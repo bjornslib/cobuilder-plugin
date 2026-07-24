@@ -9,7 +9,7 @@ owner: bjoerns
 # Story Mode — explain-diff authoring reference
 
 How to write a per-PR narrative for the Odyssey bundle viewer
-(`<target>/.odyssey/data/story.json`). One artifact, two readers: a PM skims
+(`<bundle-dir>/data/story.json`). One artifact, two readers: a PM skims
 `narration` and gets the plot; a developer reads `detail`/`problem`/`solution` and
 gets the mechanism.
 
@@ -49,7 +49,7 @@ is where most of the explain-diff prose lives: `problem` and `solution` are
 precise (code identifiers in backticks), `narration` restates the same
 content in plain language. Level 3 exists only when the PR carries real
 architectural weight — pull `alternatives` and `forces` straight from the
-PR's ADRs (`<target>/.odyssey/data/adrs.json`, records with matching
+PR's ADRs (`<bundle-dir>/data/adrs.json`, records with matching
 `source_pr`, extracted in the same sweep — see `decision-records-lite.md`); do
 not invent options the ADR didn't record. Level 4 is the only level allowed
 to name files — group them by shared intent (e.g. "DDD rename & feedback
@@ -183,11 +183,11 @@ them with the plugin's `scripts/generate_audio.py`, which reads the `voice`
 fields straight out of `story.json`:
 
 ```bash
-uv run "${CLAUDE_PLUGIN_ROOT}/scripts/generate_audio.py" --repo <target> --bundle-dir <target>/.odyssey --prs <N> --voice Charon   # requires GEMINI_API_KEY (env var or .env)
-uv run "${CLAUDE_PLUGIN_ROOT}/scripts/generate_audio.py" --repo <target> --bundle-dir <target>/.odyssey --prs <N> --dry-run          # print scripts, no API calls
+uv run "${CLAUDE_PLUGIN_ROOT}/scripts/generate_audio.py" --repo <target> --bundle-dir <bundle-dir> --prs <N> --voice Charon   # requires GEMINI_API_KEY (env var or .env)
+uv run "${CLAUDE_PLUGIN_ROOT}/scripts/generate_audio.py" --repo <target> --bundle-dir <bundle-dir> --prs <N> --dry-run          # print scripts, no API calls
 ```
 
-Output lands at `<target>/.odyssey/data/audio/pr<N>_<level>.wav`
+Output lands at `<bundle-dir>/data/audio/pr<N>_<level>.wav`
 (e.g. `pr73_landscape.wav`), played by the bundle viewer the same
 manifest-gated way scene art is. Default voice is `Charon` (informative &
 professional — recommended for architecture/tech description). Generation is
