@@ -25,9 +25,11 @@ repo — it never edits the target repo's source, only writes into its bundle
 directory (`<bundle-dir>`, see Hub resolution below).
 
 Where that bundle actually lands depends on whether the target is the session's
-own repo or a foreign one: self-analysis bundles stay at `<target>/.odyssey/`,
-foreign-repo bundles are stored centrally at `<hub>/.prodyssey/<repo-slug>/`. See
-Hub resolution below for the exact rule.
+own repo or a foreign one: every bundle lives under one parent,
+`<hub>/.prodyssey/` — self-analysis bundles land at `<hub>/.prodyssey/self/`
+(which, because target and hub are the same repo in that case, sits inside the
+analyzed repo and is committed alongside its code), foreign-repo bundles at
+`<hub>/.prodyssey/<repo-slug>/`. See Hub resolution below for the exact rule.
 
 Reference material lives in `references/` and is loaded on demand, not inlined here.
 Scripts live in `scripts/` and are called via `uv run`, never edited by the skill.
@@ -44,7 +46,9 @@ Scripts live in `scripts/` and are called via `uv run`, never edited by the skil
 When `--repo` points outside the session's working directory, narrative authoring
 requires read access to that path. If reads are being denied, tell the user to run
 `/add-dir <path>` (or add the path to their permissions) and retry — do not work
-around it by guessing at file contents. All script invocations below pass the
+around it by guessing at file contents. If `--store local` is also in effect for
+that path, write access is needed too (`/add-dir` grants both read and write, so
+one ask covers it). All script invocations below pass the
 resolved path as `--repo <target>`; where the bundle actually lands (`<bundle-dir>`)
 is determined by the storage rule in Hub resolution below, overridable with
 `--store local|central`.
@@ -60,14 +64,28 @@ analyzed.
 **Storage rule** — where a given invocation's bundle actually lives:
 
 - **Self-analysis** (no `--repo` given, or `--repo` resolves to the same repo
-  as `<hub>` — i.e. `<target>`'s git toplevel equals `<hub>`): the bundle stays
-  at `<target>/.odyssey/`, unchanged from today.
+  as `<hub>` — i.e. `<target>`'s git toplevel equals `<hub>`): the bundle lives
+  at `<hub>/.prodyssey/self/`. `self` is a **fixed literal, never a computed
+  slug** — do not "fix" this into a hashed slug. The slug hash (below) is a
+  `shasum` of the resolved absolute target path; a self-bundle committed under
+  a hashed name would be undiscoverable from any other clone location, since a
+  teammate cloning the repo to a different path computes a different hash and
+  silently gets pointed at a new, empty bundle instead of the one already
+  committed. `self` is clone-portable. Slugs never leave the hub they were
+  computed in, so their path-dependence is harmless.
 - **Foreign repo** (`--repo <other-path>` resolves to a DIFFERENT repo than
-  `<hub>`): the bundle moves to `<hub>/.prodyssey/<repo-slug>/`.
+  `<hub>`): the bundle lives at `<hub>/.prodyssey/<repo-slug>/`, unchanged.
 
 An optional `--store local|central` flag overrides the automatic rule
 regardless of the self/foreign check: `--store local` forces
-`<target>/.odyssey/`, `--store central` forces `<hub>/.prodyssey/<repo-slug>/`.
+`<target>/.prodyssey/self/`, `--store central` forces
+`<hub>/.prodyssey/<repo-slug>/`. This preserves today's meaning of `local`
+(writing into the target repo itself). Note that for self-analysis the two
+branches converge — `<target>` and `<hub>` are the same repo, so
+`--store local` is a no-op there. Do not read `local` as "`<hub>/.prodyssey/self`"
+instead — that alternative would put a *foreign* repo's bundle under `self/`
+when `--store local` is passed for it, breaking the invariant that makes the
+fixed literal safe to leave un-slugged.
 
 Compute `<repo-slug>` once per invocation whenever the foreign path applies:
 
@@ -86,26 +104,55 @@ STORE_MODE="<local|central, from --store if the user passed it, else empty>"
 HUB_TOPLEVEL=$(git -C "<hub>" rev-parse --show-toplevel)
 TARGET_TOPLEVEL=$(git -C "<target>" rev-parse --show-toplevel)
 
-if [ "$STORE_MODE" = "local" ] || { [ "$STORE_MODE" != "central" ] && [ "$HUB_TOPLEVEL" = "$TARGET_TOPLEVEL" ]; }; then
-  BUNDLE_DIR="<target>/.odyssey"
+if [ "$STORE_MODE" = "central" ] || { [ "$STORE_MODE" != "local" ] && [ "$HUB_TOPLEVEL" != "$TARGET_TOPLEVEL" ]; }; then
+  BUNDLE_DIR="$HUB_TOPLEVEL/.prodyssey/$SLUG"
 else
-  BUNDLE_DIR="<hub>/.prodyssey/$SLUG"
+  BUNDLE_DIR="$TARGET_TOPLEVEL/.prodyssey/self"
 fi
 ```
 
-`<bundle-dir>` replaces every `<target>/.odyssey` reference in Baseline mode
-and Generate mode's script invocations below.
+(`<repo-slug>`/`$SLUG` is computed only when the foreign path applies — see
+above.) `<bundle-dir>` is the only path Baseline, Generate, and Publish modes
+ever write to; no mode references a literal bundle path directly.
 
-Whenever `<bundle-dir>` resolves under `<hub>/.prodyssey/` (the central case,
-whether reached automatically or via `--store central`) and
+**Legacy layout detection.** Immediately after `BUNDLE_DIR` is computed above
+— reached by all four modes, since Step 0's prereq gate is skipped by View and
+Publish — check: if `$BUNDLE_DIR` does not exist but a legacy
+`<target>/.odyssey/` does, STOP and tell the user their bundle predates the
+`.prodyssey/self` layout, printing the exact command:
+```
+git -C <target> mv .odyssey .prodyssey/self
+```
+Do not perform the move yourself, and do not fall through to "no baseline
+found". Two reasons this is detect-but-not-migrate rather than an automatic
+fix: auto-running `git mv` inside a user's repo contradicts this skill's own
+"never edits the target repo's source" posture; and without this check,
+Generate mode's auto-baseline check (below) would find nothing at the new
+path, announce "No baseline found", and silently regenerate over
+hand-authored narrative at real Gemini API cost. This block is removable at
+0.2.0, once legacy `.odyssey/` layouts are no longer expected in the wild.
+
+Whenever `<bundle-dir>` resolves under `<hub>/.prodyssey/` and
 `<hub>/.prodyssey/` doesn't exist yet, create it (`mkdir -p`) and check
-whether the hub's `.gitignore` already covers `.prodyssey/`; if not, print a
-suggested line for the user to add manually — do NOT edit `.gitignore`
-yourself. This applies the first time *any* mode (Baseline, Generate, or
+whether the hub's `.gitignore` already covers its three bookkeeping entries;
+if not, print exactly these three lines for the user to add manually:
+```
+.prodyssey/.view-server.pid
+.prodyssey/.view-server.log
+.prodyssey/active
+```
+Do NOT edit `.gitignore` yourself, and **never suggest ignoring `.prodyssey/`
+as a whole** — bundles are meant to be committed alongside the code they
+narrate; a narrative that isn't in the repo isn't doing its job. Only these
+three entries are exceptions: `.view-server.pid` and `.view-server.log` are
+process bookkeeping for a server that only ever exists on one machine, and
+`active` is a symlink holding an ABSOLUTE path — committing it both breaks in
+every other clone (the path won't exist there) and churns the diff on every
+view switch. This applies the first time *any* mode (Baseline, Generate, or
 View) creates the directory, not just View mode — and it's a one-time
 notice, not a durable reminder: once `<hub>/.prodyssey/` exists, later
 invocations skip the check even if the user never actually added the
-suggested line.
+suggested lines.
 
 ## Step 0 — Prereq gate (hard, before ANYTHING generative)
 
@@ -275,13 +322,19 @@ one-server-plus-symlink design below work.
 ### Layout
 
 `<hub>/.prodyssey/` holds:
-- One subfolder per foreign-repo bundle: each `<repo-slug>/` is a full bundle
-  root (`data/`, `viewer/`, `assets/`), created by Baseline/Generate mode per
-  the storage rule in Hub resolution above.
+- `self/` — the hub's own self-analysis bundle (the repo that contains this
+  `.prodyssey/`), and one subfolder per foreign-repo bundle (`<repo-slug>/`).
+  Each is a peer full bundle root (`data/`, `viewer/`, `assets/`), created by
+  Baseline/Generate mode per the storage rule in Hub resolution above. Harmless
+  side effect worth knowing so nobody "fixes" it later: `self/` is therefore
+  also directly reachable at `http://localhost:<port>/self/viewer/`, in
+  addition to the usual `/active/viewer/`.
 - `active` — a symlink to the ABSOLUTE path of whichever bundle root is
-  currently selected for viewing. Points either at a `<hub>/.prodyssey/<slug>/`
-  entry, or at `<target>/.odyssey/` itself when viewing the hub's own
-  self-analysis bundle.
+  currently selected for viewing. Usually points at a
+  `<hub>/.prodyssey/self/` or `<hub>/.prodyssey/<slug>/` entry, but for a
+  foreign bundle stored with `--store local` it points outside the hub
+  entirely, at `<other-target>/.prodyssey/self/` — that's fine, `http.server`
+  follows symlinks (see below).
 - `.view-server.pid` / `.view-server.log` — the one long-lived server process
   for this hub.
 
@@ -295,19 +348,19 @@ applies — see Hub resolution).
 
 2. **Discover known bundles** — needed for selection, `--list`, and the
    auto-select case:
-   - Central entries: immediate children of `<hub>/.prodyssey/` that are real
+   - Entries: immediate children of `<hub>/.prodyssey/` that are real
      directories, NOT symlinks — e.g. `find <hub>/.prodyssey -mindepth 1 -maxdepth 1 -type d`
      (`-type d` without `-L` naturally excludes the `active` symlink even
      though it points at a directory; don't use a glob like `*/`, which
      follows symlinks and would wrongly include `active` as if it were its
      own bundle). Also excludes `.view-server.pid`/`.view-server.log` since
      those are files, not directories.
-   - Plus, if `<hub>/.odyssey/` exists (the hub's own self-analysis bundle),
-     include it too.
    - For each, read `data/story.json`'s `meta.repo` and `meta.generated`
      fields to build a human-readable label (repo name + generation date).
      Skip an entry whose `story.json` is missing or unreadable rather than
-     failing discovery outright — note it as incomplete if listing.
+     failing discovery outright — note it as incomplete if listing. When an
+     entry's directory name is `self`, label it "(this repo)" so it's
+     distinguishable from a slug entry in the picker.
 
 3. **`--list`**: print the discovered list from step 2 (label + path per
    entry) and STOP — don't start or switch anything.
@@ -324,13 +377,23 @@ applies — see Hub resolution).
    fi
    rm -f "$PIDFILE" "$LOGFILE"
    ```
-   (PID/log files live under `<hub>/.prodyssey/`, not `/tmp` — `.prodyssey/`
-   is understood as hub-local scratch now, never part of any committable
-   bundle.)
+   (The PID/log files live under `<hub>/.prodyssey/` rather than `/tmp` so
+   they're scoped per hub. They and `active` are the only three entries under
+   `.prodyssey/` that should be gitignored — see the gitignore-suggestion
+   paragraph in Hub resolution above. Everything else under `.prodyssey/` is a
+   committed bundle, not scratch.)
 
 5. **Select which bundle to view**:
-   1. `--repo <path>` given → resolve it directly via the storage rule in Hub
-      resolution above to that repo's bundle-dir. No prompt.
+   1. `--repo <path>` given → resolve the storage rule in Hub resolution above
+      to a primary candidate bundle-dir. If `data/story.json` is missing
+      there, probe the OTHER candidate before giving up — i.e. if the
+      primary was `<target>/.prodyssey/self`, try
+      `<hub>/.prodyssey/<repo-slug>`, and vice versa — and report which of the
+      two was actually found. This is what makes bundles stored with
+      `--store local` findable even though the storage rule's default guess
+      would otherwise miss them. Only if BOTH candidates lack
+      `data/story.json` does this fall through to the "no baseline found"
+      handling below. No prompt either way.
    2. No `--repo`, and step 2's discovery found exactly one bundle total →
       auto-select it. No prompt.
    3. No `--repo`, and discovery found multiple bundles → present the list
@@ -465,13 +528,13 @@ of the run looking like it silently failed.
 - Narrative authoring and ADR extraction are Claude judgment work — never delegate
   their content to a script. Scripts only move data (diffs, prompts, audio, bundle
   verification).
-- Never touch anything in `<target>` outside `<target>/.odyssey/` and `<target>/.env`
+- Never touch anything in `<target>` outside `<target>/.prodyssey/` and `<target>/.env`
   (read-only check, never written by this skill) — `<hub>/.prodyssey/` is also a
   sanctioned write location, for centrally-stored bundles and view-server bookkeeping.
 - `story.json`'s `meta.schema_version` is `"1.0"` — `verify_bundle.py` gates on it.
 - View mode's PID/log files and the `active` symlink live under
-  `<hub>/.prodyssey/`, never inside `<target>/.odyssey/` — that directory is the
-  committable bundle when self-analysis storage applies.
+  `<hub>/.prodyssey/`, never inside a bundle directory — those two files plus
+  `active` are the only entries meant to stay out of the commit.
 - Publish mode's `exports/` (per-PR HTML, `index.html`, `publish-manifest.json`)
   lives inside `<bundle-dir>` and is committable the same way `data/`/`assets/`
   are — it's the durable record of what's been published and from what
