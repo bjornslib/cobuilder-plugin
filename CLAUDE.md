@@ -12,7 +12,7 @@ voice narration, retro-extracted ADRs — viewable in a portable HTML viewer.
 
 Where the bundle lands depends on the target: analyzing your own repo
 (no `--repo`, or `--repo` resolving to the session's own checkout) writes to
-`<target>/.odyssey/`; analyzing a foreign repo writes instead to
+`<target>/.prodyssey/self/`; analyzing a foreign repo writes instead to
 `<hub>/.prodyssey/<repo-slug>/`, where `<hub>` is the session's own repo —
 never the foreign one. `--store local|central` overrides the automatic
 choice. See `skills/odyssey/SKILL.md`'s Hub resolution section for the exact
@@ -57,7 +57,7 @@ declare them.
 `SKILL.md` is the source of truth for the procedure; skim it before changing
 orchestration behavior. In short: a hard prereq gate (git repo, `uv` on PATH,
 `GEMINI_API_KEY`) runs before anything generative; `baseline` mode derives
-`.odyssey/inventory.yaml` + world districts; `generate` mode is per-PR and
+`<bundle-dir>/inventory.yaml` + world districts; `generate` mode is per-PR and
 resumable — `verify_bundle.py` decides which stages are already `"ok"` so a
 killed sweep can be re-invoked without regenerating completed narrative,
 art, or audio (`--force` overrides).
@@ -73,7 +73,7 @@ Scripts are PEP 723 (`uv run script.py` resolves `google-genai`, `pillow`,
 
 `viewer/index.html` is a normal multi-file web page in disguise: one HTML
 file, but it depends on three things that only exist *next to* it inside a
-real `.odyssey/` bundle:
+real `.prodyssey/` bundle:
 
 1. **Sibling `<script src="../data/*.js">` tags** (`story.js`, `manifest.js`,
    per-PR `diffs-pr{N}.js` via `document.write`, `adrs.js`) — this is how
@@ -86,9 +86,12 @@ real `.odyssey/` bundle:
 3. **Two external CDN requests** — Google Fonts (JetBrains Mono) and
    `cdn.jsdelivr.net/npm/motion` for the UI's micro-animations.
 
-Intended viewing is `python3 -m http.server` inside `.odyssey/viewer/`, or
-the (future) production app's *Import bundle* flow — both preserve the
-relative file layout the viewer expects.
+Intended viewing is `python3 -m http.server` rooted at the bundle root (the
+parent of `viewer/` — e.g. `.prodyssey/self/`), not inside `viewer/` itself:
+`viewer/index.html` requests sibling files like `../data/story.js`, so
+serving from inside `viewer/` 404s every data file. The (future) production
+app's *Import bundle* flow preserves the same relative file layout the
+viewer expects.
 
 **This means the viewer cannot be published as a Claude Artifact as-is.**
 Artifacts are a single self-contained file with no sibling files and a CSP
@@ -131,7 +134,7 @@ recognized, reserved flag value with no implementation behind it yet.
 ## Bundle output shape (what generation produces)
 
 ```
-<bundle-dir>/       <target>/.odyssey/ for self-analysis, <hub>/.prodyssey/<repo-slug>/ for a foreign repo
+<bundle-dir>/       <target>/.prodyssey/self/ for self-analysis, <hub>/.prodyssey/<repo-slug>/ for a foreign repo
   data/{story.json, story.js, adrs.json, adrs.js, manifest.js,
         diffs-pr{N}.js…, audio/pr{N}_{level}.wav}
   assets/pr-{N}/level-{1..3}.png
@@ -144,32 +147,43 @@ recognized, reserved flag value with no implementation behind it yet.
 as committable as the rest of the bundle — see Publish mode notes below.
 
 `story.json`'s `meta.schema_version` is currently `"1.0"` —
-`verify_bundle.py` gates on it (`SCHEMA_VERSION_KNOWN`). Both `.odyssey/` and
-`.prodyssey/` are committed in *this* repo (not gitignored — `.odyssey/` was
-explicitly un-ignored in `66782c7`, and `.prodyssey/` was never ignored):
-`.odyssey/` is this repo's own generated bundle, tracked so engineers can
-review each other's PRs as an odyssey instead of only a raw diff, same as
-it's meant to be committed in target repos that adopt the plugin;
-`.prodyssey/` holds committed *test fixtures* — bundles generated against
-other local repos (`cobuilder-harness-a103a550`, `digital-curator-80f83abb`)
-via `--repo`, kept as demo/dogfooding data rather than as this repo's own PR
-history. A hub adopting the plugin for its own use is not expected to commit
-`.prodyssey/` the same way — `skills/odyssey/SKILL.md`'s Hub resolution
-section has the skill suggest a `.gitignore` line for it by default.
+`verify_bundle.py` gates on it (`SCHEMA_VERSION_KNOWN`). Everything under
+`.prodyssey/` is committed in *this* repo (not gitignored — only three
+bookkeeping entries are: `.prodyssey/.view-server.pid`,
+`.prodyssey/.view-server.log`, and `.prodyssey/active`, a symlink holding an
+absolute path that would break in clones and churn the diff on every view
+switch). The self-bundle and the foreign-repo cache used to live under two
+separate top-level directories; they're now unified under one `.prodyssey/`
+root, distinguished by subdirectory: `.prodyssey/self/` is
+this repo's own generated bundle, tracked so engineers can review each
+other's PRs as an odyssey instead of only a raw diff, same as it's meant to
+be committed in target repos that adopt the plugin. The other two
+subdirectories — `.prodyssey/cobuilder-harness-a103a550/` and
+`.prodyssey/digital-curator-80f83abb/` — are committed *test fixtures*:
+bundles generated against other local repos via `--repo`, kept as
+demo/dogfooding data rather than as this repo's own PR history. Do not
+delete them as stale cache — they exist deliberately, are named by
+`<repo-slug>` (never `self`, which is reserved for the self-bundle), and are
+otherwise indistinguishable from real foreign-repo caches. Whether a hub
+adopting the plugin also commits its foreign-repo slug directories is that
+team's call — the skill takes no position on it. `skills/odyssey/SKILL.md`'s
+Hub resolution section suggests a `.gitignore` line for the three
+bookkeeping entries only, and is explicit that `.prodyssey/` as a whole must
+never be suggested for ignoring.
 
 ## Conventions worth preserving
 
-- Never touch anything in `<target>` outside `<target>/.odyssey/` and a
-  read-only check of `<target>/.env`; `<hub>/.prodyssey/` is also a
+- Never touch anything in `<target>` outside `<target>/.prodyssey/self/` and
+  a read-only check of `<target>/.env`; `<hub>/.prodyssey/` is also a
   sanctioned write location, for centrally-stored foreign-repo bundles and
   view-server bookkeeping.
 - `extract_story.py` never overwrites authored narrative fields for PRs
   already in `story.json` — new PRs get a minimal stub; re-running is safe.
 - `--repo <path>` (skill + all three commands) targets any local checkout,
   not just the session's own working directory; where the bundle lands is
-  the Hub resolution storage rule — `<target>/.odyssey/` for self-analysis,
-  `<hub>/.prodyssey/<repo-slug>/` for a foreign repo, overridable with
-  `--store local|central`.
+  the Hub resolution storage rule — `<target>/.prodyssey/self/` for
+  self-analysis, `<hub>/.prodyssey/<repo-slug>/` for a foreign repo,
+  overridable with `--store local|central`.
 - Everything judgment-shaped (narrative voice, register, what counts as a
   decision worth an ADR) lives in `references/*.md` prose, loaded on demand
   — not hardcoded in scripts or the skill body.
@@ -178,6 +192,8 @@ section has the skill suggest a `.gitignore` line for it by default.
 
 Plugin scaffold → viewer port → skill/references/commands → generation +
 verification scripts → `--repo` external-checkout targeting → Hub
-resolution / central storage (`--store`, `.prodyssey/`, `view` command) (see
-`git log` for the WS-A/B/C/D workstream commits). No test suite, no CI
-config, no package manager — this is prose + Python scripts + one HTML file.
+resolution / central storage (`--store`, `.prodyssey/`, `view` command) →
+unification of the two former bundle-storage roots, with the self-bundle
+moved to `.prodyssey/self/` (see `git log` for the WS-A/B/C/D workstream
+commits). No test suite, no CI config, no package manager — this is prose +
+Python scripts + one HTML file.
