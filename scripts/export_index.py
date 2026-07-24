@@ -15,7 +15,7 @@ slice of the ~2000-line bundle viewer.
 
 Usage:
     uv run export_index.py --repo <path>
-    uv run export_index.py --bundle-dir <path>/.odyssey
+    uv run export_index.py --bundle-dir <path>/.prodyssey/self
 """
 from __future__ import annotations
 
@@ -147,11 +147,11 @@ def render_index(manifest: dict) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--repo", default=None, help="path to the target git repo (default: cwd)")
-    parser.add_argument("--bundle-dir", default=None, help="bundle dir to read (default: <repo>/.odyssey)")
+    parser.add_argument("--bundle-dir", default=None, help="bundle dir to read (default: <repo>/.prodyssey/self)")
     args = parser.parse_args()
 
     repo = resolve_repo(args.repo)
-    bundle_dir = Path(args.bundle_dir).resolve() if args.bundle_dir else repo / ".odyssey"
+    bundle_dir = Path(args.bundle_dir).resolve() if args.bundle_dir else repo / ".prodyssey" / "self"
     out_dir = bundle_dir / "exports"
     manifest_path = out_dir / "publish-manifest.json"
 
