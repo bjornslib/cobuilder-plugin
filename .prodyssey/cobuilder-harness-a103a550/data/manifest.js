@@ -1,1 +1,1 @@
-window.ODYSSEY = {"schema_version": "1.0", "excluded_prs": [], "hero": [], "diff_prs": []};
+window.ODYSSEY = {"schema_version": "1.0", "excluded_prs": [], "hero": [], "diff_prs": [79]};
