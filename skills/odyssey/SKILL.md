@@ -191,9 +191,9 @@ Only after all three checks pass does mode dispatch begin.
 
 The invoking command passes a mode (`baseline`, `generate`, `view`, or
 `publish`) plus forwarded args (`--repo`, `--store`, `--prs`, `--force`,
-`--voice`, `--dry-run`, `--port`, `--stop`, `--list`, `--format`). If invoked
-with no mode, ask the user whether they want `baseline`, `generate`, `view`,
-or `publish`.
+`--voice`, `--dry-run`, `--port`, `--stop`, `--list`, `--format`, `--style`).
+If invoked with no mode, ask the user whether they want `baseline`,
+`generate`, `view`, or `publish`.
 
 ## Baseline mode
 
@@ -262,7 +262,9 @@ Per-PR narrative + ADR + art + audio sweep. Steps:
    Execute only the missing stages, **in this order**:
 
    1. **Narrative authoring** (Claude work, not a script). Follow
-      `references/story-mode.md`. Ground every claim by reading the diff (from
+      `references/story-mode.md`. The register is selected by `--style
+      kleppmann|ste` (default `kleppmann`) — see `references/story-mode.md`
+      §3 for both. Ground every claim by reading the diff (from
       `extract_diffs.py`'s output — run it first if the diff isn't extracted yet),
       the touched files in `<target>`, and `<bundle-dir>/inventory.yaml`.
       Author the four levels (`landscape`, `problem_solution`, `architecture`,
