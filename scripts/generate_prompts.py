@@ -66,13 +66,13 @@ VISUAL_DESCRIBE_INSTRUCTIONS = {
     "problem_solution": (
         "You are given the JSON data for one pull request from a codebase's evolution "
         "timeline. Visually describe the concrete problem this PR faced and the fix it "
-        "shipped, grounded in the PR's own problem/solution narrative."
+        "shipped, grounded in the JSON data that describes the PR's problem/solution narrative."
     ),
     "architecture": (
         "You are given the JSON data for one pull request from a codebase's evolution "
         "timeline. Visually describe the underlying design decision behind this PR — the "
         "forces at play, any rejected alternatives, and the boundaries it drew — grounded "
-        "in the PR's `adrs` field if present."
+        "in the PR's `adrs` field from the PR, if present."
     ),
 }
 
