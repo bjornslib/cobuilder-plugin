@@ -1,0 +1,91 @@
+generated: 2026-07-27
+provenance: inferred
+repo: cobuilder-harness
+stacks:
+  - card: generic.md
+    scope: "/"
+    note: "Python 3.11 package (hatchling, pydantic, litellm, typer, chromadb) — no FastAPI markers, so the language-level fallback applies."
+  - card: nextjs.md
+    scope: "cobuilder-frontend/"
+    note: "Next.js app-router frontend (app/api/**/route.ts, package.json)."
+contexts:
+  - id: cobuilder
+    label: CoBuilder Engine
+    paths: [cobuilder]
+    summary: "The Python package itself: execution_engine (runner, handlers, adapters, events, middleware), repomap, pipeline_definition, and the CLI entrypoints."
+  - id: .cobuilder
+    label: Pipeline Templates & Examples
+    paths: [.cobuilder]
+    summary: "Runtime configuration for the pipeline engine: 30 manifest/prompt templates, 9 example DOT graphs, and tool-sets.yaml declaring per-role tool grants."
+  - id: .agents
+    label: Agent Skill Library
+    paths: [.agents]
+    summary: "Project-owned agent definitions (SKILL.md + references/examples per skill) that the pipeline runner dispatches — the 'smarts' the zero-intelligence runner has none of."
+  - id: .claude
+    label: Claude Code Harness
+    paths: [.claude]
+    summary: "The Claude Code configuration surface — 592 skill files, plus hooks, sub-agents, scripts and its own hook test suite."
+  - id: .pi
+    label: Pi Editor Extensions
+    paths: [.pi]
+    summary: "TypeScript/JS extensions for the Pi editor — pipeline launcher, event parser and overlay — that surface pipeline runs inside the IDE."
+  - id: cobuilder-frontend
+    label: Pipeline Web UI
+    paths: [cobuilder-frontend]
+    summary: "Next.js app-router frontend with API routes for pipeline listing, DOT rendering, live state and SSE event streaming."
+  - id: tests
+    label: Test Suite
+    paths: [tests]
+    summary: "Pytest suites mirroring the engine: unit, execution_engine, hooks, attractor, functional, e2e and regression tiers."
+  - id: acceptance-tests
+    label: Blind Acceptance Tests
+    paths: [acceptance-tests]
+    summary: "Gherkin .feature files and manifests written before implementation and deliberately withheld from builder agents, for the Guardian to verify against."
+  - id: examples
+    label: Spikes & Worked Examples
+    paths: [examples]
+    summary: "Runnable spike code and findings — the activegraph_shared_state experiment plus a checkpointed hello-tdd pipeline run with its signal files."
+  - id: docs
+    label: Documentation Corpus
+    paths: [docs]
+    summary: "The written record: solution designs, SDS/PRD documents, prototypes, research notes and design references accumulated across the project."
+  - id: .taskmaster
+    label: Product Requirements
+    paths: [.taskmaster]
+    summary: "PRD documents (PRD-CLEANUP-001, PRD-EXECBDD-001, PRD-HARNESS-RELIABILITY-001, ...) plus taskmaster config — the intake side of the pipeline."
+  - id: .pipelines
+    label: Spike Pipeline Evidence
+    paths: [.pipelines]
+    summary: "Archived evidence for the GASCITY-INT-001 spike: its DOT graph alongside the research notes the pipeline's agents produced."
+  - id: state
+    label: Run State & Audits
+    paths: [state]
+    summary: "Per-PRD progress, routing and plan JSON plus audit findings/scores — the bookkeeping trail of what the pipeline has executed."
+  - id: .beads
+    label: Beads Issue Tracker
+    paths: [.beads]
+    summary: "In-repo AI-native issue tracking (steveyegge/beads): config.yaml plus lifecycle/TDD/validated workflow formulas kept next to the code."
+  - id: reports
+    label: Architecture Review Reports
+    paths: [reports]
+    summary: "Generated architecture-review deliverables (founder and technical cuts, HTML + PDF) from the 2026-06-12 review."
+  - id: .repomap
+    label: Repomap Config
+    paths: [.repomap]
+    summary: "Configuration and per-project manifests driving the repomap codebase-intelligence subsystem; baselines/ is a tracked-empty output directory."
+  - id: tools
+    label: Operator Tooling
+    paths: [tools]
+    summary: "Go-based operator tools — a pipeline-watch TUI with its own go.mod, and tmux-nav for driving multi-pane agent sessions."
+  - id: utils
+    label: Shell Utilities
+    paths: [utils]
+    summary: "Ad-hoc shell and Python helpers: advisory reports, commit-range and doc-lifecycle scripts, audio generation, and a pipeline watcher."
+  - id: stagehand-crawl-cli
+    label: Stagehand Crawler
+    paths: [stagehand-crawl-cli]
+    summary: "A standalone Node/ESM browser-crawling CLI (Stagehand-based) with cookie capture — independent of the Python engine."
+  - id: .github
+    label: CI & Repo Policy
+    paths: [.github]
+    summary: "GitHub-side policy only: CI workflow, CODEOWNERS, dependabot, and the PR template."

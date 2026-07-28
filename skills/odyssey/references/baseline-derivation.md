@@ -10,7 +10,7 @@ owner: bjoerns
 
 How to derive an architecture baseline for a foreign repo with zero existing
 architecture docs: a district map plus a flat `inventory.yaml`, written into
-`<target>/.odyssey/`. This is the *describe-lite* mode — it keeps the parent
+`<bundle-dir>/`. This is the *describe-lite* mode — it keeps the parent
 skill's verification discipline (never assert an unverified boundary) but
 drops the full per-context artifact set (`canvas.md`, `boundary.yaml`,
 governed ADRs) that assumes you maintain the target repo.
@@ -102,7 +102,7 @@ Never overwrite a district entry that already has human-authored fields (a
 non-placeholder text as authored and leave it, per the same discipline
 `extract_story.py` applies to narrative fields.
 
-### `<target>/.odyssey/inventory.yaml`
+### `<bundle-dir>/inventory.yaml`
 
 ```yaml
 generated: <ISO date>

@@ -47,4 +47,4 @@ retroactive extraction from a merged PR, not a design-time record.>
 
 ## Maps to
 
-District `<context-id>` from `.odyssey/inventory.yaml`.
+District `<context-id>` from `<bundle-dir>/inventory.yaml`.

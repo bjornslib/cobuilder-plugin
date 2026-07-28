@@ -34,7 +34,7 @@ already-published artifact needs republishing.
 
 Usage:
     uv run export_artifact.py --repo <path> --prs 73
-    uv run export_artifact.py --bundle-dir <path>/.odyssey --prs 73,75
+    uv run export_artifact.py --bundle-dir <path>/.prodyssey/self --prs 73,75
     uv run export_artifact.py --bundle-dir <bundle> --prs 73 --force
 """
 from __future__ import annotations
@@ -327,7 +327,7 @@ def now_iso() -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--repo", default=None, help="path to the target git repo (default: cwd)")
-    parser.add_argument("--bundle-dir", default=None, help="bundle dir to read (default: <repo>/.odyssey)")
+    parser.add_argument("--bundle-dir", default=None, help="bundle dir to read (default: <repo>/.prodyssey/self)")
     parser.add_argument("--prs", required=True, help="comma-separated PR numbers, e.g. 73,75")
     parser.add_argument("--out-dir", default=None, help="export output dir (default: <bundle-dir>/exports)")
     parser.add_argument("--image-width", type=int, default=None, help="override the first compression tier's width")
@@ -338,7 +338,7 @@ def main() -> None:
     args = parser.parse_args()
 
     repo = resolve_repo(args.repo)
-    bundle_dir = Path(args.bundle_dir).resolve() if args.bundle_dir else repo / ".odyssey"
+    bundle_dir = Path(args.bundle_dir).resolve() if args.bundle_dir else repo / ".prodyssey" / "self"
     out_dir = Path(args.out_dir).resolve() if args.out_dir else bundle_dir / "exports"
     viewer_path = bundle_dir / "viewer" / "index.html"
 

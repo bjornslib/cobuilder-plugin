@@ -94,7 +94,7 @@ section.
 Instead of anchoring to a `boundary.yaml`, `maps_to` (when included in the
 body's "Maps to" section, or as an optional top-level field if the consuming
 code wants it structured) references a **context id from
-`<target>/.odyssey/inventory.yaml`** — the district the decision most directly
+`<bundle-dir>/inventory.yaml`** — the district the decision most directly
 affects. Records inherit `provenance: inferred` from the inventory context
 they map to; there is no separate provenance field on the record itself.
 
@@ -107,7 +107,7 @@ they map to; there is no separate provenance field on the record itself.
    the diff and surrounding code actually show — never speculate beyond the
    evidence.
 4. Assign the next free `ADR-NNNN` id.
-5. Write/merge into `<target>/.odyssey/data/adrs.json`, regenerate
+5. Write/merge into `<bundle-dir>/data/adrs.json`, regenerate
    `data/adrs.js`, and set this PR's `adrs: ["ADR-NNNN", ...]` array in
    `data/story.json` so story mode's level 3 can pull `alternatives`/`forces`
    straight from these records (see `story-mode.md` §2).

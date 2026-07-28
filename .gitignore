@@ -2,3 +2,9 @@ __pycache__/
 *.pyc
 .env
 .DS_Store
+
+# prodyssey view-server bookkeeping — machine-local only.
+# The bundles under .prodyssey/ ARE committed; that's the point of the format.
+.prodyssey/.view-server.pid
+.prodyssey/.view-server.log
+.prodyssey/active
