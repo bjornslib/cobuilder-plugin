@@ -155,7 +155,8 @@ choice would pick local.
 directory (its own `self/` bundle plus anything cached for foreign repos);
 with more than one it lists them and asks which to view, `/prodyssey:view
 --list` shows what's stored, and switching between them doesn't restart the
-server — it just repoints what's served.
+server — it just repoints what's served.'
+
 ---
 
 ## Output: the bundle
