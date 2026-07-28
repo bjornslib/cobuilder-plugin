@@ -66,13 +66,13 @@ VISUAL_DESCRIBE_INSTRUCTIONS = {
     "problem_solution": (
         "You are given the JSON data for one pull request from a codebase's evolution "
         "timeline. Visually describe the concrete problem this PR faced and the fix it "
-        "shipped, grounded in the PR's own problem/solution narrative."
+        "shipped, grounded in the JSON data that describes the PR's problem/solution narrative."
     ),
     "architecture": (
         "You are given the JSON data for one pull request from a codebase's evolution "
         "timeline. Visually describe the underlying design decision behind this PR — the "
         "forces at play, any rejected alternatives, and the boundaries it drew — grounded "
-        "in the PR's `adrs` field if present."
+        "in the PR's `adrs` field from the PR, if present."
     ),
 }
 
@@ -354,7 +354,7 @@ def rewrite_manifest(bundle_dir: Path, manifest_path: Path) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--repo", default=None, help="path to the target git repo (default: cwd)")
-    parser.add_argument("--bundle-dir", default=None, help="bundle output dir (default: <repo>/.odyssey)")
+    parser.add_argument("--bundle-dir", default=None, help="bundle output dir (default: <repo>/.prodyssey/self)")
     parser.add_argument("--prs", default=None, help="comma-separated PR numbers (default: all timeline PRs)")
     parser.add_argument(
         "--levels",
@@ -369,7 +369,7 @@ def main() -> None:
     args = parser.parse_args()
 
     repo = resolve_repo(args.repo)
-    bundle_dir = Path(args.bundle_dir).resolve() if args.bundle_dir else repo / ".odyssey"
+    bundle_dir = Path(args.bundle_dir).resolve() if args.bundle_dir else repo / ".prodyssey" / "self"
     data_dir = bundle_dir / "data"
     story_json = data_dir / "story.json"
     prompts_json = data_dir / "prompts.json"

@@ -18,10 +18,9 @@ supplied after `/prodyssey:view` (`--repo <path>`, `--store local|central`,
 Skill("odyssey", args="view $ARGUMENTS")
 ```
 
-View mode discovers ALL known bundles for this hub — the hub's own
-self-analysis bundle at `<target>/.odyssey/` (if present) plus every
-centrally-stored foreign-repo bundle under `<hub>/.prodyssey/` — then picks
-which one to serve:
+View mode discovers ALL known bundles for this hub — every bundle under
+`<hub>/.prodyssey/`, including `self/` (the hub's own self-analysis bundle,
+if present) and any foreign-repo slugs — then picks which one to serve:
 
 - `--repo <path>` selects that repo's bundle directly, no prompt. If that
   repo was baselined/generated with a non-default `--store` mode, pass the
