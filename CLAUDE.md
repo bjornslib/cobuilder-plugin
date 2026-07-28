@@ -188,6 +188,24 @@ never be suggested for ignoring.
   decision worth an ADR) lives in `references/*.md` prose, loaded on demand
   — not hardcoded in scripts or the skill body.
 
+## Writing standard
+
+Technical prose in this repo defaults to ASD-STE100 Issue 9 Simplified
+Technical English (STE): `README.md`, this file, `skills/odyssey/references/*.md`,
+and commit and PR bodies. Invoke `Skill("ste-writing")` for the rules. Check a
+draft with `python3 .claude/skills/ste-writing/ste-lint.py <file>` — the
+score counts violations per 100 words, and a lower score reads cleaner.
+
+**Carve-out**: the authored PR narrative inside `story.json` does not follow
+this default. Its register comes from `--style kleppmann|ste` (default
+`kleppmann`) — see `skills/odyssey/references/story-mode.md` §3 for both
+registers.
+
+The `ste-writing` skill lives under `.claude/skills/` on purpose and does not
+ship with the plugin — an install of `prodyssey@prodyssey` still gets exactly
+one skill, `odyssey`, matching the minimal install surface above. The skill
+checks rules only. It does not certify ASD-STE100 dictionary compliance.
+
 ## Recent history
 
 Plugin scaffold → viewer port → skill/references/commands → generation +

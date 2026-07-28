@@ -118,6 +118,11 @@ Register: `beats` text is developer-precise (the `detail`-register rules in
 
 ## 3. Style rules (mandatory)
 
+Which register applies is set by `--style kleppmann|ste`, default
+`kleppmann`.
+
+### kleppmann (default)
+
 - Write with the clarity and flow of Martin Kleppmann: short declarative
   sentences building to a compound one, technical precision without jargon
   for its own sake, one idea per paragraph.
@@ -143,6 +148,15 @@ Register: `beats` text is developer-precise (the `detail`-register rules in
   foundation." Check `related_decisions` (`depends-on`) in the ADRs to find
   these threads; render them as `related_decisions`/cross-references in
   level 3, not as speculation.
+
+### ste
+
+Defer to the `ste-writing` skill (`Skill("ste-writing")`) for the rules —
+this section does not restate them, to keep one source of truth. Author the
+same four levels and `beats` structure as the `kleppmann` register above;
+only the sentence/word/voice rules change. PR #79 in the cobuilder-harness
+bundle (`.prodyssey/cobuilder-harness-a103a550/`) is the worked example of
+this register.
 
 ## 4. Registers
 
