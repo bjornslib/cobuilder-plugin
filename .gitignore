@@ -8,3 +8,7 @@ __pycache__/
 .prodyssey/.view-server.pid
 .prodyssey/.view-server.log
 .prodyssey/active
+
+.mcp.json
+.serena/
+.prodyssey/digital-curator-80f83abb/docs/
