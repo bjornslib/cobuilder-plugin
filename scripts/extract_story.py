@@ -52,7 +52,8 @@ import sys
 from datetime import date
 from pathlib import Path
 
-SCHEMA_VERSION = "1.0"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _bundle_meta import SCHEMA_VERSION
 DEFAULT_LEVELS = ["PR Landscape", "Problem & Solution", "Architecture", "File Changes"]
 
 EXCLUDE_PREFIXES = (".venv/", "node_modules/", ".git/")

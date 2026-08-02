@@ -36,7 +36,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-SCHEMA_VERSION = "1.0"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _bundle_meta import SCHEMA_VERSION
+
 MAX_LINES_PER_FILE = 4000
 MAX_BYTES_PER_FILE = 200_000  # belt-and-suspenders: some files (minified JS, a
 # single-line JSON blob, a data-URI-heavy HTML export) pack megabytes onto a

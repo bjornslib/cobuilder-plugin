@@ -60,7 +60,9 @@ from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 
-SCHEMA_VERSION = "1.0"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _bundle_meta import SCHEMA_VERSION
+
 DEFAULT_MAX_BYTES = 15 * 1024 * 1024  # target under the 16 MiB artifact hard cap
 # (image-width, jpeg-quality) tiers, tried in order until the file fits budget.
 COMPRESSION_TIERS = [(1400, 78), (1100, 68), (900, 55)]

@@ -178,16 +178,9 @@ needs the `Artifact` tool, available in a `/login` session on a paid plan.
 Without it, Prodyssey still writes the flattened files to
 `<bundle-dir>/exports/` for manual use.
 
-**Bundle predates the Mermaid work?** Publish reads its own copy of
-`viewer/index.html` from inside the bundle, and a bundle generated before
-diagram support carries an older copy. Publish then stops with an error
-that names the mismatch. Fix it by re-running `/prodyssey:baseline`, which
-refreshes the viewer copy in place, or by copying the current file in by
-hand:
-
-```
-cp "${CLAUDE_PLUGIN_ROOT}/viewer/index.html" <bundle-dir>/viewer/index.html
-```
+An older bundle needs no manual fix. Every command upgrades the bundle it
+touches first. A bundle generated before diagram support gets a current
+viewer copy the first time any `/prodyssey:*` command runs against it.
 
 ## Multiple repos
 
@@ -226,6 +219,7 @@ repos](#multiple-repos) below.
 
 ```
 <target>/.prodyssey/self/
+  bundle.json         # format and schema version, checked and refreshed on every run
   data/{story.json, story.js, adrs.json, adrs.js, manifest.js, diffs-pr{N}.js…,
         audio/pr{N}_{level}.wav, diagrams/pr{N}-level{1,2,3}.mmd, diagrams.js}
   assets/pr-{N}/level-{1..3}.png
@@ -240,7 +234,12 @@ generated the PR: `--art diagram` writes only `.mmd` files and no PNGs,
 
 Commit the bundle, and a share link is only the raw GitHub URL. You can
 also import the bundle into the viewer directly, by upload or by local
-path. The `schema_version` field gates compatibility (AC G5).
+path. The `schema_version` field gates compatibility (AC G5). A bundle
+from an older plugin version is not a dead end, though. Every command
+upgrades the layout and the data shape of the bundle it touches, in place,
+before doing anything else. An older bundle catches up to the current
+format on its first use. It never needs a fresh `/prodyssey:baseline` run
+just to modernize.
 
 ---
 
@@ -274,6 +273,8 @@ prodyssey/
 │   ├── generate_audio.py      # TTS narration (Gemini voices)
 │   ├── extract_diffs.py       # per-PR diff extraction into the bundle
 │   ├── build_diagrams.py      # compiles authored .mmd files into data/diagrams.js, and validates them
+│   ├── migrate_bundle.py      # refreshes the viewer, and steps bundle layout + data shape forward
+│   ├── _bundle_meta.py        # the version constants that the other scripts import
 │   ├── verify_bundle.py       # schema_version + completeness check (drives resumability)
 │   ├── export_artifact.py     # flattens one PR into a self-contained artifact-safe HTML
 │   ├── export_index.py        # renders the cross-PR index artifact from publish-manifest.json
@@ -288,7 +289,7 @@ Key manifest fields (`plugin.json`):
 ```json
 {
   "name": "prodyssey",
-  "version": "0.1.0"
+  "version": "0.2.0"
 }
 ```
 
@@ -333,6 +334,46 @@ Contact the author for more information.
 | **decisions-mode governance** (state machine, viewpoints, ADR numbering) | Governs a living doc set in a repo you own. Prodyssey generates immutable bundle records instead |
 | **describe-mode full canvas** | The flat inventory serves as the `maps_to` anchor. The full canvas adds documentation-program overhead that a foreign repo cannot sustain |
 | `sync-books.sh`, `sync-corpus.sh`, `html_to_pdf.py` | Corpus maintenance tooling for the parent skill |
+
+---
+
+## Upgrading a bundle from an older version
+
+A bundle keeps its own copy of the viewer, and it records the layout and the
+data shape it was written with. A newer plugin can therefore find an older
+bundle on disk. You do not upgrade it by hand.
+
+`scripts/migrate_bundle.py` does the work, and every `/prodyssey:*` command
+runs it against the bundle before it does anything else. An older bundle
+catches up on its first use. The script does three things, in this order:
+
+1. It refreshes `viewer/index.html` from the plugin. This is unconditional,
+   because the viewer is a build artifact with no authored content in it.
+2. It steps the directory layout forward, tracked by `bundle_format`.
+3. It steps the data shape forward, tracked by `schema_version`.
+
+Step 3 never rewrites your content. Each data migration declares the fields
+it changes. The script collects every authored value before and after the
+migration, and it compares the two sets. If a value changed that the
+migration did not declare, the script writes nothing and stops with the
+field name. It also copies `story.json` to `<bundle-dir>/.migration-backup/`
+before it writes. Add that path to `.gitignore`, because the backup is
+disposable.
+
+Run the script directly to inspect an upgrade before it happens:
+
+```
+uv run scripts/migrate_bundle.py --bundle-dir .prodyssey/self --dry-run
+```
+
+`--dry-run` reports the three phases and prints a diff of `story.json`. It
+writes nothing.
+
+Two limits are worth knowing. An upgrade is one way. An older plugin reports
+`unknown-schema-version` for a bundle that a newer plugin migrated. Update
+the plugin on every machine that reads the bundle. The script also refuses a
+bundle from a plugin newer than itself. It tells you to update the plugin
+rather than guess the format.
 
 ---
 
