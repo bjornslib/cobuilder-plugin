@@ -173,17 +173,21 @@ Run this before any other step, every baseline/generate invocation:
    STOP before running any script and print:
 
    ```
-   GEMINI_API_KEY is required for scene art and voice narration.
+   GEMINI_API_KEY is required for voice narration (and scene art, unless
+   --art diagram is in effect).
    Get one at https://aistudio.google.com/apikey, then either:
      export GEMINI_API_KEY=<key>
    or add it to <target>/.env:
      GEMINI_API_KEY=<key>
    ```
 
-   Do not run `generate_prompts.py --generate` or `generate_audio.py` without a
-   confirmed key — narrative authoring and ADR extraction (which don't call Gemini)
-   may still proceed if the user explicitly asks for text-only output, but the
-   default `generate` sweep always needs the key and must stop here if absent.
+   Voice narration always calls Gemini, so this gate stands regardless of
+   `--art`. Do not run `generate_prompts.py --generate` or `generate_audio.py`
+   without a confirmed key — narrative authoring, ADR extraction, and diagram
+   authoring (none of which call Gemini) may still proceed if the user
+   explicitly asks for text-only or diagram-only output, but the default
+   `generate` sweep always needs the key for narration and must stop here if
+   absent.
 
 Only after all three checks pass does mode dispatch begin.
 
@@ -191,7 +195,8 @@ Only after all three checks pass does mode dispatch begin.
 
 The invoking command passes a mode (`baseline`, `generate`, `view`, or
 `publish`) plus forwarded args (`--repo`, `--store`, `--prs`, `--force`,
-`--voice`, `--dry-run`, `--port`, `--stop`, `--list`, `--format`, `--style`).
+`--voice`, `--art`, `--dry-run`, `--port`, `--stop`, `--list`, `--format`,
+`--style`).
 If invoked with no mode, ask the user whether they want `baseline`,
 `generate`, `view`, or `publish`.
 
@@ -256,8 +261,9 @@ Per-PR narrative + ADR + art + audio sweep. Steps:
 3. **Per PR**, run the resumability check first and only execute stages which
    artifacts are missing (or all stages if `--force`):
    ```bash
-   uv run "${CLAUDE_PLUGIN_ROOT}/scripts/verify_bundle.py" --bundle-dir <bundle-dir> --prs <N> --json
+   uv run "${CLAUDE_PLUGIN_ROOT}/scripts/verify_bundle.py" --bundle-dir <bundle-dir> --prs <N> --art <mode> --json
    ```
+   (`<mode>` is this invocation's `--art` value, below — default `both`.)
    The result's `prs.<N>` map tells you, per artifact key, `"ok"` or `"missing"`.
    Execute only the missing stages, **in this order**:
 
@@ -282,20 +288,74 @@ Per-PR narrative + ADR + art + audio sweep. Steps:
       ```bash
       uv run "${CLAUDE_PLUGIN_ROOT}/scripts/extract_diffs.py" --repo <target> --bundle-dir <bundle-dir> --prs <N>
       ```
-   4. **Scene-art prompts + generation**:
+   4. **Diagram authoring** — skipped when `--art image` is in effect (see
+      below). The orchestrating Claude does **not** write the `.mmd` files
+      itself. For each PR in this stage, spawn one subagent whose prompt
+      must:
+      - tell it to invoke `Skill("prodyssey:mermaid")` first. If that call
+        gives `Unknown skill`, tell it to read
+        `${CLAUDE_PLUGIN_ROOT}/skills/mermaid/SKILL.md` directly and obey
+        that file instead. The skill resolves by name only in a session
+        that has an installed plugin version which contains it; a session
+        that runs from a development checkout, or from an installed version
+        older than the skill, does not find it. The path always resolves,
+        because `${CLAUDE_PLUGIN_ROOT}` points at the copy in use;
+      - then tell it to read
+        `${CLAUDE_PLUGIN_ROOT}/skills/odyssey/references/diagram-mode.md`;
+      - hand it the grounding inputs: this PR's timeline entry in
+        `<bundle-dir>/data/story.json`, its extracted diff
+        (`<bundle-dir>/data/diffs-pr{N}.js`), and
+        `<bundle-dir>/inventory.yaml`;
+      - state the three output paths and the diagram type required for
+        each: `<bundle-dir>/data/diagrams/pr{N}-level1.mmd` (`C4Container`,
+        PR landscape), `<bundle-dir>/data/diagrams/pr{N}-level2.mmd`
+        (`sequenceDiagram`, problem and solution), and
+        `<bundle-dir>/data/diagrams/pr{N}-level3.mmd` (`classDiagram`,
+        architecture); level 4 has no diagram;
+      - require the subagent to return only the paths it wrote.
+
+      Then compile and validate:
+      ```bash
+      uv run "${CLAUDE_PLUGIN_ROOT}/scripts/build_diagrams.py" --repo <target> --bundle-dir <bundle-dir> --prs <N>
+      ```
+      This writes `<bundle-dir>/data/diagrams.js` from the `.mmd` sources
+      and checks each file for the right diagram type per level and
+      balanced brackets (`--strict` adds a mermaid-cli parse check). If
+      validation fails, send the failure back to the **same** subagent to
+      fix the source file — do not hand-patch the `.mmd` files yourself.
+   5. **Scene-art prompts + generation** — skipped when `--art diagram` is
+      in effect (see below):
       ```bash
       uv run "${CLAUDE_PLUGIN_ROOT}/scripts/generate_prompts.py" --repo <target> --bundle-dir <bundle-dir> --prs <N> --generate
       ```
-   5. **Voice narration**:
+   6. **Voice narration**:
       ```bash
       uv run "${CLAUDE_PLUGIN_ROOT}/scripts/generate_audio.py" --repo <target> --bundle-dir <bundle-dir> --prs <N>
       ```
       Pass `--voice <V>` if the user specified one.
 
    `--force` regenerates every stage regardless of `verify_bundle.py`'s result.
-4. **Final verify**: re-run `verify_bundle.py --prs <all-selected> --json` and
-   report a per-PR artifact table (which stages ran, which were skipped as already
+4. **Final verify**: re-run `verify_bundle.py --prs <all-selected> --art
+   <mode> --json` (`<mode>` is this invocation's `--art` value) and report a
+   per-PR artifact table (which stages ran, which were skipped as already
    complete, which failed).
+
+### `--art` flag
+
+`--art both|diagram|image` selects which visual family generate mode
+produces for levels 1 through 3 (level 4 has neither). Default: `both`.
+
+- `both` — runs diagram authoring (step 4) and scene art (step 5). This is
+  today's behavior plus diagrams.
+- `diagram` — runs diagram authoring, skips scene art entirely. No Gemini
+  image calls for this sweep.
+- `image` — skips diagram authoring, runs scene art. Matches the pre-diagram
+  behavior exactly.
+
+Pass the same `--art <mode>` value to `verify_bundle.py` in both the
+resumability check (step 3's preamble) and the final verify (step 4), so
+resumability tracks whichever family this invocation actually asked for
+instead of reporting the untouched family as missing.
 
 ## View mode
 
@@ -529,7 +589,11 @@ of the run looking like it silently failed.
 
 - Narrative authoring and ADR extraction are Claude judgment work — never delegate
   their content to a script. Scripts only move data (diffs, prompts, audio, bundle
-  verification).
+  verification). Diagram authoring is also Claude judgment work, but it runs one
+  step further removed: the orchestrating Claude never writes `.mmd` files itself,
+  it delegates that to a per-PR subagent (see Generate mode, step 4) and only calls
+  a script (`build_diagrams.py`) to compile and validate the subagent's output into
+  `data/diagrams.js`.
 - Never touch anything in `<target>` outside `<target>/.prodyssey/` and `<target>/.env`
   (read-only check, never written by this skill) — `<hub>/.prodyssey/` is also a
   sanctioned write location, for centrally-stored bundles and view-server bookkeeping.

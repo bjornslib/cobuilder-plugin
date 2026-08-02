@@ -2,10 +2,12 @@
 
 Prodyssey turns a merged pull request into a four-level narrated story: PR
 Landscape, Problem and Solution, Architecture, and File Changes. The story
-includes generated scene art, voice narration, and extracted architecture
-decision records. Prodyssey runs inside your own Claude Code session against
-your own checkout. Your repo never leaves your machine. Your API keys pay
-only for what you generate.
+includes voice narration and extracted architecture decision records. For
+levels 1 through 3, Prodyssey also adds a visual: Gemini-generated scene art,
+an authored Mermaid diagram, or both. The `--art` flag below picks the form.
+Prodyssey runs inside your own Claude Code session, against your own
+checkout. Your repo never leaves your machine, and your API keys pay only
+for what you generate.
 
 ---
 
@@ -27,7 +29,7 @@ Restart the session, or enable the plugin from `/plugin`. After that, the
 
 | Requirement | Why | Checked when |
 |---|---|---|
-| `GEMINI_API_KEY` (env or `.env` in the target repo) | Generates scene art with Gemini and generates TTS narration | Checked on every invocation. If the key is absent, the skill stops and prints a message that tells you what to do (AC G2) |
+| `GEMINI_API_KEY` (env or `.env` in the target repo) | Generates TTS narration, always. Also generates level 1 through 3 scene art, under `--art both` (the default) or `--art image`. Not needed for scene art under `--art diagram` | Checked on every invocation. If the key is absent, the skill stops and prints a message that tells you what to do (AC G2) |
 | A git checkout of the target repo | All analysis runs locally: `git log`, grep, and file reads | Checked on invocation |
 | `python3` version 3.10 or later, with `uv` | Bundled scripts run through [PEP 723](https://peps.python.org/pep-0723/) inline metadata. `uv run` resolves `google-genai`, `pillow`, and `python-dotenv` for each script, with no venv setup needed | Checked at the first script call |
 
@@ -46,14 +48,32 @@ the repo in Claude Code, you can generate its story.
 
 For each PR, Prodyssey runs these steps in order: it writes the story
 narrative (4 levels plus voice scripts), extracts ADRs in retrospect, and
-merges the result into `story.json`. It then generates scene-art prompts and
-Gemini images for levels 1 through 3, and generates TTS narration. If no
-baseline exists yet, the skill runs `baseline` first, on its own (AC G3).
-You do not need to know that this is a separate step.
+merges the result into `story.json`. It then produces the level 1 through 3
+visuals and generates TTS narration. If no baseline exists yet, the skill
+runs `baseline` first, on its own (AC G3). You do not need to know that this
+is a separate step.
 
 ```
 /prodyssey:generate --latest        # the most recent merged PR
 /prodyssey:generate --prs 12..18   # a range
+```
+
+### Visual form: `--art`
+
+`--art both|diagram|image` picks the level 1 through 3 visual form. Default:
+`both`.
+
+- `both` — authors a Mermaid diagram for each level and generates a Gemini
+  scene-art image for each level. The viewer shows the image by default and
+  lets you toggle to the diagram.
+- `diagram` — authors Mermaid diagrams only. Prodyssey skips the Gemini
+  image calls, so this mode needs no image generation cost and works even
+  without a scene-art budget.
+- `image` — generates Gemini scene art only, the behavior before diagrams
+  existed.
+
+```
+/prodyssey:generate --prs 79 --art diagram
 ```
 
 ### Baseline (explicit)
@@ -115,6 +135,12 @@ repo. See [Multiple repos](#multiple-repos) below for where it goes.
   itself. `viewer/index.html` requests sibling files such as
   `../data/story.js`. A server rooted inside `viewer/` returns a 404 error
   for every data file.)
+- **Image and diagram views**: on a level with both a scene-art image and a
+  Mermaid diagram, the viewer shows the image first and adds a toggle to
+  switch to the diagram. A level with only one form shows it directly, with
+  no toggle. The diagram view supports wheel-to-zoom about the cursor and
+  drag-to-pan. If the Mermaid CDN script cannot load, the viewer falls back
+  to showing the plain diagram source, and the rest of the page still works.
 - **Production app** (future): sign in, then use *Import bundle* to upload
   `.prodyssey/` or paste the raw GitHub URL of a committed bundle. The
   review workflow, with approve, request changes, and per-level comments,
@@ -127,14 +153,19 @@ repo. See [Multiple repos](#multiple-repos) below for where it goes.
 ```
 
 This command flattens PR #73 into one self-contained HTML file. The file
-inlines the story, the ADRs, the diff, and the scene art and narration. It
-recompresses them to fit under the 16 MiB cap of Claude Artifacts. Prodyssey
-publishes the file as an Artifact and prints the URL. It also rebuilds and
-publishes a small index artifact that links to every PR published so far
-for this bundle, not only the PR or PRs in the current run. The index
-always shows the full set. If a PR has not changed since its last publish,
-a re-run reports "already up to date" instead of publishing again. The
-`--force` flag overrides this check.
+inlines the story, the ADRs, the diff, and whichever level 1 through 3
+visuals the PR has: scene art, Mermaid diagrams, or both. Prodyssey
+recompresses the result to fit under the 16 MiB cap of Claude Artifacts.
+Mermaid diagrams render natively on the Artifact platform, so a published
+diagram needs no bundled runtime. A PR published with `--art diagram`
+carries no image data, so it stays well under the cap.
+
+Prodyssey publishes the file as an Artifact and prints the URL. It also
+rebuilds and publishes a small index artifact that links to every PR
+published so far for this bundle, not only the PR or PRs in the current
+run. The index always shows the full set. If a PR has not changed since its
+last publish, a re-run reports "already up to date" instead of publishing
+again. The `--force` flag overrides this check.
 
 ```
 /prodyssey:publish --prs 73,75
@@ -146,6 +177,17 @@ implements today. `--format notion` is reserved for later use. Publishing
 needs the `Artifact` tool, available in a `/login` session on a paid plan.
 Without it, Prodyssey still writes the flattened files to
 `<bundle-dir>/exports/` for manual use.
+
+**Bundle predates the Mermaid work?** Publish reads its own copy of
+`viewer/index.html` from inside the bundle, and a bundle generated before
+diagram support carries an older copy. Publish then stops with an error
+that names the mismatch. Fix it by re-running `/prodyssey:baseline`, which
+refreshes the viewer copy in place, or by copying the current file in by
+hand:
+
+```
+cp "${CLAUDE_PLUGIN_ROOT}/viewer/index.html" <bundle-dir>/viewer/index.html
+```
 
 ## Multiple repos
 
@@ -184,12 +226,17 @@ repos](#multiple-repos) below.
 
 ```
 <target>/.prodyssey/self/
-  data/{story.json, story.js, adrs.json, adrs.js, manifest.js, diffs-pr{N}.js…, audio/pr{N}_{level}.wav}
+  data/{story.json, story.js, adrs.json, adrs.js, manifest.js, diffs-pr{N}.js…,
+        audio/pr{N}_{level}.wav, diagrams/pr{N}-level{1,2,3}.mmd, diagrams.js}
   assets/pr-{N}/level-{1..3}.png
   inventory.yaml
   viewer/index.html
   exports/{publish-manifest.json, pr-{N}.html…, index.html}   # written by /prodyssey:publish
 ```
+
+The `diagrams/` and `assets/` entries depend on which `--art` mode
+generated the PR: `--art diagram` writes only `.mmd` files and no PNGs,
+`--art image` writes only PNGs, and `--art both` (the default) writes both.
 
 Commit the bundle, and a share link is only the raw GitHub URL. You can
 also import the bundle into the viewer directly, by upload or by local
@@ -210,19 +257,23 @@ prodyssey/
 │   ├── view.md                # thin: invokes the skill with args="view ..."
 │   └── publish.md             # thin: invokes the skill with args="publish --prs ..."
 ├── skills/
-│   └── odyssey/
-│       ├── SKILL.md          # orchestration: prereq gate → baseline → per-PR sweep → view → publish → verify
-│       └── references/       # extracted from architecture-review-design-maintenance (see below)
-│           ├── story-mode.md
-│           ├── decision-records-lite.md
-│           ├── baseline-derivation.md      # describe-lite: district + inventory procedure
-│           ├── adr-template.md
-│           └── stacks/{README,nextjs,react-typescript,python-fastapi,generic}.md
+│   ├── odyssey/
+│   │   ├── SKILL.md          # orchestration: prereq gate → baseline → per-PR sweep → view → publish → verify
+│   │   └── references/       # extracted from architecture-review-design-maintenance (see below)
+│   │       ├── story-mode.md
+│   │       ├── decision-records-lite.md
+│   │       ├── baseline-derivation.md      # describe-lite: district + inventory procedure
+│   │       ├── diagram-mode.md             # authoring rules for the per-PR Mermaid diagrams
+│   │       ├── adr-template.md
+│   │       └── stacks/{README,nextjs,react-typescript,python-fastapi,generic}.md
+│   └── mermaid/               # authoring rules for Mermaid diagrams, invoked by the
+│                               # diagram-authoring subagent, not the orchestrator directly
 ├── scripts/                   # top-level, not nested under skills/ — called via ${CLAUDE_PLUGIN_ROOT}/scripts/...
 │   ├── extract_story.py       # generalized: any repo path, writes <bundle-dir>/story.json
 │   ├── generate_prompts.py    # nanobanana scene-art prompts
 │   ├── generate_audio.py      # TTS narration (Gemini voices)
 │   ├── extract_diffs.py       # per-PR diff extraction into the bundle
+│   ├── build_diagrams.py      # compiles authored .mmd files into data/diagrams.js, and validates them
 │   ├── verify_bundle.py       # schema_version + completeness check (drives resumability)
 │   ├── export_artifact.py     # flattens one PR into a self-contained artifact-safe HTML
 │   ├── export_index.py        # renders the cross-PR index artifact from publish-manifest.json
@@ -246,6 +297,12 @@ This is deliberate: the plugin must work in any session without touching
 that session's permission or hook surface. Claude Code auto-discovers
 `skills/` and `commands/` from their default directory locations, so the
 manifest does not need to declare them.
+
+The plugin ships two skills. `odyssey` runs the orchestration this README
+describes. `mermaid` holds authoring rules for the level 1 through 3
+diagrams that the `--art` flag can generate (see Visual form above). The
+per-PR diagram-authoring subagent invokes `mermaid` for itself. You never
+invoke it directly.
 
 ---
 
@@ -281,9 +338,11 @@ Contact the author for more information.
 
 ## Generation Cost
 
-You pay your own way. Narrative and ADR extraction run on your Claude Code
-subscription. Images and TTS run on your `GEMINI_API_KEY`. A typical PR
-uses 3 images and 3 narration clips, and costs roughly single-digit cents
-to low single-digit dollars, depending on the Gemini tier. The prerequisite
-gate exists so that you never discover a missing key three stages into a
-sweep.
+You pay your own way. Narrative, ADR extraction, and diagram authoring run
+on your Claude Code subscription. Scene art and TTS narration run on your
+`GEMINI_API_KEY`. A typical PR generates 3 narration clips under every
+`--art` mode, plus 3 images under the default `--art both` or under
+`--art image`, and no images under `--art diagram`. Cost runs roughly
+single-digit cents to low single-digit dollars, depending on the Gemini
+tier, less under `--art diagram`. The prerequisite gate exists so that you
+never discover a missing key three stages into a sweep.

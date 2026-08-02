@@ -21,6 +21,10 @@ rule and slug derivation.
 Install surface: `/plugin marketplace add bjornslib/prodyssey` then
 `/plugin install prodyssey@prodyssey`. No agents, no hooks, no MCP servers —
 deliberate, so the plugin never touches another session's permission surface.
+The plugin ships two skills, `odyssey` (the orchestration skill described in
+this file) and `mermaid` (authoring rules for the Mermaid diagrams described
+below) — the diagram-authoring subagent that `odyssey` spawns invokes
+`mermaid` for itself; the orchestrating Claude never invokes it directly.
 
 See `README.md` for the user-facing install/usage doc and the extraction
 manifest (what was ported from `architecture-review-design-maintenance` and
@@ -34,15 +38,20 @@ know that aren't obvious from reading the files.
 .claude-plugin/       plugin.json (manifest) + marketplace.json
 commands/              thin dispatchers: baseline.md, generate.md, view.md,
                        publish.md, view.md → Skill("odyssey", args=...)
-skills/odyssey/
-  SKILL.md            orchestration: prereq gate → baseline → per-PR sweep →
+skills/
+  odyssey/
+    SKILL.md          orchestration: prereq gate → baseline → per-PR sweep →
                        view → publish → verify
-  references/         loaded on demand (story-mode, decision-records-lite,
-                       baseline-derivation, adr-template, stacks/*)
-scripts/               8 PEP-723 uv scripts, called by the skill, never edited by it:
+    references/       loaded on demand (story-mode, decision-records-lite,
+                       baseline-derivation, diagram-mode, adr-template, stacks/*)
+  mermaid/            authoring rules for the Mermaid diagrams below; not
+                       invoked by the orchestrating Claude directly — the
+                       per-PR diagram-authoring subagent invokes it as
+                       Skill("prodyssey:mermaid")
+scripts/               9 PEP-723 uv scripts, called by the skill, never edited by it:
                        extract_story.py, generate_prompts.py, generate_audio.py,
-                       extract_diffs.py, verify_bundle.py, export_artifact.py,
-                       export_index.py, record_publish.py
+                       extract_diffs.py, build_diagrams.py, verify_bundle.py,
+                       export_artifact.py, export_index.py, record_publish.py
 viewer/index.html      the bundle viewer (~2000 lines, single file, see below)
 ```
 
@@ -64,7 +73,12 @@ art, or audio (`--force` overrides).
 
 Narrative authoring and ADR extraction are **Claude judgment work** done
 directly against `data/story.json` / `data/adrs.json` — never delegated to a
-script. Scripts only move data: diffs, image prompts, audio, verification.
+script. Scripts only move data: diffs, image prompts, audio, diagram
+compilation, verification. Diagram authoring is also Claude judgment work,
+but the orchestrating Claude never writes the `.mmd` files itself — it
+spawns a per-PR subagent to do that (see Generate mode in
+`skills/odyssey/SKILL.md`), then runs `scripts/build_diagrams.py` to compile
+the subagent's `.mmd` files into `data/diagrams.js` and validate them.
 
 Scripts are PEP 723 (`uv run script.py` resolves `google-genai`, `pillow`,
 `python-dotenv` inline — no venv, no `requirements.txt`).
@@ -83,8 +97,13 @@ real `.prodyssey/` bundle:
    (built in `heroFrame()` and the audio-dialog image, both in
    `viewer/index.html`), narration audio at `../data/audio/pr{N}_{level}.wav`
    (`toggleAudio()`).
-3. **Two external CDN requests** — Google Fonts (JetBrains Mono) and
-   `cdn.jsdelivr.net/npm/motion` for the UI's micro-animations.
+3. **Three external CDN requests** — Google Fonts (JetBrains Mono),
+   `cdn.jsdelivr.net/npm/motion` for the UI's micro-animations, and a
+   version-pinned Mermaid 11 script that renders `<pre class="mermaid">`
+   blocks for levels 1 through 3. Each falls back gracefully if the CDN is
+   unreachable: Mermaid falls back to showing the plain diagram source,
+   Motion falls back to a no-op, and the fonts fall back to the existing
+   `monospace`/`sans-serif` stack.
 
 Intended viewing is `python3 -m http.server` rooted at the bundle root (the
 parent of `viewer/` — e.g. `.prodyssey/self/`), not inside `viewer/` itself:
@@ -131,17 +150,47 @@ date" instead of re-publishing.
 `--format artifact` is the only implemented target; `--format notion` is a
 recognized, reserved flag value with no implementation behind it yet.
 
+Diagrams reuse this pipeline rather than replicating it: `export_artifact.py`
+inlines `window.DIAGRAMS` as literal JSON, the same way it inlines `STORY`/
+`ODYSSEY`/`DIFFS`/`ADRS`, and strips the Mermaid CDN tag rather than
+inlining a runtime — the Claude Artifact platform renders
+`<pre class="mermaid">` blocks natively, so no bundled script is needed. An
+`--inline-mermaid` flag is the escape hatch for if native rendering turns
+out not to handle blocks injected after page load: it inlines a vendored
+`mermaid.min.js` instead of relying on native support. A PR published with
+`--art diagram` carries no PNGs at all, which relieves the 16 MiB budget
+pressure described above — diagrams are plain text, not base64 image data.
+
+**Bundles made before the diagram change must refresh their viewer copy.**
+`export_artifact.py` transforms the copy of `viewer/index.html` inside the
+bundle, not the plugin's copy, and the diagram work changed the two strings it
+matches on. A bundle written before that change therefore fails the export's
+verbatim guard until you copy the current viewer in
+(`cp "${CLAUDE_PLUGIN_ROOT}/viewer/index.html" <bundle-dir>/viewer/index.html`,
+which is also what baseline mode does). The error message says this, so the
+failure is loud and self-explaining, not silent — but it is the one migration
+step an existing bundle needs.
+
 ## Bundle output shape (what generation produces)
 
 ```
 <bundle-dir>/       <target>/.prodyssey/self/ for self-analysis, <hub>/.prodyssey/<repo-slug>/ for a foreign repo
   data/{story.json, story.js, adrs.json, adrs.js, manifest.js,
-        diffs-pr{N}.js…, audio/pr{N}_{level}.wav}
+        diffs-pr{N}.js…, audio/pr{N}_{level}.wav,
+        diagrams/pr{N}-level{1,2,3}.mmd, diagrams.js}
   assets/pr-{N}/level-{1..3}.png
   inventory.yaml
   viewer/index.html
   exports/{publish-manifest.json, pr-{N}.html…, index.html}   # written by /prodyssey:publish
 ```
+
+`data/diagrams/pr{N}-level{L}.mmd` files are the source of truth for the
+Mermaid diagrams — level 1 (`C4Container`), level 2 (`sequenceDiagram`), and
+level 3 (`classDiagram`); level 4 has none. `scripts/build_diagrams.py`
+compiles them into `data/diagrams.js` (`window.DIAGRAMS`), the same
+sibling-script-tag pattern `story.js`/`manifest.js`/`adrs.js` already use.
+Whether a given PR has diagrams, scene art, or both depends on the `--art`
+flag it was generated with (see Generate mode in `skills/odyssey/SKILL.md`).
 
 `exports/` only appears once `/prodyssey:publish` has run at least once; it's
 as committable as the rest of the bundle — see Publish mode notes below.
@@ -185,8 +234,13 @@ never be suggested for ignoring.
   self-analysis, `<hub>/.prodyssey/<repo-slug>/` for a foreign repo,
   overridable with `--store local|central`.
 - Everything judgment-shaped (narrative voice, register, what counts as a
-  decision worth an ADR) lives in `references/*.md` prose, loaded on demand
-  — not hardcoded in scripts or the skill body.
+  decision worth an ADR, what a diagram should show) lives in
+  `references/*.md` prose, loaded on demand — not hardcoded in scripts or
+  the skill body.
+- `build_diagrams.py` only compiles and validates `.mmd` files a subagent
+  already wrote — it never authors diagram content itself, the same rule
+  `extract_story.py` and the audio/prompt scripts already follow for
+  narrative and art.
 
 ## Writing standard
 
@@ -202,9 +256,11 @@ this default. Its register comes from `--style kleppmann|ste` (default
 registers.
 
 The `ste-writing` skill lives under `.claude/skills/` on purpose and does not
-ship with the plugin — an install of `prodyssey@prodyssey` still gets exactly
-one skill, `odyssey`, matching the minimal install surface above. The skill
-checks rules only. It does not certify ASD-STE100 dictionary compliance.
+ship with the plugin — an install of `prodyssey@prodyssey` gets exactly the
+two skills under `skills/` in this repo, `odyssey` and `mermaid`, never a
+third, matching the minimal install surface above. `ste-writing` stays a
+repo-local dev tool instead. The linter checks rules only. It does not
+certify ASD-STE100 dictionary compliance.
 
 ## Recent history
 
@@ -212,6 +268,8 @@ Plugin scaffold → viewer port → skill/references/commands → generation +
 verification scripts → `--repo` external-checkout targeting → Hub
 resolution / central storage (`--store`, `.prodyssey/`, `view` command) →
 unification of the two former bundle-storage roots, with the self-bundle
-moved to `.prodyssey/self/` (see `git log` for the WS-A/B/C/D workstream
-commits). No test suite, no CI config, no package manager — this is prose +
-Python scripts + one HTML file.
+moved to `.prodyssey/self/` → authored Mermaid diagrams as an `--art`
+alternative to Gemini scene art, adding the `mermaid` skill and
+`build_diagrams.py` (see `git log` for the WS-A/B/C/D workstream commits).
+No test suite, no CI config, no package manager — this is prose + Python
+scripts + one HTML file.

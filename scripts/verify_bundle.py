@@ -17,15 +17,28 @@ Artifact key names (stable, used in --json output):
     adr.<id>                - each id in this entry's adrs[] exists in data/adrs.json
                               (missing data/adrs.json => every adr check is "missing")
     asset.level-1/2/3       - PNG exists and is >1KB
+    diagram.level-1/2/3     - data/diagrams/pr{N}-level{L}.mmd exists, is non-empty
+                              after stripping whitespace and `%%` comment lines, and
+                              its first meaningful line starts with the level's
+                              required diagram type (C4Container / sequenceDiagram /
+                              classDiagram)
     audio.<level>           - wav exists; only checked for levels with a non-empty
                               `voice` script in story.json
     diffs                   - data/diffs-pr{N}.js exists
 
-Exit 0 iff every checked artifact is "ok". Never writes anything.
+  `asset.*` and `diagram.*` are always computed and reported, but which family is
+  REQUIRED for a passing/"ok" run is controlled by `--art image|diagram|both`
+  (default `image`, matching pre-diagram behavior). The non-gating family's keys
+  are listed under a per-section `"_optional"` key (JSON) or marked `(optional)`
+  in the table; their real status is still reported, not hidden.
+
+Exit 0 iff every REQUIRED artifact is "ok" (see `--art` above). Never writes
+anything.
 
 Usage:
     uv run verify_bundle.py --bundle-dir <bundle>
     uv run verify_bundle.py --bundle-dir <bundle> --prs 73,75 --json
+    uv run verify_bundle.py --bundle-dir <bundle> --art diagram --json
 """
 from __future__ import annotations
 
@@ -37,6 +50,7 @@ from pathlib import Path
 SCHEMA_VERSION_KNOWN = {"1.0"}
 LEVEL_KEYS = ["landscape", "problem_solution", "architecture", "file_changes"]
 MIN_ASSET_BYTES = 1024
+DIAGRAM_TYPE_BY_LEVEL = {1: "C4Container", 2: "sequenceDiagram", 3: "classDiagram"}
 
 
 def count_inventory_contexts(text: str) -> int:
@@ -94,6 +108,41 @@ def load_adrs(bundle_dir: Path) -> dict | None:
         return None
 
 
+def check_diagram_file(bundle_dir: Path, pr_num: int, level: int) -> str:
+    """"ok" when the .mmd exists, has a meaningful (non-blank, non-`%%`-comment)
+    line, and that first meaningful line starts with the level's required
+    diagram type. "missing" when absent or empty. "wrong-type" when present
+    with content but the header doesn't match."""
+    path = bundle_dir / "data" / "diagrams" / f"pr{pr_num}-level{level}.mmd"
+    if not path.exists():
+        return "missing"
+    text = path.read_text()
+    if not text.strip():
+        return "missing"
+    first_meaningful = None
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("%%"):
+            continue
+        first_meaningful = line
+        break
+    if first_meaningful is None:
+        return "missing"
+    required = DIAGRAM_TYPE_BY_LEVEL[level]
+    return "ok" if first_meaningful.startswith(required) else "wrong-type"
+
+
+def optional_prefixes_for_art(art: str) -> tuple[str, ...]:
+    """Key prefixes that are reported but not required for a passing run,
+    given --art. 'image' (default) keeps pre-diagram behavior: asset.* is
+    required, diagram.* is informational only."""
+    if art == "image":
+        return ("diagram.",)
+    if art == "diagram":
+        return ("asset.",)
+    return ()  # "both": nothing optional
+
+
 def check_pr(bundle_dir: Path, story: dict | None, adrs: dict | None, pr_num: int) -> dict[str, str]:
     results: dict[str, str] = {}
 
@@ -129,6 +178,9 @@ def check_pr(bundle_dir: Path, story: dict | None, adrs: dict | None, pr_num: in
         else:
             results[f"asset.level-{i}"] = "ok"
 
+    for i in (1, 2, 3):
+        results[f"diagram.level-{i}"] = check_diagram_file(bundle_dir, pr_num, i)
+
     for level_key in LEVEL_KEYS:
         level = levels.get(level_key)
         voice = level.get("voice") if isinstance(level, dict) else None
@@ -143,8 +195,8 @@ def check_pr(bundle_dir: Path, story: dict | None, adrs: dict | None, pr_num: in
     return results
 
 
-def all_ok(results: dict[str, str]) -> bool:
-    return all(v == "ok" for v in results.values())
+def all_ok(results: dict[str, str], optional_prefixes: tuple[str, ...] = ()) -> bool:
+    return all(v == "ok" for k, v in results.items() if not k.startswith(optional_prefixes))
 
 
 def main() -> None:
@@ -152,7 +204,18 @@ def main() -> None:
     parser.add_argument("--bundle-dir", required=True, help="bundle dir to verify (e.g. <repo>/.prodyssey/self)")
     parser.add_argument("--prs", default=None, help="comma-separated PR numbers (default: all timeline PRs)")
     parser.add_argument("--json", action="store_true", help="emit machine-readable JSON instead of a table")
+    parser.add_argument(
+        "--art",
+        choices=["image", "diagram", "both"],
+        default="image",
+        help="which scene-art family is REQUIRED for a passing run: 'image' "
+        "(asset.* required, diagram.* informational — default, matches "
+        "pre-diagram behavior), 'diagram' (diagram.* required, asset.* "
+        "informational), or 'both' (both required)",
+    )
     args = parser.parse_args()
+
+    optional_prefixes = optional_prefixes_for_art(args.art)
 
     bundle_dir = Path(args.bundle_dir).resolve()
     if not bundle_dir.exists():
@@ -177,21 +240,34 @@ def main() -> None:
     for pr_num in pr_nums:
         prs_results[str(pr_num)] = check_pr(bundle_dir, story, adrs, pr_num)
 
-    ok = all_ok(baseline) and all(all_ok(r) for r in prs_results.values())
+    # Baseline keys (story/inventory/viewer) are never subject to --art — only
+    # the per-PR asset.*/diagram.* families are conditionally optional.
+    ok = all_ok(baseline) and all(all_ok(r, optional_prefixes) for r in prs_results.values())
+
+    def optional_keys(results: dict[str, str]) -> list[str]:
+        return sorted(k for k in results if k.startswith(optional_prefixes))
 
     if args.json:
-        print(json.dumps({"baseline": baseline, "prs": prs_results}, indent=2, ensure_ascii=False))
+        baseline_out = dict(baseline)
+        baseline_out["_optional"] = []  # baseline is never gated by --art
+        prs_out = {
+            pr_num: {**results, "_optional": optional_keys(results)}
+            for pr_num, results in prs_results.items()
+        }
+        print(json.dumps({"art": args.art, "baseline": baseline_out, "prs": prs_out}, indent=2, ensure_ascii=False))
     else:
-        print("Baseline")
+        print(f"Baseline (--art {args.art})")
         print("--------")
         for key, status in baseline.items():
-            print(f"  {key:<12} {status}")
+            print(f"  {key:<20} {status:<12} (required)")
         for pr_num, results in prs_results.items():
             header = f"PR #{pr_num}"
             print(f"\n{header}")
             print("-" * len(header))
+            optional = set(optional_keys(results))
             for key, status in results.items():
-                print(f"  {key:<20} {status}")
+                marker = "(optional)" if key in optional else "(required)"
+                print(f"  {key:<20} {status:<12} {marker}")
         print(f"\nOverall: {'OK' if ok else 'FAIL'}")
 
     sys.exit(0 if ok else 1)
