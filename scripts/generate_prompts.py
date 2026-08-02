@@ -40,7 +40,9 @@ import sys
 import time
 from pathlib import Path
 
-SCHEMA_VERSION = "1.0"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _bundle_meta import SCHEMA_VERSION
+
 DEFAULT_MODEL = "gemini-3-pro-image-preview"
 
 SHARED_STYLE = (

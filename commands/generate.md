@@ -13,9 +13,9 @@ one is derived automatically first.
 
 Invoke the `odyssey` skill in generate mode, forwarding any arguments the user
 supplied after `/prodyssey:generate` (`--repo`, `--prs`, `--latest`, `--force`,
-`--voice`, `--style`). `--repo <path>` targets any local checkout — not just
-the repo this session is running in (the skill will ask for `/add-dir` if it
-lacks read access there):
+`--voice`, `--art`, `--style`). `--repo <path>` targets any local checkout —
+not just the repo this session is running in (the skill will ask for
+`/add-dir` if it lacks read access there):
 
 ```
 Skill("odyssey", args="generate $ARGUMENTS")
@@ -37,6 +37,17 @@ if needed), proposes the **last 10 discovered PRs**, and confirms the list
 with the user before running anything — it never silently sweeps an
 unconfirmed PR list.
 
+## Visual family: `--art`
+
+`--art both|diagram|image` picks which visual family the sweep produces for
+levels 1 through 3 (level 4 has neither). Default: `both`.
+
+- `both` — authors Mermaid diagrams and generates Gemini scene art.
+- `diagram` — authors Mermaid diagrams only. Skips the Gemini scene-art
+  stage, so no image-generation calls run.
+- `image` — generates Gemini scene art only. Matches behavior before
+  diagrams existed.
+
 ## Examples
 
 ```
@@ -46,4 +57,5 @@ unconfirmed PR list.
 /prodyssey:generate --force
 /prodyssey:generate --repo ~/code/other-project --prs 42
 /prodyssey:generate --prs 79 --style ste
+/prodyssey:generate --prs 79 --art diagram
 ```
