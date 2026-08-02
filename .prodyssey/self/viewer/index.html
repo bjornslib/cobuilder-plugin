@@ -8,6 +8,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/motion@12/dist/motion.min.js"></script>
+<!-- Version-pinned (not a floating major-range tag like the Motion script above) because
+     Mermaid's rendering output — layout, spacing, even which diagram types validate —
+     visibly drifts between minor versions, and a bundle's diagrams must render identically
+     every time this file is reopened, not "whatever's newest today". Sets window.mermaid. -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.min.js"></script>
 <style>
   /* Option F merges Option D's flat-map content pipeline (day palette, JetBrains Mono,
      teal accent) with Option E's tactical-review structural ideas (topbar queue nav,
@@ -185,6 +190,65 @@
 
   .hero-frame{border-radius:10px;overflow:hidden;border:1px solid var(--line);box-shadow:0 2px 10px rgba(30,40,55,0.06);}
   .hero-frame img{display:block;width:100%;height:auto;}
+
+  /* ================= HERO ART MODE TOGGLE (image vs. Mermaid diagram) =================
+     Only rendered when both an image and a diagram exist for a PR/level (see heroFrame) —
+     when just one exists, the frame shows it with no toggle at all. */
+  .hero-art-toggle{display:flex;gap:4px;padding:6px 6px 0;justify-content:flex-end;}
+  .hero-art-toggle button{
+    font:600 10px 'JetBrains Mono',monospace;letter-spacing:.04em;text-transform:uppercase;
+    padding:4px 10px;border-radius:12px;border:1px solid var(--line);background:#fff;color:var(--ink-dim);cursor:pointer;
+  }
+  .hero-art-toggle button.active{border-color:var(--accent);color:var(--accent-text);background:color-mix(in oklch, var(--accent) 8%, white);}
+  .hero-art-toggle button:hover:not(.active){border-color:var(--ink-dim);}
+
+  /* The viewport is the zoom/pan stage: overflow:hidden clips the transformed SVG, and
+     touch-action/user-select are killed so a drag-to-pan gesture never also selects text
+     or triggers a touchpad's page-back swipe. Height is a compromise — tall enough that a
+     scaled-to-fit diagram reads clearly, short enough that dense diagrams (which need
+     zoom anyway) don't dominate the level. */
+  .diagram-viewport{
+    position:relative;height:420px;overflow:hidden;background:var(--paper);
+    cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
+  }
+  .diagram-viewport.grabbing{cursor:grabbing;}
+  /* No flex-centering here on purpose: mermaid.run() renders the SVG at its natural
+     block size (100% of this pre's width, height auto from its viewBox aspect ratio),
+     which is usually much taller than the 420px viewport. attachZoomPan reads that
+     natural size once and does the fit-to-container math itself (see fitScale/reset) —
+     centering via flexbox instead would size THIS box to the child's full unscaled
+     height (flex only enforces a min-size from min-height, it doesn't cap it), which
+     silently pushed the whole diagram below the clipped viewport the first time this
+     was tried. */
+  .diagram-viewport pre.mermaid{ margin:0;position:absolute;top:0;left:0; }
+  /* transform-origin:0 0 is what makes attachZoomPan's translate/scale math (which
+     assumes scaling shrinks the SVG toward ITS OWN top-left corner) match reality —
+     the CSS default (50% 50%, the element's own center) shrinks toward the middle of
+     the pre-scale layout box instead, which is the same undersized-viewport bug
+     described above by a different route: scaling down from a center that sits well
+     below the viewport's visible top edge moves the rendered result even further out
+     of view, not toward it. */
+  .diagram-viewport pre.mermaid svg{ display:block;max-width:none;transform-origin:0 0; }
+  /* Fit-to-container is the resting state before any zoom/pan input — mountDiagrams's
+     attachZoomPan sets an explicit scale once the SVG's natural size is known so a
+     large diagram doesn't render at 1:1 and overflow the viewport on first paint. */
+  .diagram-controls{
+    position:absolute;right:8px;bottom:8px;display:flex;gap:6px;z-index:1;
+  }
+  .diagram-controls button{
+    font:10px 'JetBrains Mono',monospace;padding:4px 9px;border-radius:6px;border:1px solid var(--line);
+    background:color-mix(in oklch, white 88%, transparent);color:var(--ink-dim);cursor:pointer;backdrop-filter:blur(2px);
+  }
+  .diagram-controls button:hover{border-color:var(--accent);color:var(--accent-text);}
+  .diagram-error{padding:14px 16px;font:11.5px 'JetBrains Mono',monospace;color:oklch(0.5 0.15 25);}
+
+  /* No-Mermaid fallback (CDN blocked/offline) — plain escaped source, no rendering
+     attempted. Mirrors the graceful no-op spirit of anim()'s missing-Motion guard above. */
+  .mermaid-src-note{padding:10px 16px 0;font:11px 'JetBrains Mono',monospace;color:var(--ink-dim);font-style:italic;}
+  pre.mermaid-src{
+    margin:0;padding:14px 16px;font:11.5px 'JetBrains Mono',monospace;white-space:pre-wrap;word-break:break-word;
+    color:oklch(0.3 0.02 250);background:oklch(0.98 0.005 250);
+  }
 
   .district-boxes{display:flex;flex-wrap:wrap;gap:10px;}
   .district-box{
@@ -455,6 +519,11 @@
      renderAudioDialogContent). */
   .audio-dialog-image{display:block;width:100%;max-height:78vh;object-fit:contain;border-radius:10px;border:1px solid var(--line);background:oklch(0.97 0.005 250);}
   .audio-dialog-image[hidden]{display:none;}
+  /* Diagram body honours the same art-mode toggle as the content-pane hero frame (see
+     renderAudioDialogContent) — same .diagram-viewport machinery, just taller since the
+     dialog has no caption/rail competing for vertical space. */
+  #audio-dialog-diagram.diagram-viewport{height:78vh;border-radius:10px;border:1px solid var(--line);}
+  #audio-dialog-diagram[hidden]{display:none;}
   .audio-dialog-narration{margin:0;font-size:13px;line-height:1.6;font-style:italic;color:var(--ink-dim);}
   .audio-dialog-narration[hidden]{display:none;}
   .audio-dialog-controls{display:flex;align-items:center;gap:10px;}
@@ -576,6 +645,7 @@
         <button class="drawer-close" id="audio-dialog-close-btn" title="Close (Esc)">&times;</button>
       </div>
       <img class="audio-dialog-image" id="audio-dialog-image" alt="" hidden>
+      <div class="diagram-viewport" id="audio-dialog-diagram" data-diagram hidden><pre class="mermaid"></pre></div>
       <p class="audio-dialog-narration" id="audio-dialog-narration" hidden></p>
       <div class="audio-dialog-controls">
         <button class="audio-btn" id="audio-dialog-btn">&#9654;</button>
@@ -594,9 +664,11 @@
 });
 </script>
 <script src="../data/adrs.js"></script>
+<script src="../data/diagrams.js"></script>
 <script>
 window.DIFFS = window.DIFFS || {};
 window.ADRS = window.ADRS || {};
+window.DIAGRAMS = window.DIAGRAMS || {};
 (function(){
   'use strict';
 
@@ -640,6 +712,11 @@ window.ADRS = window.ADRS || {};
   // levels 1-3; level 4 has no art slot in this design).
   const ASSET_V = Date.now(); // cache-buster: PNGs get regenerated in place with identical names
   const HERO_ASSETS = new Set((window.ODYSSEY && window.ODYSSEY.hero) || []);
+  // Mermaid source manifest — {"<pr>": {"<level>": "<mermaid source>"}}, string keys
+  // throughout (PR numbers and level indices both stringify as object-literal keys),
+  // produced by scripts/build_diagrams.py. Looked up defensively everywhere: a PR/level
+  // with no authored diagram is the common case, not an error.
+  const DIAGRAMS = window.DIAGRAMS || {};
   // Voice narration slots — derived from story.js: a level with an authored
   // `voice` script is expected to have a rendered wav (generate_audio.py
   // writes data/audio/pr<N>_<level>.wav). Keeps the manifest from drifting
@@ -677,6 +754,11 @@ window.ADRS = window.ADRS || {};
     // true while a level/PR content transition animation is in flight — guards re-entrant
     // nav input (arrow mashing, double rail clicks) from stacking transitions.
     transitioning: false,
+    // Hero art mode: 'image' | 'diagram'. A global viewer preference (like hintsPinned
+    // below), not per-PR — switching to the diagram view on one PR is expected to stick
+    // when browsing to the next. Defaults to 'image' so the generated scene art is what
+    // a first-time viewer sees; the diagram is the opt-in alternate view.
+    artMode: 'image',
   };
   let cueDebounceTimer = null;
 
@@ -694,6 +776,45 @@ window.ADRS = window.ADRS || {};
       if (!Object.keys(kf).length) return { finished: Promise.resolve() };
     }
     return Motion.animate(el, kf, opts);
+  }
+
+  /* ============================================================
+     MERMAID INITIALIZATION — same graceful-CDN-failure posture as the Motion setup
+     above: if the CDN script didn't load, window.mermaid is undefined and
+     mountOneDiagram() falls back to a plain escaped-source <pre>, never throws.
+     securityLevel 'strict' matches this viewer's own no-inline-event-handlers
+     discipline. themeVariables maps Mermaid's palette onto the page's own
+     day-palette tokens (--accent/--ink/--line/--paper, JetBrains Mono) so a rendered
+     diagram reads as part of the page rather than a foreign widget dropped in.
+     Values are plain hex/rgba, NOT the oklch()/color-mix() this file uses everywhere
+     else in CSS — Mermaid parses themeVariables through its own internal color
+     library (khroma), which throws "Unsupported color format" on both of those
+     (confirmed by hand: oklch() here crashes mermaid.initialize() outright before a
+     single diagram ever renders). These are hand-picked hex approximations of the
+     same --ink/--ink-dim/--line/--paper tones for that reason alone.
+     ============================================================ */
+  if (window.mermaid){
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: 'base',
+      themeVariables: {
+        fontFamily: "'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace",
+        primaryColor: '#e9f3f4',
+        primaryTextColor: '#282e3d',
+        primaryBorderColor: '#2f8f9d',
+        lineColor: 'rgba(30,40,55,0.4)',
+        secondaryColor: '#f7f6f3',
+        tertiaryColor: '#f6f4ef',
+        background: '#f6f4ef',
+        mainBkg: '#ffffff',
+        textColor: '#282e3d',
+        nodeBorder: '#2f8f9d',
+        clusterBkg: '#eef7f8',
+        clusterBorder: 'rgba(30,40,55,0.2)',
+        edgeLabelBackground: '#f6f4ef',
+      },
+    });
   }
 
   function pr(){ return TIMELINE[state.prIndex]; }
@@ -865,13 +986,288 @@ window.ADRS = window.ADRS || {};
   }
 
   /* ============================================================
-     SCENE ART
+     SCENE ART — image and/or Mermaid diagram, switchable via state.artMode
      ============================================================ */
+  // Looks up DIAGRAMS[prNum][levelIdx] defensively — string keys throughout, since a
+  // plain object literal (from diagrams.js) always stringifies numeric-looking keys
+  // the same way regardless of whether the caller passes a number or a string.
+  function diagramSource(prNum, levelIdx){
+    const forPr = DIAGRAMS[String(prNum)];
+    const src = forPr && forPr[String(levelIdx)];
+    return (typeof src === 'string' && src.trim()) ? src : null;
+  }
+  // Builds just the frame's inner markup (toggle + active view) — split out from
+  // heroFrame() so onArtModeToggle can replace a single frame's contents in place
+  // without touching the rest of the level's DOM (and its scroll position).
+  function heroFrameInner(prNum, levelIdx, alt, hasImage, hasDiagram){
+    const mode = hasImage && hasDiagram ? state.artMode : (hasImage ? 'image' : 'diagram');
+    const toggleHtml = (hasImage && hasDiagram) ? `
+      <div class="hero-art-toggle">
+        <button type="button" class="${mode === 'image' ? 'active' : ''}" data-art-mode="image">Image</button>
+        <button type="button" class="${mode === 'diagram' ? 'active' : ''}" data-art-mode="diagram">Diagram</button>
+      </div>` : '';
+    const bodyHtml = mode === 'diagram'
+      // Placeholder ONLY — the Mermaid source is injected later via .textContent
+      // (mountDiagrams), never interpolated into this HTML string. That's what makes
+      // `<<interface>>`, `&`, and quotes inside real Mermaid syntax safe here.
+      ? `<div class="diagram-viewport" data-diagram data-pr="${prNum}" data-level="${levelIdx}"><pre class="mermaid"></pre></div>`
+      : `<img src="../assets/pr-${prNum}/level-${levelIdx}.png" alt="${escapeHtml(alt)}" loading="lazy">`;
+    return toggleHtml + bodyHtml;
+  }
   function heroFrame(prNum, levelIdx, alt){
     if (levelIdx > 3) return '';
     const rel = `pr-${prNum}/level-${levelIdx}.png`;
-    if (!HERO_ASSETS.has(rel)) return '';
-    return `<div class="hero-frame"><img src="../assets/${rel}" alt="${escapeHtml(alt)}" loading="lazy"></div>`;
+    const hasImage = HERO_ASSETS.has(rel);
+    const hasDiagram = !!diagramSource(prNum, levelIdx);
+    if (!hasImage && !hasDiagram) return '';
+    return `<div class="hero-frame" data-pr="${prNum}" data-level="${levelIdx}" data-alt="${escapeHtml(alt)}">${heroFrameInner(prNum, levelIdx, alt, hasImage, hasDiagram)}</div>`;
+  }
+  // Delegable wiring for the toggle buttons inside any hero-frame(s) under `container` —
+  // called once per fresh innerHTML assignment (setMainHtml) and again after
+  // onArtModeToggle replaces a single frame's contents.
+  function wireHeroFrames(container){
+    container.querySelectorAll('.hero-art-toggle button').forEach(btn => {
+      btn.addEventListener('click', () => onArtModeToggle(btn));
+    });
+  }
+  function onArtModeToggle(btn){
+    const mode = btn.dataset.artMode;
+    if (mode === state.artMode) return;
+    state.artMode = mode;
+    saveArtMode(mode);
+    const frame = btn.closest('.hero-frame');
+    if (!frame) return;
+    unmountDiagrams(frame); // disconnect this frame's observer/zoom-pan before its DOM is replaced
+    const prNum = Number(frame.dataset.pr);
+    const levelIdx = Number(frame.dataset.level);
+    const alt = frame.dataset.alt;
+    const rel = `pr-${prNum}/level-${levelIdx}.png`;
+    const hasImage = HERO_ASSETS.has(rel);
+    const hasDiagram = !!diagramSource(prNum, levelIdx);
+    frame.innerHTML = heroFrameInner(prNum, levelIdx, alt, hasImage, hasDiagram);
+    wireHeroFrames(frame);
+    mountDiagrams(frame);
+  }
+
+  /* ============================================================
+     DIAGRAM MOUNTING — renders Mermaid source into the placeholder(s) heroFrame()
+     leaves behind, attaches zoom/pan once an <svg> exists, and tracks everything it
+     creates so PR/level navigation never accumulates stale observers or listeners.
+     ============================================================ */
+  let activeDiagrams = []; // [{ viewport, observer, cleanupZoom }]
+  // mountOneDiagram() is async and its caller (setMainHtml) deliberately does NOT await
+  // it, so a fast PR/level navigation can tear down and re-render the content pane while
+  // an earlier mount is still suspended inside `await mermaid.run()`. Without a staleness
+  // check that mount resumes afterwards and registers itself in activeDiagrams — AFTER
+  // the teardown that was supposed to collect it — leaving a MutationObserver and pointer
+  // listeners bound to dead DOM that nothing can ever disconnect. Arrow-key mashing would
+  // leak one such orphan per navigation.
+  //
+  // The token is stamped PER VIEWPORT rather than kept as one global generation counter:
+  // the audio dialog mounts its own diagram into a persistent element while the content
+  // pane may still be mounting one of its own, and a global counter would let either
+  // teardown abandon the other's perfectly live mount. Detachment alone is not a
+  // sufficient test either — #audio-dialog-diagram is reused across open/close, so a
+  // close-then-reopen races on a node that stays connected throughout.
+  let diagramToken = 0;
+
+  // Every [data-diagram] node in (or equal to) `container`, whether or not it is
+  // currently registered in activeDiagrams — an in-flight mount is not yet registered,
+  // which is exactly the case the token has to invalidate.
+  function diagramViewportsIn(container){
+    if (container.matches && container.matches('[data-diagram]')) return [container];
+    return container.querySelectorAll ? Array.from(container.querySelectorAll('[data-diagram]')) : [];
+  }
+
+  // Tears down every mounted diagram whose viewport lives inside `container` (or
+  // literally is `container`) — disconnects its MutationObserver and removes its
+  // zoom/pan listeners. Called before any innerHTML assignment that might discard
+  // diagram DOM out from under a still-live observer.
+  function unmountDiagrams(container){
+    // Invalidate in-flight mounts on exactly these viewports (see diagramToken above).
+    diagramViewportsIn(container).forEach(v => { v.dataset.diagramToken = String(++diagramToken); });
+    activeDiagrams = activeDiagrams.filter(inst => {
+      const affected = container === inst.viewport || (container.contains && container.contains(inst.viewport));
+      if (!affected) return true;
+      if (inst.observer) inst.observer.disconnect();
+      if (inst.cleanupZoom) inst.cleanupZoom();
+      return false;
+    });
+  }
+
+  async function mountDiagrams(container){
+    for (const viewport of diagramViewportsIn(container)){
+      await mountOneDiagram(viewport);
+    }
+  }
+
+  async function mountOneDiagram(viewport){
+    const token = String(++diagramToken);
+    viewport.dataset.diagramToken = token;
+    const prNum = viewport.dataset.pr;
+    const levelIdx = viewport.dataset.level;
+    const src = diagramSource(prNum, levelIdx) || '';
+    const pre = viewport.querySelector('pre.mermaid');
+    if (!pre) return;
+
+    if (!window.mermaid){
+      // No-Mermaid fallback (CDN blocked/offline): show the escaped source verbatim,
+      // attempt no rendering, set up no observer. Same graceful-no-op spirit as
+      // anim()'s missing-Motion guard above — never throw just because a CDN is down.
+      viewport.innerHTML = `<div class="mermaid-src-note">Mermaid unavailable (offline or blocked) — showing raw diagram source.</div><pre class="mermaid-src"></pre>`;
+      viewport.querySelector('pre.mermaid-src').textContent = src;
+      return;
+    }
+
+    pre.textContent = src; // .textContent, never innerHTML — see heroFrameInner's comment
+    pre.removeAttribute('data-processed'); // in case this exact node was ever mermaid.run() before
+
+    try {
+      await mermaid.run({ nodes: [pre] });
+    } catch (err){
+      if (viewport.dataset.diagramToken !== token) return;
+      viewport.innerHTML = `<div class="diagram-error">Diagram failed to render: ${escapeHtml((err && err.message) || String(err))}</div>`;
+      return;
+    }
+
+    // The only await above has now resolved. If this viewport was torn down or re-mounted
+    // while we were suspended, register nothing and attach nothing — otherwise we orphan
+    // an observer and a pointer-listener set that no teardown can reach any more.
+    if (viewport.dataset.diagramToken !== token || !viewport.isConnected) return;
+
+    // Attach zoom/pan once the <svg> shows up, then disconnect. A MutationObserver
+    // rather than reading the SVG straight off mermaid.run()'s resolved promise:
+    // in a published Claude Artifact, the platform's own Mermaid renderer produces
+    // the SVG on its own schedule outside this script's control, so an
+    // observer-based attach works identically whether our mermaid.run() call above
+    // or the platform did the actual rendering.
+    const inst = { viewport, observer: null, cleanupZoom: null };
+    activeDiagrams.push(inst);
+    const attachOnce = (svg) => {
+      if (inst.cleanupZoom) return; // already attached
+      if (inst.observer) inst.observer.disconnect();
+      inst.cleanupZoom = attachZoomPan(viewport, svg);
+    };
+    const existingSvg = pre.querySelector('svg');
+    if (existingSvg){
+      attachOnce(existingSvg);
+    } else {
+      inst.observer = new MutationObserver(() => {
+        const svg = pre.querySelector('svg');
+        if (svg) attachOnce(svg);
+      });
+      inst.observer.observe(pre, { childList: true, subtree: true });
+    }
+  }
+
+  /* ============================================================
+     ZOOM / PAN — wheel-to-zoom about the cursor, drag-to-pan, both as a CSS
+     `transform` on the rendered <svg>. IMPORTANT: #main-content-wrap already has its
+     own { passive: true } wheel listener driving the scroll-through level cue
+     (onMainWheel, below) — this one must preventDefault() + stopPropagation() so
+     zooming a diagram never also advances the level, and is registered WITHOUT
+     { passive: true } so preventDefault() is legal at all.
+     ============================================================ */
+  function attachZoomPan(viewport, svg){
+    const MIN_SCALE = 0.2, MAX_SCALE = 6;
+    let scale = 1, tx = 0, ty = 0;
+
+    // Captured ONCE, before any transform is ever applied — svg.getBoundingClientRect()
+    // reports the CURRENT (possibly already-scaled) rendered box, so reading it lazily
+    // inside fitScale()/reset() (e.g. every time the Reset button fires) would measure
+    // an already-shrunk diagram and keep re-fitting it smaller on every click. Mermaid
+    // never resizes an already-rendered SVG's natural (untransformed) layout box, so a
+    // one-time snapshot here is safe and is the only correct baseline for "fit".
+    const naturalRect = svg.getBoundingClientRect();
+    const naturalW = naturalRect.width || svg.clientWidth || 1;
+    const naturalH = naturalRect.height || svg.clientHeight || 1;
+
+    function fitScale(){
+      const vw = viewport.clientWidth, vh = viewport.clientHeight;
+      if (!naturalW || !naturalH || !vw || !vh) return 1;
+      return Math.min(1, vw / naturalW, vh / naturalH);
+    }
+    function apply(){
+      svg.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+    }
+    function reset(){
+      scale = fitScale();
+      // Center the fitted diagram in the viewport rather than pinning it to the
+      // top-left corner — transform-origin:0 0 (see CSS) means scale alone would
+      // otherwise leave it hugging that corner.
+      tx = Math.max(0, (viewport.clientWidth - naturalW * scale) / 2);
+      ty = Math.max(0, (viewport.clientHeight - naturalH * scale) / 2);
+      apply();
+    }
+    reset();
+
+    function onWheel(e){
+      e.preventDefault();
+      e.stopPropagation(); // never let this reach #main-content-wrap's scroll-cue listener
+      const rect = viewport.getBoundingClientRect();
+      const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+      const prevScale = scale;
+      scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale * Math.exp(-e.deltaY * 0.0015)));
+      // Keep the point under the cursor fixed in viewport space while scale changes.
+      tx = cx - (cx - tx) * (scale / prevScale);
+      ty = cy - (cy - ty) * (scale / prevScale);
+      apply();
+    }
+    let dragging = false, lastX = 0, lastY = 0;
+    function onPointerDown(e){
+      dragging = true;
+      lastX = e.clientX; lastY = e.clientY;
+      viewport.classList.add('grabbing');
+      if (viewport.setPointerCapture) viewport.setPointerCapture(e.pointerId);
+      e.preventDefault(); // blocks text selection / native drag while panning
+    }
+    function onPointerMove(e){
+      if (!dragging) return;
+      tx += e.clientX - lastX;
+      ty += e.clientY - lastY;
+      lastX = e.clientX; lastY = e.clientY;
+      apply();
+    }
+    function onPointerUp(){
+      dragging = false;
+      viewport.classList.remove('grabbing');
+    }
+    viewport.addEventListener('wheel', onWheel, { passive: false });
+    viewport.addEventListener('pointerdown', onPointerDown);
+    viewport.addEventListener('pointermove', onPointerMove);
+    viewport.addEventListener('pointerup', onPointerUp);
+    viewport.addEventListener('pointerleave', onPointerUp);
+
+    const controls = document.createElement('div');
+    controls.className = 'diagram-controls';
+    controls.innerHTML = `<button type="button" data-action="reset">Reset</button><button type="button" data-action="copy">Copy source</button>`;
+    viewport.appendChild(controls);
+    function onControlsClick(e){
+      const btn = e.target.closest('button[data-action]');
+      if (!btn) return;
+      if (btn.dataset.action === 'reset'){
+        reset();
+      } else if (btn.dataset.action === 'copy'){
+        const src = diagramSource(viewport.dataset.pr, viewport.dataset.level) || '';
+        if (navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(src).then(() => {
+            btn.textContent = 'Copied!';
+            setTimeout(() => { btn.textContent = 'Copy source'; }, 1200);
+          }).catch(() => { /* clipboard unavailable — button just doesn't confirm */ });
+        }
+      }
+    }
+    controls.addEventListener('click', onControlsClick);
+
+    return function cleanup(){
+      viewport.removeEventListener('wheel', onWheel);
+      viewport.removeEventListener('pointerdown', onPointerDown);
+      viewport.removeEventListener('pointermove', onPointerMove);
+      viewport.removeEventListener('pointerup', onPointerUp);
+      viewport.removeEventListener('pointerleave', onPointerUp);
+      controls.removeEventListener('click', onControlsClick);
+      if (controls.parentNode) controls.parentNode.removeChild(controls);
+    };
   }
 
   function escapeHtml(s){
@@ -910,6 +1306,22 @@ window.ADRS = window.ADRS || {};
   }
   function saveHintsPinned(v){
     try { localStorage.setItem(HINTS_PIN_KEY, v ? '1' : '0'); } catch (e) { /* unavailable */ }
+  }
+
+  /* ============================================================
+     ART MODE PERSISTENCE — same try/catch-guarded localStorage pattern as
+     HINTS_PIN_KEY above. Global (not per-PR/level): whichever view the user last
+     chose is what every hero frame opens in from then on.
+     ============================================================ */
+  const ART_MODE_KEY = 'odyssey-f:art-mode';
+  function loadArtMode(){
+    try {
+      const v = localStorage.getItem(ART_MODE_KEY);
+      return v === 'diagram' ? 'diagram' : 'image';
+    } catch (e) { return 'image'; }
+  }
+  function saveArtMode(v){
+    try { localStorage.setItem(ART_MODE_KEY, v); } catch (e) { /* unavailable */ }
   }
   let hintsCollapseTimer = null;
   function collapseHints(){
@@ -1090,6 +1502,17 @@ window.ADRS = window.ADRS || {};
     updateAudioButtonUI();
   }
 
+  // Every place renderMainContent() assigns main.innerHTML must go through this: tear
+  // down whatever diagrams the OLD content held (their observers/zoom listeners would
+  // otherwise dangle once that DOM is discarded), swap the markup, wire up any hero-art
+  // toggles the new markup contains, then mount whichever diagram(s) it asks for.
+  function setMainHtml(main, html){
+    unmountDiagrams(main);
+    main.innerHTML = html;
+    wireHeroFrames(main);
+    mountDiagrams(main);
+  }
+
   /* ============================================================
      RENDER: MAIN CONTENT (levels 1-4)
      ============================================================ */
@@ -1131,12 +1554,12 @@ window.ADRS = window.ADRS || {};
         return `<span class="legend-item"><span class="legend-swatch" style="background:${color};"></span>${d.kind}</span>`;
       }).join('');
 
-      main.innerHTML = `
+      setMainHtml(main, `
         <div class="level-stack">
           ${heroFrame(p.pr, 1, `PR #${p.pr} overview diagram`)}
           <div class="district-boxes">${boxesHtml}</div>
           <div class="legend-row">${legendHtml}</div>
-        </div>`;
+        </div>`);
       main.querySelectorAll('.district-box').forEach(btn => {
         btn.addEventListener('click', () => jumpToFileChanges(btn.dataset.district));
       });
@@ -1180,13 +1603,13 @@ window.ADRS = window.ADRS || {};
           </div>
         </div>` : '';
 
-      main.innerHTML = `
+      setMainHtml(main, `
         <div class="level-stack narrow">
           ${heroFrame(p.pr, 2, `Before/after PR #${p.pr}`)}
           <div class="chip-row">${touchHtml}</div>
           ${grid}
           ${altHtml}
-        </div>`;
+        </div>`);
 
     } else if (state.level === 3){
       const arch = content.architecture;
@@ -1214,13 +1637,13 @@ window.ADRS = window.ADRS || {};
         ? `<div class="beats-stack">${beats.map(beatCard).join('')}</div>`
         : `<div class="empty-card"><div class="empty-detail">No architecture beats recorded for this PR.</div></div>`;
 
-      main.innerHTML = `
+      setMainHtml(main, `
         <div class="level-stack narrow">
           ${heroFrame(p.pr, 3, `PR #${p.pr} architecture diagram`)}
           <div class="adr-row">${adrHtml}</div>
           <div class="district-boxes">${boxesHtml}</div>
           ${beatsHtml}
-        </div>`;
+        </div>`);
       main.querySelectorAll('.adr-badge[data-adr-id]').forEach(btn => {
         btn.addEventListener('click', () => openAdrSheet(btn.dataset.adrId));
       });
@@ -1273,12 +1696,12 @@ window.ADRS = window.ADRS || {};
           </details>`;
       }).join('');
 
-      main.innerHTML = `
+      setMainHtml(main, `
         <div class="level-stack narrower">
           <div class="chip-row">${touchHtml}</div>
           ${focusBanner}
           ${groupsHtml}
-        </div>`;
+        </div>`);
 
       const clearBtn = document.getElementById('clear-focus-btn');
       if (clearBtn) clearBtn.addEventListener('click', clearFocusDistrict);
@@ -1421,22 +1844,42 @@ window.ADRS = window.ADRS || {};
     const block = content[levelKey()];
     document.getElementById('audio-dialog-title').textContent = `PR #${p.pr} — ${LEVEL_LABELS[state.level - 1]}`;
 
-    // Body is the generated level image when one exists for this PR/level (same
-    // HERO_ASSETS manifest the content pane uses via heroFrame — gated to levels 1-3);
-    // falls back to narration text only when no image asset was rendered for this PR.
+    // Body honours the same state.artMode toggle as the content-pane hero frame: the
+    // diagram when art mode is 'diagram' and one exists, else the generated level image
+    // (same HERO_ASSETS manifest heroFrame uses — gated to levels 1-3), else narration
+    // text. Exactly one of the three is ever visible — see the branches below.
     const img = document.getElementById('audio-dialog-image');
+    const diagramEl = document.getElementById('audio-dialog-diagram');
     const narrationEl = document.getElementById('audio-dialog-narration');
+    unmountDiagrams(diagramEl); // drop any observer/zoom-pan from whatever this dialog last showed
+
     const rel = state.level <= 3 ? `pr-${p.pr}/level-${state.level}.png` : null;
-    const hasImage = rel && HERO_ASSETS.has(rel);
-    if (hasImage){
+    const hasImage = !!(rel && HERO_ASSETS.has(rel));
+    const hasDiagram = state.level <= 3 && !!diagramSource(p.pr, state.level);
+    const showDiagram = state.artMode === 'diagram' && hasDiagram;
+    const showImage = !showDiagram && hasImage;
+
+    if (showDiagram){
+      diagramEl.dataset.pr = p.pr;
+      diagramEl.dataset.level = state.level;
+      diagramEl.innerHTML = '<pre class="mermaid"></pre>'; // restore in case a prior render left an error/fallback here
+      diagramEl.hidden = false;
+      img.hidden = true;
+      img.removeAttribute('src');
+      narrationEl.hidden = true;
+      narrationEl.textContent = '';
+      mountDiagrams(diagramEl);
+    } else if (showImage){
       img.src = `../assets/${rel}`;
       img.alt = `PR #${p.pr} — ${LEVEL_LABELS[state.level - 1]} scene art`;
       img.hidden = false;
+      diagramEl.hidden = true;
       narrationEl.hidden = true;
       narrationEl.textContent = '';
     } else {
       img.hidden = true;
       img.removeAttribute('src');
+      diagramEl.hidden = true;
       narrationEl.textContent = (block && block.narration) || p.tagline || '';
       narrationEl.hidden = false;
     }
@@ -1457,6 +1900,7 @@ window.ADRS = window.ADRS || {};
     if (!state.audioDialogOpen) return;
     state.audioDialogOpen = false;
     renderSheetVisibility();
+    unmountDiagrams(document.getElementById('audio-dialog-diagram')); // no dangling observer/zoom-pan once closed
     const dialog = document.getElementById('audio-dialog');
     const exitAnim = anim(dialog, { opacity: [1, 0], scale: [1, 0.96] }, { duration: 0.13, ease: 'ease-in' });
     // hidden must never stay gated on the animation promise alone: if it stalls (backgrounded
@@ -1973,6 +2417,10 @@ window.ADRS = window.ADRS || {};
   // Start on the most recent PR in the bundle (timeline is chronological).
   state.prIndex = Math.max(0, TIMELINE.length - 1);
   document.title = `${REPO} — Codebase Odyssey`;
+
+  // Loaded before the first render (unlike hintsPinned below) because it decides which
+  // side of the image/diagram toggle renderMainContent's first heroFrame() call renders.
+  state.artMode = loadArtMode();
 
   renderAll();
 

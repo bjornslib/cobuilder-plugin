@@ -1,0 +1,31 @@
+C4Container
+    title Digital Curator PR 1 - adds the SecurePII desktop container
+
+    Person(user, "User", "Copies and pastes text that contains PII")
+
+    Container_Boundary(ext, "Chrome Extension (src/) - existing") {
+        Container(bg, "Background service worker", "MV3", "Privacy filter, offscreen document")
+        Container(content, "Content scripts", "TS", "Injected into claude.ai and chatgpt.com, intercepts paste and copy")
+        Container(shared, "shared/", "TS", "Zustand store, redaction, paste-instruction.ts")
+    }
+
+    Container_Boundary(desk, "SecurePII Desktop (desktop/) - new in PR 1") {
+        Container(monitor, "clipboard-monitor.ts", "Electron main", "Polls the system clipboard every 500ms")
+        Container(decision, "clipboard-decision.ts", "TS", "Redact, restore, or pass-through ladder")
+        Container(inference, "inference-host.ts", "Hidden BrowserWindow", "Reuses privacy-filter.ts over IPC (ADR-0001)")
+        ContainerDb(records, "records-store.ts", "electron-store and Keychain", "Encrypted original values")
+        Container(tray, "Tray and overlay", "Electron renderer", "Menu-bar UI, hotkeys")
+    }
+
+    System_Ext(chatapp, "AI Chat", "claude.ai or chatgpt.com")
+    System_Ext(nativeapp, "Native apps", "Mail, Slack, IDE - not protected before this PR")
+
+    Rel(user, content, "Pastes into", "DOM paste event")
+    Rel(content, chatapp, "Redacted text reaches")
+    Rel(user, nativeapp, "Copies PII from")
+    Rel(nativeapp, monitor, "Clipboard read", "polling")
+    Rel(monitor, decision, "Attributed clipboard change")
+    Rel(decision, inference, "Redact via")
+    Rel(decision, records, "Store or restore original")
+    Rel(monitor, tray, "Status updates")
+    Rel(shared, decision, "Shared paste-instruction.ts (ADR-0002)")
