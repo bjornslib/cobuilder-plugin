@@ -8,3 +8,10 @@ __pycache__/
 .prodyssey/.view-server.pid
 .prodyssey/.view-server.log
 .prodyssey/active
+# migrate_bundle.py's pre-migration story.json snapshot — disposable once a
+# migration proves sound, and machine-local like the entries above.
+.prodyssey/*/.migration-backup/
+
+.mcp.json
+.serena/
+.prodyssey/digital-curator-80f83abb/docs/

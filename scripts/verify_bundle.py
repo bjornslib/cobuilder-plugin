@@ -7,9 +7,20 @@
 
 Artifact key names (stable, used in --json output):
   baseline:
-    story      - data/story.json parses and schema_version is a known value ("1.0")
+    story      - data/story.json parses and schema_version is a known value
+                 (see _bundle_meta.SCHEMA_VERSION_KNOWN)
     inventory  - inventory.yaml exists with >=1 context
     viewer     - viewer/index.html exists
+    bundle.format - <bundle-dir>/bundle.json's bundle_format equals the plugin's
+                 _bundle_meta.CURRENT_BUNDLE_FORMAT. "missing" when bundle.json
+                 doesn't exist (pre-versioning bundle), "stale:<N>"/"too-new:<N>"
+                 otherwise. Run migrate_bundle.py to fix "missing"/"stale".
+    bundle.schema - bundle.json's schema_version and story.json's
+                 meta.schema_version agree and both equal the plugin's current
+                 _bundle_meta.SCHEMA_VERSION. "missing" when either side is
+                 absent, "mismatch:<a>!=<b>" when they disagree,
+                 "stale:<N>"/"too-new:<N>" when they agree but differ from
+                 current. Run migrate_bundle.py to fix "missing"/"stale".
   per PR (nested under "prs"."<N>"):
     timeline               - timeline entry for this PR exists
     narrative.<level>      - non-empty `narration` for each of the 4 levels
@@ -17,15 +28,28 @@ Artifact key names (stable, used in --json output):
     adr.<id>                - each id in this entry's adrs[] exists in data/adrs.json
                               (missing data/adrs.json => every adr check is "missing")
     asset.level-1/2/3       - PNG exists and is >1KB
+    diagram.level-1/2/3     - data/diagrams/pr{N}-level{L}.mmd exists, is non-empty
+                              after stripping whitespace and `%%` comment lines, and
+                              its first meaningful line starts with the level's
+                              required diagram type (C4Container / sequenceDiagram /
+                              classDiagram)
     audio.<level>           - wav exists; only checked for levels with a non-empty
                               `voice` script in story.json
     diffs                   - data/diffs-pr{N}.js exists
 
-Exit 0 iff every checked artifact is "ok". Never writes anything.
+  `asset.*` and `diagram.*` are always computed and reported, but which family is
+  REQUIRED for a passing/"ok" run is controlled by `--art image|diagram|both`
+  (default `image`, matching pre-diagram behavior). The non-gating family's keys
+  are listed under a per-section `"_optional"` key (JSON) or marked `(optional)`
+  in the table; their real status is still reported, not hidden.
+
+Exit 0 iff every REQUIRED artifact is "ok" (see `--art` above). Never writes
+anything.
 
 Usage:
     uv run verify_bundle.py --bundle-dir <bundle>
     uv run verify_bundle.py --bundle-dir <bundle> --prs 73,75 --json
+    uv run verify_bundle.py --bundle-dir <bundle> --art diagram --json
 """
 from __future__ import annotations
 
@@ -34,9 +58,12 @@ import json
 import sys
 from pathlib import Path
 
-SCHEMA_VERSION_KNOWN = {"1.0"}
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _bundle_meta import CURRENT_BUNDLE_FORMAT, SCHEMA_VERSION, SCHEMA_VERSION_KNOWN
+
 LEVEL_KEYS = ["landscape", "problem_solution", "architecture", "file_changes"]
 MIN_ASSET_BYTES = 1024
+DIAGRAM_TYPE_BY_LEVEL = {1: "C4Container", 2: "sequenceDiagram", 3: "classDiagram"}
 
 
 def count_inventory_contexts(text: str) -> int:
@@ -52,6 +79,61 @@ def count_inventory_contexts(text: str) -> int:
         if stripped.startswith("- "):
             count += 1
     return count
+
+
+def version_tuple(value: str) -> tuple[int, ...]:
+    """Best-effort numeric ordering for a dotted version string ("1.10" >
+    "1.2"). Falls back to (0,) for anything that doesn't parse, which sorts
+    below every real version — callers only use this to pick "stale" vs
+    "too-new" once two values are already known to differ."""
+    try:
+        return tuple(int(part) for part in str(value).split("."))
+    except (ValueError, AttributeError):
+        return (0,)
+
+
+def check_bundle_json(bundle_dir: Path, story: dict | None) -> dict[str, str]:
+    """bundle.format / bundle.schema — see the docstring's Artifact key names
+    block for the exact status vocabulary."""
+    results: dict[str, str] = {}
+    bundle_json_path = bundle_dir / "bundle.json"
+
+    if not bundle_json_path.exists():
+        results["bundle.format"] = "missing"
+        results["bundle.schema"] = "missing"
+        return results
+
+    try:
+        bundle_meta = json.loads(bundle_json_path.read_text())
+    except json.JSONDecodeError:
+        results["bundle.format"] = "missing"
+        results["bundle.schema"] = "missing"
+        return results
+
+    bundle_format = bundle_meta.get("bundle_format")
+    if not isinstance(bundle_format, int):
+        results["bundle.format"] = "missing"
+    elif bundle_format == CURRENT_BUNDLE_FORMAT:
+        results["bundle.format"] = "ok"
+    elif bundle_format < CURRENT_BUNDLE_FORMAT:
+        results["bundle.format"] = f"stale:{bundle_format}"
+    else:
+        results["bundle.format"] = f"too-new:{bundle_format}"
+
+    bundle_schema = bundle_meta.get("schema_version")
+    story_schema = (story or {}).get("meta", {}).get("schema_version")
+    if not bundle_schema or not story_schema:
+        results["bundle.schema"] = "missing"
+    elif bundle_schema != story_schema:
+        results["bundle.schema"] = f"mismatch:{bundle_schema}!={story_schema}"
+    elif bundle_schema == SCHEMA_VERSION:
+        results["bundle.schema"] = "ok"
+    elif version_tuple(bundle_schema) < version_tuple(SCHEMA_VERSION):
+        results["bundle.schema"] = f"stale:{bundle_schema}"
+    else:
+        results["bundle.schema"] = f"too-new:{bundle_schema}"
+
+    return results
 
 
 def check_baseline(bundle_dir: Path) -> tuple[dict[str, str], dict | None]:
@@ -70,6 +152,8 @@ def check_baseline(bundle_dir: Path) -> tuple[dict[str, str], dict | None]:
         else:
             version = story.get("meta", {}).get("schema_version")
             results["story"] = "ok" if version in SCHEMA_VERSION_KNOWN else f"unknown-schema-version:{version}"
+
+    results.update(check_bundle_json(bundle_dir, story))
 
     inventory_path = bundle_dir / "inventory.yaml"
     if not inventory_path.exists():
@@ -92,6 +176,41 @@ def load_adrs(bundle_dir: Path) -> dict | None:
         return json.loads(adrs_path.read_text())
     except json.JSONDecodeError:
         return None
+
+
+def check_diagram_file(bundle_dir: Path, pr_num: int, level: int) -> str:
+    """"ok" when the .mmd exists, has a meaningful (non-blank, non-`%%`-comment)
+    line, and that first meaningful line starts with the level's required
+    diagram type. "missing" when absent or empty. "wrong-type" when present
+    with content but the header doesn't match."""
+    path = bundle_dir / "data" / "diagrams" / f"pr{pr_num}-level{level}.mmd"
+    if not path.exists():
+        return "missing"
+    text = path.read_text()
+    if not text.strip():
+        return "missing"
+    first_meaningful = None
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("%%"):
+            continue
+        first_meaningful = line
+        break
+    if first_meaningful is None:
+        return "missing"
+    required = DIAGRAM_TYPE_BY_LEVEL[level]
+    return "ok" if first_meaningful.startswith(required) else "wrong-type"
+
+
+def optional_prefixes_for_art(art: str) -> tuple[str, ...]:
+    """Key prefixes that are reported but not required for a passing run,
+    given --art. 'image' (default) keeps pre-diagram behavior: asset.* is
+    required, diagram.* is informational only."""
+    if art == "image":
+        return ("diagram.",)
+    if art == "diagram":
+        return ("asset.",)
+    return ()  # "both": nothing optional
 
 
 def check_pr(bundle_dir: Path, story: dict | None, adrs: dict | None, pr_num: int) -> dict[str, str]:
@@ -129,6 +248,9 @@ def check_pr(bundle_dir: Path, story: dict | None, adrs: dict | None, pr_num: in
         else:
             results[f"asset.level-{i}"] = "ok"
 
+    for i in (1, 2, 3):
+        results[f"diagram.level-{i}"] = check_diagram_file(bundle_dir, pr_num, i)
+
     for level_key in LEVEL_KEYS:
         level = levels.get(level_key)
         voice = level.get("voice") if isinstance(level, dict) else None
@@ -143,8 +265,8 @@ def check_pr(bundle_dir: Path, story: dict | None, adrs: dict | None, pr_num: in
     return results
 
 
-def all_ok(results: dict[str, str]) -> bool:
-    return all(v == "ok" for v in results.values())
+def all_ok(results: dict[str, str], optional_prefixes: tuple[str, ...] = ()) -> bool:
+    return all(v == "ok" for k, v in results.items() if not k.startswith(optional_prefixes))
 
 
 def main() -> None:
@@ -152,7 +274,18 @@ def main() -> None:
     parser.add_argument("--bundle-dir", required=True, help="bundle dir to verify (e.g. <repo>/.prodyssey/self)")
     parser.add_argument("--prs", default=None, help="comma-separated PR numbers (default: all timeline PRs)")
     parser.add_argument("--json", action="store_true", help="emit machine-readable JSON instead of a table")
+    parser.add_argument(
+        "--art",
+        choices=["image", "diagram", "both"],
+        default="image",
+        help="which scene-art family is REQUIRED for a passing run: 'image' "
+        "(asset.* required, diagram.* informational — default, matches "
+        "pre-diagram behavior), 'diagram' (diagram.* required, asset.* "
+        "informational), or 'both' (both required)",
+    )
     args = parser.parse_args()
+
+    optional_prefixes = optional_prefixes_for_art(args.art)
 
     bundle_dir = Path(args.bundle_dir).resolve()
     if not bundle_dir.exists():
@@ -177,21 +310,34 @@ def main() -> None:
     for pr_num in pr_nums:
         prs_results[str(pr_num)] = check_pr(bundle_dir, story, adrs, pr_num)
 
-    ok = all_ok(baseline) and all(all_ok(r) for r in prs_results.values())
+    # Baseline keys (story/inventory/viewer) are never subject to --art — only
+    # the per-PR asset.*/diagram.* families are conditionally optional.
+    ok = all_ok(baseline) and all(all_ok(r, optional_prefixes) for r in prs_results.values())
+
+    def optional_keys(results: dict[str, str]) -> list[str]:
+        return sorted(k for k in results if k.startswith(optional_prefixes))
 
     if args.json:
-        print(json.dumps({"baseline": baseline, "prs": prs_results}, indent=2, ensure_ascii=False))
+        baseline_out = dict(baseline)
+        baseline_out["_optional"] = []  # baseline is never gated by --art
+        prs_out = {
+            pr_num: {**results, "_optional": optional_keys(results)}
+            for pr_num, results in prs_results.items()
+        }
+        print(json.dumps({"art": args.art, "baseline": baseline_out, "prs": prs_out}, indent=2, ensure_ascii=False))
     else:
-        print("Baseline")
+        print(f"Baseline (--art {args.art})")
         print("--------")
         for key, status in baseline.items():
-            print(f"  {key:<12} {status}")
+            print(f"  {key:<20} {status:<12} (required)")
         for pr_num, results in prs_results.items():
             header = f"PR #{pr_num}"
             print(f"\n{header}")
             print("-" * len(header))
+            optional = set(optional_keys(results))
             for key, status in results.items():
-                print(f"  {key:<20} {status}")
+                marker = "(optional)" if key in optional else "(required)"
+                print(f"  {key:<20} {status:<12} {marker}")
         print(f"\nOverall: {'OK' if ok else 'FAIL'}")
 
     sys.exit(0 if ok else 1)
