@@ -161,20 +161,17 @@ out not to handle blocks injected after page load: it inlines a vendored
 `--art diagram` carries no PNGs at all, which relieves the 16 MiB budget
 pressure described above — diagrams are plain text, not base64 image data.
 
-**Bundles made before the diagram change must refresh their viewer copy.**
-`export_artifact.py` transforms the copy of `viewer/index.html` inside the
-bundle, not the plugin's copy, and the diagram work changed the two strings it
-matches on. A bundle written before that change therefore fails the export's
-verbatim guard until you copy the current viewer in
-(`cp "${CLAUDE_PLUGIN_ROOT}/viewer/index.html" <bundle-dir>/viewer/index.html`,
-which is also what baseline mode does). The error message says this, so the
-failure is loud and self-explaining, not silent — but it is the one migration
-step an existing bundle needs.
+A bundle written before the diagram change once needed its viewer copy
+refreshed by hand. `scripts/migrate_bundle.py` now handles this: every mode
+runs it before it touches a bundle, so `export_artifact.py`'s verbatim guard
+against the viewer copy should never fire in practice. See Bundle versioning
+and migration below.
 
 ## Bundle output shape (what generation produces)
 
 ```
 <bundle-dir>/       <target>/.prodyssey/self/ for self-analysis, <hub>/.prodyssey/<repo-slug>/ for a foreign repo
+  bundle.json        bundle_format, schema_version, generator_version, migrated_at
   data/{story.json, story.js, adrs.json, adrs.js, manifest.js,
         diffs-pr{N}.js…, audio/pr{N}_{level}.wav,
         diagrams/pr{N}-level{1,2,3}.mmd, diagrams.js}
@@ -182,6 +179,7 @@ step an existing bundle needs.
   inventory.yaml
   viewer/index.html
   exports/{publish-manifest.json, pr-{N}.html…, index.html}   # written by /prodyssey:publish
+  .migration-backup/  # pre-migration story.json snapshots, written by migrate_bundle.py
 ```
 
 `data/diagrams/pr{N}-level{L}.mmd` files are the source of truth for the
@@ -195,13 +193,18 @@ flag it was generated with (see Generate mode in `skills/odyssey/SKILL.md`).
 `exports/` only appears once `/prodyssey:publish` has run at least once; it's
 as committable as the rest of the bundle — see Publish mode notes below.
 
-`story.json`'s `meta.schema_version` is currently `"1.0"` —
-`verify_bundle.py` gates on it (`SCHEMA_VERSION_KNOWN`). Everything under
-`.prodyssey/` is committed in *this* repo (not gitignored — only three
+`story.json`'s `meta.schema_version` is currently `"1.1"`, and it is the
+source of truth for a bundle's data shape — `bundle.json` only mirrors it.
+`scripts/_bundle_meta.py` holds the constant, and `verify_bundle.py` gates on
+it (`SCHEMA_VERSION_KNOWN`, which also accepts `"1.0"` so that migration can
+read an older bundle). Everything under
+`.prodyssey/` is committed in *this* repo (not gitignored — only four
 bookkeeping entries are: `.prodyssey/.view-server.pid`,
-`.prodyssey/.view-server.log`, and `.prodyssey/active`, a symlink holding an
+`.prodyssey/.view-server.log`, `.prodyssey/active` (a symlink holding an
 absolute path that would break in clones and churn the diff on every view
-switch). The self-bundle and the foreign-repo cache used to live under two
+switch), and each bundle's `.migration-backup/` (pre-migration `story.json`
+snapshots, disposable once a migration proves sound). The self-bundle and
+the foreign-repo cache used to live under two
 separate top-level directories; they're now unified under one `.prodyssey/`
 root, distinguished by subdirectory: `.prodyssey/self/` is
 this repo's own generated bundle, tracked so engineers can review each
@@ -216,9 +219,73 @@ delete them as stale cache — they exist deliberately, are named by
 otherwise indistinguishable from real foreign-repo caches. Whether a hub
 adopting the plugin also commits its foreign-repo slug directories is that
 team's call — the skill takes no position on it. `skills/odyssey/SKILL.md`'s
-Hub resolution section suggests a `.gitignore` line for the three
+Hub resolution section suggests a `.gitignore` line for the four
 bookkeeping entries only, and is explicit that `.prodyssey/` as a whole must
 never be suggested for ignoring.
+
+## Bundle versioning and migration
+
+A bundle drifts from what the plugin currently produces in three distinct
+ways, and each way needs its own fix, not one migration framework:
+
+1. **Files derived from the plugin.** `viewer/index.html` is the only case
+   today. It is a build artifact with nothing authored to preserve, so
+   `scripts/migrate_bundle.py` refreshes it **unconditionally**, on every
+   run, never gated on a version check. This is the important rule: gating
+   the viewer refresh on a version number is exactly the bug that motivated
+   this whole mechanism — a bundle's viewer went stale and silently dropped
+   diagram support because nothing forced a refresh once the viewer changed
+   without a version bump.
+2. **Directory layout** — which files and directories exist. Tracked by
+   `bundle_format`, an integer in `bundle.json`, and stepped forward by an
+   ordered `LAYOUT_MIGRATIONS` list in `migrate_bundle.py`.
+3. **Data shape** — the structure of `story.json`. Tracked by
+   `schema_version`. `story.json`'s `meta.schema_version` is the source of
+   truth, and `bundle.json` only mirrors it — `migrate_bundle.py` reads the
+   data, never the mirror. A mirror that runs ahead of the data would
+   otherwise deadlock the bundle: the ladder skips every step as "already
+   current" while `verify_bundle.py` keeps failing `bundle.schema`, and no
+   command can repair it. An ordered `SCHEMA_MIGRATIONS` list steps the
+   shape forward.
+
+`migrate_bundle.py` runs all three phases, in this order, against
+`--bundle-dir`: the unconditional viewer refresh, then the layout ladder,
+then the data ladder. `skills/odyssey/SKILL.md` calls it at the start of
+every mode — Baseline, Generate, View, and Publish — so a stale bundle
+self-heals before any other step reads it.
+
+A data migration must never regenerate content. `story.json` holds
+authored, irreplaceable text next to derived fields a script can
+recompute, and a migration is only safe to run unattended if it cannot
+touch the authored half by accident. Each migration in `SCHEMA_MIGRATIONS`
+declares a `touches` set of the dotted field paths it changes.
+`migrate_bundle.py` runs the whole ladder in memory, over a deepcopy, and
+compares every authored field before and after each step. Any authored
+field outside `touches` that changed stops the run. Nothing reaches disk in
+that case, so there is no restore step — the failure mode is "no write",
+not "write then undo". A successful run copies `story.json` to
+`<bundle-dir>/.migration-backup/` before it writes the new one. This is the
+guard that makes an in-place migration trustworthy with paid Gemini art and
+TTS content in the same file.
+
+**What the data ladder does not cover.** `SCHEMA_MIGRATIONS` steps are
+`story.json` transforms — the step signature takes and returns the story
+dict. `adrs.json` has no ladder and no guard yet, and a shape change there
+needs the interface widened first. `manifest.js` carries a `schema_version`
+of its own that migration deliberately leaves alone: nothing reads it (the
+viewer never reads `schema_version` at all), and `rewrite_manifest()`
+rebuilds that file wholesale on the next generate. If anything ever starts
+gating on that value, it has to join the ladder.
+
+**Adding a migration.** Bump `SCHEMA_VERSION` (or `CURRENT_BUNDLE_FORMAT`)
+in `scripts/_bundle_meta.py`, the single source both ladders and the five
+scripts that used to hardcode the literal now import from. Then append one
+entry to the matching ladder — `LAYOUT_MIGRATIONS` for a new file or
+directory, `SCHEMA_MIGRATIONS` for a `story.json` shape change, with its
+`touches` set if it is a data migration. Never call
+`extract_story.py` from inside a migration to "rebuild" a bundle — that
+re-derives content from git and discards whatever a maintainer authored by
+hand.
 
 ## Conventions worth preserving
 

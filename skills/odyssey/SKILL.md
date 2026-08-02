@@ -134,21 +134,25 @@ hand-authored narrative at real Gemini API cost. This block is removable at
 
 Whenever `<bundle-dir>` resolves under `<hub>/.prodyssey/` and
 `<hub>/.prodyssey/` doesn't exist yet, create it (`mkdir -p`) and check
-whether the hub's `.gitignore` already covers its three bookkeeping entries;
-if not, print exactly these three lines for the user to add manually:
+whether the hub's `.gitignore` already covers its four bookkeeping entries;
+if not, print exactly these four lines for the user to add manually:
 ```
 .prodyssey/.view-server.pid
 .prodyssey/.view-server.log
 .prodyssey/active
+.prodyssey/*/.migration-backup/
 ```
 Do NOT edit `.gitignore` yourself, and **never suggest ignoring `.prodyssey/`
 as a whole** — bundles are meant to be committed alongside the code they
 narrate; a narrative that isn't in the repo isn't doing its job. Only these
-three entries are exceptions: `.view-server.pid` and `.view-server.log` are
-process bookkeeping for a server that only ever exists on one machine, and
+four entries are exceptions: `.view-server.pid` and `.view-server.log` are
+process bookkeeping for a server that only ever exists on one machine,
 `active` is a symlink holding an ABSOLUTE path — committing it both breaks in
 every other clone (the path won't exist there) and churns the diff on every
-view switch. This applies the first time *any* mode (Baseline, Generate, or
+view switch — and `<bundle-dir>/.migration-backup/` holds `migrate_bundle.py`'s
+pre-migration backup of `story.json`, kept only until the next successful
+migration proves the bundle sound, not a durable record worth committing.
+This applies the first time *any* mode (Baseline, Generate, or
 View) creates the directory, not just View mode — and it's a one-time
 notice, not a durable reminder: once `<hub>/.prodyssey/` exists, later
 invocations skip the check even if the user never actually added the
@@ -219,10 +223,14 @@ procedure. Summary:
 3. Derive the district map and per-district summaries per
    `references/baseline-derivation.md`; author labels/kinds/blurbs directly into
    `world.districts` in `story.json`, and write `<bundle-dir>/inventory.yaml`.
-4. Copy the viewer:
+4. Migrate the bundle. This refreshes the viewer copy, and it steps the
+   layout and the data shape forward when the plugin defines a newer
+   version of either:
    ```bash
-   cp "${CLAUDE_PLUGIN_ROOT}/viewer/index.html" <bundle-dir>/viewer/index.html
+   uv run "${CLAUDE_PLUGIN_ROOT}/scripts/migrate_bundle.py" --bundle-dir <bundle-dir>
    ```
+   This replaces the old bare `cp` of `viewer/index.html`. Migration owns
+   the viewer refresh now, so there is one mechanism, not two.
 5. Verify:
    ```bash
    uv run "${CLAUDE_PLUGIN_ROOT}/scripts/verify_bundle.py" --bundle-dir <bundle-dir> --json
@@ -242,7 +250,12 @@ Per-PR narrative + ADR + art + audio sweep. Steps:
    `<bundle-dir>/inventory.yaml` is missing, announce "No baseline found —
    running baseline first" and execute the full Baseline mode above before
    continuing.
-2. **Resolve the PR list**: use `--prs` if given (comma list, range `N..M`, or
+2. **Migrate the bundle**, so the sweep below never runs against a stale
+   viewer copy or an outdated data shape:
+   ```bash
+   uv run "${CLAUDE_PLUGIN_ROOT}/scripts/migrate_bundle.py" --bundle-dir <bundle-dir>
+   ```
+3. **Resolve the PR list**: use `--prs` if given (comma list, range `N..M`, or
    `--latest`). Otherwise let `extract_story.py`'s discovery surface the most
    recent PRs (merge commits → squash `(#N)` → `gh` fallback) and confirm the last
    10 with the user before proceeding.
@@ -258,7 +271,7 @@ Per-PR narrative + ADR + art + audio sweep. Steps:
    original snapshot as immutable the way a merged PR's is.
 
 
-3. **Per PR**, run the resumability check first and only execute stages which
+4. **Per PR**, run the resumability check first and only execute stages which
    artifacts are missing (or all stages if `--force`):
    ```bash
    uv run "${CLAUDE_PLUGIN_ROOT}/scripts/verify_bundle.py" --bundle-dir <bundle-dir> --prs <N> --art <mode> --json
@@ -335,7 +348,7 @@ Per-PR narrative + ADR + art + audio sweep. Steps:
       Pass `--voice <V>` if the user specified one.
 
    `--force` regenerates every stage regardless of `verify_bundle.py`'s result.
-4. **Final verify**: re-run `verify_bundle.py --prs <all-selected> --art
+5. **Final verify**: re-run `verify_bundle.py --prs <all-selected> --art
    <mode> --json` (`<mode>` is this invocation's `--art` value) and report a
    per-PR artifact table (which stages ran, which were skipped as already
    complete, which failed).
@@ -353,7 +366,7 @@ produces for levels 1 through 3 (level 4 has neither). Default: `both`.
   behavior exactly.
 
 Pass the same `--art <mode>` value to `verify_bundle.py` in both the
-resumability check (step 3's preamble) and the final verify (step 4), so
+resumability check (step 4's preamble) and the final verify (step 5), so
 resumability tracks whichever family this invocation actually asked for
 instead of reporting the untouched family as missing.
 
@@ -471,12 +484,18 @@ applies — see Hub resolution).
    a real repo that just hasn't been baselined yet, or was baselined with a
    different `--store` mode than the one this resolution assumed).
 
-6. **Point `active` at the selection**:
+6. **Migrate the bundle**, so a stale viewer copy or an outdated data shape
+   never reaches the browser:
+   ```bash
+   uv run "${CLAUDE_PLUGIN_ROOT}/scripts/migrate_bundle.py" --bundle-dir <absolute-selected-bundle-dir>
+   ```
+
+7. **Point `active` at the selection**:
    ```bash
    ln -sfn "<absolute-selected-bundle-dir>" "<hub>/.prodyssey/active"
    ```
 
-7. **Reuse or start the server**:
+8. **Reuse or start the server**:
    ```bash
    PIDFILE="<hub>/.prodyssey/.view-server.pid"
    LOGFILE="<hub>/.prodyssey/.view-server.log"
@@ -490,7 +509,7 @@ applies — see Hub resolution).
    fi
    ```
    If a server is already running for this hub, do NOT start a second one —
-   repointing `active` (step 6) is enough; the running server picks up the new
+   repointing `active` (step 7) is enough; the running server picks up the new
    symlink target on its next request, no restart needed. Just report the
    existing port/URL and tell the user to refresh — note that `--port` has no
    effect in this branch (it only applies to a fresh start); if the user
@@ -502,7 +521,7 @@ applies — see Hub resolution).
    Do not use the Bash tool's own `run_in_background` option here; that's for
    commands that eventually finish, and this one never does.
 
-8. **Confirm a fresh start actually came up** (skip this if step 7 reused an
+9. **Confirm a fresh start actually came up** (skip this if step 8 reused an
    existing server): poll the log briefly rather than a single fixed sleep —
    `http.server` startup time varies under load:
    ```bash
@@ -518,11 +537,11 @@ applies — see Hub resolution).
    whatever — treat it as a failed start: show the log contents to the user
    verbatim and STOP. Never report a URL you haven't confirmed is live.
 
-9. **Report the URL**: `http://localhost:<port>/active/viewer/`. Tell the
-   user the server keeps running in the background — the session is free to
-   continue — that switching bundles later is just re-running
-   `/prodyssey:view --repo <other>` (or answering the picker) and refreshing
-   the tab, and that `/prodyssey:view --stop` shuts the server down entirely.
+10. **Report the URL**: `http://localhost:<port>/active/viewer/`. Tell the
+    user the server keeps running in the background — the session is free to
+    continue — that switching bundles later is just re-running
+    `/prodyssey:view --repo <other>` (or answering the picker) and refreshing
+    the tab, and that `/prodyssey:view --stop` shuts the server down entirely.
 
 ## Publish mode
 
@@ -544,7 +563,14 @@ export scripts) but not `GEMINI_API_KEY`, and doesn't touch `<target>` at all.
    run `/prodyssey:generate --prs <N>` first and STOP before publishing any
    of the others (a partial publish from a partially-valid PR list is more
    confusing than refusing up front).
-4. **Per PR**, in order:
+4. **Migrate the bundle**, before any export runs. This makes the stale-viewer
+   export error self-healing:
+   ```bash
+   uv run "${CLAUDE_PLUGIN_ROOT}/scripts/migrate_bundle.py" --bundle-dir <bundle-dir>
+   ```
+   `export_artifact.py`'s own verbatim guard against the viewer copy stays in
+   place regardless, as a backstop — it should now never fire.
+5. **Per PR**, in order:
    ```bash
    uv run "${CLAUDE_PLUGIN_ROOT}/scripts/export_artifact.py" --bundle-dir <bundle-dir> --prs <N>
    ```
@@ -565,7 +591,7 @@ export scripts) but not `GEMINI_API_KEY`, and doesn't touch `<target>` at all.
      ```
    - Otherwise, report "already up to date" with the existing URL and move on
      — don't call the Artifact tool for a PR that hasn't changed.
-5. **Always rebuild and republish the index**, regardless of which PRs (if
+6. **Always rebuild and republish the index**, regardless of which PRs (if
    any) actually changed this run — it reflects every PR ever recorded in
    `publish-manifest.json`, not just this invocation's:
    ```bash
@@ -575,7 +601,7 @@ export scripts) but not `GEMINI_API_KEY`, and doesn't touch `<target>` at all.
    `publish-manifest.json`'s `index.artifact_url` as `url:` when present so
    it updates in place across sessions the same way per-PR artifacts do.
    Record it the same way: `--target index`.
-6. **Report a summary table** — PR, status (published / updated / unchanged),
+7. **Report a summary table** — PR, status (published / updated / unchanged),
    artifact URL — plus the index URL.
 
 If the `Artifact` tool isn't available (per Anthropic's own documentation:

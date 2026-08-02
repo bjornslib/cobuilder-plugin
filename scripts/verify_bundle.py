@@ -7,9 +7,20 @@
 
 Artifact key names (stable, used in --json output):
   baseline:
-    story      - data/story.json parses and schema_version is a known value ("1.0")
+    story      - data/story.json parses and schema_version is a known value
+                 (see _bundle_meta.SCHEMA_VERSION_KNOWN)
     inventory  - inventory.yaml exists with >=1 context
     viewer     - viewer/index.html exists
+    bundle.format - <bundle-dir>/bundle.json's bundle_format equals the plugin's
+                 _bundle_meta.CURRENT_BUNDLE_FORMAT. "missing" when bundle.json
+                 doesn't exist (pre-versioning bundle), "stale:<N>"/"too-new:<N>"
+                 otherwise. Run migrate_bundle.py to fix "missing"/"stale".
+    bundle.schema - bundle.json's schema_version and story.json's
+                 meta.schema_version agree and both equal the plugin's current
+                 _bundle_meta.SCHEMA_VERSION. "missing" when either side is
+                 absent, "mismatch:<a>!=<b>" when they disagree,
+                 "stale:<N>"/"too-new:<N>" when they agree but differ from
+                 current. Run migrate_bundle.py to fix "missing"/"stale".
   per PR (nested under "prs"."<N>"):
     timeline               - timeline entry for this PR exists
     narrative.<level>      - non-empty `narration` for each of the 4 levels
@@ -47,7 +58,9 @@ import json
 import sys
 from pathlib import Path
 
-SCHEMA_VERSION_KNOWN = {"1.0"}
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _bundle_meta import CURRENT_BUNDLE_FORMAT, SCHEMA_VERSION, SCHEMA_VERSION_KNOWN
+
 LEVEL_KEYS = ["landscape", "problem_solution", "architecture", "file_changes"]
 MIN_ASSET_BYTES = 1024
 DIAGRAM_TYPE_BY_LEVEL = {1: "C4Container", 2: "sequenceDiagram", 3: "classDiagram"}
@@ -68,6 +81,61 @@ def count_inventory_contexts(text: str) -> int:
     return count
 
 
+def version_tuple(value: str) -> tuple[int, ...]:
+    """Best-effort numeric ordering for a dotted version string ("1.10" >
+    "1.2"). Falls back to (0,) for anything that doesn't parse, which sorts
+    below every real version — callers only use this to pick "stale" vs
+    "too-new" once two values are already known to differ."""
+    try:
+        return tuple(int(part) for part in str(value).split("."))
+    except (ValueError, AttributeError):
+        return (0,)
+
+
+def check_bundle_json(bundle_dir: Path, story: dict | None) -> dict[str, str]:
+    """bundle.format / bundle.schema — see the docstring's Artifact key names
+    block for the exact status vocabulary."""
+    results: dict[str, str] = {}
+    bundle_json_path = bundle_dir / "bundle.json"
+
+    if not bundle_json_path.exists():
+        results["bundle.format"] = "missing"
+        results["bundle.schema"] = "missing"
+        return results
+
+    try:
+        bundle_meta = json.loads(bundle_json_path.read_text())
+    except json.JSONDecodeError:
+        results["bundle.format"] = "missing"
+        results["bundle.schema"] = "missing"
+        return results
+
+    bundle_format = bundle_meta.get("bundle_format")
+    if not isinstance(bundle_format, int):
+        results["bundle.format"] = "missing"
+    elif bundle_format == CURRENT_BUNDLE_FORMAT:
+        results["bundle.format"] = "ok"
+    elif bundle_format < CURRENT_BUNDLE_FORMAT:
+        results["bundle.format"] = f"stale:{bundle_format}"
+    else:
+        results["bundle.format"] = f"too-new:{bundle_format}"
+
+    bundle_schema = bundle_meta.get("schema_version")
+    story_schema = (story or {}).get("meta", {}).get("schema_version")
+    if not bundle_schema or not story_schema:
+        results["bundle.schema"] = "missing"
+    elif bundle_schema != story_schema:
+        results["bundle.schema"] = f"mismatch:{bundle_schema}!={story_schema}"
+    elif bundle_schema == SCHEMA_VERSION:
+        results["bundle.schema"] = "ok"
+    elif version_tuple(bundle_schema) < version_tuple(SCHEMA_VERSION):
+        results["bundle.schema"] = f"stale:{bundle_schema}"
+    else:
+        results["bundle.schema"] = f"too-new:{bundle_schema}"
+
+    return results
+
+
 def check_baseline(bundle_dir: Path) -> tuple[dict[str, str], dict | None]:
     results: dict[str, str] = {}
 
@@ -84,6 +152,8 @@ def check_baseline(bundle_dir: Path) -> tuple[dict[str, str], dict | None]:
         else:
             version = story.get("meta", {}).get("schema_version")
             results["story"] = "ok" if version in SCHEMA_VERSION_KNOWN else f"unknown-schema-version:{version}"
+
+    results.update(check_bundle_json(bundle_dir, story))
 
     inventory_path = bundle_dir / "inventory.yaml"
     if not inventory_path.exists():

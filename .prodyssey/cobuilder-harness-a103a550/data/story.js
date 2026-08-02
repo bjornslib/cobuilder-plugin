@@ -2,7 +2,7 @@ window.STORY = {
   "meta": {
     "repo": "cobuilder-harness",
     "generated": "2026-07-21",
-    "schema_version": "1.0",
+    "schema_version": "1.1",
     "title": "cobuilder-harness — Codebase Odyssey",
     "description": "CoBuilder: a pipeline execution engine that turns product requirements into working software through autonomous multi-agent workflows. The runner has zero LLM intelligence — it reads a DOT graph, dispatches project-owned agents, and transitions node states mechanically.",
     "levels": [
@@ -231,7 +231,8 @@ window.STORY = {
       "touched": {
         ".claude": 2
       },
-      "levels": {}
+      "levels": {},
+      "status": "merged"
     },
     {
       "pr": 61,
@@ -248,7 +249,8 @@ window.STORY = {
         "cobuilder": 4,
         "tests": 2
       },
-      "levels": {}
+      "levels": {},
+      "status": "merged"
     },
     {
       "pr": 62,
@@ -277,7 +279,8 @@ window.STORY = {
         "state": 3,
         "tests": 4
       },
-      "levels": {}
+      "levels": {},
+      "status": "merged"
     },
     {
       "pr": 63,
@@ -304,7 +307,8 @@ window.STORY = {
         "formulas": 6,
         "tests": 7
       },
-      "levels": {}
+      "levels": {},
+      "status": "merged"
     },
     {
       "pr": 64,
@@ -335,7 +339,8 @@ window.STORY = {
         "tests": 142,
         "tools": 1
       },
-      "levels": {}
+      "levels": {},
+      "status": "merged"
     },
     {
       "pr": 65,
@@ -352,7 +357,8 @@ window.STORY = {
         ".claude": 6,
         "docs": 1
       },
-      "levels": {}
+      "levels": {},
+      "status": "merged"
     },
     {
       "pr": 66,
@@ -371,7 +377,8 @@ window.STORY = {
         "docs": 12,
         "tests": 2
       },
-      "levels": {}
+      "levels": {},
+      "status": "merged"
     },
     {
       "pr": 68,
@@ -393,7 +400,8 @@ window.STORY = {
         "docs": 21,
         "tests": 15
       },
-      "levels": {}
+      "levels": {},
+      "status": "merged"
     },
     {
       "pr": 70,
@@ -415,7 +423,8 @@ window.STORY = {
         "docs": 9,
         "tests": 6
       },
-      "levels": {}
+      "levels": {},
+      "status": "merged"
     },
     {
       "pr": 71,
@@ -431,7 +440,8 @@ window.STORY = {
       "touched": {
         "cobuilder-frontend": 3
       },
-      "levels": {}
+      "levels": {},
+      "status": "merged"
     },
     {
       "pr": 79,
