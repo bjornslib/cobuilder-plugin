@@ -1,0 +1,25 @@
+sequenceDiagram
+    participant User
+    participant Mail as Mail (native app)
+    participant SecurePII as SecurePII clipboard-monitor.ts
+    participant Records as records-store.ts
+    participant Chat as ChatGPT (browser)
+
+    User->>Mail: Copy "SSN 123-45-6789"
+    Mail-->>SecurePII: Clipboard change (polled every 500ms)
+    SecurePII->>SecurePII: attribution.ts identifies the frontmost app
+
+    alt App is on the exclusion list
+        SecurePII-->>Mail: Leave the clipboard unchanged
+    else App is not excluded
+        SecurePII->>SecurePII: clipboard-decision.ts chooses redact
+        SecurePII->>Records: Store the original, assign id 8a1f2c04
+        SecurePII-->>Mail: Rewrite the clipboard to "[ssn:8a1f2c04]"
+    end
+
+    User->>Chat: Paste "[ssn:8a1f2c04]" with the placeholder instruction
+    Chat-->>User: Reply echoes "[ssn:8a1f2c04]" as-is
+    User->>SecurePII: Copy the reply from Chat
+    SecurePII->>Records: Look up 8a1f2c04
+    Records-->>SecurePII: Original value "123-45-6789"
+    SecurePII-->>User: Restores the clipboard to the original SSN

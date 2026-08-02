@@ -36,7 +36,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-SCHEMA_VERSION = "1.0"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _bundle_meta import SCHEMA_VERSION
+
 MAX_LINES_PER_FILE = 4000
 MAX_BYTES_PER_FILE = 200_000  # belt-and-suspenders: some files (minified JS, a
 # single-line JSON blob, a data-URI-heavy HTML export) pack megabytes onto a
@@ -329,6 +331,10 @@ def rewrite_manifest(bundle_dir: Path, manifest_path: Path) -> None:
         m = re.match(r"level-(\d+)\.png$", name)
         return int(m.group(1)) if m else 0
 
+    def pr_level_from_diagram_filename(name: str) -> tuple[int, int]:
+        m = re.match(r"pr(\d+)-level(\d+)\.mmd$", name)
+        return (int(m.group(1)), int(m.group(2))) if m else (0, 0)
+
     hero = []
     if assets_dir.exists():
         for pr_dir in sorted(assets_dir.glob("pr-*"), key=lambda p: pr_num_from_dirname(p.name)):
@@ -345,11 +351,18 @@ def rewrite_manifest(bundle_dir: Path, manifest_path: Path) -> None:
                 diff_prs.append(int(m.group(1)))
     diff_prs.sort()
 
+    diagrams_dir = data_dir / "diagrams"
+    diagrams = []
+    if diagrams_dir.exists():
+        for mmd in sorted(diagrams_dir.glob("pr*-level*.mmd"), key=lambda p: pr_level_from_diagram_filename(p.name)):
+            diagrams.append(mmd.name)
+
     manifest = {
         "schema_version": SCHEMA_VERSION,
         "excluded_prs": excluded_prs,
         "hero": hero,
         "diff_prs": diff_prs,
+        "diagrams": diagrams,
     }
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_text(f"window.ODYSSEY = {json.dumps(manifest, ensure_ascii=False)};\n")
