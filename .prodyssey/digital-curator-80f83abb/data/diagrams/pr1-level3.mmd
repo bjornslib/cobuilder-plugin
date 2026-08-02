@@ -1,0 +1,44 @@
+classDiagram
+    class ClipboardMonitor {
+        +pollIntervalMs int
+        +readClipboard() string
+    }
+
+    class Fingerprint {
+        +hasChanged(content) bool
+        +ignoreOwnWrites() void
+    }
+
+    class Attribution {
+        +frontmostApp() string
+        +usesLsappinfoFallback() bool
+    }
+
+    class Exclusions {
+        +isExcluded(appId) bool
+        +excludedApps list
+    }
+
+    class ClipboardDecision {
+        +decide(content, app) Action
+    }
+
+    class InferenceHost {
+        <<hidden BrowserWindow>>
+        +reusesPrivacyFilter bool
+        +runViaIPC() void
+    }
+
+    class RecordsStore {
+        +store(id, original) void
+        +restore(id) string
+    }
+
+    ClipboardMonitor --> Fingerprint : detects changes via
+    ClipboardMonitor --> Attribution : identifies app via
+    ClipboardMonitor --> ClipboardDecision : delegates to
+    ClipboardDecision --> Exclusions : checks
+    ClipboardDecision --> InferenceHost : redact or restore via
+    InferenceHost --> RecordsStore : reads and writes originals
+
+    note for InferenceHost "ADR-0001: reuses privacy-filter.ts\nverbatim instead of a native module"

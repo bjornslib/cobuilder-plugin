@@ -7,35 +7,46 @@
 HTML file safe to publish as a Claude Artifact.
 
 The bundled viewer (`viewer/index.html`) is a normal multi-file web page in
-disguise: it loads `window.STORY`/`ODYSSEY`/`DIFFS_BY_PR`/`ADRS` via sibling
-`<script src="../data/*.js">` tags, references scene-art PNGs and narration
-WAVs by relative path, and pulls Google Fonts + the Motion animation library
-from two CDNs. A published Artifact is one file with no siblings and a CSP
-that blocks every external request, so none of that survives as-is.
+disguise: it loads `window.STORY`/`ODYSSEY`/`DIFFS_BY_PR`/`ADRS`/`DIAGRAMS`
+via sibling `<script src="../data/*.js">` tags, references scene-art PNGs
+and narration WAVs by relative path, and pulls Google Fonts + the Motion
+animation library + the Mermaid diagram-rendering library from three CDNs.
+A published Artifact is one file with no siblings and a CSP that blocks
+every external request, so none of that survives as-is.
 
 This script produces one flattened file per requested PR:
   - that PR's `story.json` timeline entry (world districts/meta kept intact —
     the viewer's district lookups need them) inlined as literal JSON instead
     of a script-src fetch
-  - that PR's referenced ADRs, its diff file, and its manifest (hero/diff_prs
-    scoped to just this PR) inlined the same way
+  - that PR's referenced ADRs, its diff file, its manifest (hero/diff_prs
+    scoped to just this PR), and its authored Mermaid diagram sources (levels
+    1-3, read straight from `<bundle-dir>/data/diagrams/pr{N}-level{L}.mmd`)
+    inlined the same way
   - hero PNGs recompressed to JPEG (resize + quality tiers, retried
     progressively tighter if the file would exceed the budget) and embedded
     as data URIs; narration WAVs embedded unmodified unless the budget still
     doesn't fit, in which case audio is dropped as a last resort
-  - the two CDN tags dropped (Motion already no-ops gracefully when
-    `window.Motion` is undefined; Google Fonts failing just falls back to
-    the existing monospace/sans-serif stack)
+  - the Google Fonts + Motion CDN tags dropped (Motion already no-ops
+    gracefully when `window.Motion` is undefined; Google Fonts failing just
+    falls back to the existing monospace/sans-serif stack)
+  - the Mermaid CDN tag dropped too, by default: published Claude Artifacts
+    render `<pre class="mermaid">` blocks NATIVELY, so no runtime needs
+    inlining, and the viewer's own no-Mermaid fallback (plain escaped source)
+    is harmless dead code in that environment. Pass --inline-mermaid to
+    instead vendor a real Mermaid runtime into the page (see that flag's
+    help text) for viewing contexts that don't render Mermaid natively.
 
 Also computes and records, in `<bundle-dir>/exports/publish-manifest.json`,
-whether this PR's underlying commit or narrative content changed since the
-last export — the signal the publish pipeline uses to decide whether an
-already-published artifact needs republishing.
+whether this PR's underlying commit or narrative content (including its
+diagram sources) changed since the last export — the signal the publish
+pipeline uses to decide whether an already-published artifact needs
+republishing.
 
 Usage:
     uv run export_artifact.py --repo <path> --prs 73
     uv run export_artifact.py --bundle-dir <path>/.prodyssey/self --prs 73,75
     uv run export_artifact.py --bundle-dir <bundle> --prs 73 --force
+    uv run export_artifact.py --bundle-dir <bundle> --prs 73 --inline-mermaid
 """
 from __future__ import annotations
 
@@ -57,20 +68,42 @@ COMPRESSION_TIERS = [(1400, 78), (1100, 68), (900, 55)]
 TITLE_TAG_RE = re.compile(r"<title>.*?</title>")
 
 SCRIPT_BLOCK_RE = re.compile(
-    r'<script src="\.\./data/story\.js"></script>.*?<script src="\.\./data/adrs\.js"></script>\n',
+    r'<script src="\.\./data/story\.js"></script>.*?<script src="\.\./data/diagrams\.js"></script>\n',
     re.S,
 )
 CDN_LINK_RES = [
     re.compile(r'<link rel="preconnect"[^>]*>\n'),
     re.compile(r'<link href="https://fonts\.googleapis[^>]*>\n'),
-    re.compile(r'<script src="https://cdn\.jsdelivr\.net[^>]*></script>\n'),
+    re.compile(r'<script src="https://cdn\.jsdelivr\.net/npm/motion[^>]*></script>\n'),
 ]
-HERO_SRC_OLD = 'return `<div class="hero-frame"><img src="../assets/${rel}" alt="${escapeHtml(alt)}" loading="lazy"></div>`;'
-HERO_SRC_NEW = 'return `<div class="hero-frame"><img src="${window.ODYSSEY_ASSETS[rel] || \'\'}" alt="${escapeHtml(alt)}" loading="lazy"></div>`;'
+# Handled separately from CDN_LINK_RES (not just folded into that list) because its
+# fate depends on --inline-mermaid: dropped by default (published Claude Artifacts
+# render `<pre class="mermaid">` blocks NATIVELY, so no runtime needs inlining — the
+# viewer's own no-Mermaid fallback in mountOneDiagram() just shows escaped source
+# instead, same graceful-degradation posture as the Motion no-op above), or replaced
+# in place with a vendored runtime when --inline-mermaid is passed.
+MERMAID_CDN_RE = re.compile(r'<script src="https://cdn\.jsdelivr\.net/npm/mermaid[^>]*></script>\n')
+HERO_SRC_OLD = ': `<img src="../assets/pr-${prNum}/level-${levelIdx}.png" alt="${escapeHtml(alt)}" loading="lazy">`;'
+HERO_SRC_NEW = (
+    ": `<img src=\"${window.ODYSSEY_ASSETS['pr-' + prNum + '/level-' + levelIdx + '.png'] || ''}\" "
+    'alt="${escapeHtml(alt)}" loading="lazy">`;'
+)
 DIALOG_IMG_OLD = "img.src = `../assets/${rel}`;"
 DIALOG_IMG_NEW = "img.src = window.ODYSSEY_ASSETS[rel] || '';"
 AUDIO_SRC_OLD = "narrationAudio.src = `../data/audio/${file}`;"
 AUDIO_SRC_NEW = "narrationAudio.src = window.ODYSSEY_AUDIO[file] || '';"
+# The three script-default fallbacks the viewer sets right after its data-loading
+# <script src> block (see SCRIPT_BLOCK_RE above) — left in place after that block is
+# swapped for our inline literals, this would silently clobber window.DIAGRAMS (and
+# DIFFS/ADRS) back to `{}` since `window.X || {}` re-runs after our inline assignment
+# too. Matched and stripped verbatim, behind the same fail-loudly guard as every other
+# transform in this script — see the VERBATIM_GUARDS check in build_html().
+DEFAULTS_BLOCK_OLD = (
+    "window.DIFFS = window.DIFFS || {};\n"
+    "window.ADRS = window.ADRS || {};\n"
+    "window.DIAGRAMS = window.DIAGRAMS || {};\n"
+)
+DEFAULTS_BLOCK_NEW = ""
 
 
 # ---- filesystem / repo resolution (same conventions as the other scripts) ----
@@ -140,6 +173,31 @@ def load_diffs_js(bundle_dir: Path, pr_num: int) -> str | None:
     return diffs_path.read_text()
 
 
+def load_diagrams_for_pr(bundle_dir: Path, pr_num: int) -> dict[str, str]:
+    """Returns {"<level>": "<mermaid source>"} for this PR, string keys to match
+    window.DIAGRAMS's shape in the viewer (see diagramSource() in viewer/index.html).
+
+    Reads the authored `.mmd` files directly from `<bundle-dir>/data/diagrams/`
+    rather than parsing `data/diagrams.js` — the `.mmd` files are
+    build_diagrams.py's own input/ground truth (same naming convention
+    `pr{N}-level{L}.mmd` that extract_story.py's rewrite_manifest() already
+    keys its manifest listing off of), so this works even if diagrams.js
+    hasn't been (re)built yet, and avoids taking on a second JS-literal parser
+    for a shape this script doesn't otherwise need to round-trip.
+    """
+    diagrams_dir = bundle_dir / "data" / "diagrams"
+    if not diagrams_dir.is_dir():
+        return {}
+    out: dict[str, str] = {}
+    pattern = re.compile(rf"pr{pr_num}-level(\d+)\.mmd$")
+    for mmd in sorted(diagrams_dir.glob(f"pr{pr_num}-level*.mmd")):
+        m = pattern.match(mmd.name)
+        if not m:
+            continue
+        out[m.group(1)] = mmd.read_text()
+    return out
+
+
 def discover_hero_pngs(bundle_dir: Path, pr_num: int) -> list[Path]:
     pr_dir = bundle_dir / "assets" / f"pr-{pr_num}"
     if not pr_dir.is_dir():
@@ -183,9 +241,11 @@ def build_html(
     manifest_obj: dict,
     diffs_js: str | None,
     adrs_obj: dict,
+    diagrams_obj: dict[str, str],
     assets_map: dict[str, str],
     audio_map: dict[str, str],
     page_title: str,
+    inline_mermaid_js: str | None,
 ) -> str:
     html = viewer_html
     for cdn_re in CDN_LINK_RES:
@@ -198,17 +258,58 @@ def build_html(
 
     html = TITLE_TAG_RE.sub(f"<title>{_html_mod.escape(page_title)}</title>", html, count=1)
 
-    if HERO_SRC_OLD not in html or DIALOG_IMG_OLD not in html or AUDIO_SRC_OLD not in html:
+    # Fail loudly, not silently, if the viewer no longer contains any string this
+    # script depends on verbatim — an unguarded str.replace() that finds nothing
+    # just no-ops, which for DEFAULTS_BLOCK_OLD in particular would leave a stale
+    # `window.DIAGRAMS = window.DIAGRAMS || {};`-style line able to clobber the
+    # inlined data below it. Every verbatim string this function relies on must be
+    # listed here.
+    verbatim_checks = {
+        "hero image <img> (heroFrameInner)": HERO_SRC_OLD,
+        "audio-dialog image src assignment": DIALOG_IMG_OLD,
+        "narration-audio src assignment": AUDIO_SRC_OLD,
+        "window.DIFFS/ADRS/DIAGRAMS defaults block": DEFAULTS_BLOCK_OLD,
+    }
+    missing = [label for label, needle in verbatim_checks.items() if needle not in html]
+    if missing:
         print(
-            "error: viewer/index.html doesn't match the expected shape for this transform "
-            "(hero image / audio-dialog image / narration-audio src assignment not found verbatim).\n"
-            "remediation: the viewer was edited — update export_artifact.py's replacement strings to match.",
+            "error: this bundle's viewer/index.html doesn't match the expected shape for this "
+            f"transform — not found verbatim: {', '.join(missing)}.\n"
+            "remediation: most often the bundle simply holds an older copy of the viewer than the "
+            "installed plugin (each bundle carries its own copy, and the Mermaid-diagram support "
+            "changed it). Refresh it and retry:\n"
+            '  cp "${CLAUDE_PLUGIN_ROOT}/viewer/index.html" <bundle-dir>/viewer/index.html\n'
+            "or re-run /prodyssey:baseline against the bundle, which does the same copy.\n"
+            "If the bundle's viewer is already current, then viewer/index.html was edited and "
+            "export_artifact.py's replacement strings need updating to match.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    if not inline_mermaid_js and not MERMAID_CDN_RE.search(html):
+        print(
+            "error: viewer/index.html's Mermaid CDN <script> tag not found verbatim.\n"
+            "remediation: the viewer was edited — update export_artifact.py's MERMAID_CDN_RE to match.",
             file=sys.stderr,
         )
         sys.exit(1)
     html = html.replace(HERO_SRC_OLD, HERO_SRC_NEW)
     html = html.replace(DIALOG_IMG_OLD, DIALOG_IMG_NEW)
     html = html.replace(AUDIO_SRC_OLD, AUDIO_SRC_NEW)
+    html = html.replace(DEFAULTS_BLOCK_OLD, DEFAULTS_BLOCK_NEW)
+
+    if inline_mermaid_js is not None:
+        # Vendor the runtime in place of the CDN fetch instead of dropping it —
+        # for viewing contexts (e.g. this script's own file:// verification, or any
+        # non-Artifact host) that don't render `<pre class="mermaid">` natively.
+        html = MERMAID_CDN_RE.sub(
+            "<script>" + escape_script_close(inline_mermaid_js) + "</script>\n",
+            html,
+            count=1,
+        )
+    else:
+        # Published Claude Artifacts render `<pre class="mermaid">` blocks NATIVELY,
+        # so no runtime needs inlining — drop the CDN tag same as Fonts/Motion above.
+        html = MERMAID_CDN_RE.sub("", html, count=1)
 
     old_block = SCRIPT_BLOCK_RE.search(html)
     if not old_block:
@@ -227,14 +328,12 @@ window.STORY = {escape_script_close(json.dumps(story_obj, ensure_ascii=False))};
 window.ODYSSEY = {json.dumps(manifest_obj, ensure_ascii=False)};
 {diffs_block}
 window.ADRS = {escape_script_close(json.dumps(adrs_obj, ensure_ascii=False))};
+window.DIAGRAMS = {escape_script_close(json.dumps(diagrams_obj, ensure_ascii=False))};
 window.ODYSSEY_ASSETS = {json.dumps(assets_map, ensure_ascii=False)};
 window.ODYSSEY_AUDIO = {json.dumps(audio_map, ensure_ascii=False)};
 </script>
 """
     html = html.replace(old_block.group(0), inline_data)
-    html = html.replace(
-        "window.DIFFS = window.DIFFS || {};\nwindow.ADRS = window.ADRS || {};\n", ""
-    )
     return html
 
 
@@ -247,6 +346,7 @@ def render_for_pr(
     image_width: int,
     jpeg_quality: int,
     include_audio: bool,
+    inline_mermaid_js: str | None,
 ) -> tuple[str, int, list[str]]:
     """Returns (html, total_bytes, notes)."""
     story_obj = {
@@ -257,7 +357,16 @@ def render_for_pr(
     adr_ids = entry.get("adrs") or []
     adrs_obj = load_adrs_subset(bundle_dir, adr_ids)
     diffs_js = load_diffs_js(bundle_dir, pr_num)
+    diagrams_by_level = load_diagrams_for_pr(bundle_dir, pr_num)
+    # Scoped the same way window.DIAGRAMS's shape is looked up in the viewer —
+    # {"<pr>": {"<level>": src}}, string keys throughout — even though this file
+    # only ever inlines one PR's worth, so diagramSource()'s DIAGRAMS[String(prNum)]
+    # lookup keeps working unmodified in the exported page.
+    diagrams_obj = {str(pr_num): diagrams_by_level} if diagrams_by_level else {}
 
+    # Empty when the PR has no PNGs at all (an --art diagram PR, say) — the loop
+    # below and the compression-tier retry loop in main() both handle that fine:
+    # zero iterations, empty assets_map, no exception.
     hero_pngs = discover_hero_pngs(bundle_dir, pr_num)
     assets_map: dict[str, str] = {}
     hero_rel: list[str] = []
@@ -285,7 +394,18 @@ def render_for_pr(
 
     repo_name = story.get("meta", {}).get("repo", "")
     page_title = f"{repo_name} — PR #{pr_num}: {entry.get('title', '')}".strip(" —")
-    html = build_html(viewer_html, story_obj, manifest_obj, diffs_js, adrs_obj, assets_map, audio_map, page_title)
+    html = build_html(
+        viewer_html,
+        story_obj,
+        manifest_obj,
+        diffs_js,
+        adrs_obj,
+        diagrams_obj,
+        assets_map,
+        audio_map,
+        page_title,
+        inline_mermaid_js,
+    )
     return html, len(html.encode()), notes
 
 
@@ -295,9 +415,15 @@ def _b64(data: bytes) -> str:
     return base64.b64encode(data).decode()
 
 
-def compute_source_hash(entry: dict, adrs_obj: dict, diffs_js: str | None) -> str:
+def compute_source_hash(entry: dict, adrs_obj: dict, diffs_js: str | None, diagrams_by_level: dict[str, str]) -> str:
+    # diagrams_by_level included so an edited `.mmd` (no commit/entry change) still
+    # trips a re-export — otherwise the hash would report "unchanged" forever once a
+    # PR's diagram source is tweaked after the fact. Note this changes the hash for
+    # every PR already exported before diagrams existed, so the very next run of
+    # `/prodyssey:publish` will re-export all of them once, even ones with no
+    # diagrams (empty dict still changes the payload's shape) — expected, one-time.
     payload = json.dumps(
-        {"entry": entry, "adrs": adrs_obj, "diffs": diffs_js},
+        {"entry": entry, "adrs": adrs_obj, "diffs": diffs_js, "diagrams": diagrams_by_level},
         sort_keys=True,
         ensure_ascii=False,
     )
@@ -334,6 +460,17 @@ def main() -> None:
     parser.add_argument("--jpeg-quality", type=int, default=None, help="override the first compression tier's quality")
     parser.add_argument("--max-bytes", type=int, default=DEFAULT_MAX_BYTES, help="target byte budget (default ~15 MiB)")
     parser.add_argument("--no-audio", action="store_true", help="never embed narration audio")
+    parser.add_argument(
+        "--inline-mermaid",
+        action="store_true",
+        help=(
+            "vendor a real Mermaid runtime into the exported page instead of relying on "
+            "native rendering (published Claude Artifacts render `<pre class=\"mermaid\">` "
+            "blocks natively, so this is normally unnecessary there). Requires "
+            "viewer/vendor/mermaid.min.js to already exist, version-matched to the CDN tag "
+            "pinned in viewer/index.html — this script never downloads it."
+        ),
+    )
     parser.add_argument("--force", action="store_true", help="rebuild even if the export already exists")
     args = parser.parse_args()
 
@@ -350,6 +487,21 @@ def main() -> None:
         )
         sys.exit(1)
     viewer_html = viewer_path.read_text()
+
+    inline_mermaid_js: str | None = None
+    if args.inline_mermaid:
+        vendored_path = Path(__file__).resolve().parent.parent / "viewer" / "vendor" / "mermaid.min.js"
+        if not vendored_path.exists():
+            print(
+                f"error: --inline-mermaid requires a vendored Mermaid runtime at {vendored_path}, "
+                "but it was not found. This script never downloads it.\n"
+                "remediation: fetch mermaid.min.js for the exact version pinned in viewer/index.html's "
+                "CDN tag (currently mermaid@11.6.0's dist/mermaid.min.js) and save it to that exact path, "
+                "then re-run with --inline-mermaid.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        inline_mermaid_js = vendored_path.read_text()
 
     pr_nums = sorted({int(x.strip()) for x in args.prs.split(",") if x.strip()})
     if not pr_nums:
@@ -385,7 +537,8 @@ def main() -> None:
         adr_ids = entry.get("adrs") or []
         adrs_obj = load_adrs_subset(bundle_dir, adr_ids)
         diffs_js = load_diffs_js(bundle_dir, pr_num)
-        source_hash = compute_source_hash(entry, adrs_obj, diffs_js)
+        diagrams_by_level = load_diagrams_for_pr(bundle_dir, pr_num)
+        source_hash = compute_source_hash(entry, adrs_obj, diffs_js, diagrams_by_level)
         commit = entry.get("commit")
 
         unchanged = (
@@ -401,14 +554,15 @@ def main() -> None:
         html = total_bytes = notes = None
         for width, quality in tiers:
             html, total_bytes, notes = render_for_pr(
-                viewer_html, story, bundle_dir, pr_num, entry, width, quality, include_audio
+                viewer_html, story, bundle_dir, pr_num, entry, width, quality, include_audio, inline_mermaid_js
             )
             if total_bytes <= args.max_bytes:
                 break
         if total_bytes > args.max_bytes and include_audio:
             width, quality = tiers[-1]
             html, total_bytes, notes = render_for_pr(
-                viewer_html, story, bundle_dir, pr_num, entry, width, quality, include_audio=False
+                viewer_html, story, bundle_dir, pr_num, entry, width, quality,
+                include_audio=False, inline_mermaid_js=inline_mermaid_js,
             )
         if total_bytes > args.max_bytes:
             print(
