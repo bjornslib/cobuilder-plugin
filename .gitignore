@@ -8,3 +8,4 @@ __pycache__/
 .prodyssey/.view-server.pid
 .prodyssey/.view-server.log
 .prodyssey/active
+.mcp.json

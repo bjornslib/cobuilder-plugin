@@ -1,0 +1,36 @@
+C4Container
+    title PR 3 - unify bundle storage under .prodyssey/self
+
+    Person(maintainer, "Maintainer", "Runs baseline / generate / view / publish against a target repo")
+
+    Container_Boundary(hub, "Hub root - HUB_TOPLEVEL/.prodyssey/") {
+        Container(selfdir, ".prodyssey/self/", "committed bundle dir", "New home for self-analysis: data/, assets/, viewer/, inventory.yaml")
+        Container(slugdir, ".prodyssey/<repo-slug>/", "committed bundle dir", "Unchanged: cobuilder-harness-a103a550, digital-curator-80f83abb")
+        Container(bookkeeping, "active, .view-server.pid/.log", "gitignored", "View-server bookkeeping, now all under one root")
+    }
+
+    Container_Boundary(legacy, "Legacy layout - target repo") {
+        ContainerDb(oldbundle, ".odyssey/", "pre-PR3 bundle dir", "Old self-analysis default, now only detected, never auto-migrated")
+    }
+
+    Container_Boundary(scripts, "scripts/ - bundle-dir defaults updated") {
+        Container(extract, "extract_story.py", "uv script", "--bundle-dir default: <repo>/.prodyssey/self")
+        Container(others, "extract_diffs.py, generate_prompts.py, generate_audio.py, verify_bundle.py, export_artifact.py, export_index.py", "uv scripts", "Same --bundle-dir default rewritten in each")
+    }
+
+    Container_Boundary(skill, "skills/odyssey/") {
+        Container(skillmd, "SKILL.md", "orchestration", "Hub resolution rule and legacy-layout detection block")
+    }
+
+    Container_Boundary(devlocal, ".claude/skills/ - dev-local, not shipped") {
+        Container(ste, "ste-writing/", "SKILL.md + ste-lint.py", "New skill, deliberately outside skills/ per ADR-0004")
+    }
+
+    Rel(maintainer, skillmd, "Invokes baseline/generate/view/publish")
+    Rel(skillmd, extract, "Computes BUNDLE_DIR, passes --bundle-dir")
+    Rel(skillmd, others, "Computes BUNDLE_DIR, passes --bundle-dir")
+    Rel(extract, selfdir, "Reads/writes story.json, adrs.json")
+    Rel(others, slugdir, "Reads/writes foreign-repo bundles")
+    Rel(skillmd, oldbundle, "Detects if present and BUNDLE_DIR missing")
+    Rel(skillmd, maintainer, "Prints git mv .odyssey .prodyssey/self, stops")
+    Rel(maintainer, ste, "Uses for repo's own ASD-STE100 docs")

@@ -1,0 +1,35 @@
+sequenceDiagram
+    participant Mode as SKILL.md (any of 4 modes)
+    participant Migrate as migrate_bundle.py
+    participant Viewer as viewer/index.html
+    participant BundleJson as bundle.json
+    participant Story as data/story.json
+    participant Guard as run_guard() + harvest_authored()
+
+    Mode->>Migrate: uv run migrate_bundle.py --bundle-dir <bundle-dir>
+
+    Migrate->>Viewer: refresh_viewer() content-compares against plugin's copy
+    Migrate-->>Mode: "refreshed" or "unchanged" (unconditional, no version gate)
+
+    Migrate->>BundleJson: read bundle_format
+    Migrate->>Migrate: run_layout_ladder() steps LAYOUT_MIGRATIONS from current_format
+
+    Migrate->>Story: read meta.schema_version (source of truth, not bundle.json's mirror)
+    Migrate->>Migrate: run_data_ladder(story, current_schema)
+
+    loop each SCHEMA_MIGRATIONS step, e.g. migrate_1_0_to_1_1
+        Migrate->>Guard: run_guard(story, migrate_fn, touches)
+        Guard->>Guard: harvest_authored(story) before deepcopy
+        Guard->>Guard: migrate_fn(deepcopy(story))
+        Guard->>Guard: harvest_authored(result) after
+        alt authored field changed outside declared touches set
+            Guard-->>Migrate: violations (sorted dotted paths)
+            Migrate-->>Mode: error "changed authored content it did not declare" — nothing written
+        else no violations
+            Guard-->>Migrate: migrated story, schema advances (e.g. 1.0 to 1.1)
+        end
+    end
+
+    Migrate->>Story: back up to .migration-backup/<date>-schema-<old>.json, then write story.json + story.js
+    Migrate->>BundleJson: write bundle_format, schema_version, generator_version, migrated_at
+    Migrate-->>Mode: report viewer / layout / data steps applied
