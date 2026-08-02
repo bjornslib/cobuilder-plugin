@@ -161,11 +161,11 @@ diagram needs no bundled runtime. A PR published with `--art diagram`
 carries no image data, so it stays well under the cap.
 
 Prodyssey publishes the file as an Artifact and prints the URL. It also
-rebuilds and publishes a small index artifact that links to every PR
-published so far for this bundle, not only the PR or PRs in the current
-run. The index always shows the full set. If a PR has not changed since its
-last publish, a re-run reports "already up to date" instead of publishing
-again. The `--force` flag overrides this check.
+rebuilds and publishes a small index artifact. That artifact links to every
+PR published so far for this bundle, not only the PRs in the current run.
+The index always shows the full set. If a PR has not changed since its last
+publish, a re-run reports "already up to date" instead of publishing again.
+The `--force` flag overrides this check.
 
 ```
 /prodyssey:publish --prs 73,75
@@ -228,9 +228,9 @@ repos](#multiple-repos) below.
   exports/{publish-manifest.json, pr-{N}.html…, index.html}   # written by /prodyssey:publish
 ```
 
-The `diagrams/` and `assets/` entries depend on which `--art` mode
-generated the PR: `--art diagram` writes only `.mmd` files and no PNGs,
-`--art image` writes only PNGs, and `--art both` (the default) writes both.
+The `diagrams/` and `assets/` entries depend on the `--art` mode that
+generated the PR. `--art diagram` writes only `.mmd` files and no PNGs.
+`--art image` writes only PNGs. `--art both`, the default, writes both.
 
 Commit the bundle, and a share link is only the raw GitHub URL. You can
 also import the bundle into the viewer directly, by upload or by local
@@ -382,8 +382,8 @@ rather than guess the format.
 You pay your own way. Narrative, ADR extraction, and diagram authoring run
 on your Claude Code subscription. Scene art and TTS narration run on your
 `GEMINI_API_KEY`. A typical PR generates 3 narration clips under every
-`--art` mode, plus 3 images under the default `--art both` or under
-`--art image`, and no images under `--art diagram`. Cost runs roughly
-single-digit cents to low single-digit dollars, depending on the Gemini
-tier, less under `--art diagram`. The prerequisite gate exists so that you
+`--art` mode. It also generates 3 images under `--art both`, the default,
+or under `--art image`, and no images under `--art diagram`. Cost runs from
+single-digit cents to low single-digit dollars, and depends on the Gemini
+tier. `--art diagram` costs less. The prerequisite gate exists so that you
 never discover a missing key three stages into a sweep.
