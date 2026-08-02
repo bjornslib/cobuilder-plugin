@@ -1,0 +1,237 @@
+# Mermaid Diagrams for Digital Curator PR #1 (grounded in data/story.json)
+
+## Level 1: PR Landscape
+
+```mermaid
+mindmap
+  root((Digital Curator))
+    Chrome Extension src
+      Background privacy filter
+      Content scripts claude.ai chatgpt.com
+      Paste interceptor and copy handler
+      Sidepanel and popup UI
+      Shared Zustand store and redaction
+    SecurePII Desktop new in PR 1
+      Clipboard monitor polls every 500ms
+      Attribution and exclusions
+      Hidden inference host BrowserWindow
+      Encrypted records store
+      Tray hotkeys and overlay
+      Preload bridges typed IPC
+```
+
+---
+
+## Level 1 (alternate): PR Landscape — C4 Container Diagram
+
+```mermaid
+C4Container
+    title Digital Curator — PR #1 adds SecurePII desktop container
+
+    Person(user, "User", "Copies and pastes text containing PII")
+
+    Container_Boundary(ext, "Chrome Extension (src/) — existing") {
+        Container(bg, "Background service worker", "MV3", "Privacy filter, offscreen document")
+        Container(content, "Content scripts", "TS", "Injected into claude.ai / chatgpt.com, intercepts paste/copy")
+        Container(shared, "shared/", "TS", "Zustand store, redaction, paste-instruction.ts")
+    }
+
+    Container_Boundary(desk, "SecurePII Desktop (desktop/) — new in PR #1") {
+        Container(monitor, "clipboard-monitor.ts", "Electron main", "Polls system clipboard every 500ms")
+        Container(decision, "clipboard-decision.ts", "TS", "Redact / restore / pass-through ladder")
+        Container(inference, "inference-host.ts", "Hidden BrowserWindow", "Reuses privacy-filter.ts over IPC (ADR-0001)")
+        ContainerDb(records, "records-store.ts", "electron-store + Keychain", "Encrypted original values")
+        Container(tray, "Tray / overlay", "Electron renderer", "Menu-bar UI, hotkeys")
+    }
+
+    System_Ext(chatapp, "AI Chat", "claude.ai / chatgpt.com")
+    System_Ext(nativeapp, "Native apps", "Mail, Slack, IDE — previously unprotected")
+
+    Rel(user, content, "Pastes into", "DOM paste event")
+    Rel(content, chatapp, "Redacted text reaches")
+    Rel(user, nativeapp, "Copies PII from")
+    Rel(nativeapp, monitor, "Clipboard read", "polling")
+    Rel(monitor, decision, "Attributed clipboard change")
+    Rel(decision, inference, "Redact via")
+    Rel(decision, records, "Store / restore original")
+    Rel(monitor, tray, "Status updates")
+    Rel(shared, decision, "Shared paste-instruction.ts (ADR-0002)")
+```
+
+---
+
+## Level 2: Problem & Solution
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Mail as Mail (native app)
+    participant SecurePII as SecurePII clipboard-monitor.ts
+    participant Records as records-store.ts
+    participant Chat as ChatGPT (browser)
+
+    User->>Mail: Copy "SSN 123-45-6789"
+    Mail-->>SecurePII: Clipboard change (polled, 500ms)
+    SecurePII->>SecurePII: attribution.ts identifies frontmost app
+
+    alt App is on exclusion list
+        SecurePII-->>Mail: Leave clipboard unmodified
+    else App is not excluded
+        SecurePII->>SecurePII: clipboard-decision.ts chooses redact
+        SecurePII->>Records: Store original, mint id 8a1f2c04
+        SecurePII-->>Mail: Rewrite clipboard to "[ssn:8a1f2c04]"
+    end
+
+    User->>Chat: Paste "[ssn:8a1f2c04]" + placeholder instruction
+    Chat-->>User: Reply echoes "[ssn:8a1f2c04]" verbatim
+    User->>SecurePII: Copy reply from Chat
+    SecurePII->>Records: Look up 8a1f2c04
+    Records-->>SecurePII: Original "123-45-6789"
+    SecurePII-->>User: Clipboard restored to original SSN
+```
+
+---
+
+## Level 2 (alternate): Problem to Solution — Before/After State
+
+```mermaid
+stateDiagram-v2
+    [*] --> Before
+
+    state "Before: browser-only redaction" as Before {
+        [*] --> WatchesPage
+        WatchesPage --> RedactsOnPaste : content script sees paste event\non claude.ai / chatgpt.com
+        RedactsOnPaste --> BlindElsewhere : copy from Mail, Slack, IDE
+        BlindElsewhere : no interception point outside the DOM\nPII reaches the AI chat unredacted
+    }
+
+    Before --> After : PR #1 adds desktop/ SecurePII
+
+    state "After: system clipboard redaction" as After {
+        [*] --> PollsClipboard
+        PollsClipboard --> AttributesApp : clipboard-monitor.ts, every 500ms
+        AttributesApp --> ChecksExclusions : attribution.ts / lsappinfo-parser.ts
+        ChecksExclusions --> PassesThrough : app on exclusion list
+        ChecksExclusions --> Redacts : app not excluded
+        Redacts --> StoresOriginal : clipboard-decision.ts rewrites\nto [ssn:8a1f2c04]
+        StoresOriginal --> RestoresOnCopy : records-store.ts looks up id\non copy back out
+    }
+
+    After --> [*]
+```
+
+---
+
+## Level 2 (alternate 2): Problem to Solution — C4 Component Diagram
+
+```mermaid
+C4Component
+    title Problem to Solution — redact then restore an SSN copied from Mail
+
+    Person(user, "User", "Copies PII from a native app, pastes into an AI chat")
+    System_Ext(nativeapp, "Mail", "Previously unprotected — no DOM for a content script to watch")
+    System_Ext(chatapp, "AI Chat", "claude.ai / chatgpt.com")
+
+    Container_Boundary(desk, "SecurePII Desktop") {
+        Component(monitor, "clipboard-monitor.ts", "Electron main", "Polls the system clipboard every 500ms")
+        Component(fingerprint, "fingerprint.ts", "TS", "Detects real changes, ignores own rewrites")
+        Component(attribution, "attribution.ts", "TS", "Identifies the frontmost app")
+        Component(exclusions, "exclusions.ts", "TS", "Password managers, concealed markers")
+        Component(decision, "clipboard-decision.ts", "TS", "Redact / restore / pass-through ladder")
+        ComponentDb(records, "records-store.ts", "electron-store + Keychain", "Encrypted originals")
+    }
+
+    Rel(user, nativeapp, "Copies \"SSN 123-45-6789\"")
+    Rel(nativeapp, monitor, "Clipboard change observed")
+    Rel(monitor, fingerprint, "Confirms a real change")
+    Rel(fingerprint, attribution, "Identify frontmost app")
+    Rel(attribution, exclusions, "Mail is not excluded")
+    Rel(exclusions, decision, "Proceed to redact")
+    Rel(decision, records, "Store original, mint id 8a1f2c04")
+    Rel(decision, nativeapp, "Clipboard rewritten to [ssn:8a1f2c04]")
+    Rel(user, chatapp, "Pastes placeholder, model echoes it verbatim")
+    Rel(user, monitor, "Copies reply back out")
+    Rel(monitor, records, "Look up 8a1f2c04, restore original SSN")
+```
+
+---
+
+## Level 2 (alternate 3): Problem to Solution — Block Diagram
+
+```mermaid
+block
+  columns 3
+  block:Problem
+    columns 1
+    Ptitle["BEFORE — browser-only redaction"]
+    P1["Content script watches only the\nDOM of claude.ai / chatgpt.com"]
+    P2["paste-interceptor.ts fires on\npaste into a supported chat"]
+    P3["Mail, Slack, an IDE: no DOM\nfor a content script to reach"]
+    P4["PII reaches the clipboard and\nthe AI chat unredacted"]
+  end
+
+  block:Solution
+    columns 1
+    Stitle["AFTER — system clipboard redaction"]
+    S1["clipboard-monitor.ts polls the\nOS clipboard every 500ms"]
+    S2["attribution.ts + exclusions.ts\nidentify and filter the app"]
+    S3["clipboard-decision.ts redacts:\n123-45-6789 to [ssn:8a1f2c04]"]
+    S4["records-store.ts restores the\noriginal on copy-out"]
+  end
+
+  style Ptitle fill:#5a1a1a,stroke:#a33,color:#fff
+  style Stitle fill:#1a4a2a,stroke:#3a3,color:#fff
+  style P4 fill:#3a1a1a,stroke:#a33,color:#fff
+  style S3 fill:#1a3a1a,stroke:#3a3,color:#fff
+```
+
+---
+
+## Level 3: Architecture
+
+```mermaid
+classDiagram
+    class ClipboardMonitor {
+        +pollIntervalMs int
+        +readClipboard() string
+    }
+
+    class Fingerprint {
+        +hasChanged(content) bool
+        +ignoreOwnWrites() void
+    }
+
+    class Attribution {
+        +frontmostApp() string
+        +usesLsappinfoFallback() bool
+    }
+
+    class Exclusions {
+        +isExcluded(appId) bool
+        +excludedApps list
+    }
+
+    class ClipboardDecision {
+        +decide(content, app) Action
+    }
+
+    class InferenceHost {
+        <<hidden BrowserWindow>>
+        +reusesPrivacyFilter bool
+        +runViaIPC() void
+    }
+
+    class RecordsStore {
+        +store(id, original) void
+        +restore(id) string
+    }
+
+    ClipboardMonitor --> Fingerprint : detects changes via
+    ClipboardMonitor --> Attribution : identifies app via
+    ClipboardMonitor --> ClipboardDecision : delegates to
+    ClipboardDecision --> Exclusions : checks
+    ClipboardDecision --> InferenceHost : redact/restore via
+    InferenceHost --> RecordsStore : reads/writes originals
+
+    note for InferenceHost "ADR-0001: reuses privacy-filter.ts\nverbatim instead of a native module"
+```

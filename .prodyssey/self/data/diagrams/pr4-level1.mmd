@@ -1,0 +1,43 @@
+C4Container
+    title Prodyssey PR 4 landscape — Mermaid diagrams and self-upgrading bundles
+
+    Person(claude, "Orchestrating Claude", "Runs baseline/generate/view/publish modes")
+
+    Container(mermaid_skill, "skills/mermaid/", "New skill: SKILL.md + references/", "SKILL.md dispatches to 40+ per-type docs — c4.md, sequenceDiagram.md, classDiagram.md, flowchart.md")
+
+    Container(odyssey_skill, "skills/odyssey/", "Updated skill: SKILL.md + diagram-mode.md", "SKILL.md step 4 spawns one diagram subagent per PR; diagram-mode.md is the syntax/grounding contract")
+
+    Container(subagent, "Diagram-authoring subagent", "Spawned per PR by SKILL.md step 4", "Invokes Skill(prodyssey:mermaid), reads diagram-mode.md, writes .mmd files")
+
+    Container(build_diagrams, "scripts/build_diagrams.py", "New PEP 723 script", "Validates diagram type per level and bracket balance, compiles diagrams.js")
+
+    Container(migrate_bundle, "scripts/migrate_bundle.py", "New PEP 723 script", "Viewer refresh, LAYOUT_MIGRATIONS ladder, SCHEMA_MIGRATIONS ladder with authored-field guard")
+
+    Container(bundle_meta, "scripts/_bundle_meta.py", "New shared constants module", "SCHEMA_VERSION 1.1, SCHEMA_VERSION_KNOWN, CURRENT_BUNDLE_FORMAT 1")
+
+    ContainerDb(diagrams_dir, "data/diagrams/pr{N}-level{1,2,3}.mmd", "Plain text files", "Source of truth for each PR's diagrams")
+
+    ContainerDb(diagrams_js, "data/diagrams.js", "Generated JS", "window.DIAGRAMS, read by the viewer")
+
+    ContainerDb(bundle_story, "bundle.json + data/story.json", "Generated JSON + hand-authored JSON", "meta.schema_version drives the SCHEMA_MIGRATIONS ladder")
+
+    Container(viewer, "viewer/index.html", "Single HTML file", "Renders pre.mermaid blocks for levels 1-3")
+
+    System_Ext(mermaid_cdn, "cdn.jsdelivr.net Mermaid 11", "External CDN script")
+
+    Rel(claude, odyssey_skill, "Runs baseline/generate/view/publish per")
+    Rel(odyssey_skill, migrate_bundle, "Calls at the start of all four modes")
+    Rel(odyssey_skill, subagent, "Spawns one per PR (step 4)")
+    Rel(subagent, mermaid_skill, "Invokes Skill(\"prodyssey:mermaid\") first")
+    Rel(subagent, odyssey_skill, "Reads diagram-mode.md's authoring contract")
+    Rel(subagent, bundle_story, "Reads this PR's timeline entry from story.json")
+    Rel(subagent, diagrams_dir, "Writes pr{N}-level{1,2,3}.mmd to")
+    Rel(claude, build_diagrams, "Runs after the subagent returns")
+    Rel(build_diagrams, diagrams_dir, "Reads and validates")
+    Rel(build_diagrams, diagrams_js, "Compiles into")
+    Rel(build_diagrams, odyssey_skill, "Failure routes back to the same subagent via")
+    Rel(diagrams_js, viewer, "Sibling script feeds window.DIAGRAMS to")
+    Rel(viewer, mermaid_cdn, "Renders diagram blocks via")
+    Rel(migrate_bundle, viewer, "Unconditionally refreshes")
+    Rel(migrate_bundle, bundle_story, "Steps bundle_format and schema_version ladders over")
+    Rel(migrate_bundle, bundle_meta, "Imports CURRENT_BUNDLE_FORMAT, SCHEMA_VERSION from")

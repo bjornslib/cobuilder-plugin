@@ -1,0 +1,25 @@
+sequenceDiagram
+    participant Maintainer
+    participant SKILLMD as skills/odyssey/SKILL.md
+    participant FS as Filesystem
+    participant Extract as scripts/extract_story.py
+
+    Maintainer->>SKILLMD: /prodyssey:generate --prs 3
+    SKILLMD->>SKILLMD: Resolve TARGET_TOPLEVEL, HUB_TOPLEVEL
+    SKILLMD->>SKILLMD: Compute BUNDLE_DIR = TARGET_TOPLEVEL/.prodyssey/self
+
+    SKILLMD->>FS: Does BUNDLE_DIR exist?
+
+    alt BUNDLE_DIR missing and legacy .odyssey exists
+        FS-->>SKILLMD: .odyssey/ found, .prodyssey/self/ missing
+        SKILLMD-->>Maintainer: STOP - bundle predates .prodyssey/self layout
+        SKILLMD-->>Maintainer: "git -C target mv .odyssey .prodyssey/self"
+        note over SKILLMD: Detect but never auto-migrate -\nskill never edits target repo source,\nand silent regen would burn Gemini cost\nover hand-authored narrative
+    else BUNDLE_DIR exists, or neither path exists
+        FS-->>SKILLMD: Proceed with resolved BUNDLE_DIR
+        SKILLMD->>Extract: uv run extract_story.py --repo target --bundle-dir BUNDLE_DIR
+        Extract->>FS: Read/write BUNDLE_DIR/data/story.json
+        FS-->>Extract: story.json (existing authored fields preserved)
+        Extract-->>SKILLMD: Bundle updated at .prodyssey/self
+        SKILLMD-->>Maintainer: Continues sweep (art, audio, diagrams)
+    end

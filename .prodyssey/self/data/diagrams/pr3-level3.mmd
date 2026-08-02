@@ -1,0 +1,60 @@
+classDiagram
+    class SKILLmd {
+        <<skills/odyssey/SKILL.md>>
+        +Hub resolution rule
+        +computeBundleDir(STORE_MODE, HUB_TOPLEVEL, TARGET_TOPLEVEL) BUNDLE_DIR
+        +legacyLayoutCheck() void
+    }
+
+    class ExtractStoryPy {
+        <<scripts/extract_story.py>>
+        --bundle-dir default "less than repo greater than /.prodyssey/self"
+        +build_seed_story(repo, bundle_dir) dict
+        +rewrite_manifest(bundle_dir, manifest_path) void
+    }
+
+    class OtherBundleScripts {
+        <<scripts/*.py>>
+        extract_diffs.py
+        generate_prompts.py
+        generate_audio.py
+        verify_bundle.py
+        export_artifact.py
+        export_index.py
+        --bundle-dir default "less than repo greater than /.prodyssey/self"
+    }
+
+    class SelfBundleDir {
+        <<.prodyssey/self/>>
+        +data/story.json
+        +data/adrs.json
+        +inventory.yaml
+        +viewer/index.html
+    }
+
+    class LegacyOdysseyDir {
+        <<.odyssey/ - pre-PR3>>
+        +detected, never auto-migrated
+    }
+
+    class SlugBundleDir {
+        <<.prodyssey/less than repo-slug greater than / - unchanged>>
+        +cobuilder-harness-a103a550
+        +digital-curator-80f83abb
+    }
+
+    class SteWritingSkill {
+        <<.claude/skills/ste-writing/>>
+        +SKILL.md
+        +ste-lint.py
+        note "ADR-0004: kept outside skills/,\nnot part of plugin install surface"
+    }
+
+    SKILLmd --> ExtractStoryPy : passes --bundle-dir BUNDLE_DIR
+    SKILLmd --> OtherBundleScripts : passes --bundle-dir BUNDLE_DIR
+    ExtractStoryPy --> SelfBundleDir : reads/writes
+    OtherBundleScripts --> SlugBundleDir : reads/writes foreign-repo bundles
+    SKILLmd --> LegacyOdysseyDir : detects presence, stops with git mv instruction
+    SKILLmd ..> SteWritingSkill : documents ADR-0004 placement, does not load it
+
+    note for SKILLmd "ADR-0003: unify bundle storage\nunder less than target greater than /.prodyssey/self,\nreserve self as fixed slug"

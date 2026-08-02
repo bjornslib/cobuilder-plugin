@@ -1,0 +1,308 @@
+# Mermaid Diagrams for Digital Curator PR Levels
+
+## Level 1: PR Landscape - High-Level Overview Diagram
+
+### Recommended Type: Mindmap (per skill documentation)
+
+```mermaid
+mindmap
+  root((Digital Curator))
+    Products
+      Chrome Extension MV3
+        Clipboard Monitoring
+        Placeholder Generation
+      Electron Desktop App
+        Tray Menu Interface
+        Native OS Integration
+    Technical Stack
+      Vite/CRXJS Build System
+      Dolt State Tracker Database
+      Vendored Dependencies (node_modules)
+    Documentation
+      PRDs & SDS Documents
+      Test Plans
+      SECUREPII Desk TP [.md]
+
+```
+
+---
+
+## Level 2: Problem & Solution - Detailed Analysis Diagram
+
+### Recommended Type: Sequence Diagram with Alt Branches
+
+```mermaid
+sequenceDiagram
+    participant User as User
+    participant Ext as Extension MV3
+    participant Clip as Clipboard API
+    participant Desk as Desktop App
+    participant AI as AI Interface
+
+    User->>Ext: Copy PII Data ($555-1234)
+    
+    alt Auto-redaction Enabled
+        Ext->>Clip: Intercept Write Event
+        loop Category Check
+            Ext->>Desk: Verify Exclusion List (Numbers, PasswordMgr)
+            Desk->>Ext: Return allowed/cleared status
+        end
+        Ext->>Ext: Generate [phone:hash] placeholder
+    else Manual Override ⌘⇧R
+        User->>User: Trigger Hotkey
+        User->>Clip: Force redact regardless exclusion
+    end
+
+    Alt Restore Operation?
+        User->>_auto_check: Background scan
+        
+        alt Paste has placeholders
+            User->>AI: Paste has placeholders
+            AI-->>Ext: Detect restore opportunity
+            Ext->>Clip: Fetch original from DB
+            Clip-->>User: Return PI cleared content
+        end
+
+    note right of Ext: State database tracks: 137 records, 5 excluded apps, active status
+    
+```
+
+---
+
+## NEW: Problem → Solution State Machine (Before/After States)
+
+### Recommended Type: Deterministic Finite Automaton (DFA) for workflow modeling
+
+**Perfect for visualizing the transformation from unprotected to protected states!**
+
+```mermaid
+stateDiagram-v2
+    title PII Protection Workflow - Before vs After States
+    
+    [*] --> UnProtected : Extension Installed
+    
+    state UnProtected {
+        direction TB
+        [*] --> NoIntercept
+        NoIntercept --> ContentCopied: User Ctrl+C
+        state "Clipboard = Plain Text" as plain_clipboard
+    }
+
+    UnProtected --> Protected : Protection ENABLED
+    
+    state Protected {
+        direction TB
+        [*] --> Intercepting
+        Intercepting --> PIIDetected: Clipboard Has PII?
+        PIIDetected --> PlaceholderGenerated: Category Lookup \\ Apply: [phone:hash], [email:id], etc.
+        PlaceholderGenerated --> StoredInDB : Record to Dolt Database
+        
+        %% This state shows the key difference - transformed clipboard content! 🌟
+        note right of Intercepting: ✅ BEFORE this, raw PII flows to apps\n❌ AFTER this, only placeholders remain
+
+    }
+
+    Protected --> Excluded : App in Exclusion List?
+    Excluded --> PassThrough : Numbers/App\\Password Manager etc.
+
+    StoredInDB --> RestoreAvailable : User Selects Placeholder Pasted Content  
+    RestoreAvailable --> OriginalContentReturned: ⌘⇧E or Auto-detect \\ Fetch from DB
+
+    %% Color coding the states to show transformation phases ⚡
+    note right of UnProtected
+        🔴 BEFORE STATE\n  • Raw PII exposed in clipboard\\ 
+  • Apps see actual phone, email, name\\
+  • Security risk at this step!
+    end
+
+    note right of Protected  
+      🟢 AFTER STATE TRANSFORMATION\\
+       * Clipboard contains [phone:a7b8c9d]\\\n  * Only typed characters get through\\\n  • Protection is ON via menu/toggle
+    end
+
+```
+
+---
+
+## Level 3: Architecture - Technical System Diagram
+
+### Recommended Type: Class Diagram with Stereotypes and Associations
+
+```mermaid
+classDiagram
+    class DigitalCurator{
+        +String version "v1.0"
+         +boolean isProtected
+         +void processClipboard()
+     }
+
+    class ExtensionMV3 {
+          <<module>>
+          -ServiceWorker bgWorker
+          -BackgroundScript contentScripts
+          +Promise syncWithDesktop() async
+     }
+
+    class DesktopApp { 
+          <<application>>
+          #TrayMenu menuController
+          #DoltDB dbConnection
+          +int syncIntervalMs
+          -void handleTrayAction()
+     }
+
+    class StateDatabase {
+         <<entity>>
+         +String schemaPath "/dolt/tracking"
+         +-Record[] recordsPK "tracked entries"
+         +-Dict exclusions "excluded apps"
+     }
+
+    class ClipboardMonitor { 
+          <<service>>
+          -PII[] piiPatterns
+          +String detectCategory(ClipboardContent) string
+          +boolean isExcluded(URL) bool
+     }
+
+    DigitalCurator ..> StateDatabase : manages
+    ExtensionMV3 --> ClipboardMonitor : uses
+    DesktopApp ..> StateDatabase : queries  
+    StateDatabase "1" o-- "*" RecordEntry : contains
+    ClipboardMonitor --> PIIEntity : identifies
+
+```
+
+---
+
+## Cross-Reference: PR Levels Integration Flowchart
+
+### Recommended Type: Flowchart TD with Subgraphs and Themes
+
+```mermaid
+flowchart TB
+    subgraph Level1["L1 - Product Landscape"]
+        style L1 fill:#e3f2fd,stroke:#0d47a1
+        A[Product Vision] -->|defines scope| B[Epic Boundaries]  
+        C[System Limits] -->|shapes architecture| D[Implementation Layers]
+    end
+
+    subgraph Level2["L2 - Problem/Solution"] 
+        style L2 fill:#e8f5e9,stroke:#1b5e20,color:#000
+        E[PII Exposure RISK] -->|solve via| F[Auto-redaction Engine]  
+        G[X-App Sync Issues] -->|mitigate| H[Clipboard Hook Layer]
+    end
+
+    subgraph Level3["L3 - Component Design"] 
+        style L3 fill:#fff3e0,stroke:#ef6c00,color:#000
+        I[Database Schema] -->|stores| J[Dolt Tables: records, exclusions]  
+        K[Event System] -->|monitors| L[Clipboard Event Stream]
+
+    A ==> E
+    B ==> F  
+    C ==> G
+    D ==> H
+
+```
+
+---
+
+## State Machine: Protection Modes FSM (Extension Level Process)
+
+### Recommended Type: Finite State Machine with Mode Transitions
+
+*Showing how the extension toggles between protection states*
+
+```mermaid
+stateDiagram-v2
+    title Digital Curator - Protection Mode Controller
+    
+    [*] --> Idle : Extension Load
+    Idle --> Monitoring : Ready Event \\ DB Loaded
+    
+    state Monitoring {
+        direction TB
+        [*] --> WatchClipboard
+        ClipboardChanged --> DetectPII : on each write
+        DetectPII --> CheckExclusion : pattern match \\ "contains PII"
+        
+        CheckExclusion --> ApplyRedaction : not excluded app
+        CheckExclusion --> AllowPassthrough : Numbers/LLM tools etc.
+        
+        ApplyRedaction --> GeneratePlaceholder : category+content hash
+        GeneratePlaceholder --> SyncWithDB : dolt push \\ record_id++
+    }
+
+    Monitoring --> Paused : Tray Toggle OFF
+    Paused --> Monitoring : Tray Toggle ON
+    Monitoring --> ErrorState : DB write failure | Network timeout
+    
+    note right of Idle :: "Initial state - no protection yet"\nNote: Will transition to monitoring once ready\\nDatabase connection established
+
+```
+
+---
+
+## Entity Relationship: Database Schema (Level 3 Focus)
+
+### Recommended Type: ER Diagram with Cardinality and Attributes
+
+```mermaid
+erDiagram
+     %% PR-1 Digital Curator Core Entities - Level 3 Architecture
+     
+    USER ||--o{ STAKEHOLDER : "defines"
+    STAKEHOLDER }|--|| STATE_DATABASE : "manages, owns"
+    STATE_DATABASE ||--|{ RECORD_ENTRY : "indexes, stores"
+
+    EXTENSION_APP ||--|{ CLIPBOARD_EVENT : "captures, intercepts"  
+    DESKTOP_APP ||--o{ MENU_ITEM : "exposes in tray" 
+
+    CLIPBOARD_EVENT ||--|| PII_ENTITY : "identified by"
+    PII_ENTITY }|--|| CATEGORY_TYPE : "classified as"
+
+    TEST_PLAN ||--|{ SCENARIO : "executes, validates"  
+    SCENARIO ||--o{ ASSERTION : "assesses"
+
+     %% Entity attribute definitions for clarity
+     
+    USER {
+        string id PK "User identifier"
+        string email "Contact address"  
+        datetime last_login "Timestamp"
+    } 
+
+    STAKEHOLDER {
+        int id PK "Stakeholder ID" 
+        string name FK "FK to User.name"
+        enum role "PM,Eng,QA,Admin"  
+    }
+
+    STATE_DATABASE {
+        string db_path PK "/dolt/repo/path"
+        bool in_transaction "true/false"
+        array tracked_tables ["records","exclusions"]
+    }
+
+    RECORD_ENTRY {
+        hash placeholder_hash PK "SHA256 hash key"  
+        text original_content "-" "PII data" -
+     }
+
+```
+
+---
+
+## Summary Matrix: PR Levels by Diagram Type
+
+| Level | Primary Content Focus | Optimal Diagram Type | Purpose & Benefits |
+|-------|----------------------|----------------------|---------------------|
+| **L1** | Product scope, features | Mindmap / Flowchart | Rapid stakeholder review, decision framing |
+| **L2** | Issue pathways, fixes | Sequence Diagram | Trace execution order, spot bottlenecks |  
+| **L3** | Implementation details | Class/ER Diagrams | Guide code structure, ensure data integrity |
+
+### **Bonus: Added Problem→Solution State Machine** (Above Level 2)
+
+This state machine shows the transformation from raw PII to protected content - perfect for understanding how the system solves security issues by changing clipboard states!
+
+---
