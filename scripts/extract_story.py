@@ -559,7 +559,13 @@ def rewrite_manifest(bundle_dir: Path, manifest_path: Path) -> None:
             end = text.rindex(";")
             existing = json.loads(text[start:end])
             excluded_prs = existing.get("excluded_prs", [])
-        except Exception:
+        except Exception as e:
+            print(
+                f"warning: could not read excluded_prs from {manifest_path}: {e}\n"
+                "The manifest will be rewritten with an empty excluded_prs list. "
+                "If you hand-edited that field, re-apply it after this run.",
+                file=sys.stderr,
+            )
             excluded_prs = []
 
     def pr_num_from_dirname(name: str) -> int:
