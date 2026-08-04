@@ -92,6 +92,14 @@ def run_git(repo: Path, args: list[str]) -> str:
     return subprocess.check_output(["git", "-C", str(repo)] + args, text=True)
 
 
+def run_git_quiet(repo: Path, args: list[str]) -> str:
+    """run_git for a probe whose failure is expected and handled. Keeps git's
+    own stderr off the user's terminal."""
+    return subprocess.check_output(
+        ["git", "-C", str(repo)] + args, text=True, stderr=subprocess.DEVNULL
+    )
+
+
 def get_remote_origin(repo: Path) -> str | None:
     try:
         return run_git(repo, ["remote", "get-url", "origin"]).strip()
@@ -103,7 +111,10 @@ def detect_default_branch(repo: Path) -> str:
     """Detect the repo's default branch: origin/HEAD symref first, then try
     `main` and `master` directly. Exits 1 with remediation if none resolve."""
     try:
-        out = run_git(repo, ["symbolic-ref", "--short", "refs/remotes/origin/HEAD"]).strip()
+        # This is a probe, and a repo with no origin/HEAD symref is the normal
+        # case, not an error — swallow git's "fatal:" so it never reaches the
+        # user's terminal on the way to the `main`/`master` fallback below.
+        out = run_git_quiet(repo, ["symbolic-ref", "--short", "refs/remotes/origin/HEAD"]).strip()
         if out.startswith("origin/"):
             out = out[len("origin/"):]
         if out:
