@@ -180,10 +180,11 @@ def main():
         sys.exit(1)
     pr_nums = sorted(set(pr_nums))
 
-    # Load .env from the target repo root (not cwd) so GEMINI_API_KEY resolves
-    # the same way regardless of where this script is invoked from.
+    # No path argument: the target repo (--repo) is untrusted, and its .env
+    # must never be merged into this process. load_dotenv() with no argument
+    # searches upward from cwd, which under `uv run` is this session's own repo.
     from dotenv import load_dotenv
-    load_dotenv(repo / ".env")
+    load_dotenv()
 
     entries = []  # (pr_num, level, text, output_file)
     for pr_num in pr_nums:

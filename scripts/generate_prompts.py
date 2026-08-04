@@ -253,10 +253,12 @@ def run_generate(
     descriptions_json: Path,
     model: str,
     force: bool,
-    repo: Path,
 ) -> None:
     from dotenv import load_dotenv
-    load_dotenv(repo / ".env")  # loads GEMINI_API_KEY from the target repo's .env, if present
+    # No path argument: the target repo (--repo) is untrusted, and its .env
+    # must never be merged into this process. load_dotenv() with no argument
+    # searches upward from cwd, which under `uv run` is this session's own repo.
+    load_dotenv()
 
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
@@ -389,8 +391,11 @@ def main() -> None:
 
     if args.generate:
         # Fail the API-key gate before writing any artifacts, not after prompts.json exists.
+        # No path argument: the target repo (--repo) is untrusted, and its .env
+        # must never be merged into this process. load_dotenv() with no argument
+        # searches upward from cwd, which under `uv run` is this session's own repo.
         from dotenv import load_dotenv
-        load_dotenv(repo / ".env")
+        load_dotenv()
         if not os.environ.get("GEMINI_API_KEY"):
             print(
                 "GEMINI_API_KEY is not set.\n\n"
@@ -409,7 +414,7 @@ def main() -> None:
     print(f"Wrote {prompts_json} ({len(prompts)} prompts)")
 
     if args.generate:
-        run_generate(prompts, bundle_dir, descriptions_json, args.model, args.force, repo)
+        run_generate(prompts, bundle_dir, descriptions_json, args.model, args.force)
         rewrite_manifest(bundle_dir, manifest_js)
         print(f"Wrote {manifest_js}")
 
