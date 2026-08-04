@@ -11,6 +11,11 @@ __pycache__/
 # migrate_bundle.py's pre-migration story.json snapshot — disposable once a
 # migration proves sound, and machine-local like the entries above.
 .prodyssey/*/.migration-backup/
+# submit mode's pre-PR diff cache. Exactly reproducible from
+# `git diff <merge-base>..<head>`, and self-referential: committing it into the
+# branch it diffs rewrites it on every commit, and each version would then
+# contain the last one. The authored intent/assessment beside it ARE committed.
+.prodyssey/*/exports/branch-*/diff.json
 
 .mcp.json
 .serena/

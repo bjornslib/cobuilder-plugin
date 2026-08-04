@@ -79,6 +79,30 @@ vocabulary for architectural weight.
      `map_quality: low` on the district-map output so downstream consumers
      know not to over-trust it.
 
+## 3a. District sensitivity (optional)
+
+Submit mode reads an optional `sensitivity` field on each district to set a
+change's risk tier. Author it here, where the district's real contents are
+already verified, instead of leaving submit mode to guess from path names.
+
+Three values:
+
+| Value | Assign it when the district holds |
+|---|---|
+| `sensitive` | authentication, authorization, permissions, billing or payments, data deletion, database migrations, infrastructure, or a security boundary |
+| `architectural` | a module boundary, a dependency direction, a public interface, or a cross-cutting pattern that other districts depend on |
+| `routine` | everything else |
+
+**Assign it from the files, not from the name.** A district called `auth` that
+holds only login-page copy is `routine`. A district called `utils` that holds
+the token verifier is `sensitive`. This is the same §1 discipline: check
+before you claim.
+
+The field is optional, and omitting it costs little. Submit mode falls back to
+reading the diff directly when a district carries no value, and
+`references/review-mode.md` §4 holds that fallback. A bundle written before
+this field existed keeps working.
+
 ## 4. Writing the outputs
 
 ### `world.districts` in `data/story.json`
@@ -93,9 +117,13 @@ doesn't exist yet — see SKILL.md Baseline mode step 1). Shape:
   "label": "<authored label>",
   "kind": "core|tooling|quality|knowledge|product|governance|unknown",
   "blurb": "<one-line, grounded in verified contents>",
-  "root_paths": ["<dir>", "..."]
+  "root_paths": ["<dir>", "..."],
+  "sensitivity": "routine|architectural|sensitive"
 }
 ```
+
+`sensitivity` is optional — see §3a. Leave the key out rather than defaulting
+it to `routine`, so an absent value stays distinguishable from a judged one.
 
 Never overwrite a district entry that already has human-authored fields (a
 `blurb` that doesn't match the auto-generated pattern) — treat existing
@@ -112,6 +140,7 @@ contexts:
     label: <authored label>
     paths: [<dir>, ...]
     summary: <one-line, grounded in verified contents>
+    sensitivity: routine|architectural|sensitive   # optional, see §3a
 ```
 
 `contexts[].id` matches `world.districts[].id` in `story.json` — this is the

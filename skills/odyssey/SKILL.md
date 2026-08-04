@@ -2,17 +2,22 @@
 name: odyssey
 title: "Codebase Odyssey Generator"
 status: active
-version: 0.1.0
+version: 0.3.0
 description: >
   Generate a narrated four-level codebase story bundle (landscape, problem/solution,
   architecture, file-changes) with scene art, voice narration, and retro-extracted
-  architecture decision records for any locally checked-out git repo. Also serves the
-  bundle locally for viewing. Use when the user asks to "generate codebase odyssey",
-  "generate story for PR", "odyssey baseline", "prodyssey", "narrated PR story", "tell
-  the story of this PR as scene art", "explain this PR as a story", "build the odyssey
-  bundle", "refresh odyssey baseline", "view the odyssey bundle", "serve the bundle",
-  "open the viewer", "start the odyssey server", "stop the odyssey server", or invokes
-  `/prodyssey:baseline`, `/prodyssey:generate`, or `/prodyssey:view`.
+  architecture decision records for any locally checked-out git repo. Also interviews
+  a change's author before the PR opens, assesses the change against the bundle, and
+  serves the bundle locally for viewing. Use when the user asks to "generate codebase
+  odyssey", "generate story for PR", "odyssey baseline", "prodyssey", "narrated PR
+  story", "tell the story of this PR as scene art", "explain this PR as a story",
+  "build the odyssey bundle", "refresh odyssey baseline", "view the odyssey bundle",
+  "serve the bundle", "open the viewer", "start the odyssey server", "stop the
+  odyssey server", "publish the odyssey", "submit this PR", "review my PR", "review
+  this branch before I open a PR", "architecture review", "should we merge this",
+  "will we regret this change", "interview me about this change", or invokes
+  `/prodyssey:baseline`, `/prodyssey:generate`, `/prodyssey:view`,
+  `/prodyssey:publish`, or `/prodyssey:submit`.
 ---
 
 # Codebase Odyssey Generator
@@ -20,9 +25,16 @@ description: >
 Orchestration procedure for turning merged PRs of **any locally checked-out git
 repo** — the session's own repo, or any other checkout reached via `--repo` — into
 a portable bundle: four-level narrated story, scene art, TTS narration, and ADR
-retro-extraction. This is a read-only, generate-only instrument against the target
-repo — it never edits the target repo's source, only writes into its bundle
-directory (`<bundle-dir>`, see Hub resolution below).
+retro-extraction. It also runs Submit mode, which interviews a change's author,
+assesses the change against that bundle, and opens the pull request.
+
+**This skill never edits the target repo's source.** It only writes into the
+bundle directory (`<bundle-dir>`, see Hub resolution below). Baseline, Generate,
+View, and Publish are read-only against the target beyond that. Submit mode is
+the one exception, and it is narrow: after an explicit confirmation, it pushes
+the branch and runs `gh pr create`. It still writes no source file, and it takes
+no other outward action — no comments, no edits to an existing PR body, no
+labels, no reviewers, no merges. See Submit mode.
 
 Where that bundle actually lands depends on whether the target is the session's
 own repo or a foreign one: every bundle lives under one parent,
@@ -113,11 +125,13 @@ fi
 
 (`<repo-slug>`/`$SLUG` is computed only when the foreign path applies — see
 above.) `<bundle-dir>` is the only path Baseline, Generate, and Publish modes
-ever write to; no mode references a literal bundle path directly.
+ever write to; no mode references a literal bundle path directly. Submit mode
+writes there too, and its `git push` / `gh pr create` are the only actions that
+reach outside it.
 
 **Legacy layout detection.** Immediately after `BUNDLE_DIR` is computed above
-— reached by all four modes, since Step 0's prereq gate is skipped by View and
-Publish — check: if `$BUNDLE_DIR` does not exist but a legacy
+— reached by all five modes, since Step 0's prereq gate is skipped by View,
+Publish, and Submit — check: if `$BUNDLE_DIR` does not exist but a legacy
 `<target>/.odyssey/` does, STOP and tell the user their bundle predates the
 `.prodyssey/self` layout, printing the exact command:
 ```
@@ -129,8 +143,8 @@ fix: auto-running `git mv` inside a user's repo contradicts this skill's own
 "never edits the target repo's source" posture; and without this check,
 Generate mode's auto-baseline check (below) would find nothing at the new
 path, announce "No baseline found", and silently regenerate over
-hand-authored narrative at real Gemini API cost. This block is removable at
-0.2.0, once legacy `.odyssey/` layouts are no longer expected in the wild.
+hand-authored narrative at real Gemini API cost. This block is removable once
+legacy `.odyssey/` layouts are no longer expected in the wild.
 
 Whenever `<bundle-dir>` resolves under `<hub>/.prodyssey/` and
 `<hub>/.prodyssey/` doesn't exist yet, create it (`mkdir -p`) and check
@@ -160,11 +174,13 @@ suggested lines.
 
 ## Step 0 — Prereq gate (hard, before ANYTHING generative)
 
-Applies to **baseline** and **generate** modes. **View and Publish modes are
-exempt** — View only serves static files already on disk (needs neither `uv`
-nor `GEMINI_API_KEY`); Publish only flattens/publishes what's already
-generated (needs `uv` for its export scripts, but not `GEMINI_API_KEY`). See
-each mode's own section below.
+Applies to **baseline** and **generate** modes. **View, Publish, and Submit
+modes are exempt** — View only serves static files already on disk (needs
+neither `uv` nor `GEMINI_API_KEY`); Publish only flattens/publishes what's
+already generated (needs `uv` for its export scripts, but not
+`GEMINI_API_KEY`); Submit reads git and writes markdown (needs `uv` and a git
+repo, but never calls Gemini — its narrative work is Claude's judgment, and it
+generates no art or audio). See each mode's own section below.
 
 Run this before any other step, every baseline/generate invocation:
 
@@ -197,12 +213,13 @@ Only after all three checks pass does mode dispatch begin.
 
 ## Mode dispatch
 
-The invoking command passes a mode (`baseline`, `generate`, `view`, or
-`publish`) plus forwarded args (`--repo`, `--store`, `--prs`, `--force`,
+The invoking command passes a mode (`baseline`, `generate`, `view`, `publish`,
+or `submit`) plus forwarded args (`--repo`, `--store`, `--prs`, `--force`,
 `--voice`, `--art`, `--dry-run`, `--port`, `--stop`, `--list`, `--format`,
-`--style`).
+`--style`, `--stage`, `--branch`, `--base`, `--draft`, `--no-create`,
+`--non-interactive`).
 If invoked with no mode, ask the user whether they want `baseline`,
-`generate`, `view`, or `publish`.
+`generate`, `view`, `publish`, or `submit`.
 
 ## Baseline mode
 
@@ -286,6 +303,11 @@ Per-PR narrative + ADR + art + audio sweep. Steps:
       §3 for both. Ground every claim by reading the diff (from
       `extract_diffs.py`'s output — run it first if the diff isn't extracted yet),
       the touched files in `<target>`, and `<bundle-dir>/inventory.yaml`.
+      **Read this PR's `intent` block first when it has one** — submit mode
+      captured the author's stated problem, approach, and rejected
+      alternatives, so do not re-derive them from the diff. See
+      `references/story-mode.md`'s opening for what carries over and what
+      does not.
       Author the four levels (`landscape`, `problem_solution`, `architecture`,
       `file_changes`), the tagline, and the `voice` scripts directly into
       `data/story.json` for this PR. **`problem_solution` and `architecture`
@@ -296,7 +318,11 @@ Per-PR narrative + ADR + art + audio sweep. Steps:
       `kind` values per level and worked guidance.
    2. **ADR retro-extraction**. Follow `references/decision-records-lite.md`.
       Write/update `data/adrs.json` and `data/adrs.js`, and set this PR's `adrs[]`
-      array in `story.json` to the resulting record ids.
+      array in `story.json` to the resulting record ids. When the PR carries an
+      `intent` block, §7 of that reference applies: take `alternatives` from
+      the author instead of hunting for traces of them, and mark the record
+      `provenance: authored`. An unmerged PR's record is `state: proposed`,
+      not `approved` (§3.2).
    3. **Diff extraction**:
       ```bash
       uv run "${CLAUDE_PLUGIN_ROOT}/scripts/extract_diffs.py" --repo <target> --bundle-dir <bundle-dir> --prs <N>
@@ -611,6 +637,122 @@ produces are still valid deliverables — tell the user where they landed
 (`<bundle-dir>/exports/`) so they can open or share them another way instead
 of the run looking like it silently failed.
 
+## Submit mode
+
+Interviews the author of a change, assesses that change against the bundle, and
+opens the pull request. Submit mode is the author-side and reviewer-side half of
+the plugin: every other mode narrates history, this one is used before the
+history exists. It needs `uv` and a git repo, never `GEMINI_API_KEY`, and it
+generates no art and no audio.
+
+Two references govern it, both loaded on demand:
+`references/interview-guide.md` for what to ask and how, and
+`references/review-mode.md` for the rubric, the verdicts, and the risk tiers.
+
+`--stage pre|post` selects the stage (default `pre`).
+
+### Pre stage
+
+1. **Resolve `<bundle-dir>`** per Hub resolution above, then **migrate the
+   bundle**:
+   ```bash
+   uv run "${CLAUDE_PLUGIN_ROOT}/scripts/migrate_bundle.py" --bundle-dir <bundle-dir>
+   ```
+2. **Resolve the target**, in this order:
+   - `--prs <N>` — the PR already exists. Use the existing open-PR path (see
+     Generate mode step 3). Nothing gets created.
+   - no `--prs` — the current branch. Ask `gh pr view --json number` for it
+     first. If a PR already exists for this branch, adopt its number and
+     continue as the case above; this is the re-run-after-review-feedback
+     path. If not, this is a pre-submit run, and step 7 opens the PR.
+3. **Extract the diff.** For a PR:
+   ```bash
+   uv run "${CLAUDE_PLUGIN_ROOT}/scripts/extract_diffs.py" --repo <target> --bundle-dir <bundle-dir> --prs <N>
+   ```
+   For a branch with no PR yet (`--base` defaults to the detected default
+   branch):
+   ```bash
+   uv run "${CLAUDE_PLUGIN_ROOT}/scripts/extract_diffs.py" --repo <target> --bundle-dir <bundle-dir> --branch [<ref>] [--base <branch>]
+   ```
+   The branch form writes `<bundle-dir>/exports/branch-<slug>/diff.json` and
+   touches nothing under `data/`.
+4. **Gather the rest of the evidence before asking the author anything.** Read
+   the touched districts in `<bundle-dir>/inventory.yaml`, every record in
+   `<bundle-dir>/data/adrs.json` whose `problem` or `decision` covers those
+   districts, the matching stack card per `references/stacks/README.md`, and
+   the timeline entries for earlier PRs in the same districts. This order is
+   not optional — `references/interview-guide.md` §2 depends on it.
+5. **Interview the author** (Claude work, not a script). Follow
+   `references/interview-guide.md`. Draft a hypothesis from step 4, ask only
+   what the evidence cannot settle, then play the drafted `intent` back for
+   confirmation. `--non-interactive`, or a session with no author present,
+   takes the fallback in §6 of that file and sets `intent.source: "inferred"`.
+6. **Assess** (Claude work, not a script). Follow `references/review-mode.md`:
+   the three questions with evidence, the stack card's boundary greps, the
+   district delta, the risk tier, `regret_risk`, and the verdict.
+7. **Render, then open the PR.** Write `intent.json` and `assessment.json` into
+   the branch staging directory (branch target) or the two blocks onto the
+   timeline entry (PR target), then:
+   ```bash
+   uv run "${CLAUDE_PLUGIN_ROOT}/scripts/render_review.py" --repo <target> --bundle-dir <bundle-dir> {--prs <N> | --branch [<ref>]}
+   ```
+   If step 2 found no PR, open one — see **Submitting the PR** below. If a PR
+   already exists, skip to step 8.
+8. **File the results under the PR number.** Write `intent` and `assessment`
+   onto that PR's timeline entry in `<bundle-dir>/data/story.json`, regenerate
+   `data/story.js`, then re-render so the deliverables carry the number:
+   ```bash
+   uv run "${CLAUDE_PLUGIN_ROOT}/scripts/render_review.py" --repo <target> --bundle-dir <bundle-dir> --prs <N>
+   ```
+9. **Verify**:
+   ```bash
+   uv run "${CLAUDE_PLUGIN_ROOT}/scripts/verify_bundle.py" --bundle-dir <bundle-dir> --prs <N> --require-review --json
+   ```
+   Report the verdict, the risk tier, the finding count, the PR URL, and the
+   paths of the two markdown files.
+
+### Submitting the PR
+
+Assess first, create second. The assessment is part of the author's decision
+about whether to open the PR at all.
+
+1. **Make sure the branch is pushed.** If `git rev-parse --abbrev-ref
+   --symbolic-full-name @{u}` finds no upstream, the branch needs
+   `git push -u origin <branch>` before `gh pr create` can work.
+2. **Confirm once, covering both outward actions.** Show the author the
+   rendered description, the base branch, the verdict, and the risk tier. Then
+   ask to "push `<branch>` and open a PR against `<base>`". Pushing a branch
+   and opening a PR are public and hard to walk back. **Nothing fires without
+   this confirmation** — not with `--force`, not in `--non-interactive`, which
+   takes the `--no-create` path instead.
+   - A `rework` verdict does not block anything. Offer three ways forward —
+     open it, open it as a draft, or stop and fix first — and let the author
+     pick. This mode reports; it never gates.
+3. **Create it:**
+   ```bash
+   gh pr create --base <base> --head <branch> --title "<title>" --body-file <bundle-dir>/exports/branch-<slug>/description.md [--draft]
+   ```
+   Then read the number back with `gh pr view --json number`.
+4. **Continue at pre-stage step 8** with that number.
+
+**Three cases end at the staging directory instead**, and all three are normal:
+`--no-create`, `gh` missing or unauthenticated, and the author declining at
+step 2. In each, tell the user where the files landed
+(`<bundle-dir>/exports/branch-<slug>/`), print the exact `gh pr create` line
+above so nothing is lost, and say that re-running `/prodyssey:submit` once the
+PR exists files the content into `story.json`.
+
+### Post stage
+
+Runs after the PR merges. Same steps 1 through 4, then:
+
+5. **Compare the merged diff against the `intent` captured pre-merge** and
+   write a second `assessment` with `stage: "post"` and a populated `drift`
+   array. `references/review-mode.md` §7 holds the four drift kinds and the
+   rule that matters most: **never rewrite the pre-stage `intent`.** Its value
+   comes from being what the author said before the change shipped.
+6. Render and verify as in pre-stage steps 8 and 9.
+
 ## Notes
 
 - Narrative authoring and ADR extraction are Claude judgment work — never delegate
@@ -619,11 +761,19 @@ of the run looking like it silently failed.
   step further removed: the orchestrating Claude never writes `.mmd` files itself,
   it delegates that to a per-PR subagent (see Generate mode, step 4) and only calls
   a script (`build_diagrams.py`) to compile and validate the subagent's output into
-  `data/diagrams.js`.
+  `data/diagrams.js`. The author interview and the architecture assessment are the
+  same kind of work — `render_review.py` lays out the result and judges none of it.
 - Never touch anything in `<target>` outside `<target>/.prodyssey/` and `<target>/.env`
   (read-only check, never written by this skill) — `<hub>/.prodyssey/` is also a
   sanctioned write location, for centrally-stored bundles and view-server bookkeeping.
-- `story.json`'s `meta.schema_version` is `"1.0"` — `verify_bundle.py` gates on it.
+  Submit mode's `git push` and `gh pr create` are the only actions that reach past
+  this line, they never write a source file, and they only run after the explicit
+  confirmation in Submit mode.
+- `story.json`'s `meta.schema_version` is `"1.2"` — `verify_bundle.py` gates on it.
+  `scripts/_bundle_meta.py` is the single source for that constant.
+- Submit mode's `intent` and `assessment` live on the timeline entry, not in a file
+  of their own. That is what puts them under `migrate_bundle.py`'s authored-field
+  guard, and it is why the viewer needs no new global to render them.
 - View mode's PID/log files and the `active` symlink live under
   `<hub>/.prodyssey/`, never inside a bundle directory — those two files plus
   `active` are the only entries meant to stay out of the commit.

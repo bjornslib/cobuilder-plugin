@@ -292,6 +292,9 @@
 
   .alt-section-label{font:10.5px 'JetBrains Mono',monospace;letter-spacing:.1em;color:var(--ink-dim);text-transform:uppercase;margin-bottom:8px;}
   .alt-row{display:flex;gap:12px;flex-wrap:wrap;}
+  /* A `display:` rule beats the plain `hidden` attribute, so the ADR sheet's
+     "+N more" disclosure needs this to stay hidden until the button is clicked. */
+  .alt-row[hidden]{display:none;}
   .alt-card{width:240px;background:#fff;border:1px dashed oklch(0.6 0.13 25);border-radius:8px;padding:10px 12px;}
   .alt-card .alt-opt{font-size:12px;font-weight:600;color:oklch(0.3 0.02 250);}
   .alt-card .alt-rej{font-size:11px;color:oklch(0.45 0.14 25);margin-top:5px;line-height:1.4;}
@@ -303,6 +306,16 @@
   }
   .adr-badge:hover{background:oklch(0.94 0.04 60);border-color:oklch(0.48 0.13 60);}
   .no-adrs{font:11.5px system-ui,sans-serif;color:var(--ink-dim);}
+
+  /* Submit-mode assessment badge: same row as the ADR badges, deliberately a
+     different hue so a verdict never reads as an ADR id. */
+  .assessment-badge{
+    font:10.5px 'JetBrains Mono',monospace;padding:4px 10px;border-radius:3px;cursor:pointer;
+    border:1px solid oklch(0.55 0.12 265);color:oklch(0.44 0.12 265);background:oklch(0.97 0.02 265);
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .assessment-badge:hover{background:oklch(0.94 0.04 265);border-color:oklch(0.48 0.13 265);}
+  .assessment-badge .ab-dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
 
   .beats-stack{display:flex;flex-direction:column;gap:10px;}
   .beat-card.fixed-card{height:180px;}
@@ -453,18 +466,42 @@
   /* ================= ADR SHEET (same shadcn-Sheet family as the comments drawer,
      just wider — reuses .drawer-header/.drawer-close/.drawer-body). Shares
      #drawer-scrim with the comments drawer; JS enforces only one open at a time. ================= */
-  #adr-sheet{
+  #adr-sheet,
+  #assessment-sheet{
     position:fixed;top:0;right:0;bottom:0;width:clamp(480px, 40vw, 720px);max-width:92vw;background:#fff;
     border-left:1px solid var(--line);border-radius:14px 0 0 14px;box-shadow:-12px 0 34px rgba(20,25,35,0.2);
     transform:translateX(100%);transition:transform .25s ease;z-index:41;
     display:flex;flex-direction:column;min-height:0;
   }
-  #adr-sheet.open{transform:translateX(0);}
-  #adr-sheet .drawer-header{align-items:flex-start;}
+  #adr-sheet.open,
+  #assessment-sheet.open{transform:translateX(0);}
+  #adr-sheet .drawer-header,
+  #assessment-sheet .drawer-header{align-items:flex-start;}
   .adr-sheet-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px;}
   .adr-state-badge{font:10px 'JetBrains Mono',monospace;letter-spacing:.04em;padding:3px 9px;border-radius:10px;border:1px solid;text-transform:uppercase;white-space:nowrap;}
   .adr-sheet-sourceline{font:11px 'JetBrains Mono',monospace;color:var(--ink-dim);}
-  #adr-sheet .drawer-body{overflow-y:auto;gap:16px;}
+  #adr-sheet .drawer-body,
+  #assessment-sheet .drawer-body{overflow-y:auto;gap:16px;}
+
+  /* Assessment-only blocks. Everything else in the sheet reuses .adr-block,
+     .ab-kicker, .force-chip, .alt-section-label, and .adr-body-md. */
+  .asm-finding{border-radius:8px;border:1px solid var(--line);background:#fff;padding:10px 12px;border-left:3px solid var(--line);}
+  .asm-finding.blocker{border-left-color:oklch(0.55 0.19 25);}
+  .asm-finding.concern{border-left-color:oklch(0.66 0.15 70);}
+  .asm-finding.note{border-left-color:oklch(0.7 0.05 250);}
+  .asm-finding .asm-sev{font:700 9.5px 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim);}
+  .asm-finding.blocker .asm-sev{color:oklch(0.5 0.18 25);}
+  .asm-finding.concern .asm-sev{color:oklch(0.5 0.14 70);}
+  .asm-finding .asm-claim{font-size:12.5px;line-height:1.5;color:oklch(0.28 0.02 250);margin-top:5px;}
+  .asm-finding .asm-ev{font:10.5px 'JetBrains Mono',monospace;color:var(--ink-dim);margin-top:6px;word-break:break-all;}
+  .asm-finding .asm-fix{font-size:12px;line-height:1.5;color:oklch(0.4 0.02 250);margin-top:6px;}
+  .asm-stack{display:flex;flex-direction:column;gap:8px;}
+  .asm-stack[hidden]{display:none;}
+  .asm-check{display:flex;gap:8px;align-items:baseline;font-size:12px;line-height:1.5;color:oklch(0.3 0.02 250);}
+  .asm-check .asm-res{font:700 9.5px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;}
+  .asm-check.pass .asm-res{color:oklch(0.45 0.13 145);}
+  .asm-check.violation .asm-res{color:oklch(0.5 0.18 25);}
+  .asm-delta{font:11.5px 'JetBrains Mono',monospace;color:oklch(0.3 0.02 250);line-height:1.7;}
 
   .adr-block{border-radius:10px;border:1px solid var(--line);background:#fff;padding:14px 16px;}
   .adr-block.problem{border-left:3px solid oklch(0.6 0.16 25);}
@@ -636,6 +673,22 @@
     <div class="drawer-body" id="adr-sheet-body"></div>
   </div>
 
+  <!-- Submit-mode assessment sheet (same Sheet family as the ADR sheet above,
+       reachable from the Assessment badge on level 3). Reads the timeline
+       entry's own `assessment`/`intent` blocks — there is no window.ASSESSMENTS,
+       because both live inline in story.json. Shares #drawer-scrim; only one
+       sheet is ever open. -->
+  <div id="assessment-sheet" role="dialog" aria-label="Architecture assessment">
+    <div class="drawer-header">
+      <div>
+        <h2 id="assessment-sheet-title">Assessment</h2>
+        <div class="adr-sheet-meta" id="assessment-sheet-meta"></div>
+      </div>
+      <button class="drawer-close" id="assessment-sheet-close-btn" title="Close (Esc)">&times;</button>
+    </div>
+    <div class="drawer-body" id="assessment-sheet-body"></div>
+  </div>
+
   <!-- Narration audio dialog (shadcn Dialog look, centered). Shares #drawer-scrim above;
        mutually exclusive with the comments drawer / ADR sheet — see openAudioDialog. -->
   <div id="audio-dialog-layer">
@@ -749,7 +802,9 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     // ADR sheet: mutually exclusive with the comments drawer (see openCommentsDrawer/openAdrSheet).
     adrOpen: false,
     activeAdrId: null,
-    // Audio dialog: mutually exclusive with both sheets above (see openAudioDialog).
+    // Submit-mode assessment sheet: mutually exclusive with both panels above.
+    assessmentOpen: false,
+    // Audio dialog: mutually exclusive with every sheet above (see openAudioDialog).
     audioDialogOpen: false,
     // true while a level/PR content transition animation is in flight — guards re-entrant
     // nav input (arrow mashing, double rail clicks) from stacking transitions.
@@ -1620,6 +1675,15 @@ window.DIAGRAMS = window.DIAGRAMS || {};
         ? adrs.map(a => `<button class="adr-badge" data-adr-id="${escapeHtml(a)}">${escapeHtml(a)}</button>`).join('')
         : `<span class="no-adrs">No ADRs recorded for this PR.</span>`;
 
+      // Assessment badge, only when submit mode actually left one behind. A PR
+      // generated before submit mode existed simply shows no badge.
+      const asm = p.assessment;
+      const assessmentHtml = (asm && asm.verdict)
+        ? `<button class="assessment-badge" id="assessment-badge" title="Architecture assessment (submit mode)">
+             <span class="ab-dot"></span>Assessment: ${escapeHtml(asm.verdict)}
+           </button>`
+        : '';
+
       const boxesHtml = DISTRICTS.map(d => {
         const isTouched = !!touched[d.id];
         const color = KIND_COLOR[d.kind] || KIND_COLOR.tooling;
@@ -1640,13 +1704,15 @@ window.DIAGRAMS = window.DIAGRAMS || {};
       setMainHtml(main, `
         <div class="level-stack narrow">
           ${heroFrame(p.pr, 3, `PR #${p.pr} architecture diagram`)}
-          <div class="adr-row">${adrHtml}</div>
+          <div class="adr-row">${adrHtml}${assessmentHtml}</div>
           <div class="district-boxes">${boxesHtml}</div>
           ${beatsHtml}
         </div>`);
       main.querySelectorAll('.adr-badge[data-adr-id]').forEach(btn => {
         btn.addEventListener('click', () => openAdrSheet(btn.dataset.adrId));
       });
+      const asmBtn = main.querySelector('#assessment-badge');
+      if (asmBtn) asmBtn.addEventListener('click', openAssessmentSheet);
 
     } else {
       const fc = content.file_changes;
@@ -1887,6 +1953,7 @@ window.DIAGRAMS = window.DIAGRAMS || {};
   function openAudioDialog(){
     if (state.commentsOpen) state.commentsOpen = false;
     if (state.adrOpen) state.adrOpen = false;
+    if (state.assessmentOpen) state.assessmentOpen = false;
     state.audioDialogOpen = true;
     renderAudioDialogContent();
     const dialog = document.getElementById('audio-dialog');
@@ -2117,6 +2184,10 @@ window.DIAGRAMS = window.DIAGRAMS || {};
       state.level = 1;
       state.focusDistrict = null;
       state.draftMergeMethod = null;
+      // The assessment sheet renders the CURRENT pr(), so leaving it open across
+      // a PR switch would show the new PR's data under the old PR's scroll
+      // position — and level resets to 1, where its badge is not even visible.
+      if (state.assessmentOpen) closeAssessmentSheet();
       closeMergeMenu();
       stopAudio();
       renderAll();
@@ -2148,19 +2219,22 @@ window.DIAGRAMS = window.DIAGRAMS || {};
   }
 
   /* ============================================================
-     COMMENTS DRAWER + ADR SHEET (shadcn Sheet look, recreated in vanilla JS/CSS)
-     Both panels share one #drawer-scrim; opening either one closes the other first, so
-     at most one sheet is ever open — this is the "only one sheet at a time" rule.
+     COMMENTS DRAWER + ADR SHEET + ASSESSMENT SHEET (shadcn Sheet look, recreated
+     in vanilla JS/CSS). All three panels share one #drawer-scrim; opening any one
+     closes the others first, so at most one sheet is ever open — this is the
+     "only one sheet at a time" rule.
      ============================================================ */
   function renderSheetVisibility(){
     document.getElementById('comments-drawer').classList.toggle('open', state.commentsOpen);
     document.getElementById('adr-sheet').classList.toggle('open', state.adrOpen);
+    document.getElementById('assessment-sheet').classList.toggle('open', state.assessmentOpen);
     const scrim = document.getElementById('drawer-scrim');
-    scrim.classList.toggle('open', state.commentsOpen || state.adrOpen || state.audioDialogOpen);
+    scrim.classList.toggle('open', state.commentsOpen || state.adrOpen || state.assessmentOpen || state.audioDialogOpen);
     scrim.classList.toggle('audio-dim', state.audioDialogOpen);
   }
   function openCommentsDrawer(){
     if (state.adrOpen){ state.adrOpen = false; }
+    if (state.assessmentOpen){ state.assessmentOpen = false; }
     if (state.audioDialogOpen) stopAudio(); // mutual exclusivity: closes + stops the audio dialog
     state.commentsOpen = true;
     renderSheetVisibility();
@@ -2172,6 +2246,7 @@ window.DIAGRAMS = window.DIAGRAMS || {};
   }
   function openAdrSheet(id){
     if (state.commentsOpen){ state.commentsOpen = false; }
+    if (state.assessmentOpen){ state.assessmentOpen = false; }
     if (state.audioDialogOpen) stopAudio(); // mutual exclusivity: closes + stops the audio dialog
     state.adrOpen = true;
     state.activeAdrId = id;
@@ -2182,9 +2257,22 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     state.adrOpen = false;
     renderSheetVisibility();
   }
+  function openAssessmentSheet(){
+    if (state.commentsOpen){ state.commentsOpen = false; }
+    if (state.adrOpen){ state.adrOpen = false; }
+    if (state.audioDialogOpen) stopAudio(); // mutual exclusivity: closes + stops the audio dialog
+    state.assessmentOpen = true;
+    renderAssessmentSheet();
+    renderSheetVisibility();
+  }
+  function closeAssessmentSheet(){
+    state.assessmentOpen = false;
+    renderSheetVisibility();
+  }
   function closeAnyOpenSheet(){
     if (state.commentsOpen) closeCommentsDrawer();
     else if (state.adrOpen) closeAdrSheet();
+    else if (state.assessmentOpen) closeAssessmentSheet();
     else if (state.audioDialogOpen) stopAudio();
   }
 
@@ -2352,6 +2440,201 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     }
   }
 
+  /* ---------- Submit-mode assessment sheet ----------
+     Reads pr().assessment / pr().intent straight off window.STORY. No new
+     global and no new data file: both blocks live inline on the timeline
+     entry, which is what gives them migrate_bundle.py's authored-field guard.
+     Verdict/tier vocabulary: skills/odyssey/references/review-mode.md §8, §4. */
+  const VERDICT_COLOR = {
+    sound:    ['oklch(0.94 0.06 145)', 'oklch(0.4 0.13 145)', 'oklch(0.6 0.12 145)'],
+    concerns: ['oklch(0.95 0.06 70)',  'oklch(0.44 0.13 70)', 'oklch(0.65 0.13 70)'],
+    rework:   ['oklch(0.95 0.05 25)',  'oklch(0.45 0.17 25)', 'oklch(0.62 0.16 25)'],
+  };
+  const PATTERN_LABEL = {
+    conforms: 'Conforms to an existing pattern',
+    'new-valuable': 'New pattern, and it earns its place',
+    duplicate: 'Duplicates something the repo already has',
+    reinvention: 'Reinvents a solved problem',
+  };
+  const DRIFT_LABEL = {
+    out_of_scope: 'Out of scope, but touched',
+    unaddressed_risk: 'Risk with no guard',
+    adopted_alternative: 'Rejected option adopted',
+    delta_shift: 'District delta shifted',
+  };
+
+  function verdictBadgeHtml(v){
+    const [bg, fg, border] = VERDICT_COLOR[v] || ['oklch(0.96 0.02 250)', 'var(--ink-dim)', 'var(--line)'];
+    return `<span class="adr-state-badge" style="background:${bg};color:${fg};border-color:${border};">${escapeHtml((v || 'unknown').toUpperCase())}</span>`;
+  }
+
+  function asmQuestionHtml(kicker, block, extraLabel, extraKey){
+    if (!block || !block.answer) return '';
+    const ev = (block.evidence || []).filter(Boolean);
+    return `
+      <div class="adr-block">
+        <div class="ab-kicker" style="color:var(--accent-text);">${escapeHtml(kicker)}</div>
+        <p>${escapeHtml(block.answer)}</p>
+        ${extraKey && block[extraKey] ? `<p style="margin-top:8px;"><strong>${escapeHtml(extraLabel)}:</strong> ${escapeHtml(block[extraKey])}</p>` : ''}
+        ${ev.length ? `<div class="chip-row" style="margin-top:10px;">${ev.map(e => `<span class="force-chip">${escapeHtml(e)}</span>`).join('')}</div>` : ''}
+      </div>`;
+  }
+
+  function renderAssessmentSheet(){
+    const p = pr();
+    const a = p && p.assessment;
+    const intent = (p && p.intent) || null;
+    const titleEl = document.getElementById('assessment-sheet-title');
+    const metaEl = document.getElementById('assessment-sheet-meta');
+    const body = document.getElementById('assessment-sheet-body');
+
+    if (!a){
+      titleEl.textContent = 'Assessment';
+      metaEl.innerHTML = '';
+      body.innerHTML = `
+        <div class="empty-card">
+          <div class="empty-detail">No assessment recorded for this PR. Run <code>/prodyssey:submit</code> against it.</div>
+        </div>`;
+      return;
+    }
+
+    titleEl.textContent = `PR #${p.pr} — assessment`;
+    const metaBits = [
+      a.risk_tier ? `risk: ${a.risk_tier}` : '',
+      a.stage === 'post' ? 'post-merge' : 'pre-merge',
+      a.generated ? a.generated : '',
+    ].filter(Boolean).join(' · ');
+    metaEl.innerHTML = verdictBadgeHtml(a.verdict)
+      + (metaBits ? `<span class="adr-sheet-sourceline">${escapeHtml(metaBits)}</span>` : '');
+
+    const summaryHtml = a.summary ? `
+      <div class="adr-block decision">
+        <div class="ab-kicker">Summary</div>
+        <p>${escapeHtml(a.summary)}</p>
+      </div>` : '';
+
+    // The author's own words come first — the assessment is a response to them.
+    let intentHtml = '';
+    if (intent && intent.problem){
+      const flags = [
+        intent.source === 'inferred' ? 'intent inferred, not stated by the author' : '',
+        intent.authorship && intent.authorship !== 'human' ? `authorship: ${intent.authorship}` : '',
+        (intent.unknowns || []).length ? `${intent.unknowns.length} author-flagged unknown(s)` : '',
+      ].filter(Boolean);
+      intentHtml = `
+        <div class="adr-block problem">
+          <div class="ab-kicker">The author's stated problem</div>
+          <p>${escapeHtml(intent.problem)}</p>
+          ${flags.length ? `<div class="chip-row" style="margin-top:10px;">${flags.map(f => `<span class="force-chip">${escapeHtml(f)}</span>`).join('')}</div>` : ''}
+        </div>`;
+    }
+
+    let patternHtml = '';
+    if (a.pattern && a.pattern.answer){
+      const label = PATTERN_LABEL[a.pattern.verdict] || a.pattern.verdict || '';
+      const dupes = (a.pattern.duplicates || []).filter(Boolean);
+      patternHtml = asmQuestionHtml('Q3 — pattern, duplicate, or reinvention', a.pattern);
+      patternHtml = patternHtml.replace(
+        '<p>',
+        `${label ? `<p style="margin-bottom:8px;"><strong>${escapeHtml(label)}</strong></p>` : ''}<p>`
+      );
+      if (dupes.length){
+        patternHtml = patternHtml.replace(
+          '</div>\n      </div>',
+          `</div>\n        <div class="asm-delta" style="margin-top:8px;">duplicates: ${dupes.map(d => escapeHtml(d)).join(', ')}</div>\n      </div>`
+        );
+      }
+    }
+
+    const findings = a.findings || [];
+    const order = { blocker: 0, concern: 1, note: 2 };
+    const sorted = findings.slice().sort((x, y) => (order[x.severity] ?? 3) - (order[y.severity] ?? 3));
+    const findingCard = (f) => `
+      <div class="asm-finding ${escapeHtml(f.severity || 'note')}">
+        <div class="asm-sev">${escapeHtml(f.severity || 'note')}${f.district ? ` · ${escapeHtml(f.district)}` : ''}</div>
+        <div class="asm-claim">${escapeHtml(f.claim || '')}</div>
+        ${f.evidence ? `<div class="asm-ev">${escapeHtml(f.evidence)}</div>` : ''}
+        ${f.suggestion ? `<div class="asm-fix">${escapeHtml(f.suggestion)}</div>` : ''}
+      </div>`;
+    let findingsHtml = '';
+    if (sorted.length){
+      // Same +N more disclosure the ADR sheet uses for rejected alternatives.
+      const visible = sorted.slice(0, 3);
+      const hidden = sorted.slice(3);
+      findingsHtml = `
+        <div>
+          <div class="alt-section-label">Findings</div>
+          <div class="asm-stack">${visible.map(findingCard).join('')}</div>
+          ${hidden.length ? `
+            <button class="link-btn" id="asm-findings-more-btn" style="margin-top:8px;">+${hidden.length} more</button>
+            <div class="asm-stack" id="asm-findings-hidden" hidden style="margin-top:8px;">${hidden.map(findingCard).join('')}</div>
+          ` : ''}
+        </div>`;
+    }
+
+    const checks = a.boundary_checks || [];
+    const checksHtml = checks.length ? `
+      <div>
+        <div class="alt-section-label">Boundary checks</div>
+        <div class="asm-stack">${checks.map(c => `
+          <div class="asm-check ${escapeHtml(c.result || '')}">
+            <span class="asm-res">${escapeHtml(c.result || '?')}</span>
+            <span>${escapeHtml(c.rule || '')}${c.source ? ` <span class="adr-sheet-sourceline">(${escapeHtml(c.source)})</span>` : ''}</span>
+          </div>`).join('')}</div>
+      </div>` : '';
+
+    const d = a.delta || {};
+    const deltaLines = []
+      .concat((d.districts_added || []).map(x => `+ district ${x}`))
+      .concat((d.districts_changed || []).map(x => `~ ${x.id}: ${x.files_before} → ${x.files_after} files`))
+      .concat((d.edges_added || []).map(x => `+ edge ${x}`))
+      .concat((d.edges_removed || []).map(x => `- edge ${x}`));
+    const deltaHtml = deltaLines.length ? `
+      <div>
+        <div class="alt-section-label">District delta</div>
+        <div class="asm-delta">${deltaLines.map(l => escapeHtml(l)).join('<br>')}</div>
+      </div>` : '';
+
+    const drift = a.drift || [];
+    const driftHtml = drift.length ? `
+      <div>
+        <div class="alt-section-label">Drift from the stated intent</div>
+        <div class="asm-stack">${drift.map(x => `
+          <div class="asm-finding concern">
+            <div class="asm-sev">${escapeHtml(DRIFT_LABEL[x.kind] || x.kind || '')}</div>
+            <div class="asm-claim">${escapeHtml(x.claim || '')}</div>
+            ${x.evidence ? `<div class="asm-ev">${escapeHtml(x.evidence)}</div>` : ''}
+          </div>`).join('')}</div>
+      </div>` : '';
+
+    const regretHtml = a.regret_risk ? `
+      <div class="adr-block">
+        <div class="ab-kicker" style="color:oklch(0.5 0.15 25);">Will we regret this?</div>
+        <p>${escapeHtml(a.regret_risk)}</p>
+      </div>` : '';
+
+    body.innerHTML = `
+      ${summaryHtml}
+      ${intentHtml}
+      ${asmQuestionHtml('Q1 — is this sensible?', a.sensible)}
+      ${asmQuestionHtml('Q2 — maintainability and readability', a.maintainability, 'Constraint introduced', 'constraint_introduced')}
+      ${patternHtml}
+      ${regretHtml}
+      ${findingsHtml}
+      ${checksHtml}
+      ${deltaHtml}
+      ${driftHtml}
+    `;
+
+    const moreBtn = document.getElementById('asm-findings-more-btn');
+    if (moreBtn){
+      moreBtn.addEventListener('click', () => {
+        document.getElementById('asm-findings-hidden').hidden = false;
+        moreBtn.hidden = true;
+      });
+    }
+  }
+
   document.getElementById('tb-prev').addEventListener('click', () => selectPR(state.prIndex - 1));
   document.getElementById('tb-next').addEventListener('click', () => selectPR(state.prIndex + 1));
 
@@ -2371,6 +2654,7 @@ window.DIAGRAMS = window.DIAGRAMS || {};
   document.getElementById('btn-comments-toggle').addEventListener('click', openCommentsDrawer);
   document.getElementById('drawer-close-btn').addEventListener('click', closeCommentsDrawer);
   document.getElementById('adr-sheet-close-btn').addEventListener('click', closeAdrSheet);
+  document.getElementById('assessment-sheet-close-btn').addEventListener('click', closeAssessmentSheet);
   document.getElementById('drawer-scrim').addEventListener('click', closeAnyOpenSheet);
   document.getElementById('btn-add-comment').addEventListener('click', addCommentOnly);
   commentInput.addEventListener('keydown', (e) => { if (e.key === 'Enter'){ e.preventDefault(); addCommentOnly(); } });
@@ -2393,7 +2677,7 @@ window.DIAGRAMS = window.DIAGRAMS || {};
   window.addEventListener('keydown', (e) => {
     // Escape must close whichever sheet is open, even while the comment input is
     // focused — checked before the input/textarea early-return below so it always works.
-    if (e.key === 'Escape' && (state.commentsOpen || state.adrOpen || state.audioDialogOpen)){ closeAnyOpenSheet(); return; }
+    if (e.key === 'Escape' && (state.commentsOpen || state.adrOpen || state.assessmentOpen || state.audioDialogOpen)){ closeAnyOpenSheet(); return; }
 
     const tag = document.activeElement && document.activeElement.tagName;
     if (tag === 'TEXTAREA' || tag === 'INPUT') return;

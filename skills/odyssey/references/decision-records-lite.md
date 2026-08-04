@@ -67,6 +67,12 @@ section.
    step exists in this lite model (that machinery is dropped). Set
    `source_pr` and note in the body that the record is retroactively
    extracted.
+
+   **Carve-out for an unmerged PR.** A decision in a PR that has not merged is
+   a proposal, not an approved decision. Use `state: proposed` for a PR whose
+   `timeline[].status` is `"open"`. Submit mode never writes an ADR at all —
+   see §7 — so this case only arises when generate mode runs against an open
+   PR. Change the state to `approved` on the next run after the PR merges.
 3. **One record per structural decision** — module boundary, dependency
    direction, data-flow choice, public interface, cross-cutting pattern.
    Not every PR produces one; most PRs produce zero or one. Do not manufacture
@@ -76,6 +82,11 @@ section.
    actually consider. If you can't find any, either the PR isn't ADR-worthy or
    the alternative is genuinely just "do nothing," which is a legitimate
    entry.
+
+   **Prefer the author's own answer when it exists.** See §7. An `intent`
+   block on the timeline entry holds `alternatives` in this exact
+   `{option, rejected_because}` shape, stated by the person who made the
+   choice. Copy those instead of searching for traces of them.
 5. **Examples never live in the register.** Sample/demo records belong in this
    reference file, not in a real bundle's `data/adrs.json`.
 
@@ -101,13 +112,40 @@ they map to; there is no separate provenance field on the record itself.
 ## 6. Workflow — retro-extraction from a merged PR
 
 1. Read the PR's diff (`extract_diffs.py` output) and touched files.
-2. Identify zero or more *structural* decisions in the diff (see §3.3).
-3. For each: fill the shape in §1, using `references/adr-template.md` as the
+2. Read this PR's `intent` block, if it has one (§7).
+3. Identify zero or more *structural* decisions in the diff (see §3.3).
+4. For each: fill the shape in §1, using `references/adr-template.md` as the
    body skeleton. Ground `problem`/`decision`/`alternatives`/`forces` in what
    the diff and surrounding code actually show — never speculate beyond the
    evidence.
-4. Assign the next free `ADR-NNNN` id.
-5. Write/merge into `<bundle-dir>/data/adrs.json`, regenerate
+5. Assign the next free `ADR-NNNN` id.
+6. Write/merge into `<bundle-dir>/data/adrs.json`, regenerate
    `data/adrs.js`, and set this PR's `adrs: ["ADR-NNNN", ...]` array in
    `data/story.json` so story mode's level 3 can pull `alternatives`/`forces`
    straight from these records (see `story-mode.md` §2).
+
+## 7. When the author already answered
+
+Submit mode (`/prodyssey:submit`) interviews the author before the PR opens,
+and writes an `intent` block onto the PR's timeline entry. See
+`references/interview-guide.md` §1 for the shape. When that block is present,
+it changes this workflow in three ways:
+
+1. **`problem` and the body's `## Context` come from `intent.problem` and
+   `intent.why_now`.** These are statements of fact by the person who made the
+   change. Do not replace them with your reading of the diff.
+2. **`alternatives` come from `intent.alternatives`.** The shape already
+   matches, so copy the entries. This is the case §3.4's escape hatch exists
+   for, and an interviewed PR does not need it.
+3. **The record carries `provenance: authored` instead of `inferred`.** §5's
+   default applies only to a record you reconstructed yourself. A reader needs
+   to know which of the two they are looking at.
+
+Two rules do not relax. A record still needs a real *structural* decision
+(§3.3) — an interview does not make a routine PR ADR-worthy. And an `intent`
+block whose own `source` is `"inferred"` is not an author statement: it is
+another reading of the evidence, so the record stays `provenance: inferred`.
+
+**Submit mode itself writes no ADR.** A pre-merge decision is a proposal, and
+the register holds decisions. Generate mode writes the record after the PR
+merges, reading the `intent` the interview captured.
