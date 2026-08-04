@@ -22,9 +22,21 @@ The diff is split per file (on `diff --git a/... b/...` boundaries), each
 file's diff capped at 4000 lines with a truncation marker, and written as a
 namespaced JS file: `window.DIFFS_BY_PR[N] = {"<path>": "<diff text>", ...}`.
 
+`--branch` is the pre-submit path: it diffs a working branch that has no PR
+number yet (`git diff <merge-base(base, ref)>..<ref>`), which is what submit
+mode's interview reads before the PR exists. It writes JSON to
+`<bundle-dir>/exports/branch-<slug>/diff.json` and touches NOTHING under
+`data/` — story.json keys on an integer `pr`, so a branch cannot enter the
+timeline, and a synthetic key would leak into verify_bundle.py, the viewer,
+and the publish manifest. The PR number arrives when submit mode opens the
+PR; the content is filed under it then. A branch diff always overwrites,
+because the branch tip is the point.
+
 Usage:
     uv run extract_diffs.py --repo <path> --prs 73,75
     uv run extract_diffs.py --repo <path> --prs 73 --force
+    uv run extract_diffs.py --repo <path> --branch
+    uv run extract_diffs.py --repo <path> --branch feature/x --base develop
 """
 from __future__ import annotations
 
@@ -77,6 +89,14 @@ def run_git(repo: Path, args: list[str]) -> str:
     return subprocess.check_output(["git", "-C", str(repo)] + args, text=True)
 
 
+def run_git_quiet(repo: Path, args: list[str]) -> str:
+    """run_git for a probe whose failure is expected and handled. Keeps git's
+    own stderr off the user's terminal."""
+    return subprocess.check_output(
+        ["git", "-C", str(repo)] + args, text=True, stderr=subprocess.DEVNULL
+    )
+
+
 def get_remote_origin(repo: Path) -> str | None:
     try:
         return run_git(repo, ["remote", "get-url", "origin"]).strip()
@@ -88,7 +108,10 @@ def detect_default_branch(repo: Path) -> str:
     """Detect the repo's default branch: origin/HEAD symref first, then try
     `main` and `master` directly. Exits 1 with remediation if none resolve."""
     try:
-        out = run_git(repo, ["symbolic-ref", "--short", "refs/remotes/origin/HEAD"]).strip()
+        # This is a probe, and a repo with no origin/HEAD symref is the normal
+        # case, not an error — swallow git's "fatal:" so it never reaches the
+        # user's terminal on the way to the `main`/`master` fallback below.
+        out = run_git_quiet(repo, ["symbolic-ref", "--short", "refs/remotes/origin/HEAD"]).strip()
         if out.startswith("origin/"):
             out = out[len("origin/"):]
         if out:
@@ -248,6 +271,88 @@ def resolve_prs(repo: Path, pr_nums: list[int], dot_range: str | None) -> dict[i
     return resolved
 
 
+# ---- working-branch resolution (no PR number yet) ----
+
+def slugify(name: str) -> str:
+    """Same rule as SKILL.md's Hub resolution slug: lowercase, every
+    non-alphanumeric run collapsed to one hyphen, no leading/trailing
+    hyphen."""
+    out = re.sub(r"[^a-z0-9]+", "-", name.lower())
+    return out.strip("-") or "branch"
+
+
+def resolve_branch(repo: Path, ref: str, base: str | None) -> dict:
+    """Resolve a working branch against its base. Returns the same
+    {hash, kind, diff_base} shape the open-PR path produces, plus the
+    branch name, its slug, and the base it was diffed against."""
+    base_ref = base or detect_default_branch(repo)
+
+    try:
+        head_sha = run_git(repo, ["rev-parse", ref]).strip()
+    except subprocess.CalledProcessError:
+        print(
+            f"error: '{ref}' does not resolve to a commit in this repo.\n"
+            "remediation: pass --branch <existing-branch>, or omit it to use HEAD.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    # A meaningful slug needs the branch NAME, not "HEAD". Detached HEAD has no
+    # name, so fall back to the short sha rather than slugging "head".
+    name = ref
+    if ref == "HEAD":
+        try:
+            name = run_git(repo, ["rev-parse", "--abbrev-ref", "HEAD"]).strip()
+        except subprocess.CalledProcessError:
+            name = ""
+        if not name or name == "HEAD":
+            name = head_sha[:8]
+
+    merge_base = compute_merge_base(repo, base_ref, head_sha)
+    if not merge_base:
+        print(
+            f"error: no merge-base between '{base_ref}' and '{ref}'.\n"
+            f"Tried: `git merge-base {base_ref} {ref}`, then `git merge-base origin/{base_ref} {ref}`.\n"
+            "remediation: fetch the base branch, or pass --base <branch> explicitly.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    if merge_base == head_sha:
+        print(
+            f"error: '{ref}' has no commits beyond '{base_ref}' — there is nothing to review.\n"
+            "remediation: commit your work on this branch first.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    return {
+        "hash": head_sha,
+        "kind": "open",
+        "diff_base": merge_base,
+        "branch": name,
+        "slug": slugify(name),
+        "base": base_ref,
+    }
+
+
+def diff_stats(repo: Path, base_sha: str, head_sha: str) -> dict[str, int]:
+    """files/adds/dels from `git diff --numstat`. A binary file reports "-"
+    for both counts, and contributes to `files` only."""
+    out = run_git(repo, ["diff", "--numstat", f"{base_sha}..{head_sha}"])
+    files = adds = dels = 0
+    for line in out.splitlines():
+        parts = line.split("\t")
+        if len(parts) < 3:
+            continue
+        files += 1
+        if parts[0].isdigit():
+            adds += int(parts[0])
+        if parts[1].isdigit():
+            dels += int(parts[1])
+    return {"files": files, "adds": adds, "dels": dels}
+
+
 # ---- diff extraction ----
 
 def get_diff_text(repo: Path, entry: dict) -> str:
@@ -304,6 +409,26 @@ def write_diffs_file(data_dir: Path, pr_num: int, files: dict[str, str]) -> Path
         f"window.DIFFS_BY_PR[{pr_num}] = {body};\n"
     )
     out_path.write_text(content)
+    return out_path
+
+
+def write_branch_diff(bundle_dir: Path, entry: dict, files: dict[str, str], stats: dict[str, int]) -> Path:
+    """Write the pre-submit staging file. JSON, not JS: nothing loads a branch
+    diff into the viewer, and submit mode reads it directly."""
+    out_dir = bundle_dir / "exports" / f"branch-{entry['slug']}"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "kind": "branch",
+        "branch": entry["branch"],
+        "slug": entry["slug"],
+        "base": entry["base"],
+        "merge_base": entry["diff_base"],
+        "head": entry["hash"],
+        "stats": stats,
+        "files": files,
+    }
+    out_path = out_dir / "diff.json"
+    out_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
     return out_path
 
 
@@ -372,7 +497,21 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--repo", default=None, help="path to the target git repo (default: cwd)")
     parser.add_argument("--bundle-dir", default=None, help="bundle output dir (default: <repo>/.prodyssey/self)")
-    parser.add_argument("--prs", required=True, help="comma-separated PR numbers, e.g. 73,75")
+    parser.add_argument("--prs", default=None, help="comma-separated PR numbers, e.g. 73,75")
+    parser.add_argument(
+        "--branch",
+        nargs="?",
+        const="HEAD",
+        default=None,
+        metavar="REF",
+        help="pre-submit path: diff a working branch with no PR number yet (default ref: HEAD). "
+        "Writes exports/branch-<slug>/diff.json and nothing under data/. Mutually exclusive with --prs",
+    )
+    parser.add_argument(
+        "--base",
+        default=None,
+        help="base branch --branch diffs against (default: repo's detected default branch)",
+    )
     parser.add_argument(
         "--dot-range",
         default=None,
@@ -381,10 +520,29 @@ def main() -> None:
     parser.add_argument("--force", action="store_true", help="overwrite diffs-pr{N}.js files that already exist")
     args = parser.parse_args()
 
+    if bool(args.prs) == bool(args.branch):
+        print(
+            "error: pass exactly one of --prs or --branch.\n"
+            "remediation: --prs N[,M,...] for a PR that exists, --branch for a working branch that has no PR yet.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     repo = resolve_repo(args.repo)
     bundle_dir = Path(args.bundle_dir).resolve() if args.bundle_dir else repo / ".prodyssey" / "self"
     data_dir = bundle_dir / "data"
     manifest_js = data_dir / "manifest.js"
+
+    if args.branch:
+        entry = resolve_branch(repo, args.branch, args.base)
+        files = split_diff_by_file(get_diff_text(repo, entry))
+        stats = diff_stats(repo, entry["diff_base"], entry["hash"])
+        out_path = write_branch_diff(bundle_dir, entry, files, stats)
+        print(
+            f"branch {entry['branch']} vs {entry['base']}: "
+            f"{stats['files']} file(s), +{stats['adds']}/-{stats['dels']} -> {out_path}"
+        )
+        return
 
     pr_nums = sorted({int(x.strip()) for x in args.prs.split(",") if x.strip()})
     if not pr_nums:
