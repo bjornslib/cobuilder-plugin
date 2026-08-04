@@ -180,11 +180,13 @@ def main():
         sys.exit(1)
     pr_nums = sorted(set(pr_nums))
 
-    # No path argument: the target repo (--repo) is untrusted, and its .env
-    # must never be merged into this process. load_dotenv() with no argument
-    # searches upward from cwd, which under `uv run` is this session's own repo.
-    from dotenv import load_dotenv
-    load_dotenv()
+    from dotenv import load_dotenv, find_dotenv
+    # usecwd=True is REQUIRED, not cosmetic. The default anchors to this
+    # script's own directory, which for an installed plugin is
+    # ~/.claude/plugins/cache/..., not the user's repo. Anchor to the working
+    # directory instead: SKILL.md always runs these from the hub. The target
+    # repo is untrusted and its .env must never load.
+    load_dotenv(find_dotenv(usecwd=True))
 
     entries = []  # (pr_num, level, text, output_file)
     for pr_num in pr_nums:
