@@ -92,7 +92,7 @@ Compute `<repo-slug>` once per invocation whenever the foreign path applies:
 ```bash
 REMOTE=$(git -C "<target>" remote get-url origin 2>/dev/null)
 NAME=$(basename "${REMOTE:-<target>}" .git)
-NAME=$(printf '%s' "$NAME" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9' '-' | sed 's/-\+/-/g; s/^-//; s/-$//')
+NAME=$(printf '%s' "$NAME" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9' '-' | sed 's/-\{1,\}/-/g; s/^-//; s/-$//')  # POSIX \{1,\} is deliberate: \+ is GNU-only and a silent no-op on macOS/BSD sed
 HASH=$(printf '%s' "<resolved-abs-target-path>" | shasum | cut -c1-8)
 SLUG="${NAME}-${HASH}"
 ```
