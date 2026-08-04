@@ -301,10 +301,9 @@ hand.
 
 ## Conventions worth preserving
 
-- Never touch anything in `<target>` outside `<target>/.prodyssey/self/`,
-  and a read-only check of `<target>/.env`. `<hub>/.prodyssey/` is also a
-  sanctioned write location, for centrally-stored foreign-repo bundles and
-  for view-server bookkeeping.
+- Never touch anything in `<target>` outside `<target>/.prodyssey/self/`.
+  `<hub>/.prodyssey/` is also a sanctioned write location, for
+  centrally-stored foreign-repo bundles and for view-server bookkeeping.
 - `extract_story.py` never overwrites an authored narrative field for a PR
   already in `story.json`. A new PR gets a minimal stub. A second run is
   safe.

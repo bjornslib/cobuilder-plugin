@@ -173,15 +173,17 @@ Run this before any other step, every baseline/generate invocation:
 2. Confirm `uv` is on PATH (`which uv`). If missing, STOP and tell the user to install
    `uv` (https://docs.astral.sh/uv/getting-started/installation/).
 3. Confirm `GEMINI_API_KEY` is available: check the environment, then check for a
-   `.env` file in `<target>` containing `GEMINI_API_KEY=`. If **neither** is present,
-   STOP before running any script and print:
+   `.env` file in `<hub>` containing `GEMINI_API_KEY=`. Never check `<target>`
+   for this — `<target>` is an untrusted repo, and its `.env` must never load
+   into this process. If **neither** is present, STOP before running any
+   script and print:
 
    ```
    GEMINI_API_KEY is required for voice narration (and scene art, unless
    --art diagram is in effect).
    Get one at https://aistudio.google.com/apikey, then either:
      export GEMINI_API_KEY=<key>
-   or add it to <target>/.env:
+   or add it to <hub>/.env:
      GEMINI_API_KEY=<key>
    ```
 
@@ -620,9 +622,10 @@ of the run looking like it silently failed.
   it delegates that to a per-PR subagent (see Generate mode, step 4) and only calls
   a script (`build_diagrams.py`) to compile and validate the subagent's output into
   `data/diagrams.js`.
-- Never touch anything in `<target>` outside `<target>/.prodyssey/` and `<target>/.env`
-  (read-only check, never written by this skill) — `<hub>/.prodyssey/` is also a
-  sanctioned write location, for centrally-stored bundles and view-server bookkeeping.
+- Never touch anything in `<target>` outside `<target>/.prodyssey/` —
+  `<hub>/.prodyssey/` is also a sanctioned write location, for centrally-stored
+  bundles and view-server bookkeeping. The plugin never reads a `.env` file
+  from `<target>`.
 - `story.json`'s `meta.schema_version` is `"1.0"` — `verify_bundle.py` gates on it.
 - View mode's PID/log files and the `active` symlink live under
   `<hub>/.prodyssey/`, never inside a bundle directory — those two files plus

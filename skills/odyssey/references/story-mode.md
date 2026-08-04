@@ -197,7 +197,7 @@ them with the plugin's `scripts/generate_audio.py`, which reads the `voice`
 fields straight out of `story.json`:
 
 ```bash
-uv run "${CLAUDE_PLUGIN_ROOT}/scripts/generate_audio.py" --repo <target> --bundle-dir <bundle-dir> --prs <N> --voice Charon   # requires GEMINI_API_KEY (env var or .env)
+uv run "${CLAUDE_PLUGIN_ROOT}/scripts/generate_audio.py" --repo <target> --bundle-dir <bundle-dir> --prs <N> --voice Charon   # requires GEMINI_API_KEY (env var, or .env in your own repo, never <target>)
 uv run "${CLAUDE_PLUGIN_ROOT}/scripts/generate_audio.py" --repo <target> --bundle-dir <bundle-dir> --prs <N> --dry-run          # print scripts, no API calls
 ```
 
