@@ -92,12 +92,18 @@ def discover_diagram_files(diagrams_dir: Path) -> list[tuple[int, int, Path]]:
 
 
 def strip_comments(text: str) -> str:
-    lines = []
-    for line in text.splitlines():
-        if line.strip().startswith("%%"):
-            continue
-        lines.append(line)
-    return "\n".join(lines)
+    """Blanks every `%%` comment line, keeping the line COUNT intact.
+
+    The blank line matters: check_balance() reports a line number, and callers
+    show that number to whoever has to fix the file. Dropping comment lines
+    outright would shift every later number by the count of comments above it,
+    which sends the reader to the wrong line. An emptied line still strips to
+    nothing, so the "empty after stripping" test below reads the same either way.
+    """
+    return "\n".join(
+        "" if line.strip().startswith("%%") else line
+        for line in text.splitlines()
+    )
 
 
 def first_content_line(text: str) -> str | None:
@@ -111,7 +117,7 @@ def first_content_line(text: str) -> str | None:
 
 def check_balance(text: str) -> str | None:
     """Returns an error string naming the first imbalance, or None if balanced."""
-    stack: list[str] = []
+    stack: list[tuple[str, int]] = []  # (bracket, line number it opened on)
     for i, line in enumerate(text.splitlines(), start=1):
         for ch in line:
             if ch in OPEN_TO_CLOSE:
@@ -147,7 +153,11 @@ def validate_file(path: Path, level: int) -> list[str]:
             f"line 1: expected first content line to start with '{required}', found: {found!r}"
         )
 
-    balance_error = check_balance(text)
+    # Checked against the comment-stripped text, never the raw file: a `%%` comment
+    # is prose, and prose carries brackets. `%% see rewrite_manifest(` or a `:-)` in
+    # a note used to fail the whole build and send the authoring subagent off to
+    # "fix" a diagram that was already correct.
+    balance_error = check_balance(stripped_of_comments)
     if balance_error:
         problems.append(f"unbalanced brackets — {balance_error}")
 
