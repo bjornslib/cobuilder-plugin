@@ -1,1 +1,1 @@
-window.ODYSSEY = {"schema_version": "1.1", "excluded_prs": [], "hero": ["pr-2/level-1.png", "pr-2/level-2.png", "pr-2/level-3.png"], "diff_prs": [2, 3, 4], "diagrams": []};
+window.ODYSSEY = {"schema_version": "1.1", "excluded_prs": [], "hero": ["pr-2/level-1.png", "pr-2/level-2.png", "pr-2/level-3.png"], "diff_prs": [2, 3, 4], "diagrams": ["pr3-level1.mmd", "pr3-level2.mmd", "pr3-level3.mmd", "pr4-level1.mmd", "pr4-level2.mmd", "pr4-level3.mmd"]};

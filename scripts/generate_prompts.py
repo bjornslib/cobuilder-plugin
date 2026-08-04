@@ -320,7 +320,13 @@ def rewrite_manifest(bundle_dir: Path, manifest_path: Path) -> None:
             end = text.rindex(";")
             existing = json.loads(text[start:end])
             excluded_prs = existing.get("excluded_prs", [])
-        except Exception:
+        except Exception as e:
+            print(
+                f"warning: could not read excluded_prs from {manifest_path}: {e}\n"
+                "The manifest will be rewritten with an empty excluded_prs list. "
+                "If you hand-edited that field, re-apply it after this run.",
+                file=sys.stderr,
+            )
             excluded_prs = []
 
     def pr_num_from_dirname(name: str) -> int:
@@ -330,6 +336,10 @@ def rewrite_manifest(bundle_dir: Path, manifest_path: Path) -> None:
     def level_num_from_filename(name: str) -> int:
         m = re.match(r"level-(\d+)\.png$", name)
         return int(m.group(1)) if m else 0
+
+    def pr_level_from_diagram_filename(name: str) -> tuple[int, int]:
+        m = re.match(r"pr(\d+)-level(\d+)\.mmd$", name)
+        return (int(m.group(1)), int(m.group(2))) if m else (0, 0)
 
     hero = []
     if assets_dir.exists():
@@ -347,11 +357,18 @@ def rewrite_manifest(bundle_dir: Path, manifest_path: Path) -> None:
                 diff_prs.append(int(m.group(1)))
     diff_prs.sort()
 
+    diagrams_dir = data_dir / "diagrams"
+    diagrams = []
+    if diagrams_dir.exists():
+        for mmd in sorted(diagrams_dir.glob("pr*-level*.mmd"), key=lambda p: pr_level_from_diagram_filename(p.name)):
+            diagrams.append(mmd.name)
+
     manifest = {
         "schema_version": SCHEMA_VERSION,
         "excluded_prs": excluded_prs,
         "hero": hero,
         "diff_prs": diff_prs,
+        "diagrams": diagrams,
     }
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_text(f"window.ODYSSEY = {json.dumps(manifest, ensure_ascii=False)};\n")
