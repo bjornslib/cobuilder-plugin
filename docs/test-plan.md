@@ -222,15 +222,22 @@ def leaf_keys(obj) -> set[str]:
 
     A leaf is any key whose value is not a dict, plus recursion into
     lists of dicts, for example each entry of `world.districts` or
-    `timeline`. Two fields, `size` and `touched`, hold a dict value but
-    count as leaves in their own right. Each one is a single derived
-    blob keyed by dynamic data, district IDs for `touched`, not a named
-    field group, so this walker does not open them."""
-    OPAQUE_DICT_LEAVES = {"size", "touched"}
+    `timeline`. The rule for OPAQUE is not "this key holds a dict or a
+    list of dicts". The rule is that `harvest_authored()` already
+    harvests each of these fields as one whole value. This walker must
+    not open them, or it invents leaf names the guard never produces.
+    `size` and `touched` are each a single derived blob keyed by dynamic
+    data, district IDs for `touched`. `beats`, `groups`, `forces`,
+    `alternatives`, and `consequences` are each one authored list that
+    `AUTHORED_LEVEL_FIELDS` names whole, so an edit inside one entry, for
+    example a `beats[0].text` value, already changes the harvested blob
+    and the guard already sees it."""
+    OPAQUE = {"size", "touched", "beats", "groups", "forces",
+              "alternatives", "consequences"}
     leaves: set[str] = set()
     if isinstance(obj, dict):
         for key, value in obj.items():
-            if key in OPAQUE_DICT_LEAVES:
+            if key in OPAQUE:
                 leaves.add(key)
             elif isinstance(value, dict):
                 leaves |= leaf_keys(value)
@@ -293,6 +300,7 @@ bug this plan names in its brief.
 | `test_migrate_01_guard_blocks_undeclared_change` | `run_guard()` | A migration that changes an authored field outside its `touches` set reports a violation and writes nothing | Protects paid Gemini art and TTS content from silent loss | no |
 | `test_migrate_02_guard_passes_declared_change` | `run_guard()` | A migration that changes a field inside `touches` reports zero violations | Confirms the guard does not fail closed on everything | no |
 | `test_migrate_03_harvest_authored_classifies_every_leaf` | `harvest_authored()` | Every leaf key in the golden `story.json` fixture appears in the authored tuples, or in a separate derived-leaf list, with no key left in neither | The single most valuable test in this plan, see 3.1 below | no |
+| `test_migrate_03b_harvest_authored_classifies_real_bundle` | `harvest_authored()` | The same completeness check as `test_migrate_03`, run against the real `.prodyssey/self/data/story.json` instead of the golden fixture | The golden fixture pins the contract by hand. The production variant catches drift in real data that a hand-built fixture cannot show. Only this variant found the `adrs` gap that commit 3711eaa fixed, see 3.1 below | no |
 | `test_migrate_04_full_run_aborts_no_disk_write` | `main()`, run through `subprocess` | A migration bug that violates `touches` leaves `story.json` byte-identical on disk, and the process exits with code 1 | Proves the "no write" failure mode `CLAUDE.md` describes | no |
 | `test_migrate_05_backup_written_on_success` | `main()` | A successful migration writes `.migration-backup/<date>-schema-<from>.json`, and its bytes match the pre-migration file | The backup is the only recovery path, so it must exist | no |
 | `test_migrate_06_viewer_refresh_unconditional` | `refresh_viewer()` | A bundle whose viewer file differs from the copy the plugin ships, but whose `bundle_format` already sits current, still gets its viewer overwritten | Regression guard for the exact bug the docstring names | no |
@@ -317,7 +325,7 @@ bug this plan names in its brief.
 | `test_export_index_01_renders_pending_and_published` | `render_card()` | A PR entry with no artifact URL renders "Not yet published". A PR entry with a URL renders a working link | The only test this script needs. Pure string templating carries low risk | no |
 | `test_record_publish_01_pr_target_writes_url_and_timestamp` | `main()`, run through `subprocess` | Passing a PR target and a URL sets the artifact URL of that PR and a fresh timestamp, and leaves every other key untouched | A simple script, but the one write step no other script can substitute for | no |
 
-This plan proposes 24 tests, spread across eight test files. Seven files
+This plan proposes 25 tests, spread across eight test files. Seven files
 match one script each. One shared file,
 `test_manifest_agreement.py`, holds the three-way comparison test. This
 count excludes the Gemini-calling code paths in `generate_prompts.py` and
@@ -381,6 +389,16 @@ content. This is why the test earns its place as the single most
 valuable one in this plan. It does not depend on a maintainer remembering
 to update it. It fails on its own the moment the real gap it exists to
 catch opens up.
+
+#### 3.1.1 This test already found two real gaps
+
+Before anyone wrote a line of this test, a manual run of its logic
+against the real, production `.prodyssey/self/data/story.json` surfaced
+two authored fields with no guard: `timeline[].adrs` and
+`districts[].root_paths`. Commit 3711eaa added both fields to their
+`AUTHORED_*_FIELDS` tuples and closed the gap. This is the argument for
+the test in one sentence. Run by hand against production data, and before
+the code existed as a test, it found a real defect.
 
 ## 4. Phasing
 
