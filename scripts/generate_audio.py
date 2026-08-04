@@ -2,8 +2,8 @@
 # /// script
 # requires-python = ">=3.10"
 # dependencies = [
-#     "google-genai>=1.0.0",
-#     "python-dotenv>=1.0.0",
+#     "google-genai>=1.0.0,<2",
+#     "python-dotenv>=1.0.0,<2",
 # ]
 # ///
 """
