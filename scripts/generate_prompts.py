@@ -2,9 +2,9 @@
 # /// script
 # requires-python = ">=3.10"
 # dependencies = [
-#     "google-genai>=1.0.0",
-#     "pillow>=10.0.0",
-#     "python-dotenv>=1.0.0",
+#     "google-genai>=1.0.0,<2",
+#     "pillow>=10.0.0,<13",
+#     "python-dotenv>=1.0.0,<2",
 # ]
 # ///
 """Generate Nano Banana Pro (Gemini image model) prompts for a Codebase Odyssey bundle.
