@@ -66,8 +66,15 @@ PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 
 # Authored (irreplaceable) leaves in story.json, as dotted-path templates.
 # "*" stands for "every item in this list" when walking timeline/districts.
-AUTHORED_TIMELINE_FIELDS = ("tagline", "depth")
-AUTHORED_DISTRICT_FIELDS = ("label", "kind", "blurb")
+#
+# A field earns a place in one of these tuples only if a human or a Claude
+# authoring stage produced it, and no script can recompute it from git or
+# from the rest of the bundle. `adrs` is retro-extraction output (see
+# skills/odyssey/SKILL.md Generate mode step 2); `root_paths` is authored
+# during baseline district derivation. Both are irreplaceable the same way
+# `tagline` and `blurb` are.
+AUTHORED_TIMELINE_FIELDS = ("tagline", "depth", "adrs")
+AUTHORED_DISTRICT_FIELDS = ("label", "kind", "blurb", "root_paths")
 AUTHORED_LEVEL_FIELDS = (
     "narration", "voice", "detail", "problem", "solution",
     "beats", "decision", "forces", "alternatives", "consequences", "groups",
