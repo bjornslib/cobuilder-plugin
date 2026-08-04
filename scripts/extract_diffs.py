@@ -10,7 +10,7 @@ still open (no merge commit yet) — its head commit and local merge-base
 (same discovery chain as extract_story.py — merge-commit scan, squash-commit
 scan, gh CLI fallback with an open-PR path; duplicated here so this script is
 standalone-runnable with no cross-imports), then computes the diff:
-  - merge commit: `git diff <parent1>..<parent2>`
+  - merge commit: `git diff <sha>^1 <sha>`
   - squash commit: `git diff <sha>^..<sha>`
   - open PR:       `git diff <merge-base>..<head>`
 
@@ -253,9 +253,12 @@ def resolve_prs(repo: Path, pr_nums: list[int], dot_range: str | None) -> dict[i
 def get_diff_text(repo: Path, entry: dict) -> str:
     sha = entry["hash"]
     if entry["kind"] == "merge":
-        parts = run_git(repo, ["rev-list", "--parents", "-n", "1", sha]).strip().split()
-        parent1, parent2 = parts[1], parts[2]
-        return run_git(repo, ["diff", f"{parent1}..{parent2}"])
+        # First-parent diff, not <parent1>..<parent2>. First-parent is the
+        # PR's actual contribution to the mainline. <parent1>..<parent2>
+        # additionally reverses whatever landed on the base branch after
+        # the PR branched, which corrupts the diff for any PR that is not
+        # the most recent merge. Do not "simplify" this back.
+        return run_git(repo, ["diff", f"{sha}^1", sha])
     if entry["kind"] == "open":
         return run_git(repo, ["diff", f"{entry['diff_base']}..{sha}"])
     return run_git(repo, ["diff", f"{sha}^..{sha}"])
