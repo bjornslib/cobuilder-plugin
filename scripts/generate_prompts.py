@@ -254,11 +254,13 @@ def run_generate(
     model: str,
     force: bool,
 ) -> None:
-    from dotenv import load_dotenv
-    # No path argument: the target repo (--repo) is untrusted, and its .env
-    # must never be merged into this process. load_dotenv() with no argument
-    # searches upward from cwd, which under `uv run` is this session's own repo.
-    load_dotenv()
+    from dotenv import load_dotenv, find_dotenv
+    # usecwd=True is REQUIRED, not cosmetic. The default anchors to this
+    # script's own directory, which for an installed plugin is
+    # ~/.claude/plugins/cache/..., not the user's repo. Anchor to the working
+    # directory instead: SKILL.md always runs these from the hub. The target
+    # repo is untrusted and its .env must never load.
+    load_dotenv(find_dotenv(usecwd=True))
 
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
@@ -391,11 +393,13 @@ def main() -> None:
 
     if args.generate:
         # Fail the API-key gate before writing any artifacts, not after prompts.json exists.
-        # No path argument: the target repo (--repo) is untrusted, and its .env
-        # must never be merged into this process. load_dotenv() with no argument
-        # searches upward from cwd, which under `uv run` is this session's own repo.
-        from dotenv import load_dotenv
-        load_dotenv()
+        from dotenv import load_dotenv, find_dotenv
+        # usecwd=True is REQUIRED, not cosmetic. The default anchors to this
+        # script's own directory, which for an installed plugin is
+        # ~/.claude/plugins/cache/..., not the user's repo. Anchor to the working
+        # directory instead: SKILL.md always runs these from the hub. The target
+        # repo is untrusted and its .env must never load.
+        load_dotenv(find_dotenv(usecwd=True))
         if not os.environ.get("GEMINI_API_KEY"):
             print(
                 "GEMINI_API_KEY is not set.\n\n"
