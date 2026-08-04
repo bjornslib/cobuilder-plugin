@@ -36,6 +36,13 @@ Artifact key names (stable, used in --json output):
     audio.<level>           - wav exists; only checked for levels with a non-empty
                               `voice` script in story.json
     diffs                   - data/diffs-pr{N}.js exists
+    intent                  - submit mode's captured author intent: a dict with a
+                              non-empty `problem`. "empty" when the dict is there
+                              but `problem` is not.
+    assessment              - submit mode's architecture assessment: a dict whose
+                              `verdict` is sound/concerns/rework and which answers
+                              all three questions. "incomplete" when a question
+                              block is absent, "wrong-verdict:<v>" otherwise.
 
   `asset.*` and `diagram.*` are always computed and reported, but which family is
   REQUIRED for a passing/"ok" run is controlled by `--art image|diagram|both`
@@ -43,13 +50,20 @@ Artifact key names (stable, used in --json output):
   are listed under a per-section `"_optional"` key (JSON) or marked `(optional)`
   in the table; their real status is still reported, not hidden.
 
-Exit 0 iff every REQUIRED artifact is "ok" (see `--art` above). Never writes
-anything.
+  `intent`/`assessment` follow the same reported-but-optional rule, and are
+  optional by DEFAULT — every PR generated before submit mode existed has
+  neither, and a bundle must not start failing because the plugin grew a new
+  mode. `--require-review` promotes them to required, which is what submit mode
+  passes to confirm its own run landed.
+
+Exit 0 iff every REQUIRED artifact is "ok" (see `--art` and `--require-review`
+above). Never writes anything.
 
 Usage:
     uv run verify_bundle.py --bundle-dir <bundle>
     uv run verify_bundle.py --bundle-dir <bundle> --prs 73,75 --json
     uv run verify_bundle.py --bundle-dir <bundle> --art diagram --json
+    uv run verify_bundle.py --bundle-dir <bundle> --prs 73 --require-review --json
 """
 from __future__ import annotations
 
@@ -64,6 +78,12 @@ from _bundle_meta import CURRENT_BUNDLE_FORMAT, SCHEMA_VERSION, SCHEMA_VERSION_K
 LEVEL_KEYS = ["landscape", "problem_solution", "architecture", "file_changes"]
 MIN_ASSET_BYTES = 1024
 DIAGRAM_TYPE_BY_LEVEL = {1: "C4Container", 2: "sequenceDiagram", 3: "classDiagram"}
+# skills/odyssey/references/review-mode.md §8 and §3.
+ASSESSMENT_VERDICTS = {"sound", "concerns", "rework"}
+ASSESSMENT_QUESTIONS = ("sensible", "maintainability", "pattern")
+# Key prefixes for submit mode's two artifacts. Optional unless --require-review;
+# no other artifact key starts with either string.
+REVIEW_PREFIXES = ("intent", "assessment")
 
 
 def count_inventory_contexts(text: str) -> int:
@@ -213,6 +233,32 @@ def optional_prefixes_for_art(art: str) -> tuple[str, ...]:
     return ()  # "both": nothing optional
 
 
+def check_intent(entry: dict | None) -> str:
+    """"ok" when submit mode's interview left a `problem` behind. An `intent`
+    block with no `problem` is a half-written interview, not a valid one."""
+    intent = (entry or {}).get("intent")
+    if not isinstance(intent, dict) or not intent:
+        return "missing"
+    return "ok" if intent.get("problem") else "empty"
+
+
+def check_assessment(entry: dict | None) -> str:
+    """"ok" when the block carries a known verdict and answers all three
+    questions in review-mode.md §3. Shape only — nothing here judges whether
+    the answers are any good."""
+    assessment = (entry or {}).get("assessment")
+    if not isinstance(assessment, dict) or not assessment:
+        return "missing"
+    verdict = assessment.get("verdict")
+    if verdict not in ASSESSMENT_VERDICTS:
+        return f"wrong-verdict:{verdict}"
+    for question in ASSESSMENT_QUESTIONS:
+        block = assessment.get(question)
+        if not isinstance(block, dict) or not block.get("answer"):
+            return "incomplete"
+    return "ok"
+
+
 def check_pr(bundle_dir: Path, story: dict | None, adrs: dict | None, pr_num: int) -> dict[str, str]:
     results: dict[str, str] = {}
 
@@ -262,6 +308,9 @@ def check_pr(bundle_dir: Path, story: dict | None, adrs: dict | None, pr_num: in
     diffs_path = bundle_dir / "data" / f"diffs-pr{pr_num}.js"
     results["diffs"] = "ok" if diffs_path.exists() else "missing"
 
+    results["intent"] = check_intent(entry)
+    results["assessment"] = check_assessment(entry)
+
     return results
 
 
@@ -283,9 +332,18 @@ def main() -> None:
         "pre-diagram behavior), 'diagram' (diagram.* required, asset.* "
         "informational), or 'both' (both required)",
     )
+    parser.add_argument(
+        "--require-review",
+        action="store_true",
+        help="require submit mode's intent/assessment blocks for a passing run. "
+        "Off by default so a bundle generated before submit mode existed keeps "
+        "passing; submit mode passes it to confirm its own run landed",
+    )
     args = parser.parse_args()
 
     optional_prefixes = optional_prefixes_for_art(args.art)
+    if not args.require_review:
+        optional_prefixes += REVIEW_PREFIXES
 
     bundle_dir = Path(args.bundle_dir).resolve()
     if not bundle_dir.exists():
@@ -324,9 +382,18 @@ def main() -> None:
             pr_num: {**results, "_optional": optional_keys(results)}
             for pr_num, results in prs_results.items()
         }
-        print(json.dumps({"art": args.art, "baseline": baseline_out, "prs": prs_out}, indent=2, ensure_ascii=False))
+        # `art` and `require_review` both decide what counts as optional, so the
+        # JSON reports each of them next to the results they shaped.
+        payload = {
+            "art": args.art,
+            "require_review": args.require_review,
+            "baseline": baseline_out,
+            "prs": prs_out,
+        }
+        print(json.dumps(payload, indent=2, ensure_ascii=False))
     else:
-        print(f"Baseline (--art {args.art})")
+        review_note = ", review required" if args.require_review else ""
+        print(f"Baseline (--art {args.art}{review_note})")
         print("--------")
         for key, status in baseline.items():
             print(f"  {key:<20} {status:<12} (required)")

@@ -11,6 +11,13 @@ scene art, voice narration, and retro-extracted ADRs, in a portable HTML
 viewer. The target is the session's own repo, or any other checkout reached
 through `--repo`.
 
+Submit mode is the one part that does not narrate history. It runs before the
+history exists — it interviews the author of a change, assesses that change
+against the bundle, and opens the pull request. It exists because the rest of
+the plugin spends real effort reconstructing intent that nobody wrote down.
+Capture the intent at submit time, and generate mode stops guessing. See
+Submit mode below, and `skills/odyssey/references/{interview-guide,review-mode}.md`.
+
 Where the bundle lands depends on the target. Analyzing your own repo writes
 to `<target>/.prodyssey/self/` — that is the case with no `--repo`, or with
 `--repo` that resolves to the session's own checkout. Analyzing a foreign
@@ -39,21 +46,24 @@ files.
 ```
 .claude-plugin/       plugin.json (manifest) + marketplace.json
 commands/              thin dispatchers: baseline.md, generate.md, view.md,
-                       publish.md, view.md → Skill("odyssey", args=...)
+                       publish.md, submit.md → Skill("odyssey", args=...)
 skills/
   odyssey/
     SKILL.md          orchestration: prereq gate → baseline → per-PR sweep →
-                       view → publish → verify
+                       submit → view → publish → verify
     references/       loaded on demand (story-mode, decision-records-lite,
-                       baseline-derivation, diagram-mode, adr-template, stacks/*)
+                       baseline-derivation, diagram-mode, review-mode,
+                       interview-guide, adr-template, pr-description-template,
+                       stacks/*)
   mermaid/            authoring rules for the Mermaid diagrams below; not
                        invoked by the orchestrating Claude directly — the
                        per-PR diagram-authoring subagent invokes it as
                        Skill("prodyssey:mermaid")
-scripts/               9 PEP-723 uv scripts, called by the skill, never edited by it:
+scripts/              11 PEP-723 uv scripts, called by the skill, never edited by it:
                        extract_story.py, generate_prompts.py, generate_audio.py,
                        extract_diffs.py, build_diagrams.py, verify_bundle.py,
-                       export_artifact.py, export_index.py, record_publish.py
+                       export_artifact.py, export_index.py, record_publish.py,
+                       migrate_bundle.py, render_review.py
 viewer/index.html      the bundle viewer (~2000 lines, single file, see below)
 ```
 
@@ -86,6 +96,45 @@ them.
 
 Scripts are PEP 723 (`uv run script.py` resolves `google-genai`, `pillow`,
 `python-dotenv` inline — no venv, no `requirements.txt`).
+
+## Submit mode — what is load-bearing about it
+
+`/prodyssey:submit` interviews a change's author, assesses the change, and
+opens the pull request. Four things about it are easy to break by accident.
+
+**The interview is the product.** `references/interview-guide.md` §2 says
+never ask a question the evidence already answers, and §3 caps the count at
+six. A future session that turns this into a fixed questionnaire has removed
+the only thing that separates it from a generic diff-reading reviewer. The
+mode reads the diff, the districts, the ADRs, and the stack card *before* it
+asks anything.
+
+**The PR number comes from opening the PR.** `story.json` keys on an integer
+`pr`, and `verify_bundle.py`, `record_publish.py`, `manifest.js`, and the
+viewer all depend on that. A working branch therefore cannot enter the
+timeline. Rather than mint a synthetic key, the pre stage ends with
+`gh pr create` and files the result under the real number. Before that, the
+content stages in `<bundle-dir>/exports/branch-<slug>/`. Do not "fix" this by
+inventing a branch key.
+
+**Pushing and opening a PR are the only actions outside `.prodyssey/`,** and
+they only run after an explicit confirmation. Nothing else on GitHub is in
+scope: no comments, no edits to an existing PR body, no labels, no reviewers,
+no merges. `--non-interactive` cannot open a PR at all, because there is
+nobody there to confirm.
+
+**`intent` and `assessment` live on the timeline entry, not in a file of
+their own.** That is what puts them under `migrate_bundle.py`'s
+authored-field guard — both names are in `AUTHORED_TIMELINE_FIELDS` — and it
+is why the viewer reads them off `window.STORY` with no new global and no new
+`<script src>` tag. A separate `reviews.json` would repeat the `adrs.json`
+debt described under Bundle versioning below.
+
+Assessment is Claude judgment work, like narrative and ADRs.
+`scripts/render_review.py` lays the result out as markdown and judges none of
+it. `verify_bundle.py` gained `intent` and `assessment` keys that are
+**optional by default** — a bundle generated before this mode existed must
+keep passing — and `--require-review` promotes them.
 
 ## The viewer is not self-contained — this matters for anything artifact-related
 
@@ -184,6 +233,9 @@ and migration below.
   inventory.yaml
   viewer/index.html
   exports/{publish-manifest.json, pr-{N}.html…, index.html}   # written by /prodyssey:publish
+  exports/pr-{N}-{description,assessment}.md                  # written by /prodyssey:submit
+  exports/branch-{slug}/{diff,intent,assessment}.json         # /prodyssey:submit, pre-PR staging
+  exports/branch-{slug}/{description,assessment}.md
   .migration-backup/  # pre-migration story.json snapshots, written by migrate_bundle.py
 ```
 
@@ -198,13 +250,13 @@ flag it was generated with (see Generate mode in `skills/odyssey/SKILL.md`).
 `exports/` appears only after `/prodyssey:publish` runs at least once. It is
 as committable as the rest of the bundle — see Publish mode notes below.
 
-`story.json`'s `meta.schema_version` is currently `"1.1"`, and it is the
+`story.json`'s `meta.schema_version` is currently `"1.2"`, and it is the
 source of truth for a bundle's data shape. `bundle.json` only mirrors it.
 `scripts/_bundle_meta.py` holds the constant, and `verify_bundle.py` gates
-on it through `SCHEMA_VERSION_KNOWN`. That set also accepts `"1.0"`, so
+on it through `SCHEMA_VERSION_KNOWN`. That set also accepts `"1.0"` and `"1.1"`, so
 migration can still read an older bundle.
 
-This repo commits everything under `.prodyssey/`. Only four bookkeeping
+This repo commits everything under `.prodyssey/`. Only five bookkeeping
 entries are gitignored:
 
 - `.prodyssey/.view-server.pid` and `.prodyssey/.view-server.log`, which are
@@ -213,6 +265,11 @@ entries are gitignored:
   breaks every other clone and churns the diff on each view switch.
 - Each bundle's `.migration-backup/`, which holds pre-migration `story.json`
   snapshots. They are disposable once a migration proves sound.
+- `exports/branch-*/diff.json`, submit mode's pre-PR diff cache. It is exactly
+  reproducible from `git diff <merge-base>..<head>`, and it is
+  self-referential — committing it into the branch it diffs rewrites it on
+  every commit, and each version would then contain the last one. The authored
+  `intent.json` and `assessment.json` beside it are committed.
 
 The self-bundle and the foreign-repo cache used to live under two separate
 top-level directories. One `.prodyssey/` root now holds both, and the
@@ -262,8 +319,8 @@ ways, and each way needs its own fix, not one migration framework:
 
 `migrate_bundle.py` runs all three phases against `--bundle-dir`, in this
 order: the unconditional viewer refresh, then the layout ladder, then the
-data ladder. `skills/odyssey/SKILL.md` calls it at the start of all four
-modes — Baseline, Generate, View, and Publish. A stale bundle therefore
+data ladder. `skills/odyssey/SKILL.md` calls it at the start of all five
+modes — Baseline, Generate, Submit, View, and Publish. A stale bundle therefore
 self-heals before any other step reads it.
 
 A data migration must never regenerate content. `story.json` holds
@@ -308,7 +365,7 @@ hand.
 - `extract_story.py` never overwrites an authored narrative field for a PR
   already in `story.json`. A new PR gets a minimal stub. A second run is
   safe.
-- `--repo <path>` works on the skill and on all four commands. It targets
+- `--repo <path>` works on the skill and on all five commands. It targets
   any local checkout, not only the session's own working directory. The Hub
   resolution storage rule decides where the bundle lands:
   `<target>/.prodyssey/self/` for self-analysis, or
@@ -351,6 +408,10 @@ resolution / central storage (`--store`, `.prodyssey/`, `view` command) →
 unification of the two former bundle-storage roots, with the self-bundle
 moved to `.prodyssey/self/` → authored Mermaid diagrams as an `--art`
 alternative to Gemini scene art, adding the `mermaid` skill and
-`build_diagrams.py` (see `git log` for the WS-A/B/C/D workstream commits).
+`build_diagrams.py` (see `git log` for the WS-A/B/C/D workstream commits) →
+`submit` mode, which reverses part of the review-mode exclusion recorded in
+`README.md`'s extraction manifest and adds schema 1.2, the
+`interview-guide`/`review-mode` references, `render_review.py`, and the
+viewer's assessment sheet.
 No test suite, no CI config, no package manager — this is prose + Python
 scripts + one HTML file.
