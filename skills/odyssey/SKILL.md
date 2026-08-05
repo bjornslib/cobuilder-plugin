@@ -189,15 +189,19 @@ Run this before any other step, every baseline/generate invocation:
 2. Confirm `uv` is on PATH (`which uv`). If missing, STOP and tell the user to install
    `uv` (https://docs.astral.sh/uv/getting-started/installation/).
 3. Confirm `GEMINI_API_KEY` is available: check the environment, then check for a
-   `.env` file in `<target>` containing `GEMINI_API_KEY=`. If **neither** is present,
-   STOP before running any script and print:
+   `.env` file in `<hub>` containing `GEMINI_API_KEY=`. Never check `<target>`
+   for this — `<target>` is an untrusted repo, and its `.env` must never load
+   into this process. The scripts resolve `.env` from the working directory,
+   not from either script's own path, so always run them from inside `<hub>` —
+   the same directory this gate checks. If **neither** is present, STOP before
+   running any script and print:
 
    ```
    GEMINI_API_KEY is required for voice narration (and scene art, unless
    --art diagram is in effect).
    Get one at https://aistudio.google.com/apikey, then either:
      export GEMINI_API_KEY=<key>
-   or add it to <target>/.env:
+   or add it to <hub>/.env:
      GEMINI_API_KEY=<key>
    ```
 

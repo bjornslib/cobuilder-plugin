@@ -29,7 +29,7 @@ Restart the session, or enable the plugin from `/plugin`. After that, the
 
 | Requirement | Why | Checked when |
 |---|---|---|
-| `GEMINI_API_KEY` (env or `.env` in the target repo) | Generates TTS narration, always. Also generates level 1 through 3 scene art, under `--art both` (the default) or `--art image`. Not needed for scene art under `--art diagram` | Checked on every invocation. If the key is absent, the skill stops and prints a message that tells you what to do (AC G2) |
+| `GEMINI_API_KEY` (env or `.env` in your own repo, never the target repo) | Generates TTS narration, always. Also generates level 1 through 3 scene art, under `--art both` (the default) or `--art image`. Not needed for scene art under `--art diagram` | Checked on every invocation. If the key is absent, the skill stops and prints a message that tells you what to do (AC G2) |
 | A git checkout of the target repo | All analysis runs locally: `git log`, grep, and file reads | Checked on invocation |
 | `python3` version 3.10 or later, with `uv` | Bundled scripts run through [PEP 723](https://peps.python.org/pep-0723/) inline metadata. `uv run` resolves `google-genai`, `pillow`, and `python-dotenv` for each script, with no venv setup needed | Checked at the first script call |
 
@@ -115,8 +115,10 @@ points the whole sweep at any local checkout:
 /prodyssey:baseline --repo ~/code/other-project
 ```
 
-Prodyssey looks up `GEMINI_API_KEY` in that repo's `.env` file, or in your
-environment. If Claude lacks read access to the path, grant it once with
+Prodyssey looks up `GEMINI_API_KEY` in your environment, or in your own
+repo's `.env` file. It never reads `.env` from the target repo — that repo
+is untrusted, and its `.env` must never load into this process. If Claude
+lacks read access to the path, grant it once with
 `/add-dir ~/code/other-project`. The bundle itself does not land inside that
 repo. See [Multiple repos](#multiple-repos) below for where it goes.
 
