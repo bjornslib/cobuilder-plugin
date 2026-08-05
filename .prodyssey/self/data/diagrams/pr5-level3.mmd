@@ -1,0 +1,37 @@
+classDiagram
+    class GeneratePromptsPy {
+        +run_generate(descriptions_json, model, force) void
+        +resolveEnv() void
+        +dependencyManifest string
+    }
+
+    class GenerateAudioPy {
+        +main() void
+        +resolveEnv() void
+        +dependencyManifest string
+    }
+
+    class ExportArtifactPy {
+        +dependencyManifest string
+    }
+
+    class EnvResolutionContract {
+        <<ADR-0007>>
+        +find_dotenv(usecwd) Path
+        +neverReadsRepoArg() bool
+    }
+
+    class DependencyLockContract {
+        <<ADR-0008>>
+        +upperBound() string
+        +lockfilePath() string
+    }
+
+    GeneratePromptsPy ..|> EnvResolutionContract : implements
+    GenerateAudioPy ..|> EnvResolutionContract : implements
+    GeneratePromptsPy ..|> DependencyLockContract : implements
+    GenerateAudioPy ..|> DependencyLockContract : implements
+    ExportArtifactPy ..|> DependencyLockContract : implements
+
+    note for EnvResolutionContract "ADR-0007: find_dotenv(usecwd=True)\nanchors to the hub cwd, never the --repo target"
+    note for DependencyLockContract "ADR-0008: pillow under 13, google-genai under 2,\npython-dotenv under 2, plus a hash-pinned\nuv lock --script lockfile per script"

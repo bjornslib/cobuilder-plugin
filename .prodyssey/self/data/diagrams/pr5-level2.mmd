@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant Operator
+    participant Script as generate_prompts.py / generate_audio.py
+    participant HubEnv as Hub .env (cwd)
+    participant TargetEnv as --repo target .env (untrusted)
+    participant Gemini as Gemini API
+
+    Operator->>Script: uv run script.py --repo target-path (cwd is the hub)
+
+    rect rgb(255, 225, 225)
+        Note over Script,TargetEnv: Before PR 5 - vulnerable
+        Script->>TargetEnv: load_dotenv(repo slash .env)
+        TargetEnv-->>Script: Merges HTTPS_PROXY, SSL_CERT_FILE, decoy GEMINI_API_KEY into os.environ
+        Script->>Gemini: Authenticated call using a poisoned environment
+    end
+
+    rect rgb(220, 245, 220)
+        Note over Script,HubEnv: After PR 5, ADR-0007 - anchored
+        Script->>Script: find_dotenv(usecwd=True)
+        Script->>HubEnv: Resolve GEMINI_API_KEY from process cwd
+        HubEnv-->>Script: Real GEMINI_API_KEY
+        Script--xTargetEnv: Never read
+        Script->>Gemini: Authenticated call using only the hub's own key
+    end
