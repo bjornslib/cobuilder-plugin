@@ -2,8 +2,8 @@
 # /// script
 # requires-python = ">=3.10"
 # dependencies = [
-#     "google-genai>=1.0.0",
-#     "python-dotenv>=1.0.0",
+#     "google-genai>=1.0.0,<2",
+#     "python-dotenv>=1.0.0,<2",
 # ]
 # ///
 """
@@ -180,10 +180,13 @@ def main():
         sys.exit(1)
     pr_nums = sorted(set(pr_nums))
 
-    # Load .env from the target repo root (not cwd) so GEMINI_API_KEY resolves
-    # the same way regardless of where this script is invoked from.
-    from dotenv import load_dotenv
-    load_dotenv(repo / ".env")
+    from dotenv import load_dotenv, find_dotenv
+    # usecwd=True is REQUIRED, not cosmetic. The default anchors to this
+    # script's own directory, which for an installed plugin is
+    # ~/.claude/plugins/cache/..., not the user's repo. Anchor to the working
+    # directory instead: SKILL.md always runs these from the hub. The target
+    # repo is untrusted and its .env must never load.
+    load_dotenv(find_dotenv(usecwd=True))
 
     entries = []  # (pr_num, level, text, output_file)
     for pr_num in pr_nums:

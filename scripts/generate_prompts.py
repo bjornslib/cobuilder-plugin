@@ -2,9 +2,9 @@
 # /// script
 # requires-python = ">=3.10"
 # dependencies = [
-#     "google-genai>=1.0.0",
-#     "pillow>=10.0.0",
-#     "python-dotenv>=1.0.0",
+#     "google-genai>=1.0.0,<2",
+#     "pillow>=10.0.0,<13",
+#     "python-dotenv>=1.0.0,<2",
 # ]
 # ///
 """Generate Nano Banana Pro (Gemini image model) prompts for a Codebase Odyssey bundle.
@@ -253,10 +253,14 @@ def run_generate(
     descriptions_json: Path,
     model: str,
     force: bool,
-    repo: Path,
 ) -> None:
-    from dotenv import load_dotenv
-    load_dotenv(repo / ".env")  # loads GEMINI_API_KEY from the target repo's .env, if present
+    from dotenv import load_dotenv, find_dotenv
+    # usecwd=True is REQUIRED, not cosmetic. The default anchors to this
+    # script's own directory, which for an installed plugin is
+    # ~/.claude/plugins/cache/..., not the user's repo. Anchor to the working
+    # directory instead: SKILL.md always runs these from the hub. The target
+    # repo is untrusted and its .env must never load.
+    load_dotenv(find_dotenv(usecwd=True))
 
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
@@ -316,7 +320,13 @@ def rewrite_manifest(bundle_dir: Path, manifest_path: Path) -> None:
             end = text.rindex(";")
             existing = json.loads(text[start:end])
             excluded_prs = existing.get("excluded_prs", [])
-        except Exception:
+        except Exception as e:
+            print(
+                f"warning: could not read excluded_prs from {manifest_path}: {e}\n"
+                "The manifest will be rewritten with an empty excluded_prs list. "
+                "If you hand-edited that field, re-apply it after this run.",
+                file=sys.stderr,
+            )
             excluded_prs = []
 
     def pr_num_from_dirname(name: str) -> int:
@@ -326,6 +336,10 @@ def rewrite_manifest(bundle_dir: Path, manifest_path: Path) -> None:
     def level_num_from_filename(name: str) -> int:
         m = re.match(r"level-(\d+)\.png$", name)
         return int(m.group(1)) if m else 0
+
+    def pr_level_from_diagram_filename(name: str) -> tuple[int, int]:
+        m = re.match(r"pr(\d+)-level(\d+)\.mmd$", name)
+        return (int(m.group(1)), int(m.group(2))) if m else (0, 0)
 
     hero = []
     if assets_dir.exists():
@@ -343,11 +357,18 @@ def rewrite_manifest(bundle_dir: Path, manifest_path: Path) -> None:
                 diff_prs.append(int(m.group(1)))
     diff_prs.sort()
 
+    diagrams_dir = data_dir / "diagrams"
+    diagrams = []
+    if diagrams_dir.exists():
+        for mmd in sorted(diagrams_dir.glob("pr*-level*.mmd"), key=lambda p: pr_level_from_diagram_filename(p.name)):
+            diagrams.append(mmd.name)
+
     manifest = {
         "schema_version": SCHEMA_VERSION,
         "excluded_prs": excluded_prs,
         "hero": hero,
         "diff_prs": diff_prs,
+        "diagrams": diagrams,
     }
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_text(f"window.ODYSSEY = {json.dumps(manifest, ensure_ascii=False)};\n")
@@ -389,8 +410,13 @@ def main() -> None:
 
     if args.generate:
         # Fail the API-key gate before writing any artifacts, not after prompts.json exists.
-        from dotenv import load_dotenv
-        load_dotenv(repo / ".env")
+        from dotenv import load_dotenv, find_dotenv
+        # usecwd=True is REQUIRED, not cosmetic. The default anchors to this
+        # script's own directory, which for an installed plugin is
+        # ~/.claude/plugins/cache/..., not the user's repo. Anchor to the working
+        # directory instead: SKILL.md always runs these from the hub. The target
+        # repo is untrusted and its .env must never load.
+        load_dotenv(find_dotenv(usecwd=True))
         if not os.environ.get("GEMINI_API_KEY"):
             print(
                 "GEMINI_API_KEY is not set.\n\n"
@@ -409,7 +435,7 @@ def main() -> None:
     print(f"Wrote {prompts_json} ({len(prompts)} prompts)")
 
     if args.generate:
-        run_generate(prompts, bundle_dir, descriptions_json, args.model, args.force, repo)
+        run_generate(prompts, bundle_dir, descriptions_json, args.model, args.force)
         rewrite_manifest(bundle_dir, manifest_js)
         print(f"Wrote {manifest_js}")
 

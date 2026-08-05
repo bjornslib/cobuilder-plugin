@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["pillow>=10.0.0"]
+# dependencies = ["pillow>=10.0.0,<13"]
 # ///
 """Flatten one PR from a Codebase Odyssey bundle into a single self-contained
 HTML file safe to publish as a Claude Artifact.
