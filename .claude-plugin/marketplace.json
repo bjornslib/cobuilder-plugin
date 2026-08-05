@@ -2,6 +2,6 @@
   "name": "prodyssey",
   "owner": { "name": "bjornslib", "url": "https://github.com/bjornslib" },
   "plugins": [
-    { "name": "prodyssey", "source": ".", "description": "Codebase Odyssey generator plugin", "version": "0.1.0" }
+    { "name": "prodyssey", "source": ".", "description": "Codebase Odyssey generator plugin", "version": "0.3.0" }
   ]
 }

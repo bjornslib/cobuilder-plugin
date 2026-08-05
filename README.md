@@ -122,6 +122,80 @@ lacks read access to the path, grant it once with
 `/add-dir ~/code/other-project`. The bundle itself does not land inside that
 repo. See [Multiple repos](#multiple-repos) below for where it goes.
 
+---
+
+## Reviewing before you merge
+
+The four commands above narrate history. This one runs before the history
+exists.
+
+```
+/prodyssey:submit
+```
+
+Run it on a branch that has no pull request. Prodyssey reads the diff, the
+district map, and every architecture decision the repo already recorded. It
+then asks you only what that evidence cannot answer, usually four to six
+questions. It writes your answers down, assesses the change, and opens the
+pull request with a description built from what you said.
+
+The assessment answers three questions that a diff cannot:
+
+1. **Is this sensible?** Does the change solve the problem you state, and does
+   that problem belong here?
+2. **Does it help or hurt maintainability?** It names the invariant the change
+   establishes, in the same words an ADR uses.
+3. **New pattern, duplicate, or reinvention?** This is the question the bundle
+   exists to answer. A `duplicate` or `reinvention` verdict must cite the ADR
+   or the district it duplicates. Without a citation, there is no verdict.
+
+Then it answers the one a senior reviewer actually asks: **will we regret
+this?**
+
+The verdict is `sound`, `concerns`, or `rework`. **It never blocks a merge.**
+A `rework` verdict gives you three options. Open the PR, open it as a draft,
+or fix the change first. You choose.
+
+### It asks who wrote the code
+
+Prodyssey records whether the change is `human`, `agent-assisted`, or
+`agent-generated`. It also records the parts you cannot explain. "The agent
+wrote that, and I am not sure why" is a useful answer, not a failed interview.
+Those notes raise the risk tier and go in the PR description where a reviewer
+reads them. Code that nobody can explain costs a team more than the same code
+with an author who can.
+
+### What it writes, and what it opens
+
+Everything lands in the bundle. The PR description and the assessment go to
+`<bundle-dir>/exports/` as markdown. The two structured blocks go onto the
+PR's timeline entry in `story.json`. The viewer shows the assessment on level
+3, behind a badge next to the ADR chips.
+
+Opening the pull request is the only thing Prodyssey does outside
+`.prodyssey/`. It shows you the description and asks first. It does nothing
+else on GitHub. Use `--no-create` to stop before that and keep the files.
+
+```
+/prodyssey:submit --no-create          # write the files, open nothing
+/prodyssey:submit --draft              # open it as a draft
+/prodyssey:submit --base develop       # a base branch other than the default
+/prodyssey:submit --prs 73             # review an open PR instead of creating one
+/prodyssey:submit --prs 73 --stage post
+```
+
+`--stage post` runs after the merge. It compares what shipped against what
+you said before it shipped. Scope you declared out of bounds and touched
+anyway. Risks that never got a guard. Options you rejected that the code
+adopted. It never rewrites what you said earlier.
+
+### It makes the story better
+
+The intent captured here stays in the bundle. When `/prodyssey:generate` runs
+on that PR later, it reads your stated problem and your rejected alternatives
+instead of inferring them from the diff. The ADR it extracts is marked
+`provenance: authored`, not `inferred`.
+
 ## Viewing the result
 
 - **Bundled viewer**: `/prodyssey:view` starts one long-lived `python3 -m
@@ -228,11 +302,25 @@ repos](#multiple-repos) below.
   inventory.yaml
   viewer/index.html
   exports/{publish-manifest.json, pr-{N}.html…, index.html}   # written by /prodyssey:publish
+  exports/pr-{N}-{description,assessment}.md                  # written by /prodyssey:submit
+  exports/branch-{slug}/{diff,intent,assessment}.json         # /prodyssey:submit, before a PR exists
+  exports/branch-{slug}/{description,assessment}.md
 ```
 
 The `diagrams/` and `assets/` entries depend on the `--art` mode that
 generated the PR. `--art diagram` writes only `.mmd` files and no PNGs.
 `--art image` writes only PNGs. `--art both`, the default, writes both.
+
+`/prodyssey:submit` also writes two blocks onto the PR's own timeline entry
+in `story.json`: `intent`, which holds what the author said, and
+`assessment`, which holds the judgment written against it. They live there,
+and not in a file of their own, so the migration guard protects them the way
+it protects the narrative.
+
+A `branch-{slug}/` directory is the staging area for a branch that has no
+pull request yet. Once the PR opens, the same content moves into
+`story.json` under the real PR number, and the staging directory is a
+leftover you can delete.
 
 Commit the bundle, and a share link is only the raw GitHub URL. You can
 also import the bundle into the viewer directly, by upload or by local
@@ -256,15 +344,19 @@ prodyssey/
 │   ├── baseline.md           # thin: invokes the skill with args="baseline"
 │   ├── generate.md           # thin: invokes the skill with args="generate --prs ..."
 │   ├── view.md                # thin: invokes the skill with args="view ..."
-│   └── publish.md             # thin: invokes the skill with args="publish --prs ..."
+│   ├── publish.md             # thin: invokes the skill with args="publish --prs ..."
+│   └── submit.md              # thin: invokes the skill with args="submit ..."
 ├── skills/
 │   ├── odyssey/
-│   │   ├── SKILL.md          # orchestration: prereq gate → baseline → per-PR sweep → view → publish → verify
+│   │   ├── SKILL.md          # orchestration: prereq gate → baseline → per-PR sweep → submit → view → publish → verify
 │   │   └── references/       # extracted from architecture-review-design-maintenance (see below)
 │   │       ├── story-mode.md
 │   │       ├── decision-records-lite.md
 │   │       ├── baseline-derivation.md      # describe-lite: district + inventory procedure
 │   │       ├── diagram-mode.md             # authoring rules for the per-PR Mermaid diagrams
+│   │       ├── review-mode.md              # submit mode: the three questions, verdicts, risk tiers
+│   │       ├── interview-guide.md          # submit mode: what to ask the author, and what not to
+│   │       ├── pr-description-template.md  # the PR body skeleton render_review.py fills
 │   │       ├── adr-template.md
 │   │       └── stacks/{README,nextjs,react-typescript,python-fastapi,generic}.md
 │   └── mermaid/               # authoring rules for Mermaid diagrams, invoked by the
@@ -280,7 +372,8 @@ prodyssey/
 │   ├── verify_bundle.py       # schema_version + completeness check (drives resumability)
 │   ├── export_artifact.py     # flattens one PR into a self-contained artifact-safe HTML
 │   ├── export_index.py        # renders the cross-PR index artifact from publish-manifest.json
-│   └── record_publish.py      # records a published Artifact URL back into publish-manifest.json
+│   ├── record_publish.py      # records a published Artifact URL back into publish-manifest.json
+│   └── render_review.py       # lays out the captured intent + assessment as two markdown files
 ├── viewer/
 │   └── index.html            # portable bundle viewer
 └── README.md                 # this file
@@ -291,7 +384,7 @@ Key manifest fields (`plugin.json`):
 ```json
 {
   "name": "prodyssey",
-  "version": "0.2.0"
+  "version": "0.3.0"
 }
 ```
 
@@ -323,6 +416,7 @@ Contact the author for more information.
 | `references/architecture-documentation.md` | `references/baseline-derivation.md` | Keeps describe-mode's verification discipline as the inventory procedure: enumerate modules, grep import edges in both directions, and never assert a boundary that is not verified. Drops the 8-section canvas, `boundary.yaml` authoring, and INVENTORY.md bookkeeping, replaced by one flat `inventory.yaml` file |
 | `references/stacks/*` (4 cards + README) | `references/stacks/*` | Kept verbatim. Detection precedence and ADR-topic checklists drive stack detection and extraction prompts |
 | `references/templates/adr-template.md` | `references/adr-template.md` | Trimmed frontmatter (no state machine fields) |
+| `references/stacks/*`'s `## Boundary Rules` and `## Review Checks` | `references/review-mode.md` | The card sections were extracted with the cards, and nothing read them until now. Submit mode runs the literal grep commands in `Boundary Rules` and records each result. It never reads `## Corpus Load`, because those paths do not ship with this plugin |
 | `docs/prototypes/codebase-evolution/data/extract_story.py` | `scripts/extract_story.py` | Generalized. Takes a repo path as a parameter, selects a PR by number through merge-commit lookup, writes to `<bundle-dir>/`, and never overwrites an authored or generated narrative field |
 | `docs/prototypes/codebase-evolution/nanobanana/generate_prompts.py` | `scripts/generate_prompts.py` | Reads district and world data from the bundle instead of hand-authored `story.json` fields |
 | `utils/generate_audio.py` | `scripts/generate_audio.py` | Keeps the same flow: voice scripts feed Gemini TTS. The output path changes to `<bundle-dir>/data/audio/` |
@@ -331,7 +425,7 @@ Contact the author for more information.
 
 | Not extracted | Why |
 |---|---|
-| **review / maintenance modes** + `saas-checklist.md`, `harness-security.md`, report templates, `compute_scores.py` | An audit instrument for maintainers, out of scope for Prodyssey (consensus 7/7) |
+| **maintenance mode** + `saas-checklist.md`, `harness-security.md`, report templates, `compute_scores.py` | An audit instrument for maintainers, out of scope for Prodyssey (consensus 7/7). **Partly reversed.** `/prodyssey:submit` now reviews a change, and it is a different instrument: it interviews the author, and it answers three judgment questions against this bundle's own districts and ADRs. What stayed out is what made the original an audit — the score, the corpus, the checklists, and the gate. Submit mode consumes the stack cards' `## Boundary Rules` and `## Review Checks` sections, which `stacks/README.md` already declared as review inputs |
 | **corpus/** (~170 principle YAMLs) + **books/** (14 vendored volumes) | Grounding for audit depth. Story generation needs the style rules and the record shapes, not the review corpus, and dropping it keeps the plugin download small |
 | **decisions-mode governance** (state machine, viewpoints, ADR numbering) | Governs a living doc set in a repo you own. Prodyssey generates immutable bundle records instead |
 | **describe-mode full canvas** | The flat inventory serves as the `maps_to` anchor. The full canvas adds documentation-program overhead that a foreign repo cannot sustain |
