@@ -185,5 +185,69 @@
       ]
     },
     "body": "## Context\n\nRetroactively extracted from PR #4. As the bundle format gained diagrams and other changes, older committed bundles (including this repo's own `.prodyssey/self/` and its test-fixture bundles) needed a way to self-heal to the current shape, motivated directly by a real incident: a bundle's viewer had gone stale and silently lost diagram support.\n\n## Options considered\n\n1. **One version-gated ladder covering everything, including the viewer.** Rejected — reproduces the exact incident that motivated this work.\n2. **In-place JSON transforms with no authored-field guard.** Rejected — unsafe next to hand-authored narrative and paid TTS/art content living in the same file.\n3. **Three independent phases, one unconditional, two version-gated, with a guard on the data ladder (chosen).**\n\n## Decision\n\n`migrate_bundle.py` always refreshes the viewer, then steps the layout ladder from `bundle_format`, then steps the schema ladder from `story.json`'s own `meta.schema_version`, comparing every authored field before and after each schema step and refusing to write if anything outside the declared `touches` set changed.\n\n## Consequences\n\n- **Positive:** every mode self-heals a stale bundle before doing anything else; hand-authored content is structurally protected from an in-place migration bug.\n- **Constraint introduced:** adding a new schema migration means declaring an accurate `touches` set — an incomplete one causes the guard to reject a legitimate migration, not silently under-check it.\n- **Negative / accepted:** a failed guard means \"no write happened,\" not an automatic fix — the maintainer has to widen `touches` or fix the migration function by hand.\n\n## Value delivered\n\n- **New capability:** automatic, safe bundle self-migration across all four modes.\n- **Benefit:** removes drift-related support burden without risking paid content.\n- **Beneficiary:** developer, operator\n\n## Maps to\n\nDistrict `scripts` from `.prodyssey/self/inventory.yaml`."
+  },
+  "ADR-0007": {
+    "id": "ADR-0007",
+    "title": "Anchor the GEMINI_API_KEY / .env lookup to the hub's cwd, never to a --repo target",
+    "state": "approved",
+    "source_pr": 5,
+    "problem": "generate_prompts.py and generate_audio.py called load_dotenv(repo / \".env\"), where repo is whatever path --repo passes. load_dotenv merges every assignment in that file into os.environ (subject only to override=False protecting a variable already set), so a foreign, untrusted --repo target's .env could set HTTPS_PROXY, HTTP_PROXY, REQUESTS_CA_BUNDLE, SSL_CERT_FILE, or any GOOGLE_*/GEMINI_* variable the google-genai SDK reads, and capture the session's own GEMINI_API_KEY on the next request.",
+    "decision": "Both scripts call load_dotenv(find_dotenv(usecwd=True)) with no path argument, which searches upward from the process's current working directory instead of the target repo or the script's own directory. Since SKILL.md always runs these scripts from inside the hub, this resolves the hub's own .env and never touches the target's.",
+    "alternatives": [
+      {
+        "option": "load_dotenv(repo / \".env\") — the original code",
+        "rejected_because": "Treats the analyzed repo as a trusted source of environment configuration, when --repo is explicitly documented as pointing at foreign, untrusted checkouts."
+      },
+      {
+        "option": "load_dotenv() with no arguments (python-dotenv's plain default)",
+        "rejected_because": "find_dotenv()'s default is usecwd=False, which walks up from the calling frame's own file — the scripts' directory under scripts/, not the working directory. That happens to work only in this dev checkout because the scripts live inside the hub; for an installed plugin, CLAUDE_PLUGIN_ROOT sits under ~/.claude/plugins/cache/, nowhere near the user's repo, so the key would never be found even when the user placed it exactly where README.md and SKILL.md say to."
+      }
+    ],
+    "forces": [
+      "--repo is documented to accept any local checkout, including ones the user does not control or trust.",
+      "SKILL.md's own Step 0 prereq gate already states the key belongs to <hub>, never <target> — the fix has to make the code match that documented boundary, not just patch the immediate leak.",
+      "python-dotenv's find_dotenv() has two different default search origins (usecwd=False walks from the caller's file; usecwd=True walks from the process cwd) that look interchangeable but are not, once scripts run from an installed plugin path instead of a dev checkout."
+    ],
+    "delivers": {
+      "capability": "A --repo target can never influence which environment variables the session's own API calls run with, regardless of what that target's .env contains.",
+      "benefit": "The user's GEMINI_API_KEY, and any other environment variable an untrusted repo could otherwise poison (HTTPS_PROXY, SSL_CERT_FILE, etc.), stays confined to the hub the user actually controls.",
+      "beneficiary": [
+        "operator",
+        "developer"
+      ]
+    },
+    "body": "## Context\n\ngenerate_prompts.py and generate_audio.py both authenticate to Google's Gemini API using GEMINI_API_KEY, and both previously loaded that key's .env file from the --repo target rather than the hub. --repo is documented (SKILL.md's Target resolution section) to accept any local checkout, which by construction includes repos the user does not control.\n\n## Options considered\n\n1. Original: load_dotenv(repo / \".env\") against the target — rejected, trusts an untrusted repo's file to set process environment variables.\n2. load_dotenv() with no path — rejected, python-dotenv's usecwd=False default resolves relative to the scripts' own directory, which only coincides with the hub in a dev checkout, not an installed plugin.\n3. Chosen: load_dotenv(find_dotenv(usecwd=True)) — resolves from the process working directory, which SKILL.md's procedure always leaves at the hub before invoking any script.\n\n## Decision\n\nAnchor .env resolution to cwd via find_dotenv(usecwd=True) at all three call sites, and never construct a path into --repo target for this purpose. SKILL.md's Step 0 prereq gate now states the cwd constraint explicitly.\n\n## Consequences\n\nA foreign --repo target's .env is now fully inert as far as this plugin's own process environment is concerned. Verified against a hostile fixture repo whose .env set a decoy GEMINI_API_KEY plus HTTPS_PROXY and a marker variable — none of it reached os.environ regardless of --repo target.\n\n## Value delivered\n\nCloses a credential-exfiltration path that existed for any user who pointed --repo at a repo they didn't fully trust.\n\n## Maps to\n\nscripts"
+  },
+  "ADR-0008": {
+    "id": "ADR-0008",
+    "title": "Cap and lock third-party dependencies in the three Gemini-calling scripts",
+    "state": "approved",
+    "source_pr": 5,
+    "problem": "export_artifact.py, generate_audio.py, and generate_prompts.py declare PEP 723 dependencies (pillow, google-genai, python-dotenv) with no upper version bound. Two of the three read GEMINI_API_KEY and send authenticated requests to Google, so an untested major release of any dependency could load silently on the next uv run, with the key already resident in process memory, and no lockfile pinned the resolved versions or their transitive packages.",
+    "decision": "Add upper bounds to each dependency (pillow<13, google-genai<2, python-dotenv<2) and generate a uv lockfile beside each of the three scripts (scripts/<name>.py.lock), pinning every transitive package with a hash. The other eight scripts in the plugin use only the standard library and need neither bound nor lockfile.",
+    "alternatives": [
+      {
+        "option": "Leave dependencies unbounded, matching the plugin's existing PEP 723 scripts",
+        "rejected_because": "An unbounded dependency on a script that authenticates to an external API with a live secret can silently pick up a compromised or breaking major release on the very next run."
+      },
+      {
+        "option": "Pin exact versions in the PEP 723 header instead of adding a lockfile",
+        "rejected_because": "A version pin alone does not pin or hash transitive dependencies, so a compromised transitive package could still load; a lockfile is what makes a tampered resolution fail closed instead of executing."
+      }
+    ],
+    "forces": [
+      "generate_prompts.py and generate_audio.py send the user's GEMINI_API_KEY to Google on every call — a compromised or unexpectedly-behaving dependency has a live credential to work with.",
+      "uv 0.5.14 (the version available when the version caps were first added) has no `uv lock --script` subcommand, so the caps landed one commit ahead of the lockfiles, after an upgrade to uv 0.12.1 made per-script locking possible.",
+      "Locking only the three scripts that declare third-party dependencies keeps the other eight, stdlib-only scripts free of lockfile maintenance they don't need."
+    ],
+    "delivers": {
+      "capability": "A `uv run` of any of the three key-handling scripts resolves to the same, hash-verified set of packages every time, and fails closed rather than silently executing a tampered or unexpectedly major-bumped dependency.",
+      "benefit": "The blast radius of a supply-chain compromise in pillow, google-genai, or python-dotenv is contained to versions the maintainer has actually reviewed, on the two scripts that hold a live external credential.",
+      "beneficiary": [
+        "operator",
+        "developer"
+      ]
+    },
+    "body": "## Context\n\nThree of the plugin's eleven PEP 723 scripts declare third-party dependencies. Two of those three (generate_prompts.py, generate_audio.py) read GEMINI_API_KEY and call Google's API on every run; the third (export_artifact.py) depends on pillow alone, for image recompression. None had an upper version bound or a lockfile.\n\n## Options considered\n\n1. Leave dependencies unbounded — rejected, given the live credential two of the three scripts hold.\n2. Exact-pin versions in the PEP 723 header, no lockfile — rejected, does not pin or hash transitive packages.\n3. Chosen: upper-bound each direct dependency, and lock all three scripts once uv 0.12.1 made `uv lock --script` available.\n\n## Decision\n\npillow<13 (resolves to 12.3.0), google-genai<2 (resolves to 1.75.0), python-dotenv<2 (resolves to 1.2.2). Each of the three scripts gets a sibling .lock file pinning every transitive package with a hash. Refresh a lockfile with `uv lock --script scripts/<name>.py` after any change to that script's dependency block.\n\n## Consequences\n\nA `uv run` against a tampered or altered lockfile now fails the hash check instead of executing. The other eight, stdlib-only scripts carry no lockfile and need none.\n\n## Value delivered\n\nRemoves the single largest unreviewed-upgrade surface on the two scripts that hold a live Google API credential.\n\n## Maps to\n\nscripts"
   }
 }

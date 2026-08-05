@@ -1,0 +1,26 @@
+C4Container
+    title Prodyssey PR 5 - closing the credential trust boundary
+
+    Person(operator, "Developer/Operator", "Runs /prodyssey commands with cwd at the hub")
+
+    Container_Boundary(hub, "Hub repo (cwd) - trusted") {
+        ContainerDb(hubenv, ".env", "file", "Holds the real GEMINI_API_KEY")
+        Container(prompts, "generate_prompts.py", "PEP 723 script", "Gemini image prompts; locked deps (ADR-0008)")
+        Container(audio, "generate_audio.py", "PEP 723 script", "Gemini TTS narration; locked deps (ADR-0008)")
+        Container(artifact, "export_artifact.py", "PEP 723 script", "Pillow recompression for publish; locked deps (ADR-0008)")
+    }
+
+    Container_Boundary(target, "--repo target (foreign, untrusted checkout)") {
+        ContainerDb(targetenv, ".env", "file", "Arbitrary content the target author controls")
+    }
+
+    System_Ext(gemini, "Gemini API", "google-genai SDK, image and TTS calls")
+
+    Rel(operator, prompts, "Invokes via SKILL.md", "cwd stays at hub")
+    Rel(operator, audio, "Invokes via SKILL.md", "cwd stays at hub")
+    Rel(hubenv, prompts, "find_dotenv(usecwd=True) resolves key", "ADR-0007")
+    Rel(hubenv, audio, "find_dotenv(usecwd=True) resolves key", "ADR-0007")
+    Rel(prompts, gemini, "Authenticated image-prompt calls")
+    Rel(audio, gemini, "Authenticated TTS calls")
+    Rel(targetenv, prompts, "BLOCKED - no longer read", "ADR-0007")
+    Rel(targetenv, audio, "BLOCKED - no longer read", "ADR-0007")
