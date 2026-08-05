@@ -29,17 +29,17 @@ src/
 
 Rationale for the boundaries:
 - **Feature folders with an index.ts** — each feature exposes a deliberate public
-  interface; other features import that, never internal files, so features stay
+  interface. Other features import that interface, never internal files, so features stay
   independently changeable (frontend bounded contexts, per corpus card 005).
-- **Container/presentational split** — components that fetch/coordinate are separated
-  from components that render, keeping the render layer testable with plain props
-  (corpus card 001).
-- **Side effects in custom hooks** — fetching, subscriptions, and timers are wrapped in
-  hooks rather than scattered through component bodies (corpus card 004).
+- **Container/presentational split** — the split separates components that fetch or
+  coordinate from components that render, keeping the render layer testable with plain
+  props (corpus card 001).
+- **Side effects in custom hooks** — hooks wrap fetching, subscriptions, and timers instead
+  of scattering them through component bodies (corpus card 004).
 
 ## Boundary Rules
 
-Each rule is grep-checkable; report violations as architecture findings.
+Each rule is grep-checkable. Report violations as architecture findings.
 
 1. Components never call HTTP clients directly — data access goes through hooks or the
    feature's `api.ts`.
@@ -49,7 +49,7 @@ Each rule is grep-checkable; report violations as architecture findings.
 3. Shared `components/` never import from `features/` (dependency points from features
    toward shared code, not back).
    Check: `grep -rn "from.*features/" src/components/`
-4. Presentational components don't import global stores — state arrives via props or
+4. Presentational components do not import global stores — state arrives via props or
    feature hooks.
    Check: `grep -rn "useStore\|useSelector\|useAtom" src/**/components/`
 
@@ -62,7 +62,7 @@ Each rule is grep-checkable; report violations as architecture findings.
 - `corpus/principles/security/frontend_security.yaml`
 - `corpus/principles/security/xss_csrf_csp.yaml`
 
-Review mode already loads all of `corpus/principles/security/*`; the security entries
+Review mode already loads all of `corpus/principles/security/*`. The security entries
 here exist so design mode gets them too. The Airbnb style cards
 (`003_airbnb_style.yaml`, `006`–`031`) are style-level — load on demand via
 `corpus-index.md` symptom lookup, not as part of the stack chain.
@@ -73,8 +73,8 @@ Stack-specific smells beyond the generic corpus:
 
 - **`any`-heavy typing**: `any`, `as any`, or `@ts-ignore` clusters that void the type
   system where it matters most (API boundaries, state).
-- **Stale closures / missing hook deps**: effects and callbacks whose dependency arrays
-  are silenced or hand-pruned.
+- **Stale closures / missing hook deps**: effects and callbacks with a silenced or
+  hand-pruned dependency array.
 - **Prop drilling vs context**: the same prop threaded through 3+ component layers, or
   conversely one god-context re-rendering the whole tree.
 - **Unbounded effects**: subscriptions, timers, or listeners in `useEffect` without a
@@ -87,7 +87,7 @@ Stack-specific smells beyond the generic corpus:
 Decisions this stack forces — during retro-extraction, check each has a record:
 
 - State management (Redux/Zustand/Jotai/context — and what belongs in which)
-- Data-fetching layer (React Query/SWR/hand-rolled; cache invalidation policy)
+- Data-fetching layer (React Query/SWR/hand-rolled), and its cache invalidation policy
 - Styling system (CSS modules/Tailwind/CSS-in-JS)
 - Form handling (react-hook-form/Formik/uncontrolled)
 - Routing and code-splitting boundaries

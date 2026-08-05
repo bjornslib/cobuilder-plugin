@@ -6,7 +6,7 @@ state: approved          # retro-extractions from a merged PR are always "approv
 source_pr: NN
 problem: "<the problem this decision answers>"
 decision: "<the chosen option, one sentence>"
-alternatives:             # >=1 entry — what was traded away
+alternatives:             # >=1 entry — what the decision traded away
   - option: "<rejected option>"
     rejected_because: "<why>"
 forces:                   # constraints/drivers: requirements, expertise, business
@@ -26,7 +26,7 @@ retroactive extraction from a merged PR, not a design-time record.>
 
 ## Options considered
 
-1. **<option A>.** <analysis; why rejected/accepted>
+1. **<option A>.** <analysis, why rejected/accepted>
 2. **<option B (chosen)>.** <analysis>
 
 ## Decision

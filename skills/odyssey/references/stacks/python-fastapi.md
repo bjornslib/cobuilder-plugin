@@ -32,7 +32,7 @@ alembic/ or migrations/ # schema migrations under version control
 
 Rationale for the boundaries:
 - **schemas/ vs models/** — Pydantic wire contracts and ORM persistence models change for
-  different reasons; conflating them leaks storage shape into the public API and blocks
+  different reasons. Conflating them leaks storage shape into the public API and blocks
   independent evolution.
 - **routers/ vs services/** — keeps business logic testable without an HTTP client and
   keeps handlers thin enough to audit for auth/validation at a glance.
@@ -40,7 +40,7 @@ Rationale for the boundaries:
 
 ## Boundary Rules
 
-Each rule is grep-checkable; report violations as architecture findings.
+Each rule is grep-checkable. Report violations as architecture findings.
 
 1. Routers never import ORM models directly — they call services.
    Check: `grep -rn "from app.models\|from ..models" app/api/ app/routers/`
@@ -62,7 +62,7 @@ Each rule is grep-checkable; report violations as architecture findings.
 - `corpus/principles/security/tenant_isolation.yaml`
 - `corpus/principles/security/layer_boundaries.yaml`
 
-Review mode already loads all of `corpus/principles/security/*`; the security entries
+Review mode already loads all of `corpus/principles/security/*`. The security entries
 here exist so design mode gets them too. Load further `corpus/principles/python/*`
 craft cards on demand via `corpus-index.md` symptom lookup.
 
