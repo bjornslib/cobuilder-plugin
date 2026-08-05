@@ -2,7 +2,7 @@ window.STORY = {
   "meta": {
     "repo": "prodyssey",
     "generated": "2026-07-22",
-    "schema_version": "1.1",
+    "schema_version": "1.2",
     "title": "prodyssey — Codebase Odyssey",
     "description": "",
     "levels": [

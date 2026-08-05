@@ -23,6 +23,30 @@ not the codebase's current state). This applies to `narration`, `problem`/
 `solution`, `beats`, and `voice` alike — the register (plain vs.
 developer-precise) is unchanged, only the tense/certainty.
 
+**When the PR carries an `intent` block, read it first.** Submit mode
+(`/prodyssey:submit`) interviews the author before the PR opens and writes
+what they said onto the timeline entry — see `references/interview-guide.md`
+§1. Everything below still applies to how you write. What changes is where the
+content comes from:
+
+- `intent.problem` and `intent.why_now` are the problem. Level 2's `problem`
+  and its `background` beat start there, and you do not re-derive them from
+  the diff. Rewrite for register and length, never for meaning.
+- `intent.approach` is the solution, and `intent.alternatives` supplies level
+  3's rejected options directly.
+- `intent.out_of_scope` is the honest boundary of the change, which a diff
+  cannot show. It belongs in the level 3 narrative when it explains a
+  surprising absence.
+- `intent.unknowns` is not narrative material. It is a review signal, it lives
+  in the assessment, and it does not belong in a story a reader trusts.
+
+Still ground every *mechanism* claim in the diff. The author states the intent.
+Only the code states what the change actually does, and the two can disagree —
+that disagreement is exactly what submit mode's post stage reports.
+
+An `intent` block whose `source` is `"inferred"` was not stated by anyone. Treat
+it as one more reading of the evidence, at the same weight as your own.
+
 ## 1. Framework origin
 
 The four-part structure is Geoffrey Litt's **explain-diff** framework

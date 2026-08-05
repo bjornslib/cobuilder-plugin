@@ -66,15 +66,12 @@ PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 
 # Authored (irreplaceable) leaves in story.json, as dotted-path templates.
 # "*" stands for "every item in this list" when walking timeline/districts.
-#
-# A field earns a place in one of these tuples only if a human or a Claude
-# authoring stage produced it, and no script can recompute it from git or
-# from the rest of the bundle. `adrs` is retro-extraction output (see
-# skills/odyssey/SKILL.md Generate mode step 2); `root_paths` is authored
-# during baseline district derivation. Both are irreplaceable the same way
-# `tagline` and `blurb` are.
-AUTHORED_TIMELINE_FIELDS = ("tagline", "depth", "adrs")
-AUTHORED_DISTRICT_FIELDS = ("label", "kind", "blurb", "root_paths")
+# `intent` is the author's own words, captured by submit mode's interview, and
+# `assessment` is the judgment written against them — both irreplaceable, and
+# neither re-derivable from git. They sit here so the guard treats a migration
+# that touches either one as a violation unless it declares them.
+AUTHORED_TIMELINE_FIELDS = ("tagline", "depth", "intent", "assessment")
+AUTHORED_DISTRICT_FIELDS = ("label", "kind", "blurb")
 AUTHORED_LEVEL_FIELDS = (
     "narration", "voice", "detail", "problem", "solution",
     "beats", "decision", "forces", "alternatives", "consequences", "groups",
@@ -153,10 +150,22 @@ def migrate_1_0_to_1_1(story: dict) -> dict:
     return story
 
 
+def migrate_1_1_to_1_2(story: dict) -> dict:
+    """Stamp only. 1.2 adds two OPTIONAL timeline fields written by submit
+    mode — `intent` (the author's stated problem/approach/alternatives) and
+    `assessment` (the judgment written against them). Neither is backfilled:
+    `intent` is what a person said, and nothing but an interview can produce
+    it, so an absent block stays absent rather than becoming an invented one.
+    verify_bundle.py reports both as optional unless --require-review."""
+    story.setdefault("meta", {})["schema_version"] = "1.2"
+    return story
+
+
 # Ordered list of (from, to, fn, touches, description). Append one entry per
 # future schema bump; never edit history in place.
 SCHEMA_MIGRATIONS: list[tuple[str, str, object, set[str], str]] = [
     ("1.0", "1.1", migrate_1_0_to_1_1, set(), "backfill timeline[].status where absent"),
+    ("1.1", "1.2", migrate_1_1_to_1_2, set(), "stamp schema 1.2 (intent/assessment are optional, never backfilled)"),
 ]
 
 
@@ -431,8 +440,15 @@ def main() -> None:
     bundle_json_path = bundle_dir / "bundle.json"
     # `schema_mirror_drift` matters even when no ladder step ran: the mirror is
     # wrong and only rewriting it clears verify_bundle.py's `bundle.schema`.
+    # A viewer refresh counts too — the plugin just changed something in this
+    # bundle, so leaving `generator_version` at the older value makes the stamp
+    # claim a version that did not produce what is now on disk.
     needs_bundle_json = (
-        not bundle_json_path.exists() or layout_steps or data_steps or schema_mirror_drift
+        not bundle_json_path.exists()
+        or layout_steps
+        or data_steps
+        or schema_mirror_drift
+        or report["viewer"] == "refreshed"
     )
     if needs_bundle_json:
         write_bundle_json(bundle_dir, final_format, report["data"]["to"])
