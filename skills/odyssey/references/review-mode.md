@@ -50,7 +50,10 @@ One JSON object on this PR's timeline entry:
   ],
   "boundary_checks": [
     {"rule": "<the rule text>", "source": "stacks/python-fastapi.md",
-     "result": "violation", "evidence": "<the grep hit>"}
+     "result": "violation", "evidence": "<the grep hit>"},
+    {"rule": "<the rule text>", "source": "stacks/python-fastapi.md",
+     "result": "not-checkable",
+     "evidence": "<why the grep could not run, for example: path does not exist in this repo, or the pattern targets Python and this repo is Swift"}
   ],
   "delta": {
     "districts_added": [], "districts_changed": [],
@@ -182,11 +185,30 @@ sections drive this step:
 
 - **`## Boundary Rules`** — each rule ships with a literal `grep` command. Run
   it against the touched paths. Write one entry in `boundary_checks` per rule,
-  with `result` set to `pass` or `violation`, and the grep hit as `evidence`.
+  with `result` set to `pass`, `violation`, or `not-checkable`, and the grep
+  hit or the reason as `evidence`.
 - **`## Review Checks`** — the stack's named smells. Check each one against
   the diff. A hit becomes a `findings` entry, not a `boundary_checks` entry.
 
 Read `## Reference Structure` and `## ADR Topics` for context.
+
+A `result` takes one of three values. `pass` means the grep ran and found no
+hit. `violation` means the grep ran and found a hit that breaks the rule.
+`not-checkable` means the grep could not produce a signal in this repo,
+because the path in the rule does not exist, or the pattern targets a
+language the repo does not use. `not-checkable` is not `pass`. A rule that
+could not run tells the reviewer nothing, and recording it as `pass` claims a
+clean result that nobody verified. `not-checkable` is also the one supported
+spelling for this case. Earlier bundles used `not-applicable`, a value this
+reference never defined. Treat that value as the same thing, and write
+`not-checkable` going forward.
+
+When every grep from a card returns empty, do not report a clean result.
+Record that fact in the assessment `summary`. An all-empty run across a whole
+card is stronger evidence that the card does not match the repo than that the
+code is clean. Name the mismatch in the summary, for example that the stack
+card targets a language the repo does not use, and fall back to
+`stacks/generic.md`'s Review Checks and Boundary Rules for this PR.
 
 **Never read `## Corpus Load`.** Those sections point at
 `corpus/principles/**/*.yaml`, which this plugin does not ship. The paths are

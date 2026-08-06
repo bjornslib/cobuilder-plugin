@@ -43,7 +43,23 @@ storage, with adapters at the edges.
 
 ## Review Checks
 
-None beyond the generic corpus — that is what the corpus chain already covers.
+These seven checks apply to any language. This card is the fallback, and no
+corpus ships with the plugin.
+
+- **A God file or a God function**: one file or one function that holds
+  several unrelated responsibilities.
+- **A duplicated code path**: the same logic in two places, where a change
+  must land in both.
+- **A swallowed error**: a caught error that the code discards without a
+  log, a re-throw, or a recovery.
+- **A hardcoded secret or endpoint**: a credential, a token, or a host name
+  written into a source file.
+- **Dead code**: an unreachable branch, an unused export, or a function no
+  caller invokes.
+- **A widened public interface with no caller**: a symbol made public that
+  only one internal caller uses.
+- **An untested new branch**: a new conditional path with no test that
+  exercises it.
 
 ## ADR Topics
 
