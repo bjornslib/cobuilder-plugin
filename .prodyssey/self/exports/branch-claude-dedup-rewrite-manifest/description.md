@@ -1,0 +1,39 @@
+# Branch claude-dedup-rewrite-manifest
+
+## Problem
+
+Three near-identical copies of rewrite_manifest() existed across extract_story.py, extract_diffs.py, and generate_prompts.py — plain code duplication. Separately, submit mode's interview had no way to catch when an author's own account of a change wasn't internally coherent, or didn't match what the diff actually showed — a gap the author noticed mid-interview on a real PR. The odyssey docs (SKILL.md + references/) also needed a clarity pass.
+
+The self-consistency gap surfaced live, during a real PR interview — worth fixing before it recurred on the next one, rather than filing it for later.
+
+## Why this approach
+
+Consolidated rewrite_manifest() into scripts/_manifest.py, following the existing _bundle_meta.py shared-module pattern — no behavior change, verified via `--help` on all three callers. Added §3a to interview-guide.md: ask the problem and approach questions blind, before showing Claude's diff-derived hypothesis, then compare all three accounts by LLM judgment (not regex/keyword matching) — a real mismatch gets raised to the author with a choice to resolve now or log it, never silently dropped into unknowns. Ran an STE-flavored active-voice pass across SKILL.md and every references/ file.
+
+## Alternatives considered
+
+None. The author reports no alternative was considered.
+
+## Out of scope
+
+- Viewer-level assessment placement (Level 2 vs Level 3 UI work) — unrelated work from a different branch, not part of this change.
+- No new intent schema field and no new interview stage — the self-consistency check reorders two questions §3 already budgets.
+
+## Risks
+
+- The mismatch-detection in §3a leans on Claude's judgment call at interview time — a subtler mismatch than a clean example (like the one we just walked through) could be missed or over-flagged.
+- The STE prose pass touched 14 files; despite verification, a subtle meaning drift in reworded prose is the main risk of that kind of edit.
+
+## How this was tested
+
+Dedup verified via `uv run <script>.py --help` on all three refactored scripts post-change. STE pass verified via ste-lint.py before/after scores on all 14 touched files, plus manual diffing of field names, JSON keys, and §-cross-references before/after to catch accidental semantic drift from the prose edits. interview-guide.md reread end-to-end for internal coherence after both passes landed.
+
+## Where to focus
+
+- §3a in interview-guide.md — the core new design; read it end to end for coherence
+- SKILL.md step 5 — confirm it still matches interview-guide.md's actual flow
+- The STE-pass diffs generally, for any accidental meaning drift introduced while rewording
+
+---
+
+_Authorship: agent-generated._

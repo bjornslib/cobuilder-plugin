@@ -1,0 +1,29 @@
+C4Container
+    title Prodyssey PR 9 - manifest dedup and interview self-consistency check
+
+    Person(author, "PR author", "Answers submit-mode interview questions")
+    Person(maintainer, "Maintainer", "Runs generate/baseline scripts")
+
+    Container_Boundary(scriptsB, "scripts/ - Generation Scripts") {
+        Container(bundle_meta, "_bundle_meta.py", "Python, existing", "SCHEMA_VERSION constant, the precedent shared module")
+        Container(manifest, "_manifest.py", "Python, new in PR 9", "Single rewrite_manifest() implementation")
+        Container(extract_story, "extract_story.py", "Python", "Builds story.json; now imports rewrite_manifest")
+        Container(extract_diffs, "extract_diffs.py", "Python", "Extracts per-PR diffs; now imports rewrite_manifest")
+        Container(generate_prompts, "generate_prompts.py", "Python", "Generates art prompts; now imports rewrite_manifest")
+    }
+
+    Container_Boundary(skillsB, "skills/odyssey/ - Odyssey Skill") {
+        Container(skillmd, "SKILL.md", "Markdown", "Step 5 updated to match the new blind-question order")
+        Container(interview, "interview-guide.md", "Markdown, adds section 3a", "Self-consistency check: blind Q&A vs Claude's own hypothesis")
+        Container(storymode, "story-mode.md", "Markdown", "Drift paragraph updated to match new question order")
+        Container(refs, "10 other references/ files", "Markdown", "STE active-voice clarity pass, no meaning change")
+    }
+
+    Rel(maintainer, extract_story, "Runs to rebuild story.json")
+    Rel(extract_story, manifest, "imports rewrite_manifest()")
+    Rel(extract_diffs, manifest, "imports rewrite_manifest()")
+    Rel(generate_prompts, manifest, "imports rewrite_manifest()")
+    Rel(manifest, bundle_meta, "imports SCHEMA_VERSION")
+    Rel(author, interview, "Answers problem/approach blind, then sees hypothesis")
+    Rel(interview, skillmd, "Step 5 invokes this interview flow")
+    Rel(interview, storymode, "unknowns field feeds downstream narrative")
