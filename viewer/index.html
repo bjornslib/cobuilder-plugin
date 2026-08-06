@@ -307,15 +307,24 @@
   .adr-badge:hover{background:oklch(0.94 0.04 60);border-color:oklch(0.48 0.13 60);}
   .no-adrs{font:11.5px system-ui,sans-serif;color:var(--ink-dim);}
 
-  /* Submit-mode assessment badge: same row as the ADR badges, deliberately a
-     different hue so a verdict never reads as an ADR id. */
-  .assessment-badge{
-    font:10.5px 'JetBrains Mono',monospace;padding:4px 10px;border-radius:3px;cursor:pointer;
-    border:1px solid oklch(0.55 0.12 265);color:oklch(0.44 0.12 265);background:oklch(0.97 0.02 265);
-    display:inline-flex;align-items:center;gap:6px;
+  /* Submit-mode "PR Author Assessment" banner: sits at the top of level 2,
+     the PR's most-viewed level, since the assessment covers the whole PR
+     rather than one level specifically. Opens the same detail sheet the
+     ADR badges use. Deliberately a different hue (265) from the ADR badge's
+     (60) so a verdict never reads as an ADR id. */
+  .pr-assessment-banner{
+    display:flex;flex-direction:column;gap:8px;text-align:left;width:100%;
+    border-radius:10px;border:1px solid var(--line);background:#fff;padding:14px 18px;cursor:pointer;
+    font-family:inherit;transition:border-color .15s, box-shadow .15s;
   }
-  .assessment-badge:hover{background:oklch(0.94 0.04 265);border-color:oklch(0.48 0.13 265);}
-  .assessment-badge .ab-dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+  .pr-assessment-banner:hover{border-color:oklch(0.55 0.12 265);box-shadow:0 2px 10px rgba(30,40,55,0.06);}
+  .pr-assessment-banner:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .pab-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .pab-label{font:700 11px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:oklch(0.44 0.12 265);}
+  .pab-badges{display:flex;gap:6px;flex-wrap:wrap;}
+  .pab-summary{margin:0;font-size:13px;line-height:1.55;color:oklch(0.28 0.02 250);}
+  .pab-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;font:10.5px 'JetBrains Mono',monospace;color:var(--ink-dim);}
+  .pab-cta{color:var(--accent-text);}
 
   .beats-stack{display:flex;flex-direction:column;gap:10px;}
   .beat-card.fixed-card{height:180px;}
@@ -673,15 +682,15 @@
     <div class="drawer-body" id="adr-sheet-body"></div>
   </div>
 
-  <!-- Submit-mode assessment sheet (same Sheet family as the ADR sheet above,
-       reachable from the Assessment badge on level 3). Reads the timeline
-       entry's own `assessment`/`intent` blocks — there is no window.ASSESSMENTS,
-       because both live inline in story.json. Shares #drawer-scrim; only one
-       sheet is ever open. -->
-  <div id="assessment-sheet" role="dialog" aria-label="Architecture assessment">
+  <!-- Submit-mode "PR Author Assessment" sheet (same Sheet family as the ADR
+       sheet above), reachable from the assessment banner at the top of level
+       2. Reads the timeline entry's own `assessment`/`intent` blocks — there
+       is no window.ASSESSMENTS, because both live inline in story.json.
+       Shares #drawer-scrim; only one sheet is ever open. -->
+  <div id="assessment-sheet" role="dialog" aria-label="PR Author Assessment">
     <div class="drawer-header">
       <div>
-        <h2 id="assessment-sheet-title">Assessment</h2>
+        <h2 id="assessment-sheet-title">PR Author Assessment</h2>
         <div class="adr-sheet-meta" id="assessment-sheet-meta"></div>
       </div>
       <button class="drawer-close" id="assessment-sheet-close-btn" title="Close (Esc)">&times;</button>
@@ -1660,11 +1669,14 @@ window.DIAGRAMS = window.DIAGRAMS || {};
 
       setMainHtml(main, `
         <div class="level-stack narrow">
+          ${assessmentBannerHtml(p)}
           ${heroFrame(p.pr, 2, `Before/after PR #${p.pr}`)}
           <div class="chip-row">${touchHtml}</div>
           ${grid}
           ${altHtml}
         </div>`);
+      const bannerEl = main.querySelector('#pr-assessment-banner');
+      if (bannerEl) bannerEl.addEventListener('click', openAssessmentSheet);
 
     } else if (state.level === 3){
       const arch = content.architecture;
@@ -1674,15 +1686,6 @@ window.DIAGRAMS = window.DIAGRAMS || {};
       const adrHtml = adrs.length
         ? adrs.map(a => `<button class="adr-badge" data-adr-id="${escapeHtml(a)}">${escapeHtml(a)}</button>`).join('')
         : `<span class="no-adrs">No ADRs recorded for this PR.</span>`;
-
-      // Assessment badge, only when submit mode actually left one behind. A PR
-      // generated before submit mode existed simply shows no badge.
-      const asm = p.assessment;
-      const assessmentHtml = (asm && asm.verdict)
-        ? `<button class="assessment-badge" id="assessment-badge" title="Architecture assessment (submit mode)">
-             <span class="ab-dot"></span>Assessment: ${escapeHtml(asm.verdict)}
-           </button>`
-        : '';
 
       const boxesHtml = DISTRICTS.map(d => {
         const isTouched = !!touched[d.id];
@@ -1704,15 +1707,13 @@ window.DIAGRAMS = window.DIAGRAMS || {};
       setMainHtml(main, `
         <div class="level-stack narrow">
           ${heroFrame(p.pr, 3, `PR #${p.pr} architecture diagram`)}
-          <div class="adr-row">${adrHtml}${assessmentHtml}</div>
+          <div class="adr-row">${adrHtml}</div>
           <div class="district-boxes">${boxesHtml}</div>
           ${beatsHtml}
         </div>`);
       main.querySelectorAll('.adr-badge[data-adr-id]').forEach(btn => {
         btn.addEventListener('click', () => openAdrSheet(btn.dataset.adrId));
       });
-      const asmBtn = main.querySelector('#assessment-badge');
-      if (asmBtn) asmBtn.addEventListener('click', openAssessmentSheet);
 
     } else {
       const fc = content.file_changes;
@@ -2468,6 +2469,48 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     return `<span class="adr-state-badge" style="background:${bg};color:${fg};border-color:${border};">${escapeHtml((v || 'unknown').toUpperCase())}</span>`;
   }
 
+  const AUTHORSHIP_LABEL = {
+    human: 'Human-authored',
+    'agent-assisted': 'Agent-supported',
+    'agent-generated': 'Agent-driven',
+  };
+  const AUTHORSHIP_COLOR = {
+    human:             ['oklch(0.96 0.02 250)', 'oklch(0.4 0.03 250)',  'oklch(0.6 0.03 250)'],
+    'agent-assisted':  ['oklch(0.95 0.05 265)', 'oklch(0.42 0.12 265)', 'oklch(0.6 0.1 265)'],
+    'agent-generated': ['oklch(0.94 0.07 300)', 'oklch(0.42 0.15 300)', 'oklch(0.6 0.13 300)'],
+  };
+
+  function authorshipBadgeHtml(authorship){
+    if (!authorship) return '';
+    const label = AUTHORSHIP_LABEL[authorship] || authorship;
+    const [bg, fg, border] = AUTHORSHIP_COLOR[authorship] || ['oklch(0.96 0.02 250)', 'var(--ink-dim)', 'var(--line)'];
+    return `<span class="adr-state-badge" style="background:${bg};color:${fg};border-color:${border};">${escapeHtml(label.toUpperCase())}</span>`;
+  }
+
+  // "PR Author Assessment" banner — sits at the top of level 2 (see level-2
+  // render branch). Opens the same #assessment-sheet the old level-3 badge
+  // used to. Verdict and authorship are shown side by side, deliberately
+  // neither replacing the other: verdict is a judgment about the change,
+  // authorship is a fact about who wrote it, and conflating them would lose
+  // information a reviewer needs.
+  function assessmentBannerHtml(p){
+    const a = p.assessment;
+    if (!a || !a.verdict) return '';
+    const intent = p.intent || null;
+    return `
+      <button class="pr-assessment-banner" id="pr-assessment-banner" title="Open the full PR Author Assessment">
+        <div class="pab-top">
+          <span class="pab-label">PR Author Assessment</span>
+          <span class="pab-badges">${verdictBadgeHtml(a.verdict)}${authorshipBadgeHtml(intent && intent.authorship)}</span>
+        </div>
+        ${a.summary ? `<p class="pab-summary">${escapeHtml(a.summary)}</p>` : ''}
+        <div class="pab-foot">
+          <span>${a.risk_tier ? `risk: ${escapeHtml(a.risk_tier)}` : ''}</span>
+          <span class="pab-cta">View full assessment &rarr;</span>
+        </div>
+      </button>`;
+  }
+
   function asmQuestionHtml(kicker, block, extraLabel, extraKey){
     if (!block || !block.answer) return '';
     const ev = (block.evidence || []).filter(Boolean);
@@ -2489,7 +2532,7 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     const body = document.getElementById('assessment-sheet-body');
 
     if (!a){
-      titleEl.textContent = 'Assessment';
+      titleEl.textContent = 'PR Author Assessment';
       metaEl.innerHTML = '';
       body.innerHTML = `
         <div class="empty-card">
@@ -2498,13 +2541,14 @@ window.DIAGRAMS = window.DIAGRAMS || {};
       return;
     }
 
-    titleEl.textContent = `PR #${p.pr} — assessment`;
+    titleEl.textContent = `PR #${p.pr} — PR Author Assessment`;
     const metaBits = [
       a.risk_tier ? `risk: ${a.risk_tier}` : '',
       a.stage === 'post' ? 'post-merge' : 'pre-merge',
       a.generated ? a.generated : '',
     ].filter(Boolean).join(' · ');
     metaEl.innerHTML = verdictBadgeHtml(a.verdict)
+      + authorshipBadgeHtml(intent && intent.authorship)
       + (metaBits ? `<span class="adr-sheet-sourceline">${escapeHtml(metaBits)}</span>` : '');
 
     const summaryHtml = a.summary ? `
@@ -2518,7 +2562,6 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     if (intent && intent.problem){
       const flags = [
         intent.source === 'inferred' ? 'intent inferred, not stated by the author' : '',
-        intent.authorship && intent.authorship !== 'human' ? `authorship: ${intent.authorship}` : '',
         (intent.unknowns || []).length ? `${intent.unknowns.length} author-flagged unknown(s)` : '',
       ].filter(Boolean);
       intentHtml = `

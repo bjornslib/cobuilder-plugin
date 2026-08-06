@@ -1,0 +1,60 @@
+# Assessment — Branch claude-dedup-rewrite-manifest
+
+**Verdict:** Sound  
+**Risk tier:** Architectural  
+**Stage:** pre-merge
+
+## Summary
+
+Deduplicates three identical copies of rewrite_manifest() into scripts/_manifest.py, following the repo's existing _bundle_meta.py shared-module pattern, with no behavior change. Adds a self-consistency check (interview-guide.md §3a) that asks the author the problem and approach blind before showing Claude's own diff-derived hypothesis, then compares all three accounts by judgment rather than keyword matching — a cross-cutting change to how every future submit-mode interview runs. Also runs an STE-flavored active-voice pass across SKILL.md and every references/ file.
+
+## Question 1 — is this sensible?
+
+Yes, on both halves. The dedup solves a real, named duplication problem in the scripts district, at the layer it belongs (a shared module, matching the _bundle_meta.py precedent already in the codebase). The self-consistency check solves a gap the author found live, during a real PR interview — the interview had no mechanism to catch an author's own unsettled or incorrect account of their change, which is exactly the kind of judgment work this repo's references/ docs are meant to hold.
+
+Evidence: `scripts/_manifest.py` `skills/odyssey/references/interview-guide.md` `scripts/_bundle_meta.py`
+
+## Question 2 — maintainability and readability
+
+Helps on both fronts. The dedup removes the second and third places a manifest-shape bug could hide, collapsing three call sites onto one function. The self-consistency check adds no new schema field and no new interview stage — it reorders two questions §3 already budgets, so it costs no new surface for the intent block or verify_bundle.py to track.
+
+**Constraint introduced:** rewrite_manifest() has exactly one implementation (scripts/_manifest.py); the three callers may never re-inline their own copy. The interview must show the drafted hypothesis only after both the problem and approach questions are answered blind.
+
+Evidence: `scripts/_manifest.py:1-83` `skills/odyssey/references/interview-guide.md:63-64,104-106`
+
+## Question 3 — new pattern, duplicate, or reinvention?
+
+**Conforms to an existing pattern**
+
+The dedup conforms to the shared-module pattern scripts/_bundle_meta.py already established for exactly this problem (one script imported, never executed, by its callers). The STE pass conforms to the Writing standard section of this repo's own CLAUDE.md, which already mandates STE for these exact files. The self-consistency check is new — no ADR or district already covers author-side consistency checking inside the interview — but it extends interview-guide.md and review-mode.md's existing risk_tier/unknowns machinery rather than introducing a parallel one, so it reads as an extension of an established pattern, not a reinvention.
+
+Evidence: `scripts/_bundle_meta.py` `skills/odyssey/references/interview-guide.md` `skills/odyssey/references/review-mode.md:169-172`
+
+## Will we regret this?
+
+Low. The dedup is mechanically verified (all three callers still run) and reduces, not adds, the number of places to change. The bigger long-term cost is the self-consistency check's judgment-based nature: if Claude ever runs the §3a comparison carelessly, it either misses a real mismatch (defeating the point) or over-flags a harmless register difference (training authors to expect friction and answer defensively, the exact failure mode §3 already warns about). Neither failure leaves a trace in story.json today, since the check produces no artifact of its own besides what lands in unknowns. The team lives with a process step whose quality is only as good as the interviewing session that ran it, with no automated regression check to catch drift over time.
+
+## Findings
+
+| Severity | Finding | Evidence |
+|---|---|---|
+| note | The mismatch-detection in §3a is a judgment call made at interview time, with no mechanical check — its accuracy depends entirely on how carefully the interviewing Claude compares the three accounts. | `skills/odyssey/references/interview-guide.md:115-118` |
+
+**Suggestions**
+
+- **The mismatch-detection in §3a is a judgment call made at interview time, with no mechanical check — its accuracy depends entirely on how carefully the interviewing Claude compares the three accounts.** — No action needed now; worth watching in practice for false negatives (a real mismatch missed) or false positives (a register difference wrongly raised as material).
+
+## Boundary checks
+
+| Result | Rule | Source | Evidence |
+|---|---|---|---|
+| pass | Configuration crosses into code in one place, not scattered env reads. | `skills/odyssey/references/stacks/generic.md` | `No env var or config reads added or changed in this diff — grep for os.environ/getenv across the four changed scripts shows no new occurrences.` |
+
+## District delta
+
+- `scripts`: 12 -> 13 files
+- `skills`: 12 -> 12 files
+
+---
+
+_Generated by prodyssey submit mode on 2026-08-06._
