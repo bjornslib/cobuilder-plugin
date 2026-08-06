@@ -738,6 +738,29 @@ Two references govern it, both loaded on demand:
    ```
    Report the verdict, the risk tier, the finding count, the PR URL, and the
    paths of the two markdown files.
+10. **Offer to continue into narrative generation.** Ask the author
+    (`AskUserQuestion`) whether to move straight into Generate mode's per-PR
+    sweep for this PR now that `intent` and `assessment` are captured.
+    Frame it as optional — declining just stops here, same as before this
+    step existed. If declined, tell the author the same PR can be narrated
+    later with `/prodyssey:generate --prs <N>`.
+
+    If the author says yes, ask (same or a follow-up `AskUserQuestion`):
+    - `--art image` (Gemini-generated scene art) or `--art diagram`
+      (authored Mermaid — see Generate mode step 4's subagent-authoring
+      rule).
+    - Whether to include audio narration (`--voice <V>`, or a specific
+      voice), or skip audio entirely.
+
+    Then run Generate mode's per-PR steps above (steps 1 through 4) for this
+    PR with the chosen flags. Generate mode's own resumability check
+    (`verify_bundle.py --prs <N> --json`) already shows this PR's `diffs` as
+    `ok` from step 3 above, so diff extraction is not repeated — only
+    `narrative.*`, the ADR pass, `asset.*`/`diagram.*`, and audio (if
+    requested) run. This step applies whether the target came from step 2's
+    `--prs <N>` branch, or from opening a new PR in **Submitting the PR**
+    below (where step 8's render/verify has already run and this step
+    follows immediately after it).
 
 ### Submitting the PR
 
@@ -780,6 +803,13 @@ Runs after the PR merges. Same steps 1 through 4, then:
    rule that matters most: **never rewrite the pre-stage `intent`.** Its value
    comes from being what the author said before the change shipped.
 6. Render and verify as in pre-stage steps 8 and 9.
+7. **Offer to continue into narrative generation**, same as pre-stage step
+   10 — a PR can reach post stage without ever having been narrated (this is
+   exactly the case that motivated adding step 10). Check whether
+   `verify_bundle.py`'s `narrative.*`/`asset.*` keys are still `missing` for
+   this PR; if so, make the same offer and ask the same two questions
+   (`--art` mode, audio or not), then run Generate mode's per-PR steps as
+   pre-stage step 10 describes.
 
 ## Notes
 

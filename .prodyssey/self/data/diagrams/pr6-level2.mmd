@@ -1,0 +1,44 @@
+sequenceDiagram
+    participant Author
+    participant Submit as SKILL.md Submit mode (Claude)
+    participant ExtractDiffs as extract_diffs.py
+    participant Staging as exports/branch-slug/
+    participant RenderReview as render_review.py
+    participant GH as gh CLI / GitHub
+    participant Story as story.json
+
+    Author->>Submit: /prodyssey:submit --stage pre (no --prs yet)
+    Submit->>GH: gh pr view --json number
+    GH-->>Submit: no PR for this branch yet
+
+    Submit->>ExtractDiffs: --branch (base defaults to the detected default branch)
+    ExtractDiffs->>Staging: Write diff.json
+
+    rect rgb(220, 245, 220)
+        Note over Submit,Story: Gather evidence before asking anything - interview-guide.md section 2
+        Submit->>Story: Read touched districts, matching ADRs, stack card, prior timeline entries
+    end
+
+    rect rgb(255, 240, 210)
+        Note over Submit,Author: Interview - ask only what the evidence cannot already answer, capped at six
+        Submit->>Author: Ask problem/approach questions blind, compare against drafted hypothesis
+        Author-->>Submit: Answers
+        Submit->>Author: Play the drafted intent back for confirmation
+    end
+
+    Submit->>Submit: Assess against bundle history - verdict, risk tier, regret_risk (review-mode.md)
+    Submit->>Staging: Write intent.json / assessment.json
+
+    Submit->>RenderReview: --branch (stage target)
+    RenderReview-->>Submit: description.md / assessment.md
+
+    Submit->>Author: Show verdict, risk tier, rendered description
+    Author-->>Submit: Confirms push and PR creation
+
+    Submit->>GH: git push -u origin branch (if no upstream)
+    Submit->>GH: gh pr create --body-file description.md
+    GH-->>Submit: Real PR number N
+
+    Submit->>Story: File intent + assessment onto timeline[N] - never a synthetic key
+    Submit->>RenderReview: --prs N (re-render so deliverables carry the real number)
+    Submit->>Submit: verify_bundle.py --prs N --require-review
