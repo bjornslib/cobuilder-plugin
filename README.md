@@ -86,8 +86,8 @@ This command derives the architecture baseline of the repo into
 `.prodyssey/self/`:
 
 1. **Stack detection** — matches the repo against bundled stack cards
-   (`nextjs`, `react-typescript`, `python-fastapi`, with `generic` as the
-   fallback).
+   (`nextjs`, `react-typescript`, `python-fastapi`, `swift`, `swiftui-app`,
+   `vapor`, with `generic` as the fallback).
 2. **District map** — groups the repo with heuristic clustering. The
    clustering weighs top-level directories by file count and size, adds
    commit-frequency heat from `git log`, and merges by import edge. Claude
@@ -358,7 +358,7 @@ prodyssey/
 │   │       ├── interview-guide.md          # submit mode: what to ask the author, and what not to
 │   │       ├── pr-description-template.md  # the PR body skeleton render_review.py fills
 │   │       ├── adr-template.md
-│   │       └── stacks/{README,nextjs,react-typescript,python-fastapi,generic}.md
+│   │       └── stacks/{README,nextjs,react-typescript,python-fastapi,swift,swiftui-app,vapor,generic}.md
 │   └── mermaid/               # authoring rules for Mermaid diagrams, invoked by the
 │                               # diagram-authoring subagent, not the orchestrator directly
 ├── scripts/                   # top-level, not nested under skills/ — called via ${CLAUDE_PLUGIN_ROOT}/scripts/...
@@ -414,7 +414,7 @@ Contact the author for more information.
 | `references/story-mode.md` | `references/story-mode.md` | Keeps the framework, the four-level mapping, and the register and style rules verbatim. Rewires the output target to `<bundle-dir>/story.json` instead of `docs/prototypes/.../story.json`. When no ADR carries a matching `source_pr`, the process falls back to ADRs extracted in the same sweep. §3 now splits into two registers, selected with `--style kleppmann\|ste` (default `kleppmann`). The `ste` register defers to the `ste-writing` skill |
 | `references/decision-records.md` | `references/decision-records-lite.md` | Keeps the record shape: context, forces, decision, consequences, plus `delivers` and `maps_to`. Drops the state machine, the transition rules, viewpoint regeneration, and ADR numbering governance, since those govern a maintained doc set, not a generated bundle. `maps_to` targets `inventory.yaml`, and each record carries `provenance: inferred` |
 | `references/architecture-documentation.md` | `references/baseline-derivation.md` | Keeps describe-mode's verification discipline as the inventory procedure: enumerate modules, grep import edges in both directions, and never assert a boundary that is not verified. Drops the 8-section canvas, `boundary.yaml` authoring, and INVENTORY.md bookkeeping, replaced by one flat `inventory.yaml` file |
-| `references/stacks/*` (4 cards + README) | `references/stacks/*` | Kept verbatim. Detection precedence and ADR-topic checklists drive stack detection and extraction prompts |
+| `references/stacks/*` (4 cards + README) | `references/stacks/*` | Kept verbatim. Detection precedence and ADR-topic checklists drive stack detection and extraction prompts. The `swift`, `swiftui-app`, and `vapor` cards were authored in this repo, not extracted |
 | `references/templates/adr-template.md` | `references/adr-template.md` | Trimmed frontmatter (no state machine fields) |
 | `references/stacks/*`'s `## Boundary Rules` and `## Review Checks` | `references/review-mode.md` | The card sections were extracted with the cards, and nothing read them until now. Submit mode runs the literal grep commands in `Boundary Rules` and records each result. It never reads `## Corpus Load`, because those paths do not ship with this plugin |
 | `docs/prototypes/codebase-evolution/data/extract_story.py` | `scripts/extract_story.py` | Generalized. Takes a repo path as a parameter, selects a PR by number through merge-commit lookup, writes to `<bundle-dir>/`, and never overwrites an authored or generated narrative field |

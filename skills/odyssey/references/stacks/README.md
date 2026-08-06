@@ -33,7 +33,7 @@ then apply this card's sections as additions/overrides.
 ## Detection Precedence
 
 1. Evaluate cards most-specific first: framework cards before language cards
-   (`nextjs` before `react-typescript`).
+   (`nextjs` before `react-typescript`, and `vapor` or `swiftui-app` before `swift`).
 2. First card whose `## Detect` markers all match wins.
 3. If nothing matches, use `generic.md`.
 4. Polyglot repos (e.g. FastAPI backend + React frontend): load one card per matched
@@ -52,5 +52,8 @@ single-file change.
 |---|---|
 | `python-fastapi.md` | fleshed out |
 | `react-typescript.md` | fleshed out |
+| `swift.md` | fleshed out |
 | `nextjs.md` | STUB |
+| `swiftui-app.md` | STUB |
+| `vapor.md` | STUB |
 | `generic.md` | fallback — always applicable |
