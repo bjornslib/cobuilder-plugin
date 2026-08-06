@@ -22,12 +22,12 @@ Every card is a markdown file with these sections:
 |---|---|---|
 | `## Detect` | Deterministic manifest/dependency markers | all modes — run first |
 | `## Reference Structure` | Canonical layout with the rationale for each boundary | design (starting skeleton), review (diff target) |
-| `## Boundary Rules` | Grep-checkable layering rules | review findings; seeds `boundary.yaml` `forbidden_dependencies` candidates in describe mode |
+| `## Boundary Rules` | Grep-checkable layering rules | review findings, and seeds `boundary.yaml` `forbidden_dependencies` candidates in describe mode |
 | `## Corpus Load` | Explicit corpus files this stack pulls in | design/review/maintenance corpus chains |
 | `## Review Checks` | Stack-specific smells beyond the generic corpus | review/maintenance |
 | `## ADR Topics` | Decisions this stack typically forces | decisions mode — checklist for made-but-unrecorded decisions |
 
-Optional field: `## Inherits` — the card extends another card; load the parent card first,
+Optional field: `## Inherits`. This card extends another card. Load the parent card first,
 then apply this card's sections as additions/overrides.
 
 ## Detection Precedence

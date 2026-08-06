@@ -8,7 +8,7 @@ grade: draft
 
 # Stack: nextjs — Next.js (React meta-framework)
 
-> STUB — detection and inheritance are authoritative; the remaining sections are a
+> STUB — detection and inheritance are authoritative. The remaining sections are a
 > reasoning sketch awaiting a real Next.js engagement to flesh out.
 
 ## Detect
@@ -18,12 +18,12 @@ grade: draft
 
 ## Inherits
 
-`react-typescript.md` — load that card first; the rules below are Next.js additions.
+`react-typescript.md` — load that card first. The rules below are Next.js additions.
 
 ## Boundary Rules (sketch)
 
-1. Server/client component discipline: `'use client'` only where interactivity requires
-   it; no server-only imports (DB clients, secrets, `fs`) in client components.
+1. Server/client component discipline: use `'use client'` only where interactivity requires
+   it. Client components must not carry server-only imports (DB clients, secrets, `fs`).
 2. Route handlers (`app/**/route.ts`) stay thin — delegate to services, mirroring the
    routers-vs-services rule in `python-fastapi.md`.
 3. Data fetching belongs in server components or route handlers, not client-side

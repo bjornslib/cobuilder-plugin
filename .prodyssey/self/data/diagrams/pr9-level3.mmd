@@ -1,0 +1,32 @@
+classDiagram
+    class BundleMeta {
+        <<scripts/_bundle_meta.py, existing>>
+        +SCHEMA_VERSION str
+    }
+
+    class Manifest {
+        <<scripts/_manifest.py, new>>
+        +rewrite_manifest(bundle_dir Path, manifest_path Path) None
+    }
+
+    class ExtractStory {
+        <<scripts/extract_story.py>>
+        +build_new_story(repo Path, existing dict, dot_range str, prs_filter list) dict
+    }
+
+    class ExtractDiffs {
+        <<scripts/extract_diffs.py>>
+        +write_branch_diff(bundle_dir Path, entry dict, files dict, stats dict) Path
+    }
+
+    class GeneratePrompts {
+        <<scripts/generate_prompts.py>>
+        +run_generate(...) None
+    }
+
+    Manifest --> BundleMeta : imports SCHEMA_VERSION
+    ExtractStory --> Manifest : imports rewrite_manifest()
+    ExtractDiffs --> Manifest : imports rewrite_manifest()
+    GeneratePrompts --> Manifest : imports rewrite_manifest()
+
+    note for Manifest "Follows the existing _bundle_meta.py\nshared-module pattern: imported,\nnever executed, by its callers.\nThree identical copies of\nrewrite_manifest() collapse to one."

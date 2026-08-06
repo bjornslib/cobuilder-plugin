@@ -1,0 +1,30 @@
+sequenceDiagram
+    participant Author
+    participant Claude as Interviewing Claude
+    participant Diff as Diff + inventory.yaml + ADRs
+    participant Intent as intent.problem / intent.approach
+    participant Unknowns as intent.unknowns
+
+    Claude->>Diff: Read diff, districts, ADRs, stack card
+    Claude->>Claude: Draft hypothesis from the diff (kept private)
+
+    Claude->>Author: Ask "what problem does this solve?" (blind)
+    Author-->>Claude: "assessment placement, Level 2 vs Level 3 of the viewer"
+    Claude->>Author: Ask "what was your approach?" (blind)
+    Author-->>Claude: "same viewer-placement account"
+
+    Claude->>Claude: Compare both answers against the diff-derived hypothesis
+    Note over Claude: Hypothesis says: rewrite_manifest() dedup + STE clarity pass.\nNeither author answer leads to the other.
+
+    alt Same understanding, different altitude
+        Claude->>Intent: Write reconciled problem/approach
+    else Material mismatch survives re-check against diff
+        Claude->>Diff: Re-read diff before raising it (hypothesis may be wrong, not the author)
+        Claude->>Author: "I noticed your answers describe viewer-placement work,\nbut the diff shows a manifest dedup and a doc pass - resolve now or log it?"
+        alt Author resolves now
+            Author-->>Claude: Reconciled problem/approach
+            Claude->>Intent: Write reconciled problem/approach
+        else Author chooses to log it
+            Claude->>Unknowns: Record mismatch in the author's own words
+        end
+    end

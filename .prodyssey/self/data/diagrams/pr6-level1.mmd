@@ -1,0 +1,32 @@
+C4Container
+    title Prodyssey PR 6 - submit mode interviews the author before the PR exists
+
+    Person(author, "PR author", "Runs /prodyssey:submit before or after opening a PR")
+
+    Container_Boundary(staging, "Branch staging (pre-PR) - exports/branch-<slug>/") {
+        ContainerDb(diffcache, "diff.json", "file", "Reproducible from git diff; gitignored, never committed")
+        ContainerDb(stagedreview, "intent.json / assessment.json", "file", "Interview answers and the judgment against them; committed once written")
+    }
+
+    Container_Boundary(bundle, "<bundle-dir> - committed") {
+        Container(skill, "SKILL.md Submit mode", "Claude judgment", "Interviews (interview-guide.md) and assesses (review-mode.md); never delegates content to a script")
+        Container(extract, "extract_diffs.py", "PEP 723 script", "New --branch flag stages a diff before any PR number exists")
+        Container(render, "render_review.py", "PEP 723 script, new", "Lays out intent/assessment as markdown; judges nothing")
+        Container(migrate, "migrate_bundle.py", "PEP 723 script", "AUTHORED_TIMELINE_FIELDS now guards intent/assessment; schema 1.2")
+        Container(verify, "verify_bundle.py", "PEP 723 script", "intent/assessment optional by default, required under --require-review")
+        ContainerDb(story, "story.json", "file", "timeline[].pr keys on the real gh pr create number, never a synthetic key")
+    }
+
+    System_Ext(gh, "GitHub (gh CLI)", "gh pr create / gh pr view - the only action outside .prodyssey/, after explicit confirmation")
+
+    Rel(author, skill, "Runs /prodyssey:submit --stage pre|post")
+    Rel(skill, extract, "Extracts the diff before interviewing anyone")
+    Rel(extract, diffcache, "Writes pre-PR diff")
+    Rel(skill, stagedreview, "Stages intent + assessment before a PR number exists")
+    Rel(skill, render, "Renders description.md / assessment.md")
+    Rel(render, stagedreview, "Reads staged intent/assessment for branch target")
+    Rel(render, story, "Reads timeline intent/assessment once a PR number exists")
+    Rel(skill, gh, "Opens the PR only after one explicit confirmation")
+    Rel(gh, story, "Real PR number lets intent/assessment file onto the timeline entry")
+    Rel(migrate, story, "Guards intent/assessment on every schema migration")
+    Rel(verify, story, "Checks intent/assessment shape against schema 1.2")

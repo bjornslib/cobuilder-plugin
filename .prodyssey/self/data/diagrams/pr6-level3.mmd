@@ -1,0 +1,50 @@
+classDiagram
+    class MigrateBundlePy {
+        +AUTHORED_TIMELINE_FIELDS tuple
+        +harvest_authored(story) dict
+        +run_guard(story, migrate_fn, touches) tuple
+        +migrate_1_1_to_1_2(story) dict
+    }
+
+    class RenderReviewPy {
+        +render_description(title, intent) string
+        +render_assessment(title, assessment, intent) string
+        +write_pair(out_dir, prefix, title, intent, assessment) list
+    }
+
+    class VerifyBundlePy {
+        +check_assessment(entry, require_review) list
+    }
+
+    class ExtractDiffsPy {
+        +main(branch, base) void
+    }
+
+    class StoryTimelineEntry {
+        +int pr
+        +intent dict
+        +assessment dict
+    }
+
+    class AuthoredFieldGuardContract {
+        <<invariant>>
+        +intent and assessment in AUTHORED_TIMELINE_FIELDS
+        +migration touching either MUST declare it in touches
+    }
+
+    class SchemaVersionContract {
+        <<schema 1.2>>
+        +intent optional
+        +assessment optional
+        +--require-review promotes both to required
+    }
+
+    MigrateBundlePy ..|> AuthoredFieldGuardContract : implements
+    MigrateBundlePy --> StoryTimelineEntry : guards intent/assessment on every migration
+    RenderReviewPy --> StoryTimelineEntry : reads intent/assessment, judges nothing
+    VerifyBundlePy ..|> SchemaVersionContract : implements
+    VerifyBundlePy --> StoryTimelineEntry : checks intent/assessment shape
+    ExtractDiffsPy --> StoryTimelineEntry : stages diff.json pre-PR via branch mode
+
+    note for AuthoredFieldGuardContract "AUTHORED_TIMELINE_FIELDS grows from\n(tagline, depth) to\n(tagline, depth, intent, assessment) -\nno migration may touch either field\nunless declared in touches"
+    note for SchemaVersionContract "migrate_1_1_to_1_2 is a pure stamp -\nneither field is backfilled on any\npre-existing PR"

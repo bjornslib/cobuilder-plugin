@@ -71,11 +71,14 @@ change: **never write a claim you did not check.**
 - Every entry in `findings` carries an `evidence` value. That value is a
   `path:line` reference, or an ADR id, or a district id from
   `inventory.yaml`. A finding with no evidence does not go in the array.
+
 - Read the file before you write about it. A diff hunk shows you the change.
   It does not show you the surrounding code that the change has to live with.
+
 - Report what you could not check. "I did not verify the callers of this
   function" is a useful sentence. A confident claim about callers you never
   read is not.
+
 - Do not repeat the author's `intent` back as a finding. The interview already
   recorded it. The assessment adds your reading, or it adds nothing.
 
@@ -92,8 +95,8 @@ Read the two halves separately. A change can solve its stated problem
 correctly and still be the wrong change, because the problem belongs
 somewhere else. Say which of the two halves fails when one does.
 
-When `intent.source` is `inferred`, say so in the answer. You are assessing
-the change against your own reading of the problem, not against the author's
+When `intent.source` is `inferred`, say so in the answer. You assess the
+change against your own reading of the problem, not against the author's
 statement, and a reviewer needs to know that.
 
 ### 3.2 Does this help or hurt maintainability and readability?
@@ -103,9 +106,9 @@ carries this phrasing as **"Constraint introduced: the invariant this decision
 establishes"**, and `constraint_introduced` holds it here.
 
 A change helps when it removes a special case, moves a decision to one place,
-or makes an illegal state harder to write. A change hurts when it adds a
-second place to change for one reason, widens a public interface without a
-caller that needs it, or makes a rule that only its author knows.
+or makes an illegal state harder to write. A change hurts when it adds a second place to change for one reason. It also
+hurts when it widens a public interface without a caller that needs it, or
+makes a rule that only its author knows.
 
 Judge the code the repo will keep, not the diff. A large diff that deletes a
 duplicated path improves maintainability. A small diff that adds a
@@ -119,11 +122,11 @@ This is the question the bundle exists to answer. Pick one verdict:
 |---|---|
 | `conforms` | The change uses a pattern the repo already has, the way the repo already uses it. This is the common, good case. |
 | `new-valuable` | The change introduces a pattern the repo does not have, and the pattern earns its place. Say what it buys. |
-| `duplicate` | The change builds a second implementation of something a district or an ADR already provides. |
+| `duplicate` | The change implements, a second time, something a district or an ADR already provides. |
 | `reinvention` | The change solves a problem the repo already solved, in a different way, and does not say why the existing way fails. |
 
-**A `duplicate` or a `reinvention` verdict must cite what it duplicates.** Put
-the ADR id or the district id in `duplicates`, and the file evidence in
+**A `duplicate` or a `reinvention` verdict must cite what it duplicates.**
+Put the ADR id or the district id in `duplicates`. Put the file evidence in
 `evidence`. A verdict with no citation is an accusation, and it wastes the
 reviewer's time. When you cannot cite it, the verdict is not `duplicate`.
 
@@ -145,9 +148,9 @@ write that. Do not manufacture a verdict from a thin baseline. This follows
 Write `regret_risk`: one paragraph on what the team lives with if this change
 merges as written. Not "does this work". "What do we regret in six months."
 
-Name the cost in the terms the repo will feel it: a second place to change, a
-dependency somebody has to maintain, a boundary that later work has to route
-around, a rule with no test to hold it.
+Name the cost in the terms the repo will feel it: a second place to change,
+a dependency somebody has to maintain, a boundary that later work has to
+route around, or a rule with no test to hold it.
 
 ## 4. Risk tier
 
@@ -156,19 +159,21 @@ three inputs, and take the highest:
 
 1. **District sensitivity.** Read the optional `sensitivity` field on each
    touched district in `inventory.yaml`. See `baseline-derivation.md` §3a.
+
 2. **Diff heuristics**, for a bundle whose baseline carries no `sensitivity`
    values. Treat a change to authentication, authorization, billing, data
    deletion, a database migration, infrastructure, or a security boundary as
    `sensitive`. Treat a change to a module boundary, a dependency direction, a
    public interface, or a cross-cutting pattern as `architectural`.
+
 3. **Author understanding.** A non-empty `intent.unknowns` array raises the
    result by one step, `routine` to `architectural`, or `architectural` to
    `sensitive`. Code that the author cannot explain costs the team more than
    the same code with an author who can.
 
-The tier sets how deep the assessment goes, and submit mode reports it. **It
-is not a gate.** Nothing in this mode blocks a merge, and nothing refuses to
-open a pull request.
+The tier sets how deep the assessment goes, and submit mode reports it.
+**It is not a gate.** Nothing in this mode blocks a merge. Nothing refuses
+to open a pull request.
 
 ## 5. Boundary checks from the stack card
 
@@ -247,10 +252,14 @@ section of `SKILL.md`.
 - **No defect hunting.** No missing null check, no naming, no unhandled error
   path, no test-coverage gap. Other tools own that work, and a review that
   mixes commodity findings with judgment buries the judgment.
+
 - **No score.** No number, no grade, no pass rate. The verdict and the
   findings carry the result.
+
 - **No gate.** Nothing here blocks a merge or refuses to open a PR.
+
 - **No corpus.** See §5.
+
 - **No new ADR.** A pre-merge decision is a proposal. Generate mode writes the
   record after the PR merges. See `decision-records-lite.md` §3.2.
 
@@ -258,12 +267,20 @@ section of `SKILL.md`.
 
 1. Read the diff, `inventory.yaml`, `data/adrs.json`, the matching stack card,
    and the timeline entries for earlier PRs in the touched districts.
+
 2. Read this PR's `intent` block, or run the interview first.
+
 3. Answer §3.1, §3.2, and §3.3, with evidence for each.
+
 4. Run the stack card's boundary greps (§5). Record the results.
+
 5. Compute the district delta (§6).
+
 6. Compute the risk tier (§4).
+
 7. Write `regret_risk`, then pick the verdict (§8).
+
 8. Write the block into this PR's timeline entry in `data/story.json`.
+
 9. Render the deliverables:
    `uv run scripts/render_review.py --bundle-dir <bundle-dir> --prs <N>`.

@@ -36,12 +36,13 @@ the branch and runs `gh pr create`. It still writes no source file, and it takes
 no other outward action — no comments, no edits to an existing PR body, no
 labels, no reviewers, no merges. See Submit mode.
 
-Where that bundle actually lands depends on whether the target is the session's
-own repo or a foreign one: every bundle lives under one parent,
-`<hub>/.prodyssey/` — self-analysis bundles land at `<hub>/.prodyssey/self/`
-(which, because target and hub are the same repo in that case, sits inside the
-analyzed repo and is committed alongside its code), foreign-repo bundles at
-`<hub>/.prodyssey/<repo-slug>/`. See Hub resolution below for the exact rule.
+Where that bundle actually lands depends on whether the target is the
+session's own repo or a foreign one. Every bundle lives under one parent,
+`<hub>/.prodyssey/`. Self-analysis bundles land at
+`<hub>/.prodyssey/self/` — because target and hub are the same repo in
+that case, this sits inside the analyzed repo and is committed alongside
+its code. Foreign-repo bundles land at `<hub>/.prodyssey/<repo-slug>/`.
+See Hub resolution below for the exact rule.
 
 Reference material lives in `references/` and is loaded on demand, not inlined here.
 Scripts live in `scripts/` and are called via `uv run`, never edited by the skill.
@@ -60,18 +61,18 @@ requires read access to that path. If reads are being denied, tell the user to r
 `/add-dir <path>` (or add the path to their permissions) and retry — do not work
 around it by guessing at file contents. If `--store local` is also in effect for
 that path, write access is needed too (`/add-dir` grants both read and write, so
-one ask covers it). All script invocations below pass the
-resolved path as `--repo <target>`; where the bundle actually lands (`<bundle-dir>`)
-is determined by the storage rule in Hub resolution below, overridable with
+one ask covers it). All script invocations below pass the resolved path as
+`--repo <target>`. The storage rule in Hub resolution below determines
+where the bundle actually lands (`<bundle-dir>`), overridable with
 `--store local|central`.
 
 ## Hub resolution
 
 `<hub>` — the local scratch root for bookkeeping and for centrally-stored
-bundles — is resolved the same way `<target>` falls back in step 2 above: the
-git toplevel of the session's own working directory. `<hub>` is never affected
-by `--repo`; it is always about the session's own checkout, not the repo being
-analyzed.
+bundles — resolves the same way `<target>` falls back in step 2 above: the
+git toplevel of the session's own working directory. `--repo` never
+affects `<hub>`. It is always about the session's own checkout, not the
+repo being analyzed.
 
 **Storage rule** — where a given invocation's bundle actually lives:
 
@@ -79,12 +80,13 @@ analyzed.
   as `<hub>` — i.e. `<target>`'s git toplevel equals `<hub>`): the bundle lives
   at `<hub>/.prodyssey/self/`. `self` is a **fixed literal, never a computed
   slug** — do not "fix" this into a hashed slug. The slug hash (below) is a
-  `shasum` of the resolved absolute target path; a self-bundle committed under
-  a hashed name would be undiscoverable from any other clone location, since a
-  teammate cloning the repo to a different path computes a different hash and
-  silently gets pointed at a new, empty bundle instead of the one already
-  committed. `self` is clone-portable. Slugs never leave the hub they were
-  computed in, so their path-dependence is harmless.
+  `shasum` of the resolved absolute target path. A self-bundle committed
+  under a hashed name would be undiscoverable from any other clone
+  location. A teammate who clones the repo to a different path computes a
+  different hash, and silently lands on a new, empty bundle instead of the
+  one already committed. `self` is clone-portable. Slugs never leave the
+  hub where the invocation computed them, so their path-dependence is
+  harmless.
 - **Foreign repo** (`--repo <other-path>` resolves to a DIFFERENT repo than
   `<hub>`): the bundle lives at `<hub>/.prodyssey/<repo-slug>/`, unchanged.
 
@@ -94,10 +96,11 @@ regardless of the self/foreign check: `--store local` forces
 `<hub>/.prodyssey/<repo-slug>/`. This preserves today's meaning of `local`
 (writing into the target repo itself). Note that for self-analysis the two
 branches converge — `<target>` and `<hub>` are the same repo, so
-`--store local` is a no-op there. Do not read `local` as "`<hub>/.prodyssey/self`"
-instead — that alternative would put a *foreign* repo's bundle under `self/`
-when `--store local` is passed for it, breaking the invariant that makes the
-fixed literal safe to leave un-slugged.
+`--store local` is a no-op there. Do not read `local` as
+"`<hub>/.prodyssey/self`" instead. That reading would put a *foreign*
+repo's bundle under `self/` whenever a user passes `--store local` for it,
+breaking the invariant that makes the fixed literal safe to leave
+un-slugged.
 
 Compute `<repo-slug>` once per invocation whenever the foreign path applies:
 
@@ -125,31 +128,32 @@ fi
 
 (`<repo-slug>`/`$SLUG` is computed only when the foreign path applies — see
 above.) `<bundle-dir>` is the only path Baseline, Generate, and Publish modes
-ever write to; no mode references a literal bundle path directly. Submit mode
+ever write to. No mode references a literal bundle path directly. Submit mode
 writes there too, and its `git push` / `gh pr create` are the only actions that
 reach outside it.
 
-**Legacy layout detection.** Immediately after `BUNDLE_DIR` is computed above
-— reached by all five modes, since Step 0's prereq gate is skipped by View,
-Publish, and Submit — check: if `$BUNDLE_DIR` does not exist but a legacy
-`<target>/.odyssey/` does, STOP and tell the user their bundle predates the
-`.prodyssey/self` layout, printing the exact command:
+**Legacy layout detection.** Compute `BUNDLE_DIR` above, then check this
+immediately — reached by all five modes, since Step 0's prereq gate is
+skipped by View, Publish, and Submit. If `$BUNDLE_DIR` does not exist but
+a legacy `<target>/.odyssey/` does, STOP. Tell the user their bundle
+predates the `.prodyssey/self` layout, and print the exact command:
 ```
 git -C <target> mv .odyssey .prodyssey/self
 ```
 Do not perform the move yourself, and do not fall through to "no baseline
-found". Two reasons this is detect-but-not-migrate rather than an automatic
-fix: auto-running `git mv` inside a user's repo contradicts this skill's own
-"never edits the target repo's source" posture; and without this check,
-Generate mode's auto-baseline check (below) would find nothing at the new
-path, announce "No baseline found", and silently regenerate over
-hand-authored narrative at real Gemini API cost. This block is removable once
-legacy `.odyssey/` layouts are no longer expected in the wild.
+found". Two reasons make this detect-but-not-migrate rather than an
+automatic fix. First, auto-running `git mv` inside a user's repo
+contradicts this skill's own "never edits the target repo's source"
+posture. Second, without this check, Generate mode's auto-baseline check
+(below) would find nothing at the new path, announce "No baseline
+found", and silently regenerate over hand-authored narrative at real
+Gemini API cost. This block is removable once legacy `.odyssey/` layouts
+are no longer expected in the wild.
 
 Whenever `<bundle-dir>` resolves under `<hub>/.prodyssey/` and
-`<hub>/.prodyssey/` doesn't exist yet, create it (`mkdir -p`) and check
-whether the hub's `.gitignore` already covers its four bookkeeping entries;
-if not, print exactly these four lines for the user to add manually:
+`<hub>/.prodyssey/` does not exist yet, create it (`mkdir -p`) and check
+whether the hub's `.gitignore` already covers its four bookkeeping entries.
+If not, print exactly these four lines for the user to add manually:
 ```
 .prodyssey/.view-server.pid
 .prodyssey/.view-server.log
@@ -158,29 +162,39 @@ if not, print exactly these four lines for the user to add manually:
 ```
 Do NOT edit `.gitignore` yourself, and **never suggest ignoring `.prodyssey/`
 as a whole** — bundles are meant to be committed alongside the code they
-narrate; a narrative that isn't in the repo isn't doing its job. Only these
-four entries are exceptions: `.view-server.pid` and `.view-server.log` are
-process bookkeeping for a server that only ever exists on one machine,
-`active` is a symlink holding an ABSOLUTE path — committing it both breaks in
-every other clone (the path won't exist there) and churns the diff on every
-view switch — and `<bundle-dir>/.migration-backup/` holds `migrate_bundle.py`'s
-pre-migration backup of `story.json`, kept only until the next successful
-migration proves the bundle sound, not a durable record worth committing.
-This applies the first time *any* mode (Baseline, Generate, or
-View) creates the directory, not just View mode — and it's a one-time
-notice, not a durable reminder: once `<hub>/.prodyssey/` exists, later
-invocations skip the check even if the user never actually added the
-suggested lines.
+narrate. A narrative that is not in the repo is not doing its job. Only
+these four entries are exceptions:
+
+- `.view-server.pid` and `.view-server.log` are process bookkeeping for a
+  server that only ever exists on one machine.
+- `active` is a symlink holding an ABSOLUTE path. Committing it both
+  breaks in every other clone (the path will not exist there) and churns
+  the diff on every view switch.
+- `<bundle-dir>/.migration-backup/` holds `migrate_bundle.py`'s
+  pre-migration backup of `story.json`, kept only until the next
+  successful migration proves the bundle sound, not a durable record
+  worth committing.
+
+This applies the first time *any* mode (Baseline, Generate, or View)
+creates the directory, not just View mode. It is also a one-time notice,
+not a durable reminder: once `<hub>/.prodyssey/` exists, later invocations
+skip the check even if the user never actually added the suggested
+lines.
 
 ## Step 0 — Prereq gate (hard, before ANYTHING generative)
 
 Applies to **baseline** and **generate** modes. **View, Publish, and Submit
-modes are exempt** — View only serves static files already on disk (needs
-neither `uv` nor `GEMINI_API_KEY`); Publish only flattens/publishes what's
-already generated (needs `uv` for its export scripts, but not
-`GEMINI_API_KEY`); Submit reads git and writes markdown (needs `uv` and a git
-repo, but never calls Gemini — its narrative work is Claude's judgment, and it
-generates no art or audio). See each mode's own section below.
+modes are exempt**:
+
+- View only serves static files already on disk (needs neither `uv` nor
+  `GEMINI_API_KEY`).
+- Publish only flattens/publishes what is already generated (needs `uv`
+  for its export scripts, but not `GEMINI_API_KEY`).
+- Submit reads git and writes markdown (needs `uv` and a git repo, but
+  never calls Gemini — its narrative work is Claude's judgment, and it
+  generates no art or audio).
+
+See each mode's own section below.
 
 Run this before any other step, every baseline/generate invocation:
 
@@ -192,7 +206,7 @@ Run this before any other step, every baseline/generate invocation:
    `.env` file in `<hub>` containing `GEMINI_API_KEY=`. Never check `<target>`
    for this — `<target>` is an untrusted repo, and its `.env` must never load
    into this process. The scripts resolve `.env` from the working directory,
-   not from either script's own path, so always run them from inside `<hub>` —
+   not from either script's own path. Always run them from inside `<hub>` —
    the same directory this gate checks. If **neither** is present, STOP before
    running any script and print:
 
@@ -207,11 +221,11 @@ Run this before any other step, every baseline/generate invocation:
 
    Voice narration always calls Gemini, so this gate stands regardless of
    `--art`. Do not run `generate_prompts.py --generate` or `generate_audio.py`
-   without a confirmed key — narrative authoring, ADR extraction, and diagram
+   without a confirmed key. Narrative authoring, ADR extraction, and diagram
    authoring (none of which call Gemini) may still proceed if the user
-   explicitly asks for text-only or diagram-only output, but the default
-   `generate` sweep always needs the key for narration and must stop here if
-   absent.
+   explicitly asks for text-only or diagram-only output. But the default
+   `generate` sweep always needs the key for narration, and must stop here if
+   the key is absent.
 
 Only after all three checks pass does mode dispatch begin.
 
@@ -236,13 +250,13 @@ procedure. Summary:
    uv run "${CLAUDE_PLUGIN_ROOT}/scripts/extract_story.py" --repo <target> --bundle-dir <bundle-dir> --dry-run
    ```
    (drop `--dry-run` once ready to write) — this creates `data/story.json` from
-   `inventory.yaml` if `story.json` doesn't exist yet, and writes `data/story.js` +
+   `inventory.yaml` if `story.json` does not exist yet, and writes `data/story.js` +
    `data/manifest.js`.
 2. Detect the stack(s) per `references/stacks/README.md` detection precedence
-   (most-specific card first; `generic.md` fallback). Polyglot repos load one card
+   (most-specific card first, `generic.md` fallback). Polyglot repos load one card
    per matched sub-tree.
 3. Derive the district map and per-district summaries per
-   `references/baseline-derivation.md`; author labels/kinds/blurbs directly into
+   `references/baseline-derivation.md`. Author labels/kinds/blurbs directly into
    `world.districts` in `story.json`, and write `<bundle-dir>/inventory.yaml`.
 4. Migrate the bundle. This refreshes the viewer copy, and it steps the
    layout and the data shape forward when the plugin defines a newer
@@ -258,7 +272,7 @@ procedure. Summary:
    ```
    Report the `baseline` section of the result to the user.
 
-Re-runnable any time; refreshes in place. Never overwrites human-authored narrative
+Re-runnable any time, and refreshes in place. Never overwrites human-authored narrative
 fields already present in `story.json` (that discipline lives in `extract_story.py`
 and in how you write district blurbs — treat existing text as authored, not
 scratch).
@@ -281,15 +295,15 @@ Per-PR narrative + ADR + art + audio sweep. Steps:
    recent PRs (merge commits → squash `(#N)` → `gh` fallback) and confirm the last
    10 with the user before proceeding.
 
-   `--prs N` can resolve to either a merged commit or a currently-open PR (the
-   `gh` fallback checks `mergedAt`/`mergeCommit` and, if both are empty, treats
-   N as open — diffing against the local merge-base of its head and base
-   branches instead of a merge/squash commit). Open-PR entries are tagged
+   `--prs N` can resolve to either a merged commit or a currently-open PR.
+   The `gh` fallback checks `mergedAt`/`mergeCommit` and, if both are empty,
+   treats N as open — diffing against the local merge-base of its head and
+   base branches instead of a merge/squash commit. Open-PR entries are tagged
    `"status": "open"` in `story.json` and reflect the PR's diff as of
-   generation time, not settled history: re-running generate mode with `--force`
-   for that PR after new commits land on its branch refreshes the
-   size/touched/diff/narrative for the new tip, rather than treating the
-   original snapshot as immutable the way a merged PR's is.
+   generation time, not settled history. Re-running generate mode with
+   `--force` for that PR after new commits land on its branch refreshes the
+   size/touched/diff/narrative for the new tip. It does not treat the
+   original snapshot as immutable the way a merged PR's snapshot is.
 
 
 4. **Per PR**, run the resumability check first and only execute stages which
@@ -304,20 +318,21 @@ Per-PR narrative + ADR + art + audio sweep. Steps:
    1. **Narrative authoring** (Claude work, not a script). Follow
       `references/story-mode.md`. The register is selected by `--style
       kleppmann|ste` (default `kleppmann`) — see `references/story-mode.md`
-      §3 for both. Ground every claim by reading the diff (from
-      `extract_diffs.py`'s output — run it first if the diff isn't extracted yet),
-      the touched files in `<target>`, and `<bundle-dir>/inventory.yaml`.
+      §3 for both. Ground every claim in three sources: the diff, the touched
+      files in `<target>`, and `<bundle-dir>/inventory.yaml`. Get the diff
+      from `extract_diffs.py`'s output, and run that script first if the
+      diff is not extracted yet.
       **Read this PR's `intent` block first when it has one** — submit mode
       captured the author's stated problem, approach, and rejected
       alternatives, so do not re-derive them from the diff. See
       `references/story-mode.md`'s opening for what carries over and what
       does not.
       Author the four levels (`landscape`, `problem_solution`, `architecture`,
-      `file_changes`), the tagline, and the `voice` scripts directly into
-      `data/story.json` for this PR. **`problem_solution` and `architecture`
+      `file_changes`), plus the tagline and the `voice` scripts. Write all of
+      it directly into `data/story.json` for this PR. **`problem_solution` and `architecture`
       each also need a `beats` array** (`{"kind": ..., "text": ...}` items) —
       this is what the viewer's Background/Intuition and Forces/Contract/
-      Boundary cards actually render; `problem`/`solution`/`forces`/`decision`
+      Boundary cards actually render. `problem`/`solution`/`forces`/`decision`
       alone are not enough. See `references/story-mode.md` §2a for the exact
       `kind` values per level and worked guidance.
    2. **ADR retro-extraction**. Follow `references/decision-records-lite.md`.
@@ -339,22 +354,22 @@ Per-PR narrative + ADR + art + audio sweep. Steps:
         gives `Unknown skill`, tell it to read
         `${CLAUDE_PLUGIN_ROOT}/skills/mermaid/SKILL.md` directly and obey
         that file instead. The skill resolves by name only in a session
-        that has an installed plugin version which contains it; a session
+        that has an installed plugin version which contains it. A session
         that runs from a development checkout, or from an installed version
         older than the skill, does not find it. The path always resolves,
-        because `${CLAUDE_PLUGIN_ROOT}` points at the copy in use;
+        because `${CLAUDE_PLUGIN_ROOT}` points at the copy in use.
       - then tell it to read
-        `${CLAUDE_PLUGIN_ROOT}/skills/odyssey/references/diagram-mode.md`;
+        `${CLAUDE_PLUGIN_ROOT}/skills/odyssey/references/diagram-mode.md`.
       - hand it the grounding inputs: this PR's timeline entry in
         `<bundle-dir>/data/story.json`, its extracted diff
         (`<bundle-dir>/data/diffs-pr{N}.js`), and
-        `<bundle-dir>/inventory.yaml`;
+        `<bundle-dir>/inventory.yaml`.
       - state the three output paths and the diagram type required for
         each: `<bundle-dir>/data/diagrams/pr{N}-level1.mmd` (`C4Container`,
         PR landscape), `<bundle-dir>/data/diagrams/pr{N}-level2.mmd`
         (`sequenceDiagram`, problem and solution), and
         `<bundle-dir>/data/diagrams/pr{N}-level3.mmd` (`classDiagram`,
-        architecture); level 4 has no diagram;
+        architecture). Level 4 has no diagram.
       - require the subagent to return only the paths it wrote.
 
       Then compile and validate:
@@ -396,9 +411,9 @@ produces for levels 1 through 3 (level 4 has neither). Default: `both`.
   behavior exactly.
 
 Pass the same `--art <mode>` value to `verify_bundle.py` in both the
-resumability check (step 4's preamble) and the final verify (step 5), so
-resumability tracks whichever family this invocation actually asked for
-instead of reporting the untouched family as missing.
+resumability check (step 4's preamble) and the final verify (step 5). This
+way resumability tracks whichever family this invocation actually asked
+for, instead of reporting the untouched family as missing.
 
 ## View mode
 
@@ -409,20 +424,21 @@ call, no `uv`, just `python3`'s stdlib `http.server`, bound to localhost only.
 One long-lived server process per hub, rooted at `<hub>/.prodyssey/` itself
 (never at a bundle's `viewer/` subfolder directly — see below), always serving
 `http://localhost:<port>/active/viewer/`. Switching which bundle is being
-viewed is just repointing a symlink; it never requires restarting the server.
+viewed is just repointing a symlink. It never requires restarting the server.
 
 **Why the server is rooted one level up.** `viewer/index.html` requests
-`../data/story.js`, `../data/manifest.js`, etc — `data/` is a SIBLING of
+`../data/story.js`, `../data/manifest.js`, etc. `data/` is a SIBLING of
 `viewer/`, not a child of it. A server rooted directly at `<bundle-dir>/viewer/`
 404s on every one of those requests. The server must be rooted at the bundle
 ROOT (parent of `viewer/` and `data/`), and the reported/requested URL must
 include the `/viewer/` path segment. (Confirmed via curl this session: 404
-from `<bundle-dir>/viewer/` root; 200 once served from `<bundle-dir>` — the
-bundle root — with `/viewer/index.html` requested.) `python3 -m http.server` also
-correctly follows symlinks — both the symlink itself and the relative
-`../data/...` requests made through pages served via the symlink resolve
-correctly (confirmed via curl this session) — which is what makes the
-one-server-plus-symlink design below work.
+from `<bundle-dir>/viewer/` root, 200 once served from `<bundle-dir>` — the
+bundle root — with `/viewer/index.html` requested.)
+
+`python3 -m http.server` also correctly follows symlinks. Both the symlink
+itself and the relative `../data/...` requests made through pages served
+via the symlink resolve correctly (confirmed via curl this session). This
+is what makes the one-server-plus-symlink design below work.
 
 ### Layout
 
@@ -438,12 +454,12 @@ one-server-plus-symlink design below work.
   currently selected for viewing. Usually points at a
   `<hub>/.prodyssey/self/` or `<hub>/.prodyssey/<slug>/` entry, but for a
   foreign bundle stored with `--store local` it points outside the hub
-  entirely, at `<other-target>/.prodyssey/self/` — that's fine, `http.server`
+  entirely, at `<other-target>/.prodyssey/self/` — that is fine, `http.server`
   follows symlinks (see below).
 - `.view-server.pid` / `.view-server.log` — the one long-lived server process
   for this hub.
 
-Compute `<hub>` per Hub resolution above; `<hub>/.prodyssey/` may already exist
+Compute `<hub>` per Hub resolution above. `<hub>/.prodyssey/` may already exist
 from a prior Baseline/Generate run (same `mkdir -p` + `.gitignore` check
 applies — see Hub resolution).
 
@@ -456,7 +472,7 @@ applies — see Hub resolution).
    - Entries: immediate children of `<hub>/.prodyssey/` that are real
      directories, NOT symlinks — e.g. `find <hub>/.prodyssey -mindepth 1 -maxdepth 1 -type d`
      (`-type d` without `-L` naturally excludes the `active` symlink even
-     though it points at a directory; don't use a glob like `*/`, which
+     though it points at a directory. Do not use a glob like `*/`, which
      follows symlinks and would wrongly include `active` as if it were its
      own bundle). Also excludes `.view-server.pid`/`.view-server.log` since
      those are files, not directories.
@@ -464,11 +480,11 @@ applies — see Hub resolution).
      fields to build a human-readable label (repo name + generation date).
      Skip an entry whose `story.json` is missing or unreadable rather than
      failing discovery outright — note it as incomplete if listing. When an
-     entry's directory name is `self`, label it "(this repo)" so it's
+     entry's directory name is `self`, label it "(this repo)" so it is
      distinguishable from a slug entry in the picker.
 
 3. **`--list`**: print the discovered list from step 2 (label + path per
-   entry) and STOP — don't start or switch anything.
+   entry) and STOP. Do not start or switch anything.
 
 4. **`--stop`**: kill this hub's server and STOP — do not start a new one:
    ```bash
@@ -483,7 +499,7 @@ applies — see Hub resolution).
    rm -f "$PIDFILE" "$LOGFILE"
    ```
    (The PID/log files live under `<hub>/.prodyssey/` rather than `/tmp` so
-   they're scoped per hub. They and `active` are the only three entries under
+   they stay scoped per hub. They and `active` are the only three entries under
    `.prodyssey/` that should be gitignored — see the gitignore-suggestion
    paragraph in Hub resolution above. Everything else under `.prodyssey/` is a
    committed bundle, not scratch.)
@@ -508,11 +524,11 @@ applies — see Hub resolution).
       `/prodyssey:baseline` first and STOP.
 
    Whichever bundle-dir is selected, confirm `data/story.json` and
-   `viewer/index.html` exist under it before proceeding; if not, STOP and
+   `viewer/index.html` exist under it before proceeding. If not, STOP and
    tell the user to run `/prodyssey:baseline` for that repo first (same
-   remediation as 5.4 — this also covers the case where `--repo` pointed at
-   a real repo that just hasn't been baselined yet, or was baselined with a
-   different `--store` mode than the one this resolution assumed).
+   remediation as 5.4). This also covers the case where `--repo` pointed at
+   a real repo that just has not been baselined yet, or was baselined with a
+   different `--store` mode than the one this resolution assumed.
 
 6. **Migrate the bundle**, so a stale viewer copy or an outdated data shape
    never reaches the browser:
@@ -539,17 +555,17 @@ applies — see Hub resolution).
    fi
    ```
    If a server is already running for this hub, do NOT start a second one —
-   repointing `active` (step 7) is enough; the running server picks up the new
+   repointing `active` (step 7) is enough. The running server picks up the new
    symlink target on its next request, no restart needed. Just report the
-   existing port/URL and tell the user to refresh — note that `--port` has no
-   effect in this branch (it only applies to a fresh start); if the user
+   existing port/URL and tell the user to refresh. Note that `--port` has no
+   effect in this branch, since it only applies to a fresh start. If the user
    explicitly passed `--port` while a server is already running on a
    different port, tell them so rather than silently ignoring it. Run the
    start branch as a normal (non-backgrounded-tool-call) Bash invocation —
    the trailing shell `&` detaches the server process itself, so the tool
    call returns immediately with nothing left running in its own foreground.
-   Do not use the Bash tool's own `run_in_background` option here; that's for
-   commands that eventually finish, and this one never does.
+   Do not use the Bash tool's own `run_in_background` option here. That option
+   is for commands that eventually finish, and this one never does.
 
 9. **Confirm a fresh start actually came up** (skip this if step 8 reused an
    existing server): poll the log briefly rather than a single fixed sleep —
@@ -562,34 +578,36 @@ applies — see Hub resolution).
    cat "$LOGFILE"
    ```
    If a `Serving HTTP on ... port NNNNN ...` line appears, parse the port out
-   of it. If it doesn't appear within the poll window — port collision
-   (`--port <N>` pointed at something already listening), permission error,
-   whatever — treat it as a failed start: show the log contents to the user
-   verbatim and STOP. Never report a URL you haven't confirmed is live.
+   of it. If it does not appear within the poll window, treat it as a failed
+   start — the cause may be a port collision (`--port <N>` pointed at
+   something already listening), a permission error, or something else.
+   Show the log contents to the user verbatim and STOP. Never report a URL
+   that has not been confirmed live.
 
 10. **Report the URL**: `http://localhost:<port>/active/viewer/`. Tell the
-    user the server keeps running in the background — the session is free to
-    continue — that switching bundles later is just re-running
-    `/prodyssey:view --repo <other>` (or answering the picker) and refreshing
-    the tab, and that `/prodyssey:view --stop` shuts the server down entirely.
+    user the server keeps running in the background, so the session is free
+    to continue. Tell them that switching bundles later is just re-running
+    `/prodyssey:view --repo <other>` (or answering the picker) and
+    refreshing the tab. Tell them that `/prodyssey:view --stop` shuts the
+    server down entirely.
 
 ## Publish mode
 
 Flattens already-generated PRs into self-contained Claude Artifacts — one per
 PR, plus an index artifact linking to all of them. Publish mode is a
 consumer of an existing bundle, not a generator: it needs `uv` (to run the
-export scripts) but not `GEMINI_API_KEY`, and doesn't touch `<target>` at all.
+export scripts) but not `GEMINI_API_KEY`, and does not touch `<target>` at all.
 
 1. **Resolve `<bundle-dir>`** per Hub resolution above (same `--repo`/`--store`
    rules as every other mode — nothing new here).
 2. **Resolve `--format`** (default `artifact`). Anything other than `artifact`
-   — right now that's just `notion` — is a recognized, reserved value with no
-   implementation yet: report that clearly ("`--format notion` isn't
+   — right now that is just `notion` — is a recognized, reserved value with no
+   implementation yet. Report that clearly ("`--format notion` is not
    implemented yet") and STOP rather than falling through to the artifact
    path silently.
 3. **Resolve the PR list** from `--prs` (comma list or `N..M` range, same
    parsing as Generate mode). For each requested PR, confirm it exists in
-   `<bundle-dir>/data/story.json`'s timeline; if any don't, tell the user to
+   `<bundle-dir>/data/story.json`'s timeline. If any do not, tell the user to
    run `/prodyssey:generate --prs <N>` first and STOP before publishing any
    of the others (a partial publish from a partially-valid PR list is more
    confusing than refusing up front).
@@ -609,7 +627,7 @@ export scripts) but not `GEMINI_API_KEY`, and doesn't touch `<target>` at all.
    commit or narrative content changed since the last export. Read
    `publish-manifest.json` after the script runs (it prints the path) to get
    this PR's current `artifact_url` (if any):
-   - If there's no recorded `artifact_url` yet, or the script reported a
+   - If there is no recorded `artifact_url` yet, or the script reported a
      commit/content change, or the user passed `--force`: call the `Artifact`
      tool on `exports/pr-<N>.html` (`title`: `"<repo> — PR #<N>: <title>"`,
      `description`: the PR's tagline, `favicon`: an emoji fitting the PR).
@@ -620,7 +638,7 @@ export scripts) but not `GEMINI_API_KEY`, and doesn't touch `<target>` at all.
      uv run "${CLAUDE_PLUGIN_ROOT}/scripts/record_publish.py" --bundle-dir <bundle-dir> --target pr-<N> --url <returned-url>
      ```
    - Otherwise, report "already up to date" with the existing URL and move on
-     — don't call the Artifact tool for a PR that hasn't changed.
+     — do not call the Artifact tool for a PR that has not changed.
 6. **Always rebuild and republish the index**, regardless of which PRs (if
    any) actually changed this run — it reflects every PR ever recorded in
    `publish-manifest.json`, not just this invocation's:
@@ -634,18 +652,19 @@ export scripts) but not `GEMINI_API_KEY`, and doesn't touch `<target>` at all.
 7. **Report a summary table** — PR, status (published / updated / unchanged),
    artifact URL — plus the index URL.
 
-If the `Artifact` tool isn't available (per Anthropic's own documentation:
-publishing artifacts requires a `/login` session on a paid plan — API-key and
-cloud-provider-credential sessions can't publish), the export files this mode
-produces are still valid deliverables — tell the user where they landed
-(`<bundle-dir>/exports/`) so they can open or share them another way instead
-of the run looking like it silently failed.
+The `Artifact` tool may not be available. Per Anthropic's own
+documentation, publishing artifacts requires a `/login` session on a paid
+plan — API-key and cloud-provider-credential sessions cannot publish. Even
+then, the export files this mode produces are still valid deliverables.
+Tell the user where they landed (`<bundle-dir>/exports/`) so they can open
+or share them another way, instead of the run looking like it silently
+failed.
 
 ## Submit mode
 
 Interviews the author of a change, assesses that change against the bundle, and
 opens the pull request. Submit mode is the author-side and reviewer-side half of
-the plugin: every other mode narrates history, this one is used before the
+the plugin. Every other mode narrates history. This one runs before the
 history exists. It needs `uv` and a git repo, never `GEMINI_API_KEY`, and it
 generates no art and no audio.
 
@@ -667,7 +686,7 @@ Two references govern it, both loaded on demand:
      Generate mode step 3). Nothing gets created.
    - no `--prs` — the current branch. Ask `gh pr view --json number` for it
      first. If a PR already exists for this branch, adopt its number and
-     continue as the case above; this is the re-run-after-review-feedback
+     continue as the case above. This is the re-run-after-review-feedback
      path. If not, this is a pre-submit run, and step 7 opens the PR.
 3. **Extract the diff.** For a PR:
    ```bash
@@ -680,15 +699,20 @@ Two references govern it, both loaded on demand:
    ```
    The branch form writes `<bundle-dir>/exports/branch-<slug>/diff.json` and
    touches nothing under `data/`.
-4. **Gather the rest of the evidence before asking the author anything.** Read
-   the touched districts in `<bundle-dir>/inventory.yaml`, every record in
-   `<bundle-dir>/data/adrs.json` whose `problem` or `decision` covers those
-   districts, the matching stack card per `references/stacks/README.md`, and
-   the timeline entries for earlier PRs in the same districts. This order is
-   not optional — `references/interview-guide.md` §2 depends on it.
+4. **Gather the rest of the evidence before asking the author anything.**
+   Read, in this order:
+   1. The touched districts in `<bundle-dir>/inventory.yaml`.
+   2. Every record in `<bundle-dir>/data/adrs.json` whose `problem` or
+      `decision` covers those districts.
+   3. The matching stack card per `references/stacks/README.md`.
+   4. The timeline entries for earlier PRs in the same districts.
+
+   This order is not optional — `references/interview-guide.md` §2 depends on it.
 5. **Interview the author** (Claude work, not a script). Follow
-   `references/interview-guide.md`. Draft a hypothesis from step 4, ask only
-   what the evidence cannot settle, then play the drafted `intent` back for
+   `references/interview-guide.md`. Draft a hypothesis from step 4, but hold
+   it back. Ask the problem and approach questions blind, and compare both
+   against each other and against the hypothesis (§3a). Ask only what the
+   evidence still cannot settle, then play the drafted `intent` back for
    confirmation. `--non-interactive`, or a session with no author present,
    takes the fallback in §6 of that file and sets `intent.source: "inferred"`.
 6. **Assess** (Claude work, not a script). Follow `references/review-mode.md`:
@@ -714,6 +738,29 @@ Two references govern it, both loaded on demand:
    ```
    Report the verdict, the risk tier, the finding count, the PR URL, and the
    paths of the two markdown files.
+10. **Offer to continue into narrative generation.** Ask the author
+    (`AskUserQuestion`) whether to move straight into Generate mode's per-PR
+    sweep for this PR now that `intent` and `assessment` are captured.
+    Frame it as optional — declining just stops here, same as before this
+    step existed. If declined, tell the author the same PR can be narrated
+    later with `/prodyssey:generate --prs <N>`.
+
+    If the author says yes, ask (same or a follow-up `AskUserQuestion`):
+    - `--art image` (Gemini-generated scene art) or `--art diagram`
+      (authored Mermaid — see Generate mode step 4's subagent-authoring
+      rule).
+    - Whether to include audio narration (`--voice <V>`, or a specific
+      voice), or skip audio entirely.
+
+    Then run Generate mode's per-PR steps above (steps 1 through 4) for this
+    PR with the chosen flags. Generate mode's own resumability check
+    (`verify_bundle.py --prs <N> --json`) already shows this PR's `diffs` as
+    `ok` from step 3 above, so diff extraction is not repeated — only
+    `narrative.*`, the ADR pass, `asset.*`/`diagram.*`, and audio (if
+    requested) run. This step applies whether the target came from step 2's
+    `--prs <N>` branch, or from opening a new PR in **Submitting the PR**
+    below (where step 8's render/verify has already run and this step
+    follows immediately after it).
 
 ### Submitting the PR
 
@@ -731,7 +778,7 @@ about whether to open the PR at all.
    takes the `--no-create` path instead.
    - A `rework` verdict does not block anything. Offer three ways forward —
      open it, open it as a draft, or stop and fix first — and let the author
-     pick. This mode reports; it never gates.
+     pick. This mode reports. It never gates.
 3. **Create it:**
    ```bash
    gh pr create --base <base> --head <branch> --title "<title>" --body-file <bundle-dir>/exports/branch-<slug>/description.md [--draft]
@@ -756,14 +803,21 @@ Runs after the PR merges. Same steps 1 through 4, then:
    rule that matters most: **never rewrite the pre-stage `intent`.** Its value
    comes from being what the author said before the change shipped.
 6. Render and verify as in pre-stage steps 8 and 9.
+7. **Offer to continue into narrative generation**, same as pre-stage step
+   10 — a PR can reach post stage without ever having been narrated (this is
+   exactly the case that motivated adding step 10). Check whether
+   `verify_bundle.py`'s `narrative.*`/`asset.*` keys are still `missing` for
+   this PR; if so, make the same offer and ask the same two questions
+   (`--art` mode, audio or not), then run Generate mode's per-PR steps as
+   pre-stage step 10 describes.
 
 ## Notes
 
 - Narrative authoring and ADR extraction are Claude judgment work — never delegate
   their content to a script. Scripts only move data (diffs, prompts, audio, bundle
   verification). Diagram authoring is also Claude judgment work, but it runs one
-  step further removed: the orchestrating Claude never writes `.mmd` files itself,
-  it delegates that to a per-PR subagent (see Generate mode, step 4) and only calls
+  step further removed. The orchestrating Claude never writes `.mmd` files itself.
+  It delegates that to a per-PR subagent (see Generate mode, step 4) and only calls
   a script (`build_diagrams.py`) to compile and validate the subagent's output into
   `data/diagrams.js`. The author interview and the architecture assessment are the
   same kind of work — `render_review.py` lays out the result and judges none of it.
@@ -771,7 +825,7 @@ Runs after the PR merges. Same steps 1 through 4, then:
   (read-only check, never written by this skill) — `<hub>/.prodyssey/` is also a
   sanctioned write location, for centrally-stored bundles and view-server bookkeeping.
   Submit mode's `git push` and `gh pr create` are the only actions that reach past
-  this line, they never write a source file, and they only run after the explicit
+  this line. They never write a source file, and they only run after the explicit
   confirmation in Submit mode.
 - `story.json`'s `meta.schema_version` is `"1.2"` — `verify_bundle.py` gates on it.
   `scripts/_bundle_meta.py` is the single source for that constant.
@@ -782,6 +836,6 @@ Runs after the PR merges. Same steps 1 through 4, then:
   `<hub>/.prodyssey/`, never inside a bundle directory — those two files plus
   `active` are the only entries meant to stay out of the commit.
 - Publish mode's `exports/` (per-PR HTML, `index.html`, `publish-manifest.json`)
-  lives inside `<bundle-dir>` and is committable the same way `data/`/`assets/`
-  are — it's the durable record of what's been published and from what
-  version, not disposable build output.
+  lives inside `<bundle-dir>`. It is committable the same way `data/`/`assets/`
+  are, since it is the durable record of what has been published and from
+  what version, not disposable build output.

@@ -23,8 +23,8 @@ compiles them into `data/diagrams.js` for the viewer.
 
 Level 4 has no diagram. Do not write a `pr{N}-level4.mmd` file.
 
-One diagram per file. Each file holds raw Mermaid source only: no ```` ``` ````
-fences, no markdown headings, no surrounding prose. The first line is the
+One diagram per file. Each file holds raw Mermaid source only. It has no code
+fences, no markdown headings, and no surrounding prose. The first line is the
 diagram type keyword (`C4Container`, `sequenceDiagram`, or `classDiagram`),
 optionally after one or more `%%` comment lines.
 
@@ -37,15 +37,18 @@ diff does not show.
 - Every C4 container, every sequence participant, and every class must map to
   a real file, module, or symbol touched by this PR. Use the real file name as
   the node label — `clipboard-monitor.ts`, not "the monitor component."
+
 - Every relation (`Rel`, an arrow between participants, a class association)
-  must reflect a real call, a real message, or a real dependency visible in
-  the diff or the surrounding code. Do not add a relation to make the diagram
-  look more complete than the change actually is.
+  must reflect a real call, a real message, or a real dependency. The diff
+  or the surrounding code must show it. Do not add a relation that makes the
+  diagram look more complete than the change actually is.
+
 - Read the diff before you draw. Do not infer structure from a commit message
   or a PR title alone.
-- Pull class members and container descriptions from the actual code — a
-  method signature, a stored field, a config key — not from a guess at what a
-  file with that name probably does.
+
+- Pull class members and container descriptions from the actual code: a
+  method signature, a stored field, a config key. Do not guess them from
+  what a file with that name probably does.
 
 ## 3. Syntax constraints
 
@@ -54,33 +57,38 @@ ignored. Follow them even when the diagram would render without them.
 
 - **C4 is an experimental Mermaid diagram type.** Keep to the documented
   subset: `Person`, `System_Ext`, `Container`, `ContainerDb`,
-  `Container_Boundary`, and `Rel`. Do not reach for less common C4 macros —
-  they are more likely to hit a Mermaid version gap.
+  `Container_Boundary`, and `Rel`. Do not reach for less common C4 macros.
+  They are more likely to hit a Mermaid version gap.
+
 - **No `<br/>` in labels.** Use `\n` inside a quoted label to force a line
   break. `<br/>` is an HTML tag, and not every Mermaid renderer accepts it in
   every diagram type.
+
 - **Keep level-1 containers under about twelve.** A C4 diagram with more
-  containers than that lays out unreadably at the hero-image width the viewer
-  renders it at. Group related files into one container instead of listing
+  containers than that lays out unreadably at the hero-image width the
+  viewer uses. Group related files into one container instead of listing
   each one.
+
 - **Quote every label with a comma or a parenthesis inside it.** An unquoted
-  label with a comma or a parenthesis can break Mermaid's parser or shift text
-  into the wrong field.
+  label with a comma or a parenthesis can break the Mermaid parser. It can
+  also shift text into the wrong field.
+
 - **No tabs.** Use spaces for indentation. A tab can produce a parse error
   that a space would not.
+
 - **No `#` in a C4 `title` line.** The C4 lexer stops at a `#` that is not
   inside quotation marks, and it gives this error:
   `Lexical error on line 2. Unrecognized text.` A PR title usually contains
-  `#`, thus this is easy to do by accident. Write `title Digital Curator PR 1`,
-  or put the text in quotation marks. A `#` inside a quoted label, and a `#`
-  in a `sequenceDiagram` or a `classDiagram`, are safe.
+  `#`, so this is easy to do by accident. Write `title Digital Curator PR 1`,
+  or put the text in quotation marks. A `#` inside a quoted label is safe. A
+  `#` in a `sequenceDiagram` or a `classDiagram` is also safe.
 
 ## 4. Worked examples
 
-These three examples are the chosen diagram types for this bundle. Ignore any
-other Mermaid diagram type you may see referenced elsewhere (mindmap, state
-diagram, block diagram, C4 component diagram) — those were alternates
-considered for an earlier bundle and are not part of this contract.
+These three examples are the chosen diagram types for this bundle. You may
+see other Mermaid diagram types referenced elsewhere: mindmap, state diagram,
+block diagram, C4 component diagram. Ignore them. Those were alternates
+considered for an earlier bundle, and they are not part of this contract.
 
 ### Level 1 — `C4Container`
 
@@ -200,10 +208,10 @@ classDiagram
 ## 5. Validation
 
 `scripts/build_diagrams.py` checks every `.mmd` file before it compiles
-`data/diagrams.js`. It checks three things: the first content line matches
-the level's required diagram type, brackets balance across the file, and the
-file is not empty once comments and blank lines are stripped. Run
-`--strict` to also parse each file with `mermaid-cli` through `npx`, when
+`data/diagrams.js`. It checks three things. The first content line must
+match the level's required diagram type. Brackets must balance across the
+file. The file must not be empty once comments and blank lines drop out.
+Run `--strict` to also parse each file with `mermaid-cli` through `npx`, when
 `npx` is on the PATH.
 
 A validation failure names the file and the line. Fix it in the `.mmd`
