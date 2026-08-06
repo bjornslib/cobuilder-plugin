@@ -147,6 +147,14 @@ def evidence_list(items) -> str:
     return " ".join(f"`{str(i).strip()}`" for i in items if str(i).strip())
 
 
+def cell(value) -> str:
+    """One markdown table cell. A newline inside a cell ends the row and spills
+    the rest of the value into the document as body text, so collapse every
+    whitespace run to a single space before escaping the column separator.
+    Authored JSON has no length discipline, and a multi-line `claim` is normal."""
+    return " ".join(str(value or "").split()).replace("|", "\\|")
+
+
 # ---- description.md ----
 
 def render_description(title: str, intent: dict) -> str:
@@ -219,9 +227,9 @@ def render_findings(findings) -> str:
     )
     lines = ["| Severity | Finding | Evidence |", "|---|---|---|"]
     for f in rows:
-        severity = str(f.get("severity", "note")).strip()
-        claim = str(f.get("claim", "")).strip().replace("|", "\\|")
-        ev = str(f.get("evidence", "")).strip().replace("|", "\\|")
+        severity = cell(f.get("severity", "note"))
+        claim = cell(f.get("claim", ""))
+        ev = cell(f.get("evidence", ""))
         lines.append(f"| {severity} | {claim} | {f'`{ev}`' if ev else '—'} |")
     body = "\n".join(lines)
     suggestions = [
@@ -241,10 +249,10 @@ def render_boundary_checks(checks) -> str:
     for c in checks:
         if not isinstance(c, dict):
             continue
-        result = str(c.get("result", "")).strip()
-        rule = str(c.get("rule", "")).strip().replace("|", "\\|")
-        source = str(c.get("source", "")).strip()
-        ev = str(c.get("evidence", "")).strip().replace("|", "\\|")
+        result = cell(c.get("result", ""))
+        rule = cell(c.get("rule", ""))
+        source = cell(c.get("source", ""))
+        ev = cell(c.get("evidence", ""))
         lines.append(
             f"| {result} | {rule} | {f'`{source}`' if source else '—'} | {f'`{ev}`' if ev else '—'} |"
         )
@@ -281,9 +289,9 @@ def render_drift(drift) -> str:
     for d in drift:
         if not isinstance(d, dict):
             continue
-        kind = DRIFT_LABEL.get(d.get("kind"), str(d.get("kind", "")).strip())
-        claim = str(d.get("claim", "")).strip().replace("|", "\\|")
-        ev = str(d.get("evidence", "")).strip().replace("|", "\\|")
+        kind = cell(DRIFT_LABEL.get(d.get("kind"), d.get("kind", "")))
+        claim = cell(d.get("claim", ""))
+        ev = cell(d.get("evidence", ""))
         lines.append(f"| {kind} | {claim} | {f'`{ev}`' if ev else '—'} |")
     return section("Drift from the stated intent", "\n".join(lines))
 

@@ -2464,8 +2464,17 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     delta_shift: 'District delta shifted',
   };
 
+  /* Assessment values come from authored JSON, so a lookup key can be anything —
+     including an Object.prototype member name. A bare `MAP[k]` would then return
+     a truthy non-iterable (`constructor`, `toString`, `valueOf`, `__proto__`),
+     the `||` fallback would never fire, and the destructure below would throw a
+     pageerror that kills the whole sheet. Own-property lookups only. */
+  function ownLookup(map, key, fallback){
+    return Object.prototype.hasOwnProperty.call(map, key) ? map[key] : fallback;
+  }
+
   function verdictBadgeHtml(v){
-    const [bg, fg, border] = VERDICT_COLOR[v] || ['oklch(0.96 0.02 250)', 'var(--ink-dim)', 'var(--line)'];
+    const [bg, fg, border] = ownLookup(VERDICT_COLOR, v, ['oklch(0.96 0.02 250)', 'var(--ink-dim)', 'var(--line)']);
     return `<span class="adr-state-badge" style="background:${bg};color:${fg};border-color:${border};">${escapeHtml((v || 'unknown').toUpperCase())}</span>`;
   }
 
@@ -2511,15 +2520,23 @@ window.DIAGRAMS = window.DIAGRAMS || {};
       </button>`;
   }
 
-  function asmQuestionHtml(kicker, block, extraLabel, extraKey){
+    /* `leadHtml`/`tailHtml` are pre-escaped markup slotted above the answer and
+     below the evidence row. They exist so the Q3 caller can compose its verdict
+     label and its `duplicates` citation in one pass. Patching this function's
+     output with .replace() afterwards silently lost the citation whenever the
+     evidence row was absent, because the replace target only existed with it. */
+  
+  function asmQuestionHtml(kicker, block, extraLabel, extraKey, leadHtml, tailHtml){
     if (!block || !block.answer) return '';
     const ev = (block.evidence || []).filter(Boolean);
     return `
       <div class="adr-block">
         <div class="ab-kicker" style="color:var(--accent-text);">${escapeHtml(kicker)}</div>
+        ${leadHtml || ''}
         <p>${escapeHtml(block.answer)}</p>
         ${extraKey && block[extraKey] ? `<p style="margin-top:8px;"><strong>${escapeHtml(extraLabel)}:</strong> ${escapeHtml(block[extraKey])}</p>` : ''}
         ${ev.length ? `<div class="chip-row" style="margin-top:10px;">${ev.map(e => `<span class="force-chip">${escapeHtml(e)}</span>`).join('')}</div>` : ''}
+        ${tailHtml || ''}
       </div>`;
   }
 
@@ -2574,19 +2591,15 @@ window.DIAGRAMS = window.DIAGRAMS || {};
 
     let patternHtml = '';
     if (a.pattern && a.pattern.answer){
-      const label = PATTERN_LABEL[a.pattern.verdict] || a.pattern.verdict || '';
+      const label = ownLookup(PATTERN_LABEL, a.pattern.verdict, a.pattern.verdict || '');
       const dupes = (a.pattern.duplicates || []).filter(Boolean);
-      patternHtml = asmQuestionHtml('Q3 — pattern, duplicate, or reinvention', a.pattern);
-      patternHtml = patternHtml.replace(
-        '<p>',
-        `${label ? `<p style="margin-bottom:8px;"><strong>${escapeHtml(label)}</strong></p>` : ''}<p>`
-      );
-      if (dupes.length){
-        patternHtml = patternHtml.replace(
-          '</div>\n      </div>',
-          `</div>\n        <div class="asm-delta" style="margin-top:8px;">duplicates: ${dupes.map(d => escapeHtml(d)).join(', ')}</div>\n      </div>`
-        );
-      }
+      // review-mode.md §3.3 makes this citation mandatory for a duplicate or a
+      // reinvention verdict, so it must survive an empty evidence array.
+      const lead = label ? `<p style="margin-bottom:8px;"><strong>${escapeHtml(label)}</strong></p>` : '';
+      const tail = dupes.length
+        ? `<div class="asm-delta" style="margin-top:8px;">duplicates: ${dupes.map(d => escapeHtml(d)).join(', ')}</div>`
+        : '';
+      patternHtml = asmQuestionHtml('Q3 — pattern, duplicate, or reinvention', a.pattern, '', '', lead, tail);
     }
 
     const findings = a.findings || [];
@@ -2644,7 +2657,7 @@ window.DIAGRAMS = window.DIAGRAMS || {};
         <div class="alt-section-label">Drift from the stated intent</div>
         <div class="asm-stack">${drift.map(x => `
           <div class="asm-finding concern">
-            <div class="asm-sev">${escapeHtml(DRIFT_LABEL[x.kind] || x.kind || '')}</div>
+            <div class="asm-sev">${escapeHtml(ownLookup(DRIFT_LABEL, x.kind, x.kind || ''))}</div>
             <div class="asm-claim">${escapeHtml(x.claim || '')}</div>
             ${x.evidence ? `<div class="asm-ev">${escapeHtml(x.evidence)}</div>` : ''}
           </div>`).join('')}</div>

@@ -381,16 +381,50 @@ hand.
 
 ## Writing standard
 
-Technical prose in this repo defaults to ASD-STE100 Issue 9 Simplified
-Technical English (STE): `README.md`, this file, `skills/odyssey/references/*.md`,
-and commit and PR bodies. Invoke `Skill("ste-writing")` for the rules. Check a
-draft with `python3 .claude/skills/ste-writing/ste-lint.py <file>` — the
-score counts violations per 100 words, and a lower score reads cleaner.
+Prose in this repo follows plain-English rules distilled from ASD-STE100
+Issue 9 Simplified Technical English (STE). It applies to every content
+type produced here: `README.md`, this file, `skills/odyssey/references/*.md`,
+commit and PR bodies, code comments, error messages, ADRs, and the story
+the plugin writes into `story.json`. `Skill("ste-writing")` holds the full
+rule set and its two modes (`strict` for procedures and safety text,
+`flavored` for general prose). The condensed version below is what to hold
+in mind without invoking it.
 
-**Carve-out**: the authored PR narrative inside `story.json` does not follow
-this default. Its register comes from `--style kleppmann|ste` (default
-`kleppmann`) — see `skills/odyssey/references/story-mode.md` §3 for both
-registers.
+**Words.** One name for one thing — do not call the same item by two
+names. Pick the short common word: start, not begin or commence; use, not
+utilize or leverage; help, not facilitate; show, not demonstrate; about,
+not regarding. One meaning per word. Drop marketing adjectives — seamless,
+robust, powerful, cutting-edge, effortless, world-class, next-generation,
+revolutionary. Cap a noun cluster at three words; split a longer one with
+"of" or a hyphen. Put an article (a, an, the) before every countable
+singular noun.
+
+**Verbs.** Active voice: "the script reads the file", not "the file is
+read by the script". A verb for an action, not a noun for it: "verify the
+bundle", not "perform verification of the bundle". Simple tenses: "the
+migration found a stale field", not "the migration has found a stale
+field".
+
+**Sentences and structure.** One instruction per sentence, capped at
+20-25 words. No contractions. No semicolons — write two sentences instead.
+One topic per paragraph, six sentences or fewer. State a condition before
+its command.
+
+**Marketing and copy — reduced strictness, not exempt.** The `kleppmann`
+narrative register, `story.json`'s default (`skills/odyssey/references/story-mode.md`
+§3), and README's own pitch language both need room for a voice that
+controlled language strips out. They follow a lighter pass of the rules
+above instead of the full set: active voice, plain verbs, no marketing
+adjectives, one topic per paragraph. They are not held to the
+sentence-length cap, the noun-cluster limit, or STE's restricted word
+list. A passive sentence with a known actor, or a claim the diff does not
+support, is still a defect there. The `--style ste` register
+(`story-mode.md` §3) already opts a PR's narrative into the full,
+unrelaxed rules, and this section changes nothing about that choice.
+
+Judge a draft by rereading it against the rules above. `ste-writing` also
+ships `.claude/skills/ste-writing/ste-lint.py`, a rules-only linter that
+scores violations per 100 words, for a quick optional check.
 
 The `ste-writing` skill lives under `.claude/skills/` on purpose, and it
 does not ship with the plugin. An install of `prodyssey@prodyssey` gets
