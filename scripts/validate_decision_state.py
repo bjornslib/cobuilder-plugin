@@ -16,7 +16,8 @@ What it blocks (exit 1):
   2. Illegal state jumps      — a pushed edit moves a record between states not
                                 allowed by the transition table (e.g. idea → approved).
   3. Agent self-approval      — `state: approved` with empty `approved_by`.
-  4. Broken anchors           — `maps_to.context` has no boundary.yaml at the pushed commit.
+  4. Broken anchors           — `maps_to.context` has no boundary.yaml at the pushed commit
+                                (skipped when `maps_to.unanchored` is true).
   5. Deleted records          — records are superseded (`rejected` + `replaces`), never deleted.
   6. Missing decision (opt-in via ARCHKIT_PROTECTED_PATHS) — the push changes a
                                 protected format path with no decision-record change
@@ -67,7 +68,7 @@ except ImportError:  # fail-open: can't validate without a YAML parser
 # main()) overrides that at invocation time. Defaults to docs/architecture.
 DOC_ROOT = os.environ.get("ARCHKIT_DOC_ROOT", "docs/architecture")
 ADR_DIR = f"{DOC_ROOT}/adr/"
-CONTEXTS_DIR = f"{DOC_ROOT}/architecture/contexts/"
+CONTEXTS_DIR = f"{DOC_ROOT}/contexts/"
 
 # Published format paths: changing any of these without a decision-record
 # change in the same push is a missing decision. Empty by default — this is
@@ -215,9 +216,18 @@ def validate_record(d: dict, path: str) -> list[str]:
                          "state the benefit, not only the cost)")
     maps_to = d.get("maps_to") or {}
     if isinstance(maps_to, dict):
-        for k in ("context", "modules", "rule"):
-            if not maps_to.get(k):
-                v.append(f"{path}: `maps_to.{k}` is required (the structural anchor)")
+        unanchored = bool(maps_to.get("unanchored"))
+        if not maps_to.get("rule"):
+            v.append(f"{path}: `maps_to.rule` is required (the structural anchor)")
+        if not maps_to.get("modules"):
+            v.append(f"{path}: `maps_to.modules` is required (the structural anchor)")
+        if unanchored:
+            if not maps_to.get("district"):
+                v.append(
+                    f"{path}: `maps_to.district` is required when the record is unanchored"
+                )
+        elif not maps_to.get("context"):
+            v.append(f"{path}: `maps_to.context` is required (the structural anchor)")
     return v
 
 
@@ -291,8 +301,12 @@ def validate_range(base: str, head: str) -> tuple[list[str], int]:
         if new_state in STATES:
             violations.extend(validate_transition(old_state, new_state, path))
 
-        ctx = (record.get("maps_to") or {}).get("context")
-        if ctx and not git_path_exists(head, f"{CONTEXTS_DIR}{ctx}/boundary.yaml"):
+        maps_to = record.get("maps_to") or {}
+        unanchored = isinstance(maps_to, dict) and bool(maps_to.get("unanchored"))
+        ctx = maps_to.get("context") if isinstance(maps_to, dict) else None
+        if ctx and not unanchored and not git_path_exists(
+            head, f"{CONTEXTS_DIR}{ctx}/boundary.yaml"
+        ):
             violations.append(
                 f"{path}: `maps_to.context: {ctx}` has no boundary record at "
                 f"{CONTEXTS_DIR}{ctx}/boundary.yaml — document the context "
@@ -343,7 +357,7 @@ def _apply_doc_root(root: str) -> None:
         )
         sys.exit(1)
     ADR_DIR = f"{root}/adr/"
-    CONTEXTS_DIR = f"{root}/architecture/contexts/"
+    CONTEXTS_DIR = f"{root}/contexts/"
 
 
 def main() -> int:
