@@ -1,0 +1,184 @@
+id: security-api-security-001
+name: API and Webhook Security
+category: security
+canonical_tags: ['security', 'api-security', 'webhooks', 'rate-limiting', 'cors']
+sources:
+  - owasp/api-security-top-ten.md
+summary: >
+  APIs must enforce rate limiting, validate webhook signatures, use CORS
+  restrictively, and avoid leaking internal errors. Webhook handlers that
+  do not verify signatures or check idempotency are trivially exploitable:
+  an attacker can forge events, replay deliveries, and trigger side effects
+  at will. Rate limiting prevents brute-force and denial-of-wallet attacks
+  on LLM-backed APIs. CORS misconfiguration (allowing any origin) enables
+  cross-origin data theft from authenticated browser sessions. Internal
+  error messages in responses expose stack traces, SQL fragments, and
+  infrastructure details that aid further exploitation.
+examples:
+  - language: python
+    bad: |
+      import hashlib
+      import hmac
+      from fastapi import FastAPI, Request
+
+      app = FastAPI()
+
+
+      # ---- Webhook without signature verification ----
+      @app.post("/webhooks/stripe")
+      async def stripe_webhook(request: Request):
+          payload = await request.json()
+          # Trust the payload blindly — attacker can forge any event
+          if payload["type"] == "payment_succeeded":
+              upgrade_subscription(payload["data"]["customer"])
+          return {"status": "received"}
+
+
+      # ---- No rate limiting on LLM endpoint ----
+      @app.post("/api/chat")
+      async def chat(request: Request):
+          body = await request.json()
+          response = call_llm(body["prompt"])
+          return {"reply": response}
+
+
+      # ---- Overly permissive CORS ----
+      from starlette.middleware.cors import CORSMiddleware
+
+      app.add_middleware(
+          CORSMiddleware,
+          allow_origins=["*"],        # any origin can call this API
+          allow_methods=["*"],
+          allow_headers=["*"],
+      )
+
+
+      # ---- Internal error details leaked in response ----
+      @app.get("/api/users/{user_id}")
+      def get_user(user_id: int):
+          user = db.query(User).filter(User.id == user_id).one()
+          # If user not found: SQLAlchemy raises with full query text in traceback
+          # FastAPI default handler returns traceback as JSON in dev mode
+          return user
+    good: |
+      import hashlib
+      import hmac
+      from fastapi import FastAPI, Request, HTTPException
+      from slowapi import Limiter
+      from slowapi.util import get_remote_address
+      from starlette.middleware.cors import CORSMiddleware
+      from starlette.responses import JSONResponse
+
+      app = FastAPI()
+      limiter = Limiter(key_func=get_remote_address)
+
+
+      # ---- Webhook with HMAC signature verification + idempotency ----
+      STRIPE_WEBHOOK_SECRET = os.environ["STRIPE_WEBHOOK_SECRET"]
+      _processed_events: set[str] = set()  # in production, use Redis with TTL
+
+
+      def verify_stripe_signature(payload: bytes, sig_header: str) -> bool:
+          """Verify HMAC-SHA256 signature from Stripe webhook."""
+          expected = hmac.new(
+              STRIPE_WEBHOOK_SECRET.encode(),
+              payload,
+              hashlib.sha256,
+          ).hexdigest()
+          return hmac.compare_digest(expected, sig_header)
+
+
+      @app.post("/webhooks/stripe")
+      async def stripe_webhook(request: Request):
+          raw = await request.body()
+          sig = request.headers.get("Stripe-Signature", "")
+          if not verify_stripe_signature(raw, sig):
+              raise HTTPException(400, "Invalid signature")
+
+          payload = await request.json()
+          event_id = payload["id"]
+
+          # Idempotency: skip already-processed events (prevents replays)
+          if event_id in _processed_events:
+              return {"status": "already_processed"}
+          _processed_events.add(event_id)
+
+          if payload["type"] == "payment_succeeded":
+              upgrade_subscription(payload["data"]["customer"])
+          return {"status": "received"}
+
+
+      # ---- Rate limiting on LLM endpoint ----
+      @app.post("/api/chat")
+      @limiter.limit("10/minute")
+      async def chat(request: Request):
+          body = await request.json()
+          response = call_llm(body["prompt"])
+          return {"reply": response}
+
+
+      # ---- Restrictive CORS: only known origins ----
+      ALLOWED_ORIGINS = [
+          "https://app.example.com",
+          "https://admin.example.com",
+      ]
+
+      app.add_middleware(
+          CORSMiddleware,
+          allow_origins=ALLOWED_ORIGINS,
+          allow_methods=["GET", "POST", "PUT", "DELETE"],
+          allow_headers=["Authorization", "Content-Type"],
+      )
+
+
+      # ---- Generic error responses: no internal details leaked ----
+      @app.exception_handler(Exception)
+      async def generic_error(request: Request, exc: Exception):
+          logger.error("Unhandled exception", exc_info=exc)
+          return JSONResponse(
+              status_code=500,
+              content={"detail": "Internal server error"},
+          )
+
+
+      @app.get("/api/users/{user_id}")
+      def get_user(user_id: int):
+          user = db.query(User).filter(User.id == user_id).one_or_none()
+          if user is None:
+              raise HTTPException(404, "User not found")
+          return user
+heuristics:
+  - >
+    Webhook handlers MUST verify the cryptographic signature on every
+    request. Without verification, any attacker can forge events that
+    trigger payments, permission changes, or data modifications.
+    Use hmac.compare_digest (constant-time comparison) to prevent timing
+    attacks on the signature check.
+  - >
+    Webhook handlers must be idempotent. Delivery services (Stripe, GitHub,
+    Twilio) may deliver the same event multiple times. Track processed
+    event IDs (with TTL) and skip duplicates. Without idempotency, a
+    replayed webhook duplicates side effects.
+  - >
+    Rate limit every endpoint that invokes LLMs, sends email, or charges
+    money. Denial-of-wallet (draining API credits) is the LLM-era analog
+    of denial-of-service. Use slowapi, Redis-based limiters, or cloud
+    provider rate limiting.
+  - >
+    CORS must restrict origins to known frontend domains. allow_origins=["*"]
+    with credentials means any website can make authenticated requests to
+    your API on behalf of a logged-in user. Specify exact origins.
+  - >
+    Never return internal error details (stack traces, SQL queries, file
+    paths) in API responses. Use a global exception handler that logs
+    the full error server-side and returns a generic 500 to the client.
+    In development, use debug mode; in production, never.
+  - >
+    Authenticate API endpoints consistently. Every endpoint should have
+    an explicit auth dependency (FastAPI Depends) or be explicitly marked
+    as public. Missing auth on one endpoint in a /api/ router is a common
+    oversight that creates an unauthenticated data path.
+related_tags:
+  [security, api-security, webhooks, rate-limiting, cors, hmac,
+   idempotency, denial-of-wallet, owasp-api-top-ten, error-handling,
+   signature-verification, timing-attack]

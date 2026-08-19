@@ -1,0 +1,85 @@
+id: airbnb-semicolons-025
+name: Airbnb Semicolons — Required, ASI Hazards, Statement Termination
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  Airbnb requires semicolons at the end of every statement. Automatic
+  Semicolon Insertion (ASI) can produce surprising behavior — a line break
+  after return (return\nvalue) returns undefined, and an array literal on
+  the next line gets treated as a property accessor. Explicit semicolons
+  prevent ASI hazards and make statement boundaries unambiguous. Configure
+  your linter to catch missing semicolons.
+examples:
+  - language: typescript
+    bad: |
+      // ASI hazard: array literal on next line treated as indexing
+      const luke = {}
+      const leia = {}
+      [luke, leia].forEach((jedi) => jedi.father = "vader")
+      // Error: Cannot read properties of undefined
+
+      // ASI hazard: parentheses treated as function call
+      const reaction = "No! That's impossible!"
+      (async function meanwhileOnTheFalcon() {
+        // ...
+      }())
+      // TypeError: "No! That's impossible!" is not a function
+
+      // ASI hazard: return on its own line → returns undefined
+      function foo() {
+        return
+          "search your feelings, you know it to be foo"
+      }
+      // Returns undefined, not the string
+
+      // Missing semicolons throughout
+      const name = "Luke"
+      const age = 28
+      process(name, age)
+    good: |
+      // Semicolons make statement boundaries explicit
+      const luke = {};
+      const leia = {};
+      [luke, leia].forEach((jedi) => {
+        jedi.father = "vader";
+      });
+
+      const reaction = "No! That's impossible!";
+      (async function meanwhileOnTheFalcon() {
+        // ...
+      }());
+
+      // Return value on same line as return
+      function foo() {
+        return "search your feelings, you know it to be foo";
+      }
+
+      // Consistent semicolons throughout
+      const name = "Luke";
+      const age = 28;
+      process(name, age);
+
+      // TypeScript interfaces/types don't need semicolons but delimiters (; or ,) work
+      interface User {
+        name: string;
+        age: number;
+      }
+
+      // Class methods — no semicolons needed in class bodies
+      class Hero {
+        fight() {
+          return "victory";
+        }
+      }
+heuristics:
+  - Always terminate statements with semicolons. They make code unambiguous and predictable.
+  - Understand the three most common ASI hazards: (1) return followed by newline returns undefined, (2) an opening bracket/paren on a new line can be parsed as indexing or invocation, (3) line breaks between operators can split expressions.
+  - Never rely on ASI. Even though it's part of the spec, its rules are subtle and produce counterintuitive results.
+  - Configure eslint semi to error on missing semicolons.
+  - TypeScript interfaces and type declarations use semicolons or commas as member separators — choose one and be consistent. Semicolons are the de facto standard.
+  - Class methods do not need semicolons in the class body.
+  - In for loops, semicolons separate the three expressions: for (let i = 0; i < n; i += 1).
+  - If you're coming from a no-semicolon style (StandardJS), note that Airbnb explicitly requires them — the consistency benefit outweighs the keystroke saving.
+related_tags: [airbnb, semicolons, asi, automatic-semicolon-insertion, statement-termination]

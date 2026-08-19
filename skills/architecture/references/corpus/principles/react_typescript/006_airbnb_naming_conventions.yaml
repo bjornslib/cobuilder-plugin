@@ -1,0 +1,130 @@
+id: airbnb-naming-001
+name: Airbnb Naming Conventions — Case Styles & Semantic Clarity
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  Airbnb enforces strict naming conventions: camelCase for variables, functions, and instances;
+  PascalCase for classes, constructors, and components; UPPER_SNAKE_CASE only for exported
+  constants with stable values. Acronyms should be all-uppercase or all-lowercase (not mixed).
+  Filenames must exactly match their default export name. Avoid single-letter names, leading/trailing
+  underscores, and saving `this` references (use arrow functions instead). These rules make code
+  self-documenting and reduce the cognitive load of reading unfamiliar modules.
+examples:
+  - language: typescript
+    bad: |
+      // Inconsistent case — mixed conventions confuse readers
+      const OBJEcttsssss = {};
+      const this_is_my_object = {};
+
+      // Single-letter names — zero semantic meaning
+      function q() {
+        return users.filter((u) => u.active);
+      }
+
+      // Leading/trailing underscores — fake privacy
+      this.__firstName__ = "Panda";
+      this._lastName = "Bear";
+
+      // Constructor with lowercase — new-cap violation
+      function user(options: { name: string }) {
+        this.name = options.name;
+      }
+      const bad = new user({ name: "nope" });
+
+      // Saving this reference instead of using arrow functions
+      function foo() {
+        const self = this;
+        return function () {
+          console.log(self.value);
+        };
+      }
+    good: |
+      // camelCase for variables, objects, functions, instances
+      const userSettings = {};
+      const activeUsers = users.filter((user) => user.active);
+
+      // Descriptive names — semantics clear at a glance
+      function queryActiveUsers(): User[] {
+        return users.filter((user) => user.active);
+      }
+
+      // No underscores — use WeakMap for true privacy if needed
+      const userNames = new WeakMap<object, string>();
+      userNames.set(this, "Panda");
+
+      // PascalCase for classes & constructors
+      class User {
+        constructor(public readonly name: string) {}
+      }
+      const user = new User({ name: "yup" });
+
+      // Arrow functions instead of saving `this`
+      function foo() {
+        return () => {
+          console.log(this.value);
+        };
+      }
+  - language: typescript
+    bad: |
+      // Mixed-case acronyms — Sms, http, Json
+      import SmsContainer from "./containers/SmsContainer";
+      const HttpRequests = [
+        { url: "/api/users" },
+      ];
+
+      // Filename doesn't match default export
+      // File: checkBox.ts
+      class CheckBox {
+        checked: boolean;
+      }
+      export default CheckBox;
+
+      // In another file:
+      import CheckBox from "./checkBox"; // PascalCase import, camelCase filename
+
+      // UPPER_CASE for non-exported internal constant
+      const PRIVATE_VARIABLE = "should not be uppercased";
+
+      // UPPER_CASE for mutable export
+      export let REASSIGNABLE_CONFIG = { debug: false };
+    good: |
+      // Acronyms: all-uppercase or all-lowercase, never mixed
+      import SMSContainer from "./containers/SMSContainer";
+      const HTTPRequests = [
+        { url: "/api/users" },
+      ];
+      // Or all-lowercase:
+      const httpRequests = [
+        { url: "/api/users" },
+      ];
+
+      // Filename exactly matches default export (PascalCase for class)
+      // File: CheckBox.ts
+      class CheckBox {
+        checked: boolean;
+      }
+      export default CheckBox;
+
+      // In consuming file:
+      import CheckBox from "./CheckBox";
+
+      // UPPER_CASE only for exported, immutable constants
+      export const API_KEY = "sk-live-abc123";
+      export const MAX_RETRY_COUNT = 3;
+
+      // Internal constants stay camelCase
+      const defaultTimeout = 5000;
+heuristics:
+  - Use camelCase when naming objects, functions, instances, and variables.
+  - Use PascalCase only when naming constructors, classes, or React components.
+  - UPPER_SNAKE_CASE is reserved for exported constants that will never change. Internal constants stay camelCase.
+  - Acronyms and initialisms (API, HTTP, SMS) should be all-uppercase in PascalCase contexts (HTTPSClient) or all-lowercase in camelCase contexts (httpClient) — never mixed like HttpRequests or SmsContainer.
+  - A base filename should exactly match the name of its default export: CheckBox.ts exports CheckBox, fortyTwo.ts exports fortyTwo.
+  - Avoid single-letter variable and function names — be descriptive. Exceptions: i, j as loop indices in simple loops.
+  - Do not use trailing or leading underscores. They suggest fake privacy in a language with no real private properties (use #private fields or WeakMap).
+  - Do not save references to 'this' (const self = this). Use arrow functions or .bind() instead.
+  - Use camelCase when exporting a function as default. Use PascalCase when exporting a class, constructor, or singleton object.
+  - Boolean properties and methods should use 'is' or 'has' prefixes: isActive, hasPermission.
+related_tags: [naming, camelCase, PascalCase, conventions, readability, airbnb, filename-conventions]

@@ -1,0 +1,565 @@
+id: health-checks-001
+name: Health Checks and Readiness Probes
+category: resilience
+canonical_tags: ['resilience', 'release-it', 'production-readiness', 'ddia']
+sources:
+  - books/release-it.md
+  - books/designing-data-intensive-applications.md
+summary: >
+  Health checks are not "return 200 if the process is running" -- they are
+  the system's self-diagnosis mechanism that tells the orchestrator whether
+  this instance can actually serve traffic. Three distinct signals are
+  required: a Liveness probe answers "is the process alive and not
+  deadlocked?"; a Readiness probe answers "can this instance accept
+  requests right now?"; and a Startup probe answers "is initialization
+  complete?" These must reflect real dependency state -- a Readiness probe
+  that returns green while the database is unreachable will route traffic to
+  a dead instance, causing cascading 500s. Health checks are the first line
+  of automated recovery: Kubernetes uses them to restart deadlocked pods and
+  stop routing to sick ones; load balancers use them to pull sick nodes from
+  rotation. A health check that always returns green is worse than no health
+  check -- it trains the system to ignore the signal.
+examples:
+  - language: python
+    bad: |
+      from fastapi import FastAPI
+
+      app = FastAPI()
+
+
+      @app.get("/health")
+      async def health():
+          """Always returns healthy -- says nothing about actual ability."""
+          return {"status": "ok"}
+
+
+      @app.get("/ready")
+      async def ready():
+          """Same as health -- no distinction between alive and ready."""
+          return {"status": "ready"}
+
+
+      # This service could have lost its database connection, exhausted its
+      # thread pool, and be deadlocked -- and /health still says "ok".
+    good: |
+      import asyncio
+      import time
+      from dataclasses import dataclass, field
+      from enum import Enum
+      from typing import Any, Callable, Optional
+      from fastapi import FastAPI, HTTPException
+      import httpx
+
+
+      app = FastAPI()
+
+      # ---- Health state -----------------------------------------------
+      class HealthStatus(Enum):
+          HEALTHY = "healthy"
+          DEGRADED = "degraded"
+          UNHEALTHY = "unhealthy"
+
+
+      @dataclass
+      class DependencyHealth:
+          name: str
+          status: HealthStatus
+          latency_ms: float = 0.0
+          error: Optional[str] = None
+
+
+      # ---- Dependency check registry ----------------------------------
+      @dataclass
+      class HealthCheckRegistry:
+          """
+          Collects health checks for all dependencies. The aggregate
+          status is healthy only if ALL critical deps are healthy.
+
+          A degraded dependency (cache, search) reduces overall to DEGRADED
+          but still allows traffic. An unhealthy critical dependency (DB,
+          payment gateway) makes the instance UNHEALTHY -- it should be
+          pulled from rotation.
+          """
+          checks: list[Callable[[], Any]] = field(default_factory=list)
+          _dependency_health: dict[str, DependencyHealth] = field(default_factory=dict)
+
+          def register(self, name: str, is_critical: bool, check_fn: Callable[[], Any]) -> None:
+              self.checks.append((name, is_critical, check_fn))
+
+          async def run_all(self) -> dict:
+              results: dict[str, dict] = {}
+              overall = HealthStatus.HEALTHY
+
+              for name, is_critical, check_fn in self.checks:
+                  start = time.monotonic()
+                  try:
+                      result = await check_fn() if asyncio.iscoroutinefunction(check_fn) else check_fn()
+                      status = HealthStatus.HEALTHY
+                      error = None
+                  except Exception as e:
+                      result = None
+                      status = HealthStatus.UNHEALTHY
+                      error = str(e)[:500]
+
+                  latency = (time.monotonic() - start) * 1000
+                  dep = DependencyHealth(
+                      name=name, status=status, latency_ms=round(latency, 2), error=error
+                  )
+                  results[name] = {
+                      "status": dep.status.value,
+                      "latency_ms": dep.latency_ms,
+                      "error": dep.error,
+                  }
+
+                  if is_critical and status == HealthStatus.UNHEALTHY:
+                      overall = HealthStatus.UNHEALTHY
+                  elif not is_critical and status == HealthStatus.UNHEALTHY and overall == HealthStatus.HEALTHY:
+                      overall = HealthStatus.DEGRADED
+
+              return {
+                  "status": overall.value,
+                  "timestamp": time.time(),
+                  "dependencies": results,
+              }
+
+
+      # ---- Concrete health checks -------------------------------------
+      async def check_database() -> str:
+          """Verify the DB accepts connections and returns a known value."""
+          async with db_pool.acquire() as conn:
+              row = await conn.fetchrow("SELECT 1 AS health")
+              assert row["health"] == 1
+          return "ok"
+
+
+      async def check_redis() -> str:
+          """Verify Redis is reachable and responsive."""
+          await redis_client.ping()
+          return "ok"
+
+
+      async def check_payment_gateway() -> str:
+          """Verify the payment gateway responds to a health probe."""
+          async with httpx.AsyncClient(timeout=httpx.Timeout(2.0)) as client:
+              resp = await client.get("https://payments.internal/health")
+              resp.raise_for_status()
+          return "ok"
+
+
+      def check_disk_space(min_free_mb: int = 100) -> str:
+          """Verify disk has free space -- prevents crash-loop on full disk."""
+          import shutil
+          stat = shutil.disk_usage("/var/data")
+          free_mb = stat.free / (1024 * 1024)
+          assert free_mb >= min_free_mb, f"Only {free_mb:.0f}MB free (need {min_free_mb}MB)"
+          return "ok"
+
+
+      # ---- Register checks --------------------------------------------
+      registry = HealthCheckRegistry()
+      registry.register("database", is_critical=True, check_fn=check_database)
+      registry.register("redis", is_critical=False, check_fn=check_redis)
+      registry.register("payment_gateway", is_critical=True, check_fn=check_payment_gateway)
+      registry.register("disk_space", is_critical=False, check_fn=check_disk_space)
+
+
+      # ---- Thread-deadlock detection ----------------------------------
+      class DeadlockDetector:
+          """
+          Detects main-loop deadlocks via a watchdog heartbeat.
+
+          A background thread updates a timestamp every N ms. The health
+          endpoint compares now() to the last heartbeat. If the gap exceeds
+          the threshold, the main event loop is deadlocked.
+          """
+          def __init__(self, max_gap_ms: int = 5000) -> None:
+              self._max_gap_ms = max_gap_ms
+              self._last_heartbeat = time.monotonic()
+              self._running = True
+              self._heartbeat_task: Optional[asyncio.Task] = None
+
+          async def start(self) -> None:
+              async def heartbeat():
+                  while self._running:
+                      self._last_heartbeat = time.monotonic()
+                      await asyncio.sleep(1.0)
+              self._heartbeat_task = asyncio.create_task(heartbeat())
+
+          def is_alive(self) -> bool:
+              gap = (time.monotonic() - self._last_heartbeat) * 1000
+              return gap < self._max_gap_ms
+
+          async def stop(self) -> None:
+              self._running = False
+              if self._heartbeat_task:
+                  self._heartbeat_task.cancel()
+
+
+      deadlock_detector = DeadlockDetector(max_gap_ms=5000)
+
+
+      # ---- Readiness tracker: warm-up phase ---------------------------
+      class ReadinessTracker:
+          """
+          Tracks whether the instance has completed initialization.
+
+          Until ready=True, the /ready endpoint returns 503 so the load
+          balancer doesn't send traffic to an instance that's still
+          loading config, warming caches, or running migrations.
+          """
+          def __init__(self) -> None:
+              self._ready = False
+              self._startup_progress: dict[str, bool] = {}
+
+          def mark_step_done(self, step: str) -> None:
+              self._startup_progress[step] = True
+
+          def set_ready(self) -> None:
+              self._ready = True
+
+          @property
+          def is_ready(self) -> bool:
+              return self._ready
+
+          def progress(self) -> dict:
+              return {
+                  "ready": self._ready,
+                  "steps": self._startup_progress,
+              }
+
+
+      readiness = ReadinessTracker()
+
+
+      # ---- Health endpoints -------------------------------------------
+      @app.get("/health/live")
+      async def liveness():
+          """
+          Liveness: is the process alive and not deadlocked?
+
+          Kubernetes restarts the pod if this fails. It must be cheap
+          (no dependency checks) and must detect deadlocks. A liveness
+          probe that does DB queries can cause restart cascades during
+          DB outages.
+          """
+          if not deadlock_detector.is_alive():
+              raise HTTPException(status_code=503, detail="deadlock detected")
+          return {"status": "alive"}
+
+
+      @app.get("/health/ready")
+      async def readiness_probe():
+          """
+          Readiness: can this instance serve traffic?
+
+          Returns 503 if:
+          - Startup hasn't completed (still loading config, etc.)
+          - A critical dependency is unhealthy
+          - The instance has been marked for draining
+
+          Load balancers stop routing to this instance on 503.
+          """
+          if not readiness.is_ready:
+              raise HTTPException(
+                  status_code=503,
+                  detail=f"not ready: {readiness.progress()}",
+              )
+
+          health = await registry.run_all()
+          if health["status"] == HealthStatus.UNHEALTHY.value:
+              raise HTTPException(
+                  status_code=503,
+                  detail=f"critical dependency unhealthy: {health}",
+              )
+
+          # Return full health snapshot so operators can see what's degraded
+          return health
+
+
+      @app.get("/health/startup")
+      async def startup_probe():
+          """
+          Startup: has initialization completed?
+
+          Kubernetes gives this a longer timeout and failure threshold
+          than liveness/readiness. Once it succeeds, it's never checked
+          again. Separating startup from readiness prevents premature
+          restarts during slow initialization.
+          """
+          if readiness.is_ready:
+              return {"status": "startup_complete"}
+          return {"status": "starting", "progress": readiness.progress()}
+
+
+      # ---- Startup sequence -------------------------------------------
+      async def startup():
+          """Initialize all subsystems, then mark ready."""
+          deadlock_detector.start()
+
+          # Step 1: Load config
+          await load_config()
+          readiness.mark_step_done("config_loaded")
+
+          # Step 2: Connect to database
+          await db_pool.connect()
+          readiness.mark_step_done("db_connected")
+
+          # Step 3: Warm caches
+          await warm_caches()
+          readiness.mark_step_done("caches_warm")
+
+          readiness.set_ready()
+  - language: typescript
+    bad: |
+      import express from "express";
+
+      const app = express();
+
+      // The universal anti-pattern: always-200 health check.
+      app.get("/health", (_req, res) => {
+        res.json({ status: "ok" });
+      });
+
+      app.get("/ready", (_req, res) => {
+        res.json({ status: "ready" });
+      });
+
+      app.listen(3000);
+    good: |
+      import express from "express";
+      import { Pool } from "pg";
+      import { createClient, RedisClientType } from "redis";
+      import axios from "axios";
+
+      const app = express();
+
+      // ---- Health status -----------------------------------------------
+      type HealthStatus = "healthy" | "degraded" | "unhealthy";
+
+      interface DependencyResult {
+        status: HealthStatus;
+        latencyMs: number;
+        error?: string;
+      }
+
+      // ---- Health check registry ---------------------------------------
+      interface HealthCheck {
+        name: string;
+        critical: boolean;
+        check: () => Promise<void>;
+      }
+
+      class HealthCheckRegistry {
+        private checks: HealthCheck[] = [];
+
+        register(name: string, critical: boolean, check: () => Promise<void>): void {
+          this.checks.push({ name, critical, check });
+        }
+
+        async runAll(): Promise<{
+          status: HealthStatus;
+          dependencies: Record<string, DependencyResult>;
+        }> {
+          const results: Record<string, DependencyResult> = {};
+          let overall: HealthStatus = "healthy";
+
+          for (const { name, critical, check } of this.checks) {
+            const start = Date.now();
+            try {
+              await Promise.race([check(), timeout(2000)]);
+              results[name] = {
+                status: "healthy",
+                latencyMs: Date.now() - start,
+              };
+            } catch (err) {
+              const status: HealthStatus = "unhealthy";
+              results[name] = {
+                status,
+                latencyMs: Date.now() - start,
+                error: (err as Error).message.slice(0, 500),
+              };
+
+              if (critical) {
+                overall = "unhealthy";
+              } else if (overall === "healthy") {
+                overall = "degraded";
+              }
+            }
+          }
+
+          return { status: overall, dependencies: results };
+        }
+      }
+
+      function timeout(ms: number): Promise<never> {
+        return new Promise((_, reject) =>
+          setTimeout(() => reject(new Error(`Timeout after ${ms}ms`)), ms),
+        );
+      }
+
+      // ---- Concrete health checks --------------------------------------
+      async function checkDatabase(pool: Pool): Promise<void> {
+        const result = await pool.query("SELECT 1 AS health");
+        if (result.rows[0].health !== 1) throw new Error("DB health check failed");
+      }
+
+      async function checkRedis(redis: RedisClientType): Promise<void> {
+        await redis.ping();
+      }
+
+      async function checkPaymentGateway(): Promise<void> {
+        await axios.get("https://payments.internal/health", { timeout: 2000 });
+      }
+
+      // ---- Deadlock detection ------------------------------------------
+      class DeadlockDetector {
+        private lastHeartbeat = Date.now();
+
+        constructor(private readonly maxGapMs: number = 5000) {
+          setInterval(() => {
+            this.lastHeartbeat = Date.now();
+          }, 1000);
+        }
+
+        isAlive(): boolean {
+          return Date.now() - this.lastHeartbeat < this.maxGapMs;
+        }
+      }
+
+      // ---- Readiness state ----------------------------------------------
+      class ReadinessTracker {
+        private ready = false;
+        private stepsDone: Record<string, boolean> = {};
+
+        markStep(name: string): void {
+          this.stepsDone[name] = true;
+        }
+
+        setReady(): void {
+          this.ready = true;
+        }
+
+        get isReady(): boolean {
+          return this.ready;
+        }
+
+        progress() {
+          return { ready: this.ready, steps: this.stepsDone };
+        }
+      }
+
+      // ---- Wire it up --------------------------------------------------
+      const registry = new HealthCheckRegistry();
+      const pool = new Pool({ max: 20 });
+      const redis = createClient();
+      const deadlockDetector = new DeadlockDetector();
+      const readiness = new ReadinessTracker();
+
+      registry.register("database", true, () => checkDatabase(pool));
+      registry.register("redis", false, () => checkRedis(redis as RedisClientType));
+      registry.register("payment_gateway", true, checkPaymentGateway);
+
+      // Liveness: cheap, detects deadlocks, no dependency checks
+      app.get("/health/live", (_req, res) => {
+        if (!deadlockDetector.isAlive()) {
+          res.status(503).json({ status: "deadlocked" });
+          return;
+        }
+        res.json({ status: "alive" });
+      });
+
+      // Readiness: full dependency scan, blocks traffic if unhealthy
+      app.get("/health/ready", async (_req, res) => {
+        if (!readiness.isReady) {
+          res.status(503).json({
+            status: "not ready",
+            progress: readiness.progress(),
+          });
+          return;
+        }
+
+        const health = await registry.runAll();
+        if (health.status === "unhealthy") {
+          res.status(503).json(health);
+          return;
+        }
+        res.json(health);
+      });
+
+      // Startup: separate probe with longer timeout
+      app.get("/health/startup", (_req, res) => {
+        if (readiness.isReady) {
+          res.json({ status: "startup_complete" });
+        } else {
+          res.json({ status: "starting", progress: readiness.progress() });
+        }
+      });
+
+      app.listen(3000);
+
+      // ---- Startup sequence --------------------------------------------
+      async function startup(): Promise<void> {
+        await redis.connect();
+        readiness.markStep("redis_connected");
+        await pool.connect();
+        readiness.markStep("db_connected");
+        readiness.setReady();
+      }
+
+      startup();
+heuristics:
+  - >
+    Three distinct probes are required: Liveness (is the process alive?),
+    Readiness (can it serve traffic?), and Startup (is initialization done?).
+    Collapsing them into one endpoint makes the orchestrator restart pods during
+    normal initialization and route to deadlocked pods.
+  - >
+    Liveness must be cheap and must detect deadlocks. It must NOT check
+    dependencies -- a liveness probe that queries the database will trigger
+    restart cascades during a DB outage, making the outage worse. Use a
+    watchdog heartbeat to detect event-loop deadlocks.
+  - >
+    Readiness must reflect real dependency state. If the database is
+    unreachable, readiness must return 503 so the load balancer stops routing
+    traffic. A readiness probe that ignores dependency health routes requests to
+    instances that will 500 every call.
+  - >
+    Startup probes have longer timeouts and higher failure thresholds than
+    liveness/readiness. Separating startup prevents premature restarts when
+    initialization is slow (loading large configs, warming caches, running
+    migrations).
+  - >
+    Health checks must be per-dependency, not aggregate. An aggregate "overall
+    health" that hides which dependency is broken forces operators to SSH in and
+    check each one manually. Return a dependency-by-dependency breakdown.
+  - >
+    Classify dependencies as critical or non-critical. A cache outage should
+    return DEGRADED (still route traffic, but with reduced capability). A
+    database outage should return UNHEALTHY (stop routing traffic immediately).
+  - >
+    Never include secrets or PII in health check responses. Health endpoints are
+    often exposed to load balancers and monitoring systems with broad access.
+    Return status codes and dependency names, not connection strings or user
+    data.
+  - >
+    "Health checks that always return green despite broken downstreams" is an
+    anti-pattern (Release It!). If your health check can't detect broken
+    dependencies, it's not a health check -- it's a lie that delays detection
+    until users complain.
+  - >
+    Include latency in health check results. A dependency that responds in 2ms
+    is healthy; one that responds in 2000ms is barely alive and about to fail.
+    Latency trends in health checks predict outages before they happen.
+  - >
+    A draining instance must signal "not ready" but remain "alive." When
+    graceful shutdown begins, flip readiness to 503 so the load balancer stops
+    sending new requests, but keep liveness green so the orchestrator doesn't
+    forcefully kill the pod while existing requests are finishing.
+  - >
+    Test health check failure modes: simulate a DB outage, verify readiness
+    returns 503, verify liveness is unaffected, verify recovery when the DB
+    comes back. The most common health check bug is a check that never fails
+    because it swallows exceptions.
+related_tags: [health-check, readiness, liveness, startup-probe, kubernetes,
+  load-balancer, graceful-shutdown, dependency-health, monitoring,
+  deadlock-detection, orchestrator, release-it, ddia]

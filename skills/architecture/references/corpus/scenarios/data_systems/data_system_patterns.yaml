@@ -1,0 +1,323 @@
+id: data-system-patterns-001
+name: Message Ordering, Eventual Consistency, Partitioning, Stream Processing, and Schema Evolution
+category: data_systems
+canonical_tags: [data-systems, resilience]
+principle: >
+  Distributed data systems are defined by explicit trade-offs in ordering,
+  consistency, locality, and evolution. Message ordering must be scoped to the
+  minimum guarantee business logic requires — per-key, per-partition, or
+  per-stream, never implicit total order. Eventual consistency must be an
+  intentional contract with staleness bounds and conflict resolution, not a
+  passive property. Partitioning must colocate data and computation by the
+  domain key that drives access patterns. Stream processing treats logs as
+  durable histories with replayable, rebuildable consumers. Schema evolution
+  must be planned with backward and forward compatibility across all readers
+  and writers. These patterns form the foundation of reliable data-intensive
+  systems.
+sources:
+  - books/designing-data-intensive-applications.md
+
+scenarios:
+  - id: ds-1
+    title: "Message ordering in a multi-partition event stream"
+    context: >
+      A ride-sharing platform emits events from multiple sources: drivers
+      update their location every 5 seconds, riders request trips, the
+      matching engine assigns drivers, and the billing service records
+      charges. All events flow through a partitioned Kafka topic keyed by
+      ride_id. A downstream consumer builds a timeline view showing every
+      event for a given ride in order. However, location updates from the
+      driver's phone arrive out of order (mobile networks are unreliable),
+      and the matching assignment sometimes arrives before the latest
+      location update that triggered it.
+    question: >
+      What ordering guarantees should the system provide, and how should
+      out-of-order events be handled?
+    answer: >
+      Kafka guarantees order within a partition for a given key. Since all
+      ride events share ride_id as the partition key, events are ordered
+      within each ride's partition. This is the correct scope: per-ride
+      ordering, not global ordering.
+
+      However, the producer side is the real challenge. Mobile networks
+      cause location updates to arrive out of order: update at T=10
+      (lat=40.71) might arrive after update at T=12 (lat=40.72) because
+      the T=10 update was delayed by a cell tower handoff. The producer
+      must embed a sequence number or event timestamp in each message, and
+      the consumer must handle these.
+
+      Consumer strategies for out-of-order events:
+      1. Sequence-number gating: The consumer tracks the highest sequence
+         number seen per ride. If it receives event seq=10 after already
+         processing seq=12, it either discards seq=10 (stale data) or
+         buffers it for a grace period and reorders before processing.
+      2. Event-time watermarking: The consumer processes events in event
+         time (the embedded timestamp), not processing time (when it
+         arrived). This requires a watermark — a threshold that says "all
+         events with timestamp < T have arrived." Late events (arriving
+         after the watermark) are either discarded or logged for audit.
+      3. Accept eventual ordering: If the timeline view is not
+         latency-sensitive, the consumer simply inserts events by their
+         event timestamp. It might briefly show events out of order but
+         corrects within seconds. This is often acceptable for analytics
+         dashboards but not for operational workflows.
+
+      The business logic determines the strictness. A billing system
+      processing charges must never apply a charge before the ride is
+      assigned — it must enforce causal ordering (assignment before
+      charge). A driver heatmap can tolerate a few seconds of stale
+      location data.
+
+      Never: assume all events arrive in perfect order because they use
+      the same partition key. Always encode ordering metadata (sequence
+      number, timestamp) at the producer.
+    decisions:
+      - Per-key partitioning is the right scope; global ordering is unnecessary
+      - Producers embed sequence numbers or timestamps; consumers handle reordering
+      - Watermarking for stream processors; sequence gating for operational consumers
+      - Causal ordering enforced for critical paths; eventual ordering for analytics
+
+  - id: ds-2
+    title: "Eventual consistency as an explicit contract, not an accident"
+    context: >
+      A social media platform uses a primary PostgreSQL instance for writes
+      and several read replicas for serving content. After a user posts a
+      comment, they refresh the page and the comment is missing. Five seconds
+      later, it appears. The user reports this as a bug. The engineering team
+      has been treating replication lag as an infrastructure problem —
+      "replicas are usually caught up" — rather than a product decision.
+      There is no monitoring of replication lag per replica, no staleness
+      SLA, and no user-facing behavior for stale reads.
+    question: >
+      How should eventual consistency be designed as an intentional product
+      contract rather than an accidental infrastructure property?
+    answer: >
+      Eventual consistency is not a boolean — it is a contract with specific
+      parameters: staleness bound, conflict resolution, and read-your-writes
+      expectations. The team must make these explicit.
+
+      Step 1 — Define the consistency model per use case:
+      - Read-your-writes: After a user posts a comment, their next read must
+        include that comment. This requires either reading from the primary
+        for "own content" queries, or using a sticky session to route the
+        user to a replica that is caught up past their last write timestamp.
+      - Monotonic reads: The user should never see comments disappear on
+        refresh. Route them to a single replica (session stickiness) or use
+        a causally consistent read that only advances.
+      - Eventual consistency: Other users viewing the thread may see the
+        comment within N seconds. N is a product decision — 2 seconds feels
+        instant; 30 seconds feels broken.
+
+      Step 2 — Expose staleness to operations: Track replication lag per
+      replica. If a replica falls behind beyond the staleness SLA, remove it
+      from the read pool and alert. Health checks must reflect replication
+      state, not just connectivity. A replica that is connected but 60
+      seconds behind is unhealthy.
+
+      Step 3 — Use causal consistency where possible: Many "eventual
+      consistency" bugs are actually causal consistency violations. If the
+      system preserves causal order (this comment happened after that post,
+      so the comment must not appear without the post), most user-visible
+      anomalies disappear. Tools: logical clocks, version vectors, or
+      database features like PostgreSQL logical replication slots with
+      causal tracking.
+
+      Step 4 — Conflict resolution: What happens when two users edit the
+      same profile simultaneously on different replicas? Options: last-write
+      wins (simple, data loss), merge (CRDT), or reject with conflict
+      (explicit user resolution). This must be a product decision, not an
+      accidental default.
+
+      Never: treat eventual consistency as "it'll sort itself out." Always
+      define staleness bounds, monitor them, and handle violations.
+    decisions:
+      - Consistency model defined per use case, not one size fits all
+      - Read-your-writes via primary reads or sticky sessions with causal tracking
+      - Replication lag monitored; stale replicas removed from read pool
+      - Conflict resolution is a product decision, not a database default
+
+  - id: ds-3
+    title: "Partition key selection and hot-key risk in a multi-tenant SaaS"
+    context: >
+      A SaaS analytics platform partitions its event data by tenant_id.
+      Events from all tenants flow into a partitioned stream for processing.
+      Most tenants have modest traffic, but three enterprise customers each
+      produce 100x the median event volume. One of them (Acme) runs a
+      marketing campaign that temporarily triples their event rate. The
+      partition handling Acme's data falls behind — consumer lag grows,
+      processing latency spikes, and alerts fire. Meanwhile, the other 9
+      partitions are idle at 10% capacity. The platform's SLA to all Acme
+      users is violated, while other tenants are unaffected.
+    question: >
+      How should the partitioning strategy handle tenant skew and hot
+      partitions?
+    answer: >
+      Partitioning by tenant_id creates an inherent skew problem: a few large
+      tenants dominate single partitions. Several mitigations exist:
+
+      Approach 1 — Sub-partition large tenants: Instead of one partition per
+      tenant, partition by (tenant_id + sub_key) for large tenants. Acme's
+      events are spread across multiple partitions by hashing on a composite
+      key, e.g., (tenant_id, event_type) or (tenant_id, user_id % N). This
+      spreads the load. The trade-off: all queries that need per-tenant
+      ordering must gather from multiple partitions and merge. If per-tenant
+      ordering is not required, this is ideal.
+
+      Approach 2 — Dedicated partitions for large tenants: Give Acme and
+      other large tenants their own dedicated partitions (or even dedicated
+      topics), while small tenants share a general pool. This requires
+      routing logic that maps tenant → partition group, and the mapping
+      must be dynamic (tenants grow and shrink). The operational complexity
+      is higher but the isolation is better.
+
+      Approach 3 — Virtual partitions with dynamic assignment: Partition at
+      a finer granularity (e.g., 1000 virtual partitions) that are
+      dynamically assigned to physical partitions and consumers. When a hot
+      virtual partition is detected, it is reassigned to a less-loaded
+      consumer. This is what systems like Kafka with partition reassignment
+      or Apache Flink's rescaling achieve.
+
+      Prevention: Monitor partition skew continuously. Metrics per partition:
+      throughput, consumer lag, processing latency. Set thresholds and alert
+      before SLA violations. The marketing campaign should have been
+      predictable — large tenant behavior changes are rarely sudden.
+
+      Never: partition by a key that is known to be skewed without a skew
+      mitigation plan. Tenant size distribution follows a power law in most
+      SaaS platforms.
+    decisions:
+      - Sub-partition or dedicate resources for known skewed tenants
+      - Virtual partitioning with dynamic reassignment for elasticity
+      - Monitor partition-level throughput, lag, and latency; alert before SLA breach
+      - Composite partition key when tenant-level ordering is not required
+
+  - id: ds-4
+    title: "Stream processing with non-rebuildable projections"
+    context: >
+      A fraud detection system processes a stream of payment events in real
+      time. It maintains a running aggregate: the total amount spent per user
+      in the last 24 hours (a sliding window). This aggregate is stored in
+      Redis with a 24-hour TTL per key. The aggregate is never persisted
+      durably — it's built incrementally from the stream, one event at a
+      time, and kept only in memory/cache. After a Redis cluster failure,
+      all state is lost. The team attempts to replay the 24-hour event window
+      from Kafka, but the replay takes 6 hours and produces incorrect results
+      because some events in the window have aged out of Kafka's retention.
+    question: >
+      How should stream processing state be designed so that it is
+      rebuildable after failure?
+    answer: >
+      Every stream processing state falls into two categories: derived
+      (rebuildable from the source of truth) and non-derived (primary state
+      that cannot be reconstructed). The fraud detection aggregate is derived
+      — the source of truth is the event stream. A well-designed stream
+      processor must be able to rebuild its state from the source.
+
+      Requirements for rebuildability:
+      1. Durable event retention: The source stream's retention period must
+         exceed the maximum window any consumer needs to rebuild. If the max
+         window is 24 hours, Kafka must retain events for at least 30 hours
+         (with buffer). If Kafka retention is shorter, events must be archived
+         to long-term storage (S3, data lake) before they age out, and the
+         rebuild process reads from the archive for older events.
+      2. Checkpointed state: Stream processors (Flink, Kafka Streams) should
+         use durable, periodic state checkpoints. After failure, the processor
+         restores from the latest checkpoint and replays only the events since
+         that checkpoint. This is faster than full rebuild and still maintains
+         correctness.
+      3. Idempotent replay: The aggregate update logic must be idempotent.
+         Replaying event X twice must produce the same aggregate as playing
+         it once. This is usually true for commutative operations like sums,
+         but not for operations like "append to list" or "increment counter
+         and send alert on threshold." The latter must be guarded with
+         deduplication or conditional alerting.
+      4. Replay speed: Full rebuild should be tested regularly, not
+         discovered during an incident. Run a weekly full rebuild from the
+         archive to verify that it completes within the SLA (the 6-hour
+         rebuild time is unacceptable for a 24-hour window).
+
+      Never: rely on an in-memory store as the sole holder of derived state.
+      Redis is a cache for stream state, not the source of truth. The source
+      is the event log; Redis should be repopulated from it.
+    decisions:
+      - Event retention must exceed max consumer window with buffer
+      - Periodic durable checkpoints for fast recovery; full rebuild as fallback
+      - Idempotent aggregate update logic for safe replay
+      - Regular disaster-recovery drills: full rebuild tested, not assumed
+      - Archive events before they age out of the primary stream
+
+  - id: ds-5
+    title: "Schema evolution breaking downstream consumers at rollout"
+    context: >
+      A microservice team changes the UserCreated event schema: they rename
+      "full_name" to "display_name" and change "email" from a string to an
+      object {address, verified}. They deploy the producer first, and
+      immediately the notification service (which reads full_name for welcome
+      emails), the analytics pipeline (which expects email as a string), and
+      the CRM sync (which deserializes into a typed class) all break. The
+      team rolls back, losing an hour of events that downstream consumers
+      can now never process correctly.
+    question: >
+      How should schema evolution be planned so that producers and consumers
+      can be deployed independently without breaking?
+    answer: >
+      Schema evolution must follow compatibility discipline. The broken
+      rollout violated both backward compatibility (old consumers cannot read
+      new producer output) and forward compatibility (new consumers cannot
+      read old producer output).
+
+      Rules for compatible evolution:
+      1. Backward compatibility: A new schema can read data written with the
+         old schema. This means: never remove a field that existing consumers
+         use, never change a field's type. Instead, add a new field
+         ("display_name") and keep the old one ("full_name") with a
+         deprecation period.
+      2. Forward compatibility: An old schema can read data written with the
+         new schema. This means: new fields must have defaults, never make a
+         new required field without a default. Consumers that don't understand
+         "email_metadata" should ignore it, not crash.
+      3. The rename-and-change pattern ("full_name" → "display_name" and
+         "email": string → object) is two breaking changes. It must be a
+         multi-phase rollout:
+
+         Phase 1 (non-breaking): Add "display_name" (populated alongside
+         "full_name") and add "email_info" as an object (keeping "email" as
+         a string). Deploy the producer. Old consumers ignore new fields.
+         New consumers can start using them.
+
+         Phase 2 (consumer migration): Update all consumers to read
+         "display_name" and "email_info". Monitor that no consumer still
+         reads the old fields. Deploy updated consumers.
+
+         Phase 3 (cleanup): Remove "full_name" and "email" from the
+         producer, after confirming zero consumers still reference them.
+         This is a breaking change, but it's safe because no consumer
+         depends on those fields anymore.
+
+      Schema registry: Use a central schema registry (Confluent, AWS Glue)
+      that enforces compatibility checks at the producer. The producer cannot
+      publish a breaking change unless explicitly allowed. This catches the
+      error at CI time, not at 3 AM.
+
+      Version identifiers: Every event carries a schema version. Consumers
+      can branch on version if truly necessary, but this should be rare —
+      prefer compatible evolution over version branching.
+
+      Never: deploy a producer schema change without verifying all consuming
+      services are compatible. Never: "just update all services at once" —
+      in distributed systems, simultaneous deployment is fantasy.
+    decisions:
+      - Backward and forward compatibility are required for independent deployability
+      - Multi-phase rollout: add field → migrate consumers → remove old field
+      - Schema registry enforces compatibility at producer CI, not runtime
+      - Deprecation period for removed fields; monitor consumer usage before removal
+
+related_tags: [message-ordering, eventual-consistency, partitioning, stream-processing, schema-evolution, data-systems, ddia, distributed-systems]
+heuristics:
+  - Per-key partitioning is the right scope for ordering; global ordering is an anti-pattern.
+  - Producers embed sequence numbers or timestamps; consumers handle reordering, never assume perfect arrival order.
+  - Eventual consistency is not a boolean — define staleness bounds, monitor them, handle violations.
+  - Partition by a key known to be skewed only with a skew mitigation plan.
+  - Stream state must be rebuildable: event retention must exceed max consumer window, checkpoints must be durable.
+  - Schema evolution requires backward and forward compatibility for independent deployability.
+  - Multi-phase rollout: add new field → migrate consumers → remove old field; never deploy breaking changes in one step.

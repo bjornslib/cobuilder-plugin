@@ -1,0 +1,85 @@
+id: airbnb-variables-013
+name: Airbnb Variables — const/let, Block Scoping, No var
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  Airbnb mandates const for all references that won't be reassigned (default), let when reassignment
+  is needed, and bans var entirely. Both const and let are block-scoped, preventing the hoisting confusion
+  and scope-leakage bugs that var causes. Declare each variable on its own line (no comma-separated lists),
+  group all consts then all lets, and assign variables at declaration time whenever possible.
+examples:
+  - language: typescript
+    bad: |
+      // var — function-scoped, hoisting surprises, allowed redeclaration
+      var a = 1;
+      var b = 2;
+
+      // let for values that never change — missing const intent
+      let MAX_USERS = 100;
+      let API_URL = "https://api.example.com";
+
+      // Comma-separated declarations — harder to scan, harder to diff
+      const items = getItems(), goSportsTeam = true, dragonball = "z";
+
+      // var leaks across blocks — classic footgun
+      {
+        var leaked = "I escape the block!";
+      }
+      console.log(leaked);  // "I escape the block!" — surprise!
+
+      // Reassigning a const — will throw TypeError at runtime
+      const user = loadUser();
+      user = updateUser(user);  // 💥
+
+      // Unassigned const — must be initialized
+      const result;  // SyntaxError
+    good: |
+      // const by default — communicates immutability intent
+      const MAX_USERS = 100;
+      const API_URL = "https://api.example.com";
+
+      // let only when reassignment is necessary
+      let count = 0;
+      for (const item of items) {
+        if (item.isActive) {
+          count += 1;
+        }
+      }
+
+      // One declaration per line — diffs are clean, scanning is fast
+      const items = getItems();
+      const goSportsTeam = true;
+      const dragonball = "z";
+
+      // Block-scoped: const and let stay inside their braces
+      {
+        const safe = "I stay inside the block";
+        let alsoSafe = "Me too";
+      }
+      // console.log(safe);  // ReferenceError — prevented by block scoping
+
+      // Group consts together, then lets
+      const baseUrl = getBaseUrl();
+      const defaultTimeout = 5000;
+
+      let currentPage = 1;
+      let isLoading = false;
+
+      // Assign at declaration time when possible
+      const userName = computeUserName(data);  // not: let userName; ... userName = ...
+
+      // If mutation is needed, capture as let
+      let mutableConfig = { ...baseConfig };
+      mutableConfig.timeout = 10000;
+heuristics:
+  - Use const for all references by default. It prevents accidental reassignment, communicates intent, and lets the engine optimize better.
+  - "Use let only when reassignment is needed (loop counters, accumulating values, swapped variables). If you never reassign, use const."
+  - "Never use var. It's function-scoped (not block-scoped), hoisted in confusing ways, allows redeclaration, and is entirely superseded by const/let."
+  - "Declare one variable per line. Comma-separated declarations (const a, b, c;) make diffs harder to read and individual lines harder to scan."
+  - "Group all const declarations together, then all let declarations. This makes it obvious which variables are immutable and which can change."
+  - Assign variables at declaration time. Declaring then later assigning adds vertical distance between declaration and first use, making the flow harder to follow.
+  - "const prevents reassignment of the binding, not the value. Object properties and array elements of a const can still be mutated — const only locks the reference."
+  - "Block-scoping with const/let eliminates entire classes of bugs: accidental leaking from if/for blocks, closure-in-loop surprises, and temporal dead zone issues."
+related_tags: [airbnb, const, let, var, block-scoping, variables, immutability, javascript, typescript]

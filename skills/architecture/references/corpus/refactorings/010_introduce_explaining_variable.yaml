@@ -1,0 +1,84 @@
+id: introduce-explaining-variable-010
+name: Introduce Explaining Variable
+category: refactoring
+canonical_tags: ['refactoring', 'readability']
+sources:
+  - books/refactoring.md
+summary: |
+  Introduce Explaining Variable takes a complex or opaque expression and assigns
+  its result to a well-named temporary variable. The variable name captures the
+  intent of the expression, making the subsequent code read like prose instead of
+  a puzzle. Unlike Extract Method, this keeps the logic inline — useful when
+  extracting a method would require passing too many parameters, or when the
+  expression is only meaningful in one local context. Often used as a stepping
+  stone toward Extract Method: first introduce the variable to understand the
+  expression, then extract the variable and its context into a method.
+examples:
+  - language: python
+    bad: |
+      def is_eligible_for_promo(user: User, order: Order) -> bool:
+          return (
+              user.account_age_days > 365
+              and user.total_orders > 5
+              and order.total > 50
+              and order.total / user.total_orders < user.avg_order_value * 1.5
+              and user.email.endswith("@company.com") is False
+          )
+    good: |
+      def is_eligible_for_promo(user: User, order: Order) -> bool:
+          is_loyal_customer = user.account_age_days > 365
+          has_order_history = user.total_orders > 5
+          meets_minimum_spend = order.total > 50
+          order_not_unusual = (
+              order.total / user.total_orders < user.avg_order_value * 1.5
+          )
+          is_not_internal = not user.email.endswith("@company.com")
+
+          return (
+              is_loyal_customer
+              and has_order_history
+              and meets_minimum_spend
+              and order_not_unusual
+              and is_not_internal
+          )
+  - language: typescript
+    bad: |
+      function shouldRetry(error: AxiosError, attempt: number): boolean {
+        return (
+          (error.response?.status === 429 ||
+            error.response?.status === 503 ||
+            error.code === "ECONNRESET") &&
+          attempt < 3 &&
+          (error.response?.headers?.["retry-after"] === undefined ||
+            parseInt(error.response.headers["retry-after"]) < 10)
+        );
+      }
+    good: |
+      function shouldRetry(error: AxiosError, attempt: number): boolean {
+        const isRetryableStatus =
+          error.response?.status === 429 ||
+          error.response?.status === 503;
+        const isConnectionReset = error.code === "ECONNRESET";
+        const isTransientError = isRetryableStatus || isConnectionReset;
+
+        const hasAttemptsRemaining = attempt < 3;
+
+        const retryAfterHeader = error.response?.headers?.["retry-after"];
+        const hasReasonableRetryDelay =
+          retryAfterHeader === undefined ||
+          parseInt(retryAfterHeader) < 10;
+
+        return isTransientError && hasAttemptsRemaining && hasReasonableRetryDelay;
+      }
+heuristics:
+  - Apply when a complex boolean expression (3+ clauses) appears in an if-condition, while-condition, or return — extract each clause into a named variable so the final condition reads like a checklist.
+  - Apply when an arithmetic expression uses "magic" intermediate steps that are not obvious — name each intermediate result.
+  - Apply when Extract Method is awkward because too many local variables would need to be passed — a local variable is lighter weight.
+  - Use as a discovery tool: introduce variables to understand an expression, then decide whether to keep them or extract a method.
+  - Do NOT introduce a variable for a trivial expression (e.g. `is_admin = user.role == "admin"` called once) — the inline expression is clear enough.
+  - Do NOT introduce so many variables that the method becomes longer and harder to follow — balance clarity against verbosity.
+  - Prefer Extract Method over explaining variables when the logic might be reused elsewhere — the method becomes the single source of truth.
+  - Give variables intention-revealing names, not type-describing ones: is_loyal_customer, not age_and_orders_check.
+  - After introducing variables: inline the original complex expression so it uses the variables — the two representations should never coexist.
+  - Mechanical sequence: (1) identify the complex expression, (2) determine what each sub-expression means in domain terms, (3) assign each to a const/local with that domain name, (4) rewrite the original expression using the new variables, (5) if one of the variables captures a coherent concept, consider extracting it into a method next.
+related_tags: [explaining-variable, extract-method, readability, decomposition, boolean-logic]

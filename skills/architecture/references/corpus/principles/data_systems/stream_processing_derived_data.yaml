@@ -1,0 +1,629 @@
+id: stream-processing-derived-data-001
+name: Stream Processing and Derived Data
+category: data_systems
+canonical_tags: ['data-systems', 'streaming', 'domain-driven-design']
+sources:
+  - books/designing-data-intensive-applications.md
+summary: >
+  Stream processing and derived data are two sides of the same coin: event streams
+  are the source of truth, and everything else — databases, caches, search indexes,
+  read models — are derived projections maintained from those streams. Stream-table
+  duality says a stream is the changelog of a table, and a table is the materialized
+  snapshot of a stream at a point in time. Change data capture (CDC) transforms
+  database writes into event streams so downstream consumers can react without
+  coupling to the source schema. CQRS separates the write model (commands, validated
+  by aggregates that produce events) from read models (projections, materialized
+  views optimized for queries). Materialized views must be maintainable — incrementally
+  updated from the source stream, monitored for lag, and fully rebuildable from
+  scratch when state drifts. The fundamental rule: derived data is discardable and
+  rebuildable; the event log is the only durable source of truth. Design every
+  derived view with a rebuild path, version the stream schema, and monitor lag
+  as a first-class operational metric.
+examples:
+  - language: python
+    bad: |
+      from dataclasses import dataclass, field
+      from typing import Any
+
+
+      class MonolithicOrderService:
+          """Reads and writes to the same DB — no separation, no stream, no rebuild path."""
+
+          def __init__(self, db: Any) -> None:
+              self._db = db
+
+          def place_order(self, user_id: str, items: list[dict]) -> dict:
+              # Write directly to the operational DB
+              order_id = self._db.insert("orders", {
+                  "user_id": user_id,
+                  "status": "placed",
+                  "items": items,
+              })
+              # Also write to the analytics DB — two writes, no atomicity
+              self._db.insert("analytics_orders", {
+                  "order_id": order_id,
+                  "user_id": user_id,
+                  "total": sum(i["price"] for i in items),
+              })
+              # Also update a cache — third write, no transaction
+              self._cache.set(f"user_orders:{user_id}",
+                              self._load_user_orders(user_id))
+              return {"order_id": order_id}
+
+          def get_user_orders(self, user_id: str) -> list[dict]:
+              # Read from cache — stale after concurrent writes, no rebuild
+              cached = self._cache.get(f"user_orders:{user_id}")
+              if cached:
+                  return cached
+              return self._db.query("orders", user_id=user_id)
+
+          # No event stream — impossible to:
+          # - replay orders to rebuild projections
+          # - add a new read model without backfilling
+          # - answer "what happened in order?" (all mutations overwrite)
+
+    good: |
+      from __future__ import annotations
+
+      import json
+      import time
+      from abc import ABC, abstractmethod
+      from dataclasses import dataclass, field
+      from enum import Enum
+      from typing import Any, Protocol
+
+
+      # -- Stream-Table Duality --
+      # A stream is the changelog of a table; a table is a materialized snapshot.
+      # Writing to the stream (append-only log) is the source of truth.
+      # Tables/views are derived from the stream.
+
+      @dataclass(frozen=True)
+      class StreamEvent:
+          """Immutable event in the append-only log — source of truth."""
+          event_id: str
+          event_type: str
+          aggregate_id: str
+          payload: dict[str, Any]
+          timestamp: float = field(default_factory=time.time)
+          causation_id: str | None = None
+
+
+      class EventLog(ABC):
+          """Durable, append-only, replayable event stream."""
+
+          @abstractmethod
+          def append(self, events: list[StreamEvent], expected_version: int) -> int:
+              """Atomically append events; fail if version mismatch (optimistic lock)."""
+              ...
+
+          @abstractmethod
+          def read_stream(self, aggregate_id: str, from_version: int = 0) -> list[StreamEvent]:
+              """Read events for one aggregate — ordered by version."""
+              ...
+
+          @abstractmethod
+          def read_all(self, from_offset: int = 0) -> list[StreamEvent]:
+              """Read all events globally — for full rebuilds."""
+              ...
+
+
+      # -- Change Data Capture (CDC) --
+      # Capture writes from the operational DB as events in the log.
+      # Downstream consumers react without coupling to the source schema.
+
+      @dataclass
+      class CdcCapture:
+          """Transforms database row changes into stream events."""
+
+          event_log: EventLog
+
+          def on_row_insert(self, table: str, row: dict) -> None:
+              event = StreamEvent(
+                  event_id=f"cdc-{table}-{row['id']}-{int(time.time() * 1000)}",
+                  event_type=f"{table}_created",
+                  aggregate_id=str(row["id"]),
+                  payload={"after": row, "table": table},
+              )
+              self.event_log.append([event], expected_version=0)
+
+          def on_row_update(self, table: str, old: dict, new: dict) -> None:
+              event = StreamEvent(
+                  event_id=f"cdc-{table}-{new['id']}-{int(time.time() * 1000)}",
+                  event_type=f"{table}_updated",
+                  aggregate_id=str(new["id"]),
+                  payload={"before": old, "after": new, "table": table,
+                           "changed_fields": [k for k in new if old.get(k) != new[k]]},
+              )
+              self.event_log.append([event], expected_version=0)
+
+          def on_row_delete(self, table: str, row: dict) -> None:
+              event = StreamEvent(
+                  event_id=f"cdc-{table}-{row['id']}-{int(time.time() * 1000)}",
+                  event_type=f"{table}_deleted",
+                  aggregate_id=str(row["id"]),
+                  payload={"before": row, "table": table},
+              )
+              self.event_log.append([event], expected_version=0)
+
+
+      # -- CQRS: Command Model (write side) --
+      # Commands are requests that may be rejected; they produce events.
+
+      class CommandValidationError(ValueError):
+          """Command rejected by business rules."""
+          pass
+
+
+      @dataclass(frozen=True)
+      class PlaceOrderCommand:
+          user_id: str
+          items: list[dict[str, Any]]
+          shipping_address: str
+
+
+      @dataclass
+      class OrderAggregate:
+          """Validates commands, produces events — write model only."""
+          order_id: str
+          user_id: str = ""
+          items: list[dict] = field(default_factory=list)
+          status: str = "draft"
+          shipping_address: str = ""
+          _version: int = 0
+          _uncommitted: list[StreamEvent] = field(default_factory=list)
+
+          def place(self, cmd: PlaceOrderCommand) -> None:
+              if self._version > 0:
+                  raise CommandValidationError("Order already placed")
+              if not cmd.items:
+                  raise CommandValidationError("Order must have at least one item")
+              if not cmd.shipping_address:
+                  raise CommandValidationError("Shipping address required")
+              self._apply(OrderPlaced(
+                  order_id=self.order_id, user_id=cmd.user_id,
+                  items=cmd.items, shipping_address=cmd.shipping_address,
+              ))
+
+          def _apply(self, event: OrderPlaced) -> None:
+              self.user_id = event.user_id
+              self.items = event.items
+              self.status = "placed"
+              self.shipping_address = event.shipping_address
+              self._version += 1
+              self._uncommitted.append(StreamEvent(
+                  event_id=f"evt-{self.order_id}-{self._version}",
+                  event_type="OrderPlaced",
+                  aggregate_id=self.order_id,
+                  payload={"user_id": event.user_id, "items": event.items,
+                           "shipping_address": event.shipping_address},
+                  causation_id=f"cmd-place-{self.order_id}",
+              ))
+
+          def collect_events(self) -> list[StreamEvent]:
+              events = list(self._uncommitted)
+              self._uncommitted.clear()
+              return events
+
+          @classmethod
+          def from_history(cls, order_id: str, events: list[StreamEvent]) -> OrderAggregate:
+              agg = cls(order_id=order_id)
+              for event in sorted(events, key=lambda e: e.timestamp):
+                  if event.event_type == "OrderPlaced":
+                      agg.user_id = event.payload["user_id"]
+                      agg.items = event.payload["items"]
+                      agg.status = "placed"
+                      agg.shipping_address = event.payload["shipping_address"]
+                      agg._version += 1
+              return agg
+
+
+      # -- CQRS: Query Model (read side) --
+      # Projections/materialized views, optimized for reads, derived from events.
+
+      class MaterializedView(ABC):
+          """Derived projection — discardable and rebuildable from the event log."""
+
+          @abstractmethod
+          def apply(self, event: StreamEvent) -> None:
+              """Apply one event to this view — must be idempotent."""
+              ...
+
+          @abstractmethod
+          def rebuild(self, event_log: EventLog) -> None:
+              """Discard all state and rebuild from scratch."""
+              ...
+
+          @abstractmethod
+          def lag_seconds(self, event_log: EventLog) -> float:
+              """How far behind the source of truth is this view?"""
+              ...
+
+
+      class UserOrderProjection(MaterializedView):
+          """Read-optimized view: user_id → their orders, updated incrementally."""
+
+          def __init__(self, store: Any) -> None:
+              self._store = store  # Key-value store (RocksDB, DynamoDB, etc.)
+              self._last_event_ts: float = 0.0
+
+          def apply(self, event: StreamEvent) -> None:
+              if event.event_type != "OrderPlaced":
+                  return
+              user_id = event.payload["user_id"]
+              key = f"user_orders:{user_id}"
+              existing = json.loads(self._store.get(key) or "[]")
+              # Idempotent: check for duplicate by event_id
+              if any(o["event_id"] == event.event_id for o in existing):
+                  return
+              existing.append({
+                  "order_id": event.aggregate_id,
+                  "items": event.payload["items"],
+                  "shipping_address": event.payload.get("shipping_address", ""),
+                  "placed_at": event.timestamp,
+                  "event_id": event.event_id,
+              })
+              self._store.put(key, json.dumps(existing))
+              self._last_event_ts = max(self._last_event_ts, event.timestamp)
+
+          def query(self, user_id: str) -> list[dict]:
+              raw = self._store.get(f"user_orders:{user_id}")
+              return json.loads(raw) if raw else []
+
+          def rebuild(self, event_log: EventLog) -> None:
+              start = time.time()
+              self._store.clear_prefix("user_orders:")
+              count = 0
+              for event in event_log.read_all():
+                  self.apply(event)
+                  count += 1
+              elapsed = time.time() - start
+              self._last_event_ts = time.time()
+              if elapsed > 300:
+                  raise RuntimeError(f"Rebuild took {elapsed:.1f}s — exceeds SLA")
+
+          def lag_seconds(self, event_log: EventLog) -> float:
+              latest = event_log.read_all()
+              if not latest:
+                  return 0.0
+              max_event_ts = max(e.timestamp for e in latest)
+              return max(0.0, max_event_ts - self._last_event_ts)
+
+
+      class RevenueAnalyticsView(MaterializedView):
+          """Second read model — added later, no change to write side needed."""
+
+          def __init__(self, store: Any) -> None:
+              self._store = store
+              self._last_event_ts: float = 0.0
+
+          def apply(self, event: StreamEvent) -> None:
+              if event.event_type != "OrderPlaced":
+                  return
+              # Daily revenue bucket
+              day = time.strftime("%Y-%m-%d", time.gmtime(event.timestamp))
+              key = f"revenue:{day}"
+              current = float(self._store.get(key) or 0)
+              total = sum(item["price"] * item.get("quantity", 1)
+                          for item in event.payload["items"])
+              self._store.put(key, str(current + total))
+              self._last_event_ts = max(self._last_event_ts, event.timestamp)
+
+          def query_daily_revenue(self, day: str) -> float:
+              return float(self._store.get(f"revenue:{day}") or 0)
+
+          def rebuild(self, event_log: EventLog) -> None:
+              self._store.clear_prefix("revenue:")
+              for event in event_log.read_all():
+                  self.apply(event)
+
+          def lag_seconds(self, event_log: EventLog) -> float:
+              latest = event_log.read_all()
+              if not latest:
+                  return 0.0
+              max_event_ts = max(e.timestamp for e in latest)
+              return max(0.0, max_event_ts - self._last_event_ts)
+
+
+      # -- Materialized View Maintenance Pipeline --
+      # Keeps all derived views in sync with the source event log.
+
+      @dataclass
+      class ViewMaintainer:
+          """Monitors and maintains a set of materialized views."""
+          views: list[MaterializedView]
+          event_log: EventLog
+          _last_offset: int = 0
+
+          def poll_and_update(self) -> None:
+              """Incrementally apply new events to all views."""
+              new_events = self.event_log.read_all(from_offset=self._last_offset)
+              for event in new_events:
+                  for view in self.views:
+                      view.apply(event)
+              if new_events:
+                  self._last_offset += len(new_events)
+
+          def health_check(self) -> dict[str, float]:
+              """Report lag for every view."""
+              return {
+                  type(v).__name__: v.lag_seconds(self.event_log)
+                  for v in self.views
+              }
+
+          def rebuild_all(self) -> None:
+              """Full rebuild — run after schema changes or detected drift."""
+              for view in self.views:
+                  view.rebuild(self.event_log)
+              self._last_offset = len(self.event_log.read_all())
+
+
+      # -- Wiring it together --
+      # In production, the write path:
+      #   1. Validate command against aggregate
+      #   2. Append events to log (source of truth)
+      #   3. View maintainer (async) applies events to all read models
+      #
+      # New read models can be added at any time — rebuild from the log,
+      # no migration needed on the write side.
+
+  - language: typescript
+    bad: |
+      // Monolithic service: reads and writes to same table, no stream, no rebuild
+      class OrderService {
+        constructor(private db: Database, private cache: Cache) {}
+
+        async placeOrder(userId: string, items: Item[]): Promise<{ orderId: string }> {
+          const orderId = crypto.randomUUID();
+          // Write to operational DB
+          await this.db.query(
+            `INSERT INTO orders (id, user_id, status, items) VALUES ($1, $2, $3, $4)`,
+            [orderId, userId, "placed", JSON.stringify(items)]
+          );
+          // Also write to analytics — separate write, no atomicity
+          const total = items.reduce((sum, i) => sum + i.price, 0);
+          await this.db.query(
+            `INSERT INTO analytics_orders (order_id, user_id, total) VALUES ($1, $2, $3)`,
+            [orderId, userId, total]
+          );
+          // Update cache — third write
+          await this.cache.set(`user_orders:${userId}`,
+            await this.loadUserOrders(userId), 300);
+          return { orderId };
+        }
+
+        // No event log → cannot rebuild projections, cannot add new read models
+      }
+
+    good: |
+      // -- Stream-Table Duality: stream is the changelog, table is the snapshot --
+
+      interface StreamEvent {
+        eventId: string;
+        eventType: string;
+        aggregateId: string;
+        payload: Record<string, unknown>;
+        timestamp: number;
+        causationId?: string;
+      }
+
+      interface EventLog {
+        append(events: StreamEvent[], expectedVersion: number): Promise<number>;
+        readStream(aggregateId: string, fromVersion?: number): Promise<StreamEvent[]>;
+        readAll(fromOffset?: number): Promise<StreamEvent[]>;
+      }
+
+      // -- Change Data Capture (CDC): DB writes → stream events --
+
+      class CdcCapture {
+        constructor(private eventLog: EventLog) {}
+
+        onRowInsert(table: string, row: Record<string, unknown>): void {
+          this.eventLog.append([{
+            eventId: `cdc-${table}-${row.id}-${Date.now()}`,
+            eventType: `${table}_created`,
+            aggregateId: String(row.id),
+            payload: { after: row, table },
+            timestamp: Date.now(),
+          }], 0);
+        }
+
+        onRowUpdate(table: string, oldRow: Record<string, unknown>,
+                    newRow: Record<string, unknown>): void {
+          const changedFields = Object.keys(newRow).filter(
+            k => oldRow[k] !== newRow[k]
+          );
+          this.eventLog.append([{
+            eventId: `cdc-${table}-${newRow.id}-${Date.now()}`,
+            eventType: `${table}_updated`,
+            aggregateId: String(newRow.id),
+            payload: { before: oldRow, after: newRow, table, changedFields },
+            timestamp: Date.now(),
+          }], 0);
+        }
+      }
+
+      // -- CQRS: Write Model (commands → events) --
+
+      interface Command {
+        readonly commandId: string;
+      }
+
+      interface PlaceOrder extends Command {
+        readonly commandId: string;
+        readonly userId: string;
+        readonly items: Array<{ productId: string; price: number; quantity: number }>;
+        readonly shippingAddress: string;
+      }
+
+      class OrderAggregate {
+        private version = 0;
+        private uncommitted: StreamEvent[] = [];
+        userId = "";
+        items: Array<{ productId: string; price: number; quantity: number }> = [];
+        status = "draft";
+        shippingAddress = "";
+
+        constructor(public readonly orderId: string) {}
+
+        place(command: PlaceOrder): void {
+          if (this.version > 0) throw new Error("Order already placed");
+          if (command.items.length === 0) throw new Error("Must have items");
+          if (!command.shippingAddress) throw new Error("Address required");
+          this.apply({
+            eventId: `evt-${this.orderId}-${this.version + 1}`,
+            eventType: "OrderPlaced",
+            aggregateId: this.orderId,
+            payload: {
+              userId: command.userId, items: command.items,
+              shippingAddress: command.shippingAddress,
+            },
+            timestamp: Date.now(),
+            causationId: command.commandId,
+          });
+        }
+
+        private apply(event: StreamEvent): void {
+          const p = event.payload;
+          this.userId = p.userId as string;
+          this.items = p.items as typeof this.items;
+          this.status = "placed";
+          this.shippingAddress = p.shippingAddress as string;
+          this.version++;
+          this.uncommitted.push(event);
+        }
+
+        collectEvents(): StreamEvent[] {
+          const events = [...this.uncommitted];
+          this.uncommitted = [];
+          return events;
+        }
+
+        static fromHistory(orderId: string, events: StreamEvent[]): OrderAggregate {
+          const agg = new OrderAggregate(orderId);
+          for (const e of events.sort((a, b) => a.timestamp - b.timestamp)) {
+            agg.apply(e);
+          }
+          return agg;
+        }
+      }
+
+      // -- CQRS: Read Model (materialized view, derived from events) --
+
+      interface MaterializedView {
+        apply(event: StreamEvent): void;
+        rebuild(eventLog: EventLog): Promise<void>;
+        lagSeconds(eventLog: EventLog): Promise<number>;
+      }
+
+      class UserOrderProjection implements MaterializedView {
+        private lastEventTs = 0;
+
+        constructor(private store: KeyValueStore) {}
+
+        apply(event: StreamEvent): void {
+          if (event.eventType !== "OrderPlaced") return;
+          const userId = event.payload.userId as string;
+          const key = `user_orders:${userId}`;
+          const existing: unknown = this.store.get(key) ?? "[]";
+          const orders: Array<Record<string, unknown>> =
+            typeof existing === "string" ? JSON.parse(existing) : (existing as []);
+          // Idempotent dedup
+          if (orders.some(o => o.eventId === event.eventId)) return;
+          orders.push({
+            orderId: event.aggregateId,
+            items: event.payload.items,
+            shippingAddress: event.payload.shippingAddress,
+            placedAt: event.timestamp,
+            eventId: event.eventId,
+          });
+          this.store.put(key, JSON.stringify(orders));
+          this.lastEventTs = Math.max(this.lastEventTs, event.timestamp);
+        }
+
+        async rebuild(eventLog: EventLog): Promise<void> {
+          const start = Date.now();
+          this.store.clearPrefix("user_orders:");
+          let count = 0;
+          for (const event of await eventLog.readAll()) {
+            this.apply(event);
+            count++;
+          }
+          const elapsed = (Date.now() - start) / 1000;
+          this.lastEventTs = Date.now();
+          if (elapsed > 300) {
+            throw new Error(`Rebuild took ${elapsed}s — exceeds SLA`);
+          }
+        }
+
+        async lagSeconds(eventLog: EventLog): Promise<number> {
+          const all = await eventLog.readAll();
+          if (all.length === 0) return 0;
+          const maxTs = Math.max(...all.map(e => e.timestamp));
+          return Math.max(0, maxTs - this.lastEventTs);
+        }
+
+        query(userId: string): Record<string, unknown>[] {
+          const raw = this.store.get(`user_orders:${userId}`);
+          return raw ? JSON.parse(raw as string) : [];
+        }
+      }
+
+      // -- Materialized View Maintenance Pipeline --
+
+      class ViewMaintainer {
+        private lastOffset = 0;
+
+        constructor(
+          private views: MaterializedView[],
+          private eventLog: EventLog,
+        ) {}
+
+        async pollAndUpdate(): Promise<void> {
+          const newEvents = await this.eventLog.readAll(this.lastOffset);
+          for (const event of newEvents) {
+            for (const view of this.views) {
+              view.apply(event);
+            }
+          }
+          if (newEvents.length > 0) {
+            this.lastOffset += newEvents.length;
+          }
+        }
+
+        async healthCheck(): Promise<Record<string, number>> {
+          const result: Record<string, number> = {};
+          for (const view of this.views) {
+            result[view.constructor.name] = await view.lagSeconds(this.eventLog);
+          }
+          return result;
+        }
+
+        async rebuildAll(): Promise<void> {
+          for (const view of this.views) {
+            await view.rebuild(this.eventLog);
+          }
+          this.lastOffset = (await this.eventLog.readAll()).length;
+        }
+      }
+
+      // New read models can be added at any time:
+      //   const revenueView = new RevenueAnalyticsView(store);
+      //   await revenueView.rebuild(eventLog);  // backfill from log
+      //   maintainer.views.push(revenueView);   // now kept in sync
+
+heuristics:
+  - Stream-table duality: a stream is the changelog of a table, and a table is a materialized snapshot of a stream. Write to the stream; derive tables from it.
+  - The event log is the only source of truth. Databases, caches, search indexes, and read models are derived projections — discardable and rebuildable.
+  - Every derived view must have a documented rebuild path. If you cannot rebuild a projection from the source log within SLA, it is a ticking time bomb.
+  - Change Data Capture (CDC) decouples consumers from source databases: capture INSERT/UPDATE/DELETE as stream events rather than requiring direct DB access.
+  - CQRS separates the write model (commands validated by aggregates, producing events) from read models (projections/materialized views optimized for queries).
+  - The write side must be the authority on correctness; the read side can be eventually consistent. Read-model lag is a product decision — define staleness bounds explicitly.
+  - Materialized views must be maintainable: apply events incrementally (idempotent dedup), monitor lag, and support full rebuild when drift is detected.
+  - Adding a new read model should require zero changes to the write path — replay the event log from offset zero and build the new projection.
+  - Idempotency is mandatory in every derived view's apply() method: use event_id deduplication or naturally idempotent key-value updates.
+  - Monitor view lag as a first-class metric. If lag exceeds the defined staleness bound, trigger an alert and investigate.
+  - Schema evolution in streams requires versioning: use upcasting to transform old events to the new schema during rebuild.
+  - Derived data pipelines must be observable: log rebuild start/end times, event counts, and per-view lag for every maintenance cycle.
+  - The trade-off: event-driven derived data adds upfront complexity in pipeline design, but pays off in auditability, rebuildability, and the ability to add new read models without touching the write path.
+related_tags: [stream-processing, derived-data, stream-table-duality, cdc, change-data-capture, cqrs, command-query-responsibility-segregation, materialized-view, projection, event-sourcing, rebuild, idempotency, consumer-lag, event-log, data-systems, ddia]

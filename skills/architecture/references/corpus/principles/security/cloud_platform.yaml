@@ -1,0 +1,148 @@
+id: security-cloud-platform-001
+name: Cloud and Platform Security
+category: security
+canonical_tags: ['security', 'cloud', 'docker', 'cors', 'ci-cd', 'cis-benchmarks']
+sources:
+  - cis/benchmarks.md
+  - twelve-factor/methodology.md
+  - cloud/provider-best-practices.md
+summary: >
+  Containers must not run as root. Health checks must verify real
+  dependencies. CORS must be restrictive. CI/CD pipelines must not expose
+  secrets. Security headers must be present. These are the baseline
+  controls for any cloud-deployed service. Missing them does not cause
+  immediate breaches — it creates the conditions under which a minor
+  vulnerability becomes a critical incident. A container running as root
+  turns a file-write bug into a container-escape; a permissive CORS
+  policy turns an XSS into a cross-origin data exfiltration; a CI
+  pipeline with broad permissions turns a dependency confusion attack
+  into a supply-chain compromise.
+examples:
+  - language: python
+    bad: |
+      # ---- Dockerfile: running as root ----
+      FROM python:3.12
+      WORKDIR /app
+      COPY . .
+      RUN pip install -r requirements.txt
+      # Runs as root by default — any process in the container has root privileges
+      CMD ["uvicorn", "app:app", "--host", "0.0.0.0"]
+
+
+      # ---- Overly permissive CORS in production ----
+      from starlette.middleware.cors import CORSMiddleware
+
+      app.add_middleware(
+          CORSMiddleware,
+          allow_origins=["*"],
+          allow_credentials=True,    # credentials + wildcard = any origin steals data
+      )
+
+
+      # ---- Health check that lies ----
+      @app.get("/health")
+      def health():
+          return {"status": "ok"}  # Does not check database, cache, or downstream deps
+
+
+      # ---- GitHub Actions: broad permissions ----
+      # .github/workflows/deploy.yml
+      # permissions: write-all   # workflow can modify repo settings, push to any branch
+    good: |
+      # ---- Dockerfile: non-root user, minimal base ----
+      FROM python:3.12-slim
+      WORKDIR /app
+      COPY requirements.txt .
+      RUN pip install --no-cache-dir -r requirements.txt
+      COPY . .
+
+      # Create non-root user and switch to it
+      RUN groupadd -r appuser && useradd -r -g appuser appuser
+      USER appuser
+
+      EXPOSE 8000
+      CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+
+
+      # ---- Restrictive CORS: exact origins only ----
+      from starlette.middleware.cors import CORSMiddleware
+
+      app.add_middleware(
+          CORSMiddleware,
+          allow_origins=[
+              "https://app.example.com",
+              "https://admin.example.com",
+          ],
+          allow_methods=["GET", "POST", "PUT", "DELETE"],
+          allow_headers=["Authorization", "Content-Type"],
+          allow_credentials=True,
+      )
+
+
+      # ---- Health check that verifies real dependencies ----
+      @app.get("/health")
+      async def health():
+          checks = {}
+          try:
+              db.execute(text("SELECT 1"))
+              checks["database"] = "ok"
+          except Exception:
+              checks["database"] = "degraded"
+
+          try:
+              redis.ping()
+              checks["cache"] = "ok"
+          except Exception:
+              checks["cache"] = "degraded"
+
+          status = "ok" if all(v == "ok" for v in checks.values()) else "degraded"
+          code = 200 if status == "ok" else 503
+          return JSONResponse(content={"status": status, **checks}, status_code=code)
+
+
+      # ---- GitHub Actions: minimal permissions ----
+      # .github/workflows/deploy.yml
+      # permissions:
+      #   contents: read
+      #   id-token: write   # OIDC for cloud auth, no long-lived keys
+      #   # No write access to repo settings, issues, or packages
+heuristics:
+  - >
+    Containers must run as a non-root user. A process running as root in
+    a container can modify any file, install packages, and escalate to
+    the host if there is a container-escape vulnerability. Adding a
+    USER directive is a two-line change with disproportionate security
+    benefit.
+  - >
+    Health checks must verify real dependencies (database, cache, downstream
+    services), not just return 200. A health check that always returns ok
+    hides degraded state from load balancers and orchestrators. A service
+    that cannot reach its database is not healthy.
+  - >
+    CORS must restrict origins to known frontend domains. allow_origins=["*"]
+    with allow_credentials=True allows any website to make authenticated
+    cross-origin requests. Specify exact origins; avoid wildcard in
+    production.
+  - >
+    CI/CD pipelines must use minimal permissions. A workflow with
+    write-all permissions can be exploited via dependency confusion or
+    script injection to push malicious code, modify release artifacts,
+    or access secrets. Grant only the permissions the workflow needs.
+  - >
+    Add security headers to HTTP responses: Strict-Transport-Security,
+    X-Content-Type-Options, X-Frame-Options, Content-Security-Policy.
+    These headers are a one-time configuration that prevents classes of
+    attacks (clickjacking, MIME sniffing, downgrade attacks) for the
+    lifetime of the service.
+  - >
+    Use 12-Factor principles: store config in environment variables, not
+    in code or container images. Secrets in container layers persist in
+    the registry and are accessible to anyone who can pull the image.
+  - >
+    Prefer OIDC (OpenID Connect) over long-lived secrets for CI/CD cloud
+    authentication. OIDC tokens are short-lived and scoped; leaked secrets
+    are valid until manually rotated.
+related_tags:
+  [security, cloud, docker, containers, non-root, health-checks, cors,
+   ci-cd, github-actions, security-headers, 12-factor, oidc,
+   cis-benchmarks, kubernetes, orchestration]

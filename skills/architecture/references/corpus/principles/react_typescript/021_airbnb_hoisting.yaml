@@ -1,0 +1,79 @@
+id: airbnb-hoisting-021
+name: Airbnb Hoisting — TDZ, Declarations, and Define-Before-Use
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  Airbnb's hoisting rules: understand that var declarations hoist (with
+  undefined initialization), function declarations hoist with their body,
+  and const/let are hoisted but have Temporal Dead Zones (TDZ) that throw
+  ReferenceError if accessed before initialization. Always define variables,
+  classes, and functions before they are used — this ensures readers
+  encounter definitions before usage, improving readability.
+examples:
+  - language: typescript
+    bad: |
+      // var hoisting — confusing behavior
+      function example() {
+        console.log(declaredButNotAssigned); // undefined (no error!)
+        var declaredButNotAssigned = true;
+      }
+
+      // Function declaration called before defined
+      fun();
+      function fun() {}
+
+      // Class used before defined — ReferenceError
+      new A();
+      class A {}
+
+      // const/let in TDZ — ReferenceError
+      console.log(a);
+      console.log(b);
+      let a = 10;
+      const b = 5;
+
+      // Anonymous expression called before assignment
+      anonymous(); // TypeError: anonymous is not a function
+      var anonymous = function () {
+        console.log("anonymous");
+      };
+    good: |
+      // Define before use — natural reading order
+      const declaredButNotAssigned = true;
+      console.log(declaredButNotAssigned);
+
+      // Function definition before call
+      function fun() {}
+      fun();
+
+      // Class definition before use
+      class A {}
+      new A();
+
+      // const/let defined before access
+      let a = 10;
+      const b = 5;
+      console.log(a); // 10
+      console.log(b); // 5
+
+      // Named expression defined before call
+      const anonymous = function () {
+        console.log("anonymous");
+      };
+      anonymous();
+
+      // Imported modules naturally define before use
+      import { processData } from "./data";
+      const result = processData(input);
+heuristics:
+  - Always define variables, classes, and functions before they are used — code reads top-to-bottom and readers should encounter definitions first.
+  - Use const and let, which have Temporal Dead Zones (TDZ) that throw ReferenceError if accessed before initialization. This catches use-before-define bugs at runtime.
+  - Understand that function declarations are fully hoisted (name + body), while var declarations hoist only the name (initialized to undefined).
+  - Never rely on hoisting behavior — it creates confusion about execution order and harms readability.
+  - Named function expressions hoist the variable name (undefined) but not the function name or body. Don't call them before assignment.
+  - eslint no-use-before-define enforces this for variables, classes, and functions.
+  - Import statements naturally enforce define-before-use since they appear at file top and must complete before the module body runs.
+  - If you find yourself needing hoisting for circular dependencies, refactor the module structure instead.
+related_tags: [airbnb, hoisting, tdz, define-before-use, var, const, temporal-dead-zone]

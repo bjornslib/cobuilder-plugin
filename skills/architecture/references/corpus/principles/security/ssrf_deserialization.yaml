@@ -1,0 +1,169 @@
+id: security-ssrf-deserialization-001
+name: SSRF, Template Injection, and Deserialization Defense
+category: security
+canonical_tags: ['security', 'ssrf', 'template-injection', 'deserialization', 'owasp-a10']
+sources:
+  - owasp/top-ten.md
+  - cwe/ssrf-patterns.md
+  - cwe/deserialization-patterns.md
+summary: >
+  Server-Side Request Forgery (SSRF) occurs when an application fetches a
+  user-supplied URL without validating the destination, allowing attackers
+  to probe internal networks, access cloud metadata endpoints, and exfiltrate
+  data. Template injection (SSTI) happens when user input is embedded in a
+  template engine's context string before rendering, granting access to the
+  server's object graph and often achieving remote code execution.
+  Deserialization attacks exploit unsafe deserializers (pickle, yaml.load,
+  marshal) that reconstruct arbitrary objects from untrusted byte streams,
+  enabling direct code execution. All three vulnerabilities share a common
+  pattern: the server interprets user-controlled data as executable content
+  in a privileged context. Defense requires allowlisting external
+  destinations, enabling autoescaping in template engines, and using safe
+  serialization formats (JSON) instead of object deserializers.
+examples:
+  - language: python
+    bad: |
+      import pickle
+      import yaml
+      import requests
+      from fastapi import FastAPI
+      from jinja2 import Environment
+
+      app = FastAPI()
+
+
+      # ---- SSRF: user-controlled URL fetched without validation ----
+      @app.get("/preview")
+      def preview_url(url: str):
+          # Attacker supplies http://169.254.169.254/latest/meta-data/
+          # or http://localhost:6379/ to reach internal services.
+          resp = requests.get(url, timeout=5)
+          return {"status": resp.status_code, "body": resp.text[:500]}
+
+
+      # ---- Template injection: user input in template string ----
+      env = Environment()
+
+      @app.get("/greet")
+      def greet(name: str):
+          # {{ config.__class__.__init__.__globals__['os'].popen('id').read() }}
+          template = env.from_string(f"Hello {name}!")
+          return template.render()
+
+
+      # ---- Deserialization: pickle/yaml on untrusted data ----
+      @app.post("/import")
+      def import_data(payload: bytes):
+          # Arbitrary code execution via crafted pickle payload
+          obj = pickle.loads(payload)
+          return {"type": type(obj).__name__}
+
+
+      @app.post("/config")
+      def load_config(data: str):
+          # yaml.load without SafeLoader allows arbitrary Python objects
+          config = yaml.load(data)
+          return config
+    good: |
+      import json
+      import ipaddress
+      import yaml
+      import requests
+      from fastapi import FastAPI, HTTPException, Query
+      from jinja2 import Environment, select_autoescape
+      from urllib.parse import urlparse
+
+      app = FastAPI()
+
+      ALLOWED_DOMAINS = {"api.example.com", "cdn.example.com"}
+
+      def is_private_url(url: str) -> bool:
+          """Block requests to private/reserved IP ranges and metadata endpoints."""
+          parsed = urlparse(url)
+          if parsed.scheme not in ("http", "https"):
+              return True
+          hostname = parsed.hostname
+          if hostname in ("localhost", "metadata.google.internal"):
+              return True
+          try:
+              ip = ipaddress.ip_address(hostname)
+              return ip.is_private or ip.is_loopback or ip.is_reserved
+          except ValueError:
+              pass  # hostname is a domain, not an IP — check allowlist
+          return hostname not in ALLOWED_DOMAINS
+
+
+      # ---- SSRF defense: validate URL before fetching ----
+      @app.get("/preview")
+      def preview_url(url: str = Query(max_length=2048)):
+          if is_private_url(url):
+              raise HTTPException(403, "URL not allowed")
+          resp = requests.get(url, timeout=5, allow_redirects=False)
+          return {"status": resp.status_code, "body": resp.text[:500]}
+
+
+      # ---- Template injection defense: autoescaping + never from_string ----
+      env = Environment(autoescape=select_autoescape(["html"]))
+
+      @app.get("/greet")
+      def greet(name: str = Query(max_length=100)):
+          # Render from a predefined template file; pass user input as a variable.
+          template = env.get_template("greet.html")
+          return template.render(name=name)
+
+
+      # ---- Deserialization defense: json instead of pickle ----
+      @app.post("/import")
+      def import_data(payload: bytes):
+          # JSON is safe: no object instantiation, only primitives and containers.
+          obj = json.loads(payload)
+          return {"type": type(obj).__name__}
+
+
+      # ---- YAML defense: safe_load only ----
+      @app.post("/config")
+      def load_config(data: str):
+          # yaml.safe_load only parses basic types — no arbitrary objects.
+          config = yaml.safe_load(data)
+          return config
+heuristics:
+  - >
+    Block all requests to private IP ranges (10.0.0.0/8, 172.16.0.0/12,
+    192.168.0.0/16), loopback (127.0.0.0/8), link-local (169.254.0.0/16),
+    and cloud metadata endpoints (169.254.169.254, metadata.google.internal)
+    before making outbound HTTP requests on behalf of users.
+  - >
+    Allowlist external domains that your application may fetch, rather than
+    trying to maintain a comprehensive blocklist. A blocklist of private IPs
+    is insufficient — DNS rebinding, IPv6-mapped IPv4, and redirect chains
+    bypass naive IP checks. Allowlisting is the only reliable SSRF defense.
+  - >
+    Never deserialize untrusted data with pickle, yaml.load (without
+    SafeLoader), marshal, or shelve. These reconstruct arbitrary Python
+    objects and execute code during deserialization. Use json.loads for data
+    interchange — it produces only primitives and containers, never objects.
+  - >
+    Enable autoescaping in every template engine. Jinja2: use
+    select_autoescape. Django templates: auto-escape is on by default. Never
+    use Environment.from_string() with user input — load templates from
+    files and pass user data as render variables only.
+  - >
+    Validate and normalize URLs before fetching: parse with urlparse,
+    reject non-http/https schemes, resolve the hostname to an IP, check
+    against private ranges, and disable automatic redirects (or validate
+    each redirect destination). DNS resolution must happen at request time,
+    not at validation time, to prevent TOCTOU via DNS rebinding.
+  - >
+    Use json as the interchange format for all external data. If you need
+    richer types, define a schema (JSON Schema, Pydantic) and validate the
+    parsed JSON against it before using it. Never accept serialized objects
+    from untrusted sources.
+  - >
+    Disable follow-redirects on outbound requests (allow_redirects=False
+    in requests) or validate each redirect hop. An attacker-controlled
+    redirect can point an otherwise-safe URL to an internal service after
+    the initial validation passes.
+related_tags:
+  [security, ssrf, server-side-request-forgery, template-injection,
+   ssti, deserialization, pickle, yaml, cloud-metadata, dns-rebinding,
+   owasp-a10, cwe-918, cwe-502, cwe-94, autoescape, allowlist]

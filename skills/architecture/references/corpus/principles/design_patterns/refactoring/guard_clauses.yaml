@@ -1,0 +1,416 @@
+id: guard-clauses-001
+name: "Refactoring — Replace Nested Conditional with Guard Clauses"
+category: design-patterns
+canonical_tags: ['refactoring', 'simplifying-conditionals', 'guard-clauses', 'replace-nested-conditional', 'early-return', 'flatten-arrow-code', 'fail-fast', 'happy-path', 'readability']
+sources:
+  - books/refactoring.md
+  - books/clean-code.md
+  - books/code-complete.md
+  - open_sources/design_patterns/refactoring-guru-patterns.txt
+summary: >
+  Replace Nested Conditional with Guard Clauses is a refactoring that inverts
+  deep if/else pyramids into a flat sequence of early-return checks. Each guard
+  clause handles one invalid or exceptional case at the top of the function,
+  bailing out immediately. The "happy path" — the main logic — then sits at the
+  left margin, unindented and uncluttered. This pattern is sometimes called
+  "flattening arrow code" because the characteristic rightward drift of nested
+  conditionals disappears. Use this when a function has more than one level of
+  conditional nesting and the deepest branches contain the core logic, or when
+  validation and error handling are tangled into the same if/else structure as
+  the business logic. The refactoring is reversible: if a function ends up with
+  too many guards that obscure the main flow, consider Consolidate Conditional
+  Expression or extract the guards into a separate validation function. Guard
+  clauses are a statement of intent — "if this precondition fails, stop" —
+  rather than a symmetrical branch of the algorithm. They make code read like a
+  contract: preconditions first, then the work.
+examples:
+  - language: python
+    bad: |
+      # Arrow code: the core logic (saving the order) is buried three indentation
+      # levels deep. A reader must hold the entire branching structure in their
+      # head to understand when `order.save()` actually executes. Adding a new
+      # validation requires threading another if/else through the pyramid.
+
+      from decimal import Decimal
+      from dataclasses import dataclass
+      from datetime import date
+
+
+      @dataclass
+      class Order:
+          customer_id: str
+          total: Decimal
+          shipping_address: str
+          status: str
+
+          def save(self) -> None:
+              ...
+
+
+      def process_order(order: Order, inventory: dict[str, int]) -> str:
+          if order.customer_id:
+              if order.total > Decimal("0"):
+                  if order.shipping_address:
+                      if inventory.get("stock", 0) > 0:
+                          # The actual work — four levels deep
+                          inventory["stock"] -= 1
+                          order.status = "confirmed"
+                          order.save()
+                          return "Order confirmed"
+                      else:
+                          return "Out of stock"
+                  else:
+                      return "Missing shipping address"
+              else:
+                  return "Invalid order total"
+          else:
+              return "Missing customer ID"
+
+      # Notice how the return values alternate sides: the first error message
+      # is at the deepest else, the last at the outermost. This forces the
+      # reader to scan every branch to build a mental list of failure modes.
+
+    good: |
+      # Guard Clauses: each validation fails fast and returns immediately. The
+      # happy path — the actual order processing — sits at the left margin with
+      # zero indentation. A reader scans the top of the function to understand
+      # all failure modes, then reads the unindented block to understand the
+      # core logic. Adding a new validation means adding one guard clause at
+      # the top — no pyramid surgery required.
+
+      from decimal import Decimal
+      from dataclasses import dataclass
+      from datetime import date
+
+
+      @dataclass
+      class Order:
+          customer_id: str
+          total: Decimal
+          shipping_address: str
+          status: str
+
+          def save(self) -> None:
+              ...
+
+
+      def process_order(order: Order, inventory: dict[str, int]) -> str:
+          # Guard: validate preconditions — fail fast
+          if not order.customer_id:
+              return "Missing customer ID"
+
+          if order.total <= Decimal("0"):
+              return "Invalid order total"
+
+          if not order.shipping_address:
+              return "Missing shipping address"
+
+          if inventory.get("stock", 0) <= 0:
+              return "Out of stock"
+
+          # Happy path: all preconditions satisfied, do the work
+          inventory["stock"] -= 1
+          order.status = "confirmed"
+          order.save()
+          return "Order confirmed"
+
+      # Even better: extract validation into a dedicated function.
+      # Each guard clause can also raise a domain-specific exception
+      # instead of returning a string, making error handling explicit
+      # at the call site.
+
+      class OrderValidationError(ValueError):
+          pass
+
+
+      def validate_order(order: Order, inventory: dict[str, int]) -> None:
+          if not order.customer_id:
+              raise OrderValidationError("Missing customer ID")
+          if order.total <= Decimal("0"):
+              raise OrderValidationError("Invalid order total")
+          if not order.shipping_address:
+              raise OrderValidationError("Missing shipping address")
+          if inventory.get("stock", 0) <= 0:
+              raise OrderValidationError("Out of stock")
+
+
+      def process_order_robust(order: Order, inventory: dict[str, int]) -> str:
+          validate_order(order, inventory)
+
+          inventory["stock"] -= 1
+          order.status = "confirmed"
+          order.save()
+          return "Order confirmed"
+
+      # The guard clause pattern also applies to loops. Use `continue` as
+      # the bail-out mechanism to keep loop bodies flat:
+      #
+      #   for item in items:
+      #       if item.is_archived:
+      #           continue          # guard — skip to next iteration
+      #       if not item.is_active:
+      #           continue
+      #
+      #       # Happy path for this iteration
+      #       process(item)
+
+  - language: typescript
+    bad: |
+      // Arrow code: the main logic (`publishPost`) is unreachable through
+      // a maze of nested conditionals. Each new business rule deepens the
+      // pyramid. Refactoring one branch risks breaking another — the
+      // conditions are structurally coupled by indentation, not by intent.
+
+      interface Post {
+        id: string;
+        title: string;
+        content: string;
+        authorId: string;
+        status: "draft" | "review" | "published";
+        scheduledAt?: Date;
+      }
+
+      interface User {
+        id: string;
+        role: "admin" | "editor" | "viewer";
+        isSuspended: boolean;
+      }
+
+      function publishPost(post: Post, user: User): string {
+        if (!user.isSuspended) {
+          if (user.role === "admin" || user.role === "editor") {
+            if (post.status !== "published") {
+              if (post.title.length > 0) {
+                if (post.content.length > 0) {
+                  // The actual work — five levels deep
+                  post.status = "published";
+                  return `Post "${post.title}" published`;
+                } else {
+                  return "Content is empty";
+                }
+              } else {
+                return "Title is empty";
+              }
+            } else {
+              return "Post is already published";
+            }
+          } else {
+            return "Insufficient permissions";
+          }
+        } else {
+          return "User is suspended";
+        }
+      }
+
+      // The function also violates the principle that error cases and the
+      // happy path should not share the same branching structure. A reader
+      // cannot tell at a glance which branches are error handling and which
+      // is the core algorithm.
+
+    good: |
+      // Guard Clauses: each precondition check fails fast and returns
+      // immediately. The happy path — `post.status = "published"` — is the
+      // first line at the left margin after the guards. The reader sees all
+      // failure modes in a flat vertical list, then the main logic with
+      // zero indentation. The function reads like a contract: "you must meet
+      // these conditions, then I'll do the work."
+
+      interface Post {
+        id: string;
+        title: string;
+        content: string;
+        authorId: string;
+        status: "draft" | "review" | "published";
+        scheduledAt?: Date;
+      }
+
+      interface User {
+        id: string;
+        role: "admin" | "editor" | "viewer";
+        isSuspended: boolean;
+      }
+
+      function publishPost(post: Post, user: User): string {
+        // Guard: validate preconditions — fail fast
+        if (user.isSuspended) {
+          return "User is suspended";
+        }
+
+        if (user.role !== "admin" && user.role !== "editor") {
+          return "Insufficient permissions";
+        }
+
+        if (post.status === "published") {
+          return "Post is already published";
+        }
+
+        if (post.title.length === 0) {
+          return "Title is empty";
+        }
+
+        if (post.content.length === 0) {
+          return "Content is empty";
+        }
+
+        // Happy path: all guards passed, do the work
+        post.status = "published";
+        return `Post "${post.title}" published`;
+      }
+
+      // For more complex validation, extract guards into a dedicated function.
+      // Throw domain-specific errors so callers can distinguish failure modes
+      // without parsing return strings.
+
+      class PostPublishError extends Error {
+        constructor(message: string) {
+          super(message);
+          this.name = "PostPublishError";
+        }
+      }
+
+      function validatePublishPreconditions(
+        post: Post,
+        user: User
+      ): void {
+        if (user.isSuspended) {
+          throw new PostPublishError("User is suspended");
+        }
+        if (user.role !== "admin" && user.role !== "editor") {
+          throw new PostPublishError("Insufficient permissions");
+        }
+        if (post.status === "published") {
+          throw new PostPublishError("Post is already published");
+        }
+        if (post.title.length === 0) {
+          throw new PostPublishError("Title is empty");
+        }
+        if (post.content.length === 0) {
+          throw new PostPublishError("Content is empty");
+        }
+      }
+
+      function publishPostRobust(post: Post, user: User): string {
+        validatePublishPreconditions(post, user);
+
+        post.status = "published";
+        return `Post "${post.title}" published`;
+      }
+
+      // Guard clauses also work well with discriminated unions and the
+      // `never` type in TypeScript — after exhaustive guards, the compiler
+      // knows the remaining type is impossible:
+
+      type Shape =
+        | { kind: "circle"; radius: number }
+        | { kind: "rectangle"; width: number; height: number }
+        | { kind: "triangle"; base: number; height: number };
+
+      function area(shape: Shape): number {
+        // Guards route to the right computation — no nested if/else chain
+        if (shape.kind === "circle") {
+          return Math.PI * shape.radius ** 2;
+        }
+        if (shape.kind === "rectangle") {
+          return shape.width * shape.height;
+        }
+        // TypeScript narrows Shape to { kind: "triangle"; ... } here
+        return 0.5 * shape.base * shape.height;
+      }
+
+      // Test that the guard clauses behave as expected
+      import { describe, it, expect } from "vitest";
+
+      describe("publishPost", () => {
+        const editor: User = { id: "1", role: "editor", isSuspended: false };
+
+        it("publishes a valid post", () => {
+          const post: Post = {
+            id: "p1",
+            title: "Hello",
+            content: "World",
+            authorId: "1",
+            status: "draft",
+          };
+          expect(publishPost(post, editor)).toBe('Post "Hello" published');
+        });
+
+        it("rejects an empty title", () => {
+          const post: Post = {
+            id: "p1",
+            title: "",
+            content: "World",
+            authorId: "1",
+            status: "draft",
+          };
+          expect(publishPost(post, editor)).toBe("Title is empty");
+        });
+      });
+
+heuristics:
+  - >
+    "Use guard clauses to replace nested conditional with flat conditional
+    structure. Instead of if/else if/else, check a condition and return
+    immediately if it fails" (Fowler, Refactoring). The guard clause says
+    "this is the rare or exceptional case — handle it and leave."
+  - >
+    A conditional is a candidate for a guard clause when one branch is the
+    "normal" path and the other is an exit — error, bail-out, or early
+    termination. If both branches are equally likely and equally important,
+    use if/else instead. Guards are for asymmetric cases.
+  - >
+    The happy path should sit at the left margin of the function after all
+    guard clauses. If guards are mixed throughout the function (guard,
+    some logic, guard, more logic), the function is doing too many things —
+    extract methods so each function has a single happy path.
+  - >
+    Reverse the condition from the original nested code. Instead of
+    `if (valid) { ... lots of code ... } else { handle_error }`, write
+    `if (not valid) { handle_error; return }` and let the valid case continue
+    at the left margin.
+  - >
+    A guard clause should do one of three things: return a value, throw an
+    exception, or (in loops) continue/break. A guard clause that sets a flag
+    variable and then continues is not a guard — it's a disguised state machine.
+  - >
+    In languages with exception handling, consider whether a guard should
+    throw instead of return. Throwing makes the failure mode visible at the
+    call site (callers must either catch or let it propagate), while returning
+    an error value requires every caller to check. Match the convention of
+    the codebase.
+  - >
+    Guard clauses work well with `Result` / `Either` types. Instead of
+    returning early with an error string, return `Err("reason")` and let the
+    happy path return `Ok(value)`. Callers compose with `and_then` / `flatMap`.
+  - >
+    In TypeScript, guard clauses combine powerfully with type narrowing.
+    After a guard like `if (typeof value !== "string") return`, the compiler
+    knows `value` is `string` in the remaining code. Use this to eliminate
+    redundant type assertions.
+  - >
+    Do NOT use guard clauses when they obscure the main logic. If a function
+    has 15 guard clauses and 3 lines of happy-path logic, the guards have
+    taken over — extract a `validate()` function or use a validation object.
+  - >
+    A guard clause at the very top of a function that checks a common case
+    is a performance optimization, not a readability one. Only add such
+    guards if profiling shows they matter; otherwise trust the branch
+    predictor.
+  - >
+    When converting a nested if/else pyramid to guard clauses, work outside-in:
+    start with the outermost condition, invert it, add the guard, and repeat
+    until the inner logic is at the left margin. Verify behavior at each step
+    — the inverted conditions must be exact logical complements.
+  - >
+    Avoid guard clauses that produce side effects before bailing out. If a
+    guard needs to log or record metrics, that's fine, but a guard should
+    not mutate shared state (e.g., decrement a counter, close a connection)
+    and then return — that couples cleanup to validation.
+
+related_tags:
+  [guard-clauses, replace-nested-conditional, early-return, fail-fast,
+   flatten-arrow-code, happy-path, simplifying-conditionals, refactoring,
+   fowler-refactoring, consolidate-conditional-expression,
+   decompose-conditional, extract-method, bouncer-pattern,
+   validation, precondition-checks, defensive-programming,
+   type-narrowing, discriminated-unions, result-type, either-monad,
+   code-smells, arrow-code, pyramid-of-doom, readability]

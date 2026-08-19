@@ -1,0 +1,155 @@
+id: security-audit-logging-001
+name: Security Audit Logging and Tamper-Proof Event Trails
+category: security
+canonical_tags: ['security', 'audit-logging', 'compliance', 'intrusion-detection', 'owasp-a09']
+sources:
+  - owasp/top-ten.md
+  - nist/sp-800-92.md
+  - pci-dss/requirement-10.md
+summary: >
+  Security audit logging records who did what, when, and from where. Without
+  structured audit trails, breaches go undetected, forensic investigation is
+  impossible, and compliance obligations are unmet. Common failures include:
+  using print() or unstructured text for security events, logging only
+  successful operations while ignoring failures, storing audit logs in the
+  same database as application data (a SQL injection can delete the audit
+  trail), omitting request correlation IDs, logging credentials or tokens,
+  and having no alerting on anomaly patterns. Defense requires structured
+  JSON logging with mandatory fields (event type, user ID, timestamp, request
+  ID), append-only or write-once storage for audit logs, alerting on
+  failure spikes (failed auth, permission denied), and retention policies
+  aligned with compliance requirements.
+examples:
+  - language: python
+    bad: |
+      from fastapi import FastAPI, Request
+
+      app = FastAPI()
+
+
+      # ---- Unstructured logging: print() for auth events ----
+      @app.post("/login")
+      def login(request: Request, username: str, password: str):
+          user = authenticate(username, password)
+          if user:
+              print(f"User {username} logged in")  # unstructured, no timestamp
+              return {"token": create_token(user)}
+          # Failed login not logged at all — brute force goes undetected
+          raise HTTPException(401)
+
+
+      # ---- Credentials logged in plain text ----
+      @app.post("/register")
+      def register(username: str, password: str):
+          print(f"Registering {username} with password={password}")  # credential leak
+          db.save(User(username=username, password_hash=hash_pw(password)))
+          return {"ok": True}
+
+
+      # ---- Audit logs in same database as application data ----
+      @app.post("/transfer")
+      def transfer(from_id: int, to_id: int, amount: float):
+          execute_transfer(from_id, to_id, amount)
+          # If attacker gets SQL injection, they can DELETE FROM audit_logs
+          db.execute("INSERT INTO audit_logs (event, user_id) VALUES ('transfer', %s)", from_id)
+          return {"ok": True}
+    good: |
+      import json
+      import time
+      from fastapi import FastAPI, Request
+      from opentelemetry import trace
+
+      app = FastAPI()
+
+      # ---- Structured JSON logger with mandatory fields ----
+      def audit_log(event: str, request: Request, **kwargs):
+          span = trace.get_current_span()
+          entry = {
+              "event": event,
+              "timestamp": time.time_ns(),
+              "request_id": request.headers.get("x-request-id", "unknown"),
+              "trace_id": format(span.get_span_context().trace_id, "032x") if span else None,
+              "user_id": getattr(request.state, "user_id", None),
+              "source_ip": request.client.host,
+              **kwargs,
+          }
+          # Write to append-only log (file, SIEM, or dedicated audit store)
+          audit_writer.write(json.dumps(entry))
+
+
+      # ---- Log success AND failure with context ----
+      @app.post("/login")
+      def login(request: Request, username: str, password: str):
+          user = authenticate(username, password)
+          if user:
+              audit_log("auth.login.success", request, username=username)
+              return {"token": create_token(user)}
+          audit_log("auth.login.failure", request, username=username)
+          raise HTTPException(401)
+
+
+      # ---- Never log credentials ----
+      @app.post("/register")
+      def register(username: str, password: str):
+          # Log the event, not the credential
+          audit_log("auth.register", request, username=username)
+          db.save(User(username=username, password_hash=hash_pw(password)))
+          return {"ok": True}
+
+
+      # ---- Audit logs in append-only storage ----
+      # Use a dedicated audit log store (e.g., append-only S3, dedicated
+      # database with no DELETE grants, or SIEM) so that a compromise of
+      # the application database cannot destroy the audit trail.
+      @app.post("/transfer")
+      def transfer(from_id: int, to_id: int, amount: float, request: Request):
+          execute_transfer(from_id, to_id, amount)
+          audit_log(
+              "transfer.complete", request,
+              from_id=from_id, to_id=to_id, amount=amount,
+          )
+          return {"ok": True}
+heuristics:
+  - >
+    Log every authentication event — both success and failure. Failed
+    login attempts are the primary signal for brute-force and credential-
+    stuffing attacks. A spike in auth failures from a single IP or
+    targeting a single account must trigger an alert.
+  - >
+    Use structured JSON logs with mandatory fields: event type, timestamp
+    (nanosecond precision), request_id, user_id, source IP, and trace_id
+    for distributed correlation. Unstructured text logs are not searchable,
+    not correlatable, and not ingestible by SIEM systems without fragile
+    parsing.
+  - >
+    Store audit logs in append-only storage separate from application data.
+    A SQL injection in the application database must not be able to delete
+    the audit trail. Options: append-only file with no delete permissions,
+    a separate database with no DELETE grants, object storage with WORM
+    (write-once-read-many) retention, or a dedicated SIEM.
+  - >
+    Include a request_id on every inbound request and propagate it through
+    all log entries, spans, and downstream calls. The request_id is the
+    primary correlation key for reconstructing a user's action across
+    microservices, databases, and async workers.
+  - >
+    Set up alerting on anomaly patterns: spike in failed authentications
+    (>10 failures from one IP in 5 minutes), privilege escalation
+    attempts, access to sensitive resources by new or unusual users, and
+    bulk data export operations. Alerts must be actionable — include the
+    user ID, IP, and resource in the alert payload.
+  - >
+    Never log credentials, API keys, session tokens, or PII in audit
+    entries. If you must reference a credential for debugging, log a
+    truncated hash (first 4 chars + "...") rather than the full value.
+    Treat audit logs as sensitive data — they contain behavioral patterns
+    that are valuable to attackers.
+  - >
+    Retain audit logs per compliance requirements (GDPR: as long as
+    needed; PCI-DSS: 1 year minimum; SOX: 7 years). Define a retention
+    policy in writing and automate log rotation and archival. Logs
+    beyond the retention period must be securely deleted or anonymized.
+related_tags:
+  [security, audit-logging, compliance, intrusion-detection, siem,
+   structured-logging, request-correlation, append-only, retention-policy,
+   owasp-a09, cwe-778, cwe-223, pci-dss, gdpr, alerting, anomaly-detection]

@@ -1,0 +1,49 @@
+id: readability-naming-001
+name: Readability, Naming & Small Functions
+category: readability
+canonical_tags: ['readability']
+sources:
+  - books/clean-code.md
+summary: Code should be written primarily for humans. Use intention-revealing names, keep functions small and single-purpose, and organize code so the high-level story is visible before the details.
+examples:
+  - language: python
+    bad: |
+      def proc(d, t):
+          """Process data."""
+          a = []
+          for x in d:
+              if x["s"] == t:
+                  a.append(x)
+          return a
+
+      def calc(x, y, z):
+          return x * y * z * 0.08
+    good: |
+      def filter_by_status(orders: list[dict], desired_status: str) -> list[dict]:
+          """Return only orders matching the given status."""
+          return [order for order in orders if order["status"] == desired_status]
+
+
+      TAX_RATE = 0.08
+
+      def calculate_tax(subtotal: float, quantity: int, rate: float = TAX_RATE) -> float:
+          """Calculate total tax for a line item."""
+          return subtotal * quantity * rate
+  - language: typescript
+    bad: |
+      const d = items.filter(i => i.t === "done");
+      function p(u: any) { /* ... */ }
+    good: |
+      const completedItems = items.filter(item => item.status === "done");
+
+      function processPayment(user: User): PaymentResult {
+        // ...
+      }
+heuristics:
+  - Names must explain purpose, role, or behavior without requiring extra comments.
+  - Keep each function at one level of abstraction — don't mix high-level orchestration with low-level details.
+  - A function should do one thing and have one clear reason to change.
+  - Use pronounceable, searchable names. Avoid single-letter variables except in trivial loop counters.
+  - Prefer descriptive names over short names. `filter_by_status` beats `filt`.
+  - Avoid boolean flag parameters — split into separate functions instead.
+related_tags: [readability, naming, small-functions, clean-code]

@@ -1,0 +1,160 @@
+id: airbnb-functions-001
+name: Airbnb Functions — Declarations, Parameters & Pure Patterns
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  Airbnb's function conventions favor named function expressions over declarations (to avoid hoisting surprises),
+  rest parameters over the arguments object, default parameters over manual fallbacks, and immutable parameter
+  handling. Never mutate or reassign parameters; use the spread operator instead of apply(); always put default
+  parameters last. These rules produce predictable, composable functions with clear data flow.
+examples:
+  - language: typescript
+    bad: |
+      // Function declaration — hoisted, can be called before defined
+      function foo() {
+        return "surprise";
+      }
+
+      // Anonymous function expression — no name in stack traces
+      const bar = function () {
+        return "who called me?";
+      };
+
+      // Using arguments object — not a real array, opaque
+      function concatenateAll() {
+        const args = Array.prototype.slice.call(arguments);
+        return args.join("");
+      }
+
+      // Parameter mutation with || fallback
+      function handleThings(opts: Options | undefined) {
+        opts = opts || {};
+        return process(opts);
+      }
+
+      // Reassigning parameter
+      function update(a: number): number {
+        a = a * 2;
+        return a;
+      }
+    good: |
+      // Named function expression — clear stack traces, no hoisting surprises
+      const short = function longUniqueMoreDescriptiveLexicalFoo(): string {
+        return "predictable";
+      };
+
+      // Rest parameters — real array, explicit about intent
+      function concatenateAll(...args: string[]): string {
+        return args.join("");
+      }
+
+      // Default parameter syntax — no mutation
+      function handleThings(opts: Options = {}): Result {
+        return process(opts);
+      }
+
+      // Avoid parameter reassignment — use new variable instead
+      function update(a: number): number {
+        const doubled = a * 2;
+        return doubled;
+      }
+
+      // Default parameters must be last
+      function createUser(name: string, opts: UserOptions = {}): User {
+        return new User(name, opts);
+      }
+  - language: typescript
+    bad: |
+      // Using apply() instead of spread
+      const numbers = [1, 2, 3, 4, 5];
+      console.log.apply(console, numbers);
+
+      // new with apply via bind — unreadable
+      new (Function.prototype.bind.apply(Date, [null, 2016, 8, 5]));
+
+      // Side effect in default parameter — confusing behavior
+      let b = 1;
+      function count(a = b++): void {
+        console.log(a);
+      }
+      count();  // 1
+      count();  // 2
+      count(3); // 3
+      count();  // 3 — b++ side effect is invisible to caller
+
+      // Mutating parameter object
+      function f1(obj: Record<string, unknown>): void {
+        obj.key = 1; // side effect leaks to caller
+      }
+    good: |
+      // Spread syntax for variadic calls — cleaner
+      const numbers = [1, 2, 3, 4, 5];
+      console.log(...numbers);
+
+      // Spread with new — readable
+      new Date(...[2016, 8, 5]);
+
+      // Avoid side effects in default parameters
+      let b = 1;
+      function count(a: number): void {
+        console.log(a);
+      }
+      count(b++);  // side effect visible at call site
+      count(b++);
+      count(3);
+      count(b++);
+
+      // Never mutate parameters — read or copy
+      function f2(obj: Record<string, unknown>): void {
+        const key = Object.prototype.hasOwnProperty.call(obj, "key")
+          ? obj.key
+          : 1;
+        process(key);
+      }
+  - language: typescript
+    bad: |
+      // Multiline function signature — messy alignment
+      function foo(bar: string,
+                   baz: number,
+                   quux: boolean): void {
+        process(bar, baz, quux);
+      }
+
+      // Function constructor — eval-like, security risk
+      const add = new Function("a", "b", "return a + b");
+
+      // Inconsistent spacing around function keyword
+      const f = function(){};
+      const g = function (){};
+      const h = function() {};
+    good: |
+      // Multiline signatures: each param on its own line, trailing comma
+      function foo(
+        bar: string,
+        baz: number,
+        quux: boolean,
+      ): void {
+        process(bar, baz, quux);
+      }
+
+      // Use regular function expressions, never Function constructor
+      const add = (a: number, b: number): number => a + b;
+
+      // Consistent spacing: space after function keyword, space before brace
+      const x = function (): void {};
+      const y = function a(): void {};
+heuristics:
+  - Use named function expressions instead of function declarations. Declarations are hoisted and can be called before definition, harming readability.
+  - Explicitly name the expression even when the variable name suffices — ensures meaningful stack traces.
+  - Use rest syntax (...args) over the arguments object. Rest params are real arrays and explicit about which arguments are expected.
+  - Use default parameter syntax over manual fallbacks (opts = opts || {}). Default params avoid mutation and are clearer.
+  - Always put default parameters last in the parameter list.
+  - Avoid side effects in default parameter expressions — they are evaluated at call time in confusing ways.
+  - Never mutate or reassign function parameters. Use const b = a || 1 instead of a = a || 1.
+  - Prefer spread syntax (...args) over apply() for calling variadic functions. Cleaner, no context needed.
+  - Multiline function signatures should indent each parameter on its own line with trailing commas.
+  - Never use the Function constructor — it evaluates strings like eval() and creates security vulnerabilities.
+  - Use consistent spacing: no space between function name and parens in calls, space before opening brace.
+related_tags: [functions, parameters, rest-parameters, default-parameters, immutability, airbnb, readability]

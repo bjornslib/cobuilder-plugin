@@ -1,0 +1,198 @@
+id: ubiquitous-language-004
+name: Ubiquitous Language Naming Exercises
+category: architecture
+canonical_tags: [ddd, readability]
+principle: >
+  Ubiquitous language is a shared vocabulary between domain experts and developers,
+  scoped to a single bounded context. Code (classes, methods, events, tests) must
+  use the exact terms domain experts use. One concept, one name. One name, one meaning.
+  Generic technical names (Manager, Processor, Handler, Data, Info) are signals that
+  the domain has not been properly modeled.
+sources:
+  - books/domain-driven-design.md
+  - books/domain-driven-design-distilled.md
+  - books/implementing-domain-driven-design.md
+  - books/clean-code.md
+summary: >
+  Ubiquitous language bridges domain experts and developers with a shared, scoped
+  vocabulary. Code must use the exact terms domain experts use — one concept, one
+  name, one meaning. Generic technical names (Manager, Processor, Handler) signal
+  an unmodeled domain. Scenarios cover renaming technical code to domain language,
+  catching generic names, and maintaining language consistency across contexts.
+
+scenarios:
+  - id: ul-1
+    title: "Renaming a codebase from technical to domain language"
+    context: >
+      A loan origination system has been built by developers who never spoke to
+      domain experts. The code uses terms like:
+      - LoanApplicationManager (orchestrates the whole process)
+      - ApplicationData (DTO holding form fields)
+      - RiskProcessor (calculates risk score)
+      - StatusHandler (updates application status)
+      - DocumentService (manages uploaded documents)
+      - ApprovalPipeline (approval workflow)
+      - NotificationSender (sends status updates)
+    question: >
+      After talking to the loan officers, you discover their real vocabulary:
+      applicants submit an "Application," it goes through "Underwriting," which
+      produces a "Credit Decision" (approved, declined, or "referred" for manual
+      review). Approved applications become "Loan Offers" that customers can
+      "accept." How should the code be renamed?
+    answer: >
+      Every technical name must be replaced with the domain term. This is not
+      cosmetic — it reveals missing concepts and clarifies responsibilities.
+
+      Renaming:
+      - LoanApplicationManager → Application (entity, not a manager). The
+        application has behaviors: submit(), underwrite(), decide(),
+        generateOffer().
+      - ApplicationData → Application (value objects for its fields: LoanAmount,
+        EmploymentInfo, CreditProfile). No "Data" suffix.
+      - RiskProcessor → Underwriting (domain service). It evaluates the application
+        against credit policy and produces a CreditDecision (value object:
+        Approved, Declined, Referred).
+      - StatusHandler → Eliminated. Status transitions are methods on Application:
+        submit() → status = Submitted, underwrite() → UnderReview, decide() →
+        Decisioned. No separate handler.
+      - DocumentService → DocumentRepository (for persistence). Document
+        requirements are part of the Underwriting policy, not a generic service.
+      - ApprovalPipeline → DecisionWorkflow or CreditPolicy. This is a domain
+        concept: "Does this application pass our lending criteria?" Pipeline is
+        a technical metaphor.
+      - NotificationSender → ApplicationEvents publisher. Notifications are side
+        effects of domain events: ApplicationSubmitted, CreditDecisioned,
+        LoanOfferGenerated. No "sender" class needed.
+
+      Key test: "Would a loan officer recognize these names?" If they would say
+      "What's a RiskProcessor?" but nod at "Underwriting," the name was wrong.
+      Source: DDD (ubiquitous language, knowledge crunching), Clean Code
+      (meaningful names, avoid noise words).
+    decisions:
+      - Replace Manager/Processor/Handler/Data/Service with domain terms
+      - Domain experts' vocabulary is the source of truth for names
+      - Status transitions are methods, not handlers
+      - Names that domain experts don't recognize indicate missing domain insight
+
+  - id: ul-2
+    title: "When the same word means different things — same context violation"
+    context: >
+      In a hospital system, the term "Patient" appears in the Scheduling module
+      (a Patient is a person with an appointment slot), the Billing module (a
+      Patient is an insurance-covered entity with a balance), and the Clinical
+      module (a Patient is a person with a medical record). All three modules
+      share a Patient class in the same namespace. When the clinical team says
+      "discharge the patient," the scheduling team thinks it means "cancel future
+      appointments," but clinically it means "the patient is medically cleared
+      to leave."
+    question: >
+      Is this a ubiquitous language problem or a bounded context problem? How
+      should it be fixed?
+    answer: >
+      It is both — and the fact that the modules share a class means it is
+      actually a bounded context violation. The word "Patient" carries three
+      different meanings, which by definition means there are three bounded contexts.
+
+      The fix:
+      1. Recognize three bounded contexts:
+         - Scheduling Context: Patient here means "a person with a schedule."
+           Rename to ScheduledPatient or differentiate via the context namespace.
+         - Billing Context: Patient here means "a financially responsible party."
+           Rename to BillingAccount or PatientAccount.
+         - Clinical Context: Patient here is the medical entity. Keep as Patient
+           since this is the clinical system's core domain.
+
+      2. Each context gets its own Patient concept with its own language:
+         - Scheduling: "book appointment," "check in," "no-show"
+         - Billing: "submit claim," "apply copay," "outstanding balance"
+         - Clinical: "diagnose," "prescribe," "discharge"
+
+      3. Translation when contexts interact:
+         - Scheduling → Clinical: "Patient checked in" (event) → Clinical
+           updates status to "In Consultation"
+         - Clinical → Scheduling: "Patient discharged" (event) → Scheduling
+           cancels future appointments
+         - Clinical → Billing: "Encounter completed" (event) → Billing generates
+           claim
+
+      4. Never: A single import of "Patient" across module boundaries. Each
+         context imports only its own Patient and translates at the boundary.
+
+      The original problem was that "discharge" in clinical language triggered
+      a scheduling action (cancel appointments) without an explicit translation
+      layer. The fix makes the translation explicit: Clinical emits
+      PatientDischarged event; Scheduling subscribes and decides what that means
+      in its own language.
+      Source: DDD (bounded contexts, ubiquitous language, context mapping),
+      DDD Distilled (context boundaries, translation).
+    decisions:
+      - Same word with multiple meanings in one codebase = multiple bounded contexts
+      - Each context gets its own concept with its own language
+      - Cross-context meaning divergence requires explicit translation layers
+      - Never share domain classes across contexts — share IDs and events instead
+
+  - id: ul-3
+    title: "Code that speaks framework, not domain"
+    context: >
+      A food delivery platform has code organized around the HTTP framework.
+      Classes include: CreateOrderController, OrderResponseDto, OrderEntity
+      (JPA-annotated), OrderRepository (Spring Data JPA), OrderService,
+      OrderNotFoundException. The domain experts talk about "restaurants,"
+      "menus," "carts," "delivery zones," "riders," and "estimated delivery time."
+      None of these words appear in class names.
+    question: >
+      How should the naming be restructured to reflect the domain rather than
+      the framework?
+    answer: >
+      This codebase screams "Spring Boot," not "food delivery." Each class must
+      be renamed to express what it does in domain terms, and the framework role
+      becomes secondary (visible in annotations or package location, not class
+      names).
+
+      Restructured naming:
+      - CreateOrderController → The domain action is "placing an order." The
+        class is OrderController (not CreateOrderController — the HTTP verb
+        is not a domain concept). Alternatively, use the use case name:
+        PlaceOrderEndpoint.
+      - OrderResponseDto → Order (if used as a read model) or OrderView.
+        "Response" and "Dto" are transport concepts. The domain just says "Order."
+      - OrderEntity → Order (entity, but the word "Entity" is a JPA leak).
+        The domain model should be in the domain package, framework-agnostic.
+        If JPA requires annotations, put them on an OrderJpaEntity in the
+        infrastructure layer and map to the domain Order.
+      - OrderRepository → JPA implementation: JpaOrderRepository in
+        infrastructure. The domain interface is OrderRepository (or
+        OrderStore) in the domain layer.
+      - OrderService → Split by use case: PlaceOrder, CancelOrder,
+        UpdateDeliveryAddress. Each is a focused application service, not a
+        catch-all.
+      - OrderNotFoundException → This is a valid exception name, but it belongs
+        in the domain or application layer, not as a framework exception.
+
+      Domain terminology that should appear:
+      - Restaurant, Menu, MenuItem
+      - Cart (domain entity with behavior: addItem, removeItem, checkout)
+      - DeliveryZone (value object: defines which postcodes a restaurant serves)
+      - Rider (entity: assigned to deliveries)
+      - EstimatedDeliveryTime (value object calculated from distance and kitchen
+        prep time)
+
+      Heuristic: Read the class names aloud. If a domain expert would not
+      understand what the class does, rename it. "CreateOrderController" means
+      nothing to a restaurant owner. "PlaceOrder" does.
+      Source: DDD (ubiquitous language, model-driven design), Clean Architecture
+      (treat frameworks as details), Clean Code (naming).
+    decisions:
+      - Class names should express domain concepts, not framework roles
+      - Framework artifacts (Controller, Entity, DTO) go in infrastructure packages
+      - Domain layer uses pure business names — Restaurant, Rider, DeliveryZone
+      - If a domain expert can't read the class names, they need to change
+
+related_tags: [ubiquitous-language, naming, ddd, domain-language, code-as-documentation]
+heuristics:
+  - Code (classes, methods, events, tests) must use the exact terms domain experts use.
+  - One concept, one name. One name, one meaning — scope per bounded context.
+  - Generic technical names (Manager, Processor, Handler, Data, Info) signal an unmodeled domain.
+  - Would a domain expert recognize these names? If they would say "What's a RiskProcessor?" but nod at "Underwriting," the name was wrong.
+  - Status transitions are methods on entities, not separate handler classes.
+  - Each bounded context gets its own concept with its own language; cross-context meaning divergence requires explicit translation layers.

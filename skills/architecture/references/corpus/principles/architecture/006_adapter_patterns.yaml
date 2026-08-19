@@ -1,0 +1,596 @@
+id: adapter-patterns-006
+name: Adapter Patterns — Repository, Gateway, Controller, Presenter, Mapper & Anticorruption Layer
+category: architecture
+canonical_tags: ['clean-architecture', 'hexagonal-architecture']
+sources:
+  - books/clean-architecture.md
+  - books/unified-software-engineering.md
+summary: >
+  Adapters are the replaceable shells around a stable core. They translate between
+  the domain/application layer and external systems: databases, HTTP, message queues,
+  vendor SDKs, filesystems, and foreign domains. Every adapter implements a port
+  (interface) owned by the inner layer — the dependency arrow points inward. There
+  are six essential adapter types: repository adapters (persistence), gateway adapters
+  (external APIs), controller adapters (inbound delivery), presenter adapters (outbound
+  formatting), mapper adapters (boundary translation), and anticorruption layers
+  (foreign-domain protection). Each isolates a specific kind of volatility and keeps
+  the core testable, replaceable, and framework-independent.
+examples:
+  - language: python
+    bad: |
+      # No adapters — business logic directly coupled to every external system.
+      # PostgreSQL, Stripe, SMTP, Slack, and HTTP all imported in one module.
+      # Testing requires ALL of these to be running.
+      # Swapping any dependency forces rewriting business rules.
+
+      import psycopg2
+      import stripe
+      import smtplib
+      from fastapi import FastAPI, Request, HTTPException
+      from email.mime.text import MIMEText
+      import requests
+
+      app = FastAPI()
+      stripe.api_key = "sk_live_xxx"
+
+      @app.post("/checkout/{user_id}")
+      async def checkout(user_id: int, request: Request):
+          body = await request.json()
+          cart_items = body["items"]
+
+          # Direct DB access from route handler
+          conn = psycopg2.connect("dbname=shop")
+          cur = conn.cursor()
+          cur.execute("SELECT id, price, stock FROM products WHERE id IN %s",
+                      (tuple(item["product_id"] for item in cart_items),))
+          products = {row[0]: {"price": row[1], "stock": row[2]} for row in cur.fetchall()}
+
+          total = 0
+          for item in cart_items:
+              pid = item["product_id"]
+              qty = item["quantity"]
+              prod = products.get(pid)
+              if not prod:
+                  raise HTTPException(400, f"Unknown product {pid}")
+              if qty > prod["stock"]:
+                  raise HTTPException(400, f"Insufficient stock for {pid}")
+              total += prod["price"] * qty
+
+          # Direct Stripe call from handler
+          try:
+              charge = stripe.Charge.create(
+                  amount=int(total * 100),
+                  currency="usd",
+                  source=body["stripe_token"],
+                  metadata={"user_id": user_id},
+              )
+          except stripe.error.StripeError as e:
+              raise HTTPException(402, str(e))
+
+          # Direct DB write
+          cur.execute(
+              "INSERT INTO orders (user_id, total, stripe_charge_id, items) VALUES (%s, %s, %s, %s)",
+              (user_id, total, charge.id, str(cart_items)),
+          )
+          conn.commit()
+
+          # Direct email send
+          cur.execute("SELECT email FROM users WHERE id = %s", (user_id,))
+          email = cur.fetchone()[0]
+          msg = MIMEText(f"Order confirmed! Total: ${total:.2f}")
+          msg["Subject"] = "Order Confirmation"
+          msg["From"] = "shop@example.com"
+          msg["To"] = email
+          with smtplib.SMTP("smtp.example.com") as server:
+              server.send_message(msg)
+
+          # Direct Slack notification
+          requests.post("https://hooks.slack.com/services/xxx",
+                        json={"text": f"New order from user {user_id}: ${total:.2f}"})
+
+          cur.close()
+          conn.close()
+          return {"status": "ok", "charge_id": charge.id}
+
+    good: |
+      # Six adapter types, each implementing a port owned by the core.
+      # Business logic depends only on stable interfaces.
+      # Every adapter is independently testable and replaceable.
+
+      from abc import ABC, abstractmethod
+      from dataclasses import dataclass
+      from typing import Protocol
+
+
+      # ═══════════════════════════════════════════════════════════
+      # DOMAIN + APPLICATION LAYER (core — zero imports of adapters)
+      # ═══════════════════════════════════════════════════════════
+
+      @dataclass
+      class CartItem:
+          product_id: str
+          quantity: int
+
+      @dataclass
+      class Product:
+          id: str
+          price: float
+          stock: int
+
+      @dataclass
+      class Order:
+          id: int | None
+          user_id: int
+          items: list[CartItem]
+          total: float
+          charge_id: str | None = None
+
+      @dataclass
+      class CheckoutRequest:
+          user_id: int
+          items: list[CartItem]
+          payment_token: str
+
+      @dataclass
+      class CheckoutResponse:
+          order_id: int
+          total: float
+          charge_id: str
+
+
+      # ---- Port 1: Product Repository (persistence adapter contract) ----
+      class ProductRepository(ABC):
+          @abstractmethod
+          def find_by_ids(self, product_ids: list[str]) -> list[Product]: ...
+
+
+      # ---- Port 2: Order Repository (persistence adapter contract) ----
+      class OrderRepository(ABC):
+          @abstractmethod
+          def save(self, order: Order) -> Order: ...
+
+
+      # ---- Port 3: Payment Gateway (gateway adapter contract) ----
+      class PaymentGateway(ABC):
+          @abstractmethod
+          def charge(self, amount_cents: int, token: str, metadata: dict) -> str: ...
+
+
+      # ---- Port 4: User Details (gateway adapter contract) ----
+      class UserLookup(ABC):
+          @abstractmethod
+          def find_email(self, user_id: int) -> str: ...
+
+
+      # ---- Port 5: Order Presenter (presenter adapter contract) ----
+      class CheckoutPresenter(ABC):
+          @abstractmethod
+          def present_confirmation(self, response: CheckoutResponse) -> dict: ...
+
+
+      # ---- Use case: depends only on ports ----
+      class CheckoutUseCase:
+          def __init__(
+              self,
+              products: ProductRepository,
+              orders: OrderRepository,
+              payment: PaymentGateway,
+              users: UserLookup,
+              presenter: CheckoutPresenter,
+              notifier: "OrderNotifier",
+          ) -> None:
+              self._products = products
+              self._orders = orders
+              self._payment = payment
+              self._users = users
+              self._presenter = presenter
+              self._notifier = notifier
+
+          def execute(self, request: CheckoutRequest) -> dict:
+              # Domain logic
+              prod_ids = [item.product_id for item in request.items]
+              products = {p.id: p for p in self._products.find_by_ids(prod_ids)}
+              total = 0.0
+
+              for item in request.items:
+                  prod = products.get(item.product_id)
+                  if not prod:
+                      raise ValueError(f"Unknown product: {item.product_id}")
+                  if item.quantity > prod.stock:
+                      raise ValueError(f"Insufficient stock for {item.product_id}")
+                  total += prod.price * item.quantity
+
+              # External payment processing through gateway port
+              charge_id = self._payment.charge(
+                  amount_cents=int(total * 100),
+                  token=request.payment_token,
+                  metadata={"user_id": str(request.user_id)},
+              )
+
+              order = Order(
+                  id=None,
+                  user_id=request.user_id,
+                  items=request.items,
+                  total=total,
+                  charge_id=charge_id,
+              )
+              saved = self._orders.save(order)
+
+              response = CheckoutResponse(
+                  order_id=saved.id,
+                  total=total,
+                  charge_id=charge_id,
+              )
+
+              # Notification through notifier port
+              user_email = self._users.find_email(request.user_id)
+              self._notifier.notify_order_placed(saved, user_email)
+
+              # Presentation through presenter port
+              return self._presenter.present_confirmation(response)
+
+
+      # ═══════════════════════════════════════════════════════════
+      # ADAPTER 1: Repository adapter (PostgreSQL)
+      # ═══════════════════════════════════════════════════════════
+      # import psycopg2
+      class PostgresProductRepository(ProductRepository):
+          def __init__(self, conn):
+              self._conn = conn
+
+          def find_by_ids(self, product_ids: list[str]) -> list[Product]:
+              cur = self._conn.cursor()
+              cur.execute(
+                  "SELECT id, price, stock FROM products WHERE id IN %s",
+                  (tuple(product_ids),),
+              )
+              return [Product(id=r[0], price=float(r[1]), stock=int(r[2])) for r in cur.fetchall()]
+
+
+      # ═══════════════════════════════════════════════════════════
+      # ADAPTER 2: Gateway adapter (Stripe payments)
+      # ═══════════════════════════════════════════════════════════
+      # import stripe
+      class StripePaymentGateway(PaymentGateway):
+          def __init__(self, client):
+              self._client = client
+
+          def charge(self, amount_cents: int, token: str, metadata: dict) -> str:
+              charge = self._client.Charge.create(
+                  amount=amount_cents,
+                  currency="usd",
+                  source=token,
+                  metadata=metadata,
+              )
+              return charge.id
+
+
+      # ═══════════════════════════════════════════════════════════
+      # ADAPTER 3: Controller adapter (FastAPI HTTP)
+      # ═══════════════════════════════════════════════════════════
+      # import fastapi
+      class CheckoutController:
+          def __init__(self, use_case: CheckoutUseCase) -> None:
+              self._use_case = use_case
+
+          @staticmethod
+          def register(app, use_case: CheckoutUseCase) -> None:
+              ctrl = CheckoutController(use_case)
+              app.post("/checkout/{user_id}")(ctrl.handle)
+
+          async def handle(self, request) -> dict:
+              try:
+                  body = await request.json()
+                  result = self._use_case.execute(
+                      CheckoutRequest(
+                          user_id=int(request.path_params["user_id"]),
+                          items=[CartItem(**i) for i in body["items"]],
+                          payment_token=body["stripe_token"],
+                      )
+                  )
+                  return result
+              except ValueError as e:
+                  from fastapi import HTTPException
+                  raise HTTPException(400, str(e))
+
+
+      # ═══════════════════════════════════════════════════════════
+      # ADAPTER 4: Presenter adapter (JSON:API format)
+      # ═══════════════════════════════════════════════════════════
+      class JsonApiCheckoutPresenter(CheckoutPresenter):
+          def present_confirmation(self, response: CheckoutResponse) -> dict:
+              return {
+                  "data": {
+                      "type": "orders",
+                      "id": str(response.order_id),
+                      "attributes": {
+                          "total": f"${response.total:.2f}",
+                          "charge_id": response.charge_id,
+                      },
+                  }
+              }
+
+
+      # ═══════════════════════════════════════════════════════════
+      # ADAPTER 5: Mapper adapter (ORM row → domain model translator)
+      # ═══════════════════════════════════════════════════════════
+      class ProductMapper:
+          """Explicit mapping from ORM/sqlalchemy rows to domain objects."""
+          @staticmethod
+          def row_to_product(row) -> Product:
+              return Product(id=row.id, price=row.price, stock=row.stock)
+
+
+      # ═══════════════════════════════════════════════════════════
+      # ADAPTER 6: Anticorruption layer (legacy system protection)
+      # ═══════════════════════════════════════════════════════════
+      class LegacyInventoryAnticorruption:
+          """
+          Protects the clean domain model from a legacy inventory system
+          that uses cryptic codes, outdated schemas, and inconsistent naming.
+          The core domain never sees legacy_sku, legacy_status_codes, etc.
+          """
+          def __init__(self, legacy_client):
+              self._legacy = legacy_client
+
+          def check_availability(self, product_id: str, quantity: int) -> bool:
+              # Translate domain Product → legacy SKU codes
+              legacy_sku = self._to_legacy_sku(product_id)
+              resp = self._legacy.query("CHECK_INV", {"sku": legacy_sku, "qty": quantity})
+              return self._parse_availability(resp)
+
+          def _to_legacy_sku(self, product_id: str) -> str:
+              # Domain "widget-a" → legacy "WDGT-ALPHA-V2"
+              return f"WDGT-{product_id.split('-')[1].upper()}-V2"
+
+          def _parse_availability(self, resp: dict) -> bool:
+              # Legacy returns "AVL"/"BO"/"NA" — translate to boolean
+              return resp.get("status") == "AVL"
+
+
+  - language: typescript
+    bad: |
+      // One handler doing everything: HTTP, SQL, Stripe, email, Slack.
+      // No adapter seams — testing requires the full stack running.
+
+      import { Router, Request, Response } from "express";
+      import { Pool } from "pg";
+      import Stripe from "stripe";
+      import nodemailer from "nodemailer";
+
+      const router = Router();
+      const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+      const stripe = new Stripe(process.env.STRIPE_SECRET!);
+
+      router.post("/checkout/:userId", async (req: Request, res: Response) => {
+        const { items, stripeToken } = req.body;
+        const userId = parseInt(req.params.userId);
+
+        // Direct SQL
+        const ids = items.map((i: any) => i.productId);
+        const { rows: products } = await pool.query(
+          "SELECT id, price, stock FROM products WHERE id = ANY($1)",
+          [ids],
+        );
+
+        let total = 0;
+        for (const item of items) {
+          const prod = products.find((p: any) => p.id === item.productId);
+          if (!prod) return res.status(400).json({ error: "Unknown product" });
+          if (item.qty > prod.stock) return res.status(400).json({ error: "No stock" });
+          total += prod.price * item.qty;
+        }
+
+        // Direct Stripe
+        const charge = await stripe.charges.create({
+          amount: Math.round(total * 100),
+          currency: "usd",
+          source: stripeToken,
+          metadata: { userId: userId.toString() },
+        });
+
+        // Direct SQL write
+        await pool.query(
+          "INSERT INTO orders (user_id, total, stripe_charge_id) VALUES ($1, $2, $3)",
+          [userId, total, charge.id],
+        );
+
+        // Direct email + Slack
+        const { rows: [user] } = await pool.query("SELECT email FROM users WHERE id = $1", [userId]);
+        await transporter.sendMail({ to: user.email, subject: "Order confirmed", text: `Total: $${total}` });
+        await fetch("https://hooks.slack.com/xxx", {
+          method: "POST",
+          body: JSON.stringify({ text: `Order from user ${userId}: $${total}` }),
+        });
+
+        res.json({ status: "ok", chargeId: charge.id });
+      });
+
+    good: |
+      // Six adapter types, each implementing a port owned by the core.
+
+      // ═══════════════════════════════════════════════════════
+      // DOMAIN + APPLICATION LAYER (ports only)
+      // ═══════════════════════════════════════════════════════
+
+      interface Product { id: string; price: number; stock: number; }
+      interface Order { id: number | null; userId: number; items: CartItem[]; total: number; }
+
+      // Port 1: Product Repository
+      interface ProductRepository {
+        findByIds(ids: string[]): Promise<Product[]>;
+      }
+
+      // Port 2: Order Repository
+      interface OrderRepository {
+        save(order: Order): Promise<Order>;
+      }
+
+      // Port 3: Payment Gateway
+      interface PaymentGateway {
+        charge(amountCents: number, token: string, meta: Record<string, string>): Promise<string>;
+      }
+
+      // Port 4: User Lookup
+      interface UserLookup {
+        findEmail(userId: number): Promise<string>;
+      }
+
+      // Port 5: Order Notifier
+      interface OrderNotifier {
+        notifyPlaced(order: Order, userEmail: string): Promise<void>;
+      }
+
+      // Port 6: Checkout Presenter
+      interface CheckoutPresenter {
+        present(result: CheckoutResult): unknown;
+      }
+
+      interface CheckoutResult { orderId: number; total: number; chargeId: string; }
+
+      // USE CASE
+      export class CheckoutUseCase {
+        constructor(
+          private products: ProductRepository,
+          private orders: OrderRepository,
+          private payment: PaymentGateway,
+          private users: UserLookup,
+          private notifier: OrderNotifier,
+          private presenter: CheckoutPresenter,
+        ) {}
+
+        async execute(userId: number, items: CartItem[], token: string): Promise<unknown> {
+          const prodIds = items.map(i => i.productId);
+          const products = await this.products.findByIds(prodIds);
+          const map = new Map(products.map(p => [p.id, p]));
+
+          let total = 0;
+          for (const item of items) {
+            const p = map.get(item.productId);
+            if (!p) throw new Error(`Unknown: ${item.productId}`);
+            if (item.quantity > p.stock) throw new Error(`No stock: ${item.productId}`);
+            total += p.price * item.quantity;
+          }
+
+          const chargeId = await this.payment.charge(
+            Math.round(total * 100), token, { userId: String(userId) }
+          );
+          const saved = await this.orders.save({ id: null, userId, items, total });
+          const email = await this.users.findEmail(userId);
+          await this.notifier.notifyPlaced(saved, email);
+
+          return this.presenter.present({ orderId: saved.id!, total, chargeId });
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════
+      // ADAPTERS
+      // ═══════════════════════════════════════════════════════
+
+      // Adapter 1: Repository (PostgreSQL)
+      import { Pool } from "pg";
+      export class PgProductRepository implements ProductRepository {
+        constructor(private pool: Pool) {}
+        async findByIds(ids: string[]): Promise<Product[]> {
+          const { rows } = await this.pool.query(
+            "SELECT id, price, stock FROM products WHERE id = ANY($1)", [ids]
+          );
+          return rows.map(r => ({ id: r.id, price: Number(r.price), stock: r.stock }));
+        }
+      }
+
+      // Adapter 2: Gateway (Stripe)
+      import Stripe from "stripe";
+      export class StripePaymentGateway implements PaymentGateway {
+        constructor(private client: Stripe) {}
+        async charge(amountCents: number, token: string, meta: Record<string, string>): Promise<string> {
+          const c = await this.client.charges.create({ amount: amountCents, currency: "usd", source: token, metadata: meta });
+          return c.id;
+        }
+      }
+
+      // Adapter 3: Controller (Express)
+      import { Router, Request, Response } from "express";
+      export function checkoutRoutes(uc: CheckoutUseCase): Router {
+        const r = Router();
+        r.post("/checkout/:userId", async (req: Request, res: Response) => {
+          try {
+            const result = await uc.execute(parseInt(req.params.userId), req.body.items, req.body.stripeToken);
+            res.status(201).json(result);
+          } catch (e: any) { res.status(400).json({ error: e.message }); }
+        });
+        return r;
+      }
+
+      // Adapter 4: Presenter (JSON:API)
+      export class JsonApiPresenter implements CheckoutPresenter {
+        present(r: CheckoutResult) {
+          return { data: { type: "orders", id: String(r.orderId), attributes: { total: `$${r.total.toFixed(2)}`, chargeId: r.chargeId } } };
+        }
+      }
+
+      // Adapter 5: Mapper
+      export function mapProductRow(row: any): Product {
+        return { id: row.id, price: Number(row.price), stock: row.stock };
+      }
+
+      // Adapter 6: Anticorruption Layer (legacy inventory)
+      export class LegacyInventoryACL {
+        constructor(private legacy: LegacyClient) {}
+        async check(productId: string, qty: number): Promise<boolean> {
+          const resp = await this.legacy.query("CHECK", { sku: `WDGT-${productId.split("-")[1].toUpperCase()}` });
+          return resp.status === "AVL";
+        }
+      }
+
+heuristics:
+  - >
+    Repository adapters: implement data access contracts defined by the domain/application
+    layer. They reconstitute aggregates and persist them. Repository interfaces should
+    reflect aggregate access patterns and domain intent — `OrderRepository.findPending()`,
+    not `GenericRepository<Order>`.
+  - >
+    Gateway adapters: wrap external APIs (payment processors, email services, message
+    brokers, vendor SDKs). They translate domain concepts into vendor-specific calls
+    and vendor responses back into domain objects. The core never imports the vendor SDK.
+  - >
+    Controller adapters: translate delivery input (HTTP requests, CLI args, queue messages)
+    into use-case input models. A controller should be thin — extract data, call the use
+    case, return the result. If the controller contains if/else branching on business
+    conditions, those branches belong in the use case.
+  - >
+    Presenter adapters: format use-case output for a specific delivery mechanism
+    (JSON:API, GraphQL response shapes, HTML templates, CSV exports, CLI tables).
+    The use case returns plain data; the presenter decides how to present it.
+  - >
+    Mapper adapters: explicit, testable translation between external representations
+    (ORM rows, DTOs, wire formats) and domain models. Mapping must be explicit and
+    testable — hide complex mapping in dedicated mapper objects, not scattered through
+    controllers and repositories.
+  - >
+    Anticorruption layers (ACL): protect a clean domain model from a foreign, legacy,
+    or partner system with its own terminology, schemas, and constraints. The ACL
+    translates foreign concepts into local domain language and vice versa. The local
+    core never imports a legacy type directly.
+  - >
+    All adapters share one rule: the dependency arrow points inward. An adapter imports
+    the port it implements (from the inner layer), never the reverse. The inner layer
+    does not know which adapter is connected at runtime.
+  - >
+    Name adapters by the detail they adapt: `PostgresOrderRepository`, `StripePaymentGateway`,
+    `HttpUserController`, `JsonApiPresenter`. The name tells readers exactly which external
+    system is being adapted without reading the implementation.
+  - >
+    Test each adapter class in isolation: repository adapters against a test database,
+    gateway adapters against a vendor sandbox, controller adapters with mock use cases,
+    presenter adapters with sample output models. Integration tests belong at the adapter
+    boundary, not inside business logic tests.
+  - >
+    When swapping infrastructure (PostgreSQL → MongoDB, REST → gRPC, Stripe → Braintree),
+    only the adapter changes. The port stays the same, the use case stays the same, the
+    tests stay green. This is the adapter pattern's design goal: replaceable shells
+    around a stable core.
+related_tags:
+  [adapters, repository-pattern, gateway-pattern, controller-pattern, presenter-pattern,
+   mapper-pattern, anticorruption-layer, ports-and-adapters, hexagonal-architecture,
+   clean-architecture, translation-layer, dependency-inversion]

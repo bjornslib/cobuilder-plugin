@@ -1,0 +1,475 @@
+id: characterization-tests-001
+name: Characterization Tests
+category: testing
+canonical_tags: ['testing', 'legacy-code', 'refactoring', 'safety-net']
+sources:
+  - books/working-effectively-with-legacy-code.md
+  - books/unified-software-engineering.md
+summary: |
+  Characterization tests capture what code actually does — not what it should do, not what
+  the spec says, not what anyone remembers — what it does right now. They are the safety net
+  that makes legacy refactoring possible: pin down current behavior, then improve structure
+  with confidence. Unlike specification tests that encode intent, characterization tests
+  encode reality. They are the first move in any legacy change: before you break a dependency,
+  before you extract a method, before you touch a line — lock down what the code does today.
+  Even ugly, accidental, or buggy behavior gets captured if real consumers rely on it.
+  Once protected, you can refactor, restructure, and modernize safely. Characterization
+  tests are not permanent — they evolve into specification tests as you understand intent
+  or get replaced by intentional tests for new behavior.
+
+what_are_characterization_tests:
+  summary: |
+    A characterization test is a test that documents the current behavior of existing code.
+    Unlike TDD tests that define desired behavior, characterization tests discover actual
+    behavior by exercising the system and recording outputs. The term comes from Michael
+    Feathers' "Working Effectively with Legacy Code" — the test "characterizes" code whose
+    intent is unknown, undocumented, or unreliable. The test passes if the current behavior
+    is preserved; it fails if behavior changes (intentionally or not).
+  core_principle: |
+    "Use characterization tests when you do not yet know whether the current behavior is
+    intentional." — Michael Feathers
+  distinction_from_spec_tests:
+    - aspect: "Source of truth"
+      specification_test: "The requirement or design document"
+      characterization_test: "The actual running code"
+    - aspect: "Writing process"
+      specification_test: "Write test, then write code (TDD)"
+      characterization_test: "Run code, observe output, encode output as assertions"
+    - aspect: "When it fails"
+      specification_test: "Code doesn't meet requirements (bug or incomplete)"
+      characterization_test: "Behavior changed — could be intentional improvement or regression"
+    - aspect: "Lifespan"
+      specification_test: "Permanent — encodes the contract"
+      characterization_test: "Transitional — evolves into spec test or gets replaced as intent clarifies"
+
+when_to_use:
+  summary: |
+    Characterization tests are situational, not universal. Use them when you're working with
+    code whose behavior is unclear, unreliable, or untested — the legacy scenario. Do not use
+    them for new code (TDD) or code with clear specifications (spec tests). The decision is
+    based on what you know about the code's intent.
+  triggers:
+    - condition: "No existing tests cover the code you need to change"
+      action: "Characterize externally visible behavior before editing anything."
+    - condition: "The specification is missing, outdated, or known to be wrong"
+      action: "Characterize actual behavior — the code IS the spec right now."
+    - condition: "You're refactoring (changing structure, preserving behavior)"
+      action: "Characterization tests are essential — they prove you preserved behavior."
+    - condition: "The code has known bugs that consumers depend on"
+      action: "Characterize the buggy behavior too. Fix the bug separately, with its own test."
+    - condition: "You're extracting pure logic from a tangled method"
+      action: "Characterize the whole method's output, then extract and TDD the pure part."
+    - condition: "You're breaking a dependency to enable testing"
+      action: "Characterize first through the highest observable interface, then break."
+  anti_triggers:
+    - "New feature development — use TDD, not characterization."
+    - "Code with a clear, trusted specification — write spec tests to that spec."
+    - "Exploratory/spike code — tests are wasted on throwaway experiments."
+    - "Trivial getters, setters, or data classes — characterize behavior, not structure."
+
+characterization_workflow:
+  summary: |
+    Characterization follows a specific workflow that reverses the TDD cycle. Instead of
+    Red→Green→Refactor, you Run→Record→Protect→Change. You start by understanding what
+    the code actually outputs, encode that as assertions, then use that safety net to
+    refactor or extend.
+  steps:
+    - name: "1. Identify the change point"
+      description: |
+        Narrow your focus to the specific method, class, or module you need to modify.
+        Do not characterize the entire system — work near the change point. "Identify
+        the exact area affected."
+      rules:
+        - "Trace from the requested change backward to the nearest observable boundary."
+        - "If the change is in a 500-line method, characterize just the outputs you'll affect."
+        - "Prefer the highest-level test that still isolates your change safely."
+    - name: "2. Determine if tests already exist"
+      description: |
+        Before writing new tests, check whether existing tests already protect the
+        behavior you need. Trusted tests (tests that have caught regressions before)
+        are worth more than new characterization tests. But if tests are absent, flaky,
+        or only test irrelevant paths, proceed to characterization.
+      rules:
+        - "Existing tests that are fast, deterministic, and relevant = sufficient coverage."
+        - "Existing tests that only test happy paths = insufficient for risky changes."
+        - "No tests at all = full characterization needed."
+    - name: "3. Write characterization tests"
+      description: |
+        Exercise the code with representative inputs and assert on actual outputs.
+        The key insight: you are NOT designing the "right" behavior — you are recording
+        what the code actually does. Run the code, capture its output, and encode that
+        output verbatim as the expected value in your assertion. If the output is ugly,
+        capture it ugly. If it returns an unexpected error code, capture that too.
+      rules:
+        - "Test externally visible behavior first — return values, state changes, side effects."
+        - "Prefer narrow tests around the slice you are about to modify."
+        - "Capture ugly behavior if real consumers rely on it."
+        - "Use representative inputs: typical cases, edge cases near your change, known tricky inputs."
+        - "If output is nondeterministic (timestamps, UUIDs), parameterize or mock the source of nondeterminism."
+      technique_python: |
+        # Step 1: Run the legacy code and observe output
+        >>> from legacy.inventory import InventorySystem
+        >>> inv = InventorySystem()
+        >>> inv.add_item("SKU-001", 10)
+        >>> inv.get_stock_level("SKU-001")
+        10
+        >>> inv.add_item("SKU-001", -5)  # Does it reject negative?
+        5  # Apparently not — it subtracts. Capture this.
+
+        # Step 2: Encode observed behavior as tests
+        def test_add_item_increases_stock():
+            inv = InventorySystem()
+            inv.add_item("SKU-001", 10)
+            assert inv.get_stock_level("SKU-001") == 10
+
+        def test_negative_quantity_subtracts_stock():
+            """Characterization: current behavior allows negative adds."""
+            inv = InventorySystem()
+            inv.add_item("SKU-001", 10)
+            inv.add_item("SKU-001", -5)
+            assert inv.get_stock_level("SKU-001") == 5
+
+        # These tests don't judge — they just lock in what the code does.
+      technique_typescript: |
+        // Step 1: Observe legacy behavior
+        // const formatter = new LegacyDateFormatter();
+        // formatter.format("2024-01-15")  →  "Jan 15, 2024"
+        // formatter.format("")            →  "Invalid date"
+        // formatter.format(null)          →  throws TypeError
+
+        // Step 2: Encode as characterization tests
+        describe("LegacyDateFormatter (characterization)", () => {
+          const formatter = new LegacyDateFormatter();
+
+          it("formats ISO date to readable form", () => {
+            expect(formatter.format("2024-01-15")).toBe("Jan 15, 2024");
+          });
+
+          it("returns 'Invalid date' for empty string", () => {
+            expect(formatter.format("")).toBe("Invalid date");
+          });
+
+          it("throws TypeError for null input", () => {
+            expect(() => formatter.format(null)).toThrow(TypeError);
+          });
+        });
+    - name: "4. Protect and change"
+      description: |
+        Once characterization tests are green, they form a safety net. Now you can
+        refactor structure, extract methods, break dependencies, or add new behavior —
+        and the characterization tests will catch any unintended behavior changes.
+      rules:
+        - "Run characterization tests after every refactoring step."
+        - "If a characterization test fails unexpectedly, you changed behavior — revert and try a smaller step."
+        - "If you intentionally change behavior, update or replace the characterization test."
+        - "Once behavior is protected, improve structure safely."
+
+new_behavior_with_legacy:
+  summary: |
+    When adding new behavior to legacy code, keep new-behavior tests separate from
+    characterization tests. New behavior gets TDD; old behavior gets characterization.
+    The separation makes intent explicit: characterization tests say "this is what the
+    system does," new tests say "this is what we want it to do."
+  rules:
+    - "Add focused TDD tests for the requested new behavior."
+    - "Keep characterization tests for existing behavior unless the behavior change is intentional."
+    - "Separate tests that describe legacy behavior from tests that describe new requirements."
+    - "When old behavior IS the bug you're fixing: add a characterization test first, then a new-behavior test, then fix."
+
+examples:
+  - language: python
+    bad: |
+      # Editing legacy code with no safety net — gambling.
+      # The legacy calculate_price() has been in production for 3 years.
+      # Nobody remembers all its edge cases. No tests exist.
+
+      class LegacyPricingEngine:
+          def calculate_price(self, order: dict) -> float:
+              # 200 lines of tangled logic with hard-coded rules, special
+              # customer discounts, regional multipliers, and tax edge cases.
+              base = order.get("subtotal", 0)
+              if order.get("customer_tier") == "premium":
+                  base *= 0.85  # 15% discount
+              elif order.get("customer_tier") == "wholesale":
+                  if order.get("volume", 0) > 100:
+                      base *= 0.70
+                  else:
+                      base *= 0.80
+              if order.get("region") == "EU":
+                  base *= 1.20  # VAT
+              elif order.get("region") == "US":
+                  if order.get("state") in ("CA", "NY"):
+                      base *= 1.0875
+              # ... 150 more lines of undocumented rules
+              return round(base, 2)
+
+
+      # "I'll just add a loyalty discount and hope nothing breaks."
+      class LegacyPricingEngine:
+          def calculate_price(self, order: dict) -> float:
+              base = order.get("subtotal", 0)
+              # NEW: 5% loyalty discount for 5+ year customers
+              if order.get("years_as_customer", 0) >= 5:
+                  base *= 0.95
+              # ... existing logic ...
+              return round(base, 2)
+      # Did this break wholesale tier stacking? Regional tax order?
+      # Nobody knows until production burns.
+    good: |
+      # Step 1: Characterize current behavior before touching anything.
+
+      import pytest
+      from legacy.pricing import LegacyPricingEngine
+
+
+      class TestLegacyPricingCharacterization:
+          """Lock down current behavior before adding loyalty discount."""
+
+          def test_standard_customer_no_discount(self):
+              engine = LegacyPricingEngine()
+              order = {"subtotal": 100.0, "customer_tier": "standard", "region": "US", "state": "TX"}
+              # Observed output: 100.0
+              assert engine.calculate_price(order) == 100.0
+
+          def test_premium_tier_gets_15_percent_off(self):
+              engine = LegacyPricingEngine()
+              order = {"subtotal": 100.0, "customer_tier": "premium", "region": "US", "state": "TX"}
+              # Observed output: 100 * 0.85 = 85.0
+              assert engine.calculate_price(order) == 85.0
+
+          def test_wholesale_high_volume_gets_30_percent_off(self):
+              engine = LegacyPricingEngine()
+              order = {"subtotal": 100.0, "customer_tier": "wholesale", "volume": 200,
+                       "region": "US", "state": "TX"}
+              assert engine.calculate_price(order) == 70.0
+
+          def test_eu_customers_pay_20_percent_vat(self):
+              engine = LegacyPricingEngine()
+              order = {"subtotal": 100.0, "customer_tier": "standard", "region": "EU"}
+              assert engine.calculate_price(order) == 120.0
+
+          def test_ca_customers_pay_state_tax(self):
+              engine = LegacyPricingEngine()
+              order = {"subtotal": 100.0, "customer_tier": "standard", "region": "US", "state": "CA"}
+              assert engine.calculate_price(order) == 108.75
+
+          def test_discount_stacking_premium_and_eu(self):
+              """Characterization: premium discount applies BEFORE VAT."""
+              engine = LegacyPricingEngine()
+              order = {"subtotal": 100.0, "customer_tier": "premium", "region": "EU"}
+              # Observed: (100 * 0.85) * 1.20 = 102.0
+              assert engine.calculate_price(order) == 102.0
+
+          def test_missing_tier_behavior(self):
+              """Characterization: what happens when customer_tier is absent?"""
+              engine = LegacyPricingEngine()
+              order = {"subtotal": 100.0, "region": "US", "state": "TX"}
+              # Observed: defaults to no discount — 100.0
+              assert engine.calculate_price(order) == 100.0
+
+          def test_zero_subtotal(self):
+              """Characterization: edge case — zero subtotal."""
+              engine = LegacyPricingEngine()
+              order = {"subtotal": 0.0, "customer_tier": "premium", "region": "US", "state": "TX"}
+              assert engine.calculate_price(order) == 0.0
+
+
+      # All characterization tests pass. Now we have a safety net.
+      # Step 2: Add the loyalty discount with confidence.
+
+      class LegacyPricingEngine:
+          def calculate_price(self, order: dict) -> float:
+              base = order.get("subtotal", 0)
+              # NEW: 5% loyalty discount for 5+ year customers
+              if order.get("years_as_customer", 0) >= 5:
+                  base *= 0.95
+              # ... existing logic (unchanged) ...
+              if order.get("customer_tier") == "premium":
+                  base *= 0.85
+              elif order.get("customer_tier") == "wholesale":
+                  if order.get("volume", 0) > 100:
+                      base *= 0.70
+                  else:
+                      base *= 0.80
+              if order.get("region") == "EU":
+                  base *= 1.20
+              elif order.get("region") == "US":
+                  if order.get("state") in ("CA", "NY"):
+                      base *= 1.0875
+              return round(base, 2)
+
+
+      # Step 3: Add a SPEC test for the NEW behavior
+      def test_loyalty_discount_for_5_year_customer():
+          """New behavior: 5-year customers get 5% off, then tier/region apply."""
+          engine = LegacyPricingEngine()
+          order = {"subtotal": 100.0, "customer_tier": "standard", "region": "US",
+                   "state": "TX", "years_as_customer": 6}
+          # Expected: 100 * 0.95 = 95.0
+          assert engine.calculate_price(order) == 95.0
+
+
+      # Step 4: Update characterization tests that changed intentionally
+      # (The existing characterization tests still pass — loyalty is additive,
+      #  not conflicting. If any characterization test broke, we'd know immediately.)
+
+  - language: typescript
+    bad: |
+      // No characterization — changing legacy formatting with fingers crossed.
+
+      class LegacyReportFormatter {
+        formatHeader(title: string, date: Date): string {
+          // Years of accumulated formatting rules — some contradictory.
+          let result = "";
+          if (title.length > 50) {
+            result = title.substring(0, 47) + "...";
+          } else {
+            result = title;
+          }
+          const dateStr = date.toISOString().split("T")[0];
+          // Bug: empty title produces "Report: " with trailing space
+          result = `Report: ${result} (${dateStr})`;
+          // Bug: double spaces when title starts with space
+          return result.trim();  // trim() was added later as band-aid
+        }
+      }
+
+      // "Just need to add an author field" — no safety net.
+      formatHeader(title: string, date: Date, author?: string): string {
+        let result = "";
+        if (title.length > 50) {
+          result = title.substring(0, 47) + "...";
+        } else {
+          result = title;
+        }
+        const dateStr = date.toISOString().split("T")[0];
+        result = `Report: ${result} (${dateStr})`;
+        if (author) {
+          result += ` by ${author}`;  // Did this break anything? Who knows.
+        }
+        return result.trim();
+      }
+    good: |
+      // Step 1: Characterize current behavior.
+
+      import { LegacyReportFormatter } from "./LegacyReportFormatter";
+
+      describe("LegacyReportFormatter (characterization)", () => {
+        const formatter = new LegacyReportFormatter();
+        const testDate = new Date("2024-03-15");
+
+        it("formats a standard title and date", () => {
+          expect(formatter.formatHeader("Q1 Results", testDate))
+            .toBe("Report: Q1 Results (2024-03-15)");
+        });
+
+        it("truncates titles longer than 50 characters", () => {
+          const longTitle = "A".repeat(60);
+          const result = formatter.formatHeader(longTitle, testDate);
+          expect(result).toBe(
+            `Report: ${"A".repeat(47)}... (2024-03-15)`
+          );
+        });
+
+        it("handles empty title — produces 'Report: ' with trailing space trimmed", () => {
+          // Characterization: this IS the current behavior, bug or not.
+          expect(formatter.formatHeader("", testDate))
+            .toBe("Report:  (2024-03-15)");
+        });
+
+        it("trims leading/trailing spaces in title", () => {
+          expect(formatter.formatHeader("  Sales  ", testDate))
+            .toBe("Report: Sales (2024-03-15)");
+        });
+      });
+
+      // Step 2: Add author field safely — characterization tests catch breakage.
+
+      class LegacyReportFormatter {
+        formatHeader(title: string, date: Date, author?: string): string {
+          let result = "";
+          if (title.length > 50) {
+            result = title.substring(0, 47) + "...";
+          } else {
+            result = title;
+          }
+          const dateStr = date.toISOString().split("T")[0];
+          result = `Report: ${result} (${dateStr})`;
+          if (author) {
+            result += ` by ${author}`;
+          }
+          return result.trim();
+        }
+      }
+
+      // Characterization tests still pass. New behavior test:
+      describe("LegacyReportFormatter (new behavior)", () => {
+        it("appends author when provided", () => {
+          const formatter = new LegacyReportFormatter();
+          expect(formatter.formatHeader("Q1 Results", testDate, "Alice"))
+            .toBe("Report: Q1 Results (2024-03-15) by Alice");
+        });
+      });
+
+evolving_characterization_tests:
+  summary: |
+    Characterization tests are not a permanent fixture. As you understand the code's intent,
+    evolve them: document WHY the behavior exists, replace accidental behavior with intentional
+    tests, and remove characterization tests that duplicate specification tests. The goal is a
+    test suite that describes intent, not merely records history.
+  evolution_path:
+    - stage: "Discovery"
+      action: "Characterization tests capture observed behavior verbatim."
+      example: "assert engine.calculate_price(order) == 102.0  # observed"
+    - stage: "Understanding"
+      action: "Add comments explaining WHY the behavior exists."
+      example: "assert engine.calculate_price(order) == 102.0  # premium discount applied before VAT"
+    - stage: "Refinement"
+      action: "Replace characterization tests with specification tests as intent clarifies."
+      example: "def test_discount_applied_before_tax(): ...  # now a spec"
+    - stage: "Retirement"
+      action: "Remove characterization tests fully covered by specification tests."
+      example: "Delete characterization that only duplicates spec test coverage."
+
+characterization_and_design:
+  summary: |
+    Characterization tests reveal design problems, just like TDD test pain does.
+    If a characterization test requires 30 lines of setup, the design is telling
+    you something: the class has too many dependencies, mixed concerns, or hidden
+    couplings. Don't just characterize — use the test pain to guide refactoring.
+  design_signals:
+    - signal: "Cannot exercise the method without a full database"
+      design_problem: "Business logic coupled to persistence"
+      action: "Characterize through whatever interface works, then extract pure logic"
+    - signal: "Method takes 8 parameters, half of which are null in most callers"
+      design_problem: "Method does too many things; missing cohesive abstraction"
+      action: "Characterize the specific path you need, then split the method"
+    - signal: "Output depends on global mutable state"
+      design_problem: "Hidden inputs make behavior nondeterministic"
+      action: "Characterize after controlling the global state, then inject the dependency"
+    - signal: "Method is 400 lines with intertwined computation and I/O"
+      design_problem: "No separation of policy from mechanism"
+      action: "Characterize end-to-end output, then extract pure computation"
+
+heuristics:
+  - "Characterization tests are the first move in legacy code — before seams, before extraction, before any edit."
+  - "Test externally visible behavior first. Implementation details change; outputs are the contract."
+  - "Prefer narrow characterization around the change point. Characterizing the whole module is analysis paralysis."
+  - "Capture ugly behavior if real consumers depend on it. Ugly is a description, not a judgment."
+  - "Separate characterization from specification — different intent, different lifespan."
+  - "When characterization tests fail, ask: did I change behavior intentionally or accidentally?"
+  - "Characterization tests are a bridge: they get you from 'untested legacy' to 'tested code.' Cross it and move on."
+  - "If a characterization test requires too much setup, the design is telling you something useful — listen."
+  - "Run characterization tests after every refactoring step. A failure on step 3 of 20 means undo step 3, not steps 1–20."
+  - "When the legacy code IS the specification (no docs, no product owner memory), characterization tests ARE your spec."
+
+pitfalls:
+  - "Characterizing everything instead of the change point — perfect characterization of irrelevant code is wasted effort."
+  - "Over-characterizing implementation details — tests that assert internal intermediate values break on any refactor."
+  - "Treating characterization tests as permanent — they should evolve into spec tests or get replaced."
+  - "Skipping characterization because 'the change is small' — small changes in tangled code break unexpected things."
+  - "Using characterization as an excuse to never write specification tests — characterization captures now, spec captures intent."
+
+related_tags:
+  [characterization-tests, legacy-code, safety-net, refactoring, working-effectively-with-legacy-code,
+   michael-feathers, test-first, tdd, behavior-preservation, regression-tests, golden-master-testing]

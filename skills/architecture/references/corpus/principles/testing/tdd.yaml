@@ -1,0 +1,457 @@
+id: tdd-001
+name: Test-Driven Development (TDD)
+category: testing
+canonical_tags: ['testing', 'tdd', 'design', 'feedback']
+sources:
+  - books/clean-code.md
+  - books/the-pragmatic-programmer.md
+  - books/unified-software-engineering.md
+  - books/working-effectively-with-legacy-code.md
+summary: |
+  TDD is a design discipline, not a testing afterthought. The Red-Green-Refactor cycle
+  forces you to articulate the contract before the implementation: write a failing test
+  (Red), make it pass with the simplest code (Green), then improve structure without
+  changing behavior (Refactor). The Pragmatic Programmer's feedback-loop principle makes
+  TDD the natural engineering rhythm — shorten the time between intent and verification.
+  TDD produces code that is testable by construction, not by retrofit. Every test is an
+  executable specification; the test suite becomes living documentation of what the
+  system should do. When working with legacy code, TDD applies to new behavior sprouted
+  beside existing code — new methods, new classes, and new seams all start with a test.
+
+cycle:
+  summary: |
+    The TDD cycle has three phases. You stay in each phase only as long as needed,
+    then move on. The rhythm is rapid — seconds or minutes, not hours.
+  phases:
+    - name: Red
+      description: >
+        Write exactly one failing test. The test must be specific enough to fail for
+        the right reason (not a syntax error, not a missing import — a meaningful
+        assertion failure). If you cannot write a test because the code is untestable,
+        the design is telling you something: find a seam, inject a dependency, or
+        extract a pure function.
+      rules:
+        - "The test must exercise exactly one new behavior or constraint."
+        - "The test name must describe the scenario and expected outcome."
+        - "If writing the test requires too much setup, refactor the design first."
+        - "Run the test and verify it fails with the expected assertion, not a crash."
+    - name: Green
+      description: >
+        Write the simplest code that makes the test pass. "Simplest" means fewest
+        concepts, not fewest characters. Duplication is acceptable in Green — you will
+        remove it in Refactor. Resist the temptation to implement more than the test
+        demands. Over-implementation produces untested code paths.
+      rules:
+        - "Do not add behavior beyond what the failing test requires."
+        - "Hard-coding the expected return value IS acceptable if it's the simplest pass."
+        - "If the test still fails, the test is wrong or the production code is wrong — fix one, not both simultaneously."
+        - "Run ALL tests — a new Green must not break existing Reds."
+    - name: Refactor
+      description: >
+        Improve the internal structure without changing observable behavior. Remove
+        duplication (the kind that duplicates knowledge, not just text). Improve names.
+        Extract methods that clarify intent. The test suite is your safety net — if
+        any test breaks, you changed behavior, not structure.
+      rules:
+        - "Do not add new tests or new behavior during Refactor."
+        - "Remove duplication introduced in Green."
+        - "Improve names to reflect newly clarified intent."
+        - "Run all tests after every refactoring step."
+        - "If a refactor feels risky, do it in smaller steps."
+
+tdd_strategies:
+  summary: |
+    Kent Beck describes three strategies for moving from Red to Green. Choose
+    the strategy that keeps you moving forward with the least risk. Each has a
+    place — the skill is knowing when to use which.
+  strategies:
+    - name: Fake It ('Til You Make It)
+      description: >
+        Return a hard-coded constant and gradually replace it with variables.
+        This is the simplest possible Green — you know the answer the test
+        expects, so you return it directly. In the next cycle, a new test with
+        different inputs forces you to replace the constant with real logic.
+        Fake It is a psychological trick: it keeps you moving through
+        Red→Green→Refactor without stopping to design. The design emerges
+        as the fakes are incrementally replaced.
+      when_to_use:
+        - "When you're unsure of the implementation and want fast feedback."
+        - "When the test drives a simple transformation (return value, flag)."
+        - "When over-thinking the Green step would slow the cycle."
+      rules:
+        - "The fake must satisfy the test exactly — no more, no less."
+        - "A second test with different inputs should break the fake."
+        - "Replace the fake with real logic as soon as a test demands it."
+    - name: Triangulation
+      description: >
+        Drive abstraction by writing two or more examples that differ only in
+        the axis you want to generalize. The first test establishes a concrete
+        case; the second test forces you to find the pattern connecting them.
+        Triangulation is how you discover the right abstraction instead of
+        guessing it. Only when two (or more) tests point in the same direction
+        do you know which axis to abstract on. Beck's rule: "Only generalize
+        when you have two or more examples."
+      when_to_use:
+        - "When the correct abstraction is not obvious from a single case."
+        - "When you're designing an algorithm and need to discover the pattern."
+        - "When you're tempted to over-generalize prematurely."
+      rules:
+        - "Write the first test with concrete values and simplest Green."
+        - "Write a second test that varies exactly one axis (different input, different expected output)."
+        - "Generalize only when you have at least two concrete examples pointing at the same abstraction."
+        - "If the second test passes without generalization, you haven't triangulated — write a third test."
+    - name: Obvious Implementation
+      description: >
+        When the implementation is trivially clear, type it in directly. No need
+        to fake or triangulate if you can see the whole solution. The Pragmatic
+        Programmer's rule: don't waste ceremony on the obvious. But if the
+        obvious implementation doesn't work on the first try, fall back to
+        Fake It or Triangulation — you were wrong about "obvious."
+      when_to_use:
+        - "When the logic is simple and you're confident in the solution."
+        - "When you've solved this exact problem before."
+        - "For pure functions with no dependencies or side effects."
+      rules:
+        - "The implementation must still be the simplest thing that passes."
+        - "If any test fails, abandon Obvious Implementation and Fake It."
+        - "Do not use Obvious Implementation to skip writing the test first."
+
+baby_steps:
+  summary: |
+    Baby steps are the smallest possible change that moves the system from one
+    known state to the next — and keeps the bar green. Each step is so trivial
+    that you cannot get it wrong. A baby step should take seconds, not minutes.
+    This is the discipline that makes TDD sustainable at scale: when every step
+    is reversible and verified, you never fear breaking things. The rhythm is
+    Red (seconds), Green (seconds), Refactor (seconds), then repeat. If a step
+    feels large, it's not a baby step — split it further.
+  rules:
+    - "A baby step changes exactly ONE thing: one test, one line of production code, one rename."
+    - "Run all tests after every step. If you can't run tests in under 2 seconds, fix the suite."
+    - "If you're stuck on a Red for more than 2 minutes, revert and take a smaller step."
+    - "Commit on every Green. Version control is your undo stack for baby steps."
+    - "Baby steps apply to Refactor too: rename one variable, extract one method, run tests, repeat."
+  technique: |
+    # Baby-step TDD for a simple stack (Python)
+
+    # Step 1: RED — test that a new stack is empty
+    def test_new_stack_is_empty():
+        stack = Stack()
+        assert stack.is_empty()
+
+    # Step 2: GREEN — minimal Stack class
+    class Stack:
+        def is_empty(self):
+            return True
+
+    # Step 3: RED — push then not empty
+    def test_after_push_stack_is_not_empty():
+        stack = Stack()
+        stack.push(1)
+        assert not stack.is_empty()
+
+    # Step 4: GREEN — add push, update is_empty
+    class Stack:
+        def __init__(self):
+            self._items = []
+        def push(self, item):
+            self._items.append(item)
+        def is_empty(self):
+            return len(self._items) == 0
+
+    # Step 5: REFACTOR — rename _items for clarity
+    # Tests still green. One trivial rename, verified.
+    # Continue: pop, peek, LIFO ordering — one baby step per test.
+
+tdd_rhythms:
+  summary: |
+    TDD operates at multiple rhythms, not just the micro Red-Green-Refactor
+    cycle. The Pragmatic Programmer emphasizes that sustainable engineering
+    depends on finding and maintaining the right cadence at every scale.
+    A rhythm too fast burns you out; too slow and feedback arrives too late.
+  rhythms:
+    - name: Seconds — The TDD Cycle
+      description: >
+        Red, Green, Refactor. Each phase lasts seconds. The test runner must
+        complete in under a second or two for this rhythm to work. If the suite
+        is slow, the rhythm breaks — you start checking email between runs,
+        context-switching, and losing the tight feedback loop. Keep the unit
+        test suite fast by design: no database, no network, no filesystem.
+    - name: Minutes — The Feature Cadence
+      description: >
+        A full feature or behavior implemented through multiple TDD cycles
+        over 15–60 minutes. You start with the simplest test, triangulate
+        through edge cases, and end with a refactored, tested, documented
+        piece of behavior. Commit at this boundary. The feature cadence
+        is the checkpoint: if you can't finish a feature in one session,
+        you have either too-large stories or too-slow tests.
+    - name: Hours — The Integration Beat
+      description: >
+        Every few hours, run the full test suite (unit + integration + E2E).
+        This catches integration surprises that the fast unit suite misses.
+        CI runs this on every push, but locally you should run it before
+        opening a PR. If the full suite takes more than 10 minutes, invest
+        in parallelization and test restructuring — the integration beat
+        must be short enough that you actually run it.
+    - name: Daily — The Refactoring Rhythm
+      description: >
+        At the start (or end) of each day, scan the codebase for smells that
+        accumulated during feature work. Refactor with the safety net of a
+        green suite. This is the "leave the campground cleaner" principle:
+        daily incremental improvement prevents the kind of rot that makes
+        weeks-long refactoring projects necessary. TDD's Refactor phase at
+        daily scale.
+  rules:
+    - "If your unit tests take more than 2 seconds, the seconds rhythm is broken — profile and fix."
+    - "Pair the seconds rhythm with a test watcher (ptw, jest --watch) for instant feedback."
+    - "Time-box each TDD session: if you go 90 minutes without a commit, something is wrong."
+    - "The daily refactoring rhythm is non-negotiable in a TDD codebase — skip it and debt compounds."
+
+examples:
+  - language: python
+    bad: |
+      # Writing all the code first, then tests — "test-last" — the tests
+      # only verify what you already built. No design pressure.
+      #
+      # The code has hidden assumptions: what happens with empty orders?
+      # What about negative prices? The tests won't find these because
+      # they're written to match the implementation, not the contract.
+
+      class OrderService:
+          def calculate_total(self, items: list[dict]) -> float:
+              total = sum(item["price"] * item["quantity"] for item in items)
+              if total > 100:
+                  total *= 0.9  # 10% discount
+              return total
+
+
+      # Tests written after — they ratify the implementation, warts and all
+      class TestOrderService:
+          def test_normal_order(self):
+              svc = OrderService()
+              assert svc.calculate_total([{"price": 10, "quantity": 2}]) == 20
+
+          def test_discount_applied(self):
+              svc = OrderService()
+              assert svc.calculate_total([{"price": 50, "quantity": 3}]) == 135
+              # Wait — is this right? 150 * 0.9 = 135. But the test
+              # doesn't assert WHY 135; it just matches the implementation.
+    good: |
+      # TDD: Red → Green → Refactor, one test at a time.
+
+      # === RED: write the failing test first ===
+      def test_order_total_is_sum_of_items():
+          """An order's total is the sum of price × quantity for each item."""
+          service = OrderService()
+          items = [
+              {"price": 10.0, "quantity": 2},
+              {"price": 15.0, "quantity": 1},
+          ]
+          assert service.calculate_total(items) == 35.0  # 20 + 15
+      # FAILS: OrderService doesn't exist yet
+
+
+      # === GREEN: simplest code that passes ===
+      class OrderService:
+          def calculate_total(self, items):
+              return 35.0  # Hard-coded — simplest pass
+      # TEST PASSES. But obviously wrong. That's fine — next test drives change.
+
+
+      # === RED: second test, different values force real logic ===
+      def test_different_items_produce_different_total():
+          service = OrderService()
+          items = [{"price": 5.0, "quantity": 3}]
+          assert service.calculate_total(items) == 15.0
+      # FAILS: hard-coded 35.0
+
+
+      # === GREEN: generalize to real logic ===
+      class OrderService:
+          def calculate_total(self, items):
+              return sum(item["price"] * item["quantity"] for item in items)
+      # Both tests pass. Duplication removed by generalization.
+
+
+      # === RED: discount rule — orders over $100 get 10% off ===
+      def test_orders_over_100_get_10_percent_discount():
+          service = OrderService()
+          items = [{"price": 50.0, "quantity": 3}]
+          assert service.calculate_total(items) == 135.0  # 150 * 0.9
+      # FAILS: returns 150, no discount
+
+
+      # === GREEN: add discount, simplest way ===
+      class OrderService:
+          def __init__(self, discount_threshold=100.0, discount_rate=0.9):
+              self._threshold = discount_threshold
+              self._rate = discount_rate
+
+          def calculate_total(self, items):
+              total = sum(item["price"] * item["quantity"] for item in items)
+              if total > self._threshold:
+                  total *= self._rate
+              return total
+      # All three tests pass.
+
+
+      # === RED: boundary — exactly $100 gets NO discount ===
+      def test_exactly_100_gets_no_discount():
+          service = OrderService()
+          items = [{"price": 100.0, "quantity": 1}]
+          assert service.calculate_total(items) == 100.0
+      # FAILS if > vs >= boundary is wrong — test catches the decision.
+
+
+      # === REFACTOR: extract value objects, improve names ===
+      from dataclasses import dataclass
+
+      @dataclass(frozen=True)
+      class LineItem:
+          price: float
+          quantity: int
+
+          @property
+          def subtotal(self) -> float:
+              return self.price * self.quantity
+
+      class OrderService:
+          def __init__(self, discount_threshold=100.0, discount_rate=0.9):
+              self._threshold = discount_threshold
+              self._rate = discount_rate
+
+          def calculate_total(self, items: list[LineItem]) -> float:
+              total = sum(item.subtotal for item in items)
+              if total > self._threshold:
+                  total = round(total * self._rate, 2)
+              return total
+      # All tests still pass. Structure improved, behavior preserved.
+
+  - language: typescript
+    bad: |
+      // Test-last: tests ratify whatever the implementation does.
+      // Missing edge cases: what about empty input? Whitespace? Special chars?
+
+      export function slugify(text: string): string {
+        return text.toLowerCase().replace(/\\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      }
+
+      describe("slugify", () => {
+        it("handles basic text", () => {
+          expect(slugify("Hello World")).toBe("hello-world");
+        });
+        // No test for: leading/trailing spaces, multiple spaces,
+        // special characters at boundaries, empty string, all-special-chars
+      });
+    good: |
+      // TDD: each test drives one design decision.
+
+      // RED 1: basic slugification
+      describe("slugify", () => {
+        it("lowercases and replaces single spaces with hyphens", () => {
+          expect(slugify("Hello World")).toBe("hello-world");
+        });
+      });
+      // GREEN 1: text.toLowerCase().replace(/\\s/, '-')
+
+      // RED 2: multiple spaces collapse to one hyphen
+      describe("slugify", () => {
+        it("collapses multiple spaces into one hyphen", () => {
+          expect(slugify("Hello   World")).toBe("hello-world");
+        });
+      });
+      // GREEN 2: replace(/\\s+/g, '-')
+
+      // RED 3: leading/trailing spaces trimmed
+      describe("slugify", () => {
+        it("trims leading and trailing whitespace", () => {
+          expect(slugify("  Hello World  ")).toBe("hello-world");
+        });
+      });
+      // GREEN 3: add .trim() before processing
+
+      // RED 4: special characters removed
+      describe("slugify", () => {
+        it("removes special characters", () => {
+          expect(slugify("Hello, World!")).toBe("hello-world");
+        });
+      });
+      // GREEN 4: add .replace(/[^a-z0-9-]/g, '')
+
+      // RED 5: empty input returns empty string
+      describe("slugify", () => {
+        it("returns empty string for empty input", () => {
+          expect(slugify("")).toBe("");
+        });
+      });
+      // GREEN 5: guard clause at top
+
+      // REFACTOR: final clean implementation
+      export function slugify(text: string): string {
+        return text
+          .trim()
+          .toLowerCase()
+          .replace(/\\s+/g, '-')
+          .replace(/[^a-z0-9-]/g, '')
+          .replace(/-+/g, '-')     // collapse multiple hyphens
+          .replace(/^-|-$/g, '');  // trim leading/trailing hyphens
+      }
+
+tdd_and_legacy:
+  summary: |
+    In legacy code, TDD applies to new behavior only — sprout methods, sprout
+    classes, and new seams. You cannot TDD a refactoring of existing code because
+    refactoring changes structure without changing behavior; the existing behavior
+    IS the specification. Wrap untested code with characterization tests first,
+    then apply TDD to new code.
+  rules:
+    - "For new behavior added to legacy code: TDD as normal (Red → Green → Refactor)."
+    - "For refactoring existing legacy code: characterization tests first, then structural change."
+    - "For extracting pure logic from legacy code: TDD the extracted function separately."
+    - "For introducing a seam: TDD the seam's contract, then use the seam in legacy code."
+
+tdd_and_design:
+  summary: |
+    TDD is a design tool. If a class is hard to test, it's hard to use. Tests that
+    require excessive setup, mock chains, or framework bootstrapping are revealing
+    design problems: too many dependencies, hidden couplings, mixed concerns, or
+    missing abstractions. Listen to the test pain — it's pointing at where the
+    design needs improvement.
+  design_signals:
+    - signal: "Cannot instantiate the class without a database connection"
+      design_problem: "Class mixes business logic with persistence"
+      fix: "Separate policy from mechanism; inject a repository interface"
+    - signal: "Need to mock 5 collaborators for a simple test"
+      design_problem: "Class has too many responsibilities or violates SRP"
+      fix: "Split into smaller, focused classes; use facade if needed"
+    - signal: "Test setup is 30 lines for a 3-line assertion"
+      design_problem: "Hidden dependencies or temporal coupling"
+      fix: "Make dependencies explicit; use builders for test data"
+    - signal: "Cannot test without running the full application"
+      design_problem: "Business logic trapped in framework entry points"
+      fix: "Extract pure logic from controllers/handlers; test independently"
+
+heuristics:
+  - "The Red phase is where design happens — if you can't write the test, the API is wrong."
+  - "Green is not about correctness — it's about making the test pass. Correctness comes from the test itself plus all prior tests."
+  - "Never skip Refactor — it's where the design accumulates. Without Refactor, TDD produces working but rotting code."
+  - "Run all tests on every cycle. A fast suite (seconds, not minutes) makes TDD sustainable."
+  - "TDD for algorithms: test the contract, not the implementation. Test what, not how."
+  - "TDD for integration: test that the adapter correctly translates between external and internal formats; mock the external side."
+  - "TDD with property-based testing: properties define the contract; TDD drives the implementation of each property."
+  - "The Pragmatic Programmer's 'tracer bullet' is TDD at architecture scale — build a thin end-to-end slice with tests first."
+  - "If you can't think of the next test, you may be done — or you may need to step back and reconsider the contract."
+  - "TDD doesn't mean no design upfront. You still need architectural decisions about boundaries and ownership — TDD fills in the details."
+  - "A test that never failed is not a TDD test — you don't know if it actually asserts anything. Always see Red before Green."
+
+pitfalls:
+  - "Testing trivial getters/setters produces noise, not safety. Test behavior, not structure."
+  - "Over-mocking in TDD couples tests to implementation details — mock at architectural boundaries, not every collaborator."
+  - "Skipping Refactor because 'it works' — the debt compounds. Two cycles without Refactor is a warning sign."
+  - "Writing multiple failing tests at once — you lose the tight Red→Green feedback. One test per cycle."
+  - "TDD as religion — when exploration or prototyping is the goal, tests can wait. Be pragmatic."
+
+related_tags:
+  [tdd, test-driven-development, red-green-refactor, feedback-loops, design-pressure,
+   executable-specification, test-first, unit-testing, refactoring, pragmatic-programmer,
+   clean-architecture, legacy-code, characterization-tests]

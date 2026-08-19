@@ -1,0 +1,125 @@
+id: dataclasses-namedtuples-013
+name: Data Classes vs Named Tuples
+category: design
+canonical_tags: ['python', 'design', 'data-structures']
+sources:
+  - books/clean-code.md
+  - books/clean-architecture.md
+  - open_sources/python/pep-0008.html
+summary: >-
+  Choose the right data container for the job. `dataclasses.dataclass` is the modern default for mutable or
+  complex data objects — it auto-generates `__init__`, `__repr__`, and `__eq__`, supports default values,
+  type hints, field-level metadata, and optional immutability (`frozen=True`). `collections.namedtuple` is
+  a lightweight immutable tuple with named field access — useful for simple, hashable records where tuple
+  unpacking and memory compactness matter. `typing.NamedTuple` combines namedtuple with type hints.
+  Pydantic `BaseModel` adds runtime validation, serialisation, and parsing for external data boundaries
+  (APIs, configs). Plain `dict` with string keys is an anti-pattern when field names are known at
+  development time — it hides the contract, breaks IDE autocompletion, and invites KeyErrors.
+  The principle: make the structure of your data explicit with a typed container — never pass around
+  opaque dicts whose keys are tribal knowledge.
+examples:
+  - language: python
+    bad: |
+      """Dicts-as-structs: field names exist only in string literals,
+      no IDE support, contracts hidden, easy to misspell keys.
+      Also: manually writing __init__ / __repr__ boilerplate."""
+
+      # Contract hidden in string keys — what are the expected fields?
+      def create_user(data: dict) -> dict:
+          return {
+              "user_name": data["name"],       # KeyError if missing.
+              "user_email": data["email"],
+              "user_age": data.get("age", 0),  # Silent default.
+          }
+
+      # Caller must know the magic strings.
+      user = create_user({"name": "Alice", "email": "alice@e.com"})
+      print(user["user_name"])  # No autocomplete, no mypy check.
+
+      # Manual class with boilerplate — easy to get __eq__ wrong.
+      class Order:
+          def __init__(self, id: str, total: float, status: str):
+              self.id = id
+              self.total = total
+              self.status = status
+
+          def __repr__(self):
+              return f"Order(id={self.id!r}, total={self.total}, status={self.status!r})"
+
+          def __eq__(self, other):
+              if not isinstance(other, Order):
+                  return NotImplemented
+              return (self.id == other.id and
+                      self.total == other.total and
+                      self.status == other.status)
+
+      # namedtuple for something that should be a class.
+      from collections import namedtuple
+
+      # Named fields, but no type hints, no default values,
+      # and ._replace() is obscure.
+      Point = namedtuple("Point", ["x", "y", "z"])
+      p = Point(1, 2, 3)  # What type are these? Docs don't say.
+    good: |
+      """Explicit data structures: dataclass for mutable objects,
+      NamedTuple for immutable records, Pydantic for I/O boundaries."""
+
+      from dataclasses import dataclass, field
+      from typing import NamedTuple
+
+      # ---- dataclass: default choice for data objects ----
+      @dataclass
+      class Order:
+          """Auto-generated __init__, __repr__, __eq__."""
+          id: str
+          total: float
+          status: str = "pending"  # Default value.
+
+      @dataclass(frozen=True)
+      class ImmutableConfig:
+          """frozen=True: hashable, immutable — safe as dict key."""
+          host: str
+          port: int = 5432
+          use_tls: bool = True
+
+      @dataclass
+      class User:
+          name: str
+          email: str
+          age: int = 0
+          tags: list[str] = field(default_factory=list)
+          # field(default_factory=...) for mutable defaults.
+
+      # ---- NamedTuple: lightweight immutable records ----
+      class Point(NamedTuple):
+          """Type-hinted named tuple — immutable, hashable,
+          unpackable, memory-efficient."""
+          x: float
+          y: float
+          z: float = 0.0
+
+      p = Point(1.0, 2.0)
+      x, y, _ = p  # Tuple unpacking.
+      d = {p: "origin"}  # Hashable → usable as dict key.
+
+      # ---- Pydantic: for external data boundaries ----
+      from pydantic import BaseModel, EmailStr, field_validator
+
+      class CreateUserRequest(BaseModel):
+          """API payload: validated, parsed, serialisable."""
+          name: str
+          email: EmailStr
+          age: int = 0
+
+          @field_validator("age")
+          @classmethod
+          def age_must_be_reasonable(cls, v: int) -> int:
+              if not 0 <= v <= 150:
+                  raise ValueError("Age must be 0–150")
+              return v
+
+      # Parsing from untrusted input with full validation.
+      data = CreateUserRequest.model_validate_json(
+          '{"name":"Alice","email":"alice@e.com"}'
+      )
+      # data.model_dump() → dict, data.model_dump_json() → str.

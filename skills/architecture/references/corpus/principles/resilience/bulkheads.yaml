@@ -1,0 +1,516 @@
+id: bulkheads-001
+name: Bulkheads and Resource Isolation
+category: resilience
+canonical_tags: ['resilience', 'release-it', 'production-readiness']
+sources:
+  - books/release-it.md
+  - books/designing-data-intensive-applications.md
+summary: >
+  Bulkheads partition system resources so that a failure in one component
+  cannot exhaust the resources needed by another. Named after ship
+  compartments that prevent a single hull breach from sinking the vessel,
+  software bulkheads isolate thread pools, connection pools, memory, and
+  worker capacity across different workloads. One slow database query should
+  not consume all HTTP worker threads; one runaway background job should not
+  starve the request-serving path. Bulkheads are the defense-in-depth
+  complement to circuit breakers and timeouts: where those stop calling a
+  failing dependency, bulkheads ensure that even if the call slips through,
+  the damage is contained to its own resource pool. Without bulkheads,
+  resource contention is invisible until the whole system collapses.
+examples:
+  - language: python
+    bad: |
+      import asyncio
+      import httpx
+      from typing import Any
+
+
+      # Single connection pool for ALL outbound work -- every dependency
+      # competes for the same connections. One slow API starves everything.
+      SHARED_CLIENT = httpx.AsyncClient(
+          limits=httpx.Limits(max_connections=50, max_keepalive_connections=20),
+      )
+
+
+      async def handle_request(request: Any) -> dict:
+          """Request path competes with background work for connections."""
+          user_task = SHARED_CLIENT.get(
+              f"https://api.internal/users/{request.user_id}"
+          )
+          payment_task = SHARED_CLIENT.get(
+              f"https://payments.internal/balance/{request.user_id}"
+          )
+          analytics_task = SHARED_CLIENT.post(
+              "https://analytics.internal/event",
+              json={"user_id": request.user_id, "action": "page_view"},
+          )
+          # All three share the same 50 connections. Analytics spikes starve
+          # payment requests.
+          results = await asyncio.gather(user_task, payment_task, analytics_task)
+          return combine(results)
+
+
+      # One thread pool for all CPU work -- a single expensive computation
+      # blocks all other CPU-bound tasks.
+      CPU_POOL = asyncio.get_event_loop()  # default executor, shared
+    good: |
+      import asyncio
+      import concurrent.futures
+      from dataclasses import dataclass, field
+      from typing import Any, Optional
+      import httpx
+
+
+      # ---- Named connection clients per dependency domain --------------
+      @dataclass
+      class HttpClientPools:
+          """Separate connection pools for each dependency domain."""
+          users: httpx.AsyncClient
+          payments: httpx.AsyncClient
+          analytics: httpx.AsyncClient
+          search: httpx.AsyncClient
+
+          async def close(self) -> None:
+              for client in [self.users, self.payments, self.analytics, self.search]:
+                  await client.aclose()
+
+
+      def create_pools() -> HttpClientPools:
+          """Each pool is sized to its domain, not globally."""
+          return HttpClientPools(
+              users=httpx.AsyncClient(
+                  limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
+                  base_url="https://api.internal",
+              ),
+              payments=httpx.AsyncClient(
+                  limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
+                  base_url="https://payments.internal",
+                  timeout=httpx.Timeout(10.0),
+              ),
+              analytics=httpx.AsyncClient(
+                  limits=httpx.Limits(max_connections=5, max_keepalive_connections=2),
+                  base_url="https://analytics.internal",
+              ),
+              search=httpx.AsyncClient(
+                  limits=httpx.Limits(max_connections=15, max_keepalive_connections=8),
+                  base_url="https://search.internal",
+              ),
+          )
+
+
+      # ---- Semaphore-backed bulkhead for concurrent operations ----------
+      @dataclass
+      class Bulkhead:
+          """
+          A semaphore that limits concurrent access to a resource pool.
+
+          Unlike a raw Semaphore, a Bulkhead tracks rejection metrics and
+          provides a context manager that auto-releases on exit.
+          """
+          name: str
+          max_concurrent: int
+          _semaphore: asyncio.Semaphore = field(init=False, repr=False)
+          _rejected: int = field(default=0, init=False, repr=False)
+          _total: int = field(default=0, init=False, repr=False)
+
+          def __post_init__(self) -> None:
+              self._semaphore = asyncio.Semaphore(self.max_concurrent)
+
+          async def acquire(self) -> bool:
+              self._total += 1
+              if self._semaphore.locked():
+                  self._rejected += 1
+                  return False
+              await self._semaphore.acquire()
+              return True
+
+          def release(self) -> None:
+              self._semaphore.release()
+
+          @property
+          def available(self) -> int:
+              return self._semaphore._value
+
+          @property
+          def rejection_rate(self) -> float:
+              if self._total == 0:
+                  return 0.0
+              return self._rejected / self._total
+
+          def stats(self) -> dict:
+              return {
+                  "name": self.name,
+                  "max": self.max_concurrent,
+                  "available": self.available,
+                  "rejected": self._rejected,
+                  "total": self._total,
+                  "rejection_rate": self.rejection_rate,
+              }
+
+          def __enter__(self) -> None:
+              raise TypeError("Use 'async with' for async bulkheads")
+
+          async def __aenter__(self) -> "Bulkhead":
+              return self
+
+          async def __aexit__(self, *args: Any) -> None:
+              self.release()
+
+
+      # ---- Thread pool isolation for CPU-bound work --------------------
+      class ThreadPoolBulkhead:
+          """
+          Separate thread pools for different CPU-bound workloads.
+
+          Rendering, image processing, and report generation each get their
+          own pool so a spike in report generation doesn't block image
+          thumbnailing.
+          """
+          def __init__(self) -> None:
+              self._rendering = concurrent.futures.ThreadPoolExecutor(
+                  max_workers=4, thread_name_prefix="render"
+              )
+              self._image_processing = concurrent.futures.ThreadPoolExecutor(
+                  max_workers=2, thread_name_prefix="image"
+              )
+              self._reporting = concurrent.futures.ThreadPoolExecutor(
+                  max_workers=2, thread_name_prefix="report"
+              )
+
+          async def render(self, template: str, context: dict) -> str:
+              loop = asyncio.get_running_loop()
+              return await loop.run_in_executor(
+                  self._rendering, _render_template, template, context
+              )
+
+          async def thumbnail(self, image_data: bytes) -> bytes:
+              loop = asyncio.get_running_loop()
+              return await loop.run_in_executor(
+                  self._image_processing, _create_thumbnail, image_data
+              )
+
+          def shutdown(self) -> None:
+              for pool in [self._rendering, self._image_processing, self._reporting]:
+                  pool.shutdown(wait=True)
+
+
+      def _render_template(template: str, context: dict) -> str:
+          ...
+
+      def _create_thumbnail(image_data: bytes) -> bytes:
+          ...
+
+
+      # ---- Composing bulkheads in request handling ---------------------
+      @dataclass
+      class BulkheadConfig:
+          payment: Bulkhead
+          search: Bulkhead
+          analytics: Bulkhead
+          image_processing: Bulkhead
+
+
+      async def handle_request(
+          request: Any,
+          pools: HttpClientPools,
+          bulkheads: BulkheadConfig,
+          thread_pools: ThreadPoolBulkhead,
+      ) -> dict:
+          # Payment: must succeed or fail explicitly
+          async with bulkheads.payment:
+              try:
+                  payment = await pools.payments.get(
+                      f"/balance/{request.user_id}"
+                  )
+              except Exception:
+                  payment = {"balance": "unavailable"}
+
+          # Search: optional, degrade if bulkhead is full
+          search_result: Optional[dict] = None
+          if await bulkheads.search.acquire():
+              try:
+                  search_result = await pools.search.get(
+                      f"/query?q={request.query}"
+                  )
+              except Exception:
+                  search_result = None
+              finally:
+                  bulkheads.search.release()
+
+          # Analytics: fire-and-forget, shed if bulkhead full
+          if await bulkheads.analytics.acquire():
+              asyncio.create_task(
+                  _track_analytics(pools.analytics, bulkheads.analytics, request)
+              )
+          # if bulkhead full, analytics is silently dropped
+
+          # Image processing: offload to isolated thread pool
+          thumbnail_future = thread_pools.thumbnail(request.image_data)
+
+          results = await asyncio.gather(thumbnail_future)
+          return {
+              "balance": payment,
+              "thumbnails": results[0],
+              "search": search_result,
+          }
+
+
+      async def _track_analytics(
+          client: httpx.AsyncClient, bulkhead: Bulkhead, request: Any
+      ) -> None:
+          try:
+              await client.post("/event", json={"action": "page_view"})
+          finally:
+              bulkhead.release()
+
+
+      # ---- Bulkhead status for monitoring ------------------------------
+      def get_bulkhead_metrics(bulkheads: BulkheadConfig) -> dict:
+          return {
+              name: bh.stats()
+              for name, bh in [
+                  ("payment", bulkheads.payment),
+                  ("search", bulkheads.search),
+                  ("analytics", bulkheads.analytics),
+              ]
+          }
+  - language: typescript
+    bad: |
+      import { Pool } from "pg";
+
+      // One connection pool shared for everything -- reads, writes,
+      // analytics, batch jobs. A runaway analytics query consumes all
+      // connections; payment writes queue behind it.
+      const SHARED_POOL = new Pool({ max: 20 });
+
+      async function getDashboard(userId: string) {
+        // All queries compete for the same 20 connections
+        const [profile, orders, recommendations, analytics] =
+          await Promise.all([
+            SHARED_POOL.query("SELECT * FROM users WHERE id = $1", [userId]),
+            SHARED_POOL.query("SELECT * FROM orders WHERE user_id = $1", [userId]),
+            SHARED_POOL.query("SELECT * FROM recommendations WHERE user_id = $1", [userId]),
+            SHARED_POOL.query(
+              "SELECT * FROM analytics WHERE user_id = $1 AND date > now() - interval '30 days'",
+              [userId],
+            ),
+          ]);
+        return { profile, orders, recommendations, analytics };
+      }
+    good: |
+      import { Pool } from "pg";
+
+      // ---- Per-domain connection pools ---------------------------------
+      class DatabaseBulkhead {
+        readonly critical: Pool;     // payments, auth -- must always work
+        readonly primary: Pool;      // user profiles, orders -- normal path
+        readonly reporting: Pool;    // analytics, dashboards -- can degrade
+        readonly background: Pool;   // batch jobs, ETL -- lowest priority
+
+        constructor() {
+          this.critical = new Pool({
+            max: 5,
+            connectionTimeoutMillis: 5000,
+            statement_timeout: 5000,
+          });
+          this.primary = new Pool({
+            max: 15,
+            connectionTimeoutMillis: 3000,
+            statement_timeout: 10000,
+          });
+          this.reporting = new Pool({
+            max: 5,
+            connectionTimeoutMillis: 5000,
+            statement_timeout: 30000,
+          });
+          this.background = new Pool({
+            max: 3,
+            connectionTimeoutMillis: 10000,
+            statement_timeout: 60000,
+          });
+        }
+
+        async end(): Promise<void> {
+          await Promise.all([
+            this.critical.end(),
+            this.primary.end(),
+            this.reporting.end(),
+            this.background.end(),
+          ]);
+        }
+      }
+
+      // ---- Concurrent request bulkhead ---------------------------------
+      interface BulkheadStats {
+        active: number;
+        max: number;
+        rejected: number;
+        total: number;
+      }
+
+      class Bulkhead {
+        private active = 0;
+        private rejected = 0;
+        private total = 0;
+
+        constructor(
+          public readonly name: string,
+          public readonly maxConcurrent: number,
+        ) {}
+
+        tryAcquire(): boolean {
+          this.total++;
+          if (this.active >= this.maxConcurrent) {
+            this.rejected++;
+            return false;
+          }
+          this.active++;
+          return true;
+        }
+
+        release(): void {
+          if (this.active > 0) this.active--;
+        }
+
+        stats(): BulkheadStats {
+          return {
+            active: this.active,
+            max: this.maxConcurrent,
+            rejected: this.rejected,
+            total: this.total,
+          };
+        }
+      }
+
+      // ---- Composed handler with bulkheads ------------------------------
+      class ResilientDashboardService {
+        private readonly paymentBulkhead = new Bulkhead("payment", 10);
+        private readonly searchBulkhead = new Bulkhead("search", 20);
+        private readonly analyticsBulkhead = new Bulkhead("analytics", 5);
+
+        constructor(private readonly db: DatabaseBulkhead) {}
+
+        async getDashboard(userId: string) {
+          // Payment: critical, dedicated pool + tight bulkhead
+          let balance: unknown;
+          if (this.paymentBulkhead.tryAcquire()) {
+            try {
+              const res = await this.db.critical.query(
+                "SELECT balance FROM accounts WHERE user_id = $1",
+                [userId],
+              );
+              balance = res.rows[0]?.balance;
+            } catch {
+              balance = null;
+            } finally {
+              this.paymentBulkhead.release();
+            }
+          } else {
+            balance = null; // bulkhead full: degrade gracefully
+          }
+
+          // Profile: uses primary pool
+          const profile = await this.db.primary.query(
+            "SELECT * FROM users WHERE id = $1",
+            [userId],
+          );
+
+          // Search: optional, drop if bulkhead is full
+          let searchResults: unknown = null;
+          if (this.searchBulkhead.tryAcquire()) {
+            try {
+              const res = await this.db.primary.query(
+                "SELECT * FROM search_index WHERE query ILIKE $1 LIMIT 10",
+                [`%${userId}%`],
+              );
+              searchResults = res.rows;
+            } catch {
+              searchResults = null;
+            } finally {
+              this.searchBulkhead.release();
+            }
+          }
+
+          // Analytics: fire-and-forget via background pool
+          if (this.analyticsBulkhead.tryAcquire()) {
+            this.db.background
+              .query(
+                "INSERT INTO page_views (user_id, viewed_at) VALUES ($1, now())",
+                [userId],
+              )
+              .catch(() => {})
+              .finally(() => this.analyticsBulkhead.release());
+          }
+          // If bulkhead full, analytics silently dropped
+
+          return {
+            balance,
+            profile: profile.rows[0],
+            searchResults,
+          };
+        }
+
+        metrics(): Record<string, BulkheadStats> {
+          return {
+            payment: this.paymentBulkhead.stats(),
+            search: this.searchBulkhead.stats(),
+            analytics: this.analyticsBulkhead.stats(),
+          };
+        }
+      }
+heuristics:
+  - >
+    Separate resource pools by failure domain. One shared pool for all outbound
+    work means any slow dependency can consume all threads, connections, or
+    workers. Partition by criticality: critical (payments), primary (profiles),
+    best-effort (analytics, logging).
+  - >
+    Each pool must have an explicit, measured maximum. "Unlimited" or
+    "system-default" pool sizes fail silently until the kernel kills the process
+    for OOM or file-descriptor exhaustion. Size pools based on measured
+    concurrency under normal load with headroom.
+  - >
+    Isolate slow or risky work from core request paths. Background jobs, ETL
+    queries, report generation, and image processing belong in their own pools --
+    never on the same threads/connections that serve user requests.
+  - >
+    Bulkheads work at two levels: connection pools (network IO) and concurrency
+    limits (semaphores for in-process operations). Use both: a connection pool
+    isolates socket/connection resources; a semaphore bulkhead isolates CPU and
+    memory within the process.
+  - >
+    A full bulkhead is a signal, not a crash. When a best-effort bulkhead reaches
+    capacity, drop the work silently (analytics event, log entry). When a critical
+    bulkhead reaches capacity, reject with a clear retryable error. Never block
+    indefinitely -- that's resource coupling.
+  - >
+    Monitor bulkhead rejection rate, not just pool utilization. A pool at 80%
+    utilization with zero rejections is healthy; a pool at 50% utilization but
+    10% rejection rate means clients are arriving in bursts and starving.
+  - >
+    "One failing integration must not consume all threads, connections, or worker
+    capacity" (Release It!). If your payment gateway times out after 5 seconds
+    and you have 50 threads, an upstream spike can exhaust all 50 threads waiting
+    on payment timeouts. A bulkhead of 10 payment slots means only 10 threads
+    can block on payments; the other 40 serve other work.
+  - >
+    Bulkhead limits compound: if you have a payment pool with 10 connections and
+    a payment bulkhead with 20 concurrent requests, the effective limit is
+    min(10, 20) = 10. Size bulkhead limits slightly above pool limits so the
+    connection pool is the primary throttle.
+  - >
+    Thread-pool bulkheads must use bounded queues. An unbounded queue behind a
+    thread pool is a deferred resource leak -- requests accumulate in memory
+    waiting for a worker slot. Use SynchronousQueue (reject on full) or a small
+    bounded queue.
+  - >
+    Test bulkhead exhaustion: saturate a pool, verify that other pools continue
+    serving, verify that rejection metrics increment, verify recovery when load
+    subsides. Bulkhead bugs are invisible until load hits the ceiling.
+  - >
+    The right size for a bulkhead is measured, not guessed. Start with
+    concurrency * (p95 latency / target throughput) for each domain, then tune
+    based on rejection metrics in production.
+related_tags: [bulkhead, resource-isolation, connection-pool, thread-pool,
+  semaphore, cascading-failure, capacity-planning, failure-domain,
+  resource-management, concurrency-limit, release-it, ddia]

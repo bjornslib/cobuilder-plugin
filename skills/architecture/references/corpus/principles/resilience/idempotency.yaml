@@ -1,0 +1,1052 @@
+id: idempotency-001
+name: Idempotency and Safe Retry Design
+category: resilience
+canonical_tags: ['resilience', 'release-it', 'production-readiness', 'ddia']
+sources:
+  - books/release-it.md
+  - books/designing-data-intensive-applications.md
+summary: >
+  Idempotency is the property that an operation produces the same result
+  whether executed once or multiple times. It is not optional in distributed
+  systems -- clients retry, networks duplicate packets, queues redeliver
+  messages, and timeouts obscure whether work completed. Every operation
+  that can be retried must be idempotent, or it must use idempotency keys
+  to deduplicate duplicate requests. The three strategies are: natural
+  idempotency (setting a value, upserting by unique key), idempotency keys
+  (a client-generated UUID that the server uses to detect and return cached
+  results for duplicate requests), and deduplication tokens in message
+  queues (message IDs used by the broker to filter duplicates). Operations
+  that are not idempotent -- charging a credit card, sending an email,
+  incrementing a counter -- must be wrapped in an idempotency layer that
+  makes them safe for retry. "Duplicate charge/order/send operations on
+  retry" is a forbidden pattern (Release It!).
+examples:
+  - language: python
+    bad: |
+      import asyncio
+      from typing import Any
+
+
+      async def charge_customer(amount: float, card_token: str) -> dict:
+          """
+          Not idempotent. If the caller retries after a timeout, the customer
+          is charged twice. No idempotency key, no dedup.
+          """
+          result = await payment_gateway.charge(
+              amount=amount, card=card_token
+          )
+          await db.insert("charges", {
+              "amount": amount,
+              "card": card_token,
+              "transaction_id": result["id"],
+          })
+          return result
+
+
+      async def increment_view_count(article_id: str) -> None:
+          """
+          Not idempotent. Retries inflate the counter.
+          UPDATE articles SET views = views + 1 WHERE id = $1
+          """
+          await db.execute(
+              "UPDATE articles SET views = views + 1 WHERE id = $1",
+              [article_id],
+          )
+
+
+      async def send_welcome_email(user_id: str) -> None:
+          """Not idempotent. Retries send duplicate emails."""
+          user = await db.fetchrow("SELECT email FROM users WHERE id = $1", [user_id])
+          await email_service.send(user["email"], "Welcome!", "Thanks for signing up.")
+    good: |
+      import asyncio
+      import hashlib
+      import json
+      import uuid
+      from dataclasses import dataclass
+      from datetime import datetime, timezone
+      from enum import Enum, auto
+      from typing import Any, Optional
+
+
+      # ---- Strategy 1: Natural idempotency via upsert -------------------
+      async def set_user_preferences(user_id: str, prefs: dict) -> None:
+          """
+          Idempotent by nature: setting a value to X is the same whether
+          you do it once or ten times. Use INSERT ... ON CONFLICT UPDATE.
+          """
+          await db.execute(
+              """
+              INSERT INTO user_prefs (user_id, preferences, updated_at)
+              VALUES ($1, $2, now())
+              ON CONFLICT (user_id)
+              DO UPDATE SET preferences = $2, updated_at = now()
+              """,
+              [user_id, json.dumps(prefs)],
+          )
+
+
+      # ---- Strategy 2: Idempotency key (stripe-style) ------------------
+      class IdempotencyStatus(Enum):
+          NEW = auto()
+          IN_PROGRESS = auto()
+          COMPLETED = auto()
+
+
+      @dataclass
+      class IdempotencyRecord:
+          key: str
+          status: IdempotencyStatus
+          response: Optional[dict] = None
+          created_at: str = ""
+          completed_at: Optional[str] = None
+
+          def to_row(self) -> dict:
+              return {
+                  "key": self.key,
+                  "status": self.status.name,
+                  "response": json.dumps(self.response) if self.response else None,
+                  "created_at": self.created_at,
+                  "completed_at": self.completed_at,
+              }
+
+
+      class IdempotencyStore:
+          """
+          Stores idempotency key status in a database table.
+
+          Schema:
+              CREATE TABLE idempotency_keys (
+                  key       TEXT PRIMARY KEY,
+                  status    TEXT NOT NULL DEFAULT 'NEW',
+                  response  JSONB,
+                  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                  completed_at TIMESTAMPTZ
+              );
+          """
+          def __init__(self, db_pool) -> None:
+              self._db = db_pool
+
+          async def begin(self, key: str) -> IdempotencyRecord:
+              """Atomically check if a key exists; if not, insert NEW."""
+              now = datetime.now(timezone.utc).isoformat()
+
+              # Try insert -- if key exists, return the existing record
+              result = await self._db.fetchrow(
+                  """
+                  INSERT INTO idempotency_keys (key, status, created_at)
+                  VALUES ($1, 'NEW', $2)
+                  ON CONFLICT (key) DO UPDATE SET key = idempotency_keys.key
+                  RETURNING key, status, response, created_at, completed_at
+                  """,
+                  [key, now],
+              )
+
+              return IdempotencyRecord(
+                  key=result["key"],
+                  status=IdempotencyStatus[result["status"]],
+                  response=result["response"],
+                  created_at=result["created_at"].isoformat(),
+                  completed_at=result["completed_at"].isoformat() if result["completed_at"] else None,
+              )
+
+          async def mark_in_progress(self, key: str) -> None:
+              await self._db.execute(
+                  "UPDATE idempotency_keys SET status = 'IN_PROGRESS' WHERE key = $1",
+                  [key],
+              )
+
+          async def complete(self, key: str, response: dict) -> None:
+              now = datetime.now(timezone.utc).isoformat()
+              await self._db.execute(
+                  """
+                  UPDATE idempotency_keys
+                  SET status = 'COMPLETED', response = $2, completed_at = $3
+                  WHERE key = $1
+                  """,
+                  [key, json.dumps(response), now],
+              )
+
+          async def cleanup(self, older_than_hours: int = 24) -> int:
+              result = await self._db.execute(
+                  """
+                  DELETE FROM idempotency_keys
+                  WHERE completed_at < now() - interval '$1 hours'
+                  """,
+                  [older_than_hours],
+              )
+              return result
+
+
+      async def charge_customer_idempotent(
+          amount: float,
+          card_token: str,
+          idempotency_key: str,
+          store: IdempotencyStore,
+      ) -> dict:
+          """
+          Charge a customer exactly once, using an idempotency key.
+
+          Flow:
+          1. Begin: atomically insert or retrieve the key.
+          2. If COMPLETED, return cached response immediately.
+          3. If IN_PROGRESS, poll until complete (or timeout).
+          4. If NEW, mark IN_PROGRESS, execute, mark COMPLETED, return.
+          """
+          record = await store.begin(idempotency_key)
+
+          if record.status == IdempotencyStatus.COMPLETED:
+              # Already done -- return cached response
+              return record.response or {}
+
+          if record.status == IdempotencyStatus.IN_PROGRESS:
+              # Another request is processing this key -- wait for it
+              for _ in range(30):  # 30 * 100ms = 3s max wait
+                  await asyncio.sleep(0.1)
+                  record = await store.begin(idempotency_key)
+                  if record.status == IdempotencyStatus.COMPLETED:
+                      return record.response or {}
+              raise IdempotencyConflictError(f"Timed out waiting for {idempotency_key}")
+
+          # NEW -- we're the first to process this key
+          await store.mark_in_progress(idempotency_key)
+
+          try:
+              result = await payment_gateway.charge(amount=amount, card=card_token)
+              response = {
+                  "transaction_id": result["id"],
+                  "amount": amount,
+                  "status": "charged",
+              }
+              await store.complete(idempotency_key, response)
+              return response
+          except Exception:
+              # Don't leave the key IN_PROGRESS -- allow the caller to retry
+              await store.begin(idempotency_key)  # resets to NEW via upsert
+              raise
+
+
+      class IdempotencyConflictError(Exception):
+          """Raised when waiting for an in-progress idempotency key times out."""
+
+
+      # ---- Strategy 3: Deduplication via event IDs ---------------------
+      class DeduplicatingConsumer:
+          """
+          Consumes messages from a queue, skipping duplicates by event ID.
+
+          Uses a Bloom filter or a set of recently-seen IDs to skip
+          messages that have already been processed.
+          """
+          def __init__(self, dedup_window: int = 10_000) -> None:
+              self._seen: set[str] = set()
+              self._max_size = dedup_window
+
+          def is_duplicate(self, event_id: str) -> bool:
+              if event_id in self._seen:
+                  return True
+              self._seen.add(event_id)
+              # Keep the set bounded -- oldest entries age out
+              if len(self._seen) > self._max_size:
+                  self._seen.clear()  # or use a ring buffer for production
+              return False
+
+          async def consume(self, message: dict) -> None:
+              event_id = message["event_id"]
+              if self.is_duplicate(event_id):
+                  return  # skip -- already processed
+
+              await process_event(message)
+
+
+      # ---- Strategy 4: Conditional write for counters ------------------
+      async def increment_view_count_idempotent(
+          article_id: str, request_id: str
+      ) -> None:
+          """
+          Idempotent counter increment using a dedup table.
+
+          Instead of incrementing directly, record each unique request_id
+          in a dedup table, then increment only on first insert.
+
+          Schema:
+              CREATE TABLE view_dedup (
+                  article_id TEXT,
+                  request_id TEXT,
+                  PRIMARY KEY (article_id, request_id)
+              );
+          """
+          inserted = await db.execute(
+              """
+              INSERT INTO view_dedup (article_id, request_id)
+              VALUES ($1, $2)
+              ON CONFLICT DO NOTHING
+              """,
+              [article_id, request_id],
+          )
+
+          if inserted:  # First time we've seen this request_id
+              await db.execute(
+                  "UPDATE articles SET views = views + 1 WHERE id = $1",
+                  [article_id],
+              )
+
+
+      # ---- Strategy 5: Idempotency middleware (FastAPI) ----------------
+      from fastapi import FastAPI, Request, HTTPException
+
+
+      app = FastAPI()
+      store = IdempotencyStore(db_pool)
+
+
+      @app.post("/charges")
+      async def create_charge(request: Request):
+          idempotency_key = request.headers.get("Idempotency-Key")
+          if not idempotency_key:
+              raise HTTPException(status_code=400, detail="Idempotency-Key header required")
+
+          body = await request.json()
+          return await charge_customer_idempotent(
+              amount=body["amount"],
+              card_token=body["card_token"],
+              idempotency_key=idempotency_key,
+              store=store,
+          )
+
+
+      # ---- Client-side idempotency key generation ----------------------
+      def generate_idempotency_key(
+          operation: str, *identity_components: str
+      ) -> str:
+          """
+          Deterministic idempotency key from operation + identity.
+
+          Deterministic keys let clients safely retry without the server
+          needing to know about prior attempts. The same inputs always
+          produce the same key, so a retry hits the same dedup record.
+          """
+          payload = ":".join([operation, *identity_components])
+          return hashlib.sha256(payload.encode()).hexdigest()[:32]
+
+
+      # Usage:
+      key = generate_idempotency_key("charge", "user_42", "order_789", "2026-05-07")
+  - language: typescript
+    bad: |
+      import express from "express";
+      import { Pool } from "pg";
+
+      const app = express();
+      const pool = new Pool();
+
+      // No idempotency key. Retry = double charge.
+      app.post("/charges", express.json(), async (req, res) => {
+        const { amount, cardToken } = req.body;
+        const result = await paymentGateway.charge(amount, cardToken);
+        await pool.query(
+          "INSERT INTO charges (amount, transaction_id) VALUES ($1, $2)",
+          [amount, result.id],
+        );
+        res.json(result);
+      });
+
+      app.listen(3000);
+    good: |
+      import express from "express";
+      import { Pool } from "pg";
+      import { randomUUID } from "crypto";
+      import { createHash } from "crypto";
+
+      const app = express();
+      const pool = new Pool();
+
+      // ---- Idempotency store (in-memory for clarity; use DB in prod) ---
+      type IdempotencyStatus = "NEW" | "IN_PROGRESS" | "COMPLETED";
+
+      interface IdempotencyRecord {
+        key: string;
+        status: IdempotencyStatus;
+        response?: unknown;
+        createdAt: number;
+        completedAt?: number;
+      }
+
+      class IdempotencyStore {
+        private records = new Map<string, IdempotencyRecord>();
+        private locks = new Map<string, Promise<void>>();
+
+        /**
+         * Atomically begin processing an idempotency key.
+         * If the key is COMPLETED, return its cached response.
+         * If IN_PROGRESS, wait for the inflight request to finish.
+         */
+        async begin(key: string): Promise<IdempotencyRecord> {
+          const existing = this.records.get(key);
+
+          if (existing?.status === "COMPLETED") {
+            return existing;
+          }
+
+          if (existing?.status === "IN_PROGRESS") {
+            // Wait for the inflight operation to complete
+            await this.waitForCompletion(key);
+            const completed = this.records.get(key);
+            if (completed?.status === "COMPLETED") return completed;
+          }
+
+          const record: IdempotencyRecord = {
+            key,
+            status: "NEW",
+            createdAt: Date.now(),
+          };
+          this.records.set(key, record);
+          return record;
+        }
+
+        markInProgress(key: string): void {
+          const record = this.records.get(key);
+          if (record) record.status = "IN_PROGRESS";
+        }
+
+        complete(key: string, response: unknown): void {
+          const record = this.records.get(key);
+          if (record) {
+            record.status = "COMPLETED";
+            record.response = response;
+            record.completedAt = Date.now();
+          }
+          // Release any waiters
+          this.locks.get(key)?.then(() => {});
+        }
+
+        private async waitForCompletion(key: string): Promise<void> {
+          for (let i = 0; i < 30; i++) {
+            const record = this.records.get(key);
+            if (record?.status === "COMPLETED") return;
+            await new Promise((r) => setTimeout(r, 100));
+          }
+          throw new Error(`Timeout waiting for idempotency key: ${key}`);
+        }
+
+        /** Clean up old records to prevent unbounded memory growth. */
+        cleanup(olderThanMs: number = 24 * 60 * 60 * 1000): void {
+          const cutoff = Date.now() - olderThanMs;
+          for (const [key, record] of this.records) {
+            if (record.completedAt && record.completedAt < cutoff) {
+              this.records.delete(key);
+            }
+          }
+        }
+      }
+
+      // ---- Idempotent charge endpoint ---------------------------------
+      const idempotencyStore = new IdempotencyStore();
+
+      app.post("/charges", express.json(), async (req, res) => {
+        const idempotencyKey = req.headers["idempotency-key"] as string;
+        if (!idempotencyKey) {
+          res.status(400).json({ error: "Idempotency-Key header required" });
+          return;
+        }
+
+        const { amount, cardToken } = req.body;
+
+        try {
+          const record = await idempotencyStore.begin(idempotencyKey);
+
+          if (record.status === "COMPLETED") {
+            // Already charged -- return cached result
+            res.json(record.response);
+            return;
+          }
+
+          // NEW -- process the charge
+          idempotencyStore.markInProgress(idempotencyKey);
+
+          const result = await paymentGateway.charge(amount, cardToken);
+          const response = {
+            transactionId: result.id,
+            amount,
+            status: "charged",
+          };
+
+          idempotencyStore.complete(idempotencyKey, response);
+          res.json(response);
+        } catch (err) {
+          // Let the caller retry with the same key
+          res.status(500).json({
+            error: "Charge processing failed",
+            idempotencyKey,
+            retryable: true,
+          });
+        }
+      });
+
+      // ---- Counter dedup (view counts) ---------------------------------
+      const viewDedup = new Map<string, Set<string>>();
+
+      app.post("/articles/:id/view", async (req, res) => {
+        const articleId = req.params.id;
+        const requestId = randomUUID();
+
+        // Deduplicate: only count the first occurrence of this requestId
+        if (!viewDedup.has(articleId)) {
+          viewDedup.set(articleId, new Set());
+        }
+        const dedupSet = viewDedup.get(articleId)!;
+
+        if (dedupSet.has(requestId)) {
+          res.json({ status: "duplicate", views: "unchanged" });
+          return;
+        }
+
+        dedupSet.add(requestId);
+        await pool.query(
+          "UPDATE articles SET views = views + 1 WHERE id = $1",
+          [articleId],
+        );
+
+        res.json({ status: "counted" });
+      });
+
+      // ---- Deterministic key generator ---------------------------------
+      function generateIdempotencyKey(
+        operation: string,
+        ...components: string[]
+      ): string {
+        const payload = [operation, ...components].join(":");
+        return createHash("sha256").update(payload).digest("hex").slice(0, 32);
+      }
+
+      app.listen(3000);
+
+      // Clean up idempotency records periodically
+      setInterval(() => idempotencyStore.cleanup(), 60 * 60 * 1000);
+heuristics:
+  - >
+    Every operation that can be retried must be idempotent or use idempotency
+    keys. "Duplicate charge/order/send operations on retry" (Release It!) is a
+    forbidden pattern. This is not a nice-to-have -- it is table stakes for
+    distributed systems.
+  - >
+    Prefer natural idempotency when possible: UPSERT (INSERT ... ON CONFLICT
+    UPDATE), setting a value rather than incrementing, PUT semantics over POST.
+    These are idempotent by construction and require no extra infrastructure.
+  - >
+    Idempotency keys must be unique per operation intent, not per attempt. The
+    same key must be used for all retries of the same logical operation so the
+    server can deduplicate. Generate them client-side and pass in a header
+    (Idempotency-Key).
+  - >
+    Deterministic idempotency keys (hash of operation + identity components) let
+    clients safely retry even after crash-restart cycles where random keys would
+    be lost. A random UUID is fine for synchronous retries but fails if the
+    client process restarts and generates a new key.
+  - >
+    The idempotency layer must handle the three-lifecycle problem: if a request
+    arrives and the key is IN_PROGRESS (another request is mid-processing),
+    either return a 409 Conflict, poll until complete, or return the
+    in-progress result. Do not process the same key concurrently -- that
+    defeats the purpose.
+  - >
+    Idempotency records must have a TTL. Storing every idempotency key forever
+    leaks storage. Clean up COMPLETED records after a retention window (24-72
+    hours is typical). Clients should not reuse idempotency keys after that
+    window.
+  - >
+    The idempotency key insert/check must be atomic. A SELECT-then-INSERT race
+    condition between two concurrent requests will both see "not exists" and
+    both process. Use INSERT ... ON CONFLICT with RETURNING or a
+    compare-and-swap primitive.
+  - >
+    Counter operations (views, likes, retweets) are not naturally idempotent.
+    Wrap them with a dedup table: INSERT into a (entity_id, request_id) table
+    with ON CONFLICT DO NOTHING, and only increment the counter if the insert
+    succeeds.
+  - >
+    Message queues provide idempotent delivery in some configurations (exactly-once
+    semantics). But never assume the queue solves the problem -- the consumer
+    handler must still be idempotent. Exactly-once delivery in the broker is an
+    optimization, not a guarantee.
+  - >
+    The timeout problem: if a client times out waiting for a response, it
+    doesn't know whether the server processed the request. The client retries
+    with the same idempotency key; the server returns the cached result if
+    already processed or processes fresh if not. This is why idempotency keys
+    exist.
+  - >
+    Test idempotency explicitly: send the same request twice, verify the second
+    returns the same result without side effects. Test concurrent duplicate
+    submissions, test the IN_PROGRESS collision path, test cleanup after TTL.
+    Idempotency bugs are catastrophic -- they produce real-world data corruption
+    (duplicate charges, duplicate orders, duplicate emails).
+  - >
+    "Use durable handoff for important asynchronous work" (Release It!). For
+    work that must not be lost, use an outbox pattern: write the operation intent
+    and its idempotency key atomically with the business data, then a separate
+    process picks up and executes the work. This ensures the idempotency guard
+    survives process crashes.
+
+request_fingerprinting:
+  summary: >
+    A request fingerprint is a deterministic hash of a request's meaningful
+    content used to detect duplicates independently of any client-supplied
+    key. Unlike an idempotency key — which depends on the client generating
+    and attaching a UUID-like token — a fingerprint is computed from the
+    request payload itself: the method, path, body fields that carry
+    business identity, and (optionally) the actor. Two requests that produce
+    the same fingerprint represent the same logical operation and the second
+    should be deduplicated. Fingerprinting is a defense-in-depth complement
+    to idempotency keys: it catches duplicates when the client forgets or
+    intentionally omits the key, when an intermediary retries without
+    preserving headers, or when different gateways re-inject the same event.
+  design_principles:
+    - principle: "Canonicalization"
+      description: >
+        Before hashing, normalize the payload to a canonical form: sort JSON
+        keys alphabetically, strip insignificant whitespace, use a consistent
+        date/time format, and exclude non-deterministic fields (timestamps,
+        request IDs, tracing headers). Two requests that differ only in
+        whitespace or field ordering must produce identical fingerprints.
+    - principle: "Field selection"
+      description: >
+        Fingerprint only the fields that determine the business outcome. For
+        a charge: amount + card_token + operation. For an order: customer_id
+        + items + shipping_address. Exclude mutable metadata (client IP,
+        User-Agent, request time). Including noise fields makes fingerprints
+        useless for dedup because the same logical request generates
+        different hashes.
+    - principle: "Actor binding"
+      description: >
+        Bind the fingerprint to the authenticated user/tenant when the same
+        operation from different actors should be treated as distinct. Two
+        different users charging $10 to their own cards are different
+        operations; the fingerprint must include the user ID. For
+        tenant-agnostic operations (health check, anonymous read), omit the
+        actor.
+    - principle: "Uniqueness scope"
+      description: >
+        Define the fingerprint uniqueness scope explicitly. Is it global (one
+        fingerprint across all tenants), per-tenant, per-user, or
+        per-entity? A global scope means no two operations anywhere can
+        share a fingerprint; per-user means the same request from different
+        users is allowed. Match the scope to the business domain.
+    - principle: "Time-window bounding"
+      description: >
+        Fingerprints must have a TTL. Storing every fingerprint forever
+        leaks storage and eventually causes hash collisions. Expire
+        fingerprints after a window (minutes to hours depending on expected
+        retry period). After expiry, the same logical operation may
+        legitimately repeat (a user charges their card again next week).
+    - principle: "Collision handling"
+      description: >
+        SHA-256 collision is astronomically unlikely, but a truncated hash
+        can collide. When a fingerprint match is found, verify the full
+        payload as a second-pass dedup check. Use a composite key of
+        (fingerprint, payload_hash) for storage. If the fingerprints match
+        but payloads differ, it's a collision — process the request normally
+        and log the collision alert.
+  comparison_with_idempotency_keys:
+    heading: "Fingerprint vs Idempotency Key"
+    rows:
+      - dimension: "Origin"
+        fingerprint: "Server-computed from request payload"
+        idempotency_key: "Client-generated token, passed in a header"
+      - dimension: "Requires client cooperation"
+        fingerprint: "No — works even if client ignores the protocol"
+        idempotency_key: "Yes — client must generate, persist, and resend the key"
+      - dimension: "Resilience to header stripping"
+        fingerprint: "Immune — computed from body, not headers"
+        idempotency_key: "Vulnerable — proxies and load balancers may drop custom headers"
+      - dimension: "Deterministic across restarts"
+        fingerprint: "Yes — same payload always produces the same hash"
+        idempotency_key: "Depends — random UUIDs are not; deterministic ones are"
+      - dimension: "Detects unintentional duplicates"
+        fingerprint: "Yes — catches duplicate POSTs from double-clicks, form resubmissions"
+        idempotency_key: "No — each submission gets a fresh random key"
+      - dimension: "Risk of false match"
+        fingerprint: "Low but nonzero — two different requests may hash to the same fingerprint (hash collision)"
+        idempotency_key: "None — UUIDs are unique by construction"
+      - dimension: "Best used for"
+        fingerprint: "Internal event processing, double-submit protection, cross-gateway dedup"
+        idempotency_key: "Client-initiated idempotent operations (API calls, payment requests)"
+
+fingerprinting_examples:
+  - language: python
+    title: "Request fingerprinting — canonicalization and dedup"
+    code: |
+      import hashlib
+      import json
+      import time
+      from collections import OrderedDict
+      from typing import Any, Optional
+
+
+      class RequestFingerprinter:
+          """
+          Computes deterministic fingerprints from request payloads for
+          duplicate detection, independent of client-supplied idempotency keys.
+
+          Use this as a defense-in-depth layer: even if the Idempotency-Key
+          header is missing or stripped, the server can still detect that
+          two POSTs with identical business content are duplicates.
+          """
+
+          def __init__(
+              self,
+              business_fields: tuple[str, ...],
+              ttl_seconds: int = 3600,
+          ) -> None:
+              """
+              business_fields: which payload keys determine business identity.
+                  e.g. ("amount", "card_token", "currency") for a charge.
+                  Fields not in this set are excluded from the fingerprint.
+              ttl_seconds: how long fingerprints are valid before expiry.
+              """
+              self.business_fields = business_fields
+              self.ttl_seconds = ttl_seconds
+              self._store: dict[str, float] = {}  # fp -> expiry_ts
+
+          @staticmethod
+          def canonicalize(obj: Any) -> str:
+              """
+              Normalize a JSON-like value to a canonical string
+              so that two different representations of the same data
+              produce identical fingerprints.
+
+              Rules:
+              - Sort dict keys alphabetically.
+              - Use consistent JSON separators (no extra whitespace).
+              - Ensure stable float formatting.
+              """
+              if isinstance(obj, dict):
+                  sorted_items = sorted(
+                      (k, RequestFingerprinter.canonicalize(v))
+                      for k, v in obj.items()
+                  )
+                  return json.dumps(OrderedDict(sorted_items), sort_keys=True)
+              if isinstance(obj, (list, tuple)):
+                  elems = [RequestFingerprinter.canonicalize(item) for item in obj]
+                  return json.dumps(elems)
+              if isinstance(obj, bool):
+                  return "true" if obj else "false"
+              if isinstance(obj, (int, float)):
+                  # Stable representation for numbers
+                  return repr(obj)
+              if obj is None:
+                  return "null"
+              return json.dumps(obj)
+
+          def compute(
+              self,
+              method: str,
+              path: str,
+              payload: dict[str, Any],
+              actor_id: Optional[str] = None,
+          ) -> str:
+              """
+              Compute a fingerprint from the request method, path,
+              business-relevant body fields, and (optionally) the actor.
+
+              The result is a 64-char hex SHA-256 hash.
+              """
+              # Extract only business-relevant fields
+              filtered = {
+                  k: v for k, v in payload.items()
+                  if k in self.business_fields
+              }
+
+              # Build the fingerprint input
+              components: dict[str, Any] = {
+                  "method": method,
+                  "path": path,
+                  "payload": filtered,
+              }
+              if actor_id is not None:
+                  components["actor"] = actor_id
+
+              canonical = self.canonicalize(components)
+              return hashlib.sha256(canonical.encode()).hexdigest()
+
+          def is_duplicate(self, fingerprint: str) -> bool:
+              """
+              Check if this fingerprint has been seen within the TTL window.
+
+              Returns True if duplicate (should be skipped).
+              Returns False if new (should be processed).
+              """
+              now = time.monotonic()
+              existing_expiry = self._store.get(fingerprint)
+
+              if existing_expiry is not None and existing_expiry > now:
+                  return True  # Still within TTL — it's a duplicate
+
+              # Not seen (or expired) — record it
+              self._store[fingerprint] = now + self.ttl_seconds
+              return False
+
+          def cleanup(self) -> int:
+              """Remove expired fingerprints."""
+              now = time.monotonic()
+              expired = [
+                  fp for fp, exp in self._store.items() if exp <= now
+              ]
+              for fp in expired:
+                  del self._store[fp]
+              return len(expired)
+
+
+      # ---- Usage ---------------------------------------------------------
+      fingerprinter = RequestFingerprinter(
+          business_fields=("amount", "card_token", "currency"),
+          ttl_seconds=3600,
+      )
+
+      # Two POSTs with identical business content but different metadata
+      # produce the SAME fingerprint:
+      payload_1 = {
+          "amount": 10000,
+          "card_token": "tok_visa_4242",
+          "currency": "usd",
+          "idempotency_key": "ik_abc123",
+          "request_id": "req_001",
+          "client_timestamp": "2026-05-07T12:00:00Z",
+      }
+
+      payload_2 = {
+          "card_token": "tok_visa_4242",  # different field order
+          "amount": 10000,
+          "currency": "usd",
+          "idempotency_key": "ik_abc123",
+          "request_id": "req_002",  # different request ID
+          "client_timestamp": "2026-05-07T12:00:01Z",  # different timestamp
+      }
+
+      fp1 = fingerprinter.compute("POST", "/charges", payload_1)
+      fp2 = fingerprinter.compute("POST", "/charges", payload_2)
+      assert fp1 == fp2  # same business intent → same fingerprint
+
+      # First request is new, second is a duplicate:
+      assert fingerprinter.is_duplicate(fp1) is False  # new
+      assert fingerprinter.is_duplicate(fp2) is True   # duplicate detected
+
+  - language: typescript
+    title: "Request fingerprinting middleware (Express + PostgreSQL)"
+    code: |
+      import express, { Request, Response, NextFunction } from "express";
+      import { createHash } from "crypto";
+
+      /**
+       * Fingerprint-based deduplication middleware.
+       *
+       * Computes a deterministic hash from the request body's business fields
+       * and checks against a database-backed set. If the same fingerprint was
+       * seen within the TTL, the request is rejected as a duplicate.
+       *
+       * This is complementary to idempotency-key-based dedup — it catches
+       * duplicates where the client did not supply (or lost) the idempotency key.
+       */
+
+      interface FingerprintConfig {
+        /** Which body fields constitute the business identity. */
+        fields: string[];
+        /** TTL in seconds for fingerprint entries. */
+        ttlSeconds: number;
+        /** Optional: bind fingerprint to the authenticated user ID. */
+        actorResolver?: (req: Request) => string | undefined;
+      }
+
+      /**
+       * Canonicalize a value to a stable string for hashing.
+       * Sorts object keys, strips metadata-only fields.
+       */
+      function canonicalize(value: unknown): string {
+        if (value === null) return "null";
+        if (typeof value === "boolean") return value ? "true" : "false";
+        if (typeof value === "number") return String(value);
+        if (typeof value === "string") return JSON.stringify(value);
+        if (Array.isArray(value)) {
+          return JSON.stringify(value.map(canonicalize));
+        }
+        if (typeof value === "object") {
+          const sorted = Object.keys(value as Record<string, unknown>)
+            .sort()
+            .map((k) => [k, canonicalize((value as Record<string, unknown>)[k])]);
+          return JSON.stringify(Object.fromEntries(sorted));
+        }
+        return String(value);
+      }
+
+      function computeFingerprint(
+        method: string,
+        path: string,
+        body: Record<string, unknown>,
+        fields: string[],
+        actorId?: string,
+      ): string {
+        // Extract only business-relevant fields
+        const filtered: Record<string, unknown> = {};
+        for (const field of fields) {
+          if (field in body) {
+            filtered[field] = body[field];
+          }
+        }
+
+        const input: Record<string, unknown> = {
+          method,
+          path,
+          payload: filtered,
+        };
+        if (actorId !== undefined) {
+          input.actor = actorId;
+        }
+
+        const canonical = canonicalize(input);
+        return createHash("sha256").update(canonical).digest("hex");
+      }
+
+      /**
+       * In-memory store (use PostgreSQL with INSERT ... ON CONFLICT in prod).
+       */
+      class FingerprintStore {
+        private records = new Map<string, number>();
+
+        /**
+         * Returns true if the fingerprint is within TTL (duplicate).
+         * Records a new fingerprint if not seen or expired.
+         */
+        isDuplicate(fingerprint: string, ttlSeconds: number): boolean {
+          const now = Date.now();
+          const expiry = this.records.get(fingerprint);
+
+          if (expiry !== undefined && expiry > now) {
+            return true; // within TTL → duplicate
+          }
+
+          // Not seen or expired → record and allow
+          this.records.set(fingerprint, now + ttlSeconds * 1000);
+          return false;
+        }
+
+        cleanup(ttlSeconds: number): number {
+          const now = Date.now();
+          let removed = 0;
+          for (const [key, expiry] of this.records) {
+            if (expiry <= now) {
+              this.records.delete(key);
+              removed++;
+            }
+          }
+          return removed;
+        }
+      }
+
+      // ---- Middleware factory --------------------------------------------
+      function fingerprintDedup(config: FingerprintConfig) {
+        const store = new FingerprintStore();
+
+        // Clean up expired fingerprints every 5 minutes
+        setInterval(() => store.cleanup(config.ttlSeconds), 5 * 60 * 1000);
+
+        return (req: Request, res: Response, next: NextFunction) => {
+          const actorId = config.actorResolver?.(req);
+
+          const fingerprint = computeFingerprint(
+            req.method,
+            req.path,
+            req.body as Record<string, unknown>,
+            config.fields,
+            actorId,
+          );
+
+          if (store.isDuplicate(fingerprint, config.ttlSeconds)) {
+            res.status(409).json({
+              error: "Duplicate request detected",
+              reason: "A request with identical business content was recently processed.",
+            });
+            return;
+          }
+
+          next();
+        };
+      }
+
+      // ---- Example usage -------------------------------------------------
+      const app = express();
+      app.use(express.json());
+
+      // Apply fingerprint dedup to mutation endpoints
+      app.use(
+        "/charges",
+        fingerprintDedup({
+          fields: ["amount", "card_token", "currency"],
+          ttlSeconds: 3600,
+          actorResolver: (req) =>
+            (req as unknown as { userId?: string }).userId,
+        }),
+      );
+
+      app.post("/charges", async (req, res) => {
+        // By the time we get here, we know this isn't a duplicate.
+        const result = await paymentGateway.charge(
+          req.body.amount,
+          req.body.card_token,
+        );
+        res.json({ transactionId: result.id });
+      });
+
+fingerprinting_heuristics:
+  - >
+    Fingerprints complement idempotency keys; they do not replace them.
+    Use idempotency keys for client-initiated operations (the client controls
+    dedup), and fingerprints for server-side duplicate detection (the server
+    protects itself against absent or stripped keys).
+  - >
+    Canonicalization is the hardest part. Two representations of the same
+    JSON payload can differ in key ordering, whitespace, numeric precision,
+    and encoding. A naïve json.dumps → sha256 approach will produce different
+    fingerprints for semantically identical requests. Sort keys, normalize
+    numbers, and strip insignificant fields before hashing.
+  - >
+    Exclude request metadata from the fingerprint: timestamps, request IDs,
+    tracing headers, client IPs, User-Agent strings. Including these
+    guarantees every request looks unique and fingerprinting achieves nothing.
+  - >
+    Bind the fingerprint to the actor when the same operation from different
+    users has different meaning. A $10 charge from user A and a $10 charge
+    from user B are different operations — the fingerprint must include
+    the user ID to avoid false-duplicate rejection.
+  - >
+    Fingerprints must expire. If you store every fingerprint forever, you
+    leak storage and eventually prevent legitimate repeat operations. A
+    1-hour TTL covers most retry scenarios (client timeouts, network flapping,
+    job retries) without blocking normal daily usage.
+  - >
+    Treat fingerprint matches as a signal, not a guarantee. When a match is
+    found, do a second-pass check: compare the full canonicalized payload or
+    the payload hash. If SHA-256 fingerprints match but the payloads differ,
+    you have a hash collision — rare but possible. Process the request and
+    alert on the collision for forensic review.
+  - >
+    Fingerprinting is also valuable for event sourcing and stream processing:
+    when replaying events, compute a fingerprint from the event payload and
+    check against previously processed fingerprints to skip already-applied
+    events. This makes replay idempotent without requiring the event itself
+    to carry a dedup field.
+  - >
+    For form-submission dedup (double-click protection), combine fingerprinting
+    with a server-generated nonce. The server embeds a unique nonce in the
+    form; the client submits the nonce with the POST; the server deduplicates
+    on (nonce, fingerprint). This prevents both double-submits and replay
+    attacks.
+  - >
+    Test fingerprinting by mutating non-business fields: send two requests
+    with different request IDs and timestamps but identical business content,
+    and assert the second is rejected. Test that different business content
+    yields different fingerprints. Test TTL expiry: wait past the window and
+    assert the same business content is accepted again.
+related_tags: [idempotency, idempotency-key, deduplication, exactly-once,
+  retry-safety, upsert, conditional-write, outbox-pattern, message-queue,
+  stripe, data-integrity, duplicate-prevention, request-fingerprinting,
+  canonicalization, double-submit-protection, event-replay, release-it, ddia]

@@ -1,0 +1,171 @@
+id: pep8-programming-018
+name: PEP 8 Programming Recommendations — Comparisons, Exceptions, Context Managers, and Best Practices
+category: readability
+canonical_tags: ['python', 'readability']
+sources:
+  - open_sources/python/pep-0008.html
+summary: >
+  PEP 8's programming recommendations cover common correctness and style patterns: compare
+  singletons with 'is'/'is not' (never ==), use 'is not' instead of 'not ... is', implement all
+  six rich-comparison methods (or use total_ordering), prefer def over lambda assignment, derive
+  exceptions from Exception not BaseException, use specific exception classes in except clauses
+  (avoid bare except:), keep try blocks minimal, use with for resource management, and use
+  ''.startswith()/.endswith() instead of slicing. Other rules: be consistent with return
+  statements, use isinstance() for type checks, leverage empty-sequence falsiness, avoid
+  comparing booleans to True/False, and stay away from flow control inside finally suites.
+examples:
+  - language: python
+    bad: |
+      # Equality comparison with None — is should be used for singletons.
+      if value == None:
+          ...
+
+      # 'not x is y' — harder to read than 'x is not y'.
+      if not user is None:
+          ...
+
+      # Lambda assigned to a variable — loses traceback name.
+      f = lambda x: x * 2
+
+      # Bare except: catches KeyboardInterrupt and SystemExit.
+      try:
+          import custom_library
+      except:
+          custom_library = None
+
+      # Too-broad try block — masks bugs in handle_value().
+      try:
+          return handle_value(collection[key])
+      except KeyError:
+          return key_not_found(key)
+
+      # String slicing for prefix check — error-prone with length.
+      if filename[:3] == 'tmp':
+          ...
+
+      # Type comparison instead of isinstance.
+      if type(obj) is type(1):
+          ...
+
+      # Checking empty sequence with len().
+      if len(items) == 0:
+          ...
+
+      # Boolean comparison to True.
+      if is_active == True:
+          ...
+
+      # Return inconsistency: some bare, some with value.
+      def process(x):
+          if x < 0:
+              return
+          return math.sqrt(x)
+
+      # Flow control inside finally — cancels active exception.
+      def risky():
+          try:
+              1 / 0
+          finally:
+              return 42
+    good: |
+      """PEP 8 programming recommendations: is-singleton checks, def over
+      lambda, specific exceptions, minimal try blocks, resource context
+      managers, isinstance type checks, and consistent return patterns.
+      """
+
+
+      # Use 'is' for None (and other singletons).
+      if value is None:
+          ...
+
+
+      # 'is not' reads better than 'not ... is'.
+      if user is not None:
+          ...
+
+
+      # 'if x' checks truthiness; 'if x is not None' checks presence.
+      if items:  # Empty sequences are falsy.
+          process(items)
+      if config_override is not None:  # Don't conflate with falsy containers.
+          apply_config(config_override)
+
+
+      # Define functions with 'def', not lambda assignment.
+      def double(x: float) -> float:
+          """Return x multiplied by 2."""
+          return x * 2
+
+
+      # Catch specific exceptions.
+      try:
+          import platform_specific
+      except ImportError:
+          platform_specific = None
+
+
+      # Minimal try block — only the statement that can raise.
+      try:
+          value = collection[key]
+      except KeyError:
+          return key_not_found(key)
+      else:
+          return handle_value(value)
+
+
+      # Use startswith/endswith, not slices.
+      if filename.startswith('tmp'):
+          ...
+
+
+      # isinstance for type checks — handles inheritance correctly.
+      if isinstance(obj, int):
+          ...
+
+
+      # Consistent returns: all expressions or all bare.
+      def process(x: float) -> float | None:
+          if x < 0:
+              return None
+          return math.sqrt(x)
+
+
+      # Use with statement for resource management.
+      with open('data.txt') as fh:
+          data = fh.read()
+
+      with conn.begin_transaction():
+          do_stuff_in_transaction(conn)
+
+
+      # Use functools.total_ordering if you can't implement all six
+      # rich-comparison methods (__eq__, __ne__, __lt__, __le__, __gt__, __ge__).
+      from functools import total_ordering
+
+      @total_ordering
+      class Version:
+          def __eq__(self, other): ...
+
+          def __lt__(self, other): ...
+
+
+      # Exception chaining: raise X from Y to preserve traceback.
+      try:
+          config = parse_config(path)
+      except ParseError as e:
+          raise ConfigError(f"Invalid config at {path}") from e
+heuristics:
+  - "Compare singletons (None, True, False) with 'is'/'is not', never with ==. Use 'if x is not None' (not 'if not x is None') — it reads more naturally."
+  - "Do not use 'if x' as a substitute for 'if x is not None': the former conflates None with empty containers, zero, and False. Be explicit when you mean presence."
+  - "Always use 'def' for named functions — never f = lambda .... The def form gives the function a proper __name__ for tracebacks."
+  - "Catch specific exceptions (except ValueError:) rather than bare except:. Bare except catches KeyboardInterrupt and SystemExit, breaking program control."
+  - "Keep try blocks as minimal as possible — only the statement(s) that can raise the expected exception. Move the rest into else: or after the try/except."
+  - "Use 'with' for resource management (files, locks, transactions). Context managers that do more than acquire/release should use separate named methods (conn.begin_transaction(), not conn)."
+  - "Use ''.startswith() and ''.endswith() instead of string slicing for prefix/suffix checks — clearer and avoids off-by-one errors."
+  - "Use isinstance(obj, Type) for type comparisons — it handles subclass relationships correctly. Do not compare type() directly."
+  - "Truthiness: use the fact that empty sequences and collections are falsy — 'if seq:' and 'if not seq:' rather than 'if len(seq) == 0:'."
+  - "Do not compare booleans to True or False with ==. Just write 'if greeting:' or 'if not greeting:'."
+  - "Return consistency: either all return statements return a value, or none do. If mixing, bare returns must be 'return None'."
+  - "Do not use return/break/continue inside a finally: suite — it cancels any active exception propagating through the block."
+  - "Derive exceptions from Exception, not BaseException. Design exception hierarchies around how calling code catches them, not where they originate."
+related_tags: [pep8, programming, recommendations, exceptions, context-managers, comparisons, isinstance, truthiness, return-statements]

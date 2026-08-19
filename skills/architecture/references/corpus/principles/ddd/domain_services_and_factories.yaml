@@ -1,0 +1,419 @@
+id: domain-services-factories-001
+name: "Domain-Driven Design — Domain Services and Factories: Stateless Business Logic, Object Creation, and Service Orchestration"
+category: architecture
+canonical_tags: ['ddd', 'domain-services', 'factories']
+sources:
+  - books/domain-driven-design.md
+summary: >
+  Domain services and factories are the two tactical DDD patterns for behavior
+  that cannot live comfortably on a single entity. Domain services express
+  stateless domain operations — business logic that spans multiple domain
+  concepts without belonging to any one of them. Use a domain service when the
+  behavior is domain-significant and forcing it onto an entity would distort that
+  entity's responsibility. Factories encapsulate object creation when construction
+  carries business rules, requires multiple collaborating values, or must
+  guarantee validity on return. Two flavors exist: concrete factory methods
+  (simple, single-responsibility) and abstract factories (when creation policy
+  varies by context). The canonical anti-patterns are the anemic domain model
+  (all logic in services, entities as data bags), the god service (one service
+  with dozens of unrelated policies), and scattered construction logic (validity
+  rules repeated across controllers, endpoints, and mappers). Application
+  services orchestrate the collaboration: load aggregates via repositories,
+  delegate creation to factories, coordinate via domain services, persist
+  results, and publish events — but never own the business rules themselves.
+examples:
+  - language: python
+    bad: |
+      # God service + anemic model + scattered construction — three anti-patterns in one
+      from dataclasses import dataclass
+      from decimal import Decimal
+      from typing import Any
+
+      @dataclass
+      class Account:
+          id: str
+          balance: Decimal
+          status: str  # "active" or "frozen"
+
+      @dataclass
+      class Order:
+          id: str
+          customer_id: str
+          lines: list[Any]  # anonymous dicts
+          total: Decimal = Decimal("0")
+          status: str = "draft"
+
+      class OrderService:
+          """Contains ALL domain logic. Entities are passive. Construction is ad-hoc."""
+
+          def create_order(self, request_data: dict[str, Any]) -> Order:
+              # Construction logic lives here — no factory, no single source of truth
+              order = Order(id=str(uuid4()), customer_id=request_data["customer_id"])
+              for item in request_data.get("items", []):
+                  if item["quantity"] <= 0:  # validation scattered
+                      raise ValueError("Quantity must be positive")
+                  order.lines.append(item)
+                  order.total += Decimal(str(item["price"])) * item["quantity"]
+              return order  # empty order? partial state? unclear
+
+          def place_order(self, order_id: str, account_repo: object, order_repo: object) -> None:
+              order = order_repo.find(order_id)
+              account = account_repo.find(order.customer_id)
+
+              # Business rules buried in a service method
+              if account.status != "active":
+                  raise ValueError("Account not active")
+              if account.balance < order.total:
+                  raise ValueError("Insufficient funds")
+              if not order.lines:
+                  raise ValueError("Empty order")
+
+              account.balance -= order.total  # direct mutation, no entity method
+              order.status = "placed"
+
+              account_repo.save(account)
+              order_repo.save(order)
+
+    good: |
+      from __future__ import annotations
+
+      from abc import ABC, abstractmethod
+      from dataclasses import dataclass, field
+      from decimal import Decimal
+      from typing import Protocol
+      from uuid import UUID, uuid4
+
+      # ──────────────────────────────────────────────────────────────────────
+      # Value Objects — immutable, self-validating
+      # ──────────────────────────────────────────────────────────────────────
+
+      @dataclass(frozen=True)
+      class Money:
+          amount: Decimal
+          currency: str = "USD"
+
+          def __post_init__(self) -> None:
+              if self.amount < 0:
+                  raise ValueError("Money cannot be negative")
+
+          def __add__(self, other: Money) -> Money:
+              if self.currency != other.currency:
+                  raise ValueError("Currency mismatch")
+              return Money(self.amount + other.amount, self.currency)
+
+          def __sub__(self, other: Money) -> Money:
+              if self.currency != other.currency:
+                  raise ValueError("Currency mismatch")
+              result = self.amount - other.amount
+              if result < 0:
+                  raise ValueError("Result would be negative")
+              return Money(result, self.currency)
+
+          def __mul__(self, qty: int) -> Money:
+              return Money(self.amount * qty, self.currency)
+
+      @dataclass(frozen=True)
+      class Quantity:
+          value: int
+          def __post_init__(self) -> None:
+              if self.value <= 0:
+                  raise ValueError(f"Quantity must be positive, got {self.value}")
+
+      @dataclass(frozen=True)
+      class ProductId:
+          value: str
+
+      @dataclass(frozen=True)
+      class CustomerId:
+          value: str
+
+      @dataclass(frozen=True)
+      class OrderId:
+          value: UUID = field(default_factory=uuid4)
+
+      @dataclass(frozen=True)
+      class AccountId:
+          value: UUID = field(default_factory=uuid4)
+
+      # ──────────────────────────────────────────────────────────────────────
+      # Entities — own behavior, protect state
+      # ──────────────────────────────────────────────────────────────────────
+
+      class Account:
+          """Entity: owns its balance, enforces debit/credit invariants."""
+
+          def __init__(self, account_id: AccountId, initial_balance: Money) -> None:
+              self._id = account_id
+              self._balance = initial_balance
+              self._status = "active"
+
+          @property
+          def id(self) -> AccountId:
+              return self._id
+
+          @property
+          def balance(self) -> Money:
+              return self._balance
+
+          @property
+          def status(self) -> str:
+              return self._status
+
+          def debit(self, amount: Money) -> None:
+              if self._status != "active":
+                  raise ValueError(f"Cannot debit {self._status} account")
+              self._balance = self._balance - amount  # Money.__sub__ validates
+
+          def credit(self, amount: Money) -> None:
+              if self._status != "active":
+                  raise ValueError(f"Cannot credit {self._status} account")
+              self._balance = self._balance + amount
+
+      @dataclass(frozen=True)
+      class OrderLine:
+          """Value object: subtotal computation belongs here."""
+          product_id: ProductId
+          quantity: Quantity
+          unit_price: Money
+
+          def subtotal(self) -> Money:
+              return self.unit_price * self.quantity.value
+
+      class Order:
+          """Aggregate root — created through a factory, never directly by external code."""
+
+          def __init__(self, order_id: OrderId, customer_id: CustomerId,
+                       lines: list[OrderLine]) -> None:
+              self._id = order_id
+              self._customer_id = customer_id
+              self._lines = lines
+              self._status = "draft"
+
+          @property
+          def id(self) -> OrderId:
+              return self._id
+
+          @property
+          def customer_id(self) -> CustomerId:
+              return self._customer_id
+
+          @property
+          def status(self) -> str:
+              return self._status
+
+          @property
+          def lines(self) -> list[OrderLine]:
+              return list(self._lines)
+
+          def total(self) -> Money:
+              return Money(
+                  sum(line.subtotal().amount for line in self._lines),
+                  self._lines[0].unit_price.currency if self._lines else "USD"
+              )
+
+          def place(self) -> None:
+              if not self._lines:
+                  raise ValueError("Cannot place empty order")
+              self._status = "placed"
+
+          def mark_paid(self) -> None:
+              if self._status != "placed":
+                  raise ValueError(f"Cannot mark paid from {self._status}")
+              self._status = "paid"
+
+      # ──────────────────────────────────────────────────────────────────────
+      # FACTORY — encapsulates creation rules, guarantees valid objects on return
+      # ──────────────────────────────────────────────────────────────────────
+
+      # --- Pattern A: Concrete Factory Method (simple, single responsibility) ---
+
+      class OrderFactory:
+          """Single source of truth for Order creation. Every Order returned is valid."""
+
+          def create(self, customer_id: CustomerId,
+                     line_specs: list[tuple[ProductId, Quantity, Money]]) -> Order:
+              if not line_specs:
+                  raise ValueError("Order must have at least one line item")
+
+              lines = [
+                  OrderLine(product_id=pid, quantity=qty, unit_price=price)
+                  for pid, qty, price in line_specs
+              ]
+
+              return Order(
+                  order_id=OrderId(),
+                  customer_id=customer_id,
+                  lines=lines,
+              )
+
+          def reconstitute(self, order_id: OrderId, customer_id: CustomerId,
+                          lines: list[OrderLine], status: str) -> Order:
+              """Reconstitution: restore from persistence — bypasses creation validation."""
+              order = Order.__new__(Order)
+              order._id = order_id          # type: ignore[attr-defined]
+              order._customer_id = customer_id
+              order._lines = lines
+              order._status = status
+              return order
+
+      # --- Pattern B: Abstract Factory (creation policy varies by context) ---
+
+      class PricingPolicy(ABC):
+          """Abstract factory for line-item pricing. Different policies = different factories."""
+
+          @abstractmethod
+          def price_for(self, product_id: ProductId, quantity: Quantity) -> Money:
+              ...
+
+      class RetailPricing(PricingPolicy):
+          def price_for(self, product_id: ProductId, quantity: Quantity) -> Money:
+              # Look up retail price from product catalog
+              return Money(Decimal("29.99"))
+
+      class WholesalePricing(PricingPolicy):
+          def price_for(self, product_id: ProductId, quantity: Quantity) -> Money:
+              base = Decimal("29.99")
+              if quantity.value >= 100:
+                  return Money(base * Decimal("0.70"))  # 30% discount
+              if quantity.value >= 10:
+                  return Money(base * Decimal("0.85"))  # 15% discount
+              return Money(base)
+
+      class PricedOrderFactory:
+          """Factory that applies a pricing policy during creation."""
+
+          def __init__(self, pricing: PricingPolicy) -> None:
+              self._pricing = pricing
+
+          def create(self, customer_id: CustomerId,
+                     line_specs: list[tuple[ProductId, Quantity]]) -> Order:
+              """Prices are computed by the injected policy, not hardcoded."""
+              priced_specs = [
+                  (pid, qty, self._pricing.price_for(pid, qty))
+                  for pid, qty in line_specs
+              ]
+              return OrderFactory().create(customer_id, priced_specs)
+
+      # ──────────────────────────────────────────────────────────────────────
+      # DOMAIN SERVICE — stateless, coordinates entities, depends on domain interfaces
+      # ──────────────────────────────────────────────────────────────────────
+
+      class FeePolicy(ABC):
+          """Domain interface — different fee policies for different customer tiers."""
+
+          @abstractmethod
+          def fee_for(self, account_id: AccountId, amount: Money) -> Money:
+              ...
+
+      class StandardFeePolicy(FeePolicy):
+          def fee_for(self, account_id: AccountId, amount: Money) -> Money:
+              if amount.amount > Decimal("1000"):
+                  return Money(Decimal("0"), amount.currency)
+              return Money(Decimal("5.00"), amount.currency)
+
+      class PremiumFeePolicy(FeePolicy):
+          def fee_for(self, account_id: AccountId, amount: Money) -> Money:
+              return Money(Decimal("0"), amount.currency)  # no fees for premium
+
+      class FundsTransferService:
+          """Domain service: stateless coordination of Account entities.
+          Named after the business capability — FundsTransfer — not a technical role."""
+
+          def __init__(self, fee_policy: FeePolicy) -> None:
+              self._fee_policy = fee_policy
+
+          def transfer(self, source: Account, target: Account, amount: Money) -> Money:
+              if source.id == target.id:
+                  raise ValueError("Cannot transfer to the same account")
+
+              fee = self._fee_policy.fee_for(source.id, amount)
+              total_deduction = amount + fee  # Money.__add__ validates currency
+
+              source.debit(total_deduction)   # entity enforces "active + sufficient funds"
+              target.credit(amount)           # entity enforces "active only"
+
+              return fee
+
+      # ──────────────────────────────────────────────────────────────────────
+      # Repository interfaces — domain-facing contracts, implementation in infra
+      # ──────────────────────────────────────────────────────────────────────
+
+      class AccountRepository(ABC):
+          @abstractmethod
+          def account_of(self, account_id: AccountId) -> Account | None: ...
+          @abstractmethod
+          def save(self, account: Account) -> None: ...
+
+      class OrderRepository(ABC):
+          @abstractmethod
+          def order_of(self, order_id: OrderId) -> Order | None: ...
+          @abstractmethod
+          def save(self, order: Order) -> None: ...
+
+      # ──────────────────────────────────────────────────────────────────────
+      # APPLICATION SERVICES — orchestrate factories + domain services + repos
+      # ──────────────────────────────────────────────────────────────────────
+
+      class CreateOrderUseCase:
+          """Application service: orchestrates factory, not business rules."""
+
+          def __init__(self, factory: PricedOrderFactory, repo: OrderRepository) -> None:
+              self._factory = factory
+              self._repo = repo
+
+          def execute(self, customer_id: str, items: list[dict]) -> Order:
+              specs = [
+                  (ProductId(i["product_id"]), Quantity(i["quantity"]))
+                  for i in items
+              ]
+              order = self._factory.create(CustomerId(customer_id), specs)
+              self._repo.save(order)
+              return order
+
+      class PlaceOrderUseCase:
+          """Application service: orchestrates domain service + repositories."""
+
+          def __init__(self, accounts: AccountRepository, orders: OrderRepository,
+                       transfer_svc: FundsTransferService) -> None:
+              self._accounts = accounts
+              self._orders = orders
+              self._transfer = transfer_svc
+
+          def execute(self, order_id: str) -> None:
+              order = self._orders.order_of(OrderId(UUID(order_id)))
+              if order is None:
+                  raise ValueError("Order not found")
+
+              account = self._accounts.account_of(AccountId(UUID(order.customer_id.value)))
+              if account is None:
+                  raise ValueError("Account not found")
+
+              # Domain service makes the business decision
+              self._transfer.transfer(
+                  source=account,
+                  target=Account(...),  # merchant settlement account
+                  amount=order.total(),
+              )
+
+              order.mark_paid()
+              self._accounts.save(account)
+              self._orders.save(order)
+
+heuristics:
+  - Use a domain service only when behavior is domain-significant and does not naturally belong to one entity or value object. If the operation can live on an entity without distorting it, put it there.
+  - Domain services are stateless. They coordinate domain objects but do not hold domain state themselves. State belongs in entities and value objects.
+  - Name domain services after business capabilities: FundsTransferService, PricingEngine, FraudDetectionPolicy, RoutingStrategy. Avoid generic names like OrderManager, InvoiceProcessor, or DataHandler.
+  - Domain services must depend only on domain interfaces, not on infrastructure. A domain service that imports a database connection, message broker, or HTTP client is not a domain service — it is infrastructure leaking upward.
+  - Do not move all behavior into services. A domain with entities that are just data bags and services that contain all logic is the anemic domain model anti-pattern, not DDD.
+  - Keep domain services focused on a single business capability. A service called OrderService with 30 methods is not a domain service — it is a god object.
+  - Use factories when construction involves business rules beyond simple field assignment. If creation requires checking policies, combining multiple value objects, or enforcing invariants across collaborators, a factory earns its cost.
+  - Factories guarantee valid objects on return. A caller should never receive a partially initialized or invalid object from a factory. If construction fails, raise — never return an object that "still needs setup."
+  - Use concrete factory methods (like OrderFactory) for simple creation with a single set of rules. Use abstract factories (like PricingPolicy → RetailPricing/WholesalePricing) when creation policy varies by context, customer tier, or configuration.
+  - Provide a separate reconstitution path for loading from persistence. Use a `reconstitute()` method that bypasses creation validation — stored objects were valid when first created.
+  - Controllers, endpoints, and mappers must not contain business construction logic. Translate request data into factory inputs, then delegate creation to the factory.
+  - Application services orchestrate the collaboration: load aggregates, delegate creation to factories, coordinate via domain services, persist results, publish events. They own the use case flow — never the business rules.
+  - A domain service is not the same as an application service. Domain services contain domain logic (business rules, policies, coordination of domain objects). Application services orchestrate use cases (load aggregates, call domain services, persist, publish events).
+  - Test domain services with in-memory implementations of their dependencies. A FundsTransferService test uses a fake FeePolicy and real Account entities — no database required.
+  - Test factory creation paths separately from reconstitution paths. Creation rejects invalid inputs and produces valid outputs. Reconstitution faithfully restores previously valid state without re-applying creation rules.
+
+related_tags: [domain-services, factories, stateless-operations, abstract-factories, factory-methods, business-policies, anemic-domain-model, ubiquitous-language, ddd-tactical, coordination, valid-construction, reconstitution, application-services, orchestration]

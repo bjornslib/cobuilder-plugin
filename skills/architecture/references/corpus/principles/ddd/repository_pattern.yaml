@@ -1,0 +1,1084 @@
+id: repository-pattern-001
+name: "Domain-Driven Design — Repository Pattern: Collection-Oriented vs Persistence-Oriented, Specifications, and Testing Strategies"
+category: architecture
+canonical_tags: ['ddd', 'repository-pattern', 'aggregates', 'tactical-design', 'specifications', 'testing']
+sources:
+  - books/domain-driven-design.md
+  - books/patterns-of-enterprise-application-architecture.md
+summary: >
+  The repository pattern is the bridge between the domain model and persistence — but
+  the way you design that bridge defines the architecture of your entire application.
+  A collection-oriented repository (DDD) presents the illusion of an in-memory collection:
+  clients add, remove, and find aggregate roots as if they were objects in a Set or Map,
+  with persistence handled transparently behind the interface. A persistence-oriented
+  repository (PoEAA) makes storage operations explicit: save, update, delete are first-class
+  verbs the caller invokes intentionally. The wrong choice for your domain complexity
+  creates either leaky abstractions (collection-oriented hides performance disasters) or
+  anemic models (persistence-oriented pushes business logic into orchestration code).
+  The specification pattern complements repositories by extracting reusable, combinable
+  business rules — EligibleForRenewal, InvoiceIsOverdue, RouteSatisfiesPolicy — into
+  named domain objects that answer "does this satisfy the criterion?" Specifications
+  keep query logic out of repositories, validation logic out of services, and selection
+  logic out of controllers. Testing repositories forces a hard choice: mock the interface
+  (fast, tests domain logic) or integration-test the implementation (real, tests SQL/ORM).
+  The answer is both — mock repositories for domain-level tests, integration-test the
+  real implementation for persistence correctness, and use in-memory fakes for the middle
+  ground when you need speed without mocks.
+
+orientation_comparison:
+  - dimension: "Metaphor"
+    collection_oriented: >
+      The repository is an in-memory collection of aggregate roots. Clients ask for
+      objects, add new ones, and remove old ones — just like working with a Set, List,
+      or Map. Persistence is an implementation detail, not part of the contract.
+    persistence_oriented: >
+      The repository is a persistence gateway. Clients explicitly save, update, and
+      delete. The contract names the storage operations so callers understand that
+      work is happening and can control when it occurs.
+  - dimension: "Primary operation"
+    collection_oriented: >
+      `add(aggregate)`, `remove(aggregate)`, `findById(id)`, `findByCriteria(spec)`.
+      Adding an object to the repository implies it will be persisted, but the caller
+      doesn't say when or how.
+    persistence_oriented: >
+      `save(aggregate)`, `update(aggregate)`, `delete(aggregate)`, `findById(id)`.
+      Every mutation verb is explicit. The caller owns the decision to persist.
+  - dimension: "Transaction awareness"
+    collection_oriented: >
+      Transactions are hidden. The repository decides when to flush, commit, or roll
+      back. The client works with objects; the infrastructure manages consistency.
+      This works best with a Unit of Work pattern tracking dirty objects.
+    persistence_oriented: >
+      Transactions are explicit. The caller wraps save/update/delete calls in a
+      transactional boundary. You always know when a write hits the database because
+      you called the method that does it.
+  - dimension: "Best for"
+    collection_oriented: >
+      Complex domains with rich aggregates, invariants, and lifecycle transitions.
+      DDD tactical design where the domain model should be persistence-ignorant.
+      Systems where multiple objects change in a single business operation and you
+      want the infrastructure to figure out ordering.
+    persistence_oriented: >
+      Transaction scripts, simple CRUD, or domains where the business logic pattern
+      is not a rich domain model. Systems where explicit control over persistence
+      timing matters (batching, write-ordering, partial saves). When your ORM
+      already provides a clean persistence gateway.
+  - dimension: "Unit of Work coupling"
+    collection_oriented: >
+      Almost always paired with Unit of Work. The repository tracks added/removed
+      objects; the Unit of Work commits them as one batch. Without UoW, collection-
+      oriented repositories become ambiguous ("when does add() actually save?").
+    persistence_oriented: >
+      Optional. Each save/update is self-contained. You can still batch with an
+      explicit transaction wrapper, but the repository doesn't require batching
+      infrastructure to make sense.
+  - dimension: "Query complexity"
+    collection_oriented: >
+      Query methods express domain intent: `findOverdueInvoices()`, `findCustomersEligibleForUpgrade()`.
+      Complex queries are encapsulated behind named methods or specifications.
+      Avoids leaking SQL/ORM query builders into domain code.
+    persistence_oriented: >
+      May expose query builders or criteria objects: `findBy(Criteria)`, `query(QueryBuilder)`.
+      More flexible for ad-hoc reporting and admin queries, but risks leaking
+      persistence concerns into application logic.
+  - dimension: "Testing"
+    collection_oriented: >
+      Trivial to mock — the interface looks like a collection. `mock_repo.find_by_id.return_value = order`.
+      Domain logic tests never touch a database. Fast, isolated, clean.
+    persistence_oriented: >
+      Still mockable, but explicit save/update verbs mean tests must simulate more
+      persistence behavior. Integration tests are more important because the explicit
+      contract often encodes storage semantics.
+
+specification_pattern:
+  summary: >
+    A specification is a predicate that determines whether an object satisfies some
+    criterion. It's a domain concept, not a query builder — even when it's used to
+    build queries. The three canonical uses: (1) Selection — find objects matching a
+    criterion (repository query); (2) Validation — check whether an object is in a
+    valid state for an operation; (3) Construction — build an object to order based
+    on a specification. Specifications compose through AND, OR, and NOT — you can
+    combine `InvoiceIsOverdue` AND `CustomerHasCreditHold` into a single
+    `ShouldBlockShipment` specification without writing new conditional logic.
+  rules:
+    - "Specifications must live in the domain layer, speak ubiquitous language, and express business rules — not SQL fragments."
+    - "A specification answers a yes/no question about a domain object. It is not a data-access helper disguised as a domain concept."
+    - "Composition (AND/OR/NOT) is the killer feature. Build complex rules from simple, tested specifications."
+    - "When a specification is used for repository queries, the translation to SQL/ORM must happen in infrastructure, not in the specification itself."
+    - "Do not put query-building logic in specifications. The specification says 'what'; the repository implementation figures out 'how'."
+  selection:
+    description: "Use specifications as query criteria for repositories. The specification encodes the business rule; the repository implementation translates it to a query."
+  validation:
+    description: "Use specifications to check whether an object is valid for an operation. `order.cancel()` can check `CancellationIsAllowed.isSatisfiedBy(order)` before transitioning state."
+  construction:
+    description: "Use specifications to describe what should be built. A `ProductRequirement` specification can drive a factory to create matching products."
+
+testing_repositories:
+  summary: >
+    Testing strategy for repositories operates on three levels, and skipping any one
+    creates blind spots. Mock repositories for domain logic tests (fast, focused on
+    business rules). In-memory fake repositories for integration-level domain tests
+    (real object lifecycle, no database). Real repository integration tests for
+    persistence correctness (SQL, ORM mapping, transactional behavior). The key
+    insight: mock the interface, not the implementation. When your repository
+    interface is defined in domain terms (findOverdueInvoices, not findBySql), mocks
+    are clean and meaningful. When the interface is a generic CRUD gateway, mocks
+    become elaborate re-implementations of the database and you've lost the point.
+  strategy:
+    - level: "Mock repositories"
+      when: "Testing domain logic, application services, or use cases in isolation."
+      what: "Replace the repository with a test double. Assert that the service calls the right methods with the right arguments — not that the database was updated."
+      value: "Fast, deterministic, forces clean interface design. If mocking is hard, your repository interface is wrong."
+    - level: "In-memory fakes"
+      when: "Testing workflows that span multiple repository operations without database overhead."
+      what: "Implement the repository interface with a dict or Map. Objects live for the duration of the test. Full lifecycle (add, modify, find, remove) works in-process."
+      value: "Real object behavior without database setup/teardown. Catches state-transition bugs that mocks miss."
+    - level: "Integration tests"
+      when: "Testing repository implementations, ORM mappings, SQL queries, transactional behavior."
+      what: "Spin up a real database (testcontainer, in-memory SQLite, Docker Postgres). Save real objects, query them back, verify persistence correctness."
+      value: "Catches SQL errors, mapping mistakes, constraint violations, and N+1 problems. The only way to verify your queries actually work."
+  anti_patterns:
+    - "Mocking the database driver or ORM internals instead of the repository interface — tests become brittle re-implementations of Hibernate/SQLAlchemy."
+    - "Only integration-testing repositories — domain tests become slow, flaky, and skip edge cases because setup is painful."
+    - "Only mock-testing repositories — you never verify that your SQL actually runs, and production fails on queries that 'worked in tests.'"
+    - "Creating a mock that re-implements collection semantics with a real database — you're integration testing but calling it a mock."
+
+common_pitfalls:
+  - pitfall: "Generic repository overreach — `IRepository<T>` with `GetAll()`, `Find(Expression<Func<T,bool>>)`, `Add(T)`, `Remove(T)`"
+    explanation: "The interface says nothing about the domain. A CustomerRepository and an OrderRepository have the same API. You can't tell what queries are allowed, what's efficient, or what the domain means. Specifications become LINQ expressions, not business rules."
+    fix: "Create focused repository interfaces per aggregate: `OrderRepository.findOverdue()`, `CustomerRepository.findEligibleForUpgrade()`. The name IS the documentation."
+
+  - pitfall: "Repository per table instead of per aggregate root"
+    explanation: "If you have OrderRepository, OrderLineRepository, and OrderAddressRepository, you've modeled your database, not your domain. OrderLine and Address are part of the Order aggregate — they should be loaded and saved through OrderRepository only."
+    fix: "One repository per aggregate root. Line items and addresses are loaded with the Order, saved with the Order. If you need to query line items independently, ask whether they're really part of the same aggregate."
+
+  - pitfall: "Collection-oriented repository without Unit of Work"
+    explanation: "`repo.add(order)` followed by `repo.add(lineItem)` — when does it save? In what order? If the second add fails, is the first one rolled back? Without UoW tracking dirty objects and committing atomically, collection semantics are a lie."
+    fix: "Either pair collection-oriented repos with Unit of Work, or switch to persistence-oriented with explicit save(). Don't run the middle ground where nobody knows when writes happen."
+
+  - pitfall: "Specifications that are just query builders"
+    explanation: "`new Specification({ where: { status: 'overdue', amount: { gt: 100 } } })` — this is a JSON query, not a domain concept. It lives in infrastructure, speaks ORM dialect, and can't be unit-tested without a database."
+    fix: "Name the business rule: `InvoiceIsOverdue`. Give it a `isSatisfiedBy(invoice) -> bool` method. Let the repository implementation translate it to SQL. The specification is pure domain logic."
+
+  - pitfall: "Putting business rules in repository implementations"
+    explanation: "`OrderRepository.save(order)` checks if the order total exceeds the customer's credit limit and throws. Now domain rules live in infrastructure code. Switch databases and the rule vanishes."
+    fix: "Business rules belong in domain objects or domain services. The repository persists state; the domain model enforces rules. Validate before saving, not during."
+
+  - pitfall: "Mixing collection and persistence semantics in one interface"
+    explanation: "`add(order)` PLUS `save(order)` PLUS `flush()` — the interface can't decide what it is. Callers don't know whether add() persists or just stages. Tests break when you change the underlying ORM because the interface leaked implementation details."
+    fix: "Pick one metaphor and commit. If you're DDD, it's add/remove with UoW. If you're PoEAA, it's save/update/delete. Don't hybridize."
+
+  - pitfall: "Lazy loading across aggregate boundaries disguised as repository calls"
+    explanation: "`order.getCustomer()` triggers a hidden `customerRepository.findById(order.customerId)`. Now domain objects depend on repositories, persistence is unpredictable, and your 'pure' domain model has database calls in getters."
+    fix: "Reference other aggregates by identity. If the application service needs the Customer, it calls `customerRepo.findById(order.customerId)` explicitly. The domain model stays persistence-ignorant."
+
+examples:
+  - language: python
+    bad: |
+      # Generic repository erases domain meaning. Everything is CRUD.
+      # Specification is a dict of filters, not a business rule.
+      # Collection and persistence semantics are confused.
+
+      from __future__ import annotations
+
+      from abc import ABC, abstractmethod
+      from dataclasses import dataclass
+      from decimal import Decimal
+      from typing import Any, Generic, Protocol, TypeVar
+      from uuid import UUID
+
+      T = TypeVar("T")
+
+      # --- GENERIC REPOSITORY: says nothing about the domain ---
+      class IRepository(Generic[T], ABC):
+          @abstractmethod
+          def get_by_id(self, id: UUID) -> T | None: ...
+          @abstractmethod
+          def find(self, spec: dict[str, Any]) -> list[T]: ...  # Dict is not a spec
+          @abstractmethod
+          def add(self, entity: T) -> None: ...
+          @abstractmethod
+          def remove(self, entity: T) -> None: ...
+          @abstractmethod
+          def save(self, entity: T) -> None: ...  # Both add AND save?
+          @abstractmethod
+          def flush(self) -> None: ...
+
+      # --- DOMAIN MODEL: anemic, no behavior ---
+      @dataclass
+      class Invoice:
+          id: UUID
+          customer_id: UUID
+          amount: Decimal
+          due_date: str
+          status: str  # "paid", "overdue", "draft" — stringly typed
+
+      # --- REPOSITORY IMPLEMENTATION: business logic in infrastructure ---
+      class SqlInvoiceRepository(IRepository[Invoice]):
+          def save(self, invoice: Invoice) -> None:
+              # Business rule buried in infrastructure!
+              if invoice.amount > Decimal("10000") and invoice.status == "draft":
+                  raise ValueError("Large invoices require manager approval")
+              # ... actual SQL ...
+
+          def find(self, spec: dict[str, Any]) -> list[Invoice]:
+              query = "SELECT * FROM invoices WHERE 1=1"
+              if "status" in spec:
+                  query += f" AND status = '{spec['status']}'"  # SQL injection!
+              if "min_amount" in spec:
+                  query += f" AND amount > {spec['min_amount']}"
+              # ... execute query ...
+              return []
+
+      # --- APPLICATION SERVICE: orchestration leaking everywhere ---
+      class OverdueInvoiceService:
+          def __init__(self, repo: IRepository[Invoice]) -> None:
+              self._repo = repo
+
+          def process_overdue(self) -> None:
+              overdue_spec = {"status": "overdue", "min_amount": 100}
+              invoices = self._repo.find(overdue_spec)
+              for inv in invoices:
+                  # Business logic in application layer
+                  if inv.amount > Decimal("5000"):
+                      print(f"Escalate {inv.id}")  # Print???
+                  else:
+                      print(f"Send reminder for {inv.id}")
+
+      # --- TESTING: mock is elaborate and meaningless ---
+      def test_process_overdue():
+          mock_repo = Mock()
+          mock_repo.find.return_value = [
+              Invoice(UUID("..."), UUID("..."), Decimal("6000"), "2024-01-01", "overdue")
+          ]
+          svc = OverdueInvoiceService(mock_repo)
+          svc.process_overdue()
+          mock_repo.find.assert_called_once_with(
+              {"status": "overdue", "min_amount": 100}
+          )  # Testing dict shape, not domain behavior
+
+    good: |
+      # Focused repository per aggregate. Collection-oriented with UoW.
+      # Specification is a composable domain predicate.
+      # Three-level testing: mock, fake, integration.
+
+      from __future__ import annotations
+
+      from abc import ABC, abstractmethod
+      from dataclasses import dataclass, field
+      from datetime import date, timedelta
+      from decimal import Decimal
+      from typing import Protocol
+      from uuid import UUID, uuid4
+
+      # ====================================================================
+      # DOMAIN LAYER: specifications + aggregate + repository interface
+      # ====================================================================
+
+      # --- VALUE OBJECTS ---
+
+      @dataclass(frozen=True)
+      class Money:
+          amount: Decimal
+          currency: str = "USD"
+
+          def __post_init__(self) -> None:
+              if self.amount < 0:
+                  raise ValueError(f"Money cannot be negative: {self.amount}")
+
+          def __gt__(self, other: Money) -> bool:
+              if self.currency != other.currency:
+                  raise ValueError("Currency mismatch")
+              return self.amount > other.amount
+
+      # --- SPECIFICATIONS: pure domain predicates, composable ---
+
+      class InvoiceSpecification(ABC):
+          """Base class for invoice specifications — domain predicates, not queries."""
+
+          @abstractmethod
+          def is_satisfied_by(self, invoice: Invoice) -> bool: ...
+
+          def __and__(self, other: InvoiceSpecification) -> AndSpecification:
+              return AndSpecification(self, other)
+
+          def __or__(self, other: InvoiceSpecification) -> OrSpecification:
+              return OrSpecification(self, other)
+
+          def __invert__(self) -> NotSpecification:
+              return NotSpecification(self)
+
+      class AndSpecification(InvoiceSpecification):
+          def __init__(self, left: InvoiceSpecification, right: InvoiceSpecification) -> None:
+              self._left = left
+              self._right = right
+
+          def is_satisfied_by(self, invoice: Invoice) -> bool:
+              return self._left.is_satisfied_by(invoice) and self._right.is_satisfied_by(invoice)
+
+      class OrSpecification(InvoiceSpecification):
+          def __init__(self, left: InvoiceSpecification, right: InvoiceSpecification) -> None:
+              self._left = left
+              self._right = right
+
+          def is_satisfied_by(self, invoice: Invoice) -> bool:
+              return self._left.is_satisfied_by(invoice) or self._right.is_satisfied_by(invoice)
+
+      class NotSpecification(InvoiceSpecification):
+          def __init__(self, spec: InvoiceSpecification) -> None:
+              self._spec = spec
+
+          def is_satisfied_by(self, invoice: Invoice) -> bool:
+              return not self._spec.is_satisfied_by(invoice)
+
+      class InvoiceIsOverdue(InvoiceSpecification):
+          """Domain rule: an invoice is overdue if past due_date and not paid."""
+          def is_satisfied_by(self, invoice: Invoice) -> bool:
+              return invoice.status == "issued" and invoice.due_date < date.today()
+
+      class InvoiceAmountExceeds(Money):
+          """Domain rule: invoice amount exceeds a threshold."""
+          def __init__(self, threshold: Money) -> None:
+              self._threshold = threshold
+
+          def is_satisfied_by(self, invoice: Invoice) -> bool:
+              return invoice.total_amount > self._threshold
+
+      class CustomerHasCreditHold(InvoiceSpecification):
+          """Domain rule: customer is on credit hold."""
+          def __init__(self, hold_list: set[UUID]) -> None:
+              self._hold_list = hold_list
+
+          def is_satisfied_by(self, invoice: Invoice) -> bool:
+              return invoice.customer_id in self._hold_list
+
+      # Composed specification — no new code, just composition
+      def ShouldEscalateInvoice() -> InvoiceSpecification:
+          return InvoiceIsOverdue() & InvoiceAmountExceeds(Money(Decimal("5000"), "USD"))
+
+      # --- AGGREGATE ROOT ---
+
+      class Invoice:
+          def __init__(
+              self,
+              invoice_id: UUID,
+              customer_id: UUID,
+              amount: Money,
+              due_date: date,
+          ) -> None:
+              self._id = invoice_id
+              self._customer_id = customer_id
+              self._amount = amount
+              self._due_date = due_date
+              self._status: str = "draft"
+              self._payments: list[Payment] = []
+
+          # --- Identity ---
+          @property
+          def id(self) -> UUID:
+              return self._id
+
+          @property
+          def customer_id(self) -> UUID:
+              return self._customer_id
+
+          @property
+          def status(self) -> str:
+              return self._status
+
+          @property
+          def due_date(self) -> date:
+              return self._due_date
+
+          @property
+          def total_amount(self) -> Money:
+              paid = sum((p.amount for p in self._payments), Money(Decimal("0"), self._amount.currency))
+              return Money(self._amount.amount - paid.amount, self._amount.currency)
+
+          def __eq__(self, other: object) -> bool:
+              if not isinstance(other, Invoice):
+                  return NotImplemented
+              return self._id == other._id
+
+          def __hash__(self) -> int:
+              return hash(self._id)
+
+          # --- Domain behavior ---
+
+          def issue(self) -> None:
+              if self._status != "draft":
+                  raise ValueError(f"Cannot issue a {self._status} invoice")
+              if self._amount.amount == 0:
+                  raise ValueError("Cannot issue a zero-amount invoice")
+              self._status = "issued"
+
+          def record_payment(self, payment: Payment) -> None:
+              if self._status not in ("issued", "partially_paid"):
+                  raise ValueError(f"Cannot pay a {self._status} invoice")
+              self._payments.append(payment)
+              if self.total_amount.amount <= 0:
+                  self._status = "paid"
+              else:
+                  self._status = "partially_paid"
+
+          def cancel(self, reason: str) -> None:
+              if self._status == "paid":
+                  raise ValueError("Cannot cancel a paid invoice")
+              if not reason.strip():
+                  raise ValueError("Cancellation requires a reason")
+              self._status = "cancelled"
+
+      @dataclass(frozen=True)
+      class Payment:
+          amount: Money
+          paid_at: date
+
+      # --- REPOSITORY INTERFACE: collection-oriented, domain language ---
+
+      class InvoiceRepository(ABC):
+          """Collection-oriented repository for the Invoice aggregate."""
+
+          @abstractmethod
+          def add(self, invoice: Invoice) -> None:
+              """Add an invoice to the collection. Persisted on UoW commit."""
+
+          @abstractmethod
+          def remove(self, invoice: Invoice) -> None:
+              """Remove an invoice from the collection. Deleted on UoW commit."""
+
+          @abstractmethod
+          def find_by_id(self, invoice_id: UUID) -> Invoice | None:
+              """Find an invoice by its identity."""
+
+          @abstractmethod
+          def find_satisfying(self, spec: InvoiceSpecification) -> list[Invoice]:
+              """Find all invoices that satisfy a domain specification."""
+
+          @abstractmethod
+          def find_overdue(self, as_of: date | None = None) -> list[Invoice]:
+              """Domain-intent query: find all overdue invoices."""
+
+      # --- UNIT OF WORK ---
+
+      class UnitOfWork(ABC):
+          invoices: InvoiceRepository
+
+          @abstractmethod
+          def commit(self) -> None: ...
+
+          @abstractmethod
+          def rollback(self) -> None: ...
+
+          def __enter__(self) -> UnitOfWork:
+              return self
+
+          def __exit__(self, *args: object) -> None:
+              self.rollback()
+
+      # ====================================================================
+      # INFRASTRUCTURE LAYER: real repository + spec-to-SQL translation
+      # ====================================================================
+
+      class SqlInvoiceRepository(InvoiceRepository):
+          def __init__(self, session: Any) -> None:
+              self._session = session
+              self._seen: set[Invoice] = set()
+
+          def add(self, invoice: Invoice) -> None:
+              self._seen.add(invoice)
+              self._session.add(invoice_to_row(invoice))
+
+          def remove(self, invoice: Invoice) -> None:
+              self._seen.discard(invoice)
+              row = self._session.query(InvoiceRow).filter_by(id=str(invoice.id)).first()
+              if row:
+                  self._session.delete(row)
+
+          def find_by_id(self, invoice_id: UUID) -> Invoice | None:
+              row = self._session.query(InvoiceRow).filter_by(id=str(invoice_id)).first()
+              return row_to_invoice(row) if row else None
+
+          def find_satisfying(self, spec: InvoiceSpecification) -> list[Invoice]:
+              # Infrastructure translates specification to SQL.
+              # The spec itself stays pure domain logic.
+              translator = SpecificationTranslator()
+              query = translator.translate(spec)
+              rows = self._session.execute(query).fetchall()
+              return [row_to_invoice(r) for r in rows]
+
+          def find_overdue(self, as_of: date | None = None) -> list[Invoice]:
+              cutoff = as_of or date.today()
+              rows = (
+                  self._session.query(InvoiceRow)
+                  .filter(InvoiceRow.status == "issued")
+                  .filter(InvoiceRow.due_date < cutoff)
+                  .all()
+              )
+              return [row_to_invoice(r) for r in rows]
+
+      # ====================================================================
+      # APPLICATION LAYER: use case coordinates domain + repository
+      # ====================================================================
+
+      class ProcessOverdueInvoicesUseCase:
+          def __init__(self, uow_factory: callable[[], UnitOfWork]) -> None:
+              self._uow_factory = uow_factory
+
+          def execute(self) -> list[UUID]:
+              escalated: list[UUID] = []
+              with self._uow_factory() as uow:
+                  overdue = uow.invoices.find_overdue()
+                  escalate_spec = ShouldEscalateInvoice()
+                  for inv in overdue:
+                      if escalate_spec.is_satisfied_by(inv):
+                          escalated.append(inv.id)
+                          # Escalate via domain event or notification service
+                  uow.commit()
+              return escalated
+
+      # ====================================================================
+      # TESTING: three levels
+      # ====================================================================
+
+      # --- Level 1: Mock repository for domain logic tests ---
+
+      def test_should_escalate_overdue_large_invoice():
+          """Specification works on domain objects — no repository needed."""
+          inv = Invoice(
+              UUID("a" * 32), UUID("c" * 32),
+              Money(Decimal("6000"), "USD"),
+              date.today() - timedelta(days=31),
+          )
+          inv.issue()
+
+          spec = ShouldEscalateInvoice()
+          assert spec.is_satisfied_by(inv) is True
+
+      def test_use_case_escalates_overdue_invoices():
+          """Mock repository verifies orchestration without database."""
+          mock_repo = Mock(spec=InvoiceRepository)
+          overdue_inv = Invoice(
+              UUID("a" * 32), UUID("c" * 32),
+              Money(Decimal("6000"), "USD"),
+              date.today() - timedelta(days=31),
+          )
+          overdue_inv.issue()
+          mock_repo.find_overdue.return_value = [overdue_inv]
+
+          mock_uow = Mock(spec=UnitOfWork)
+          mock_uow.invoices = mock_repo
+
+          uow_factory = lambda: mock_uow  # noqa: E731
+          use_case = ProcessOverdueInvoicesUseCase(uow_factory)
+          escalated = use_case.execute()
+
+          assert len(escalated) == 1
+          assert escalated[0] == overdue_inv.id
+          mock_uow.commit.assert_called_once()
+
+      # --- Level 2: In-memory fake for integration-level domain tests ---
+
+      class InMemoryInvoiceRepository(InvoiceRepository):
+          def __init__(self) -> None:
+              self._invoices: dict[UUID, Invoice] = {}
+
+          def add(self, invoice: Invoice) -> None:
+              self._invoices[invoice.id] = invoice
+
+          def remove(self, invoice: Invoice) -> None:
+              self._invoices.pop(invoice.id, None)
+
+          def find_by_id(self, invoice_id: UUID) -> Invoice | None:
+              return self._invoices.get(invoice_id)
+
+          def find_satisfying(self, spec: InvoiceSpecification) -> list[Invoice]:
+              return [inv for inv in self._invoices.values() if spec.is_satisfied_by(inv)]
+
+          def find_overdue(self, as_of: date | None = None) -> list[Invoice]:
+              spec = InvoiceIsOverdue()
+              return self.find_satisfying(spec)
+
+      def test_multiple_invoice_lifecycle_with_fake():
+          """Fake repository catches state-transition bugs mocks miss."""
+          repo = InMemoryInvoiceRepository()
+          inv1 = Invoice(uuid4(), uuid4(), Money(Decimal("100"), "USD"), date.today() + timedelta(days=30))
+          inv2 = Invoice(uuid4(), uuid4(), Money(Decimal("200"), "USD"), date.today() - timedelta(days=5))
+          inv2.issue()
+
+          repo.add(inv1)
+          repo.add(inv2)
+
+          # Only inv2 is overdue
+          overdue = repo.find_overdue()
+          assert len(overdue) == 1
+          assert overdue[0].id == inv2.id
+
+          # Pay inv2 — it should no longer be overdue
+          inv2.record_payment(Payment(Money(Decimal("200"), "USD"), date.today()))
+          overdue = repo.find_overdue()
+          assert len(overdue) == 0
+
+      # --- Level 3: Integration test for real repository ---
+      # (Requires database — run in CI, not in fast unit-test suite)
+
+      def test_sql_repository_persists_and_retrieves():
+          """Integration test verifies real SQL behavior."""
+          # Setup: create engine, create tables, begin transaction
+          # session = create_test_session()
+          # repo = SqlInvoiceRepository(session)
+          #
+          # inv = Invoice(uuid4(), uuid4(), Money(Decimal("150"), "USD"), date.today() + timedelta(days=30))
+          # inv.issue()
+          # repo.add(inv)
+          # session.commit()
+          #
+          # fetched = repo.find_by_id(inv.id)
+          # assert fetched is not None
+          # assert fetched.status == "issued"
+          # assert fetched.total_amount == Money(Decimal("150"), "USD")
+          pass  # Database not available in this environment — see CI pipeline
+
+  - language: typescript
+    bad: |
+      // Generic IRepository<T> — CRUD for everything, domain meaning nowhere.
+      // Specifications are ad-hoc filter objects with no business language.
+      // Collection and persistence semantics mushed together.
+
+      // --- GENERIC REPOSITORY ---
+      interface IRepository<T> {
+        getById(id: string): Promise<T | null>;
+        find(criteria: Record<string, unknown>): Promise<T[]>;  // Not a spec
+        add(entity: T): Promise<void>;
+        remove(entity: T): Promise<void>;
+        save(entity: T): Promise<void>;  // add AND save? Pick one.
+        flush(): Promise<void>;
+      }
+
+      // --- ANEMIC MODEL ---
+      interface InvoiceData {
+        id: string;
+        customerId: string;
+        amount: number;
+        dueDate: string;
+        status: "paid" | "overdue" | "draft";
+      }
+
+      class Invoice implements InvoiceData {
+        constructor(
+          public id: string,
+          public customerId: string,
+          public amount: number,
+          public dueDate: string,
+          public status: "paid" | "overdue" | "draft",
+        ) {}
+        // No behavior. Just a bag of mutable fields.
+      }
+
+      // --- BUSINESS LOGIC IN INFRASTRUCTURE ---
+      class SqlInvoiceRepository implements IRepository<Invoice> {
+        async save(invoice: Invoice): Promise<void> {
+          // Business rule in infrastructure!
+          if (invoice.amount > 10000 && invoice.status === "draft") {
+            throw new Error("Large invoices require manager approval");
+          }
+          await this.db.query("INSERT INTO invoices ...", [invoice]);
+        }
+
+        async find(criteria: Record<string, unknown>): Promise<Invoice[]> {
+          let query = "SELECT * FROM invoices WHERE 1=1";
+          if (criteria["status"]) {
+            query += ` AND status = '${criteria["status"]}'`;  // SQL injection
+          }
+          const rows = await this.db.query(query);
+          return rows.map(r => new Invoice(r.id, r.customer_id, r.amount, r.due_date, r.status));
+        }
+      }
+
+    good: |
+      // Focused repository per aggregate. Collection-oriented with Unit of Work.
+      // Specification is a composable domain predicate.
+      // Three-level testing: mock, fake, integration.
+
+      // ====================================================================
+      // DOMAIN LAYER
+      // ====================================================================
+
+      // --- VALUE OBJECTS ---
+
+      class Money {
+        constructor(
+          public readonly amount: number,
+          public readonly currency: string = "USD",
+        ) {
+          if (amount < 0) throw new Error(`Money cannot be negative: ${amount}`);
+        }
+
+        greaterThan(other: Money): boolean {
+          if (this.currency !== other.currency) throw new Error("Currency mismatch");
+          return this.amount > other.amount;
+        }
+
+        add(other: Money): Money {
+          if (this.currency !== other.currency) throw new Error("Currency mismatch");
+          return new Money(this.amount + other.amount, this.currency);
+        }
+
+        subtract(other: Money): Money {
+          if (this.currency !== other.currency) throw new Error("Currency mismatch");
+          return new Money(this.amount - other.amount, this.currency);
+        }
+
+        equals(other: Money): boolean {
+          return this.amount === other.amount && this.currency === other.currency;
+        }
+      }
+
+      // --- SPECIFICATIONS: composable domain predicates ---
+
+      interface InvoiceSpecification {
+        isSatisfiedBy(invoice: Invoice): boolean;
+        and(other: InvoiceSpecification): InvoiceSpecification;
+        or(other: InvoiceSpecification): InvoiceSpecification;
+        not(): InvoiceSpecification;
+      }
+
+      class AndSpecification implements InvoiceSpecification {
+        constructor(
+          private readonly left: InvoiceSpecification,
+          private readonly right: InvoiceSpecification,
+        ) {}
+
+        isSatisfiedBy(invoice: Invoice): boolean {
+          return this.left.isSatisfiedBy(invoice) && this.right.isSatisfiedBy(invoice);
+        }
+
+        and(other: InvoiceSpecification): InvoiceSpecification {
+          return new AndSpecification(this, other);
+        }
+        or(other: InvoiceSpecification): InvoiceSpecification {
+          return new OrSpecification(this, other);
+        }
+        not(): InvoiceSpecification {
+          return new NotSpecification(this);
+        }
+      }
+
+      class OrSpecification implements InvoiceSpecification {
+        constructor(
+          private readonly left: InvoiceSpecification,
+          private readonly right: InvoiceSpecification,
+        ) {}
+
+        isSatisfiedBy(invoice: Invoice): boolean {
+          return this.left.isSatisfiedBy(invoice) || this.right.isSatisfiedBy(invoice);
+        }
+
+        and(other: InvoiceSpecification): InvoiceSpecification {
+          return new AndSpecification(this, other);
+        }
+        or(other: InvoiceSpecification): InvoiceSpecification {
+          return new OrSpecification(this, other);
+        }
+        not(): InvoiceSpecification {
+          return new NotSpecification(this);
+        }
+      }
+
+      class NotSpecification implements InvoiceSpecification {
+        constructor(private readonly spec: InvoiceSpecification) {}
+
+        isSatisfiedBy(invoice: Invoice): boolean {
+          return !this.spec.isSatisfiedBy(invoice);
+        }
+
+        and(other: InvoiceSpecification): InvoiceSpecification {
+          return new AndSpecification(this, other);
+        }
+        or(other: InvoiceSpecification): InvoiceSpecification {
+          return new OrSpecification(this, other);
+        }
+        not(): InvoiceSpecification {
+          return this.spec;  // Double negation
+        }
+      }
+
+      class InvoiceIsOverdue implements InvoiceSpecification {
+        isSatisfiedBy(invoice: Invoice): boolean {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          return invoice.status === "issued" && invoice.dueDate < today;
+        }
+
+        and(other: InvoiceSpecification): InvoiceSpecification {
+          return new AndSpecification(this, other);
+        }
+        or(other: InvoiceSpecification): InvoiceSpecification {
+          return new OrSpecification(this, other);
+        }
+        not(): InvoiceSpecification {
+          return new NotSpecification(this);
+        }
+      }
+
+      class InvoiceAmountExceeds implements InvoiceSpecification {
+        constructor(private readonly threshold: Money) {}
+
+        isSatisfiedBy(invoice: Invoice): boolean {
+          return invoice.totalAmount.greaterThan(this.threshold);
+        }
+
+        and(other: InvoiceSpecification): InvoiceSpecification {
+          return new AndSpecification(this, other);
+        }
+        or(other: InvoiceSpecification): InvoiceSpecification {
+          return new OrSpecification(this, other);
+        }
+        not(): InvoiceSpecification {
+          return new NotSpecification(this);
+        }
+      }
+
+      // Composed specification
+      function shouldEscalateInvoice(): InvoiceSpecification {
+        return new InvoiceIsOverdue().and(
+          new InvoiceAmountExceeds(new Money(5000, "USD"))
+        );
+      }
+
+      // --- AGGREGATE ROOT ---
+
+      interface PaymentData {
+        amount: Money;
+        paidAt: Date;
+      }
+
+      class Payment {
+        constructor(
+          public readonly amount: Money,
+          public readonly paidAt: Date,
+        ) {}
+      }
+
+      class Invoice {
+        private _status: string = "draft";
+        private readonly _payments: Payment[] = [];
+
+        constructor(
+          public readonly id: string,
+          public readonly customerId: string,
+          private readonly _amount: Money,
+          public readonly dueDate: Date,
+        ) {}
+
+        // --- Queries ---
+        get status(): string { return this._status; }
+
+        get totalAmount(): Money {
+          if (this._payments.length === 0) return this._amount;
+          return this._payments.reduce(
+            (remaining, p) => remaining.subtract(p.amount),
+            this._amount,
+          );
+        }
+
+        // --- Identity equality ---
+        equals(other: Invoice): boolean {
+          return this.id === other.id;
+        }
+
+        // --- Domain behavior ---
+
+        issue(): void {
+          if (this._status !== "draft")
+            throw new Error(`Cannot issue a ${this._status} invoice`);
+          if (this._amount.amount === 0)
+            throw new Error("Cannot issue a zero-amount invoice");
+          this._status = "issued";
+        }
+
+        recordPayment(payment: Payment): void {
+          if (this._status !== "issued" && this._status !== "partially_paid")
+            throw new Error(`Cannot pay a ${this._status} invoice`);
+          this._payments.push(payment);
+          if (this.totalAmount.amount <= 0) {
+            this._status = "paid";
+          } else {
+            this._status = "partially_paid";
+          }
+        }
+
+        cancel(reason: string): void {
+          if (this._status === "paid")
+            throw new Error("Cannot cancel a paid invoice");
+          if (!reason.trim())
+            throw new Error("Cancellation requires a reason");
+          this._status = "cancelled";
+        }
+      }
+
+      // --- REPOSITORY INTERFACE: collection-oriented ---
+
+      interface InvoiceRepository {
+        add(invoice: Invoice): void;
+        remove(invoice: Invoice): void;
+        findById(id: string): Invoice | null;
+        findSatisfying(spec: InvoiceSpecification): Invoice[];
+        findOverdue(asOf?: Date): Invoice[];
+      }
+
+      // --- UNIT OF WORK ---
+
+      interface UnitOfWork {
+        invoices: InvoiceRepository;
+        commit(): Promise<void>;
+        rollback(): Promise<void>;
+      }
+
+      // ====================================================================
+      // APPLICATION LAYER
+      // ====================================================================
+
+      class ProcessOverdueInvoicesUseCase {
+        constructor(
+          private readonly uowFactory: () => UnitOfWork,
+        ) {}
+
+        async execute(): Promise<string[]> {
+          const escalated: string[] = [];
+          const uow = this.uowFactory();
+          try {
+            const overdue = uow.invoices.findOverdue();
+            const escalateSpec = shouldEscalateInvoice();
+            for (const inv of overdue) {
+              if (escalateSpec.isSatisfiedBy(inv)) {
+                escalated.push(inv.id);
+              }
+            }
+            await uow.commit();
+          } catch (e) {
+            await uow.rollback();
+            throw e;
+          }
+          return escalated;
+        }
+      }
+
+      // ====================================================================
+      // TESTING: THREE LEVELS
+      // ====================================================================
+
+      // --- Level 1: Mock repository ---
+
+      test("should escalate overdue large invoice", () => {
+        const inv = new Invoice(
+          "inv-1", "cust-1",
+          new Money(6000, "USD"),
+          new Date("2024-01-01"),
+        );
+        inv.issue();
+
+        const spec = shouldEscalateInvoice();
+        expect(spec.isSatisfiedBy(inv)).toBe(true);
+      });
+
+      test("use case escalates overdue invoices via mock", async () => {
+        const overdueInv = new Invoice(
+          "inv-1", "cust-1",
+          new Money(6000, "USD"),
+          new Date("2024-01-01"),
+        );
+        overdueInv.issue();
+
+        const mockRepo: InvoiceRepository = {
+          add: jest.fn(),
+          remove: jest.fn(),
+          findById: jest.fn(),
+          findSatisfying: jest.fn(),
+          findOverdue: jest.fn().mockReturnValue([overdueInv]),
+        };
+
+        const mockUow: UnitOfWork = {
+          invoices: mockRepo,
+          commit: jest.fn().mockResolvedValue(undefined),
+          rollback: jest.fn().mockResolvedValue(undefined),
+        };
+
+        const useCase = new ProcessOverdueInvoicesUseCase(() => mockUow);
+        const escalated = await useCase.execute();
+
+        expect(escalated).toEqual(["inv-1"]);
+        expect(mockUow.commit).toHaveBeenCalledTimes(1);
+      });
+
+      // --- Level 2: In-memory fake ---
+
+      class InMemoryInvoiceRepository implements InvoiceRepository {
+        private readonly invoices = new Map<string, Invoice>();
+
+        add(invoice: Invoice): void {
+          this.invoices.set(invoice.id, invoice);
+        }
+
+        remove(invoice: Invoice): void {
+          this.invoices.delete(invoice.id);
+        }
+
+        findById(id: string): Invoice | null {
+          return this.invoices.get(id) ?? null;
+        }
+
+        findSatisfying(spec: InvoiceSpecification): Invoice[] {
+          return Array.from(this.invoices.values()).filter(inv =>
+            spec.isSatisfiedBy(inv)
+          );
+        }
+
+        findOverdue(asOf?: Date): Invoice[] {
+          return this.findSatisfying(new InvoiceIsOverdue());
+        }
+      }
+
+      test("fake repository catches lifecycle transitions", () => {
+        const repo = new InMemoryInvoiceRepository();
+        const inv1 = new Invoice(
+          "inv-1", "cust-1",
+          new Money(100, "USD"),
+          new Date(Date.now() + 30 * 86400000),
+        );
+        const inv2 = new Invoice(
+          "inv-2", "cust-2",
+          new Money(200, "USD"),
+          new Date(Date.now() - 5 * 86400000),
+        );
+        inv2.issue();
+
+        repo.add(inv1);
+        repo.add(inv2);
+
+        expect(repo.findOverdue()).toHaveLength(1);
+        expect(repo.findOverdue()[0].id).toBe("inv-2");
+
+        // Pay inv2 — should leave overdue list
+        inv2.recordPayment(new Payment(new Money(200, "USD"), new Date()));
+        expect(repo.findOverdue()).toHaveLength(0);
+      });
+
+      // --- Level 3: Integration test ---
+      // Requires database — see CI for Postgres testcontainer setup
+
+heuristics:
+  - "One repository per aggregate root. If you have more repositories than aggregates, you're modeling your database, not your domain."
+  - "The repository interface lives in the domain layer and speaks domain language. The implementation lives in infrastructure. Never import infrastructure types into the repository interface."
+  - "Collection-oriented if you have rich domain logic and Unit of Work. Persistence-oriented for transaction scripts and simple CRUD. Don't hybridize — pick one mental model and commit."
+  - "A specification is a predicate, not a query. If you can't evaluate `isSatisfiedBy()` on a plain domain object, you've built a query builder, not a specification."
+  - "Compose specifications with AND/OR/NOT. The whole point is building complex rules from simple ones without writing new conditional code."
+  - "Translate specifications to queries in infrastructure, never in the specification itself. The spec says 'what' in domain language; the repo says 'how' in SQL."
+  - "Test repositories at three levels: mock for domain logic speed, fake for object-lifecycle correctness, integration for SQL/mapping correctness. Skip any level at your peril."
+  - "If mocking your repository is hard, your interface is wrong. A good repo interface has focused, domain-named methods — `findOverdue()` mocks in one line."
+  - "The repository should reconstruct full aggregates from persistence. Partial loads (selective column fetching, lazy loading) create objects that can't enforce invariants."
+  - "Do not call repositories from domain objects. Aggregate roots don't fetch their own children — the application service loads the aggregate and passes it in."
+  - "`save()` is a smell in a pure collection-oriented repository. The repository should track dirtied objects (via UoW) and persist on commit, not on demand."
+  - "Repository query methods should not take raw SQL, ORM criteria, or filter maps. If you need ad-hoc querying, create a separate query service — don't corrupt the repository abstraction."
+
+related_tags:
+  [ddd, repository-pattern, aggregates, specifications, unit-of-work, persistence, testing, domain-driven-design, enterprise-patterns, collection-oriented, persistence-oriented, tactical-design]

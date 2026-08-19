@@ -1,0 +1,185 @@
+id: 12factor-dev-prod-parity-010
+name: "12-Factor App — Dev/Prod Parity (Keep Environments Similar)"
+category: cloud-native
+canonical_tags: ['12factor', 'dev-prod-parity', 'continuous-deployment', 'environments', 'backing-services', 'docker']
+sources:
+  - open_sources/design_patterns/12factor-app.txt
+  - open_sources/design_patterns/12factor-dev-prod-parity.html
+summary: >
+  Keep development, staging, and production environments as similar as
+  possible. Historically, three gaps existed between dev and prod: the time
+  gap (weeks between writing and deploying code), the personnel gap
+  (developers write, ops deploys), and the tools gap (different OS, different
+  backing services). The twelve-factor app closes all three: continuous
+  deployment shrinks the time gap to hours, developers who write code also
+  deploy and monitor it, and all environments use the same backing services
+  (PostgreSQL, not SQLite in dev and PostgreSQL in prod). Even when adapter
+  libraries abstract away service differences, resist the temptation to use
+  lightweight local substitutes — tiny incompatibilities cause failures that
+  disincentivize continuous deployment. Modern containerization (Docker) and
+  provisioning tools (Chef, Puppet) make it practical to run production-like
+  environments locally.
+examples:
+  - language: python
+    bad: |
+      # BAD: Dev uses SQLite, prod uses PostgreSQL. Dev runs on macOS,
+      # prod on Linux. Dev uses in-memory cache, prod uses Redis. Code works
+      # in dev but fails in prod because of subtle SQL dialect differences.
+
+      # settings.py — BAD: dev/prod divergence by environment
+      import os
+      import platform
+
+      if platform.system() == "Darwin":  # macOS
+          DATABASE_URL = "sqlite:///dev.db"
+          CACHE_BACKEND = "memory"
+      else:  # assumed Linux/production
+          DATABASE_URL = os.environ.get("DATABASE_URL")
+          CACHE_BACKEND = "redis"
+
+      # WHY: SQLite's datetime handling, boolean representation, and
+      # concurrency model differ from PostgreSQL. Code tested on SQLite
+      # passes tests but fails on PostgreSQL under real concurrency.
+      #
+      # WHY: In-memory cache works for one process in dev. Production
+      # has 4 web workers — cache misses constantly, sessions break.
+
+    good: |
+      # GOOD: Same backing services everywhere. PostgreSQL in dev and prod.
+      # Redis in dev and prod. Docker Compose provides production-like
+      # services locally. The app reads everything from env vars.
+
+      # docker-compose.yml — GOOD: production-like services locally
+      # services:
+      #   db:
+      #     image: postgres:16
+      #     environment:
+      #       POSTGRES_USER: app
+      #       POSTGRES_PASSWORD: dev_password
+      #       POSTGRES_DB: myapp
+      #   redis:
+      #     image: redis:7
+      #   app:
+      #     build: .
+      #     ports: ["8000:8000"]
+      #     environment:
+      #       DATABASE_URL: postgres://app:dev_password@db:5432/myapp
+      #       REDIS_URL: redis://redis:6379
+      #       PORT: 8000
+
+      import os
+
+      # WHY: Single code path for all environments. DATABASE_URL always
+      # points to PostgreSQL — local Docker in dev, RDS in prod.
+      DATABASE_URL = os.environ["DATABASE_URL"]
+
+      # WHY: REDIS_URL always points to Redis — local Docker in dev,
+      # ElastiCache in prod. No in-memory fallback.
+      REDIS_URL = os.environ["REDIS_URL"]
+
+      # WHY: Same version of Python, same OS (via Docker), same database
+      # engine, same cache backend. The dev environment is a small-scale
+      # replica of production. If tests pass locally, they pass in prod.
+
+  - language: typescript
+    bad: |
+      // BAD: Dev uses SQLite, prod uses PostgreSQL via different ORM configs.
+      // Dev on macOS, prod on Linux. File paths differ. Dev has CORS disabled,
+      // prod has it enabled. Config divergence causes "works on my machine".
+
+      // db.ts — BAD: environment-gated database choice
+      import { PrismaClient } from "@prisma/client";
+
+      const isDev = !process.env.NODE_ENV || process.env.NODE_ENV === "development";
+
+      export const prisma = new PrismaClient({
+        datasources: {
+          db: {
+            // WHY: SQLite in dev, PostgreSQL in prod. SQLite has no enums,
+            // no array columns, different JSON handling. Schema migrations
+            // diverge. Tests pass locally, fail in CI/prod.
+            url: isDev
+              ? "file:./dev.db"
+              : process.env.DATABASE_URL,
+          },
+        },
+      });
+
+    good: |
+      // GOOD: Same database everywhere. Docker Compose provides PostgreSQL
+      // locally. No environment-gated config. Tests run against the same
+      // engine as production.
+
+      // docker-compose.yml — GOOD: production-like local setup
+      // services:
+      //   db:
+      //     image: postgres:16
+      //     environment:
+      //       POSTGRES_USER: app
+      //       POSTGRES_PASSWORD: dev_password
+      //       POSTGRES_DB: myapp
+      //     ports: ["5432:5432"]
+      //   redis:
+      //     image: redis:7
+      //     ports: ["6379:6379"]
+
+      import { PrismaClient } from "@prisma/client";
+
+      // WHY: Single datasource URL. Points to PostgreSQL locally (via
+      // Docker) and in production (via RDS/Cloud SQL). No divergence.
+      export const prisma = new PrismaClient({
+        datasources: {
+          db: { url: process.env.DATABASE_URL! },
+        },
+      });
+
+      // WHY: The .env file for dev:
+      // DATABASE_URL=postgres://app:dev_password@localhost:5432/myapp
+      // REDIS_URL=redis://localhost:6379
+      //
+      // The same env vars in production point to managed services.
+      // Identical application code, zero environment gates.
+
+heuristics:
+  - >
+    "Keep development, staging, and production as similar as possible.
+    Close the time gap, personnel gap, and tools gap" (12factor.net).
+  - >
+    Time gap: deploy code to production in hours, not weeks. Continuous
+    deployment makes each change small and debuggable. Long gaps mean large,
+    risky batch deploys.
+  - >
+    Personnel gap: developers who write code should deploy it and monitor it
+    in production. Separate ops teams create a handoff bottleneck and reduce
+    ownership.
+  - >
+    Tools gap: all environments should use the same OS, the same backing
+    services (PostgreSQL, not SQLite), and the same versions. Docker and
+    containerization make this practical.
+  - >
+    Resist using lightweight local substitutes even with abstraction
+    adapters. SQLite in dev and PostgreSQL in prod WILL cause bugs — SQL
+    dialects differ in subtle ways (datetime handling, boolean types, JSON
+    operators, case sensitivity).
+  - >
+    Use Docker Compose or Dev Containers to run production-like backing
+    services locally. Modern packaging (Homebrew, apt-get) makes installing
+    PostgreSQL, Redis, and RabbitMQ trivial.
+  - >
+    The cost of environment divergence compounds over the app's lifetime.
+    Each "works on my machine" bug that reaches production erodes trust in
+    the deployment process and disincentivizes frequent deploys.
+  - >
+    Adapters (ActiveRecord, SQLAlchemy ORM) are useful for porting to NEW
+    services, not for running different services in dev vs prod. All deploys
+    should use the same type and version of each backing service.
+  - >
+    Test deployments should mirror production. A staging environment that
+    differs from production in any meaningful way (different database
+    version, different OS, different instance size) is not a valid gate
+    before production deployment.
+
+related_tags:
+  [dev-prod-parity, continuous-deployment, environments, docker,
+   docker-compose, backing-services, postgresql, sqlite, adapter,
+   twelve-factor, devops, vagrant, provisioning, chef, puppet]

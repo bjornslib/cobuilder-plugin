@@ -1,0 +1,190 @@
+id: extract-method-001
+name: Extract Method
+category: refactoring
+canonical_tags: ['refactoring', 'readability']
+sources:
+  - books/refactoring.md
+  - books/working-effectively-with-legacy-code.md
+summary: |
+  Extract Method is the most fundamental refactoring: take a block of code that has a coherent purpose, move it to a new method, and replace the block with a call. 
+  It improves readability by naming the extracted intent, enables reuse, and makes each method focus on a single level of abstraction.
+examples:
+  - language: python
+    bad: |
+      def generate_report(orders: list[Order], writer: ReportWriter) -> None:
+          # Calculate total revenue and tax
+          total = 0.0
+          total_tax = 0.0
+          for order in orders:
+              if order.status != "cancelled":
+                  subtotal = sum(item.price * item.quantity for item in order.items)
+                  discount = subtotal * order.discount_rate
+                  revenue = subtotal - discount
+                  tax = revenue * 0.08
+                  total += revenue
+                  total_tax += tax
+
+          # Write header
+          writer.write_line("=" * 60)
+          writer.write_line("QUARTERLY REVENUE REPORT")
+          writer.write_line("=" * 60)
+
+          # Write summary
+          writer.write_line(f"Total Revenue: ${total:,.2f}")
+          writer.write_line(f"Total Tax Collected: ${total_tax:,.2f}")
+          net = total - total_tax
+          writer.write_line(f"Net Revenue: ${net:,.2f}")
+
+          # Write per-order detail
+          writer.write_line("\n--- Order Details ---")
+          for order in orders:
+              if order.status != "cancelled":
+                  writer.write_line(f"  Order #{order.id}: ${order.total:,.2f} ({order.status})")
+    good: |
+      def generate_report(orders: list[Order], writer: ReportWriter) -> None:
+          totals = _calculate_revenue_totals(orders)
+
+          _write_header(writer)
+          _write_summary(totals, writer)
+          _write_order_details(orders, writer)
+
+      def _calculate_revenue_totals(orders: list[Order]) -> RevenueTotals:
+          total = 0.0
+          total_tax = 0.0
+          for order in orders:
+              if order.status != "cancelled":
+                  subtotal = sum(item.price * item.quantity for item in order.items)
+                  discount = subtotal * order.discount_rate
+                  revenue = subtotal - discount
+                  tax = revenue * 0.08
+                  total += revenue
+                  total_tax += tax
+          return RevenueTotals(revenue=total, tax=total_tax)
+
+      def _write_header(writer: ReportWriter) -> None:
+          writer.write_line("=" * 60)
+          writer.write_line("QUARTERLY REVENUE REPORT")
+          writer.write_line("=" * 60)
+
+      def _write_summary(totals: RevenueTotals, writer: ReportWriter) -> None:
+          writer.write_line(f"Total Revenue: ${totals.revenue:,.2f}")
+          writer.write_line(f"Total Tax Collected: ${totals.tax:,.2f}")
+          writer.write_line(f"Net Revenue: ${totals.revenue - totals.tax:,.2f}")
+
+      def _write_order_details(orders: list[Order], writer: ReportWriter) -> None:
+          writer.write_line("\n--- Order Details ---")
+          for order in orders:
+              if order.status != "cancelled":
+                  writer.write_line(f"  Order #{order.id}: ${order.total:,.2f} ({order.status})")
+  - language: typescript
+    bad: |
+      async function handleCheckout(
+        cart: Cart,
+        payment: PaymentInfo,
+        user: User
+      ): Promise<CheckoutResult> {
+        // Validate inventory
+        const stockErrors: string[] = [];
+        for (const item of cart.items) {
+          const stock = await inventoryService.getStock(item.sku);
+          if (stock.available < item.quantity) {
+            stockErrors.push(`${item.name}: only ${stock.available} available`);
+          }
+        }
+        if (stockErrors.length > 0) {
+          return { success: false, errors: stockErrors };
+        }
+
+        // Calculate totals
+        let subtotal = 0;
+        let tax = 0;
+        let shipping = 0;
+        for (const item of cart.items) {
+          subtotal += item.price * item.quantity;
+        }
+        if (cart.promoCode) {
+          subtotal *= 1 - cart.promoCode.discountRate;
+        }
+        tax = subtotal * 0.08;
+        shipping = cart.items.length > 3 ? 0 : 5.99;
+        const total = subtotal + tax + shipping;
+
+        // Process payment
+        const charge = await paymentGateway.charge(payment.token, total);
+        if (!charge.success) {
+          return { success: false, errors: [charge.errorMessage] };
+        }
+
+        // Create order
+        const order = await orderRepository.create({
+          userId: user.id,
+          items: cart.items,
+          total,
+          paymentId: charge.id,
+        });
+
+        // Send confirmation
+        await emailService.send(user.email, "order-confirmation", { order });
+
+        return { success: true, orderId: order.id };
+      }
+    good: |
+      async function handleCheckout(
+        cart: Cart,
+        payment: PaymentInfo,
+        user: User
+      ): Promise<CheckoutResult> {
+        const stockResult = await validateInventory(cart);
+        if (!stockResult.ok) return stockResult;
+
+        const total = calculateCheckoutTotal(cart);
+        const charge = await processPayment(payment, total);
+        if (!charge.ok) return charge;
+
+        const order = await createOrder(user, cart, total, charge);
+        await sendOrderConfirmation(user, order);
+
+        return { success: true, orderId: order.id };
+      }
+
+      async function validateInventory(cart: Cart): Promise<CheckoutResult> {
+        const errors: string[] = [];
+        for (const item of cart.items) {
+          const stock = await inventoryService.getStock(item.sku);
+          if (stock.available < item.quantity) {
+            errors.push(`${item.name}: only ${stock.available} available`);
+          }
+        }
+        return errors.length > 0 ? { success: false, errors } : { ok: true };
+      }
+
+      function calculateCheckoutTotal(cart: Cart): number {
+        let subtotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        if (cart.promoCode) subtotal *= 1 - cart.promoCode.discountRate;
+        const tax = subtotal * 0.08;
+        const shipping = cart.items.length > 3 ? 0 : 5.99;
+        return subtotal + tax + shipping;
+      }
+
+      async function processPayment(payment: PaymentInfo, total: number): Promise<PaymentResult> {
+        const charge = await paymentGateway.charge(payment.token, total);
+        if (!charge.success) return { ok: false, errors: [charge.errorMessage] };
+        return { ok: true, chargeId: charge.id };
+      }
+
+      async function createOrder(user: User, cart: Cart, total: number, charge: PaymentResult) {
+        return orderRepository.create({ userId: user.id, items: cart.items, total, paymentId: charge.chargeId });
+      }
+
+      async function sendOrderConfirmation(user: User, order: Order) {
+        await emailService.send(user.email, "order-confirmation", { order });
+      }
+heuristics:
+  - Extract when a block of code has a natural name that describes what it does (not how).
+  - Extract when a function mixes levels of abstraction: low-level loops next to high-level orchestration.
+  - Extract when comments describe blocks — let the function name replace the comment.
+  - Do NOT extract single-line expressions just to name them (Extract Variable is often better).
+  - Keep extracted methods focused: one extracted method, one responsibility.
+  - Follow the mechanical steps: (1) give the new method a good name, (2) copy the block out, (3) identify which variables are read vs. modified, (4) pass reads as parameters, return modified values, (5) replace the original block with the call.
+  - Run tests after each extraction — never batch multiple extractions without verifying behavior is preserved.
+related_tags: [extract-method, decomposition, single-responsibility, readability, small-functions]

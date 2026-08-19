@@ -1,0 +1,502 @@
+id: design-patterns-behavioral-004
+name: Behavioral Patterns
+category: design-patterns
+canonical_tags: ['design-patterns', 'behavioral', 'gof', 'strategy', 'observer', 'command', 'state', 'template-method']
+sources:
+  - open_sources/design_patterns/refactoring-guru-patterns.txt
+  - open_sources/design_patterns/refactoring-guru-patterns.html
+  - open_sources/design_patterns/augmentcode-refactoring.html
+summary: >
+  Behavioral patterns concern themselves with algorithms and the assignment of
+  responsibilities between objects. They shift focus from static "what is connected
+  to what" to dynamic "who does what and when" — describing how objects communicate,
+  how control flows through the system, and how behavior can vary independently
+  of the objects that execute it. The ten classic behavioral patterns each solve
+  a different communication problem: Strategy makes a family of algorithms
+  interchangeable, Observer defines a subscription mechanism for event notification,
+  Command encapsulates requests as objects, State lets an object alter its behavior
+  when its internal state changes, Iterator traverses collections without exposing
+  internals, and Template Method defines an algorithm skeleton with pluggable
+  steps. Use behavioral patterns when conditional logic (if/switch on type or state)
+  is spreading across the codebase, when you need to decouple event producers from
+  consumers, or when different parts of the system need to vary their algorithms
+  independently. Avoid behavioral patterns when the communication is simple enough
+  that a direct function call or a simple callback array suffices — not every
+  notification needs the full Observer machinery.
+examples:
+  - language: python
+    bad: |
+      # ----- Strategy missing: shipping cost calculation via if/elif chain -----
+      # Every new shipping method adds another elif branch. The logic for
+      # each method is tangled together. If you need to add a promo-day
+      # discount that only applies to "express" — you're modifying the same
+      # function, risking regression on other shipping methods.
+
+      from dataclasses import dataclass
+      from decimal import Decimal
+
+
+      @dataclass
+      class Order:
+          weight_kg: float
+          distance_km: float
+          is_fragile: bool
+          subtotal: Decimal
+
+
+      # BAD: if/elif chain for strategy selection
+      def calculate_shipping(
+          method: str, order: Order
+      ) -> Decimal:
+          base = Decimal("0")
+          if method == "standard":
+              base = Decimal(str(order.weight_kg * 2.0 + order.distance_km * 0.1))
+          elif method == "express":
+              base = Decimal(str(order.weight_kg * 5.0 + order.distance_km * 0.3))
+              if order.is_fragile:
+                  base += Decimal("15.00")  # fragile surcharge
+          elif method == "overnight":
+              base = Decimal(str(order.weight_kg * 12.0 + 50.0))
+          elif method == "free":
+              # Free if subtotal exceeds threshold
+              if order.subtotal >= Decimal("100.00"):
+                  return Decimal("0")
+              else:
+                  base = Decimal(str(order.weight_kg * 2.0 + order.distance_km * 0.1))
+          else:
+              raise ValueError(f"Unknown shipping method: {method}")
+          return base.quantize(Decimal("0.01"))
+
+      # Problems:
+      # 1. The function keeps growing with every new shipping method
+      # 2. Free shipping logic is tangled inside the if/elif
+      # 3. Adding a "loyal customer discount" modifier touches this function
+      #    for every shipping method — massive blast radius
+
+    good: |
+      # Strategy pattern: a ShippingStrategy interface with concrete strategies.
+      # Adding a new shipping method = one new class. Modifiers (discounts) can
+      # be applied as decorators on strategies, not as branches in a switch.
+
+      from abc import ABC, abstractmethod
+      from dataclasses import dataclass
+      from decimal import Decimal
+
+
+      @dataclass
+      class Order:
+          weight_kg: float
+          distance_km: float
+          is_fragile: bool
+          subtotal: Decimal
+
+
+      # Strategy interface
+      class ShippingStrategy(ABC):
+          @abstractmethod
+          def calculate(self, order: Order) -> Decimal:
+              ...
+
+
+      class StandardShipping(ShippingStrategy):
+          def calculate(self, order: Order) -> Decimal:
+              cost = order.weight_kg * 2.0 + order.distance_km * 0.1
+              return Decimal(str(cost)).quantize(Decimal("0.01"))
+
+
+      class ExpressShipping(ShippingStrategy):
+          def calculate(self, order: Order) -> Decimal:
+              cost = order.weight_kg * 5.0 + order.distance_km * 0.3
+              if order.is_fragile:
+                  cost += 15.0
+              return Decimal(str(cost)).quantize(Decimal("0.01"))
+
+
+      class OvernightShipping(ShippingStrategy):
+          def calculate(self, order: Order) -> Decimal:
+              cost = order.weight_kg * 12.0 + 50.0
+              return Decimal(str(cost)).quantize(Decimal("0.01"))
+
+
+      class FreeShipping(ShippingStrategy):
+          """Free when subtotal >= $100, otherwise standard rates."""
+          THRESHOLD = Decimal("100.00")
+
+          def calculate(self, order: Order) -> Decimal:
+              if order.subtotal >= self.THRESHOLD:
+                  return Decimal("0")
+              # Delegates to standard shipping for small orders
+              return StandardShipping().calculate(order)
+
+
+      # Decorator strategy — applies a percentage discount to any strategy
+      class DiscountedShipping(ShippingStrategy):
+          def __init__(self, inner: ShippingStrategy, discount_pct: float):
+              self._inner = inner
+              self._discount_pct = discount_pct
+
+          def calculate(self, order: Order) -> Decimal:
+              base = self._inner.calculate(order)
+              discount = base * Decimal(str(self._discount_pct))
+              return (base - discount).quantize(Decimal("0.01"))
+
+
+      # Strategy factory — single switch point
+      def get_shipping_strategy(method: str) -> ShippingStrategy:
+          strategies: dict[str, ShippingStrategy] = {
+              "standard": StandardShipping(),
+              "express": ExpressShipping(),
+              "overnight": OvernightShipping(),
+              "free": FreeShipping(),
+          }
+          strategy = strategies.get(method)
+          if strategy is None:
+              raise ValueError(f"Unknown shipping method: {method}")
+          return strategy
+
+      # Usage:
+      #   strategy = get_shipping_strategy("express")
+      #   holiday_strategy = DiscountedShipping(strategy, 0.10)
+      #   cost = holiday_strategy.calculate(order)
+
+    extra: |
+      # ----- Observer example: event subscription system -----
+      # Without Observer, you hard-code what happens when state changes.
+      # Adding a new side-effect (e.g., "also log to audit trail") requires
+      # modifying the state-change method.
+
+      from abc import ABC, abstractmethod
+      from typing import Callable
+
+
+      # Subject (observable) — maintains state and notifies observers
+      class OrderStatusTracker:
+          def __init__(self, order_id: str):
+              self.order_id = order_id
+              self._status: str = "pending"
+              self._observers: list[Callable[[str, str], None]] = []
+
+          @property
+          def status(self) -> str:
+              return self._status
+
+          def subscribe(self, observer: Callable[[str, str], None]) -> None:
+              self._observers.append(observer)
+
+          def unsubscribe(self, observer: Callable[[str, str], None]) -> None:
+              self._observers.remove(observer)
+
+          def set_status(self, new_status: str) -> None:
+              old_status = self._status
+              self._status = new_status
+              # Notify all observers — they don't need to know each other
+              for observer in self._observers:
+                  observer(self.order_id, new_status)
+
+      # Concrete observers (subscribers) — each does one thing
+      def send_email_notification(order_id: str, status: str) -> None:
+          print(f"[EMAIL] Order {order_id} is now '{status}' — emailing customer")
+
+      def update_inventory(order_id: str, status: str) -> None:
+          if status == "shipped":
+              print(f"[INVENTORY] Order {order_id} shipped — reducing stock")
+
+      def log_to_audit(order_id: str, status: str) -> None:
+          print(f"[AUDIT] Order {order_id}: status changed to '{status}'")
+
+      # Usage: subscribers can be added/removed at runtime
+      order_tracker = OrderStatusTracker("ORD-1234")
+      order_tracker.subscribe(send_email_notification)
+      order_tracker.subscribe(update_inventory)
+      order_tracker.subscribe(log_to_audit)
+
+      order_tracker.set_status("confirmed")
+      # Output:
+      #   [EMAIL] Order ORD-1234 is now 'confirmed' — emailing customer
+      #   [AUDIT] Order ORD-1234: status changed to 'confirmed'
+
+      order_tracker.set_status("shipped")
+      # Output:
+      #   [EMAIL] Order ORD-1234 is now 'shipped' — emailing customer
+      #   [INVENTORY] Order ORD-1234 shipped — reducing stock
+      #   [AUDIT] Order ORD-1234: status changed to 'shipped'
+
+      # Adding a new side-effect is one new function + one subscribe() call.
+      # The OrderStatusTracker class never changes.
+
+  - language: typescript
+    bad: |
+      // ----- Strategy missing: payment processing if/else chain -----
+      // Every payment method is a branch in `processPayment`. Adding
+      // "crypto" or "BNPL" means extending this function — and every
+      // caller of it — with new branches.
+
+      interface PaymentRequest {
+        method: "credit_card" | "paypal" | "bank_transfer";
+        amount: number;
+        cardNumber?: string;
+        paypalEmail?: string;
+        accountNumber?: string;
+        routingNumber?: string;
+      }
+
+      // BAD: Strategy selected via if/else on a discriminated field
+      async function processPayment(req: PaymentRequest): Promise<string> {
+        if (req.method === "credit_card") {
+          // Credit card specifics
+          if (!req.cardNumber || req.cardNumber.length !== 16) {
+            throw new Error("Invalid card number");
+          }
+          console.log(`Processing $${req.amount} via card ${req.cardNumber}`);
+          return `txn_cc_${Date.now()}`;
+
+        } else if (req.method === "paypal") {
+          if (!req.paypalEmail || !req.paypalEmail.includes("@")) {
+            throw new Error("Invalid PayPal email");
+          }
+          console.log(`Processing $${req.amount} via PayPal ${req.paypalEmail}`);
+          return `txn_pp_${Date.now()}`;
+
+        } else if (req.method === "bank_transfer") {
+          if (!req.accountNumber || !req.routingNumber) {
+            throw new Error("Missing bank details");
+          }
+          console.log(
+            `Processing $${req.amount} via bank ${req.accountNumber}`
+          );
+          return `txn_bt_${Date.now()}`;
+        }
+
+        throw new Error("Unknown payment method");
+      }
+
+      // Adding "crypto" payment:
+      //   1. Add 'crypto' to the union type
+      //   2. Add `walletAddress?: string` to PaymentRequest
+      //   3. Add an `else if (req.method === "crypto")` branch
+      //   4. Hope you don't miss one of the 47 call sites that also
+      //      have copies of this if/else chain
+
+    good: |
+      // Strategy pattern: PaymentProcessor interface with implementations.
+      // Each strategy validates its own inputs, keeping the dispatch clean.
+
+      interface PaymentContext {
+        amount: number;
+      }
+
+      interface CreditCardContext extends PaymentContext {
+        cardNumber: string;
+      }
+
+      interface PayPalContext extends PaymentContext {
+        email: string;
+      }
+
+      interface BankTransferContext extends PaymentContext {
+        accountNumber: string;
+        routingNumber: string;
+      }
+
+      // Strategy interface
+      interface PaymentStrategy<T extends PaymentContext> {
+        validate(context: T): void;
+        process(context: T): Promise<string>;
+      }
+
+      // Concrete strategies — each encapsulates its own rules
+      class CreditCardStrategy implements PaymentStrategy<CreditCardContext> {
+        validate(ctx: CreditCardContext): void {
+          if (!ctx.cardNumber || ctx.cardNumber.length !== 16) {
+            throw new Error("Invalid card number");
+          }
+        }
+
+        async process(ctx: CreditCardContext): Promise<string> {
+          console.log(`Processing $${ctx.amount} via card ${ctx.cardNumber}`);
+          return `txn_cc_${Date.now()}`;
+        }
+      }
+
+      class PayPalStrategy implements PaymentStrategy<PayPalContext> {
+        validate(ctx: PayPalContext): void {
+          if (!ctx.email || !ctx.email.includes("@")) {
+            throw new Error("Invalid PayPal email");
+          }
+        }
+
+        async process(ctx: PayPalContext): Promise<string> {
+          console.log(`Processing $${ctx.amount} via PayPal ${ctx.email}`);
+          return `txn_pp_${Date.now()}`;
+        }
+      }
+
+      class BankTransferStrategy
+        implements PaymentStrategy<BankTransferContext>
+      {
+        validate(ctx: BankTransferContext): void {
+          if (!ctx.accountNumber || !ctx.routingNumber) {
+            throw new Error("Missing bank details");
+          }
+        }
+
+        async process(ctx: BankTransferContext): Promise<string> {
+          console.log(
+            `Processing $${ctx.amount} via bank ${ctx.accountNumber}`
+          );
+          return `txn_bt_${Date.now()}`;
+        }
+      }
+
+      // Registry — single place to add new strategies
+      const paymentStrategies = {
+        credit_card: new CreditCardStrategy(),
+        paypal: new PayPalStrategy(),
+        bank_transfer: new BankTransferStrategy(),
+      } as const;
+
+      type PaymentMethod = keyof typeof paymentStrategies;
+
+      async function processPayment(
+        method: PaymentMethod,
+        context: PaymentContext
+      ): Promise<string> {
+        const strategy = paymentStrategies[method];
+        if (!strategy) {
+          throw new Error(`Unknown payment method: ${method}`);
+        }
+        // TypeScript narrows context based on the method at compile time
+        strategy.validate(context as any);
+        return strategy.process(context as any);
+      }
+
+    extra: |
+      // ----- Observer example: typed event bus -----
+      // Without Observer, you call specific functions by name — hard-coding
+      // the dependency graph. With Observer, producers and consumers are
+      // connected only through event types.
+
+      type EventType =
+        | "user_registered"
+        | "order_shipped"
+        | "payment_failed";
+
+      interface Event<T extends EventType> {
+        type: T;
+        timestamp: number;
+        payload: T extends "user_registered"
+          ? { userId: string; email: string }
+          : T extends "order_shipped"
+            ? { orderId: string; trackingNumber: string }
+            : T extends "payment_failed"
+              ? { orderId: string; reason: string }
+              : never;
+      }
+
+      type EventHandler<T extends EventType> = (
+        event: Event<T>
+      ) => void | Promise<void>;
+
+      // Subject — typed event bus
+      class EventBus {
+        private handlers = new Map<
+          EventType,
+          Set<EventHandler<any>>
+        >();
+
+        on<T extends EventType>(
+          type: T, handler: EventHandler<T>
+        ): () => void {
+          if (!this.handlers.has(type)) {
+            this.handlers.set(type, new Set());
+          }
+          this.handlers.get(type)!.add(handler);
+
+          // Return unsubscribe function
+          return () => {
+            this.handlers.get(type)?.delete(handler);
+          };
+        }
+
+        emit<T extends EventType>(event: Event<T>): void {
+          const typeHandlers = this.handlers.get(event.type);
+          if (!typeHandlers) return;
+          for (const handler of typeHandlers) {
+            handler(event);
+          }
+        }
+      }
+
+      // Usage: decoupled subscribers
+      const bus = new EventBus();
+
+      // Subscriber 1: send welcome email
+      bus.on("user_registered", (event) => {
+        console.log(
+          `[EMAIL] Welcome email to ${event.payload.email}`
+        );
+      });
+
+      // Subscriber 2: create user profile in search index
+      bus.on("user_registered", (event) => {
+        console.log(
+          `[SEARCH] Indexing user ${event.payload.userId}`
+        );
+      });
+
+      // Subscriber 3: track in analytics
+      bus.on("user_registered", (event) => {
+        console.log(
+          `[ANALYTICS] User registered: ${event.payload.email}`
+        );
+      });
+
+      // Emitting an event notifies all subscribers — they don't know
+      // about each other
+      bus.emit({
+        type: "user_registered",
+        timestamp: Date.now(),
+        payload: {
+          userId: "usr_abc",
+          email: "alice@example.com",
+        },
+      });
+
+heuristics:
+  - Use Strategy to define a family of algorithms, make them interchangeable, and vary them independently from the clients that use them — replace if/elif chains on type codes.
+  - Use Observer to define a subscription mechanism that notifies multiple dependent objects about state changes, without coupling the subject to specific observer classes.
+  - Use Command to turn requests into objects — enabling parameterization, queuing, logging, undo/redo, and delayed execution of operations.
+  - Use State when an object's behavior changes based on its internal state, and the object has many states with distinct behaviors — replaces large switch-on-state blocks.
+  - Use Chain of Responsibility to pass requests along a chain of handlers until one handles it — middleware pipelines, event filters, and validation chains are natural fits.
+  - Use Template Method to define the skeleton of an algorithm in a base class and let subclasses override specific steps without changing the algorithm's structure.
+  - Use Iterator to traverse elements of a collection without exposing its underlying representation — most modern languages have built-in iterator protocols; use them first.
+  - Use Mediator to reduce chaotic many-to-many dependencies between objects by centralizing communication — a chat room is the canonical metaphor.
+  - >
+    In languages with first-class functions (Python, JavaScript/TypeScript),
+    many Strategy and Observer patterns can be implemented with plain
+    callbacks or dictionaries of functions. A full class hierarchy is
+    justified when the strategy has internal state, multiple methods,
+    or independent lifecycle.
+  - >
+    The Strategy and State patterns have nearly identical structure but
+    completely different intent. Strategy lets you choose an algorithm
+    once and rarely change it. State expects the object to transition
+    between states frequently. If your "strategy" changes 5 times per
+    request, reconsider — you may actually have a State problem.
+  - >
+    When implementing Observer, always provide an unsubscribe mechanism.
+    If subscribers cannot detach, they become memory leaks — the subject
+    holds references that prevent garbage collection. In event-driven
+    frameworks, use weak references or explicit `dispose()` patterns.
+  - >
+    Avoid Template Method when the algorithm's structure itself varies
+    often. If you find yourself overriding the template method (not just
+    the hook methods), you're fighting the pattern. Consider Strategy
+    instead — it gives callers full control over the algorithm.
+
+related_tags:
+  [behavioral-patterns, strategy, observer, command, state, chain-of-responsibility,
+   template-method, iterator, mediator, memento, visitor, gof, gang-of-four,
+   design-patterns, algorithms, event-driven, publish-subscribe, event-bus,
+   finite-state-machine, middleware, undo-redo, callback, first-class-functions,
+   decoupling, dependency-inversion, open-closed-principle, polymorphism]

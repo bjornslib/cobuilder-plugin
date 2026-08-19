@@ -1,0 +1,77 @@
+id: airbnb-jquery-std-028
+name: Airbnb jQuery & Standard Library — Caching, Selectors, and Safe Globals
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  Airbnb's jQuery rules (prefix $ variables, cache lookups, use scoped
+  selectors) remain relevant patterns for any DOM abstraction, even in
+  React. The Standard Library section mandates Number.isNaN/isFinite over
+  their global counterparts — the global versions coerce types in surprising
+  ways. These patterns teach disciplined DOM access and safe numeric checks
+  that apply beyond jQuery.
+examples:
+  - language: typescript
+    bad: |
+      // jQuery object without $ prefix — unclear it's a jQuery object
+      const sidebar = $(".sidebar");
+
+      // Repeated DOM query — expensive, unnecessary
+      function setSidebar() {
+        $(".sidebar").hide();
+        // ... other code ...
+        $(".sidebar").css({ "background-color": "pink" });
+      }
+
+      // Global isNaN — coerces strings
+      isNaN("1.2");   // false (coerces to 1.2, which is a number)
+      isNaN("1.2.3"); // true (coerces to NaN)
+
+      // Global isFinite — coerces strings
+      isFinite("2e3"); // true (coerces to 2000)
+
+      // Complex jQuery selector context
+      $("ul", ".sidebar").hide();
+    good: |
+      // $ prefix identifies jQuery objects
+      const $sidebar = $(".sidebar");
+      const $sidebarBtn = $(".sidebar-btn");
+
+      // Cache DOM references — query once, use many times
+      function setSidebar() {
+        const $sidebar = $(".sidebar");
+        $sidebar.hide();
+        // ... other code ...
+        $sidebar.css({ "background-color": "pink" });
+      }
+
+      // Number.isNaN — no type coercion
+      Number.isNaN("1.2.3");              // false (string, not NaN)
+      Number.isNaN(Number("1.2.3"));      // true (explicit conversion)
+
+      // Number.isFinite — no type coercion
+      Number.isFinite("2e3");             // false (string)
+      Number.isFinite(parseInt("2e3", 10)); // true
+
+      // Clean selectors
+      $(".sidebar ul").hide();
+      $sidebar.find("ul").hide();
+
+      // React: useRef for DOM caching
+      const sidebarRef = useRef<HTMLDivElement>(null);
+
+      // React: useCallback for stable event handlers
+      const handleClick = useCallback(() => {
+        sidebarRef.current?.classList.toggle("active");
+      }, []);
+heuristics:
+  - Prefix jQuery object variables with $: const $sidebar = $(".sidebar"). This visually distinguishes DOM collections from plain data.
+  - Cache jQuery/DOM lookups. Query the DOM once, store the reference, and reuse it. Repeated queries are unnecessary work.
+  - For DOM queries, use cascading selectors ($(".sidebar ul")) or parent-child ($(".sidebar > ul")). Use .find() with a cached reference.
+  - In React, useRef serves the same caching purpose for DOM elements.
+  - Use Number.isNaN() instead of global isNaN(). The global version coerces non-numbers before checking, producing false positives.
+  - Use Number.isFinite() instead of global isFinite(). Same coercion problem.
+  - If coercion is desired, make it explicit: Number.isFinite(Number(x)) or Number.isFinite(parseInt(x, 10)).
+  - These safe-guard patterns apply to all numeric validation, not just jQuery-era code.
+related_tags: [airbnb, jquery, standard-library, isnan, isfinite, dom-caching, selectors]

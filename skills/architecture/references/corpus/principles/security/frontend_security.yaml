@@ -1,0 +1,158 @@
+id: security-frontend-security-001
+name: "Frontend Security: SRI, CORS, HTTPS Enforcement, and Clickjacking Defense"
+category: security
+canonical_tags: ['security', 'frontend-security', 'sri', 'cors', 'hsts', 'clickjacking', 'owasp-a05']
+sources:
+  - owasp/top-ten.md
+  - mdn/subresource-integrity.md
+  - cwe/clickjacking-patterns.md
+summary: >
+  Frontend security encompasses browser-enforced protections that prevent
+  script supply-chain attacks, cross-origin data leakage, protocol
+  downgrade, and UI redressing. Subresource Integrity (SRI) ensures
+  third-party scripts have not been tampered with by verifying their hash
+  before execution. Misconfigured CORS (Access-Control-Allow-Origin: *)
+  exposes APIs to any origin, enabling data exfiltration from authenticated
+  sessions. Missing X-Frame-Options or frame-ancestors headers allow
+  clickjacking — embedding the application in an iframe to trick users
+  into clicking hidden UI elements. Mixed content on HTTPS pages weakens
+  the transport security guarantee. HSTS (HTTP Strict Transport Security)
+  prevents protocol downgrade from HTTPS to HTTP. Defense requires SRI
+  on all external scripts, specific-origin CORS, frame-busting headers,
+  HSTS, and strict mixed-content blocking.
+examples:
+  - language: python
+    bad: |
+      from fastapi import FastAPI
+      from fastapi.middleware.cors import CORSMiddleware
+
+      app = FastAPI()
+
+
+      # ---- CORS: allow all origins ----
+      app.add_middleware(
+          CORSMiddleware,
+          allow_origins=["*"],       # any site can call this API
+          allow_credentials=True,    # with cookies — credential theft
+          allow_methods=["*"],
+          allow_headers=["*"],
+      )
+
+
+      # ---- No security headers at all ----
+      @app.get("/")
+      def index():
+          # No X-Frame-Options — page can be iframed (clickjacking)
+          # No HSTS — browser may downgrade to HTTP
+          # No Content-Security-Policy — no SRI enforcement
+          return HTMLResponse("<h1>Welcome</h1>")
+
+
+      # ---- HTML: external script without integrity check ----
+      # <script src="https://cdn.example.com/analytics.js"></script>
+      # If cdn.example.com is compromised, malicious code runs on every
+      # page load — supply-chain attack.
+
+
+      # ---- Mixed content on HTTPS page ----
+      # <img src="http://insecure.example.com/tracker.gif" />
+      # HTTP request on HTTPS page leaks referrer and session data.
+    good: |
+      from fastapi import FastAPI
+      from fastapi.middleware.cors import CORSMiddleware
+      from starlette.middleware.base import BaseHTTPMiddleware
+
+      app = FastAPI()
+
+
+      # ---- CORS: specific origins only ----
+      ALLOWED_ORIGINS = [
+          "https://app.example.com",
+          "https://admin.example.com",
+      ]
+      app.add_middleware(
+          CORSMiddleware,
+          allow_origins=ALLOWED_ORIGINS,  # explicit allowlist
+          allow_credentials=True,
+          allow_methods=["GET", "POST", "PUT", "DELETE"],
+          allow_headers=["Authorization", "Content-Type"],
+      )
+
+
+      # ---- Security headers middleware ----
+      class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+          async def dispatch(self, request, call_next):
+              response = await call_next(request)
+              response.headers["X-Frame-Options"] = "DENY"
+              response.headers["X-Content-Type-Options"] = "nosniff"
+              response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+              response.headers["Strict-Transport-Security"] = (
+                  "max-age=63072000; includeSubDomains; preload"
+              )
+              return response
+
+      app.add_middleware(SecurityHeadersMiddleware)
+
+
+      # ---- HTML: external script with SRI hash ----
+      # <script
+      #   src="https://cdn.example.com/analytics.js"
+      #   integrity="sha384-oqVuAfXRKap7fdgcCY5uykM6+R9GqQ8K/uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC"
+      #   crossorigin="anonymous"
+      # ></script>
+      # If the script content changes, the browser refuses to execute it.
+
+
+      # ---- Mixed content prevented ----
+      # All resources loaded over HTTPS:
+      # <img src="https://cdn.example.com/tracker.gif" />
+      # CSP upgrade-insecure-requests enforces this automatically:
+      # Content-Security-Policy: upgrade-insecure-requests
+heuristics:
+  - >
+    Add Subresource Integrity (SRI) hashes to all third-party scripts and
+    stylesheets. Compute the hash (sha384 or sha512) from the known-good
+    file and add it as the integrity attribute. If the CDN is compromised
+    and the file changes, the browser will refuse to execute it. Generate
+    SRI hashes with: openssl dgst -sha384 -binary file.js | openssl base64 -A
+  - >
+    Restrict CORS to specific origins. Never use Access-Control-Allow-
+    Origin: * when the endpoint requires authentication. A wildcard
+    origin with credentials allows any website to make authenticated
+    requests to your API using the victim's session. If you need dynamic
+    origins, maintain an allowlist and validate the Origin header against
+    it before reflecting it in the response.
+  - >
+    Set X-Frame-Options: DENY (or SAMEORIGIN if you must iframe your own
+    pages) and Content-Security-Policy: frame-ancestors 'none' to prevent
+    clickjacking. Without these headers, any site can embed your
+    application in a transparent iframe and trick users into clicking
+    hidden buttons or forms.
+  - >
+    Enforce HTTPS with HSTS. Set Strict-Transport-Security: max-age=
+    63072000; includeSubDomains; preload. This tells the browser to
+    never attempt an HTTP connection to your domain for the next 2 years.
+    Submit to the HSTS preload list for browsers that never attempt HTTP
+    before the first HSTS header is received.
+  - >
+    Prevent mixed content by serving all resources over HTTPS and using
+    the CSP directive upgrade-insecure-requests. Mixed content (HTTP
+    resources on an HTTPS page) weakens the security guarantee: the HTTP
+    request leaks the Referer header and any cookies, and the response can
+    be modified by a MITM attacker.
+  - >
+    Set Referrer-Policy: strict-origin-when-cross-origin to limit the
+    information sent in the Referer header to other origins. The full URL
+    as a referrer can leak sensitive path segments, query parameters, and
+    session tokens embedded in URLs. Cross-origin requests should send
+    only the origin (scheme + host), not the full path.
+  - >
+    Validate all client-side input before making API calls. Client-side
+    validation improves UX but does not provide security — an attacker
+    can bypass it by calling the API directly. Server-side validation is
+    mandatory. Client-side validation is an optimization, not a control.
+related_tags:
+  [security, frontend-security, subresource-integrity, sri, cors,
+   cross-origin, hsts, clickjacking, x-frame-options, mixed-content,
+   https-enforcement, referrer-policy, owasp-a05, cwe-346, cwe-1021,
+   supply-chain, csp]

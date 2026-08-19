@@ -1,0 +1,555 @@
+id: test-doubles-001
+name: Test Doubles — Mocks, Stubs, Fakes, Spies
+category: testing
+canonical_tags: ['testing', 'mocks', 'design', 'legacy-code']
+sources:
+  - books/working-effectively-with-legacy-code.md
+  - books/the-pragmatic-programmer.md
+summary: |
+  Test doubles replace real collaborators so tests stay fast, deterministic, and focused
+  on the unit under test. Mocks verify behavior (was it called correctly?), stubs supply
+  canned answers (what should it return?), fakes provide working-but-lightweight
+  implementations, and spies record calls for later inspection without dictating behavior.
+  The key to effective doubling is finding seams — boundaries where substitution is
+  possible without surgery. Mock over-use couples tests to implementation details
+  instead of outcomes; the Pragmatic Programmer's feedback principle demands tests that
+  break when behavior changes, not when structure changes.
+
+types_of_doubles:
+  summary: |
+    Each double type serves a distinct purpose. The choice depends on what you need
+    to verify about the interaction between your code and its collaborators. Use the
+    lightest double that gets the test written — not the heaviest tool available.
+  kinds:
+    - name: Stub
+      definition: |
+        A stub provides pre-configured answers to calls made during the test.
+        It returns fixed data — always the same value, regardless of input.
+        Stubs answer "what should the collaborator return?" They have no
+        assertions about HOW they were called.
+      signals_you_need_a_stub:
+        - "The real collaborator is non-deterministic (current time, random, weather API)."
+        - "The real collaborator is slow (database, network, file I/O)."
+        - "The real collaborator's return value depends on state you don't want to set up."
+        - "You need to test how your code handles a specific return value, including errors."
+      rules:
+        - "A stub should be trivial — if it has logic, it's becoming a fake."
+        - "Stubs do not assert; they supply. Let the test assertions check the outcome."
+        - "Prefer a stub over a mock when you only care about what was returned, not how it was called."
+      example_python: |
+        # A payment gateway stub: always returns success or failure as configured.
+        # No network, no credentials, no latency.
+
+        from dataclasses import dataclass
+
+        @dataclass
+        class PaymentResult:
+            success: bool
+            transaction_id: str
+
+
+        class PaymentGatewayStub:
+            """Returns whatever result it was configured with."""
+            def __init__(self, result: PaymentResult):
+                self._result = result
+                self.call_count = 0  # observation, not assertion
+
+            def charge(self, amount: float, card_token: str) -> PaymentResult:
+                self.call_count += 1
+                return self._result
+
+
+        # Test: order service handles declined payments gracefully.
+        def test_order_service_handles_declined_payment():
+            stub = PaymentGatewayStub(PaymentResult(success=False, transaction_id=""))
+            service = OrderService(payment_gateway=stub)
+
+            result = service.place_order(items=[...])
+
+            assert result.status == "PAYMENT_DECLINED"
+            assert stub.call_count == 1  # optional observation, not the point
+
+    - name: Mock
+      definition: |
+        A mock is a pre-programmed object with expectations about which calls will be
+        made, with what arguments, in what order, and how many times. Mocks answer
+        "did the code under test interact with its collaborator correctly?" Mocks
+        carry their own assertions; the test sets expectations and the mock verifies
+        them after the act.
+      signals_you_need_a_mock:
+        - "The SUT must call a collaborator with specific arguments — and the outcome is a side effect (e.g., sending an email, publishing an event)."
+        - "The interaction IS the contract — you need to verify the collaboration protocol, not just the result."
+        - "The collaborator has no return value (void/None methods) and the only observable effect is the call itself."
+        - "You need to verify ordering or count constraints (called exactly once, called before/after X)."
+      rules:
+        - "Mock at architectural boundaries, not every collaborator inside the unit."
+        - "A test with >3 mocks is a design smell — the unit has too many dependencies."
+        - "Mock roles, not objects. Mock the notifier interface, not the MailgunClient class."
+        - "If you need to read mock documentation to understand a test, the test is too coupled."
+        - "Prefer spies over mocks when you need call verification but want a lighter touch."
+      example_python: |
+        from unittest.mock import Mock, call
+
+        # Mock: verify that checkout publishes the right event with the right payload.
+        def test_checkout_publishes_order_placed_event():
+            event_bus = Mock()
+            notifier = Mock()
+
+            checkout = CheckoutService(event_bus=event_bus, notifier=notifier)
+            checkout.complete(order_id="123", user_id="u1", total=99.99)
+
+            # The interaction IS the contract — this is what we're verifying.
+            event_bus.publish.assert_called_once_with(
+                "order.placed",
+                {"order_id": "123", "user_id": "u1", "total": 99.99},
+            )
+            # We DON'T assert on notifier — it's irrelevant to this test.
+            notifier.send_email.assert_not_called()
+
+    - name: Fake
+      definition: |
+        A fake has a working implementation, but takes shortcuts that make it unsuitable
+        for production. Fakes often use in-memory storage instead of a real database,
+        or implement a simplified but correct version of a complex algorithm. Fakes
+        answer "can I run the full flow without the real infrastructure?"
+      signals_you_need_a_fake:
+        - "You need stateful behavior across multiple calls (a stub is too simple)."
+        - "The test exercises a flow where multiple operations depend on each other's results."
+        - "The real collaborator is expensive to set up but its behavior is well-understood."
+        - "You want to test integration logic without the real integration."
+      rules:
+        - "A fake must implement the same contract as the real thing — it's a conforming implementation."
+        - "Fakes should behave correctly for the scenarios they cover; document what they don't."
+        - "If the fake becomes complex enough to have its own bugs, it needs its own tests."
+        - "Prefer a fake over a chain of mocks when the collaborator is stateful."
+      example_python: |
+        # Fake in-memory repository: full CRUD contract, no database.
+        from dataclasses import dataclass, field
+        from typing import Optional
+
+        @dataclass
+        class User:
+            id: str
+            email: str
+            name: str
+
+
+        class FakeUserRepository:
+            """Implements UserRepository contract entirely in memory."""
+            def __init__(self):
+                self._users: dict[str, User] = {}
+
+            def save(self, user: User) -> None:
+                self._users[user.id] = user
+
+            def find_by_id(self, user_id: str) -> Optional[User]:
+                return self._users.get(user_id)
+
+            def find_by_email(self, email: str) -> Optional[User]:
+                for user in self._users.values():
+                    if user.email == email:
+                        return user
+                return None
+
+            def delete(self, user_id: str) -> None:
+                self._users.pop(user_id, None)
+
+
+        # Test: registration prevents duplicate emails — needs stateful repository.
+        def test_registration_rejects_duplicate_email():
+            repo = FakeUserRepository()
+            service = RegistrationService(user_repo=repo)
+
+            # First registration succeeds.
+            result1 = service.register("alice@example.com", "Alice")
+            assert result1.success is True
+            assert repo.find_by_email("alice@example.com") is not None
+
+            # Second registration with same email — fake remembers state.
+            result2 = service.register("alice@example.com", "Alice Duplicate")
+            assert result2.success is False
+            assert "already registered" in result2.error
+
+    - name: Spy
+      definition: |
+        A spy records the calls it receives so the test can inspect them afterward.
+        Unlike a mock, a spy does not dictate expected behavior upfront — it passively
+        records. The test queries the spy after the act: "was this called? how many
+        times? with what arguments?" Spies sit between stubs and mocks: they supply
+        answers (like a stub) AND record interactions (like a mock, but deferred).
+      signals_you_need_a_spy:
+        - "You want to verify calls were made but don't want to pre-program expectations."
+        - "The collaborator also needs to return values — a pure mock doesn't do that easily."
+        - "You want looser coupling: the test asserts what matters, not every call detail."
+        - "You're testing that something was NOT called (absence verification)."
+      rules:
+        - "A spy without assertions is dead code — always assert on recorded calls or it proves nothing."
+        - "Spies reduce coupling vs. mocks: the SUT determines the calls, the test queries afterward."
+        - "If you find yourself asserting on every recorded call, you wanted a mock."
+      example_python: |
+        # Spy: a real collaborator that also records calls for later inspection.
+        # Here, the spy IS the stub — it returns data AND records interactions.
+
+        class NotificationSpy:
+            """Sends nothing, records everything."""
+            def __init__(self):
+                self.sent: list[dict] = []
+
+            def send_welcome_email(self, email: str, name: str) -> bool:
+                self.sent.append({"type": "welcome", "email": email, "name": name})
+                return True  # always succeeds for test purposes
+
+            def send_password_reset(self, email: str, token: str) -> bool:
+                self.sent.append({"type": "reset", "email": email, "token": token})
+                return True
+
+
+        def test_onboarding_sends_welcome_email():
+            spy = NotificationSpy()
+            onboarding = OnboardingService(notifications=spy)
+
+            onboarding.complete_signup(email="bob@example.com", name="Bob")
+
+            # After the act, inspect. No pre-programmed expectations.
+            assert len(spy.sent) == 1
+            assert spy.sent[0]["type"] == "welcome"
+            assert spy.sent[0]["email"] == "bob@example.com"
+
+seams:
+  summary: |
+    A seam is a place where you can alter behavior without editing the surrounding
+    code. In the language of Working Effectively with Legacy Code, seams are the
+    entry points for test doubles — you can't inject a stub or mock without first
+    identifying (or creating) a boundary where substitution is possible.
+  seam_types:
+    - name: Constructor Injection Seam
+      description: >
+        Pass the collaborator through the constructor. The seam is the constructor
+        parameter. In tests, pass a double; in production, pass the real thing.
+        This is the strongest seam — explicit, visible, language-agnostic.
+      example: |
+        class OrderService:
+            def __init__(self, payment_gateway: PaymentGateway):
+                self._gateway = payment_gateway
+            # seam: self._gateway — swap in stub/mock/fake at construction time.
+
+    - name: Parameter Injection Seam
+      description: >
+        Pass the collaborator as a method parameter instead of storing it as state.
+        Useful when the dependency changes per call or when constructor injection
+        would require refactoring too much legacy code at once.
+      example: |
+        def calculate_shipping(order, rate_provider: RateProvider = None):
+            provider = rate_provider or FedExRateProvider()  # default = production
+            # seam: rate_provider parameter — test passes a stub.
+
+    - name: Subclass/Override Seam
+      description: >
+        In languages with inheritance, extract the hard dependency into an overridable
+        method. Tests subclass and override that method to return canned data.
+        Feathers calls this "Extract and Override" — a legacy technique when
+        constructor injection would require changing too many callers.
+      example: |
+        class ReportGenerator:
+            def _get_current_time(self):          # <-- seam
+                return datetime.now()
+
+        # In test:
+        class TestableReportGenerator(ReportGenerator):
+            def _get_current_time(self):
+                return datetime(2025, 1, 15)      # deterministic
+
+    - name: Module/Import Seam
+      description: >
+        Replace a module-level dependency by redirecting imports in tests.
+        In Python: unittest.mock.patch. In TypeScript: jest.mock. Use sparingly —
+        these seams are invisible to the type system and can hide coupling.
+      example: |
+        # Python: patch the module where it's imported
+        from unittest.mock import patch
+
+        @patch("orders.gateway.PaymentGateway.charge")
+        def test_charge_declined(mock_charge):
+            mock_charge.return_value = PaymentResult(success=False, transaction_id="")
+            # seam: the import boundary — fragile but effective for legacy code.
+
+  identification_heuristics:
+    - "Look for hard dependencies first: time, random, network, filesystem, globals — each one is a seam candidate."
+    - "If a dependency blocks testing, the seam location is exactly where your code calls it."
+    - "Constructor arguments are natural seams — prefer making them explicit over monkey-patching."
+    - "A seam found is a seam that should stay: once injected, the interface becomes a design contract."
+    - "The best seam is the smallest one that unlocks the test — don't restructure the whole module for one stub."
+    - "When you can't find a seam, you've found a design problem — the code is monolithic by construction."
+
+avoiding_over_use:
+  summary: |
+    "Mocking untestable structure instead of improving it" is a forbidden pattern in
+    WELC. Over-mocking produces tests that know too much — they assert on HOW the
+    code works, not WHAT it does. When implementation changes, tests break even though
+    behavior is correct. The Pragmatic Programmer's feedback principle says tests
+    should confirm outcomes, not ratify accidental structure.
+  signals_of_over_mocking:
+    - "Test has more mock setup lines than assertion lines."
+    - "Refactoring (no behavior change) breaks tests."
+    - "Test reads like a transcript of method calls, not a specification."
+    - "Mocks return other mocks — mock chains indicate a design that needs interfaces."
+    - "The test name describes implementation ('calls validate then save then publish') instead of behavior ('places order successfully')."
+  antidotes:
+    - antidote: "Mock at architectural boundaries"
+      explanation: "Mock the database interface, not every query method. Mock the email gateway, not the SMTP client. Boundaries are where real I/O happens — everything inside can be real objects."
+    - antidote: "Test outcomes, not interactions"
+      explanation: "Assert the result — order.total, account.balance, response.status — not that order.save() was called. If the result is correct, the calls don't matter."
+    - antidote: "Use real objects where possible"
+      explanation: "Value objects, domain logic, pure functions — no need to mock. Only double things that are slow, non-deterministic, or have side effects."
+    - antidote: "Extract pure logic from side-effectful code"
+      explanation: "If a method does computation AND I/O, split it. Test the computation with real values; test the orchestration with a double for the I/O boundary."
+    - antidote: "Prefer fakes for stateful collaborators"
+      explanation: "A FakeUserRepository with real behavior is clearer than a mock that simulates find_by_email → returns_user → then save → raises_on_duplicate."
+
+examples:
+  - language: python
+    bad: |
+      # Over-mocked: the test describes HOW the code works, not WHAT it does.
+      # Every internal collaborator is mocked. Refactoring breaks these tests.
+      # The test is 30 lines of mock setup for 3 lines of assertion.
+
+      from unittest.mock import Mock, patch
+
+      def test_order_checkout():
+          mock_repo = Mock()
+          mock_validator = Mock()
+          mock_pricing = Mock()
+          mock_gateway = Mock()
+          mock_notifier = Mock()
+          mock_event_bus = Mock()
+
+          mock_repo.find_order.return_value = Mock(id="123", items=[...])
+          mock_validator.validate.return_value = True
+          mock_pricing.calculate.return_value = 99.99
+          mock_gateway.charge.return_value = Mock(success=True, tx_id="tx-1")
+
+          mock_repo.find_order.assert_called_once_with("123")
+          mock_validator.validate.assert_called_once()
+          mock_pricing.calculate.assert_called_once()
+          mock_gateway.charge.assert_called_once_with(99.99, ANY)
+          mock_notifier.send.assert_called_once()
+          mock_event_bus.publish.assert_called_once()
+
+          # This test will break if we:
+          # - rename any method
+          # - reorder validation and pricing
+          # - add a new collaborator (must add mock + assertion)
+          # - change the notifier to fire-and-forget
+          # The test ratifies the current implementation, not the contract.
+
+    good: |
+      # Test outcomes at seam boundaries. Only mock what must be doubled.
+      # The test describes WHAT should happen, not HOW.
+
+      import pytest
+      from dataclasses import dataclass
+
+
+      @dataclass
+      class Order:
+          id: str
+          items: list
+          total: float
+          status: str
+
+
+      class FakeOrderRepository:
+          """In-memory repository — full contract, no mocking syntax."""
+          def __init__(self, orders=None):
+              self._orders = {o.id: o for o in (orders or [])}
+
+          def find(self, order_id: str) -> Order | None:
+              return self._orders.get(order_id)
+
+          def save(self, order: Order) -> None:
+              self._orders[order.id] = order
+
+
+      class StubPaymentGateway:
+          """Returns a configured result — no network, no credentials."""
+          def __init__(self, *, success: bool = True):
+              self._success = success
+
+          def charge(self, total: float) -> dict:
+              if self._success:
+                  return {"success": True, "transaction_id": "tx-stub-1"}
+              return {"success": False, "transaction_id": ""}
+
+
+      # --- The test: seam boundaries are explicit ---
+
+      def test_checkout_completes_order():
+          """Placing an order charges payment and marks it COMPLETED."""
+          repo = FakeOrderRepository(orders=[
+              Order(id="123", items=[...], total=99.99, status="PENDING"),
+          ])
+          gateway = StubPaymentGateway(success=True)
+
+          service = CheckoutService(order_repo=repo, payment_gateway=gateway)
+          result = service.checkout(order_id="123")
+
+          # Assert outcomes, not call sequences.
+          assert result.status == "COMPLETED"
+          assert result.transaction_id == "tx-stub-1"
+
+          # The order was persisted with updated status.
+          saved = repo.find("123")
+          assert saved.status == "COMPLETED"
+
+
+      def test_checkout_handles_payment_failure():
+          """When payment fails, the order stays PENDING with an error."""
+          repo = FakeOrderRepository(orders=[
+              Order(id="123", items=[...], total=99.99, status="PENDING"),
+          ])
+          gateway = StubPaymentGateway(success=False)
+
+          service = CheckoutService(order_repo=repo, payment_gateway=gateway)
+          result = service.checkout(order_id="123")
+
+          assert result.status == "PENDING"
+          assert result.error == "PAYMENT_DECLINED"
+
+      # These tests survive method renames, reordering, and new collaborators.
+      # They assert the contract: given a pending order and payment outcome,
+      # the checkout produces the correct result.
+
+  - language: typescript
+    bad: |
+      // Over-mocked: the test is a call-sequence transcript.
+      // Adding a logging step or changing a method name breaks this.
+      // The test knows about every internal collaborator.
+
+      describe("OrderCheckout", () => {
+        it("completes checkout", () => {
+          const repo = {
+            findOrder: jest.fn().mockReturnValue({ id: "123", items: [], total: 99.99 }),
+            save: jest.fn(),
+          };
+          const validator = { validate: jest.fn().mockReturnValue(true) };
+          const pricing = { calculate: jest.fn().mockReturnValue(99.99) };
+          const gateway = { charge: jest.fn().mockReturnValue({ success: true, txId: "tx-1" }) };
+          const notifier = { send: jest.fn() };
+          const eventBus = { publish: jest.fn() };
+
+          const checkout = new CheckoutService(
+            repo as any, validator as any, pricing as any,
+            gateway as any, notifier as any, eventBus as any
+          );
+          const result = checkout.complete("123");
+
+          expect(result.status).toBe("COMPLETED");
+
+          // Call-sequence assertions — fragile to any refactor.
+          expect(repo.findOrder).toHaveBeenCalledWith("123");
+          expect(validator.validate).toHaveBeenCalled();
+          expect(pricing.calculate).toHaveBeenCalled();
+          expect(gateway.charge).toHaveBeenCalledWith(99.99, expect.any(String));
+          expect(notifier.send).toHaveBeenCalled();
+          expect(eventBus.publish).toHaveBeenCalled();
+        });
+      });
+
+    good: |
+      // Test outcomes through seams. Use fakes and stubs, not mocks.
+      // The test describes behavior, not implementation.
+
+      interface Order {
+        id: string;
+        items: Item[];
+        total: number;
+        status: "PENDING" | "COMPLETED" | "FAILED";
+      }
+
+      interface OrderRepository {
+        find(id: string): Order | undefined;
+        save(order: Order): void;
+      }
+
+      interface PaymentGateway {
+        charge(total: number): PaymentResult;
+      }
+
+
+      class FakeOrderRepository implements OrderRepository {
+        private orders = new Map<string, Order>();
+        constructor(initial: Order[] = []) {
+          initial.forEach(o => this.orders.set(o.id, { ...o }));
+        }
+        find(id: string) { return this.orders.get(id); }
+        save(order: Order) { this.orders.set(order.id, { ...order }); }
+      }
+
+      class StubPaymentGateway implements PaymentGateway {
+        constructor(private success: boolean = true) {}
+        charge(_total: number): PaymentResult {
+          return this.success
+            ? { success: true, transactionId: "tx-stub-1" }
+            : { success: false, transactionId: "" };
+        }
+      }
+
+      describe("CheckoutService", () => {
+        it("completes checkout when payment succeeds", () => {
+          const repo = new FakeOrderRepository([
+            { id: "123", items: [], total: 99.99, status: "PENDING" },
+          ]);
+          const gateway = new StubPaymentGateway(true);
+          const service = new CheckoutService(repo, gateway);
+
+          const result = service.checkout("123");
+
+          // Assert outcomes — the contract, not the call sequence.
+          expect(result.status).toBe("COMPLETED");
+          expect(result.transactionId).toBe("tx-stub-1");
+
+          const saved = repo.find("123");
+          expect(saved!.status).toBe("COMPLETED");
+        });
+
+        it("returns error when payment fails", () => {
+          const repo = new FakeOrderRepository([
+            { id: "123", items: [], total: 99.99, status: "PENDING" },
+          ]);
+          const gateway = new StubPaymentGateway(false);
+          const service = new CheckoutService(repo, gateway);
+
+          const result = service.checkout("123");
+
+          expect(result.status).toBe("PENDING");
+          expect(result.error).toBe("PAYMENT_DECLINED");
+        });
+      });
+
+heuristics:
+  - "Start with real objects. Only introduce a double when the real thing makes the test slow, flaky, or impossible."
+  - "Stubs for queries, mocks for commands — if the collaborator returns data, stub it. If it performs an action, mock (or spy) it."
+  - "A test with zero doubles is the best test — it proves the code is testable by construction."
+  - "When you can't decide between stub and mock: if you'd assert on the return value, stub. If you'd assert on the call itself, mock."
+  - "Fakes are worth the investment when the same collaborator appears in 5+ tests — the upfront cost amortizes."
+  - "The WELC seam rule: use the smallest seam that unlocks the change. A parameter injection is cheaper than a full DI restructure."
+  - "If a mock chain is three deep (mock returns mock returns mock), extract an interface and write a fake."
+  - "Spies over mocks when you're exploring: write the test, run it, THEN decide which interactions matter."
+  - "Test doubles should make tests EASIER to write. If the double setup is more complex than the real setup, use the real thing."
+  - "Characterization tests (WELC) often need doubles because legacy code wasn't built for testing — that's the seam discovery phase."
+
+pitfalls:
+  - "Mocking the collaborator you're testing: if you mock the SUT's own methods, you're testing the mock, not the code."
+  - "Partial mocks (mocking some methods of a real object): the object has two personalities. Extract the behavior into a separate collaborator instead."
+  - "Mocking value objects or DTOs: if a User or Order is just data, construct a real one. Don't mock data."
+  - "Forgetting to assert on mocks: a test with mocks and no verify/assert_called_with passes even if the code does nothing."
+  - "Mocking third-party code directly: if the Stripe API changes, your tests still pass. Wrap third-party code in your own interface and mock THAT."
+  - "Mocking the filesystem, clock, and network in every test: these are hard dependencies — extract them behind interfaces and use fakes consistently across the suite."
+  - "Using mocks in integration tests: integration tests should exercise real boundaries. Doubles belong in unit tests."
+  - "Leaving mock setup in test files when the same mock appears in 10 tests: extract into a shared fixture or fake class."
+
+related_tags:
+  [test-doubles, mocks, stubs, fakes, spies, seams, dependency-injection,
+   testing, legacy-code, pragmatic-programmer, working-effectively-with-legacy-code,
+   characterization-tests, test-design, over-mocking, mock-hell,
+   test-pyramid, unit-testing, integration-testing]

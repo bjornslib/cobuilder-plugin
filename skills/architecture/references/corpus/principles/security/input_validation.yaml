@@ -1,0 +1,133 @@
+id: security-input-validation-001
+name: Input Validation and Injection Defense
+category: security
+canonical_tags: ['security', 'injection', 'input-validation', 'owasp-a03']
+sources:
+  - owasp/top-ten.md
+  - cwe/injection-patterns.md
+summary: >
+  All user input must be validated at trust boundaries and parameterized
+  before use in SQL, shell commands, file paths, or API calls. String
+  interpolation of user input into executable contexts is the root cause of
+  injection vulnerabilities. SQL injection, command injection, and path
+  traversal share the same root cause: untrusted data is concatenated into
+  a context where it is interpreted as code rather than data. Defense is
+  always the same pattern: validate input shape, then use parameterized
+  interfaces or explicit argument lists that separate data from control.
+examples:
+  - language: python
+    bad: |
+      import os
+      import sqlite3
+      import subprocess
+      from fastapi import FastAPI
+
+      app = FastAPI()
+
+
+      # ---- SQL Injection: f-string interpolation into SQL ----
+      @app.get("/users")
+      def search_users(q: str):
+          conn = sqlite3.connect("app.db")
+          # User input interpolated directly into SQL — arbitrary SQL execution
+          cursor = conn.execute(f"SELECT * FROM users WHERE name LIKE '%{q}%'")
+          return cursor.fetchall()
+
+
+      # ---- Command Injection: shell=True with user input ----
+      @app.post("/convert")
+      def convert_image(filename: str):
+          # shell=True + f-string = arbitrary command execution
+          subprocess.run(f"convert {filename} output.png", shell=True)
+
+
+      # ---- Path Traversal: unsanitized filename ----
+      @app.get("/download")
+      def download(file_name: str):
+          # User can request ../../etc/passwd or any file on the system
+          with open(f"/var/data/uploads/{file_name}") as f:
+              return f.read()
+    good: |
+      import os
+      import sqlite3
+      import subprocess
+      from pathlib import Path
+      from fastapi import FastAPI, HTTPException, Query
+
+      app = FastAPI()
+
+      # ---- SQL Injection defense: parameterized queries ----
+      @app.get("/users")
+      def search_users(q: str = Query(max_length=100)):
+          conn = sqlite3.connect("app.db")
+          # Parameterized query — database driver handles escaping
+          cursor = conn.execute(
+              "SELECT * FROM users WHERE name LIKE ?",
+              (f"%{q}%",),
+          )
+          return cursor.fetchall()
+
+
+      # ---- Command Injection defense: explicit arg list, shell=False ----
+      @app.post("/convert")
+      def convert_image(filename: str):
+          # Validate filename is a known safe value
+          ALLOWED_FORMATS = {"png", "jpg", "webp"}
+          suffix = Path(filename).suffix.lstrip(".")
+          if suffix not in ALLOWED_FORMATS:
+              raise HTTPException(400, f"Unsupported format: {suffix}")
+          # Explicit argument list — no shell expansion possible
+          subprocess.run(
+              ["convert", filename, "output.png"],
+              shell=False,
+              check=True,
+          )
+
+
+      # ---- Path Traversal defense: resolve and confine to base dir ----
+      UPLOAD_DIR = Path("/var/data/uploads").resolve()
+
+      @app.get("/download")
+      def download(file_name: str):
+          # Resolve and verify the path stays within the upload directory
+          target = (UPLOAD_DIR / file_name).resolve()
+          if not target.is_relative_to(UPLOAD_DIR):
+              raise HTTPException(403, "Path traversal blocked")
+          return target.read_text()
+heuristics:
+  - >
+    Every injection vulnerability shares one root cause: untrusted data is
+    concatenated into a context where it is interpreted as code. The fix is
+    always the same: use parameterized interfaces (SQL bind parameters,
+    subprocess arg lists, Path.resolve + is_relative_to) that separate data
+    from control flow.
+  - >
+    Validate input at trust boundaries — the outermost layer where data
+    enters the system (HTTP endpoints, CLI args, message queue consumers).
+    Inner layers should assume data is already validated.
+  - >
+    SQL injection defense: never use f-strings, format(), or % formatting
+    to build SQL. Always use parameterized queries (?, :name, %(name)s)
+    provided by the database driver. This is non-negotiable.
+  - >
+    Command injection defense: never use shell=True with user input. Use
+    subprocess.run(["cmd", "arg1", "arg2"], shell=False) with explicit
+    argument lists. If you need shell features (pipes, redirects), validate
+    every user-supplied segment against a whitelist first.
+  - >
+    Path traversal defense: resolve user-supplied paths against a known
+    safe base directory and verify the result is relative to it. Path.resolve()
+    eliminates ../ tricks; is_relative_to() confirms confinement.
+  - >
+    Use Pydantic models for request validation in FastAPI. Field constraints
+    (max_length, regex, gt/lt) reject malformed input before it reaches
+    business logic. Validation at the schema level is cheaper than validation
+    scattered across handlers.
+  - >
+    Defense in depth: validate shape at the boundary, then parameterize at
+    the execution site. Validation catches nonsense early; parameterization
+    catches what validation misses. You need both.
+related_tags:
+  [security, injection, sql-injection, command-injection, path-traversal,
+   input-validation, parameterized-queries, owasp-a03, cwe-89, cwe-78,
+   cwe-22, pydantic, trust-boundary]

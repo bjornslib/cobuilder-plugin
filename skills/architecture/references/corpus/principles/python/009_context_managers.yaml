@@ -1,0 +1,360 @@
+id: context-managers-009
+name: Context Managers and Resource Management — __enter__/__exit__, contextlib, Exception Safety, and Real-World Patterns
+category: robustness
+canonical_tags: ['python', 'robustness', 'resource-management', 'context-managers', 'contextlib']
+sources:
+  - open_sources/python/pep-0008.html
+  - books/clean-code.md
+summary: >-
+  Context managers (the `with` statement) are Python's mechanism for deterministic resource
+  management. They guarantee setup and teardown happen regardless of how the block exits — whether
+  by normal completion, early return, or raised exception. Any object implementing `__enter__` and
+  `__exit__` is a context manager. `__enter__` runs on entry and returns the managed resource
+  (often `self`). `__exit__` receives `(exc_type, exc_val, exc_tb)` — `None` triple means clean
+  exit; a non-None triple means an exception is propagating. Returning `False` (or `None`) from
+  `__exit__` re-raises the exception; returning `True` suppresses it. The `contextlib` module
+  provides factory utilities: `@contextmanager` turns a single-yield generator into a context
+  manager (everything before `yield` is `__enter__`, the `yield` value is the as-target,
+  everything after `yield` is `__exit__`); `closing()` wraps objects with a `close()` method
+  that aren't context managers; `suppress()` swallows specified exception types; `redirect_stdout`
+  and `redirect_stderr` capture or redirect output; `ExitStack` manages a dynamic number of
+  context managers and guarantees LIFO cleanup even when some acquisitions fail partway through;
+  `nullcontext` provides a no-op context manager for conditional with-blocks; `AbstractContextManager`
+  and `ContextDecorator` are base classes for creating context managers that also work as decorators.
+  The principle: never make the caller responsible for remembering to call `.close()`, `.release()`,
+  or `.rollback()` — encode the lifecycle in the construct itself so resource leaks are structurally
+  impossible.
+examples:
+  - language: python
+    bad: |
+      """ANTI-PATTERNS: manual try/finally, nested cleanup nesting,
+      missing exception safety, forgetting cleanup on early return,
+      and reimplementing what contextlib already provides."""
+
+      # FILE: every exit path must duplicate cleanup. One missing
+      # `close()` and you have a file descriptor leak.
+      f = open("data.txt")
+      try:
+          data = f.read()
+          if not data:
+              return None  # BUG: early return before close!
+          result = process(data)
+      finally:
+          f.close()
+
+      # LOCK: if acquire succeeds and anything between raises,
+      # the lock leaks forever → deadlock.
+      lock.acquire()
+      try:
+          shared_list.append(item)
+          risky_operation()  # If this raises, release never runs
+      finally:
+          lock.release()
+
+      # DATABASE: nested try/finally for cursor + connection.
+      # Three levels of nesting for one query — unreadable and fragile.
+      conn = connect_db()
+      try:
+          cursor = conn.cursor()
+          try:
+              cursor.execute("SELECT ...")
+              rows = cursor.fetchall()
+          finally:
+              cursor.close()
+      finally:
+          conn.close()
+
+      # DYNAMIC RESOURCES: you can't know at compile time how many
+      # files to open. Manual LIFO cleanup is error-prone.
+      files = []
+      try:
+          for path in paths:
+              f = open(path)
+              files.append(f)
+          process_all(files)
+      finally:
+          for f in reversed(files):  # Easy to forget reversed()
+              f.close()
+
+      # CUSTOM CONTEXT MANAGER WITH BUGS:
+      class BadSession:
+          def __init__(self, dsn):
+              self.conn = connect_db(dsn)  # Setup in __init__ — not __enter__
+
+          def __enter__(self):
+              return self.conn
+
+          def __exit__(self, exc_type, exc_val, exc_tb):
+              self.conn.close()
+              # BUG: no return value → returns None → exceptions propagate.
+              # That's usually correct, but missing explicit intent.
+              # BUG: if __init__ raises, __exit__ is never called —
+              # connection may already be open and leaked.
+
+      # REIMPLEMENTING contextlib.suppress:
+      try:
+          os.remove("lockfile")
+      except FileNotFoundError:
+          pass  # Four lines for what should be one contextlib call.
+
+      # REIMPLEMENTING contextlib.closing:
+      from urllib.request import urlopen
+      page = urlopen("https://example.com")
+      try:
+          html = page.read()
+      finally:
+          page.close()
+
+      # EXCEPTION SUPPRESSION WITHOUT UNDERSTANDING:
+      class BrokenResource:
+          def __exit__(self, exc_type, exc_val, exc_tb):
+              self.cleanup()
+              return True  # BUG: suppresses ALL exceptions, even MemoryError
+    good: |
+      """Context managers encode lifecycle in a single construct.
+      Cleanup is guaranteed on every exit path, the happy path is
+      uncluttered, and contextlib eliminates boilerplate."""
+
+      # ── BUILT-IN CONTEXT MANAGERS ──────────────────────────
+
+      # FILE: `with open()` handles close on ANY exit path.
+      with open("data.txt") as f:
+          data = f.read()
+          if not data:
+              return None  # close() runs before return — guaranteed.
+          result = process(data)
+
+      # LOCK: `with lock` guarantees release even on exception.
+      with lock:
+          shared_list.append(item)
+          risky_operation()
+
+      # DATABASE: connection + cursor as context managers — no nesting.
+      with connect_db() as conn, conn.cursor() as cursor:
+          cursor.execute("SELECT ...")
+          rows = cursor.fetchall()
+
+      # TEMPORARY DIRECTORY: auto-deleted on block exit.
+      import tempfile
+      with tempfile.TemporaryDirectory() as tmp:
+          write_files(tmp)
+          run_job(tmp)  # Directory cleaned up always.
+
+      # MULTIPLE RESOURCES: parenthesized syntax (Python 3.10+).
+      with (
+          open("src.txt") as src,
+          open("dst.txt", "w") as dst,
+      ):
+          dst.write(src.read())
+
+      # ── CLASS-BASED CUSTOM CONTEXT MANAGER ─────────────────
+
+      class DatabaseSession:
+          """Full-control context manager: explicit exception handling,
+          transaction commit/rollback, and cleanup."""
+
+          def __init__(self, dsn: str) -> None:
+              self.dsn = dsn
+              self.conn: Any | None = None
+
+          def __enter__(self) -> "DatabaseSession":
+              self.conn = connect_db(self.dsn)
+              self.conn.execute("BEGIN")
+              return self
+
+          def __exit__(
+              self,
+              exc_type: type[BaseException] | None,
+              exc_val: BaseException | None,
+              exc_tb: Any,
+          ) -> bool:
+              if exc_type is None:
+                  self.conn.commit()
+              else:
+                  self.conn.rollback()
+              if self.conn:
+                  self.conn.close()
+              return False  # Don't suppress exceptions.
+
+      with DatabaseSession("postgres://...") as session:
+          session.execute("INSERT INTO ...")
+          session.execute("UPDATE ...")
+          # On exception: rollback + close. On success: commit + close.
+
+      # ── @contextmanager FOR SIMPLE CASES ──────────────────
+
+      from contextlib import contextmanager
+
+      @contextmanager
+      def timer(name: str):
+          """Measure and log block duration."""
+          import time
+          start = time.monotonic()
+          yield  # Everything after yield runs on exit.
+          elapsed = time.monotonic() - start
+          logger.info("%s took %.2fs", name, elapsed)
+
+      with timer("data-load"):
+          load_dataset()
+
+      @contextmanager
+      def temporary_chdir(path: str):
+          """Change directory for a block, restore on exit."""
+          import os
+          old = os.getcwd()
+          os.chdir(path)
+          try:
+              yield
+          finally:
+              os.chdir(old)
+
+      @contextmanager
+      def indented_log(name: str):
+          """Indent log output for a scoped operation."""
+          logger.info("%s:", name)
+          try:
+              yield
+          except Exception:
+              logger.exception("%s FAILED", name)
+              raise
+          finally:
+              logger.info("%s complete.", name)
+
+      # ── EXCEPTION SAFETY: __exit__ RETURN VALUE ────────────
+
+      class ErrorRecorder:
+          """Record but don't suppress exceptions."""
+
+          def __init__(self) -> None:
+              self.errors: list[BaseException] = []
+
+          def __enter__(self) -> "ErrorRecorder":
+              return self
+
+          def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+              if exc_type is not None:
+                  self.errors.append(exc_val)
+              return False  # Never suppress — always propagate.
+
+      # Only suppress specific, expected exceptions:
+      class IgnoreValueError:
+          def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+              if exc_type is ValueError:
+                  return True  # Suppress ValueError
+              return False     # Propagate everything else
+
+      # ── contextlib UTILITIES ───────────────────────────────
+
+      # suppress(): swallow specific exception types.
+      from contextlib import suppress
+
+      with suppress(FileNotFoundError):
+          os.remove("lockfile")
+
+      # closing(): wrap objects with .close() that aren't CMs.
+      from contextlib import closing
+      from urllib.request import urlopen
+
+      with closing(urlopen("https://example.com")) as page:
+          html = page.read()
+
+      # redirect_stdout / redirect_stderr:
+      from contextlib import redirect_stdout
+      import io
+
+      buf = io.StringIO()
+      with redirect_stdout(buf):
+          print("Captured output")
+      assert buf.getvalue() == "Captured output\n"
+
+      # ── ExitStack: DYNAMIC RESOURCE MANAGEMENT ─────────────
+
+      from contextlib import ExitStack
+
+      def process_paths(paths: list[str]) -> None:
+          """Open an unknown number of files — ExitStack
+          handles dynamic count and LIFO cleanup."""
+          with ExitStack() as stack:
+              files = [stack.enter_context(open(p)) for p in paths]
+              process_all(files)
+              # All files closed in reverse order on exit.
+
+      # ExitStack + conditional resources:
+      def maybe_open(path: str | None) -> object | None:
+          with ExitStack() as stack:
+              if path:
+                  f = stack.enter_context(open(path))
+                  return f
+              # stack cleans up any entered managers.
+              return None
+
+      # ── nullcontext: CONDITIONAL WITH-BLOCKS ───────────────
+
+      from contextlib import nullcontext
+
+      def open_if_valid(path: str | None):
+          ctx = open(path) if path else nullcontext()
+          with ctx as f:
+              if f:
+                  return f.read()
+              return ""
+
+      # ── ContextDecorator: USE AS DECORATOR OR WITH ─────────
+
+      from contextlib import ContextDecorator
+
+      class debug_timing(ContextDecorator):
+          """Can be used as `with debug_timing(...)` or `@debug_timing(...)`."""
+
+          def __init__(self, label: str) -> None:
+              self.label = label
+
+          def __enter__(self):
+              import time
+              self.start = time.monotonic()
+              return self
+
+          def __exit__(self, *exc):
+              import time
+              elapsed = time.monotonic() - self.start
+              logger.debug("%s: %.4fs", self.label, elapsed)
+              return False
+
+      @debug_timing("expensive-calc")
+      def expensive_calculation():
+          ...
+
+      with debug_timing("batch-job"):
+          run_batch()
+
+      # ── TRANSACTION: FULL ATOMICITY PATTERN ────────────────
+
+      @contextmanager
+      def atomic_write(path: str, mode: str = "w"):
+          """Write to a temp file, atomically replace on success."""
+          import os
+          tmp = f"{path}.tmp"
+          with open(tmp, mode) as f:
+              yield f
+          os.replace(tmp, path)  # Atomic on POSIX
+
+      with atomic_write("config.json") as f:
+          json.dump(config, f)
+          # If json.dump raises, tmp file is closed but not moved.
+          # On success, config.json is updated atomically.
+
+heuristics:
+  - "Every resource that has a paired acquire/release or open/close lifecycle should be managed with a context manager. If you're writing `try: ... finally: obj.close()`, you're missing a context manager."
+  - "`__exit__` receives `(exc_type, exc_val, exc_tb)`. All three are `None` on clean exit. Returning `False` (or `None`) propagates the exception; returning `True` suppresses it. Default to `False` — only suppress exceptions you fully understand and intend to swallow."
+  - "Use `@contextmanager` for simple setup/teardown where the generator pattern suffices. Use class-based `__enter__`/`__exit__` when you need state between enter and exit, complex cleanup logic, or reusability via attributes."
+  - "Never do setup work in `__init__` that requires paired teardown in `__exit__`. If `__init__` raises, `__exit__` is never called. Defer resource acquisition to `__enter__`."
+  - "Use `contextlib.ExitStack` when the number of context managers isn't known until runtime, or when you need to conditionally enter managers. It guarantees LIFO cleanup and handles partial failures correctly."
+  - "Use `contextlib.suppress(*exceptions)` to swallow specific expected exceptions. Never use bare `except:` or `return True` in `__exit__` to suppress all exceptions — you'll hide bugs."
+  - "Use `contextlib.nullcontext()` as a no-op placeholder when context manager usage is conditional. This keeps the `with` block structure clean regardless of whether a resource is needed."
+  - "Stack multiple context managers with the parenthesized `with (a as x, b as y, c as z)` syntax (Python 3.10+). This avoids the horizontal-scroll nightmare of `with a, b, c as x, y, z`."
+  - "When `__exit__` does cleanup that can itself raise, the original exception must not be masked. Python handles this correctly: if `__exit__` raises while an exception is already propagating, the new exception is attached as `__context__` and the original is re-raised as an exception group (Python 3.11+)."
+  - "`ContextDecorator` is the base class for context managers that should also work as decorators. It's simpler than `__enter__`/`__exit__` + `__call__` manually."
+  - "Prefer `closing(obj)` for legacy objects with `.close()` that predate the context manager protocol, rather than writing throwaway wrapper classes."
+  - "Context managers compose naturally with generators: `yield` inside a `with` block defers cleanup until the generator is exhausted or garbage-collected. This is the foundation of `@contextmanager` itself."
+
+related_tags: [context-manager, with-statement, __enter__, __exit__, contextlib, contextmanager, ExitStack, closing, suppress, exitstack, redirect-stdout, nullcontext, ContextDecorator, exception-safety, resource-cleanup, deterministic-finalization, RAII, transaction, atomicity, python]

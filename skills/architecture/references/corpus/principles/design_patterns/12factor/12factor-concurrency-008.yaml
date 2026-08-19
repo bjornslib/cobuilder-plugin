@@ -1,0 +1,219 @@
+id: 12factor-concurrency-008
+name: "12-Factor App — Concurrency (Scale Out via Process Model)"
+category: cloud-native
+canonical_tags: ['12factor', 'concurrency', 'scaling', 'process-model', 'share-nothing', 'workload', 'procfile']
+sources:
+  - open_sources/design_patterns/12factor-app.txt
+  - open_sources/design_patterns/12factor-concurrency.html
+summary: >
+  In the twelve-factor app, processes are first-class citizens. The developer
+  architects the app to handle diverse workloads by assigning each type of
+  work to a process type: web processes handle HTTP requests, worker processes
+  handle background jobs, and clock processes handle scheduled tasks. The
+  share-nothing, horizontally partitionable nature means adding concurrency
+  is simple — just run more processes. The array of process types and their
+  counts is the process formation. Twelve-factor processes should never
+  daemonize or write PID files; instead, rely on the OS process manager
+  (systemd, Foreman) to manage output streams, restart crashed processes,
+  and handle shutdowns. The process model doesn't preclude internal
+  multiplexing via threads or async/evented I/O — but an individual VM can
+  only scale vertically so far. Horizontal scaling via the process model
+  is the twelve-factor path.
+examples:
+  - language: python
+    bad: |
+      # BAD: Monolithic single-process design. One Python process handles
+      # HTTP requests, runs background jobs synchronously in the same
+      # process, and daemonizes itself. No process types, no formation.
+      # To scale, you must vertically scale the VM.
+
+      import time
+      import threading
+      import daemonize
+      from http.server import HTTPServer, BaseHTTPRequestHandler
+
+      # WHY: Web and worker logic in the same process. A slow background job
+      # blocks HTTP responses. Cannot scale web and worker independently.
+      class MonolithHandler(BaseHTTPRequestHandler):
+          def do_GET(self):
+              if self.path == "/send-email":
+                  # WHY: Blocking email send in the HTTP handler — ties up
+                  # a web thread for seconds. Under load, all threads are
+                  # blocked and the app becomes unresponsive.
+                  time.sleep(3)  # simulate slow email send
+                  self.send_response(200)
+                  self.end_headers()
+                  self.wfile.write(b"Email sent")
+              else:
+                  self.send_response(200)
+                  self.end_headers()
+                  self.wfile.write(b"OK")
+
+      # WHY: Daemonizes itself — writes PID file, detaches from terminal.
+      # The OS process manager cannot track this process. Restart logic is
+      # hand-rolled. Logs go to a file, not stdout.
+      # daemonize.Daemonize(app="myapp", pid="/tmp/myapp.pid", action=run)
+
+    good: |
+      # GOOD: Process types defined in a Procfile. Web and worker are
+      # separate process types, independently scalable. No daemonization.
+      # The process manager (Honcho in dev, systemd/k8s in prod) handles
+      # lifecycle.
+
+      # Procfile:
+      # web: gunicorn app:create_app --bind 0.0.0.0:$PORT --workers 2
+      # worker: python -m app.worker
+      # clock: python -m app.scheduler
+
+      import os
+      import json
+      import redis
+      from http.server import HTTPServer, BaseHTTPRequestHandler
+
+      REDIS_URL = os.environ["REDIS_URL"]
+      _redis = redis.from_url(REDIS_URL)
+
+      class WebHandler(BaseHTTPRequestHandler):
+          """Web process type — handles HTTP, enqueues async work."""
+          def do_GET(self):
+              if self.path == "/send-email":
+                  # WHY: Enqueue job to Redis — returns immediately. The
+                  # worker process picks it up. Web stays fast.
+                  job = json.dumps({"type": "send_email", "to": "user@example.com"})
+                  _redis.rpush("queue:email", job)
+                  self.send_response(202)
+                  self.end_headers()
+                  self.wfile.write(b"Email queued")
+              else:
+                  self.send_response(200)
+                  self.end_headers()
+                  self.wfile.write(b"OK")
+
+      # worker.py — separate process type
+      # WHY: Worker process independently scalable. If email volume spikes,
+      # run `worker: 5` in the formation. Web processes unaffected.
+      #
+      # import redis, json, time
+      # _redis = redis.from_url(os.environ["REDIS_URL"])
+      # while True:
+      #     _, job_data = _redis.blpop("queue:email", timeout=30)
+      #     if job_data:
+      #         job = json.loads(job_data)
+      #         print(f"Processing: {job['type']} to {job['to']}")
+      #         time.sleep(2)  # send email
+
+      # WHY: The process formation can be:
+      #   web: 4 processes (handle HTTP)
+      #   worker: 2 processes (handle background jobs)
+      #   clock: 1 process (handle scheduled tasks)
+      # Each scales independently. No code changes for scaling.
+
+  - language: typescript
+    bad: |
+      // BAD: Single Node.js process handles everything — HTTP, background
+      // jobs, email sending. Uses in-process scheduling. Cannot scale
+      // different workload types independently.
+
+      import express from "express";
+
+      const app = express();
+
+      app.get("/send-email", async (_req, res) => {
+        // WHY: Blocking email send in request handler. 3s delay per request.
+        // Under 100 concurrent requests, the event loop is saturated.
+        await new Promise((r) => setTimeout(r, 3000)); // fake email
+        res.send("Email sent");
+      });
+
+      app.listen(3000);
+
+      // WHY: No process formation. To handle more email traffic, you must
+      // run more copies of the entire app — web + worker bundled together.
+      // Email spikes consume web capacity, and vice versa.
+
+    good: |
+      // GOOD: Process types separated. Web enqueues jobs to Redis, worker
+      // processes them independently. Procfile defines the formation.
+      // Each type scales independently.
+
+      // Procfile:
+      // web: node dist/web.js
+      // worker: node dist/worker.js
+
+      // web.ts — GOOD: enqueues work, returns fast
+      import express from "express";
+      import { createClient } from "redis";
+
+      const redis = createClient({ url: process.env.REDIS_URL });
+      redis.connect();
+
+      const app = express();
+
+      app.get("/send-email", async (_req, res) => {
+        // WHY: Push to Redis queue — non-blocking. Worker picks it up.
+        await redis.rPush(
+          "queue:email",
+          JSON.stringify({ type: "send_email", to: "user@example.com" })
+        );
+        res.status(202).send("Email queued");
+      });
+
+      const port = parseInt(process.env.PORT || "3000", 10);
+      app.listen(port, "0.0.0.0");
+
+      // worker.ts — GOOD: dedicated worker process, independently scalable
+      // import { createClient } from "redis";
+      //
+      // const redis = createClient({ url: process.env.REDIS_URL });
+      // await redis.connect();
+      //
+      // while (true) {
+      //   const result = await redis.blPop("queue:email", 30);
+      //   if (result) {
+      //     const job = JSON.parse(result.element);
+      //     console.log(`Sending email to ${job.to}`);
+      //     await new Promise((r) => setTimeout(r, 2000)); // send
+      //   }
+      // }
+
+heuristics:
+  - >
+    "Scale out via the process model. Processes are a first class citizen.
+    The developer assigns each type of work to a process type" (12factor.net).
+  - >
+    Use process types for workload diversity: web for HTTP, worker for
+    background jobs, clock for scheduled tasks. Each type scales
+    independently — more web processes don't affect worker count.
+  - >
+    The process formation is the array of process types and their counts.
+    Deploy with `web: 3, worker: 2` and scale to `web: 10, worker: 5`
+    without code changes.
+  - >
+    Twelve-factor processes should never daemonize or write PID files.
+    Rely on the OS process manager (systemd, k8s, Foreman) to manage
+    lifecycle, restarts, and output streams.
+  - >
+    The process model doesn't exclude internal concurrency. Use threads,
+    async/await, or evented I/O within a process. But vertical scaling
+    has limits — horizontal scaling via process count is the escape hatch.
+  - >
+    A process type can be instantiated into zero or more processes. A
+    clock process type runs with count=1. A web process type runs with
+    count=N. The formation is declarative.
+  - >
+    In development, use Foreman or Honcho with a Procfile. In production,
+    the platform (Heroku, Kubernetes, Nomad) reads the Procfile or
+    equivalent to determine the formation.
+  - >
+    When adding a new workload type (e.g., a metrics collector), add a new
+    process type. Don't stuff it into the web or worker type — separate
+    concerns, separate process types.
+  - >
+    The share-nothing property of processes means scaling out is safe.
+    No process depends on in-memory state of another process. Adding
+    a process is a pure capacity increase.
+
+related_tags:
+  [concurrency, process-model, scaling, horizontal-scaling, procfile,
+   foreman, honcho, web-process, worker-process, process-formation,
+   share-nothing, systemd, kubernetes, heroku, twelve-factor]

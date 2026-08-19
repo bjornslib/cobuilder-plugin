@@ -1,0 +1,445 @@
+id: circuit-breakers-001
+name: Circuit Breakers
+category: resilience
+canonical_tags: ['resilience', 'release-it', 'production-readiness', 'ddia']
+sources:
+  - books/release-it.md
+  - books/designing-data-intensive-applications.md
+summary: >
+  A circuit breaker is a stability pattern that stops cascading failure by
+  detecting when a downstream dependency is unhealthy and failing fast
+  instead of piling on more requests. It operates in three states: CLOSED
+  (normal operation, calls pass through), OPEN (failures exceed threshold,
+  calls are rejected immediately), and HALF_OPEN (after a recovery timeout,
+  a single probe call is allowed to test if the dependency has recovered).
+  Circuit breakers prevent thread-pool exhaustion, reduce tail latency
+  amplification, and give failing dependencies breathing room to recover.
+  They must be paired with degradation -- when the circuit is open, surface
+  a fallback response (static stub, cached stale data, or queued work)
+  rather than silently erroring. This is not optional: a circuit breaker
+  without a fallback is just a faster crash.
+examples:
+  - language: python
+    bad: |
+      import time
+      from typing import Any
+      import requests
+
+
+      class EmailService:
+          """No circuit breaker. Every call hits the SMTP gateway regardless."""
+
+          def __init__(self, url: str) -> None:
+              self._url = url
+
+          def send(self, to: str, subject: str, body: str) -> dict:
+              """Keeps flooding a dead gateway, exhausting threads."""
+              resp = requests.post(
+                  f"{self._url}/send",
+                  json={"to": to, "subject": subject, "body": body},
+              )
+              resp.raise_for_status()
+              return resp.json()
+
+
+      svc = EmailService("https://smtp-gateway.internal")
+      for user in users:
+          try:
+              svc.send(user.email, "Welcome", "Hello!")
+          except Exception:
+              pass  # keeps hitting the dead gateway with every call
+    good: |
+      import time
+      import threading
+      from dataclasses import dataclass, field
+      from enum import Enum
+      from typing import Any, Callable, Optional, TypeVar
+      import requests
+
+
+      T = TypeVar("T")
+
+      # ---- Circuit breaker state machine ------------------------------
+      class CircuitState(Enum):
+          CLOSED = "closed"       # calls pass through
+          OPEN = "open"           # calls rejected, fail fast
+          HALF_OPEN = "half_open" # probe call allowed
+
+
+      @dataclass
+      class CircuitBreaker:
+          """
+          Thread-safe circuit breaker with three states.
+
+          CLOSED -> OPEN after failure_threshold consecutive failures.
+          OPEN -> HALF_OPEN after recovery_timeout seconds.
+          HALF_OPEN -> CLOSED on success, -> OPEN on failure.
+          """
+          failure_threshold: int = 5
+          recovery_timeout: float = 30.0
+          half_open_max_requests: int = 1
+
+          state: CircuitState = CircuitState.CLOSED
+          failure_count: int = 0
+          last_failure_time: float = 0.0
+          half_open_requests: int = 0
+          _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
+
+          def call(self, fn: Callable[..., T], *args: Any, **kwargs: Any) -> T:
+              with self._lock:
+                  if self.state == CircuitState.OPEN:
+                      if time.monotonic() - self.last_failure_time >= self.recovery_timeout:
+                          self.state = CircuitState.HALF_OPEN
+                          self.half_open_requests = 0
+                      else:
+                          remaining = self.recovery_timeout - (time.monotonic() - self.last_failure_time)
+                          raise CircuitOpenError(f"Circuit open for {remaining:.0f}s")
+
+                  if self.state == CircuitState.HALF_OPEN:
+                      if self.half_open_requests >= self.half_open_max_requests:
+                          raise CircuitOpenError("Circuit half-open -- probe capacity reached")
+                      self.half_open_requests += 1
+
+              try:
+                  result = fn(*args, **kwargs)
+                  with self._lock:
+                      self.failure_count = 0
+                      if self.state == CircuitState.HALF_OPEN:
+                          self.state = CircuitState.CLOSED
+                          self.half_open_requests = 0
+                  return result
+              except Exception:
+                  with self._lock:
+                      self.failure_count += 1
+                      self.last_failure_time = time.monotonic()
+                      if (
+                          self.state == CircuitState.HALF_OPEN
+                          or self.failure_count >= self.failure_threshold
+                      ):
+                          self.state = CircuitState.OPEN
+                  raise
+
+
+      class CircuitOpenError(Exception):
+          """Raised when the circuit breaker rejects a call."""
+
+
+      # ---- Sliding-window variant ---------------------------------------
+      @dataclass
+      class SlidingWindowBreaker:
+          """
+          Counts failures in a sliding time window instead of consecutive
+          failures. Better for bursty failure patterns.
+          """
+          window_seconds: float = 60.0
+          failure_threshold: int = 10
+          recovery_timeout: float = 30.0
+
+          state: CircuitState = CircuitState.CLOSED
+          _failures: list = field(default_factory=list)
+          _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
+
+          def _prune(self, now: float) -> None:
+              cutoff = now - self.window_seconds
+              self._failures = [t for t in self._failures if t > cutoff]
+
+          def call(self, fn: Callable[..., T], *args: Any, **kwargs: Any) -> T:
+              now = time.monotonic()
+              with self._lock:
+                  self._prune(now)
+                  if self.state == CircuitState.OPEN:
+                      last_fail = self._failures[-1] if self._failures else 0.0
+                      if now - last_fail >= self.recovery_timeout:
+                          self.state = CircuitState.HALF_OPEN
+                      else:
+                          raise CircuitOpenError("Circuit open")
+
+              try:
+                  result = fn(*args, **kwargs)
+                  with self._lock:
+                      if self.state == CircuitState.HALF_OPEN:
+                          self.state = CircuitState.CLOSED
+                  return result
+              except Exception:
+                  with self._lock:
+                      self._failures.append(now)
+                      self._prune(now)
+                      if len(self._failures) >= self.failure_threshold:
+                          self.state = CircuitState.OPEN
+                  raise
+
+
+      # ---- Resilient email service --------------------------------------
+      class ResilientEmailService:
+          def __init__(self, url: str, timeout: float = 5.0) -> None:
+              self._url = url
+              self._timeout = timeout
+              self._breaker = CircuitBreaker(failure_threshold=3, recovery_timeout=30.0)
+
+          def send(self, to: str, subject: str, body: str) -> dict:
+              try:
+                  return self._breaker.call(self._send_raw, to, subject, body)
+              except CircuitOpenError:
+                  # Circuit open -> queue for later, return degraded
+                  self._queue_email(to, subject, body)
+                  return {"status": "queued", "message": "Email queued; gateway unavailable"}
+              except Exception:
+                  # Transient failure before circuit trips
+                  self._queue_email(to, subject, body)
+                  return {"status": "queued", "message": "Email queued due to transient error"}
+
+          def _send_raw(self, to: str, subject: str, body: str) -> dict:
+              resp = requests.post(
+                  f"{self._url}/send",
+                  json={"to": to, "subject": subject, "body": body},
+                  timeout=self._timeout,
+              )
+              resp.raise_for_status()
+              return resp.json()
+
+          def _queue_email(self, to: str, subject: str, body: str) -> None:
+              import json
+              with open("/var/queue/email_backlog.jsonl", "a") as f:
+                  f.write(json.dumps({"to": to, "subject": subject}) + "\n")
+
+
+      svc = ResilientEmailService("https://smtp-gateway.internal", timeout=5.0)
+      for user in users:
+          result = svc.send(user.email, "Welcome", "Hello!")
+          # Never throws -- always returns success or degraded status
+  - language: typescript
+    bad: |
+      import axios from "axios";
+
+      // No circuit breaker -- keeps pounding a dying gateway.
+      class PaymentService {
+        constructor(private readonly gatewayUrl: string) {}
+
+        async charge(userId: string, amount: number) {
+          const resp = await axios.post(`${this.gatewayUrl}/charge`, {
+            userId,
+            amount,
+          });
+          return resp.data;
+        }
+      }
+    good: |
+      import axios from "axios";
+
+      // ---- Circuit breaker state machine -----------------------------
+      type CircuitState = "closed" | "open" | "half-open";
+
+      interface BreakerConfig {
+        failureThreshold: number;
+        recoveryTimeoutMs: number;
+        halfOpenMaxRequests: number;
+      }
+
+      class CircuitBreaker {
+        private state: CircuitState = "closed";
+        private failureCount = 0;
+        private lastFailureTime = 0;
+        private halfOpenRequests = 0;
+
+        constructor(private readonly config: BreakerConfig) {}
+
+        async call<T>(fn: () => Promise<T>): Promise<T> {
+          if (this.state === "open") {
+            const elapsed = Date.now() - this.lastFailureTime;
+            if (elapsed >= this.config.recoveryTimeoutMs) {
+              this.state = "half-open";
+              this.halfOpenRequests = 0;
+            } else {
+              throw new CircuitOpenError(
+                `Circuit open for ${Math.ceil(
+                  (this.config.recoveryTimeoutMs - elapsed) / 1000
+                )}s`
+              );
+            }
+          }
+
+          if (this.state === "half-open") {
+            if (this.halfOpenRequests >= this.config.halfOpenMaxRequests) {
+              throw new CircuitOpenError(
+                "Circuit half-open -- at probe capacity"
+              );
+            }
+            this.halfOpenRequests++;
+          }
+
+          try {
+            const result = await fn();
+            this.failureCount = 0;
+            if (this.state === "half-open") {
+              this.state = "closed";
+              this.halfOpenRequests = 0;
+            }
+            return result;
+          } catch (err) {
+            this.failureCount++;
+            this.lastFailureTime = Date.now();
+            if (
+              this.state === "half-open" ||
+              this.failureCount >= this.config.failureThreshold
+            ) {
+              this.state = "open";
+            }
+            throw err;
+          }
+        }
+
+        getState(): CircuitState {
+          return this.state;
+        }
+      }
+
+      class CircuitOpenError extends Error {
+        constructor(message: string) {
+          super(message);
+          this.name = "CircuitOpenError";
+        }
+      }
+
+      // ---- Per-dependency breaker registry ---------------------------
+      class BreakerRegistry {
+        private breakers = new Map<string, CircuitBreaker>();
+
+        get(key: string, config?: Partial<BreakerConfig>): CircuitBreaker {
+          if (!this.breakers.has(key)) {
+            this.breakers.set(
+              key,
+              new CircuitBreaker({
+                failureThreshold: config?.failureThreshold ?? 5,
+                recoveryTimeoutMs: config?.recoveryTimeoutMs ?? 30_000,
+                halfOpenMaxRequests: config?.halfOpenMaxRequests ?? 1,
+              })
+            );
+          }
+          return this.breakers.get(key)!;
+        }
+
+        status(): Record<string, CircuitState> {
+          const result: Record<string, CircuitState> = {};
+          for (const [key, breaker] of this.breakers) {
+            result[key] = breaker.getState();
+          }
+          return result;
+        }
+      }
+
+      // ---- Resilient payment service ---------------------------------
+      interface ChargeResult {
+        transactionId: string;
+        status: "success" | "degraded";
+      }
+
+      class ResilientPaymentService {
+        private readonly breaker: CircuitBreaker;
+
+        constructor(
+          private readonly gatewayUrl: string,
+          private readonly breakerRegistry: BreakerRegistry
+        ) {
+          this.breaker = breakerRegistry.get("payment-gateway", {
+            failureThreshold: 3,
+            recoveryTimeoutMs: 30_000,
+          });
+        }
+
+        async charge(userId: string, amount: number): Promise<ChargeResult> {
+          try {
+            return await this.breaker.call(async () => {
+              const resp = await axios.post(
+                `${this.gatewayUrl}/charge`,
+                { userId, amount },
+                { timeout: 5000 }
+              );
+              return {
+                transactionId: resp.data.transaction_id,
+                status: "success",
+              };
+            });
+          } catch (err) {
+            if (err instanceof CircuitOpenError) {
+              await this.enqueueDeferredCharge(userId, amount);
+              return { transactionId: "pending", status: "degraded" };
+            }
+            await this.enqueueDeferredCharge(userId, amount);
+            return { transactionId: "pending", status: "degraded" };
+          }
+        }
+
+        private async enqueueDeferredCharge(
+          userId: string,
+          amount: number
+        ): Promise<void> {
+          // Write to durable queue for later processing
+          await someDurableQueue.send({
+            type: "deferred_charge",
+            userId,
+            amount,
+            queuedAt: Date.now(),
+          });
+        }
+      }
+
+      // Export breaker status as a first-class metric
+      app.get("/health/breakers", (_req, res) => {
+        res.json(breakerRegistry.status());
+      });
+heuristics:
+  - >
+    A circuit breaker has exactly three states: CLOSED (normal), OPEN (fail
+    fast), HALF_OPEN (probing). Implementations that omit HALF_OPEN and use
+    timer-based auto-reset without probing are not circuit breakers -- they are
+    retry loops that will re-flood the dependency the moment the timer expires.
+  - >
+    Choose failure counting based on the failure pattern: consecutive-failure
+    counting trips fast on prolonged outages but can be held open by intermittent
+    successes. Sliding-window counting tracks failures within a time window and
+    is more robust against flaky dependencies.
+  - >
+    A circuit breaker without a fallback is a faster crash. When the circuit is
+    open, every rejected call must return a degraded response: a static stub,
+    stale cached data, or a message confirming the work was queued for later.
+  - >
+    Circuit breakers must be per-dependency, not global. One global breaker means
+    a single slow database can block all outbound calls. Each dependency gets its
+    own breaker with its own threshold and recovery timeout.
+  - >
+    Tune thresholds to the dependency: cache misses are transient (threshold
+    10+), payment gateway timeouts are critical (threshold 3), search indexes can
+    have longer recovery (60s) because stale results are acceptable.
+  - >
+    Expose circuit breaker state as a first-class metric: current state, failure
+    count, and last transition time must be observable so operators can
+    distinguish healthy from limping-along-under-protection at a glance.
+  - >
+    Do not nest circuit breakers. If service A calls B through a breaker and B
+    calls C through another, a failure in C opens B's breaker, which may look
+    like B failing and open A's breaker. Surface a degraded response when B
+    is open rather than treating it as a failure.
+  - >
+    Circuit breakers and retries are complementary. Retry with backoff handles
+    transient blips; the circuit breaker handles sustained failure. Compose them:
+    retry inside the breaker's call() so retries count toward the threshold.
+  - >
+    Test circuit breaker behavior explicitly: trip with synthetic failures,
+    verify open-state rejection, probe with HALF_OPEN, confirm success resets
+    to CLOSED. A breaker that never opens is absent; one that never closes is a
+    permanent outage.
+  - >
+    Stop flooding sick dependencies (Release It!). The breaker's primary job is
+    to stop sending requests that will fail, giving the dependency headroom to
+    recover. Every request sent during an outage makes the outage longer.
+  - >
+    HALF_OPEN must limit concurrent probe requests. Without a limit, a burst of
+    requests can all probe simultaneously when the timer expires, re-flooding
+    the dependency. Use 1 probe request at a time.
+  - >
+    Log every state transition with the dependency name, failure count, and
+    timestamp. These transitions are the signals operators need to diagnose
+    cascading failures.
+related_tags: [circuit-breaker, resilience, fallback, degradation, cascading-failure,
+  fault-tolerance, stability, thread-pool, timeout, half-open,
+  sliding-window, dependency-isolation, release-it, ddia]

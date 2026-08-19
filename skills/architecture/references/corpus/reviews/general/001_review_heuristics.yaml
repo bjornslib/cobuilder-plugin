@@ -1,0 +1,244 @@
+id: review-heuristics-001
+name: "Code Review: Refactoring Heuristics"
+category: code-review
+canonical_tags: [refactoring, readability]
+sources:
+  - books/refactoring.md
+  - books/working-effectively-with-legacy-code.md
+  - books/clean-code.md
+summary: |
+  A structured code review checklist derived from Refactoring (Fowler) and Working 
+  Effectively with Legacy Code (Feathers). Each heuristic maps a code smell to concrete 
+  review questions, an example trigger, and the recommended refactoring. The goal is 
+  to make reviews systematic rather than taste-based — every finding should reference 
+  a named smell and a named cure.
+examples:
+  - language: python
+    bad: |
+      # Code submitted for review with multiple smells
+      class ReportEngine:
+          def generate(self, data: list[dict], fmt: str, email_to: str) -> None:
+              # Smell 1: Long function mixing format, compute, and delivery
+              result = ""
+              for row in data:
+                  # Smell 2: Primitive obsession on format string
+                  if fmt == "csv":
+                      result += ",".join(str(v) for v in row.values()) + "\n"
+                  elif fmt == "json":
+                      result += str(row) + "\n"
+                  elif fmt == "xml":
+                      result += "<row>" + "".join(f"<{k}>{v}</{k}>" for k, v in row.items()) + "</row>\n"
+
+              # Smell 3: Side effect (email) mixed with computation
+              if email_to:
+                  self._email.send(email_to, "Report", result)
+
+              # Smell 4: Direct DB write mixed with formatting
+              self._db.execute("INSERT INTO reports (content, format) VALUES (?, ?)", (result, fmt))
+
+              return result
+    good: |
+      # Refactored after review — each concern is a separate, testable unit.
+      from abc import ABC, abstractmethod
+
+      class ReportFormatter(ABC):
+          """Replace conditional with polymorphism for format handling."""
+          @abstractmethod
+          def format(self, data: list[dict]) -> str: ...
+
+      class CsvFormatter(ReportFormatter):
+          def format(self, data: list[dict]) -> str:
+              return "\n".join(",".join(str(v) for v in row.values()) for row in data)
+
+      class JsonFormatter(ReportFormatter):
+          def format(self, data: list[dict]) -> str:
+              return "\n".join(json.dumps(row) for row in data)
+
+      FORMATTERS = {"csv": CsvFormatter, "json": JsonFormatter}
+
+      class ReportGenerator:
+          """Single responsibility: compute a report string."""
+          def __init__(self, formatter: ReportFormatter):
+              self._formatter = formatter
+
+          def generate(self, data: list[dict]) -> str:
+              return self._formatter.format(data)
+
+      class ReportDistributor:
+          """Single responsibility: deliver the report to the right channel."""
+          def __init__(self, email_service, db):
+              self._email = email_service
+              self._db = db
+
+          def distribute(self, content: str, email_to: str | None) -> None:
+              if email_to:
+                  self._email.send(email_to, "Report", content)
+              self._db.execute(
+                  "INSERT INTO reports (content, format) VALUES (?, ?)",
+                  (content, "text"),
+              )
+  - language: typescript
+    bad: |
+      // PR #428: "Add weekly summary email feature" — submitted for review.
+      class WeeklySummaryService {
+        constructor(
+          private db: Database,
+          private email: EmailClient,
+          private metrics: MetricsCollector,
+          private logger: Logger,
+        ) {}
+
+        async sendWeeklySummary(orgId: string): Promise<void> {
+          // Smell 1: Long function — query, compute, format, send all in one.
+          const weekAgo = new Date(Date.now() - 7 * 86400000);
+
+          const users = await this.db.query(
+            "SELECT * FROM users WHERE org_id = $1 AND created_at > $2", [orgId, weekAgo]
+          );
+          const orders = await this.db.query(
+            "SELECT * FROM orders WHERE org_id = $1 AND created_at > $2", [orgId, weekAgo]
+          );
+
+          // Smell 2: Primitive obsession — raw numbers for revenue math
+          let totalRevenue = 0;
+          let orderCount = orders.length;
+          for (const o of orders) {
+            totalRevenue += o.total ?? 0;
+          }
+
+          // Smell 3: Feature envy — computing user stats by digging into orders
+          const activeUsers = new Set<string>();
+          for (const o of orders) {
+            activeUsers.add(o.user_id);
+          }
+
+          const body = [
+            `Weekly Summary for ${orgId}`,
+            `─────────────────────────────`,
+            `New users: ${users.length}`,
+            `Orders: ${orderCount}`,
+            `Revenue: $${totalRevenue.toFixed(2)}`,
+            `Active users: ${activeUsers.size}`,
+          ].join("\n");
+
+          await this.email.send({
+            to: `admin@${orgId}.com`,
+            subject: "Weekly Summary",
+            body,
+          });
+        }
+      }
+    good: |
+      // After review: extracted queries, computation, and delivery into separate units.
+
+      interface WeeklyStats {
+        newUsers: number;
+        orderCount: number;
+        totalRevenue: number;
+        activeUsers: number;
+      }
+
+      class WeeklyStatsRepository {
+        constructor(private db: Database) {}
+
+        async fetchStats(orgId: string, since: Date): Promise<WeeklyStats> {
+          const users = await this.db.query(
+            "SELECT COUNT(*) as count FROM users WHERE org_id = $1 AND created_at > $2",
+            [orgId, since],
+          );
+          const orders = await this.db.query(
+            "SELECT COALESCE(SUM(total), 0) as revenue, COUNT(*) as count, COUNT(DISTINCT user_id) as active FROM orders WHERE org_id = $1 AND created_at > $2",
+            [orgId, since],
+          );
+          return {
+            newUsers: Number(users[0].count),
+            orderCount: Number(orders[0].count),
+            totalRevenue: Number(orders[0].revenue),
+            activeUsers: Number(orders[0].active),
+          };
+        }
+      }
+
+      class WeeklySummaryFormatter {
+        format(orgId: string, stats: WeeklyStats): string {
+          return [
+            `Weekly Summary for ${orgId}`,
+            `─────────────────────────────`,
+            `New users: ${stats.newUsers}`,
+            `Orders: ${stats.orderCount}`,
+            `Revenue: $${stats.totalRevenue.toFixed(2)}`,
+            `Active users: ${stats.activeUsers}`,
+          ].join("\n");
+        }
+      }
+
+      class WeeklySummarySender {
+        constructor(private email: EmailClient) {}
+
+        async send(orgId: string, body: string): Promise<void> {
+          await this.email.send({
+            to: `admin@${orgId}.com`,
+            subject: "Weekly Summary",
+            body,
+          });
+        }
+      }
+
+      // Orchestrator: thin, readable, each collaborator independently testable.
+      class WeeklySummaryService {
+        constructor(
+          private repo: WeeklyStatsRepository,
+          private formatter: WeeklySummaryFormatter,
+          private sender: WeeklySummarySender,
+        ) {}
+
+        async sendWeeklySummary(orgId: string): Promise<void> {
+          const since = new Date(Date.now() - 7 * 86400000);
+          const stats = await this.repo.fetchStats(orgId, since);
+          const body = this.formatter.format(orgId, stats);
+          await this.sender.send(orgId, body);
+        }
+      }
+heuristics:
+
+  # ── STRUCTURAL SMELLS ──
+  - "Long Function: Does a function mix 3+ distinct phases (query, compute, format, deliver)? If yes, request Extract Method for each phase. Look for inline comments as extraction candidates."
+  - "Long Function: Can you describe the function without using 'and'? 'It fetches AND computes AND formats AND sends' means too many responsibilities."
+  - "God Class: Does the class have >10 public methods or take >4 constructor dependencies from unrelated domains? Request Extract Class for each cohesive cluster."
+  - "God Class: Can you think of two different reasons this class might change (e.g., DB schema AND email template)? That violates SRP — request decomposition."
+  - "Divergent Change: Does one class get touched for multiple unrelated features each sprint? Split concerns."
+
+  # ── DATA SMELLS ──
+  - "Primitive Obsession: Are there validation regexes, range checks, or format strings copy-pasted across 3+ call sites? Request a value object (Email, Money, ZipCode)."
+  - "Primitive Obsession: Is `str`/`string` used for semantically distinct concepts (email, phone, SKU, zip) with no type-level distinction? Request branded types or value classes."
+  - "Data Clumps: Do 3+ parameters always appear together across multiple signatures? Request Introduce Parameter Object."
+  - "Magic Numbers/Strings: Are raw numbers or string literals used in business logic without a named constant? Request Replace Magic Number with Symbolic Constant."
+
+  # ── BEHAVIOR SMELLS ──
+  - "Feature Envy: Does a method call 3+ getters on another object without touching its own fields? Request Move Method to the data-owning class."
+  - "Feature Envy: Does a method chain dots (obj.getA().getB().getC())? It's coupled to the internal structure of A, B, and C. Request Tell, Don't Ask."
+  - "Shotgun Surgery: Does one small requirement change force edits across 5+ files? Request consolidating the knowledge into one module."
+
+  # ── CONTROL FLOW SMELLS ──
+  - "Conditional Complexity: Is the same type/status field branched on with if/elif in 3+ places? Request Replace Conditional with Polymorphism."
+  - "Conditional Complexity: Are there deeply nested if/else pyramids (>3 levels)? Request Replace Nested Conditional with Guard Clauses."
+  - "Switch Statements: Is `switch`/`match` on a type code repeated? This is a hidden type hierarchy — request polymorphism."
+
+  # ── QUALITY GATES ──
+  - "Behavior Preservation: Were structural changes separated from behavior changes? Reject mixed-intent patches."
+  - "Test coverage: For legacy code changes, were characterization tests added before refactoring? If behavior was unclear, request tests first."
+  - "Reversibility: Can each step be understood and reverted independently? Reject big-bang transformations."
+  - "Dead Code: Are there commented-out blocks, unused imports, or unreachable branches? Request deletion — version control is the undo."
+  - "Naming: Do names reveal intent (what) or merely describe mechanism (how)? Request Rename Variable/Method before deeper refactoring."
+  - "Abstraction Payoff: Does every abstraction introduced earn its keep? Request inlining of speculative abstractions or single-caller interfaces."
+  - "Review scope: Is the patch reviewable in one sitting? If the diff is >400 lines, suggest splitting into a refactoring sequence."
+
+  # ── RECOMMENDED REVIEW WORKFLOW ──
+  - "1. Skim the diff for size and intent — is it a refactoring, a feature, or both mixed together?"
+  - "2. For each file touched, identify the primary smell driving the change."
+  - "3. For each smell, reference the named refactoring technique and verify it was applied correctly."
+  - "4. Check that behavior-preserving refactorings are separated from behavior changes."
+  - "5. Verify tests were added or updated appropriately."
+  - "6. Approve or request changes with concrete references (smell name + refactoring name)."
+
+related_tags: [code-review, refactoring-checklist, code-smells, quality-gates, review-workflow, characterization-tests, behavior-preservation]

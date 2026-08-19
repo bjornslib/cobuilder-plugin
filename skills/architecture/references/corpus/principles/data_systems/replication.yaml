@@ -1,0 +1,589 @@
+id: replication-001
+name: Replication Strategies
+category: data_systems
+canonical_tags: ['data-systems', 'resilience', 'scalability']
+sources:
+  - books/designing-data-intensive-applications.md
+summary: >
+  Replication copies data across nodes for durability, availability, and
+  read scalability. Choose a replication strategy based on the required
+  consistency-vs-latency trade-off. Single-leader replication gives strong
+  consistency on the leader with eventual consistency on followers — it is
+  the simplest model and appropriate for most workloads. Multi-leader
+  replication enables writes in multiple datacenters but introduces
+  write-conflict resolution. Leaderless replication (Dynamo-style) trades
+  strong consistency for high write availability and requires quorum
+  reads/writes plus anti-entropy repair. Every replication strategy must
+  define: write acknowledgment semantics (how many replicas confirm?),
+  read consistency guarantees (quorum? stale? monotonic?), failure
+  detection and failover behavior, and lag monitoring.
+examples:
+  - language: python
+    bad: |
+      import time
+      from typing import Any
+
+
+      class BrokenReplicationClient:
+          """Sends writes to primary, reads from any replica with no consistency."""
+
+          def __init__(self, primary: Any, replicas: list[Any]) -> None:
+              self._primary = primary
+              self._replicas = replicas
+
+          def write(self, key: str, value: str) -> None:
+              # Fire-and-forget: no ack from replicas, no quorum confirmation
+              self._primary.set(key, value)
+              for replica in self._replicas:
+                  try:
+                      replica.set(key, value)  # async, unconfirmed
+                  except Exception:
+                      pass  # silently dropped — replica drifts
+
+          def read(self, key: str) -> str | None:
+              # Random replica — no read-your-writes, no staleness awareness
+              replica = hash(key) % len(self._replicas)
+              return self._replicas[replica].get(key)
+
+          # After primary failure: no failover, no leader election, no detection
+    good: |
+      from __future__ import annotations
+
+      import threading
+      import time
+      from dataclasses import dataclass, field
+      from enum import Enum
+      from typing import Any, Callable
+
+
+      class WriteConsistency(Enum):
+          ONE = 1       # Leader only
+          QUORUM = 2    # leader + (N//2) followers
+          ALL = 3       # All replicas
+
+
+      class ReadConsistency(Enum):
+          ONE = 1       # Any replica
+          QUORUM = 2    # Majority of replicas agree
+          LEADER = 3    # Always from leader (read-your-writes)
+
+
+      @dataclass
+      class ReplicationConfig:
+          replicas: list[str]
+          write_consistency: WriteConsistency = WriteConsistency.QUORUM
+          read_consistency: ReadConsistency = ReadConsistency.QUORUM
+          replication_timeout_ms: int = 2000
+
+
+      @dataclass
+      class ReplicationLag:
+          """Observable lag — stale replicas are removed from read pool."""
+          replica_id: str
+          lag_bytes: int
+          lag_seconds: float
+          last_heartbeat: float
+
+
+      class SingleLeaderReplication:
+          """Single-leader: writes go to leader, reads from any replica by policy."""
+
+          def __init__(self, config: ReplicationConfig) -> None:
+              self._config = config
+              self._nodes: dict[str, Any] = {}
+              self._leader_id: str = config.replicas[0]
+              self._lag: dict[str, ReplicationLag] = {}
+              self._lock = threading.Lock()
+
+          @property
+          def leader(self) -> str:
+              return self._leader_id
+
+          def write(self, key: str, value: str) -> bool:
+              """Write to leader, wait for required acknowledgments."""
+              with self._lock:
+                  leader_node = self._nodes[self._leader_id]
+                  leader_node.set(key, value)
+
+                  if self._config.write_consistency == WriteConsistency.ONE:
+                      return True
+
+                  # Collect acknowledgments from followers
+                  required_acks = self._ack_count()
+                  acks = 1  # leader is always 1
+
+                  for replica_id in self._config.replicas:
+                      if replica_id == self._leader_id:
+                          continue
+                      try:
+                          self._nodes[replica_id].set(key, value)
+                          acks += 1
+                      except Exception:
+                          continue
+                      if acks >= required_acks:
+                          return True
+
+                  return acks >= required_acks  # True only if quorum met
+
+          def read(self, key: str) -> str | None:
+              """Read according to consistency policy."""
+              match self._config.read_consistency:
+                  case ReadConsistency.LEADER:
+                      return self._nodes[self._leader_id].get(key)
+                  case ReadConsistency.ONE:
+                      # Any replica: prefer current (low lag)
+                      healthy = self._healthy_replicas()
+                      if not healthy:
+                          return None
+                      return self._nodes[healthy[0]].get(key)
+                  case ReadConsistency.QUORUM:
+                      # Read from multiple replicas, return most recent value
+                      return self._quorum_read(key)
+
+          def _quorum_read(self, key: str) -> str | None:
+              """Read from multiple replicas, pick value with highest version."""
+              versions: list[tuple[int, str]] = []
+              for replica_id in self._healthy_replicas():
+                  try:
+                      result = self._nodes[replica_id].get_with_version(key)
+                      if result:
+                          versions.append(result)
+                  except Exception:
+                      continue
+                  if len(versions) >= self._ack_count():
+                      break
+              if not versions:
+                  return None
+              # Return value with highest version number
+              return max(versions, key=lambda v: v[0])[1]
+
+          def _ack_count(self) -> int:
+              n = len(self._config.replicas)
+              return (n // 2) + 1  # majority
+
+          def _healthy_replicas(self) -> list[str]:
+              """Exclude replicas that are lagging beyond threshold."""
+              now = time.monotonic()
+              return [
+                  r for r in self._config.replicas
+                  if r not in self._lag or (now - self._lag[r].last_heartbeat) < 30
+              ]
+
+          def failover(self, new_leader: str) -> bool:
+              """Promote a follower to leader after primary failure."""
+              if new_leader not in self._nodes:
+                  return False
+              with self._lock:
+                  self._leader_id = new_leader
+              return True
+
+
+      class LeaderlessReplication:
+          """Dynamo-style: writes go to multiple nodes, reads use quorum."""
+
+          def __init__(self, nodes: list[Any], quorum_size: int) -> None:
+              self._nodes = nodes
+              self._quorum = quorum_size
+
+          def write(self, key: str, value: str, timestamp: float | None = None) -> bool:
+              ts = timestamp or time.time()
+              successes = 0
+              for node in self._nodes:
+                  try:
+                      node.set(key, value, ts)
+                      successes += 1
+                  except Exception:
+                      continue
+              return successes >= self._quorum
+
+          def read(self, key: str) -> str | None:
+              """Read from multiple nodes, reconcile conflicts."""
+              results: list[tuple[str, float]] = []
+              for node in self._nodes:
+                  try:
+                      data = node.get_with_timestamp(key)
+                      if data:
+                          results.append(data)
+                  except Exception:
+                      continue
+                  if len(results) >= self._quorum:
+                      break
+
+              if not results:
+                  return None
+
+              # Conflict resolution: last-write-wins by timestamp
+              latest = max(results, key=lambda r: r[1])
+
+              # Anti-entropy: repair stale nodes with the latest value
+              for node in self._nodes:
+                  try:
+                      existing = node.get_with_timestamp(key)
+                      if not existing or existing[1] < latest[1]:
+                          node.set(key, latest[0], latest[1])
+                  except Exception:
+                      continue
+
+              return latest[0]
+
+
+      class MultiLeaderReplication:
+          """Multi-leader: writes accepted by any leader, conflicts resolved by CRDT or custom resolver."""
+
+          def __init__(self, leaders: list[str], conflict_resolver: Callable[[str, str], str]) -> None:
+              self._leaders = leaders
+              self._resolve = conflict_resolver
+              self._nodes: dict[str, Any] = {}
+              # Vector clocks per key: leader_id -> counter
+              self._clocks: dict[str, dict[str, int]] = defaultdict(dict)
+              self._lock = threading.Lock()
+
+          def write(self, leader_id: str, key: str, value: str) -> bool:
+              """Accept write from any leader; increment that leader's clock entry."""
+              if leader_id not in self._leaders:
+                  return False
+              with self._lock:
+                  clock = self._clocks.setdefault(key, {})
+                  clock[leader_id] = clock.get(leader_id, 0) + 1
+                  self._nodes[leader_id].set(key, value, dict(clock))
+              # Async propagate to other leaders (conflict detection on read)
+              return True
+
+          def read(self, key: str, prefer_leader: str | None = None) -> str | None:
+              """Read from all leaders, detect conflicts, resolve with resolver."""
+              versions: dict[str, tuple[str, dict[str, int]]] = {}
+              for leader_id in self._leaders:
+                  try:
+                      result = self._nodes[leader_id].get_with_clock(key)
+                      if result:
+                          versions[leader_id] = result
+                  except Exception:
+                      continue
+
+              if not versions:
+                  return None
+
+              if len(versions) == 1:
+                  return next(iter(versions.values()))[0]
+
+              # Conflict detection: concurrent if neither clock dominates
+              conflicting = self._detect_conflicts(versions)
+              if conflicting:
+                  # Apply resolver to merge concurrent versions
+                  merged = self._resolve(
+                      versions[conflicting[0]][0],
+                      versions[conflicting[1]][0],
+                  )
+                  return merged
+
+              # Single winner: pick version with highest clock
+              return max(versions.values(), key=lambda v: sum(v[1].values()))[0]
+
+          def _detect_conflicts(
+              self, versions: dict[str, tuple[str, dict[str, int]]],
+          ) -> list[str] | None:
+              """Two versions conflict if neither vector clock dominates the other."""
+              ids = list(versions.keys())
+              for i in range(len(ids)):
+                  for j in range(i + 1, len(ids)):
+                      ci = versions[ids[i]][1]
+                      cj = versions[ids[j]][1]
+                      # ci dominates cj if every entry in ci >= cj
+                      ci_dominates = all(ci.get(k, 0) >= cj.get(k, 0) for k in set(ci) | set(cj))
+                      cj_dominates = all(cj.get(k, 0) >= ci.get(k, 0) for k in set(ci) | set(cj))
+                      if not ci_dominates and not cj_dominates:
+                          return [ids[i], ids[j]]
+              return None
+
+
+      class SyncVsAsyncReplication:
+          """Contrast: synchronous replication blocks until replicas confirm;
+          asynchronous replication returns immediately and replicates in background."""
+
+          def __init__(self, primary: Any, replicas: list[Any]) -> None:
+              self._primary = primary
+              self._replicas = replicas
+              self._pending: list[tuple[str, str, int]] = []  # (key, value, retries)
+
+          # --- Synchronous: caller blocks until quorum confirms ---
+          def write_sync(self, key: str, value: str, required_acks: int = 2) -> bool:
+              self._primary.set(key, value)
+              acks = 1
+              for replica in self._replicas:
+                  try:
+                      replica.set(key, value)
+                      acks += 1
+                  except Exception:
+                      pass
+                  if acks >= required_acks:
+                      return True
+              return acks >= required_acks  # False → caller can retry or report
+
+          # --- Asynchronous: write returns immediately, replication happens in background ---
+          def write_async(self, key: str, value: str) -> bool:
+              """Fire and return — replication lag is a separate concern."""
+              self._primary.set(key, value)
+              self._pending.append((key, value, 3))  # enqueue for background worker
+              # Background thread picks up _pending and replicates with retries
+              return True  # acknowledged immediately — stale reads possible
+
+          def _replicate_background(self) -> None:
+              """Background replication with retry (called by periodic task)."""
+              failed: list[tuple[str, str, int]] = []
+              for key, value, retries in self._pending:
+                  success = False
+                  for replica in self._replicas:
+                      try:
+                          replica.set(key, value)
+                          success = True
+                          break  # one replica confirmed is enough per item
+                      except Exception:
+                          continue
+                  if not success and retries > 0:
+                      failed.append((key, value, retries - 1))
+              self._pending = failed  # retry remaining next cycle
+
+          @property
+          def pending_replication_count(self) -> int:
+              """Observability: how much data is in the replication backlog?"""
+              return len(self._pending)
+
+
+      class SplitBrainGuard:
+          """Fencing with monotonically increasing epoch to prevent split-brain writes."""
+
+          def __init__(self, nodes: list[str]) -> None:
+              self._epoch: int = 0
+              self._fencing_tokens: dict[str, int] = {}  # node -> epoch token
+              self._lock = threading.Lock()
+
+          def acquire_leadership(self, node_id: str) -> int:
+              """Node requests leadership — gets a fencing token (epoch number)."""
+              with self._lock:
+                  self._epoch += 1
+                  self._fencing_tokens[node_id] = self._epoch
+                  return self._epoch
+
+          def validate_write(self, node_id: str, token: int) -> bool:
+              """Reject writes from nodes with stale epochs (split-brain prevention)."""
+              current = self._fencing_tokens.get(node_id)
+              if current is None or token < current:
+                  # Token is stale — this node was deposed, its writes are dangerous
+                  return False
+              return True
+
+          def step_down(self, node_id: str) -> None:
+              """Explicit step-down: invalidate node's fencing token."""
+              with self._lock:
+                  self._fencing_tokens.pop(node_id, None)
+
+          @property
+          def current_epoch(self) -> int:
+              return self._epoch
+
+          def active_leader(self) -> str | None:
+              """Return the node with the highest current epoch."""
+              if not self._fencing_tokens:
+                  return None
+              return max(self._fencing_tokens, key=lambda n: self._fencing_tokens[n])
+  - language: typescript
+    bad: |
+      // Broken replication — writes fire to primary, reads from any replica
+      class BrokenReplicationService {
+        constructor(
+          private primary: DataStore,
+          private replicas: DataStore[],
+        ) {}
+
+        async write(key: string, value: string): Promise<void> {
+          await this.primary.set(key, value);
+          // Replicate to followers with no ack tracking — silent drift
+          for (const replica of this.replicas) {
+            replica.set(key, value).catch(() => {}); // fire-and-forget
+          }
+        }
+
+        async read(key: string): Promise<string | null> {
+          // Random replica — no read-your-writes, no staleness awareness
+          const idx = Math.floor(Math.random() * this.replicas.length);
+          return this.replicas[idx].get(key);
+        }
+        // No failover, no lag monitoring, no quorum enforcement
+      }
+    good: |
+      enum WriteConsistency { ONE = 1, QUORUM = 2, ALL = 3 }
+      enum ReadConsistency { ONE = 1, QUORUM = 2, LEADER = 3 }
+
+      interface ReplicationConfig {
+        replicas: string[];
+        writeConsistency: WriteConsistency;
+        readConsistency: ReadConsistency;
+        timeoutMs: number;
+      }
+
+      interface ReplicationLag {
+        replicaId: string;
+        lagBytes: number;
+        lagSeconds: number;
+        lastHeartbeat: number;
+      }
+
+      interface VersionedValue {
+        value: string;
+        version: number;
+        timestamp: number;
+      }
+
+      // -- Single-leader replication with quorum writes and policy-driven reads --
+      class SingleLeaderReplication {
+        private nodes = new Map<string, DataStore>();
+        private leaderId: string;
+        private lag = new Map<string, ReplicationLag>();
+
+        constructor(private config: ReplicationConfig) {
+          this.leaderId = config.replicas[0];
+        }
+
+        private ackCount(): number {
+          return Math.floor(this.config.replicas.length / 2) + 1;
+        }
+
+        async write(key: string, value: string, version: number): Promise<boolean> {
+          const leaderNode = this.nodes.get(this.leaderId)!;
+          await leaderNode.set(key, value, version);
+          if (this.config.writeConsistency === WriteConsistency.ONE) return true;
+
+          const required = this.ackCount();
+          let acks = 1;
+
+          for (const replicaId of this.config.replicas) {
+            if (replicaId === this.leaderId) continue;
+            try {
+              const node = this.nodes.get(replicaId);
+              if (node) {
+                await node.set(key, value, version);
+                acks++;
+              }
+            } catch {
+              // Replica unavailable — skip, quorum may still be met
+            }
+            if (acks >= required) return true;
+          }
+          return acks >= required;
+        }
+
+        async read(key: string): Promise<string | null> {
+          switch (this.config.readConsistency) {
+            case ReadConsistency.LEADER: {
+              const leader = this.nodes.get(this.leaderId);
+              return leader ? leader.get(key) : null;
+            }
+            case ReadConsistency.ONE: {
+              const healthy = this.healthyReplicas();
+              if (healthy.length === 0) return null;
+              const node = this.nodes.get(healthy[0]);
+              return node ? node.get(key) : null;
+            }
+            case ReadConsistency.QUORUM:
+              return this.quorumRead(key);
+          }
+        }
+
+        private async quorumRead(key: string): Promise<string | null> {
+          const versions: VersionedValue[] = [];
+          for (const replicaId of this.healthyReplicas()) {
+            try {
+              const node = this.nodes.get(replicaId);
+              if (node) {
+                const result = await node.getVersioned(key);
+                if (result) versions.push(result);
+              }
+            } catch {
+              continue;
+            }
+            if (versions.length >= this.ackCount()) break;
+          }
+          if (versions.length === 0) return null;
+          versions.sort((a, b) => b.version - a.version);
+          return versions[0].value;
+        }
+
+        private healthyReplicas(): string[] {
+          const now = Date.now();
+          return this.config.replicas.filter((r) => {
+            const lag = this.lag.get(r);
+            return !lag || (now - lag.lastHeartbeat) < 30_000;
+          });
+        }
+
+        failover(newLeader: string): boolean {
+          if (!this.nodes.has(newLeader)) return false;
+          this.leaderId = newLeader;
+          return true;
+        }
+      }
+
+      // -- Leaderless (Dynamo-style) replication with quorum and anti-entropy --
+      class LeaderlessReplication {
+        constructor(
+          private nodes: DataStore[],
+          private quorumSize: number,
+        ) {}
+
+        async write(key: string, value: string): Promise<boolean> {
+          const ts = Date.now();
+          let successes = 0;
+          for (const node of this.nodes) {
+            try {
+              await node.set(key, value, ts);
+              successes++;
+            } catch {
+              // Node unavailable — quorum may still be met
+            }
+          }
+          return successes >= this.quorumSize;
+        }
+
+        async read(key: string): Promise<string | null> {
+          const results: VersionedValue[] = [];
+          for (const node of this.nodes) {
+            try {
+              const data = await node.getVersioned(key);
+              if (data) results.push(data);
+            } catch {
+              continue;
+            }
+            if (results.length >= this.quorumSize) break;
+          }
+
+          if (results.length === 0) return null;
+
+          // Last-write-wins conflict resolution
+          results.sort((a, b) => b.timestamp - a.timestamp);
+          const latest = results[0];
+
+          // Anti-entropy: repair stale nodes
+          for (const node of this.nodes) {
+            try {
+              const existing = await node.getVersioned(key);
+              if (!existing || existing.timestamp < latest.timestamp) {
+                await node.set(key, latest.value, latest.timestamp);
+              }
+            } catch {
+              continue;
+            }
+          }
+
+          return latest.value;
+        }
+      }
+heuristics:
+  - Single-leader replication is the default starting point: writes to leader, reads from any replica with explicit consistency policy.
+  - Write acknowledgment semantics must be explicit: how many replicas confirm before the write is "done"? ONE, QUORUM, or ALL.
+  - Read consistency must be a product decision, not an accident: read-your-writes requires leader reads or causal tracking.
+  - Lag monitoring is mandatory: track replication lag per replica; remove stale replicas from the read pool.
+  - Failover must be tested: leader election, split-brain guards, and promotion should be exercised regularly, not discovered during outage.
+  - Multi-leader replication introduces write conflicts: define conflict resolution (LWW, merge, CRDT, reject) before deploying.
+  - Leaderless replication (Dynamo-style) requires quorum reads + writes and anti-entropy repair — stale data accumulates without it.
+  - Never treat replication status as binary (up/down) — a replica that is connected but 60 seconds behind is functionally unhealthy.
+related_tags: [replication, single-leader, multi-leader, leaderless, quorum, failover, lag-monitoring, read-your-writes, anti-entropy, data-systems, ddia]

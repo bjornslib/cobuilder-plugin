@@ -1,0 +1,203 @@
+id: refactoring-techniques-composing-006
+name: "Refactoring — Composing Methods"
+category: design-patterns
+canonical_tags: ['refactoring', 'composing-methods', 'extract-method', 'inline-method', 'extract-variable', 'replace-temp-with-query']
+sources:
+  - open_sources/design_patterns/refactoring-guru-patterns.txt
+  - open_sources/design_patterns/refactoring-guru-patterns.html
+  - books/refactoring.md
+summary: >
+  Composing Methods is a family of refactorings that improve methods by making
+  them shorter, clearer, and more focused. The core technique is Extract Method
+  — take a coherent fragment of code, give it a descriptive name, and make it a
+  separate method. Other techniques include Inline Method (reverse of extract —
+  when the method body is as clear as the name), Extract Variable (name a
+  complex sub-expression), Inline Temp (remove a variable that adds no clarity),
+  Replace Temp with Query (replace a local variable with a method call so it's
+  reusable), Split Temporary Variable (when a variable is reused for different
+  purposes), Remove Assignments to Parameters (use locals instead of mutating
+  parameters), and Replace Method with Method Object (extract a long method into
+  its own class when it has too many local variables).
+examples:
+  - language: python
+    bad: |
+      # BAD: A long method that mixes multiple concerns. The reader must
+      # parse everything at once. Testing any sub-behavior requires setting
+      # up the entire method's state.
+
+      def generate_report(orders: list[dict], year: int) -> str:
+          # Filter: orders for the given year (5 lines of logic)
+          filtered = []
+          for o in orders:
+              order_year = int(o["date"].split("-")[0])
+              if order_year == year and o["status"] != "cancelled":
+                  filtered.append(o)
+
+          # Calculate: totals by month (10 lines)
+          monthly = {}
+          for o in filtered:
+              month = o["date"].split("-")[1]
+              monthly.setdefault(month, 0.0)
+              monthly[month] += o["total"]
+
+          # Format: CSV-style report (8 lines)
+          lines = [f"Sales Report — {year}"]
+          lines.append("Month,Revenue")
+          for m in sorted(monthly):
+              lines.append(f"{m},${monthly[m]:.2f}")
+          lines.append(f"Total,${sum(monthly.values()):.2f}")
+          return "\n".join(lines)
+
+      # WHY: 25 lines, three concerns. Extract Method would produce:
+      # filter_orders_by_year(), aggregate_by_month(), format_csv_report().
+
+    good: |
+      # GOOD: Extracted methods. Each is short, named, and independently
+      # testable. generate_report() orchestrates, doesn't do the work.
+
+      from collections import defaultdict
+      from datetime import date
+
+
+      def filter_orders_by_year(orders: list[dict], year: int) -> list[dict]:
+          """Return orders placed in the given year, excluding cancelled."""
+          return [
+              o for o in orders
+              if int(o["date"].split("-")[0]) == year
+              and o["status"] != "cancelled"
+          ]
+
+
+      def aggregate_by_month(orders: list[dict]) -> dict[str, float]:
+          """Sum order totals by month (MM key)."""
+          monthly = defaultdict(float)
+          for o in orders:
+              month = o["date"].split("-")[1]
+              monthly[month] += o["total"]
+          return dict(monthly)
+
+
+      def format_csv_report(year: int, monthly: dict[str, float]) -> str:
+          """Format monthly revenue as a CSV-style report."""
+          lines = [f"Sales Report — {year}", "Month,Revenue"]
+          for m in sorted(monthly):
+              lines.append(f"{m},${monthly[m]:.2f}")
+          total = sum(monthly.values())
+          lines.append(f"Total,${total:.2f}")
+          return "\n".join(lines)
+
+
+      def generate_report(orders: list[dict], year: int) -> str:
+          """Generate a sales report for the year — pure orchestration."""
+          filtered = filter_orders_by_year(orders, year)
+          monthly = aggregate_by_month(filtered)
+          return format_csv_report(year, monthly)
+
+  - language: typescript
+    bad: |
+      // BAD: Long method with nested logic. Discount calculation is
+      // embedded in the order processing function. Reusing it elsewhere
+      // requires copy-paste.
+
+      function processOrder(order: Order): OrderSummary {
+        // Validate
+        if (!order.items.length) throw new Error("No items");
+        for (const item of order.items) {
+          if (item.quantity <= 0) throw new Error(`Invalid qty: ${item.name}`);
+        }
+
+        // Calculate subtotal
+        let subtotal = 0;
+        for (const item of order.items) {
+          subtotal += item.quantity * item.price;
+        }
+
+        // Calculate discount — nested ternary, hard to follow
+        const discountRate =
+          order.customer.tier === "gold" ? 0.20 :
+          order.customer.tier === "silver" && order.items.length > 5 ? 0.10 :
+          0.0;
+        const discount = subtotal * discountRate;
+
+        // Calculate tax
+        const taxRate = order.shipping.state === "CA" ? 0.085 : 0.05;
+        const tax = (subtotal - discount) * taxRate;
+
+        return { subtotal, discount, tax, total: subtotal - discount + tax };
+      }
+
+    good: |
+      // GOOD: Extracted methods. Each calculation is a pure, named function.
+      // The processOrder function reads like business rules.
+
+      function validateOrderItems(items: LineItem[]): void {
+        if (!items.length) throw new Error("No items");
+        for (const item of items) {
+          if (item.quantity <= 0) throw new Error(`Invalid qty: ${item.name}`);
+        }
+      }
+
+      function calculateSubtotal(items: LineItem[]): number {
+        return items.reduce((sum, item) => sum + item.quantity * item.price, 0);
+      }
+
+      function discountRate(customer: Customer, itemCount: number): number {
+        if (customer.tier === "gold") return 0.20;
+        if (customer.tier === "silver" && itemCount > 5) return 0.10;
+        return 0.0;
+      }
+
+      function taxRate(shipping: Address): number {
+        return shipping.state === "CA" ? 0.085 : 0.05;
+      }
+
+      function processOrder(order: Order): OrderSummary {
+        validateOrderItems(order.items);
+        const subtotal = calculateSubtotal(order.items);
+        const discount = subtotal * discountRate(order.customer, order.items.length);
+        const tax = (subtotal - discount) * taxRate(order.shipping);
+        return { subtotal, discount, tax, total: subtotal - discount + tax };
+      }
+
+heuristics:
+  - >
+    "Extract Method: you have a code fragment that can be grouped together.
+    Turn the fragment into a method whose name explains the purpose of the
+    method" (Fowler, Refactoring).
+  - >
+    Extract Method is the most common and most powerful refactoring. If you
+    have to spend even a second thinking "what does this block do?", extract
+    it and give it a name.
+  - >
+    Inline Method: when the method body is just as clear as the method name,
+    inline it and remove the indirection. Not every method deserves to exist.
+  - >
+    Replace Temp with Query: replace a local variable with a method call.
+    This makes the computation reusable and the original method shorter.
+    The extracted query method is independently testable.
+  - >
+    Split Temporary Variable: if a variable is assigned more than once and
+    each assignment serves a different purpose, split it into separate
+    variables. A variable should mean one thing throughout its scope.
+  - >
+    Remove Assignments to Parameters: don't reassign to the parameter
+    variable — use a local variable instead. This prevents confusion about
+    pass-by-value vs pass-by-reference semantics.
+  - >
+    Replace Method with Method Object: when a long method uses many local
+    variables and extracting methods would require passing them all as
+    parameters, turn the method into its own class with the locals as fields.
+  - >
+    Substitute Algorithm: replace a complex algorithm with a simpler one.
+    If you find a clearer way to achieve the same result, swap it — after
+    thorough testing.
+  - >
+    The goal of composing methods is readability. A method should do ONE
+    thing, be SHORT (5-15 lines ideal), and read TOP-TO-BOTTOM at a single
+    level of abstraction.
+
+related_tags:
+  [composing-methods, extract-method, inline-method, extract-variable,
+   replace-temp-with-query, inline-temp, split-temporary-variable,
+   remove-assignments-to-parameters, substitute-algorithm,
+   fowler-refactoring, readability, small-functions, refactoring]

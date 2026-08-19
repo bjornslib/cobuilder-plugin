@@ -1,0 +1,126 @@
+id: replace-magic-literal-015
+name: Replace Magic Literal with Symbolic Constant
+category: refactoring
+canonical_tags: ['refactoring', 'readability']
+sources:
+  - books/refactoring.md
+  - books/clean-code.md
+summary: |
+  Replace Magic Literal with Symbolic Constant replaces hard-coded numbers, strings,
+  or other literal values with named constants that explain what they represent.
+  A magic literal is a value whose meaning is not obvious from the code — `86400`,
+  `"admin"`, `0.0825`. By extracting these into constants with intention-revealing
+  names (`SECONDS_PER_DAY`, `ADMIN_ROLE`, `TAX_RATE_CA`), you make business rules
+  explicit, centralize the value so it changes in one place, and let the compiler or
+  linter catch typos that a raw string would hide.
+examples:
+  - language: python
+    bad: |
+      def is_session_expired(last_activity: float) -> bool:
+          return (time.time() - last_activity) > 1800  # What is 1800?
+
+      def validate_password(pw: str) -> bool:
+          return len(pw) >= 8 and not pw.startswith("test")  # Why 8? Why "test"?
+
+      def calculate_tax(amount: float, state: str) -> float:
+          if state == "CA":
+              return amount * 0.0725
+          elif state == "NY":
+              return amount * 0.04
+          elif state == "TX":
+              return amount * 0.0625
+          return amount
+
+      def can_vote(age: int) -> bool:
+          return age >= 18  # Is this 18 years? 18 months? 18 centuries?
+    good: |
+      import time
+      from enum import Enum
+
+      # Constants with intention-revealing names
+      SESSION_TIMEOUT_SECONDS = 30 * 60  # 30 minutes in seconds
+      MIN_PASSWORD_LENGTH = 8
+      FORBIDDEN_PASSWORD_PREFIX = "test"
+      VOTING_AGE_YEARS = 18
+
+      class TaxRate(Enum):
+          CA = 0.0725
+          NY = 0.0400
+          TX = 0.0625
+
+      _TAX_BY_STATE: dict[str, float] = {
+          "CA": TaxRate.CA.value,
+          "NY": TaxRate.NY.value,
+          "TX": TaxRate.TX.value,
+      }
+
+      def is_session_expired(last_activity: float) -> bool:
+          return (time.time() - last_activity) > SESSION_TIMEOUT_SECONDS
+
+      def validate_password(pw: str) -> bool:
+          return len(pw) >= MIN_PASSWORD_LENGTH and not pw.startswith(
+              FORBIDDEN_PASSWORD_PREFIX
+          )
+
+      def calculate_tax(amount: float, state: str) -> float:
+          return amount * _TAX_BY_STATE.get(state, 0.0)
+
+      def can_vote(age: int) -> bool:
+          return age >= VOTING_AGE_YEARS
+  - language: typescript
+    bad: |
+      function assessCredit(score: number, income: number): "approved" | "denied" {
+        if (score > 680 && income > 45000) return "approved";
+        return "denied";
+      }
+
+      function formatFileSize(bytes: number): string {
+        if (bytes > 1048576) return `${(bytes / 1048576).toFixed(1)} MB`;
+        return `${(bytes / 1024).toFixed(1)} KB`;
+      }
+
+      function applyDiscount(orderTotal: number): number {
+        if (orderTotal > 500) return orderTotal * 0.9;
+        if (orderTotal > 200) return orderTotal * 0.95;
+        return orderTotal;
+      }
+    good: |
+      const CREDIT_SCORE_THRESHOLD = 680;
+      const MIN_INCOME_THRESHOLD = 45_000;
+      const APPROVED = "approved" as const;
+      const DENIED = "denied" as const;
+
+      function assessCredit(score: number, income: number): typeof APPROVED | typeof DENIED {
+        if (score > CREDIT_SCORE_THRESHOLD && income > MIN_INCOME_THRESHOLD) return APPROVED;
+        return DENIED;
+      }
+
+      const BYTES_PER_KB = 1024;
+      const BYTES_PER_MB = 1024 * 1024;
+
+      function formatFileSize(bytes: number): string {
+        if (bytes > BYTES_PER_MB) return `${(bytes / BYTES_PER_MB).toFixed(1)} MB`;
+        return `${(bytes / BYTES_PER_KB).toFixed(1)} KB`;
+      }
+
+      // Group related business rules together
+      const DISCOUNT_TIERS = [
+        { threshold: 500, rate: 0.90 },
+        { threshold: 200, rate: 0.95 },
+      ] as const;
+
+      function applyDiscount(orderTotal: number): number {
+        const tier = DISCOUNT_TIERS.find((t) => orderTotal > t.threshold);
+        return tier ? orderTotal * tier.rate : orderTotal;
+      }
+heuristics:
+  - Apply when a numeric literal appears without obvious meaning — `0.0725` is a tax rate, `4096` is a buffer size, `30` could be anything.
+  - Apply when a string literal represents a role, status, or code that could be misspelled — `"admni"` is a silent bug; `Role.ADMIN` is a compile-time error.
+  - Apply when the same literal appears in multiple places — centralize it so changing `SESSION_TIMEOUT` from 1800 to 3600 is a one-line edit.
+  - Name constants after their domain meaning, not their value: `MAX_RETRY_ATTEMPTS`, not `THREE`.
+  - Do NOT replace every number with a constant — `0`, `1`, `-1`, simple loop bounds (`i < len(items)`), and obvious mathematical constants (`2 * radius`) stay inline.
+  - Do NOT replace literals that are part of a clear formula that would become harder to read if fragmented (`seconds = hours * 3600` is clearer than `seconds = hours * SECONDS_PER_HOUR`).
+  - Group related constants together: tax rates in a TaxRate enum, timeouts in a TimeoutConfig class, error codes in a namespace.
+  - After replacing: search for the old literal to confirm no instances were missed — a stray `86400` buried in a helper file means your constant isn't the single source of truth.
+  - Mechanical sequence: (1) identify a literal whose meaning isn't obvious, (2) declare a constant with an intention-revealing name, (3) replace all occurrences of the literal with the constant, (4) re-run tests — if behavior changed, the literal was used for different concepts in different contexts, so use separate constants.
+related_tags: [magic-number, magic-string, constants, readability, single-source-of-truth, enums, business-rules]

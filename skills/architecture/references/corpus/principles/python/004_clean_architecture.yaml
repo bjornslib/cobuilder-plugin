@@ -1,0 +1,109 @@
+id: clean-architecture-001
+name: Clean Architecture — Dependency Rule & Layered Boundaries
+category: architecture
+canonical_tags: ['clean-architecture']
+sources:
+  - books/clean-architecture.md
+summary: Source code dependencies must point inward toward higher-level policies. Business rules must not depend on frameworks, databases, or UI. Each layer has clear responsibilities, and outer layers adapt external details to inner-layer interfaces.
+examples:
+  - language: python
+    bad: |
+      # Domain entity importing SQLAlchemy and FastAPI
+      from sqlalchemy import Column, Integer, String
+      from fastapi import HTTPException
+
+      class User(Base):
+          __tablename__ = "users"
+          id = Column(Integer, primary_key=True)
+          name = Column(String)
+
+          def activate(self):
+              if not self.name:
+                  raise HTTPException(status_code=400, detail="Name required")
+              self.is_active = True
+    good: |
+      # Pure domain entity — no framework imports
+      from dataclasses import dataclass
+
+
+      @dataclass
+      class User:
+          id: int
+          name: str
+          is_active: bool = False
+
+          def activate(self) -> None:
+              if not self.name.strip():
+                  raise ValueError("User name cannot be empty")
+              self.is_active = True
+
+
+      # Use case (application layer)
+      class ActivateUserUseCase:
+          def __init__(self, user_repository: UserRepository):
+              self._repo = user_repository
+
+          def execute(self, user_id: int) -> User:
+              user = self._repo.get_by_id(user_id)
+              user.activate()
+              self._repo.save(user)
+              return user
+
+
+      # Repository interface — owned by domain/application layer
+      from abc import ABC, abstractmethod
+
+      class UserRepository(ABC):
+          @abstractmethod
+          def get_by_id(self, user_id: int) -> User: ...
+          @abstractmethod
+          def save(self, user: User) -> None: ...
+  - language: typescript
+    bad: |
+      // Use case importing Express and TypeORM directly
+      import { Request, Response } from "express";
+      import { getRepository } from "typeorm";
+      import { User } from "../entities/User";
+
+      export async function activateUser(req: Request, res: Response) {
+        const repo = getRepository(User);
+        const user = await repo.findOne(req.params.id);
+        user.isActive = true;
+        await repo.save(user);
+        res.json(user);
+      }
+    good: |
+      // Pure use case — no framework types
+      interface UserRepository {
+        findById(id: string): Promise<User>;
+        save(user: User): Promise<void>;
+      }
+
+      export class ActivateUserUseCase {
+        constructor(private readonly userRepo: UserRepository) {}
+
+        async execute(userId: string): Promise<User> {
+          const user = await this.userRepo.findById(userId);
+          user.activate();
+          await this.userRepo.save(user);
+          return user;
+        }
+      }
+
+      // Controller (interface adapters layer) — Express lives here only
+      export class UserController {
+        constructor(private readonly activateUser: ActivateUserUseCase) {}
+
+        async activate(req: Request, res: Response): Promise<void> {
+          const user = await this.activateUser.execute(req.params.id);
+          res.json(user);
+        }
+      }
+heuristics:
+  - Source code dependencies must point inward. Business rules never import web frameworks, ORMs, or vendor SDKs.
+  - Define repository interfaces in the domain or application layer; implement them in infrastructure.
+  - Use cases orchestrate entities and repositories. They should not contain delivery concerns, ORM concerns, or presentation formatting.
+  - Treat frameworks, databases, and UIs as details — pluggable, replaceable, and hidden behind boundaries.
+  - If a change in the database layer forces changes in business rules, the dependency rule is violated.
+  - Organize code by use case and domain concept, not by technical layer (avoid `utils/`, `helpers/`, `common/`).
+related_tags: [clean-architecture, dependency-rule, boundaries, layers, use-cases]

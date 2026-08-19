@@ -1,0 +1,423 @@
+id: dependency-inversion-deep-002
+name: Dependency Inversion — Stable Abstractions, Plugin Architecture & Composition Root
+category: architecture
+canonical_tags: ['solid', 'architecture', 'clean-architecture']
+sources:
+  - books/clean-architecture.md
+  - books/unified-software-engineering.md
+summary: >
+  Dependency Inversion is not just "depend on interfaces" — it is the principle that
+  stable, high-level policy must never depend on volatile, low-level details. The inner
+  layers own the abstractions they need; outer layers implement them. This inverts the
+  traditional dependency chain and is the engine behind plugin architectures, hexagonal
+  ports, and replaceable infrastructure. The composition root (main component) sits at
+  the outermost edge and wires concrete implementations into abstract contracts, keeping
+  the core entirely free of construction knowledge.
+examples:
+  - language: python
+    bad: |
+      # High-level policy directly instantiating concrete details.
+      # Three violations:
+      # (1) Use case knows about PostgreSQL via import.
+      # (2) Use case knows about Stripe via direct new().
+      # (3) Use case constructs its own dependencies — no seam for testing.
+
+      import psycopg2
+      from stripe import Stripe
+
+      class ProcessRefundUseCase:
+          def __init__(self):
+              self._db = psycopg2.connect("dbname=payments")
+              self._stripe = Stripe("sk_live_xxx")
+
+          def execute(self, charge_id: str, amount: float) -> dict:
+              # Business rule buried in framework coupling
+              if amount <= 0:
+                  raise ValueError("Refund amount must be positive")
+
+              refund = self._stripe.refunds.create(
+                  charge=charge_id,
+                  amount=int(amount * 100),
+              )
+
+              cur = self._db.cursor()
+              cur.execute(
+                  "INSERT INTO refunds (charge_id, amount, stripe_id) VALUES (%s, %s, %s)",
+                  (charge_id, amount, refund.id),
+              )
+              self._db.commit()
+
+              return {"id": refund.id, "status": refund.status}
+
+    good: |
+      # Stable abstractions owned by the inner layer.
+      # Outer layers (PostgreSQL, Stripe, test doubles) implement these contracts.
+      # The composition root wires everything — zero construction knowledge in core.
+
+      from abc import ABC, abstractmethod
+      from dataclasses import dataclass
+      from typing import Protocol, Optional
+
+
+      # ---- Domain data (inner layer, no dependencies) ----
+      @dataclass
+      class RefundResult:
+          refund_id: str
+          status: str
+          amount: float
+
+
+      # ---- Port: repository contract (owned by application layer) ----
+      class RefundRepository(ABC):
+          @abstractmethod
+          def save(self, charge_id: str, amount: float, refund_id: str) -> None: ...
+
+          @abstractmethod
+          def find_by_charge(self, charge_id: str) -> list[dict]: ...
+
+
+      # ---- Port: payment gateway contract (owned by application layer) ----
+      class PaymentGateway(ABC):
+          @abstractmethod
+          def refund(self, charge_id: str, amount_cents: int) -> RefundResult: ...
+
+
+      # ---- Port: clock contract (owned by application layer, isolates time) ----
+      class Clock(ABC):
+          @abstractmethod
+          def now_utc(self) -> float: ...
+
+
+      # ---- Use case: depends ONLY on stable abstractions ----
+      class ProcessRefundUseCase:
+          """High-level policy. Zero knowledge of PostgreSQL, Stripe, or system time."""
+
+          def __init__(
+              self,
+              gateway: PaymentGateway,
+              repo: RefundRepository,
+              clock: Clock,
+              max_refund_pct: float = 1.0,
+          ) -> None:
+              self._gateway = gateway
+              self._repo = repo
+              self._clock = clock
+              self._max_pct = max_refund_pct
+
+          def execute(self, charge_id: str, amount: float) -> RefundResult:
+              if amount <= 0:
+                  raise ValueError("Refund amount must be positive")
+
+              # Business invariant: can't refund more than originally charged
+              prior_refunds = sum(
+                  r["amount"] for r in self._repo.find_by_charge(charge_id)
+              )
+              if amount > prior_refunds + amount * self._max_pct:
+                  raise ValueError(f"Refund exceeds {self._max_pct:.0%} cap")
+
+              result = self._gateway.refund(charge_id, int(amount * 100))
+              self._repo.save(charge_id, amount, result.refund_id)
+              return result
+
+
+      # ---- Outer layer: PostgreSQL adapter (implements contract, depends inward) ----
+      # imports psycopg2
+      class PostgresRefundRepository(RefundRepository):
+          def __init__(self, conn):
+              self._conn = conn
+
+          def save(self, charge_id: str, amount: float, refund_id: str) -> None:
+              cur = self._conn.cursor()
+              cur.execute(
+                  "INSERT INTO refunds (charge_id, amount, stripe_id) VALUES (%s, %s, %s)",
+                  (charge_id, amount, refund_id),
+              )
+              self._conn.commit()
+
+          def find_by_charge(self, charge_id: str) -> list[dict]:
+              cur = self._conn.cursor()
+              cur.execute(
+                  "SELECT amount FROM refunds WHERE charge_id = %s", (charge_id,)
+              )
+              return [{"amount": row[0]} for row in cur.fetchall()]
+
+
+      # ---- Outer layer: Stripe adapter (implements contract, depends inward) ----
+      # import stripe
+      class StripePaymentGateway(PaymentGateway):
+          def __init__(self, client):
+              self._client = client
+
+          def refund(self, charge_id: str, amount_cents: int) -> RefundResult:
+              refund = self._client.refunds.create(
+                  charge=charge_id,
+                  amount=amount_cents,
+              )
+              return RefundResult(
+                  refund_id=refund.id,
+                  status=refund.status,
+                  amount=amount_cents / 100,
+              )
+
+
+      # ---- Outer layer: System clock adapter (even time is behind a port) ----
+      class SystemClock(Clock):
+          def now_utc(self) -> float:
+              import time
+              return time.time()
+
+
+      # ---- Composition root: outermost edge wires everything ----
+      # This is the ONLY place that knows about concrete implementations.
+      # The use case has zero import of psycopg2, stripe, or time.
+      def build_refund_use_case() -> ProcessRefundUseCase:
+          import psycopg2
+          import stripe
+
+          conn = psycopg2.connect("dbname=payments")
+          stripe_client = stripe.Stripe("sk_live_xxx")
+
+          return ProcessRefundUseCase(
+              gateway=StripePaymentGateway(stripe_client),
+              repo=PostgresRefundRepository(conn),
+              clock=SystemClock(),
+              max_refund_pct=1.0,
+          )
+
+
+      # ---- Test: swap EVERY adapter — use case code never changes ----
+      class FakePaymentGateway(PaymentGateway):
+          def refund(self, charge_id: str, amount_cents: int) -> RefundResult:
+              return RefundResult("fake-r-1", "succeeded", amount_cents / 100)
+
+      class InMemRefundRepository(RefundRepository):
+          def __init__(self):
+              self._refunds: list[dict] = []
+
+          def save(self, charge_id, amount, refund_id):
+              self._refunds.append(
+                  {"charge_id": charge_id, "amount": amount, "refund_id": refund_id}
+              )
+
+          def find_by_charge(self, charge_id):
+              return [r for r in self._refunds if r["charge_id"] == charge_id]
+
+      class FrozenClock(Clock):
+          def __init__(self, ts=1700000000.0):
+              self._ts = ts
+          def now_utc(self):
+              return self._ts
+
+      # The use case is testable in complete isolation — no DB, no network, no time.
+      uc = ProcessRefundUseCase(
+          gateway=FakePaymentGateway(),
+          repo=InMemRefundRepository(),
+          clock=FrozenClock(),
+      )
+
+  - language: typescript
+    bad: |
+      // Use case directly importing and constructing concrete dependencies.
+      // Swapping Stripe → Braintree requires editing business logic.
+      // Testing requires a real Stripe account and network.
+
+      import { Stripe } from "stripe";
+      import { createPool, Pool } from "mysql2";
+
+      export class IssueRefundUseCase {
+        private stripe: Stripe;
+        private pool: Pool;
+
+        constructor() {
+          this.stripe = new Stripe(process.env.STRIPE_SECRET!);
+          this.pool = createPool({
+            host: process.env.DB_HOST,
+            database: process.env.DB_NAME,
+          });
+        }
+
+        async execute(chargeId: string, amount: number): Promise<void> {
+          if (amount <= 0) throw new Error("Invalid amount");
+
+          const refund = await this.stripe.refunds.create({
+            charge: chargeId,
+            amount: Math.round(amount * 100),
+          });
+
+          await this.pool.execute(
+            "INSERT INTO refunds (charge_id, amount, stripe_id) VALUES (?, ?, ?)",
+            [chargeId, amount, refund.id],
+          );
+        }
+      }
+
+    good: |
+      // ---- Port: gateway contract (owned by application layer) ----
+      interface PaymentGateway {
+        refund(chargeId: string, amountCents: number): Promise<RefundResult>;
+      }
+
+      interface RefundResult {
+        refundId: string;
+        status: string;
+      }
+
+      // ---- Port: repository contract (owned by application layer) ----
+      interface RefundRepository {
+        save(chargeId: string, amount: number, refundId: string): Promise<void>;
+        findByCharge(chargeId: string): Promise<{ amount: number }[]>;
+      }
+
+      // ---- Port: config reader contract (isolates env/config access) ----
+      interface ConfigReader {
+        get(key: string): string;
+      }
+
+      // ---- Use case: depends ONLY on stable abstractions ----
+      export class IssueRefundUseCase {
+        constructor(
+          private readonly gateway: PaymentGateway,
+          private readonly repo: RefundRepository,
+          private readonly config: ConfigReader,
+          private readonly maxRefundPct: number = 1.0,
+        ) {}
+
+        async execute(chargeId: string, amount: number): Promise<RefundResult> {
+          if (amount <= 0) throw new Error("Refund amount must be positive");
+
+          const prior = await this.repo.findByCharge(chargeId);
+          const priorTotal = prior.reduce((s, r) => s + r.amount, 0);
+          if (amount + priorTotal > amount * this.maxRefundPct) {
+            throw new Error(`Refund cap ${this.maxRefundPct * 100}% exceeded`);
+          }
+
+          const result = await this.gateway.refund(
+            chargeId,
+            Math.round(amount * 100),
+          );
+          await this.repo.save(chargeId, amount, result.refundId);
+          return result;
+        }
+      }
+
+      // ---- Outer layer: Stripe adapter (depends inward) ----
+      import { Stripe } from "stripe";
+
+      export class StripePaymentGateway implements PaymentGateway {
+        private readonly client: Stripe;
+
+        constructor(config: ConfigReader) {
+          this.client = new Stripe(config.get("STRIPE_SECRET"));
+        }
+
+        async refund(chargeId: string, amountCents: number): Promise<RefundResult> {
+          const refund = await this.client.refunds.create({
+            charge: chargeId,
+            amount: amountCents,
+          });
+          return { refundId: refund.id, status: refund.status };
+        }
+      }
+
+      // ---- Outer layer: MySQL adapter (depends inward) ----
+      import { Pool } from "mysql2";
+
+      export class MySqlRefundRepository implements RefundRepository {
+        constructor(private readonly pool: Pool) {}
+
+        async save(chargeId: string, amount: number, refundId: string): Promise<void> {
+          await this.pool.execute(
+            "INSERT INTO refunds (charge_id, amount, stripe_id) VALUES (?, ?, ?)",
+            [chargeId, amount, refundId],
+          );
+        }
+
+        async findByCharge(chargeId: string): Promise<{ amount: number }[]> {
+          const [rows] = await this.pool.execute(
+            "SELECT amount FROM refunds WHERE charge_id = ?",
+            [chargeId],
+          );
+          return (rows as any[]).map((r) => ({ amount: r.amount }));
+        }
+      }
+
+      // ---- Outer layer: environment config adapter ----
+      export class EnvConfigReader implements ConfigReader {
+        get(key: string): string {
+          return process.env[key] ?? "";
+        }
+      }
+
+      // ---- Composition root: the ONLY place that wires implementations ----
+      import { createPool } from "mysql2";
+
+      export function buildRefundUseCase(): IssueRefundUseCase {
+        const config = new EnvConfigReader();
+        const pool = createPool({
+          host: config.get("DB_HOST"),
+          database: config.get("DB_NAME"),
+        });
+
+        return new IssueRefundUseCase(
+          new StripePaymentGateway(config),
+          new MySqlRefundRepository(pool),
+          config,
+          1.0,
+        );
+      }
+
+      // ---- Test: zero infrastructure needed ----
+      const useCase = new IssueRefundUseCase(
+        { refund: async () => ({ refundId: "x", status: "succeeded" }) },
+        { save: async () => {}, findByCharge: async () => [] },
+        { get: () => "" },
+      );
+
+heuristics:
+  - >
+    "High-level policy must not depend on low-level details. Both should depend on
+    abstractions. Abstractions must not depend on details. Details must depend on
+    abstractions" (Robert C. Martin). The abstraction belongs to the inner layer
+    that needs it, not to the outer layer that provides it.
+  - >
+    The plugin architecture pattern is DIP applied at scale: define a stable contract
+    in the core, let plugins / adapters conform to it, and wire the chosen
+    implementations at the composition root. The core never imports a plugin directly.
+  - >
+    The composition root is the single place at the outermost edge where concrete
+    objects are constructed and wired. Business logic must never contain construction
+    logic (no `new Stripe()`, no `psycopg2.connect()`, no `createPool()` inside a
+    use case). Construction is a separate concern.
+  - >
+    Stable abstractions change far less often than concrete implementations.
+    Depend on what is stable (business rules, domain concepts), not on what is
+    volatile (vendor APIs, databases, frameworks, network protocols).
+  - >
+    Every volatile dependency deserves a port: not just databases and payment
+    gateways, but clocks (`Clock`), ID generators, filesystems, message publishers,
+    configuration sources, and random number generators. If it makes core logic
+    non-deterministic or hard to test, isolate it behind a stable interface.
+  - >
+    "Keep wiring in the main component. Object construction belongs in the
+    composition root. Do not instantiate infrastructure dependencies inside use
+    cases or entities" (Clean Architecture code generation rules).
+  - >
+    When a vendor SDK changes, the number of files that must change is the
+    dependency fan-out. DIP minimizes this to the adapter layer only — a Stripe
+    API change touches `StripePaymentGateway` and nothing else.
+  - >
+    Test strategy: every port can be swapped for a test double. Core business
+    tests run without real databases, networks, frameworks, or wall-clock time.
+    The test suite verifies policy correctness in complete isolation.
+  - >
+    Avoid "shared common packages" that create sideways coupling across modules.
+    Each inner layer defines only the abstractions it directly needs. An abstraction
+    used by three modules but owned by none is a design smell.
+  - >
+    If a use case imports `psycopg2`, `stripe`, `mysql2`, `pg`, `sqlalchemy`, or
+    `redis`, the dependency arrow is wrong. Extract an interface, move the import
+    to an adapter, and inject the adapter at the composition root.
+related_tags:
+  [dependency-inversion, dip, stable-abstractions, plugin-architecture,
+   composition-root, ports-and-adapters, hexagonal, construction-vs-use,
+   volatile-details, dependency-injection, clean-architecture, solid]

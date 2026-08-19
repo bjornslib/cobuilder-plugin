@@ -1,0 +1,97 @@
+id: airbnb-arrays-012
+name: Airbnb Arrays — Literal Syntax, Spreads, from(), and Multiline Formatting
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  Airbnb array rules mandate literal syntax ([] over new Array()), push() for appending, spread syntax
+  for copying arrays and converting iterables (prefer over Array.from for simple conversion), Array.from
+  for mapping over iterables (avoids intermediate array), and proper multiline bracket formatting. Use
+  return statements in array method callbacks. These rules produce concise, performant array operations.
+examples:
+  - language: typescript
+    bad: |
+      // Constructor instead of literal — verbose
+      const items = new Array<number>();
+
+      // Direct index assignment for appending
+      const someStack: string[] = [];
+      someStack[someStack.length] = "abracadabra";
+
+      // Verbose loop-based copy
+      const items = [1, 2, 3, 4, 5];
+      const len = items.length;
+      const itemsCopy: number[] = [];
+      for (let i = 0; i < len; i += 1) {
+        itemsCopy[i] = items[i];
+      }
+
+      // Array.prototype.slice for array-like conversion
+      const arrLike = { 0: "foo", 1: "bar", 2: "baz", length: 3 };
+      const arr = Array.prototype.slice.call(arrLike);
+
+      // Spread + map creates an intermediate array
+      const foo = new Set([1, 2, 3]);
+      const baz = [...foo].map(bar);
+
+      // Missing return in reduce callback — acc becomes undefined
+      [[0, 1], [2, 3], [4, 5]].reduce((acc, item) => {
+        acc.concat(item);  // no return!
+      });
+
+      // Multiline array without proper bracket formatting
+      const arr = [
+        [0, 1], [2, 3], [4, 5],
+      ];
+    good: |
+      // Literal syntax
+      const items: number[] = [];
+
+      // push() for appending — explicit intent
+      const someStack: string[] = [];
+      someStack.push("abracadabra");
+
+      // Spread for copying — concise, declarative
+      const items = [1, 2, 3, 4, 5];
+      const itemsCopy = [...items];
+
+      // Spread for iterable conversion — shortest form
+      const foo = document.querySelectorAll(".foo");
+      const nodes = [...foo];
+
+      // Array.from for array-like conversion — clear intent
+      const arrLike = { 0: "foo", 1: "bar", 2: "baz", length: 3 };
+      const arr = Array.from(arrLike);
+
+      // Array.from with map callback — no intermediate array
+      const fooSet = new Set([1, 2, 3]);
+      const baz = Array.from(fooSet, bar);
+
+      // Return statement in reduce — correct accumulation
+      [[0, 1], [2, 3], [4, 5]].reduce((acc, item) => {
+        const flatten = acc.concat(item);
+        return flatten;
+      });
+
+      // Multiline arrays: each item on its own line
+      const arr = [[0, 1], [2, 3], [4, 5]];  // single-line for small arrays
+
+      const objectInArray = [
+        { id: 1 },
+        { id: 2 },
+      ];
+
+      const numberInArray = [
+        1,
+        2,
+      ];
+heuristics:
+  - "Use literal syntax [] instead of new Array(). Literals are shorter, not subject to constructor override, and don't have the surprising new Array(3) vs new Array(3, 4) behavior."
+  - Use push() to append items instead of direct index assignment (arr[arr.length] = ...). push() clearly expresses intent.
+  - "Use spread syntax [...items] to copy arrays. It's shorter and more declarative than loops or slice()."
+  - "Use spread [...iterable] for simple iterable-to-array conversion. Use Array.from() when converting array-like objects or when you need to map during conversion (Array.from(iterable, mapFn))."
+  - Array.from with a map callback (Array.from(foo, bar)) is preferred over spread-then-map ([...foo].map(bar)) because it avoids creating an intermediate array.
+  - "Always include a return statement in array method callbacks (map, filter, reduce). Only omit return for single-expression arrow functions without a block body."
+  - For multiline arrays, put each element on its own line with proper indentation and the closing bracket on a new line. For small single-line arrays, inline is fine.
+related_tags: [airbnb, arrays, spread, array-from, push, multiline, iterables, javascript, typescript]

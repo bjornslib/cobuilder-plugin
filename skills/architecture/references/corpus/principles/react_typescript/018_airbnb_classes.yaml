@@ -1,0 +1,113 @@
+id: airbnb-classes-018
+name: Airbnb Classes — class Syntax, Inheritance, Chaining & toString
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  Airbnb mandates ES6 class syntax over direct prototype manipulation — it's
+  more concise and easier to reason about. Use extends for inheritance, method
+  chaining via return this, and explicit toString() when useful. Avoid
+  instanceof checks; prefer TypeScript discriminated unions or duck typing.
+  Never use getters/setters that produce side effects. Classes should have a
+  clear, single responsibility.
+examples:
+  - language: typescript
+    bad: |
+      // Prototype manipulation — verbose, error-prone
+      function Queue(contents = []) {
+        this.queue = [...contents];
+      }
+      Queue.prototype.pop = function () {
+        const value = this.queue[0];
+        this.queue.splice(0, 1);
+        return value;
+      };
+
+      // Helper library for inheritance — unnecessary complexity
+      const inherits = require("inherits");
+      function PeekableQueue(contents) {
+        Queue.apply(this, contents);
+      }
+      inherits(PeekableQueue, Queue);
+      PeekableQueue.prototype.peek = function () {
+        return this.queue[0];
+      };
+
+      // No method chaining — multiple statements needed
+      luke.jump(); // => true
+      luke.setHeight(20); // => undefined
+
+      // instanceof check — fragile, breaks across realms
+      if (obj instanceof MyClass) {
+        process(obj);
+      }
+    good: |
+      // Class syntax — clean, modern, readable
+      class Queue<T> {
+        private queue: T[];
+
+        constructor(contents: T[] = []) {
+          this.queue = [...contents];
+        }
+
+        pop(): T {
+          const value = this.queue[0];
+          this.queue.splice(0, 1);
+          return value;
+        }
+      }
+
+      // extends for inheritance — built-in, instanceof-safe
+      class PeekableQueue<T> extends Queue<T> {
+        peek(): T {
+          return this.queue[0];
+        }
+      }
+
+      // Method chaining enables fluent APIs
+      class Jedi {
+        jump(): this {
+          this.jumping = true;
+          return this;
+        }
+
+        setHeight(height: number): this {
+          this.height = height;
+          return this;
+        }
+      }
+
+      const luke = new Jedi();
+      luke.jump().setHeight(20);
+
+      // Custom toString() — no side effects, useful for debugging
+      class Jedi {
+        constructor(options: { name?: string } = {}) {
+          this.name = options.name || "no name";
+        }
+
+        toString(): string {
+          return `Jedi — ${this.getName()}`;
+        }
+
+        getName(): string {
+          return this.name;
+        }
+      }
+
+      // Duplicate check — TypeScript structural typing
+      // Instead of instanceof, use type predicates or discriminated unions
+      function isJedi(obj: unknown): obj is Jedi {
+        return typeof obj === "object" && obj !== null && "jump" in obj;
+      }
+heuristics:
+  - Always use class syntax over direct prototype manipulation. It's the standard, concise, and readable way to define constructors and methods.
+  - Use extends for inheritance. It properly sets up the prototype chain and preserves instanceof.
+  - Methods can return this to enable method chaining. This creates fluent, readable APIs.
+  - It's acceptable to override toString() — just ensure it has no side effects and operates successfully regardless of object state.
+  - Avoid instanceof for type narrowing — prefer TypeScript type predicates, discriminated unions, or duck typing which work across execution contexts.
+  - Classes should have a single responsibility. If a class grows beyond ~200 lines, consider splitting.
+  - Do not use TC39 proposals that haven't reached stage 3 — they're not finalized and may change or be withdrawn.
+  - ES5 compatibility: when targeting older environments, ensure class transpilation is configured correctly (Babel, TypeScript downlevel emit).
+related_tags: [airbnb, classes, constructors, inheritance, method-chaining, es6, prototype]

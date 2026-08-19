@@ -1,0 +1,111 @@
+id: seams-for-testing-001
+name: Creating Seams to Add Tests in Legacy Code
+category: refactoring
+canonical_tags: [refactoring, readability]
+sources:
+  - books/working-effectively-with-legacy-code.md
+summary: A seam is a place where behavior can be changed without editing the surrounding code directly. Use seams to inject test doubles, isolate dependencies, and observe behavior in untested legacy code — unlocking safe change without rewriting.
+technique:
+  name: Seam-Based Testing
+  when_to_use: When legacy code has no tests and you need to observe or isolate its behavior before modifying it.
+  steps:
+    - step: 1
+      action: Identify the dependency that makes the code untestable — time, file I/O, network, globals, static calls, framework, or complex collaborators.
+      rationale: You cannot test what you cannot control. Find the specific obstacle first.
+    - step: 2
+      action: Choose the smallest seam type that unlocks observation or substitution at that dependency boundary.
+      rationale: Minimal seams are safer to introduce and easier to justify.
+    - step: 3
+      action: Introduce the seam — extract a method, inject a parameter, wrap a static call, or create an adapter around the framework object.
+      rationale: Each seam type works at a different boundary. Match the seam to the dependency.
+    - step: 4
+      action: Write a test that exercises the code through the seam, substituting a fake or stub for the hard dependency.
+      rationale: The test proves the seam works and locks down current behavior through that boundary.
+    - step: 5
+      action: Keep the seam after the test passes — it now documents the dependency boundary and enables future changes.
+      rationale: A seam that disappears after testing is wasted effort. Good seams pay for themselves over time.
+  seam_types:
+    - type: Constructor Injection
+      description: Pass a collaborator through the constructor instead of creating it internally.
+      best_for: Hard-coded service dependencies, database access, API clients.
+      example_sketch: "class ReportGenerator:\n    def __init__(self, db: Database) -> None: ...\n    # instead of: self.db = Database.connect() inside __init__"
+    - type: Parameter Injection
+      description: Pass a dependency as a method parameter instead of reaching for a global or creating it inline.
+      best_for: Clock/time, random generator, current-user context.
+      example_sketch: "def calculate_discount(order, *, clock=None):\n    now = (clock or datetime).now()"
+    - type: Extract Method Seam
+      description: Extract a hard dependency call into a separate method so tests can override it.
+      best_for: Static method calls, framework API calls, file access buried in logic.
+      example_sketch: "def process():\n    ...\n    data = self._read_config()  # extracted — test can override _read_config"
+    - type: Wrapper / Adapter Seam
+      description: Wrap a static, global, or framework call in a thin class that can be mocked or substituted.
+      best_for: Global singletons, static utility classes, OS-level calls.
+      example_sketch: "class FileSystem:\n    def read(self, path): return open(path).read()\n# Inject FileSystem; test with FakeFileSystem returning canned data"
+    - type: Module / Import Seam
+      description: Replace a module import at test time (monkey-patch or dependency-injection container).
+      best_for: Third-party libraries, logging modules, configuration modules.
+      example_sketch: "import config  # test replaces config.DEBUG = True before exercising code"
+    - type: Subclass Seam (Extract and Override)
+      description: Make a method overridable and subclass the legacy class in tests to replace the behavior.
+      best_for: Languages without good composition support, deeply embedded framework calls.
+      example_sketch: "class TestableReporter(Reporter):\n    def _send_email(self, to, body):\n        self.sent.append((to, body))  # observe instead of send"
+  pitfalls:
+    - "Don't create a seam for every dependency — only for the one blocking your test."
+    - "Prefer explicit seams (constructor/parameter injection) over magical ones (monkey-patching, class-level replacement)."
+    - "If a seam requires too much test setup, the design is telling you to split the class."
+    - "Don't leave seams undocumented — future developers need to know why the indirection exists."
+heuristics:
+  - Use the smallest seam that unlocks the change.
+  - Prefer seams that remain useful after the current task.
+  - Create seams near hard dependencies, not randomly in the code.
+  - A seam that only exists for testing is still valuable if it documents a real boundary.
+  - Constructor injection > parameter injection > extract-and-override > monkey-patch.
+related_tags: [seam, injection, dependency-breaking, testability, legacy, isolation, adapter, wrapper]
+examples:
+  python:
+    bad: |
+      class ReportGenerator:
+          def generate(self, month: str) -> str:
+              # Hard dependency: reads live config file — untestable
+              config = json.loads(open("/etc/reports/config.json").read())
+              template = config["template"]
+              data = Database.query(f"SELECT * FROM sales WHERE month = '{month}'")
+              return template.format(data=data)
+    good: |
+      class ReportGenerator:
+          def __init__(self, config_reader=None, database=None):
+              # Constructor injection seams — test can supply fakes
+              self.config = config_reader or FileConfigReader()
+              self.db = database or Database()
+
+          def generate(self, month: str) -> str:
+              template = self.config.read()["template"]
+              data = self.db.query(f"SELECT * FROM sales WHERE month = '{month}'")
+              return template.format(data=data)
+
+      # Test: ReportGenerator(config_reader=FakeConfig({"template": "{data}"}), database=FakeDB([...]))
+  typescript:
+    bad: |
+      class OrderProcessor {
+        process(orderId: string): void {
+          // Hard dependency: live credit check — untestable
+          const score = CreditBureau.check(orderId);
+          if (score < 600) throw new Error("Credit denied");
+          Inventory.reserve(orderId);
+        }
+      }
+    good: |
+      class OrderProcessor {
+        constructor(
+          private creditService: CreditService = new CreditBureau(),
+          private inventory: InventoryService = new Inventory()
+        ) {}
+
+        process(orderId: string): void {
+          const score = this.creditService.check(orderId);
+          if (score < 600) throw new Error("Credit denied");
+          this.inventory.reserve(orderId);
+        }
+      }
+
+      // Test: new OrderProcessor(new FakeCreditService(720), fakeInventory).process("ORD-1")

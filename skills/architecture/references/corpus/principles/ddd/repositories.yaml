@@ -1,0 +1,240 @@
+id: repositories-001
+name: "Domain-Driven Design — Repositories: Aggregate Persistence, Reconstitution, and Collection Abstraction"
+category: architecture
+canonical_tags: ['ddd', 'repositories']
+sources:
+  - books/domain-driven-design.md
+  - books/domain-driven-design-distilled.md
+  - books/implementing-domain-driven-design.md
+summary: >
+  Repositories provide access to aggregates as though they were in-memory
+  collections. They hide persistence mechanics behind a domain-facing interface,
+  reconstituting whole aggregates from storage and persisting their state back.
+  A repository exists for each aggregate root — never per table, never per entity
+  inside the aggregate. The repository interface is defined by the domain or
+  application layer that needs it; the implementation lives in infrastructure.
+  Repositories return domain objects, not ORM rows, not database records, not
+  raw dicts. The canonical anti-patterns: generic `IRepository<T>` abstractions
+  that erase domain meaning, repository-per-table designs that ignore aggregate
+  boundaries, business rules leaking into repository implementations, and ORM
+  entities exposed directly to domain code. A well-designed repository makes the
+  persistence infrastructure a replaceable detail, not a constraint on the model.
+examples:
+  - language: python
+    bad: |
+      # Generic repository, ORM-leaking, table-driven — erases domain meaning
+      from __future__ import annotations
+
+      from typing import Any, Generic, TypeVar
+
+      T = TypeVar("T")
+
+      class GenericRepository(Generic[T]):
+          """One-size-fits-all CRUD. No aggregate awareness. No domain intent."""
+
+          def __init__(self) -> None:
+              self._storage: dict[int, Any] = {}  # mock for illustration
+
+          def get(self, id: int) -> T | None:
+              return self._storage.get(id)
+
+          def save(self, entity: T) -> None:
+              self._storage[id(entity)] = entity  # assumes int id
+
+          def delete(self, id: int) -> None:
+              self._storage.pop(id, None)
+
+          def find_all(self) -> list[T]:
+              return list(self._storage.values())
+
+      # Repository per table, not per aggregate — Order and OrderLine separate
+      class OrderTableRepo(GenericRepository):
+          pass  # directly operates on ORM Order model
+
+      class OrderLineTableRepo(GenericRepository):
+          pass  # directly operates on ORM OrderLine model
+
+      # Application code loads and saves parts of the aggregate separately
+      def approve_order(order_id: int) -> None:
+          order_repo = OrderTableRepo()
+          line_repo = OrderLineTableRepo()
+          order = order_repo.get(order_id)  # returns ORM object, not domain object
+          lines = line_repo.find_all()  # loads ALL lines, not just this order's
+          # Business rules implemented here because repo returned a bare record
+          if order.status != "pending":
+              raise ValueError("Cannot approve")
+          order.status = "approved"  # direct mutation
+          order_repo.save(order)  # saves partial state
+
+    good: |
+      from __future__ import annotations
+
+      from abc import ABC, abstractmethod
+      from dataclasses import dataclass, field
+      from decimal import Decimal
+      from typing import Protocol, runtime_checkable
+      from uuid import UUID, uuid4
+
+      # --- Domain model (no infrastructure dependencies) ---
+
+      @dataclass(frozen=True)
+      class Money:
+          amount: Decimal
+          currency: str = "USD"
+
+          def __post_init__(self) -> None:
+              if self.amount < 0:
+                  raise ValueError("Money cannot be negative")
+
+          def __add__(self, other: Money) -> Money:
+              if self.currency != other.currency:
+                  raise ValueError("Currency mismatch")
+              return Money(self.amount + other.amount, self.currency)
+
+      @dataclass(frozen=True)
+      class OrderId:
+          value: UUID = field(default_factory=uuid4)
+
+      @dataclass(frozen=True)
+      class ProductId:
+          value: str
+
+      @dataclass(frozen=True)
+      class OrderLineId:
+          value: str = field(default_factory=lambda: uuid4().hex)
+
+      # --- Aggregate Root ---
+
+      class Order:
+          """Aggregate root. Repository will persist/reconstitute the whole aggregate."""
+
+          def __init__(self, order_id: OrderId, customer_id: str) -> None:
+              self._id = order_id
+              self._customer_id = customer_id
+              self._status: str = "draft"
+              self._lines: dict[OrderLineId, OrderLine] = {}
+              self._version: int = 1
+
+          @property
+          def id(self) -> OrderId:
+              return self._id
+
+          @property
+          def status(self) -> str:
+              return self._status
+
+          @property
+          def version(self) -> int:
+              return self._version
+
+          def add_line(self, line_id: OrderLineId, product_id: ProductId,
+                       quantity: int, unit_price: Money) -> None:
+              if self._status != "draft":
+                  raise ValueError(f"Cannot add lines to {self._status} order")
+              self._lines[line_id] = OrderLine(line_id, product_id, quantity, unit_price)
+              # reconstitution-only hook for repository to restore version
+              self._version += 1
+
+          def place(self) -> None:
+              if not self._lines:
+                  raise ValueError("Cannot place empty order")
+              self._status = "placed"
+              self._version += 1
+
+          def cancel(self, reason: str) -> None:
+              if self._status not in ("draft", "placed"):
+                  raise ValueError(f"Cannot cancel {self._status} order")
+              self._status = "cancelled"
+              self._version += 1
+
+          def total(self) -> Money:
+              return Money(sum(
+                  (line.quantity * line.unit_price.amount) for line in self._lines.values()
+              ))
+
+      @dataclass(frozen=True)
+      class OrderLine:
+          """Part of Order aggregate — no independent repository."""
+          line_id: OrderLineId
+          product_id: ProductId
+          quantity: int
+          unit_price: Money
+
+      # --- Repository interface defined by the domain/application layer ---
+
+      class OrderRepository(ABC):
+          """Defined by the domain model's needs, not the database schema."""
+
+          @abstractmethod
+          def next_identity(self) -> OrderId:
+              """Generate the next aggregate identity — domain concern."""
+              ...
+
+          @abstractmethod
+          def order_of_id(self, order_id: OrderId) -> Order | None:
+              """Reconstitute full aggregate, not a partial ORM record."""
+              ...
+
+          @abstractmethod
+          def save(self, order: Order) -> None:
+              """Persist the entire aggregate. Version for optimistic concurrency."""
+              ...
+
+          @abstractmethod
+          def orders_for_customer(self, customer_id: str,
+                                  status_filter: str | None = None) -> list[Order]:
+              """Domain-intent query, not generic find()."""
+              ...
+
+      # --- Infrastructure implementation (not in domain layer) ---
+
+      class PostgresOrderRepository(OrderRepository):
+          """Concrete implementation. Maps between domain and persistence."""
+
+          def __init__(self, db_connection: object) -> None:
+              self._db = db_connection  # dependency injected
+
+          def next_identity(self) -> OrderId:
+              return OrderId()
+
+          def order_of_id(self, order_id: OrderId) -> Order | None:
+              # Real implementation would load from DB and reconstitute
+              # using a _reconstitute constructor or event sourcing
+              raise NotImplementedError
+
+          def save(self, order: Order) -> None:
+              # Real implementation would persist entire aggregate atomically
+              # using optimistic concurrency check on order.version
+              raise NotImplementedError
+
+          def orders_for_customer(self, customer_id: str,
+                                  status_filter: str | None = None) -> list[Order]:
+              # Real implementation would query with domain-intent parameters
+              raise NotImplementedError
+
+      # --- Application service uses the repository interface, not the impl ---
+
+      class PlaceOrderUseCase:
+          def __init__(self, repo: OrderRepository) -> None:
+              self._repo = repo
+
+          def execute(self, order_id: OrderId) -> None:
+              order = self._repo.order_of_id(order_id)
+              if order is None:
+                  raise ValueError(f"Order {order_id.value} not found")
+              order.place()
+              self._repo.save(order)
+
+heuristics:
+  - One repository per aggregate root, never per table or per entity inside the aggregate. The repository is the single persistence gateway for the entire aggregate.
+  - Repository interfaces belong to the domain or application layer. They express what the model needs to load and save. The concrete implementation (Postgres, MongoDB, in-memory) lives in infrastructure.
+  - Repositories return fully reconstituted domain objects — aggregates with all invariants intact, all children loaded, ready for business operations. Never return ORM models, raw dicts, or partially loaded entities.
+  - "Repository method names should reflect domain intent: orders_for_customer(customer_id) is better than find(criteria: dict)."
+  - Keep business rules out of repository implementations. A repository persists and reconstitutes aggregates — it does not enforce domain invariants. Those belong on the aggregate.
+  - "Repositories should support aggregate identity generation when the domain needs it: next_identity() returns a new aggregate ID. This keeps ID generation strategy (UUID, sequence, snowflake) a repository concern."
+  - Repositories should handle optimistic concurrency. Track an aggregate version field and check it on save to detect conflicting concurrent modifications.
+  - Do not create generic `IRepository<T>` abstractions. They erase domain meaning and encourage treating all aggregates as interchangeable CRUD items.
+  - Repositories are the only code that should reach into aggregate internals for persistence purposes. Use a dedicated reconstitution constructor or factory method that bypasses normal business validation when loading from storage.
+  - Test repositories as infrastructure (with a real database or an in-memory substitute). Test domain behavior separately using mock repository interfaces. Do not test business rules through the database.
+
+related_tags: [repositories, aggregate-persistence, aggregate-root, domain-driven-design, collection-abstraction, infrastructure-layer, reconstitution, ddd-tactical]

@@ -1,0 +1,156 @@
+id: remove-flag-argument-017
+name: Remove Flag Argument
+category: refactoring
+canonical_tags: ['refactoring', 'readability']
+sources:
+  - books/clean-code.md
+  - books/refactoring.md
+summary: |
+  Remove Flag Argument eliminates boolean (or enum) parameters that toggle a function's
+  behavior between two different modes. A function `render(highlight: bool)` forces
+  callers to write `render(true)` — which tells you nothing about what that `true`
+  means. The refactoring splits such functions into two (or more) named functions, each
+  with a clear verb phrase: `renderHighlighted()` and `renderNormal()`. This makes
+  call sites self-documenting, removes the runtime conditional inside the function,
+  and lets each variant evolve independently without worrying about the other's code
+  path. If the two variants share substantial logic, extract the shared part into a
+  private helper and keep the public API as thin wrappers.
+examples:
+  - language: python
+    bad: |
+      class InvoiceRenderer:
+          def render(self, invoice: Invoice, for_pdf: bool) -> str:
+              template = self._load_template("invoice")
+              header = f"Invoice #{invoice.id}"
+              if for_pdf:
+                  # PDF-specific layout
+                  lines = [
+                      header.center(80),
+                      "-" * 80,
+                      f"Customer: {invoice.customer_name}",
+                      "-" * 80,
+                  ]
+              else:
+                  # HTML-specific layout
+                  lines = [
+                      f"<h1>{header}</h1>",
+                      f"<p>Customer: {invoice.customer_name}</p>",
+                  ]
+              for item in invoice.items:
+                  lines.append(self._format_item(item, for_pdf))
+              footer = self._build_footer(invoice, for_pdf)
+              return template.replace("{{content}}", "\n".join(lines + [footer]))
+
+      # Call sites are opaque
+      html = renderer.render(invoice, False)  # What is False?
+      pdf  = renderer.render(invoice, True)   # What is True?
+    good: |
+      class InvoiceRenderer:
+          def render_html(self, invoice: Invoice) -> str:
+              """Render invoice as HTML."""
+              template = self._load_template("invoice")
+              lines = [
+                  f"<h1>Invoice #{invoice.id}</h1>",
+                  f"<p>Customer: {invoice.customer_name}</p>",
+              ]
+              for item in invoice.items:
+                  lines.append(self._format_item_html(item))
+              footer = self._build_footer_html(invoice)
+              return template.replace("{{content}}", "\n".join(lines + [footer]))
+
+          def render_pdf(self, invoice: Invoice) -> str:
+              """Render invoice as PDF-compatible plain text."""
+              template = self._load_template("invoice")
+              header = f"Invoice #{invoice.id}"
+              lines = [
+                  header.center(80),
+                  "-" * 80,
+                  f"Customer: {invoice.customer_name}",
+                  "-" * 80,
+              ]
+              for item in invoice.items:
+                  lines.append(self._format_item_pdf(item))
+              footer = self._build_footer_pdf(invoice)
+              return template.replace("{{content}}", "\n".join(lines + [footer]))
+
+          # Shared helper — extracted common logic
+          def _load_template(self, name: str) -> str: ...
+
+          def _format_item_html(self, item: LineItem) -> str: ...
+          def _format_item_pdf(self, item: LineItem) -> str: ...
+          def _build_footer_html(self, invoice: Invoice) -> str: ...
+          def _build_footer_pdf(self, invoice: Invoice) -> str: ...
+
+      # Call sites are self-documenting
+      html = renderer.render_html(invoice)
+      pdf  = renderer.render_pdf(invoice)
+  - language: typescript
+    bad: |
+      function fetchUsers(
+        query: string,
+        includeArchived: boolean,
+        orderBy: "name" | "date",
+        ascending: boolean
+      ): User[] {
+        let sql = `SELECT * FROM users WHERE name ILIKE $1`;
+        const params: unknown[] = [`%${query}%`];
+
+        if (!includeArchived) {
+          sql += " AND archived = false";
+        }
+
+        sql += ` ORDER BY ${orderBy} ${ascending ? "ASC" : "DESC"}`;
+
+        return db.query(sql, params);
+      }
+
+      // Call site — indecipherable without docs
+      const users = fetchUsers("john", false, "name", true);
+      // What does false mean? What does true mean?
+    good: |
+      interface FetchUsersParams {
+        query: string;
+        includeArchived?: boolean;
+        orderBy?: "name" | "date";
+        ascending?: boolean;
+      }
+
+      const DEFAULT_PARAMS: Required<Pick<FetchUsersParams, "includeArchived" | "orderBy" | "ascending">> = {
+        includeArchived: false,
+        orderBy: "name",
+        ascending: true,
+      };
+
+      function fetchActiveUsersByName(query: string): User[] {
+        return _queryUsers(query, { ...DEFAULT_PARAMS, includeArchived: false, orderBy: "name", ascending: true });
+      }
+
+      function fetchAllUsersByDate(query: string): User[] {
+        return _queryUsers(query, { ...DEFAULT_PARAMS, includeArchived: true, orderBy: "date", ascending: false });
+      }
+
+      // Private — parameter object for uncommon combinations
+      function _queryUsers(query: string, options: Required<FetchUsersParams>): User[] {
+        let sql = "SELECT * FROM users WHERE name ILIKE $1";
+        const params: unknown[] = [`%${query}%`];
+
+        if (!options.includeArchived) sql += " AND archived = false";
+        sql += ` ORDER BY ${options.orderBy} ${options.ascending ? "ASC" : "DESC"}`;
+        return db.query(sql, params);
+      }
+
+      // Call sites — clear intent
+      const users = fetchActiveUsersByName("john");
+      const all = fetchAllUsersByDate("smith");
+heuristics:
+  - Apply when a boolean parameter appears in a public method signature — `true` / `false` at a call site carries no semantic information.
+  - Apply when you see call sites with a comment next to the flag: `render(invoice, true /* for_pdf */)` — the comment is proof the flag is opaque.
+  - Apply when the function body starts with `if flag: doA() else: doB()` and the two branches are substantively different — they're two functions in disguise.
+  - Create two well-named methods: `sendWithRetry()` and `sendAtMostOnce()` instead of `send(retry: bool)`.
+  - Do NOT apply when the flag controls a minor variation (e.g. `formatDate(date, includeYear: bool)`) — the overhead of two functions outweighs the clarity gain.
+  - Do NOT apply when the flag is part of a public API that has many callers and each variant would be a one-line wrapper — consider a parameter object or named arguments instead.
+  - Do NOT apply when the flag comes from user input or configuration and is genuinely a runtime switch — if the caller genuinely doesn't know which branch at compile-time, keep the flag.
+  - After removing: search for all call sites of the original function and ensure each now calls the right variant — a mechanical find-and-replace of `oldMethod(true)` to `newMethodA()` is safer than manual edits.
+  - If the two variants share most of their logic, extract a private implementation method that takes the flag internally, then expose two public wrappers that don't — the flag stays hidden.
+  - Mechanical sequence: (1) create two new public methods with descriptive names covering each flag value, (2) copy the flag-branch-specific code into each, (3) extract shared logic into a private helper, (4) migrate callers one by one, (5) delete the original flagged method.
+related_tags: [flag-argument, boolean-parameter, command-query-separation, readability, api-design, self-documenting-code]
