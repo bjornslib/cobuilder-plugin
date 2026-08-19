@@ -35,7 +35,7 @@ error: `data/diagrams.js` is written as `window.DIAGRAMS = {};`.
 
 Usage:
     uv run build_diagrams.py --repo <path>
-    uv run build_diagrams.py --bundle-dir <path>/.prodyssey/self --prs 73,75
+    uv run build_diagrams.py --bundle-dir <path>/.cobuilder-architect/self --prs 73,75
     uv run build_diagrams.py --bundle-dir <bundle> --validate
     uv run build_diagrams.py --bundle-dir <bundle> --strict
 """
@@ -221,14 +221,14 @@ def run_strict_check(path: Path) -> str | None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--repo", default=None, help="path to the target git repo (default: cwd)")
-    parser.add_argument("--bundle-dir", default=None, help="bundle output dir (default: <repo>/.prodyssey/self)")
+    parser.add_argument("--bundle-dir", default=None, help="bundle output dir (default: <repo>/.cobuilder-architect/self)")
     parser.add_argument("--prs", default=None, help="comma-separated PR numbers (default: all PRs found in the diagrams dir)")
     parser.add_argument("--validate", action="store_true", help="validate only; write nothing")
     parser.add_argument("--strict", action="store_true", help="also parse each file with mermaid-cli via npx, if npx is on PATH")
     args = parser.parse_args()
 
     repo = resolve_repo(args.repo)
-    bundle_dir = Path(args.bundle_dir).resolve() if args.bundle_dir else repo / ".prodyssey" / "self"
+    bundle_dir = Path(args.bundle_dir).resolve() if args.bundle_dir else repo / ".cobuilder-architect" / "self"
     diagrams_dir = bundle_dir / "data" / "diagrams"
     diagrams_js = bundle_dir / "data" / "diagrams.js"
 

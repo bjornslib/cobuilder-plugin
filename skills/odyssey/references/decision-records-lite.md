@@ -134,7 +134,7 @@ is no separate provenance field on the record itself.
 
 ## 7. When the author already answered
 
-Submit mode (`/prodyssey:submit`) interviews the author before the PR opens,
+Submit mode (`/cobuilder-architect:submit`) interviews the author before the PR opens,
 and writes an `intent` block onto the PR's timeline entry. See
 `references/interview-guide.md` §1 for the shape. When that block is present,
 it changes this workflow in three ways:

@@ -10,12 +10,12 @@ current run), each linking out to its Claude Artifact URL.
 
 Unlike `export_artifact.py`'s per-PR output, this page carries no images or
 audio — just text and links — so it's cheap enough to rebuild unconditionally
-on every `/prodyssey:publish` invocation. Its own small template, not a
+on every `/cobuilder-architect:publish` invocation. Its own small template, not a
 slice of the ~2000-line bundle viewer.
 
 Usage:
     uv run export_index.py --repo <path>
-    uv run export_index.py --bundle-dir <path>/.prodyssey/self
+    uv run export_index.py --bundle-dir <path>/.cobuilder-architect/self
 """
 from __future__ import annotations
 
@@ -147,11 +147,11 @@ def render_index(manifest: dict) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--repo", default=None, help="path to the target git repo (default: cwd)")
-    parser.add_argument("--bundle-dir", default=None, help="bundle dir to read (default: <repo>/.prodyssey/self)")
+    parser.add_argument("--bundle-dir", default=None, help="bundle dir to read (default: <repo>/.cobuilder-architect/self)")
     args = parser.parse_args()
 
     repo = resolve_repo(args.repo)
-    bundle_dir = Path(args.bundle_dir).resolve() if args.bundle_dir else repo / ".prodyssey" / "self"
+    bundle_dir = Path(args.bundle_dir).resolve() if args.bundle_dir else repo / ".cobuilder-architect" / "self"
     out_dir = bundle_dir / "exports"
     manifest_path = out_dir / "publish-manifest.json"
 

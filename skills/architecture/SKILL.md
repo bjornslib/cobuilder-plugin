@@ -15,12 +15,12 @@ A mode-switchable skill for six use cases: system design (architecture decisions
 Accept a mode argument when the skill is invoked, or prompt if none is provided.
 
 **Argument-based invocation:**
-- `/archkit:design` -- Design mode
-- `/archkit:review` -- Review mode
-- `/archkit:maintenance` -- Maintenance mode
-- `/archkit:decisions` -- Decision Records mode
-- `/archkit:describe` -- Architecture Description mode
-- `/archkit:debug` -- Debug mode
+- `/cobuilder-architect:design` -- Design mode
+- `/cobuilder-architect:review` -- Review mode
+- `/cobuilder-architect:maintenance` -- Maintenance mode
+- `/cobuilder-architect:decisions` -- Decision Records mode
+- `/cobuilder-architect:describe` -- Architecture Description mode
+- `/cobuilder-architect:debug` -- Debug mode
 
 These modes are self-only. They analyse the session's own repo. Odyssey can target another checkout; architecture cannot. If the user asks to analyse a different local checkout, or to override where output lands, refuse.
 

@@ -1,11 +1,11 @@
 ---
-title: "Archkit: Describe"
+title: "cobuilder-architect: Describe"
 status: active
 type: command
 last_verified: 2026-08-04
 ---
 
-# Archkit: Describe
+# cobuilder-architect: Describe
 
 Documents a bounded context: a ddd-crew canvas, C4 diagrams, and a
 machine-diffable `boundary.yaml`. Every claim in the resulting documentation
@@ -18,7 +18,7 @@ different local checkout, or to override where output lands, the skill will
 refuse.
 
 Invoke the `architecture` skill in describe mode, forwarding any arguments
-the user supplied after `/archkit:describe`:
+the user supplied after `/cobuilder-architect:describe`:
 
 ```
 Skill("architecture", args="describe $ARGUMENTS")

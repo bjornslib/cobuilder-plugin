@@ -320,7 +320,7 @@ def all_ok(results: dict[str, str], optional_prefixes: tuple[str, ...] = ()) -> 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--bundle-dir", required=True, help="bundle dir to verify (e.g. <repo>/.prodyssey/self)")
+    parser.add_argument("--bundle-dir", required=True, help="bundle dir to verify (e.g. <repo>/.cobuilder-architect/self)")
     parser.add_argument("--prs", default=None, help="comma-separated PR numbers (default: all timeline PRs)")
     parser.add_argument("--json", action="store_true", help="emit machine-readable JSON instead of a table")
     parser.add_argument(

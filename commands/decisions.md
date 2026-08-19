@@ -1,11 +1,11 @@
 ---
-title: "Archkit: Decisions"
+title: "cobuilder-architect: Decisions"
 status: active
 type: command
 last_verified: 2026-08-04
 ---
 
-# Archkit: Decisions
+# cobuilder-architect: Decisions
 
 Authors new decision records or retro-extracts them from existing code and
 history, following the ISO/IEC/IEEE 42010 decision-record standard: a
@@ -19,7 +19,7 @@ different local checkout, or to override where output lands, the skill will
 refuse.
 
 Invoke the `architecture` skill in decisions mode, forwarding any arguments
-the user supplied after `/archkit:decisions`:
+the user supplied after `/cobuilder-architect:decisions`:
 
 ```
 Skill("architecture", args="decisions $ARGUMENTS")

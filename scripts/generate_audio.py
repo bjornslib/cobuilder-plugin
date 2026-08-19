@@ -111,7 +111,7 @@ def main():
         description="Generate TTS audio files for PR stories in story.json using Gemini 3.1 Flash TTS."
     )
     parser.add_argument("--repo", default=None, help="path to the target git repo (default: cwd)")
-    parser.add_argument("--bundle-dir", default=None, help="bundle output dir (default: <repo>/.prodyssey/self)")
+    parser.add_argument("--bundle-dir", default=None, help="bundle output dir (default: <repo>/.cobuilder-architect/self)")
     parser.add_argument("--pr", type=int, default=None, help="single pull request number to generate audio for")
     parser.add_argument("--prs", default=None, help="comma-separated PR numbers to loop over")
     parser.add_argument(
@@ -163,7 +163,7 @@ def main():
         sys.exit(0)
 
     repo = resolve_repo(args.repo)
-    bundle_dir = Path(args.bundle_dir).resolve() if args.bundle_dir else repo / ".prodyssey" / "self"
+    bundle_dir = Path(args.bundle_dir).resolve() if args.bundle_dir else repo / ".cobuilder-architect" / "self"
     story_path = args.story_file or (bundle_dir / "data" / "story.json")
     output_dir = args.output_dir or (bundle_dir / "data" / "audio")
 

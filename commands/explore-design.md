@@ -1,11 +1,11 @@
 ---
-title: "Archkit: Explore Design"
+title: "cobuilder-architect: Explore Design"
 status: active
 type: command
 last_verified: 2026-08-04
 ---
 
-# Archkit: Explore Design
+# cobuilder-architect: Explore Design
 
 This command is the architecture skill's divergent-exploration design pass.
 The new seven-stage `/design` mode (not yet written) will wrap it.
@@ -21,7 +21,7 @@ different local checkout, or to override where output lands, the skill will
 refuse.
 
 Invoke the `architecture` skill in design mode, forwarding any arguments the
-user supplied after `/archkit:explore-design`:
+user supplied after `/cobuilder-architect:explore-design`:
 
 ```
 Skill("architecture", args="design $ARGUMENTS")
