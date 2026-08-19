@@ -2,7 +2,11 @@
   "name": "cobuilder-implement",
   "title": "CoBuilder Implement — a design becomes verified code",
   "adr": "ADR-0012",
-  "adrs": ["ADR-0012", "ADR-0011", "ADR-0015"],
+  "adrs": [
+    "ADR-0012",
+    "ADR-0011",
+    "ADR-0015"
+  ],
   "created": "2026-08-19",
   "outcome": "The architecture design produced by cobuilder-architect carries directly into implementation: its intent is decomposed into testable epics, and each epic ships as vertical slices that an independent validator scores at 0.90 or better before the next one starts.",
   "done_when": [
@@ -20,13 +24,26 @@
     "boundary_rules_checked": true,
     "challenge_stage_run": true
   },
-  "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
+  "limits": {
+    "warn_after_rounds": 3,
+    "cutoff_rounds": 6
+  },
   "epics": [
-    { "id": "E1", "branch": "design/cobuilder-implement", "pr": null, "state": "planned" }
+    {
+      "id": "E1",
+      "branch": "design/design-mode",
+      "pr": null,
+      "state": "planned",
+      "note": "Shares a branch and a pull request with the design-mode design. See ADR-0013: a branch may carry more than one design."
+    }
   ],
   "stage": "review",
   "supersedes": null,
   "rounds": [
-    { "n": 1, "changed": true, "feedback_class": "material" }
+    {
+      "n": 1,
+      "changed": true,
+      "feedback_class": "material"
+    }
   ]
 }

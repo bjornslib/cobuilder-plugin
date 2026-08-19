@@ -181,6 +181,14 @@ design is delivered when every epic has a merged pull request.
   the one-design-to-one-pull-request assumption, and the addition of the
   one-or-several question at the last stage.
 
+- **Constraint introduced.** A branch may carry more than one design. The
+  `epics` array models one design across many pull requests. It does not model
+  many designs inside one pull request, and the branch parse returns the first
+  match. Submit mode therefore treats design resolution as a judgment, not a
+  lookup. When a branch matches one design but the diff also touches a second
+  design's declared modules, submit mode names both and asks the author which
+  designs this pull request delivers. It never picks silently.
+
 - **Risk carried.** The split depends on design mode never growing a
   decomposition step. A future session that adds one recreates the duplication
   this record exists to prevent.
