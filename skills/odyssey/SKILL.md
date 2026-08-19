@@ -1014,10 +1014,11 @@ returns. Do not implement that join here.
    `intent` and `assessment` to the engineer before you write them to disk.
 
    Then write four artifacts. Run each prose pass through
-   `Skill("ste-writing")` in flavored mode. Use strict mode for ADR
-   procedural text: the constraint introduced, and the boundary rules. The
-   plugin ships no hooks, so "automatic" means this section instructs the
-   step.
+   `Skill("cobuilder-architect:ste-writing")` in flavored mode. If that call
+   gives `Unknown skill`, read `${CLAUDE_PLUGIN_ROOT}/skills/ste-writing/SKILL.md`
+   directly and obey that file instead. Use strict mode for ADR procedural
+   text: the constraint introduced, and the boundary rules. The plugin ships
+   no hooks, so "automatic" means this section instructs the step.
 
    1. **ADR.** Write `docs/architecture/adr/ADR-NNNN-<slug>.md` from
       `skills/architecture/references/templates/adr-template.md`. Set

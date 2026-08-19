@@ -1,0 +1,26 @@
+C4Container
+    title "cobuilder-implement design: two plugins joined by one file, no code dependency"
+
+    Person(engineer, "Engineer", "Approves gates, runs both plugins in the same coding harness")
+
+    Container_Boundary(target, "Target repo") {
+        Container(intentfile, "intent.json", "JSON file", "docs/architecture/designs/<name>/intent.json — the only join between the two plugins")
+    }
+
+    Container_Boundary(architect, "cobuilder-architect plugin — designs") {
+        Container(designmode, "design mode", "skill", "Interviews the engineer, writes intent.json and the ADR before code exists")
+    }
+
+    Container_Boundary(implement, "cobuilder-implement plugin — builds") {
+        Container(gates, "G1-G4 gates", "skill", "Business Spec, Technical Spec, Slice Plan and Rubrics, Acceptance")
+        Container(validator, "VALIDATE subagent", "subagent", "Executes tests, then reads code, scores against a blind rubric")
+    }
+
+    Rel(engineer, designmode, "Runs design mode on")
+    Rel(designmode, intentfile, "Writes")
+    Rel(engineer, gates, "Runs G1 to start build on")
+    Rel(gates, intentfile, "Reads at G1 to ground the Business Spec")
+    Rel(gates, validator, "Spawns per slice")
+
+    UpdateRelStyle(designmode, intentfile, $offsetX="10", $offsetY="-10")
+    UpdateRelStyle(gates, intentfile, $offsetX="-10", $offsetY="10")

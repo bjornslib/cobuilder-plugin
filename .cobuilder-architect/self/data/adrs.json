@@ -617,6 +617,153 @@
     ],
     "provenance": "authored"
   },
+  "ADR-0012": {
+    "id": "ADR-0012",
+    "title": "CoBuilder Implement: a design becomes verified code",
+    "state": "decided",
+    "source_pr": null,
+    "problem": "Software Factory gates every design decision before code exists, then accepts a slice on the implementer's own word. CoBuilder Guardian scores work independently against a rubric the implementer never reads, but runs only on the pi SDK, DOT pipelines, beads, and Hindsight. Neither can take an approved architecture design and turn it into verified code in an arbitrary coding harness, so the designs cobuilder-architect now produces have nothing that consumes them.",
+    "decision": "Ship cobuilder-implement as a separate plugin: a three-tier build (initiative, epic, slice) behind four gates, where a validator that did not write the code executes the test suite, then judges whether the tests cover the declared outcomes, and scores every slice and epic at 0.90 or better against a rubric written before the code existed.",
+    "alternatives": [
+      {
+        "option": "One agent writes the rubric, the tests, the code, and the self-report in a single context, and a human skims the log at the end",
+        "rejected_because": "It abandons independent scoring, which the outcome requires. The agent that wrote the code judges its own test run."
+      },
+      {
+        "option": "Delete the validator and get blindness from context amnesia: one agent writes the rubric, the harness clears context, then the same agent implements and self-scores twice, voiding on a mismatch above 0.15",
+        "rejected_because": "Erasure blindness cannot be verified from outside the model, and two runs of one policy give correlated error rather than independent verification."
+      },
+      {
+        "option": "Treat rubrics as a cross-repo append-only ledger and cluster criterion fingerprints into a shared genome that primes the validator with a prior",
+        "rejected_because": "It needs a periodic clustering job across repos, which breaks the no-external-service rule, and it solves a volume problem this work does not have yet."
+      },
+      {
+        "option": "Forbid the validator from reading the implementation and score only from a test runner's exit codes",
+        "rejected_because": "It scores whether tests pass and never asks whether the tests are worth passing. The validator reads the code after it executes the suite, and judges test adequacy against the specs."
+      },
+      {
+        "option": "Commit a hash of every test file at G3 and check it before scoring",
+        "rejected_because": "It changes the G3 gate contract to close a hole that a validator judging test adequacy already covers."
+      },
+      {
+        "option": "Score a criterion called 'no undeclared test dependencies' to catch a fixture added after G3",
+        "rejected_because": "Enumerating a test's transitive dependencies is not free in a dynamically imported language."
+      },
+      {
+        "option": "Strip the validator's retry feedback to pass or fail per criterion, so accumulated feedback cannot leak the rubric's shape",
+        "rejected_because": "Rich feedback is mandatory for the implementing agent to improve within its attempts. Starving it pushes slices into escalation, which costs more than the leak."
+      },
+      {
+        "option": "Extend Software Factory with a verification step per slice",
+        "rejected_because": "A rubric written after the code describes the code, so it always passes."
+      },
+      {
+        "option": "Port CoBuilder Guardian and replace its dispatch layer with subagents",
+        "rejected_because": "The guardian's ceremony was proportionate to its machinery. Remove the machinery and the ceremony stays without its justification."
+      },
+      {
+        "option": "Accept a slice at 0.70, the guardian's shipped threshold",
+        "rejected_because": "A 0.70 gate accepts three criteria in ten being half met, and half met is where the observed bugs came from."
+      }
+    ],
+    "forces": [
+      "the skill must run in any harness that can spawn a subagent, with no SDK, no pipeline runtime, and no external service",
+      "an implementing agent that reads the rubric writes to the rubric, not to the requirement",
+      "an agent that wrote code cannot score it, because it reads its own intent into the code",
+      "a skill directory is not a workflow discovery path, but a plugin's workflows directory is",
+      "process weight that does not scale down makes small work cost more than the work",
+      "ADR-0015 makes the architecture modes self-only, so a build workflow cannot live inside cobuilder-architect"
+    ],
+    "delivers": {
+      "capability": "An approved architecture design becomes working code in any coding harness that can spawn a subagent, with every slice and epic gated on an independent score rather than a self-report.",
+      "benefit": "The defects a self-report hides are found at the slice boundary, while the diff is still small enough to fix cheaply. The design that cobuilder-architect captured stops at nothing.",
+      "beneficiary": [
+        "developer",
+        "reviewer",
+        "validator-agent",
+        "the-business"
+      ]
+    },
+    "body": "# ADR-0012 — CoBuilder Implement: a design becomes verified code\n\n## Context\n\nTwo workflows exist, and each holds half of what a build needs.\n\n**Software Factory** makes every important decision before implementation code\nexists. Four gates run in order, and a human approves each one. It then builds\nvertical slices, and each slice ends in a working state. Its weakness sits at\nthe end of a slice. The agent proves the slice works by running it and showing\nthe result, so the agent that built the slice decides what counts as proof.\n\n**CoBuilder Guardian** answers that weakness. It writes acceptance rubrics\nbefore implementation starts, stores them where the implementer cannot read\nthem, and scores the result. Its weakness is the runtime. It needs the pi SDK,\nDOT pipelines, beads, and Hindsight, and none of that runs in another harness.\n\nThe valuable half of the guardian needs no runtime. Four ideas carry: write\nthe rubric before the code, hide it from the implementer, score with an agent\nthat did not build the thing, and route every gap instead of dropping it.\n\nADR-0011 added design mode, so designs now exist and carry intent,\nalternatives, and constraints that nobody has to reconstruct later. ADR-0015\nmade the architecture modes self-only, so a build workflow cannot live inside\nthis plugin. The design therefore has nothing that consumes it.\n\n## Options considered\n\nStage 4 of design mode contested the stated approach against five frames. The\nfull rejected set sits in the frontmatter. Three shaped the result.\n\n1. **Collapse to one agent, one gate, one log.** Rejected. It abandons\n   independent scoring, which the outcome requires.\n\n2. **Delete the validator, and get blindness from context amnesia.** Rejected\n   as a trap. It looks right because it assumes away the hard part: blindness\n   by erasure cannot be verified from outside the model, and two scoring runs\n   of one policy produce correlated error, not independent verification.\n\n3. **Forbid the validator from reading the implementation (chosen, with a\n   change).** The inversion frame showed that a validator which re-reads the\n   code and asks whether it looks correct will score a plausible function with\n   a swallowed exception at 1.0. Its proposed fix was to score only from exit\n   codes. That fix scores whether tests pass and never asks whether the tests\n   are worth passing. The decision takes the diagnosis and rejects the cure:\n   the validator executes the suite first, then reads the code, and judges\n   whether the tests are sensible and cover the outcomes the specs declared.\n\n## Decision\n\nShip `cobuilder-implement` as a plugin of its own. It needs a git repository,\na test command, and the ability to spawn a subagent. It needs nothing else.\n\n### Three tiers\n\nA feature is an epic, one to one. An epic is a vertical slice of the product,\nand **it must always be testable**. If nobody can state how to prove an epic\nworks, it is not an epic yet, and the Business Spec is not finished. An epic\nholds the slices that build it.\n\n### Four gates, two of them repeating\n\n| Gate | Name | Cadence | Produces |\n|---|---|---|---|\n| G1 | Business Spec | once | the spec, the epics, one skeleton Technical Spec per epic |\n| G2 | Technical Spec | per epic | the detailed spec, written just in time and research verified |\n| G3 | Slice Plan and Rubrics | per epic | the slice list, and the blind epic and slice rubrics |\n| G4 | Acceptance | per slice, then per epic | work scored at 0.90 or better |\n\nG2 carries Software Factory's architecture gate and its program design gate for\none epic. **An epic gate is a complete Software Factory run.** The Business\nSpec is a new tier above Software Factory's scope, which that workflow never\nhad an opinion about.\n\n### The validator's mandate\n\nThe validator did not write the code, and it never wrote the tests. It works in\ntwo steps, in this order.\n\n1. **Execute.** Run the suite in a fresh process. Score from what the run\n   reports, never from a claimed result.\n2. **Read, then judge.** Read the implementation and the tests, and judge\n   whether the tests are sensible, and whether they cover the outcomes the\n   Business Spec and the Technical Spec declared for this epic and this slice.\n   A test that passes without exercising the declared outcome is not a pass.\n\nThe second step is what stops a rubric from being satisfied by dead code, a\nstub return, or a mocked response.\n\n### Scoring\n\nCriteria score `0.0`, `0.5`, or `1.0`. A wider scale lets a validator split the\ndifference on anything ambiguous, and a marginal slice then drifts past the\ngate. Every score cites evidence: a test name, captured output, or a file and a\nline. A score without evidence is an opinion and does not count.\n\nA slice passes at 0.90 or better with no critical criterion below 1.0. Below\nthat it returns to the implementing agent with **full feedback**, up to three\nattempts, then escalates. An epic gate is hard: below 0.90 a remediation slice\nreturns the epic feedback to the implementing agent until the epic closes, and\na human check-in runs after every third remediation.\n\n**The threshold does not move in reaction to a failed attempt.** A moved\ngoalpost converts the score into noise.\n\n### The void rule\n\nA rigged pass voids the run instead of scoring it, and the void costs no\nattempt, because what was measured was not the thing. The triggers are a test\nedited, skipped, weakened, or narrowed; a test whose dependency was swapped or\nnarrowed in a sibling file; a test that would also pass against the\npre-change code; and an implementer that read the rubric.\n\nThe sibling-file trigger exists because the obvious rule misses the obvious\nattack. An implementing agent does not need to edit a test to defeat it. It can\nadd a helper the test imports and narrow what the test exercises, and the diff\nto the test file stays empty.\n\n### The record\n\nEach scored slice appends one line to a per-epic ledger that nothing rewrites.\nThe line carries the epic, the slice, the per-criterion score, and **the\nvalidator's stated reason for each score**. A session that resumes a stalled\ninitiative can then see why a slice sits at 0.72 without re-invoking the\nvalidator.\n\n### The light path\n\nA single-epic initiative collapses the two specs into one document and skips\nthe refute panel, the skeptic, and the epic rubric. Research still runs when\nthe spec names a new library, a new external API, or a version change, because\nthat risk does not scale with the epic count. **The slice loop and the 0.90\ngate never switch off.**\n\n### Out of scope\n\nOpening a pull request or pushing a branch, which stays submit mode's job.\nChanging design mode. Any code dependency between the two plugins. Agents,\nhooks, and MCP servers.\n\n## Consequences\n\n- **Positive.** No slice is declared done by the agent that built it. The\n  pattern that catches a plausible but wrong pass is structural, and it does\n  not depend on the implementer's care.\n\n- **Positive.** A validator that judges test adequacy catches the failure the\n  void rule cannot express: criteria written at a level that dead code\n  satisfies.\n\n- **Positive.** The skill runs in any harness with a subagent. A scripted\n  runner adds deterministic control flow, and the manual three-role mode is the\n  portable fallback.\n\n- **Constraint introduced.** No slice or epic is accepted on the word of the\n  agent that built it. A validator that did not write the code executes the\n  tests, judges their adequacy against the declared outcomes, and scores at\n  0.90 or better against a rubric written before the code existed.\n\n- **Constraint introduced.** The threshold is 0.90, and it does not move in\n  reaction to a failed attempt. A different value is set only when a human asks\n  for it, and the reason is recorded.\n\n- **Risk carried, accepted.** Blindness is honour based. Nothing mechanically\n  stops an implementer reading the rubric directory. The void rule punishes the\n  read after the fact, and detection depends on the validator noticing.\n\n- **Risk carried.** At volume, a validator pool statistically absorbs the shape\n  of passing rubrics, so prompt discipline leaks. The fix proposed for this\n  needs a cross-repo clustering job, which the no-external-service rule\n  forbids, so the risk stays open and named.\n\n- **Risk carried.** Just-in-time detailing can redefine a contract another epic\n  depends on. A skeleton names the contracts an epic exposes or consumes, and\n  those freeze at G1. The rule is a rule, not a mechanism, and it depends on\n  each skeleton naming its contracts honestly.\n\n- **Risk carried.** The validator now does two jobs, and the second is\n  judgment. Judgment scored on a three-value scale may not repeat run to run.\n  Consistency is an unknown to measure on real slices, not to assume.\n\n- **Negative, accepted.** A multi-epic initiative runs one refute panel, plus a\n  research panel and a skeptic per epic, before the first slice starts. The\n  light path removes this for single-epic work, and nothing removes it for\n  multi-epic work.\n\n## Value delivered\n\n- **New capability.** An approved architecture design becomes working code in\n  any coding harness that can spawn a subagent, with every slice and epic gated\n  on an independent score rather than a self-report.\n- **Benefit.** The defects a self-report hides are found at the slice boundary,\n  while the diff is still small enough to fix cheaply. The intent that\n  cobuilder-architect captured now reaches the code.\n- **Beneficiary.** The developer building the change, the reviewer reading it,\n  the validating agent that finally has a rubric and a mandate, and the\n  business that inherits fewer escaped defects.\n\n## Maps to\n\nDistrict `skills` from `.cobuilder-architect/self/inventory.yaml`, and the\nplugin that ships outside this repository. The join to this repository is one\nfile, and [ADR-0013](ADR-0013-design-mode-implement-join.md) governs it.\n",
+    "maps_to": {
+      "district": "skills",
+      "unanchored": true,
+      "modules": [
+        "skills"
+      ],
+      "rule": "No slice or epic is accepted on the word of the agent that built it. A validator that did not write the code executes the tests, judges their adequacy against the declared outcomes, and scores at 0.90 or better against a rubric written before the code existed."
+    },
+    "history": [
+      {
+        "state": "decided",
+        "date": "2026-08-19",
+        "note": "Recorded from design mode. Stage 4 produced seven rejected options. Chosen on this branch; not approved until a human merges."
+      }
+    ]
+  },
+  "ADR-0013": {
+    "id": "ADR-0013",
+    "title": "Design mode and cobuilder-implement: split the first gate, join through a file",
+    "state": "decided",
+    "source_pr": null,
+    "problem": "Design mode and cobuilder-implement both capture intent before code exists. Left alone, each grows a weaker copy of the other: design mode grows a planning tier, and the build workflow grows an architecture interview. ADR-0011 also joins a design to its pull request through the branch name, and that join is one to one, which a Business Spec with several epics cannot express.",
+    "decision": "Split the first gate. Design mode owns framing, exploration, and the challenge, and produces the ADR and intent.json. cobuilder-implement owns epic decomposition and everything downstream. The two join through docs/architecture/designs/<name>/intent.json, a file contract and not a code dependency, and goal.json carries an epics array so one design can track many pull requests.",
+    "alternatives": [
+      {
+        "option": "Design mode replaces the whole first gate, including epic decomposition",
+        "rejected_because": "Design mode would grow a second, weaker planning tier. Decomposition into testable epics feeds the rubrics, and it is the build workflow's competence."
+      },
+      {
+        "option": "cobuilder-implement authors its own Business Spec and ignores design mode",
+        "rejected_because": "It rebuilds the interview, the corpus, the divergent exploration, and the challenge stage that design mode already has."
+      },
+      {
+        "option": "Make design mode a hard dependency of cobuilder-implement",
+        "rejected_because": "The build workflow must run in any harness. A dependency on this plugin and its corpus ends that."
+      },
+      {
+        "option": "Join the two through a code call, such as a skill invocation",
+        "rejected_because": "A code call couples release cycles. A file on disk lets either side run alone, and lets a third tool read the same contract."
+      },
+      {
+        "option": "Keep the scalar branch field in goal.json and accept one pull request per design",
+        "rejected_because": "An initiative with several epics produces several pull requests, and a one-to-one branch join cannot express that."
+      }
+    ],
+    "forces": [
+      "ADR-0011 is amendable rather than superseded, because no pull request has merged it",
+      "story.json keys on an integer pr, so a design never enters the timeline until a pull request exists",
+      "cobuilder-implement must carry no dependency on this plugin",
+      "ADR-0014 moved authored source into docs/, so the design directory is the contract's home",
+      "design mode's challenge stage contests the approach, and never the epic decomposition, because it does not produce one"
+    ],
+    "delivers": {
+      "capability": "An engineer designs a change in cobuilder-architect, builds it with cobuilder-implement, and each epic's pull request points back at the design that produced it.",
+      "benefit": "Neither tool carries a weaker copy of the other's job, and drift is measured per epic against that epic's slice of the design rather than against a whole record no single pull request was going to satisfy.",
+      "beneficiary": [
+        "developer",
+        "reviewer",
+        "the-business"
+      ]
+    },
+    "body": "# ADR-0013 — Design mode and cobuilder-implement: split the first gate, join through a file\n\n## Context\n\nADR-0011 added `/cobuilder-architect:design`, a seven-stage interview-led design\nmode. It grounds itself in the bundle, interviews the engineer, explores\ndivergent options, challenges the stated approach, and drafts a record with\ndiagrams and an `intent.json`.\n\nADR-0012 added cobuilder-implement, whose first gate writes a Business Spec,\nchallenges it, and decomposes it into testable epics.\n\nBoth capture intent before the code exists. The overlap is real, and it is not\naccidental. Without a decision, each one grows a weaker copy of the other half.\n\nTwo further facts shape the answer. Design mode's challenge stage contests\n**the approach**, and it never contests an epic decomposition, because it does\nnot produce one. And ADR-0011 joins a design to its pull request through the\nbranch name, one to one. A Business Spec with several epics produces several\npull requests, so a scalar branch field cannot express the result.\n\n## Options considered\n\n1. **Design mode replaces the whole first gate.** Rejected. Decomposition into\n   testable epics feeds the rubrics, and it belongs to the workflow that writes\n   them. Moving it here grows a second planning tier.\n\n2. **cobuilder-implement ignores design mode.** Rejected. It rebuilds an\n   interview, a corpus, a divergent exploration, and a challenge stage that\n   already exist.\n\n3. **Split the first gate, and join through a file (chosen).** Design mode runs\n   its seven stages. cobuilder-implement reads the result and decomposes it.\n   Neither imports the other.\n\n## Decision\n\n### The first gate splits in two\n\n**Design (optional), supplied by this plugin.** It produces the record, the\ndiagrams, and `intent.json`. Its last stage asks only whether the change is one\npull request or several, captures the epic slugs when the answer is several,\nand creates the first branch. **Design mode does no epic decomposition.**\n\n**Decomposition, always run by cobuilder-implement.** It turns the design into\nordered epics, each with testable acceptance criteria, declared dependencies,\nand named cross-epic contracts. It writes the epics back into `goal.json`.\n\ncobuilder-implement asks once whether design mode is available and wanted, and\nrecords the answer. When the answer is no, it drafts the Business Spec itself.\n\n### The challenge retargets rather than repeats\n\nDesign mode's challenge stage contests the approach. cobuilder-implement's\nrefute panel therefore contests what that stage never saw: whether the epics\nare genuinely independent, whether each one is testable, whether one is\nmissing, and whether the declared cross-epic contracts hold. No signal is paid\nfor twice.\n\n### The join is one file\n\n```\ndocs/architecture/designs/<name>/intent.json\n```\n\ncobuilder-implement reads it. Design mode writes it. Neither side calls the\nother, so either runs alone, and a third tool can read the same file.\n\n### goal.json carries an epics array\n\nThe scalar `branch` field retires.\n\n```json\n\"epics\": [\n  {\"id\": \"E1\", \"slug\": \"guest-checkout\",\n   \"outcome\": \"<testable criterion>\",\n   \"branch\": \"design/checkout/guest-checkout\",\n   \"pr\": 42, \"state\": \"merged\"},\n  {\"id\": \"E2\", \"slug\": \"saved-cards\",\n   \"outcome\": \"<...>\", \"branch\": null, \"pr\": null, \"state\": \"planned\"}\n],\n\"stage\": \"partially-delivered\"\n```\n\nDesign mode writes the slugs. cobuilder-implement writes `outcome`, because\nonly decomposition knows the testable criterion.\n\n### Branch convention\n\n`design/<design-name>/<epic-slug>`. Git allows a slash, so the join is a prefix\nparse. Submit mode removes `design/`, reads the first segment as the design\nname, and reads the rest as the epic slug. A single-epic design keeps the plain\n`design/<name>` form with one entry and no second segment, so the common case\nadds nothing to remember. The authoritative fallback stays a scan of every\n`goal.json` for a matching `epics[].branch`.\n\n### Submit mode records the design\n\nSubmit mode writes `intent.design = {name, epic}` onto the timeline entry, so a\npull request points back at its design and the viewer can group several pull\nrequests under one. Drift is measured per epic, against that epic's slice of\nthe design. `goal.stage` gains `partially-delivered` and `delivered`, and a\ndesign is delivered when every epic has a merged pull request.\n\n## Consequences\n\n- **Positive.** Neither tool duplicates the other. Design mode keeps its corpus\n  and its interview. cobuilder-implement keeps its harness independence.\n\n- **Positive.** Drift becomes measurable per epic. A per-epic baseline is\n  fairer than a whole record that no single pull request was going to satisfy.\n\n- **Constraint introduced.** The two plugins join through\n  `docs/architecture/designs/<name>/intent.json` and never through a code call.\n  Design mode does no epic decomposition, and cobuilder-implement does no\n  architecture interview.\n\n- **Constraint introduced.** The contract path appears in two plans. **A change\n  to the path in one plan must change the other in the same commit, or the\n  contract breaks silently.** The failure mode is not an error. The reader\n  finds no file and falls back to drafting a Business Spec from scratch, which\n  looks like normal operation. A reader that finds no file must report that it\n  looked and found nothing.\n\n- **Amends ADR-0011.** That record is not approved, so this one amends it\n  rather than superseding it. The amended parts are the scalar `branch` field,\n  the one-design-to-one-pull-request assumption, and the addition of the\n  one-or-several question at the last stage.\n\n- **Risk carried.** The split depends on design mode never growing a\n  decomposition step. A future session that adds one recreates the duplication\n  this record exists to prevent.\n\n## Value delivered\n\n- **New capability.** An engineer designs a change in cobuilder-architect,\n  builds it with cobuilder-implement, and every epic's pull request points back\n  at the design.\n- **Benefit.** One design tracks to completion across many pull requests, and\n  neither tool carries a weaker copy of the other's job.\n- **Beneficiary.** The developer designing and building, the reviewer tracing a\n  pull request to its design, and the business reading a delivered design.\n\n## Maps to\n\nDistricts `skills` and `docs` from `.cobuilder-architect/self/inventory.yaml`.\n",
+    "maps_to": {
+      "district": "skills",
+      "unanchored": true,
+      "modules": [
+        "skills",
+        "docs"
+      ],
+      "rule": "The two plugins join through docs/architecture/designs/<name>/intent.json and never through a code call. Design mode does no epic decomposition; cobuilder-implement does no architecture interview."
+    },
+    "history": [
+      {
+        "state": "decided",
+        "date": "2026-08-19",
+        "note": "Recorded from the cobuilder-implement design. Amends ADR-0011's one-design-to-one-pull-request assumption. Chosen on this branch; not approved until a human merges."
+      }
+    ]
+  },
   "ADR-0014": {
     "id": "ADR-0014",
     "title": "Authored source lives in docs/; the bundle is derived",

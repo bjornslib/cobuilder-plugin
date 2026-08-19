@@ -15,61 +15,102 @@ window.STORY = {
   "world": {
     "districts": [
       {
-        "id": ".prodyssey",
-        "label": "Central Bundle Cache",
-        "kind": "tooling",
-        "files": 78,
-        "blurb": "Hub-local scratch for centrally-stored bundles and view-server bookkeeping (per-repo-slug subfolders, active symlink, view-server pid/log) — currently holds test-run bundles from prior sessions committed to git rather than gitignored.",
+        "id": "skills",
+        "label": "Skills",
+        "kind": "core",
+        "files": 292,
+        "blurb": "Four skills, invoked by name, not by path: odyssey holds the orchestration procedure and its on-demand references (story-mode, decision-records-lite, baseline-derivation, design-mode, stack cards). architecture holds review, maintenance, design, decisions, describe, and debug modes. mermaid authors the Mermaid diagrams. ste-writing is a dev-local linter for plain-English prose, and it never ships with the plugin.",
         "root_paths": [
-          ".prodyssey"
-        ]
-      },
-      {
-        "id": "commands",
-        "label": "Slash Commands",
-        "kind": "tooling",
-        "files": 5,
-        "blurb": "Thin dispatchers (baseline.md, generate.md, view.md) that forward arguments straight into the odyssey skill — no logic of their own.",
-        "root_paths": [
-          "commands"
+          "skills"
         ]
       },
       {
         "id": "scripts",
-        "label": "Generation Scripts",
+        "label": "Scripts",
         "kind": "core",
-        "files": 17,
-        "blurb": "PEP 723 uv scripts doing the mechanical data movement the skill orchestrates: extract_story, extract_diffs, generate_prompts, generate_audio, verify_bundle.",
+        "files": 18,
+        "blurb": "Eighteen PEP 723 uv scripts that move data mechanically. Each skill mode calls them; none of them author narrative, ADRs, or diagrams. build_adrs.py and build_designs.py compile authored markdown into JSON the viewer reads. render_review.py lays out an assessment without judging it.",
         "root_paths": [
           "scripts"
         ]
       },
       {
-        "id": "skills",
-        "label": "Odyssey Skill",
-        "kind": "core",
-        "files": 53,
-        "blurb": "SKILL.md orchestration procedure plus on-demand reference docs (story-mode, decision-records-lite, baseline-derivation, adr-template, per-stack detection cards) that hold all the judgment-shaped guidance.",
+        "id": "commands",
+        "label": "Commands",
+        "kind": "tooling",
+        "files": 12,
+        "blurb": "Thin dispatchers, one per mode (baseline, generate, view, publish, submit, design, review, maintenance, decisions, describe, debug, explore-design). Each forwards its arguments straight into a skill and holds no logic of its own.",
         "root_paths": [
-          "skills"
+          "commands"
+        ]
+      },
+      {
+        "id": "viewer",
+        "label": "Viewer",
+        "kind": "core",
+        "files": 1,
+        "blurb": "One HTML file that renders a generated bundle: story timeline, ADR sheet, assessment sheet, and Mermaid diagrams. It depends on sibling data files inside a real bundle directory, and it is not a self-contained artifact as-is.",
+        "root_paths": [
+          "viewer"
+        ]
+      },
+      {
+        "id": "docs",
+        "label": "Docs",
+        "kind": "authored-source",
+        "files": 40,
+        "blurb": "Authored source that no script regenerates: architecture decision records under architecture/adr and adr, design proposals under architecture/designs, two architecture review reports, a plan for cobuilder-factory, and staged pull-request content under pull-requests. Submit and design mode write here. Generate mode never does.",
+        "root_paths": [
+          "docs"
+        ]
+      },
+      {
+        "id": ".cobuilder-architect",
+        "label": "Bundle Store",
+        "kind": "tooling",
+        "files": 85,
+        "blurb": "The plugin's own generated output, committed alongside the code it narrates. self holds this repo's own bundle. Two named subfolders hold committed test fixtures generated against other local checkouts. An active symlink and view-server pid and log files are the only entries meant to stay out of git.",
+        "root_paths": [
+          ".cobuilder-architect"
         ]
       }
     ]
   },
   "timeline": [
     {
-      "pr": 2,
+      "pr": 1,
       "date": "2026-07-22",
+      "title": "Master",
+      "tagline": "",
+      "depth": "summary",
+      "size": {
+        "files": 29,
+        "adds": 6159,
+        "dels": 40
+      },
+      "touched": {
+        "(root)": 2,
+        ".prodyssey": 22,
+        "commands": 3,
+        "skills": 2
+      },
+      "levels": {},
+      "status": "merged",
+      "commit": "7bd668f"
+    },
+    {
+      "pr": 2,
+      "date": "2026-07-24",
       "title": "docs: add CLAUDE.md with codebase orientation + artifact feasibility findings",
       "tagline": "This PR proposes an orientation doc, plus a full pipeline that turns any generated PR narrative into a shareable Claude Artifact.",
       "depth": "detailed",
       "size": {
-        "files": 29,
-        "adds": 7586,
-        "dels": 43
+        "files": 31,
+        "adds": 7850,
+        "dels": 51
       },
       "touched": {
-        ".odyssey": 16,
+        ".odyssey": 18,
         ".prodyssey": 3,
         "(root)": 2,
         "commands": 1,
@@ -196,8 +237,8 @@ window.STORY = {
           ]
         }
       },
-      "status": "open",
-      "commit": "70f51543af31cc77e1a5505a8225ba5a6c07b53e"
+      "status": "merged",
+      "commit": "96c1531"
     },
     {
       "pr": 3,
@@ -211,10 +252,10 @@ window.STORY = {
         "dels": 428
       },
       "touched": {
-        ".claude": 3,
         ".claude-plugin": 1,
-        ".prodyssey": 29,
+        ".claude": 3,
         "(root)": 3,
+        ".prodyssey": 29,
         "commands": 3,
         "scripts": 7,
         "skills": 5
@@ -341,7 +382,9 @@ window.STORY = {
             }
           ]
         }
-      }
+      },
+      "status": "merged",
+      "commit": "fb4be22"
     },
     {
       "pr": 4,
@@ -349,7 +392,7 @@ window.STORY = {
       "title": "Mermaid diagrams for levels 1-3, and self-upgrading bundles",
       "tagline": "This PR proposes a second visual family alongside Gemini scene art — text-only Mermaid diagrams authored by a per-PR subagent — plus a mechanism that upgrades any older bundle in place before a session touches it.",
       "depth": "detailed",
-      "status": "open",
+      "status": "merged",
       "size": {
         "files": 71,
         "adds": 23349,
@@ -357,14 +400,14 @@ window.STORY = {
       },
       "touched": {
         ".claude-plugin": 1,
-        ".prodyssey": 16,
         "(root)": 3,
+        ".prodyssey": 16,
         "commands": 1,
         "scripts": 8,
         "skills": 41,
         "viewer": 1
       },
-      "commit": "a3119dbac24e7ec3d4cdb2e13513be718f736249",
+      "commit": "065654d",
       "adrs": [
         "ADR-0005",
         "ADR-0006"
@@ -851,20 +894,59 @@ window.STORY = {
       ]
     },
     {
+      "pr": 7,
+      "date": "2026-08-05",
+      "title": "Pr Odyssey Improvements 7Suouc",
+      "tagline": "",
+      "depth": "summary",
+      "size": {
+        "files": 8,
+        "adds": 129,
+        "dels": 73
+      },
+      "touched": {
+        ".prodyssey": 6,
+        "scripts": 1,
+        "viewer": 1
+      },
+      "levels": {},
+      "status": "merged",
+      "commit": "630aa4f"
+    },
+    {
+      "pr": 8,
+      "date": "2026-08-06",
+      "title": "Ste Writing Style Claude Fd5Fzs",
+      "tagline": "",
+      "depth": "summary",
+      "size": {
+        "files": 1,
+        "adds": 44,
+        "dels": 10
+      },
+      "touched": {
+        "(root)": 1
+      },
+      "levels": {},
+      "status": "merged",
+      "commit": "d9a81d7"
+    },
+    {
       "pr": 9,
       "date": "2026-08-06",
       "title": "Deduplicate rewrite_manifest(); add interview self-consistency check; STE clarity pass",
       "tagline": "Three duplicate copies of one function become one, and submit mode's own interview now checks the author's account against itself before writing anything down.",
       "depth": "detailed",
       "size": {
-        "files": 30,
-        "adds": 1204,
-        "dels": 1098
+        "files": 45,
+        "adds": 2893,
+        "dels": 670
       },
       "touched": {
-        ".prodyssey": 13,
+        ".prodyssey": 27,
         "scripts": 4,
-        "skills": 13
+        "skills": 13,
+        "viewer": 1
       },
       "levels": {
         "landscape": {
@@ -980,8 +1062,8 @@ window.STORY = {
           ]
         }
       },
-      "status": "open",
-      "commit": "d27793e49425ac5553a9d608ed4db25658b76216",
+      "status": "merged",
+      "commit": "139de94",
       "intent": {
         "captured": "2026-08-06",
         "source": "author",
@@ -1078,6 +1160,25 @@ window.STORY = {
       "adrs": [
         "ADR-0010"
       ]
+    },
+    {
+      "pr": 10,
+      "date": "2026-08-06",
+      "title": "Swift Best Practices Fbx48M",
+      "tagline": "",
+      "depth": "summary",
+      "size": {
+        "files": 7,
+        "adds": 329,
+        "dels": 8
+      },
+      "touched": {
+        "(root)": 1,
+        "skills": 6
+      },
+      "levels": {},
+      "status": "merged",
+      "commit": "6b2fce6"
     }
   ]
 };
