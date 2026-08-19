@@ -28,7 +28,7 @@ These modes are self-only. They analyse the session's own repo. Odyssey can targ
 
 **Content-inferred fallback:** If the user says "help me design this" without a mode argument, infer `design`. If "audit my codebase", infer `review`. If "record this decision" / "create an ADR" / "extract decisions from this PR", infer `decisions`. If "document this module/context" / "write the boundary record", infer `describe`. If "why is X failing" / "find the root cause" / "debug this", infer `debug`.
 
-Narrated per-PR story generation (explain-diff narratives, scene art, voice narration) is not part of this skill. It lives in the separate `prodyssey` plugin (https://github.com/bjornslib/prodyssey), which produces four-level narrated codebase stories.
+Narrated per-PR story generation (explain-diff narratives, scene art, voice narration) is not part of this skill. It lives in the `odyssey` skill in this plugin.
 
 ## Repo
 

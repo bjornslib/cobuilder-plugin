@@ -5,48 +5,68 @@ Guidance for Claude Code instances working in this repo.
 ## What this repo is
 
 **cobuilder-architect** is a Claude Code plugin (`.claude-plugin/`), not an app with a
-build/test/deploy cycle. It has one job. It turns the merged PRs of *any*
-locally checked-out git repo into a four-level narrated "codebase odyssey":
-scene art, voice narration, and retro-extracted ADRs, in a portable HTML
-viewer. The target is the session's own repo, or any other checkout reached
-through `--repo`.
+build/test/deploy cycle. It covers design, submit, and review: the
+architecture lifecycle except build. It also narrates the merged PRs of a
+locally checked-out git repo. The result is a four-level story with scene
+art, voice narration, and retro-extracted ADRs, in a portable HTML viewer.
 
-Submit mode is the one part that does not narrate history. It runs before the
-history exists — it interviews the author of a change, assesses that change
-against the bundle, and opens the pull request. It exists because the rest of
-the plugin spends real effort reconstructing intent that nobody wrote down.
-Capture the intent at submit time, and generate mode stops guessing. See
-Submit mode below, and `skills/odyssey/references/{interview-guide,review-mode}.md`.
+The five Odyssey modes still take `--repo`. The six architecture modes are
+self-only. They analyze the session's own repo and refuse a foreign target.
 
-Where the bundle lands depends on the target. Analyzing your own repo writes
-to `<target>/.cobuilder-architect/self/` — that is the case with no `--repo`, or with
-`--repo` that resolves to the session's own checkout. Analyzing a foreign
-repo writes instead to `<hub>/.cobuilder-architect/<repo-slug>/`, where `<hub>` is the
-session's own repo, never the foreign one. `--store local|central` overrides
-the automatic choice. See `skills/odyssey/SKILL.md`'s Hub resolution section
+Submit mode is the one Odyssey path that does not narrate history. It runs
+before the history exists. It interviews the author of a change, assesses
+that change against the bundle, and opens the pull request.
+
+It exists because the rest of the plugin spends real effort reconstructing
+intent that nobody wrote down. Capture the intent at submit time, and
+generate mode stops guessing. This branch extends the plugin to capture
+intent before code exists. See Submit mode below, and
+`skills/odyssey/references/{interview-guide,review-mode}.md`.
+
+Where the Odyssey bundle lands depends on the target. Analyzing your own
+repo writes to `<target>/.cobuilder-architect/self/`. That is the case with
+no `--repo`, or with `--repo` that resolves to the session's own checkout.
+Analyzing a foreign repo writes instead to
+`<hub>/.cobuilder-architect/<repo-slug>/`, where `<hub>` is the session's
+own repo, never the foreign one. `--store local|central` overrides the
+automatic choice. See `skills/odyssey/SKILL.md`'s Hub resolution section
 for the exact rule and slug derivation.
 
 Install surface: `/plugin marketplace add bjornslib/cobuilder-architect` then
-`/plugin install cobuilder-architect@cobuilder-architect`. No agents, no hooks, no MCP servers —
-deliberate, so the plugin never touches another session's permission surface.
-The plugin ships two skills. `odyssey` is the orchestration skill this file
-describes. `mermaid` holds the authoring rules for the Mermaid diagrams
-below. The diagram-authoring subagent that `odyssey` spawns invokes
-`mermaid` for itself. The orchestrating Claude never invokes it directly.
+`/plugin install cobuilder-architect@cobuilder-architect`. No agents, no hooks, no MCP servers.
+That is deliberate, so the plugin never touches another session's permission
+surface.
+
+The plugin ships four skills. They are `odyssey`, `architecture`, `mermaid`,
+and `ste-writing`.
+
+`odyssey` orchestrates the five history modes this file describes.
+`architecture` runs the six self-only modes. `mermaid` holds the authoring
+rules for the Mermaid diagrams below. The diagram-authoring subagent that
+`odyssey` spawns invokes `mermaid` for itself. The orchestrating Claude never
+invokes it directly.
 
 See `README.md` for the user-facing install and usage doc, and for the
-extraction manifest. That manifest records what was ported from
-`architecture-review-design-maintenance`, and what was deliberately left
-behind. Do not duplicate that content here. This file is for orientation,
-and for the things a future coding session cannot get from reading the
-files.
+extraction manifest. That manifest records what Odyssey took from
+`architecture-review-design-maintenance`. The architecture skill is now in
+this plugin. Do not duplicate that content here. This file is for
+orientation, and for the things a future coding session cannot get from
+reading the files.
 
 ## Layout
 
 ```
 .claude-plugin/       plugin.json (manifest) + marketplace.json
-commands/              thin dispatchers: baseline.md, generate.md, view.md,
-                       publish.md, submit.md → Skill("odyssey", args=...)
+commands/              thin dispatchers. Odyssey five:
+                       baseline.md, generate.md, view.md, publish.md,
+                       submit.md → Skill("odyssey", args=...)
+                       Architecture six:
+                       review.md, maintenance.md, decisions.md,
+                       describe.md, debug.md, explore-design.md
+                       → Skill("architecture", args=...)
+                       explore-design is the architecture skill's
+                       divergent-exploration pass, not a seven-stage
+                       design mode.
 skills/
   odyssey/
     SKILL.md          orchestration: prereq gate → baseline → per-PR sweep →
@@ -55,17 +75,32 @@ skills/
                        baseline-derivation, diagram-mode, review-mode,
                        interview-guide, adr-template, pr-description-template,
                        stacks/*)
+  architecture/       six self-only modes: review, maintenance, decisions,
+                       describe, debug, explore-design
   mermaid/            authoring rules for the Mermaid diagrams below; not
-                       invoked by the orchestrating Claude directly — the
+                       invoked by the orchestrating Claude directly. The
                        per-PR diagram-authoring subagent invokes it as
                        Skill("cobuilder-architect:mermaid")
-scripts/              11 PEP-723 uv scripts, called by the skill, never edited by it:
+  ste-writing/        STE writing rules and ste-lint.py
+scripts/              PEP-723 uv scripts, called by the skill, never edited by it:
                        extract_story.py, generate_prompts.py, generate_audio.py,
-                       extract_diffs.py, build_diagrams.py, verify_bundle.py,
-                       export_artifact.py, export_index.py, record_publish.py,
-                       migrate_bundle.py, render_review.py
+                       extract_diffs.py, build_diagrams.py, build_adrs.py,
+                       validate_decision_state.py, compute_scores.py,
+                       html_to_pdf.py, verify_bundle.py, export_artifact.py,
+                       export_index.py, record_publish.py, migrate_bundle.py,
+                       render_review.py
 viewer/index.html      the bundle viewer (~2000 lines, single file, see below)
 ```
+
+Two roots hold output.
+
+`docs/` holds authored, git-visible, self-only files:
+`docs/architecture/adr/`, `docs/architecture/designs/`,
+`docs/architecture/review/`, `docs/architecture/contexts/`,
+`docs/pull-requests/`.
+
+`.cobuilder-architect/` is the bundle: derived projections and binary
+assets. Odyssey `--repo` still writes foreign bundles here under a slug.
 
 (`scripts/` is top-level, a sibling of `skills/`, not nested under
 `skills/odyssey/` — `SKILL.md` calls it via `${CLAUDE_PLUGIN_ROOT}/scripts/...`.)
@@ -84,12 +119,16 @@ the world districts. `generate` mode is per-PR and resumable.
 can therefore run again without regenerating completed narrative, art, or
 audio. `--force` overrides this.
 
-Narrative authoring and ADR extraction are **Claude judgment work**, done
-directly against `data/story.json` and `data/adrs.json`, and never delegated
-to a script. Scripts only move data: diffs, image prompts, audio, diagram
-compilation, and verification. Diagram authoring is also Claude judgment
+Narrative authoring and ADR extraction are **Claude judgment work**, never
+delegated to a script. Claude writes the narrative into `data/story.json`. ADR
+extraction writes `docs/architecture/adr/*.md` and then runs
+`scripts/build_adrs.py`, which compiles the markdown into the self-bundle
+projection. Never write `data/adrs.json` by hand.
+
+Scripts only move data: diffs, image prompts, audio, diagram compilation,
+ADR compilation, and verification. Diagram authoring is also Claude judgment
 work, but the orchestrating Claude never writes the `.mmd` files itself. It
-spawns a per-PR subagent to do that — see Generate mode in
+spawns a per-PR subagent to do that. See Generate mode in
 `skills/odyssey/SKILL.md`. It then runs `scripts/build_diagrams.py`, which
 compiles the subagent's `.mmd` files into `data/diagrams.js` and validates
 them.
@@ -237,7 +276,10 @@ and migration below.
   .migration-backup/  # pre-migration story.json snapshots, written by migrate_bundle.py
 
 <repo>/
+  docs/architecture/adr/ADR-NNNN-<slug>.md                    # generate writes these
   docs/architecture/designs/<name>/{goal,intent,assessment}.json, adr-draft.md, pr-draft.md
+  docs/architecture/review/                                  # /review and /maintenance reports
+  docs/architecture/contexts/
   docs/pull-requests/pr-<N>/{description,assessment}.md
   docs/pull-requests/branch-<slug>/{intent,assessment}.json, {description,assessment}.md
 ```
@@ -361,16 +403,17 @@ hand.
 
 ## Conventions worth preserving
 
-- Never touch anything in `<target>` outside `<target>/.cobuilder-architect/self/`.
-  `<hub>/.cobuilder-architect/` is also a sanctioned write location, for
-  centrally-stored foreign-repo bundles and for view-server bookkeeping.
+- **Authored source lives in `docs/`.** Derived projections live in the
+  bundle. `.cobuilder-architect/` is not a document store. `docs/` is a
+  sanctioned write location for self-analysis. Architecture modes never
+  take `--repo`. The five Odyssey commands still do.
 - `extract_story.py` never overwrites an authored narrative field for a PR
   already in `story.json`. A new PR gets a minimal stub. A second run is
   safe.
-- `--repo <path>` works on the skill and on all five commands. It targets
-  any local checkout, not only the session's own working directory. The Hub
-  resolution storage rule decides where the bundle lands:
-  `<target>/.cobuilder-architect/self/` for self-analysis, or
+- `--repo <path>` works on the five Odyssey commands, not on the architecture
+  six. It targets any local checkout, not only the session's own working
+  directory. The storage rule in Hub resolution decides where the bundle
+  lands: `<target>/.cobuilder-architect/self/` for self-analysis, or
   `<hub>/.cobuilder-architect/<repo-slug>/` for a foreign repo. `--store
   local|central` overrides it.
 - Everything judgment-shaped lives in `references/*.md` prose, loaded on
@@ -379,8 +422,9 @@ hand.
   what a diagram should show.
 - `build_diagrams.py` only compiles and validates the `.mmd` files that a
   subagent already wrote. It never authors diagram content itself.
-  `extract_story.py` and the audio and prompt scripts follow the same rule
-  for narrative and art.
+  `build_adrs.py` is the same rule for ADRs: full rebuild of the self-bundle
+  projection, never a merge, never authoring. `extract_story.py` and the
+  audio and prompt scripts follow the same rule for narrative and art.
 
 ## Writing standard
 
@@ -426,15 +470,10 @@ support, is still a defect there. The `--style ste` register
 unrelaxed rules, and this section changes nothing about that choice.
 
 Judge a draft by rereading it against the rules above. `ste-writing` also
-ships `.claude/skills/ste-writing/ste-lint.py`, a rules-only linter that
-scores violations per 100 words, for a quick optional check.
-
-The `ste-writing` skill lives under `.claude/skills/` on purpose, and it
-does not ship with the plugin. An install of `cobuilder-architect@cobuilder-architect` gets
-exactly the two skills under `skills/` in this repo, `odyssey` and
-`mermaid`, and never a third. That matches the minimal install surface
-above. `ste-writing` stays a repo-local dev tool instead. The linter checks
-rules only. It does not certify ASD-STE100 dictionary compliance.
+ships `skills/ste-writing/ste-lint.py`, a rules-only linter that scores
+violations per 100 words, for a quick optional check. The linter checks
+rules only. It does not certify ASD-STE100 dictionary compliance. The
+install constraint is no agents, no hooks, and no MCP servers.
 
 ## Recent history
 
@@ -448,6 +487,11 @@ alternative to Gemini scene art, adding the `mermaid` skill and
 `submit` mode, which reverses part of the review-mode exclusion recorded in
 `README.md`'s extraction manifest and adds schema 1.2, the
 `interview-guide`/`review-mode` references, `render_review.py`, and the
-viewer's assessment sheet.
+viewer's assessment sheet → merge of the architecture skill (corpus, books,
+review / maintenance / decisions / describe / debug, `compute_scores.py`,
+`html_to_pdf.py`) → rename from prodyssey to cobuilder-architect → ADR-store
+unification (`docs/architecture/adr/` as source, `build_adrs.py` as the
+self-bundle projection) → authored designs and PR docs moved into `docs/`.
+Design mode is not shipped.
 No test suite, no CI config, no package manager — this is prose + Python
 scripts + one HTML file.
