@@ -73,8 +73,8 @@ skills/
                        submit → view → publish → verify
     references/       loaded on demand (story-mode, decision-records-lite,
                        baseline-derivation, diagram-mode, review-mode,
-                       interview-guide, adr-template, pr-description-template,
-                       stacks/*)
+                       interview-guide, design-mode, adr-template,
+                       pr-description-template, stacks/*)
   architecture/       six self-only modes: review, maintenance, decisions,
                        describe, debug, explore-design
   mermaid/            authoring rules for the Mermaid diagrams below; not
