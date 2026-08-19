@@ -373,12 +373,13 @@ Per-PR narrative + ADR + art + audio sweep. Steps:
       alone are not enough. See `references/story-mode.md` §2a for the exact
       `kind` values per level and worked guidance.
    2. **ADR retro-extraction**. Follow `references/decision-records-lite.md`.
-      Write/update `data/adrs.json` and `data/adrs.js`, and set this PR's `adrs[]`
-      array in `story.json` to the resulting record ids. When the PR carries an
-      `intent` block, §7 of that reference applies: take `alternatives` from
-      the author instead of hunting for traces of them, and mark the record
-      `provenance: authored`. An unmerged PR's record is `state: proposed`,
-      not `approved` (§3.2).
+      Write the markdown record under `docs/architecture/adr/`, then run
+      `uv run "${CLAUDE_PLUGIN_ROOT}/scripts/build_adrs.py"`. Never write
+      `data/adrs.json` by hand. Set this PR's `adrs[]` array in `story.json`
+      to the resulting record ids. When the PR carries an `intent` block,
+      take `alternatives` from the author instead of hunting for traces of
+      them, and mark the record `provenance: authored`. A retro-created
+      record is `state: decided`, never `approved`.
    3. **Diff extraction**:
       ```bash
       uv run "${CLAUDE_PLUGIN_ROOT}/scripts/extract_diffs.py" --repo <target> --bundle-dir <bundle-dir> --prs <N>

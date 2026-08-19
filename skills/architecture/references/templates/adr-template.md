@@ -35,7 +35,7 @@ delivers:                  # MANDATORY value facet
   # addresses_problem: P1|P2|P3|P4
 # source_pr: NN            # retro-extraction only
 related:
-  - "{doc_root}/architecture/contexts/<context-id>/boundary.yaml"
+  - "{doc_root}/contexts/<context-id>/boundary.yaml"
 ---
 
 # ADR-NNNN — <decision name>

@@ -38,7 +38,7 @@ really happened. Start every record from `templates/adr-template.md`.
 | `related_decisions` | — | Typed edges: `depends-on`, `caused-by`, `is-excluded-by`, `replaces`, `is-alternative-for`, `is-related-to`. Use `is-related-to` for group siblings; reserve `caused-by`/`depends-on` for real causality/dependency. |
 | `related_concerns` | — | van Heesch concern codes (C1–C23) |
 | `history` | ✅ | `{state, date, by?, source?, note?}` entries, oldest first (§5 integrity) |
-| `maps_to` | ✅ | `{context, modules[], rule}` — the structural anchor. `context` must exist in `{doc_root}/architecture/contexts/<id>/boundary.yaml`; `rule` must be consistent with that boundary record. |
+| `maps_to` | ✅ | `{context, modules[], rule}` — the structural anchor. `context` must exist in `{doc_root}/contexts/<id>/boundary.yaml`; `rule` must be consistent with that boundary record. If no context exists yet, set `unanchored: true` and prefer `district` over `context`. |
 | `delivers` | ✅ | `{capability, benefit, beneficiary[], enables[]?, addresses_problem?}` — the value facet (§4) |
 | `source_pr` | retro only | PR number the decision was extracted from |
 | doc-gardener fields | ✅ | `title`, `status: active`, `type: architecture`, `last_verified`, `owner` |
