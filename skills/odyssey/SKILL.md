@@ -757,7 +757,7 @@ Two references govern it, both loaded on demand:
    the three questions with evidence, the stack card's boundary greps, the
    district delta, the risk tier, `regret_risk`, and the verdict.
 7. **Render, then open the PR.** Write `intent.json` and `assessment.json` into
-   the branch staging directory (branch target) or the two blocks onto the
+   `docs/pull-requests/branch-<slug>/` (branch target) or the two blocks onto the
    timeline entry (PR target), then:
    ```bash
    uv run "${CLAUDE_PLUGIN_ROOT}/scripts/render_review.py" --repo <target> --bundle-dir <bundle-dir> {--prs <N> | --branch [<ref>]}
@@ -819,7 +819,7 @@ about whether to open the PR at all.
      pick. This mode reports. It never gates.
 3. **Create it:**
    ```bash
-   gh pr create --base <base> --head <branch> --title "<title>" --body-file <bundle-dir>/exports/branch-<slug>/description.md [--draft]
+   gh pr create --base <base> --head <branch> --title "<title>" --body-file docs/pull-requests/branch-<slug>/description.md [--draft]
    ```
    Then read the number back with `gh pr view --json number`.
 4. **Continue at pre-stage step 8** with that number.
@@ -827,7 +827,7 @@ about whether to open the PR at all.
 **Three cases end at the staging directory instead**, and all three are normal:
 `--no-create`, `gh` missing or unauthenticated, and the author declining at
 step 2. In each, tell the user where the files landed
-(`<bundle-dir>/exports/branch-<slug>/`), print the exact `gh pr create` line
+(`docs/pull-requests/branch-<slug>/`), print the exact `gh pr create` line
 above so nothing is lost, and say that re-running `/cobuilder-architect:submit` once the
 PR exists files the content into `story.json`.
 

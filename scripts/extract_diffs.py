@@ -28,9 +28,11 @@ mode's interview reads before the PR exists. It writes JSON to
 `<bundle-dir>/exports/branch-<slug>/diff.json` and touches NOTHING under
 `data/` — story.json keys on an integer `pr`, so a branch cannot enter the
 timeline, and a synthetic key would leak into verify_bundle.py, the viewer,
-and the publish manifest. The PR number arrives when submit mode opens the
-PR; the content is filed under it then. A branch diff always overwrites,
-because the branch tip is the point.
+and the publish manifest. Authored `intent.json` and `assessment.json` live
+under `docs/pull-requests/branch-<slug>/`, not next to this cache. This
+script never writes those files. The PR number arrives when submit mode
+opens the PR; the content is filed under it then. A branch diff always
+overwrites, because the branch tip is the point.
 
 Usage:
     uv run extract_diffs.py --repo <path> --prs 73,75
