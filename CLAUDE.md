@@ -57,16 +57,16 @@ reading the files.
 
 ```
 .claude-plugin/       plugin.json (manifest) + marketplace.json
-commands/              thin dispatchers. Odyssey five:
+commands/              thin dispatchers. Odyssey six:
                        baseline.md, generate.md, view.md, publish.md,
-                       submit.md → Skill("odyssey", args=...)
+                       submit.md, design.md → Skill("odyssey", args=...)
                        Architecture six:
                        review.md, maintenance.md, decisions.md,
                        describe.md, debug.md, explore-design.md
                        → Skill("architecture", args=...)
                        explore-design is the architecture skill's
-                       divergent-exploration pass, not a seven-stage
-                       design mode.
+                       divergent-exploration pass. Design mode wraps
+                       it as stage 3.
 skills/
   odyssey/
     SKILL.md          orchestration: prereq gate → baseline → per-PR sweep →
