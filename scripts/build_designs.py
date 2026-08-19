@@ -53,6 +53,8 @@ GOAL_FIELDS = (
     "epics",
     "stage",
     "supersedes",
+    "adr",
+    "adrs",
     "rounds",
 )
 EPIC_FIELDS = ("id", "slug", "branch", "pr", "state", "outcome")
@@ -258,6 +260,33 @@ def main() -> None:
                     failures.append(assessment_shape)
                 elif assessment is not None:
                     record["assessment"] = assessment
+
+        narrative_path = path.parent / "narrative.json"
+        if narrative_path.is_file():
+            narrative_rel = (
+                narrative_path.relative_to(repo)
+                if narrative_path.is_relative_to(repo)
+                else narrative_path
+            )
+            narrative_raw, narrative_error = load_json(narrative_path)
+            if narrative_error:
+                failures.append(f"{narrative_rel}: {narrative_error}")
+            elif not isinstance(narrative_raw, dict):
+                failures.append(f"{narrative_rel}: narrative.json must be an object")
+            else:
+                record["narrative"] = narrative_raw
+
+        diagrams: dict[str, str] = {}
+        diagrams_dir = path.parent / "diagrams"
+        if diagrams_dir.is_dir():
+            for level in (1, 2, 3):
+                mmd = diagrams_dir / f"level-{level}.mmd"
+                if mmd.is_file():
+                    text = mmd.read_text()
+                    if text.strip():
+                        diagrams[str(level)] = text
+        if diagrams:
+            record["diagrams"] = diagrams
 
         records[name] = record
 
