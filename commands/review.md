@@ -13,12 +13,9 @@ linked, self-contained HTML reports: a technical report first, then a
 founder-facing one, each carrying a 0-100 health score and letter grade. The
 full 14-file security corpus is loaded unconditionally for every review.
 
-Pass `--repo <path>` to audit any local checkout rather than the current
-repo, and `--store local|central` to override where the reports land.
-Reports land in `<out-dir>/reports/` — `.archkit/self/reports/` for
-self-analysis, or the per-hub cache (`<hub>/.archkit/<repo-slug>/reports/`)
-for a foreign repo passed via `--repo`, so foreign checkouts are never
-written into unless `--store local` overrides that.
+This mode is self-only. It analyses the session's own repo. Reports land in
+`docs/architecture/review/`. If the user asks to analyse a different local
+checkout, or to override where output lands, the skill will refuse.
 
 Invoke the `architecture` skill in review mode, forwarding any arguments the
 user supplied after `/archkit:review`:

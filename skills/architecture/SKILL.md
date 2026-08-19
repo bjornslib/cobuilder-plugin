@@ -15,14 +15,14 @@ A mode-switchable skill for six use cases: system design (architecture decisions
 Accept a mode argument when the skill is invoked, or prompt if none is provided.
 
 **Argument-based invocation:**
-- `/archkit:design [--repo <path>] [--store local|central]` -- Design mode
-- `/archkit:review [--repo <path>] [--store local|central]` -- Review mode
-- `/archkit:maintenance [--repo <path>] [--store local|central]` -- Maintenance mode
-- `/archkit:decisions [--repo <path>] [--store local|central]` -- Decision Records mode
-- `/archkit:describe [--repo <path>] [--store local|central]` -- Architecture Description mode
-- `/archkit:debug [--repo <path>] [--store local|central]` -- Debug mode
+- `/archkit:design` -- Design mode
+- `/archkit:review` -- Review mode
+- `/archkit:maintenance` -- Maintenance mode
+- `/archkit:decisions` -- Decision Records mode
+- `/archkit:describe` -- Architecture Description mode
+- `/archkit:debug` -- Debug mode
 
-`--repo <path>` points any mode at a different local checkout instead of the session's own repo (see Target and output resolution below); `--store` overrides where output lands. With `--repo`, analysis executes inside the target the same way it does locally -- debug mode reproduces the bug there, checklists and corpus scans run there -- so pointing it at an unfamiliar clone runs that clone's code.
+These modes are self-only. They analyse the session's own repo. Odyssey can target another checkout; architecture cannot. If the user asks to analyse a different local checkout, or to override where output lands, refuse.
 
 **Interactive fallback:** If invoked without an argument, prompt: "Which mode? (design / review / maintenance / decisions / describe / debug)". Do not assume review mode by default.
 
@@ -30,72 +30,27 @@ Accept a mode argument when the skill is invoked, or prompt if none is provided.
 
 Narrated per-PR story generation (explain-diff narratives, scene art, voice narration) is not part of this skill. It lives in the separate `prodyssey` plugin (https://github.com/bjornslib/prodyssey), which produces four-level narrated codebase stories.
 
-## Target and output resolution
+## Repo
 
-Every mode operates against a target repo that may or may not be the repo the session is running in.
+The repo is always the session's own git toplevel. Normalise it once with `git rev-parse --show-toplevel`. There is no foreign target.
 
-- `<target>` -- the repo being analysed. From `--repo <path>` if given, else the session's own git toplevel. Always normalise with `git -C <path> rev-parse --show-toplevel`, so pointing `--repo` at a subdirectory resolves to that repo's root.
-- `<hub>` -- the session's OWN git toplevel. Never affected by `--repo`. This is the bookkeeping root, and it is also where a foreign target's output lands.
-- `<out-dir>` -- computed once at the top of every invocation from `<target>` and `<hub>`. It is the only path any mode writes to; no mode references a literal output path directly.
-
-**Resolution:**
-
-```bash
-STORE_MODE="<local|central from --store, else empty>"
-HUB_TOPLEVEL=$(git -C "<hub>" rev-parse --show-toplevel)
-TARGET_TOPLEVEL=$(git -C "<target>" rev-parse --show-toplevel)
-
-if [ "$STORE_MODE" = "central" ] || { [ "$STORE_MODE" != "local" ] && [ "$HUB_TOPLEVEL" != "$TARGET_TOPLEVEL" ]; }; then
-  OUT_DIR="$HUB_TOPLEVEL/.archkit/$SLUG"      # foreign
-else
-  OUT_DIR="$TARGET_TOPLEVEL/.archkit/self"    # self
-fi
-```
-
-The comparison is toplevel-to-toplevel, not raw path -- this is what makes `--repo .`, `--repo ./skills`, and a trailing-slash form all correctly resolve to self instead of being misread as foreign.
-
-**Slug** (`$SLUG`, computed only on the foreign branch above): basename of the `origin` remote URL with `.git` stripped, falling back to the target path's basename when there is no origin; lowercased; non-alphanumerics collapsed to `-`; runs of `-` collapsed; leading/trailing `-` trimmed; then `-` plus the first 8 characters of `shasum` of the resolved absolute target path (the path, not the remote):
-
-```bash
-REMOTE=$(git -C "<target>" remote get-url origin 2>/dev/null)
-NAME=$(basename "${REMOTE:-<target>}" .git)
-NAME=$(printf '%s' "$NAME" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9' '-' | sed 's/-\{1,\}/-/g; s/^-//; s/-$//')  # POSIX form deliberate: \+ is a GNU-only sed extension, silently a no-op on macOS/BSD sed
-HASH=$(printf '%s' "<resolved-abs-target-path>" | shasum | cut -c1-8)
-SLUG="${NAME}-${HASH}"
-```
-
-**Three invariants:**
-
-1. `self` is a fixed literal, never a hashed slug. A committed self-output under a path-derived hash is undiscoverable from any other clone: a teammate cloning to a different path computes a different hash and silently gets an empty result instead of the committed one. Slugs never leave the hub that computed them, so their path-dependence is harmless.
-2. `--store local` means TARGET-local (`<target>/.archkit/self/`), never hub-local. Reading it as `<hub>/.archkit/self/` would put a foreign repo's output under the hub's own `self/`, destroying the property that makes an un-slugged `self` safe to commit.
-3. On denied reads to a foreign path, STOP and tell the user to run `/add-dir <path>`. Never work around it by inferring file contents. Every archkit output is an evidence-backed audit; a fabricated finding is worse than no finding.
-
-**Working directory rule.** All commands that READ the target run with the working directory set to `<target>` -- `cd "<target>"` for a shell block, `git -C "<target>"` for a one-off git call. All WRITES go to the absolute `<out-dir>`. This applies uniformly across every mode and is not optional: `references/saas-checklist.md` is ~1300 lines of bare `grep -rn …` / `find . -type f` with no path argument, and the stack cards test bare filenames like `[ -f pyproject.toml ]`. Setting cwd once makes all of that work unmodified against `<target>` instead of parameterising a thousand individual commands.
-
-**Run metadata.** On every run, write `<out-dir>/.archkit-meta.json` recording the resolved absolute target path, the store mode, the slug (when foreign), and the timestamp of the last run. Maintenance mode reads this file to locate prior reports rather than re-deriving the storage rule from scratch -- trend analysis is a core archkit feature, not a viewer convenience, so guessing at where the last run landed is not good enough.
-
-**Gitignore notice.** The first time any mode creates `<hub>/.archkit/` (it doesn't exist yet): `mkdir -p` it, then check whether the hub's `.gitignore` already covers it and, if not, PRINT (never edit) these lines for the user to add:
-```
-.archkit/*/
-!.archkit/self/
-```
-Self-analysis describes the repo it lives in and belongs in its history; a foreign repo's audit is a visitor and must not silently become part of an unrelated project's permanent record. This fires once, keyed on directory existence, not as a durable reminder -- and archkit never edits `.gitignore` itself.
+**Working directory.** READ commands run at the repo toplevel so `references/saas-checklist.md`'s bare `grep`/`find` still work, and so stack cards can test bare filenames like `[ -f pyproject.toml ]`. WRITES go to `{doc_root}` or `{doc_root}/review/`.
 
 ## Documentation Root
 
-Modes that write documentation (design, decisions, describe) place it under `{doc_root}`, resolved differently depending on whether this is a self or foreign analysis (see Target and output resolution above):
+`{doc_root}` is always `docs/architecture/` under the repo toplevel.
 
-- **Self analysis:** `{doc_root}` = `<target>/docs/architecture/` by default. A repo overrides it by stating a different root when invoking the skill, or by already having a conventional location -- the auto-adopt probe (does `<target>` already have `docs/adr/`, `doc/adr/`, or `docs/architecture/` populated) runs against `<target>`, not cwd; if one exists, adopt it rather than creating a second tree. ADRs for your own repo belong in `docs/architecture/`, visible and reviewable, not hidden in a dot-directory.
-- **Foreign analysis:** `{doc_root}` = `<out-dir>`. ADRs, canvases, boundary records, and viewpoints all land under the same `<out-dir>` used for reports, mirroring the self layout so it can be moved into the target later.
+If the repo already has a populated `docs/adr/` or `doc/adr/` tree, adopt that tree rather than creating a second one.
 
-In both cases, HTML/Markdown reports (Review, Maintenance) go to `<out-dir>/reports/` specifically, never to `{doc_root}` directly.
+HTML review and maintenance reports go to `docs/architecture/review/`. Filenames stay `architecture-review-YYYY-MM-DD-{technical,founder}.html`. The pair must stay co-located because they cross-link with relative hrefs.
 
-Resulting layout, rooted at `{doc_root}`:
+Resulting layout:
 ```
 {doc_root}/adr/ADR-NNNN-<slug>.md
-{doc_root}/architecture/contexts/<context-id>/{canvas.md,boundary.yaml}
-{doc_root}/architecture/INVENTORY.md
+{doc_root}/contexts/<context-id>/{canvas.md,boundary.yaml}
+{doc_root}/INVENTORY.md
 {doc_root}/decisions/           # generated viewpoints
+{doc_root}/review/              # HTML reports, both files together
 ```
 
 ## Mode Workflows
@@ -111,7 +66,7 @@ Resulting layout, rooted at `{doc_root}`:
 4. Optionally load `corpus/principles/resilience/*` if the system has external integrations
 5. Check the pre-flight gate in `references/divergent-exploration.md` §1 -- this step can legitimately no-op if an abort condition applies. Otherwise run divergent exploration per that reference using the **design frame set** (§3). Survivors populate the ADR's Considered Options section; every trap the critic flags becomes a rejected-option entry with its reason recorded -- this is what turns the ADR from a record of one choice into a record of a decision.
 
-**Output:** An ADR markdown document (`{doc_root}/adr/ADR-NNNN-<slug>.md` -- see Documentation Root above for how `{doc_root}` resolves for self vs. foreign targets) with component boundaries, interface contracts, and dependency direction. An HTML version can optionally be produced using the report conventions in the Report Generation section below.
+**Output:** An ADR markdown document (`{doc_root}/adr/ADR-NNNN-<slug>.md`) with component boundaries, interface contracts, and dependency direction. An HTML version can optionally be produced using the report conventions in the Report Generation section below.
 
 ### Review Mode
 
@@ -128,7 +83,7 @@ Resulting layout, rooted at `{doc_root}`:
 8. **Load comprehensive SaaS checklist:** `references/saas-checklist.md` — the definitive detection methodology for SaaS-specific security, architecture, and quality issues
 9. Blind-spot hunt: run divergent exploration per `references/divergent-exploration.md` using the **review frame set** (§3), after the checklist above has run. Hunters are told what the checklist has already found and instructed to look elsewhere -- this is what makes it a blind-spot hunt rather than a duplicate scan. Survivors enter the normal P0/P1/P2 severity flow below; the scoring rubric, impact taxonomy, size categorisation, and both report templates need no changes.
 
-**Output:** Two linked HTML artifacts, written to `<out-dir>/reports/`:
+**Output:** Two linked HTML artifacts, written to `docs/architecture/review/`:
 1. **Technical Report (B)** -- First. Severity-tagged findings (P0/P1/P2), file-level evidence blocks, code paths, and remediation prompts. Uses `references/reports/architecture-review-TECHNICAL-TEMPLATE.html` as the design reference.
 2. **Founder Report (A)** -- Second. Plain-language translation of Technical Report findings. Health score (0-100), letter grade, 8 category breakdown bars, business-impact-first findings with right-aligned severity badges (`Blocking` / `Warning` / `Plan` / `Pass`), phased remediation plan, AI prompt packs with copy buttons, and comparison with previous scan. Uses `references/reports/architecture-review-FOUNDER-TEMPLATE.html` as the design reference.
 
@@ -138,7 +93,7 @@ Resulting layout, rooted at `{doc_root}`:
 
 **Scope:** Trend analysis and net-new finding detection. Reuses the review corpus chain.
 
-**Prior scan detection:** Search `<out-dir>/reports/` (read from `<out-dir>/.archkit-meta.json` -- see Target and output resolution above -- rather than re-deriving `<out-dir>`) for existing `architecture-review-YYYY-MM-DD-technical.html` files. Never scan cwd or `<target>` unbounded: under `--repo`, an unbounded scan would compare the wrong repo's baseline, or report "first scan" forever. If found:
+**Prior scan detection:** Scan `docs/architecture/review/` for existing `architecture-review-YYYY-MM-DD-technical.html` files. Sort by the date in the filename. Never scan the repo unbounded; only that one directory. If found:
 - Compare current findings with prior scan
 - Surface NEW, ESCALATED, STABLE, RESOLVED in the Trend section
 - Highlight regressions in a top callout
@@ -149,7 +104,7 @@ If no prior report exists, state: "This is the first scan. Future audits will co
 
 **Refactoring invocation:** When diagnostics flag a specific smell (god class, duplicated code, long function, etc.), load the matching `corpus/refactorings/<smell>.yaml` on-demand -- do not pre-load all refactoring files.
 
-**Output:** A trend report (HTML or markdown), written to `<out-dir>/reports/`, showing delta, plus an incremental backlog. If structural fixes are required, produce a refactoring plan referencing the loaded refactoring YAML.
+**Output:** A trend report (HTML or markdown), written to `docs/architecture/review/`, showing delta, plus an incremental backlog. If structural fixes are required, produce a refactoring plan referencing the loaded refactoring YAML.
 
 ### Decisions Mode
 
@@ -161,10 +116,10 @@ If no prior report exists, state: "This is the first scan. Future audits will co
 3. For retro-extraction from a merged PR: one record per structural decision in the PR; `state: approved` (it merged), `source_pr` set, `history` entries dated to the merge — never invent dates (see integrity rules).
 4. During retro-extraction, also consult the detected stack card's ADR Topics (`references/stacks/`) as a checklist for decisions the codebase has made but never recorded.
 5. Every record MUST carry a `delivers` block (capability / benefit / beneficiary) and a `## Value delivered` body section. A record without value framing fails the standard.
-6. Anchor `maps_to` to a context/module that exists in a `boundary.yaml` under `{doc_root}/architecture/contexts/`. If the context is undocumented, flag it (or switch to `describe` mode first).
+6. Anchor `maps_to` to a context/module that exists in a `boundary.yaml` under `{doc_root}/contexts/`. If the context is undocumented, flag it (or switch to `describe` mode first).
 7. After adding/changing records, refresh the three viewpoint files in `{doc_root}/decisions/` (relationship, chronology, capabilities) so they stay consistent with the record set.
 
-**Output:** ADR file(s) + updated viewpoint indexes, under `{doc_root}` (self vs. foreign split in Documentation Root above). Canonical standard: `references/standard.md` §5.4.
+**Output:** ADR file(s) + updated viewpoint indexes, under `{doc_root}`. Canonical standard: `references/standard.md` §5.4.
 
 ### Describe Mode (Architecture Description)
 
@@ -173,24 +128,24 @@ If no prior report exists, state: "This is the first scan. Future audits will co
 **Workflow:**
 1. Read `references/architecture-documentation.md` — the authoring procedure — and consult `references/standard.md` (canonical) for artifact definitions.
 2. **Verify before writing.** Ground every claim in code: enumerate the context's modules, grep its real import edges in both directions, and identify its actual public interface. Never write a boundary rule you have not checked against the code.
-3. Produce the context bundle in `{doc_root}/architecture/contexts/<context-id>/` from the templates: `canvas.md` (from `references/templates/canvas-template.md`, eight canvas sections + embedded C2/C3 Mermaid) and `boundary.yaml` (from `references/templates/boundary-template.yaml`). Seed `forbidden_dependencies` candidates from the detected stack card's Boundary Rules (`references/stacks/`), keeping only those verified against the code per step 2.
+3. Produce the context bundle in `{doc_root}/contexts/<context-id>/` from the templates: `canvas.md` (from `references/templates/canvas-template.md`, eight canvas sections + embedded C2/C3 Mermaid) and `boundary.yaml` (from `references/templates/boundary-template.yaml`). Seed `forbidden_dependencies` candidates from the detected stack card's Boundary Rules (`references/stacks/`), keeping only those verified against the code per step 2.
 4. Record any boundary violation found during verification (inverted imports, schema leakage, term overloading) — in the canvas, as a `forbidden_dependencies` entry with a `why`, and flag it as an ADR candidate. Surfacing smells is a primary output, not a side effect.
-5. Update `{doc_root}/architecture/INVENTORY.md` (doc status, findings).
+5. Update `{doc_root}/INVENTORY.md` (doc status, findings).
 
-**Output:** `canvas.md` + `boundary.yaml` for the context, an updated INVENTORY, and a list of surfaced ADR candidates, under `{doc_root}` (self vs. foreign split in Documentation Root above). Minimum bar: `references/standard.md` §8.
+**Output:** `canvas.md` + `boundary.yaml` for the context, an updated INVENTORY, and a list of surfaced ADR candidates, under `{doc_root}`. Minimum bar: `references/standard.md` §8.
 
 ### Debug Mode
 
 **Scope:** Diagnose the root cause of a specific failure or bug. Does not implement the fix.
 
 **Workflow:**
-1. Reproduce the bug first, inside `<target>`. A hypothesis about an unreproduced bug is a guess.
+1. Reproduce the bug first, inside the repo. A hypothesis about an unreproduced bug is a guess.
 2. Diverge hypotheses: run divergent exploration per `references/divergent-exploration.md` using the **debug frame set** (§3).
 3. The critic ranks surviving hypotheses by **cheapest discriminating test**, not by likelihood -- this override is defined in `references/divergent-exploration.md` §4.
-4. Run that test, inside `<target>`.
+4. Run that test, inside the repo.
 5. Converge on a root cause, or re-diverge on the surviving hypotheses if the test does not resolve it.
 
-**Output:** A root-cause statement, the evidence, the specific discriminating observation that confirmed it, a recommended fix, and a regression test that would have caught it. This mode delivers diagnosis and a recommended fix, not the fix itself.
+**Output:** A root-cause statement, the evidence, the specific discriminating observation that confirmed it, a recommended fix, and a regression test that would have caught it. This mode delivers diagnosis and a recommended fix, not the fix itself. It writes no report directory.
 
 ## Report Generation
 
@@ -200,7 +155,7 @@ When producing human-consumable deliverables, follow these rules:
 2. **Copy the design system:** Use the ivory/slate/clay palette from `assets/design-system.css`. Self-contained -- no external dependencies.
 3. **Include a `.prompt-box`** in the page header documenting scan parameters and the command that generated the report.
 4. **Generate Technical Report (B) first, then Founder Report (A).** Technical Report contains the "Technical Report Summary" section; the Founder Report contains the "Executive Summary." Founder findings are translations of Technical Report findings. Lock technical evidence before translating.
-5. **Link bidirectionally:** Every founder finding links to its technical counterpart via anchor (`#SEC-01`), and vice versa. Filenames are standardised as `architecture-review-YYYY-MM-DD-technical.html` and `architecture-review-YYYY-MM-DD-founder.html`; the two reports link to each other with relative hrefs, so they must stay co-located in the same `<out-dir>/reports/` directory.
+5. **Link bidirectionally:** Every founder finding links to its technical counterpart via anchor (`#SEC-01`), and vice versa. Filenames are standardised as `architecture-review-YYYY-MM-DD-technical.html` and `architecture-review-YYYY-MM-DD-founder.html`; the two reports link to each other with relative hrefs, so they must stay co-located in `docs/architecture/review/`.
 6. **Add copy buttons:** Include "Copy AI prompt" buttons on founder findings using inline JS clipboard.
 7. **Reference templates:** Consult `references/reports/architecture-review-TECHNICAL-TEMPLATE.html` and `references/reports/architecture-review-FOUNDER-TEMPLATE.html` for exact component structure (severity badges, score bars, impact tags, evidence blocks, phased plan cards).
 8. **Technical Report Summary (not Executive Summary).** The technical report's top section is titled "Technical Report Summary" -- it summarises P0/P1/P2 counts and the audit scope. The Founder Report has the "Executive Summary."
@@ -312,7 +267,7 @@ If any of 1-4 trigger, surface a dedicated DDD finding. Recommended remediation:
 
 ## Historical Trending
 
-For Maintenance mode, scan `<out-dir>/reports/` (never cwd or `<target>` unbounded -- see the Prior scan detection rule under Maintenance Mode above) for prior `architecture-review-YYYY-MM-DD-*.html` files. Sort by date. Compare with the most recent prior scan:
+For Maintenance mode, scan `docs/architecture/review/` (never the repo unbounded -- see the Prior scan detection rule under Maintenance Mode above) for prior `architecture-review-YYYY-MM-DD-*.html` files. Sort by the date in the filename. Compare with the most recent prior scan:
 - **NEW** -- finding not present in prior scan
 - **ESCALATED** -- severity increased since prior scan
 - **STABLE** -- same severity, still present
