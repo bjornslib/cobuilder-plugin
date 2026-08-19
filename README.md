@@ -1,13 +1,16 @@
-# Prodyssey — Codebase Odyssey Generator
+# cobuilder-architect
 
-Prodyssey turns a merged pull request into a four-level narrated story: PR
-Landscape, Problem and Solution, Architecture, and File Changes. The story
-includes voice narration and extracted architecture decision records. For
-levels 1 through 3, Prodyssey also adds a visual: Gemini-generated scene art,
-an authored Mermaid diagram, or both. The `--art` flag below picks the form.
-Prodyssey runs inside your own Claude Code session, against your own
+cobuilder-architect is a Claude Code plugin for design, submit, and review
+(the architecture lifecycle except build), plus narrated history. Odyssey
+turns a merged pull request into a four-level narrated story: PR Landscape,
+Problem and Solution, Architecture, and File Changes. The story includes
+voice narration and extracted architecture decision records. For levels 1
+through 3, Odyssey also adds a visual: Gemini-generated scene art, an
+authored Mermaid diagram, or both. The `--art` flag below picks the form.
+The plugin runs inside your own Claude Code session, against your own
 checkout. Your repo never leaves your machine, and your API keys pay only
-for what you generate.
+for what you generate. This branch extends the plugin to capture intent
+before code exists.
 
 ---
 
@@ -36,7 +39,7 @@ Restart the session, or enable the plugin from `/plugin`. After that, the
 | A git checkout of the target repo | All analysis runs locally: `git log`, grep, and file reads | Checked on invocation |
 | `python3` version 3.10 or later, with `uv` | Bundled scripts run through [PEP 723](https://peps.python.org/pep-0723/) inline metadata. `uv run` resolves `google-genai`, `pillow`, and `python-dotenv` for each script, with no venv setup needed | Checked at the first script call |
 
-Prodyssey needs no GitHub token, no server, and no database. If you can open
+The plugin needs no GitHub token, no server, and no database. If you can open
 the repo in Claude Code, you can generate its story.
 
 ---
@@ -49,7 +52,7 @@ the repo in Claude Code, you can generate its story.
 /cobuilder-architect:generate --prs 73,75
 ```
 
-For each PR, Prodyssey runs these steps in order: it writes the story
+For each PR, Odyssey runs these steps in order: it writes the story
 narrative (4 levels plus voice scripts), extracts ADRs in retrospect, and
 merges the result into `story.json`. It then produces the level 1 through 3
 visuals and generates TTS narration. If no baseline exists yet, the skill
@@ -69,7 +72,7 @@ is a separate step.
 - `both` — authors a Mermaid diagram for each level and generates a Gemini
   scene-art image for each level. The viewer shows the image by default and
   lets you toggle to the diagram.
-- `diagram` — authors Mermaid diagrams only. Prodyssey skips the Gemini
+- `diagram` — authors Mermaid diagrams only. Odyssey skips the Gemini
   image calls, so this mode needs no image generation cost and works even
   without a scene-art budget.
 - `image` — generates Gemini scene art only, the behavior before diagrams
@@ -99,7 +102,7 @@ This command derives the architecture baseline of the repo into
    fewer). A repo under 20 files becomes a single district. A docs-only
    repo falls back to file-type buckets flagged `map_quality: low`.
 3. **Context inventory** — for each district, records `{name, root_paths,
-   purpose}`. Prodyssey verifies each entry against real import edges, using
+   purpose}`. Odyssey verifies each entry against real import edges, using
    grep in both directions, and flags the entry `provenance: inferred`. ADR
    extraction anchors its `maps_to` field to this inventory when the repo
    has no architecture docs of its own.
@@ -118,7 +121,7 @@ points the whole sweep at any local checkout:
 /cobuilder-architect:baseline --repo ~/code/other-project
 ```
 
-Prodyssey looks up `GEMINI_API_KEY` in your environment, or in your own
+Odyssey looks up `GEMINI_API_KEY` in your environment, or in your own
 repo's `.env` file. It never reads `.env` from the target repo — that repo
 is untrusted, and its `.env` must never load into this process. If Claude
 lacks read access to the path, grant it once with
@@ -136,7 +139,7 @@ exists.
 /cobuilder-architect:submit
 ```
 
-Run it on a branch that has no pull request. Prodyssey reads the diff, the
+Run it on a branch that has no pull request. Odyssey reads the diff, the
 district map, and every architecture decision the repo already recorded. It
 then asks you only what that evidence cannot answer, usually four to six
 questions. It writes your answers down, assesses the change, and opens the
@@ -161,7 +164,7 @@ or fix the change first. You choose.
 
 ### It asks who wrote the code
 
-Prodyssey records whether the change is `human`, `agent-assisted`, or
+Odyssey records whether the change is `human`, `agent-assisted`, or
 `agent-generated`. It also records the parts you cannot explain. "The agent
 wrote that, and I am not sure why" is a useful answer, not a failed interview.
 Those notes raise the risk tier and go in the PR description where a reviewer
@@ -175,7 +178,7 @@ The PR description and the assessment go to
 PR's timeline entry in `story.json`. The viewer shows the assessment on level
 3, behind a badge next to the ADR chips.
 
-Opening the pull request is the only thing Prodyssey does outside
+Opening the pull request is the only thing Odyssey does outside
 `.cobuilder-architect/`. It shows you the description and asks first. It does nothing
 else on GitHub. Use `--no-create` to stop before that and keep the files.
 
@@ -233,13 +236,13 @@ instead of inferring them from the diff. The ADR it extracts is marked
 
 This command flattens PR #73 into one self-contained HTML file. The file
 inlines the story, the ADRs, the diff, and whichever level 1 through 3
-visuals the PR has: scene art, Mermaid diagrams, or both. Prodyssey
+visuals the PR has: scene art, Mermaid diagrams, or both. Odyssey
 recompresses the result to fit under the 16 MiB cap of Claude Artifacts.
 Mermaid diagrams render natively on the Artifact platform, so a published
 diagram needs no bundled runtime. A PR published with `--art diagram`
 carries no image data, so it stays well under the cap.
 
-Prodyssey publishes the file as an Artifact and prints the URL. It also
+Odyssey publishes the file as an Artifact and prints the URL. It also
 rebuilds and publishes a small index artifact. That artifact links to every
 PR published so far for this bundle, not only the PRs in the current run.
 The index always shows the full set. If a PR has not changed since its last
@@ -251,10 +254,10 @@ The `--force` flag overrides this check.
 /cobuilder-architect:publish --prs 73 --force
 ```
 
-`--format artifact` is the default, and the only target Prodyssey
+`--format artifact` is the default, and the only target Odyssey
 implements today. `--format notion` is reserved for later use. Publishing
 needs the `Artifact` tool, available in a `/login` session on a paid plan.
-Without it, Prodyssey still writes the flattened files to
+Without it, Odyssey still writes the flattened files to
 `<bundle-dir>/exports/` for manual use.
 
 An older bundle needs no manual fix. Every command upgrades the bundle it
@@ -265,7 +268,7 @@ viewer copy the first time any `/cobuilder-architect:*` command runs against it.
 
 Analyzing your own repo, with no `--repo` flag, works as before. The bundle
 still lands at `.cobuilder-architect/self/`, portable and ready to commit. Point
-`--repo <path>` at a different local checkout, and by default Prodyssey
+`--repo <path>` at a different local checkout, and by default Odyssey
 writes nothing into that repo. Instead, it caches the bundle locally, under
 the hub's `.cobuilder-architect/<repo-slug>/` directory. The hub is the repo you run
 Claude Code from. This scoping makes it safe to generate stories for a repo
@@ -347,15 +350,21 @@ cobuilder-architect/
 │   ├── plugin.json           # manifest: name "cobuilder-architect", version, keywords
 │   └── marketplace.json      # one-plugin marketplace: name "cobuilder-architect", plugins: [{source: "."}]
 ├── commands/
-│   ├── baseline.md           # thin: invokes the skill with args="baseline"
-│   ├── generate.md           # thin: invokes the skill with args="generate --prs ..."
-│   ├── view.md                # thin: invokes the skill with args="view ..."
-│   ├── publish.md             # thin: invokes the skill with args="publish --prs ..."
-│   └── submit.md              # thin: invokes the skill with args="submit ..."
+│   ├── baseline.md           # odyssey: Skill("odyssey", args="baseline")
+│   ├── generate.md           # odyssey: Skill("odyssey", args="generate --prs ...")
+│   ├── view.md                # odyssey: Skill("odyssey", args="view ...")
+│   ├── publish.md             # odyssey: Skill("odyssey", args="publish --prs ...")
+│   ├── submit.md              # odyssey: Skill("odyssey", args="submit ...")
+│   ├── review.md              # architecture: Skill("architecture", args="review")
+│   ├── maintenance.md         # architecture: Skill("architecture", args="maintenance")
+│   ├── decisions.md           # architecture: Skill("architecture", args="decisions")
+│   ├── describe.md            # architecture: Skill("architecture", args="describe")
+│   ├── debug.md               # architecture: Skill("architecture", args="debug")
+│   └── explore-design.md      # architecture divergent-exploration pass, not a seven-stage design mode
 ├── skills/
 │   ├── odyssey/
 │   │   ├── SKILL.md          # orchestration: prereq gate → baseline → per-PR sweep → submit → view → publish → verify
-│   │   └── references/       # extracted from architecture-review-design-maintenance (see below)
+│   │   └── references/       # Odyssey path onto the architecture skill (see below)
 │   │       ├── story-mode.md
 │   │       ├── decision-records-lite.md
 │   │       ├── baseline-derivation.md      # describe-lite: district + inventory procedure
@@ -363,16 +372,22 @@ cobuilder-architect/
 │   │       ├── review-mode.md              # submit mode: the three questions, verdicts, risk tiers
 │   │       ├── interview-guide.md          # submit mode: what to ask the author, and what not to
 │   │       ├── pr-description-template.md  # the PR body skeleton render_review.py fills
-│   │       ├── adr-template.md
+│   │       ├── adr-template.md             # pointer to the architecture template
 │   │       └── stacks/{README,nextjs,react-typescript,python-fastapi,swift,swiftui-app,vapor,generic}.md
-│   └── mermaid/               # authoring rules for Mermaid diagrams, invoked by the
+│   ├── architecture/          # six self-only modes: review, maintenance, decisions, describe, debug, explore-design
+│   ├── mermaid/               # authoring rules for Mermaid diagrams, invoked by the
 │                               # diagram-authoring subagent, not the orchestrator directly
-├── scripts/                   # top-level, not nested under skills/ — called via ${CLAUDE_PLUGIN_ROOT}/scripts/...
+│   └── ste-writing/           # STE writing rules and ste-lint.py
+├── scripts/                   # top-level, not nested under skills/. Called via ${CLAUDE_PLUGIN_ROOT}/scripts/...
 │   ├── extract_story.py       # generalized: any repo path, writes <bundle-dir>/story.json
 │   ├── generate_prompts.py    # nanobanana scene-art prompts
 │   ├── generate_audio.py      # TTS narration (Gemini voices)
 │   ├── extract_diffs.py       # per-PR diff extraction into the bundle
 │   ├── build_diagrams.py      # compiles authored .mmd files into data/diagrams.js, and validates them
+│   ├── build_adrs.py          # full rebuild of the self-bundle ADR projection from docs/architecture/adr/
+│   ├── validate_decision_state.py
+│   ├── compute_scores.py      # review and maintenance health scores
+│   ├── html_to_pdf.py         # review and maintenance report export
 │   ├── migrate_bundle.py      # refreshes the viewer, and steps bundle layout + data shape forward
 │   ├── _bundle_meta.py        # the version constants that the other scripts import
 │   ├── verify_bundle.py       # schema_version + completeness check (drives resumability)
@@ -400,11 +415,13 @@ that session's permission or hook surface. Claude Code auto-discovers
 `skills/` and `commands/` from their default directory locations, so the
 manifest does not need to declare them.
 
-The plugin ships two skills. `odyssey` runs the orchestration this README
-describes. `mermaid` holds authoring rules for the level 1 through 3
-diagrams that the `--art` flag can generate (see Visual form above). The
-per-PR diagram-authoring subagent invokes `mermaid` for itself. You never
-invoke it directly.
+The plugin ships four skills. `odyssey` runs the history modes this README
+describes. `architecture` runs the six self-only modes.
+
+`mermaid` holds authoring rules for the level 1 through 3 diagrams that the
+`--art` flag can generate (see Visual form above). The per-PR
+diagram-authoring subagent invokes `mermaid` for itself. You never invoke
+it directly. `ste-writing` holds the writing rules and `ste-lint.py`.
 
 ---
 
@@ -418,24 +435,24 @@ Contact the author for more information.
 | Source (cobuilder-harness) | Becomes | Adaptation |
 |---|---|---|
 | `references/story-mode.md` | `references/story-mode.md` | Keeps the framework, the four-level mapping, and the register and style rules verbatim. Rewires the output target to `<bundle-dir>/story.json` instead of `docs/prototypes/.../story.json`. When no ADR carries a matching `source_pr`, the process falls back to ADRs extracted in the same sweep. §3 now splits into two registers, selected with `--style kleppmann\|ste` (default `kleppmann`). The `ste` register defers to the `ste-writing` skill |
-| `references/decision-records.md` | `references/decision-records-lite.md` | Keeps the record shape: context, forces, decision, consequences, plus `delivers` and `maps_to`. Drops the state machine, the transition rules, viewpoint regeneration, and ADR numbering governance, since those govern a maintained doc set, not a generated bundle. `maps_to` targets `inventory.yaml`, and each record carries `provenance: inferred` |
+| `references/decision-records.md` | `references/decision-records-lite.md` | Short Odyssey path onto the full 42010 schema in the architecture skill. Not a second record shape. |
 | `references/architecture-documentation.md` | `references/baseline-derivation.md` | Keeps describe-mode's verification discipline as the inventory procedure: enumerate modules, grep import edges in both directions, and never assert a boundary that is not verified. Drops the 8-section canvas, `boundary.yaml` authoring, and INVENTORY.md bookkeeping, replaced by one flat `inventory.yaml` file |
 | `references/stacks/*` (4 cards + README) | `references/stacks/*` | Kept verbatim. Detection precedence and ADR-topic checklists drive stack detection and extraction prompts. The `swift`, `swiftui-app`, and `vapor` cards were authored in this repo, not extracted |
-| `references/templates/adr-template.md` | `references/adr-template.md` | Trimmed frontmatter (no state machine fields) |
-| `references/stacks/*`'s `## Boundary Rules` and `## Review Checks` | `references/review-mode.md` | The card sections were extracted with the cards, and nothing read them until now. Submit mode runs the literal grep commands in `Boundary Rules` and records each result. It never reads `## Corpus Load`, because those paths do not ship with this plugin |
+| `references/templates/adr-template.md` | `references/adr-template.md` | Pointer to the architecture template. |
+| `references/stacks/*`'s `## Boundary Rules` and `## Review Checks` | `references/review-mode.md` | Submit mode runs the grep commands in `Boundary Rules`. It never reads `## Corpus Load`. Review mode loads those paths from the architecture skill. |
 | `docs/prototypes/codebase-evolution/data/extract_story.py` | `scripts/extract_story.py` | Generalized. Takes a repo path as a parameter, selects a PR by number through merge-commit lookup, writes to `<bundle-dir>/`, and never overwrites an authored or generated narrative field |
 | `docs/prototypes/codebase-evolution/nanobanana/generate_prompts.py` | `scripts/generate_prompts.py` | Reads district and world data from the bundle instead of hand-authored `story.json` fields |
 | `utils/generate_audio.py` | `scripts/generate_audio.py` | Keeps the same flow: voice scripts feed Gemini TTS. The output path changes to `<bundle-dir>/data/audio/` |
 
-### Excluded from PR Odyssey but in architecture skill
+### Excluded from Odyssey. Now in this plugin as the architecture skill
 
-| Not extracted | Why |
+| Not extracted into Odyssey | Where it lives now |
 |---|---|
-| **maintenance mode** + `saas-checklist.md`, `harness-security.md`, report templates, `compute_scores.py` | An audit instrument for maintainers, out of scope for Prodyssey (consensus 7/7). **Partly reversed.** `/cobuilder-architect:submit` now reviews a change, and it is a different instrument: it interviews the author, and it answers three judgment questions against this bundle's own districts and ADRs. What stayed out is what made the original an audit — the score, the corpus, the checklists, and the gate. Submit mode consumes the stack cards' `## Boundary Rules` and `## Review Checks` sections, which `stacks/README.md` already declared as review inputs |
-| **corpus/** (~170 principle YAMLs) + **books/** (14 vendored volumes) | Grounding for audit depth. Story generation needs the style rules and the record shapes, not the review corpus, and dropping it keeps the plugin download small |
-| **decisions-mode governance** (state machine, viewpoints, ADR numbering) | Governs a living doc set in a repo you own. Prodyssey generates immutable bundle records instead |
-| **describe-mode full canvas** | The flat inventory serves as the `maps_to` anchor. The full canvas adds documentation-program overhead that a foreign repo cannot sustain |
-| `sync-books.sh`, `sync-corpus.sh`, `html_to_pdf.py` | Corpus maintenance tooling for the parent skill |
+| **review** and **maintenance** modes, `saas-checklist.md`, `harness-security.md`, report templates, `compute_scores.py`, `html_to_pdf.py` | `/cobuilder-architect:review` and `/cobuilder-architect:maintenance`. Self-only. Submit already reversed part of this exclusion. The full audit (scores, checklists, dual HTML reports) ships as `/cobuilder-architect:review`. |
+| **corpus/** (~170 principle YAMLs) + **books/** (14 vendored volumes) | `skills/architecture/references/{corpus,books}/` |
+| **decisions-mode governance** (state machine, viewpoints, ADR numbering) | The architecture skill. `decision-records-lite.md` is a short Odyssey path onto that schema. |
+| **describe-mode full canvas** | `/cobuilder-architect:describe`. Self-only. Odyssey still uses the flat inventory. |
+| `sync-books.sh`, `sync-corpus.sh` | Still excluded. |
 
 ---
 
