@@ -1,0 +1,32 @@
+{
+  "name": "cobuilder-implement",
+  "title": "CoBuilder Implement — a design becomes verified code",
+  "adr": "ADR-0012",
+  "adrs": ["ADR-0012", "ADR-0011", "ADR-0015"],
+  "created": "2026-08-19",
+  "outcome": "The architecture design produced by cobuilder-architect carries directly into implementation: its intent is decomposed into testable epics, and each epic ships as vertical slices that an independent validator scores at 0.90 or better before the next one starts.",
+  "done_when": [
+    "the skill runs G1 through G4 and stops at each gate for approval",
+    "a slice is scored at 0.90 or better by a validator that executes the tests and never wrote the code",
+    "an epic below 0.90 loops back to GREEN and closes",
+    "cobuilder-implement builds one real change end to end under its own gates"
+  ],
+  "abort_if": [
+    "0.90 proves unreachable in practice, so most real slices escalate rather than pass, which makes the threshold theatre"
+  ],
+  "min_work": {
+    "derived_from": "6 districts (skills, scripts, commands, viewer, docs, .cobuilder-architect), 3 related ADRs, 1 boundary rule on install surface",
+    "alternatives_explored": 5,
+    "boundary_rules_checked": true,
+    "challenge_stage_run": true
+  },
+  "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
+  "epics": [
+    { "id": "E1", "branch": "design/cobuilder-implement", "pr": null, "state": "planned" }
+  ],
+  "stage": "review",
+  "supersedes": null,
+  "rounds": [
+    { "n": 1, "changed": true, "feedback_class": "material" }
+  ]
+}

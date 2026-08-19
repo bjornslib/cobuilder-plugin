@@ -201,8 +201,10 @@ written. `verdict` uses the same values as `review-mode.md` §8: `sound`,
 ## 9. Stage 5 — Draft
 
 Write four artifacts. Run each prose pass through
-`Skill("ste-writing")` in flavored mode. Use strict mode for ADR
-procedural text: the constraint introduced, and the boundary rules.
+`Skill("cobuilder-architect:ste-writing")` in flavored mode. If that call
+gives `Unknown skill`, read `${CLAUDE_PLUGIN_ROOT}/skills/ste-writing/SKILL.md`
+directly and obey that file instead. Use strict mode for ADR procedural
+text: the constraint introduced, and the boundary rules.
 
 1. **ADR.** Write `docs/architecture/adr/ADR-NNNN-<slug>.md` from
    `skills/architecture/references/templates/adr-template.md`. Set

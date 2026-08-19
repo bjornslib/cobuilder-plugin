@@ -185,8 +185,11 @@ Which register applies is set by `--style kleppmann|ste`, default
 
 ### ste
 
-Defer to the `ste-writing` skill (`Skill("ste-writing")`) for the rules —
-this section does not restate them, to keep one source of truth. Author the
+Defer to the `ste-writing` skill (`Skill("cobuilder-architect:ste-writing")`)
+for the rules. If that call gives `Unknown skill`, read
+`${CLAUDE_PLUGIN_ROOT}/skills/ste-writing/SKILL.md` directly and obey that
+file instead. This section does not restate the rules, to keep one source
+of truth. Author the
 same four levels and `beats` structure as the `kleppmann` register above.
 Only the sentence/word/voice rules change. PR #79 in the cobuilder-harness
 bundle (`.cobuilder-architect/cobuilder-harness-a103a550/`) is the worked example of

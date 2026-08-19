@@ -1,0 +1,34 @@
+sequenceDiagram
+    participant Orchestrator
+    participant RED as RED subagent
+    participant GREEN as GREEN subagent
+    participant VALIDATE as VALIDATE subagent
+    participant Suite as Test suite (fresh process)
+    participant Ledger as Per-epic ledger
+
+    Orchestrator->>RED: Spawn for this slice
+    RED->>RED: Write failing tests against the blind rubric's declared outcomes
+    RED-->>Orchestrator: Failing tests committed
+
+    Orchestrator->>GREEN: Spawn with failing tests
+    GREEN->>GREEN: Write minimal code, never edit a test
+    GREEN-->>Orchestrator: Implementation ready
+
+    Orchestrator->>VALIDATE: Spawn to score the slice
+    VALIDATE->>Suite: Execute the suite in a fresh process
+    Suite-->>VALIDATE: Pass/fail results, no claimed result accepted
+    VALIDATE->>VALIDATE: Read the code and the tests, judge adequacy against specs
+
+    alt Score >= 0.90, no critical criterion below 1.0
+        VALIDATE->>Ledger: Append per-criterion score and stated reason
+        VALIDATE-->>Orchestrator: Slice accepted
+    else Score below 0.90
+        VALIDATE->>Ledger: Append per-criterion score and stated reason
+        VALIDATE-->>Orchestrator: Return to GREEN with full feedback
+        Orchestrator->>GREEN: Retry (up to 3 attempts total)
+        Note over Orchestrator,GREEN: After 3 attempts, escalate to a human check-in
+    else Rigged pass detected (edited/skipped/weakened test, swapped dependency, rubric read)
+        VALIDATE->>Ledger: Append VOID and stated reason
+        VALIDATE-->>Orchestrator: Void, no attempt cost
+        Orchestrator->>RED: Return to RED to rewrite the tests
+    end

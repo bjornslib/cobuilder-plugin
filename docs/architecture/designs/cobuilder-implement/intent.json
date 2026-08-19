@@ -1,0 +1,70 @@
+{
+  "captured": "2026-08-19",
+  "source": "authored",
+  "design_name": "cobuilder-implement",
+  "authorship": "bjoerns, with Claude drafting and challenging",
+  "problem": "Software Factory gates the design, then accepts a slice on the implementer's own word. CoBuilder Guardian scores independently, but runs only on the pi SDK. Neither turns an approved design into verified code in an arbitrary harness, so the designs cobuilder-architect produces have nothing that consumes them.",
+  "why_now": "Design mode shipped, so designs now carry intent that nobody has to reconstruct. The half that turns a design into code does not exist, so the intent stops at the branch name.",
+  "approach": "Three tiers and four gates. An initiative holds epics, a feature is an epic, and every epic must be testable. An epic holds vertical slices. Three separate agents build each slice: one writes failing tests, one writes the minimal code and never edits a test, and one validates. The validator executes the suite, then reads the code and judges whether the tests cover the declared outcomes. A slice needs 0.90 or better. The epic gate is hard, and remediation returns to the implementing agent until it closes.",
+  "alternatives": [
+    {
+      "option": "One agent does the rubric, the tests, the code, and the self-report in a single context, and a human skims the log at the end",
+      "rejected_because": "It abandons independent scoring, which the outcome requires. The agent that wrote the code judges its own test run, which is the most gameable pattern available."
+    },
+    {
+      "option": "Delete the validator. Get blindness from context amnesia: one agent writes the rubric, the harness clears context, and the same agent implements and self-scores twice, voiding on a mismatch above 0.15",
+      "rejected_because": "Erasure blindness cannot be verified from outside the model, and two runs of one policy give correlated error rather than independent verification. It assumes away the hard part."
+    },
+    {
+      "option": "Treat rubrics as a cross-repo append-only ledger, cluster criterion fingerprints into a shared genome, and prime the validator with a prior score distribution",
+      "rejected_because": "It needs a periodic clustering job across repos, which breaks the rule that this skill uses no external service and no pipeline runtime. It also solves a volume problem this work does not have yet."
+    },
+    {
+      "option": "Forbid the validator from reading the implementation at all, and score only from a test runner's exit codes",
+      "rejected_because": "It scores whether tests pass and never asks whether the tests are worth passing. The validator must also judge test adequacy against the specs, so it reads the code after it executes the suite."
+    },
+    {
+      "option": "Commit a hash of every test file at G3 and check it before scoring",
+      "rejected_because": "It changes the G3 gate contract for a hole that a validator judging test adequacy already covers. The void triggers widen in prose instead."
+    },
+    {
+      "option": "Score a criterion called 'no undeclared test dependencies' to catch a fixture added after G3",
+      "rejected_because": "Enumerating a test's transitive dependencies is not free in a dynamically imported language. The same reasoning as the hash check applies."
+    },
+    {
+      "option": "Strip the validator's retry feedback to pass or fail per criterion, so accumulated feedback cannot leak the rubric's shape",
+      "rejected_because": "Rich feedback is mandatory for GREEN to improve within its attempts. Starving it pushes slices into escalation, which costs more than the leak."
+    }
+  ],
+  "out_of_scope": [
+    "opening a pull request or pushing a branch — that stays submit mode's job in cobuilder-architect",
+    "changing design mode, which this design consumes and does not modify",
+    "any code dependency between the two plugins in either direction",
+    "agents, hooks, and MCP servers, so the plugin never touches another session's permission surface",
+    "running the skill on a real initiative, which follows the build"
+  ],
+  "risks": [
+    "blindness is honour-based: nothing mechanically stops an implementer reading the rubric directory, and detection depends on the validator noticing",
+    "at volume, a validator pool statistically absorbs the shape of passing rubrics, so prompt discipline leaks and no filesystem permission was ever there to catch it",
+    "just-in-time detailing can redefine a cross-epic contract another epic depends on; the frozen-contract rule is a rule, not a mechanism",
+    "the ledger records what agents claim, so a rigged run writes a clean-looking entry; it buys auditability, not integrity",
+    "a validator that must judge test adequacy does more work per slice, which raises cost and slows every gate"
+  ],
+  "testing": "The skill is prose plus two workflow scripts, so verification is static plus one end-to-end run. Parse both scripts wrapped in an async function, because the runtime wraps them and a bare top-level return fails a plain module check. Confirm every reference named in SKILL.md exists and is reachable. Grep for retired names. Then run the skill against a throwaway feature and confirm it reaches the G3 rubric gate check and stops for approval. The stop condition is self-hosting: it builds one real change end to end under its own gates.",
+  "reviewer_focus": [
+    "the validator's mandate — it executes the suite, then reads the code and judges whether the tests cover the declared outcomes",
+    "the epic gate and its remediation loop, which has no automatic escalation and relies on a human check-in every three remediations",
+    "the light path, which removes the panels for a single-epic initiative but never the slice loop or the 0.90 gate",
+    "the join contract path, which is written in two plans and breaks silently if one moves"
+  ],
+  "unknowns": [
+    "whether 0.90 is reachable often enough in practice that escalation stays the exception",
+    "whether a validator judging test adequacy scores consistently enough run to run for the number to mean anything",
+    "whether the manual three-role mode degrades acceptably in a harness with no scripted runner",
+    "how many remediation rounds a real epic needs before the human check-in fires"
+  ],
+  "design": {
+    "name": "cobuilder-implement",
+    "epic": null
+  }
+}
