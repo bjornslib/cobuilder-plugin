@@ -4,7 +4,7 @@
   "created": "2026-08-19",
   "outcome": "An engineer can design a change with the plugin before writing it, and the resulting intent, ADR, and diagrams carry through to the pull request that implements it.",
   "done_when": [
-    "/prodyssey:design runs the seven stages and writes a design directory",
+    "/cobuilder-architect:design runs the seven stages and writes a design directory",
     "submit mode resolves a design from the branch name and skips the cold interview",
     "the viewer lists and renders designs alongside the PR timeline"
   ],
@@ -19,12 +19,19 @@
     "challenge_stage_run": true
   },
   "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
+  "epics": [
+    {
+      "id": "E1",
+      "branch": "design/design-mode",
+      "pr": null,
+      "state": "planned"
+    }
+  ],
   "stage": "review",
   "supersedes": null,
   "rounds": [
     { "n": 1, "changed": true, "feedback_class": "material" },
     { "n": 2, "changed": true, "feedback_class": "material" },
     { "n": 3, "changed": true, "feedback_class": "cosmetic" }
-  ],
-  "branch": null
+  ]
 }

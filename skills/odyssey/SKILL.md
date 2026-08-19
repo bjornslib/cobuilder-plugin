@@ -733,7 +733,7 @@ Two references govern it, both loaded on demand:
    - no `--prs` — the current branch. Ask `gh pr view --json number` for it
      first. If a PR already exists for this branch, adopt its number and
      continue as the case above. This is the re-run-after-review-feedback
-     path. If not, this is a pre-submit run, and step 7 opens the PR.
+     path. If not, this is a pre-submit run, and step 8 opens the PR.
 3. **Extract the diff.** For a PR:
    ```bash
    uv run "${CLAUDE_PLUGIN_ROOT}/scripts/extract_diffs.py" --repo <target> --bundle-dir <bundle-dir> --prs <N>
@@ -754,37 +754,77 @@ Two references govern it, both loaded on demand:
    4. The timeline entries for earlier PRs in the same districts.
 
    This order is not optional — `references/interview-guide.md` §2 depends on it.
-5. **Interview the author** (Claude work, not a script). Follow
-   `references/interview-guide.md`. Draft a hypothesis from step 4, but hold
-   it back. Ask the problem and approach questions blind, and compare both
-   against each other and against the hypothesis (§3a). Ask only what the
-   evidence still cannot settle, then play the drafted `intent` back for
-   confirmation. `--non-interactive`, or a session with no author present,
-   takes the fallback in §6 of that file and sets `intent.source: "inferred"`.
-6. **Assess** (Claude work, not a script). Follow `references/review-mode.md`:
+5. **Resolve the design.** Take the current branch name (or `--branch`). If
+   it starts with `design/`, strip that prefix. The first path segment is the
+   design name. The rest, if any, is the epic slug.
+   - `design/design-mode` → name `design-mode`, epic none (single-epic form)
+   - `design/checkout/guest-checkout` → name `checkout`, epic `guest-checkout`
+
+   Look for `docs/architecture/designs/<name>/goal.json`. If that misses,
+   scan every `docs/architecture/designs/*/goal.json` for a matching
+   `epics[].branch`. That scan is the authoritative fallback. It handles a
+   renamed branch.
+
+   When you compare slugs (the remaining path against `epics[].slug`), reuse
+   the `slugify()` rule from `scripts/extract_diffs.py`: lowercase, every
+   non-alphanumeric run collapsed to one hyphen, no leading or trailing
+   hyphen. Do not invent a second slugger.
+
+   A branch that does not start with `design/` and matches no
+   `epics[].branch` is a miss. `feature/foo` is a miss. Stay on the cold
+   interview.
+
+   **On a hit:** load that design's `intent.json` as the starting hypothesis
+   for step 6. Ask only what changed since the design. Do not re-interview
+   cold. The five-topic design interview already happened. Still run the
+   self-consistency check against the diff (`interview-guide.md` §3a). The
+   design can have drifted. Carry `intent.design = {name, epic}` forward.
+   `epic` is null for the single-epic form. Write that object onto the
+   timeline entry in step 9, and onto
+   `docs/pull-requests/branch-<slug>/intent.json` at the pre-PR stage in
+   step 8.
+
+   **On a miss:** behave exactly as today. Additive. Step 6 runs the cold
+   interview.
+6. **Interview the author** (Claude work, not a script). Follow
+   `references/interview-guide.md`. If step 5 found a design, that
+   `intent.json` is the hypothesis. Ask what changed since the design. Still
+   run the self-consistency check against the diff (§3a). If step 5 missed,
+   draft a hypothesis from step 4, but hold it back. Ask the problem and
+   approach questions blind, and compare both against each other and against
+   the hypothesis (§3a). Ask only what the evidence still cannot settle, then
+   play the drafted `intent` back for confirmation. `--non-interactive`, or a
+   session with no author present, takes the fallback in §6 of that file and
+   sets `intent.source: "inferred"`.
+7. **Assess** (Claude work, not a script). Follow `references/review-mode.md`:
    the three questions with evidence, the stack card's boundary greps, the
    district delta, the risk tier, `regret_risk`, and the verdict.
-7. **Render, then open the PR.** Write `intent.json` and `assessment.json` into
+8. **Render, then open the PR.** Write `intent.json` and `assessment.json` into
    `docs/pull-requests/branch-<slug>/` (branch target) or the two blocks onto the
-   timeline entry (PR target), then:
+   timeline entry (PR target). If step 5 found a design, the staged
+   `intent.json` includes `design: {name, epic}`. Then:
    ```bash
    uv run "${CLAUDE_PLUGIN_ROOT}/scripts/render_review.py" --repo <target> --bundle-dir <bundle-dir> {--prs <N> | --branch [<ref>]}
    ```
    If step 2 found no PR, open one — see **Submitting the PR** below. If a PR
-   already exists, skip to step 8.
-8. **File the results under the PR number.** Write `intent` and `assessment`
+   already exists, skip to step 9.
+9. **File the results under the PR number.** Write `intent` and `assessment`
    onto that PR's timeline entry in `<bundle-dir>/data/story.json`, regenerate
    `data/story.js`, then re-render so the deliverables carry the number:
    ```bash
    uv run "${CLAUDE_PLUGIN_ROOT}/scripts/render_review.py" --repo <target> --bundle-dir <bundle-dir> --prs <N>
    ```
-9. **Verify**:
+   If step 5 found a design, write `intent.design = {name, epic}` onto that
+   entry (`epic` is null for the single-epic form). Then fill that epic's
+   `pr` and `state` in the design's `goal.json` (`state: "open"` until merge).
+   If the design has one epic and no slug, update that one epic.
+10. **Verify**:
    ```bash
    uv run "${CLAUDE_PLUGIN_ROOT}/scripts/verify_bundle.py" --bundle-dir <bundle-dir> --prs <N> --require-review --json
    ```
    Report the verdict, the risk tier, the finding count, the PR URL, and the
    paths of the two markdown files.
-10. **Offer to continue into narrative generation.** Ask the author
+11. **Offer to continue into narrative generation.** Ask the author
     (`AskUserQuestion`) whether to move straight into Generate mode's per-PR
     sweep for this PR now that `intent` and `assessment` are captured.
     Frame it as optional — declining just stops here, same as before this
@@ -805,8 +845,8 @@ Two references govern it, both loaded on demand:
     `narrative.*`, the ADR pass, `asset.*`/`diagram.*`, and audio (if
     requested) run. This step applies whether the target came from step 2's
     `--prs <N>` branch, or from opening a new PR in **Submitting the PR**
-    below (where step 8's render/verify has already run and this step
-    follows immediately after it).
+    below (where step 9's render and step 10's verify have already run and
+    this step follows immediately after it).
 
 ### Submitting the PR
 
@@ -830,7 +870,7 @@ about whether to open the PR at all.
    gh pr create --base <base> --head <branch> --title "<title>" --body-file docs/pull-requests/branch-<slug>/description.md [--draft]
    ```
    Then read the number back with `gh pr view --json number`.
-4. **Continue at pre-stage step 8** with that number.
+4. **Continue at pre-stage step 9** with that number.
 
 **Three cases end at the staging directory instead**, and all three are normal:
 `--no-create`, `gh` missing or unauthenticated, and the author declining at
@@ -848,14 +888,30 @@ Runs after the PR merges. Same steps 1 through 4, then:
    array. `references/review-mode.md` §7 holds the four drift kinds and the
    rule that matters most: **never rewrite the pre-stage `intent`.** Its value
    comes from being what the author said before the change shipped.
-6. Render and verify as in pre-stage steps 8 and 9.
+
+   If `intent.design` is set, or the same lookup as pre-stage step 5 hits,
+   measure `drift` per epic against that epic's slice of the design (the
+   epic's outcome, or the design intent as it applies to this PR). Do not
+   measure against the whole ADR. No single PR was going to satisfy all of a
+   multi-epic design.
+
+   If this merge completes the last epic, roll `goal.stage` to `delivered`.
+   If some epics remain, set `goal.stage` to `partially-delivered`. Fill that
+   epic's `state` to `merged`.
+
+   Stamp `approved_by` on the ADR this design wrote (the proposed record in
+   `docs/architecture/adr/`) now that a human merged. Then run
+   `build_adrs.py`. An agent still must not set `approved` on its own
+   initiative at generate time. This post-stage stamp is the human-merge
+   signal.
+6. Render and verify as in pre-stage steps 9 and 10.
 7. **Offer to continue into narrative generation**, same as pre-stage step
-   10 — a PR can reach post stage without ever having been narrated (this is
-   exactly the case that motivated adding step 10). Check whether
+   11 — a PR can reach post stage without ever having been narrated (this is
+   exactly the case that motivated adding step 11). Check whether
    `verify_bundle.py`'s `narrative.*`/`asset.*` keys are still `missing` for
    this PR; if so, make the same offer and ask the same two questions
    (`--art` mode, audio or not), then run Generate mode's per-PR steps as
-   pre-stage step 10 describes.
+   pre-stage step 11 describes.
 
 ## Design mode
 
