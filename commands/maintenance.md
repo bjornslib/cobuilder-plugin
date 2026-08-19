@@ -12,12 +12,11 @@ results against the most recent prior `architecture-review-YYYY-MM-DD-*.html`
 report, surfacing findings as NEW, ESCALATED, STABLE, or RESOLVED. If no
 prior report exists, this run establishes the baseline instead of a trend.
 
-Pass `--repo <path>` to run maintenance against any local checkout rather
-than the current repo, and `--store local|central` to override where output
-lands. Reports land in `<out-dir>/reports/` — `.archkit/self/reports/` for
-self-analysis, or the per-hub cache for a foreign repo passed via
-`--repo` — and maintenance mode finds its prior reports in that same
-directory to compute the trend.
+This mode is self-only. It analyses the session's own repo. Reports land in
+`docs/architecture/review/`. Prior-scan detection reads that same directory
+and sorts by the date in the filename. If the user asks to analyse a
+different local checkout, or to override where output lands, the skill will
+refuse.
 
 Invoke the `architecture` skill in maintenance mode, forwarding any arguments
 the user supplied after `/archkit:maintenance`:

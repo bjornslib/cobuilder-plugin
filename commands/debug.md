@@ -12,11 +12,9 @@ hypothesis generation, then ranks hypotheses by the cheapest test that would
 discriminate between them. Delivers a root-cause diagnosis and a recommended
 fix — it does not implement the fix itself.
 
-Pass `--repo <path>` to diagnose a failure in any local checkout rather
-than the current repo, and `--store local|central` to override where any
-diagnosis artifacts land. Reproduction runs inside the target repo, so a
-`--repo` other than the current session's affects where commands actually
-execute, not just where output is written.
+This mode is self-only. It diagnoses a failure in the session's own repo.
+It writes no report directory. If the user asks to analyse a different
+local checkout, or to override where output lands, the skill will refuse.
 
 Invoke the `architecture` skill in debug mode, forwarding any arguments the
 user supplied after `/archkit:debug`:

@@ -13,17 +13,10 @@ state machine per record and a mandatory `delivers` value block (the benefit,
 not just the cost). Also refreshes the three generated viewpoint files that
 index decisions across the project.
 
-Output lands under a configurable `{doc_root}`, defaulting to
-`docs/architecture/`. Pass `--repo <path>` to author or extract decisions
-for any local checkout rather than the current repo, and `--store
-local|central` to override where output lands.
-
-Where the records land depends on what's being analyzed: self-analysis (no
-`--repo`, or `--repo` pointing at this same repo) writes them into the
-target's own `{doc_root}`, as above, while a foreign repo passed via
-`--repo` writes instead to a per-hub cache at `<hub>/.archkit/<repo-slug>/`,
-so foreign checkouts are never written into. `--store local` overrides that
-and writes into the target repo itself.
+This mode is self-only. It analyses the session's own repo. Output lands
+under `docs/architecture/` (`{doc_root}`). If the user asks to analyse a
+different local checkout, or to override where output lands, the skill will
+refuse.
 
 Invoke the `architecture` skill in decisions mode, forwarding any arguments
 the user supplied after `/archkit:decisions`:
