@@ -21,7 +21,9 @@ Three phases, run in this order every time:
    tracked by `bundle.json`'s `bundle_format` integer. 0 -> 1 is a stamp
    only: `data/diagrams/` is deliberately not created empty, since an empty
    directory isn't committable to git and `build_diagrams.py` already
-   treats a missing diagrams dir as a non-error.
+   treats a missing diagrams dir as a non-error. 1 -> 2 stamps the format
+   and writes `data/designs.js` as `window.DESIGNS = {};` when that file is
+   missing. It does not invent designs and does not touch `story.json`.
 
 3. Data ladder (`SCHEMA_MIGRATIONS`) — the structure of `story.json`,
    tracked by `schema_version`. Each migration is a pure function over a
@@ -179,8 +181,20 @@ def migrate_layout_0_to_1(bundle_dir: Path) -> None:
     build_diagrams.py already treats a missing diagrams dir as a non-error."""
 
 
+def migrate_layout_1_to_2(bundle_dir: Path) -> None:
+    """1 -> 2 stamps bundle_format and writes an empty designs.js when
+    missing. Does not invent designs. Does not touch story.json.
+    build_designs.py is self-only and rebuilds designs.js from
+    docs/architecture/designs/."""
+    designs_js = bundle_dir / "data" / "designs.js"
+    if not designs_js.exists():
+        designs_js.parent.mkdir(parents=True, exist_ok=True)
+        designs_js.write_text("window.DESIGNS = {};\n")
+
+
 LAYOUT_MIGRATIONS: list[tuple[int, int, object, str]] = [
     (0, 1, migrate_layout_0_to_1, "stamp bundle_format 1 (no directory changes)"),
+    (1, 2, migrate_layout_1_to_2, "stamp bundle_format 2 (empty designs.js if missing)"),
 ]
 
 
