@@ -32,7 +32,7 @@ docs/architecture/designs/<name>/
 ```
 
 Plus one ADR at `docs/architecture/adr/ADR-NNNN-<slug>.md`, with
-`state: proposed`. Then run `build_adrs.py`. See
+`state: decided`. Then run `build_adrs.py`. See
 `decision-records-lite.md`.
 
 `intent` uses the same fields as `interview-guide.md` §1, with
@@ -206,7 +206,7 @@ procedural text: the constraint introduced, and the boundary rules.
 
 1. **ADR.** Write `docs/architecture/adr/ADR-NNNN-<slug>.md` from
    `skills/architecture/references/templates/adr-template.md`. Set
-   `state: proposed` and `source_pr: null`. Copy `alternatives` from
+   `state: decided` and `source_pr: null`. Copy `alternatives` from
    `intent`. Then run:
 
    ```bash

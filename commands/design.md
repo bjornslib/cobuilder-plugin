@@ -37,7 +37,7 @@ application source. It does not push. It does not open a pull request.
 - `docs/architecture/designs/<name>/assessment.json`
 - `docs/architecture/designs/<name>/pr-draft.md`
 - `docs/architecture/designs/<name>/diagrams/level-{1,2,3}.mmd`
-- `docs/architecture/adr/ADR-NNNN-<slug>.md` with `state: proposed`
+- `docs/architecture/adr/ADR-NNNN-<slug>.md` with `state: decided`
 
 Stage 7 creates the first local branch after confirmation:
 `design/<name>` or `design/<name>/<epic-slug>`.

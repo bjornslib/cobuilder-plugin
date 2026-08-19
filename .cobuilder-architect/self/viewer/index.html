@@ -476,21 +476,61 @@
      just wider — reuses .drawer-header/.drawer-close/.drawer-body). Shares
      #drawer-scrim with the comments drawer; JS enforces only one open at a time. ================= */
   #adr-sheet,
-  #assessment-sheet{
+  #assessment-sheet,
+  #designs-sheet{
     position:fixed;top:0;right:0;bottom:0;width:clamp(480px, 40vw, 720px);max-width:92vw;background:#fff;
     border-left:1px solid var(--line);border-radius:14px 0 0 14px;box-shadow:-12px 0 34px rgba(20,25,35,0.2);
     transform:translateX(100%);transition:transform .25s ease;z-index:41;
     display:flex;flex-direction:column;min-height:0;
   }
   #adr-sheet.open,
-  #assessment-sheet.open{transform:translateX(0);}
+  #assessment-sheet.open,
+  #designs-sheet.open{transform:translateX(0);}
   #adr-sheet .drawer-header,
-  #assessment-sheet .drawer-header{align-items:flex-start;}
+  #assessment-sheet .drawer-header,
+  #designs-sheet .drawer-header{align-items:flex-start;}
   .adr-sheet-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px;}
   .adr-state-badge{font:10px 'JetBrains Mono',monospace;letter-spacing:.04em;padding:3px 9px;border-radius:10px;border:1px solid;text-transform:uppercase;white-space:nowrap;}
   .adr-sheet-sourceline{font:11px 'JetBrains Mono',monospace;color:var(--ink-dim);}
   #adr-sheet .drawer-body,
-  #assessment-sheet .drawer-body{overflow-y:auto;gap:16px;}
+  #assessment-sheet .drawer-body,
+  #designs-sheet .drawer-body{overflow-y:auto;gap:16px;}
+
+  /* Designs sheet — list of named designs, then a reading view. Not a fifth level. */
+  .design-list{display:flex;flex-direction:column;gap:10px;}
+  .design-card{
+    display:block;width:100%;text-align:left;border-radius:10px;border:1px solid var(--line);
+    background:#fff;padding:14px 16px;cursor:pointer;color:inherit;font:inherit;
+  }
+  .design-card:hover{border-color:var(--accent);}
+  .design-card:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .design-card-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .design-card-name{font:700 13px 'JetBrains Mono',monospace;color:oklch(0.22 0.02 250);}
+  .design-card-title{font-size:13px;line-height:1.45;color:oklch(0.3 0.02 250);margin-top:4px;}
+  .design-card-meta{font:11px 'JetBrains Mono',monospace;color:var(--ink-dim);margin-top:8px;}
+  .design-epic-list{display:flex;flex-direction:column;gap:4px;margin-top:8px;}
+  .design-epic-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font:11.5px 'JetBrains Mono',monospace;color:oklch(0.3 0.02 250);}
+  .design-epic-pr{
+    font:600 10.5px 'JetBrains Mono',monospace;padding:2px 7px;border-radius:8px;
+    border:1px solid var(--line);background:oklch(0.98 0.005 250);color:var(--ink-dim);
+  }
+  .design-epic-pr.has-pr{border-color:color-mix(in oklch, var(--accent) 50%, transparent);color:var(--accent-text);cursor:pointer;background:color-mix(in oklch, var(--accent) 6%, white);}
+  .design-epic-pr.has-pr:hover{border-color:var(--accent);}
+  #designs-sheet .diagram-viewport{height:280px;border-radius:8px;border:1px solid var(--line);}
+
+  /* A prediction is a guess, never a check. Dashed purple, not the solid
+     severity rail a pre-stage finding uses. */
+  .asm-finding.prediction{
+    border-style:dashed;border-left-style:dashed;border-left-width:3px;
+    border-left-color:oklch(0.58 0.16 300);background:oklch(0.985 0.018 300);
+  }
+  .asm-finding.prediction .asm-sev{color:oklch(0.46 0.16 300);}
+  .asm-kind-prediction{
+    display:inline-block;font:700 9.5px 'JetBrains Mono',monospace;letter-spacing:.1em;
+    text-transform:uppercase;color:oklch(0.46 0.16 300);background:oklch(0.94 0.04 300);
+    border:1px dashed oklch(0.62 0.14 300);border-radius:8px;padding:1px 7px;
+  }
+  .asm-prediction-note{font:11.5px system-ui,sans-serif;font-style:italic;color:oklch(0.46 0.16 300);margin:0 0 8px;}
 
   /* Assessment-only blocks. Everything else in the sheet reuses .adr-block,
      .ab-kicker, .force-chip, .alt-section-label, and .adr-body-md. */
@@ -630,6 +670,7 @@
     <div class="dock-row1">
       <span class="decision-status mono" id="status-pill"></span>
       <div class="dock-row1-actions">
+        <button class="btn-add-comment" id="btn-designs-toggle">Designs</button>
         <button class="btn-add-comment" id="btn-comments-toggle">Comments (0)</button>
         <button class="decision-btn close-pr" id="btn-close">Close pull request</button>
         <div class="split-btn">
@@ -698,6 +739,20 @@
     <div class="drawer-body" id="assessment-sheet-body"></div>
   </div>
 
+  <!-- Designs sheet (same Sheet family as ADR / assessment). Lists every
+       design in window.DESIGNS, then a reading view for one. Not a fifth
+       level. Shares #drawer-scrim; only one sheet is ever open. -->
+  <div id="designs-sheet" role="dialog" aria-label="Designs">
+    <div class="drawer-header">
+      <div>
+        <h2 id="designs-sheet-title">Designs</h2>
+        <div class="adr-sheet-meta" id="designs-sheet-meta"></div>
+      </div>
+      <button class="drawer-close" id="designs-sheet-close-btn" title="Close (Esc)">&times;</button>
+    </div>
+    <div class="drawer-body" id="designs-sheet-body"></div>
+  </div>
+
   <!-- Narration audio dialog (shadcn Dialog look, centered). Shares #drawer-scrim above;
        mutually exclusive with the comments drawer / ADR sheet — see openAudioDialog. -->
   <div id="audio-dialog-layer">
@@ -727,10 +782,12 @@
 </script>
 <script src="../data/adrs.js"></script>
 <script src="../data/diagrams.js"></script>
+<script src="../data/designs.js"></script>
 <script>
 window.DIFFS = window.DIFFS || {};
 window.ADRS = window.ADRS || {};
 window.DIAGRAMS = window.DIAGRAMS || {};
+window.DESIGNS = window.DESIGNS || {};
 (function(){
   'use strict';
 
@@ -813,6 +870,9 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     activeAdrId: null,
     // Submit-mode assessment sheet: mutually exclusive with both panels above.
     assessmentOpen: false,
+    // Designs sheet: mutually exclusive with the comments / ADR / assessment panels.
+    designsOpen: false,
+    activeDesignName: null,
     // Audio dialog: mutually exclusive with every sheet above (see openAudioDialog).
     audioDialogOpen: false,
     // true while a level/PR content transition animation is in flight — guards re-entrant
@@ -1060,6 +1120,24 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     const src = forPr && forPr[String(levelIdx)];
     return (typeof src === 'string' && src.trim()) ? src : null;
   }
+  // Designs carry their own Mermaid sources on the design object (design.diagrams),
+  // or fall back to window.DIAGRAMS keyed by the design name. Never interpolate
+  // the source into HTML — mountOneDiagram injects via .textContent.
+  function designDiagramSource(name, levelIdx){
+    const d = lookupDesign(name);
+    const diagrams = d && d.diagrams;
+    if (diagrams && typeof diagrams === 'object'){
+      const raw = diagrams[String(levelIdx)] || diagrams[levelIdx]
+        || diagrams['level-' + levelIdx] || diagrams['level' + levelIdx];
+      if (typeof raw === 'string' && raw.trim()) return raw;
+      if (raw && typeof raw.source === 'string' && raw.source.trim()) return raw.source;
+    }
+    return diagramSource(name, levelIdx);
+  }
+  function resolveDiagramSource(viewport){
+    if (viewport.dataset.design) return designDiagramSource(viewport.dataset.design, viewport.dataset.level);
+    return diagramSource(viewport.dataset.pr, viewport.dataset.level);
+  }
   // Builds just the frame's inner markup (toggle + active view) — split out from
   // heroFrame() so onArtModeToggle can replace a single frame's contents in place
   // without touching the rest of the level's DOM (and its scroll position).
@@ -1168,9 +1246,7 @@ window.DIAGRAMS = window.DIAGRAMS || {};
   async function mountOneDiagram(viewport){
     const token = String(++diagramToken);
     viewport.dataset.diagramToken = token;
-    const prNum = viewport.dataset.pr;
-    const levelIdx = viewport.dataset.level;
-    const src = diagramSource(prNum, levelIdx) || '';
+    const src = resolveDiagramSource(viewport) || '';
     const pre = viewport.querySelector('pre.mermaid');
     if (!pre) return;
 
@@ -1416,6 +1492,7 @@ window.DIAGRAMS = window.DIAGRAMS || {};
           <span><kbd>&uarr;&darr;</kbd>level</span>
           <span><kbd>m</kbd>merge</span>
           <span><kbd>c</kbd>comment</span>
+          <span><kbd>d</kbd>designs</span>
           <span><kbd>space</kbd>audio</span>
         </span>
         <button class="hints-collapse-btn" id="hints-collapse-btn" title="Hide shortcuts">&#9656;</button>`;
@@ -1528,6 +1605,7 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     pill.style.background = review.state === 'pending' ? 'transparent' : `color-mix(in oklch, ${colors.border} 10%, white)`;
 
     document.getElementById('btn-comments-toggle').textContent = `Comments (${review.comments.length})`;
+    updateDesignsDockButton();
     document.getElementById('comment-level-chip').textContent = levelKey();
 
     const list = document.getElementById('comment-list');
@@ -1955,6 +2033,7 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     if (state.commentsOpen) state.commentsOpen = false;
     if (state.adrOpen) state.adrOpen = false;
     if (state.assessmentOpen) state.assessmentOpen = false;
+    if (state.designsOpen) closeDesignsSheet();
     state.audioDialogOpen = true;
     renderAudioDialogContent();
     const dialog = document.getElementById('audio-dialog');
@@ -2220,22 +2299,24 @@ window.DIAGRAMS = window.DIAGRAMS || {};
   }
 
   /* ============================================================
-     COMMENTS DRAWER + ADR SHEET + ASSESSMENT SHEET (shadcn Sheet look, recreated
-     in vanilla JS/CSS). All three panels share one #drawer-scrim; opening any one
-     closes the others first, so at most one sheet is ever open — this is the
-     "only one sheet at a time" rule.
+     COMMENTS DRAWER + ADR SHEET + ASSESSMENT SHEET + DESIGNS SHEET (shadcn Sheet
+     look, recreated in vanilla JS/CSS). All four panels share one #drawer-scrim;
+     opening any one closes the others first, so at most one sheet is ever open
+     — this is the "only one sheet at a time" rule.
      ============================================================ */
   function renderSheetVisibility(){
     document.getElementById('comments-drawer').classList.toggle('open', state.commentsOpen);
     document.getElementById('adr-sheet').classList.toggle('open', state.adrOpen);
     document.getElementById('assessment-sheet').classList.toggle('open', state.assessmentOpen);
+    document.getElementById('designs-sheet').classList.toggle('open', state.designsOpen);
     const scrim = document.getElementById('drawer-scrim');
-    scrim.classList.toggle('open', state.commentsOpen || state.adrOpen || state.assessmentOpen || state.audioDialogOpen);
+    scrim.classList.toggle('open', state.commentsOpen || state.adrOpen || state.assessmentOpen || state.designsOpen || state.audioDialogOpen);
     scrim.classList.toggle('audio-dim', state.audioDialogOpen);
   }
   function openCommentsDrawer(){
     if (state.adrOpen){ state.adrOpen = false; }
     if (state.assessmentOpen){ state.assessmentOpen = false; }
+    if (state.designsOpen) closeDesignsSheet();
     if (state.audioDialogOpen) stopAudio(); // mutual exclusivity: closes + stops the audio dialog
     state.commentsOpen = true;
     renderSheetVisibility();
@@ -2248,6 +2329,7 @@ window.DIAGRAMS = window.DIAGRAMS || {};
   function openAdrSheet(id){
     if (state.commentsOpen){ state.commentsOpen = false; }
     if (state.assessmentOpen){ state.assessmentOpen = false; }
+    if (state.designsOpen) closeDesignsSheet();
     if (state.audioDialogOpen) stopAudio(); // mutual exclusivity: closes + stops the audio dialog
     state.adrOpen = true;
     state.activeAdrId = id;
@@ -2261,6 +2343,7 @@ window.DIAGRAMS = window.DIAGRAMS || {};
   function openAssessmentSheet(){
     if (state.commentsOpen){ state.commentsOpen = false; }
     if (state.adrOpen){ state.adrOpen = false; }
+    if (state.designsOpen) closeDesignsSheet();
     if (state.audioDialogOpen) stopAudio(); // mutual exclusivity: closes + stops the audio dialog
     state.assessmentOpen = true;
     renderAssessmentSheet();
@@ -2270,10 +2353,28 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     state.assessmentOpen = false;
     renderSheetVisibility();
   }
+  function openDesignsSheet(){
+    if (state.commentsOpen){ state.commentsOpen = false; }
+    if (state.adrOpen){ state.adrOpen = false; }
+    if (state.assessmentOpen){ state.assessmentOpen = false; }
+    if (state.audioDialogOpen) stopAudio();
+    state.designsOpen = true;
+    state.activeDesignName = null;
+    renderDesignsSheet();
+    renderSheetVisibility();
+  }
+  function closeDesignsSheet(){
+    if (!state.designsOpen) return;
+    state.designsOpen = false;
+    const body = document.getElementById('designs-sheet-body');
+    if (body) unmountDiagrams(body);
+    renderSheetVisibility();
+  }
   function closeAnyOpenSheet(){
     if (state.commentsOpen) closeCommentsDrawer();
     else if (state.adrOpen) closeAdrSheet();
     else if (state.assessmentOpen) closeAssessmentSheet();
+    else if (state.designsOpen) closeDesignsSheet();
     else if (state.audioDialogOpen) stopAudio();
   }
 
@@ -2525,7 +2626,6 @@ window.DIAGRAMS = window.DIAGRAMS || {};
      label and its `duplicates` citation in one pass. Patching this function's
      output with .replace() afterwards silently lost the citation whenever the
      evidence row was absent, because the replace target only existed with it. */
-  
   function asmQuestionHtml(kicker, block, extraLabel, extraKey, leadHtml, tailHtml){
     if (!block || !block.answer) return '';
     const ev = (block.evidence || []).filter(Boolean);
@@ -2553,7 +2653,7 @@ window.DIAGRAMS = window.DIAGRAMS || {};
       metaEl.innerHTML = '';
       body.innerHTML = `
         <div class="empty-card">
-          <div class="empty-detail">No assessment recorded for this PR. Run <code>/prodyssey:submit</code> against it.</div>
+          <div class="empty-detail">No assessment recorded for this PR. Run <code>/cobuilder-architect:submit</code> against it.</div>
         </div>`;
       return;
     }
@@ -2691,6 +2791,349 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     }
   }
 
+  /* ============================================================
+     DESIGNS SHEET — list every key in window.DESIGNS, then a
+     reading view for one design. Predictions never look like checks.
+     ============================================================ */
+  function designsRecord(){
+    return window.DESIGNS || {};
+  }
+  function designKeys(){
+    const rec = designsRecord();
+    if (Array.isArray(rec)){
+      return rec.map((d, i) => (d && (d.name || d.id)) || String(i));
+    }
+    return Object.keys(rec);
+  }
+  function lookupDesign(name){
+    const rec = designsRecord();
+    if (Array.isArray(rec)){
+      return rec.find(d => d && ((d.goal && d.goal.name === name) || d.name === name || d.id === name)) || rec[Number(name)] || null;
+    }
+    return Object.prototype.hasOwnProperty.call(rec, name) ? rec[name] : null;
+  }
+  // build_designs.py nests goal.json under `goal`. A flat record (name/title/stage
+  // on the design itself) is also accepted so a hand-written designs.js still renders.
+  function designGoal(d){
+    return (d && d.goal && typeof d.goal === 'object') ? d.goal : (d || {});
+  }
+  function designTitle(d){
+    const g = designGoal(d);
+    return (g && g.title) || (d && d.title) || '';
+  }
+  function designName(d, fallback){
+    const g = designGoal(d);
+    return (g && g.name) || (d && d.name) || fallback || '';
+  }
+  function designStage(d){
+    const g = designGoal(d);
+    return (g && g.stage) || (d && d.stage) || 'unknown';
+  }
+  function roundsCount(d){
+    const g = designGoal(d);
+    const rounds = (g && g.rounds) || (d && d.rounds);
+    if (Array.isArray(rounds)) return rounds.length;
+    if (typeof rounds === 'number') return rounds;
+    return 0;
+  }
+  function designEpics(d){
+    const g = designGoal(d);
+    if (g && Array.isArray(g.epics)) return g.epics;
+    return (d && Array.isArray(d.epics)) ? d.epics : [];
+  }
+  function designAdrId(d){
+    if (!d) return null;
+    if (typeof d.adr === 'string' && d.adr) return d.adr;
+    if (d.adr && typeof d.adr === 'object') return d.adr.id || d.adr.adr_id || null;
+    const g = designGoal(d);
+    return d.adr_id || d.adrId || (g && (g.adr_id || g.adr)) || null;
+  }
+  function designPrDraft(d){
+    if (!d) return '';
+    return d['pr-draft'] || d.pr_draft || d.prDraft || '';
+  }
+  function designOutcome(d){
+    const g = designGoal(d);
+    return (g && g.outcome) || (d && d.outcome) || '';
+  }
+  function epicPrNumber(epic){
+    if (!epic || epic.pr == null || epic.pr === '') return null;
+    const n = Number(epic.pr);
+    return Number.isFinite(n) ? n : null;
+  }
+  function designEpicRowsHtml(epics){
+    if (!epics.length){
+      return '<div class="design-card-meta">No epics recorded.</div>';
+    }
+    return `<div class="design-epic-list">${epics.map(epic => {
+      const prNum = epicPrNumber(epic);
+      const label = epic.slug || epic.id || 'epic';
+      const prChip = prNum == null
+        ? '<span class="design-epic-pr">no PR yet</span>'
+        : `<button type="button" class="design-epic-pr has-pr" data-pr="${prNum}">PR #${prNum}</button>`;
+      const stateChip = epic.state
+        ? `<span class="adr-state-badge" style="background:oklch(0.96 0.02 250);color:var(--ink-dim);border-color:var(--line);">${escapeHtml(String(epic.state))}</span>`
+        : '';
+      return `<div class="design-epic-row"><span>${escapeHtml(String(label))}</span>${prChip}${stateChip}</div>`;
+    }).join('')}</div>`;
+  }
+  function designFindingCard(f){
+    const isPred = f && f.kind === "prediction";
+    const sev = (f && f.severity) || 'note';
+    const kindLabel = isPred
+      ? '<span class="asm-kind-prediction">prediction</span>'
+      : escapeHtml(sev);
+    const extra = [
+      isPred && sev ? escapeHtml(sev) : '',
+      f && f.district ? escapeHtml(f.district) : '',
+    ].filter(Boolean).join(' · ');
+    return `
+      <div class="asm-finding ${isPred ? 'prediction' : escapeHtml(sev)}">
+        <div class="asm-sev">${kindLabel}${extra ? ` · ${extra}` : ''}</div>
+        <div class="asm-claim">${escapeHtml((f && f.claim) || '')}</div>
+        ${f && f.evidence ? `<div class="asm-ev">${escapeHtml(f.evidence)}</div>` : ''}
+        ${f && f.suggestion ? `<div class="asm-fix">${escapeHtml(f.suggestion)}</div>` : ''}
+      </div>`;
+  }
+  function renderDesignAssessment(a, intent){
+    if (!a){
+      return `
+        <div class="empty-card">
+          <div class="empty-detail">No design assessment recorded.</div>
+        </div>`;
+    }
+    const summaryHtml = a.summary ? `
+      <div class="adr-block decision">
+        <div class="ab-kicker">Summary</div>
+        <p>${escapeHtml(a.summary)}</p>
+      </div>` : '';
+    let intentHtml = '';
+    if (intent && intent.problem){
+      intentHtml = `
+        <div class="adr-block problem">
+          <div class="ab-kicker">The author's stated problem</div>
+          <p>${escapeHtml(intent.problem)}</p>
+        </div>`;
+    }
+    const findings = a.findings || [];
+    const hasPrediction = findings.some(f => f && f.kind === "prediction");
+    let findingsHtml = '';
+    if (findings.length){
+      findingsHtml = `
+        <div>
+          <div class="alt-section-label">Findings</div>
+          ${hasPrediction ? '<p class="asm-prediction-note">Predictions are guesses. No code exists yet to check them.</p>' : ''}
+          <div class="asm-stack">${findings.map(designFindingCard).join('')}</div>
+        </div>`;
+    }
+    const checks = a.boundary_checks || [];
+    const checksHtml = checks.length ? `
+      <div>
+        <div class="alt-section-label">Boundary checks</div>
+        <div class="asm-stack">${checks.map(c => `
+          <div class="asm-check ${escapeHtml(c.result || '')}">
+            <span class="asm-res">${escapeHtml(c.result || '?')}</span>
+            <span>${escapeHtml(c.rule || '')}${c.source ? ` <span class="adr-sheet-sourceline">(${escapeHtml(c.source)})</span>` : ''}</span>
+          </div>`).join('')}</div>
+      </div>` : '';
+    const regretHtml = a.regret_risk ? `
+      <div class="adr-block">
+        <div class="ab-kicker" style="color:oklch(0.5 0.15 25);">Will we regret this?</div>
+        <p>${escapeHtml(a.regret_risk)}</p>
+      </div>` : '';
+    let patternHtml = '';
+    if (a.pattern && a.pattern.answer){
+      const label = ownLookup(PATTERN_LABEL, a.pattern.verdict, a.pattern.verdict || '');
+      const lead = label ? `<p style="margin-bottom:8px;"><strong>${escapeHtml(label)}</strong></p>` : '';
+      patternHtml = asmQuestionHtml('Q3 — pattern, duplicate, or reinvention', a.pattern, '', '', lead, '');
+    }
+    return `
+      ${summaryHtml}
+      ${intentHtml}
+      ${asmQuestionHtml('Q1 — is this sensible?', a.sensible)}
+      ${asmQuestionHtml('Q2 — maintainability and readability', a.maintainability, 'Constraint introduced', 'constraint_introduced')}
+      ${patternHtml}
+      ${regretHtml}
+      ${findingsHtml}
+      ${checksHtml}`;
+  }
+  function renderDesignsList(titleEl, metaEl, body){
+    const keys = designKeys();
+    titleEl.textContent = 'Designs';
+    metaEl.innerHTML = keys.length
+      ? `<span class="adr-sheet-sourceline">${keys.length} design${keys.length === 1 ? '' : 's'}</span>`
+      : '';
+    if (!keys.length){
+      body.innerHTML = `
+        <div class="empty-card">
+          <div class="empty-detail">No designs yet. Run <code>/cobuilder-architect:design</code> to author one.</div>
+        </div>`;
+      return;
+    }
+    body.innerHTML = `<div class="design-list">${keys.map(name => {
+      const d = lookupDesign(name) || {};
+      const title = designTitle(d);
+      const stage = designStage(d);
+      const nRounds = roundsCount(d);
+      const epics = designEpics(d);
+      return `
+        <div class="design-card" role="button" tabindex="0" data-design-name="${escapeHtml(name)}">
+          <div class="design-card-top">
+            <span class="design-card-name">${escapeHtml(designName(d, name))}</span>
+            <span class="adr-state-badge" style="background:oklch(0.96 0.02 250);color:var(--ink-dim);border-color:var(--line);">${escapeHtml(String(stage))}</span>
+          </div>
+          ${title ? `<div class="design-card-title">${escapeHtml(title)}</div>` : ''}
+          <div class="design-card-meta">${nRounds} round${nRounds === 1 ? '' : 's'} · ${epics.length} epic${epics.length === 1 ? '' : 's'}</div>
+          ${designEpicRowsHtml(epics)}
+        </div>`;
+    }).join('')}</div>`;
+    const openCard = (card) => {
+      state.activeDesignName = card.dataset.designName;
+      renderDesignsSheet();
+    };
+    body.querySelectorAll('.design-card').forEach(card => {
+      card.addEventListener('click', () => openCard(card));
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); e.stopPropagation(); openCard(card); }
+      });
+    });
+    wireDesignEpicPrButtons(body);
+  }
+  function renderDesignReading(name, titleEl, metaEl, body){
+    const d = lookupDesign(name);
+    if (!d){
+      titleEl.textContent = name || 'Design';
+      metaEl.innerHTML = '';
+      body.innerHTML = `
+        <div class="empty-card">
+          <div class="empty-detail">Design not found. Run <code>/cobuilder-architect:design</code>.</div>
+        </div>`;
+      return;
+    }
+    const stage = designStage(d);
+    const nRounds = roundsCount(d);
+    titleEl.textContent = designTitle(d) || designName(d, name);
+    const verdict = d.assessment && d.assessment.verdict;
+    metaEl.innerHTML = (verdict ? verdictBadgeHtml(verdict) : '')
+      + `<span class="adr-state-badge" style="background:oklch(0.96 0.02 250);color:var(--ink-dim);border-color:var(--line);">${escapeHtml(String(stage))}</span>`
+      + `<span class="adr-sheet-sourceline">${escapeHtml(designName(d, name))} · ${nRounds} round${nRounds === 1 ? '' : 's'}</span>`;
+
+    const outcome = designOutcome(d);
+    const outcomeHtml = outcome ? `
+      <div class="adr-block decision">
+        <div class="ab-kicker">Outcome</div>
+        <p>${escapeHtml(outcome)}</p>
+      </div>` : '';
+
+    const adrId = designAdrId(d);
+    const adrHtml = adrId ? `
+      <div>
+        <div class="alt-section-label">ADR</div>
+        <button type="button" class="adr-badge" id="design-adr-pointer" data-adr-id="${escapeHtml(adrId)}">${escapeHtml(adrId)}</button>
+      </div>` : '';
+
+    const epics = designEpics(d);
+    const epicsHtml = `
+      <div>
+        <div class="alt-section-label">Epics</div>
+        ${designEpicRowsHtml(epics)}
+      </div>`;
+
+    const diagramLevels = [1, 2, 3].filter(lvl => !!designDiagramSource(name, lvl));
+    let diagramsHtml;
+    if (!diagramLevels.length){
+      diagramsHtml = `
+        <div>
+          <div class="alt-section-label">Diagrams</div>
+          <div class="empty-card"><div class="empty-detail">No diagrams authored for this design.</div></div>
+        </div>`;
+    } else {
+      diagramsHtml = `
+        <div>
+          <div class="alt-section-label">Diagrams</div>
+          <div class="asm-stack">${diagramLevels.map(lvl => `
+            <div>
+              <div class="design-card-meta" style="margin:0 0 6px;">Level ${lvl} — ${escapeHtml(LEVEL_LABELS[lvl - 1] || '')}</div>
+              <div class="diagram-viewport" data-diagram data-design="${escapeHtml(name)}" data-level="${lvl}"><pre class="mermaid"></pre></div>
+            </div>`).join('')}</div>
+        </div>`;
+    }
+
+    const draft = designPrDraft(d);
+    const draftHtml = draft ? `
+      <div>
+        <div class="alt-section-label">Envisioned pull request</div>
+        <div class="adr-block"><div class="adr-body-md">${renderMarkdown(draft)}</div></div>
+      </div>` : `
+      <div>
+        <div class="alt-section-label">Envisioned pull request</div>
+        <div class="empty-card"><div class="empty-detail">No pr-draft recorded for this design.</div></div>
+      </div>`;
+
+    const assessmentHtml = `
+      <div>
+        <div class="alt-section-label">Design assessment</div>
+        ${renderDesignAssessment(d.assessment, d.intent || null)}
+      </div>`;
+
+    body.innerHTML = `
+      <button type="button" class="link-btn" id="designs-back-btn">← All designs</button>
+      ${outcomeHtml}
+      ${adrHtml}
+      ${epicsHtml}
+      ${diagramsHtml}
+      ${draftHtml}
+      ${assessmentHtml}`;
+
+    const back = document.getElementById('designs-back-btn');
+    if (back) back.addEventListener('click', () => {
+      state.activeDesignName = null;
+      renderDesignsSheet();
+    });
+    const adrBtn = document.getElementById('design-adr-pointer');
+    if (adrBtn) adrBtn.addEventListener('click', () => openAdrSheet(adrBtn.dataset.adrId));
+    wireDesignEpicPrButtons(body);
+    mountDiagrams(body);
+  }
+  function wireDesignEpicPrButtons(root){
+    root.querySelectorAll('.design-epic-pr.has-pr').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const n = Number(btn.dataset.pr);
+        const idx = TIMELINE.findIndex(p => p.pr === n);
+        if (idx >= 0) selectPR(idx);
+      });
+    });
+  }
+  function renderDesignsSheet(){
+    const titleEl = document.getElementById('designs-sheet-title');
+    const metaEl = document.getElementById('designs-sheet-meta');
+    const body = document.getElementById('designs-sheet-body');
+    if (!titleEl || !metaEl || !body) return;
+    unmountDiagrams(body);
+    const keys = designKeys();
+    if (!keys.length){
+      titleEl.textContent = 'Designs';
+      metaEl.innerHTML = '';
+      body.innerHTML = `
+        <div class="empty-card">
+          <div class="empty-detail">No designs yet. Run <code>/cobuilder-architect:design</code> to author one.</div>
+        </div>`;
+      return;
+    }
+    if (state.activeDesignName){
+      renderDesignReading(state.activeDesignName, titleEl, metaEl, body);
+      return;
+    }
+    renderDesignsList(titleEl, metaEl, body);
+  }
+  function updateDesignsDockButton(){
+    const btn = document.getElementById('btn-designs-toggle');
+    if (!btn) return;
+    const n = designKeys().length;
+    btn.textContent = n ? `Designs (${n})` : 'Designs';
+  }
+
   document.getElementById('tb-prev').addEventListener('click', () => selectPR(state.prIndex - 1));
   document.getElementById('tb-next').addEventListener('click', () => selectPR(state.prIndex + 1));
 
@@ -2708,9 +3151,11 @@ window.DIAGRAMS = window.DIAGRAMS || {};
   });
   document.getElementById('btn-close').addEventListener('click', closePR);
   document.getElementById('btn-comments-toggle').addEventListener('click', openCommentsDrawer);
+  document.getElementById('btn-designs-toggle').addEventListener('click', openDesignsSheet);
   document.getElementById('drawer-close-btn').addEventListener('click', closeCommentsDrawer);
   document.getElementById('adr-sheet-close-btn').addEventListener('click', closeAdrSheet);
   document.getElementById('assessment-sheet-close-btn').addEventListener('click', closeAssessmentSheet);
+  document.getElementById('designs-sheet-close-btn').addEventListener('click', closeDesignsSheet);
   document.getElementById('drawer-scrim').addEventListener('click', closeAnyOpenSheet);
   document.getElementById('btn-add-comment').addEventListener('click', addCommentOnly);
   commentInput.addEventListener('keydown', (e) => { if (e.key === 'Enter'){ e.preventDefault(); addCommentOnly(); } });
@@ -2733,7 +3178,7 @@ window.DIAGRAMS = window.DIAGRAMS || {};
   window.addEventListener('keydown', (e) => {
     // Escape must close whichever sheet is open, even while the comment input is
     // focused — checked before the input/textarea early-return below so it always works.
-    if (e.key === 'Escape' && (state.commentsOpen || state.adrOpen || state.assessmentOpen || state.audioDialogOpen)){ closeAnyOpenSheet(); return; }
+    if (e.key === 'Escape' && (state.commentsOpen || state.adrOpen || state.assessmentOpen || state.designsOpen || state.audioDialogOpen)){ closeAnyOpenSheet(); return; }
 
     const tag = document.activeElement && document.activeElement.tagName;
     if (tag === 'TEXTAREA' || tag === 'INPUT') return;
@@ -2744,6 +3189,7 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     else if (e.key === 'ArrowDown') setLevel(state.level + 1);
     else if (e.key === 'm') mergePR();
     else if (e.key === 'c') { e.preventDefault(); openCommentsDrawer(); }
+    else if (e.key === 'd') { e.preventDefault(); openDesignsSheet(); }
     else if (e.key === ' '){
       // Always preventDefault so Space never page-scrolls the content pane. Spec: space
       // starts playback (opening the dialog) when it's closed, but once the dialog is
