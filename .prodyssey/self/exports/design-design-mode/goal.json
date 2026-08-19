@@ -1,0 +1,30 @@
+{
+  "name": "design-mode",
+  "title": "Design mode for prodyssey",
+  "created": "2026-08-19",
+  "outcome": "An engineer can design a change with the plugin before writing it, and the resulting intent, ADR, and diagrams carry through to the pull request that implements it.",
+  "done_when": [
+    "/prodyssey:design runs the seven stages and writes a design directory",
+    "submit mode resolves a design from the branch name and skips the cold interview",
+    "the viewer lists and renders designs alongside the PR timeline"
+  ],
+  "abort_if": [
+    "the challenge stage cannot be made to produce rejected options reliably, leaving every ADR with a single considered option",
+    "the architecture skill cannot be merged, leaving design mode without a corpus to reason with"
+  ],
+  "min_work": {
+    "derived_from": "3 districts (skills, scripts, viewer), 2 colliding ADRs, 1 boundary rule on install surface",
+    "alternatives_explored": 3,
+    "boundary_rules_checked": true,
+    "challenge_stage_run": true
+  },
+  "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
+  "stage": "review",
+  "supersedes": null,
+  "rounds": [
+    { "n": 1, "changed": true, "feedback_class": "material" },
+    { "n": 2, "changed": true, "feedback_class": "material" },
+    { "n": 3, "changed": true, "feedback_class": "cosmetic" }
+  ],
+  "branch": null
+}
