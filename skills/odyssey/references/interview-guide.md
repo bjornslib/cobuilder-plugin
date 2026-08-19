@@ -74,6 +74,12 @@ The gaps are usually the same four things, because a diff cannot carry them:
 4. **Which parts worry the author.** A reviewer cannot read confidence off a
    diff.
 
+When submit mode has already loaded `intent` from a design directory
+(`intent.design` is set), that block is the hypothesis. Ask what changed
+since the design. Do not re-interview the five design topics. The six-topic
+cap in §3 still holds. Still run the self-consistency check in §3a against
+the diff. The design can have drifted.
+
 ## 3. Question budget
 
 **Target six questions. Stop at eight.** A long interview trains the author to

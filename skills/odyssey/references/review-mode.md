@@ -249,6 +249,11 @@ from comparing what shipped against what the author said before it shipped. An
 `intent` block edited after the fact reports nothing. Write a new
 `assessment` with `stage: "post"`, and leave `intent` alone.
 
+When `intent.design` is set, measure drift per epic against that epic's slice
+of the design (the epic's outcome, or the design intent as it applies to this
+PR). Do not measure this PR against the whole ADR. No single PR was going to
+satisfy all of a multi-epic design.
+
 Drift is not blame. A change of plan during review is normal and often right.
 The entry records that the plan changed, so that the narrative and the ADRs
 built later describe the change that merged.
