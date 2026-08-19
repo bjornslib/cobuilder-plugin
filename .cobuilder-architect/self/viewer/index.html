@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Codebase Odyssey — Option F: Merged Review</title>
+<title>CoBuilder-Architect</title>
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
@@ -56,8 +56,20 @@
     border-bottom:1px solid var(--line);background:#fff;
   }
   .tb-brand{flex:0 0 auto;justify-self:start;min-width:0;}
-  .tb-brand .brand-title{font:700 12.5px 'JetBrains Mono',monospace;letter-spacing:.14em;color:oklch(0.22 0.02 250);}
+  .tb-brand .brand-title{font:700 12.5px 'JetBrains Mono',monospace;letter-spacing:.04em;color:oklch(0.22 0.02 250);}
   .tb-brand .brand-repo{font:10.5px 'JetBrains Mono',monospace;color:var(--ink-dim);letter-spacing:.02em;margin-top:2px;}
+  .mode-switch{
+    display:flex;align-items:stretch;margin-top:8px;width:fit-content;max-width:100%;
+    border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fff;
+  }
+  .mode-switch-btn{
+    font:600 10.5px 'JetBrains Mono',monospace;letter-spacing:.03em;padding:4px 10px;
+    border:none;background:transparent;color:var(--ink-dim);cursor:pointer;white-space:nowrap;
+  }
+  .mode-switch-btn + .mode-switch-btn{border-left:1px solid var(--line);}
+  .mode-switch-btn:hover:not(.active){background:oklch(0.97 0.005 250);color:var(--ink);}
+  .mode-switch-btn.active{background:color-mix(in oklch, var(--accent) 12%, white);color:var(--accent-text);}
+  .mode-switch-btn:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
 
   .tb-center{justify-self:center;min-width:0;display:flex;align-items:center;gap:12px;}
   .tb-nav-btn{
@@ -622,8 +634,12 @@
 
   <div id="topbar">
     <div class="tb-brand">
-      <div class="brand-title">CODEBASE ODYSSEY</div>
+      <div class="brand-title">CoBuilder-Architect</div>
       <div class="brand-repo" id="repo-label"></div>
+      <div class="mode-switch" id="mode-switch" role="tablist" aria-label="View mode">
+        <button type="button" role="tab" class="mode-switch-btn" id="mode-btn-designs" data-mode="designs" aria-selected="false">Designs</button>
+        <button type="button" role="tab" class="mode-switch-btn" id="mode-btn-prs" data-mode="prs" aria-selected="true">Pull requests</button>
+      </div>
     </div>
     <div class="tb-center">
       <button class="tb-nav-btn" id="tb-prev" title="Previous PR (&larr;)">&#8249;</button>
@@ -637,7 +653,7 @@
   </div>
 
   <div id="queue-dots-row">
-    <span class="qd-label">Queue</span>
+    <span class="qd-label" id="qd-label">Queue</span>
     <div id="queue-dots-track"><div class="qd-line"></div></div>
   </div>
 
@@ -670,10 +686,9 @@
     <div class="dock-row1">
       <span class="decision-status mono" id="status-pill"></span>
       <div class="dock-row1-actions">
-        <button class="btn-add-comment" id="btn-designs-toggle">Designs</button>
         <button class="btn-add-comment" id="btn-comments-toggle">Comments (0)</button>
-        <button class="decision-btn close-pr" id="btn-close">Close pull request</button>
-        <div class="split-btn">
+        <button class="decision-btn close-pr pr-only" id="btn-close">Close pull request</button>
+        <div class="split-btn pr-only">
           <button class="split-main" id="btn-merge">Merge pull request</button>
           <button class="split-arrow" id="btn-merge-arrow" aria-haspopup="true" title="Select merge method">&#9662;</button>
           <div class="merge-menu" id="merge-menu" hidden>
@@ -797,9 +812,12 @@ window.DESIGNS = window.DESIGNS || {};
   const TIMELINE = STORY.timeline.filter(p => !EXCLUDED_PRS.includes(p.pr));
   const REPO = STORY.meta.repo;
   const N_LEVELS = 4;
+  const DESIGN_N_LEVELS = 3;
   const LEVEL_KEYS = ['landscape','problem_solution','architecture','file_changes'];
   const LEVEL_LABELS = ['Overview', 'Problem & Solution', 'Architecture', 'File Changes'];
   const LEVEL_TEASER_FALLBACK = ['World state at this point.', 'Why this PR exists.', 'How it fits the system.', 'What actually changed.'];
+  const DESIGN_LEVEL_LABELS = ['Overview', 'Problem & Solution', 'Architecture'];
+  const DESIGN_LEVEL_TEASER_FALLBACK = ['Intent, boundaries, and outcome.', 'Why this design exists.', 'How it fits the system.'];
 
   const districtsById = {};
   DISTRICTS.forEach(d => districtsById[d.id] = d);
@@ -870,7 +888,11 @@ window.DESIGNS = window.DESIGNS || {};
     activeAdrId: null,
     // Submit-mode assessment sheet: mutually exclusive with both panels above.
     assessmentOpen: false,
-    // Designs sheet: mutually exclusive with the comments / ADR / assessment panels.
+    // First-class view mode. 'prs' is the current pull-request viewer.
+    // 'designs' mirrors it with a three-level design view. Persisted.
+    viewMode: 'prs',
+    designIndex: 0,
+    // Designs sheet: leftover drawer. Main chrome no longer opens it.
     designsOpen: false,
     activeDesignName: null,
     // Audio dialog: mutually exclusive with every sheet above (see openAudioDialog).
@@ -944,6 +966,8 @@ window.DESIGNS = window.DESIGNS || {};
   function pr(){ return TIMELINE[state.prIndex]; }
   function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
   function levelKey(){ return LEVEL_KEYS[state.level - 1]; }
+  function viewLevelMax(){ return state.viewMode === 'designs' ? DESIGN_N_LEVELS : N_LEVELS; }
+  function isDesignsMode(){ return state.viewMode === 'designs'; }
 
   /* ============================================================
      REVIEW PERSISTENCE — localStorage odyssey-f:<repo>:<pr>
@@ -1425,12 +1449,35 @@ window.DESIGNS = window.DESIGNS || {};
      RENDER: TOPBAR
      ============================================================ */
   function renderTopbar(){
-    const p = pr();
     document.getElementById('repo-label').textContent = REPO;
-    document.getElementById('tb-pr-label').innerHTML = `<b>PR #${p.pr}</b> · ${escapeHtml(p.title)}`;
-    document.getElementById('tb-queue-count').textContent = `${state.prIndex + 1} / ${TIMELINE.length}`;
-    document.getElementById('tb-prev').disabled = state.prIndex === 0;
-    document.getElementById('tb-next').disabled = state.prIndex === TIMELINE.length - 1;
+    const designs = isDesignsMode();
+    document.querySelectorAll('.mode-switch-btn').forEach(btn => {
+      const on = btn.dataset.mode === state.viewMode;
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    if (designs){
+      const keys = designKeys();
+      const name = currentDesignName();
+      const d = name ? lookupDesign(name) : null;
+      const title = d ? (designTitle(d) || designName(d, name)) : 'No designs';
+      document.getElementById('tb-pr-label').innerHTML = `<b>${escapeHtml(title)}</b>`;
+      document.getElementById('tb-queue-count').textContent = keys.length ? `${state.designIndex + 1} / ${keys.length}` : '0 / 0';
+      document.getElementById('tb-prev').disabled = !keys.length || state.designIndex === 0;
+      document.getElementById('tb-next').disabled = !keys.length || state.designIndex === keys.length - 1;
+      document.getElementById('tb-prev').title = 'Previous design (\u2190)';
+      document.getElementById('tb-next').title = 'Next design (\u2192)';
+    } else {
+      const p = pr();
+      document.getElementById('tb-pr-label').innerHTML = p
+        ? `<b>PR #${p.pr}</b> · ${escapeHtml(p.title)}`
+        : '<b>No pull requests</b>';
+      document.getElementById('tb-queue-count').textContent = `${state.prIndex + 1} / ${TIMELINE.length}`;
+      document.getElementById('tb-prev').disabled = state.prIndex === 0;
+      document.getElementById('tb-next').disabled = state.prIndex === TIMELINE.length - 1;
+      document.getElementById('tb-prev').title = 'Previous PR (\u2190)';
+      document.getElementById('tb-next').title = 'Next PR (\u2192)';
+    }
     renderHintsWidget();
   }
 
@@ -1463,6 +1510,20 @@ window.DESIGNS = window.DESIGNS || {};
   function saveArtMode(v){
     try { localStorage.setItem(ART_MODE_KEY, v); } catch (e) { /* unavailable */ }
   }
+
+  /* ============================================================
+     VIEW MODE PERSISTENCE — same try/catch-guarded localStorage
+     pattern as ART_MODE_KEY. Global: Designs vs Pull requests.
+     ============================================================ */
+  const VIEW_MODE_KEY = 'odyssey-f:view-mode';
+  function loadViewMode(){
+    try {
+      return localStorage.getItem(VIEW_MODE_KEY) === 'designs' ? 'designs' : 'prs';
+    } catch (e) { return 'prs'; }
+  }
+  function saveViewMode(v){
+    try { localStorage.setItem(VIEW_MODE_KEY, v === 'designs' ? 'designs' : 'prs'); } catch (e) { /* unavailable */ }
+  }
   let hintsCollapseTimer = null;
   function collapseHints(){
     if (state.hintsPinned) return; // pinned — never auto-collapses
@@ -1488,9 +1549,9 @@ window.DESIGNS = window.DESIGNS || {};
     if (state.hintsExpanded){
       wrap.innerHTML = `
         <span class="kbd-hints">
-          <span><kbd>&larr;&rarr;</kbd>PR</span>
+          <span><kbd>&larr;&rarr;</kbd>${isDesignsMode() ? 'design' : 'PR'}</span>
           <span><kbd>&uarr;&darr;</kbd>level</span>
-          <span><kbd>m</kbd>merge</span>
+          ${isDesignsMode() ? '' : '<span><kbd>m</kbd>merge</span>'}
           <span><kbd>c</kbd>comment</span>
           <span><kbd>d</kbd>designs</span>
           <span><kbd>space</kbd>audio</span>
@@ -1513,7 +1574,37 @@ window.DESIGNS = window.DESIGNS || {};
      ============================================================ */
   function renderQueueDots(){
     const track = document.getElementById('queue-dots-track');
+    const label = document.getElementById('qd-label');
+    if (label) label.textContent = isDesignsMode() ? 'Designs' : 'Queue';
     track.querySelectorAll('.qd-dot').forEach(el => el.remove());
+    if (isDesignsMode()){
+      const keys = designKeys();
+      const N = keys.length;
+      keys.forEach((name, i) => {
+        const pct = N > 1 ? (1.5 + (i / (N - 1)) * 97) : 50;
+        const isCurrent = i === state.designIndex;
+        const d = lookupDesign(name) || {};
+        const title = designTitle(d) || designName(d, name);
+        const stage = designStage(d);
+        const size = isCurrent ? 12 : 8;
+        const el = document.createElement('button');
+        el.className = 'qd-dot';
+        el.title = `${title} — ${stage}`;
+        el.style.width = size + 'px';
+        el.style.height = size + 'px';
+        el.style.left = pct + '%';
+        if (isCurrent) el.style.boxShadow = `0 0 0 3px color-mix(in oklch, ${ACCENT} 45%, transparent)`;
+        const fill = document.createElement('span');
+        fill.className = 'qd-dot-fill';
+        fill.style.background = isCurrent ? ACCENT : '#fff';
+        fill.style.border = `2px solid ${isCurrent ? ACCENT : 'rgba(30,40,55,0.35)'}`;
+        el.appendChild(fill);
+        el.addEventListener('click', () => selectDesign(i));
+        track.appendChild(el);
+        if (isCurrent) anim(fill, { scale: [1, 1.35, 1] }, { duration: 0.25, ease: 'ease-out' });
+      });
+      return;
+    }
     const N = TIMELINE.length;
     TIMELINE.forEach((p, i) => {
       const pct = N > 1 ? (1.5 + (i / (N - 1)) * 97) : 50;
@@ -1543,22 +1634,37 @@ window.DESIGNS = window.DESIGNS || {};
      RENDER: LEFT RAIL (levels + review-state chip)
      ============================================================ */
   function renderLevelRail(){
-    const p = pr();
-    // Review status now lives solely in the dock (see renderDock/pillLabel) — no duplicate
-    // chip up here.
-    const content = deriveLevelContent(p);
     const wrap = document.getElementById('rail-items');
-    wrap.innerHTML = LEVEL_LABELS.map((label, i) => {
-      const n = i + 1;
-      const active = n === state.level;
-      const key = LEVEL_KEYS[i];
-      const t = teaser((content[key] && content[key].narration) || LEVEL_TEASER_FALLBACK[i], 12);
-      return `<div class="rail-item${active ? ' active' : ''}" data-level="${n}">
-        <span class="rail-num mono">${n}</span>
-        <div class="rail-title">${escapeHtml(label)}</div>
-        <div class="rail-teaser">${escapeHtml(t)}</div>
-      </div>`;
-    }).join('');
+    if (isDesignsMode()){
+      const d = currentDesign();
+      const teasers = designRailTeasers(d);
+      wrap.innerHTML = DESIGN_LEVEL_LABELS.map((label, i) => {
+        const n = i + 1;
+        const active = n === state.level;
+        const t = teasers[i] || DESIGN_LEVEL_TEASER_FALLBACK[i];
+        return `<div class="rail-item${active ? ' active' : ''}" data-level="${n}">
+          <span class="rail-num mono">${n}</span>
+          <div class="rail-title">${escapeHtml(label)}</div>
+          <div class="rail-teaser">${escapeHtml(t)}</div>
+        </div>`;
+      }).join('');
+    } else {
+      const p = pr();
+      // Review status now lives solely in the dock (see renderDock/pillLabel) — no duplicate
+      // chip up here.
+      const content = deriveLevelContent(p);
+      wrap.innerHTML = LEVEL_LABELS.map((label, i) => {
+        const n = i + 1;
+        const active = n === state.level;
+        const key = LEVEL_KEYS[i];
+        const t = teaser((content[key] && content[key].narration) || LEVEL_TEASER_FALLBACK[i], 12);
+        return `<div class="rail-item${active ? ' active' : ''}" data-level="${n}">
+          <span class="rail-num mono">${n}</span>
+          <div class="rail-title">${escapeHtml(label)}</div>
+          <div class="rail-teaser">${escapeHtml(t)}</div>
+        </div>`;
+      }).join('');
+    }
     wrap.querySelectorAll('.rail-item').forEach(el => {
       el.addEventListener('click', () => setLevel(Number(el.dataset.level)));
     });
@@ -1570,13 +1676,25 @@ window.DESIGNS = window.DESIGNS || {};
      RENDER: NARRATION CAPTION
      ============================================================ */
   function renderCaption(){
+    if (isDesignsMode()){
+      const name = currentDesignName();
+      const d = currentDesign();
+      const label = DESIGN_LEVEL_LABELS[state.level - 1] || 'Overview';
+      const title = d ? (designTitle(d) || designName(d, name) || 'Design') : 'Design';
+      document.getElementById('caption-title').textContent = `${title} — ${label}`;
+      document.getElementById('caption-narration').textContent = designCaptionNarration(d, state.level);
+      renderContentAudio();
+      return;
+    }
     const p = pr();
     const content = deriveLevelContent(p);
     const block = content[levelKey()];
     // Reflects the current LEVEL, not the PR title again — the topbar already carries
     // "PR #73 · <title>", so repeating it here was pure duplication.
-    document.getElementById('caption-title').textContent = `PR #${p.pr} — ${LEVEL_LABELS[state.level - 1]}`;
-    document.getElementById('caption-narration').textContent = (block && block.narration) || p.tagline || '';
+    document.getElementById('caption-title').textContent = p
+      ? `PR #${p.pr} — ${LEVEL_LABELS[state.level - 1]}`
+      : (LEVEL_LABELS[state.level - 1] || '');
+    document.getElementById('caption-narration').textContent = (block && block.narration) || (p && p.tagline) || '';
     renderContentAudio();
   }
 
@@ -1586,7 +1704,7 @@ window.DESIGNS = window.DESIGNS || {};
   const commentInput = document.getElementById('comment-input');
   function renderDock(){
     const p = pr();
-    const review = loadReview(p.pr);
+    const review = p ? loadReview(p.pr) : defaultReview();
 
     const activeMethod = state.draftMergeMethod || review.mergeMethod || 'merge';
     const mergeBtn = document.getElementById('btn-merge');
@@ -1596,16 +1714,25 @@ window.DESIGNS = window.DESIGNS || {};
     mergeArrow.classList.toggle('is-merged', review.state === 'merged');
 
     document.getElementById('btn-close').classList.toggle('active', review.state === 'closed');
+    document.querySelectorAll('.pr-only').forEach(el => { el.hidden = isDesignsMode(); });
 
     const pill = document.getElementById('status-pill');
-    const colors = STATE_COLOR[review.state] || STATE_COLOR.pending;
-    pill.textContent = pillLabel(review);
-    pill.style.color = review.state === 'pending' ? 'var(--ink-dim)' : colors.border;
-    pill.style.borderColor = colors.border;
-    pill.style.background = review.state === 'pending' ? 'transparent' : `color-mix(in oklch, ${colors.border} 10%, white)`;
+    if (isDesignsMode()){
+      const d = currentDesign();
+      const stage = d ? designStage(d) : 'none';
+      pill.textContent = String(stage).toUpperCase();
+      pill.style.color = 'var(--ink-dim)';
+      pill.style.borderColor = 'var(--line)';
+      pill.style.background = 'transparent';
+    } else {
+      const colors = STATE_COLOR[review.state] || STATE_COLOR.pending;
+      pill.textContent = pillLabel(review);
+      pill.style.color = review.state === 'pending' ? 'var(--ink-dim)' : colors.border;
+      pill.style.borderColor = colors.border;
+      pill.style.background = review.state === 'pending' ? 'transparent' : `color-mix(in oklch, ${colors.border} 10%, white)`;
+    }
 
     document.getElementById('btn-comments-toggle').textContent = `Comments (${review.comments.length})`;
-    updateDesignsDockButton();
     document.getElementById('comment-level-chip').textContent = levelKey();
 
     const list = document.getElementById('comment-list');
@@ -1630,7 +1757,9 @@ window.DESIGNS = window.DESIGNS || {};
      reflows whether or not a track exists for the current level)
      ============================================================ */
   function currentAudioFile(){
+    if (isDesignsMode()) return '';
     const p = pr();
+    if (!p) return '';
     return `pr${p.pr}_${levelKey()}.wav`;
   }
   function renderContentAudio(){
@@ -1660,6 +1789,10 @@ window.DESIGNS = window.DESIGNS || {};
      ============================================================ */
   function renderMainContent(){
     const main = document.getElementById('main-content');
+    if (isDesignsMode()){
+      renderDesignMainContent(main);
+      return;
+    }
     const p = pr();
     const touched = p.touched || {};
     const content = deriveLevelContent(p);
@@ -1857,6 +1990,141 @@ window.DESIGNS = window.DESIGNS || {};
     }
 
     // Reset scroll + cue state whenever content is rebuilt.
+    main.scrollTop = 0;
+    hideCue();
+  }
+
+  function renderDesignMainContent(main){
+    const name = currentDesignName();
+    const d = currentDesign();
+    if (!name || !d){
+      setMainHtml(main, `
+        <div class="level-stack narrow">
+          <div class="empty-card">
+            <div class="empty-detail">No designs yet. Run <code>/cobuilder-architect:design</code> to author one.</div>
+          </div>
+        </div>`);
+      main.scrollTop = 0;
+      hideCue();
+      return;
+    }
+
+    if (state.level === 1){
+      const intent = d.intent || {};
+      const g = designGoal(d);
+      const oos = [].concat(intent.out_of_scope || (g && g.out_of_scope) || []).filter(Boolean);
+      const outcome = designOutcome(d);
+      const hasIntent = !!(intent.problem || intent.approach || intent.why_now);
+      const intentHtml = `
+        <div class="adr-block problem">
+          <div class="ab-kicker">Intent</div>
+          ${intent.problem ? `<p>${escapeHtml(intent.problem)}</p>` : ''}
+          ${intent.approach ? `<p>${escapeHtml(intent.approach)}</p>` : ''}
+          ${intent.why_now ? `<p>${escapeHtml(intent.why_now)}</p>` : ''}
+          ${hasIntent ? '' : '<p>No intent recorded for this design.</p>'}
+        </div>`;
+      const boundsHtml = `
+        <div class="adr-block">
+          <div class="ab-kicker" style="color:var(--accent-text);">Boundaries</div>
+          ${oos.length
+            ? `<div class="chip-row">${oos.map(x => `<span class="force-chip">${escapeHtml(x)}</span>`).join('')}</div>`
+            : '<p>No out-of-scope boundaries recorded.</p>'}
+        </div>`;
+      const outcomeHtml = `
+        <div class="adr-block decision">
+          <div class="ab-kicker">Outcome</div>
+          <p>${escapeHtml(outcome || 'No outcome recorded.')}</p>
+        </div>`;
+      setMainHtml(main, `
+        <div class="level-stack narrow">
+          ${intentHtml}
+          ${boundsHtml}
+          ${outcomeHtml}
+          ${designHeroFrame(name, 1, `${designTitle(d) || name} overview diagram`)}
+        </div>`);
+    } else if (state.level === 2){
+      const ps = designProblemSolution(d);
+      const bgTexts = (ps.beats || []).filter(b => b.kind === 'background').map(b => b.text);
+      const intTexts = (ps.beats || []).filter(b => b.kind === 'intuition').map(b => b.text);
+      const cardHtml = (kicker, cls, texts, emptyMsg) => `
+        <div class="fixed-card evidence ${cls}">
+          <div class="fc-kicker">${escapeHtml(kicker)}</div>
+          <div class="fc-body">${texts.length ? texts.map(t => `<p>${escapeHtml(t)}</p>`).join('') : `<span class="fc-empty">${escapeHtml(emptyMsg)}</span>`}</div>
+        </div>`;
+      const grid = `
+        <div class="grid-2x2">
+          ${cardHtml('Background', '', bgTexts, 'No background evidence recorded.')}
+          ${cardHtml('Intuition', '', intTexts, 'No intuition evidence recorded.')}
+          <div class="fixed-card problem">
+            <div class="fc-kicker">&#9888; The Problem</div>
+            <div class="fc-body"><p>${escapeHtml(ps.problem || 'No problem statement recorded.')}</p></div>
+          </div>
+          <div class="fixed-card solution">
+            <div class="fc-kicker">&#128161; The Solution</div>
+            <div class="fc-body"><p>${escapeHtml(ps.solution || 'No solution statement recorded.')}</p></div>
+          </div>
+        </div>`;
+      const alternatives = (ps.alternatives || []).filter(a => a.option || a.rejected);
+      const altHtml = alternatives.length ? `
+        <div>
+          <div class="alt-section-label">Rejected alternatives</div>
+          <div class="alt-row">
+            ${alternatives.map(alt => `
+              <div class="alt-card">
+                <div class="alt-opt">${escapeHtml(alt.option)}</div>
+                <div class="alt-rej">&times; ${escapeHtml(alt.rejected)}</div>
+              </div>`).join('')}
+          </div>
+        </div>` : '';
+      setMainHtml(main, `
+        <div class="level-stack narrow">
+          ${grid}
+          ${altHtml}
+        </div>`);
+    } else {
+      const adrIds = designAdrIds(d);
+      const adrHtml = adrIds.length
+        ? adrIds.map(a => `<button class="adr-badge" data-adr-id="${escapeHtml(a)}">${escapeHtml(a)}</button>`).join('')
+        : '<span class="no-adrs">No ADRs recorded for this design.</span>';
+      const epics = designEpics(d);
+      const epicBlocks = epics.length ? epics.map(epic => {
+        const label = epic.name || epic.slug || epic.id || 'epic';
+        const prNum = epicPrNumber(epic);
+        const prChip = prNum == null
+          ? '<span class="design-epic-pr">no PR yet</span>'
+          : `<button type="button" class="design-epic-pr has-pr" data-pr="${prNum}">PR #${prNum}</button>`;
+        const stateChip = epic.state
+          ? `<span class="adr-state-badge" style="background:oklch(0.96 0.02 250);color:var(--ink-dim);border-color:var(--line);">${escapeHtml(String(epic.state))}</span>`
+          : '';
+        const outcome = epic.outcome || '';
+        return `
+          <div class="adr-block">
+            <div class="ab-kicker" style="color:var(--accent-text);">${escapeHtml(String(label))}</div>
+            <div class="design-epic-row">${prChip}${stateChip}</div>
+            ${outcome ? `<p>${escapeHtml(outcome)}</p>` : ''}
+          </div>`;
+      }).join('') : `<div class="empty-card"><div class="empty-detail">No epics recorded for this design.</div></div>`;
+      const beats = designArchitectureBeats(d);
+      const beatsHtml = beats.length
+        ? `<div class="beats-stack">${beats.map(beatCard).join('')}</div>`
+        : '';
+      const diagramLevels = [2, 3].filter(lvl => !!designDiagramSource(name, lvl));
+      const diagramsHtml = diagramLevels.length
+        ? diagramLevels.map(lvl => designHeroFrame(name, lvl, `${designTitle(d) || name} ${DESIGN_LEVEL_LABELS[lvl - 1]} diagram`)).join('')
+        : `<div class="empty-card"><div class="empty-detail">No diagrams authored for this design.</div></div>`;
+      setMainHtml(main, `
+        <div class="level-stack narrow">
+          <div class="adr-row">${adrHtml}</div>
+          ${epicBlocks}
+          ${beatsHtml}
+          ${diagramsHtml}
+        </div>`);
+      main.querySelectorAll('.adr-badge[data-adr-id]').forEach(btn => {
+        btn.addEventListener('click', () => openAdrSheet(btn.dataset.adrId));
+      });
+      wireDesignEpicPrButtons(main);
+    }
+
     main.scrollTop = 0;
     hideCue();
   }
@@ -2108,7 +2376,10 @@ window.DESIGNS = window.DESIGNS || {};
     const bottomEl = document.getElementById('scroll-cue-bottom');
     const topEl = document.getElementById('scroll-cue-top');
     if (state.scrollCue === 'bottom'){
-      const nextLabel = state.level < N_LEVELS ? LEVEL_LABELS[state.level] : 'next PR →';
+      const labels = isDesignsMode() ? DESIGN_LEVEL_LABELS : LEVEL_LABELS;
+      const nextLabel = state.level < viewLevelMax()
+        ? labels[state.level]
+        : (isDesignsMode() ? 'next design →' : 'next PR →');
       bottomEl.textContent = `⌄ keep scrolling → ${nextLabel}`;
       const wasHidden = bottomEl.hidden;
       bottomEl.hidden = false;
@@ -2174,8 +2445,10 @@ window.DESIGNS = window.DESIGNS || {};
   function advanceFromCue(dir){
     hideCue();
     if (dir === 'down'){
-      if (state.level < N_LEVELS) setLevel(state.level + 1);
-      else if (state.prIndex < TIMELINE.length - 1) selectPR(state.prIndex + 1);
+      if (state.level < viewLevelMax()) setLevel(state.level + 1);
+      else if (isDesignsMode()){
+        if (state.designIndex < designKeys().length - 1) selectDesign(state.designIndex + 1);
+      } else if (state.prIndex < TIMELINE.length - 1) selectPR(state.prIndex + 1);
     } else {
       if (state.level > 1) setLevel(state.level - 1);
       // No defined behavior for "previous PR" at level 1's top per spec — clamp.
@@ -2256,7 +2529,11 @@ window.DESIGNS = window.DESIGNS || {};
      ============================================================ */
   function selectPR(i){
     if (state.transitioning) return;
-    const next = clamp(i, 0, TIMELINE.length - 1);
+    if (state.viewMode !== 'prs'){
+      state.viewMode = 'prs';
+      saveViewMode('prs');
+    }
+    const next = clamp(i, 0, Math.max(0, TIMELINE.length - 1));
     const dir = next > state.prIndex ? 1 : (next < state.prIndex ? -1 : 0);
     const prevIndex = state.prIndex;
     const apply = () => {
@@ -2277,7 +2554,7 @@ window.DESIGNS = window.DESIGNS || {};
   }
   function setLevel(lvl){
     if (state.transitioning) return;
-    const next = clamp(lvl, 1, N_LEVELS);
+    const next = clamp(lvl, 1, viewLevelMax());
     const dir = next > state.level ? 1 : (next < state.level ? -1 : 0);
     const apply = () => {
       state.level = next;
@@ -2286,6 +2563,37 @@ window.DESIGNS = window.DESIGNS || {};
     };
     if (dir === 0){ apply(); return; }
     transitionContent('y', dir, apply);
+  }
+  function selectDesign(i){
+    if (state.transitioning) return;
+    const keys = designKeys();
+    if (!keys.length) return;
+    const next = clamp(i, 0, keys.length - 1);
+    const dir = next > state.designIndex ? 1 : (next < state.designIndex ? -1 : 0);
+    const apply = () => {
+      state.designIndex = next;
+      if (state.level > DESIGN_N_LEVELS) state.level = 1;
+      stopAudio();
+      renderAll();
+    };
+    if (dir === 0){ apply(); return; }
+    transitionContent('x', dir, apply);
+  }
+  function setViewMode(mode){
+    if (mode !== 'prs' && mode !== 'designs') return;
+    if (state.viewMode === mode) return;
+    if (state.transitioning) return;
+    state.viewMode = mode;
+    saveViewMode(mode);
+    if (mode === 'designs'){
+      if (state.level > DESIGN_N_LEVELS) state.level = DESIGN_N_LEVELS;
+      const keys = designKeys();
+      if (state.designIndex >= keys.length) state.designIndex = Math.max(0, keys.length - 1);
+      if (state.designsOpen) closeDesignsSheet();
+    }
+    closeMergeMenu();
+    stopAudio();
+    renderAll();
   }
   function jumpToFileChanges(districtId){
     state.level = 4;
@@ -2841,12 +3149,121 @@ window.DESIGNS = window.DESIGNS || {};
     if (g && Array.isArray(g.epics)) return g.epics;
     return (d && Array.isArray(d.epics)) ? d.epics : [];
   }
-  function designAdrId(d){
-    if (!d) return null;
-    if (typeof d.adr === 'string' && d.adr) return d.adr;
-    if (d.adr && typeof d.adr === 'object') return d.adr.id || d.adr.adr_id || null;
+  function designAdrIds(d){
+    if (!d) return [];
     const g = designGoal(d);
-    return d.adr_id || d.adrId || (g && (g.adr_id || g.adr)) || null;
+    const seen = new Set();
+    const out = [];
+    const add = (id) => {
+      if (typeof id !== 'string') return;
+      const t = id.trim();
+      if (!t || seen.has(t)) return;
+      seen.add(t);
+      out.push(t);
+    };
+    if (g && Array.isArray(g.adrs)) g.adrs.forEach(add);
+    if (g){
+      if (typeof g.adr === 'string') add(g.adr);
+      else if (g.adr && typeof g.adr === 'object') add(g.adr.id || g.adr.adr_id);
+      add(g.adr_id);
+    }
+    if (typeof d.adr === 'string') add(d.adr);
+    else if (d.adr && typeof d.adr === 'object') add(d.adr.id || d.adr.adr_id);
+    add(d.adr_id || d.adrId);
+    return out;
+  }
+  function designAdrId(d){
+    const ids = designAdrIds(d);
+    return ids.length ? ids[0] : null;
+  }
+  function currentDesignName(){
+    const keys = designKeys();
+    if (!keys.length) return null;
+    return keys[clamp(state.designIndex, 0, keys.length - 1)] || null;
+  }
+  function currentDesign(){
+    const name = currentDesignName();
+    return name ? lookupDesign(name) : null;
+  }
+  function designProblemSolution(d){
+    const n = d && d.narrative && d.narrative.problem_solution;
+    if (n && typeof n === 'object'){
+      const alts = Array.isArray(n.alternatives) ? n.alternatives : [];
+      return {
+        problem: n.problem || '',
+        solution: n.solution || n.approach || '',
+        beats: Array.isArray(n.beats) ? n.beats : [],
+        alternatives: alts.map(a => ({
+          option: (a && (a.option || a.title)) || '',
+          rejected: (a && (a.rejected || a.rejected_because)) || '',
+        })),
+        narration: n.narration || '',
+      };
+    }
+    const intent = (d && d.intent) || {};
+    const beats = [];
+    if (intent.why_now) beats.push({ kind: 'background', text: intent.why_now });
+    const alts = Array.isArray(intent.alternatives) ? intent.alternatives : [];
+    return {
+      problem: intent.problem || '',
+      solution: intent.approach || '',
+      beats,
+      alternatives: alts.map(a => ({
+        option: (a && (a.option || a.title)) || '',
+        rejected: (a && (a.rejected || a.rejected_because)) || '',
+      })),
+      narration: intent.problem || '',
+    };
+  }
+  function designArchitectureBeats(d){
+    const arch = d && d.narrative && d.narrative.architecture;
+    if (!arch || typeof arch !== 'object') return [];
+    if (Array.isArray(arch.beats)) return arch.beats.filter(b => b && b.text);
+    const beats = [];
+    ['forces', 'contract', 'boundary'].forEach(kind => {
+      const v = arch[kind];
+      if (typeof v === 'string' && v.trim()) beats.push({ kind, text: v });
+      else if (Array.isArray(v)){
+        v.forEach(item => {
+          const text = typeof item === 'string' ? item : (item && item.text) || '';
+          if (text) beats.push({ kind, text });
+        });
+      }
+    });
+    return beats;
+  }
+  function designRailTeasers(d){
+    const ps = designProblemSolution(d);
+    const outcome = designOutcome(d);
+    const intent = (d && d.intent) || {};
+    const epics = designEpics(d);
+    return [
+      teaser(outcome || intent.problem || DESIGN_LEVEL_TEASER_FALLBACK[0], 12),
+      teaser(ps.problem || DESIGN_LEVEL_TEASER_FALLBACK[1], 12),
+      teaser((epics[0] && (epics[0].outcome || epics[0].name || epics[0].slug || epics[0].id)) || DESIGN_LEVEL_TEASER_FALLBACK[2], 12),
+    ];
+  }
+  function designCaptionNarration(d, level){
+    if (!d) return '';
+    const n = d.narrative || {};
+    if (level === 1){
+      return (n.overview && n.overview.narration) || designOutcome(d) || (d.intent && d.intent.problem) || '';
+    }
+    if (level === 2){
+      const ps = designProblemSolution(d);
+      return ps.narration || ps.problem || '';
+    }
+    if (n.architecture && n.architecture.narration) return n.architecture.narration;
+    const epics = designEpics(d);
+    if (epics.length) return `${epics.length} epic${epics.length === 1 ? '' : 's'} on this design.`;
+    return '';
+  }
+  function designHeroFrame(name, levelIdx, alt){
+    if (levelIdx > 3) return '';
+    if (!name || !designDiagramSource(name, levelIdx)){
+      return `<div class="empty-card"><div class="empty-detail">No diagrams authored for this design.</div></div>`;
+    }
+    return `<div class="hero-frame" data-design="${escapeHtml(name)}" data-level="${levelIdx}" data-alt="${escapeHtml(alt)}"><div class="diagram-viewport" data-diagram data-design="${escapeHtml(name)}" data-level="${levelIdx}"><pre class="mermaid"></pre></div></div>`;
   }
   function designPrDraft(d){
     if (!d) return '';
@@ -3025,11 +3442,11 @@ window.DESIGNS = window.DESIGNS || {};
         <p>${escapeHtml(outcome)}</p>
       </div>` : '';
 
-    const adrId = designAdrId(d);
-    const adrHtml = adrId ? `
+    const adrIds = designAdrIds(d);
+    const adrHtml = adrIds.length ? `
       <div>
         <div class="alt-section-label">ADR</div>
-        <button type="button" class="adr-badge" id="design-adr-pointer" data-adr-id="${escapeHtml(adrId)}">${escapeHtml(adrId)}</button>
+        <div class="adr-row">${adrIds.map(id => `<button type="button" class="adr-badge" data-adr-id="${escapeHtml(id)}">${escapeHtml(id)}</button>`).join('')}</div>
       </div>` : '';
 
     const epics = designEpics(d);
@@ -3090,8 +3507,9 @@ window.DESIGNS = window.DESIGNS || {};
       state.activeDesignName = null;
       renderDesignsSheet();
     });
-    const adrBtn = document.getElementById('design-adr-pointer');
-    if (adrBtn) adrBtn.addEventListener('click', () => openAdrSheet(adrBtn.dataset.adrId));
+    body.querySelectorAll('.adr-badge[data-adr-id]').forEach(btn => {
+      btn.addEventListener('click', () => openAdrSheet(btn.dataset.adrId));
+    });
     wireDesignEpicPrButtons(body);
     mountDiagrams(body);
   }
@@ -3127,15 +3545,17 @@ window.DESIGNS = window.DESIGNS || {};
     }
     renderDesignsList(titleEl, metaEl, body);
   }
-  function updateDesignsDockButton(){
-    const btn = document.getElementById('btn-designs-toggle');
-    if (!btn) return;
-    const n = designKeys().length;
-    btn.textContent = n ? `Designs (${n})` : 'Designs';
-  }
-
-  document.getElementById('tb-prev').addEventListener('click', () => selectPR(state.prIndex - 1));
-  document.getElementById('tb-next').addEventListener('click', () => selectPR(state.prIndex + 1));
+  document.getElementById('tb-prev').addEventListener('click', () => {
+    if (isDesignsMode()) selectDesign(state.designIndex - 1);
+    else selectPR(state.prIndex - 1);
+  });
+  document.getElementById('tb-next').addEventListener('click', () => {
+    if (isDesignsMode()) selectDesign(state.designIndex + 1);
+    else selectPR(state.prIndex + 1);
+  });
+  document.querySelectorAll('.mode-switch-btn').forEach(btn => {
+    btn.addEventListener('click', () => setViewMode(btn.dataset.mode));
+  });
 
   document.getElementById('btn-merge').addEventListener('click', mergePR);
   document.getElementById('btn-merge-arrow').addEventListener('click', (e) => { e.stopPropagation(); toggleMergeMenu(); });
@@ -3151,7 +3571,6 @@ window.DESIGNS = window.DESIGNS || {};
   });
   document.getElementById('btn-close').addEventListener('click', closePR);
   document.getElementById('btn-comments-toggle').addEventListener('click', openCommentsDrawer);
-  document.getElementById('btn-designs-toggle').addEventListener('click', openDesignsSheet);
   document.getElementById('drawer-close-btn').addEventListener('click', closeCommentsDrawer);
   document.getElementById('adr-sheet-close-btn').addEventListener('click', closeAdrSheet);
   document.getElementById('assessment-sheet-close-btn').addEventListener('click', closeAssessmentSheet);
@@ -3183,13 +3602,17 @@ window.DESIGNS = window.DESIGNS || {};
     const tag = document.activeElement && document.activeElement.tagName;
     if (tag === 'TEXTAREA' || tag === 'INPUT') return;
     if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) e.preventDefault();
-    if (e.key === 'ArrowLeft') selectPR(state.prIndex - 1);
-    else if (e.key === 'ArrowRight') selectPR(state.prIndex + 1);
-    else if (e.key === 'ArrowUp') setLevel(state.level - 1);
+    if (e.key === 'ArrowLeft'){
+      if (isDesignsMode()) selectDesign(state.designIndex - 1);
+      else selectPR(state.prIndex - 1);
+    } else if (e.key === 'ArrowRight'){
+      if (isDesignsMode()) selectDesign(state.designIndex + 1);
+      else selectPR(state.prIndex + 1);
+    } else if (e.key === 'ArrowUp') setLevel(state.level - 1);
     else if (e.key === 'ArrowDown') setLevel(state.level + 1);
-    else if (e.key === 'm') mergePR();
+    else if (e.key === 'm') { if (!isDesignsMode()) mergePR(); }
     else if (e.key === 'c') { e.preventDefault(); openCommentsDrawer(); }
-    else if (e.key === 'd') { e.preventDefault(); openDesignsSheet(); }
+    else if (e.key === 'd') { e.preventDefault(); setViewMode('designs'); }
     else if (e.key === ' '){
       // Always preventDefault so Space never page-scrolls the content pane. Spec: space
       // starts playback (opening the dialog) when it's closed, but once the dialog is
@@ -3202,7 +3625,9 @@ window.DESIGNS = window.DESIGNS || {};
 
   // Start on the most recent PR in the bundle (timeline is chronological).
   state.prIndex = Math.max(0, TIMELINE.length - 1);
-  document.title = `${REPO} — Codebase Odyssey`;
+  state.viewMode = loadViewMode();
+  if (state.viewMode === 'designs' && state.level > DESIGN_N_LEVELS) state.level = 1;
+  document.title = `${REPO} — CoBuilder-Architect`;
 
   // Loaded before the first render (unlike hintsPinned below) because it decides which
   // side of the image/diagram toggle renderMainContent's first heroFrame() call renders.
