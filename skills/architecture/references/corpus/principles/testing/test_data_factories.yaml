@@ -1,0 +1,496 @@
+id: test-data-factories-001
+name: Test Data Factories
+category: testing
+canonical_tags: ['testing', 'fixtures', 'builders', 'factories', 'test-data']
+sources:
+  - books/the-pragmatic-programmer.md
+  - books/working-effectively-with-legacy-code.md
+  - books/unified-software-engineering.md
+summary: |
+  Test data factories centralize object construction for tests, replacing scattered
+  ad-hoc setup with named, composable, and intention-revealing builders. They encode
+  the principle from The Pragmatic Programmer: "do not duplicate knowledge" —
+  when 50 tests each hand-build the same domain object, the shape of valid data is
+  duplicated knowledge. A factory makes the canonical shape explicit and lets each
+  test override only what differs. Working Effectively with Legacy Code reinforces
+  this through its dependency-breaking discipline: move setup into factories,
+  builders, or composition roots so that test construction does not mirror production
+  complexity. Unified Software Engineering gives factories a domain role — they
+  encode creation rules and guarantee constructed objects are valid, not merely
+  assembled. Test data factories are not about hiding setup; they are about making
+  setup communicate what matters and letting the noise be a default.
+
+what_are_test_data_factories:
+  summary: |
+    A test data factory is a function, class, or module that produces domain objects
+    with sensible defaults. Each factory call creates a valid instance whose fields
+    can be selectively overridden for the test at hand. The factory owns the default
+    shape; individual tests own only their distinguishing details.
+  core_principle: |
+    "The test should say what makes this test case different, not what makes an
+    Order an Order." — Derived from Pragmatic Programmer DRY + feedback principles.
+  key_ideas:
+    - "Factories encode one canonical default shape per domain concept."
+    - "Tests override only the fields relevant to the behavior under test."
+    - "Defaults should be boring, valid, and realistic enough to catch nonsense."
+    - "Factories compose: a higher-level factory delegates to lower-level ones."
+    - "Factories evolve with the domain model — when a required field is added, update the factory once."
+  distinction_from_fixtures:
+    - aspect: "Ownership"
+      fixtures: "Shared test state managed by the framework (pytest fixtures, before-each)."
+      factories: "Explicit function calls managed by the test itself."
+    - aspect: "Scope"
+      fixtures: "Often module or session scoped — risks hidden coupling between tests."
+      factories: "Per-test construction — no shared mutable state."
+    - aspect: "Override model"
+      fixtures: "Parameterized indirectly through fixture parameters."
+      factories: "Keyword-argument overrides at the call site."
+    - aspect: "Discoverability"
+      fixtures: "Name-based lookup — hard to find where values come from."
+      factories: "Explicit imports and calls — the test is self-contained."
+    - aspect: "Composability"
+      fixtures: "Fixture dependency chains can become tangled."
+      factories: "Factories call other factories — the composition graph is explicit."
+
+when_to_use:
+  summary: |
+    Test data factories are appropriate when domain objects have many fields but
+    most tests care about only a few. They are inappropriate for trivial objects
+    (2-3 fields with no invariants) or for objects whose construction is the
+    behavior under test.
+  triggers:
+    - condition: "Many tests construct the same object shape by hand"
+      action: "Extract a factory so the canonical shape lives in one place."
+    - condition: "New required fields break dozens of tests"
+      action: "Tests should not know about fields they don't care about. Update the factory default."
+    - condition: "Test setup obscures the intent of the test"
+      action: "Use a factory so the test body highlights only the distinguishing fields."
+    - condition: "Domain objects have invariants that must hold for validity"
+      action: "Factories guarantee validity — no test should construct an invalid Order."
+    - condition: "You are breaking legacy constructors that do real work"
+      action: "Per WELC: move construction out of constructors and into factories. Tests call the factory."
+    - condition: "Test doubles need realistic default state"
+      action: "Factory-produced fakes are safer than hand-built mocks with arbitrary return values."
+  anti_triggers:
+    - "Objects with 1-2 fields and no invariants — a constructor call is already a factory."
+    - "Tests whose purpose IS construction behavior (e.g., testing a builder itself)."
+    - "One-off objects used in a single test — don't abstract prematurely."
+    - "Objects requiring real external resources (DB rows, API responses) — use integration fixtures, not factories."
+
+factory_design_patterns:
+  summary: |
+    Several complementary patterns serve different needs. Choose the simplest one
+    that solves the problem; don't build a full builder DSL for a three-field struct.
+  patterns:
+    - name: "Simple Factory Function"
+      use_when: "Domain object has 3-8 fields, most tests override 1-2."
+      example: |
+        def make_order(**overrides) -> Order:
+            defaults = {
+                "id": "order-1",
+                "customer_id": "cust-1",
+                "status": OrderStatus.PENDING,
+                "items": [make_order_item()],
+                "created_at": datetime(2025, 1, 1),
+            }
+            return Order(**{**defaults, **overrides})
+    - name: "Builder Pattern (Fluent API)"
+      use_when: "Object has 8+ fields, some with complex interdependencies, and tests chain multiple overrides."
+      example: |
+        class OrderBuilder:
+            def __init__(self):
+                self._id = "order-1"
+                self._customer_id = "cust-1"
+                self._status = OrderStatus.PENDING
+                self._items = []
+                self._created_at = datetime(2025, 1, 1)
+
+            def with_customer(self, customer_id: str) -> "OrderBuilder":
+                self._customer_id = customer_id
+                return self
+
+            def with_status(self, status: OrderStatus) -> "OrderBuilder":
+                self._status = status
+                return self
+
+            def build(self) -> Order:
+                return Order(
+                    id=self._id,
+                    customer_id=self._customer_id,
+                    status=self._status,
+                    items=self._items or [make_order_item()],
+                    created_at=self._created_at,
+                )
+    - name: "Named Preset Factory"
+      use_when: "A small set of well-known states is used repeatedly (e.g., pending, shipped, cancelled)."
+      example: |
+        def make_pending_order(**overrides) -> Order:
+            return make_order(status=OrderStatus.PENDING, **overrides)
+
+        def make_shipped_order(**overrides) -> Order:
+            return make_order(status=OrderStatus.SHIPPED, shipped_at=datetime(2025, 1, 2), **overrides)
+
+        def make_cancelled_order(**overrides) -> Order:
+            return make_order(status=OrderStatus.CANCELLED, cancelled_at=datetime(2025, 1, 1), **overrides)
+    - name: "Composite Factory"
+      use_when: "Tests need realistic object graphs (Order with Customer, Items, Payments)."
+      example: |
+        def make_order_with_line_items(num_items: int = 2, **overrides) -> Order:
+            items = [make_order_item(quantity=i+1, price=Decimal(f"{10+i*5}.00")) for i in range(num_items)]
+            return make_order(items=items, total=sum(i.total for i in items), **overrides)
+    - name: "Factory with Faker Integration"
+      use_when: "Realistic but non-deterministic data is valuable (names, addresses, emails) without hand-crafting them."
+      example: |
+        from faker import Faker
+        fake = Faker()
+
+        def make_customer(**overrides) -> Customer:
+            defaults = {
+                "id": fake.uuid4(),
+                "name": fake.name(),
+                "email": fake.email(),
+                "address": fake.address(),
+            }
+            return Customer(**{**defaults, **overrides})
+
+test_data_factory_principles:
+  summary: |
+    Factories are infrastructure that serves readability. When a factory obscures
+    rather than clarifies, it has failed its purpose. Follow these principles to
+    keep factories useful.
+  principles:
+    - name: "Defaults should be boring"
+      description: |
+        The factory's default values should be unremarkable — valid, common-case
+        values that make the object clearly a normal instance. Avoid "test" or
+        "foo" strings that communicate nothing. If a field has a domain meaning
+        (e.g., currency codes), use a real value like "USD", not "XXX".
+      bad: 'Customer(name="test", email="test@test.com")'
+      good: 'Customer(name="Alice Johnson", email="alice@example.com")'
+    - name: "Overrides must be at the call site"
+      description: |
+        The test should read top-to-bottom without jumping to factory definitions.
+        All fields that distinguish this test case from other tests must be visible
+        at the call site. If a reader needs to open the factory to understand what
+        a test does, the factory is hiding important context.
+      bad: |
+        # What does this test actually depend on? Hidden in the factory.
+        order = make_order()
+        result = shipping_service.calculate(order)
+        assert result.cost == 5.00
+      good: |
+        # Reader knows: this test depends on weight and destination.
+        order = make_order(weight_kg=2.5, destination=Country.INTERNATIONAL)
+        result = shipping_service.calculate(order)
+        assert result.cost == 25.00
+    - name: "Factories compose, not duplicate"
+      description: |
+        A factory for an aggregate should call factories for its parts. When
+        make_order_item() changes (e.g., a new required field), make_order()
+        shouldn't need updating unless the new field matters at the Order level.
+    - name: "Avoid side effects in factories"
+      description: |
+        Factories should construct in-memory objects, not create database rows,
+        publish events, or call external services. If a test needs a persisted
+        object, persist it explicitly after construction, or use a separate
+        persistence helper. Per WELC: constructors doing real work is the problem;
+        factories should not reintroduce it.
+    - name: "Factories are code, not configuration"
+      description: |
+        Factory code should be reviewed, refactored, and tested like production
+        code. DRY applies: if two factories encode the same business rule (e.g.,
+        "discount cannot exceed 50%"), that rule should live in the domain model,
+        not in both factories. Factories should call the domain constructor or
+        builder, not bypass it.
+
+examples:
+  - language: python
+    bad: |
+      # Scattered hand-rolled setup: 4 tests, 4 different order shapes,
+      # no shared understanding of what an Order looks like.
+
+      def test_pending_order_discount():
+          order = Order(
+              id="1",
+              customer_id="c1",
+              status="PENDING",
+              items=[OrderItem(product_id="p1", quantity=2, price=10.00)],
+              discount=0.0,
+              shipping="STANDARD",
+              created_at=datetime(2025, 1, 1),
+          )
+          # ... test body
+
+      def test_shipped_order_no_discount():
+          order = Order(
+              id="2",
+              customer_id="c2",
+              status="SHIPPED",
+              items=[OrderItem(product_id="p2", quantity=1, price=25.00)],
+              discount=None,
+              shipping="EXPRESS",
+              created_at=datetime(2025, 1, 3),
+              shipped_at=datetime(2025, 1, 5),
+          )
+          # ... test body
+
+      def test_order_with_zero_items():
+          # Bug: Order with empty items list is invalid per domain rules,
+          # but the test doesn't know that because no factory enforces it.
+          order = Order(
+              id="3",
+              customer_id="c3",
+              status="PENDING",
+              items=[],
+              discount=0.0,
+              shipping="STANDARD",
+              created_at=datetime(2025, 1, 5),
+          )
+          # ... test body — passes but tests an impossible state
+
+      def test_order_status_transition():
+          # When a new required field ("payment_method") is added to Order,
+          # every one of these 4 tests breaks — for a field none of them care about.
+          order = Order(
+              id="4",
+              customer_id="c4",
+              status="PENDING",
+              items=[OrderItem(product_id="p3", quantity=1, price=30.00)],
+              discount=None,
+              shipping="STANDARD",
+              created_at=datetime(2025, 1, 7),
+          )
+          # ... test body
+    good: |
+      # Factories centralize shape. Each test says only what distinguishes it.
+
+      from tests.factories import make_order, make_pending_order, make_shipped_order
+
+
+      def test_pending_order_discount():
+          order = make_pending_order(discount=Decimal("5.00"))
+          apply_discount(order)
+          assert order.discount == Decimal("5.00")
+
+
+      def test_shipped_order_no_discount():
+          order = make_shipped_order()
+          with pytest.raises(DomainError, match="Cannot modify shipped order"):
+              apply_discount(order)
+
+
+      def test_order_must_have_items():
+          # Factory enforces validity — this would fail at construction time.
+          with pytest.raises(ValueError, match="Order must have at least one item"):
+              make_order(items=[])
+          # Or: the factory itself rejects the invalid state.
+          # Better: domain constructor rejects it, factory doesn't bypass it.
+
+
+      def test_order_status_transition():
+          order = make_pending_order()
+          order.ship()
+          assert order.status == OrderStatus.SHIPPED
+          assert order.shipped_at is not None
+
+
+      def test_shipping_cost_by_weight():
+          # Only the fields that matter for this behavior appear here.
+          order = make_order(weight_kg=15.0, destination=Country.INTERNATIONAL)
+          cost = shipping_service.calculate(order)
+          assert cost == Decimal("45.00")
+  - language: typescript
+    bad: |
+      // Scattered setup: 3 tests all manually construct User.
+      // Adding optionalFields triggers 3 test changes.
+
+      describe("UserService", () => {
+        it("should activate a user", () => {
+          const user: User = {
+            id: "u1",
+            name: "Alice",
+            email: "alice@example.com",
+            role: "member",
+            status: "pending",
+            createdAt: new Date("2025-01-01"),
+            preferences: { theme: "light", notifications: true },
+          };
+          // test body...
+        });
+
+        it("should suspend a user", () => {
+          const user: User = {
+            id: "u2",
+            name: "Bob",
+            email: "bob@example.com",
+            role: "member",
+            status: "active",
+            createdAt: new Date("2025-01-02"),
+            preferences: { theme: "dark", notifications: false },
+          };
+          // test body...
+        });
+
+        it("should change user role", () => {
+          const user: User = {
+            id: "u3",
+            name: "Charlie",
+            email: "charlie@example.com",
+            role: "member",
+            status: "active",
+            createdAt: new Date("2025-01-03"),
+            preferences: { theme: "light", notifications: true },
+          };
+          // test body...
+        });
+      });
+    good: |
+      // tests/factories/user.ts
+      import { faker } from "@faker-js/faker";
+
+      export function makeUser(overrides: Partial<User> = {}): User {
+        return {
+          id: faker.string.uuid(),
+          name: faker.person.fullName(),
+          email: faker.internet.email(),
+          role: "member" as const,
+          status: "active" as const,
+          createdAt: new Date("2025-01-01"),
+          preferences: { theme: "light", notifications: true },
+          ...overrides,
+        };
+      }
+
+      // tests/user-service.test.ts
+      import { makeUser } from "./factories/user";
+
+      describe("UserService", () => {
+        it("should activate a pending user", () => {
+          const user = makeUser({ status: "pending" });
+          // Only 'status' matters for this test — everything else is default.
+        });
+
+        it("should suspend an active user", () => {
+          const user = makeUser({ status: "active" });
+        });
+
+        it("should change user role", () => {
+          const user = makeUser({ role: "viewer" });
+        });
+      });
+
+      // Adding a new field to User: update makeUser() once.
+      // New test that needs it:    makeUser({ newField: "value" }).
+      // All existing tests:        unaffected.
+
+legacy_code_integration:
+  summary: |
+    When working with legacy code per WELC, factories serve a specific role in
+    the dependency-breaking workflow. They are part of the "move setup into
+    factories, builders, or composition roots" step.
+  workflow:
+    - step: "1. Characterize existing construction"
+      description: |
+        Before introducing a factory, understand what the legacy constructor
+        actually requires. If the constructor does I/O, calls globals, or has
+        12 parameters, characterize what it produces — not how it produces it.
+    - step: "2. Create a thin wrapper factory"
+      description: |
+        Build a factory that calls the legacy constructor with captured default
+        values. The factory initially mirrors the legacy construction path but
+        adds an overrides mechanism. Tests call the factory, not the constructor
+        directly.
+    - step: "3. Break constructor side effects"
+      description: |
+        Per WELC: stop doing I/O, network, or configuration lookup in constructors.
+        As you extract side effects from the constructor, update the factory to
+        inject dependencies rather than relying on hidden construction behavior.
+    - step: "4. Replace factory internals as the domain model improves"
+      description: |
+        As the codebase moves from legacy construction to explicit factories to
+        proper domain constructors, the factory's internal implementation evolves.
+        Tests that call make_order() don't change — the factory absorbs the churn.
+  example: |
+    # Legacy: constructor touches the database.
+    class LegacyOrder:
+        def __init__(self, order_id):
+            self.data = database.fetch_order(order_id)  # side effect!
+
+    # Factory: wraps the mess so tests don't touch it.
+    def make_legacy_order(**overrides) -> LegacyOrder:
+        order = LegacyOrder(order_id="test-1")
+        for key, value in overrides.items():
+            setattr(order, key, value)  # bypass the messy init
+        return order
+
+    # Later: extract the database call, use proper constructor.
+    class Order:
+        def __init__(self, id, customer_id, status, items):
+            self.id = id
+            self.customer_id = customer_id
+            self.status = status
+            self.items = items
+
+    def make_order(**overrides) -> Order:
+        defaults = {
+            "id": "order-1",
+            "customer_id": "cust-1",
+            "status": OrderStatus.PENDING,
+            "items": [make_order_item()],
+        }
+        return Order(**{**defaults, **overrides})
+
+    # Tests never changed. make_order() evolved from wrapper to real factory.
+
+common_pitfalls:
+  summary: |
+    Factories that grow without discipline become their own legacy code problem.
+  pitfalls:
+    - name: "The God Factory"
+      description: |
+        One factory function with 30 keyword parameters, conditionals for every
+        subtype, and defaults that depend on other defaults. A god factory is
+        worse than no factory — it hides complexity instead of managing it.
+      fix: "Split by bounded context or responsibility. make_customer() and make_vip_customer() are better than make_person(type='vip', loyalty_tier='platinum', ...)."
+    - name: "Invisible Coupling Through Defaults"
+      description: |
+        When a factory's default generates a specific state that many tests
+        accidentally depend on, changing the default breaks distant tests.
+        Example: make_order() defaults to status=PENDING. 200 tests pass
+        because they expect a pending order. Changing the default to ACTIVE
+        breaks tests that never mentioned status.
+      fix: "Tests should explicitly set values they depend on. If a test cares about status, pass it — don't rely on the default."
+    - name: "Factory Fan-Out for Every Variant"
+      description: |
+        Creating make_order_pending_with_discount_and_international_shipping()
+        for every combination. Named variants multiply combinatorially.
+      fix: "Use keyword overrides at the call site. make_order(status=PENDING, discount=5.00, destination=Country.INTERNATIONAL) is clearer than a 60-character function name."
+    - name: "Factories That Don't Compose"
+      description: |
+        make_order() duplicates the defaults of make_customer() instead of
+        calling it. When a Customer field changes, two factories break.
+      fix: "Factories call child factories: make_order(customer=make_customer()). Composition is DRY applied to test infrastructure."
+    - name: "Factories Bypassing Domain Invariants"
+      description: |
+        Factory sets fields directly that the domain constructor would reject.
+        This masks real domain constraints and lets tests validate impossible states.
+      fix: "Factories must go through the domain constructor or factory method. If the domain says an Order needs at least one item, make_order() should not produce an empty order."
+
+relationship_to_testing_pyramid:
+  summary: |
+    Factories serve the test pyramid differently at each level. Their primary
+    value is in unit tests; they adapt at other levels.
+  levels:
+    - level: "Unit Tests"
+      role: "Primary use case. Factories produce in-memory domain objects with no external dependencies. Fast, composable, self-contained."
+    - level: "Integration Tests"
+      role: "Factories produce objects, then tests persist them. Separate factory from persistence: make_order() returns an Order; the test explicitly saves it."
+    - level: "End-to-End Tests"
+      role: "Factories are less useful here — real or seeded data is usually better. If used, factories should produce data that gets loaded through the same ingestion path as production."
+
+related_tags:
+  [test-data-factories, test-builders, object-mother, fixtures, test-pyramid,
+   dry, feedback-loops, construction, dependency-injection, seams,
+   legacy-code, working-effectively-with-legacy-code, pragmatic-programmer,
+   unified-software-engineering, domain-driven-design, factories, builders,
+   test-quality, test-maintainability, test-setup]

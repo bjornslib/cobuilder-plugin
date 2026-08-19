@@ -1,0 +1,328 @@
+id: design-patterns-overview-001
+name: Design Patterns Overview
+category: design-patterns
+canonical_tags: ['design-patterns', 'gof', 'blueprints', 'vocabulary', 'communication']
+sources:
+  - open_sources/design_patterns/refactoring-guru-patterns.txt
+  - open_sources/design_patterns/refactoring-guru-patterns.html
+  - open_sources/design_patterns/augmentcode-refactoring.html
+summary: >
+  Design patterns are typical, battle-tested solutions to recurring problems in
+  software design. Each pattern is a blueprint — a high-level description of a
+  solution — that you adapt to your specific context, not a copy-paste snippet.
+  Patterns give teams a shared vocabulary: saying "use a Strategy here" conveys
+  intent in one word that might otherwise require a paragraph of explanation.
+  They are classified into three groups by intent: Creational (object creation),
+  Structural (assembling objects into larger structures), and Behavioral
+  (algorithms and responsibility assignment). Patterns vary by complexity — some
+  work at the class level, others at the system level — and the same pattern can
+  appear in different forms across languages. Use patterns when you recognize a
+  design problem that a known pattern solves, but avoid forcing a pattern onto a
+  problem that doesn't need it ("pattern fetishism") — simple code that works is
+  always better than complex code that matches a textbook.
+examples:
+  - language: python
+    bad: |
+      # Code review comment WITHOUT pattern vocabulary:
+      #
+      #   "In this part, you have a big if/elif chain that checks the user
+      #    role and does different things for admin, editor, and viewer.
+      #    It's hard to add a new role without touching this chain, and all
+      #    the logic is in one place. You should probably split this up so
+      #    each role has its own code path somewhere, maybe with classes?"
+      #
+      # Vague, verbose, and ambiguous. The recipient must guess what the
+      # reviewer means by "somewhere" and "maybe with classes."
+
+      # The code being reviewed — role logic tangled in one function:
+      from dataclasses import dataclass
+      from typing import Optional
+      from decimal import Decimal
+
+
+      @dataclass
+      class Document:
+          title: str
+          content: str
+          price: Optional[Decimal] = None
+
+
+      def handle_document_action(
+          role: str, doc: Document, action: str
+      ) -> str:
+          if role == "admin":
+              if action == "delete":
+                  return f"Deleted {doc.title}"
+              elif action == "publish":
+                  return f"Published {doc.title}"
+              elif action == "set_price" and doc.price is not None:
+                  return f"Price set to {doc.price}"
+          elif role == "editor":
+              if action == "publish":
+                  return f"Published {doc.title}"
+              elif action == "edit":
+                  return f"Edited {doc.title}"
+          elif role == "viewer":
+              if action == "view":
+                  return f"Viewing {doc.title}"
+          return "Action not allowed"
+
+    good: |
+      # Code review comment WITH pattern vocabulary:
+      #
+      #   "Replace the role-based if/elif chain with a Strategy pattern:
+      #    define a RoleHandler interface, create AdminHandler / EditorHandler /
+      #    ViewerHandler implementations, and switch(role).handle(action, doc).
+      #    Then adding a new role is one new class — the dispatch stays closed."
+      #
+      # Concise, precise, actionable. The recipient knows exactly what to do.
+
+      # The refactored code — Strategy pattern applied:
+      from abc import ABC, abstractmethod
+      from dataclasses import dataclass
+      from typing import Optional
+      from decimal import Decimal
+
+
+      @dataclass
+      class Document:
+          title: str
+          content: str
+          price: Optional[Decimal] = None
+
+
+      # Strategy interface — every role handler follows this contract
+      class RoleHandler(ABC):
+          @abstractmethod
+          def handle(self, doc: Document, action: str) -> str:
+              ...
+
+
+      class AdminHandler(RoleHandler):
+          def handle(self, doc: Document, action: str) -> str:
+              if action == "delete":
+                  return f"Deleted {doc.title}"
+              if action == "publish":
+                  return f"Published {doc.title}"
+              if action == "set_price" and doc.price is not None:
+                  return f"Price set to {doc.price}"
+              return "Action not allowed"
+
+
+      class EditorHandler(RoleHandler):
+          def handle(self, doc: Document, action: str) -> str:
+              if action == "publish":
+                  return f"Published {doc.title}"
+              if action == "edit":
+                  return f"Edited {doc.title}"
+              return "Action not allowed"
+
+
+      class ViewerHandler(RoleHandler):
+          def handle(self, doc: Document, action: str) -> str:
+              if action == "view":
+                  return f"Viewing {doc.title}"
+              return "Action not allowed"
+
+
+      # Dispatch map — adding a new role is one line
+      _role_handlers: dict[str, RoleHandler] = {
+          "admin": AdminHandler(),
+          "editor": EditorHandler(),
+          "viewer": ViewerHandler(),
+      }
+
+
+      def handle_document_action(
+          role: str, doc: Document, action: str
+      ) -> str:
+          handler = _role_handlers.get(role)
+          if handler is None:
+              return "Action not allowed"
+          return handler.handle(doc, action)
+
+  - language: typescript
+    bad: |
+      // Code review comment WITHOUT pattern vocabulary:
+      //
+      //   "The payment flow creates different objects depending on whether
+      //    the user paid with credit card or PayPal. Right now you're doing
+      //    `new CreditCardProcessor` or `new PayPalProcessor` all over the
+      //    place. If you add a new payment method you'll have to find every
+      //    place that does this and add a new branch. Can you hide the object
+      //    creation behind something so callers just say 'give me the right
+      //    processor'?"
+      //
+      // The reviewer is describing Factory Method without naming it — missing
+      // the vocabulary means the recipient can't search for examples or
+      // know the trade-offs.
+
+      // The code being reviewed — scattered instantiation:
+      interface PaymentProcessor {
+        process(amount: number): string;
+      }
+
+      class CreditCardProcessor implements PaymentProcessor {
+        process(amount: number): string {
+          return `Charged $${amount} to credit card`;
+        }
+      }
+
+      class PayPalProcessor implements PaymentProcessor {
+        process(amount: number): string {
+          return `Charged $${amount} via PayPal`;
+        }
+      }
+
+      function checkout1(method: string, amount: number): string {
+        let processor: PaymentProcessor;
+        if (method === "credit_card") {
+          processor = new CreditCardProcessor();
+        } else if (method === "paypal") {
+          processor = new PayPalProcessor();
+        } else {
+          throw new Error("Unknown payment method");
+        }
+        return processor.process(amount);
+      }
+
+      function checkout2(method: string, amount: number): string {
+        // Same instantiation logic duplicated in another function
+        let processor: PaymentProcessor;
+        if (method === "credit_card") {
+          processor = new CreditCardProcessor();
+        } else if (method === "paypal") {
+          processor = new PayPalProcessor();
+        } else {
+          throw new Error("Unknown payment method");
+        }
+        return processor.process(amount);
+      }
+
+    good: |
+      // Code review comment WITH pattern vocabulary:
+      //
+      //   "Use a Factory Method to centralize PaymentProcessor creation:
+      //    `PaymentProcessorFactory.create(method)` returns the right
+      //    implementation. This eliminates the scattered instanceof/if-else
+      //    logic and makes adding a new payment method a single-file change."
+      //
+      // Named pattern, clear solution, everyone on the team can look up
+      // "Factory Method" and immediately understand the structure.
+
+      // The refactored code — Factory Method applied:
+      interface PaymentProcessor {
+        process(amount: number): string;
+      }
+
+      class CreditCardProcessor implements PaymentProcessor {
+        process(amount: number): string {
+          return `Charged $${amount} to credit card`;
+        }
+      }
+
+      class PayPalProcessor implements PaymentProcessor {
+        process(amount: number): string {
+          return `Charged $${amount} via PayPal`;
+        }
+      }
+
+      // Factory Method — single source of truth for payment processor creation
+      class PaymentProcessorFactory {
+        static create(method: string): PaymentProcessor {
+          switch (method) {
+            case "credit_card":
+              return new CreditCardProcessor();
+            case "paypal":
+              return new PayPalProcessor();
+            default:
+              throw new Error(`Unknown payment method: ${method}`);
+          }
+        }
+      }
+
+      function checkout1(method: string, amount: number): string {
+        const processor = PaymentProcessorFactory.create(method);
+        return processor.process(amount);
+      }
+
+      function checkout2(method: string, amount: number): string {
+        // No duplication — callers rely on the factory
+        const processor = PaymentProcessorFactory.create(method);
+        return processor.process(amount);
+      }
+
+      // Adding a new payment method now only touches the factory:
+      //
+      //   class CryptoProcessor implements PaymentProcessor { ... }
+      //   // + one case in PaymentProcessorFactory.create()
+      //
+      // Versus the old approach which required hunting down every
+      // if/else chain scattered across the codebase.
+
+heuristics:
+  - >
+    Patterns are blueprints, not copy-paste solutions — adapt the structure to
+    your language's idioms, your team's conventions, and the specific problem.
+    A Python Strategy may use first-class functions; a Java Strategy needs an
+    interface. Both are "Strategy" but the concrete form differs.
+  - >
+    Learn the pattern vocabulary to communicate design intent concisely.
+    "Let's wrap this with a Decorator" is a precise instruction. "Let's add
+    something that adds behavior to this thing without changing its code" is
+    a conversation that can go off the rails.
+  - >
+    Patterns are classified into three intent groups: Creational (making
+    objects), Structural (connecting objects), and Behavioral (objects talking
+    to each other). Classify a pattern by *why* you use it, not by its
+    structural similarity to another pattern.
+  - >
+    Patterns vary by scale. Some (like Singleton or Iterator) affect a single
+    class. Others (like Facade or Mediator) organize entire subsystems. Don't
+    reach for a system-level pattern when a class-level refactoring suffices.
+  - >
+    A pattern is a solution in context — the "problem → solution → consequences"
+    triad matters. When evaluating a pattern, ask: What problem does it solve?
+    What does the solution cost? What new problems does it create?
+  - >
+    Resist "pattern fetishism": applying a pattern where it doesn't fit.
+    Simple procedural code that passes tests is better than over-abstracted
+    code that matches the GoF table of contents. Patterns serve readability,
+    not the other way around.
+  - >
+    Use pattern names in code review comments: "This is a Candidate for the
+    Observer pattern" tells the author exactly what refactoring to research.
+    Saying "maybe decouple this somehow" leaves them guessing.
+  - >
+    Patterns compound. A Factory Method often produces objects that use the
+    Strategy pattern internally. A Composite is commonly traversed by an
+    Iterator. Recognize these combinations — they appear in real systems far
+    more often than isolated textbook examples.
+  - >
+    Consider the language features available before applying a classic GoF
+    pattern. Python decorators, TypeScript discriminated unions, and Rust
+    traits often make a pattern unnecessary in its full object-oriented form.
+    Implement the *intent* of the pattern, not its Java-era structure.
+  - >
+    Anti-patterns are patterns too — learn them to avoid them. A "God Object"
+    is just as recognizable as a "Strategy," and naming it in a review
+    ("this class is becoming a God Object — let's split responsibilities")
+    is just as powerful as naming a positive pattern.
+  - >
+    Document which patterns are in use within a codebase. A pattern index
+    (or architecture decision record) helps new team members understand the
+    system's design without reading every line. "We use Observer for event
+    propagation and Command for undo" is worth recording.
+  - >
+    When two patterns look similar, focus on intent. Proxy and Decorator
+    both wrap an object, but Proxy controls access while Decorator adds
+    behavior. The code structure may be identical — the difference is in
+    what problem you're solving.
+
+related_tags:
+  [design-patterns, gof, gang-of-four, blueprints, vocabulary, communication,
+   creational-patterns, structural-patterns, behavioral-patterns,
+   pattern-classification, code-review, architecture, refactoring,
+   anti-patterns, design-vocabulary, fowler-refactoring,
+   shared-language, abstraction, pattern-composition,
+   pattern-fetishism, simplicity, code-readability]

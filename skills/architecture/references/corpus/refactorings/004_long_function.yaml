@@ -1,0 +1,154 @@
+id: long-function-004
+name: Long Function (Code Smell)
+category: code-smell
+canonical_tags: ['refactoring', 'readability']
+sources:
+  - books/refactoring.md
+  - books/clean-code.md
+summary: |
+  Long functions are the most pervasive code smell. A function that spans dozens or hundreds of lines
+  mixes responsibilities, levels of abstraction, and phases of work into a single unlabeled block.
+  Fowler's rule: "If you have to spend time looking at a fragment of code to figure out what it's doing, 
+  then you should extract it." Long functions resist testing (too many paths), resist reuse 
+  (everything is inlined), and force readers to hold too much state in their head at once.
+examples:
+  - language: python
+    bad: |
+      def process_order(order_id: str) -> dict:
+          # Fetch order
+          db = connect_db()
+          cursor = db.cursor()
+          cursor.execute("SELECT * FROM orders WHERE id = ?", (order_id,))
+          row = cursor.fetchone()
+          if not row:
+              return {"error": "Order not found"}
+          status = row[3]
+          items_json = row[4]
+
+          # Parse items
+          items = json.loads(items_json)
+          total = 0.0
+          for item in items:
+              cursor.execute("SELECT price, stock FROM products WHERE sku = ?", (item["sku"],))
+              product = cursor.fetchone()
+              if not product:
+                  return {"error": f"Product {item['sku']} not found"}
+              price, stock = product
+              if stock < item["quantity"]:
+                  return {"error": f"Insufficient stock for {item['sku']}"}
+              total += price * item["quantity"]
+
+          # Calculate tax and shipping
+          if total >= 100:
+              shipping = 0.0
+          elif total >= 50:
+              shipping = 5.99
+          else:
+              shipping = 9.99
+          tax = round(total * 0.08, 2)
+
+          # Validate payment
+          cursor.execute("SELECT method, last_four FROM payment_methods WHERE user_id = (SELECT user_id FROM orders WHERE id = ?)", (order_id,))
+          pm = cursor.fetchone()
+          if not pm:
+              return {"error": "No payment method on file"}
+
+          # Authorize charge
+          gateway_result = payment_gateway.authorize(pm[0], pm[1], total + shipping + tax)
+          if gateway_result["status"] != "approved":
+              return {"error": gateway_result["message"]}
+
+          # Update order status
+          cursor.execute(
+              "UPDATE orders SET status = 'processing', total = ?, tax = ?, shipping = ? WHERE id = ?",
+              (total, tax, shipping, order_id),
+          )
+          db.commit()
+
+          # Send confirmation email
+          cursor.execute("SELECT email FROM users WHERE id = (SELECT user_id FROM orders WHERE id = ?)", (order_id,))
+          user_email = cursor.fetchone()[0]
+          send_confirmation_email(user_email, order_id, total + shipping + tax)
+
+          # Log audit trail
+          cursor.execute(
+              "INSERT INTO audit_log (order_id, action, amount, timestamp) VALUES (?, ?, ?, ?)",
+              (order_id, "processed", total + shipping + tax, datetime.utcnow()),
+          )
+          db.commit()
+
+          return {"status": "processing", "order_id": order_id}
+    good: |
+      def process_order(order_id: str) -> dict:
+          """Orchestrate order processing at a single level of abstraction."""
+          with UnitOfWork() as uow:
+              order = uow.orders.get(order_id)
+              if not order:
+                  return {"error": "Order not found"}
+
+              result = _validate_and_price_order(order, uow)
+              if not result.ok:
+                  return {"error": result.error}
+
+              charge = _authorize_payment(order, result.totals, uow)
+              if not charge.ok:
+                  return {"error": charge.error}
+
+              _finalize_order(order, result.totals, charge, uow)
+              _notify_customer(order, uow)
+              _record_audit(order, result.totals, uow)
+
+          return {"status": "processing", "order_id": order_id}
+
+      def _validate_and_price_order(order: Order, uow: UnitOfWork) -> PricingResult:
+          items = order.parse_items()
+          total = 0.0
+          for item in items:
+              product = uow.products.get(item.sku)
+              if not product:
+                  return PricingResult(ok=False, error=f"Product {item.sku} not found")
+              if product.stock < item.quantity:
+                  return PricingResult(ok=False, error=f"Insufficient stock for {item.sku}")
+              total += product.price * item.quantity
+          return PricingResult(
+              ok=True,
+              totals=OrderTotals(
+                  subtotal=total,
+                  tax=round(total * 0.08, 2),
+                  shipping=_calculate_shipping(total),
+              ),
+          )
+
+      def _calculate_shipping(subtotal: float) -> float:
+          if subtotal >= 100: return 0.0
+          if subtotal >= 50: return 5.99
+          return 9.99
+
+      def _authorize_payment(order: Order, totals: OrderTotals, uow: UnitOfWork) -> AuthResult:
+          pm = uow.payment_methods.get_for_user(order.user_id)
+          if not pm:
+              return AuthResult(ok=False, error="No payment method on file")
+          gateway_result = payment_gateway.authorize(pm.method, pm.last_four, totals.grand_total)
+          return AuthResult(ok=gateway_result["status"] == "approved", error=gateway_result.get("message"))
+
+      def _finalize_order(order: Order, totals: OrderTotals, charge: AuthResult, uow: UnitOfWork) -> None:
+          uow.orders.update_status(order.id, "processing", totals)
+          uow.commit()
+
+      def _notify_customer(order: Order, uow: UnitOfWork) -> None:
+          user = uow.users.get(order.user_id)
+          send_confirmation_email(user.email, order.id, order.total)
+
+      def _record_audit(order: Order, totals: OrderTotals, uow: UnitOfWork) -> None:
+          uow.audit.record(order.id, "processed", totals.grand_total)
+          uow.commit()
+heuristics:
+  - Split when a function mixes responsibilities: data access, business logic, notification, and logging should not share a single function body.
+  - Split when levels of abstraction are mixed — high-level orchestration ("process the order") next to low-level details ("parse JSON, iterate cursors").
+  - Comments that mark phases ("# Calculate tax and shipping", "# Update order status") are extraction candidates — let the function name replace the comment.
+  - Small functions are easier to test: each extracted function tests one thing. The long version's 8 branches become 8 independently testable units.
+  - Use the "Composed Method" pattern from Beck: the top-level function should read like an outline whose methods are named at the same level of abstraction.
+  - Refactoring.md (line 124): "Split long functions when they mix responsibilities, levels of abstraction, or phases of work."
+  - Clean Code: "The first rule of functions is that they should be small. The second rule is that they should be smaller than that."
+  - Do NOT extract single-line wrappers that add no naming value — the function must earn its name.
+related_tags: [long-function, extract-method, compose-method, abstraction-levels, single-responsibility]

@@ -1,0 +1,152 @@
+id: service-boundary-001
+name: Service Boundary and Feature Placement Decisions
+category: architecture
+canonical_tags: [clean-architecture, ddd]
+principle: >
+  Features must be placed in the architectural layer that matches their responsibility.
+  Business rules belong in the domain layer; orchestration in the application layer;
+  translation in the interface adapters layer; and infrastructure details at the outermost edge.
+  Source dependencies must point inward, never outward.
+sources:
+  - books/clean-architecture.md
+  - books/domain-driven-design.md
+  - books/domain-driven-design-distilled.md
+  - books/patterns-of-enterprise-application-architecture.md
+summary: >
+  Service boundaries and architectural feature placement determine which layer owns
+  logic — domain (business rules), application (orchestration), adapter (translation),
+  or infrastructure (details). Scenarios cover pricing engine placement, notification
+  delivery boundaries, and feature flag evaluation layers.
+
+scenarios:
+  - id: sb-1
+    title: "Pricing engine placement in an e-commerce platform"
+    context: >
+      You are designing a multi-tenant e-commerce platform. The business has complex
+      pricing rules: volume discounts, loyalty tiers, regional tax calculations,
+      promotional bundles, and time-limited flash sales. The team is debating whether
+      to put pricing logic in a dedicated microservice behind a REST API, or embed it
+      as a domain module inside the monolithic application.
+    question: >
+      Where should the pricing engine live, and what architectural layer should
+      own the pricing rules?
+    answer: >
+      The pricing engine belongs in the core domain of a bounded context called
+      "Pricing" (or "Catalog Pricing" if the catalog drives it). The pricing rules
+      themselves are domain entities and value objects — they express business policy,
+      not infrastructure concerns.
+
+      The correct placement is:
+      - Domain layer: PricingRule, VolumeDiscount, TaxCalculator, LoyaltyTier as
+        domain objects. These hold the business invariants (e.g., "a flash sale
+        discount cannot stack with a loyalty discount unless explicitly allowed").
+      - Application layer: CalculateOrderPrice use case that loads applicable rules,
+        applies them in sequence, and produces a PricedOrder result.
+      - Interface adapters: REST controller that accepts order data, calls the use
+        case, and returns JSON. If other systems need pricing, an anti-corruption
+        layer translates their format into the Pricing context's language.
+      - Infrastructure: Rule persistence (database, config store), but never inside
+        the domain objects.
+
+      Whether this runs in-process or as a separate service is a deployment
+      decision, not an architectural one. The architectural boundary is the
+      bounded context — the domain model must be independent of HTTP, RPC,
+      databases, and message brokers regardless of deployment topology.
+
+      Key heuristics: Does the logic express business policy? If yes, it is domain
+      logic, not service plumbing. Does the computation depend on transport format
+      or protocol? If no, it does not belong in a controller or service facade.
+      Source: Clean Architecture (dependency rule, layer responsibilities),
+      DDD (core domain, bounded contexts).
+    decisions:
+      - Pricing rules are domain objects, not service utilities
+      - Deployment topology (monolith vs microservice) does not change architectural boundaries
+      - The bounded context boundary is the primary architectural seam
+
+  - id: sb-2
+    title: "Notification delivery logic creeping into domain"
+    context: >
+      An order management system has a requirement: "When an order is placed,
+      send a confirmation email, push notification, and SMS if the customer has
+      opted in." A developer puts this logic inside the Order entity's place()
+      method, which now imports an EmailService, PushNotifier, and SmsGateway
+      directly.
+    question: >
+      Is this correct? If not, where should notification triggers live?
+    answer: >
+      This is a Clean Architecture dependency rule violation and a domain layer
+      contamination. The Order entity is a domain object — it should contain
+      business rules (e.g., "an order cannot be placed if inventory is
+      insufficient"). Sending notifications is an application workflow concern,
+      not a domain invariant.
+
+      The correct approach:
+      - The Order entity emits a domain event: OrderPlaced. The entity's place()
+        method validates invariants and records the event, but does NOT call
+        external services.
+      - The application service (PlaceOrder use case) coordinates: it loads the
+        Order aggregate, calls place(), persists changes, then publishes the
+        OrderPlaced event.
+      - Notification handlers live in the application layer or as separate event
+        consumers. They subscribe to OrderPlaced and trigger the correct channels
+        (email, push, SMS). These handlers are infrastructure-aware but do not
+        contain domain rules.
+      - The domain layer never imports EmailService, PushNotifier, or SmsGateway.
+        These are infrastructure details.
+
+      Key heuristic: "Would this code still be correct if we stopped sending emails?"
+      If the order itself is still valid without notifications, then notifications
+      are not domain rules. Domain objects must be testable without a real email
+      server, push provider, or SMS gateway.
+      Source: Clean Architecture (entities must be pure, framework independence),
+      DDD (domain events, application services).
+    decisions:
+      - Domain entities must not depend on infrastructure services
+      - Domain events decouple domain logic from side effects
+      - Application services orchestrate workflows; domain objects enforce invariants
+
+  - id: sb-3
+    title: "Feature flag evaluation in domain vs application"
+    context: >
+      A SaaS platform uses feature flags to gradually roll out a new "AI-powered
+      recommendations" feature. The team argues about where to check the feature
+      flag: inside the RecommendationEngine domain service, in the controller, or
+      somewhere else.
+    question: >
+      At what architectural layer should feature flag evaluation happen?
+    answer: >
+      Feature flag evaluation is not a business rule — it is a deployment and
+      release engineering concern. It should not live in domain objects.
+
+      The correct placement depends on the flag's purpose:
+      - If the flag gates whether a feature is available at all: check it in the
+        application layer. The use case (GetRecommendations) checks the flag and
+        either delegates to the RecommendationEngine or returns a fallback.
+      - If the flag controls which variant of an algorithm runs: this is still an
+        application concern. The use case passes a strategy selection to the
+        domain service; the domain service receives plain parameters and does not
+        know about flags.
+      - Controllers should only check flags for UI toggles (show/hide a widget),
+        never for business logic gating.
+      - Infrastructure: the flag provider (LaunchDarkly, Unleash, config file) is
+        an infrastructure detail. The application layer consumes it through a port
+        (FeatureFlagGateway interface), not a direct import.
+
+      Anti-pattern: Feature flag checks scattered across domain objects, controllers,
+      and repositories. The flag becomes invisible technical debt that no one dares
+      remove after rollout.
+      Source: Clean Architecture (treat frameworks as details, keep business rules pure),
+      Patterns of Enterprise Application Architecture (service layer).
+    decisions:
+      - Feature flags are deployment concerns, not business rules
+      - Gating logic in application layer, not domain or controllers
+      - Flag provider behind a port interface; never imported directly in domain
+
+related_tags: [service-boundaries, feature-placement, clean-architecture, domain-driven-design, layer-responsibilities]
+heuristics:
+  - Does the logic express business policy? If yes, it is domain logic, not service plumbing.
+  - Does the computation depend on transport format or protocol? If no, it does not belong in a controller or service facade.
+  - Would this code still be correct if we stopped calling this external service? If yes, the logic is not domain rules.
+  - Domain objects must be testable without a real email server, push provider, or SMS gateway.
+  - Feature flags are deployment concerns, not business rules — gating logic belongs in the application layer.
+  - Deployment topology (monolith vs microservice) does not change architectural boundaries.

@@ -1,0 +1,499 @@
+id: timeouts-retry-discipline-001
+name: Timeouts and Retry Discipline
+category: resilience
+canonical_tags: ['resilience', 'release-it', 'production-readiness', 'ddia']
+sources:
+  - books/release-it.md
+  - books/designing-data-intensive-applications.md
+summary: >
+  Every outbound call across a network boundary must have an explicit,
+  intentionally chosen timeout. Infinite waits are forbidden. Timeouts must
+  be chosen per-dependency based on its SLA and criticality rather than left
+  to library defaults. Retries must be disciplined: bounded in count and
+  total elapsed time, randomized with jitter to avoid synchronized retry
+  storms, and restricted to idempotent or safe operations only. Never retry
+  validation errors or permanent failures. The timeout and retry strategy
+  must be designed as a unified policy: the total timeout budget for an
+  operation equals the per-attempt timeout times the maximum retries, and
+  this budget must not exceed the caller's deadline. Timeouts without retry
+  discipline create silent failures; retries without timeouts create
+  cascading overload.
+examples:
+  - language: python
+    bad: |
+      import httpx
+      from typing import Any
+
+
+      async def fetch_user_profile(user_id: str) -> dict:
+          """No timeout -- blocks forever if the remote is slow."""
+          async with httpx.AsyncClient() as client:
+              resp = await client.get(f"https://api.internal/users/{user_id}")
+              resp.raise_for_status()
+              return resp.json()
+
+
+      async def send_notification(user_id: str, message: str) -> None:
+          """Retries everything, including permanent failures, with no jitter."""
+          for _ in range(5):
+              try:
+                  await push_service.send(user_id, message)
+                  break
+              except Exception:
+                  pass  # retries validation errors, auth failures, everything
+    good: |
+      import asyncio
+      import random
+      import time
+      from dataclasses import dataclass
+      from enum import Enum, auto
+      from typing import Any, Callable, Optional, TypeVar
+      import httpx
+
+      T = TypeVar("T")
+
+      # ---- Per-dependency timeout config -------------------------------
+      @dataclass
+      class TimeoutBudget:
+          """
+          Every outbound dependency needs its own timeout budget, chosen
+          based on the dependency's SLA, not a one-size-fits-all number.
+          """
+          connect: float   # TCP/HTTP connect timeout
+          read: float      # time to wait for first byte
+          total: float     # overall request timeout
+
+
+      # Typical budgets per dependency type:
+      CACHE_TIMEOUT = TimeoutBudget(connect=0.5, read=1.0, total=1.5)
+      DATABASE_TIMEOUT = TimeoutBudget(connect=1.0, read=5.0, total=6.0)
+      EXTERNAL_API_TIMEOUT = TimeoutBudget(connect=2.0, read=10.0, total=12.0)
+
+
+      # ---- Failure classifier ------------------------------------------
+      class ErrorKind(Enum):
+          TRANSIENT = auto()    # timeout, 503, connection reset -- safe to retry
+          PERMANENT = auto()    # 400, 401, 403, 404, 422 -- never retry
+          UNKNOWN = auto()      # unexpected -- retry once cautiously
+
+
+      ERROR_KIND_MAP = {
+          408: ErrorKind.TRANSIENT,  # Request Timeout
+          429: ErrorKind.TRANSIENT,  # Too Many Requests (retry with backoff)
+          500: ErrorKind.TRANSIENT,  # Internal Server Error
+          502: ErrorKind.TRANSIENT,  # Bad Gateway
+          503: ErrorKind.TRANSIENT,  # Service Unavailable
+          504: ErrorKind.TRANSIENT,  # Gateway Timeout
+          400: ErrorKind.PERMANENT,
+          401: ErrorKind.PERMANENT,
+          403: ErrorKind.PERMANENT,
+          404: ErrorKind.PERMANENT,
+          422: ErrorKind.PERMANENT,
+      }
+
+
+      def classify_error(exc: Exception) -> ErrorKind:
+          """Classify an error as transient (retryable) or permanent (don't)."""
+          if isinstance(exc, httpx.HTTPStatusError):
+              return ERROR_KIND_MAP.get(exc.response.status_code, ErrorKind.UNKNOWN)
+          if isinstance(exc, (httpx.TimeoutException, httpx.ConnectError,
+                              httpx.RemoteProtocolError, ConnectionError)):
+              return ErrorKind.TRANSIENT
+          return ErrorKind.UNKNOWN
+
+
+      # ---- Retry policy ------------------------------------------------
+      @dataclass
+      class RetryPolicy:
+          max_retries: int = 3
+          base_delay: float = 0.1    # seconds
+          max_delay: float = 30.0    # seconds
+          jitter: bool = True
+          retryable_kinds: tuple = (ErrorKind.TRANSIENT,)
+
+          def delay(self, attempt: int) -> float:
+              """
+              Exponential backoff with jitter.
+
+              Without jitter, N clients retrying simultaneously will stay
+              synchronized, creating retry storms that amplify load.
+              Full jitter: delay = random(0, min(max_delay, base * 2^attempt)).
+              """
+              exp_backoff = min(self.max_delay, self.base_delay * (2 ** attempt))
+              if self.jitter:
+                  return random.uniform(0, exp_backoff)
+              return exp_backoff
+
+
+      # ---- The unified retry-with-timeout executor --------------------
+      class RetryableError(Exception):
+          """Raised when all retries are exhausted."""
+
+
+      async def execute_with_retry(
+          fn: Callable[..., T],
+          timeout: TimeoutBudget,
+          retry_policy: RetryPolicy,
+          *args: Any,
+          **kwargs: Any,
+      ) -> T:
+          """
+          Execute a call with per-attempt timeouts and disciplined retries.
+
+          Key invariants:
+          - Every attempt has its own timeout (not aggregate across retries).
+          - Only transient errors are retried.
+          - Jitter prevents thundering-herd retry storms.
+          - The caller receives a RetryableError when all retries exhaust.
+          """
+          last_exception: Optional[Exception] = None
+
+          for attempt in range(retry_policy.max_retries + 1):
+              try:
+                  async with httpx.AsyncClient(
+                      timeout=httpx.Timeout(
+                          connect=timeout.connect,
+                          read=timeout.read,
+                          write=None,
+                          pool=None,
+                      ),
+                  ) as client:
+                      return await fn(client, *args, **kwargs)
+              except Exception as exc:
+                  last_exception = exc
+                  kind = classify_error(exc)
+
+                  if kind not in retry_policy.retryable_kinds:
+                      raise  # permanent -- don't retry
+
+                  if attempt == retry_policy.max_retries:
+                      raise RetryableError(
+                          f"Exhausted {retry_policy.max_retries + 1} attempts; "
+                          f"last error: {exc}"
+                      ) from exc
+
+                  delay = retry_policy.delay(attempt)
+                  await asyncio.sleep(delay)
+
+          assert last_exception is not None
+          raise RetryableError(str(last_exception))
+
+
+      # ---- Usage: resilient user profile fetch ------------------------
+      async def fetch_user_profile(user_id: str) -> dict:
+          async def _fetch(client: httpx.AsyncClient, uid: str) -> dict:
+              resp = await client.get(f"https://api.internal/users/{uid}")
+              resp.raise_for_status()
+              return resp.json()
+
+          return await execute_with_retry(
+              _fetch,
+              timeout=EXTERNAL_API_TIMEOUT,
+              retry_policy=RetryPolicy(max_retries=2, base_delay=0.1, max_delay=5.0),
+              args=(user_id,),
+          )
+
+
+      # ---- Per-operation timeout wrapper ------------------------------
+      class DeadlineExceeded(Exception):
+          """Raised when the total retry budget exceeds the caller deadline."""
+
+
+      async def execute_with_deadline(
+          fn: Callable[..., T],
+          per_attempt_timeout: float,
+          max_retries: int,
+          retry_delay_fn: Callable[[int], float],
+          deadline: float,
+          *args: Any,
+          **kwargs: Any,
+      ) -> T:
+          """
+          Enforce a hard deadline across all retry attempts.
+
+          The sum of (per_attempt_timeout + delay) * max_retries must not
+          exceed the caller's deadline. If a retry would push past the
+          deadline, fail early instead.
+          """
+          deadline_at = time.monotonic() + deadline
+
+          for attempt in range(max_retries + 1):
+              now = time.monotonic()
+              if now + per_attempt_timeout > deadline_at:
+                  raise DeadlineExceeded(
+                      f"Would exceed deadline ({deadline}s) on attempt {attempt + 1}"
+                  )
+
+              try:
+                  return await asyncio.wait_for(
+                      fn(*args, **kwargs), timeout=per_attempt_timeout
+                  )
+              except asyncio.TimeoutError:
+                  if attempt == max_retries:
+                      raise
+              except Exception:
+                  if attempt == max_retries:
+                      raise
+
+              delay = retry_delay_fn(attempt)
+              await asyncio.sleep(delay)
+
+
+      # ---- Anti-retry-storm: per-key mutex ----------------------------
+      class RequestCoalescer:
+          """
+          Deduplicate concurrent retries for the same key.
+
+          If 100 callers all request user_42 simultaneously and the first
+          attempt fails, without coalescing they all retry independently,
+          creating 100 retry bursts. With coalescing, only one retry fires;
+          the other 99 await the result.
+          """
+          def __init__(self) -> None:
+              self._inflight: dict[str, asyncio.Task] = {}
+
+          async def call(
+              self, key: str, fn: Callable[..., T], *args: Any, **kwargs: Any
+          ) -> T:
+              if key in self._inflight:
+                  # Another caller is already working on this key -- await their result
+                  try:
+                      return await self._inflight[key]
+                  except Exception:
+                      # If the shared task failed, retry fresh (don't reuse failure)
+                      pass
+
+              task = asyncio.create_task(fn(*args, **kwargs))
+              self._inflight[key] = task
+              try:
+                  return await task
+              finally:
+                  self._inflight.pop(key, None)
+  - language: typescript
+    bad: |
+      import axios from "axios";
+
+      // Library defaults: no explicit timeout, no jitter, retries forever.
+      async function fetchUser(userId: string) {
+        const resp = await axios.get(`https://api/users/${userId}`);
+        return resp.data;
+      }
+
+      // Blind retry on everything including 400s
+      async function sendWithRetry(data: unknown) {
+        for (let i = 0; i < 5; i++) {
+          try {
+            await axios.post("https://api/submit", data);
+            return;
+          } catch {
+            // No classification, no backoff, no jitter
+          }
+        }
+      }
+    good: |
+      import axios, { AxiosError } from "axios";
+
+      // ---- Error classification ---------------------------------------
+      type ErrorKind = "transient" | "permanent" | "unknown";
+
+      function classify(err: AxiosError): ErrorKind {
+        const status = err.response?.status;
+        if (!status) return "transient"; // no response = network issue
+        if ([408, 429, 500, 502, 503, 504].includes(status))
+          return "transient";
+        if ([400, 401, 403, 404, 422].includes(status)) return "permanent";
+        return "unknown";
+      }
+
+      // ---- Retry policy ------------------------------------------------
+      interface RetryPolicy {
+        maxRetries: number;
+        baseDelayMs: number;
+        maxDelayMs: number;
+        jitter: boolean;
+      }
+
+      const DEFAULT_RETRY: RetryPolicy = {
+        maxRetries: 3,
+        baseDelayMs: 100,
+        maxDelayMs: 30_000,
+        jitter: true,
+      };
+
+      function retryDelay(policy: RetryPolicy, attempt: number): number {
+        const exp = Math.min(
+          policy.maxDelayMs,
+          policy.baseDelayMs * Math.pow(2, attempt),
+        );
+        return policy.jitter ? Math.random() * exp : exp;
+      }
+
+      // ---- Timeout budgets per dependency type ------------------------
+      const TIMEOUTS = {
+        cache: { connect: 500, read: 1000, total: 1500 },
+        database: { connect: 1000, read: 5000, total: 6000 },
+        external: { connect: 2000, read: 10000, total: 12000 },
+      } as const;
+
+      // ---- Unified executor ---------------------------------------------
+      class RetryExhaustedError extends Error {
+        constructor(
+          message: string,
+          public readonly attempts: number,
+          public readonly lastError: Error,
+        ) {
+          super(message);
+          this.name = "RetryExhaustedError";
+        }
+      }
+
+      async function executeWithRetry<T>(
+        fn: () => Promise<T>,
+        timeoutMs: number,
+        retryPolicy: RetryPolicy = DEFAULT_RETRY,
+      ): Promise<T> {
+        let lastError: Error | undefined;
+
+        for (let attempt = 0; attempt <= retryPolicy.maxRetries; attempt++) {
+          try {
+            const result = await withTimeout(fn, timeoutMs);
+            return result;
+          } catch (err) {
+            lastError = err instanceof Error ? err : new Error(String(err));
+
+            // Classify: permanent errors propagate immediately
+            if (err instanceof AxiosError && classify(err) === "permanent") {
+              throw err;
+            }
+
+            if (attempt === retryPolicy.maxRetries) {
+              throw new RetryExhaustedError(
+                `Exhausted ${retryPolicy.maxRetries + 1} attempts`,
+                attempt + 1,
+                lastError,
+              );
+            }
+
+            const delay = retryDelay(retryPolicy, attempt);
+            await sleep(delay);
+          }
+        }
+
+        throw lastError!;
+      }
+
+      function withTimeout<T>(fn: () => Promise<T>, ms: number): Promise<T> {
+        return new Promise((resolve, reject) => {
+          const timer = setTimeout(() => reject(new Error("Timeout")), ms);
+          fn()
+            .then((result) => {
+              clearTimeout(timer);
+              resolve(result);
+            })
+            .catch((err) => {
+              clearTimeout(timer);
+              reject(err);
+            });
+        });
+      }
+
+      function sleep(ms: number): Promise<void> {
+        return new Promise((r) => setTimeout(r, ms));
+      }
+
+      // ---- Request coalescer (anti-retry-storm) ------------------------
+      class RequestCoalescer<T> {
+        private inflight = new Map<string, Promise<T>>();
+
+        async call(key: string, fn: () => Promise<T>): Promise<T> {
+          const existing = this.inflight.get(key);
+          if (existing) {
+            try {
+              return await existing;
+            } catch {
+              // Shared task failed -- retry fresh
+            }
+          }
+
+          const task = fn();
+          this.inflight.set(key, task);
+          try {
+            return await task;
+          } finally {
+            this.inflight.delete(key);
+          }
+        }
+      }
+
+      // ---- Usage --------------------------------------------------------
+      const coalescer = new RequestCoalescer<UserProfile>();
+
+      async function fetchUserProfile(userId: string): Promise<UserProfile> {
+        return coalescer.call(userId, () =>
+          executeWithRetry(
+            () =>
+              axios
+                .get(`https://api.internal/users/${userId}`, {
+                  timeout: TIMEOUTS.external.total,
+                })
+                .then((r) => r.data),
+            TIMEOUTS.external.total,
+          ),
+        );
+      }
+heuristics:
+  - >
+    Every outbound call must have an explicit timeout. Library defaults
+    (httpx's 5s, axios's 0/infinite) are not chosen for your dependency's SLA.
+    An un-set timeout is an infinite wait -- forbidden in production code.
+  - >
+    Timeouts must be per-dependency, not global. A cache read should timeout in
+    500ms, a database query in 5s, an external payment API in 12s. One global
+    timeout means either you wait too long for caches or too short for databases.
+  - >
+    Retry only idempotent or safe operations. A retried POST that creates a
+    duplicate charge is worse than the timeout. Use idempotency keys
+    (stripe-style) to make operations safe for retry.
+  - >
+    Retries must be bounded: max count AND max total elapsed time. Unbounded
+    retries convert a transient 2-second blip into a 60-second resource leak
+    that starves other callers.
+  - >
+    Always add jitter. Without jitter, N clients that timeout simultaneously
+    will retry simultaneously, creating precisely synchronized retry storms.
+    Full jitter (random(0, cap)) outperforms equal jitter and decorrelated
+    jitter in preventing thundering herds.
+  - >
+    Never retry permanent failures. 400, 401, 403, 404, 422 indicate client
+    error -- retrying will produce the same result. Classify errors before
+    deciding whether to retry.
+  - >
+    The total retry budget must not exceed the caller's deadline. If the caller
+    expects a response in 2 seconds, do not configure 3 retries of 1-second
+    timeouts each. Reject early if retries would overshoot the deadline.
+  - >
+    Nested retries at multiple layers (application, library, proxy) multiply
+    into massive amplification. Every layer that retries 3 times creates 3^N
+    total attempts. Have exactly one retry layer per call chain.
+  - >
+    Use request coalescing for hot keys. If 100 callers all hit a cache miss for
+    the same key simultaneously, without coalescing you get 100 parallel DB
+    queries and 100 parallel retries. Coalesce: only one query fires, the rest
+    await its result.
+  - >
+    Test timeout behavior: inject artificial latency, verify the timeout fires,
+    verify the retry policy engages, verify permanent errors are not retried,
+    verify the deadline is respected.
+  - >
+    Do not retry operations that have already succeeded but whose acknowledgment
+    was lost to a timeout. This is the "timeout does not mean the operation
+    failed" problem -- use idempotency keys so a retry after a timeout is safe
+    even if the original operation completed.
+  - >
+    "Timeouts must be chosen intentionally, not left to library defaults"
+    (Release It!). Measure p50/p95/p99 latency of each dependency under normal
+    load; set the timeout at p99 * 2 or p95 * 3, whichever keeps total retry
+    time within the caller deadline.
+related_tags: [timeout, retry, backoff, jitter, thundering-herd, idempotency,
+  request-coalescing, deadline, circuit-breaker, error-classification,
+  resilience, release-it, ddia]

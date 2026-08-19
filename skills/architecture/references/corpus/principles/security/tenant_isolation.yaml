@@ -1,0 +1,163 @@
+id: security-tenant-isolation-001
+name: Tenant Isolation and Multi-Tenant Data Separation
+category: security
+canonical_tags: ['security', 'multi-tenant', 'idor', 'data-isolation', 'saas']
+sources:
+  - owasp/top-ten.md
+  - saas/security-best-practices.md
+summary: >
+  In multi-tenant systems, every data access must be scoped to the requesting
+  user's tenant. Missing tenant_id filters, overly broad RLS policies, and
+  service-role key misuse are the most common data breach vectors in SaaS.
+  Insecure Direct Object References (IDOR) — accepting an ID parameter
+  without verifying that the requesting user owns the referenced resource —
+  compound the risk: an authenticated user can access any tenant's data by
+  guessing or iterating resource identifiers. Defense requires tenant-scoped
+  queries at every data access point, dependency injection of the current
+  tenant context, and ownership verification on every object lookup.
+examples:
+  - language: python
+    bad: |
+      from fastapi import FastAPI, Depends
+      from sqlalchemy import select
+      from sqlalchemy.orm import Session
+
+      app = FastAPI()
+
+
+      def get_db() -> Session:
+          ...
+
+
+      @app.get("/reports/{report_id}")
+      def get_report(report_id: int, db: Session = Depends(get_db)):
+          # No tenant filter. Any authenticated user can fetch any report
+          # by iterating report_id values (IDOR).
+          stmt = select(Report).where(Report.id == report_id)
+          return db.execute(stmt).scalar_one()
+
+
+      @app.get("/reports")
+      def list_reports(db: Session = Depends(get_db)):
+          # Missing tenant_id filter returns ALL tenants' reports.
+          stmt = select(Report)
+          return db.execute(stmt).scalars().all()
+
+
+      # Service-role key misuse: background job with admin credentials
+      # that bypasses all tenant scoping.
+      admin_client = create_client(url="...", key=os.environ["SERVICE_ROLE_KEY"])
+
+      @app.post("/admin/cleanup")
+      def cleanup():
+          # Service-role key has no tenant context — can read/write anything.
+          admin_client.from_("reports").delete().eq("expired", True).execute()
+    good: |
+      from fastapi import FastAPI, Depends, HTTPException
+      from sqlalchemy import select
+      from sqlalchemy.orm import Session
+
+      app = FastAPI()
+
+
+      # ---- Tenant context injected per request -------------------------
+      class TenantContext:
+          def __init__(self, tenant_id: str, user_id: str):
+              self.tenant_id = tenant_id
+              self.user_id = user_id
+
+
+      def get_tenant(request: Request) -> TenantContext:
+          """Extract and validate tenant from JWT claims."""
+          claims = request.state.claims
+          return TenantContext(
+              tenant_id=claims["tenant_id"],
+              user_id=claims["sub"],
+          )
+
+
+      def get_db() -> Session:
+          ...
+
+
+      # ---- IDOR defense: verify ownership on single-object lookups -----
+      @app.get("/reports/{report_id}")
+      def get_report(
+          report_id: int,
+          db: Session = Depends(get_db),
+          tenant: TenantContext = Depends(get_tenant),
+      ):
+          stmt = select(Report).where(
+              Report.id == report_id,
+              Report.tenant_id == tenant.tenant_id,  # tenant-scoped
+          )
+          report = db.execute(stmt).scalar_one_or_none()
+          if report is None:
+              raise HTTPException(status_code=404)  # 404, not 403 — no info leak
+          return report
+
+
+      # ---- List endpoints: always filter by tenant ---------------------
+      @app.get("/reports")
+      def list_reports(
+          db: Session = Depends(get_db),
+          tenant: TenantContext = Depends(get_tenant),
+      ):
+          stmt = select(Report).where(Report.tenant_id == tenant.tenant_id)
+          return db.execute(stmt).scalars().all()
+
+
+      # ---- Repository layer enforces tenant scoping centrally ---------
+      class ReportRepository:
+          def __init__(self, session: Session, tenant_id: str):
+              self._session = session
+              self._tenant_id = tenant_id
+
+          def get(self, report_id: int) -> Report | None:
+              return self._session.execute(
+                  select(Report).where(
+                      Report.id == report_id,
+                      Report.tenant_id == self._tenant_id,
+                  )
+              ).scalar_one_or_none()
+
+          def list_all(self) -> list[Report]:
+              return self._session.execute(
+                  select(Report).where(Report.tenant_id == self._tenant_id)
+              ).scalars().all()
+heuristics:
+  - >
+    Every SELECT, UPDATE, DELETE in a multi-tenant system must include a
+    tenant_id filter. A missing WHERE clause on tenant_id is a data breach
+    waiting to happen — not a bug, a security incident.
+  - >
+    IDOR (Insecure Direct Object Reference) occurs when an endpoint accepts
+    a resource identifier without verifying that the authenticated user owns
+    or has access to that resource. Defense: every single-object lookup must
+    include both the resource ID AND the tenant ID in the WHERE clause.
+  - >
+    Dependency-inject the tenant context (tenant_id, user_id, roles) at the
+    request boundary. Never trust the client to send the correct tenant_id
+    in the request body — always derive it from the authenticated session.
+  - >
+    Service-role or admin keys bypass Row-Level Security and tenant filters
+    by design. Reserve them for back-office operations with audit logging.
+    Never use them to serve end-user requests.
+  - >
+    Prefer a repository layer that enforces tenant scoping centrally over
+    adding .filter(tenant_id=X) at every call site. The repository makes
+    the correct behavior the default; omitting the filter is a compile-time
+    or test-time error.
+  - >
+    Return 404 (not 403) when a tenant-scoped resource is not found. A 403
+    confirms the resource exists but is forbidden, leaking information
+    about other tenants' data. A 404 reveals nothing.
+  - >
+    Test tenant isolation with integration tests: create data for tenant A,
+    authenticate as tenant B, and assert that tenant B cannot see, modify,
+    or delete tenant A's resources. Automated IDOR scanners (e.g., AuthZ
+    fuzzing with different tenant tokens) catch what manual review misses.
+related_tags:
+  [security, multi-tenant, tenant-isolation, idor, data-isolation, saas,
+   row-level-security, access-control, authorization, service-role-key,
+   dependency-injection, repository-pattern]

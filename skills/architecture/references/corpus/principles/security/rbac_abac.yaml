@@ -1,0 +1,161 @@
+id: security-rbac-abac-001
+name: Role-Based and Attribute-Based Access Control
+category: security
+canonical_tags: ['security', 'rbac', 'abac', 'authorization', 'privilege-escalation', 'owasp-a01']
+sources:
+  - owasp/top-ten.md
+  - cwe/authorization-failures.md
+  - nist/sp-800-162.md
+summary: >
+  Broken access control is the most common web vulnerability. Role-Based
+  Access Control (RBAC) assigns permissions to roles and roles to users;
+  Attribute-Based Access Control (ABAC) evaluates policies against request
+  attributes (user, resource, environment). Common failures include:
+  trusting client-side role checks that an attacker can bypass, accepting
+  JWT role claims without revalidation against the database, using flat
+  role strings ("admin") without a permission matrix that enables
+  least-privilege assignments, and failing to enforce authorization on every
+  endpoint. Privilege escalation occurs when a lower-privileged user
+  accesses higher-privileged functionality by manipulating role parameters
+  or exploiting missing server-side checks. Defense requires server-side
+  authorization on every request, permission matrices with inheritance,
+  revalidation of sensitive claims from the database, and audit logging of
+  all access decisions.
+examples:
+  - language: python
+    bad: |
+      from fastapi import FastAPI, Request
+
+      app = FastAPI()
+
+
+      # ---- Client-side role check: trivially bypassed ----
+      # React component:
+      # {user.role === "admin" && <AdminPanel />}
+      # Attacker opens DevTools, changes role, or calls API directly.
+
+
+      # ---- JWT role claim trusted without revalidation ----
+      @app.get("/admin/users")
+      def list_all_users(request: Request):
+          # JWT may be stale — user was demoted but token not yet expired.
+          # Also: JWT secret compromise grants admin to any caller.
+          if request.state.claims["role"] != "admin":
+              raise HTTPException(403)
+          return db.execute(select(User)).scalars().all()
+
+
+      # ---- Flat role string: no permission granularity ----
+      @app.delete("/users/{user_id}")
+      def delete_user(user_id: int, request: Request):
+          # "admin" can do everything — no separation of concerns.
+          # Cannot grant "user-delete" without granting all admin powers.
+          if request.state.claims["role"] != "admin":
+              raise HTTPException(403)
+          db.delete(User).where(User.id == user_id)
+          return {"ok": True}
+    good: |
+      from fastapi import FastAPI, Depends, HTTPException, Request
+      from sqlalchemy import select
+      from enum import Flag, auto
+
+      app = FastAPI()
+
+
+      # ---- Permission enum: fine-grained, composable ----
+      class Permission(Flag):
+          USER_READ = auto()
+          USER_WRITE = auto()
+          USER_DELETE = auto()
+          REPORT_READ = auto()
+          REPORT_WRITE = auto()
+          ADMIN = USER_READ | USER_WRITE | USER_DELETE | REPORT_READ | REPORT_WRITE
+
+
+      # ---- Role-to-permission matrix with inheritance ----
+      ROLE_PERMISSIONS = {
+          "viewer":  Permission.USER_READ | Permission.REPORT_READ,
+          "editor":  Permission.USER_READ | Permission.USER_WRITE
+                    | Permission.REPORT_READ | Permission.REPORT_WRITE,
+          "admin":   Permission.ADMIN,
+      }
+
+
+      # ---- Server-side authorization dependency ----
+      def require_permission(perm: Permission):
+          async def checker(request: Request):
+              user_id = request.state.claims["sub"]
+              # Revalidate role from database — not just JWT claim
+              user = await db.get(User, user_id)
+              if user is None:
+                  raise HTTPException(401)
+              granted = ROLE_PERMISSIONS.get(user.role, Permission(0))
+              if not (granted & perm):
+                  raise HTTPException(403)
+              request.state.permissions = granted
+              return user
+          return checker
+
+
+      @app.get("/admin/users", dependencies=[Depends(require_permission(Permission.USER_READ))])
+      def list_all_users(request: Request):
+          return db.execute(select(User)).scalars().all()
+
+
+      @app.delete(
+          "/users/{user_id}",
+          dependencies=[Depends(require_permission(Permission.USER_DELETE))],
+      )
+      def delete_user(user_id: int, request: Request):
+          # Audit log for privileged operations
+          audit_log(
+              action="user_delete",
+              actor_id=request.state.user.id,
+              target_id=user_id,
+          )
+          db.delete(User).where(User.id == user_id)
+          return {"ok": True}
+heuristics:
+  - >
+    Never trust client-side role or permission checks. Any check that
+    runs in the browser (React conditionals, hidden UI elements, disabled
+    buttons) can be bypassed by opening DevTools or calling the API
+    directly with curl. Authorization must be enforced on the server on
+    every request.
+  - >
+    Verify roles and permissions server-side on every request, not just at
+    login. JWT claims may be stale — a user may have been demoted or
+    deprovisioned after the token was issued. For sensitive operations,
+    revalidate the user's role from the database rather than trusting the
+    token alone.
+  - >
+    Use a permission matrix instead of flat role strings. A "role" is a
+    bundle of permissions; permissions are the unit of authorization.
+    Define permissions as flags or enum values, map roles to permission
+    sets, and check specific permissions on each endpoint. This enables
+    least-privilege assignments without creating proliferating role names.
+  - >
+    Implement least-privilege by default. New users get the minimum
+    permission set required for their function. Elevate only on explicit
+    approval with time-bounded grants where possible. Review permission
+    assignments regularly — unused permissions should be revoked.
+  - >
+    Revalidate admin claims from the database on any sensitive operation
+    (user deletion, data export, permission change). The cost of one extra
+    database query per sensitive request is negligible compared to the
+    cost of a stale admin JWT granting unauthorized access.
+  - >
+    Log all privilege escalation attempts and authorization failures. A
+    403 response should produce an audit record with the user ID, the
+    requested resource, the required permission, and the granted
+    permissions. Spike in 403 responses often indicates reconnaissance.
+  - >
+    Separate authentication (who are you?) from authorization (what can
+    you do?). Authentication establishes identity; authorization checks
+    permissions. Never conflate the two — being authenticated does not
+    imply being authorized. Every endpoint needs both an authentication
+    check and an authorization check.
+related_tags:
+  [security, rbac, abac, authorization, access-control, privilege-escalation,
+   least-privilege, permission-matrix, role-hierarchy, jwt-validation,
+   owasp-a01, cwe-285, cwe-862, cwe-863, audit-log, dependency-injection]

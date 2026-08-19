@@ -1,0 +1,87 @@
+id: airbnb-arrow-functions-017
+name: Airbnb Arrow Functions — Implicit Return, Parens, and Clarity
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  Airbnb uses arrow functions for all anonymous callbacks — they preserve
+  lexical this and are more concise. Single-expression bodies use implicit
+  return without braces; multi-statement bodies always use braces and explicit
+  return. Always parenthesize arrow arguments (even single args) for
+  consistency. Wrap multiline expressions in parentheses. Never confuse arrow
+  syntax with comparison operators — parenthesize when mixed. Arrow body
+  placement should be on the same line as the arrow for implicit returns.
+examples:
+  - language: typescript
+    bad: |
+      // Anonymous function keyword in callback — verbose
+      [1, 2, 3].map(function (x) {
+        const y = x + 1;
+        return x * y;
+      });
+
+      // Single expression with braces — no implicit return
+      [1, 2, 3].map((number) => {
+        `A string containing the ${number + 1}.`; // no return!
+      });
+
+      // Implicit return with side effect
+      let bool = false;
+      foo(() => bool = true);
+
+      // Confusing arrow with comparison operators
+      const itemHeight = (item) => item.height <= 256 ? item.largeSize : item.smallSize;
+
+      // Arrow body on next line for implicit return
+      (foo) =>
+        bar;
+
+      // Missing parens around single argument
+      [1, 2, 3].map(x => x * x);
+    good: |
+      // Arrow function for callback — concise, lexical this
+      [1, 2, 3].map((x) => {
+        const y = x + 1;
+        return x * y;
+      });
+
+      // Implicit return for single pure expression
+      [1, 2, 3].map((number) => `A string containing the ${number + 1}.`);
+
+      // Multiline expression wrapped in parens for clarity
+      ["get", "post", "put"].map((httpMethod) => (
+        Object.prototype.hasOwnProperty.call(
+          httpMagicObjectWithAVeryLongName,
+          httpMethod,
+        )
+      ));
+
+      // Side effect in explicit block — clear intent
+      foo(() => {
+        bool = true;
+      });
+
+      // Parenthesize to disambiguate arrow from comparison
+      const itemHeight = (item) => (
+        item.height <= 256 ? item.largeSize : item.smallSize
+      );
+
+      // Always parenthesize arrow args for consistency
+      [1, 2, 3].map((x) => x * x);
+
+      // Object literal return — wrap in parens
+      [1, 2, 3].map((number, index) => ({
+        [index]: number,
+      }));
+heuristics:
+  - Use arrow function notation for all anonymous callbacks. Arrow functions inherit this from the enclosing scope, eliminating bind() boilerplate.
+  - If the function body is a single expression without side effects, use implicit return (omit braces and return keyword).
+  - If the body has multiple statements or side effects, use braces with an explicit return statement.
+  - Always include parentheses around arrow function arguments, even a single argument. This minimizes diff churn when arguments are added or removed.
+  - For multiline expressions in implicit returns, wrap them in parentheses for visual clarity about where the function starts and ends.
+  - Avoid confusing arrow syntax => with comparison operators >=, <=. Use parentheses or block bodies to disambiguate.
+  - Place the arrow body on the same line as the arrow for implicit returns — don't put it on the next line.
+  - When returning an object literal from an implicit return, wrap it in parentheses: ({}). Otherwise the braces are parsed as a block body.
+  - If a callback is complex enough to need a name, extract it into a named function expression rather than keeping it inline.
+related_tags: [airbnb, arrow-functions, implicit-return, callbacks, readability, this-binding]

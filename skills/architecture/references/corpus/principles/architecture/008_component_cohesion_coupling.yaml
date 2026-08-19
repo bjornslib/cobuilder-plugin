@@ -1,0 +1,460 @@
+id: component-cohesion-coupling-008
+name: "Component Principles — Cohesion, Coupling, and Architectural Boundaries"
+category: architecture
+canonical_tags: ['clean-architecture', 'component-principles', 'boundaries']
+sources:
+  - books/clean-architecture.md
+  - books/unified-software-engineering.md
+summary: >
+  A component is the smallest independently deployable unit — a deliverable that
+  can be developed, tested, and released on its own cadence (a JAR, a DLL, a
+  pip-installable package, or a container). Clean Architecture defines three
+  cohesion principles that govern which classes belong together in a component:
+  REP (Release-Reuse Equivalence), CCP (Common Closure Principle, the component
+  counterpart of SRP), and CRP (Common Reuse Principle, the component counterpart
+  of ISP). These three principles form an unavoidable tension triangle — you cannot
+  satisfy all three simultaneously; architecture is the art of choosing where to
+  position yourself on that triangle as the project matures. Three coupling
+  principles govern the relationships between components: ADP (Acyclic Dependencies
+  Principle — no dependency cycles), SDP (Stable Dependencies Principle — depend
+  toward stability, quantified by instability metric I), and SAP (Stable Abstractions
+  Principle — a stable component must be abstract, quantified by abstractness metric A).
+  The Main Sequence plots I vs A; healthy components fall near (I + A ≈ 1), avoiding
+  the Zone of Pain (stable + concrete = rigid) and the Zone of Uselessness (abstract +
+  instable = unused). Drawing architectural boundaries means identifying seams where
+  components change for different reasons and at different rates, then inverting
+  dependencies so the inner component owns the contract and the outer component
+  implements it. Boundaries are not free — each imposes a cost in indirection,
+  mapping, deployment overhead, and development friction — and must earn their place
+  by isolating volatility that actually materializes.
+examples:
+  - language: python
+    bad: |
+      # A single monolithic component — everything in one package with NO
+      # boundaries between subsystems. Three anti-patterns are visible:
+      #
+      # (1) REP violation: payment code cannot be versioned or released
+      #     independently of inventory code. A bug fix in inventory forces
+      #     a full redeployment of everything.
+      #
+      # (2) CCP violation: changes to payment gateway adapters (Stripe,
+      #     PayPal) ripple into notification templates. There is no common
+      #     closure — unrelated concerns share one deployment unit.
+      #
+      # (3) ADP violation: the dependency graph has cycles. PaymentService
+      #     calls InventoryService, which calls NotificationService, which
+      #     calls PaymentService back (refund notification → refund logic).
+      #     You cannot reason about or test any component in isolation.
+      #
+      # (4) No boundaries anywhere: business rules, SQL, HTTP middleware,
+      #     vendor SDKs, and file I/O share one codebase with no seams at all.
+
+      # ── monolith/__init__.py ─────────────────────────────────────
+      from .payments import PaymentService
+      from .inventory import InventoryService
+      from .notifications import NotificationService
+      from .reports import ReportGenerator
+      from .database import db_session
+      from fastapi import FastAPI, Request, HTTPException
+
+      app = FastAPI()
+
+      @app.post("/orders")
+      async def create_order(request: Request):
+          body = await request.json()
+          user_id = body["user_id"]
+          items = body["items"]
+
+          # Direct business logic in the controller — no use case boundary
+          inv = InventoryService()
+          total = 0
+          for item in items:
+              stock = inv.check_stock(item["product_id"])
+              if stock < item["qty"]:
+                  raise HTTPException(400, f"No stock for {item['product_id']}")
+              total += inv.get_price(item["product_id"]) * item["qty"]
+              inv.decrement(item["product_id"], item["qty"])
+
+          payment = PaymentService()
+          charge_id = payment.charge(user_id, total, body["stripe_token"])
+
+          # ADP VIOLATION: PaymentService → InventoryService ← NotificationService
+          #                 ↑                                      │
+          #                 └──────────────────────────────────────┘
+          #   cycle: PaymentService calls NotificationService (refund notice),
+          #   NotificationService calls PaymentService back (refund execute).
+          notifier = NotificationService()
+          notifier.send_receipt(user_id, charge_id, total)
+
+          # ReportGenerator reads from InventoryService AND PaymentService AND db
+          # directly — crosses every boundary but owns none.
+          report = ReportGenerator(db_session)
+          report.record_sale(user_id, items, charge_id, total)
+
+          return {"status": "ok", "charge_id": charge_id}
+
+      # ── monolith/database.py ─────────────────────────────────────
+      import sqlalchemy as sa
+      from sqlalchemy.orm import sessionmaker
+
+      engine = sa.create_engine("sqlite:///app.db")
+      Session = sessionmaker(bind=engine)
+      db_session = Session()
+
+    good: |
+      # Four independently deployable components, each with its own
+      # cohesion axis and versioning cadence. Dependency edges are
+      # acyclic and point toward stability. Every boundary is a
+      # deliberate seam isolating genuine volatility.
+
+      # ═══════════════════════════════════════════════════════════════
+      # 1. CORE COMPONENT (most stable, most abstract)
+      #    Contains domain interfaces + value types shared by all.
+      #    Zero concrete implementations — purely abstract contracts.
+      #    I ≈ 0, A ≈ 1 → sits at top-left of Main Sequence.
+      # ═══════════════════════════════════════════════════════════════
+
+      # core/contracts.py
+      from abc import ABC, abstractmethod
+      from dataclasses import dataclass
+      from typing import Protocol
+
+      @dataclass(frozen=True)
+      class Money:
+          amount_cents: int
+          currency: str = "usd"
+
+      @dataclass
+      class OrderItem:
+          product_id: str
+          qty: int
+
+      class InventoryPort(ABC):
+          """Contract for stock checking + price lookup + reservation."""
+          @abstractmethod
+          def check_availability(self, items: list[OrderItem]) -> dict: ...
+          @abstractmethod
+          def reserve(self, items: list[OrderItem]) -> str: ...
+          @abstractmethod
+          def release(self, reservation_id: str) -> None: ...
+
+      class PaymentPort(ABC):
+          """Contract for charging a payment method."""
+          @abstractmethod
+          def charge(self, amount: Money, token: str, metadata: dict) -> str: ...
+          @abstractmethod
+          def refund(self, charge_id: str, amount: Money) -> str: ...
+
+      class NotificationPort(ABC):
+          """Contract for sending transactional + lifecycle messages."""
+          @abstractmethod
+          def send_receipt(self, user_id: str, charge_id: str, amount: Money) -> None: ...
+
+      # ═══════════════════════════════════════════════════════════════
+      # 2. ORDERING COMPONENT (stable, moderately abstract)
+      #    Owns the place-order use case. Depends ONLY on core
+      #    contracts — never on inventory/payment/notification adapters.
+      #    CCP: all classes change when ordering workflow changes.
+      #    CRP: no client pulls in payment logic just to import ordering.
+      #    I ≈ 0.2, A ≈ 0.8 → healthy position on Main Sequence.
+      # ═══════════════════════════════════════════════════════════════
+
+      # ordering/use_cases.py
+      from core.contracts import (
+          InventoryPort, PaymentPort, NotificationPort,
+          OrderItem, Money,
+      )
+
+      @dataclass
+      class PlaceOrderInput:
+          user_id: str
+          items: list[OrderItem]
+          payment_token: str
+
+      @dataclass
+      class PlaceOrderOutput:
+          charge_id: str
+          total: Money
+
+      class PlaceOrderUseCase:
+          """Owned by ordering component. Orchestrates ports but imports ZERO
+             concrete adapters — the component boundary protects ordering from
+             inventory schema changes, payment SDK upgrades, and notification
+             template refactors."""
+
+          def __init__(
+              self,
+              inventory: InventoryPort,
+              payment: PaymentPort,
+              notifier: NotificationPort,
+          ):
+              self._inventory = inventory
+              self._payment = payment
+              self._notifier = notifier
+
+          def execute(self, input_: PlaceOrderInput) -> PlaceOrderOutput:
+              # (1) Cross inventory boundary — stable contract, volatile impl
+              avail = self._inventory.check_availability(input_.items)
+              for item in input_.items:
+                  if avail.get(item.product_id, 0) < item.qty:
+                      raise ValueError(f"Out of stock: {item.product_id}")
+
+              # (2) Calculate total — business rule OWNED by ordering
+              total = Money(0)
+              # ... price lookup through inventory port ...
+
+              # (3) Cross payment boundary — stable contract, volatile impl
+              reservation_id = self._inventory.reserve(input_.items)
+              try:
+                  charge_id = self._payment.charge(
+                      total, input_.payment_token,
+                      {"user_id": input_.user_id}
+                  )
+              except Exception:
+                  self._inventory.release(reservation_id)
+                  raise
+
+              # (4) Cross notification boundary — fires receipt, ordering
+              #     does NOT know if it's email/SMS/push/Slack.
+              self._notifier.send_receipt(
+                  input_.user_id, charge_id, total
+              )
+              return PlaceOrderOutput(charge_id, total)
+
+      # ═══════════════════════════════════════════════════════════════
+      # 3. INVENTORY COMPONENT (moderately stable)
+      #    Owns ProductRepository + stock reservation logic.
+      #    Implements InventoryPort from core — adapter to PostgreSQL/S3.
+      #    CCP: changes when product schema, warehouse, or pricing
+      #    engine changes. Released independently on its own cadence.
+      #    I ≈ 0.5, A ≈ 0.5 → deliberately in the middle.
+      # ═══════════════════════════════════════════════════════════════
+
+      # inventory/postgres_adapter.py
+      import psycopg2  # NOW SAFE — only in adapter layer
+      from core.contracts import InventoryPort, OrderItem, Money
+
+      class PostgresInventoryAdapter(InventoryPort):
+          def __init__(self, conn):
+              self._conn = conn
+
+          def check_availability(self, items):
+              cur = self._conn.cursor()
+              ids = [i.product_id for i in items]
+              cur.execute(
+                  "SELECT id, stock FROM products WHERE id = ANY(%s)", (ids,)
+              )
+              return {r[0]: r[1] for r in cur.fetchall()}
+
+          def reserve(self, items):
+              with self._conn.cursor() as cur:
+                  cur.execute("INSERT INTO reservations (items) VALUES (%s) RETURNING id",
+                              (json.dumps([vars(i) for i in items]),))
+                  return cur.fetchone()[0]
+
+          def release(self, reservation_id):
+              with self._conn.cursor() as cur:
+                  cur.execute("DELETE FROM reservations WHERE id = %s", (reservation_id,))
+
+      # ═══════════════════════════════════════════════════════════════
+      # 4. PAYMENT COMPONENT (least stable, most volatile)
+      #    Owns Stripe/PayPal/Adyen adapters. Concrete, highly coupled
+      #    to vendor SDKs. Implements PaymentPort from core.
+      #    I ≈ 0.9, A ≈ 0.1 — deliberately in the Zone of Pain by
+      #    design: concrete + highly depended upon because the payment
+      #    gateway IS the integration surface. Mitigate by keeping this
+      #    component SMALL and its contract in core fully covered by
+      #    contract tests.
+      # ═══════════════════════════════════════════════════════════════
+
+      # payment/stripe_adapter.py
+      import stripe  # NOW SAFE — only in adapter layer
+      from core.contracts import PaymentPort, Money
+
+      class StripePaymentAdapter(PaymentPort):
+          def __init__(self, client):
+              self._client = client
+
+          def charge(self, amount, token, metadata):
+              c = self._client.Charge.create(
+                  amount=amount.amount_cents,
+                  currency=amount.currency,
+                  source=token,
+                  metadata=metadata,
+              )
+              return c.id
+
+          def refund(self, charge_id, amount):
+              r = self._client.Refund.create(
+                  charge=charge_id,
+                  amount=amount.amount_cents,
+              )
+              return r.id
+
+      # ═══════════════════════════════════════════════════════════════
+      # COMPOSITION ROOT (outermost edge)
+      # The ONLY place that knows concrete adapter classes. This is the
+      # plugin architecture: each component is a plugin for a contract
+      # defined in core. Swap Stripe for Adyen here and NOTHING else
+      # changes — not ordering, not inventory, not the core contracts.
+      # ═══════════════════════════════════════════════════════════════
+
+      # main.py
+      from ordering.use_cases import PlaceOrderUseCase
+      from inventory.postgres_adapter import PostgresInventoryAdapter
+      from payment.stripe_adapter import StripePaymentAdapter
+      from notification.ses_adapter import SesNotificationAdapter
+      import psycopg2, stripe
+
+      def wire() -> PlaceOrderUseCase:
+          conn = psycopg2.connect("dbname=store")
+          stripe_client = stripe  # production-configured client
+          return PlaceOrderUseCase(
+              inventory=PostgresInventoryAdapter(conn),
+              payment=StripePaymentAdapter(stripe_client),
+              notifier=SesNotificationAdapter.from_env(),
+          )
+
+      # ── DEPENDENCY GRAPH (ACYCLIC) ───────────────────────────────
+      #   core (I=0, A=1) ← most stable/abstract — the platform
+      #    ↑        ↑
+      #    │        ├── ordering (I=0.2, A=0.8) — use cases
+      #    │        │
+      #    ├── inventory (I=0.5, A=0.5) — adapters
+      #    ├── payment   (I=0.9, A=0.1) — volatile adapters
+      #    └── notification (I=0.7, A=0.3) — volatile adapters
+      #
+      #   All arrows point INWARD toward core. Zero cycles.
+      #   Each component releases independently on its own version cadence.
+      #   A PR in inventory/ never touches ordering/ or payment/ code.
+      #
+      # ── REP (Release-Reuse Equivalence) ──────────────────────────
+      #   Each component is versioned independently (semver). Ordering
+      #   v2.1.0 can depend on inventory v1.5.2 while payment v3.0.0
+      #   ships a breaking SDK migration — no lockstep deployment.
+      #
+      # ── CCP (Common Closure Principle) ───────────────────────────
+      #   Payment adapter classes all change when the payment SDK
+      #   changes → they belong together in the payment component.
+      #   Inventory schema changes live entirely inside inventory/.
+      #
+      # ── CRP (Common Reuse Principle) ─────────────────────────────
+      #   A client that only needs ordering doesn't pull in payment SDK
+      #   dependencies or inventory SQL schema. Each component exposes
+      #   only its public contract; internal details are sealed.
+
+heuristics:
+  - >
+    REP (Release-Reuse Equivalence): the granule of reuse is the granule of
+    release. Classes that are reused together must be releaseable together —
+    versioned, tracked, and announced as a unit. A component that cannot be
+    independently versioned cannot serve as a reusable unit. Do not group
+    classes into a reusable component unless they genuinely ship on the same
+    release cycle with the same version number.
+  - >
+    CCP (Common Closure Principle): group classes that change for the same
+    reasons into one component. This is SRP for components — minimize the
+    number of components that must change when a single requirement changes.
+    When a database schema change forces edits in ordering, inventory, AND
+    reporting components simultaneously, CCP has been violated — those
+    classes should have been co-located.
+  - >
+    CRP (Common Reuse Principle): don't force users of a component to depend
+    on things they don't need. This is ISP for components — a dependency on a
+    component brings in every transitive class. If PaymentGateway lives in the
+    same component as ReportScheduler, every client that charges a card also
+    pulls in the entire reporting subsystem with all its dependencies. Split
+    them.
+  - >
+    The Cohesion Tension Triangle: REP and CCP are inclusive principles that
+    tend to make components larger (group everything that might change together
+    or be reused together). CRP is an exclusive principle that makes components
+    smaller (split anything a client doesn't need). You cannot maximize all three.
+    Early in a project, sacrifice REP (don't worry about reuse — build for
+    developability with CCP). As the project matures, trade CCP for CRP and REP
+    to stabilize reusable components. Architecture is the art of choosing where
+    you are on this triangle and when to move.
+  - >
+    ADP (Acyclic Dependencies Principle): the component dependency graph must
+    have no cycles. A cycle means every component in the cycle is effectively
+    one large component — you cannot test, release, or reason about any of them
+    independently. Break cycles with Dependency Inversion (extract an interface
+    into a new component that both depend on) or by creating a new component
+    that both cycle participants depend on. Detect cycles mechanically: if a
+    build graph says A depends on B, B on C, and C on A, you have a cycle.
+  - >
+    SDP (Stable Dependencies Principle): depend in the direction of stability.
+    A component's instability I = Ce / (Ca + Ce), where Ce = efferent (outgoing)
+    dependencies and Ca = afferent (incoming) dependencies. I=0 means maximally
+    stable (many dependents, zero outgoing dependencies — like core interfaces);
+    I=1 means maximally unstable (zero dependents, many outgoing dependencies —
+    like a one-off script). Dependencies should flow from unstable (I≈1) toward
+    stable (I≈0). Never depend on something less stable than yourself — if you
+    do, a change in that unstable component forces a change in your stable one.
+  - >
+    SAP (Stable Abstractions Principle): a component should be as abstract as
+    it is stable. Abstractness A = Na / Nc, where Na = number of abstract classes
+    and Nc = total number of classes. A stable component (low I, many dependents)
+    must be highly abstract (high A) so it can be extended without modification.
+    The Main Sequence is the line A + I = 1. Distance from Main Sequence
+    D = |A + I - 1| / √2. Healthy components have D < 0.1. A=0, I=0 is the Zone
+    of Pain (stable + concrete = rigid — database schema, wire protocol). A=1,
+    I=1 is the Zone of Uselessness (abstract + instable = nobody depends on it —
+    dead code). Some components belong in the Zone of Pain by nature (database
+    schema); keep them small and isolate them.
+  - >
+    "Drawing a boundary requires identifying the seam and inverting the
+    dependency so that both sides depend on the same abstraction, owned by
+    the inner side" (Clean Architecture, Chapter 17). A boundary is NOT just
+    an interface — it is an interface plus a commitment: the inner component
+    OWNS the contract, and the outer component IMPLEMENTS it. The interface
+    lives in the inner component's namespace. If the interface lives in a
+    shared/common package, there is no boundary — both sides still need to
+    agree on changes simultaneously.
+  - >
+    Partial boundary: a boundary implemented with a strategy pattern or a
+    single-method interface in the same component. Costs nearly nothing (no
+    separate deployment unit, no IPC, no version negotiation) but preserves
+    the option of extracting a full boundary later. Use when the volatility
+    is plausible but not yet proven. Full boundary: a separate component
+    with its own build, version, delivery pipeline, and deployment cadence.
+    Use when both sides genuinely change independently and the isolation
+    value exceeds the operational cost.
+  - >
+    Boundary economics — three costs to weigh: (1) abstraction cost (designing,
+    documenting, and understanding ports), (2) mapping cost (translating between
+    internal models and boundary DTOs), and (3) deployment cost (coordinating
+    releases, managing version compatibility, running integration tests across
+    component boundaries). Draw the boundary when the cost of NOT having it
+    (ripple-change cost, slow delivery, test fragility) exceeds these three.
+    A boundary that costs more than the volatility it isolates is overengineering.
+  - >
+    "Feature-first boundaries" (unified-software-engineering.md): organize
+    component boundaries around business capabilities (ordering/, billing/,
+    users/) rather than technical strata (controllers/, repositories/,
+    services/). Each feature component contains its own domain logic, use
+    cases, ports, and adapter wiring. The architecture screams the domain
+    model — a new developer learns the business by reading the component
+    tree, not by tracing layers across a flat namespace.
+  - >
+    The Plugin Architecture pattern: every component is a plugin for the
+    contracts defined in the most stable component (the core). Add a new
+    payment provider as a plugin — write one adapter class, register it at
+    the composition root, and zero other code changes. This is the ultimate
+    expression of boundary design: the core knows nothing about plugins
+    except the contract they fulfill. A plugin can be swapped, disabled, or
+    added in production configuration without touching core code or tests.
+  - >
+    Component smell — lockstep releases: if three "components" always deploy
+    together, always bump versions together, and a PR in one always touches
+    the other two, you don't have three components — you have one component
+    with accidental directory boundaries. The test: can you release component
+    A at v2.1.1 while B stays at v1.0.0 and C at v3.0.0? If no, consolidate
+    or add the boundaries that would make independent deployability real.
+related_tags:
+  [component-principles, cohesion, coupling, REP, CCP, CRP, ADP, SDP, SAP,
+   main-sequence, zone-of-pain, zone-of-uselessness, clean-architecture,
+   dependency-inversion, plugin-architecture, stable-dependencies,
+   stable-abstractions, component-diagrams, build-graph, boundaries,
+   boundary-economics, partial-boundary, full-boundary, feature-first,
+   acyclic-dependencies, tension-triangle, lockstep-releases]

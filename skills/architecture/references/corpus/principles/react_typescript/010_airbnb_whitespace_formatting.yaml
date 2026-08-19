@@ -1,0 +1,274 @@
+id: airbnb-whitespace-001
+name: Airbnb Whitespace & Formatting — Consistent Visual Structure
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  Airbnb's whitespace and formatting rules create a consistent visual structure across the entire codebase:
+  2-space soft tabs, spaces around operators and keywords, no trailing whitespace, single blank line after blocks
+  and between logical groups, no padding inside blocks, 100-character line limit. Method chains use leading dots
+  with indentation. Braces follow K&R style (else on same line as closing brace). These conventions make code
+  scannable and diffs predictable.
+examples:
+  - language: typescript
+    bad: |
+      // 4-space indentation — inconsistent with standard
+      function foo() {
+          let name;
+      }
+
+      // 1-space indentation — too shallow to distinguish nesting
+      function bar() {
+       let name;
+      }
+
+      // Missing space before opening brace
+      function test(){
+        console.log("test");
+      }
+
+      // Space between function name and parens in declaration
+      function fight () {
+        console.log("Swooosh!");
+      }
+
+      // Missing space after if keyword
+      if(isJedi) {
+        fight();
+      }
+
+      // No spaces around operators
+      const x=y+5;
+
+      // Trailing whitespace (invisible but caught by linters)
+      const name = "Luke";
+
+      // Multiple empty lines — excessive padding
+      class Person {
+        constructor(fullName: string) {
+          this.fullName = fullName;
+
+
+          this.email = "";
+
+
+          this.setAge(0);
+        }
+      }
+    good: |
+      // 2-space soft tabs — Airbnb standard
+      function baz() {
+        let name;
+      }
+
+      // Space before leading brace
+      function test() {
+        console.log("test");
+      }
+
+      // No space between function name and parens
+      function fight() {
+        console.log("Swooosh!");
+      }
+
+      // Space after if keyword
+      if (isJedi) {
+        fight();
+      }
+
+      // Spaces around infix operators
+      const x = y + 5;
+
+      // No trailing whitespace
+      const name = "Luke";
+
+      // Single blank line between logical groups, never multiple
+      class Person {
+        constructor(fullName: string) {
+          this.fullName = fullName;
+          this.email = "";
+          this.setAge(0);
+        }
+
+        setAge(birthday: Date) {
+          const today = new Date();
+          const age = getAge(today, birthday);
+          this.age = age;
+        }
+      }
+  - language: typescript
+    bad: |
+      // Method chain on one line — unreadable
+      $("#items").find(".selected").highlight().end().find(".open").updateCount();
+
+      // Method chain with trailing dots — looks like statement boundary
+      $("#items").
+        find(".selected").
+          highlight().
+          end().
+        find(".open").
+          updateCount();
+
+      // else on new line — breaks K&R brace style
+      if (test) {
+        thing1();
+        thing2();
+      }
+      else {
+        thing3();
+      }
+
+      // if block always returns, else is noise
+      function foo(x: number | null): number {
+        if (x !== null) {
+          return x;
+        } else {
+          return 0;
+        }
+      }
+
+      // Padded blocks — unnecessary blank lines
+      function bar() {
+
+        console.log(foo);
+
+      }
+
+      // Spaces inside parentheses
+      function bar( foo: string ) {
+        return foo;
+      }
+
+      // Spaces inside brackets
+      const arr = [ 1, 2, 3 ];
+      console.log(arr[ 0 ]);
+
+      // No spaces inside curly braces
+      const obj = {clark: "kent"};
+    good: |
+      // Leading dot on each chained call — visually continuous
+      $("#items")
+        .find(".selected")
+          .highlight()
+          .end()
+        .find(".open")
+          .updateCount();
+
+      // else on same line as closing brace — K&R
+      if (test) {
+        thing1();
+        thing2();
+      } else {
+        thing3();
+      }
+
+      // No else after return — early return pattern
+      function foo(x: number | null): number {
+        if (x !== null) {
+          return x;
+        }
+        return 0;
+      }
+
+      // No padding inside blocks
+      function bar() {
+        console.log(foo);
+      }
+
+      // No spaces inside parentheses
+      function bar(foo: string) {
+        return foo;
+      }
+
+      // No spaces inside brackets
+      const arr = [1, 2, 3];
+      console.log(arr[0]);
+
+      // Spaces inside curly braces
+      const obj = { clark: "kent" };
+  - language: typescript
+    bad: |
+      // 100+ character line — hard to read, review, and diff
+      const foo = jsonData && jsonData.foo && jsonData.foo.bar && jsonData.foo.bar.baz && jsonData.foo.bar.baz.quux && jsonData.foo.bar.baz.quux.xyzzy;
+
+      // Linebreak before = — obscures assignment
+      const foo
+        = "superLongLongLongLongLongLongLongLongString";
+
+      // Leading comma — unconventional and jarring
+      const story = [
+          once
+        , upon
+        , aTime
+      ];
+
+      // Missing trailing commas — noisier diffs
+      const hero = {
+        firstName: "Dana",
+        lastName: "Scully"
+      };
+
+      // Trailing comma after rest element — illegal
+      function createHero(
+        firstName: string,
+        lastName: string,
+        ...heroArgs: string[],
+      ) {
+        // does nothing
+      }
+    good: |
+      // Break at logical operators — each check on its own line
+      const foo = jsonData
+        && jsonData.foo
+        && jsonData.foo.bar
+        && jsonData.foo.bar.baz
+        && jsonData.foo.bar.baz.quux;
+
+      // Wrap in parens if assignment exceeds max-len
+      const foo = (
+        superLongLongLongLongLongLongLongLongFunctionName()
+      );
+
+      // Trailing commas, never leading
+      const story = [
+        once,
+        upon,
+        aTime,
+      ];
+
+      // Trailing commas on multiline objects — cleaner diffs
+      const hero = {
+        firstName: "Dana",
+        lastName: "Scully",
+      };
+
+      // No comma after rest element
+      function createHero(
+        firstName: string,
+        lastName: string,
+        inventorOf: string[],
+        ...heroArgs: string[]
+      ) {
+        // does nothing
+      }
+heuristics:
+  - Use 2-space soft tabs for indentation. Consistency matters more than personal preference.
+  - Place 1 space before the leading brace of blocks. No space between function name and parentheses.
+  - Place 1 space before the opening parenthesis in control statements (if, while, etc.).
+  - Set off operators with spaces: const x = y + 5.
+  - End files with a single newline character. No trailing whitespace anywhere.
+  - Use indentation with leading dots for long method chains (more than 2 calls). This emphasizes that lines are method calls, not new statements.
+  - Leave a single blank line after blocks and between logical groups. Do not use multiple blank lines.
+  - Do not pad blocks with blank lines at the start or end (no blank line after opening brace or before closing brace).
+  - Avoid lines longer than 100 characters (including whitespace). Long strings are exempt.
+  - Use braces with all multiline blocks. Single-statement blocks are OK on one line.
+  - If using multiline blocks with if/else, put else on the same line as the closing brace (K&R style).
+  - If an if block always executes a return, the subsequent else is unnecessary — use early return.
+  - Do not add spaces inside parentheses or brackets. Add spaces inside curly braces.
+  - Leading commas are forbidden. Use trailing commas on all multiline arrays, objects, imports, exports, and function signatures.
+  - Trailing commas must not appear after rest elements.
+  - No spaces before commas, one space after commas.
+  - Avoid linebreaks before or after = in an assignment. If needed, wrap the value in parentheses.
+  - Start all comments with a space after // or /**.
+related_tags: [whitespace, formatting, indentation, braces, commas, airbnb, readability, style-guide]

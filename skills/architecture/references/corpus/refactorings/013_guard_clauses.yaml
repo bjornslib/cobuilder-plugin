@@ -1,0 +1,126 @@
+id: guard-clauses-013
+name: Replace Nested Conditional with Guard Clauses
+category: refactoring
+canonical_tags: ['refactoring', 'readability']
+sources:
+  - books/refactoring.md
+  - books/clean-code.md
+summary: |
+  Replace Nested Conditional with Guard Clauses restructures deeply nested if/else chains
+  so that edge cases and invalid states are checked first and return or throw immediately.
+  The "happy path" — the main logic — stays at the left margin, unindented, and easy to
+  follow. Each guard clause handles one failure or special condition and exits, clearing
+  the way for the real work below. This is the opposite of defensive nesting: instead of
+  a pyramid of `if valid then if active then if authorized`, each check stands alone and
+  rejects the request as early as possible. Also called "early return" or "bouncer pattern."
+examples:
+  - language: python
+    bad: |
+      def calculate_shipping(order: Order) -> float:
+          if order is not None:
+              if order.shipping_address is not None:
+                  if order.items and len(order.items) > 0:
+                      if order.shipping_address.country == "US":
+                          if order.total_weight_kg > 0:
+                              if order.is_express:
+                                  return order.total_weight_kg * 5.0 + 15.0
+                              else:
+                                  return order.total_weight_kg * 2.0 + 5.0
+                          else:
+                              raise ValueError("Zero-weight order")
+                      else:
+                          raise ValueError("International shipping not supported")
+                  else:
+                      raise ValueError("No items in order")
+              else:
+                  raise ValueError("Missing shipping address")
+          raise ValueError("Order is None")
+    good: |
+      def calculate_shipping(order: Order) -> float:
+          # Guard clauses — reject invalid states immediately
+          if order is None:
+              raise ValueError("Order is None")
+          if order.shipping_address is None:
+              raise ValueError("Missing shipping address")
+          if not order.items:
+              raise ValueError("No items in order")
+          if order.shipping_address.country != "US":
+              raise ValueError("International shipping not supported")
+          if order.total_weight_kg <= 0:
+              raise ValueError("Zero-weight order")
+
+          # Happy path — flat, readable, at the left margin
+          if order.is_express:
+              return order.total_weight_kg * 5.0 + 15.0
+          return order.total_weight_kg * 2.0 + 5.0
+  - language: typescript
+    bad: |
+      function processRefund(request: RefundRequest): RefundResult {
+        if (request) {
+          if (request.orderId) {
+            const order = orderRepository.findById(request.orderId);
+            if (order) {
+              if (order.status === "completed" || order.status === "shipped") {
+                if (order.paymentRef) {
+                  if (request.amount <= order.total) {
+                    const result = paymentGateway.refund(order.paymentRef, request.amount);
+                    if (result.success) {
+                      order.status = "refunded";
+                      orderRepository.save(order);
+                      return { success: true, refundId: result.refundId };
+                    } else {
+                      return { success: false, reason: result.error };
+                    }
+                  } else {
+                    return { success: false, reason: "Refund exceeds order total" };
+                  }
+                } else {
+                  return { success: false, reason: "No payment reference" };
+                }
+              } else {
+                return { success: false, reason: `Order in non-refundable state: ${order.status}` };
+              }
+            } else {
+              return { success: false, reason: "Order not found" };
+            }
+          } else {
+            return { success: false, reason: "Missing order ID" };
+          }
+        }
+        return { success: false, reason: "Invalid request" };
+      }
+    good: |
+      function processRefund(request: RefundRequest): RefundResult {
+        // Guard clauses — fast-fail on every edge case
+        if (!request) return { success: false, reason: "Invalid request" };
+        if (!request.orderId) return { success: false, reason: "Missing order ID" };
+
+        const order = orderRepository.findById(request.orderId);
+        if (!order) return { success: false, reason: "Order not found" };
+
+        if (order.status !== "completed" && order.status !== "shipped") {
+          return { success: false, reason: `Order in non-refundable state: ${order.status}` };
+        }
+        if (!order.paymentRef) return { success: false, reason: "No payment reference" };
+        if (request.amount > order.total) return { success: false, reason: "Refund exceeds order total" };
+
+        // Happy path — do the thing
+        const result = paymentGateway.refund(order.paymentRef, request.amount);
+        if (!result.success) return { success: false, reason: result.error };
+
+        order.status = "refunded";
+        orderRepository.save(order);
+        return { success: true, refundId: result.refundId };
+      }
+heuristics:
+  - Apply when you see an if/else pyramid that goes 3+ levels deep — the reader has to hold too many conditions in their head.
+  - Apply when error handling or edge cases are nested inside the happy path — guards move rejection logic to the top.
+  - Apply when each nesting level corresponds to a distinct failure condition — each deserves its own standalone guard.
+  - Structure guards in a logical order: input validation first, then state checks, then business-rule violations.
+  - Do NOT apply when the nesting represents genuine business logic branching (e.g. "if premium customer, special pricing else standard") — use Decompose Conditional or Strategy instead.
+  - Do NOT apply when there are only 2 levels and the else branch is the main logic — a simple if/else with an early return for the edge case is already a guard clause.
+  - After applying guards: the function body should show the main logic at the top level of indentation — no business logic should be inside an `else` block.
+  - Pair with Extract Method when a guard clause's body is complex (log + raise + notify) — extract into `_assert_order_is_refundable(order)`.
+  - Do not put side effects in guard conditions — a guard condition should be a pure check; logging or metrics go in the guard body after the check.
+  - Mechanical sequence: (1) find the deepest nesting level and identify the condition that triggers it, (2) invert the condition and add a guard that exits at the top — this "peels" one level, (3) repeat until the happy path is at the top level, (4) reorder guards from most-general to most-specific.
+related_tags: [guard-clauses, early-return, flattening, readability, control-flow, conditional-logic, bouncer-pattern]

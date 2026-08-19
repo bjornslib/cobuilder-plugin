@@ -1,0 +1,230 @@
+id: 12factor-admin-processes-012
+name: "12-Factor App — Admin Processes (One-Off Tasks)"
+category: cloud-native
+canonical_tags: ['12factor', 'admin', 'management', 'one-off', 'migrations', 'repl', 'scripts']
+sources:
+  - open_sources/design_patterns/12factor-app.txt
+  - open_sources/design_patterns/12factor-admin-processes.html
+summary: >
+  Admin and management tasks — database migrations, REPL consoles, one-time
+  scripts — should run as one-off processes in an identical environment to
+  the app's regular long-running processes. They run against the same release,
+  using the same codebase and config, with the same dependency isolation.
+  Admin code must ship with application code to prevent version skew between
+  the tools and the app they manage. The same dependency isolation techniques
+  apply: if the web process runs via `bundle exec thin start`, migrations use
+  `bundle exec rake db:migrate`. Twelve-factor strongly favors languages that
+  provide a REPL out of the box (Python, Ruby, Node.js) and make one-off
+  script execution straightforward.
+examples:
+  - language: python
+    bad: |
+      # BAD: Admin scripts live outside the app repo. Migrations run with
+      # system Python, not the app's virtualenv. REPL connects to production
+      # DB directly with hardcoded credentials. Version skew between admin
+      # scripts and the app they manage.
+
+      # run_migrations.sh — BAD: outside the app, different Python
+      # #!/bin/bash
+      # ssh prod-server "cd /opt/admin-scripts && python migrate.py"
+      #
+      # WHY: The migrate.py script lives in a separate repo. When the app's
+      # ORM models change, migrate.py may be out of date. Migrations fail
+      # silently or apply wrong schema changes.
+
+      # inspect_db.py — BAD: hardcoded production credentials
+      # import psycopg2
+      # conn = psycopg2.connect(
+      #     host="prod-db.internal",
+      #     user="admin",
+      #     password="hardcoded-secret-password",
+      #     database="myapp_prod"
+      # )
+      # cur = conn.cursor()
+      # cur.execute("SELECT * FROM users LIMIT 10")
+      # print(cur.fetchall())
+      #
+      # WHY: Credentials in code. Works for the ops person who wrote it;
+      # nobody else knows this script exists. If the database host changes,
+      # the script silently breaks.
+
+    good: |
+      # GOOD: Admin code ships with the app. Migrations, REPL, and one-off
+      # scripts use the same virtualenv, same config env vars, same release.
+      # All admin commands run from the app's working directory.
+
+      import os
+      import sys
+
+      # manage.py — GOOD: shipped with the app, uses app's virtualenv
+      # Run: `python manage.py migrate`
+      # Or:   `python manage.py shell`
+      # Or:   `python manage.py run_script fix_bad_records`
+
+      # WHY: All admin commands read config the same way as the web process.
+      # The same DATABASE_URL env var drives both web and admin.
+      DATABASE_URL = os.environ["DATABASE_URL"]
+
+      def run_migrations():
+          """Apply pending database migrations."""
+          # WHY: Uses the app's ORM models — same code as web process.
+          # No version skew possible: migrations and app code are in the
+          # same commit.
+          print(f"Running migrations against {DATABASE_URL}")
+          # In a real app:
+          # from alembic import command
+          # from alembic.config import Config
+          # alembic_cfg = Config("alembic.ini")
+          # command.upgrade(alembic_cfg, "head")
+          print("Migrations complete")
+
+      def run_shell():
+          """Start an interactive REPL with the app's context loaded."""
+          # WHY: REPL with app models pre-loaded. Developers inspect live
+          # data and test queries interactively.
+          import code
+          banner = "App REPL — models and config are loaded"
+          # In a real app: pre-import ORM models, services, etc.
+          code.interact(banner=banner, local={"DATABASE_URL": DATABASE_URL})
+
+      def run_script(script_name: str):
+          """Execute a one-off maintenance script from the app's scripts/ dir."""
+          script_path = os.path.join("scripts", script_name)
+          print(f"Running script: {script_path}")
+          # WHY: Scripts in the same repo, same commit. They use the app's
+          # imports and config. No external dependency.
+          exec(open(script_path).read(), {"DATABASE_URL": DATABASE_URL})
+
+      if __name__ == "__main__":
+          if len(sys.argv) < 2:
+              print("Usage: python manage.py <migrate|shell|run_script> [args]")
+              sys.exit(1)
+          command = sys.argv[1]
+          if command == "migrate":
+              run_migrations()
+          elif command == "shell":
+              run_shell()
+          elif command == "run_script":
+              run_script(sys.argv[2])
+          else:
+              print(f"Unknown command: {command}")
+
+      # WHY: In production (Heroku):
+      # `heroku run python manage.py migrate`
+      # Runs in a one-off dyno with the same release, same config.
+      #
+      # WHY: In Kubernetes:
+      # `kubectl exec -it deploy/myapp -- python manage.py shell`
+      # Runs inside the running container — identical environment.
+
+  - language: typescript
+    bad: |
+      // BAD: Admin scripts in a separate repo. Migrations run with a
+      // different Node version. Database credentials stored in the script.
+      // No shared config. Version skew between admin tools and app code.
+
+      // admin-tools/run-migration.ts — BAD: separate repo, hardcoded config
+      // import { Client } from "pg";
+      //
+      // const client = new Client({
+      //   host: "prod-db.internal",
+      //   user: "admin",
+      //   password: "hardcoded-secret",
+      //   database: "myapp_prod",
+      // });
+      //
+      // await client.connect();
+      // await client.query("ALTER TABLE users ADD COLUMN flags JSONB");
+      // await client.end();
+      //
+      // WHY: This script is invisible to the app developers. When they rename
+      // columns or change the schema, this script silently breaks. The
+      // hardcoded credentials rotate — script breaks again.
+
+    good: |
+      // GOOD: Admin code ships with the app. package.json scripts run
+      // migrations, REPL, and one-off tasks in the same Node environment.
+      // All use process.env for config — same as the web server.
+
+      // package.json — GOOD: admin commands as npm scripts
+      // {
+      //   "scripts": {
+      //     "start": "node dist/server.js",
+      //     "migrate": "node dist/commands/migrate.js",
+      //     "shell": "node dist/commands/shell.js",
+      //     "script": "node dist/commands/run-script.js"
+      //   }
+      // }
+
+      // src/commands/migrate.ts — GOOD: shipped with app, uses same config
+      import { PrismaClient } from "@prisma/client";
+
+      async function migrate() {
+        // WHY: same DATABASE_URL as the web server. No hardcoded credentials.
+        // Prisma migrations are in the same repo as the app code.
+        const prisma = new PrismaClient();
+
+        console.log(`Running migrations against ${process.env.DATABASE_URL}`);
+
+        // WHY: Programmatic migration — no external CLI tool needed.
+        // The migration files are in prisma/migrations/ — same commit.
+        // await prisma.$executeRawUnsafe("SELECT 1");
+
+        console.log("Migrations complete");
+        await prisma.$disconnect();
+      }
+
+      migrate().catch((err) => {
+        console.error("Migration failed:", err);
+        process.exit(1);
+      });
+
+      // WHY: In production:
+      // `npm run migrate` — uses the same Node, same virtualenv, same config.
+      // Or via container: `docker run myapp npm run migrate`
+
+heuristics:
+  - >
+    "Run admin/management tasks as one-off processes. Migrations, REPL, and
+    scripts run in an identical environment as the app's regular long-running
+    processes" (12factor.net/admin-processes).
+  - >
+    Admin code must ship with application code — same repo, same commit.
+    This prevents version skew between the tools and the app they manage.
+    If admin scripts live elsewhere, they will drift.
+  - >
+    Use the same dependency isolation for admin processes. If the web process
+    runs via `bundle exec thin start`, migrations use `bundle exec rake
+    db:migrate`. If the app uses virtualenv, admin commands use that same
+    virtualenv's Python.
+  - >
+    Admin processes run against a release, using the same codebase and config
+    as any process in that release. They read DATABASE_URL, REDIS_URL, etc.
+    from the same environment variables as the web process.
+  - >
+    Database migrations should be run as a deployment step. Run `python
+    manage.py migrate` or `npm run migrate` before starting the new web
+    processes. The migration and the app code must be compatible.
+  - >
+    Provide a REPL (read-eval-print loop) for interactive inspection of the
+    app's models against the live database. Python (`python` / `python
+    manage.py shell`), Ruby (`rails console`), and Node.js (`node`) all
+    provide this natively.
+  - >
+    One-off scripts (data fixes, bulk operations, cleanup) should be
+    committed into the app's scripts/ directory and executed via the same
+    admin command interface. Never run ad-hoc SQL or scripts that live
+    outside version control.
+  - >
+    In production, use the platform's remote execution mechanism. Heroku:
+    `heroku run <command>`. Kubernetes: `kubectl exec`. The one-off process
+    starts in the same container image with the same environment.
+  - >
+    Prefer languages with a built-in REPL (Python, Ruby, Node.js, Elixir)
+    for twelve-factor apps. Languages without one (Java, Go) require more
+    tooling to achieve the same interactive inspection capability.
+
+related_tags:
+  [admin-processes, one-off, migrations, repl, scripts, manage.py,
+   rake, dependency-isolation, virtualenv, bundler, heroku-run,
+   kubectl-exec, twelve-factor, database-migrations, shell]

@@ -1,0 +1,44 @@
+# Boundary record for the <name> bounded context.
+# Machine-diffable architecture baseline — ../standard.md §5.2.
+# Authoring procedure: references/architecture-documentation.md. VERIFY every edge against code.
+# Grounded in code as of YYYY-MM-DD.
+
+id: <context-id>                      # stable kebab-case; never renamed without an ADR
+path: <repo/path/to/context>
+name: "<human name>"
+
+# Symbols other bounded contexts (or operators) may import — the published language.
+public_interface:
+  - <module.Symbol>
+
+# Context-ids this context may depend on.
+allowed_dependencies:
+  - <context-id>
+
+# Integration pattern per neighbour (mirrors canvas §6).
+context_map:
+  - with: <context-id>
+    pattern: shared-kernel | anti-corruption-layer | conformist | open-host-service | partnership
+    # shared: [<symbols>]            # shared-kernel only
+    # via: <adapter module>          # anti-corruption-layer only
+    note: "<one line>"
+
+# Explicit anti-corruption / direction rules. Graph-checkable.
+# A violating edge with no approving ADR = drift. Mark discovered violations SMELL.
+forbidden_dependencies:
+  - target: <context-id or import path>
+    # from: <context-id>             # when the rule constrains another context's edge INTO this one
+    why: "<the rule's reason — or SMELL: <evidence> for a discovered violation to resolve>"
+
+# C3-level internal modules with dependency invariants.
+modules:
+  - id: <module-id>
+    path: <repo/path>
+    # members: [<file stems>]        # when the module is a group of loose files
+    public_interface: [<Symbol>]
+    allowed_inbound: [<module-id>]   # who inside/outside the context may import this module
+    allowed_outbound: []             # [] = leaf (stdlib only) — the strongest, most checkable rule
+    rule: "<one-line invariant, human + machine readable>"
+
+# ADRs whose maps_to anchors to this context. May start empty.
+governed_by: []

@@ -1,0 +1,254 @@
+id: 12factor-disposability-009
+name: "12-Factor App — Disposability (Fast Startup, Graceful Shutdown)"
+category: cloud-native
+canonical_tags: ['12factor', 'disposability', 'startup', 'shutdown', 'resilience', 'SIGTERM', 'crash-only', 'graceful-shutdown']
+sources:
+  - open_sources/design_patterns/12factor-app.txt
+  - open_sources/design_patterns/12factor-disposability.html
+summary: >
+  Twelve-factor processes are disposable — they can be started or stopped at
+  a moment's notice. This enables fast elastic scaling, rapid code and config
+  deployment, and robustness in production. Processes should minimize startup
+  time (ideally seconds from launch to ready) and shut down gracefully on
+  SIGTERM: web processes stop accepting new requests, drain in-flight work,
+  then exit; worker processes return the current job to the work queue via
+  NACK or lock release. Processes must also be robust against sudden death
+  (hardware failure, OOM kill). Use robust queueing backends that return jobs
+  on disconnect, and design all jobs to be idempotent or reentrant. The
+  crash-only design philosophy takes this further: assume the process can die
+  at any moment and design the system to recover without manual intervention.
+examples:
+  - language: python
+    bad: |
+      # BAD: Slow startup (loads entire dataset into memory on boot).
+      # No signal handling — SIGTERM kills the process mid-request.
+      # Worker jobs are not reentrant — partial state on crash.
+
+      import time
+      from http.server import HTTPServer, BaseHTTPRequestHandler
+
+      # WHY: Loads 500MB of data on startup. Takes 45 seconds. Every scale-up
+      # event or deploy restart waits this long. During that time, no traffic.
+      print("Loading data...")
+      _data = [i for i in range(50_000_000)]  # slow startup
+      print("Ready")
+
+      class BadHandler(BaseHTTPRequestHandler):
+          def do_GET(self):
+              # WHY: No signal handling. If SIGTERM arrives during this sleep,
+              # the process dies immediately. The client gets a broken pipe.
+              time.sleep(5)  # slow request
+              self.send_response(200)
+              self.end_headers()
+              self.wfile.write(b"Done")
+
+      server = HTTPServer(("0.0.0.0", 8000), BadHandler)
+      server.serve_forever()
+      # WHY: No graceful shutdown. Ctrl+C kills it instantly.
+
+    good: |
+      # GOOD: Fast startup (seconds). Graceful shutdown on SIGTERM — stops
+      # accepting new connections, drains in-flight requests, exits cleanly.
+      # Worker jobs are idempotent and returned to queue on shutdown.
+
+      import os
+      import signal
+      import sys
+      import time
+      import redis
+      from http.server import HTTPServer, BaseHTTPRequestHandler
+
+      REDIS_URL = os.environ["REDIS_URL"]
+      _redis = redis.from_url(REDIS_URL)
+
+      # WHY: Startup takes seconds, not minutes. Lazy-load data on first
+      # request or from a fast backing service (Redis).
+      _cache = {}
+
+      class GoodHandler(BaseHTTPRequestHandler):
+          def do_GET(self):
+              key = self.path.lstrip("/")
+              if key not in _cache:
+                  _cache[key] = _redis.get(key)  # fast, lazy
+              self.send_response(200)
+              self.end_headers()
+              self.wfile.write(str(_cache[key]).encode())
+
+      port = int(os.environ.get("PORT", "8000"))
+      server = HTTPServer(("0.0.0.0", port), GoodHandler)
+      server.timeout = 1.0  # allow periodic signal checks
+
+      # WHY: Graceful shutdown handler. On SIGTERM:
+      # 1. Stop accepting new connections
+      # 2. Finish in-flight requests (or timeout)
+      # 3. Close the server socket
+      # 4. Exit cleanly
+      _shutting_down = False
+
+      def handle_sigterm(signum, frame):
+          global _shutting_down
+          print("SIGTERM received — shutting down gracefully")
+          _shutting_down = True
+          # WHY: Close server in a separate thread to not block signal handler
+          import threading
+          threading.Thread(target=server.shutdown, daemon=True).start()
+
+      signal.signal(signal.SIGTERM, handle_sigterm)
+
+      print(f"Listening on port {port} (startup: {time.time():.1f}s)")
+      server.serve_forever()
+      print("Shutdown complete")
+
+      # Worker example — idempotent job processing with graceful shutdown:
+      # while True:
+      #     try:
+      #         _, job_data = _redis.blpop("queue:jobs", timeout=5)
+      #         if job_data:
+      #             process_job_idempotently(job_data)  # safe to retry
+      #     except KeyboardInterrupt:
+      #         print("Worker shutting down — re-queuing active job")
+      #         if current_job:
+      #             _redis.lpush("queue:jobs", current_job)
+      #         break
+
+  - language: typescript
+    bad: |
+      // BAD: Slow startup (connects to all backing services synchronously).
+      // No graceful shutdown — process.exit() on uncaught error. Worker jobs
+      // are lost on kill. Long-lived HTTP requests (30s timeout).
+
+      import express from "express";
+
+      const app = express();
+
+      // WHY: Synchronous startup — loads config, connects DB, warms cache
+      // all before listening. If any step fails, the app never starts.
+      // Startup takes 20+ seconds.
+      function warmCache() {
+        for (let i = 0; i < 10_000_000; i++) {
+          // slow init
+        }
+      }
+      warmCache();
+
+      app.get("/slow", async (_req, res) => {
+        // WHY: 30s request with no abort handling. If the process receives
+        // SIGTERM, the client hangs. Kubernetes kill -9 arrives after 30s.
+        await new Promise((r) => setTimeout(r, 30_000));
+        res.send("Done");
+      });
+
+      app.listen(3000, "0.0.0.0");
+
+      // WHY: No process-level signal handling. PM2 or Docker sends SIGTERM.
+      // This app ignores it. The platform eventually kills with SIGKILL.
+      // In-flight requests and jobs are lost.
+
+    good: |
+      // GOOD: Fast startup (sub-second to listening). Graceful shutdown
+      // on SIGTERM — server.close() drains connections before exiting.
+      // Kubernetes-compatible lifecycle hooks.
+
+      import express from "express";
+      import { createServer } from "http";
+
+      const app = express();
+
+      // WHY: Defer heavy init. The server starts listening immediately.
+      // Warm-up happens async in the background.
+      setImmediate(() => {
+        // async cache warm, DB pool init, etc.
+      });
+
+      app.get("/fast", (_req, res) => {
+        res.send("Ready in milliseconds");
+      });
+
+      const server = createServer(app);
+
+      const port = parseInt(process.env.PORT || "3000", 10);
+      server.listen(port, "0.0.0.0", () => {
+        console.log(`Listening on port ${port}`);
+      });
+
+      // WHY: Graceful shutdown handler. Kubernetes sends SIGTERM, waits
+      // terminationGracePeriodSeconds (default 30s), then SIGKILL.
+      let shuttingDown = false;
+
+      process.on("SIGTERM", () => {
+        if (shuttingDown) return;
+        shuttingDown = true;
+        console.log("SIGTERM received — draining connections...");
+
+        // WHY: Close the server — stops accepting new connections.
+        // Existing connections complete within the grace period.
+        server.close((err) => {
+          if (err) {
+            console.error("Error during shutdown:", err);
+            process.exit(1);
+          }
+          console.log("All connections drained. Exiting.");
+          process.exit(0);
+        });
+
+        // WHY: Force exit after 25s (before k8s 30s SIGKILL).
+        setTimeout(() => {
+          console.error("Forced shutdown after timeout");
+          process.exit(1);
+        }, 25_000);
+      });
+
+      // WHY: Kubernetes readiness probe fails during shutdown.
+      // The load balancer stops routing traffic here while draining.
+      app.get("/healthz", (_req, res) => {
+        if (shuttingDown) {
+          res.status(503).send("Shutting down");
+        } else {
+          res.send("OK");
+        }
+      });
+
+heuristics:
+  - >
+    "Maximize robustness with fast startup and graceful shutdown. Processes
+    are disposable — they can start or stop at a moment's notice"
+    (12factor.net/disposability).
+  - >
+    Startup should take seconds, not minutes. Fast startup enables elastic
+    scaling (spin up new instances to handle load spikes) and rapid
+    deployment of code or config changes.
+  - >
+    Web processes: on SIGTERM, stop listening on the port (refuse new
+    connections), allow in-flight requests to complete, then exit. HTTP
+    requests should be short (seconds, not minutes).
+  - >
+    Worker processes: on SIGTERM, return the current job to the work queue.
+    Use NACK on RabbitMQ, release locks on Delayed Job. All jobs must be
+    reentrant or idempotent — they may be processed twice.
+  - >
+    Design for sudden death. Hardware can fail, OOM killer can strike.
+    Use robust queueing backends (Beanstalkd returns jobs on disconnect)
+    and make every operation safe to retry.
+  - >
+    Crash-only design: assume the process can die without warning. The
+    system recovers by starting a new process. No special recovery logic
+    needed — the new process starts clean and resumes from backing services.
+  - >
+    In containerized environments, respect Kubernetes' termination sequence:
+    SIGTERM → drain → exit within terminationGracePeriodSeconds. Set the
+    grace period longer than your longest expected request.
+  - >
+    Shutdown should be idempotent — handling SIGTERM twice should not
+    cause errors. Use a boolean flag to track shutdown state.
+  - >
+    Use readiness probes that fail during shutdown so the load balancer
+    stops routing traffic to a terminating instance.
+  - >
+    Test graceful shutdown under load. Run `kill -TERM <pid>` while
+    bombarding with requests. Verify no dropped requests and clean exit.
+
+related_tags:
+  [disposability, graceful-shutdown, sigterm, startup-time, crash-only,
+   idempotent, reentrant, rabbitmq, nack, beanstalkd, kubernetes,
+   termination-grace-period, readiness-probe, signal-handling,
+   twelve-factor, resilience, elastic-scaling]

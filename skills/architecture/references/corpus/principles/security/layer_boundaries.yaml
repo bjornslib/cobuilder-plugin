@@ -1,0 +1,170 @@
+id: security-layer-boundaries-001
+name: Architectural Layer Boundaries as Security Concerns
+category: security
+canonical_tags: ['security', 'layer-boundaries', 'clean-architecture', 'import-graph']
+sources:
+  - books/clean-architecture.md
+  - books/a-philosophy-of-software-design.md
+summary: >
+  When UI code imports database clients, or server code imports browser
+  APIs, the dependency violation is also a security violation — it creates
+  paths for untrusted input to reach trusted subsystems without validation.
+  Import graph analysis reveals these boundary breaches. In a well-layered
+  architecture, data flows inward through validation gates at each layer
+  boundary. When a layer is skipped (API route directly using a database
+  client), untrusted data reaches the database without the validation and
+  authorization that the intermediate layer would enforce. The coupling
+  is both a maintenance problem and an attack surface.
+examples:
+  - language: python
+    bad: |
+      from fastapi import FastAPI
+      from sqlalchemy import create_engine, select
+      from sqlalchemy.orm import Session
+
+      app = FastAPI()
+      engine = create_engine("sqlite:///app.db")
+
+      # ---- API route directly uses database client ----
+      # No repository layer, no validation layer, no authorization layer.
+      # Untrusted HTTP input flows directly into SQL queries.
+      @app.post("/users")
+      def create_user(name: str, email: str, db: Session = Depends(get_db)):
+          # No validation: email could be anything
+          # No authorization: anyone can create users
+          # No domain logic: raw SQL in the handler
+          db.execute(
+              text("INSERT INTO users (name, email) VALUES (:name, :email)"),
+              {"name": name, "email": email},
+          )
+          db.commit()
+          return {"status": "created"}
+
+
+      # ---- Circular import creating hidden coupling ----
+      # In models.py:
+      from api.routes import get_current_user  # model imports from API layer
+
+      # In routes.py:
+      from models import User  # API imports from data layer
+      # Circular: models know about HTTP authentication, routes know about SQL tables.
+      # Changes to auth logic force changes to the data layer and vice versa.
+    good: |
+      from abc import ABC, abstractmethod
+      from dataclasses import dataclass
+      from fastapi import FastAPI, Depends, HTTPException
+      from pydantic import EmailStr
+      from sqlalchemy import create_engine, select
+      from sqlalchemy.orm import Session
+
+      # ---- Domain layer: pure data and rules, no I/O imports ----
+      @dataclass
+      class User:
+          name: str
+          email: str
+
+          def validate(self) -> list[str]:
+              errors = []
+              if len(self.name) < 2:
+                  errors.append("Name too short")
+              if "@" not in self.email:
+                  errors.append("Invalid email")
+              return errors
+
+
+      # ---- Repository layer: data access, depends on domain only ----
+      class UserRepository(ABC):
+          @abstractmethod
+          def save(self, user: User) -> int: ...
+          @abstractmethod
+          def get_by_email(self, email: str) -> User | None: ...
+
+
+      class SqlUserRepository(UserRepository):
+          def __init__(self, session: Session):
+              self._session = session
+
+          def save(self, user: User) -> int:
+              row = UserRow(name=user.name, email=user.email)
+              self._session.add(row)
+              self._session.commit()
+              return row.id
+
+          def get_by_email(self, email: str) -> User | None:
+              row = self._session.execute(
+                  select(UserRow).where(UserRow.email == email)
+              ).scalar_one_or_none()
+              if row is None:
+                  return None
+              return User(name=row.name, email=row.email)
+
+
+      # ---- API layer: depends on repository interface, not implementation ----
+      class CreateUserRequest:
+          name: str
+          email: EmailStr  # Pydantic validates format at the boundary
+
+      @app.post("/users")
+      def create_user(
+          req: CreateUserRequest,
+          repo: UserRepository = Depends(get_user_repo),
+          current_user=Depends(require_admin),  # authorization gate
+      ):
+          user = User(name=req.name, email=req.email)
+          errors = user.validate()  # domain validation
+          if errors:
+              raise HTTPException(400, detail=errors)
+
+          existing = repo.get_by_email(req.email)
+          if existing:
+              raise HTTPException(409, "Email already registered")
+
+          user_id = repo.save(user)
+          return {"id": user_id, "status": "created"}
+
+      # ---- One-directional dependency: API -> Repo -> Domain ----
+      # Domain has no imports from outer layers.
+      # Repo depends on Domain (returns domain objects).
+      # API depends on Repo interface (not SqlUserRepository).
+heuristics:
+  - >
+    A layer boundary violation is a security vulnerability when it allows
+    untrusted input to bypass a validation or authorization gate. If an API
+    handler directly calls a database client, it has bypassed the
+    repository layer that would enforce tenant scoping and input validation.
+  - >
+    Enforce layer boundaries through import discipline. The domain layer
+    must not import from the data or API layers. The data layer must not
+    import from the API layer. Dependency direction is always inward.
+    Use import linting (import-linter, pyright) to catch violations in CI.
+  - >
+    Circular imports between layers are a strong signal of boundary
+    violation. If models.py imports from routes.py and routes.py imports
+    from models.py, the layers are coupled. Break the cycle by introducing
+    an interface (Protocol or ABC) in the inner layer that the outer layer
+    implements.
+  - >
+    The repository pattern is the primary defense at the data layer
+    boundary. A well-designed repository enforces tenant scoping, input
+    validation, and query constraints. Bypassing it (raw SQL in a handler)
+    means bypassing all those guarantees.
+  - >
+    Pydantic request models are the defense at the API layer boundary.
+    They validate shape and content before data enters the application.
+    A handler that accepts raw dict or str parameters has no boundary
+    validation — it trusts the caller.
+  - >
+    Authorization (who can do what) belongs at the API layer, not in the
+    domain or data layers. An API route that skips the authorization
+    dependency (Depends(require_auth)) creates an unauthenticated path
+    to every layer below it.
+  - >
+    Use dependency inversion to keep layers decoupled. The API layer
+    depends on a UserRepository interface; the data layer provides
+    SqlUserRepository. The interface lives in the inner layer, the
+    implementation in the outer layer. This is Clean Architecture's
+    dependency rule in action.
+related_tags:
+  [security, layer-boundaries, clean-architecture, dependency-rule,
+   import-graph, repository-pattern, circular-imports, dependency-inversion,
+   validation-gates, authorization, pydantic, interface-segregation]

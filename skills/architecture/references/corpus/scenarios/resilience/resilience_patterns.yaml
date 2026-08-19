@@ -1,0 +1,226 @@
+id: resilience-patterns-001
+name: Circuit Breakers, Bulkheads, Retries, and Idempotency
+category: resilience
+canonical_tags: [resilience]
+principle: >
+  Production systems must survive dependency failure, overload, and partial
+  outages. Circuit breakers fast-fail unhealthy dependencies instead of
+  flooding them. Bulkheads isolate resource pools so one failing integration
+  does not consume all capacity. Retries must be disciplined — bounded, with
+  jitter, and only on idempotent or safe operations. Idempotency ensures
+  that retries, job reruns, and event redelivery do not produce duplicate
+  side effects. These patterns work together: no single pattern is sufficient
+  alone.
+sources:
+  - books/release-it.md
+
+scenarios:
+  - id: res-1
+    title: "Circuit breaker placement in a multi-dependency service"
+    context: >
+      A payment processing service depends on three external systems: a fraud
+      detection API, a card processor, and a customer notification gateway.
+      During a flash sale, the fraud detection API becomes slow (5+ second
+      responses). Without protection, every payment request ties up a worker
+      thread waiting for fraud detection, then times out. The card processor
+      and notification gateway are healthy but inaccessible because all worker
+      threads are stuck on the slow dependency.
+    question: >
+      Where should circuit breakers be placed, and what should happen when
+      one opens?
+    answer: >
+      Each external dependency needs its own circuit breaker with independent
+      thresholds. When the fraud detection circuit breaker opens after
+      consecutive failures or excessive latency, two choices exist:
+
+      Option A — Fail open (degrade): If the business can tolerate reduced
+      fraud scrutiny during a surge, skip fraud detection and proceed with
+      payment. Log the degradation, alert operations, and optionally flag
+      those transactions for post-hoc review. This prioritizes revenue
+      over perfect fraud prevention during the event.
+
+      Option B — Fail closed (fast-fail): If every transaction must pass
+      fraud checks, fast-fail all payment requests with a clear error.
+      This protects the system but stops revenue. Appropriate for
+      regulated or high-risk transactions.
+
+      The circuit breaker must not be shared. A single shared breaker would
+      open on fraud detection slowness and cut off the card processor and
+      notifications, which are healthy. Each dependency gets its own breaker,
+      its own thread pool/bulkhead, and its own fallback policy.
+
+      The circuit breaker configuration matters: failure threshold (e.g., 5
+      consecutive failures), timeout window, half-open probe interval, and
+      success threshold to close again. These must be tuned per dependency
+      based on observed latency profiles and recovery characteristics.
+
+      Key heuristic: "If this dependency degrades, does the entire service
+      degrade, or can it continue with reduced function?" The answer drives
+      the fallback decision.
+    decisions:
+      - One circuit breaker per dependency, never shared
+      - Circuit breaker thresholds tuned per dependency, not global defaults
+      - Fail-open (degrade) vs fail-closed (fast-fail) is a business decision
+      - Half-open probe interval must be short enough to recover quickly
+
+  - id: res-2
+    title: "Bulkhead sizing and starvation in a thread-per-request model"
+    context: >
+      An API gateway proxies requests to 12 backend services using a single
+      shared thread pool of 200 threads. The product catalog service
+      occasionally has GC pauses that make requests take 30 seconds instead
+      of 50ms. During these pauses, all 200 threads queue up waiting for
+      catalog responses. The authentication service, order service, and
+      payment service are healthy but receive no threads because they're all
+      waiting on the catalog.
+    question: >
+      How should bulkheads be designed to prevent one slow service from
+      starving all others?
+    answer: >
+      Replace the single shared pool with per-service bulkheads: dedicated
+      thread pools or semaphore-limited connection pools for each backend.
+      The catalog service gets at most 30 threads; the authentication service
+      gets 20; the payment service gets 40; and so on. When the catalog slows
+      down, it fills its own 30 threads but no more — all other backends
+      continue serving normally on their own pools.
+
+      Bulkhead sizing is not guesswork. Measure each service's P50 and P99
+      latency, expected throughput, and concurrency needs. A service handling
+      100 req/s with 50ms P99 latency needs fewer threads than one handling
+      50 req/s with 200ms P99 latency. Over-provisioning wastes resources and
+      can still cause memory pressure; under-provisioning creates artificial
+      bottlenecks.
+
+      For async/non-blocking runtimes, bulkheads use semaphores or bounded
+      channels instead of threads, but the principle is identical: isolate
+      capacity per dependency class.
+
+      Additional considerations: core vs. non-core. Authentication is core —
+      if auth is down, nothing works. Product recommendations is non-core —
+      the page loads fine without it. Give core services reserved capacity
+      that non-core work cannot consume. This is admission control layered on
+      top of bulkheads.
+
+      Anti-pattern: "just increase the pool size." Adding threads masks the
+      problem until the next bottleneck (memory, DB connections, CPU) and
+      delays the inevitable collapse.
+    decisions:
+      - Dedicated pools per dependency class, not one shared pool
+      - Size pools based on measured latency and throughput, not guesses
+      - Reserve capacity for core services; shed non-core under pressure
+      - Async runtimes use semaphores/bounded channels, same isolation principle
+
+  - id: res-3
+    title: "Retry storms from layered retries in a microservice chain"
+    context: >
+      A request flows through Service A → Service B → Service C → Database.
+      Each service has retry logic: A retries up to 3 times with 1-second
+      backoff; B retries up to 3 times with 500ms backoff; C retries up to 3
+      times with 2-second backoff. When the database has a brief hiccup (5
+      seconds of unavailability), the retries multiply: C retries 3 times,
+      B retries each of C's failures 3 times, A retries each of B's failures
+      3 times. One brief database blip becomes 27 connection attempts,
+      potentially extending the database's recovery time.
+    question: >
+      How should retry discipline prevent retry multiplication across
+      service boundaries?
+    answer: >
+      Retry multiplication is a systems problem, not a per-service code
+      problem. Each service's retry logic is locally reasonable and globally
+      dangerous.
+
+      Strategy 1 — End-to-end retry budget: The outermost caller (Service A,
+      or ideally the client/API gateway) has a single retry budget. All
+      downstream calls propagate a deadline or retry-count header. Service B
+      and C do NOT retry independently; they honor the budget. If the request
+      has already used 2 of 3 allowed retries, downstream services fast-fail
+      instead of retrying.
+
+      Strategy 2 — Retry only at the edge: The API gateway or load balancer
+      retries; all internal services call without retries. The gateway has
+      full visibility into the end-to-end outcome and can decide to retry.
+      Internal services time out quickly (tight timeout) and return clear
+      retryable/non-retryable status. The gateway is the single retry point.
+
+      Strategy 3 — Idempotent tokens: Every mutable request carries an
+      idempotency key. Downstream services use the key to deduplicate, so
+      even if retries multiply, the side effect happens once. This is
+      defense-in-depth: the retry architecture may be flawed, but idempotency
+      prevents duplicate writes.
+
+      Regardless of strategy: every retry must have jitter (randomized
+      backoff) and must not retry on permanent errors (validation failures,
+      401, 403, 404). Retrying a validation error wastes resources and
+      produces the same failure.
+    decisions:
+      - Retry at one layer, not many; retry multiplication is a systems failure
+      - End-to-end retry budget with deadline propagation prevents cascades
+      - Idempotency keys as defense-in-depth when retry architecture is imperfect
+      - Jitter on every retry; never retry permanent errors
+
+  - id: res-4
+    title: "Idempotency in a payment system with at-least-once delivery"
+    context: >
+      An e-commerce platform uses a message queue for order processing.
+      OrderPlaced events are published to the queue and consumed by a payment
+      processor. The queue guarantees at-least-once delivery but can redeliver
+      messages after consumer crashes or acknowledgment timeouts. The payment
+      processor's handler: (1) receives the event, (2) charges the customer's
+      card, (3) updates the order status to "paid", (4) sends a confirmation
+      email, (5) acknowledges the message. If the handler crashes after step 2
+      but before step 5, the message is redelivered and the customer is
+      charged twice.
+    question: >
+      How should the payment processor be made idempotent to handle
+      redelivery safely?
+    answer: >
+      The handler must be designed so that processing the same event multiple
+      times produces the same outcome. Several approaches:
+
+      Approach 1 — Entity state machine: The Order entity has a state
+      machine with well-defined transitions. The handler loads the Order by
+      ID, checks if the state is already "paid" (or "payment_pending"), and
+      skips the charge if already completed. The transition from
+      "payment_pending" to "paid" is atomic (a single DB update with a
+      conditional: UPDATE orders SET status='paid' WHERE id=? AND
+      status='payment_pending'). On redelivery, the conditional update finds
+      status='paid' and does nothing. This is the cleanest approach.
+
+      Approach 2 — Deduplication table: Before processing, the handler
+      checks a deduplication table (e.g., idempotency_key → outcome). On
+      first attempt, it inserts a row and processes. On redelivery, it finds
+      the existing row and returns the cached outcome. The insert must be
+      atomic — typically INSERT ... ON CONFLICT DO NOTHING in PostgreSQL, or
+      a conditional insert in other databases. This works when the entity
+      itself cannot be used for deduplication (e.g., the event doesn't map
+      to a single entity).
+
+      Approach 3 — Idempotency in the payment provider: Stripe and similar
+      providers support idempotency keys. Pass the order ID as the
+      idempotency key; on redelivery, Stripe returns the original charge
+      result instead of creating a duplicate.
+
+      For side effects (email): the email send should be conditional on
+      first-time processing, or the handler should accept that emails may
+      be sent multiple times. Email duplicate delivery is less harmful than
+      double charging.
+
+      Never: charge first, then record state. Always record intent before
+      acting. The durable state change (status transition or dedup insert)
+      must happen in the same transaction as the decision to charge, before
+      the external call.
+    decisions:
+      - State machine with conditional transitions is the cleanest idempotency model
+      - Deduplication table when entity state machine is impractical
+      - Record intent before acting: durable state change before external side effect
+      - Idempotency keys on external providers as defense-in-depth
+
+related_tags: [circuit-breakers, bulkheads, retries, idempotency, resilience, release-it, production-readiness]
+heuristics:
+  - One circuit breaker per dependency, never shared — thresholds tuned per dependency, not global defaults.
+  - Fail-open (degrade gracefully) vs fail-closed (fast-fail) is a business decision, not a technical one.
+  - Dedicated pools per dependency class, not one shared pool — size based on measured latency and throughput.
+  - Retry at one layer, not many — retry multiplication across service boundaries is a systems failure.
+  - Every retry must have jitter and must not retry on permanent errors (validation, 401, 403, 404).
+  - State machine with conditional transitions is the cleanest idempotency model.
+  - Record intent before acting: durable state change must happen before external side effect.

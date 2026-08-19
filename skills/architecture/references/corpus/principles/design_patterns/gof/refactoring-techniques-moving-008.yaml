@@ -1,0 +1,217 @@
+id: refactoring-techniques-moving-008
+name: "Refactoring — Moving Features Between Objects"
+category: design-patterns
+canonical_tags: ['refactoring', 'moving-features', 'extract-class', 'move-method', 'hide-delegate', 'inline-class']
+sources:
+  - open_sources/design_patterns/refactoring-guru-patterns.txt
+  - open_sources/design_patterns/refactoring-guru-patterns.html
+  - books/refactoring.md
+summary: >
+  Moving features between objects is one of the most common refactoring
+  activities. As a system evolves, responsibilities drift — a method that
+  started in Class A may now use more features of Class B. Move Method
+  relocates it to where the data lives. Move Field does the same for state.
+  Extract Class splits a class doing too much into two focused classes.
+  Inline Class reverses it when a class has become a shell. Hide Delegate
+  encapsulates a delegate behind the server object so clients don't know
+  about the delegate's existence. Remove Middle Man reverses it — if a
+  class delegates too much, let clients call the delegate directly. Introduce
+  Local Extension adds methods to a class you can't modify (third-party
+  library) via subclass or wrapper.
+examples:
+  - language: python
+    bad: |
+      # BAD: Feature Envy — the Customer class has a format_address method
+      # that only uses Address fields. The method is on the wrong class.
+      # Every call is `customer.format_address()` but the logic belongs to
+      # Address. Adding an address field means changing Customer, not Address.
+
+      class Address:
+          def __init__(self, street: str, city: str, state: str, zip_code: str):
+              self.street = street
+              self.city = city
+              self.state = state
+              self.zip_code = zip_code
+
+
+      class Customer:
+          def __init__(self, name: str, address: Address):
+              self.name = name
+              self.address = address
+
+          # WHY: This method uses ONLY Address fields. It envies Address's data.
+          # If Address gets a new field (country), this method must change.
+          # The method should live on Address.
+          def format_address(self) -> str:
+              return f"{self.address.street}, {self.address.city}, {self.address.state} {self.address.zip_code}"
+
+          # WHY: Also Feature Envy — uses address street for shipping label.
+          def shipping_label(self) -> str:
+              return f"Ship to: {self.name}\n{self.address.street}\n{self.address.city}, {self.address.state} {self.address.zip_code}"
+
+    good: |
+      # GOOD: Move Method — format_address and shipping_label moved to
+      # Address where the data lives. Customer delegates. Adding a new
+      # address field only touches Address. No feature envy.
+
+      class Address:
+          def __init__(self, street: str, city: str, state: str, zip_code: str):
+              self.street = street
+              self.city = city
+              self.state = state
+              self.zip_code = zip_code
+
+          def format_address(self) -> str:
+              """Format the address as a single line."""
+              return f"{self.street}, {self.city}, {self.state} {self.zip_code}"
+
+          def shipping_label(self, recipient_name: str) -> str:
+              """Format a full shipping label."""
+              return (
+                  f"Ship to: {recipient_name}\n"
+                  f"{self.street}\n"
+                  f"{self.city}, {self.state} {self.zip_code}"
+              )
+
+
+      class Customer:
+          def __init__(self, name: str, address: Address):
+              self.name = name
+              self.address = address
+
+          def format_address(self) -> str:
+              """Delegate to Address — the data owner."""
+              return self.address.format_address()
+
+          def shipping_label(self) -> str:
+              """Delegate to Address with the customer name."""
+              return self.address.shipping_label(self.name)
+
+          # WHY: Now the Customer just passes through. If Address gets a new
+          # field, only Address changes. The customer is blissfully unaware.
+
+  - language: typescript
+    bad: |
+      // BAD: Large class doing too much. The Order class handles items,
+      // pricing, tax, shipping, and persistence — five responsibilities
+      // in one class. 200+ lines. Changing tax logic risks breaking
+      // shipping logic. Extract Class needed.
+
+      class Order {
+        id: string;
+        items: { name: string; price: number; quantity: number }[] = [];
+        shippingAddress: string = "";
+        taxRate: number = 0.08;
+
+        addItem(name: string, price: number, qty: number) { /* ... */ }
+        removeItem(name: string) { /* ... */ }
+
+        // Pricing logic — separate concern
+        calculateSubtotal(): number {
+          return this.items.reduce((s, i) => s + i.price * i.quantity, 0);
+        }
+        calculateTax(subtotal: number): number {
+          return subtotal * this.taxRate;
+        }
+        applyDiscount(code: string): number { /* ... */ }
+
+        // Shipping logic — separate concern
+        calculateShipping(weight: number): number { /* ... */ }
+        generateLabel(): string { /* ... */ }
+
+        // Persistence logic — separate concern
+        async save(): Promise<void> { /* ... */ }
+        async load(id: string): Promise<Order> { /* ... */ }
+      }
+
+    good: |
+      // GOOD: Extract Class — pricing, shipping, and persistence extracted
+      // into focused classes. Order is now a data holder + orchestrator.
+      // Each extracted class is independently testable.
+
+      class Order {
+        constructor(
+          public readonly id: string,
+          public items: LineItem[] = [],
+          public shippingAddress: Address | null = null,
+        ) {}
+      }
+
+      class PricingCalculator {
+        constructor(private readonly taxRate: number = 0.08) {}
+
+        calculateSubtotal(items: LineItem[]): number {
+          return items.reduce((s, i) => s + i.price * i.quantity, 0);
+        }
+
+        calculateTax(subtotal: number): number {
+          return subtotal * this.taxRate;
+        }
+
+        applyDiscount(subtotal: number, code: string): number {
+          const rates: Record<string, number> = { SAVE10: 0.10, SAVE20: 0.20 };
+          return subtotal * (rates[code] ?? 0);
+        }
+      }
+
+      class ShippingCalculator {
+        calculateCost(address: Address, weight: number): number {
+          return address.state === "AK" || address.state === "HI" ? 25 : 10;
+        }
+
+        generateLabel(order: Order): string {
+          return `Order #${order.id}\n${order.shippingAddress!.format()}`;
+        }
+      }
+
+      class OrderRepository {
+        async save(order: Order): Promise<void> { /* ... */ }
+        async findById(id: string): Promise<Order | null> { /* ... */ }
+      }
+      // WHY: Each class has one reason to change. Adding a new coupon type
+      // only touches PricingCalculator. Changing shipping rates only touches
+      // ShippingCalculator. No large class smell.
+
+heuristics:
+  - >
+    "Move Method: a method is used more in another class than in its own
+    class. Create a new method in the class that uses the method most, then
+    delegate or remove the old one" (Fowler, Refactoring).
+  - >
+    Move a method when it uses more features (fields, methods) of another
+    class than its own. The method should live with the data it operates on.
+    This fixes Feature Envy.
+  - >
+    Extract Class: when a class does the work of two, split it. Look for
+    subsets of fields and methods that are used together — those are the
+    seeds of the new class.
+  - >
+    Inline Class: when a class doesn't do enough to justify its existence,
+    move all its features into another class and delete the original. A
+    class with one method and no state is noise.
+  - >
+    Hide Delegate: when a client calls `obj.delegate.method()`, create a
+    delegating method on `obj` so the client doesn't know about the
+    delegate's interface. This reduces coupling.
+  - >
+    Remove Middle Man: when half the methods on a class just delegate to
+    another object, let clients call the delegate directly. The middle man
+    adds indirection without value.
+  - >
+    Introduce Local Extension: when you need to add methods to a class you
+    can't modify (third-party library), create a subclass or wrapper with
+    the additional methods. Use the extension everywhere instead of the
+    original.
+  - >
+    Responsibility should follow data. If code operates primarily on data
+    from Class B, it belongs in Class B. Move it, don't envy it.
+  - >
+    When extracting a class, name it by its responsibility. "OrderPricing"
+    is better than "OrderHelper". The name tells the reader why the class
+    exists.
+
+related_tags:
+  [moving-features, move-method, move-field, extract-class, inline-class,
+   hide-delegate, remove-middle-man, introduce-local-extension,
+   feature-envy, large-class, single-responsibility, refactoring,
+   fowler, delegation, coupling]

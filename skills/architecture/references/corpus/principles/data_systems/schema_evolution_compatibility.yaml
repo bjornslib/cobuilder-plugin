@@ -1,0 +1,652 @@
+id: schema-evolution-compatibility-001
+name: "Data Systems — Schema Evolution and Compatibility: Backward/Forward Compatibility, Versioning, and Deprecation"
+category: data-systems
+canonical_tags: ['schema-evolution', 'compatibility', 'avro', 'protobuf', 'versioning', 'deprecation', 'serialization', 'data-engineering']
+sources:
+  - books/designing-data-intensive-applications.md
+summary: >
+  Schemas will change — that is not a question of if but when. The engineering
+  discipline is planning for change so that old and new code coexist without
+  breaking. Backward compatibility means new code can read old data (new reader,
+  old writer). Forward compatibility means old code can read new data (old reader,
+  new writer). Together they enable rolling upgrades: deploy a new version
+  gradually, with old and new instances running side by side, and no downtime.
+  The schema format determines which compatibility axis you get for free. Avro
+  gives you forward compatibility by separating writer and reader schemas — the
+  reader fills in defaults for unknown fields. Protobuf gives you backward
+  compatibility by using field numbers that never change — new readers ignore
+  unknown field numbers, old readers skip fields they don't understand. Versioning
+  is not just a field — it is a contract. Distinguish internal refactors (rename a
+  private field, restructure code) from contract changes (add/remove a field,
+  change a type, alter an enum value). Deprecation is a process, not a deletion:
+  mark a field deprecated, support reading it for N versions, stop writing it,
+  then remove it only after all readers and writers have migrated. The cardinal
+  sin is schema drift by accident: reusing a field for a new meaning without
+  versioning, silently changing enum semantics, or deploying a breaking change
+  without a rollout compatibility strategy.
+
+compatibility_axes:
+  summary: >
+    Backward and forward compatibility are independent properties. A change can
+    be one, both, or neither — and the consequences of getting it wrong depend
+    on your deployment topology. In a rolling-upgrade system you need both; in a
+    staged-upgrade system you can often get by with one if you sequence
+    deployments carefully.
+  axes:
+    - axis: "Backward Compatibility"
+      definition: "New code can read data written by old code. New reader, old writer."
+      test: "Can a consumer on version N+1 process messages produced at version N without errors or data loss?"
+      critical_for: "Rolling upgrades where readers are upgraded first. Consumer-side migrations. Reading historical data archived under old schemas."
+      examples_of_compatible_changes:
+        - "Adding a new optional field with a default value"
+        - "Adding a new enum value (old writer never writes it, new reader just sees the default)"
+        - "Removing a field that was already optional and had a default"
+      examples_of_breaking_changes:
+        - "Removing a required field"
+        - "Changing a field type (int to string)"
+        - "Renaming a field in a format that uses field names for encoding (JSON, Avro without aliases)"
+    - axis: "Forward Compatibility"
+      definition: "Old code can read data written by new code. Old reader, new writer."
+      test: "Can a consumer on version N process messages produced at version N+1 without errors or data loss?"
+      critical_for: "Rolling upgrades where writers are upgraded first. Producer-side migrations. Consumers that upgrade more slowly than producers."
+      examples_of_compatible_changes:
+        - "Adding a new optional field with a default (old reader ignores it or uses the default)"
+        - "Adding a new enum value that old readers treat as unknown/fallback"
+        - "Removing a field that old readers can ignore"
+      examples_of_breaking_changes:
+        - "Adding a required field (old reader doesn't know what value to supply)"
+        - "Changing a field's semantics (old reader interprets the value incorrectly)"
+        - "Removing an enum value that old readers might receive"
+
+schema_format_compatibility_table:
+  summary: >
+    Different serialization formats provide different built-in compatibility
+    guarantees. Choosing a format is a compatibility decision, not just a
+    performance decision. The table below summarizes what each format gives you
+    for free and what you must enforce yourself.
+  formats:
+    - format: "Avro"
+      backward_compatible_by_default: "Yes — reader schema resolves field names; uses aliases for renames"
+      forward_compatible_by_default: "Yes (primary strength) — writer and reader schemas are separate; reader fills defaults for missing fields"
+      field_identification: "By name (with aliases for rename support)"
+      schema_evolution_mechanism: "Writer embeds schema ID or full schema in each file/message. Reader resolves against its own schema, filling defaults for missing fields and ignoring extra fields."
+      default_value_requirement: "Every field must have a default to support forward compatibility. Without defaults, a new field added by a writer breaks old readers."
+      enum_evolution: "Add new symbols with a default; never remove symbols that could be read by old consumers"
+      pitfalls: "Schema registry is mandatory for decoupled systems (Confluent Schema Registry). Without it, embedding full schemas in every message is expensive. Aliases for field renames must be maintained forever."
+    - format: "Protobuf"
+      backward_compatible_by_default: "Yes (primary strength) — field numbers are stable; new fields get new numbers"
+      forward_compatible_by_default: "Yes — unknown fields are preserved and can be skipped by old readers"
+      field_identification: "By number (field names are only for generated code; wire format uses numbers)"
+      schema_evolution_mechanism: "New fields get new field numbers. Old readers skip unknown field numbers. Reserved field numbers and names prevent accidental reuse."
+      default_value_requirement: "Protobuf 3 removed required fields entirely. All fields are optional with zero-value defaults. Protobuf 2 required fields break both backward and forward compatibility if removed."
+      enum_evolution: "Add new values; first value (0) must be the default/unknown sentinel. Old readers map unknown enum values to the 0 sentinel."
+      pitfalls: "Reserved fields are critical — if you delete field 5 and someone later adds a new field 5, old data with field 5 gets misinterpreted. Field numbers 1-15 use one byte in wire format; 16+ use two. Reserve high numbers for rarely-used fields."
+    - format: "JSON (no schema)"
+      backward_compatible_by_default: "No — manual enforcement required"
+      forward_compatible_by_default: "No — manual enforcement required"
+      field_identification: "By name"
+      schema_evolution_mechanism: "None built-in. Compatibility must be enforced at the application layer: tolerant reader pattern (ignore unknown fields), never remove or rename required fields."
+      default_value_requirement: "Application must handle missing fields explicitly"
+      enum_evolution: "Application must handle unexpected string values gracefully"
+      pitfalls: "Renaming a field breaks both backward and forward compatibility for name-based consumers. Adding a field is only safe if consumers use a tolerant reader that ignores unknown fields. Schema-on-read without enforcement leads to schema drift by accident."
+
+versioning_strategies:
+  summary: >
+    Versioning is not a single number on a message — it is a strategy for how
+    consumers and producers negotiate change over time. The right strategy
+    depends on whether you control both sides of the contract (internal services)
+    or only one (public APIs, shared event streams).
+  strategies:
+    - strategy: "Schema Registry + Schema ID"
+      description: "Each message carries a schema ID. The registry resolves it to a full schema. Writers register new schemas; readers fetch the schema by ID and resolve against their local reader schema."
+      when_to_use: "Decoupled producers and consumers (Kafka, event streams, data lakes). Multiple teams producing and consuming the same event types."
+      compatibility_enforcement: "Registry enforces compatibility rules (BACKWARD, FORWARD, FULL) on registration. Rejects incompatible schema changes at the producer."
+      example_workflow: |
+        1. Producer team adds `email: string = ""` to UserEvent v2.
+        2. Registry checks: is v2 backward-compatible with v1? (Yes — new optional field.)
+        3. Registry accepts v2, assigns schema ID 2.
+        4. Producer writes messages with schema ID 2.
+        5. Consumer team deploys new code that reads v2. During rollout, some consumers still read v1.
+        6. v1 consumers fetch schema ID 2 → see field `email` with default `""` → apply default → no errors.
+      pitfalls: "Schema registry is infrastructure you must operate. If it goes down, producers and consumers that cache schemas can keep working, but new schema registrations fail. Compatibility checks are only as good as the rules you configure — FULL compatibility is safest, BACKWARD is most common."
+
+    - strategy: "Content-Type + Version Header"
+      description: "Each message carries a content-type or version header (e.g., `application/vnd.myapp.user-v2+json`). Consumers route to version-specific handlers."
+      when_to_use: "REST APIs, synchronous RPC, request-response patterns where both sides are versioned explicitly."
+      compatibility_enforcement: "Manual — the version number is a social contract. Breaking changes require a new version number. Non-breaking changes can share a version."
+      example_workflow: |
+        1. API v1 returns `{"name": "Alice"}`.
+        2. API v2 adds `{"name": "Alice", "email": "alice@example.com"}`.
+        3. Client on v1 requests with `Accept: application/vnd.myapp.user-v1+json` → server strips unknown fields → returns `{"name": "Alice"}`.
+        4. Client on v2 requests with `Accept: application/vnd.myapp.user-v2+json` → returns full payload.
+      pitfalls: "Version proliferation: supporting v1, v2, v3, v4 indefinitely is expensive. Deprecation timelines must be enforced. Clients that ignore version headers and parse whatever they get will break when fields disappear."
+
+    - strategy: "Semantic Versioning (SemVer) on Messages"
+      description: "MAJOR.MINOR.PATCH on the schema itself. MAJOR = breaking change, MINOR = backward-compatible addition, PATCH = documentation/clarification."
+      when_to_use: "Libraries, SDKs, and shared schema packages distributed to external consumers."
+      compatibility_enforcement: "Convention — tooling can compare schemas and warn on breaking changes, but enforcement is social."
+      pitfalls: "MAJOR version bumps cause ecosystem fragmentation. Without automation, humans misjudge what 'breaking' means. A field rename that changes no wire format is breaking for JSON consumers but not for Protobuf consumers."
+
+deprecation_lifecycle:
+  summary: >
+    Deprecation is not deletion. It is a phased, observable process that gives
+    consumers time to migrate. A field that disappears overnight is a breaking
+    change; a field that is deprecated for three releases and then removed is
+    an orderly transition. The phases apply to fields, enum values, message
+    types, and entire API versions.
+  phases:
+    - phase: 1. "Announce"
+      description: "Mark the field/enum/endpoint as deprecated in the schema and documentation. Add a deprecation notice explaining the replacement and migration timeline."
+      protobuf: "Add `[deprecated = true]` annotation to the field. Generates deprecation warnings in compiled code."
+      avro: "Add `\"deprecated\": true` to the field's metadata in the schema. No built-in codegen warnings — enforce through lint rules."
+      json_api: "Add `Deprecated: true` and `Sunset: <ISO 8601 date>` headers to the response. Document in the API changelog."
+    - phase: 2. "Stop Writing"
+      description: "Producers stop populating the deprecated field. New messages omit it entirely. Old consumers still read it when present (backward compat), but new data doesn't contain it."
+      monitoring: "Track: what percentage of producers still emit this field? What percentage of consumers still read it? Set thresholds for proceeding to phase 3."
+    - phase: 3. "Remove Read Support"
+      description: "Remove reader-side handling of the deprecated field. Consumers that still expect it will see the default value (Avro) or zero value (Protobuf). Monitor for errors before proceeding to phase 4."
+      safety_check: "Confirm zero consumers depend on the field value. Check logs, metrics, and downstream derived data for references to the field."
+    - phase: 4. "Remove from Schema"
+      description: "Remove the field from the canonical schema. In Protobuf, move the field number to the `reserved` list to prevent accidental reuse. In Avro, simply delete the field — Avro resolves by name, so old data with the field name will match old reader schemas but is harmless."
+      protobuf_specific: "Add `reserved 5;` and `reserved \"old_field_name\";` to block accidental reuse of the field number or name."
+      avro_specific: "Delete the field from the schema. Avro reader ignores extra fields from the writer, so old data doesn't break new readers."
+
+common_pitfalls:
+  - pitfall: "Reusing a field for a new meaning without versioning"
+    explanation: "You stop using `status: int` for order status and start using it for payment status. Old consumers interpreting payment status as order status produce garbage. The field name hasn't changed — the semantics have — and no tooling will catch it."
+    fix: "Add a NEW field with a NEW name (`payment_status`). Deprecate the old field through the full lifecycle. Never overload fields."
+    source_ref: "DDIA: 'reusing fields for new concepts' is schema drift by accident"
+
+  - pitfall: "Silently changing enum or status semantics across services"
+    explanation: "Service A adds `CANCELLED_BY_USER = 4` to an enum. Service B's generated code maps unknown enum value 4 to 0 (the default). An order that was cancelled by the user is now treated as `UNKNOWN = 0`. The system silently loses information."
+    fix: "Add enum values at the end of the enum (in Protobuf, after the 0 sentinel). Never remove or renumber enum values. Old consumers must handle unknown values gracefully — log a warning, route to a dead-letter queue, or treat as a soft error. Never map to a semantically meaningful default."
+
+  - pitfall: "Removing a required field during a rolling upgrade"
+    explanation: "You remove `customer_id` (required) from the event schema because you don't need it anymore. During rollout, new producers emit messages without `customer_id`. Old consumers fail because they expected it. The system is down."
+    fix: "Make the field optional first (add a default). Deploy the optional-field version to all consumers. Then stop writing the field. Then remove it from the schema. Never remove a required field in one step."
+
+  - pitfall: "Adding a required field without a default"
+    explanation: "You add `trace_id: string` as required. Old consumers receive a message with `trace_id` they don't know about. In Avro, they need a default to fill in. In Protobuf 2, required fields break forward compatibility entirely. The producer rollout is blocked."
+    fix: "All new fields must be optional with a sensible default. `trace_id: string = \"\"`. If you truly need the field to be present, enforce it at the application layer after all consumers have migrated to the new schema."
+
+  - pitfall: "Forgetting to reserve deleted field numbers in Protobuf"
+    explanation: "You delete field 7 from a Protobuf message. Six months later, a new engineer adds a new field 7 for a totally different purpose. Old messages still in Kafka/archives have field 7 with the old meaning. The new consumer interprets the old data as the new field — silent data corruption."
+    fix: "Always use `reserved` when removing fields in Protobuf. Reserve both the field number and the field name. Most Protobuf linters can enforce this as a rule."
+
+  - pitfall: "Versioning only the API and not the data at rest"
+    explanation: "Your API is versioned (v1, v2), but your database rows, Parquet files, and S3 objects have no embedded schema version. A schema migration changes column types, but old files on disk still have the old format. Queries that union old and new data silently produce wrong results."
+    fix: "Embed a schema version or schema ID in every persistent data artifact. Parquet files can include a schema fingerprint. Database migrations should include a version column or use a schema registry for column-level evolution. Query engines should resolve the schema at read time, not assume it matches the current schema."
+
+  - pitfall: "Treating internal refactors as contract changes"
+    explanation: "You rename a private internal field in your Protobuf schema, and downstream consumers whose generated code used the old field name break their build. The field name was internal but the generated code made it part of the contract."
+    fix: "Distinguish wire-format contracts from code-generation artifacts. Protobuf field names are only for generated code — the wire format uses numbers. A rename is safe for the wire format but breaks code that references generated accessors. Communicate renames as breaking changes for generated-code consumers, even if the wire format is compatible."
+
+examples:
+  - language: python
+    bad: |
+      # Version 1: naive schema — no thought to evolution
+      # Adding a field or changing a type will break every consumer.
+
+      from dataclasses import dataclass
+      from datetime import datetime
+      from typing import Optional
+
+      @dataclass
+      class UserEvent:
+          """WRONG: fields are not optional, no version marker, no defaults."""
+          user_id: str
+          name: str                     # What if we need first_name + last_name later?
+          action: str                   # Magic string, no enum
+          timestamp: str                # String instead of proper timestamp type
+          metadata: dict                # Unstructured — changes silently
+
+          def to_json(self) -> str:
+              import json
+              return json.dumps({
+                  "user_id": self.user_id,
+                  "name": self.name,
+                  "action": self.action,
+                  "timestamp": self.timestamp,
+                  "metadata": self.metadata,
+              })
+
+      # 6 months later: someone adds `email` to the event.
+      # Problem 1: old consumers that parse this JSON will find `email` and choke.
+      # Problem 2: we renamed `name` to `first_name` + `last_name` — breaking.
+      # Problem 3: no schema version — can't tell v1 from v2 data in the archive.
+
+      @dataclass
+      class UserEventV2:
+          """Still wrong: renamed fields, no compatibility plan."""
+          user_id: str
+          first_name: str               # Was `name` — all old consumers break
+          last_name: str                # New field, no default
+          email: str                    # New required field — forward compat broken
+          action: str
+          timestamp: str
+          metadata: dict
+
+          def to_json(self) -> str:
+              import json
+              return json.dumps({
+                  "user_id": self.user_id,
+                  "first_name": self.first_name,
+                  "last_name": self.last_name,
+                  "email": self.email,
+                  "action": self.action,
+                  "timestamp": self.timestamp,
+                  "metadata": self.metadata,
+              })
+
+      # Result: rolling upgrade failure. New producers emit V2 payloads.
+      # Old consumers crash on `email` (missing in their model).
+      # V1 consumers crash on `first_name` (they expected `name`).
+      # Data lake has mixed V1/V2 records with no way to tell them apart.
+
+    good: |
+      # Version 1 with evolution built in: optional fields, defaults, explicit version.
+      # Forward and backward compatibility from day one.
+
+      from __future__ import annotations
+
+      from dataclasses import dataclass, field
+      from datetime import datetime, timezone
+      from enum import Enum
+      from typing import Optional
+
+      # --- Schema-aware serialization with Avro semantics ---
+
+      class UserAction(str, Enum):
+          """Enums evolve by addition only. Never remove or renumber."""
+          UNKNOWN = "unknown"           # Sentinel for forward compat
+          CREATED = "created"
+          UPDATED = "updated"
+          DELETED = "deleted"
+
+      @dataclass
+      class UserEvent:
+          """
+          Schema version: 1
+          Compatibility: BACKWARD + FORWARD (FULL)
+
+          Evolution rules:
+          - New fields: add as Optional[T] with a default. Bump MINOR version.
+          - Rename field: use aliases. Do NOT delete old name from aliases.
+          - Change type: add new field with new name, deprecate old field.
+          - Remove field: deprecate for 3 versions, then delete.
+          """
+          # --- Required identity fields ---
+          user_id: str
+          schema_version: int = 1       # Explicit version marker in every message
+
+          # --- Optional fields with defaults for forward compatibility ---
+          name: str = ""                # Empty string, not None — simpler for consumers
+          action: UserAction = UserAction.UNKNOWN
+          timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+          def to_avro_compatible_dict(self) -> dict:
+              """Serialize with Avro semantics: omit fields at their default value."""
+              record = {
+                  "user_id": self.user_id,
+                  "schema_version": self.schema_version,
+              }
+              if self.name:
+                  record["name"] = self.name
+              if self.action != UserAction.UNKNOWN:
+                  record["action"] = self.action.value
+              record["timestamp"] = self.timestamp
+              return record
+
+          @classmethod
+          def from_avro_compatible_dict(cls, data: dict) -> UserEvent:
+              """Reader schema resolves defaults for missing fields."""
+              return cls(
+                  user_id=data["user_id"],
+                  schema_version=data.get("schema_version", 1),
+                  name=data.get("name", ""),
+                  action=UserAction(data.get("action", "unknown")),
+                  timestamp=data.get(
+                      "timestamp", datetime.now(timezone.utc).isoformat()
+                  ),
+              )
+
+      # --- Version 2: add email with default for forward compatibility ---
+
+      @dataclass
+      class UserEventV2:
+          """Schema version: 2. Adds email. Backward + forward compatible."""
+          user_id: str
+          schema_version: int = 2
+
+          # --- Carried forward from V1 ---
+          name: str = ""
+          action: UserAction = UserAction.UNKNOWN
+          timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+          # --- NEW in V2: optional with default ---
+          email: str = ""               # Empty default = old consumers ignore safely
+
+          def to_avro_compatible_dict(self) -> dict:
+              record = {
+                  "user_id": self.user_id,
+                  "schema_version": self.schema_version,
+              }
+              if self.name:
+                  record["name"] = self.name
+              if self.action != UserAction.UNKNOWN:
+                  record["action"] = self.action.value
+              record["timestamp"] = self.timestamp
+              if self.email:
+                  record["email"] = self.email
+              return record
+
+          @classmethod
+          def from_avro_compatible_dict(cls, data: dict) -> UserEventV2:
+              """V1 data with no email field: email defaults to '' — safe."""
+              return cls(
+                  user_id=data["user_id"],
+                  schema_version=data.get("schema_version", 2),
+                  name=data.get("name", ""),
+                  action=UserAction(data.get("action", "unknown")),
+                  timestamp=data.get(
+                      "timestamp", datetime.now(timezone.utc).isoformat()
+                  ),
+                  email=data.get("email", ""),    # V1 records: default to empty
+              )
+
+      # --- Version 3: deprecate `name`, replace with `first_name` + `last_name` ---
+
+      @dataclass
+      class UserEventV3:
+          """Schema version: 3. Deprecates `name`, adds structured name fields."""
+          user_id: str
+          schema_version: int = 3
+
+          # --- DEPRECATED: use first_name + last_name instead ---
+          name: str = ""                # Still readable — consumers not yet migrated
+
+          # --- NEW: structured name fields ---
+          first_name: str = ""
+          last_name: str = ""
+
+          action: UserAction = UserAction.UNKNOWN
+          timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+          email: str = ""
+
+          def to_avro_compatible_dict(self) -> dict:
+              record = {
+                  "user_id": self.user_id,
+                  "schema_version": self.schema_version,
+              }
+              # Write deprecated field for backward compat with V1/V2 consumers
+              if self.name:
+                  record["name"] = self.name
+              if self.first_name or self.last_name:
+                  record["first_name"] = self.first_name
+                  record["last_name"] = self.last_name
+              if self.action != UserAction.UNKNOWN:
+                  record["action"] = self.action.value
+              record["timestamp"] = self.timestamp
+              if self.email:
+                  record["email"] = self.email
+              return record
+
+          @classmethod
+          def from_avro_compatible_dict(cls, data: dict) -> UserEventV3:
+              return cls(
+                  user_id=data["user_id"],
+                  schema_version=data.get("schema_version", 3),
+                  name=data.get("name", ""),
+                  first_name=data.get("first_name", ""),
+                  last_name=data.get("last_name", ""),
+                  action=UserAction(data.get("action", "unknown")),
+                  timestamp=data.get(
+                      "timestamp", datetime.now(timezone.utc).isoformat()
+                  ),
+                  email=data.get("email", ""),
+              )
+
+      # --- Application-level compatibility router ---
+
+      class UserEventRouter:
+          """
+          Routes messages to version-specific handlers.
+          During rolling upgrades, V1/V2/V3 handlers coexist.
+          """
+
+          def handle(self, raw_message: dict) -> None:
+              version = raw_message.get("schema_version", 1)
+              if version == 1:
+                  event = UserEvent.from_avro_compatible_dict(raw_message)
+                  self._handle_v1(event)
+              elif version == 2:
+                  event = UserEventV2.from_avro_compatible_dict(raw_message)
+                  self._handle_v2(event)
+              elif version == 3:
+                  event = UserEventV3.from_avro_compatible_dict(raw_message)
+                  self._handle_v3(event)
+              else:
+                  raise ValueError(f"Unknown schema version: {version}")
+
+          def _handle_v1(self, event: UserEvent) -> None:
+              print(f"V1 handler: {event.user_id} {event.action.value}")
+
+          def _handle_v2(self, event: UserEventV2) -> None:
+              print(f"V2 handler: {event.user_id} {event.action.value} email={event.email}")
+
+          def _handle_v3(self, event: UserEventV3) -> None:
+              display_name = (
+                  f"{event.first_name} {event.last_name}".strip()
+                  or event.name  # Fallback to deprecated field
+                  or event.user_id
+              )
+              print(f"V3 handler: {display_name} {event.action.value} {event.email}")
+
+  - language: typescript
+    bad: |
+      // Version 1: no thought to evolution. A type change or field rename
+      // will break every consumer in the pipeline.
+
+      interface UserEvent {
+        userId: string;
+        name: string;                  // What happens when we need first/last name?
+        action: string;                // Magic string — no enum, no type safety
+        timestamp: string;             // String instead of proper Date/timestamp
+        metadata: Record<string, any>; // Unstructured — changes silently
+      }
+
+      // 6 months later: someone adds email, renames `name` to `firstName` + `lastName`
+      interface UserEventV2 {
+        userId: string;
+        firstName: string;             // Was `name` — all old consumers break
+        lastName: string;              // New required field — forward compat broken
+        email: string;                 // New required field — forward compat broken
+        action: string;
+        timestamp: string;
+      }
+
+      // Rolling upgrade disaster:
+      // - New producers emit V2 payloads
+      // - Old consumers crash on `email` (missing in their interface)
+      // - Old consumers crash on `firstName` (they expected `name`)
+      // - Data lake has mixed V1/V2 with no version marker
+      // - No one can tell which records are which format
+
+      // Serialization with no version marker — the root cause
+      function serializeUserEvent(event: UserEvent): string {
+        return JSON.stringify(event);
+      }
+
+      // Consumer has no way to handle multiple versions
+      function deserializeUserEvent(raw: string): UserEvent {
+        const obj = JSON.parse(raw);
+        // TypeScript types are erased at runtime — no schema validation at all!
+        return obj as UserEvent;  // Hope for the best
+      }
+
+    good: |
+      // Schema evolution with explicit versioning, optional fields, and
+      // a compatibility router. Backward and forward compatible by design.
+
+      // --- Evolvable enums ---
+      enum UserAction {
+        UNKNOWN = "unknown",           // Sentinel for forward compat
+        CREATED = "created",
+        UPDATED = "updated",
+        DELETED = "deleted",
+      }
+
+      // --- Version 1: backward and forward compatible base ---
+      interface UserEventV1 {
+        userId: string;
+        schemaVersion: 1;              // Explicit version in every message
+
+        // Optional fields with defaults for forward compatibility
+        name?: string;                 // Omitted when empty
+        action?: UserAction;           // Omitted when UNKNOWN
+        timestamp?: string;            // ISO 8601
+      }
+
+      // --- Version 2: add email — backward and forward compatible ---
+      interface UserEventV2 extends UserEventV1 {
+        schemaVersion: 2;
+        email?: string;                // Optional with empty-string default
+      }
+
+      // --- Version 3: deprecate name, add structured name ---
+      interface UserEventV3 extends UserEventV2 {
+        schemaVersion: 3;
+
+        /** @deprecated Use firstName + lastName instead. Removed in V6. */
+        name?: string;                 // Still readable for backward compat
+
+        firstName?: string;
+        lastName?: string;
+      }
+
+      // --- Schema-aware serializer (Avro semantics) ---
+      function serializeV3(event: UserEventV3): Record<string, unknown> {
+        const record: Record<string, unknown> = {
+          userId: event.userId,
+          schemaVersion: 3,
+        };
+
+        if (event.firstName || event.lastName) {
+          record.firstName = event.firstName ?? "";
+          record.lastName = event.lastName ?? "";
+        }
+        if (event.name) record.name = event.name;       // Deprecated, still written
+        if (event.email) record.email = event.email;
+        if (event.action && event.action !== UserAction.UNKNOWN) {
+          record.action = event.action;
+        }
+        record.timestamp = event.timestamp ?? new Date().toISOString();
+        return record;
+      }
+
+      // --- Schema-aware deserializer (Avro semantics) ---
+      function deserializeV3(raw: Record<string, unknown>): UserEventV3 {
+        return {
+          userId: raw.userId as string,
+          schemaVersion: 3,
+          name: (raw.name as string) ?? "",
+          firstName: (raw.firstName as string) ?? "",
+          lastName: (raw.lastName as string) ?? "",
+          email: (raw.email as string) ?? "",
+          action: (raw.action as UserAction) ?? UserAction.UNKNOWN,
+          timestamp: (raw.timestamp as string) ?? new Date().toISOString(),
+        };
+      }
+
+      // --- Compatibility router: all versions coexist ---
+      class UserEventRouter {
+        handle(raw: Record<string, unknown>): void {
+          const version = (raw.schemaVersion as number) ?? 1;
+
+          switch (version) {
+            case 1: {
+              const event = raw as UserEventV1;
+              this.handleV1(event);
+              break;
+            }
+            case 2: {
+              const event = raw as UserEventV2;
+              this.handleV2(event);
+              break;
+            }
+            case 3: {
+              const event = deserializeV3(raw);
+              this.handleV3(event);
+              break;
+            }
+            default:
+              throw new Error(`Unknown schema version: ${version}`);
+          }
+        }
+
+        private handleV1(event: UserEventV1): void {
+          console.log(`V1: ${event.userId} ${event.action ?? "unknown"}`);
+        }
+
+        private handleV2(event: UserEventV2): void {
+          console.log(
+            `V2: ${event.userId} ${event.action ?? "unknown"} email=${event.email ?? ""}`
+          );
+        }
+
+        private handleV3(event: UserEventV3): void {
+          const displayName =
+            `${event.firstName ?? ""} ${event.lastName ?? ""}`.trim() ||
+            event.name ||
+            event.userId;
+          console.log(
+            `V3: ${displayName} ${event.action ?? "unknown"} ${event.email ?? ""}`
+          );
+        }
+      }
+
+      // --- Deprecation tracking: monitor field usage ---
+      interface DeprecationMetrics {
+        producersStillWritingDeprecatedFields: Map<string, number>;
+        consumersStillReadingDeprecatedFields: Map<string, number>;
+      }
+
+      function canProceedToRemoval(
+        metrics: DeprecationMetrics,
+        fieldName: string
+      ): boolean {
+        const producers = metrics.producersStillWritingDeprecatedFields.get(fieldName) ?? 0;
+        const consumers = metrics.consumersStillReadingDeprecatedFields.get(fieldName) ?? 0;
+        return producers === 0 && consumers === 0;
+      }
+
+      // --- Protobuf-compatible reserved field tracking ---
+      const RESERVED_FIELD_NUMBERS = new Set<number>([7, 12, 34]);
+      const RESERVED_FIELD_NAMES = new Set<string>(["old_status", "legacy_id"]);
+
+      function assignNewFieldNumber(): number {
+        // In real usage, this would be part of schema generation, not runtime.
+        // Protobuf's `reserved` keyword handles this in the .proto file.
+        const candidate = Math.max(...RESERVED_FIELD_NUMBERS) + 1;
+        return candidate;
+      }
+
+heuristics:
+  - "The first question for any schema change: does this break backward compatibility, forward compatibility, both, or neither? Answer this before you write code."
+  - "Schemas will change — plan for it from day one. A schema without optional fields, defaults, and a version marker is a time bomb."
+  - "Default to FULL compatibility (both backward and forward) when operating a service that does rolling upgrades. It is the only compatibility level that guarantees zero-downtime deploys."
+  - "Every new field must be optional with a default. In Avro this is mandatory for forward compatibility. In Protobuf 3 this is the default behavior. If you think you need a required field, enforce presence at the application layer, not the schema layer."
+  - "Deprecation is a process, not a deletion. Announce → stop writing → remove read support → remove from schema. Each phase has metrics and gates."
+  - "In Protobuf: always `reserve` deleted field numbers AND field names. A reused field number reading old data is silent data corruption."
+  - "In Avro: writer and reader schemas are separate. Forward compatibility is free if every field has a default. Schema aliases let you rename fields without breaking readers."
+  - "Distinguish internal refactors from contract changes. Renaming a Protobuf field is safe on the wire (field numbers don't change) but breaks generated-code consumers. Communicate both."
+  - "Version your data at rest, not just your API. A Parquet file without an embedded schema version is unreadable two schema migrations later."
+  - "Never overload a field with a new meaning. Add a new field, deprecate the old one. Schema drift by accident is the hardest bug to detect because no tooling warns about semantic changes."
+  - "Enum evolution: add new values at the end. Never remove or renumber existing values. Old consumers that receive an unknown enum value must handle it gracefully — log, route, or fall back. Never map to a semantically meaningful default."
+  - "Schema registries (Confluent, Apicurio) enforce compatibility rules at registration time. Use them whenever producers and consumers are decoupled. The registry is your compatibility gate."
+  - "Tolerant reader pattern: be liberal in what you accept, conservative in what you emit. Ignore unknown fields, fill defaults for missing fields, and never crash on a field you don't understand."
+
+related_tags:
+  [schema-evolution, backward-compatibility, forward-compatibility, avro, protobuf,
+   serialization, versioning, deprecation, schema-registry, data-engineering,
+   rolling-upgrades, tolerant-reader]

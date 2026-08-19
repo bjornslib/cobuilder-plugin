@@ -1,0 +1,289 @@
+id: 12factor-processes-006
+name: "12-Factor App — Processes (Stateless, Share-Nothing)"
+category: cloud-native
+canonical_tags: ['12factor', 'stateless', 'processes', 'share-nothing', 'sessions', 'caching', 'backing-services']
+sources:
+  - open_sources/design_patterns/12factor-app.txt
+  - open_sources/design_patterns/12factor-processes.html
+summary: >
+  Twelve-factor processes are stateless and share-nothing. The app executes
+  as one or more processes in the execution environment, and any data that
+  needs to persist must be stored in a stateful backing service (typically a
+  database). The memory space or filesystem of a process can be used as a
+  brief, single-transaction cache, but the app must never assume that cached
+  data survives to the next request — another process will likely handle it.
+  Sticky sessions (caching user session data in process memory and routing
+  future requests to the same process) are a direct violation and should
+  never be relied upon. Session state belongs in a datastore with
+  time-expiration such as Memcached or Redis. This factor is the foundation
+  for horizontal scalability: because processes share nothing, adding more
+  instances requires no code changes.
+examples:
+  - language: python
+    bad: |
+      # BAD: Stateful process. User sessions stored in an in-memory dict.
+      # If the process restarts, all sessions are lost. If there are multiple
+      # web processes, a user's request may hit a different process and find
+      # no session. Sticky session routing is a hack, not a solution.
+      # File uploads stored to local filesystem — lost on redeploy or scale-out.
+
+      import json
+      from http.server import HTTPServer, BaseHTTPRequestHandler
+      from datetime import datetime
+
+      # WHY: In-memory session store — lost on restart, not shared across
+      # processes. This forces sticky sessions or breaks multi-process deploys.
+      _sessions: dict[str, dict] = {}
+
+      class BadHandler(BaseHTTPRequestHandler):
+          def do_GET(self):
+              session_id = self.headers.get("X-Session-Id", "default")
+              if session_id not in _sessions:
+                  _sessions[session_id] = {"cart": [], "last_seen": None}
+              session = _sessions[session_id]
+              session["last_seen"] = datetime.now().isoformat()
+
+              # WHY: reads/writes local filesystem for uploads — lost on
+              # redeploy or when another process handles the file path.
+              if self.path == "/upload":
+                  content_length = int(self.headers.get("Content-Length", 0))
+                  body = self.rfile.read(content_length)
+                  with open(f"/tmp/uploads/{session_id}.dat", "wb") as f:
+                      f.write(body)
+
+              self.send_response(200)
+              self.end_headers()
+              self.wfile.write(json.dumps(session).encode())
+
+      # WHY: This whole design assumes one process, one machine. It cannot
+      # scale horizontally without introducing sticky sessions (violation)
+      # or an external session store (which this code doesn't use).
+
+    good: |
+      # GOOD: Stateless processes. Session data stored in Redis with TTL.
+      # File uploads go to S3 (a backing service). The process itself holds
+      # no state — it can be killed, restarted, or replicated freely.
+
+      import json
+      import os
+      import redis
+      import boto3
+      from http.server import HTTPServer, BaseHTTPRequestHandler
+
+      # WHY: Redis from config — works as attached resource. Sessions survive
+      # process restarts and are shared across all process instances.
+      REDIS_URL = os.environ["REDIS_URL"]
+      S3_BUCKET = os.environ["S3_BUCKET"]
+
+      _redis = redis.from_url(REDIS_URL)
+      _s3 = boto3.client("s3")
+
+      class GoodHandler(BaseHTTPRequestHandler):
+          def do_GET(self):
+              session_id = self.headers.get("X-Session-Id", "default")
+              session_key = f"session:{session_id}"
+
+              # WHY: Redis with TTL — sessions expire automatically. All
+              # processes share the same Redis, so any instance can serve
+              # any request. No sticky sessions needed.
+              data = _redis.get(session_key)
+              session = json.loads(data) if data else {"cart": [], "last_seen": None}
+
+              from datetime import datetime
+              session["last_seen"] = datetime.now().isoformat()
+              _redis.setex(session_key, 3600, json.dumps(session))
+
+              # WHY: S3 for uploads — backing service, survives deploys,
+              # shared across processes. The filesystem is never assumed
+              # persistent.
+              if self.path == "/upload":
+                  content_length = int(self.headers.get("Content-Length", 0))
+                  body = self.rfile.read(content_length)
+                  _s3.put_object(
+                      Bucket=S3_BUCKET,
+                      Key=f"uploads/{session_id}.dat",
+                      Body=body,
+                  )
+
+              self.send_response(200)
+              self.end_headers()
+              self.wfile.write(json.dumps(session).encode())
+
+      # WHY: The process is now fully stateless. It can be killed at any
+      # time — Redis and S3 hold the persistent state. Horizontal scaling
+      # is just running more copies of the same code.
+
+  - language: typescript
+    bad: |
+      // BAD: Stateful Express server. Sessions in a Map — lost on restart,
+      // not shared across processes. Uploads to local filesystem. Asset
+      // compilation happens at runtime, writing to disk as a cache.
+
+      import express from "express";
+      import { writeFileSync, readFileSync, existsSync } from "fs";
+      import { join } from "path";
+
+      const app = express();
+
+      // WHY: In-memory sessions. Works for one process in dev; breaks
+      // immediately with multiple processes in production.
+      const sessions = new Map<string, { cart: string[]; lastSeen: string }>();
+
+      app.use((req, _res, next) => {
+        const sid = (req.headers["x-session-id"] as string) || "default";
+        if (!sessions.has(sid)) {
+          sessions.set(sid, { cart: [], lastSeen: "" });
+        }
+        (req as any).session = sessions.get(sid);
+        next();
+      });
+
+      // WHY: Local filesystem for uploads. Lost on redeploy or when request
+      // hits a different process on another machine.
+      app.post("/upload", (req, res) => {
+        const chunks: Buffer[] = [];
+        req.on("data", (chunk) => chunks.push(chunk));
+        req.on("end", () => {
+          const sid = (req.headers["x-session-id"] as string) || "default";
+          writeFileSync(join("/tmp/uploads", sid + ".dat"), Buffer.concat(chunks));
+          res.json({ ok: true });
+        });
+      });
+
+      // WHY: Runtime asset compilation uses filesystem as cache. Should happen
+      // during the build stage instead — the filesystem is ephemeral.
+      app.get("/assets/:name", (req, res) => {
+        const cachePath = join("/tmp/cache", req.params.name + ".min");
+        if (existsSync(cachePath)) {
+          res.sendFile(cachePath);
+        } else {
+          const compiled = `/* compiled ${req.params.name} */`;
+          writeFileSync(cachePath, compiled);
+          res.type("js").send(compiled);
+        }
+      });
+
+      app.listen(3000);
+
+    good: |
+      // GOOD: Stateless Express server. Sessions in Redis, uploads to S3,
+      // assets compiled during build stage. The process holds no state.
+
+      import express from "express";
+      import { createClient, RedisClientType } from "redis";
+      import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+      import { join } from "path";
+
+      const app = express();
+
+      // WHY: Redis client from config URL. Shared across all process instances.
+      // Sessions expire automatically via TTL.
+      const redis: RedisClientType = createClient({
+        url: process.env.REDIS_URL || "redis://localhost:6379",
+      });
+      redis.connect();
+
+      // WHY: S3 client — backing service for file storage. Same API regardless
+      // of whether it's local MinIO or production AWS S3.
+      const s3 = new S3Client({
+        region: process.env.AWS_REGION || "us-east-1",
+        endpoint: process.env.S3_ENDPOINT,
+        forcePathStyle: true,
+      });
+
+      app.use(async (req, _res, next) => {
+        const sid = (req.headers["x-session-id"] as string) || "default";
+        const key = `session:${sid}`;
+
+        let session = await redis.get(key);
+        if (!session) {
+          // WHY: TTL of 3600s — sessions expire, cleanup is automatic.
+          // No manual garbage collection needed.
+          const data = { cart: [], lastSeen: new Date().toISOString() };
+          await redis.setEx(key, 3600, JSON.stringify(data));
+        } else {
+          const parsed = JSON.parse(session);
+          parsed.lastSeen = new Date().toISOString();
+          await redis.setEx(key, 3600, JSON.stringify(parsed));
+        }
+
+        (req as any).redisKey = key;
+        next();
+      });
+
+      // WHY: S3 for uploads — stateless, shared across processes, survives
+      // deploys and restarts. The filesystem is never touched.
+      app.post("/upload", async (req, res) => {
+        const chunks: Buffer[] = [];
+        req.on("data", (chunk) => chunks.push(chunk));
+        req.on("end", async () => {
+          const sid = (req.headers["x-session-id"] as string) || "default";
+          await s3.send(
+            new PutObjectCommand({
+              Bucket: process.env.S3_BUCKET || "app-uploads",
+              Key: `uploads/${sid}.dat`,
+              Body: Buffer.concat(chunks),
+            })
+          );
+          res.json({ ok: true });
+        });
+      });
+
+      // WHY: Assets compiled during build stage and served as static files.
+      // No runtime compilation, no filesystem cache. The /public dir is
+      // part of the build artifact.
+      app.use("/assets", express.static(join(__dirname, "public")));
+
+      app.listen(parseInt(process.env.PORT || "3000"));
+
+heuristics:
+  - >
+    "Twelve-factor processes are stateless and share-nothing. Any data that
+    needs to persist must be stored in a stateful backing service, typically
+    a database" (12factor.net/processes).
+  - >
+    The memory and filesystem of a process are only brief, single-transaction
+    caches. Never assume data written by one request survives to the next
+    request — a different process will likely handle it.
+  - >
+    Sticky sessions are a direct violation of twelve-factor. Use Memcached
+    or Redis for session state with time-expiration. Session data must be
+    accessible from any process instance.
+  - >
+    Asset compilation (JS minification, CSS bundling, image optimization)
+    should happen during the build stage, not at runtime. The filesystem is
+    not a compilation cache — it's wiped on every deploy.
+  - >
+    Even when running only one process, assume a restart (triggered by code
+    deploy, config change, or process relocation) will wipe all local state.
+    Design for ephemeral processes from day one.
+  - >
+    Worker processes are also stateless — job state belongs in the queue
+    backend. The worker itself holds nothing between jobs.
+  - >
+    A process restart should be a non-event. If your app needs special
+    startup logic to recover local state from disk, the state should be in
+    a backing service instead.
+  - >
+    Test with multiple process instances in development. Use a Procfile
+    (Foreman/Honcho) that runs `web: 2` or more. If sessions break, you
+    have a statefulness bug.
+  - >
+    In containerized environments (Docker, k8s), the filesystem is
+    deliberately ephemeral. Writing stateful data to the container
+    filesystem is anti-twelve-factor by design.
+  - >
+    Distinguish between configuration state (in env vars, Factor III) and
+    application state (in backing services, Factor IV). Processes hold
+    neither — they read config at startup and read/write state through
+    backing services at runtime.
+  - >
+    The twelve-factor stateless process model is the foundation that makes
+    horizontal scaling, blue-green deploys, and canary releases possible.
+    Without it, every scale-out event is a migration project.
+
+related_tags:
+  [stateless, share-nothing, processes, sessions, redis, memcached,
+   sticky-sessions, horizontal-scaling, ephemeral-filesystem,
+   backing-services, build-stage, asset-compilation, procfile,
+   foreman, crash-only, containers, kubernetes, blue-green-deploy]

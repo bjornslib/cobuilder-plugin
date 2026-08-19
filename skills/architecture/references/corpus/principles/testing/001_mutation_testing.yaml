@@ -1,0 +1,272 @@
+id: mutation-testing-001
+name: Mutation Testing & Test Quality Metrics
+category: testing
+canonical_tags: ['testing', 'quality', 'feedback']
+sources:
+  - books/the-pragmatic-programmer.md
+summary: >
+  Mutation testing measures how well your tests actually catch bugs by
+  injecting small faults ("mutants") into production code and checking
+  whether the test suite detects them. A mutant that causes a test to fail
+  is killed; one that passes all tests is a survivor. The mutation score
+  (killed / total) quantifies test suite quality. Mutation operators are
+  the fault-injection rules: arithmetic (AOR: +→-), relational (ROR:
+  <→≤), logical (LCR: &&→||), and statement-level changes (SDL: delete
+  statement). Equivalent mutants are semantically identical to the
+  original — the hardest to detect because no test can kill them. The
+  Pragmatic Programmer's obsession with fast, frequent feedback makes
+  mutation testing the natural extreme: it answers "how do I know my
+  tests are good enough?" by attacking your code and seeing what survives.
+examples:
+  - language: python
+    bad: |
+      import pytest
+
+
+      def is_valid_discount(price: float, discount_pct: float) -> bool:
+          """Return True if discount is within valid range."""
+          if price <= 0:
+              return False
+          if discount_pct < 0:
+              return False
+          if discount_pct > 100:
+              return False
+          # Missing: discount_pct == 0 edge case
+          # Missing: price edge cases with zero discount
+          return price > 0  # redundant but misses boundary behavior
+
+
+      # Tests that look thorough but have low mutation score
+      def test_valid_discount():
+          assert is_valid_discount(100.0, 10.0) is True
+          assert is_valid_discount(100.0, 0.0) is True
+          assert is_valid_discount(100.0, 100.0) is True
+          assert is_valid_discount(0.0, 50.0) is False
+          assert is_valid_discount(-10.0, 50.0) is False
+          assert is_valid_discount(100.0, -5.0) is False
+          assert is_valid_discount(100.0, 110.0) is False
+          # Mutation testing reveals: no assertion on discount_pct == 0
+          # path, price boundary mutants survive because tests don't
+          # exercise discount_pct==0 branch distinctly from the happy path
+    good: |
+      import pytest
+
+
+      # -- Production code: small, focused, every branch has a reason --
+      def is_valid_discount(price: float, discount_pct: float) -> bool:
+          """Return True if price > 0 and discount is in [0, 100]."""
+          if price <= 0:
+              return False
+          if not (0 <= discount_pct <= 100):
+              return False
+          return True
+
+
+      # -- Tests designed to kill every mutation operator --
+      # AOR (Arithmetic): price<=0 mutant→price<0, discount_pct>=0 etc.
+      # ROR (Relational): <=→<, <=→==, >=→> mutations at boundaries
+      # LCR (Logical): and→or, or→and in compound condition
+      # SDL (Statement Deletion): removing `return False` lines
+
+      class TestValidDiscount:
+          """Mutation score target: >95% (kill every non-equivalent mutant)."""
+
+          # --- Boundary value analysis kills ROR mutants ---
+          def test_price_zero(self):
+              """price==0 boundary: kills <=→< mutant."""
+              assert not is_valid_discount(0.0, 10.0)
+
+          def test_price_negative(self):
+              """price<0 kills price<=0→price<0 (same semantics), exercises
+              the same branch with distinct input."""
+              assert not is_valid_discount(-0.01, 10.0)
+
+          def test_price_positive_minimal(self):
+              """Smallest valid price kills boundary-deletion mutant."""
+              assert is_valid_discount(0.01, 0.0)
+
+          # --- Discount boundary table kills ROR mutants on discount ---
+          def test_discount_zero(self):
+              """discount_pct==0 boundary: kills <=→< mutant."""
+              assert is_valid_discount(100.0, 0.0)
+
+          def test_discount_negative(self):
+              """discount_pct<0 kills 0<=discount→0<discount mutant."""
+              assert not is_valid_discount(100.0, -0.01)
+
+          def test_discount_hundred(self):
+              """discount_pct==100 boundary: kills <=→< mutant."""
+              assert is_valid_discount(100.0, 100.0)
+
+          def test_discount_above_hundred(self):
+              """discount_pct>100 kills <=→< mutant."""
+              assert not is_valid_discount(100.0, 100.01)
+
+          # --- Compound condition: kills LCR (and→or) mutants ---
+          # Mutant `0 <= discount_pct or discount_pct <= 100` would pass
+          # for any value; this pair of tests kills that mutant:
+          def test_discount_negative_kills_or_mutant(self):
+              assert not is_valid_discount(100.0, -10.0)
+
+          def test_discount_above_hundred_kills_or_mutant(self):
+              assert not is_valid_discount(100.0, 150.0)
+
+          # --- Equivalent mutant awareness ---
+          # Mutant `return False`→`return True` on the price<=0 branch
+          # is NOT equivalent: price==0 test kills it.
+          # However: `price <= 0`→`price < 0` inside the branch body
+          # IS equivalent if no test sends price==0. The fix is the
+          # test_price_zero case above — it anchors the boundary.
+
+          def test_normal_case(self):
+              assert is_valid_discount(50.0, 20.0)
+
+
+      # -- Integration with mutation testing CLI (cosmic-ray or mutmut) --
+      # $ mutmut run --paths-to-mutate discount.py
+      # $ mutmut results
+      # Killed: 12  Survived: 0  Incompetent: 0  Timeout: 0
+      # Mutation score: 100% (equivalent mutants manually reviewed)
+  - language: typescript
+    bad: |
+      // -- Production code: untested edge cases --
+      export function calculateShipping(
+        orderTotal: number,
+        isExpress: boolean,
+        itemCount: number,
+      ): number {
+        const FREE_SHIPPING_THRESHOLD = 50;
+        const STANDARD_RATE = 5.99;
+        const EXPRESS_RATE = 14.99;
+        const HEAVY_ITEM_SURCHARGE = 2.0;
+
+        if (orderTotal >= FREE_SHIPPING_THRESHOLD) {
+          return 0; // free shipping
+        }
+        let cost = isExpress ? EXPRESS_RATE : STANDARD_RATE;
+        if (itemCount > 5) {
+          cost += (itemCount - 5) * HEAVY_ITEM_SURCHARGE;
+        }
+        return cost;
+      }
+
+      // -- Tests: coverage looks good, mutation score is low --
+      describe("calculateShipping", () => {
+        it("returns free shipping above threshold", () => {
+          expect(calculateShipping(75, false, 1)).toBe(0);
+        });
+        it("charges standard rate below threshold", () => {
+          expect(calculateShipping(30, false, 2)).toBe(5.99);
+        });
+        it("charges express rate", () => {
+          expect(calculateShipping(30, true, 2)).toBe(14.99);
+        });
+        // Missing: threshold boundary (orderTotal == 50)
+        // Missing: itemCount boundary (itemCount == 5, 6)
+        // Missing: express+free (orderTotal>=50, isExpress=true)
+        // Missing: heavy surcharge with express (isExpress=true, itemCount>5)
+      });
+
+      // Mutation testing reveals survivors:
+      // orderTotal>=50 → orderTotal>50 (ROR): threshold boundary untested
+      // itemCount>5 → itemCount>=5 (ROR): boundary untested
+      // isExpress?EXPRESS_RATE:STANDARD_RATE → isExpress?STANDARD_RATE:EXPRESS_RATE:
+      //   no express test at threshold kills it
+    good: |
+      // -- Production code: same logic, unchanged --
+      export function calculateShipping(
+        orderTotal: number,
+        isExpress: boolean,
+        itemCount: number,
+      ): number {
+        const FREE_SHIPPING_THRESHOLD = 50;
+        const STANDARD_RATE = 5.99;
+        const EXPRESS_RATE = 14.99;
+        const HEAVY_ITEM_SURCHARGE = 2.0;
+
+        if (orderTotal >= FREE_SHIPPING_THRESHOLD) {
+          return 0;
+        }
+        let cost = isExpress ? EXPRESS_RATE : STANDARD_RATE;
+        if (itemCount > 5) {
+          cost += (itemCount - 5) * HEAVY_ITEM_SURCHARGE;
+        }
+        return cost;
+      }
+
+      // -- Tests designed to kill every non-equivalent mutant --
+      describe("calculateShipping", () => {
+        // --- Threshold boundary: kills ROR >=→> mutant ---
+        it("charges shipping exactly at threshold", () => {
+          // orderTotal==50 — if mutant changes >= to >, this fails
+          expect(calculateShipping(50, false, 1)).toBe(0);
+        });
+
+        it("charges shipping one cent below threshold", () => {
+          expect(calculateShipping(49.99, false, 1)).toBe(5.99);
+        });
+
+        it("charges free shipping well above threshold", () => {
+          expect(calculateShipping(200, false, 1)).toBe(0);
+        });
+
+        // --- Item count boundary: kills ROR >→>= mutant ---
+        it("surcharge triggers at exactly 6 items", () => {
+          // itemCount == 6: surcharge should apply
+          const cost = calculateShipping(30, false, 6);
+          expect(cost).toBe(5.99 + (6 - 5) * 2.0); // 7.99
+        });
+
+        it("no surcharge at exactly 5 items (boundary)", () => {
+          const cost = calculateShipping(30, false, 5);
+          expect(cost).toBe(5.99); // surcharge NOT applied
+        });
+
+        it("no surcharge below 5 items", () => {
+          expect(calculateShipping(30, false, 1)).toBe(5.99);
+        });
+
+        it("surcharge scales with item count", () => {
+          const cost = calculateShipping(30, false, 10);
+          expect(cost).toBe(5.99 + (10 - 5) * 2.0); // 15.99
+        });
+
+        // --- Express flag: kills ternary flip mutant ---
+        // Mutant: isExpress?STANDARD_RATE:EXPRESS_RATE
+        it("express shipping below threshold", () => {
+          expect(calculateShipping(30, true, 1)).toBe(14.99);
+        });
+
+        // --- Cross-boundary: express + free shipping ---
+        // Mutant would keep express when free shipping should apply
+        it("express ignored when free shipping applies", () => {
+          expect(calculateShipping(75, true, 1)).toBe(0);
+        });
+
+        // --- Cross-boundary: express + heavy surcharge ---
+        it("express with heavy surcharge", () => {
+          const cost = calculateShipping(30, true, 7);
+          expect(cost).toBe(14.99 + (7 - 5) * 2.0); // 18.99
+        });
+
+        // --- Equivalent mutant awareness ---
+        // `itemCount - 5` → `itemCount - 5` is invariant, but:
+        // `HEAVY_ITEM_SURCHARGE` → `HEAVY_ITEM_SURCHARGE + 0` (AOR) is equivalent
+        // → marked equivalent after manual review; mutation score excludes it.
+      });
+
+      // -- Running Stryker (TypeScript mutation testing framework) --
+      // $ npx stryker run
+      // Mutation score: 100% (10 killed, 0 survived, 1 noCoverage, 1 equivalent)
+      // Equivalent mutant: AOR `HEAVY_ITEM_SURCHARGE`→`HEAVY_ITEM_SURCHARGE+0`
+heuristics:
+  - Mutation testing is the ultimate feedback loop: it silently plants bugs and measures whether your tests sound the alarm. High line coverage with low mutation score means your assertions are too weak or absent.
+  - Mutation operators to target: AOR (arithmetic — +↔-, *↔/), ROR (relational — <↔≤, >↔≥, ==↔!=), LCR (logical — &&↔||, invert conditions), SDL (statement deletion — removing lines), and RVR (return value — replacing returned expressions with constants).
+  - A mutant dies (is "killed") when at least one test fails that passes on the original code. A survivor indicates a gap in the test suite — add a test that exercises that specific mutant.
+  - Equivalent mutants are syntactically different but semantically identical to the original (e.g., `x+0` vs `x`). They cannot be killed by any test and must be identified by manual review. Subtract equivalent mutants from the denominator: mutation_score = killed / (total - equivalent).
+  - Target a mutation score >85% for critical business logic. 100% is possible for simple functions with thorough boundary-value testing.
+  - Mutation testing is slow — run it periodically (nightly CI), not on every commit. Use incremental mutation testing (only mutate changed files) for pre-merge checks.
+  - The Pragmatic Programmer's "ruthless feedback" principle applies: if your mutation score is low, your tests are lying to you about safety. Fix the tests, not the mutation threshold.
+  - Combine with property-based testing (Hypothesis, fast-check) to kill a broader class of mutants without writing individual boundary cases manually.
+  - A test that kills no mutants beyond what line coverage already guarantees is dead weight — it costs maintenance without adding safety. Mutation score helps identify and remove weak tests.
+related_tags: [mutation-testing, mutant-killing, test-quality, equivalent-mutants, mutation-operators, mutation-score, stryker, mutmut, feedback-loops, pragmatic-programmer]

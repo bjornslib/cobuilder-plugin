@@ -1,0 +1,95 @@
+id: pep8-whitespace-015
+name: PEP 8 Whitespace — Operator Spacing, Pet Peeves, and Keyword Argument Formatting
+category: readability
+canonical_tags: ['python', 'readability']
+sources:
+  - open_sources/python/pep-0008.html
+summary: >
+  PEP 8's whitespace rules are mechanical but high-impact: surround binary operators with single
+  spaces, avoid extraneous whitespace inside parentheses/brackets/braces, and follow specific rules
+  for colons, commas, and keyword argument = signs. The "Pet Peeves" section bans whitespace
+  immediately inside (, [, { and before , ; :. For slices, treat : as a binary operator. Function
+  annotations get spaces around -> but no space before : for a bare annotation. Keyword args and
+  unannotated defaults get no spaces around =; annotated defaults DO get spaces.
+examples:
+  - language: python
+    bad: |
+      # Whitespace inside parentheses — noisy and non-standard.
+      spam( ham[ 1 ], { eggs: 2 } )
+
+      # Space before comma or colon — wrong.
+      if x == 4 :
+          print(x , y)
+
+      # No space around binary operators — dense and hard to read.
+      hypot2=x*x+y*y
+      c=(a+b)*(a-b)
+
+      # Spaces around = in keyword arguments — violates convention.
+      def complex(real, imag = 0.0):
+          return magic(r = real, i = imag)
+
+      # Space before annotation colon — wrong.
+      def munge(input : str): ...
+
+      # Extraneous space after trailing comma.
+      foo = (0, )
+
+      # Slicing without spacing — colon treated as binary operator.
+      ham[lower + offset:upper + offset]
+    good: |
+      """PEP 8 whitespace rules: binary operators get single spaces, no
+      space inside delimiters, keyword arguments skip = spacing, slices
+      treat colon as a binary operator, annotations use -> spacing.
+      """
+
+      # No whitespace inside parentheses, brackets, or braces.
+      spam(ham[1], {eggs: 2})
+
+      # No space before comma, semicolon, or colon.
+      if x == 4:
+          print(x, y)
+
+      # Single spaces around binary operators.
+      x = x + 1
+      submitted += 1
+      hypot2 = x * x + y * y
+      c = (a + b) * (a - b)
+
+      # Low-priority operators get spaces; higher-priority don't.
+      x = x*2 - 1
+
+      # Keyword arguments: NO spaces around =.
+      def complex(real, imag=0.0):
+          return magic(r=real, i=imag)
+
+      # Annotated parameter with default: YES spaces around =.
+      def munge(sep: AnyStr = None): ...
+
+      # Function annotations: space around ->, no space before :.
+      def munge(input: AnyStr) -> PosInt: ...
+
+      # Slicing: colon gets equal spaces, like a binary operator.
+      ham[1:9]
+      ham[1:9:3]
+      ham[lower + offset : upper + offset]
+
+      # No trailing comma space.
+      foo = (0,)
+
+      # No compound statements on one line.
+      if foo == 'blah':
+          do_blah_thing()
+      do_one()
+      do_two()
+      do_three()
+heuristics:
+  - "Surround all binary operators (assignment, comparisons, Booleans) with a single space on each side. If operators have different priorities, add whitespace only around the lowest-priority operators."
+  - "Never use more than one space around a binary operator, and keep the amount equal on both sides."
+  - "Do NOT put whitespace immediately inside parentheses, brackets, or braces. No whitespace before a comma, semicolon, or colon (except in slice expressions)."
+  - "The colon in a slice acts as a binary operator — it gets equal whitespace on both sides. No space before the colon for a simple slice like a[0:1]."
+  - "Function annotations: no space before the :, but a single space around the -> arrow."
+  - "Keyword arguments and unannotated default values have NO spaces around the =. Annotated parameters with defaults DO have spaces around the =."
+  - "Avoid trailing whitespace anywhere. It's invisible, confusing with backslash-continuation, and rejected by pre-commit hooks."
+  - "Do not use compound statements (multiple statements on the same line). Short single-clause bodies on the same line are acceptable but discouraged. Never for multi-clause statements."
+related_tags: [pep8, whitespace, operators, spacing, pet-peeves, annotations, keyword-arguments, readability]

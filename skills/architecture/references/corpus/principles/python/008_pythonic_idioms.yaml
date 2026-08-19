@@ -1,0 +1,590 @@
+id: pythonic-idioms-008
+name: Pythonic Idioms and Python Data Model
+category: readability
+canonical_tags: ['python', 'readability', 'idiomatic', 'data-model', 'design']
+sources:
+  - open_sources/python/pep-0008.html
+  - open_sources/python/pep-0257.html
+  - books/clean-code.md
+  - books/the-pragmatic-programmer.md
+summary: >-
+  Pythonic code leverages the language's built-in constructs to express intent clearly and concisely —
+  comprehensions over loops, context managers over manual resource handling, enumerate/zip over index
+  counters, EAFP over LBYL, truthiness over explicit length checks, and the walrus operator to avoid
+  repeated computation. The Python Data Model is the deeper layer: dunder methods (`__repr__`, `__eq__`,
+  `__hash__`, `__bool__`, `__iter__`, `__getitem__`, `__call__`, `__enter__`/`__exit__`) let your
+  objects behave like native types — printable, comparable, iterable, callable, context-managed.
+  `__slots__` trades per-instance `__dict__` overhead for memory efficiency and attribute lockdown.
+  `@property` turns method calls into attribute access with computed values, validation, and lazy
+  evaluation. Descriptors (`__get__`, `__set__`, `__delete__`, `__set_name__`) are the machinery
+  behind properties, classmethods, staticmethods, and ORM fields — reuse attribute access logic across
+  classes. The iteration protocol (`__iter__` / `__next__`) is the contract that powers `for` loops,
+  generators, and comprehensions. The principle: write code that looks like Python, not a Java/C
+  transliteration; and design objects that play well with the language's own protocols so they compose
+  naturally with the standard library and third-party tools.
+examples:
+  - language: python
+    bad: |
+      """ANTI-PATTERNS: Java/C-think in Python — manual index counters,
+      explicit loops for simple transforms, verbose resource handling,
+      reinventing built-in protocols, and ignoring the data model."""
+
+      # ── IDIOMS: fighting the language ──────────────────────
+
+      # Manual loop with index counter instead of comprehension.
+      result = []
+      for i in range(len(items)):
+          if items[i] > 0:
+              result.append(items[i] * 2)
+
+      # Manual resource close + try/finally instead of `with`.
+      f = open("data.txt")
+      try:
+          content = f.read()
+      finally:
+          f.close()
+
+      # Index-based iteration when enumerate exists.
+      for i in range(len(names)):
+          print(f"{i}: {names[i]}")
+
+      # Pairing with manual indexing instead of zip.
+      for i in range(len(xs)):
+          print(xs[i], ys[i])
+
+      # KeyError-prone two-step dict access.
+      if key in d:
+          value = d[key]
+      else:
+          value = "default"
+
+      # Verbose truthiness check — len() when you mean "is it there?"
+      if len(records) > 0:
+          process(records)
+
+      # Manual membership loop instead of `in`.
+      found = False
+      for x in whitelist:
+          if x == target:
+              found = True
+              break
+
+      # String building with manual join + strip dance.
+      s = ""
+      for word in words:
+          s += word + ", "
+      s = s.rstrip(", ")
+
+      # LBYL (Look Before You Leap) — asking permission.
+      if os.path.exists("config.json"):
+          with open("config.json") as f:
+              cfg = json.load(f)
+      else:
+          cfg = {}
+
+      # Repeated computation in condition and body.
+      match = pattern.search(text)
+      if match:
+          value = match.group(1)
+
+      # ── DATA MODEL: ignoring Python's object protocol ──────
+
+      # No __repr__ — debugging prints <__main__.Point object at 0x...>
+      class Point:
+          def __init__(self, x, y):
+              self.x = x
+              self.y = y
+
+      # Manual comparison instead of __eq__.
+      class User:
+          def __init__(self, id, name):
+              self.id = id
+              self.name = name
+
+      # Later: if user1.id == user2.id  (and you forgot name)
+
+      # Boolean conversion with a custom method.
+      class Collection:
+          def __init__(self, items):
+              self.items = items
+
+          def is_empty(self):
+              return len(self.items) == 0
+
+      # Manual iteration via custom method.
+      class Team:
+          def __init__(self, members):
+              self.members = members
+
+          def get_members(self):
+              return self.members
+
+      # Index access via custom method.
+      class Grid:
+          def __init__(self, data):
+              self.data = data
+
+          def get_cell(self, row, col):
+              return self.data[row][col]
+
+      # ── __slots__: every instance carries a __dict__ ────────
+
+      class Measurement:
+          def __init__(self, value, unit, timestamp):
+              self.value = value
+              self.unit = unit
+              self.timestamp = timestamp
+          # ~150 bytes overhead per instance for __dict__
+
+      # ── PROPERTIES: manual getters/setters ──────────────────
+
+      class Temperature:
+          def __init__(self, celsius):
+              self._celsius = celsius
+
+          def get_celsius(self):
+              return self._celsius
+
+          def set_celsius(self, value):
+              if value < -273.15:
+                  raise ValueError("Below absolute zero")
+              self._celsius = value
+
+          def get_fahrenheit(self):
+              return self._celsius * 9/5 + 32
+
+      # ── DESCRIPTORS: repeated validation logic ──────────────
+
+      class Person:
+          def __init__(self, name, age):
+              if not name or not name.strip():
+                  raise ValueError("Name required")
+              if not isinstance(age, int) or age < 0:
+                  raise ValueError("Age must be non-negative int")
+              self.name = name
+              self.age = age
+
+      class Product:
+          def __init__(self, name, price):
+              if not name or not name.strip():
+                  raise ValueError("Name required")
+              if not isinstance(price, (int, float)) or price < 0:
+                  raise ValueError("Price must be non-negative")
+              self.name = name
+              self.price = price
+
+      # ── ITERATION PROTOCOL: manual iterator class ───────────
+
+      class Countdown:
+          def __init__(self, start):
+              self.current = start
+
+          def __iter__(self):
+              return self
+
+          def __next__(self):
+              if self.current < 0:
+                  raise StopIteration
+              val = self.current
+              self.current -= 1
+              return val
+
+      # ── CALLABLE: wrapper class with .run() ─────────────────
+
+      class DataPipeline:
+          def __init__(self, source, transforms):
+              self.source = source
+              self.transforms = transforms
+
+          def run(self):
+              data = self.source.load()
+              for t in self.transforms:
+                  data = t(data)
+              return data
+
+      pipeline = DataPipeline(source, transforms)
+      result = pipeline.run()
+    good: |
+      """PYTHONIC CODE: use the language's constructs and protocols.
+      Idioms express intent directly. The data model lets objects
+      compose naturally with the standard library."""
+
+      from functools import total_ordering
+      from typing import Any, Iterator
+
+      # ── PYTHONIC IDIOMS ─────────────────────────────────────
+
+      # Comprehension: "build new list by transforming matches."
+      result = [x * 2 for x in items if x > 0]
+
+      # Context manager: resource lifecycle is automatic.
+      with open("data.txt") as f:
+          content = f.read()
+
+      # enumerate: pairs index with value in one construct.
+      for i, name in enumerate(names):
+          print(f"{i}: {name}")
+
+      # zip: pair collections without manual indexing.
+      for x, y in zip(xs, ys):
+          print(x, y)
+
+      # dict.get with default: one call, no exception path.
+      value = d.get(key, "default")
+
+      # Truthiness: empty collections are falsy.
+      if records:
+          process(records)
+
+      # `in` operator: membership is a language primitive.
+      if target in whitelist:
+          ...
+
+      # str.join: separator-centric, no trailing-strip dance.
+      s = ", ".join(words)
+
+      # EAFP (Easier to Ask Forgiveness than Permission).
+      try:
+          with open("config.json") as f:
+              cfg = json.load(f)
+      except FileNotFoundError:
+          cfg = {}
+
+      # Walrus operator (:=): compute once, use in condition + body.
+      if match := pattern.search(text):
+          value = match.group(1)
+
+      # match/case (Python 3.10+): structural pattern matching.
+      match command:
+          case ["quit"]:
+              sys.exit(0)
+          case ["go", direction] if direction in DIRECTIONS:
+              move(direction)
+          case _:
+              print("Unknown")
+
+      # ── DATA MODEL: dunder methods ──────────────────────────
+
+      @total_ordering  # fills in __le__, __gt__, __ge__ from __eq__ + __lt__
+      class Point:
+          """A 2D point that prints nicely, compares, and hashes."""
+          __slots__ = ("x", "y")  # Memory: ~48 bytes vs ~150+ with __dict__.
+
+          def __init__(self, x: float, y: float) -> None:
+              self.x = x
+              self.y = y
+
+          def __repr__(self) -> str:
+              """Unambiguous: Point(3, 4) — eval()-able when possible."""
+              return f"{type(self).__name__}({self.x!r}, {self.y!r})"
+
+          def __str__(self) -> str:
+              """Human-readable: (3, 4)."""
+              return f"({self.x}, {self.y})"
+
+          def __eq__(self, other: object) -> bool:
+              if not isinstance(other, Point):
+                  return NotImplemented
+              return self.x == other.x and self.y == other.y
+
+          def __lt__(self, other: "Point") -> bool:
+              """Lexicographic: compare x then y."""
+              return (self.x, self.y) < (other.x, other.y)
+
+          def __hash__(self) -> int:
+              """If __eq__ is defined, __hash__ must be too for sets/dicts."""
+              return hash((self.x, self.y))
+
+          def __bool__(self) -> bool:
+              """Point is falsy only at origin."""
+              return self.x != 0 or self.y != 0
+
+          def __abs__(self) -> float:
+              """abs(point) -> distance from origin."""
+              return (self.x**2 + self.y**2) ** 0.5
+
+          def __add__(self, other: "Point") -> "Point":
+              if not isinstance(other, Point):
+                  return NotImplemented
+              return Point(self.x + other.x, self.y + other.y)
+
+          def __sub__(self, other: "Point") -> "Point":
+              if not isinstance(other, Point):
+                  return NotImplemented
+              return Point(self.x - other.x, self.y - other.y)
+
+          def __neg__(self) -> "Point":
+              return Point(-self.x, -self.y)
+
+      # Usage: objects behave like built-ins.
+      p1 = Point(3, 4)
+      p2 = Point(3, 4)
+      print(p1)               # (3, 4)
+      assert p1 == p2         # True — value equality, not identity
+      assert hash(p1) == hash(p2)
+      points = {p1, Point(1, 2)}  # Works because __hash__ is defined.
+      if p1:                  # __bool__ — True (not at origin)
+          ...
+      print(abs(p1))          # 5.0
+      p3 = p1 + Point(1, 1)   # Point(4, 5)
+
+      # ── CONTAINER PROTOCOL ──────────────────────────────────
+
+      class ImmutableGrid:
+          """2D grid accessible with grid[row, col], iterable, sized."""
+          __slots__ = ("_data", "_rows", "_cols")
+
+          def __init__(self, data: list[list[float]]) -> None:
+              self._data = data
+              self._rows = len(data)
+              self._cols = len(data[0]) if data else 0
+
+          def __repr__(self) -> str:
+              return f"Grid({self._rows}x{self._cols})"
+
+          def __len__(self) -> int:
+              """Total cell count."""
+              return self._rows * self._cols
+
+          def __getitem__(self, key: tuple[int, int]) -> float:
+              """grid[row, col] syntax via tuple key."""
+              row, col = key
+              if not (0 <= row < self._rows and 0 <= col < self._cols):
+                  raise IndexError(f"({row}, {col}) out of bounds")
+              return self._data[row][col]
+
+          def __contains__(self, value: float) -> bool:
+              """`value in grid` support."""
+              return any(value in row for row in self._data)
+
+          def __iter__(self) -> Iterator[float]:
+              """`for cell in grid` — row-major order."""
+              for row in self._data:
+                  yield from row
+
+      grid = ImmutableGrid([[1.0, 2.0], [3.0, 4.0]])
+      print(grid[0, 1])       # 2.0
+      print(len(grid))        # 4
+      print(3.0 in grid)      # True
+      for cell in grid:       # 1.0, 2.0, 3.0, 4.0
+          print(cell)
+
+      # ── CALLABLE OBJECTS ────────────────────────────────────
+
+      class ThresholdFilter:
+          """Callable object: preserves state across invocations."""
+          __slots__ = ("threshold", "_count")
+
+          def __init__(self, threshold: float) -> None:
+              self.threshold = threshold
+              self._count = 0
+
+          def __call__(self, value: float) -> bool:
+              self._count += 1
+              return value > self.threshold
+
+          @property
+          def count(self) -> int:
+              return self._count
+
+      above_100 = ThresholdFilter(100.0)
+      results = [above_100(x) for x in readings]
+      print(above_100.count)  # How many were tested.
+
+      # ── PROPERTIES: computed attributes with validation ─────
+
+      class Temperature:
+          """Celsius/fahrenheit as attributes, not getters."""
+          __slots__ = ("_celsius",)
+
+          def __init__(self, celsius: float = 0.0) -> None:
+              self.celsius = celsius  # Triggers setter validation.
+
+          @property
+          def celsius(self) -> float:
+              return self._celsius
+
+          @celsius.setter
+          def celsius(self, value: float) -> None:
+              if value < -273.15:
+                  raise ValueError("Below absolute zero")
+              self._celsius = value
+
+          @property
+          def fahrenheit(self) -> float:
+              """Read-only computed property."""
+              return self._celsius * 9 / 5 + 32
+
+          @property
+          def kelvin(self) -> float:
+              return self._celsius + 273.15
+
+      t = Temperature(25)
+      print(t.celsius)       # 25.0  — attribute, not method call
+      print(t.fahrenheit)    # 77.0
+      t.celsius = 100        # Validated through setter.
+      # t.fahrenheit = 200   # AttributeError — read-only.
+
+      # Lazy property (cached computation).
+      from functools import cached_property
+
+      class DataSet:
+          def __init__(self, filepath: str) -> None:
+              self.filepath = filepath
+
+          @cached_property
+          def data(self) -> list[dict]:
+              """Loaded once, cached on instance."""
+              with open(self.filepath) as f:
+                  return json.load(f)
+
+      # ── DESCRIPTOR PROTOCOL ─────────────────────────────────
+
+      class Validated:
+          """Reusable descriptor: type-check + validate a single attribute."""
+
+          def __init__(self, *validators):
+              self.validators = validators
+              self.name = None  # Set by __set_name__.
+
+          def __set_name__(self, owner, name: str) -> None:
+              """Called at class creation — knows the attribute name."""
+              self.name = name
+
+          def __get__(self, obj, objtype=None) -> Any:
+              if obj is None:
+                  return self  # Class-level access.
+              return obj.__dict__.get(self.name)
+
+          def __set__(self, obj, value) -> None:
+              for v in self.validators:
+                  v(self.name, value)
+              obj.__dict__[self.name] = value
+
+          def __delete__(self, obj) -> None:
+              raise AttributeError(f"Cannot delete {self.name}")
+
+      from numbers import Number
+
+      def required(name: str, value) -> None:
+          if value is None or (isinstance(value, str) and not value.strip()):
+              raise ValueError(f"{name} is required")
+
+      def positive(name: str, value) -> None:
+          if isinstance(value, Number) and value < 0:
+              raise ValueError(f"{name} must be non-negative")
+
+      class Person:
+          name = Validated(required)
+          age = Validated(positive)
+
+          def __init__(self, name: str, age: int) -> None:
+              self.name = name    # Validated(required).__set__(…)
+              self.age = age      # Validated(positive).__set__(…)
+
+      class Product:
+          name = Validated(required)
+          price = Validated(positive)
+
+          def __init__(self, name: str, price: float) -> None:
+              self.name = name
+              self.price = price
+
+      # Same validation logic, zero duplication across classes.
+      # Descriptors are the machinery behind @property, @classmethod,
+      # @staticmethod, SQLAlchemy columns, Django fields, etc.
+
+      # ── ITERATION PROTOCOL (generator form) ─────────────────
+
+      # Generator is the idiomatic way to implement __iter__.
+      class Countdown:
+          __slots__ = ("start",)
+
+          def __init__(self, start: int) -> None:
+              self.start = start
+
+          def __iter__(self) -> Iterator[int]:
+              """Generator: yield replaces manual __next__ + StopIteration."""
+              current = self.start
+              while current >= 0:
+                  yield current
+                  current -= 1
+
+      for n in Countdown(3):  # 3, 2, 1, 0
+          print(n)
+
+      # For reusable independent iterators, return a fresh generator
+      # or implement __iter__ to return a new iterator object.
+      class Replayable:
+          def __init__(self, data: list[int]) -> None:
+              self.data = data
+
+          def __iter__(self) -> Iterator[int]:
+              """Each for-loop gets a fresh iterator."""
+              return iter(self.data)
+
+      # ── CONTEXT MANAGER PROTOCOL ────────────────────────────
+
+      class Transaction:
+          """Custom context manager: commit on success, rollback on error."""
+          __slots__ = ("conn", "_active")
+
+          def __init__(self, conn) -> None:
+              self.conn = conn
+              self._active = False
+
+          def __enter__(self) -> "Transaction":
+              self.conn.execute("BEGIN")
+              self._active = True
+              return self
+
+          def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+              if exc_type is None:
+                  self.conn.execute("COMMIT")
+              else:
+                  self.conn.execute("ROLLBACK")
+              self._active = False
+              return False  # Don't suppress exceptions.
+
+      with Transaction(conn) as txn:
+          conn.execute("INSERT ...")
+
+      # ── __slots__ SUMMARY ───────────────────────────────────
+      #
+      # With __slots__:          Without __slots__:
+      #   Fixed attribute set       Dynamic __dict__ per instance
+      #   ~48 bytes per instance    ~150+ bytes per instance
+      #   No __dict__, no __weakref__ (unless added to __slots__)
+      #   Faster attribute access   Slower (dict lookup)
+      #   Prevents typos:           Typos silently create attrs:
+      #     obj.colour → Error        obj.colour = "red"  (meant "color")
+      #
+      # Use __slots__ when: creating millions of instances, the
+      # attribute set is known and fixed, or you want to catch typos.
+      # Skip __slots__ when: you need dynamic attributes, multiple
+      # inheritance with different slot layouts, or the class is small.
+
+      # ── KEY DUNDER METHODS REFERENCE ─────────────────────────
+      #
+      # __repr__       → repr(obj)         Unambiguous debug string
+      # __str__        → str(obj), print   Human-readable
+      # __eq__         → a == b            Value equality
+      # __hash__       → hash(obj)         Dict key / set membership
+      # __bool__       → bool(obj)         Truthiness
+      # __len__        → len(obj)          Sized protocol
+      # __contains__   → x in obj          Membership
+      # __getitem__    → obj[key]          Indexing
+      # __setitem__    → obj[key] = v      Mutable indexing
+      # __iter__       → for x in obj      Iterable protocol
+      # __next__       → next(obj)         Iterator protocol
+      # __call__       → obj()             Callable protocol
+      # __enter__      → with obj:         Context manager entry
+      # __exit__       → (cleanup)         Context manager exit
+      # __add__/__sub__→ a + b / a - b     Arithmetic
+      # __lt__/__le__  → a < b / a <= b    Ordering
+      # __abs__        → abs(obj)          Absolute value
+      # __getattr__    → obj.missing       Fallback attribute lookup
+      # __getattribute__→ obj.anything     Unconditional attr lookup (rare)
+      # __setattr__    → obj.x = v         Attribute assignment hook
+      # __delattr__    → del obj.x         Attribute deletion hook
+      # __slots__      → (class var)       Memory optimization

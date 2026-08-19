@@ -1,0 +1,294 @@
+id: 12factor-build-release-run-005
+name: "12-Factor App — Build, Release, Run (Strict Separation)"
+category: cloud-native
+canonical_tags: ['12factor', 'build', 'release', 'run', 'immutability', 'pipeline', 'deployment', 'rollback']
+sources:
+  - open_sources/design_patterns/12factor-app.txt
+  - open_sources/design_patterns/12factor-build-release-run.html
+summary: >
+  The codebase transforms into a deploy through three strictly separated
+  stages: Build, Release, and Run. The build stage fetches dependencies and
+  compiles binaries into an executable artifact. The release stage combines
+  that build with the deploy's current config, producing an immutable release
+  ready for execution. The run stage launches the app's processes against
+  that release. The strict separation means code changes at runtime are
+  impossible — there is no path to propagate changes back to the build
+  stage. Every release has a unique ID and is append-only; any change
+  creates a new release. The build stage can be complex (errors happen in
+  the foreground during deploy), while the run stage must be simple (it may
+  execute automatically at 3 AM on a server reboot).
+examples:
+  - language: python
+    bad: |
+      # BAD: Build, release, and run are tangled together. Config is baked
+      # into the Docker image at build time. Code changes are made by
+      # SSH-ing into the running container and editing files live. Rollback
+      # means manually reverting files. No release IDs, no audit trail.
+
+      # Dockerfile — BAD: config baked into the image
+      # ENV DATABASE_URL=postgres://prod:secret@db.internal:5432/prod
+      # ENV SECRET_KEY=hardcoded-in-image
+      # This means the same image cannot be used for staging vs production.
+      # Every config change requires a full rebuild and redeploy.
+
+      # runtime_patch.sh — BAD: live-editing code on the running server
+      # ssh prod-server-01
+      # vim /opt/app/handlers.py    # edit code directly in production
+      # systemctl restart myapp     # hope it works
+      #
+      # WHY: No separation between build and run. Changes made at runtime
+      # are invisible to the build pipeline. The next deploy from CI will
+      # overwrite the hotfix. No rollback possible — what was the previous
+      # state? Nobody knows.
+
+      # deploy.sh — BAD: manual deploy with no release tracking
+      # rsync -avz ./dist/ prod-server-01:/opt/app/
+      # ssh prod-server-01 "sudo systemctl restart myapp"
+      #
+      # WHY: No release ID. No rollback. If this deploy breaks, there is
+      # no way to atomically revert to the previous known-good state.
+      # The deploy is a destructive overwrite, not an append-only release.
+
+    good: |
+      # GOOD: Strict build → release → run pipeline. Build produces an
+      # immutable artifact. Release combines artifact + env config at deploy
+      # time. Run launches processes from the release. Every release is
+      # uniquely versioned, and rollback is a one-click operation.
+
+      # --- Build stage (runs in CI) ---
+      # Dockerfile — GOOD: no config in the image
+      # The image is a pure build artifact — same image for staging and prod.
+      # Config is injected at release time via environment.
+
+      # docker build -t myapp:$GIT_SHA .
+      # docker push myapp:$GIT_SHA
+      #
+      # WHY: Git SHA as build identifier. Immutable. Reproducible. Same
+      # image promoted through staging → production with different config.
+
+      # --- Release stage (runs at deploy time) ---
+      # Combines the build artifact with the target environment's config.
+      # Creates an immutable release record.
+
+      import os
+      import json
+      import shutil
+      from datetime import datetime, timezone
+      from pathlib import Path
+
+      RELEASES_DIR = Path("/opt/app/releases")
+      CURRENT_LINK = Path("/opt/app/current")
+
+      def create_release(build_ref: str, config: dict) -> str:
+          """Combine a build artifact with config to create a release."""
+          # WHY: Unique release ID — ISO timestamp + build ref. Immutable.
+          # Every release is a distinct directory. No destructive overwrite.
+          release_id = (
+              datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+              + f"-{build_ref[:8]}"
+          )
+          release_dir = RELEASES_DIR / release_id
+          release_dir.mkdir(parents=True)
+
+          # WHY: Build artifact extracted into the release directory.
+          # Config written alongside it. The release is self-contained.
+          shutil.copytree(f"/opt/builds/{build_ref}", release_dir / "code")
+          (release_dir / "config.json").write_text(json.dumps(config))
+          (release_dir / "RELEASE_ID").write_text(release_id)
+
+          # WHY: Atomic symlink swap — the current release is a symlink
+          # pointing at the active release directory. Rollback is just
+          # pointing the symlink at a previous release.
+          new_link = CURRENT_LINK.with_suffix(".new")
+          new_link.symlink_to(release_dir)
+          new_link.rename(CURRENT_LINK)  # atomic on most filesystems
+
+          return release_id
+
+      def rollback(target_release_id: str) -> str:
+          """Roll back to a previous release."""
+          target = RELEASES_DIR / target_release_id
+          if not target.exists():
+              raise ValueError(f"Release {target_release_id} not found")
+          new_link = CURRENT_LINK.with_suffix(".new")
+          new_link.symlink_to(target)
+          new_link.rename(CURRENT_LINK)
+          return target_release_id
+
+      # --- Run stage (process manager launches from the release) ---
+      # WHY: The process manager (systemd / supervisord) always reads the
+      # symlink. To deploy, create a new release directory, swap the symlink,
+      # and restart processes. The run stage never modifies code or config.
+
+      # systemd service file:
+      # ExecStart=/opt/app/current/code/bin/start.sh
+      # After a new release symlink swap:
+      #   systemctl restart myapp
+
+      # WHY: The run stage has zero moving parts — just launch the process
+      # from the symlink. It must work unattended at any hour.
+
+      # --- Release listing (audit trail) ---
+      def list_releases() -> list[str]:
+          """All releases, newest first — immutable append-only history."""
+          return sorted(
+              [d.name for d in RELEASES_DIR.iterdir() if d.is_dir()],
+              reverse=True,
+          )
+
+      # WHY: $ ls /opt/app/releases/
+      # 20260507T100000Z-abc12345
+      # 20260506T230000Z-def67890
+      # 20260506T120000Z-ghi11111
+      # Every deploy is a directory. Every rollback is a symlink swap.
+      # Nothing is ever overwritten. The full deploy history is on disk.
+
+  - language: typescript
+    bad: |
+      // BAD: No build/release/run separation. Config is compiled into the
+      // bundle at build time via .env files. Hotfixes are applied by
+      // editing files on the production server. No release IDs, no
+      // rollback, no audit trail.
+
+      // webpack.config.js — BAD: dotenv-webpack bakes config into the bundle
+      // at build time. The same bundle cannot be deployed to staging and
+      // production with different config. Every environment change = full
+      // rebuild.
+
+      // import Dotenv from "dotenv-webpack";
+      // plugins: [new Dotenv({ path: ".env.production" })]
+
+      // package.json — BAD: deploy is `scp` + `pm2 restart` with no
+      // release tracking. Overwrites the previous version destructively.
+      // {
+      //   "scripts": {
+      //     "deploy": "npm run build && scp -r dist/* prod:/app && ssh prod 'pm2 restart app'"
+      //   }
+      // }
+
+      // WHY: If this deploy breaks, there is no way to roll back. The
+      // previous files were overwritten. The only recovery path is to
+      // find the old commit and deploy it again — minutes of downtime.
+
+    good: |
+      // GOOD: Strict build → release → run pipeline. CI builds an
+      // immutable Docker image. Config is injected at release time.
+      // The deployment platform (k8s, Nomad, etc.) handles release
+      // versioning, rollback, and audit trail.
+
+      // --- Build stage (CI/CD pipeline) ---
+      // Dockerfile — GOOD: no config in the image
+
+      // FROM node:20-alpine AS builder
+      // WORKDIR /app
+      // COPY package*.json ./
+      // RUN npm ci --production
+      // COPY . .
+      // RUN npm run build  # compile TS, bundle assets — output to /dist
+      //
+      // FROM node:20-alpine
+      // WORKDIR /app
+      // COPY --from=builder /app/dist ./dist
+      // COPY --from=builder /app/node_modules ./node_modules
+      // EXPOSE 3000
+      // CMD ["node", "dist/server.js"]
+
+      // WHY: The image contains ONLY the compiled code. No .env files,
+      // no secrets, no environment-specific config. Same image for dev,
+      // staging, and production — config comes from the environment.
+
+      // --- Release stage (Kubernetes deployment) ---
+      // k8s/deployment.yaml — GOOD: config from ConfigMap + Secrets
+
+      // apiVersion: apps/v1
+      // kind: Deployment
+      // metadata:
+      //   name: myapp
+      //   labels:
+      //     app: myapp
+      // spec:
+      //   replicas: 3
+      //   strategy:
+      //     type: RollingUpdate  # zero-downtime deploys
+      //   template:
+      //     spec:
+      //       containers:
+      //         - name: app
+      //           image: myapp:${GIT_SHA}  # immutable build reference
+      //           envFrom:
+      //             - configMapRef:
+      //                 name: myapp-config   # per-environment config
+      //             - secretRef:
+      //                 name: myapp-secrets  # credentials from vault
+
+      // WHY: The release is the combination of image:tag + config + secrets.
+      // Kubernetes tracks each release via ReplicaSet history. Rollback is:
+      // kubectl rollout undo deployment/myapp --to-revision=3
+
+      // --- Run stage ---
+      // WHY: The run stage is just kubelet launching the container with
+      // the env vars from ConfigMap/Secrets. The process inside the
+      // container never writes config or modifies code. If the container
+      // crashes, kubelet restarts it — no manual intervention.
+
+      // --- Audit trail ---
+      // kubectl rollout history deployment/myapp
+      // REVISION  CHANGE-CAUSE
+      // 4        deploy: git-sha abc12345 by CI
+      // 3        deploy: git-sha def67890 by CI
+      // 2        deploy: git-sha ghi11111 by CI
+      //
+      // WHY: Every deploy is a revision. Every revision is immutable.
+      // Rollback is atomic and instant. The full deploy history is queryable.
+
+heuristics:
+  - >
+    "Strictly separate build and run stages. The codebase is transformed into
+    a deploy through three stages: build, release, run" (12factor.net).
+  - >
+    Build stage: converts the code repo into an executable bundle. Fetches
+    dependencies, compiles binaries and assets. This stage can be complex
+    because errors happen in the foreground during an intentional deploy.
+  - >
+    Release stage: combines the build artifact with the deploy's config.
+    The resulting release is immutable and ready for execution. Every release
+    has a unique ID (timestamp, Git SHA, incrementing number).
+  - >
+    Run stage: launches the app's processes against a selected release.
+    This stage should be as simple as possible — it may execute automatically
+    on server reboot, process crash, or scaling event.
+  - >
+    It must be impossible to change code at runtime. There is no back-channel
+    from the run stage to the build stage. Hotfixes done via SSH are a
+    violation — they bypass the pipeline and create invisible divergence.
+  - >
+    Every release is append-only and immutable. To change something, create
+    a new release. Never mutate an existing release. The release history is
+    an audit trail.
+  - >
+    The deployment tool must support atomic rollback. Use a symlink-based
+    approach (Capistrano's releases/ directory) or platform-native rollback
+    (kubectl rollout undo). Rollback should be a single command.
+  - >
+    Config is injected at release time, not build time. The same build
+    artifact should be deployable to staging and production with different
+    config. If you rebuild for each environment, the build and release
+    stages are conflated.
+  - >
+    The build stage should be the only stage that touches the network
+    to fetch dependencies. The run stage should never `npm install` or
+    `pip install` — that work happened during the build.
+  - >
+    In containerized deploys, the Docker image is the build artifact.
+    Config is injected through environment variables, mounted ConfigMaps,
+    or a sidecar. The image itself is environment-agnostic.
+  - >
+    Document the build command for new developers. A new team member should
+    be able to clone the repo, run the build command, and have a running
+    app. The build command is the single source of truth for dependencies.
+
+related_tags:
+  [build-release-run, immutability, pipeline, deployment, rollback,
+   capistrano, kubernetes, docker, ci-cd, releases, symlink, atomic,
+   append-only, audit-trail, build-stage, release-stage, run-stage,
+   twelve-factor, continuous-deployment, blue-green, canary]

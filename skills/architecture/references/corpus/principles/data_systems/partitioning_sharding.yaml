@@ -1,0 +1,461 @@
+id: partitioning-sharding-001
+name: Partitioning and Sharding
+category: data_systems
+canonical_tags: ['data-systems', 'scalability', 'locality']
+sources:
+  - books/designing-data-intensive-applications.md
+summary: >
+  Partition data by a domain-relevant key that colocates data with the computation
+  that most often drives consistency or aggregation. Choose partition keys
+  explicitly based on access patterns, not convenience. Range partitioning maps
+  keys to partitions via sorted key ranges — ideal for range scans over ordered
+  keys (timestamps, lexicographic IDs) but vulnerable to sequential-write hotspots.
+  Hash partitioning distributes keys uniformly via a hash function — even load
+  distribution but destroys key-order locality, forcing range queries to fan out
+  to every partition. Every partitioning strategy must account for hot-key risk,
+  skew, and cross-partition operation cost. The goal is not even distribution —
+  it is minimizing the number of queries that must span partitions while keeping
+  single partitions from becoming bottlenecks.
+examples:
+  - language: python
+    bad: |
+      import hashlib
+      from typing import Any
+
+
+      class NaiveShardRouter:
+          """Partitions by user_id hash with no skew awareness."""
+
+          def __init__(self, shard_count: int = 4) -> None:
+              self._shard_count = shard_count
+
+          def shard_for(self, user_id: int) -> int:
+              # Simple hash — even distribution, but all queries are cross-shard
+              return user_id % self._shard_count
+
+          def get_orders(self, user_id: int) -> list[dict]:
+              shard = self.shard_for(user_id)
+              return self._query_shard(shard, "SELECT * FROM orders WHERE user_id = ?", user_id)
+
+          def get_all_orders_for_date(self, date: str) -> list[dict]:
+              # Every query fans out to ALL shards — no locality planning
+              results: list[dict] = []
+              for shard in range(self._shard_count):
+                  results.extend(
+                      self._query_shard(shard, "SELECT * FROM orders WHERE date = ?", date)
+                  )
+              return results
+
+          # No skew monitoring, no hot-key detection, no partition reassignment
+    good: |
+      from __future__ import annotations
+
+      import bisect
+      import hashlib
+      from collections import defaultdict
+      from dataclasses import dataclass, field
+      from typing import Any
+
+
+      @dataclass
+      class PartitionConfig:
+          """Explicit partition map — auditable and versionable."""
+
+          partitions: dict[str, str]  # key_range -> shard_id
+          default_shard: str = "shard-0"
+
+          @classmethod
+          def for_tenant_orders(cls) -> PartitionConfig:
+              """Tenant-based partitioning: each tenant's data stays together."""
+              return cls(
+                  partitions={
+                      "tenant:acme": "shard-large-1",
+                      "tenant:globex": "shard-large-2",
+                      "tenant:*": "shard-general",
+                  }
+              )
+
+
+      @dataclass
+      class PartitionStats:
+          """Monitor skew so you know before it becomes an incident."""
+
+          shard_id: str
+          record_count: int
+          query_rate: float
+          avg_latency_ms: float
+
+          @property
+          def is_hot(self) -> bool:
+              return self.query_rate > 10_000  # threshold per shard
+
+
+      class LocalityAwareRouter:
+          """Routes by domain key so most queries hit a single partition."""
+
+          def __init__(self, config: PartitionConfig) -> None:
+              self._config = config
+              self._stats: dict[str, PartitionStats] = defaultdict(PartitionStats)
+
+          def _resolve_shard(self, tenant_id: str) -> str:
+              # Exact match first, then wildcard fallback
+              key = f"tenant:{tenant_id}"
+              if key in self._config.partitions:
+                  return self._config.partitions[key]
+              # Check wildcard ranges (prefix matching)
+              for pattern, shard in self._config.partitions.items():
+                  if pattern.endswith("*") and key.startswith(pattern[:-1]):
+                      return shard
+              return self._config.default_shard
+
+          def get_orders(self, tenant_id: str, user_id: int) -> list[dict]:
+              shard = self._resolve_shard(tenant_id)
+              # All tenant data is colocated — single partition query
+              return self._query_shard(
+                  shard, "SELECT * FROM orders WHERE tenant_id = ? AND user_id = ?",
+                  tenant_id, user_id,
+              )
+
+          def get_tenant_dashboard(self, tenant_id: str) -> dict:
+              """Dashboard aggregates — single partition because data is colocated."""
+              shard = self._resolve_shard(tenant_id)
+              return self._query_shard(
+                  shard,
+                  "SELECT COUNT(*), SUM(amount) FROM orders WHERE tenant_id = ? AND date = CURRENT_DATE",
+                  tenant_id,
+              )[0]
+
+          def record_query(self, shard_id: str, latency_ms: float) -> None:
+              stats = self._stats[shard_id]
+              stats.query_rate += 1
+              stats.avg_latency_ms = (stats.avg_latency_ms * 0.9) + (latency_ms * 0.1)
+
+          def hot_shards(self) -> list[str]:
+              return [s.shard_id for s in self._stats.values() if s.is_hot]
+
+
+      class ConsistentHashRing:
+          """Virtual-node consistent hashing for elastic partition assignment."""
+
+          VNODES_PER_NODE = 150
+
+          def __init__(self, nodes: list[str]) -> None:
+              self._ring: list[tuple[int, str]] = []
+              for node in nodes:
+                  for v in range(self.VNODES_PER_NODE):
+                      hash_val = int(hashlib.md5(f"{node}:vnode:{v}".encode()).hexdigest(), 16)
+                      self._ring.append((hash_val, node))
+              self._ring.sort(key=lambda x: x[0])
+
+          def get_node(self, key: str) -> str:
+              if not self._ring:
+                  raise RuntimeError("Hash ring is empty")
+              hash_val = int(hashlib.md5(key.encode()).hexdigest(), 16)
+              idx = bisect.bisect_right([h for h, _ in self._ring], hash_val)
+              return self._ring[idx % len(self._ring)][1]
+
+          def add_node(self, node: str) -> None:
+              for v in range(self.VNODES_PER_NODE):
+                  hash_val = int(hashlib.md5(f"{node}:vnode:{v}".encode()).hexdigest(), 16)
+                  bisect.insort(self._ring, (hash_val, node), key=lambda x: x[0])
+
+          def remove_node(self, node: str) -> None:
+              self._ring = [(h, n) for h, n in self._ring if n != node]
+
+
+      class RangeVsHashPartitioning:
+          """Contrast: range partitioning preserves key order; hash partitioning distributes evenly."""
+
+          def __init__(self, partition_count: int = 4) -> None:
+              self._count = partition_count
+
+          # --- Range partitioning: keys are sorted into contiguous ranges ---
+          def range_partition_for(self, key: str) -> int:
+              """Maps key to partition via sorted key range (lexicographic or numeric).
+              Range scans stay on a single partition; sequential writes create hotspots."""
+              # Hash the key for a stable sort position, then map to contiguous range
+              sort_val = int(hashlib.md5(key.encode()).hexdigest(), 16)
+              # Contiguous mapping: adjacent keys → adjacent or same partition
+              partition_width = (2**128) // self._count
+              return sort_val // partition_width
+
+          def range_scan(self, key_start: str, key_end: str) -> list[dict]:
+              """Single-partition scan — range queries are cheap."""
+              partition = self.range_partition_for(key_start)
+              return self._query_partition(
+                  partition,
+                  "SELECT * FROM events WHERE key >= ? AND key <= ?",
+                  key_start, key_end,
+              )
+
+          # --- Hash partitioning: uniform distribution, no key-order locality ---
+          def hash_partition_for(self, key: str) -> int:
+              """Deterministic hash — even distribution, range queries fan out."""
+              return int(hashlib.md5(key.encode()).hexdigest(), 16) % self._count
+
+          def hash_range_scan(self, key_start: str, key_end: str) -> list[dict]:
+              """Range query fans out to ALL partitions — O(N) overhead."""
+              results: list[dict] = []
+              for partition in range(self._count):
+                  results.extend(
+                      self._query_partition(
+                          partition,
+                          "SELECT * FROM events WHERE key >= ? AND key <= ?",
+                          key_start, key_end,
+                      )
+                  )
+              return results
+
+          # --- Composite key: hash the domain prefix for distribution + range suffix for locality ---
+          def composite_partition_for(self, tenant_id: str, timestamp: str) -> int:
+              """Hash on tenant for even distribution; colocate tenant's ordered data."""
+              return int(hashlib.md5(tenant_id.encode()).hexdigest(), 16) % self._count
+
+          def get_tenant_events_range(
+              self, tenant_id: str, from_ts: str, to_ts: str,
+          ) -> list[dict]:
+              """Single partition: all events for one tenant with a range scan."""
+              partition = self.composite_partition_for(tenant_id, "")
+              return self._query_partition(
+                  partition,
+                  "SELECT * FROM events WHERE tenant_id = ? AND ts >= ? AND ts <= ? ORDER BY ts",
+                  tenant_id, from_ts, to_ts,
+              )
+  - language: typescript
+    bad: |
+      // Partition by hash with no skew handling — every cross-shard query fans out
+      class SimpleShardRouter {
+        private shardCount = 4;
+
+        getShard(userId: number): number {
+          return userId % this.shardCount; // even distribution, zero locality
+        }
+
+        async getOrders(userId: number): Promise<Order[]> {
+          const shard = this.getShard(userId);
+          return this.queryShard(shard, "SELECT * FROM orders WHERE user_id = ?", [userId]);
+        }
+
+        async getOrdersByDate(date: string): Promise<Order[]> {
+          // Fans out to ALL shards — O(N) overhead for every date query
+          const results: Order[] = [];
+          for (let i = 0; i < this.shardCount; i++) {
+            results.push(...await this.queryShard(i, "SELECT * FROM orders WHERE date = ?", [date]));
+          }
+          return results;
+        }
+        // No skew monitoring, no hot-key detection
+      }
+    good: |
+      import { createHash } from "crypto";
+
+      interface ShardConfig {
+        shards: Map<string, string>; // key_prefix → shard_id
+        defaultShard: string;
+      }
+
+      interface ShardStats {
+        shardId: string;
+        recordCount: number;
+        queryRate: number;
+        avgLatencyMs: number;
+      }
+
+      // -- Locality-aware router: partition by tenant so most queries are single-shard --
+      class LocalityAwareRouter {
+        constructor(private config: ShardConfig) {}
+
+        private resolveShard(tenantId: string): string {
+          const exactKey = `tenant:${tenantId}`;
+          if (this.config.shards.has(exactKey)) {
+            return this.config.shards.get(exactKey)!;
+          }
+          // Check wildcard ranges
+          for (const [pattern, shard] of this.config.shards) {
+            if (pattern.endsWith("*") && exactKey.startsWith(pattern.slice(0, -1))) {
+              return shard;
+            }
+          }
+          return this.config.defaultShard;
+        }
+
+        async getOrders(tenantId: string, userId: number): Promise<Order[]> {
+          const shard = this.resolveShard(tenantId);
+          // Single partition — tenant data is colocated
+          return this.queryShard(
+            shard,
+            "SELECT * FROM orders WHERE tenant_id = ? AND user_id = ?",
+            [tenantId, userId],
+          );
+        }
+
+        async getTenantDashboard(tenantId: string): Promise<DashboardStats> {
+          const shard = this.resolveShard(tenantId);
+          // Aggregation stays on one shard — no fan-out needed
+          return this.queryShard(
+            shard,
+            "SELECT COUNT(*), SUM(amount) FROM orders WHERE tenant_id = ? AND date = CURRENT_DATE",
+            [tenantId],
+          );
+        }
+      }
+
+      // -- Consistent hash ring with virtual nodes for elastic scaling --
+      class ConsistentHashRing {
+        private ring: Array<{ hash: number; node: string }> = [];
+        private static readonly VNODES_PER_NODE = 150;
+
+        constructor(nodes: string[]) {
+          for (const node of nodes) {
+            for (let v = 0; v < ConsistentHashRing.VNODES_PER_NODE; v++) {
+              const hash = parseInt(
+                createHash("md5").update(`${node}:vnode:${v}`).digest("hex").slice(0, 8),
+                16,
+              );
+              this.ring.push({ hash, node });
+            }
+          }
+          this.ring.sort((a, b) => a.hash - b.hash);
+        }
+
+        getNode(key: string): string {
+          const hash = parseInt(
+            createHash("md5").update(key).digest("hex").slice(0, 8),
+            16,
+          );
+          // Binary search for the first node with hash >= key hash
+          let lo = 0;
+          let hi = this.ring.length;
+          while (lo < hi) {
+            const mid = (lo + hi) >>> 1;
+            if (this.ring[mid].hash < hash) lo = mid + 1;
+            else hi = mid;
+          }
+          return this.ring[lo % this.ring.length].node;
+        }
+
+        addNode(node: string): void {
+          for (let v = 0; v < ConsistentHashRing.VNODES_PER_NODE; v++) {
+            const hash = parseInt(
+              createHash("md5").update(`${node}:vnode:${v}`).digest("hex").slice(0, 8),
+              16,
+            );
+            this.ring.push({ hash, node });
+          }
+          this.ring.sort((a, b) => a.hash - b.hash);
+        }
+
+        removeNode(node: string): void {
+          this.ring = this.ring.filter((entry) => entry.node !== node);
+        }
+      }
+
+      // -- Range vs hash partitioning: contrast locality with uniformity --
+      class RangeVsHashPartitioner {
+        private count: number;
+
+        constructor(partitionCount = 4) {
+          this.count = partitionCount;
+        }
+
+        // Range partitioning: keys map to contiguous partitions — range scans are single-partition
+        rangePartitionFor(key: string): number {
+          const sortVal = parseInt(
+            createHash("md5").update(key).digest("hex").slice(0, 8),
+            16,
+          );
+          const partitionWidth = Math.floor(4294967296 / this.count); // 2^32 / count
+          return Math.floor(sortVal / partitionWidth);
+        }
+
+        async rangeScan(keyStart: string, keyEnd: string): Promise<Record<string, unknown>[]> {
+          // Single partition — adjacent keys stay together
+          const partition = this.rangePartitionFor(keyStart);
+          return this.queryPartition(
+            partition,
+            "SELECT * FROM events WHERE key >= $1 AND key <= $2",
+            [keyStart, keyEnd],
+          );
+        }
+
+        // Hash partitioning: uniform distribution, range queries fan out
+        hashPartitionFor(key: string): number {
+          const hash = parseInt(
+            createHash("md5").update(key).digest("hex").slice(0, 8),
+            16,
+          );
+          return hash % this.count;
+        }
+
+        async hashRangeScan(keyStart: string, keyEnd: string): Promise<Record<string, unknown>[]> {
+          // Every query fans out to all partitions — O(N) per range scan
+          const results: Record<string, unknown>[] = [];
+          for (let p = 0; p < this.count; p++) {
+            const rows = await this.queryPartition(
+              p,
+              "SELECT * FROM events WHERE key >= $1 AND key <= $2",
+              [keyStart, keyEnd],
+            );
+            results.push(...rows);
+          }
+          return results;
+        }
+
+        // Composite: hash tenant for distribution, range-query tenant's ordered data within one partition
+        compositePartitionFor(tenantId: string): number {
+          const hash = parseInt(
+            createHash("md5").update(tenantId).digest("hex").slice(0, 8),
+            16,
+          );
+          return hash % this.count;
+        }
+
+        async getTenantEventsRange(
+          tenantId: string,
+          fromTs: string,
+          toTs: string,
+        ): Promise<Record<string, unknown>[]> {
+          const partition = this.compositePartitionFor(tenantId);
+          return this.queryPartition(
+            partition,
+            "SELECT * FROM events WHERE tenant_id = $1 AND ts >= $2 AND ts <= $3 ORDER BY ts",
+            [tenantId, fromTs, toTs],
+          );
+        }
+      }
+
+      // -- Skew monitoring: detect hot partitions before they breach SLAs --
+      class SkewMonitor {
+        private stats = new Map<string, ShardStats>();
+
+        recordQuery(shardId: string, latencyMs: number): void {
+          const current = this.stats.get(shardId) ?? {
+            shardId,
+            recordCount: 0,
+            queryRate: 0,
+            avgLatencyMs: 0,
+          };
+          current.queryRate += 1;
+          current.avgLatencyMs = current.avgLatencyMs * 0.9 + latencyMs * 0.1;
+          this.stats.set(shardId, current);
+        }
+
+        hotShards(threshold: number = 10_000): string[] {
+          return Array.from(this.stats.values())
+            .filter((s) => s.queryRate > threshold)
+            .map((s) => s.shardId);
+        }
+      }
+heuristics:
+  - Partition by the key that drives most access patterns — the key that queries filter or aggregate on.
+  - Range partitioning: keys map to contiguous partitions — range scans are cheap, but sequential writes create hotspots.
+  - Hash partitioning: deterministic hash uniformly distributes keys — no hotspots, but range queries fan out to every partition.
+  - Composite keys combine hash on a domain prefix (even distribution) with a range suffix (single-partition scans per tenant/entity).
+  - Colocate data and computation on the same partition to avoid cross-node fan-out.
+  - Hot-key risk is the primary failure mode: monitor partition-level throughput, lag, and latency.
+  - Large tenants or entities with skew require sub-partitioning: composite keys or dedicated partitions.
+  - Consistent hashing with virtual nodes enables elastic scaling without massive data reshuffling.
+  - Never partition by a convenience key (e.g., auto-increment ID) that scatters related data across all nodes.
+  - Cross-partition queries must be intentional, rare, and budgeted — not the default access pattern.
+  - Partition maps should be versioned configuration, not hard-coded constants.
+related_tags: [partitioning, sharding, range-partitioning, hash-partitioning, consistent-hashing, hot-key, skew, colocation, data-systems, ddia, scalability]

@@ -1,0 +1,103 @@
+id: pep8-public-internal-interfaces-021
+name: PEP 8 Public and Internal Interfaces — __all__, Underscore Prefixes, and API Boundaries
+category: readability
+canonical_tags: ['python', 'readability']
+sources:
+  - open_sources/python/pep-0008.html
+summary: >
+  PEP 8 defines public vs. internal interfaces with clear rules: documented interfaces are public
+  (unless marked provisional/internal). Undocumented interfaces are internal by default. Modules
+  should declare their public API with __all__; setting __all__ to an empty list means the module
+  has no public API. Internal names get a leading underscore prefix, even when __all__ is present.
+  An interface is internal if ANY containing namespace is internal. Imported names are implementation
+  details — other modules must not rely on indirect access to them unless they're explicitly
+  documented as part of the public API.
+examples:
+  - language: python
+    bad: |
+      # No __all__ declared — from X import * pollutes namespace unpredictably.
+      # Clients can't tell which names are safe to depend on.
+      def public_api():
+          """This is meant to be used externally."""
+      def _internal_helper():
+          """But is this one safe? No way to know without docs."""
+
+      # Internal helper without underscore prefix — looks public.
+      def parse_config_file(path):
+          """Internal config parsing — no underscore, misleading."""
+
+      # Re-exported import without documentation — fragile dependency.
+      from ._parser import Parser  # Parser is now in this module's namespace
+      # Client code can do 'from mymodule import Parser' — but is that stable?
+
+      # __all__ present but internal names lack underscore — ambiguous.
+      __all__ = ['Service', 'fetch_data', 'parse_response']
+      # parse_response is for internal use only. No underscore to signal that.
+      # linting tools can't warn callers away.
+
+      # Public interface inside an internal subpackage — hidden trap.
+      # File: mylib/_internal/helpers.py
+      def publicly_documented_function(x):
+          """Documented as public API?"""
+          ...
+    good: |
+      """PEP 8 public/internal interface conventions: __all__ declares the
+      public API, _leading_underscore marks internals, and imported names
+      are never part of the public interface unless explicitly documented.
+      """
+
+      # __all__ explicitly declares the public API surface.
+      # Internal helpers get a leading underscore even with __all__ present.
+      __all__ = ['UserService', 'create_user', 'UserNotFoundError']
+
+      from typing import Any
+
+
+      class UserService:
+          """Manage user lifecycle operations."""
+
+          def create_user(self, email: str, name: str) -> User:
+              """Create and persist a new user."""
+              return self._persist(email, name)
+
+          def _validate_email(self, email: str) -> bool:
+              """Internal: validate email format."""
+              ...
+
+          def _persist(self, email: str, name: str) -> User:
+              """Internal: write to the database."""
+              ...
+
+
+      def create_user(
+          email: str,
+          name: str,
+      ) -> User:
+          """Create a new user. Public API entry point."""
+          service = UserService()
+          return service.create_user(email, name)
+
+
+      class UserNotFoundError(Exception):
+          """Raised when a user lookup by ID fails."""
+
+
+      # No public API — __all__ is empty to signal this explicitly.
+      # File: mylib/_compat.py
+      __all__: list[str] = []
+
+
+      # Package __init__ re-exporting submodule APIs explicitly.
+      # This is the documented way to expose submodule names as public.
+      # File: mylib/__init__.py
+      from mylib.services import UserService  # Documented as public API
+      from mylib.exceptions import UserNotFoundError  # Documented as public API
+heuristics:
+  - "Backwards compatibility guarantees apply only to public interfaces. A public interface is any documented API that isn't explicitly marked as provisional or internal."
+  - "Assume ALL undocumented interfaces are internal. Callers depending on undocumented behavior are writing fragile code that will break without warning."
+  - "Always declare __all__ in every module. This makes the public API explicit for both humans and tools. An empty __all__ = [] means the module has no public API at all."
+  - "Prefix internal names with a single leading underscore (_parser, _validate). Do this even when __all__ is present — the underscore is an additional signal to readers and tooling that the name is not for external use."
+  - "An interface is internal if any containing namespace (package, module, or class) is internal. A function in an _internal module is always internal, regardless of naming."
+  - "Imported names are always implementation details. Other modules must not rely on accessing MyModule.SubModule unless SubModule is explicitly documented as part of MyModule's public API (like os.path)."
+  - "When designing __init__.py, be deliberate about what you re-export. Every name in the package namespace that isn't prefixed with _ becomes part of the public surface — choose carefully."
+related_tags: [pep8, public-api, internal, __all__, underscore, interfaces, backwards-compatibility, design, apis, visibility]

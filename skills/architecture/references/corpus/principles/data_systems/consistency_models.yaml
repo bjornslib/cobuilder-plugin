@@ -1,0 +1,376 @@
+id: consistency-models-001
+name: Consistency Models
+category: data_systems
+canonical_tags: ['data-systems', 'correctness', 'resilience']
+sources:
+  - books/designing-data-intensive-applications.md
+summary: >
+  Consistency models define the guarantees a system makes about the order and
+  visibility of operations across replicas and clients. Choose a model explicitly
+  per use case rather than applying one model everywhere. Linearizability gives
+  the illusion of a single copy (strongest, most expensive). Sequential consistency
+  preserves program order across all clients. Causal consistency preserves
+  happens-before relationships (sufficient for most user-facing apps). Eventual
+  consistency makes no ordering guarantees but promises convergence. Read-your-writes,
+  monotonic reads, and consistent prefix are session guarantees that prevent
+  user-visible anomalies without requiring full linearizability. Every consistency
+  choice is a trade-off between correctness guarantees, performance, and availability
+  — make the trade-off explicit rather than hiding it.
+examples:
+  - language: python
+    bad: |
+      import threading
+      from typing import Any
+
+
+      class NoConsistencyModel:
+          """Reads and writes to any replica with zero guarantees."""
+
+          def __init__(self, replicas: list[Any]) -> None:
+              self._replicas = replicas
+
+          def write(self, key: str, value: str) -> None:
+              # Write to one replica — other replicas see nothing, or old data
+              self._replicas[0].set(key, value)
+
+          def read(self, key: str) -> str | None:
+              # Read from any replica — may see stale data, may see nothing
+              # May see comment without post (broken causality)
+              # May see value disappear on refresh (no monotonic reads)
+              return self._replicas[hash(key) % len(self._replicas)].get(key)
+
+          # No distinction between linearizability, causality, or eventual
+          # "consistency" is whatever the infrastructure happens to provide
+    good: |
+      from __future__ import annotations
+
+      import threading
+      import time
+      from dataclasses import dataclass
+      from enum import Enum
+      from typing import Any
+
+
+      class ConsistencyLevel(Enum):
+          LINEARIZABLE = "linearizable"
+          SEQUENTIAL = "sequential"
+          CAUSAL = "causal"
+          EVENTUAL = "eventual"
+
+
+      @dataclass
+      class ConsistencyContract:
+          """Explicit consistency contract — no guessing, no accidents."""
+
+          level: ConsistencyLevel
+          staleness_bound_ms: int | None = None  # Max staleness tolerated
+          requires_read_your_writes: bool = False
+          requires_monotonic_reads: bool = False
+          conflict_resolution: str = "last-write-wins"  # LWW | merge | reject
+
+          @classmethod
+          def for_user_timeline(cls) -> ConsistencyContract:
+              """Timeline: causal is enough, but read-your-writes required."""
+              return cls(
+                  level=ConsistencyLevel.CAUSAL,
+                  staleness_bound_ms=2000,
+                  requires_read_your_writes=True,
+                  requires_monotonic_reads=True,
+              )
+
+          @classmethod
+          def for_payment_ledger(cls) -> ConsistencyContract:
+              """Payment ledger: linearizable required."""
+              return cls(
+                  level=ConsistencyLevel.LINEARIZABLE,
+                  conflict_resolution="reject",
+              )
+
+          @classmethod
+          def for_analytics_dashboard(cls) -> ConsistencyContract:
+              """Analytics dashboard: eventual with bounded staleness."""
+              return cls(
+                  level=ConsistencyLevel.EVENTUAL,
+                  staleness_bound_ms=60_000,
+              )
+
+
+      class CausalConsistencyTracker:
+          """Track happens-before relationships via vector clocks."""
+
+          def __init__(self) -> None:
+              self._clock: dict[str, int] = {}
+              self._lock = threading.Lock()
+
+          def tick(self, node_id: str) -> dict[str, int]:
+              with self._lock:
+                  self._clock[node_id] = self._clock.get(node_id, 0) + 1
+                  return dict(self._clock)
+
+          def merge(self, remote_clock: dict[str, int]) -> None:
+              with self._lock:
+                  for node, count in remote_clock.items():
+                      self._clock[node] = max(self._clock.get(node, 0), count)
+
+          def happened_before(
+              self, a: dict[str, int], b: dict[str, int]
+          ) -> bool:
+              """True if a causally happened before b."""
+              at_least_one_less = False
+              for node in set(a) | set(b):
+                  av = a.get(node, 0)
+                  bv = b.get(node, 0)
+                  if av > bv:
+                      return False
+                  if av < bv:
+                      at_least_one_less = True
+              return at_least_one_less
+
+
+      class ConsistencyAwareStore:
+          """Storage layer that enforces the declared consistency contract."""
+
+          def __init__(
+              self,
+              contract: ConsistencyContract,
+              primary: Any,
+              replicas: list[Any],
+          ) -> None:
+              self._contract = contract
+              self._primary = primary
+              self._replicas = replicas
+              self._causal = CausalConsistencyTracker()
+              self._last_write_ts: float = 0.0
+
+          def write(self, key: str, value: str) -> bool:
+              writes = [self._primary]
+              if self._contract.level != ConsistencyLevel.LINEARIZABLE:
+                  writes.extend(self._replicas)
+
+              # Attach causality metadata
+              clock = self._causal.tick("writer")
+              payload = {"value": value, "clock": clock, "ts": time.time()}
+              self._last_write_ts = payload["ts"]
+
+              success = False
+              for node in writes:
+                  try:
+                      node.set(key, payload)
+                      success = True
+                  except Exception:
+                      continue
+
+              # For linearizable: must confirm quorum
+              if self._contract.level == ConsistencyLevel.LINEARIZABLE:
+                  acks = sum(
+                      1 for n in writes
+                      if self._try_ack(n, key, payload)
+                  )
+                  success = acks >= (len(writes) // 2) + 1
+
+              return success
+
+          def read(self, key: str) -> str | None:
+              """Read with session guarantees enforced."""
+              # Read-your-writes: if we just wrote, read from primary
+              if self._contract.requires_read_your_writes:
+                  result = self._primary.get(key)
+                  if result:
+                      return result["value"]
+
+              # Pick a replica, verify staleness bound
+              for replica in self._replicas:
+                  result = replica.get(key)
+                  if result is None:
+                      continue
+                  # Check staleness bound
+                  age_ms = (time.time() - result["ts"]) * 1000
+                  if (
+                      self._contract.staleness_bound_ms is not None
+                      and age_ms > self._contract.staleness_bound_ms
+                  ):
+                      continue  # too stale, try next replica
+                  # Merge causal clock
+                  self._causal.merge(result["clock"])
+                  return result["value"]
+
+              # Fallback to primary
+              result = self._primary.get(key)
+              return result["value"] if result else None
+
+          def monotonic_read(self, key: str, last_result: dict | None) -> dict | None:
+              """Never go backward: return only results >= last seen."""
+              # Pin to the same replica that served last_result
+              # Or require version >= last_result.clock
+              ...
+
+          @staticmethod
+          def _try_ack(node: Any, key: str, payload: dict) -> bool:
+              try:
+                  stored = node.get(key)
+                  return stored and stored["ts"] >= payload["ts"]
+              except Exception:
+                  return False
+  - language: typescript
+    bad: |
+      // No consistency model — reads from any node with zero guarantees
+      class NoConsistencyModel {
+        constructor(private replicas: DataStore[]) {}
+
+        async write(key: string, value: string): Promise<void> {
+          await this.replicas[0].set(key, value);
+          // Other replicas silently diverge
+        }
+
+        async read(key: string): Promise<string | null> {
+          // May see comment without post, value disappear on refresh
+          const idx = Math.floor(Math.random() * this.replicas.length);
+          return this.replicas[idx].get(key);
+        }
+      }
+    good: |
+      enum ConsistencyLevel {
+        LINEARIZABLE = "linearizable",
+        CAUSAL = "causal",
+        EVENTUAL = "eventual",
+      }
+
+      interface ConsistencyContract {
+        level: ConsistencyLevel;
+        stalenessBoundMs?: number;
+        requiresReadYourWrites: boolean;
+        requiresMonotonicReads: boolean;
+        conflictResolution: "last-write-wins" | "merge" | "reject";
+      }
+
+      interface VersionedPayload {
+        value: string;
+        clock: Record<string, number>;
+        ts: number;
+      }
+
+      const CONTRACTS = {
+        userTimeline: {
+          level: ConsistencyLevel.CAUSAL,
+          stalenessBoundMs: 2000,
+          requiresReadYourWrites: true,
+          requiresMonotonicReads: true,
+          conflictResolution: "last-write-wins",
+        } satisfies ConsistencyContract,
+
+        paymentLedger: {
+          level: ConsistencyLevel.LINEARIZABLE,
+          requiresReadYourWrites: false,
+          requiresMonotonicReads: false,
+          conflictResolution: "reject",
+        } satisfies ConsistencyContract,
+      };
+
+      // -- Vector clock for causal tracking --
+      class VectorClock {
+        private clock = new Map<string, number>();
+
+        tick(nodeId: string): Record<string, number> {
+          const current = this.clock.get(nodeId) ?? 0;
+          this.clock.set(nodeId, current + 1);
+          return Object.fromEntries(this.clock);
+        }
+
+        merge(remote: Record<string, number>): void {
+          for (const [node, count] of Object.entries(remote)) {
+            this.clock.set(node, Math.max(this.clock.get(node) ?? 0, count));
+          }
+        }
+
+        happenedBefore(a: Record<string, number>, b: Record<string, number>): boolean {
+          let atLeastOneLess = false;
+          for (const node of new Set([...Object.keys(a), ...Object.keys(b)])) {
+            const av = a[node] ?? 0;
+            const bv = b[node] ?? 0;
+            if (av > bv) return false;
+            if (av < bv) atLeastOneLess = true;
+          }
+          return atLeastOneLess;
+        }
+      }
+
+      // -- Consistency-aware store --
+      class ConsistencyAwareStore {
+        private causal = new VectorClock();
+        private lastWriteTs = 0;
+        private pinnedReplicaId: string | null = null;
+
+        constructor(
+          private contract: ConsistencyContract,
+          private primary: DataStore,
+          private replicas: DataStore[],
+        ) {}
+
+        async write(key: string, value: string): Promise<boolean> {
+          const clock = this.causal.tick("writer");
+          const payload: VersionedPayload = { value, clock, ts: Date.now() };
+          this.lastWriteTs = payload.ts;
+
+          const nodes = [this.primary, ...this.replicas];
+          let acks = 0;
+
+          for (const node of nodes) {
+            try {
+              await node.setVersioned(key, payload);
+              acks++;
+            } catch {
+              continue;
+            }
+          }
+
+          if (this.contract.level === ConsistencyLevel.LINEARIZABLE) {
+            return acks >= Math.floor(nodes.length / 2) + 1;
+          }
+          return acks > 0;
+        }
+
+        async read(key: string): Promise<string | null> {
+          // Read-your-writes: if we wrote recently, use primary
+          if (this.contract.requiresReadYourWrites && (Date.now() - this.lastWriteTs < 5000)) {
+            const result = await this.primary.getVersioned(key);
+            if (result) return result.value;
+          }
+
+          // Monotonic reads: stick to pinned replica
+          const candidates = this.pinnedReplicaId
+            ? [this.replicas.find((r) => r.id === this.pinnedReplicaId)].filter(Boolean) as DataStore[]
+            : this.replicas;
+
+          for (const replica of candidates) {
+            try {
+              const result = await replica.getVersioned(key);
+              if (!result) continue;
+              // Check staleness bound
+              const age = Date.now() - result.ts;
+              if (this.contract.stalenessBoundMs && age > this.contract.stalenessBoundMs) {
+                continue;
+              }
+              this.causal.merge(result.clock);
+              if (this.contract.requiresMonotonicReads && replica.id) {
+                this.pinnedReplicaId = replica.id;
+              }
+              return result.value;
+            } catch {
+              continue;
+            }
+          }
+          // Fallback to primary
+          const primaryResult = await this.primary.getVersioned(key);
+          return primaryResult?.value ?? null;
+        }
+      }
+heuristics:
+  - Linearizability is the strongest guarantee and the most expensive — use only where correctness requires it (payments, auctions, locks).
+  - Causal consistency is sufficient for most user-facing applications: it prevents ordering anomalies (comment before post, reply before parent) without the cost of linearizability.
+  - Session guarantees (read-your-writes, monotonic reads, consistent prefix) prevent the most common user-visible anomalies and are implementable on top of eventual consistency.
+  - Eventual consistency is not a binary property — define staleness bounds, monitor them, and handle violations as incidents.
+  - Conflict resolution strategy is part of the consistency contract: last-write-wins (simple, data loss), merge/CRDT (automatic, complex), reject (explicit, safe).
+  - Vector clocks or logical clocks are necessary for causal ordering — timestamps alone are insufficient (clock skew, NTP drift).
+  - Staleness is a product decision, not an infrastructure problem: how long can a user see old data? Define it, monitor it, alert on it.
+  - Never hide weak consistency behind strong-looking abstractions — make the consistency level visible in the API or contract.
+related_tags: [consistency-models, linearizability, causal-consistency, eventual-consistency, read-your-writes, monotonic-reads, vector-clocks, conflict-resolution, data-systems, ddia]

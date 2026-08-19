@@ -1,0 +1,421 @@
+id: solid-srp-ocp-001
+name: "SOLID — Single Responsibility (Module-Level) & Open-Closed Principle"
+category: architecture
+canonical_tags: ['solid', 'architecture', 'clean-architecture']
+sources:
+  - books/clean-architecture.md
+  - books/unified-software-engineering.md
+summary: >
+  The Single Responsibility Principle at module level means a component should have
+  exactly one axis of change — one reason for a stakeholder to request modifications.
+  Group code by what changes together; separate code that changes for different reasons.
+  The Open-Closed Principle says software entities should be open for extension but
+  closed for modification: new behavior arrives by adding code (strategy objects,
+  composition, plugins), not by rewriting existing, working code. Together these two
+  principles drive modular design: narrow, stable responsibilities that accept new
+  behavior through extension points rather than internal edits.
+examples:
+  - language: python
+    bad: |
+      # A single module that mixes three axes of change:
+      # (1) business rules — when pricing logic changes
+      # (2) persistence — when the database schema changes
+      # (3) notification — when email/SMS templates change
+      #
+      # Any stakeholder change forces edits in this one file.
+      # The module has NO single axis of change.
+
+      import sqlite3
+      import smtplib
+      from email.mime.text import MIMEText
+
+
+      class ReportGenerator:
+          """Generates reports, saves to DB, and emails them — three jobs."""
+
+          def __init__(self, db_path: str, smtp_host: str):
+              self._conn = sqlite3.connect(db_path)
+              self._smtp = smtp_host
+
+          def generate_monthly_report(self, user_id: int) -> str:
+              cursor = self._conn.cursor()
+              cursor.execute(
+                  "SELECT amount, category FROM transactions WHERE user_id=?",
+                  (user_id,),
+              )
+              rows = cursor.fetchall()
+              total = sum(r[0] for r in rows)
+              report = f"Monthly Report for {user_id}\nTotal: ${total:.2f}\n"
+              for amount, cat in rows:
+                  report += f"  {cat}: ${amount:.2f}\n"
+              return report
+
+          def save_report(self, user_id: int, report: str) -> None:
+              self._conn.execute(
+                  "INSERT INTO reports (user_id, content) VALUES (?, ?)",
+                  (user_id, report),
+              )
+              self._conn.commit()
+
+          def email_report(
+              self, recipient: str, report: str
+          ) -> None:
+              msg = MIMEText(report)
+              msg["Subject"] = "Your Monthly Report"
+              msg["From"] = "noreply@example.com"
+              msg["To"] = recipient
+              with smtplib.SMTP(self._smtp) as server:
+                  server.send_message(msg)
+
+    good: |
+      # Each module has ONE axis of change. New behavior arrives through
+      # extension (new ReportFormatter implementations), not modification.
+
+      from abc import ABC, abstractmethod
+      from dataclasses import dataclass
+      from typing import Protocol, Sequence
+
+
+      # ---- Domain: pure data, no I/O, one axis (data shape) ----
+      @dataclass
+      class Transaction:
+          amount: float
+          category: str
+
+
+      @dataclass
+      class Report:
+          user_id: int
+          transactions: Sequence[Transaction]
+          total: float
+
+          @property
+          def summary(self) -> str:
+              return f"Total: ${self.total:.2f} across {len(self.transactions)} tx"
+
+
+      # ---- Module A: Report computation — changes only when business rules change ----
+      class ReportBuilder:
+          """Builds a Report from transactions. One axis: business logic."""
+
+          def build(self, user_id: int, txns: Sequence[Transaction]) -> Report:
+              total = sum(t.amount for t in txns)
+              return Report(user_id=user_id, transactions=txns, total=total)
+
+
+      # ---- Module B: Report formatting — extension point (OCP) ----
+      class ReportFormatter(ABC):
+          """Open for extension: add new formatters without touching existing code."""
+
+          @abstractmethod
+          def format(self, report: Report) -> str: ...
+
+
+      class PlainTextFormatter(ReportFormatter):
+          def format(self, report: Report) -> str:
+              lines = [f"Report for user {report.user_id}", report.summary, ""]
+              for txn in report.transactions:
+                  lines.append(f"  {txn.category}: ${txn.amount:.2f}")
+              return "\n".join(lines)
+
+
+      class HtmlFormatter(ReportFormatter):
+          def format(self, report: Report) -> str:
+              rows = "".join(
+                  f"<tr><td>{t.category}</td><td>${t.amount:.2f}</td></tr>"
+                  for t in report.transactions
+              )
+              return (
+                  f"<h1>Report for {report.user_id}</h1>"
+                  f"<p>{report.summary}</p>"
+                  f"<table>{rows}</table>"
+              )
+
+
+      # ---- Module C: Persistence — changes only when storage changes ----
+      class ReportRepository(Protocol):
+          def save(self, report: Report) -> None: ...
+
+
+      class SqliteReportRepository:
+          def __init__(self, db_path: str) -> None:
+              import sqlite3
+              self._conn = sqlite3.connect(db_path)
+
+          def save(self, report: Report) -> None:
+              self._conn.execute(
+                  "INSERT INTO reports (user_id, content) VALUES (?, ?)",
+                  (report.user_id, PlainTextFormatter().format(report)),
+              )
+              self._conn.commit()
+
+
+      # ---- Module D: Delivery — changes only when notification channels change ----
+      class ReportDelivery(ABC):
+          @abstractmethod
+          def send(self, recipient: str, report: Report) -> None: ...
+
+
+      class EmailDelivery(ReportDelivery):
+          def __init__(self, smtp_host: str) -> None:
+              import smtplib
+              from email.mime.text import MIMEText
+              self._host = smtp_host
+
+          def send(self, recipient: str, report: Report) -> None:
+              import smtplib
+              from email.mime.text import MIMEText
+              body = PlainTextFormatter().format(report)
+              msg = MIMEText(body)
+              msg["Subject"] = "Your Monthly Report"
+              msg["From"] = "noreply@example.com"
+              msg["To"] = recipient
+              with smtplib.SMTP(self._host) as server:
+                  server.send_message(msg)
+
+
+      # ---- Orchestration: thin wiring, no business rules ----
+      class GenerateAndDeliverReport:
+          def __init__(
+              self,
+              builder: ReportBuilder,
+              repo: ReportRepository,
+              delivery: ReportDelivery,
+          ) -> None:
+              self._builder = builder
+              self._repo = repo
+              self._delivery = delivery
+
+          def execute(
+              self, user_id: int, txns: Sequence[Transaction], recipient: str
+          ) -> Report:
+              report = self._builder.build(user_id, txns)
+              self._repo.save(report)
+              self._delivery.send(recipient, report)
+              return report
+
+
+      # ---- Adding a new formatter (OCP in action): zero existing code modified ----
+      class CsvFormatter(ReportFormatter):
+          def format(self, report: Report) -> str:
+              lines = ["category,amount"]
+              for txn in report.transactions:
+                  lines.append(f"{txn.category},{txn.amount:.2f}")
+              return "\n".join(lines)
+
+  - language: typescript
+    bad: |
+      // One class mixes three axes of change:
+      // - fraud rules (risk team)
+      // - payment gateway integration (ops team)
+      // - logging/monitoring (platform team)
+      //
+      // Any stakeholder request forces edits here.
+
+      import { Stripe } from "stripe";
+      import { Logger } from "winston";
+
+      export class PaymentProcessor {
+        private stripe = new Stripe(process.env.STRIPE_SECRET!);
+        private logger: Logger;
+
+        constructor(logger: Logger) {
+          this.logger = logger;
+        }
+
+        async process(userId: string, amount: number): Promise<boolean> {
+          // Fraud check mixed in — risk team owns this
+          if (amount > 10_000) {
+            this.logger.warn("Large payment flagged", { userId, amount });
+            return false;
+          }
+
+          try {
+            await this.stripe.charges.create({
+              amount: Math.round(amount * 100),
+              currency: "usd",
+              source: "tok_visa",
+            });
+            await this.updateUserBalance(userId, amount);
+            this.logger.info("Payment succeeded", { userId, amount });
+            return true;
+          } catch (err) {
+            this.logger.error("Payment failed", { userId, amount, error: err });
+            return false;
+          }
+        }
+
+        private async updateUserBalance(userId: string, amount: number) {
+          // Direct DB access inside payment processing
+          // ...
+        }
+      }
+
+    good: |
+      // Each module has ONE axis of change. New behavior (fraud rules,
+      // payment gateways, log destinations) arrives through extension.
+
+      // ---- Domain types (axis: data shape) ----
+      interface PaymentRequest {
+        userId: string;
+        amount: number;
+        sourceToken: string;
+      }
+
+      interface PaymentResult {
+        transactionId: string;
+        status: "approved" | "declined" | "error";
+        message?: string;
+      }
+
+      // ---- Module A: Payment gateway (OCP — add gateways, never edit) ----
+      interface PaymentGateway {
+        charge(request: PaymentRequest): Promise<PaymentResult>;
+      }
+
+      class StripeGateway implements PaymentGateway {
+        private readonly stripe = new Stripe(process.env.STRIPE_SECRET!);
+
+        async charge(req: PaymentRequest): Promise<PaymentResult> {
+          const charge = await this.stripe.charges.create({
+            amount: Math.round(req.amount * 100),
+            currency: "usd",
+            source: req.sourceToken,
+          });
+          return { transactionId: charge.id, status: "approved" };
+        }
+      }
+
+      // New gateway added without modifying ANY existing code (OCP)
+      class PayPalGateway implements PaymentGateway {
+        async charge(req: PaymentRequest): Promise<PaymentResult> {
+          // PayPal-specific integration — StripeGateway untouched
+          return { transactionId: "pp-123", status: "approved" };
+        }
+      }
+
+      // ---- Module B: Fraud detection — strategy pattern (OCP via composition) ----
+      interface FraudRule {
+        evaluate(request: PaymentRequest): Promise<FraudVerdict>;
+      }
+
+      interface FraudVerdict {
+        blocked: boolean;
+        reason?: string;
+      }
+
+      class LargeAmountRule implements FraudRule {
+        constructor(private readonly threshold: number = 10_000) {}
+
+        async evaluate(req: PaymentRequest): Promise<FraudVerdict> {
+          if (req.amount > this.threshold) {
+            return { blocked: true, reason: `Exceeds ${this.threshold} limit` };
+          }
+          return { blocked: false };
+        }
+      }
+
+      class VelocityRule implements FraudRule {
+        private recentAttempts = new Map<string, number>();
+
+        async evaluate(req: PaymentRequest): Promise<FraudVerdict> {
+          const attempts = (this.recentAttempts.get(req.userId) ?? 0) + 1;
+          this.recentAttempts.set(req.userId, attempts);
+          if (attempts > 5) {
+            return { blocked: true, reason: "Velocity limit exceeded" };
+          }
+          return { blocked: false };
+        }
+      }
+
+      // Composite fraud engine — extend by adding rules, never modify
+      class FraudEngine {
+        constructor(private readonly rules: FraudRule[]) {}
+
+        async evaluate(req: PaymentRequest): Promise<FraudVerdict> {
+          for (const rule of this.rules) {
+            const verdict = await rule.evaluate(req);
+            if (verdict.blocked) return verdict;
+          }
+          return { blocked: false };
+        }
+      }
+
+      // ---- Module C: Payment use case — orchestrates, owns no detail code ----
+      export class ProcessPaymentUseCase {
+        constructor(
+          private readonly gateway: PaymentGateway,
+          private readonly fraud: FraudEngine,
+        ) {}
+
+        async execute(req: PaymentRequest): Promise<PaymentResult> {
+          // Fraud rules check — extendable without use case changes
+          const verdict = await this.fraud.evaluate(req);
+          if (verdict.blocked) {
+            return {
+              transactionId: "",
+              status: "declined",
+              message: verdict.reason,
+            };
+          }
+
+          return this.gateway.charge(req);
+        }
+      }
+
+      // ---- Composition root — wire concrete implementations at the edge ----
+      const engine = new FraudEngine([
+        new LargeAmountRule(5_000),
+        new VelocityRule(),
+        // New rule added here only — no existing code touched (OCP)
+      ]);
+      const useCase = new ProcessPaymentUseCase(
+        new StripeGateway(),
+        engine,
+      );
+
+heuristics:
+  - >
+    "Gather together the things that change for the same reason. Separate those that
+    change for different reasons" (Robert C. Martin). This is SRP at module scale:
+    the axis of change is the organizing principle.
+  - >
+    Identify axes of change by asking which stakeholder or business driver would
+    request a change. The ops team (persistence), product team (business rules),
+    and design team (formatting) drive different axes — their concerns belong
+    in different modules.
+  - >
+    At module level, SRP is about cohesion: a module that changes for only one
+    reason is more stable because unrelated changes do not ripple through it.
+  - >
+    The Open-Closed Principle says to design modules that never change. New
+    behavior arrives through new code — strategy objects, plugin implementations,
+    formatter subclasses — not through editing existing, tested, and deployed code.
+  - >
+    Prefer composition over inheritance for OCP extension points. A composite
+    pattern (list of strategies, chain of handlers) lets you add behavior by
+    appending new objects without touching existing ones.
+  - >
+    "When a single change to a program results in a cascade of changes to
+    dependent modules, the program exhibits undesirable rigidity. OCP is the
+    antidote" (Clean Architecture, Chapter 9).
+  - >
+    Use dependency inversion to protect the OCP extension point. The abstraction
+    (interface) is owned by the inner layer; new implementations arrive from the
+    outer layer without forcing recompilation or retest of the core.
+  - >
+    SRP and OCP reinforce each other: narrow responsibilities (SRP) make it
+    easier to design stable extension points (OCP). A class with 12 responsibilities
+    cannot have a clean OCP seam — every new requirement risks touching existing code.
+  - >
+    Test strategy: when a module respects OCP, you can add a new feature and only
+    need unit tests for the new code. The existing test suite stays green because
+    nothing was modified.
+  - >
+    A module that imports smtplib, sqlite3, and email.mime in one file is a red
+    flag — at least three axes of change are tangled together. Split along the
+    seams before the module becomes a bottleneck.
+related_tags:
+  [srp, ocp, solid, single-responsibility, open-closed-principle, module-design,
+   axis-of-change, cohesion, strategy-pattern, composition, extension-points,
+   clean-architecture, component-design, plugin-architecture]

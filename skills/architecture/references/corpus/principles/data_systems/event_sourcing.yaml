@@ -1,0 +1,619 @@
+id: event-sourcing-001
+name: Event Sourcing
+category: data_systems
+canonical_tags: ['data-systems', 'domain-driven-design', 'audit']
+sources:
+  - books/designing-data-intensive-applications.md
+summary: >
+  Event sourcing persists the state of an entity as a sequence of immutable
+  domain events rather than storing only the current state. The event log is the
+  source of truth — current state is a materialized projection derived from replaying
+  events. This design captures intent and history at the same fidelity as the
+  write operation, enabling temporal queries, audit trails, and full rebuildability.
+  Every event-sourced aggregate must support: command validation against current
+  state, event application that is deterministic and idempotent, snapshotting for
+  fast hydration, and upcasting for schema evolution. Distinguish commands (request
+  to do something, may be rejected), events (fact that happened, immutable), and
+  projections (materialized view of current state). Event sourcing trades write
+  simplicity and query flexibility for perfect audit, replayability, and the ability
+  to derive new projections from historical data.
+examples:
+  - language: python
+    bad: |
+      from dataclasses import dataclass
+      from typing import Any
+
+
+      @dataclass
+      class AccountCRUD:
+          """Stores only current state — no history, no audit trail."""
+
+          id: str
+          balance: int = 0
+          status: str = "active"
+
+          def deposit(self, amount: int) -> None:
+              if amount <= 0:
+                  raise ValueError("Amount must be positive")
+              self.balance += amount
+              # No event recorded — history is lost
+              # Cannot answer: "what was the balance at time T?"
+              # Cannot replay to rebuild state
+
+          def withdraw(self, amount: int) -> None:
+              if amount <= 0:
+                  raise ValueError("Amount must be positive")
+              if self.balance < amount:
+                  raise ValueError("Insufficient funds")
+              self.balance -= amount
+
+          def close(self) -> None:
+              self.status = "closed"
+              # Why was it closed? Who closed it? When? — Unanswerable
+    good: |
+      from __future__ import annotations
+
+      import uuid
+      from abc import ABC, abstractmethod
+      from dataclasses import dataclass, field
+      from datetime import datetime, timezone
+      from typing import Any
+
+
+      # -- Domain Events (immutable facts) --
+      @dataclass(frozen=True)
+      class DomainEvent(ABC):
+          event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+          occurred_at: datetime = field(
+              default_factory=lambda: datetime.now(timezone.utc)
+          )
+
+      @dataclass(frozen=True)
+      class AccountOpened(DomainEvent):
+          account_id: str = ""
+          owner: str = ""
+
+      @dataclass(frozen=True)
+      class MoneyDeposited(DomainEvent):
+          account_id: str = ""
+          amount: int = 0  # Must be positive, enforced at command layer
+
+      @dataclass(frozen=True)
+      class MoneyWithdrawn(DomainEvent):
+          account_id: str = ""
+          amount: int = 0
+
+      @dataclass(frozen=True)
+      class AccountClosed(DomainEvent):
+          account_id: str = ""
+          reason: str = ""
+
+
+      # -- Commands (requests, may be rejected) --
+      @dataclass(frozen=True)
+      class OpenAccount:
+          account_id: str
+          owner: str
+
+      @dataclass(frozen=True)
+      class DepositMoney:
+          account_id: str
+          amount: int
+
+      @dataclass(frozen=True)
+      class WithdrawMoney:
+          account_id: str
+          amount: int
+
+      @dataclass(frozen=True)
+      class CloseAccount:
+          account_id: str
+          reason: str
+
+
+      # -- Aggregate: validates commands, produces events --
+      class AccountAggregate:
+          """Current state + business rules. Events are the output."""
+
+          STATUS_OPEN = "open"
+          STATUS_CLOSED = "closed"
+
+          def __init__(self, account_id: str) -> None:
+              self.id = account_id
+              self.balance: int = 0
+              self.owner: str = ""
+              self.status: str = self.STATUS_OPEN
+              self._uncommitted_events: list[DomainEvent] = []
+              self._version: int = 0
+
+          # --- Command handlers (validate, then produce events) ---
+
+          def open(self, cmd: OpenAccount) -> None:
+              if self._version > 0:
+                  raise ValueError("Account already exists")
+              self._apply(AccountOpened(
+                  account_id=cmd.account_id, owner=cmd.owner,
+              ))
+
+          def deposit(self, cmd: DepositMoney) -> None:
+              if cmd.amount <= 0:
+                  raise ValueError("Amount must be positive")
+              if self.status == self.STATUS_CLOSED:
+                  raise ValueError("Cannot deposit to a closed account")
+              self._apply(MoneyDeposited(
+                  account_id=cmd.account_id, amount=cmd.amount,
+              ))
+
+          def withdraw(self, cmd: WithdrawMoney) -> None:
+              if cmd.amount <= 0:
+                  raise ValueError("Amount must be positive")
+              if self.balance < cmd.amount:
+                  raise ValueError(
+                      f"Insufficient funds: {self.balance} < {cmd.amount}"
+                  )
+              if self.status == self.STATUS_CLOSED:
+                  raise ValueError("Cannot withdraw from a closed account")
+              self._apply(MoneyWithdrawn(
+                  account_id=cmd.account_id, amount=cmd.amount,
+              ))
+
+          def close(self, cmd: CloseAccount) -> None:
+              if self.status == self.STATUS_CLOSED:
+                  raise ValueError("Account is already closed")
+              self._apply(AccountClosed(
+                  account_id=cmd.account_id, reason=cmd.reason,
+              ))
+
+          # --- Event application (deterministic, idempotent by event_id) ---
+
+          def _apply(self, event: DomainEvent) -> None:
+              self._apply_event_to_state(event)
+              self._uncommitted_events.append(event)
+              self._version += 1
+
+          def _apply_event_to_state(self, event: DomainEvent) -> None:
+              match event:
+                  case AccountOpened(account_id=aid, owner=owner):
+                      self.id = aid
+                      self.owner = owner
+                      self.status = self.STATUS_OPEN
+                  case MoneyDeposited(amount=amount):
+                      self.balance += amount
+                  case MoneyWithdrawn(amount=amount):
+                      self.balance -= amount
+                  case AccountClosed(reason=_):
+                      self.status = self.STATUS_CLOSED
+                  case _:
+                      raise ValueError(f"Unknown event: {type(event)}")
+
+          def collect_events(self) -> list[DomainEvent]:
+              events = list(self._uncommitted_events)
+              self._uncommitted_events.clear()
+              return events
+
+          def version(self) -> int:
+              return self._version
+
+          # --- Hydrate from event history ---
+
+          @classmethod
+          def from_history(
+              cls, account_id: str, events: list[DomainEvent],
+          ) -> AccountAggregate:
+              aggregate = cls(account_id)
+              for event in events:
+                  aggregate._apply_event_to_state(event)
+                  aggregate._version += 1
+              return aggregate
+
+
+      # -- Event Store: append-only log of all domain events --
+      class EventStore:
+          def __init__(self) -> None:
+              self._streams: dict[str, list[DomainEvent]] = {}
+
+          def append(self, stream_id: str, events: list[DomainEvent], expected_version: int) -> None:
+              """Optimistic concurrency: reject if version doesn't match."""
+              current = len(self._streams.get(stream_id, []))
+              if current != expected_version:
+                  raise ConcurrencyError(
+                      f"Expected version {expected_version}, found {current}"
+                  )
+              self._streams.setdefault(stream_id, []).extend(events)
+
+          def read_stream(self, stream_id: str) -> list[DomainEvent]:
+              return list(self._streams.get(stream_id, []))
+
+          def read_all_events(self, after_event_id: str | None = None) -> list[DomainEvent]:
+              """Read all events across all streams (for rebuilding projections)."""
+              all_events: list[DomainEvent] = []
+              for events in self._streams.values():
+                  all_events.extend(events)
+              all_events.sort(key=lambda e: e.occurred_at)
+              if after_event_id:
+                  skip = True
+                  return [e for e in all_events if not (skip := skip and e.event_id != after_event_id)]
+              return all_events
+
+
+      class ConcurrencyError(Exception):
+          pass
+
+
+      # -- Snapshots: avoid replaying the entire event stream on every load --
+      @dataclass
+      class AccountSnapshot:
+          account_id: str
+          balance: int
+          owner: str
+          status: str
+          version: int
+
+      class SnapshotStore:
+          def __init__(self) -> None:
+              self._snapshots: dict[str, AccountSnapshot] = {}
+
+          def save(self, snapshot: AccountSnapshot) -> None:
+              self._snapshots[snapshot.account_id] = snapshot
+
+          def load(self, account_id: str) -> AccountSnapshot | None:
+              return self._snapshots.get(account_id)
+
+
+      class EventSourcedRepository:
+          """Load aggregates from event store + snapshots, save new events."""
+
+          SNAPSHOT_INTERVAL = 50  # Snapshot every 50 events
+
+          def __init__(
+              self, event_store: EventStore, snapshots: SnapshotStore,
+          ) -> None:
+              self._events = event_store
+              self._snapshots = snapshots
+
+          def load(self, account_id: str) -> AccountAggregate:
+              snapshot = self._snapshots.load(account_id)
+              if snapshot:
+                  # Load events after snapshot
+                  all_events = self._events.read_stream(account_id)
+                  events = all_events[snapshot.version:]
+                  aggregate = AccountAggregate(account_id)
+                  aggregate.balance = snapshot.balance
+                  aggregate.owner = snapshot.owner
+                  aggregate.status = snapshot.status
+                  for event in events:
+                      aggregate._apply_event_to_state(event)
+                      aggregate._version += 1
+                  return aggregate
+
+              # Full replay from event stream
+              events = self._events.read_stream(account_id)
+              return AccountAggregate.from_history(account_id, events)
+
+          def save(self, aggregate: AccountAggregate) -> None:
+              events = aggregate.collect_events()
+              if not events:
+                  return
+              expected_version = aggregate.version() - len(events)
+              self._events.append(aggregate.id, events, expected_version)
+
+              # Periodic snapshot
+              if aggregate.version() % self.SNAPSHOT_INTERVAL == 0:
+                  self._snapshots.save(AccountSnapshot(
+                      account_id=aggregate.id,
+                      balance=aggregate.balance,
+                      owner=aggregate.owner,
+                      status=aggregate.status,
+                      version=aggregate.version(),
+                  ))
+
+          def all_events(self) -> list[DomainEvent]:
+              return self._events.read_all_events()
+
+
+      # -- Projection: materialized view rebuilt from events --
+      class AccountBalanceProjection:
+          """Current balance of every account — discardable, rebuildable."""
+
+          def __init__(self) -> None:
+              self._balances: dict[str, int] = {}
+
+          def apply(self, event: DomainEvent) -> None:
+              match event:
+                  case MoneyDeposited(account_id=aid, amount=amount):
+                      self._balances[aid] = self._balances.get(aid, 0) + amount
+                  case MoneyWithdrawn(account_id=aid, amount=amount):
+                      self._balances[aid] = self._balances.get(aid, 0) - amount
+                  case AccountClosed(account_id=aid):
+                      # Keep balance for audit, but mark closed
+                      pass
+
+          def rebuild(self, events: list[DomainEvent]) -> None:
+              self._balances.clear()
+              for event in events:
+                  self.apply(event)
+
+          def balance_of(self, account_id: str) -> int:
+              return self._balances.get(account_id, 0)
+  - language: typescript
+    bad: |
+      // CRUD account: stores only current state, loses all history
+      interface Account {
+        id: string;
+        balance: number;
+        status: "open" | "closed";
+      }
+
+      class AccountService {
+        private accounts = new Map<string, Account>();
+
+        deposit(accountId: string, amount: number): void {
+          const account = this.accounts.get(accountId);
+          if (!account) throw new Error("Account not found");
+          account.balance += amount;
+          // No event recorded — cannot answer "what was balance at time T?"
+        }
+
+        withdraw(accountId: string, amount: number): void {
+          const account = this.accounts.get(accountId);
+          if (!account) throw new Error("Account not found");
+          if (account.balance < amount) throw new Error("Insufficient funds");
+          account.balance -= amount;
+        }
+
+        close(accountId: string): void {
+          const account = this.accounts.get(accountId);
+          if (account) account.status = "closed";
+          // Who closed it? Why? — Lost forever
+        }
+      }
+    good: |
+      import { v4 as uuid } from "uuid";
+
+      // -- Domain Events (immutable, serializable facts) --
+      interface DomainEvent {
+        eventId: string;
+        occurredAt: Date;
+        eventType: string;
+      }
+
+      interface AccountOpened extends DomainEvent {
+        eventType: "AccountOpened";
+        accountId: string;
+        owner: string;
+      }
+
+      interface MoneyDeposited extends DomainEvent {
+        eventType: "MoneyDeposited";
+        accountId: string;
+        amount: number;
+      }
+
+      interface MoneyWithdrawn extends DomainEvent {
+        eventType: "MoneyWithdrawn";
+        accountId: string;
+        amount: number;
+      }
+
+      interface AccountClosed extends DomainEvent {
+        eventType: "AccountClosed";
+        accountId: string;
+        reason: string;
+      }
+
+      type AccountEvent = AccountOpened | MoneyDeposited | MoneyWithdrawn | AccountClosed;
+
+      // -- Commands (requests, may be rejected) --
+      interface OpenAccount { accountId: string; owner: string; }
+      interface DepositMoney { accountId: string; amount: number; }
+      interface WithdrawMoney { accountId: string; amount: number; }
+      interface CloseAccount { accountId: string; reason: string; }
+      type AccountCommand = OpenAccount | DepositMoney | WithdrawMoney | CloseAccount;
+
+      // -- Aggregate: validates commands, produces events --
+      class AccountAggregate {
+        private uncommittedEvents: AccountEvent[] = [];
+        private version = 0;
+
+        id: string;
+        balance = 0;
+        owner = "";
+        status: "open" | "closed" = "open";
+
+        constructor(accountId: string) {
+          this.id = accountId;
+        }
+
+        open(cmd: OpenAccount): void {
+          if (this.version > 0) throw new Error("Account already exists");
+          this.applyEvent({ eventId: uuid(), occurredAt: new Date(), eventType: "AccountOpened", accountId: cmd.accountId, owner: cmd.owner });
+        }
+
+        deposit(cmd: DepositMoney): void {
+          if (cmd.amount <= 0) throw new Error("Amount must be positive");
+          if (this.status === "closed") throw new Error("Account is closed");
+          this.applyEvent({ eventId: uuid(), occurredAt: new Date(), eventType: "MoneyDeposited", accountId: cmd.accountId, amount: cmd.amount });
+        }
+
+        withdraw(cmd: WithdrawMoney): void {
+          if (cmd.amount <= 0) throw new Error("Amount must be positive");
+          if (this.balance < cmd.amount) throw new Error("Insufficient funds");
+          if (this.status === "closed") throw new Error("Account is closed");
+          this.applyEvent({ eventId: uuid(), occurredAt: new Date(), eventType: "MoneyWithdrawn", accountId: cmd.accountId, amount: cmd.amount });
+        }
+
+        close(cmd: CloseAccount): void {
+          if (this.status === "closed") throw new Error("Already closed");
+          this.applyEvent({ eventId: uuid(), occurredAt: new Date(), eventType: "AccountClosed", accountId: cmd.accountId, reason: cmd.reason });
+        }
+
+        private applyEvent(event: AccountEvent): void {
+          this.mutateState(event);
+          this.uncommittedEvents.push(event);
+          this.version++;
+        }
+
+        private mutateState(event: AccountEvent): void {
+          switch (event.eventType) {
+            case "AccountOpened":
+              this.id = event.accountId;
+              this.owner = event.owner;
+              this.status = "open";
+              break;
+            case "MoneyDeposited":
+              this.balance += event.amount;
+              break;
+            case "MoneyWithdrawn":
+              this.balance -= event.amount;
+              break;
+            case "AccountClosed":
+              this.status = "closed";
+              break;
+          }
+        }
+
+        collectEvents(): AccountEvent[] {
+          const events = [...this.uncommittedEvents];
+          this.uncommittedEvents = [];
+          return events;
+        }
+
+        getVersion(): number { return this.version; }
+
+        static fromHistory(accountId: string, events: AccountEvent[]): AccountAggregate {
+          const agg = new AccountAggregate(accountId);
+          for (const event of events) {
+            agg.mutateState(event);
+            agg.version++;
+          }
+          return agg;
+        }
+      }
+
+      // -- Event Store: append-only with optimistic concurrency --
+      class EventStore {
+        private streams = new Map<string, AccountEvent[]>();
+
+        append(streamId: string, events: AccountEvent[], expectedVersion: number): void {
+          const current = this.streams.get(streamId) ?? [];
+          if (current.length !== expectedVersion) {
+            throw new ConcurrencyError(`Expected v${expectedVersion}, got v${current.length}`);
+          }
+          this.streams.set(streamId, [...current, ...events]);
+        }
+
+        readStream(streamId: string): AccountEvent[] {
+          return [...(this.streams.get(streamId) ?? [])];
+        }
+
+        readAllEvents(): AccountEvent[] {
+          const all: AccountEvent[] = [];
+          for (const events of this.streams.values()) {
+            all.push(...events);
+          }
+          all.sort((a, b) => a.occurredAt.getTime() - b.occurredAt.getTime());
+          return all;
+        }
+      }
+
+      class ConcurrencyError extends Error {}
+
+      // -- Snapshots: fast hydration without full replay --
+      interface Snapshot {
+        accountId: string;
+        balance: number;
+        owner: string;
+        status: "open" | "closed";
+        version: number;
+      }
+
+      class SnapshotStore {
+        private snapshots = new Map<string, Snapshot>();
+
+        save(snapshot: Snapshot): void { this.snapshots.set(snapshot.accountId, snapshot); }
+        load(accountId: string): Snapshot | undefined { return this.snapshots.get(accountId); }
+      }
+
+      // -- Repository with snapshot optimization --
+      class EventSourcedRepository {
+        private readonly SNAPSHOT_INTERVAL = 50;
+
+        constructor(
+          private events: EventStore,
+          private snapshots: SnapshotStore,
+        ) {}
+
+        load(accountId: string): AccountAggregate {
+          const snapshot = this.snapshots.load(accountId);
+          if (snapshot) {
+            const allEvents = this.events.readStream(accountId);
+            const postSnapshot = allEvents.slice(snapshot.version);
+            const agg = new AccountAggregate(accountId);
+            agg.balance = snapshot.balance;
+            agg.owner = snapshot.owner;
+            agg.status = snapshot.status;
+            for (const event of postSnapshot) {
+              (agg as any).mutateState(event);
+              (agg as any).version++;
+            }
+            return agg;
+          }
+          // Full replay
+          const events = this.events.readStream(accountId);
+          return AccountAggregate.fromHistory(accountId, events);
+        }
+
+        save(aggregate: AccountAggregate): void {
+          const events = aggregate.collectEvents();
+          if (events.length === 0) return;
+          const expectedVersion = aggregate.getVersion() - events.length;
+          this.events.append(aggregate.id, events, expectedVersion);
+
+          if (aggregate.getVersion() % this.SNAPSHOT_INTERVAL === 0) {
+            this.snapshots.save({
+              accountId: aggregate.id,
+              balance: aggregate.balance,
+              owner: aggregate.owner,
+              status: aggregate.status,
+              version: aggregate.getVersion(),
+            });
+          }
+        }
+      }
+
+      // -- Projection: rebuildable materialized view --
+      class AccountBalanceProjection {
+        private balances = new Map<string, number>();
+
+        apply(event: AccountEvent): void {
+          switch (event.eventType) {
+            case "MoneyDeposited":
+              this.balances.set(event.accountId, (this.balances.get(event.accountId) ?? 0) + event.amount);
+              break;
+            case "MoneyWithdrawn":
+              this.balances.set(event.accountId, (this.balances.get(event.accountId) ?? 0) - event.amount);
+              break;
+          }
+        }
+
+        rebuild(events: AccountEvent[]): void {
+          this.balances.clear();
+          for (const event of events) this.apply(event);
+        }
+
+        balanceOf(accountId: string): number {
+          return this.balances.get(accountId) ?? 0;
+        }
+      }
+heuristics:
+  - The event log is the source of truth; current state is derived from it. Never mutate state without recording an event.
+  - Commands are requests that may be rejected; events are immutable facts that already happened. Validate in the command handler, apply in the event handler.
+  - Event application must be deterministic and idempotent: replaying the same events must produce the same state.
+  - Snapshots reduce hydration cost: replay events only since the last snapshot, not from the beginning of time.
+  - Optimistic concurrency (expected version on append) prevents conflicting concurrent writes without distributed locks.
+  - Projections (read models) are derived from events and must be discardable and rebuildable.
+  - Upcasting handles schema evolution: when events change shape, transform old events to the new schema during replay.
+  - Event sourcing pairs naturally with CQRS: separate write models (aggregates) from read models (projections).
+  - Event sourcing enables temporal queries ("what was the state at time T?"), which are impossible with CRUD.
+  - The trade-off: event sourcing adds complexity in writes and queries, but provides perfect audit, replayability, and the ability to derive new insights from historical events.
+related_tags: [event-sourcing, domain-events, aggregate, cqrs, snapshot, replay, projection, upcasting, audit-log, data-systems, ddia]

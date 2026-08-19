@@ -1,0 +1,418 @@
+id: backpressure-load-shedding-001
+name: Backpressure and Load Shedding
+category: data_systems
+canonical_tags: ['data-systems', 'resilience', 'performance']
+sources:
+  - books/designing-data-intensive-applications.md
+summary: >
+  Systems degrade gracefully when they reject excess load early rather than
+  absorbing it until collapse. Every component must have a defined overload
+  posture: backpressure propagates capacity signals upstream through reactive
+  streams or bounded queues; rate limiters (token bucket, leaky bucket)
+  enforce per-client fairness and sustained throughput caps; admission
+  control rejects requests before they consume resources when the system is
+  saturated; and load shedding drops low-priority work to protect critical
+  paths. A service without explicit overload behavior is a service that will
+  fail catastrophically under load — not if, but when.
+examples:
+  - language: python
+    bad: |
+      import asyncio
+      from typing import Any
+
+
+      async def process_requests(queue: asyncio.Queue) -> None:
+          """Unbounded queue, no backpressure — memory bomb under load."""
+          while True:
+              request = await queue.get()
+              result = await handle(request)  # blocks forever if handle is slow
+              await send_result(result)  # queue grows without bound
+
+
+      # Producer has no signal to slow down — queue grows until OOM
+      async def main() -> None:
+          queue: asyncio.Queue = asyncio.Queue()
+          consumer = asyncio.create_task(process_requests(queue))
+
+          for i in range(1_000_000):
+              await queue.put({"id": i, "payload": "x" * 10_000})
+
+          await consumer
+    good: |
+      import asyncio
+      import time
+      from asyncio import QueueFull
+      from dataclasses import dataclass
+      from typing import Any
+
+
+      # ── Reactive backpressure via bounded queue ──────────────────────
+      @dataclass
+      class BackpressureConfig:
+          max_queue_size: int = 100
+          put_timeout: float = 1.0
+
+
+      async def process_with_backpressure(
+          queue: asyncio.Queue, config: BackpressureConfig
+      ) -> None:
+          """Consumer pulls at its own pace; bounded queue signals upstream."""
+          while True:
+              request = await queue.get()
+              try:
+                  result = await handle(request)
+                  await send_result(result)
+              except Exception:
+                  # Don't lose the item — dead-letter or retry with backoff
+                  await dead_letter(request)
+              finally:
+                  queue.task_done()
+
+
+      async def producer(queue: asyncio.Queue, config: BackpressureConfig) -> None:
+          """Producer respects backpressure: blocks or rejects on full queue."""
+          for i in range(1_000_000):
+              request = {"id": i, "payload": "x" * 10_000}
+              try:
+                  await asyncio.wait_for(
+                      queue.put(request), timeout=config.put_timeout
+                  )
+              except (QueueFull, asyncio.TimeoutError):
+                  # Reject early — caller retries with backoff or fails fast
+                  raise OverloadError(f"queue full, rejected request {i}")
+
+
+      # ── Token-bucket rate limiter ────────────────────────────────────
+      class TokenBucket:
+          """Allows bursts up to capacity, sustained at rate tokens/sec."""
+
+          def __init__(self, rate: float, capacity: int) -> None:
+              self._rate = rate
+              self._capacity = float(capacity)
+              self._tokens = float(capacity)
+              self._last_refill = time.monotonic()
+
+          def _refill(self) -> None:
+              now = time.monotonic()
+              elapsed = now - self._last_refill
+              self._tokens = min(self._capacity, self._tokens + elapsed * self._rate)
+              self._last_refill = now
+
+          def consume(self, tokens: int = 1) -> bool:
+              self._refill()
+              if self._tokens >= tokens:
+                  self._tokens -= tokens
+                  return True
+              return False
+
+          async def acquire(self, tokens: int = 1) -> None:
+              """Block until tokens are available (for async backpressure)."""
+              while not self.consume(tokens):
+                  wait = max(0.0, (tokens - self._tokens) / self._rate)
+                  await asyncio.sleep(wait)
+
+      # Usage: per-client rate limiter
+      per_client_limiter = TokenBucket(rate=10.0, capacity=20)
+
+      async def rate_limited_handler(client_id: str, request: Any) -> Any:
+          if not per_client_limiter.consume():
+              raise RateLimitExceeded(client_id, retry_after=0.1)
+          return await handle(request)
+
+
+      # ── Leaky-bucket traffic shaper ──────────────────────────────────
+      class LeakyBucket:
+          """Smooths bursts into steady outflow. Capacity defines max queue."""
+
+          def __init__(
+              self, rate: float, capacity: int, loop: asyncio.AbstractEventLoop
+          ) -> None:
+              self._rate = rate  # items per second
+              self._capacity = capacity
+              self._queue: asyncio.Queue = asyncio.Queue(maxsize=capacity)
+              self._task = loop.create_task(self._drain())
+
+          async def _drain(self) -> None:
+              while True:
+                  item = await self._queue.get()
+                  interval = 1.0 / self._rate
+                  await asyncio.sleep(interval)
+                  await process(item)
+                  self._queue.task_done()
+
+          async def submit(self, item: Any, timeout: float = 1.0) -> None:
+              try:
+                  await asyncio.wait_for(
+                      self._queue.put(item), timeout=timeout
+                  )
+              except (asyncio.QueueFull, asyncio.TimeoutError):
+                  raise OverloadError("leaky bucket full — shedding load")
+
+          async def close(self) -> None:
+              await self._queue.join()
+              self._task.cancel()
+
+
+      # ── Admission control ────────────────────────────────────────────
+      class AdmissionController:
+          """Reject requests when concurrent load exceeds limit."""
+
+          def __init__(self, max_concurrent: int) -> None:
+              self._semaphore = asyncio.Semaphore(max_concurrent)
+              self._rejected = 0
+
+          async def guard(self, request: Any) -> Any:
+              if self._semaphore.locked():
+                  self._rejected += 1
+                  raise OverloadError("admission denied — at capacity")
+              async with self._semaphore:
+                  return await handle(request)
+
+
+      # ── Load shedding with priority tiers ────────────────────────────
+      class PriorityShedder:
+          """Accept critical, shed best-effort when saturated."""
+
+          def __init__(
+              self, critical_semaphore: asyncio.Semaphore,
+              best_effort_threshold: float,
+          ) -> None:
+              self._critical = critical_semaphore
+              self._threshold = best_effort_threshold  # 0.0-1.0
+
+          async def handle(
+              self, request: Any, priority: str
+          ) -> Any:
+              if priority == "critical":
+                  async with self._critical:
+                      return await handle(request)
+              # Best-effort: only accept if critical path has headroom
+              if self._critical._value / self._critical._bound_value >= self._threshold:
+                  return await handle(request)
+              raise OverloadError("shed: best-effort rejected under load")
+  - language: typescript
+    bad: |
+      import express from "express";
+
+      const app = express();
+
+      // No rate limiting, no queue bounds, no admission control
+      app.post("/process", async (req, res) => {
+        const { payload } = req.body;
+        // Handler blocks the event loop — one slow request stalls everything
+        const result = await heavyComputation(payload);
+        res.json(result);
+      });
+
+      app.listen(3000);
+    good: |
+      import express from "express";
+      import { createBottleneck } from "bottleneck";
+
+      // ── Token-bucket rate limiter (hand-rolled) ─────────────────────
+      class TokenBucket {
+        private tokens: number;
+        private lastRefill: number;
+
+        constructor(
+          private readonly rate: number,    // tokens per second
+          private readonly capacity: number,
+        ) {
+          this.tokens = capacity;
+          this.lastRefill = Date.now();
+        }
+
+        private refill(): void {
+          const now = Date.now();
+          const elapsed = (now - this.lastRefill) / 1000;
+          this.tokens = Math.min(this.capacity, this.tokens + elapsed * this.rate);
+          this.lastRefill = now;
+        }
+
+        consume(tokens: number = 1): boolean {
+          this.refill();
+          if (this.tokens >= tokens) {
+            this.tokens -= tokens;
+            return true;
+          }
+          return false;
+        }
+      }
+
+      // ── Bounded async queue with backpressure ───────────────────────
+      interface QueueItem<T> {
+        data: T;
+        resolve: (result: unknown) => void;
+        reject: (err: Error) => void;
+      }
+
+      class BoundedQueue<T> {
+        private items: QueueItem<T>[] = [];
+        private processing = 0;
+
+        constructor(
+          private readonly maxSize: number,
+          private readonly maxConcurrent: number,
+        ) {}
+
+        async enqueue(data: T): Promise<unknown> {
+          if (this.items.length >= this.maxSize) {
+            throw new OverloadError("queue full — backpressure rejected");
+          }
+          return new Promise((resolve, reject) => {
+            this.items.push({ data, resolve, reject });
+            this.drain();
+          });
+        }
+
+        private drain(): void {
+          while (this.processing < this.maxConcurrent && this.items.length > 0) {
+            const item = this.items.shift()!;
+            this.processing++;
+            processItem(item.data)
+              .then(item.resolve)
+              .catch(item.reject)
+              .finally(() => {
+                this.processing--;
+                this.drain();
+              });
+          }
+        }
+      }
+
+      // ── Admission control middleware ─────────────────────────────────
+      class AdmissionController {
+        private active = 0;
+        private rejected = 0;
+
+        constructor(private readonly maxConcurrent: number) {}
+
+        middleware(): express.RequestHandler {
+          return (_req, res, next) => {
+            if (this.active >= this.maxConcurrent) {
+              this.rejected++;
+              res.status(503).json({
+                error: "admission denied — server at capacity",
+                retryAfter: 1,
+              });
+              return;
+            }
+            this.active++;
+            res.on("finish", () => {
+              this.active--;
+            });
+            next();
+          };
+        }
+
+        stats(): { active: number; rejected: number } {
+          return { active: this.active, rejected: this.rejected };
+        }
+      }
+
+      // ── Priority-aware load shedder ─────────────────────────────────
+      type Priority = "critical" | "normal" | "best-effort";
+
+      class PriorityShedder {
+        private activeByTier = { critical: 0, normal: 0, "best-effort": 0 };
+        private shedCount = 0;
+
+        constructor(
+          private readonly limits: Record<Priority, number>,
+        ) {}
+
+        tryAdmit(priority: Priority): boolean {
+          if (this.activeByTier[priority] >= this.limits[priority]) {
+            // Cascade: best-effort shed, normal shed if critical is near limit
+            if (
+              priority !== "critical" &&
+              this.activeByTier.critical / this.limits.critical > 0.8
+            ) {
+              this.shedCount++;
+              return false;
+            }
+            if (priority === "best-effort") {
+              this.shedCount++;
+              return false;
+            }
+          }
+          this.activeByTier[priority]++;
+          return true;
+        }
+
+        release(priority: Priority): void {
+          this.activeByTier[priority] = Math.max(
+            0,
+            this.activeByTier[priority] - 1,
+          );
+        }
+      }
+
+      // ── Wired application ───────────────────────────────────────────
+      const app = express();
+      const perClientLimiter = new TokenBucket(10, 20);
+      const admission = new AdmissionController(50);
+      const shedder = new PriorityShedder({
+        critical: 30,
+        normal: 15,
+        "best-effort": 5,
+      });
+
+      app.use(admission.middleware());
+
+      app.post("/critical", async (req, res) => {
+        if (!shedder.tryAdmit("critical")) {
+          res.status(503).json({ error: "shed — critical tier full" });
+          return;
+        }
+        try {
+          const result = await processCritical(req.body);
+          res.json(result);
+        } finally {
+          shedder.release("critical");
+        }
+      });
+
+      app.post("/analytics", async (req, res) => {
+        // Best-effort: shed early when under pressure
+        const clientId = req.headers["x-client-id"] as string;
+        if (!perClientLimiter.consume()) {
+          res.status(429).json({ error: "rate limited", retryAfter: 0.1 });
+          return;
+        }
+        if (!shedder.tryAdmit("best-effort")) {
+          res.status(202).json({ accepted: false, reason: "shed-under-load" });
+          return;
+        }
+        try {
+          await enqueueAnalytics(req.body);
+          res.status(202).json({ accepted: true });
+        } finally {
+          shedder.release("best-effort");
+        }
+      });
+
+      app.listen(3000);
+
+      class OverloadError extends Error {
+        constructor(message: string) {
+          super(message);
+          this.name = "OverloadError";
+        }
+      }
+heuristics:
+  - Every service must define its overload posture explicitly: reject fast, shed low-priority work, or propagate backpressure upstream. A service without defined overload behavior will collapse under load — it is not a matter of if, but when.
+  - Use bounded queues, not unbounded ones. An unbounded queue is a deferred OOM kill — it converts a throughput problem into a crash.
+  - Backpressure chains must form a closed loop: every consumer that slows down must signal upstream, and every upstream must have a policy for what to do when signaled (block, buffer with limits, or reject).
+  - Token bucket allows short bursts above the sustained rate (good for APIs with bursty clients). Leaky bucket smooths bursts into a steady outflow (good for traffic shaping and downstream protection). Choose based on whether you want to allow bursts or enforce a hard upper bound on instantaneous rate.
+  - Rate limiters must be per-client (or per-tenant, per-API-key) to prevent one noisy neighbor from starving all others. A global rate limiter without client isolation is a shared-resource tragedy waiting to happen.
+  - Admission control rejects requests before they consume resources — CPU, memory, threads, connections. Circuit breakers stop calling a failing downstream. Bulkheads partition resources so one exhausted pool does not cascade. These are complementary; use all three in layered defense.
+  - Load shedding must be priority-aware. Critical paths (payments, auth) get headroom reserved from best-effort paths (analytics, logging, prefetch). When saturated, drop low-priority work first.
+  - Shed early, not late. A 503 at the edge in 2ms is better than a request queued for 30s and then a 504. Users retry on fast failures; they abandon on slow timeouts.
+  - Every rejection must include retry-after guidance (header or field). Blind retries without backoff turn a momentary overload into a sustained thundering herd.
+  - Monitor queue depth, rejection rate, and admission-denied counts as first-class observability signals. These metrics predict outages before users notice.
+  - Reactive Streams (RS, ReactiveX) formalize backpressure as a protocol: the subscriber signals its demand (request(n)), and the publisher must not emit more than requested. Use reactive libraries when you need cross-process, cross-language backpressure with standard semantics.
+  - In event-driven / stream-processing systems, backpressure propagates through the consumer offset: if a consumer falls behind, the broker retains messages (bounded by retention) and the lag becomes the overload signal. Monitor consumer lag as the backpressure health metric.
+related_tags: [backpressure, load-shedding, rate-limiting, token-bucket, leaky-bucket,
+  admission-control, circuit-breaker, bulkhead, reactive-streams, queue-management,
+  overload, resilience, graceful-degradation, flow-control, ddia]

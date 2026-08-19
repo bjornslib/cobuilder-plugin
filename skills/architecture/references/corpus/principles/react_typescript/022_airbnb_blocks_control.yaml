@@ -1,0 +1,93 @@
+id: airbnb-blocks-control-022
+name: Airbnb Blocks & Control Statements — Braces, else Placement & Condition Formatting
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  Airbnb requires braces with all multiline blocks, cuddled else (on the same
+  line as the closing brace), and no else after return. For long conditions,
+  break each condition onto its own line with the operator at the beginning.
+  Never use selection operators (&&) in place of if statements for control
+  flow — side effects in expressions harm readability.
+examples:
+  - language: typescript
+    bad: |
+      // Missing braces on multiline if
+      if (test)
+        return false;
+
+      // else on its own line — wasted vertical space
+      if (test) {
+        thing1();
+      }
+      else {
+        thing2();
+      }
+
+      // Unnecessary else after return
+      function foo(x: unknown): unknown {
+        if (x) {
+          return x;
+        } else {
+          return y;
+        }
+      }
+
+      // Operator at end of line — hard to scan
+      if (foo === 123 &&
+        bar === "abc") {
+        thing();
+      }
+
+      // Selection operator for control flow — hides side effect
+      !isRunning && startRunning();
+    good: |
+      // Braces on all multiline blocks
+      if (test) {
+        return false;
+      }
+
+      // Cuddled else — compact and readable
+      if (test) {
+        thing1();
+      } else {
+        thing2();
+      }
+
+      // No else after return — cleaner flow
+      function foo(x: unknown): unknown {
+        if (x) {
+          return x;
+        }
+        return y;
+      }
+
+      // Operator at line beginning — easy to scan condition groups
+      if (
+        foo === 123
+        && bar === "abc"
+      ) {
+        thing();
+      }
+
+      // Nested conditions — split into separate if blocks
+      function cats(x: boolean, y: boolean) {
+        if (x) return x;
+        if (y) return y;
+      }
+
+      // Explicit if for control flow
+      if (!isRunning) {
+        startRunning();
+      }
+heuristics:
+  - Use braces with all multiline blocks (if, else, for, while, etc.). The only exception is a single statement on the same line with no braces.
+  - Place else on the same line as the preceding closing brace (} else {) — it's more compact and standard.
+  - If an if block always executes a return, the else is unnecessary. This reduces nesting and makes the happy path clearer.
+  - For long conditions spanning multiple lines, place each condition on its own line with the logical operator at the beginning.
+  - Never use && or || as selection operators for control flow (condition && sideEffect()). Use explicit if statements — side effects deserve visible control flow.
+  - Prefer early returns to reduce nesting depth. Deeply nested conditionals are hard to follow.
+  - Use TypeScript's exhaustive switch statements with never for complex branching.
+  - Function bodies should never be single-line with braces: function foo() { return false; }. Always use a newline before the body.
+related_tags: [airbnb, blocks, control-flow, braces, else, early-return, conditions]

@@ -1,0 +1,336 @@
+id: decompose-conditional-001
+name: "Refactoring — Decompose Conditional"
+category: design-patterns
+canonical_tags: ['refactoring', 'simplifying-conditionals', 'decompose-conditional', 'extract-method', 'readability', 'intention-revealing-names']
+sources:
+  - books/refactoring.md
+  - books/clean-code.md
+  - open_sources/design_patterns/refactoring-guru-patterns.txt
+  - open_sources/design_patterns/augmentcode-refactoring.html
+summary: >
+  Decompose Conditional is a refactoring that extracts the three parts of an
+  if-then-else statement — the condition, the then-branch, and the else-branch —
+  into separate, well-named methods. Instead of a reader having to decode a raw
+  comparison like `date.before(SUMMER_START) or date.after(SUMMER_END)` or trace
+  through a block of code to understand what the "then" branch actually means,
+  each piece gets its own name: `isSummer(date)`, `summerCharge(quantity)`,
+  `winterCharge(quantity)`. The condition becomes a call to a predicate method
+  that reads as a question; each branch becomes a call whose name tells the
+  reader the business outcome. This is one of the highest-leverage readability
+  refactorings for conditional logic: it takes code that forces the reader to
+  think like a compiler (evaluate this expression, then jump here, then...) and
+  transforms it into code that reads like a business rule ("if it's summer,
+  charge the summer rate; otherwise charge the winter rate"). Apply this when a
+  conditional's elements are hard to understand in isolation, or when the
+  condition describes a business concept that deserves a name — even if the
+  logic itself is only one line. Do NOT apply when the conditional is so simple
+  that the method names add ceremony without clarity (`if x > 0` speaks for
+  itself). The goal is not to eliminate every raw if-statement; it's to name
+  the ones that carry meaning beyond Boolean algebra.
+
+  The mechanical steps: (1) Extract the condition into a private method with a
+  boolean-returning name that reveals intent. (2) Extract the then-branch into
+  a private method named for the outcome or computation it performs. (3) Extract
+  the else-branch similarly. (4) The original method now reads as a three-line
+  story: test a question, do one thing if true, do another if false. Each
+  extracted method is independently testable, and modifying one branch's logic
+  no longer risks breaking the condition or the other branch.
+examples:
+  - language: python
+    bad: |
+      # The `if` condition is a dense date comparison with magic bounds.
+      # The then-branch computes a surcharge from a raw formula. A reader
+      # must reverse-engineer "peak rate" from implementation details.
+      # Adding a new rate tier (shoulder season) means touching this
+      # monolithic function and risking the existing branches.
+
+      from datetime import date
+      from decimal import Decimal
+
+
+      PEAK_RATE_START = date(2025, 6, 1)
+      PEAK_RATE_END = date(2025, 9, 30)
+      WEEKEND_MULTIPLIER = Decimal("1.25")
+
+
+      def calculate_room_price(
+          stay_date: date,
+          base_rate: Decimal,
+          guests: int,
+      ) -> Decimal:
+          # Condition: is this peak season? Reader must parse the date range.
+          if PEAK_RATE_START <= stay_date <= PEAK_RATE_END:
+              # Then-branch: peak pricing logic — raw formula, no name
+              peak_base = base_rate * Decimal("1.5")
+              if guests > 2:
+                  peak_base += Decimal("20") * (guests - 2)
+              return peak_base
+          else:
+              # Else-branch: off-peak — another raw formula
+              off_peak = base_rate
+              if stay_date.weekday() >= 5:  # 5=Sat, 6=Sun
+                  off_peak *= WEEKEND_MULTIPLIER
+              return off_peak
+
+      # The function forces a reader to hold three concerns simultaneously:
+      # the date-range check, the peak math, and the off-peak math.
+      # Debugging a wrong off-peak charge requires tracing through the
+      # if-condition mentally to confirm you're in the right branch.
+
+    good: |
+      # Decompose Conditional: condition → `is_peak_season()`, then-branch →
+      # `calculate_peak_rate()`, else-branch → `calculate_off_peak_rate()`.
+      # The orchestrating method reads like a business rule in one line.
+      # Each extracted method is independently testable and modifiable.
+
+      from datetime import date
+      from decimal import Decimal
+
+
+      PEAK_RATE_START = date(2025, 6, 1)
+      PEAK_RATE_END = date(2025, 9, 30)
+      WEEKEND_MULTIPLIER = Decimal("1.25")
+
+
+      # --- Predicate: extracted condition named as a business question ---
+
+      def is_peak_season(stay_date: date) -> bool:
+          """True if the stay date falls in the peak June–September window."""
+          return PEAK_RATE_START <= stay_date <= PEAK_RATE_END
+
+
+      # --- Then-branch: extracted as a named computation ---
+
+      def calculate_peak_rate(base_rate: Decimal, guests: int) -> Decimal:
+          """Peak-season rate: 1.5x base + $20 per guest above 2."""
+          peak = base_rate * Decimal("1.5")
+          if guests > 2:
+              peak += Decimal("20") * (guests - 2)
+          return peak
+
+
+      # --- Else-branch: extracted as a named computation ---
+
+      def calculate_off_peak_rate(base_rate: Decimal, stay_date: date) -> Decimal:
+          """Off-peak rate: base rate, with 1.25x weekend multiplier."""
+          rate = base_rate
+          if stay_date.weekday() >= 5:  # Saturday or Sunday
+              rate *= WEEKEND_MULTIPLIER
+          return rate
+
+
+      # --- Orchestration: reads like a one-line business rule ---
+
+      def calculate_room_price(
+          stay_date: date,
+          base_rate: Decimal,
+          guests: int,
+      ) -> Decimal:
+          if is_peak_season(stay_date):
+              return calculate_peak_rate(base_rate, guests)
+          return calculate_off_peak_rate(base_rate, stay_date)
+
+
+      # Each piece is independently testable — no need to mock the date
+      # to verify peak-rate math, and vice versa.
+
+      def test_is_peak_season():
+          assert is_peak_season(date(2025, 7, 4)) is True
+          assert is_peak_season(date(2025, 11, 15)) is False
+
+
+      def test_peak_rate_no_extra_guests():
+          assert calculate_peak_rate(Decimal("100"), 2) == Decimal("150")
+
+
+      def test_peak_rate_with_extra_guests():
+          assert calculate_peak_rate(Decimal("100"), 4) == Decimal("190")
+
+      # Extending the system with a "shoulder season" is now trivial:
+      # add `is_shoulder_season()`, `calculate_shoulder_rate()`, and one
+      # `elif` in the orchestrator — no surgery on existing branches.
+
+  - language: typescript
+    bad: |
+      // The conditional is a raw date comparison. The then-branch
+      // computes shipping priority from status codes and weights.
+      // A reader must parse `status === "expedited"` and the weight
+      // formula simultaneously to understand "what shipping tier is this?"
+
+      interface Shipment {
+        id: string;
+        status: "standard" | "expedited" | "next_day";
+        weightKg: number;
+        destination: "domestic" | "international";
+      }
+
+      function getShipmentTier(shipment: Shipment): string {
+        if (
+          shipment.status === "expedited" ||
+          (shipment.status === "standard" && shipment.weightKg > 30)
+        ) {
+          // Then-branch: what does this block actually mean?
+          if (shipment.destination === "international") {
+            return "Priority International";
+          }
+          return shipment.weightKg > 50 ? "Priority Plus" : "Priority";
+        } else {
+          // Else-branch: another nested conditional to decode
+          if (shipment.status === "next_day") {
+            return shipment.destination === "international"
+              ? "Express International"
+              : "Express";
+          }
+          return "Standard";
+        }
+      }
+
+      // Adding a new tier ("Economy") means threading a condition through
+      // this already complex function. The condition, then-branch, and
+      // else-branch are structurally coupled — changing one risks the others.
+
+    good: |
+      // Decompose Conditional: condition → `isPriorityShipment()`,
+      // then-branch → `priorityTier()`, else-branch → `nonPriorityTier()`.
+      // The main function is a single `if/else` whose branch names
+      // explain the outcome. Each extracted function is independently
+      // testable and has a single reason to change.
+
+      interface Shipment {
+        id: string;
+        status: "standard" | "expedited" | "next_day";
+        weightKg: number;
+        destination: "domestic" | "international";
+      }
+
+      // --- Predicate: named business question ---
+
+      function isPriorityShipment(shipment: Shipment): boolean {
+        const isExpedited = shipment.status === "expedited";
+        const isHeavyStandard =
+          shipment.status === "standard" && shipment.weightKg > 30;
+        return isExpedited || isHeavyStandard;
+      }
+
+      // --- Then-branch: priority outcome ---
+
+      function priorityTier(shipment: Shipment): string {
+        if (shipment.destination === "international") {
+          return "Priority International";
+        }
+        return shipment.weightKg > 50 ? "Priority Plus" : "Priority";
+      }
+
+      // --- Else-branch: non-priority outcome ---
+
+      function nonPriorityTier(shipment: Shipment): string {
+        if (shipment.status === "next_day") {
+          return shipment.destination === "international"
+            ? "Express International"
+            : "Express";
+        }
+        return "Standard";
+      }
+
+      // --- Orchestration: one if/else, both branches named ---
+
+      function getShipmentTier(shipment: Shipment): string {
+        if (isPriorityShipment(shipment)) {
+          return priorityTier(shipment);
+        }
+        return nonPriorityTier(shipment);
+      }
+
+      // Each extracted function is independently testable:
+
+      import { describe, it, expect } from "vitest";
+
+      describe("isPriorityShipment", () => {
+        it("expedited is always priority", () => {
+          const shipment: Shipment = {
+            id: "s1", status: "expedited", weightKg: 1, destination: "domestic",
+          };
+          expect(isPriorityShipment(shipment)).toBe(true);
+        });
+
+        it("standard under 30kg is not priority", () => {
+          const shipment: Shipment = {
+            id: "s2", status: "standard", weightKg: 20, destination: "domestic",
+          };
+          expect(isPriorityShipment(shipment)).toBe(false);
+        });
+      });
+
+      // Adding "economy" tier: add `isEconomyShipment()`, `economyTier()`,
+      // and one `elif` — no surgery on priority logic.
+
+heuristics:
+  - >
+    "Decompose Conditional: you have a complicated conditional (if-then-else).
+    Extract the condition into a method, and extract the then-part and else-part
+    into methods" (Fowler, Refactoring). The three extracted methods should be
+    named so the original code reads like a sentence: "if (isSummer(date))
+    return summerCharge(); else return winterCharge();"
+  - >
+    Apply when any component of the if-then-else is hard to understand at a
+    glance. The threshold is subjective \u2014 if you need to pause to parse the
+    condition, or scroll up/down to trace a branch, decompose.
+  - The predicate name should read as a yes/no question or a boolean
+    declaration: `is_eligible`, `has_expired`, `needs_recalculation`,
+    `should_retry`. Avoid implementation-sounding names like `check_date_range`
+    or `validate_input` — those describe mechanism, not meaning.
+  - Each branch should be named for its outcome, not its mechanism.
+    `calculate_peak_rate()` is better than `apply_peak_formula()`. The reader
+    wants to know what happens, not how.
+  - Decompose Conditional is the structural dual of Extract Method — it applies
+    the same principle (name a block of code) specifically to the three slots
+    of an if-statement. If you're comfortable with Extract Method, decomposing
+    a conditional is just extracting three methods at once.
+  - The mechanical sequence matters: extract the condition first, then the
+    then-branch, then the else-branch. After each extraction, the original
+    code should still compile and pass tests. This step-by-step approach means
+    you never have a broken intermediate state.
+  - After decomposing, the orchestrating method should be 3-5 lines. If it's
+    longer, you may have a fourth concern hiding in the branches — look for
+    setup or cleanup logic that should be extracted too.
+  - "Do NOT decompose when the conditional is so simple that a method name adds
+    no clarity. `if (x > 0) { return x; } else { return 0; }` is clearer as-is
+    than `if (isPositive(x)) { return positiveValue(x); } else { return zero(); }`.
+    Decompose meaning, not syntax."
+  - Consider whether the predicate should be a static/free function or an
+    instance method. If the condition depends only on parameters, make it a pure
+    function (easier to test, no mutable state). If it depends on object state,
+    make it an instance method.
+  - "Decompose Conditional often precedes Replace Conditional with Polymorphism.
+    First decompose to understand the structure (naming the predicate and each
+    variant), then ask whether the branches should become subclasses. Decompose
+    is the preparatory refactoring; polymorphism is the architectural move."
+  - In languages with pattern matching (Rust, Scala, Python 3.10+ match/case),
+    decomposing the condition into a predicate is less necessary — the pattern
+    syntax itself names the cases. But decomposing the branch bodies into named
+    functions is still valuable for readability and testability.
+  - The extracted methods are now part of the class's private API. If the same
+    condition or branch logic is needed elsewhere in the class, these methods
+    are already available — no copy-paste. This is the "code reuse by extraction"
+    side benefit.
+  - If the then-branch and else-branch differ only in a parameter (e.g.,
+    `rate = 1.5` vs `rate = 1.0`), consider Parameterize Method instead of
+    decomposing both branches into full methods. Decompose when the branches
+    have structurally different logic.
+  - In tests, decomposing a conditional gives you three independent units to
+    test: the predicate (does it correctly identify the case?), the then-branch
+    (does it compute the right outcome for that case?), and the else-branch.
+    Together they replace one monolithic test that must set up state for both
+    branches.
+  - "The naming pressure is the real value of this refactoring. By forcing
+    yourself to name the condition and each branch, you surface hidden domain
+    concepts. If you can't think of a good name for a branch, the conditional
+    may be doing something it shouldn't — reconsider the design before
+    extracting."
+
+related_tags:
+  [decompose-conditional, extract-method, simplifying-conditionals,
+   refactoring, readability, fowler-refactoring, guard-clauses,
+   replace-conditional-with-polymorphism, intention-revealing-names,
+   predicate-methods, small-functions, single-responsibility,
+   preparatory-refactoring, clean-code, code-smells]

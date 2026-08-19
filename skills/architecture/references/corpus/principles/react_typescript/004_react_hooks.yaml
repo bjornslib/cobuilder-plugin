@@ -1,0 +1,145 @@
+id: react-hooks-001
+name: React Hooks — Side-Effect Encapsulation & Custom Hook Composition
+category: patterns
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - books/clean-code.md
+  - books/a-philosophy-of-software-design.md
+summary: Encapsulate side effects (data fetching, subscriptions, timers, DOM manipulation) inside custom hooks rather than scattering them across components. Custom hooks are the React equivalent of deep modules — they hide complex imperative logic behind simple declarative interfaces.
+examples:
+  - language: typescript
+    bad: |
+      // Side effects scattered across the component — noisy and untestable
+      function ProductPage({ productId }: { productId: string }) {
+        const [product, setProduct] = useState<Product | null>(null);
+        const [reviews, setReviews] = useState<Review[]>([]);
+        const [loading, setLoading] = useState(true);
+        const [isFavorite, setIsFavorite] = useState(false);
+        const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
+
+        useEffect(() => {
+          fetchProduct(productId).then(setProduct);
+          fetchReviews(productId).then(setReviews);
+          fetchSimilarProducts(productId).then(setSimilarProducts);
+          checkIsFavorite(productId).then(setIsFavorite);
+          setLoading(false);
+        }, [productId]);
+
+        useEffect(() => {
+          document.title = product ? `${product.name} — Shop` : "Loading...";
+        }, [product]);
+
+        useEffect(() => {
+          const handler = () => console.log("scrolled");
+          window.addEventListener("scroll", handler);
+          return () => window.removeEventListener("scroll", handler);
+        }, []);
+
+        if (loading) return <Spinner />;
+
+        return (
+          <div>
+            <ProductHeader product={product} isFavorite={isFavorite} />
+            <ReviewList reviews={reviews} />
+            <SimilarProducts products={similarProducts} />
+          </div>
+        );
+      }
+    good: |
+      // Each side effect lives in a focused, reusable custom hook
+      function ProductPage({ productId }: { productId: string }) {
+        const { product, isLoading } = useProduct(productId);
+        const { reviews } = useReviews(productId);
+        const { similarProducts } = useSimilarProducts(productId);
+        const { isFavorite, toggleFavorite } = useFavorite(productId);
+
+        useDocumentTitle(product?.name ?? "Loading...");
+        useScrollLogger();
+
+        if (isLoading) return <Spinner />;
+
+        return (
+          <div>
+            <ProductHeader product={product} isFavorite={isFavorite} onToggleFavorite={toggleFavorite} />
+            <ReviewList reviews={reviews} />
+            <SimilarProducts products={similarProducts} />
+          </div>
+        );
+      }
+
+      // Custom hooks — each hides complexity behind a clean interface
+      function useProduct(productId: string) {
+        const [product, setProduct] = useState<Product | null>(null);
+        const [isLoading, setIsLoading] = useState(true);
+
+        useEffect(() => {
+          setIsLoading(true);
+          fetchProduct(productId).then(setProduct).finally(() => setIsLoading(false));
+        }, [productId]);
+
+        return { product, isLoading };
+      }
+
+      function useFavorite(productId: string) {
+        const [isFavorite, setIsFavorite] = useState(false);
+
+        useEffect(() => {
+          checkIsFavorite(productId).then(setIsFavorite);
+        }, [productId]);
+
+        const toggleFavorite = useCallback(() => {
+          setIsFavorite((prev) => !prev);
+          persistFavorite(productId, !isFavorite);
+        }, [productId, isFavorite]);
+
+        return { isFavorite, toggleFavorite };
+      }
+
+      function useDocumentTitle(title: string) {
+        useEffect(() => {
+          document.title = title;
+        }, [title]);
+      }
+
+      function useScrollLogger() {
+        useEffect(() => {
+          const handler = () => console.log("scrolled");
+          window.addEventListener("scroll", handler);
+          return () => window.removeEventListener("scroll", handler);
+        }, []);
+      }
+  - language: typescript
+    bad: |
+      // Effect with missing dependency — stale closure bug
+      function Timer() {
+        const [count, setCount] = useState(0);
+
+        useEffect(() => {
+          const id = setInterval(() => {
+            setCount(count + 1); // count is stale — always 0
+          }, 1000);
+          return () => clearInterval(id);
+        }, []); // eslint-disable-line react-hooks/exhaustive-deps
+      }
+    good: |
+      // Functional update avoids stale closures
+      function Timer() {
+        const [count, setCount] = useState(0);
+
+        useEffect(() => {
+          const id = setInterval(() => {
+            setCount((prev) => prev + 1);
+          }, 1000);
+          return () => clearInterval(id);
+        }, []);
+      }
+heuristics:
+  - Every useEffect that does more than trivial work should be extracted into a named custom hook.
+  - Custom hook names must start with use: useProduct, useAuth, useDebounce.
+  - A custom hook should do one thing. If it returns more than 3-4 values or handles multiple unrelated concerns, split it.
+  - Use functional state updates (setState(prev => ...)) to avoid stale closures in effects and callbacks.
+  - Always include all reactive values in the dependency array. Suppressing the linter is a code smell.
+  - Prefer useCallback and useMemo only when there's a measurable performance issue or stable reference requirement — not prematurely.
+  - Clean up subscriptions, timers, and listeners in the effect's return function to prevent memory leaks.
+  - Test custom hooks in isolation with testing-library/react-hooks or renderHook.
+related_tags: [react-hooks, side-effects, custom-hooks, composition, encapsulation]

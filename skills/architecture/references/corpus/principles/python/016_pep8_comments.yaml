@@ -1,0 +1,92 @@
+id: pep8-comments-016
+name: PEP 8 Comments — Block Comments, Inline Comments, and Documentation Strings
+category: readability
+canonical_tags: ['python', 'readability']
+sources:
+  - open_sources/python/pep-0008.html
+summary: >
+  PEP 8 defines two comment types: block comments (for paragraphs above code) and inline comments
+  (on the same line as a statement). Comments that contradict the code are worse than no comments —
+  keep them updated. Block comments are complete sentences, capitalized, ending in periods, indented
+  at the code level. Each line starts with # and a space. Paragraphs are separated by a single #.
+  Inline comments are used sparingly, separated by at least two spaces from the statement, and never
+  state the obvious. Documentation strings (docstrings) use PEP 257 conventions, covered separately.
+examples:
+  - language: python
+    bad: |
+      #calculate the total price with tax — lowercase, no space after #
+      def calc(price):
+          tax = price * 0.08
+          return price + tax  #add tax — no space after #, no sentence structure
+
+      # Outdated comment — misleading.
+      # The API returns XML. (But it now returns JSON.)
+      response = api.get_data()
+
+      # Inline comment stating the obvious.
+      x = x + 1  # Increment x
+
+      # Block comment not indented to code level.
+      # Validate the input data.
+          def validate(data):
+              ...
+
+      # Block comment paragraphs not separated.
+      # This function processes data. It validates input and returns
+      # a result object. The result includes timing information.
+      # Processing happens in three phases. First, validation.
+      def process(data):
+          ...
+    good: |
+      """PEP 8 comment conventions: block comments as complete sentences,
+      inline comments only for non-obvious intent, and docstrings for
+      public API documentation.
+      """
+
+
+      # Calculate the total price including sales tax.
+      # The tax rate is determined by the configured jurisdiction.
+      def calculate_total(price: float) -> float:
+          tax = price * TAX_RATE
+          return price + tax
+
+
+      # Validate that the input data conforms to the expected schema.
+      # Returns True if all constraints are satisfied.
+      #
+      # Constraints checked:
+      # - All required fields are present.
+      # - Numeric fields fall within allowed ranges.
+      def validate(data: dict) -> bool:
+          if not data:
+              return False
+          required = {'name', 'email', 'age'}
+          return required.issubset(data.keys())
+
+
+      def fetch_user(user_id: int) -> User:
+          """Return the User object for the given user ID.
+
+          Raises UserNotFoundError if no user exists with that ID.
+          """
+          user = cache.get(user_id)
+          if user is None:
+              user = db.query(User).filter_by(id=user_id).first()
+              if user is None:
+                  raise UserNotFoundError(user_id)
+              cache.set(user_id, user)
+          return user
+
+
+      # Compensate for 1-based indexing in the legacy API.
+      # This offset will be removed when we migrate to v2.
+      index = api.get_index() + 1
+heuristics:
+  - "Keep comments current. Outdated comments that contradict the code are actively harmful — delete or update them before they mislead."
+  - "Write comments as complete sentences. Capitalize the first word (unless it's a lowercase identifier). End sentences with a period. Use 1-2 spaces after periods in multi-sentence comments."
+  - "Block comments are indented to the same level as the code they describe. Each line begins with '# ' (hash + single space). Separate paragraphs with a line containing only '#'."
+  - "Use inline comments sparingly and only for non-obvious intent. Put at least two spaces between the statement and the '#'."
+  - "Do NOT use inline comments for things that are obvious from the code. 'x += 1  # Increment x' is noise — delete it."
+  - "Write comments in English unless you are 120% sure the code will never be read by non-speakers of your language."
+  - "Documentation strings (PEP 257) are for describing public modules, functions, classes, and methods — use docstrings, not block comments, for public API documentation."
+related_tags: [pep8, comments, block-comments, inline-comments, docstrings, readability]

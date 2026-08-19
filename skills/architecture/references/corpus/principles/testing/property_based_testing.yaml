@@ -1,0 +1,323 @@
+id: property-based-testing-001
+name: Property-Based Testing
+category: testing
+canonical_tags: ['testing', 'correctness']
+sources:
+  - books/the-pragmatic-programmer.md
+summary: |
+  Property-based tests specify invariants that must hold for all valid inputs, then let the framework
+  generate thousands of random examples, shrink failures to minimal counterexamples, and uncover edge
+  cases no one would write by hand. They complement example-based tests by catching the cases you
+  didn't think of.
+
+generators:
+  summary: |
+    Generators produce random inputs that satisfy domain constraints. Rather than hand-picking
+    three test values, you describe the shape of valid data and the framework explores the space.
+  types:
+    - kind: Primitive generators
+      description: "integers, floats, text, booleans, bytes, datetimes"
+      hypothesis: "integers(), floats(), text(), booleans(), datetimes()"
+    - kind: Composite generators
+      description: "lists, dicts, tuples, sets built from simpler generators"
+      hypothesis: "lists(integers()), dictionaries(keys=text(), values=floats())"
+    - kind: Filtered generators
+      description: "constrain generated values with .filter() or .map()"
+      hypothesis: "integers(min_value=0, max_value=100).filter(lambda x: x % 2 == 0)"
+    - kind: Custom generators
+      description: "build domain-specific generators with @composite or builds()"
+      hypothesis: "builds(MyClass, field1=integers()) or @composite strategies"
+  examples:
+    python:
+      bad: |
+        # Example-based: only 3 hand-picked values. What about negative? Zero? Huge?
+        def test_addition():
+            assert add(2, 3) == 5
+            assert add(0, 7) == 7
+            assert add(-1, 1) == 0
+
+        # This passes but says nothing about the space of all possible inputs.
+      good: |
+        from hypothesis import given
+        from hypothesis.strategies import integers, floats, text, lists, builds
+
+        @given(integers(), integers())
+        def test_addition_commutative(a, b):
+            """a + b == b + a for all integers — not just the three we picked."""
+            assert a + b == b + a
+
+        @given(floats(allow_nan=False), floats(allow_nan=False))
+        def test_addition_associative(a, b, c):
+            """(a + b) + c == a + (b + c) — the framework explores edge cases."""
+            assert (a + b) + c == a + (b + c)
+
+        # Composite: list reversal is an involution
+        @given(lists(integers()))
+        def test_reverse_is_involution(lst):
+            assert list(reversed(list(reversed(lst)))) == lst
+
+        # Custom generator for structured domain data
+        from dataclasses import dataclass
+
+        @dataclass
+        class Order:
+            item_count: int
+            unit_price: float
+
+        order_strategy = builds(Order,
+            item_count=integers(min_value=1, max_value=1000),
+            unit_price=floats(min_value=0.01, max_value=10000.00, allow_nan=False),
+        )
+
+        @given(order_strategy)
+        def test_order_total_positive(order):
+            total = order.item_count * order.unit_price
+            assert total > 0
+
+shrinking:
+  summary: |
+    When a property fails, Hypothesis shrinks the counterexample to its simplest form — often
+    revealing the exact boundary where the bug lives. Instead of debugging with
+    `[394, -827, 0, 14253, -1]`, you debug with `[-1]`.
+  how_it_works: |
+    The shrinker tries progressively simpler versions of the failing input:
+    replaces lists with shorter ones, integers with values closer to zero,
+    strings with shorter strings, and so on — until no simpler failing input exists.
+  example:
+    python: |
+      from hypothesis import given, strategies as st
+
+      # Bug: dividing by zero when total is 0
+      def average(values):
+          return sum(values) // len(values)  # BUG: no zero-length guard
+
+      @given(st.lists(st.integers()))
+      def test_average_in_range(values):
+          result = average(values)
+          # Property: average falls between min and max
+          assert min(values) <= result <= max(values)
+
+      # Hypothesis finds the failure with some long random list...
+      # then shrinks it to: [] (empty list — ZeroDivisionError on len(values))
+      #
+      # Without shrinking you'd see: [893, -451, 12, -7822, 0, 0, 441]
+      # With shrinking you see: []
+      # The minimal case reveals the root cause instantly.
+  pitfalls:
+    - "Shrinking can be slow for complex generators — use assume() to prune obviously invalid cases early."
+    - "Some properties fail only on exotic inputs that shrink poorly. Don't abandon a property just because shrinking is slow."
+
+invariants:
+  summary: |
+    An invariant is a statement that must always be true, regardless of the operation sequence
+    or input values. Property-based tests encode invariants as assertions that hold for all
+    generated inputs.
+  categories:
+    - kind: Algebraic invariants
+      description: "Mathematical laws that must always hold: commutativity, associativity, idempotence."
+      example: "sort(sort(xs)) == sort(xs) — sorting is idempotent"
+    - kind: Structural invariants
+      description: "Consistency between related data: tree balanced after insert, cache size <= max."
+      example: "After inserting into a BST, an in-order traversal yields sorted keys."
+    - kind: Business invariants
+      description: "Domain rules that must never be violated: account balance >= 0, order total > 0."
+      example: "The sum of all ledger entries must equal the account balance."
+    - kind: State-machine invariants
+      description: "Properties that survive any sequence of state transitions."
+      example: "A queue's length is always insertions minus deletions."
+  example:
+    python: |
+      from hypothesis import given, strategies as st
+      from hypothesis.stateful import RuleBasedStateMachine, rule, invariant
+
+      # State-machine invariant: a bounded set never exceeds capacity
+      class BoundedSet:
+          def __init__(self, capacity):
+              self._data = set()
+              self._capacity = capacity
+
+          def add(self, item):
+              self._data.add(item)
+              if len(self._data) > self._capacity:
+                  self._data.pop()  # evict arbitrary item
+
+          def __contains__(self, item):
+              return item in self._data
+
+          def __len__(self):
+              return len(self._data)
+
+      class BoundedSetMachine(RuleBasedStateMachine):
+          def __init__(self):
+              super().__init__()
+              self.bs = BoundedSet(capacity=10)
+
+          @rule(item=st.integers())
+          def add_item(self, item):
+              self.bs.add(item)
+
+          @invariant()
+          def never_exceeds_capacity(self):
+              """Structural invariant: capacity is never violated."""
+              assert len(self.bs) <= 10
+
+          @invariant()
+          def items_are_ints(self):
+              """Type invariant: all items are integers."""
+              for item in list(self.bs._data):
+                  assert isinstance(item, int)
+
+      TestBoundedSet = BoundedSetMachine.TestCase
+
+round_trip_properties:
+  summary: |
+    A round-trip property asserts that applying an operation and its inverse returns the original
+    value: encode(decode(x)) == x. These are among the most powerful property-based tests
+    because they require no oracle — correctness emerges from the symmetry.
+  patterns:
+    - name: Serialization round-trip
+      description: "parse(serialize(obj)) == obj"
+      example: "json.loads(json.dumps(data)) == data"
+    - name: Compression round-trip
+      description: "decompress(compress(data)) == data"
+      example: "bzip2.decompress(bzip2.compress(buf)) == buf"
+    - name: Encoding round-trip
+      description: "decode(encode(text)) == text"
+      example: "base64.b64decode(base64.b64encode(data)) == data"
+    - name: Transform plus inverse
+      description: "inverse(transform(x)) == x within tolerance"
+      example: "fft(ifft(signal)) ~= signal, matrix @ inverse(matrix) ~= identity"
+    - name: Persistence round-trip
+      description: "load(save(entity)) == entity"
+      example: "ORM.load(ORM.save(obj)) produces an equivalent object"
+  example:
+    python: |
+      import json
+      from hypothesis import given, strategies as st
+
+      # Round-trip property: any valid object survives encode -> decode
+      @given(st.recursive(
+          st.none() | st.booleans() | st.integers() | st.floats(allow_nan=False) | st.text(),
+          lambda children: st.lists(children) | st.dictionaries(st.text(), children),
+      ))
+      def test_json_round_trip(obj):
+          """parse(serialize(obj)) == obj for any JSON-serializable value."""
+          assert json.loads(json.dumps(obj)) == obj
+
+      # Round-trip: URL encoding
+      from urllib.parse import quote, unquote
+
+      @given(st.text(alphabet=st.characters(blacklist_categories=('Cs',))))
+      def test_url_encode_decode_round_trip(s):
+          """Any text survives urlencode -> urldecode."""
+          assert unquote(quote(s, safe='')) == s
+
+complementing:
+  summary: |
+    Example-based tests and property-based tests answer different questions. Example-based
+    tests verify "does this specific case work?" Property-based tests verify "does the
+    contract hold for ALL cases?" Use both — examples for readability and regression,
+    properties for coverage and edge-case discovery.
+  comparison:
+    - dimension: Question answered
+      example_based: "Does f(2) return 4?"
+      property_based: "Is f(x) > 0 for all x > 0?"
+    - dimension: Test count
+      example_based: "3-10 hand-picked values"
+      property_based: "100+ generated per run (default: 100)"
+    - dimension: Edge cases
+      example_based: "Whatever you remember to write"
+      property_based: "Framework finds them for you"
+    - dimension: Readability
+      example_based: "Easy — each case is a story"
+      property_based: "Requires thinking in contracts, not examples"
+    - dimension: Debugging
+      example_based: "Immediate — you know the failing input"
+      property_based: "Shrunk to minimal counterexample"
+    - dimension: Best for
+      example_based: "Regression tests, known tricky inputs, documentation"
+      property_based: "Algorithms, serialization, data structures, business rules"
+  example:
+    python: |
+      import pytest
+      from hypothesis import given, strategies as st
+
+      def parse_quantity(s: str) -> float:
+          """Parse '10kg', '5.5lbs', '100' -> float. Returns -1 on invalid."""
+          import re
+          m = re.match(r'^(\\d+\\.?\\d*)\\s*(kg|lbs)?$', s.strip())
+          if not m:
+              return -1
+          return float(m.group(1))
+
+      # --- Example-based tests: specific, readable, act as documentation ---
+      class TestParseQuantityExamples:
+          def test_simple_number(self):
+              assert parse_quantity("42") == 42.0
+
+          def test_with_unit(self):
+              assert parse_quantity("10kg") == 10.0
+
+          def test_decimal(self):
+              assert parse_quantity("5.5lbs") == 5.5
+
+          def test_invalid_returns_negative_one(self):
+              assert parse_quantity("garbage") == -1
+
+          def test_known_tricky_input(self):
+              # Regression: empty string used to crash
+              assert parse_quantity("") == -1
+
+      # --- Property-based tests: verify the contract for ALL inputs ---
+      @given(st.from_regex(r'\\d+\\.?\\d*', fullmatch=True))
+      def test_valid_numeric_strings_parse_to_positive(text):
+          """Property: any string that's just digits produces a positive number."""
+          result = parse_quantity(text)
+          assert result >= 0
+
+      @given(st.from_regex(r'\\d+\\.?\\d*\\s*(kg|lbs)?', fullmatch=True))
+      def test_valid_quantities_never_return_negative(text):
+          """Property: any valid quantity string returns non-negative."""
+          result = parse_quantity(text)
+          assert result >= 0
+
+      @given(st.text())
+      def test_parse_quantity_never_raises(s):
+          """Property: no input crashes the parser — critical for robustness."""
+          try:
+              parse_quantity(s)
+          except Exception:
+              pytest.fail(f"parse_quantity({s!r}) raised unexpectedly")
+
+      @given(st.floats(min_value=0, allow_nan=False, allow_infinity=False).map(str))
+      def test_numeric_text_round_trips(s):
+          """Property: string representation of a float parses back."""
+          result = parse_quantity(s)
+          assert result >= 0  # may be -1 if format mismatches, but never crashes
+
+pragmatic_testing_rules:
+  - "Keep tests runnable quickly and often — property-based tests run in CI alongside example tests."
+  - "Prefer tests that align with the business or technical contract being protected — properties ARE the contract."
+  - "Use automation so validation is habitual, not heroic — Hypothesis runs 100+ cases automatically."
+  - "Keep flaky or environment-dependent tests out of the critical feedback path — properties are deterministic given a seed."
+
+heuristics:
+  - "If you can't write a concise property for a function, its contract may be unclear — that's a design smell."
+  - "Start with round-trip properties — they're the easiest to formulate and catch the most bugs."
+  - "For data structures: test that every operation preserves all structural invariants."
+  - "For parsers/serializers: test round-trip and that invalid input never crashes."
+  - "For math/algorithm code: test algebraic properties (commutativity, associativity, idempotence)."
+  - "Use settings(deadline=...) to prevent slow property tests from blocking CI."
+  - "When a property fails, save the seed from the Hypothesis output to reproduce it later."
+  - "Don't replace example-based tests with properties — they serve different purposes. Use both."
+  - "If generators are expensive to construct, define them at module level — Hypothesis caches them."
+
+pitfalls:
+  - "Don't encode the implementation in the property — test the contract, not a mirror of the code."
+  - "Overly loose properties (e.g., 'result is an int') pass trivially and catch nothing."
+  - "Overly strict properties break on valid edge cases your generator didn't anticipate."
+  - "Stateful testing (RuleBasedStateMachine) can be slow; start with stateless given tests."
+
+related_tags:
+  [property-based-testing, hypothesis, quickcheck, generators, shrinking, invariants,
+   round-trip, testing, correctness, contract-testing, feedback-loops, automation]

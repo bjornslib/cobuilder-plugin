@@ -1,0 +1,510 @@
+id: indexing-strategies-001
+name: Indexing Strategies
+category: data_systems
+canonical_tags: ['data-systems', 'performance', 'storage']
+sources:
+  - books/designing-data-intensive-applications.md
+summary: >
+  Indexes are derived data structures that speed up reads at the cost of write
+  overhead and storage. Choose index types based on query patterns, not based on
+  what the database defaults to. Hash indexes provide O(1) point lookups but no
+  range scans. B-trees and LSM-trees are the two dominant on-disk index families
+  — B-trees optimize for reads, LSM-trees optimize for writes. Secondary indexes
+  add query flexibility but incur write amplification. Covering indexes and
+  composite indexes reduce trips to the primary store. Full-text search uses
+  inverted indexes and relevance ranking to handle natural-language queries that
+  standard B-tree indexes cannot serve efficiently — they tokenize, normalize,
+  and rank documents by term frequency. Materialized views precompute and cache
+  expensive query results (aggregations, joins), trading staleness for query
+  speed; they are the read-side equivalent of write-ahead logs. Every index is
+  a trade-off: it accelerates a specific set of queries in exchange for slower
+  writes and more storage. Indexes must be monitored for bloat, fragmentation,
+  and staleness; unused indexes are dead weight that slows every write.
+examples:
+  - language: python
+    bad: |
+      import sqlite3
+      from typing import Any
+
+
+      class NoIndexingStrategy:
+          """Table with no indexes — full table scans on every query."""
+
+          def __init__(self, db_path: str) -> None:
+              self._conn = sqlite3.connect(db_path)
+              self._conn.execute("""
+                  CREATE TABLE IF NOT EXISTS events (
+                      id INTEGER PRIMARY KEY,
+                      user_id TEXT,
+                      event_type TEXT,
+                      created_at TEXT,
+                      payload TEXT
+                  )
+              """)
+              # No indexes on user_id, event_type, or created_at
+              # Every query scans the entire table
+
+          def get_user_events(self, user_id: str, since: str) -> list[dict]:
+              """Full table scan — O(N) every time."""
+              cur = self._conn.execute(
+                  "SELECT * FROM events WHERE user_id = ? AND created_at > ?",
+                  (user_id, since),
+              )
+              return [dict(zip([d[0] for d in cur.description], row)) for row in cur]
+
+          def get_recent_by_type(self, event_type: str) -> list[dict]:
+              """Another full table scan."""
+              cur = self._conn.execute(
+                  "SELECT * FROM events WHERE event_type = ? ORDER BY created_at DESC LIMIT 50",
+                  (event_type,),
+              )
+              return [dict(zip([d[0] for d in cur.description], row)) for row in cur]
+    good: |
+      import sqlite3
+      import time
+      from datetime import datetime, timedelta, timezone
+      from typing import Any
+
+
+      class IndexedEventStore:
+          """Indexes chosen by query pattern — each index serves specific queries."""
+
+          def __init__(self, db_path: str) -> None:
+              self._conn = sqlite3.connect(db_path)
+              self._conn.execute("PRAGMA journal_mode=WAL")
+              self._conn.execute("PRAGMA synchronous=NORMAL")
+              self._conn.execute("""
+                  CREATE TABLE IF NOT EXISTS events (
+                      id INTEGER PRIMARY KEY,
+                      tenant_id TEXT NOT NULL,
+                      user_id TEXT NOT NULL,
+                      event_type TEXT NOT NULL,
+                      created_at TEXT NOT NULL,
+                      payload TEXT
+                  )
+              """)
+              # Index 1: composite — covers "get user events by time"
+              self._conn.execute("""
+                  CREATE INDEX IF NOT EXISTS idx_user_created
+                  ON events(user_id, created_at)
+              """)
+              # Index 2: composite — covers "get events by type (recent first)"
+              self._conn.execute("""
+                  CREATE INDEX IF NOT EXISTS idx_type_created
+                  ON events(event_type, created_at DESC)
+              """)
+              # Index 3: covering — avoids trip to primary store for dashboard
+              self._conn.execute("""
+                  CREATE INDEX IF NOT EXISTS idx_tenant_date_counts
+                  ON events(tenant_id, date(created_at), event_type)
+              """)
+              # Index 4: partial — only active (rare) event types need fast lookup
+              self._conn.execute("""
+                  CREATE INDEX IF NOT EXISTS idx_critical_events
+                  ON events(created_at)
+                  WHERE event_type IN ('payment', 'login', 'error')
+              """)
+              self._index_usage: dict[str, int] = {}
+
+          def get_user_events(self, user_id: str, since: str) -> list[dict]:
+              """Uses idx_user_created — O(log N) lookup."""
+              cur = self._conn.execute(
+                  "SELECT * FROM events WHERE user_id = ? AND created_at > ? ORDER BY created_at DESC",
+                  (user_id, since),
+              )
+              cols = [d[0] for d in cur.description]
+              return [dict(zip(cols, row)) for row in cur]
+
+          def get_recent_by_type(self, event_type: str, limit: int = 50) -> list[dict]:
+              """Uses idx_type_created — no sort needed, index is ordered."""
+              cur = self._conn.execute(
+                  "SELECT * FROM events WHERE event_type = ? ORDER BY created_at DESC LIMIT ?",
+                  (event_type, limit),
+              )
+              cols = [d[0] for d in cur.description]
+              return [dict(zip(cols, row)) for row in cur]
+
+          def get_dashboard_counts(self, tenant_id: str) -> list[dict]:
+              """Covering index: query answered entirely from index, no table access."""
+              cur = self._conn.execute("""
+                  SELECT date(created_at) as day, event_type, COUNT(*) as cnt
+                  FROM events
+                  WHERE tenant_id = ?
+                  GROUP BY day, event_type
+                  ORDER BY day DESC
+                  LIMIT 30
+              """, (tenant_id,))
+              cols = [d[0] for d in cur.description]
+              return [dict(zip(cols, row)) for row in cur]
+
+          def get_critical_events(self, since_hours: int = 24) -> list[dict]:
+              """Partial index — only scans relevant rows."""
+              cutoff = (datetime.now(timezone.utc) - timedelta(hours=since_hours)).isoformat()
+              cur = self._conn.execute("""
+                  SELECT * FROM events
+                  WHERE event_type IN ('payment', 'login', 'error')
+                    AND created_at > ?
+                  ORDER BY created_at DESC
+              """, (cutoff,))
+              cols = [d[0] for d in cur.description]
+              return [dict(zip(cols, row)) for row in cur]
+
+          def list_unused_indexes(self) -> list[str]:
+              """Query SQLite's index usage stats to find dead weight."""
+              cur = self._conn.execute(
+                  "SELECT name FROM sqlite_master WHERE type='index'"
+              )
+              defined = {row[0] for row in cur if not row[0].startswith("sqlite_")}
+              # In production, use pg_stat_user_indexes or sys.dm_db_index_usage_stats
+              return sorted(defined - set(self._index_usage))
+
+
+      class LSMWriteOptimizer:
+          """LSM-tree pattern: buffer writes in memory, flush sorted segments."""
+
+          def __init__(self, flush_callback: Any) -> None:
+              self._memtable: dict[str, str] = {}
+              self._flush = flush_callback
+              self._memtable_limit = 10_000
+
+          def put(self, key: str, value: str) -> None:
+              self._memtable[key] = value
+              if len(self._memtable) >= self._memtable_limit:
+                  self.flush()
+
+          def get(self, key: str) -> str | None:
+              # Check memtable first, then SSTables newest-to-oldest
+              if key in self._memtable:
+                  return self._memtable[key]
+              return self._flush.read_from_disk(key)
+
+          def flush(self) -> None:
+              """Sort memtable and write as immutable SSTable."""
+              sorted_entries = sorted(self._memtable.items())
+              self._flush.write_sstable(sorted_entries)
+              self._memtable.clear()
+      #
+      # -- Full-text search via inverted index --
+      #
+      class FullTextSearchEngine:
+          """Inverted index with TF-IDF ranking for full-text search."""
+
+          def __init__(self) -> None:
+              self._inverted: dict[str, set[int]] = {}
+              self._documents: dict[int, str] = {}
+              self._doc_freq: dict[str, int] = {}
+              self._next_id = 0
+
+          def index(self, text: str) -> int:
+              """Tokenize and index a document."""
+              doc_id = self._next_id
+              self._next_id += 1
+              self._documents[doc_id] = text
+              tokens = self._tokenize(text)
+              seen: set[str] = set()
+              for token in tokens:
+                  self._inverted.setdefault(token, set()).add(doc_id)
+                  if token not in seen:
+                      self._doc_freq[token] = self._doc_freq.get(token, 0) + 1
+                      seen.add(token)
+              return doc_id
+
+          def search(self, query: str, limit: int = 10) -> list[tuple[int, float]]:
+              """Search with TF-IDF scoring."""
+              q_tokens = self._tokenize(query)
+              if not q_tokens:
+                  return []
+              scores: dict[int, float] = {}
+              doc_count = len(self._documents) or 1
+              for token in q_tokens:
+                  tf = q_tokens.count(token) / len(q_tokens)
+                  df = self._doc_freq.get(token, 0)
+                  idf = math.log(doc_count / (df + 1))
+                  for doc_id in self._inverted.get(token, set()):
+                      doc_tf = self._documents[doc_id].lower().count(token) / max(
+                          len(self._documents[doc_id].split()), 1
+                      )
+                      scores[doc_id] = scores.get(doc_id, 0) + tf * idf * doc_tf
+              return sorted(scores.items(), key=lambda x: x[1], reverse=True)[:limit]
+
+          @staticmethod
+          def _tokenize(text: str) -> list[str]:
+              """Lowercase, split, strip punctuation — production uses stemming."""
+              return re.findall(r"\w+", text.lower())
+
+      #
+      # -- Materialized view: precompute expensive queries --
+      #
+      class MaterializedViewManager:
+          """Cache query results; refresh on write or on a schedule."""
+
+          def __init__(self, conn: sqlite3.Connection) -> None:
+              self._conn = conn
+              self._view: dict[str, list[dict]] = {}
+              self._stale: set[str] = set()
+
+          def create_view(self, name: str, query: str) -> None:
+              """Register a materialized view with its backing query."""
+              self._conn.execute(
+                  "INSERT INTO mv_definitions(view_name, query_sql) VALUES (?, ?)",
+                  (name, query),
+              )
+              self.refresh(name)
+
+          def refresh(self, name: str) -> None:
+              """Recompute the view from the base tables."""
+              cur = self._conn.execute(
+                  "SELECT query_sql FROM mv_definitions WHERE view_name = ?", (name,)
+              )
+              row = cur.fetchone()
+              if row is None:
+                  raise ValueError(f"Unknown view: {name}")
+              result = self._conn.execute(row[0])
+              cols = [d[0] for d in result.description]
+              self._view[name] = [dict(zip(cols, r)) for r in result]
+              self._stale.discard(name)
+
+          def query(self, name: str) -> list[dict]:
+              """Read from cached view; may be stale."""
+              if name not in self._view:
+                  return []
+              return self._view[name]
+
+          def invalidate(self, name: str) -> None:
+              """Mark as stale after a write to the underlying table."""
+              self._stale.add(name)
+
+          @property
+          def stale_views(self) -> list[str]:
+              return sorted(self._stale)
+  - language: typescript
+    bad: |
+      import { PrismaClient } from "@prisma/client";
+
+      const prisma = new PrismaClient();
+
+      // No indexes beyond PK — every query is a full table scan
+      async function getUserEvents(userId: string, since: Date): Promise<Event[]> {
+        return prisma.event.findMany({
+          where: { userId, createdAt: { gte: since } },
+          orderBy: { createdAt: "desc" },
+        });
+      }
+
+      async function getRecentByType(eventType: string): Promise<Event[]> {
+        return prisma.event.findMany({
+          where: { eventType },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+        });
+      }
+      // No @@index declarations in schema — every query scans the table
+    good: |
+      // -- Schema with indexes chosen per query pattern --
+      // model Event {
+      //   id        Int      @id
+      //   tenantId  String
+      //   userId    String
+      //   eventType String
+      //   createdAt DateTime
+      //   payload   String?
+      //
+      //   // Composite index: user events by time
+      //   @@index([userId, createdAt])
+      //   // Composite index: events by type (recent first)
+      //   @@index([eventType, createdAt(sort: Desc)])
+      //   // Partial: only critical event types indexed
+      //   @@index([createdAt])
+      // }
+
+      import { PrismaClient } from "@prisma/client";
+
+      const prisma = new PrismaClient();
+
+      interface IndexUsageStats {
+        indexName: string;
+        scans: number;
+        rowsRead: number;
+        lastUsed: Date | null;
+      }
+
+      // -- Query patterns that leverage the indexes --
+      async function getUserEvents(userId: string, since: Date): Promise<Event[]> {
+        return prisma.event.findMany({
+          where: { userId, createdAt: { gte: since } },
+          orderBy: { createdAt: "desc" },
+          select: { id: true, eventType: true, createdAt: true, payload: true },
+        });
+      }
+
+      async function getRecentByType(eventType: string): Promise<Event[]> {
+        // Uses @@index([eventType, createdAt(sort: Desc)]) — no sort needed
+        return prisma.event.findMany({
+          where: { eventType },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+        });
+      }
+
+      // Covering index via select: only request indexed columns, skip table access
+      async function getDashboardCounts(tenantId: string): Promise<unknown[]> {
+        return prisma.$queryRaw`
+          SELECT DATE(created_at) as day, event_type, COUNT(*) as cnt
+          FROM "Event"
+          WHERE tenant_id = ${tenantId}
+          GROUP BY day, event_type
+          ORDER BY day DESC
+          LIMIT 30
+        `;
+      }
+
+      // -- Dead index detection: find indexes that never get used --
+      async function findUnusedIndexes(): Promise<string[]> {
+        // PostgreSQL: SELECT indexrelname FROM pg_stat_user_indexes WHERE idx_scan = 0
+        // MySQL: SELECT * FROM sys.schema_unused_indexes
+        const result = await prisma.$queryRaw<Array<{ indexrelname: string }>>`
+          SELECT indexrelname
+          FROM pg_stat_user_indexes
+          WHERE idx_scan = 0
+            AND indexrelname NOT LIKE '%pkey'
+        `;
+        return result.map((r) => r.indexrelname);
+      }
+
+      // -- LSM-tree write optimization (in-memory buffer with periodic flush) --
+      class LSMMemtable<K, V> {
+        private memtable = new Map<K, V>();
+        private maxSize: number;
+
+        constructor(maxSize = 10_000) {
+          this.maxSize = maxSize;
+        }
+
+        put(key: K, value: V, onFlush?: () => void): void {
+          this.memtable.set(key, value);
+          if (this.memtable.size >= this.maxSize) {
+            onFlush?.();
+            this.memtable.clear();
+          }
+        }
+
+        get(key: K): V | undefined {
+          return this.memtable.get(key);
+        }
+
+        get size(): number {
+          return this.memtable.size;
+        }
+      }
+
+      // -- Index recommendation: analyze query patterns and suggest indexes --
+      async function recommendIndexes(): Promise<string[]> {
+        // PostgreSQL: pg_stat_statements + pg_missing_indexes equivalent
+        const slowQueries = await prisma.$queryRaw<Array<{ query: string }>>`
+          SELECT query
+          FROM pg_stat_statements
+          WHERE mean_exec_time > 100  -- 100ms
+            AND calls > 100
+          ORDER BY mean_exec_time DESC
+          LIMIT 10
+        `;
+        return slowQueries.map((q) => `Consider index for: ${q.query.slice(0, 80)}...`);
+      }
+
+      // -- Full-text search via inverted index with relevance ranking --
+      class FullTextSearchEngine {
+        private inverted: Map<string, Set<number>> = new Map();
+        private documents: Map<number, string> = new Map();
+        private docFrequency: Map<string, number> = new Map();
+        private nextId = 0;
+
+        index(text: string): number {
+          const docId = this.nextId++;
+          this.documents.set(docId, text);
+          const tokens = this.tokenize(text);
+          const seen = new Set<string>();
+          for (const token of tokens) {
+            if (!this.inverted.has(token)) this.inverted.set(token, new Set());
+            this.inverted.get(token)!.add(docId);
+            if (!seen.has(token)) {
+              this.docFrequency.set(token, (this.docFrequency.get(token) ?? 0) + 1);
+              seen.add(token);
+            }
+          }
+          return docId;
+        }
+
+        search(query: string, limit = 10): Array<[number, number]> {
+          const qTokens = this.tokenize(query);
+          if (qTokens.length === 0) return [];
+          const scores = new Map<number, number>();
+          const docCount = this.documents.size || 1;
+          for (const token of qTokens) {
+            const tf = qTokens.filter((t) => t === token).length / qTokens.length;
+            const df = this.docFrequency.get(token) ?? 0;
+            const idf = Math.log(docCount / (df + 1));
+            for (const docId of this.inverted.get(token) ?? new Set()) {
+              const docText = this.documents.get(docId) ?? "";
+              const docWords = docText.split(/\s+/).length || 1;
+              const docTf = (docText.toLowerCase().match(new RegExp(token, "g")) ?? []).length / docWords;
+              scores.set(docId, (scores.get(docId) ?? 0) + tf * idf * docTf);
+            }
+          }
+          return [...scores.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit);
+        }
+
+        private tokenize(text: string): string[] {
+          return text.toLowerCase().match(/\w+/g) ?? [];
+        }
+      }
+
+      // -- Materialized view: cache expensive query results --
+      class MaterializedViewManager {
+        private views: Map<string, unknown[]> = new Map();
+        private staleViews: Set<string> = new Set();
+
+        constructor(private prisma: PrismaClient) {}
+
+        async createView(name: string, query: string): Promise<void> {
+          // Register in metadata table
+          await this.prisma.$executeRaw`
+            INSERT INTO mv_definitions(view_name, query_sql) VALUES (${name}, ${query})
+          `;
+          await this.refresh(name);
+        }
+
+        async refresh(name: string): Promise<void> {
+          const rows = await this.prisma.$queryRawUnsafe<Array<Record<string, unknown>>>(
+            `SELECT query_sql FROM mv_definitions WHERE view_name = $1`, name
+          );
+          if (rows.length === 0) throw new Error(`Unknown view: ${name}`);
+          const result = await this.prisma.$queryRawUnsafe(rows[0].query_sql as string);
+          this.views.set(name, result);
+          this.staleViews.delete(name);
+        }
+
+        query(name: string): unknown[] {
+          return this.views.get(name) ?? [];
+        }
+
+        invalidate(name: string): void {
+          this.staleViews.add(name);
+        }
+
+        get stale(): string[] {
+          return [...this.staleViews];
+        }
+      }
+heuristics:
+  - Indexes are derived data — they exist to answer queries faster at the cost of write amplification.
+  - Choose index types by query access patterns: hash (point lookups), B-tree (range scans), LSM (write-heavy), full-text (search).
+  - Composite indexes serve multi-column queries: order columns by selectivity (most selective first).
+  - Covering indexes include all columns a query needs — the database answers from the index without touching the table.
+  - Partial indexes index only a subset of rows (WHERE clause) — useful for sparse but important values.
+  - Full-text search uses inverted indexes: tokenize documents → map term → doc_ids → rank by TF-IDF/BM25.
+  - Materialized views cache precomputed query results; they trade freshness for speed and must be refreshed on a schedule or invalidated on write.
+  - Unused indexes are dead weight: every write must update them. Monitor index usage and drop unused ones.
+  - Write-heavy workloads prefer LSM-trees (append-only, periodic compaction) over B-trees (in-place updates).
+  - Read-heavy workloads with range scans prefer B-trees over hash indexes.
+  - Every index is a trade-off: document which query each index serves and what writes it slows down.
+related_tags: [indexing, b-tree, lsm-tree, hash-index, covering-index, partial-index, composite-index, full-text-search, inverted-index, materialized-view, tf-idf, write-amplification, query-performance, data-systems, ddia]

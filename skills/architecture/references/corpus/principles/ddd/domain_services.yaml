@@ -1,0 +1,243 @@
+id: domain-services-001
+name: "Domain-Driven Design — Domain Services: Stateless Domain Operations, Coordination, and Business Policies"
+category: architecture
+canonical_tags: ['ddd', 'domain-services']
+sources:
+  - books/domain-driven-design.md
+  - books/domain-driven-design-distilled.md
+  - books/implementing-domain-driven-design.md
+summary: >
+  Domain services express domain operations that do not naturally belong to any
+  single entity or value object. They are stateless, named in the ubiquitous
+  language, and own significant business processes that span multiple domain
+  concepts. Use a domain service when the behavior is domain-significant and
+  cannot be placed on one entity without distorting that entity's
+  responsibility. The canonical anti-pattern is the "god service" — an
+  OrderService that contains all order rules, or a BillingService that holds
+  dozens of unrelated policies. Another is moving all behavior into services,
+  leaving entities as anemic data bags. A well-designed domain service
+  coordinates domain objects without replacing them, depends only on domain
+  interfaces, and is named after the business capability it provides:
+  FundsTransferService, PricingPolicy, RoutingEngine — never OrderManager
+  or InvoiceProcessor.
+examples:
+  - language: python
+    bad: |
+      # God service containing all domain logic, entities reduced to data bags
+      from dataclasses import dataclass
+      from decimal import Decimal
+
+      @dataclass
+      class Account:
+          id: str
+          balance: Decimal
+          status: str  # "active" or "frozen"
+
+      @dataclass
+      class Transfer:
+          source_id: str
+          target_id: str
+          amount: Decimal
+          status: str  # "pending", "completed", "failed"
+
+      class TransferService:
+          """Contains ALL business rules. Entities are passive. Service is a god object."""
+
+          def __init__(self, account_repo: object, fee_calculator: object,
+                       ledger: object, notification: object) -> None:
+              self._accounts = account_repo
+              self._fees = fee_calculator
+              self._ledger = ledger
+              self._notifications = notification
+
+          def transfer(self, source_id: str, target_id: str, amount: Decimal) -> Transfer:
+              # All business logic in one procedural method — no domain objects make decisions
+              source = self._accounts.find(source_id)
+              target = self._accounts.find(target_id)
+
+              if source.status != "active":
+                  raise ValueError("Source account not active")
+              if target.status != "active":
+                  raise ValueError("Target account not active")
+
+              fee = self._fees.calculate(source_id, amount)
+              total = amount + fee
+
+              if source.balance < total:
+                  raise ValueError("Insufficient funds")
+
+              source.balance -= total
+              target.balance += amount
+
+              transfer = Transfer(source_id, target_id, amount, "completed")
+              self._accounts.save(source)  # direct mutation, no aggregate protection
+              self._accounts.save(target)
+              self._ledger.record(transfer)
+              self._notifications.send(source_id, f"Transferred {amount}")
+              self._notifications.send(target_id, f"Received {amount}")
+
+              return transfer
+
+          def calculate_fees(self, account_id: str, amount: Decimal) -> Decimal:
+              # Another domain rule buried in the service...
+              pass
+
+          def check_fraud(self, transfer: Transfer) -> bool:
+              # ...and another
+              pass
+
+    good: |
+      from __future__ import annotations
+
+      from abc import ABC, abstractmethod
+      from dataclasses import dataclass
+      from decimal import Decimal
+      from typing import Protocol
+      from uuid import UUID, uuid4
+
+      # --- Value Objects ---
+
+      @dataclass(frozen=True)
+      class Money:
+          amount: Decimal
+          currency: str = "USD"
+
+          def __post_init__(self) -> None:
+              if self.amount < 0:
+                  raise ValueError("Money cannot be negative")
+
+          def __add__(self, other: Money) -> Money:
+              if self.currency != other.currency:
+                  raise ValueError("Currency mismatch")
+              return Money(self.amount + other.amount, self.currency)
+
+          def __sub__(self, other: Money) -> Money:
+              if self.currency != other.currency:
+                  raise ValueError("Currency mismatch")
+              result = self.amount - other.amount
+              if result < 0:
+                  raise ValueError("Result would be negative")
+              return Money(result, self.currency)
+
+      @dataclass(frozen=True)
+      class AccountId:
+          value: UUID = field(default_factory=uuid4)
+
+      # --- Entities own their behavior ---
+
+      class Account:
+          """Entity: owns its balance and state transitions."""
+
+          def __init__(self, account_id: AccountId, initial_balance: Money) -> None:
+              self._id = account_id
+              self._balance = initial_balance
+              self._status = "active"
+
+          @property
+          def id(self) -> AccountId:
+              return self._id
+
+          @property
+          def balance(self) -> Money:
+              return self._balance
+
+          @property
+          def status(self) -> str:
+              return self._status
+
+          def debit(self, amount: Money) -> Money:
+              """Business rule: debiting requires sufficient funds."""
+              if self._status != "active":
+                  raise ValueError(f"Cannot debit {self._status} account")
+              self._balance = self._balance - amount
+              return self._balance
+
+          def credit(self, amount: Money) -> None:
+              """Business rule: only active accounts can receive credits."""
+              if self._status != "active":
+                  raise ValueError(f"Cannot credit {self._status} account")
+              self._balance = self._balance + amount
+
+      # --- Domain Service: stateless, coordinates entities, depends only on domain interfaces ---
+
+      class FeePolicy(ABC):
+          """Domain interface — implementation may vary by customer tier."""
+
+          @abstractmethod
+          def fee_for(self, account_id: AccountId, amount: Money) -> Money:
+              ...
+
+      class StandardFeePolicy(FeePolicy):
+          def fee_for(self, account_id: AccountId, amount: Money) -> Money:
+              if amount.amount > Decimal("1000"):
+                  return Money(Decimal("0"), amount.currency)  # free for large transfers
+              return Money(Decimal("5.00"), amount.currency)
+
+      class FundsTransferService:
+          """Domain service: coordinates Accounts using a transfer policy.
+          Named after the business capability, not a technical role.
+          Stateless — all state lives in the entities it coordinates."""
+
+          def __init__(self, fee_policy: FeePolicy) -> None:
+              self._fee_policy = fee_policy
+
+          def transfer(self, source: Account, target: Account, amount: Money) -> Money:
+              """Execute a funds transfer. Entities make their own decisions;
+              the service coordinates and applies the fee policy."""
+
+              if source.id == target.id:
+                  raise ValueError("Cannot transfer to the same account")
+
+              fee = self._fee_policy.fee_for(source.id, amount)
+              total_deduction = amount + fee  # Money.__add__ validates currency match
+
+              source.debit(total_deduction)   # entity enforces "active + sufficient funds"
+              target.credit(amount)           # entity enforces "active only"
+
+              return fee  # caller can record, publish event, etc.
+
+      # --- Application service orchestrates ---
+
+      class AccountRepository(ABC):
+          @abstractmethod
+          def account_of(self, account_id: AccountId) -> Account | None:
+              ...
+          @abstractmethod
+          def save(self, account: Account) -> None:
+              ...
+
+      class TransferUseCase:
+          def __init__(self, accounts: AccountRepository, transfer_service: FundsTransferService,
+                       event_publisher: object) -> None:
+              self._accounts = accounts
+              self._transfer = transfer_service
+              self._events = event_publisher
+
+          def execute(self, source_id: AccountId, target_id: AccountId,
+                      amount: Money) -> Money:
+              src = self._accounts.account_of(source_id)
+              tgt = self._accounts.account_of(target_id)
+              if src is None or tgt is None:
+                  raise ValueError("Account not found")
+
+              fee = self._transfer.transfer(src, tgt, amount)
+
+              self._accounts.save(src)
+              self._accounts.save(tgt)
+              # Publish event after successful persistence
+              # self._events.publish(FundsTransferred(...))
+              return fee
+
+heuristics:
+  - Use a domain service only when behavior is domain-significant and does not naturally belong to one entity or value object. If the operation can live on an entity without distorting it, put it there.
+  - Domain services are stateless. They coordinate domain objects but do not hold domain state themselves. State belongs in entities and value objects.
+  - Name domain services after business capabilities: FundsTransferService, PricingEngine, FraudDetectionPolicy, RoutingStrategy. Avoid generic names like OrderManager, InvoiceProcessor, or DataHandler.
+  - Domain services must depend only on domain interfaces, not on infrastructure. A domain service that imports a database connection, message broker, or HTTP client is not a domain service — it is infrastructure leaking upward.
+  - Do not move all behavior into services. A domain with entities that are just data bags and services that contain all logic is the anemic domain model anti-pattern, not DDD.
+  - Keep domain services focused on a single business capability. A service called OrderService with 30 methods is not a domain service — it is a god object.
+  - Domain services can depend on other domain services, repositories (through interfaces), and policies. They should not depend on application services, controllers, or transport concerns.
+  - If a domain service needs to load data, inject repository interfaces — not concrete implementations. The repository interface lives in the domain/application layer; the implementation lives in infrastructure.
+  - Test domain services with in-memory implementations of their dependencies. A FundsTransferService test should use a fake FeePolicy and real Account entities — no database required.
+  - A domain service is not the same as an application service. Domain services contain domain logic (business rules, policies, coordination of domain objects). Application services orchestrate use cases (load aggregates, call domain services, persist, publish events).
+
+related_tags: [domain-services, stateless-operations, business-policies, anemic-domain-model, ubiquitous-language, ddd-tactical, coordination]

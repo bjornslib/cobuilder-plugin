@@ -1,0 +1,471 @@
+id: hexagonal-architecture-003
+name: Hexagonal Architecture — Ports, Adapters & Side-Independent Design
+category: architecture
+canonical_tags: ['hexagonal-architecture', 'clean-architecture']
+sources:
+  - books/clean-architecture.md
+  - books/unified-software-engineering.md
+summary: >
+  Hexagonal Architecture (Ports & Adapters) places the application core at the center
+  and all external interactions — databases, HTTP, message queues, UIs, filesystems,
+  vendor SDKs — at the edges. The core defines "ports" (interfaces it owns) and
+  external systems provide "adapters" (implementations). There is no distinction
+  between "driving" (inbound) and "driven" (outbound) adapters — both are equally
+  replaceable shells around a stable core. The architecture is "side-independent":
+  you can swap a REST API for a CLI, a PostgreSQL database for in-memory storage,
+  or synchronous calls for async messaging, and the core business logic never changes.
+  This is the most general form of Clean Architecture — every port is a seam and
+  every adapter is a plugin.
+examples:
+  - language: python
+    bad: |
+      # Monolithic service: business logic, web framework, and database access
+      # all tangled in one module. Changing the web framework or database
+      # forces rewriting business rules.
+
+      from fastapi import FastAPI, HTTPException
+      from sqlalchemy import create_engine, Column, Integer, String
+      from sqlalchemy.orm import Session, declarative_base
+      from pydantic import BaseModel
+
+      app = FastAPI()
+      engine = create_engine("sqlite:///orders.db")
+      Base = declarative_base()
+
+      class OrderRow(Base):
+          __tablename__ = "orders"
+          id = Column(Integer, primary_key=True)
+          product = Column(String)
+          quantity = Column(Integer)
+          status = Column(String, default="pending")
+
+      class OrderRequest(BaseModel):
+          product: str
+          quantity: int
+
+      @app.post("/orders")
+      def place_order(req: OrderRequest):
+          if req.quantity < 1:
+              raise HTTPException(400, "Quantity must be at least 1")
+          # Business rules mixed with SQLAlchemy and FastAPI
+          if req.product not in {"widget-a", "widget-b", "widget-c"}:
+              raise HTTPException(400, f"Unknown product: {req.product}")
+          with Session(engine) as session:
+              order = OrderRow(product=req.product, quantity=req.quantity)
+              session.add(order)
+              session.commit()
+              return {"id": order.id, "status": order.status}
+
+    good: |
+      # Hexagonal: the core (domain + use cases) owns ports.
+      # Adapters (FastAPI, SQLAlchemy, in-memory) implement them.
+      # Every hexagon side is replaceable without touching the core.
+
+      from abc import ABC, abstractmethod
+      from dataclasses import dataclass
+      from typing import Protocol
+
+
+      # ═══════════════════════════════════════════════════════════════
+      # CORE — the hexagon. Zero framework or infrastructure imports.
+      # ═══════════════════════════════════════════════════════════════
+
+      @dataclass
+      class Order:
+          id: int | None
+          product: str
+          quantity: int
+          status: str = "pending"
+
+          def validate(self) -> None:
+              if self.quantity < 1:
+                  raise ValueError("Quantity must be at least 1")
+              if self.product not in {"widget-a", "widget-b", "widget-c"}:
+                  raise ValueError(f"Unknown product: {self.product}")
+
+          def mark_fulfilled(self) -> None:
+              if self.status != "pending":
+                  raise ValueError(f"Cannot fulfill order in '{self.status}' state")
+              self.status = "fulfilled"
+
+
+      # ---- Port: order persistence (core owns this interface) ----
+      class OrderRepository(ABC):
+          @abstractmethod
+          def save(self, order: Order) -> Order: ...
+
+          @abstractmethod
+          def find_by_id(self, order_id: int) -> Order | None: ...
+
+
+      # ---- Port: inventory check (core owns this interface) ----
+      class InventoryGateway(ABC):
+          @abstractmethod
+          def check_availability(self, product: str, quantity: int) -> bool: ...
+
+          @abstractmethod
+          def reserve(self, product: str, quantity: int) -> str: ...
+
+
+      # ---- Port: order placed notifier (core owns this interface) ----
+      class OrderNotifier(ABC):
+          @abstractmethod
+          def notify_placed(self, order: Order) -> None: ...
+
+
+      # ---- Use case: orchestrates core logic through ports ----
+      class PlaceOrderUseCase:
+          def __init__(
+              self,
+              repo: OrderRepository,
+              inventory: InventoryGateway,
+              notifier: OrderNotifier,
+          ) -> None:
+              self._repo = repo
+              self._inventory = inventory
+              self._notifier = notifier
+
+          def execute(self, product: str, quantity: int) -> Order:
+              order = Order(id=None, product=product, quantity=quantity)
+              order.validate()
+
+              if not self._inventory.check_availability(product, quantity):
+                  raise ValueError(f"Insufficient stock for {product}")
+
+              reservation_id = self._inventory.reserve(product, quantity)
+              saved = self._repo.save(order)
+              self._notifier.notify_placed(saved)
+              return saved
+
+
+      # ═══════════════════════════════════════════════════════════════
+      # ADAPTERS — hexagon sides. Each implements a core port.
+      # ═══════════════════════════════════════════════════════════════
+
+      # ---- Driving adapter (inbound): FastAPI HTTP endpoint ----
+      # imports fastapi, pydantic
+      class OrderHttpAdapter:
+          def __init__(self, use_case: PlaceOrderUseCase) -> None:
+              self._use_case = use_case
+
+          @staticmethod
+          def register(app, use_case: PlaceOrderUseCase) -> None:
+              adapter = OrderHttpAdapter(use_case)
+              app.post("/orders")(adapter.handle)
+
+          async def handle(self, request) -> dict:
+              body = await request.json()
+              try:
+                  order = self._use_case.execute(body["product"], body["quantity"])
+                  return {"id": order.id, "status": order.status}
+              except ValueError as e:
+                  from fastapi import HTTPException
+                  raise HTTPException(status_code=400, detail=str(e))
+
+
+      # ---- Driven adapter (outbound): PostgreSQL repository ----
+      # imports sqlalchemy
+      class PostgresOrderRepository(OrderRepository):
+          def __init__(self, session_factory):
+              self._factory = session_factory
+
+          def save(self, order: Order) -> Order:
+              row = OrderRow(product=order.product, quantity=order.quantity, status=order.status)
+              with self._factory() as session:
+                  session.add(row)
+                  session.commit()
+                  order.id = row.id
+              return order
+
+          def find_by_id(self, order_id: int) -> Order | None:
+              with self._factory() as session:
+                  row = session.query(OrderRow).get(order_id)
+                  if row is None:
+                      return None
+                  return Order(id=row.id, product=row.product, quantity=row.quantity, status=row.status)
+
+
+      # ---- Driven adapter (outbound): Email notifier ----
+      # import smtplib
+      class EmailOrderNotifier(OrderNotifier):
+          def __init__(self, smtp_host: str) -> None:
+              self._host = smtp_host
+
+          def notify_placed(self, order: Order) -> None:
+              # SMTP integration — core never sees this code
+              ...
+
+
+      # ═══════════════════════════════════════════════════════════════
+      # COMPOSITION ROOT — outermost wiring layer
+      # ═══════════════════════════════════════════════════════════════
+
+      def build_app():
+          from fastapi import FastAPI
+          # Production wiring
+          app = FastAPI()
+          use_case = PlaceOrderUseCase(
+              repo=PostgresOrderRepository(session_factory),
+              inventory=WarehouseApiInventoryGateway(...),
+              notifier=EmailOrderNotifier("smtp.example.com"),
+          )
+          OrderHttpAdapter.register(app, use_case)
+          return app
+
+
+      # ═══════════════════════════════════════════════════════════════
+      # TESTING — swap EVERY adapter for test doubles
+      # ═══════════════════════════════════════════════════════════════
+
+      class InMemoryOrderRepository(OrderRepository):
+          def __init__(self) -> None:
+              self._orders: dict[int, Order] = {}
+              self._next_id = 1
+
+          def save(self, order: Order) -> Order:
+              order.id = self._next_id
+              self._orders[self._next_id] = order
+              self._next_id += 1
+              return order
+
+          def find_by_id(self, order_id: int) -> Order | None:
+              return self._orders.get(order_id)
+
+      class AlwaysAvailableInventory(InventoryGateway):
+          def check_availability(self, product: str, quantity: int) -> bool:
+              return True
+          def reserve(self, product: str, quantity: int) -> str:
+              return f"res-{product}"
+
+      class NoOpNotifier(OrderNotifier):
+          def notify_placed(self, order: Order) -> None:
+              pass
+
+      # Core tested in complete isolation — zero frameworks, zero network.
+      use_case = PlaceOrderUseCase(
+          repo=InMemoryOrderRepository(),
+          inventory=AlwaysAvailableInventory(),
+          notifier=NoOpNotifier(),
+      )
+
+  - language: typescript
+    bad: |
+      // Express app where business rules, persistence, and HTTP are fused.
+      // Changing the web framework or database means rewriting business logic.
+
+      import express, { Request, Response } from "express";
+      import { createPool, Pool } from "mysql2";
+
+      const app = express();
+      const pool: Pool = createPool({ host: "localhost", database: "orders" });
+
+      app.post("/orders", async (req: Request, res: Response) => {
+        const { product, quantity } = req.body;
+
+        // Business rule in route handler
+        if (quantity < 1) {
+          return res.status(400).json({ error: "Quantity must be at least 1" });
+        }
+        if (!["widget-a", "widget-b", "widget-c"].includes(product)) {
+          return res.status(400).json({ error: `Unknown product: ${product}` });
+        }
+
+        // SQL in route handler
+        const [result] = await pool.execute(
+          "INSERT INTO orders (product, quantity) VALUES (?, ?)",
+          [product, quantity],
+        );
+        const orderId = (result as any).insertId;
+
+        // Direct side effect in route handler
+        console.log(`Order ${orderId} placed for ${product} x${quantity}`);
+
+        res.json({ id: orderId, status: "pending" });
+      });
+
+    good: |
+      // ═══════════════════════════════════════════════════════════
+      // CORE — the hexagon. No express, no mysql2.
+      // ═══════════════════════════════════════════════════════════
+
+      // Domain model
+      interface Order {
+        id: number | null;
+        product: string;
+        quantity: number;
+        status: "pending" | "fulfilled" | "cancelled";
+      }
+
+      // Port: order persistence
+      interface OrderRepository {
+        save(order: Order): Promise<Order>;
+        findById(id: number): Promise<Order | null>;
+      }
+
+      // Port: inventory
+      interface InventoryGateway {
+        checkAvailability(product: string, quantity: number): Promise<boolean>;
+        reserve(product: string, quantity: number): Promise<string>;
+      }
+
+      // Port: notification
+      interface OrderNotifier {
+        notifyPlaced(order: Order): Promise<void>;
+      }
+
+      // Use case
+      export class PlaceOrderUseCase {
+        constructor(
+          private readonly repo: OrderRepository,
+          private readonly inventory: InventoryGateway,
+          private readonly notifier: OrderNotifier,
+        ) {}
+
+        async execute(product: string, quantity: number): Promise<Order> {
+          // Validation
+          if (quantity < 1) throw new Error("Quantity must be at least 1");
+          if (!["widget-a", "widget-b", "widget-c"].includes(product)) {
+            throw new Error(`Unknown product: ${product}`);
+          }
+
+          const available = await this.inventory.checkAvailability(product, quantity);
+          if (!available) throw new Error(`Insufficient stock for ${product}`);
+
+          await this.inventory.reserve(product, quantity);
+
+          const order: Order = {
+            id: null,
+            product,
+            quantity,
+            status: "pending",
+          };
+          const saved = await this.repo.save(order);
+          await this.notifier.notifyPlaced(saved);
+          return saved;
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      // ADAPTERS
+      // ═══════════════════════════════════════════════════════════
+
+      // Driving adapter: Express HTTP
+      import { Router, Request, Response } from "express";
+
+      export function orderRoutes(useCase: PlaceOrderUseCase): Router {
+        const router = Router();
+        router.post("/orders", async (req: Request, res: Response) => {
+          try {
+            const order = await useCase.execute(req.body.product, req.body.quantity);
+            res.json({ id: order.id, status: order.status });
+          } catch (err: any) {
+            res.status(400).json({ error: err.message });
+          }
+        });
+        return router;
+      }
+
+      // Driven adapter: MySQL repository
+      import { Pool } from "mysql2";
+
+      export class MySqlOrderRepository implements OrderRepository {
+        constructor(private readonly pool: Pool) {}
+
+        async save(order: Order): Promise<Order> {
+          const [result] = await this.pool.execute(
+            "INSERT INTO orders (product, quantity, status) VALUES (?, ?, ?)",
+            [order.product, order.quantity, order.status ?? "pending"],
+          );
+          return { ...order, id: (result as any).insertId };
+        }
+
+        async findById(id: number): Promise<Order | null> {
+          const [rows] = await this.pool.execute(
+            "SELECT id, product, quantity, status FROM orders WHERE id = ?",
+            [id],
+          );
+          const r = (rows as any[])[0];
+          return r ? { ...r } : null;
+        }
+      }
+
+      // Driven adapter: Slack notifier
+      export class SlackOrderNotifier implements OrderNotifier {
+        constructor(private readonly webhookUrl: string) {}
+
+        async notifyPlaced(order: Order): Promise<void> {
+          await fetch(this.webhookUrl, {
+            method: "POST",
+            body: JSON.stringify({
+              text: `Order #${order.id}: ${order.product} x${order.quantity}`,
+            }),
+          });
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      // COMPOSITION ROOT
+      // ═══════════════════════════════════════════════════════════
+
+      import express from "express";
+      import { createPool } from "mysql2";
+
+      const pool = createPool({ host: "localhost", database: "orders" });
+
+      const useCase = new PlaceOrderUseCase(
+        new MySqlOrderRepository(pool),
+        new WarehouseApiInventory(process.env.WAREHOUSE_URL!),
+        new SlackOrderNotifier(process.env.SLACK_WEBHOOK!),
+      );
+
+      const app = express();
+      app.use(express.json());
+      app.use(orderRoutes(useCase));
+      app.listen(3000);
+
+heuristics:
+  - >
+    The core of the hexagon defines ports: interfaces it needs to interact with the
+    outside world. It never imports or knows about specific adapters. Adapters implement
+    ports and are wired in from the outside at the composition root.
+  - >
+    There is no architectural distinction between "driving" (inbound, e.g. HTTP
+    controllers) and "driven" (outbound, e.g. database repositories) adapters.
+    Both are symmetrical — each is a replaceable shell around the stable core.
+  - >
+    "Allow an application to equally be driven by users, programs, automated tests,
+    or batch scripts, and to be developed and tested in isolation from its eventual
+    run-time devices and databases" (Alistair Cockburn, original Hexagonal Architecture
+    paper). The application does not know and does not care how it is invoked.
+  - >
+    Every external dependency — databases, message brokers, HTTP clients, filesystems,
+    clocks, UUID generators, email servers — deserves its own port if it makes
+    the core logic untestable or non-deterministic without the real thing.
+  - >
+    Ports should be semantic: a `OrderRepository.save(order)` port is better than a
+    generic `CrudRepository<Order>`. The port name should reflect domain intent and
+    use-case access patterns, not table shapes or SQL mechanics.
+  - >
+    Adapters handle translation: a REST adapter translates JSON into domain objects,
+    a PostgreSQL adapter translates rows into aggregates. The core never sees transport
+    formats, wire protocols, or storage schemas.
+  - >
+    Test strategy: the hexagon core is tested against test-double adapters. Each
+    real adapter is tested in isolation against its real external system (integration
+    test). You never need the full stack to verify business rules.
+  - >
+    Hexagonal Architecture is side-independent: you can add a gRPC adapter, a CLI
+    adapter, or a queue-consumer adapter to the same core without modifying any
+    existing code. Each new side is a new adapter implementing the same ports.
+  - >
+    Do not add ports for stable, non-volatile dependencies (standard library
+    types, pure functions, domain value objects). A port for `Math.abs()` is
+    overengineering. Ports exist to isolate volatility, not to simulate purity.
+  - >
+    The composition root is the single place that knows about all adapters. It
+    constructs the full object graph and starts the application. If adapters are
+    being constructed inside use cases, the hexagon is leaking.
+related_tags:
+  [hexagonal-architecture, ports-and-adapters, clean-architecture, dependency-inversion,
+   plugin-architecture, driving-adapter, driven-adapter, composition-root,
+   side-independence, seams, alistair-cockburn, replaceable-infrastructure]

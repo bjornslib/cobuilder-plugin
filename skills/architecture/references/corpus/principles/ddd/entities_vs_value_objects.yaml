@@ -1,0 +1,705 @@
+id: entities-vs-value-objects-001
+name: "Domain-Driven Design — Entities vs Value Objects: Identity, Equality, and When to Use Each"
+category: architecture
+canonical_tags: ['ddd', 'entities', 'value-objects', 'tactical-design']
+sources:
+  - books/domain-driven-design.md
+  - books/domain-driven-design-distilled.md
+summary: >
+  The single most important distinction in tactical DDD is whether a concept is an
+  Entity (defined by identity, mutable, tracked across time) or a Value Object
+  (defined by attributes, immutable, replaceable). Get this wrong and everything
+  downstream breaks: repositories, aggregates, equality checks, caching, and
+  concurrency all depend on this choice. An Entity models "which one" — its identity
+  persists even as every attribute changes. A Value Object models "what value" —
+  if the attributes match, the objects are interchangeable. Entities protect
+  meaningful lifecycle transitions (account.withdraw(), order.cancel()). Value
+  objects carry self-validating domain behavior on an immutable shape (Money.add(),
+  DateRange.contains()). The canonical heuristic: if you care about tracking
+  something over time and it has a lifecycle, it's an entity. If you only care
+  about the value and would happily replace one instance with another that has the
+  same attributes, it's a value object. When in doubt, default to value object —
+  immutability is safer, simpler, and easier to evolve into an entity later than
+  the reverse.
+
+distinction_table:
+  - dimension: "Equality"
+    entity: "Identity equality — two objects are the same if they share the same ID, even if every attribute differs."
+    value_object: "Structural equality — two objects are the same if all attributes match, regardless of any internal ID."
+  - dimension: "Mutability"
+    entity: "Mutable by design — state changes are expected and tracked over the object's lifecycle."
+    value_object: "Immutable by default — replace the whole object instead of modifying it. `Money(amount + 10)` not `money.amount += 10`."
+  - dimension: "Lifecycle"
+    entity: "Has a lifecycle — created, modified, archived, deleted. Persists across transactions and sessions."
+    value_object: "No independent lifecycle — created, used, and discarded. Exists only as part of an entity or another value object."
+  - dimension: "Identity"
+    entity: "Identity is explicit and stable — a UUID, a natural key, or a composite. Identity never changes."
+    value_object: "No identity — the concept itself is the value. There is no 'ID field' on a Money or EmailAddress."
+  - dimension: "Persistence"
+    entity: "Persisted by identity via a Repository. `repo.getById(id)` returns the entity with its current state."
+    value_object: "Persisted only as part of an entity (embedded in the same row or document). No standalone repository."
+  - dimension: "Concurrency"
+    entity: "Requires concurrency control — two users editing the same Account must be coordinated."
+    value_object: "No concurrency concerns — immutable objects can be shared freely across threads and transactions."
+  - dimension: "Validation"
+    entity: "Validates transitions, not just state: `account.withdraw(200)` checks status and balance at call time."
+    value_object: "Validates on construction only: a Money or EmailAddress can never exist in an invalid state."
+  - dimension: "Caching"
+    entity: "Cache by identity with invalidation on state change. Stale cache returns wrong attributes."
+    value_object: "Cache forever — immutable. Can be interned, reused, and shared without expiration."
+
+when_to_use_entity:
+  summary: >
+    Model a concept as an entity when identity matters independently of attributes,
+    when the object has a lifecycle that spans multiple operations, and when business
+    rules depend on tracking "which one" through state changes.
+  triggers:
+    - "The business cares about tracking this specific thing over time (a specific Account, Order, User, Policy)."
+    - "The object changes state meaningfully — it goes from 'pending' to 'confirmed' to 'shipped', and those transitions have rules."
+    - "Two objects with identical attributes are NOT the same thing (two Accounts with the same balance and status belong to different people)."
+    - "You need to reference this object from other objects by identity (`order.customerId`, not `order.customer`)."
+    - "The object is the root of an aggregate and protects invariants across its children."
+    - "You need a Repository to find, load, and save this object by its identity."
+  anti_triggers:
+    - "The concept is a simple label, code, or quantity — just because it has a natural key doesn't make it an entity."
+    - "You're modeling it as an entity only because the database has an `id` column — database design is not domain design."
+    - "The concept could be immutable and equality-by-value — start as a value object and promote to entity only when lifecycle complexity demands it."
+
+when_to_use_value_object:
+  summary: >
+    Model a concept as a value object when attributes define it completely,
+    when immutability simplifies reasoning, and when the concept carries
+    validation and behavior that scattered primitives cannot protect.
+  triggers:
+    - "The concept is defined entirely by its attributes. Two EmailAddress('a@b.com') objects are the same thing."
+    - "You find repeated validation for the same concept across multiple handlers, services, or endpoints."
+    - "A primitive type (string, int, Decimal, Date) hides domain meaning. Money is more than a Decimal; Email is more than a string."
+    - "The concept has domain behavior: Money.add(), DateRange.contains(), Quantity.isGreaterThan()."
+    - "You want immutability — no thread-safety concerns, no accidental mutation, no stale state bugs."
+    - "The concept is embedded in or owned by an entity and doesn't need independent lifecycle management."
+  anti_triggers:
+    - "The concept has an independent lifecycle that spans transactions (it's an entity)."
+    - "You need to track changes to this specific object over time — value objects are replaced, not tracked."
+    - "You're creating value objects for everything out of ceremony. Not every field with validation needs its own type."
+
+equality_patterns:
+  summary: >
+    The equality contract is the most common source of bugs in DDD models.
+    Entities compare by identity only — never by structural attributes.
+    Value objects compare by all attributes — structural equality, often
+    implemented through dataclasses, records, or explicit __eq__.
+  entity_equality:
+    description: "Two entity instances are equal if they share the same identity. Comparing by attributes is wrong — the same Account can change balance and still be the same Account."
+    python: |
+      class Account:
+          def __init__(self, account_id: UUID, balance: Money):
+              self._id = account_id
+              self._balance = balance
+
+          def __eq__(self, other: object) -> bool:
+              if not isinstance(other, Account):
+                  return NotImplemented
+              return self._id == other._id  # Identity only — never compare balance
+
+          def __hash__(self) -> int:
+              return hash(self._id)
+    typescript: |
+      class Account {
+        constructor(
+          public readonly id: string,
+          private balance: Money,
+        ) {}
+
+        equals(other: Account): boolean {
+          return this.id === other.id;  // Identity only
+        }
+      }
+  value_object_equality:
+    description: "Two value objects are equal if all their attributes match. Use Python dataclass(frozen=True) or TypeScript readonly records for free structural equality."
+    python: |
+      from dataclasses import dataclass
+
+      @dataclass(frozen=True)  # Auto-generates __eq__ and __hash__ from all fields
+      class Money:
+          amount: Decimal
+          currency: str = "USD"
+
+      # Money(Decimal("5"), "USD") == Money(Decimal("5"), "USD")  # True — structural equality
+    typescript: |
+      class Money {
+        constructor(
+          public readonly amount: number,
+          public readonly currency: string,
+        ) {}
+
+        equals(other: Money): boolean {
+          return this.amount === other.amount && this.currency === other.currency;
+        }
+        // Structural equality — compare all fields
+      }
+
+immutability_patterns:
+  summary: >
+    Immutability is not a preference — it's the defining operational contract
+    that distinguishes value objects from entities. An Entity mutates in place;
+    a Value Object is always replaced. Breaking this contract creates the single
+    hardest class of bugs to diagnose: shared mutable state that changes
+    unexpectedly across distant parts of the codebase.
+  entity_mutation:
+    description: "Entities mutate in place through intention-revealing methods. The mutation encodes a domain transition — it's the point of the entity."
+    python: |
+      class Order:
+          def __init__(self, order_id: str):
+              self._id = order_id
+              self._status = "pending"
+              self._items: list[LineItem] = []
+
+          def add_item(self, item: LineItem) -> None:
+              if self._status != "pending":
+                  raise ValueError("Cannot add items to a non-pending order")
+              self._items.append(item)  # MUTATION — expected for an entity
+
+          def submit(self) -> None:
+              if not self._items:
+                  raise ValueError("Cannot submit an empty order")
+              self._status = "submitted"  # MUTATION — state transition
+    typescript: |
+      class Order {
+        private _status: string = "pending";
+        private _items: LineItem[] = [];
+
+        constructor(public readonly id: string) {}
+
+        addItem(item: LineItem): void {
+          if (this._status !== "pending")
+            throw new Error("Cannot add items to a non-pending order");
+          this._items.push(item);  // MUTATION
+        }
+
+        submit(): void {
+          if (this._items.length === 0)
+            throw new Error("Cannot submit an empty order");
+          this._status = "submitted";  // MUTATION
+        }
+      }
+  value_object_immutability:
+    description: "Value objects never mutate. Operations return new instances. If you find yourself reaching for a setter, reconsider — you probably have an entity or a design smell."
+    python: |
+      @dataclass(frozen=True)
+      class Money:
+          amount: Decimal
+          currency: str = "USD"
+
+          def add(self, other: Money) -> Money:
+              if self.currency != other.currency:
+                  raise ValueError("Currency mismatch")
+              return Money(self.amount + other.amount, self.currency)  # NEW instance, no mutation
+
+      # Usage: replace, never mutate
+      total = Money(Decimal("10"), "USD")
+      total = total.add(Money(Decimal("5"), "USD"))  # Money(15 USD) — new object
+    typescript: |
+      class Money {
+        constructor(
+          public readonly amount: number,
+          public readonly currency: string,
+        ) {}
+
+        add(other: Money): Money {
+          if (this.currency !== other.currency)
+            throw new Error("Currency mismatch");
+          return new Money(this.amount + other.amount, this.currency);  // NEW instance
+        }
+      }
+
+      // Usage: replace, never mutate
+      let total = new Money(10, "USD");
+      total = total.add(new Money(5, "USD"));  // Money(15 USD)
+
+common_pitfalls:
+  - pitfall: "Modeling everything as an entity because the database has an id column"
+    explanation: "Database design is not domain design. A Money concept might have a surrogate key in a ledger table, but in the domain model it's a value object — immutable, structurally equal, and embedded in the Order entity."
+    fix: "Distinguish persistence identity from domain identity. Value objects don't need IDs even if the ORM assigns them."
+
+  - pitfall: "Adding an id field to a value object 'just in case'"
+    explanation: "The moment a value object has identity, it stops being a value object. Equality becomes ambiguous — is it identity equality or structural equality? Hash-based collections (sets, dicts, Maps) break silently."
+    fix: "Remove the id field. If the concept needs identity, model it as an entity. Don't create a hybrid that behaves inconsistently."
+
+  - pitfall: "Using reference equality (is/===) instead of structural equality for value objects"
+    explanation: "Two Money(5, USD) instances are the same value but different objects in memory. Reference equality says they're different; structural equality says they're the same. If your domain says they're interchangeable, structural equality is correct."
+    fix: "Implement __eq__/equals() that compares all fields for value objects. Use Python dataclass(frozen=True) or TypeScript readonly classes with custom equals(). Never use is/=== for value-object comparison."
+
+  - pitfall: "Mutating a value object shared across multiple entities"
+    explanation: "The classic 'spooky action at a distance' bug. Order A and Order B both reference the same Address value object. Mutating it through Order A silently changes Order B's address too."
+    fix: "Make value objects immutable. `@dataclass(frozen=True)` or `readonly` fields. Operations return new instances. The bug disappears because mutation is impossible."
+
+  - pitfall: "Creating entities for concepts that never change"
+    explanation: "A Currency, a Country, a PaymentMethod — these feel like entities because they have a code or name, but they never change state in your system. They're reference data value objects."
+    fix: "If an object has no mutable state and no lifecycle transitions in your bounded context, it's a value object — even if it has a natural key like 'USD' or 'US'."
+
+  - pitfall: "Comparing entities by structural equality instead of identity"
+    explanation: "`account1 == account2` that compares balance and status will say two accounts are equal when they're different customers' accounts that happen to have the same balance. Financial disaster."
+    fix: "Entity equality must compare identity fields ONLY. Never include mutable state fields in entity __eq__. Use a base class or mixin to enforce this."
+
+examples:
+  - language: python
+    bad: |
+      # Everything is an entity — even concepts that should be value objects.
+      # Identity creep: Money, Address, and Quantity all have IDs they don't need.
+
+      from dataclasses import dataclass
+      from decimal import Decimal
+      from uuid import UUID, uuid4
+
+      @dataclass
+      class Money:
+          """Wrong: Money is a value object, not an entity with an ID."""
+          id: UUID           # <-- unnecessary identity
+          amount: Decimal
+          currency: str = "USD"
+
+      @dataclass
+      class Quantity:
+          """Wrong: Quantity has no lifecycle, no need for identity."""
+          id: UUID           # <-- unnecessary identity
+          value: int
+
+      @dataclass
+      class Order:
+          """Order IS an entity — but its value-object fields should not be entities."""
+          id: str
+          total: Money        # Money has an id, but we don't track Money instances
+          item_count: Quantity  # Quantity has an id — which one? why?
+
+      # Later, equality breaks silently:
+      m1 = Money(uuid4(), Decimal("10"), "USD")
+      m2 = Money(uuid4(), Decimal("10"), "USD")
+      assert m1 == m2  # FALSE — dataclass includes id in equality.
+                        # Two identical monetary values are now "different."
+
+      # Mutability of value objects causes shared-state bugs:
+      class Address:
+          def __init__(self, street: str, city: str, zip_code: str) -> None:
+              self.street = street
+              self.city = city
+              self.zip_code = zip_code  # Mutable fields — dangerous
+
+      class Customer:
+          def __init__(self, customer_id: str, address: Address) -> None:
+              self.id = customer_id
+              self.address = address
+
+      class Shipment:
+          def __init__(self, shipment_id: str, destination: Address) -> None:
+              self.id = shipment_id
+              self.destination = destination
+
+      # Shared mutable value object — the classic bug
+      shared_address = Address("123 Main St", "Springfield", "12345")
+      customer = Customer("C1", shared_address)
+      shipment = Shipment("S1", shared_address)
+
+      # Someone updates the customer's address...
+      customer.address.street = "456 Oak Ave"
+      # ...and silently changes the shipment's destination too!
+      print(shipment.destination.street)  # "456 Oak Ave" — WRONG
+
+    good: |
+      # Clear separation: entities for things with identity + lifecycle,
+      # value objects for immutable concepts defined by their attributes.
+
+      from __future__ import annotations
+
+      from dataclasses import dataclass
+      from decimal import Decimal
+      from typing import Protocol
+      from uuid import UUID, uuid4
+
+      # --- Value Objects: immutable, structural equality, no identity ---
+
+      @dataclass(frozen=True)
+      class Money:
+          """Value object: defined by amount + currency. No ID. Immutable."""
+          amount: Decimal
+          currency: str = "USD"
+
+          def __post_init__(self) -> None:
+              if self.amount < 0:
+                  raise ValueError(f"Money cannot be negative: {self.amount}")
+
+          def __add__(self, other: Money) -> Money:
+              if self.currency != other.currency:
+                  raise ValueError(f"Currency mismatch: {self.currency} vs {other.currency}")
+              return Money(self.amount + other.amount, self.currency)
+
+          def multiply(self, factor: Decimal) -> Money:
+              return Money(self.amount * factor, self.currency)
+
+      @dataclass(frozen=True)
+      class Quantity:
+          """Value object: a positive integer. Immutable. No identity."""
+          value: int
+
+          def __post_init__(self) -> None:
+              if self.value <= 0:
+                  raise ValueError(f"Quantity must be positive: {self.value}")
+
+          def __add__(self, other: Quantity) -> Quantity:
+              return Quantity(self.value + other.value)
+
+      @dataclass(frozen=True)
+      class Address:
+          """Value object: defined by its fields. Immutable — shared freely."""
+          street: str
+          city: str
+          zip_code: str
+
+          def __post_init__(self) -> None:
+              if not self.street.strip():
+                  raise ValueError("Street is required")
+              if not self.city.strip():
+                  raise ValueError("City is required")
+
+          def with_street(self, new_street: str) -> Address:
+              """Return a new Address with a different street — no mutation."""
+              return Address(new_street, self.city, self.zip_code)
+
+      # --- Entity: identity-driven, mutable, lifecycle, intention-revealing behavior ---
+
+      class Order:
+          """Entity: defined by identity. Mutable within valid transitions."""
+
+          def __init__(self, order_id: UUID, customer_address: Address) -> None:
+              self._id = order_id
+              self._lines: list[OrderLine] = []
+              self._status: str = "draft"
+              self._shipping_address: Address = customer_address
+
+          # --- Identity ---
+          @property
+          def id(self) -> UUID:
+              return self._id
+
+          def __eq__(self, other: object) -> bool:
+              if not isinstance(other, Order):
+                  return NotImplemented
+              return self._id == other._id  # IDENTITY ONLY
+
+          def __hash__(self) -> int:
+              return hash(self._id)
+
+          # --- Intention-revealing behavior (mutations) ---
+
+          def add_line(self, product_id: str, price: Money, qty: Quantity) -> None:
+              if self._status != "draft":
+                  raise ValueError(f"Cannot add lines to a {self._status} order")
+              self._lines.append(OrderLine(product_id, price, qty))
+
+          def update_shipping(self, new_address: Address) -> None:
+              if self._status not in ("draft", "confirmed"):
+                  raise ValueError(f"Cannot change shipping on a {self._status} order")
+              self._shipping_address = new_address  # Replace — Address is immutable
+
+          def submit(self) -> None:
+              if self._status != "draft":
+                  raise ValueError(f"Cannot submit a {self._status} order")
+              if not self._lines:
+                  raise ValueError("Cannot submit an empty order")
+              self._status = "submitted"
+
+          def cancel(self, reason: str) -> None:
+              if self._status in ("shipped", "delivered", "cancelled"):
+                  raise ValueError(f"Cannot cancel a {self._status} order")
+              if not reason.strip():
+                  raise ValueError("Cancellation requires a reason")
+              self._status = "cancelled"
+
+          @property
+          def total(self) -> Money:
+              return sum(
+                  (line.price * Decimal(line.quantity.value) for line in self._lines),
+                  Money(Decimal("0"), self._lines[0].price.currency if self._lines else "USD"),
+              )
+
+      @dataclass(frozen=True)
+      class OrderLine:
+          """Value object within an entity. Immutable — replace the line to change it."""
+          product_id: str
+          price: Money
+          quantity: Quantity
+
+      # --- Repository port ---
+      class OrderRepository(Protocol):
+          def get_by_id(self, order_id: UUID) -> Order: ...
+          def save(self, order: Order) -> None: ...
+
+      # --- Equality works correctly ---
+      assert Money(Decimal("10"), "USD") == Money(Decimal("10"), "USD")  # True — structural
+
+      # --- Immutability prevents shared-state bugs ---
+      addr = Address("123 Main St", "Springfield", "12345")
+      customer = Customer("C1", addr)
+      shipment = Shipment("S1", addr)
+
+      # Instead of mutating (which is impossible with frozen=True):
+      new_addr = addr.with_street("456 Oak Ave")
+      customer.update_address(new_addr)  # Only customer changes
+      assert shipment.destination.street == "123 Main St"  # Shipment unchanged — correct!
+
+      # --- Application service: coordination only ---
+      class PlaceOrderUseCase:
+          def __init__(self, repo: OrderRepository) -> None:
+              self._repo = repo
+
+          def execute(self, customer_address: Address, 
+                      lines: list[tuple[str, Money, Quantity]]) -> UUID:
+              order = Order(uuid4(), customer_address)
+              for product_id, price, qty in lines:
+                  order.add_line(product_id, price, qty)
+              order.submit()
+              self._repo.save(order)
+              return order.id
+
+  - language: typescript
+    bad: |
+      // Everything gets an id — value objects become entities by accident.
+      // Equality is broken, mutability is dangerous, and intent is lost.
+
+      class Money {
+        constructor(
+          public id: string,          // WRONG: Money doesn't need identity
+          public amount: number,
+          public currency: string,
+        ) {}
+      }
+
+      class Address {
+        public street: string;         // Mutable — shared state time bomb
+        public city: string;
+        public zipCode: string;
+
+        constructor(street: string, city: string, zipCode: string) {
+          this.street = street;
+          this.city = city;
+          this.zipCode = zipCode;
+        }
+      }
+
+      class Order {
+        public status: string = "draft";  // Public mutable — no lifecycle protection
+        public lines: OrderLine[] = [];
+        public total: Money;              // Direct reference to money with an id
+
+        constructor(public id: string, public shippingAddress: Address) {}
+      }
+
+      // Two "identical" money values compare as different:
+      const m1 = new Money("id1", 10, "USD");
+      const m2 = new Money("id2", 10, "USD");
+      console.log(m1.id === m2.id);  // false — should be true for same value!
+
+      // Shared mutable value object disaster:
+      const sharedAddr = new Address("123 Main St", "Springfield", "12345");
+      const customer = new Customer("C1", sharedAddr);
+      const shipment = new Shipment("S1", sharedAddr);
+
+      customer.address.street = "456 Oak Ave";
+      console.log(shipment.destination.street);  // "456 Oak Ave" — BUG!
+
+      // No lifecycle protection:
+      const order = new Order("O1", sharedAddr);
+      order.status = "shipped";  // Anyone can set any status, no transition rules
+
+    good: |
+      // Clear separation: entities for identity + lifecycle; value objects for immutable concepts.
+
+      // --- Value Objects: immutable, structural equality, no identity ---
+
+      class Money {
+        constructor(
+          public readonly amount: number,
+          public readonly currency: string = "USD",
+        ) {
+          if (amount < 0) throw new Error(`Money cannot be negative: ${amount}`);
+        }
+
+        add(other: Money): Money {
+          if (this.currency !== other.currency)
+            throw new Error(`Currency mismatch: ${this.currency} vs ${other.currency}`);
+          return new Money(this.amount + other.amount, this.currency);
+        }
+
+        multiply(factor: number): Money {
+          return new Money(this.amount * factor, this.currency);
+        }
+
+        equals(other: Money): boolean {
+          return this.amount === other.amount && this.currency === other.currency;
+        }
+      }
+
+      class Quantity {
+        constructor(public readonly value: number) {
+          if (value <= 0) throw new Error(`Quantity must be positive: ${value}`);
+        }
+
+        add(other: Quantity): Quantity {
+          return new Quantity(this.value + other.value);
+        }
+
+        equals(other: Quantity): boolean {
+          return this.value === other.value;
+        }
+      }
+
+      class Address {
+        constructor(
+          public readonly street: string,
+          public readonly city: string,
+          public readonly zipCode: string,
+        ) {
+          if (!street.trim()) throw new Error("Street is required");
+          if (!city.trim()) throw new Error("City is required");
+        }
+
+        withStreet(newStreet: string): Address {
+          return new Address(newStreet, this.city, this.zipCode);
+        }
+
+        equals(other: Address): boolean {
+          return (
+            this.street === other.street &&
+            this.city === other.city &&
+            this.zipCode === other.zipCode
+          );
+        }
+      }
+
+      // --- Entity: identity-driven, mutable, lifecycle, intention-revealing behavior ---
+
+      class OrderLine {
+        constructor(
+          public readonly productId: string,
+          public readonly price: Money,
+          public readonly quantity: Quantity,
+        ) {}
+      }
+
+      class Order {
+        private _lines: OrderLine[] = [];
+        private _status: string = "draft";
+        private _shippingAddress: Address;
+
+        constructor(
+          public readonly id: string,
+          shippingAddress: Address,
+        ) {
+          this._shippingAddress = shippingAddress;
+        }
+
+        // --- Intention-revealing behavior ---
+
+        addLine(productId: string, price: Money, qty: Quantity): void {
+          if (this._status !== "draft")
+            throw new Error(`Cannot add lines to a ${this._status} order`);
+          this._lines.push(new OrderLine(productId, price, qty));
+        }
+
+        updateShipping(newAddress: Address): void {
+          if (this._status !== "draft" && this._status !== "confirmed")
+            throw new Error(`Cannot change shipping on a ${this._status} order`);
+          this._shippingAddress = newAddress;
+        }
+
+        submit(): void {
+          if (this._status !== "draft")
+            throw new Error(`Cannot submit a ${this._status} order`);
+          if (this._lines.length === 0)
+            throw new Error("Cannot submit an empty order");
+          this._status = "submitted";
+        }
+
+        cancel(reason: string): void {
+          if (["shipped", "delivered", "cancelled"].includes(this._status))
+            throw new Error(`Cannot cancel a ${this._status} order`);
+          if (!reason.trim()) throw new Error("Cancellation requires a reason");
+          this._status = "cancelled";
+        }
+
+        get total(): Money {
+          if (this._lines.length === 0) return new Money(0, "USD");
+          const currency = this._lines[0].price.currency;
+          return this._lines.reduce(
+            (sum, line) => sum.add(line.price.multiply(line.quantity.value)),
+            new Money(0, currency),
+          );
+        }
+
+        get status(): string {
+          return this._status;
+        }
+
+        get lineCount(): number {
+          return this._lines.length;
+        }
+
+        equals(other: Order): boolean {
+          return this.id === other.id;  // IDENTITY ONLY
+        }
+      }
+
+      // --- Repository port ---
+      interface OrderRepository {
+        getById(id: string): Promise<Order>;
+        save(order: Order): Promise<void>;
+      }
+
+      // --- Structural equality works correctly ---
+      const m1 = new Money(10, "USD");
+      const m2 = new Money(10, "USD");
+      console.log(m1.equals(m2));  // true
+
+      // --- Immutability prevents shared-state bugs ---
+      const addr = new Address("123 Main St", "Springfield", "12345");
+      const customer = new Customer("C1", addr);
+      const shipment = new Shipment("S1", addr);
+
+      const newAddr = addr.withStreet("456 Oak Ave");
+      customer.updateAddress(newAddr);
+      // shipment.destination is still "123 Main St" — correct!
+
+      // --- Application service: coordination only ---
+      class PlaceOrderUseCase {
+        constructor(private readonly repo: OrderRepository) {}
+
+        async execute(
+          shippingAddress: Address,
+          lines: Array<{ productId: string; price: Money; qty: Quantity }>,
+        ): Promise<string> {
+          const order = new Order(crypto.randomUUID(), shippingAddress);
+          for (const line of lines) {
+            order.addLine(line.productId, line.price, line.qty);
+          }
+          order.submit();
+          await this.repo.save(order);
+          return order.id;
+        }
+      }
+
+heuristics:
+  - "The first question for any new domain concept: does identity matter or do attributes define it? This answer determines entity vs value object."
+  - "Default to value object. It's safer (immutable), simpler (no lifecycle), and easier to promote to entity later than to demote an entity to value object."
+  - "Entities compare by identity only. Never include mutable state fields in entity equality — two different customers with the same balance are not the same customer."
+  - "Value objects compare by all attributes. Use dataclass(frozen=True) in Python or readonly fields in TypeScript for free structural equality."
+  - "Make value objects immutable. Operations return new instances. If you need to mutate, you have an entity or a design flaw."
+  - "Validate value objects on construction. A constructor that allows an invalid Money or EmailAddress to exist is a bug. `__post_init__` or constructor body is the single validation point."
+  - "Entities validate transitions, not just state. `account.withdraw(200)` checks status and balance at call time — the validity depends on current state, not just the input."
+  - "Use value objects aggressively to cure primitive obsession. String for Email, Decimal for Money, raw Date for DateRange — these are all value object opportunities."
+  - "A concept can be an entity in one bounded context and a value object in another. Currency might be an entity in a forex trading context but a value object in an e-commerce context."
+  - "Value objects need no repository — they're embedded in entities. Entities need repositories. This operational difference mirrors the conceptual one."
+  - "When value objects grow large (many fields, complex behavior), keep them cohesive or split them. A CustomerProfile with 20 fields might be better as several smaller value objects."
+  - "Shared references to mutable objects are the #1 source of subtle bugs in domain models. Immutable value objects eliminate this entire class of bugs."
+
+related_tags:
+  [entities, value-objects, identity, structural-equality, immutability, lifecycle, ddd-tactical,
+   primitive-obsession, domain-modeling, aggregates, repositories, bounded-context, ubiquitous-language]

@@ -1,0 +1,332 @@
+id: decorators-010
+name: Decorators and Cross-Cutting Concerns
+category: design
+canonical_tags: ['python', 'design', 'aspect-oriented']
+sources:
+  - books/clean-architecture.md
+  - books/the-pragmatic-programmer.md
+summary: >-
+  Decorators are Python's mechanism for wrapping functions or classes with reusable cross-cutting behaviour —
+  logging, timing, caching, authentication, retry, rate limiting, and validation — without modifying the
+  wrapped function's source. Use `functools.wraps` on every function decorator to preserve the original
+  function's metadata (`__name__`, `__doc__`, signature). Parameterised decorators need an extra closure layer
+  (factory → decorator → wrapper). Class decorators (`@register`, `@singleton`) work the same way but operate
+  on classes: they receive the class, optionally wrap or replace it, and return a class (or the same class
+  after mutation). Keep decorators narrow and composable: `@retry @log @cache` is clearer than one
+  mega-decorator. Know when NOT to use them: decorators obscure control flow, make stack traces harder to
+  read, and turn simple one-off logic into premature abstraction. If the cross-cutting concern only appears
+  once or twice, inline it. If the decorator changes the function's contract (signature, return type) in
+  surprising ways, refactor to explicit wrapping instead. The principle: decorate behaviour ONTO a function,
+  not INTO it — keep orthogonal concerns separate from business logic, but don't decorate what isn't truly
+  cross-cutting.
+examples:
+  - language: python
+    bad: |
+      """Cross-cutting concerns embedded directly in business logic.
+      Every function carries its own copy of logging, timing, retry,
+      and validation — duplicated, tangled, and hard to change."""
+
+      import time
+      import logging
+
+      logger = logging.getLogger(__name__)
+
+      def process_order(order_id):
+          # Logging entry — copy/pasted into every function.
+          logger.info("process_order called with order_id=%s", order_id)
+          start = time.monotonic()
+
+          try:
+              # Actual business logic (buried under infrastructure).
+              order = fetch_order(order_id)
+              order.validate()
+              order.process()
+              return order.confirmation_id
+          except Exception:
+              logger.exception("process_order failed")
+              raise
+          finally:
+              elapsed = time.monotonic() - start
+              logger.info("process_order took %.2fs", elapsed)
+
+      def ship_order(order_id):
+          # Same boilerplate again...
+          logger.info("ship_order called with order_id=%s", order_id)
+          start = time.monotonic()
+          try:
+              # More business logic drowning in ceremony.
+              ...
+          except Exception:
+              logger.exception("ship_order failed")
+              raise
+          finally:
+              elapsed = time.monotonic() - start
+              logger.info("ship_order took %.2fs", elapsed)
+    good: |
+      """Decorators extract cross-cutting concerns into composable,
+      reusable wrappers. Business logic stays clean, and decorations
+      can be mixed and matched independent of what they wrap."""
+
+      import functools
+      import time
+      import logging
+
+      logger = logging.getLogger(__name__)
+
+      # ---- Simple decorator (no parameters) ----
+      def log_call(func):
+          """Log entry, exit, and elapsed time for any function."""
+          @functools.wraps(func)  # Preserves __name__, __doc__, etc.
+          def wrapper(*args, **kwargs):
+              logger.info("%s called", func.__name__)
+              start = time.monotonic()
+              try:
+                  return func(*args, **kwargs)
+              except Exception:
+                  logger.exception("%s failed", func.__name__)
+                  raise
+              finally:
+                  elapsed = time.monotonic() - start
+                  logger.info("%s took %.2fs", func.__name__, elapsed)
+          return wrapper
+
+      # ---- Parameterised decorator (factory pattern) ----
+      def retry(max_attempts: int = 3, delay: float = 1.0):
+          """Retry a function on failure, with configurable attempts."""
+          def decorator(func):
+              @functools.wraps(func)
+              def wrapper(*args, **kwargs):
+                  last_exc = None
+                  for attempt in range(1, max_attempts + 1):
+                      try:
+                          return func(*args, **kwargs)
+                      except Exception as exc:
+                          last_exc = exc
+                          if attempt < max_attempts:
+                              time.sleep(delay)
+                  raise last_exc  # type: ignore[misc]
+              return wrapper
+          return decorator
+
+      # ---- Usage: composable, orthogonal decorations ----
+      @log_call
+      @retry(max_attempts=3, delay=0.5)
+      def process_order(order_id: str) -> str:
+          """Pure business logic — no cross-cutting noise."""
+          order = fetch_order(order_id)
+          order.validate()
+          order.process()
+          return order.confirmation_id
+
+      @log_call                    # Same logging, no copy/paste.
+      def ship_order(order_id: str) -> None:
+          """Another clean business function."""
+          ...
+  - language: python
+    description: "Class decorators — operate on whole classes, not individual methods."
+    bad: |
+      """Manual registration: every class must remember to call
+      a registry function. Forgetting one call means silent breakage,
+      and the registration is far from the class definition."""
+
+      _handlers = {}  # module-level registry
+
+      class OrderHandler:
+          def handle(self, event): ...
+
+      class PaymentHandler:
+          def handle(self, event): ...
+
+      # Must remember to register every handler — easy to forget.
+      _handlers["order"] = OrderHandler()
+      _handlers["payment"] = PaymentHandler()
+
+      # Later: _handlers["refund"] — KeyError! Someone forgot to register.
+    good: |
+      """Class decorator registers classes automatically at definition
+      time. No manual step to forget, and the decorator is visible
+      right above the class."""
+
+      import functools
+      from typing import Type
+
+      _handlers: dict[str, object] = {}
+
+      def register(event_type: str):
+          """Class decorator factory: tags a class for a given event type."""
+          def decorator(cls: Type) -> Type:
+              _handlers[event_type] = cls()
+              return cls  # Return the class unchanged (or wrap it).
+          return decorator
+
+      def singleton(cls: Type) -> Type:
+          """Class decorator: enforces single-instance pattern.
+          Wraps __new__ so only one instance is ever created."""
+          _instance = None
+          original_new = cls.__new__
+
+          @functools.wraps(original_new)
+          def _singleton_new(klass, *args, **kwargs):
+              nonlocal _instance
+              if _instance is None:
+                  _instance = original_new(klass)
+                  _instance.__init__(*args, **kwargs)  # type: ignore[misc]
+              return _instance
+
+          cls.__new__ = staticmethod(_singleton_new)  # type: ignore[assignment]
+          return cls
+
+      # Usage: decorators visible at definition — no manual step.
+      @register("order")
+      class OrderHandler:
+          def handle(self, event): ...
+
+      @register("payment")
+      class PaymentHandler:
+          def handle(self, event): ...
+
+      @singleton
+      class DatabasePool:
+          def __init__(self, dsn: str):
+              self.dsn = dsn
+
+      # Both decorators can stack:
+      @register("config")
+      @singleton
+      class ConfigLoader:
+          def __init__(self):
+              self.config = self._load()
+          def _load(self): ...
+  - language: typescript
+    description: "TypeScript decorators (experimental, Stage 3 TC39) — class, method, property, parameter-level."
+    bad: |
+      // Manual logging and timing scattered through every method.
+      class OrderService {
+        async processOrder(orderId: string): Promise<string> {
+          console.log("processOrder called", { orderId });
+          const start = performance.now();
+          try {
+            const order = await this.fetchOrder(orderId);
+            order.validate();
+            order.process();
+            return order.confirmationId;
+          } catch (e) {
+            console.error("processOrder failed", e);
+            throw e;
+          } finally {
+            console.log("processOrder took", performance.now() - start, "ms");
+          }
+        }
+
+        async shipOrder(orderId: string): Promise<void> {
+          // Same boilerplate copied again...
+          console.log("shipOrder called", { orderId });
+          const start = performance.now();
+          try {
+            // ...
+          } catch (e) {
+            console.error("shipOrder failed", e);
+            throw e;
+          } finally {
+            console.log("shipOrder took", performance.now() - start, "ms");
+          }
+        }
+      }
+    good: |
+      // TypeScript decorators extract cross-cutting concerns.
+      // Requires: "experimentalDecorators": true in tsconfig.json.
+      //
+      // Class decorator: receives the constructor.
+      function singleton<T extends { new (...args: any[]): {} }>(
+        constructor: T
+      ): T {
+        let instance: InstanceType<T> | null = null;
+        const SingletonClass = class extends constructor {
+          constructor(...args: any[]) {
+            if (instance) return instance;
+            super(...args);
+            instance = this as InstanceType<T>;
+          }
+        };
+        return SingletonClass as unknown as T;
+      }
+
+      // Method decorator: wraps individual methods.
+      function log(
+        _target: any,
+        propertyKey: string,
+        descriptor: PropertyDescriptor
+      ): PropertyDescriptor {
+        const original = descriptor.value;
+        descriptor.value = async function (...args: any[]) {
+          console.log(`${propertyKey} called`, args);
+          const start = performance.now();
+          try {
+            return await original.apply(this, args);
+          } finally {
+            console.log(`${propertyKey} took ${performance.now() - start}ms`);
+          }
+        };
+        return descriptor;
+      }
+
+      // Method decorator factory: parameterised.
+      function retry(maxAttempts: number = 3, delayMs: number = 1000) {
+        return function (
+          _target: any,
+          _propertyKey: string,
+          descriptor: PropertyDescriptor
+        ): PropertyDescriptor {
+          const original = descriptor.value;
+          descriptor.value = async function (...args: any[]) {
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+              try {
+                return await original.apply(this, args);
+              } catch (e) {
+                if (attempt === maxAttempts) throw e;
+                await new Promise(r => setTimeout(r, delayMs));
+              }
+            }
+          };
+          return descriptor;
+        };
+      }
+
+      // Usage: composable, clean class body.
+      @singleton
+      class DatabasePool {
+        constructor(private dsn: string) {}
+
+        @log
+        async query(sql: string): Promise<any> {
+          // Business logic only — logging is handled by @log.
+        }
+      }
+
+      class OrderService {
+        @retry(3, 500)
+        @log
+        async processOrder(orderId: string): Promise<string> {
+          // Pure business logic. @log handles timing, @retry handles resilience.
+          const order = await this.fetchOrder(orderId);
+          order.validate();
+          order.process();
+          return order.confirmationId;
+        }
+
+        @log
+        async shipOrder(orderId: string): Promise<void> {
+          // ...
+        }
+      }
+heuristics:
+  - 'Always use `@functools.wraps(func)` in every function decorator. Without it, the wrapper steals the original function''s name, docstring, and signature — breaking help(), introspection, and debuggers.'
+  - 'Parameterised decorators need three layers: the outer factory receives the parameters, the middle decorator receives the function, and the inner wrapper receives the call arguments. Name them clearly: ``def retry(max)`` then ``def decorator(func)`` then ``def wrapper(*args)``.'
+  - 'Keep decorators narrow: one decorator should do one thing. `@log @retry @cache` is better than `@log_retry_and_cache` because callers can mix and match. Narrow decorators are also easier to test in isolation.'
+  - Class decorators are less common than function decorators, but they shine for registration patterns (plugin systems, event handlers), singleton enforcement, and adding class-level attributes. They receive the class, can mutate or replace it, and must return a class.
+  - 'When NOT to use decorators: (a) the cross-cutting concern appears in only 1-2 places — inline it until the third occurrence; (b) the decorator changes the function''s signature or return type in surprising ways — prefer explicit wrapping; (c) the logic needs access to local variables in the caller''s scope — decorators can''t reach those; (d) the logic is tightly coupled to business rules rather than infrastructure — use composition or inheritance instead.'
+  - 'Decorators obscure the call stack: each decorator adds a frame. For debugging-heavy code, prefer explicit `with` blocks or manual wrapping so stack traces stay readable. A stack trace with six `wrapper()` frames is hostile to on-call engineers.'
+  - 'Compose decorators from the bottom up: `@log @retry def foo()` means retry wraps the function first, then log wraps retry. Execution order is log → retry → foo — the outermost decorator runs first on entry and last on exit.'
+  - 'Test decorators in isolation: instantiate the decorator directly (`logged_func = log_call(original_func)`) and verify the wrapper behaviour. Don''t only test through decorated functions — you''ll couple decorator tests to business logic.'
+  - 'Decorator stacking is powerful but fragile: changing the order of `@auth @rate_limit @cache` changes semantics. Document the expected order explicitly, and consider a single "pipeline_definition" decorator if the order is critical and non-obvious.'
+related_tags: [decorators, functools, wraps, metaprogramming, cross-cutting-concerns, aspect-oriented, class-decorators, registration, singleton, decorator-factory, parameterised-decorators, composability, separation-of-concerns]

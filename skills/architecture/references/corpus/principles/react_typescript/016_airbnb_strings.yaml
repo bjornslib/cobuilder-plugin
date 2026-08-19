@@ -1,0 +1,72 @@
+id: airbnb-strings-016
+name: Airbnb Strings — Single Quotes, Template Literals, Escaping & Safety
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  Airbnb string conventions: use single quotes for plain strings, template
+  literals only when interpolation or newlines are needed, avoid broken
+  multi-line concatenation, and never use eval(). Template strings should not
+  have spaces inside the interpolation delimiters (${name}, not ${ name }).
+  Avoid unnecessary character escaping — it harms readability.
+examples:
+  - language: typescript
+    bad: |
+      // Double quotes for plain strings
+      const name = "Capt. Janeway";
+
+      // Template literal without interpolation — misleading
+      const name = `Capt. Janeway`;
+
+      // String concatenation for building messages
+      function sayHi(name: string): string {
+        return "How are you, " + name + "?";
+      }
+
+      // Spaces inside template interpolation
+      function greeting(name: string): string {
+        return `Hello, ${ name }!`;
+      }
+
+      // Broken concatenation across lines — unsearchable
+      const errorMessage = "This is a super long error message that was " +
+        "thrown because of Batman. When you stop to think about how " +
+        "Batman had anything to do with this, you would get nowhere fast.";
+
+      // Unnecessary escaping
+      const foo = "\'this\' \i\s \"quoted\"";
+
+      // eval() — massive security vulnerability
+      const result = eval("user." + propertyName);
+    good: |
+      // Single quotes for plain strings
+      const name = 'Capt. Janeway';
+
+      // Template literals for interpolation — no spaces inside braces
+      function greeting(name: string): string {
+        return `Hello, ${name}!`;
+      }
+
+      // Single long string for long lines — searchable
+      const errorMessage = 'This is a super long error message that was thrown because of Batman.';
+
+      // Natural escaping with template literals
+      const foo = `my name is '${name}' and I'm "happy"`;
+
+      // Only escape what's necessary
+      const path = "C:\\Users\\theb";
+
+      // Parse safely instead of eval()
+      const result = JSON.parse(data);
+heuristics:
+  - Use single quotes '' for static strings — they're the standard convention and eliminate quote ambiguity.
+  - Use template literals `` only when the string contains interpolation (${expr}) or newlines. Template literals for plain strings are misleading.
+  - Never put spaces inside template interpolation: ${name} not ${ name }.
+  - For strings exceeding the line length limit, let them run long rather than breaking them with concatenation or backslash continuation. Broken strings harm searchability.
+  - Never use eval() or new Function() with strings — they're security vulnerabilities that enable code injection.
+  - Avoid unnecessary character escaping. Template literals often eliminate the need for escape characters.
+  - Use JSON.parse() for deserializing data, never eval().
+  - When programmatically building strings, prefer template literals over array.join() or concatenation.
+  - For string transformations (uppercase, trim, etc.), chain the methods directly rather than creating intermediate variables.
+related_tags: [airbnb, strings, template-literals, single-quotes, escaping, eval, readability]

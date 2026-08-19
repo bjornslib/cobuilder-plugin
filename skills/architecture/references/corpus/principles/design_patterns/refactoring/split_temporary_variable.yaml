@@ -1,0 +1,239 @@
+id: split-temporary-variable-001
+name: "Refactoring — Split Temporary Variable"
+category: design-patterns
+canonical_tags: ['refactoring', 'composing-methods', 'split-temporary-variable', 'single-assignment', 'readability', 'immutability']
+sources:
+  - books/refactoring.md
+  - books/clean-code.md
+  - open_sources/design_patterns/refactoring-guru-patterns.txt
+  - open_sources/design_patterns/augmentcode-refactoring.html
+summary: >
+  Split Temporary Variable takes a single local variable that is assigned
+  multiple times for different purposes and splits it into separate variables,
+  each named for the specific purpose it serves and each assigned exactly once.
+  A variable should mean one thing throughout its scope. When a variable like
+  `temp` holds a perimeter on line 10, then gets reassigned to an area on line
+  15, the reader must track the variable's changing meaning across the function
+  — a mental burden that grows with function length. Splitting produces
+  `perimeter` (assigned once, used for perimeter logic) and `area` (assigned
+  once, used for area logic). The names document meaning; the single-assignment
+  discipline makes reasoning about data flow trivial. This is one of the
+  simplest refactorings in Fowler's catalog: no method extractions, no class
+  changes, just renaming and deduplication of meaning within a single function.
+  It is often a preparatory refactoring for Extract Method — once variables
+  have clear single-purpose names, extracting coherent blocks of logic becomes
+  obvious. Apply when the same local variable is assigned more than once and
+  each assignment represents a different concept. Do NOT apply when the
+  variable's meaning is genuinely consistent across all assignments (e.g., a
+  loop accumulator).
+
+  The mechanical sequence: (1) Find the first assignment. Declare a new
+  variable with a name that reveals the purpose of that use. (2) Replace all
+  reads between the first and second assignment with the new variable. (3)
+  Repeat for each subsequent assignment, declaring a new variable each time.
+  (4) Remove the original variable declaration. Each step should compile;
+  the resulting code has N variables instead of 1, each with a single
+  unchanging meaning.
+examples:
+  - language: python
+    bad: |
+      # `temp` is assigned twice: first as a perimeter, then as an area.
+      # The reader must track the semantic shift: on line 18 `temp` means
+      # "perimeter," but after line 20 it means "area." A later refactorer
+      # might move the area computation earlier and break perimeter logic
+      # — the compiler won't warn because it's the same variable.
+
+      import math
+
+
+      def analyze_circle(radius: float) -> dict[str, float]:
+          # First assignment: perimeter (circumference)
+          temp = 2 * math.pi * radius
+
+          # Uses `temp` as perimeter
+          if temp > 100:
+              print(f"Large perimeter: {temp:.2f}")
+
+          is_small_perimeter = temp < 10
+
+          # Second assignment: area — completely different meaning!
+          temp = math.pi * radius ** 2
+
+          # Uses `temp` as area — reader must remember the reassignment
+          if temp > 500:
+              print(f"Large area: {temp:.2f}")
+
+          is_large_area = temp > 1000
+
+          return {
+              "perimeter_small": is_small_perimeter,
+              "area_large": is_large_area,
+          }
+
+      # If someone inserts `print(temp)` between the two assignments,
+      # it prints a perimeter. After the second, it prints an area.
+      # Same name, two meanings — a reader must track the timeline.
+
+    good: |
+      # Split Temporary Variable: `temp` → `perimeter` and `area`.
+      # Each variable is assigned exactly once, named for its meaning,
+      # and immutable in practice. A reader sees `perimeter` and knows
+      # it means perimeter everywhere, `area` means area everywhere.
+
+      import math
+
+
+      def analyze_circle(radius: float) -> dict[str, float]:
+          # Variable 1: perimeter — assigned once, meaning never changes
+          perimeter = 2 * math.pi * radius
+
+          if perimeter > 100:
+              print(f"Large perimeter: {perimeter:.2f}")
+
+          is_small_perimeter = perimeter < 10
+
+          # Variable 2: area — completely separate variable
+          area = math.pi * radius ** 2
+
+          if area > 500:
+              print(f"Large area: {area:.2f}")
+
+          is_large_area = area > 1000
+
+          return {
+              "perimeter_small": is_small_perimeter,
+              "area_large": is_large_area,
+          }
+
+      # Now extracting perimeter logic into `analyze_perimeter()`
+      # and area logic into `analyze_area()` is trivial — each
+      # block uses a different well-named variable.
+
+  - language: typescript
+    bad: |
+      // `acc` is reused: first as a distance accumulator, then as
+      // a time accumulator. The reader must track the reassignment
+      // to understand that `acc` changes meaning mid-function.
+      // Refactoring the time logic into a helper requires threading
+      // `acc` through — but which `acc`? The one before or after
+      // the reassignment?
+
+      interface Segment {
+        distanceKm: number;
+        speedKmh: number;
+      }
+
+      interface TripSummary {
+        totalDistanceKm: number;
+        totalDurationHours: number;
+        averageSpeedKmh: number;
+      }
+
+      function summarizeTrip(segments: Segment[]): TripSummary {
+        // First meaning: distance accumulator
+        let acc = 0;
+        for (const seg of segments) {
+          acc += seg.distanceKm;
+        }
+        const totalDistance = acc;
+
+        // Second meaning: time accumulator — `acc` reused!
+        // A reader must notice the reassignment to understand `acc`
+        // no longer means distance.
+        acc = 0;
+        for (const seg of segments) {
+          if (seg.speedKmh > 0) {
+            acc += seg.distanceKm / seg.speedKmh;
+          }
+        }
+        const totalDuration = acc;
+
+        return {
+          totalDistanceKm: totalDistance,
+          totalDurationHours: totalDuration,
+          averageSpeedKmh:
+            totalDuration > 0 ? totalDistance / totalDuration : 0,
+        };
+      }
+
+    good: |
+      // Split Temporary Variable: `acc` → `totalDistance` and
+      // `totalDuration`. Each is assigned once, named for its meaning,
+      // and the loops clearly accumulate different things.
+
+      interface Segment {
+        distanceKm: number;
+        speedKmh: number;
+      }
+
+      interface TripSummary {
+        totalDistanceKm: number;
+        totalDurationHours: number;
+        averageSpeedKmh: number;
+      }
+
+      function summarizeTrip(segments: Segment[]): TripSummary {
+        // Variable 1: distance accumulator, used for distance only
+        let totalDistance = 0;
+        for (const seg of segments) {
+          totalDistance += seg.distanceKm;
+        }
+
+        // Variable 2: time accumulator, used for time only
+        let totalDuration = 0;
+        for (const seg of segments) {
+          if (seg.speedKmh > 0) {
+            totalDuration += seg.distanceKm / seg.speedKmh;
+          }
+        }
+
+        return {
+          totalDistanceKm: totalDistance,
+          totalDurationHours: totalDuration,
+          averageSpeedKmh:
+            totalDuration > 0 ? totalDistance / totalDuration : 0,
+        };
+      }
+
+      // Now extracting a helper like `calculateTotalDuration()`
+      // is straightforward — no variable aliasing to untangle.
+
+heuristics:
+  - >
+    "Split Temporary Variable: you have a temporary variable assigned to
+    more than once, but it is not a loop variable nor a collecting
+    temporary variable. Make a separate temporary variable for each
+    assignment" (Fowler, Refactoring).
+  - Apply when a local variable changes meaning between assignments.
+    The signal is that you need different comments or mental context
+    to understand the variable at different points in the function.
+  - Each split variable should be named for its specific purpose.
+    `perimeter` and `area` are better than `temp1` and `temp2`.
+    The split is about naming meaning, not just creating more variables.
+  - The split often reveals that the function is doing two separate
+    jobs — one computation for each variable. This is the preparatory
+    step for Extract Method: split the variables, then extract each
+    block independently.
+  - Loop variables (accumulators, counters, iterators) are NOT candidates
+    for Split Temporary Variable — their meaning is consistent across
+    assignments (they build up a result). The smell is semantic reuse,
+    not mechanical reassignment.
+  - In languages with `const`/immutable bindings, reusing a variable for
+    two meanings requires `let`/`var`. Splitting lets you upgrade to
+    `const` — a signal to the reader that the value never changes.
+  - The original `temp` variable pattern often comes from procedural
+    programmers who treat variables as "scratch pads." Splitting is a
+    gentle nudge toward functional thinking: name the value, don't
+    reuse the slot.
+  - After splitting, consider whether the split variables should be
+    replaced with queries (Replace Temp with Query) if they represent
+    intermediate results used across multiple extracted methods.
+  - "The naming pressure is the value. If you struggle to name a split
+    variable, the function may be too tightly coupled — the two
+    computations share intermediate state you haven't isolated yet."
+
+related_tags:
+  [split-temporary-variable, composing-methods, refactoring,
+   single-assignment, immutability, readability,
+   fowler-refactoring, extract-method, replace-temp-with-query,
+   naming, code-smells, clean-code]

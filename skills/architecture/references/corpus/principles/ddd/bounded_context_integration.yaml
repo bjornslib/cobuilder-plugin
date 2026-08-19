@@ -1,0 +1,343 @@
+id: bounded-context-integration-001
+name: "Domain-Driven Design — Bounded Context Integration: Context Mapping, Anti-Corruption Layers, and Translation Patterns"
+category: architecture
+canonical_tags: ['ddd', 'bounded-contexts', 'context-mapping']
+sources:
+  - books/domain-driven-design.md
+  - books/domain-driven-design-distilled.md
+  - books/implementing-domain-driven-design.md
+summary: >
+  Bounded contexts are the fundamental unit of model integrity in DDD. Every
+  model is valid only inside its bounded context; concepts crossing boundaries
+  must be explicitly translated. Context integration patterns govern how two
+  contexts relate: Shared Kernel for jointly governed subsets, Customer/Supplier
+  when an upstream team commits to downstream needs, Conformist when adopting
+  the upstream model is cheaper than translating it, Anti-Corruption Layer when
+  protecting the local model from foreign or legacy models, Separate Ways when
+  integration cost exceeds shared value, Open Host Service when a context exposes
+  a stable integration protocol, Published Language when contexts need a
+  documented exchange language. The canonical anti-patterns: sharing model classes
+  across contexts, letting upstream APIs silently define downstream domain language,
+  calling every integration an anti-corruption layer without actual translation,
+  and one giant shared domain package that erases all boundaries.
+examples:
+  - language: python
+    bad: |
+      # Context bleeding — shared domain classes, no translation, direct imports
+      # Three contexts: Orders, Billing, Shipping — all sharing the same classes
+
+      # shared_domain/models.py — ONE package used by every context
+      from dataclasses import dataclass
+      from enum import Enum
+      from typing import Any
+
+      class OrderStatus(str, Enum):
+          """Same enum used in Orders, Billing, AND Shipping contexts."""
+          PENDING = "PENDING"
+          CONFIRMED = "CONFIRMED"
+          SHIPPED = "SHIPPED"
+          INVOICED = "INVOICED"  # Billing concern leaking into shared enum
+          DELIVERED = "DELIVERED"  # Shipping concern
+
+      @dataclass
+      class Order:
+          """Shared across all contexts — every change affects everyone."""
+          id: str
+          customer_id: str
+          status: OrderStatus
+          items: list[Any]
+          shipping_address: dict[str, str]  # Shipping-specific fields
+          invoice_id: str | None = None      # Billing-specific fields
+          tracking_number: str | None = None # Shipping-specific fields
+
+      @dataclass
+      class Customer:
+          """Same Customer used in Orders, Billing, Shipping."""
+          id: str
+          name: str
+          email: str
+          billing_address: dict[str, str]  # Only Billing cares
+          shipping_preferences: dict[str, str]  # Only Shipping cares
+
+      # --- orders/context ---
+      from shared_domain.models import Customer, Order, OrderStatus  # direct import
+
+      def place_order(customer: Customer, items: list[Any]) -> Order:
+          # Orders context has no idea what fields Billing or Shipping added
+          order = Order(id="ord-1", customer_id=customer.id,
+                       status=OrderStatus.PENDING, items=items,
+                       shipping_address=customer.shipping_address)
+          return order
+
+      # --- billing/context ---
+      from shared_domain.models import Customer, Order, OrderStatus  # same import
+
+      def generate_invoice(order: Order, customer: Customer) -> None:
+          # Billing uses billing_address from Customer — but Customer is shared,
+          # so every change to Customer (e.g. new field for Orders) affects Billing
+          order.invoice_id = f"inv-{order.id}"
+          order.status = OrderStatus.INVOICED  # Billing mutates Orders' status
+
+      # --- shipping/context ---
+      from shared_domain.models import Customer, Order, OrderStatus  # same import
+
+      def ship(order: Order) -> None:
+          order.tracking_number = "1Z999AA10123456784"
+          order.status = OrderStatus.SHIPPED  # Shipping mutates Orders' status
+
+    good: |
+      from __future__ import annotations
+
+      from abc import ABC, abstractmethod
+      from dataclasses import dataclass, field
+      from datetime import datetime, timezone
+      from decimal import Decimal
+      from typing import Protocol
+      from uuid import UUID, uuid4
+
+      # =========================================================================
+      # Orders Context — owns the Order aggregate and its lifecycle
+      # =========================================================================
+
+      @dataclass(frozen=True)
+      class Money:
+          amount: Decimal
+          currency: str = "USD"
+
+      @dataclass(frozen=True)
+      class OrderId:
+          value: UUID = field(default_factory=uuid4)
+
+      @dataclass(frozen=True)
+      class CustomerId:
+          value: str
+
+      @dataclass(frozen=True)
+      class ProductId:
+          value: str
+
+      @dataclass(frozen=True)
+      class Quantity:
+          value: int
+
+          def __post_init__(self) -> None:
+              if self.value <= 0:
+                  raise ValueError("Quantity must be positive")
+
+      @dataclass(frozen=True)
+      class OrderLine:
+          product_id: ProductId
+          quantity: Quantity
+          unit_price: Money
+
+      class Order:
+          """Aggregate root — this is the Orders context's truth."""
+
+          def __init__(self, order_id: OrderId, customer_id: CustomerId,
+                       shipping_address: str) -> None:
+              self._id = order_id
+              self._customer_id = customer_id
+              self._shipping_address = shipping_address
+              self._lines: list[OrderLine] = []
+              self._status = "draft"
+              self._events: list[object] = []
+
+          @property
+          def id(self) -> OrderId:
+              return self._id
+
+          @property
+          def customer_id(self) -> CustomerId:
+              return self._customer_id
+
+          @property
+          def status(self) -> str:
+              return self._status
+
+          def add_line(self, product_id: ProductId, quantity: Quantity,
+                       unit_price: Money) -> None:
+              self._lines.append(OrderLine(product_id, quantity, unit_price))
+
+          def place(self) -> None:
+              if not self._lines:
+                  raise ValueError("Cannot place empty order")
+              self._status = "placed"
+              # Record a domain event — the publishing happens OUTSIDE the aggregate
+              self._events.append(OrderPlaced(
+                  order_id=str(self._id.value),
+                  customer_id=self._customer_id.value,
+                  total_amount=str(self.total().amount),
+                  currency=self.total().currency,
+                  item_count=len(self._lines),
+                  shipping_address=self._shipping_address,
+              ))
+
+          def total(self) -> Money:
+              return Money(sum(l.unit_price.amount * l.quantity.value for l in self._lines))
+
+          def collect_events(self) -> list[object]:
+              events = self._events
+              self._events = []
+              return events
+
+      @dataclass(frozen=True)
+      class OrderPlaced:
+          """Domain event — internal to Orders context. Past tense, minimal payload."""
+          order_id: str
+          customer_id: str
+          total_amount: str
+          currency: str
+          item_count: int
+          shipping_address: str
+
+      # =========================================================================
+      # Integration contracts — published language shared across contexts
+      # =========================================================================
+
+      @dataclass(frozen=True)
+      class OrderPlacedIntegrationEvent:
+          """Published Language event. The external contract, independent of internal model.
+          Versioned, stable, and owned by the upstream context (Orders)."""
+          event_id: str
+          event_type: str = "order.placed"
+          event_version: str = "v1"
+          occurred_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+          payload: dict = field(default_factory=dict)
+
+          @classmethod
+          def from_domain_event(cls, domain_event: OrderPlaced) -> OrderPlacedIntegrationEvent:
+              """Translate domain event to integration event — explicit, testable."""
+              return cls(
+                  event_id=domain_event.order_id,
+                  payload={
+                      "order_id": domain_event.order_id,
+                      "customer_id": domain_event.customer_id,
+                      "total": {"amount": domain_event.total_amount,
+                                 "currency": domain_event.currency},
+                      "item_count": domain_event.item_count,
+                      "shipping_address": domain_event.shipping_address,
+                  }
+              )
+
+      # =========================================================================
+      # Billing Context — own model, translates incoming data through an ACL
+      # =========================================================================
+
+      @dataclass(frozen=True)
+      class InvoiceId:
+          value: str
+
+      @dataclass(frozen=True)
+      class BillingCustomerId:
+          """Billing's own Customer identity — NOT the same as Orders' CustomerId."""
+          value: str
+
+      class BillingAccount:
+          """Billing context's own model. Translates foreign data, never imports it."""
+
+          def __init__(self, customer_id: BillingCustomerId) -> None:
+              self._customer_id = customer_id
+              self._invoices: list[Invoice] = []
+
+          def issue_invoice(self, order_ref: str, amount: Money) -> Invoice:
+              invoice = Invoice(
+                  invoice_id=InvoiceId(f"INV-{order_ref}"),
+                  customer_id=self._customer_id,
+                  amount=amount,
+              )
+              self._invoices.append(invoice)
+              return invoice
+
+      @dataclass(frozen=True)
+      class Invoice:
+          invoice_id: InvoiceId
+          customer_id: BillingCustomerId
+          amount: Money
+
+      # --- Anti-Corruption Layer: translates foreign integration events into local model ---
+
+      class OrderPlacedToBillingTranslator:
+          """ACL: protects Billing's model from Orders' language.
+          No Orders domain type ever reaches Billing's domain layer."""
+
+          def translate(self, integration_event: OrderPlacedIntegrationEvent) -> tuple[
+              BillingCustomerId, str, Money
+          ]:
+              """Convert integration event into Billing's own types.
+
+              Returns Billing-native types — the integration event schema is the contract,
+              not Orders' internal model."""
+              payload = integration_event.payload
+              return (
+                  BillingCustomerId(payload["customer_id"]),
+                  payload["order_id"],
+                  Money(Decimal(payload["total"]["amount"]), payload["total"]["currency"]),
+              )
+
+      # =========================================================================
+      # Application service wires everything together
+      # =========================================================================
+
+      class OrderRepository(ABC):
+          @abstractmethod
+          def save(self, order: Order) -> None:
+              ...
+
+      class PlaceOrderUseCase:
+          def __init__(self, repo: OrderRepository, event_dispatcher: object) -> None:
+              self._repo = repo
+              self._dispatcher = event_dispatcher
+
+          def execute(self, order: Order) -> None:
+              order.place()
+              self._repo.save(order)
+
+              # Publish integration events AFTER persistence succeeds
+              for domain_event in order.collect_events():
+                  if isinstance(domain_event, OrderPlaced):
+                      integration_event = OrderPlacedIntegrationEvent.from_domain_event(
+                          domain_event
+                      )
+                      self._dispatcher.publish(integration_event)
+
+      # --- Billing's event handler ---
+
+      class OnOrderPlacedHandler:
+          def __init__(self, translator: OrderPlacedToBillingTranslator,
+                       billing_repo: object) -> None:
+              self._translator = translator
+              self._billing_repo = billing_repo
+
+          def handle(self, integration_event: OrderPlacedIntegrationEvent) -> None:
+              customer_id, order_ref, amount = self._translator.translate(integration_event)
+              account = self._billing_repo.find(customer_id)
+              invoice = account.issue_invoice(order_ref, amount)
+              self._billing_repo.save(account)
+
+      # =========================================================================
+      # Context map — relationship made explicit
+      #
+      # Orders ──(Published Language: OrderPlacedIntegrationEvent)──> Billing
+      #   Orders is upstream (Customer/Supplier: supplies events)
+      #   Billing is downstream (conforms to the integration contract)
+      #   Billing uses an Anti-Corruption Layer to translate into its own model
+      # =========================================================================
+
+heuristics:
+  - Every meaningful model lives inside a bounded context. There is no such thing as a context-free domain model. A model that is not explicitly owned by a context is owned by accident.
+  - A model is valid only inside its bounded context. The term "Customer" means different things in the Orders context (someone who places orders) vs. the Billing context (someone who receives invoices). This is normal and must be preserved.
+  - Translation across contexts is mandatory. Never import another context's domain classes directly. Use integration contracts, published language events, anti-corruption layers, or explicit adapters.
+  - Choose context relationship patterns deliberately and make them visible in code. If Billing conforms to Orders' published language, name the adapter ConformingInvoiceTranslator. If an anti-corruption layer protects the local model, make that explicit.
+  - Shared Kernel should be small, jointly governed, and explicitly documented. It is a deliberate sharing of a limited model subset between two contexts — not an accident of convenience.
+  - Customer/Supplier: the upstream context (Supplier) commits to meeting the downstream context's (Customer) needs. The integration contract is negotiated, not dictated.
+  - Conformist: the downstream context adopts the upstream model without translation. Use only when translation cost genuinely exceeds the cost of coupling to the upstream model.
+  - Anti-Corruption Layer: translate foreign models into the local model. The ACL owns the translation, keeps foreign terms out of the local ubiquitous language, and is testable as pure mapping logic.
+  - Separate Ways: when integration cost is higher than the value of sharing. Two contexts operate independently, each with its own data and model. Accept data duplication as a deliberate trade-off.
+  - Open Host Service: a context exposes a stable integration protocol (REST API, gRPC, message schema) for multiple consumers. The protocol is versioned and maintained as a product.
+  - Published Language: a documented exchange language (JSON schema, protobuf, XML) that two or more contexts use to communicate. Changes to the language are versioned and communicated.
+  - Integration events are external contracts — versioned, stable, and independent of internal model changes. They are the Published Language, not internal domain events. Translate domain events into integration events at the context boundary, never publish domain events directly.
+  - Identity across contexts: each context owns its own identity types. Orders uses OrderId. Billing uses BillingCustomerId. Do not pass raw IDs around and assume they mean the same thing everywhere.
+  - Keep context maps visible in package structure, integration adapters, and documentation. A developer should be able to read the directory tree and understand which contexts exist and how they relate.
+  - Do not create a giant shared/domain package. It erases boundaries, encourages context bleeding, and becomes a coupling point that prevents independent evolution.
+
+related_tags: [bounded-contexts, context-mapping, anti-corruption-layer, shared-kernel, customer-supplier, conformist, separate-ways, open-host-service, published-language, integration-events, domain-events, ddd-strategic, context-translation]

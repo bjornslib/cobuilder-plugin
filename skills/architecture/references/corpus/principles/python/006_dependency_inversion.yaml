@@ -1,0 +1,144 @@
+id: dependency-inversion-001
+name: SOLID — Dependency Inversion Principle (DIP)
+category: architecture
+canonical_tags: ['solid', 'architecture']
+sources:
+  - books/clean-architecture.md
+summary: High-level policy must not depend on low-level details. Both should depend on stable abstractions owned by the inner layer. Dependency arrows point inward — from concrete implementations toward abstract interfaces. This inverts the traditional dependency direction and is the foundation of plugin architectures, hexagonal ports, and replaceable infrastructure.
+examples:
+  - language: python
+    bad: |
+      # High-level use case directly depends on a concrete PostgreSQL implementation.
+      # Changing databases or payment providers forces rewriting business logic.
+      import psycopg2
+
+
+      class PlaceOrderUseCase:
+          def execute(self, order: dict) -> None:
+              conn = psycopg2.connect("dbname=orders user=admin")
+              cur = conn.cursor()
+              cur.execute(
+                  "INSERT INTO orders (id, total) VALUES (%s, %s)",
+                  (order["id"], order["total"]),
+              )
+              conn.commit()
+              cur.close()
+              conn.close()
+    good: |
+      # Stable abstraction owned by the inner (use case) layer.
+      # Dependencies flow inward — concrete adapters implement this interface.
+      from abc import ABC, abstractmethod
+      from dataclasses import dataclass
+      from typing import Protocol
+
+
+      @dataclass
+      class Order:
+          id: str
+          total: float
+
+
+      class OrderRepository(ABC):
+          @abstractmethod
+          def save(self, order: Order) -> None: ...
+
+
+      class PlaceOrderUseCase:
+          """High-level policy depends only on the abstraction it owns."""
+
+          def __init__(self, repository: OrderRepository) -> None:
+              self._repo = repository
+
+          def execute(self, order: Order) -> None:
+              self._repo.save(order)
+
+
+      # ---- Outer layer: PostgreSQL adapter (dependency arrow points inward) ----
+      class PostgresOrderRepository(OrderRepository):
+          def save(self, order: Order) -> None:
+              # PostgreSQL-specific code lives here, far from business rules.
+              ...
+
+
+      # ---- Outer layer: In-memory adapter (swap without touching use case) ----
+      class InMemoryOrderRepository(OrderRepository):
+          def __init__(self) -> None:
+              self._orders: dict[str, Order] = {}
+
+          def save(self, order: Order) -> None:
+              self._orders[order.id] = order
+
+      # Plugin architecture: composition root wires the chosen implementation.
+      repo = PostgresOrderRepository()
+      use_case = PlaceOrderUseCase(repository=repo)
+  - language: typescript
+    bad: |
+      // Use case directly instantiating a concrete Stripe gateway.
+      // Swapping payment providers requires rewriting business logic.
+      import { Stripe } from "stripe";
+
+      export class ProcessPaymentUseCase {
+        async execute(amount: number, token: string): Promise<void> {
+          const stripe = new Stripe(process.env.STRIPE_SECRET!);
+          await stripe.charges.create({
+            amount: Math.round(amount * 100),
+            currency: "usd",
+            source: token,
+          });
+          // Business rules now coupled to Stripe's API shape.
+        }
+      }
+    good: |
+      // Stable abstraction owned by the use case layer.
+      // Details (Stripe, PayPal, mock) implement this contract.
+      interface PaymentGateway {
+        charge(amount: number, token: string): Promise<{ transactionId: string }>;
+      }
+
+      export class ProcessPaymentUseCase {
+        // Dependency inverted: high-level policy depends on abstraction, not detail.
+        constructor(private readonly gateway: PaymentGateway) {}
+
+        async execute(amount: number, token: string): Promise<string> {
+          if (amount <= 0) throw new Error("Amount must be positive");
+          const result = await this.gateway.charge(amount, token);
+          return result.transactionId;
+        }
+      }
+
+      // ---- Outer layer: Stripe adapter (dependency arrow points inward) ----
+      import { Stripe } from "stripe";
+
+      export class StripePaymentGateway implements PaymentGateway {
+        private readonly stripe = new Stripe(process.env.STRIPE_SECRET!);
+
+        async charge(amount: number, token: string) {
+          const charge = await this.stripe.charges.create({
+            amount: Math.round(amount * 100),
+            currency: "usd",
+            source: token,
+          });
+          return { transactionId: charge.id };
+        }
+      }
+
+      // ---- Outer layer: test double (swap without touching use case) ----
+      export class FakePaymentGateway implements PaymentGateway {
+        async charge(_amount: number, _token: string) {
+          return { transactionId: "fake-txn-001" };
+        }
+      }
+
+      // Plugin architecture: composition root selects the implementation.
+      const gateway = new StripePaymentGateway();
+      const useCase = new ProcessPaymentUseCase(gateway);
+heuristics:
+  - Source code dependencies must point inward, toward higher-level policies. Never import an outer layer from an inner layer.
+  - Inner layers own the abstractions (interfaces, protocols). Outer layers implement them. This is the inversion — the detail depends on the policy, not the reverse.
+  - Stable abstractions change far less often than concrete implementations. Depend on what is stable, not on what is volatile.
+  - 'The plugin architecture pattern is DIP applied at scale: define a contract in the core, let plugins conform to it, and wire them at the composition root.'
+  - A class that directly instantiates a concrete dependency (new keyword, direct import) has not inverted its dependency — extract an interface and inject the implementation.
+  - Use dependency injection, explicit factories, or a composition root at the outermost edge to wire concrete implementations into abstract contracts.
+  - When a database, framework, or vendor SDK changes, the number of files that must change is the dependency fan-out. DIP minimizes this to the adapter layer only.
+  - If a use case imports `psycopg2`, `stripe`, `express`, or `fastapi`, the dependency arrow is wrong — refactor to an interface and an adapter.
+related_tags: [dependency-inversion, solid, dip, plugin-architecture, ports-and-adapters, hexagonal, stable-abstractions, composition-root]
