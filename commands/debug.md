@@ -1,11 +1,11 @@
 ---
-title: "Archkit: Debug"
+title: "cobuilder-architect: Debug"
 status: active
 type: command
 last_verified: 2026-08-04
 ---
 
-# Archkit: Debug
+# cobuilder-architect: Debug
 
 Diagnoses the root cause of a specific failure or bug through divergent
 hypothesis generation, then ranks hypotheses by the cheapest test that would
@@ -17,7 +17,7 @@ It writes no report directory. If the user asks to analyse a different
 local checkout, or to override where output lands, the skill will refuse.
 
 Invoke the `architecture` skill in debug mode, forwarding any arguments the
-user supplied after `/archkit:debug`:
+user supplied after `/cobuilder-architect:debug`:
 
 ```
 Skill("architecture", args="debug $ARGUMENTS")

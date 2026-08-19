@@ -1,11 +1,11 @@
 ---
-title: "Archkit: Maintenance"
+title: "cobuilder-architect: Maintenance"
 status: active
 type: command
 last_verified: 2026-08-04
 ---
 
-# Archkit: Maintenance
+# cobuilder-architect: Maintenance
 
 Re-runs the same review corpus chain used by review mode, then diffs the
 results against the most recent prior `architecture-review-YYYY-MM-DD-*.html`
@@ -19,7 +19,7 @@ different local checkout, or to override where output lands, the skill will
 refuse.
 
 Invoke the `architecture` skill in maintenance mode, forwarding any arguments
-the user supplied after `/archkit:maintenance`:
+the user supplied after `/cobuilder-architect:maintenance`:
 
 ```
 Skill("architecture", args="maintenance $ARGUMENTS")

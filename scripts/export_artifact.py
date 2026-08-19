@@ -44,7 +44,7 @@ republishing.
 
 Usage:
     uv run export_artifact.py --repo <path> --prs 73
-    uv run export_artifact.py --bundle-dir <path>/.prodyssey/self --prs 73,75
+    uv run export_artifact.py --bundle-dir <path>/.cobuilder-architect/self --prs 73,75
     uv run export_artifact.py --bundle-dir <bundle> --prs 73 --force
     uv run export_artifact.py --bundle-dir <bundle> --prs 73 --inline-mermaid
 """
@@ -146,7 +146,7 @@ def load_story(bundle_dir: Path) -> dict:
     if not story_path.exists():
         print(
             f"error: {story_path} not found.\n"
-            "remediation: run /prodyssey:baseline (and /prodyssey:generate) against this bundle first.",
+            "remediation: run /cobuilder-architect:baseline (and /cobuilder-architect:generate) against this bundle first.",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -281,7 +281,7 @@ def build_html(
             "installed plugin (each bundle carries its own copy, and the Mermaid-diagram support "
             "changed it). Refresh it and retry:\n"
             '  cp "${CLAUDE_PLUGIN_ROOT}/viewer/index.html" <bundle-dir>/viewer/index.html\n'
-            "or re-run /prodyssey:baseline against the bundle, which does the same copy.\n"
+            "or re-run /cobuilder-architect:baseline against the bundle, which does the same copy.\n"
             "If the bundle's viewer is already current, then viewer/index.html was edited and "
             "export_artifact.py's replacement strings need updating to match.",
             file=sys.stderr,
@@ -422,7 +422,7 @@ def compute_source_hash(entry: dict, adrs_obj: dict, diffs_js: str | None, diagr
     # trips a re-export — otherwise the hash would report "unchanged" forever once a
     # PR's diagram source is tweaked after the fact. Note this changes the hash for
     # every PR already exported before diagrams existed, so the very next run of
-    # `/prodyssey:publish` will re-export all of them once, even ones with no
+    # `/cobuilder-architect:publish` will re-export all of them once, even ones with no
     # diagrams (empty dict still changes the payload's shape) — expected, one-time.
     payload = json.dumps(
         {"entry": entry, "adrs": adrs_obj, "diffs": diffs_js, "diagrams": diagrams_by_level},
@@ -455,7 +455,7 @@ def now_iso() -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--repo", default=None, help="path to the target git repo (default: cwd)")
-    parser.add_argument("--bundle-dir", default=None, help="bundle dir to read (default: <repo>/.prodyssey/self)")
+    parser.add_argument("--bundle-dir", default=None, help="bundle dir to read (default: <repo>/.cobuilder-architect/self)")
     parser.add_argument("--prs", required=True, help="comma-separated PR numbers, e.g. 73,75")
     parser.add_argument("--out-dir", default=None, help="export output dir (default: <bundle-dir>/exports)")
     parser.add_argument("--image-width", type=int, default=None, help="override the first compression tier's width")
@@ -477,14 +477,14 @@ def main() -> None:
     args = parser.parse_args()
 
     repo = resolve_repo(args.repo)
-    bundle_dir = Path(args.bundle_dir).resolve() if args.bundle_dir else repo / ".prodyssey" / "self"
+    bundle_dir = Path(args.bundle_dir).resolve() if args.bundle_dir else repo / ".cobuilder-architect" / "self"
     out_dir = Path(args.out_dir).resolve() if args.out_dir else bundle_dir / "exports"
     viewer_path = bundle_dir / "viewer" / "index.html"
 
     if not viewer_path.exists():
         print(
             f"error: {viewer_path} not found.\n"
-            "remediation: run /prodyssey:baseline against this bundle first.",
+            "remediation: run /cobuilder-architect:baseline against this bundle first.",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -528,7 +528,7 @@ def main() -> None:
         if entry is None:
             print(
                 f"error: PR #{pr_num} not found in {bundle_dir}/data/story.json.\n"
-                f"remediation: run /prodyssey:generate --prs {pr_num} first.",
+                f"remediation: run /cobuilder-architect:generate --prs {pr_num} first.",
                 file=sys.stderr,
             )
             sys.exit(1)

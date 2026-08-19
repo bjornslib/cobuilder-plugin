@@ -11,11 +11,11 @@ Interviews the author of a change, assesses the change against the bundle, and
 opens the pull request with the generated description as its body. Answers three
 questions a diff cannot: is this sensible, does it help or hurt maintainability,
 and does it introduce a valuable pattern or duplicate one the repo already has.
-The captured intent stays in `.prodyssey/`, so `/prodyssey:generate` later reads
+The captured intent stays in `.cobuilder-architect/`, so `/cobuilder-architect:generate` later reads
 what the author said instead of inferring it.
 
 Invoke the `odyssey` skill in submit mode, forwarding any arguments the user
-supplied after `/prodyssey:submit` (`--repo <path>`, `--store local|central`,
+supplied after `/cobuilder-architect:submit` (`--repo <path>`, `--store local|central`,
 `--prs`, `--stage pre|post`, `--branch <ref>`, `--base <branch>`, `--draft`,
 `--no-create`, `--non-interactive`):
 
@@ -29,7 +29,7 @@ that PR without creating anything.
 
 ## What this opens
 
-This is the one command in the plugin that acts outside `.prodyssey/`. On a
+This is the one command in the plugin that acts outside `.cobuilder-architect/`. On a
 branch with no pull request, it pushes the branch and runs `gh pr create` —
 after showing you the description, the base branch, and the verdict, and asking
 first. Nothing is pushed or opened without that confirmation.
@@ -65,11 +65,11 @@ reported, and you decide whether to open it, open it as a draft, or fix first.
 ## Examples
 
 ```
-/prodyssey:submit
-/prodyssey:submit --draft
-/prodyssey:submit --no-create
-/prodyssey:submit --base develop
-/prodyssey:submit --prs 73
-/prodyssey:submit --prs 73 --stage post
-/prodyssey:submit --repo ~/code/other-project --prs 12
+/cobuilder-architect:submit
+/cobuilder-architect:submit --draft
+/cobuilder-architect:submit --no-create
+/cobuilder-architect:submit --base develop
+/cobuilder-architect:submit --prs 73
+/cobuilder-architect:submit --prs 73 --stage post
+/cobuilder-architect:submit --repo ~/code/other-project --prs 12
 ```

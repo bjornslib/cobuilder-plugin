@@ -4,7 +4,7 @@ Guidance for Claude Code instances working in this repo.
 
 ## What this repo is
 
-**prodyssey** is a Claude Code plugin (`.claude-plugin/`), not an app with a
+**cobuilder-architect** is a Claude Code plugin (`.claude-plugin/`), not an app with a
 build/test/deploy cycle. It has one job. It turns the merged PRs of *any*
 locally checked-out git repo into a four-level narrated "codebase odyssey":
 scene art, voice narration, and retro-extracted ADRs, in a portable HTML
@@ -19,15 +19,15 @@ Capture the intent at submit time, and generate mode stops guessing. See
 Submit mode below, and `skills/odyssey/references/{interview-guide,review-mode}.md`.
 
 Where the bundle lands depends on the target. Analyzing your own repo writes
-to `<target>/.prodyssey/self/` — that is the case with no `--repo`, or with
+to `<target>/.cobuilder-architect/self/` — that is the case with no `--repo`, or with
 `--repo` that resolves to the session's own checkout. Analyzing a foreign
-repo writes instead to `<hub>/.prodyssey/<repo-slug>/`, where `<hub>` is the
+repo writes instead to `<hub>/.cobuilder-architect/<repo-slug>/`, where `<hub>` is the
 session's own repo, never the foreign one. `--store local|central` overrides
 the automatic choice. See `skills/odyssey/SKILL.md`'s Hub resolution section
 for the exact rule and slug derivation.
 
-Install surface: `/plugin marketplace add bjornslib/prodyssey` then
-`/plugin install prodyssey@prodyssey`. No agents, no hooks, no MCP servers —
+Install surface: `/plugin marketplace add bjornslib/cobuilder-architect` then
+`/plugin install cobuilder-architect@cobuilder-architect`. No agents, no hooks, no MCP servers —
 deliberate, so the plugin never touches another session's permission surface.
 The plugin ships two skills. `odyssey` is the orchestration skill this file
 describes. `mermaid` holds the authoring rules for the Mermaid diagrams
@@ -58,7 +58,7 @@ skills/
   mermaid/            authoring rules for the Mermaid diagrams below; not
                        invoked by the orchestrating Claude directly — the
                        per-PR diagram-authoring subagent invokes it as
-                       Skill("prodyssey:mermaid")
+                       Skill("cobuilder-architect:mermaid")
 scripts/              11 PEP-723 uv scripts, called by the skill, never edited by it:
                        extract_story.py, generate_prompts.py, generate_audio.py,
                        extract_diffs.py, build_diagrams.py, verify_bundle.py,
@@ -99,7 +99,7 @@ Scripts are PEP 723 (`uv run script.py` resolves `google-genai`, `pillow`,
 
 ## Submit mode — what is load-bearing about it
 
-`/prodyssey:submit` interviews a change's author, assesses the change, and
+`/cobuilder-architect:submit` interviews a change's author, assesses the change, and
 opens the pull request. Four things about it are easy to break by accident.
 
 **The interview is the product.** `references/interview-guide.md` §2 says
@@ -117,7 +117,7 @@ timeline. Rather than mint a synthetic key, the pre stage ends with
 content stages in `<bundle-dir>/exports/branch-<slug>/`. Do not "fix" this by
 inventing a branch key.
 
-**Pushing and opening a PR are the only actions outside `.prodyssey/`,** and
+**Pushing and opening a PR are the only actions outside `.cobuilder-architect/`,** and
 they only run after an explicit confirmation. Nothing else on GitHub is in
 scope: no comments, no edits to an existing PR body, no labels, no reviewers,
 no merges. `--non-interactive` cannot open a PR at all, because there is
@@ -140,7 +140,7 @@ keep passing — and `--require-review` promotes them.
 
 `viewer/index.html` is a normal multi-file web page in disguise: one HTML
 file, but it depends on three things that only exist *next to* it inside a
-real `.prodyssey/` bundle:
+real `.cobuilder-architect/` bundle:
 
 1. **Sibling `<script src="../data/*.js">` tags** (`story.js`, `manifest.js`,
    per-PR `diffs-pr{N}.js` via `document.write`, `adrs.js`) — this is how
@@ -159,7 +159,7 @@ real `.prodyssey/` bundle:
    `sans-serif` stack.
 
 Serve the bundle with `python3 -m http.server`, rooted at the bundle root.
-That root is the parent of `viewer/`, for example `.prodyssey/self/`. Do not
+That root is the parent of `viewer/`, for example `.cobuilder-architect/self/`. Do not
 root it inside `viewer/` itself. `viewer/index.html` requests sibling files
 such as `../data/story.js`, so a server rooted inside `viewer/` returns a
 404 error for every data file. The future production app keeps the same
@@ -186,7 +186,7 @@ if anybody revisits it:
   again as base64. An artifact-export mode must drop audio, transcode it to
   a compressed format, or cap it to one PR level at a time.
 
-That experiment is now a real, shipped mode: `/prodyssey:publish`, which is
+That experiment is now a real, shipped mode: `/cobuilder-architect:publish`, which is
 Publish mode in `SKILL.md`. Three scripts divide the work.
 `scripts/export_artifact.py` does the transform above, per PR. It also
 retries at lower compression tiers when the result exceeds the budget, and
@@ -199,7 +199,7 @@ script is the only part of the pipeline that must run after the publish
 call, because no script can know the URL in advance.
 `publish-manifest.json` is also the
 staleness record. It holds a content hash, plus the PR's commit SHA when
-that SHA is available. A second `/prodyssey:publish` on an unchanged PR
+that SHA is available. A second `/cobuilder-architect:publish` on an unchanged PR
 therefore reports "already up to date" instead of publishing again.
 
 `--format artifact` is the only implemented target. `--format notion` is a
@@ -224,7 +224,7 @@ and migration below.
 ## Bundle output shape (what generation produces)
 
 ```
-<bundle-dir>/       <target>/.prodyssey/self/ for self-analysis, <hub>/.prodyssey/<repo-slug>/ for a foreign repo
+<bundle-dir>/       <target>/.cobuilder-architect/self/ for self-analysis, <hub>/.cobuilder-architect/<repo-slug>/ for a foreign repo
   bundle.json        bundle_format, schema_version, generator_version, migrated_at
   data/{story.json, story.js, adrs.json, adrs.js, manifest.js,
         diffs-pr{N}.js…, audio/pr{N}_{level}.wav,
@@ -232,9 +232,9 @@ and migration below.
   assets/pr-{N}/level-{1..3}.png
   inventory.yaml
   viewer/index.html
-  exports/{publish-manifest.json, pr-{N}.html…, index.html}   # written by /prodyssey:publish
-  exports/pr-{N}-{description,assessment}.md                  # written by /prodyssey:submit
-  exports/branch-{slug}/{diff,intent,assessment}.json         # /prodyssey:submit, pre-PR staging
+  exports/{publish-manifest.json, pr-{N}.html…, index.html}   # written by /cobuilder-architect:publish
+  exports/pr-{N}-{description,assessment}.md                  # written by /cobuilder-architect:submit
+  exports/branch-{slug}/{diff,intent,assessment}.json         # /cobuilder-architect:submit, pre-PR staging
   exports/branch-{slug}/{description,assessment}.md
   .migration-backup/  # pre-migration story.json snapshots, written by migrate_bundle.py
 ```
@@ -247,7 +247,7 @@ sibling-script-tag pattern `story.js`/`manifest.js`/`adrs.js` already use.
 Whether a given PR has diagrams, scene art, or both depends on the `--art`
 flag it was generated with (see Generate mode in `skills/odyssey/SKILL.md`).
 
-`exports/` appears only after `/prodyssey:publish` runs at least once. It is
+`exports/` appears only after `/cobuilder-architect:publish` runs at least once. It is
 as committable as the rest of the bundle — see Publish mode notes below.
 
 `story.json`'s `meta.schema_version` is currently `"1.2"`, and it is the
@@ -256,12 +256,12 @@ source of truth for a bundle's data shape. `bundle.json` only mirrors it.
 on it through `SCHEMA_VERSION_KNOWN`. That set also accepts `"1.0"` and `"1.1"`, so
 migration can still read an older bundle.
 
-This repo commits everything under `.prodyssey/`. Only five bookkeeping
+This repo commits everything under `.cobuilder-architect/`. Only five bookkeeping
 entries are gitignored:
 
-- `.prodyssey/.view-server.pid` and `.prodyssey/.view-server.log`, which are
+- `.cobuilder-architect/.view-server.pid` and `.cobuilder-architect/.view-server.log`, which are
   process bookkeeping for a server that exists on one machine only.
-- `.prodyssey/active`, a symlink that holds an absolute path. Committing it
+- `.cobuilder-architect/active`, a symlink that holds an absolute path. Committing it
   breaks every other clone and churns the diff on each view switch.
 - Each bundle's `.migration-backup/`, which holds pre-migration `story.json`
   snapshots. They are disposable once a migration proves sound.
@@ -272,15 +272,15 @@ entries are gitignored:
   `intent.json` and `assessment.json` beside it are committed.
 
 The self-bundle and the foreign-repo cache used to live under two separate
-top-level directories. One `.prodyssey/` root now holds both, and the
-subdirectory tells them apart. `.prodyssey/self/` is this repo's own
+top-level directories. One `.cobuilder-architect/` root now holds both, and the
+subdirectory tells them apart. `.cobuilder-architect/self/` is this repo's own
 generated bundle. It is tracked so that engineers can review each other's
 PRs as an odyssey instead of as a raw diff. A target repo that adopts the
 plugin is meant to do the same.
 
 The other two subdirectories are committed *test fixtures*:
-`.prodyssey/cobuilder-harness-a103a550/` and
-`.prodyssey/digital-curator-80f83abb/`. Both are bundles generated against
+`.cobuilder-architect/cobuilder-harness-a103a550/` and
+`.cobuilder-architect/digital-curator-80f83abb/`. Both are bundles generated against
 other local repos through `--repo`, and both are demo and dogfooding data,
 not this repo's own PR history. Do not delete them as stale cache. They
 exist deliberately, they are named by `<repo-slug>`, and they are otherwise
@@ -289,7 +289,7 @@ the self-bundle and is never a slug.) A hub that adopts the plugin may or
 may not commit its own foreign-repo slug directories. The skill takes no
 position on that. `skills/odyssey/SKILL.md`'s
 Hub resolution section suggests a `.gitignore` line for the four
-bookkeeping entries only, and is explicit that `.prodyssey/` as a whole must
+bookkeeping entries only, and is explicit that `.cobuilder-architect/` as a whole must
 never be suggested for ignoring.
 
 ## Bundle versioning and migration
@@ -358,8 +358,8 @@ hand.
 
 ## Conventions worth preserving
 
-- Never touch anything in `<target>` outside `<target>/.prodyssey/self/`.
-  `<hub>/.prodyssey/` is also a sanctioned write location, for
+- Never touch anything in `<target>` outside `<target>/.cobuilder-architect/self/`.
+  `<hub>/.cobuilder-architect/` is also a sanctioned write location, for
   centrally-stored foreign-repo bundles and for view-server bookkeeping.
 - `extract_story.py` never overwrites an authored narrative field for a PR
   already in `story.json`. A new PR gets a minimal stub. A second run is
@@ -367,8 +367,8 @@ hand.
 - `--repo <path>` works on the skill and on all five commands. It targets
   any local checkout, not only the session's own working directory. The Hub
   resolution storage rule decides where the bundle lands:
-  `<target>/.prodyssey/self/` for self-analysis, or
-  `<hub>/.prodyssey/<repo-slug>/` for a foreign repo. `--store
+  `<target>/.cobuilder-architect/self/` for self-analysis, or
+  `<hub>/.cobuilder-architect/<repo-slug>/` for a foreign repo. `--store
   local|central` overrides it.
 - Everything judgment-shaped lives in `references/*.md` prose, loaded on
   demand, and never hardcoded in a script or in the skill body. That covers
@@ -427,7 +427,7 @@ ships `.claude/skills/ste-writing/ste-lint.py`, a rules-only linter that
 scores violations per 100 words, for a quick optional check.
 
 The `ste-writing` skill lives under `.claude/skills/` on purpose, and it
-does not ship with the plugin. An install of `prodyssey@prodyssey` gets
+does not ship with the plugin. An install of `cobuilder-architect@cobuilder-architect` gets
 exactly the two skills under `skills/` in this repo, `odyssey` and
 `mermaid`, and never a third. That matches the minimal install surface
 above. `ste-writing` stays a repo-local dev tool instead. The linter checks
@@ -437,9 +437,9 @@ rules only. It does not certify ASD-STE100 dictionary compliance.
 
 Plugin scaffold → viewer port → skill/references/commands → generation +
 verification scripts → `--repo` external-checkout targeting → Hub
-resolution / central storage (`--store`, `.prodyssey/`, `view` command) →
+resolution / central storage (`--store`, `.cobuilder-architect/`, `view` command) →
 unification of the two former bundle-storage roots, with the self-bundle
-moved to `.prodyssey/self/` → authored Mermaid diagrams as an `--art`
+moved to `.cobuilder-architect/self/` → authored Mermaid diagrams as an `--art`
 alternative to Gemini scene art, adding the `mermaid` skill and
 `build_diagrams.py` (see `git log` for the WS-A/B/C/D workstream commits) →
 `submit` mode, which reverses part of the review-mode exclusion recorded in

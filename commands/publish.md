@@ -12,7 +12,7 @@ PR, plus an auto-updating index artifact linking to every PR published so far
 for this bundle.
 
 Invoke the `odyssey` skill in publish mode, forwarding any arguments the user
-supplied after `/prodyssey:publish` (`--repo <path>`, `--store local|central`,
+supplied after `/cobuilder-architect:publish` (`--repo <path>`, `--store local|central`,
 `--prs`, `--format`, `--force`):
 
 ```
@@ -22,7 +22,7 @@ Skill("odyssey", args="publish $ARGUMENTS")
 ## Requirements
 
 - The PR(s) must already exist in the bundle's `data/story.json` — run
-  `/prodyssey:generate --prs <N>` first if not.
+  `/cobuilder-architect:generate --prs <N>` first if not.
 - Publishing needs the `Artifact` tool, which requires a `/login` session on
   a paid plan (Pro/Max/Team/Enterprise) — not an API-key or cloud-credential
   session. If it's unavailable, the flattened export files are still written
@@ -38,7 +38,7 @@ that clearly rather than silently publishing as an artifact instead.
 
 ## Staleness
 
-Re-running `/prodyssey:publish` for a PR that hasn't changed since its last
+Re-running `/cobuilder-architect:publish` for a PR that hasn't changed since its last
 publish reports "already up to date" and skips re-publishing it — no wasted
 Artifact calls. A PR is considered changed if its underlying commit moved
 (new commits landed on an open PR) or its narrative/ADR content was
@@ -47,8 +47,8 @@ re-authored at the same commit. `--force` republishes regardless.
 ## Examples
 
 ```
-/prodyssey:publish --prs 73
-/prodyssey:publish --prs 73,75
-/prodyssey:publish --prs 73 --force
-/prodyssey:publish --repo ~/code/other-project --prs 12
+/cobuilder-architect:publish --prs 73
+/cobuilder-architect:publish --prs 73,75
+/cobuilder-architect:publish --prs 73 --force
+/cobuilder-architect:publish --repo ~/code/other-project --prs 12
 ```

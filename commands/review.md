@@ -1,11 +1,11 @@
 ---
-title: "Archkit: Review"
+title: "cobuilder-architect: Review"
 status: active
 type: command
 last_verified: 2026-08-04
 ---
 
-# Archkit: Review
+# cobuilder-architect: Review
 
 Runs a full-spectrum codebase audit — security, architecture, code quality,
 scaling, maintainability, dependency health, and testing. Always produces two
@@ -18,7 +18,7 @@ This mode is self-only. It analyses the session's own repo. Reports land in
 checkout, or to override where output lands, the skill will refuse.
 
 Invoke the `architecture` skill in review mode, forwarding any arguments the
-user supplied after `/archkit:review`:
+user supplied after `/cobuilder-architect:review`:
 
 ```
 Skill("architecture", args="review $ARGUMENTS")

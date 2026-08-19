@@ -55,9 +55,9 @@ MAX_LINES_PER_FILE = 4000
 MAX_BYTES_PER_FILE = 200_000  # belt-and-suspenders: some files (minified JS, a
 # single-line JSON blob, a data-URI-heavy HTML export) pack megabytes onto a
 # handful of lines, so the line cap alone doesn't bound them.
-TRUNCATION_MARKER = "\n… [truncated by prodyssey: diff exceeds 4000 lines]"
-BYTE_TRUNCATION_MARKER = "\n… [truncated by prodyssey: diff exceeds 200KB on very few lines]"
-GENERATED_EXPORT_NOTE = "[not diffed by prodyssey: this is a previously-published bundle export, not source — its content is a base64-heavy self-contained HTML file, and diffing it against itself on every regenerate would balloon future diffs without adding anything narratively useful]"
+TRUNCATION_MARKER = "\n… [truncated by cobuilder-architect: diff exceeds 4000 lines]"
+BYTE_TRUNCATION_MARKER = "\n… [truncated by cobuilder-architect: diff exceeds 200KB on very few lines]"
+GENERATED_EXPORT_NOTE = "[not diffed by cobuilder-architect: this is a previously-published bundle export, not source — its content is a base64-heavy self-contained HTML file, and diffing it against itself on every regenerate would balloon future diffs without adding anything narratively useful]"
 
 MERGE_PR_RE = re.compile(r"Merge pull request #(\d+) from \S+?/(\S+)")
 SQUASH_PR_RE = re.compile(r"\(#(\d+)\)\s*$")
@@ -438,7 +438,7 @@ def write_branch_diff(bundle_dir: Path, entry: dict, files: dict[str, str], stat
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--repo", default=None, help="path to the target git repo (default: cwd)")
-    parser.add_argument("--bundle-dir", default=None, help="bundle output dir (default: <repo>/.prodyssey/self)")
+    parser.add_argument("--bundle-dir", default=None, help="bundle output dir (default: <repo>/.cobuilder-architect/self)")
     parser.add_argument("--prs", default=None, help="comma-separated PR numbers, e.g. 73,75")
     parser.add_argument(
         "--branch",
@@ -471,7 +471,7 @@ def main() -> None:
         sys.exit(1)
 
     repo = resolve_repo(args.repo)
-    bundle_dir = Path(args.bundle_dir).resolve() if args.bundle_dir else repo / ".prodyssey" / "self"
+    bundle_dir = Path(args.bundle_dir).resolve() if args.bundle_dir else repo / ".cobuilder-architect" / "self"
     data_dir = bundle_dir / "data"
     manifest_js = data_dir / "manifest.js"
 

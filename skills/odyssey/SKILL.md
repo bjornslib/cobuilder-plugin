@@ -16,8 +16,8 @@ description: >
   odyssey server", "publish the odyssey", "submit this PR", "review my PR", "review
   this branch before I open a PR", "architecture review", "should we merge this",
   "will we regret this change", "interview me about this change", or invokes
-  `/prodyssey:baseline`, `/prodyssey:generate`, `/prodyssey:view`,
-  `/prodyssey:publish`, or `/prodyssey:submit`.
+  `/cobuilder-architect:baseline`, `/cobuilder-architect:generate`, `/cobuilder-architect:view`,
+  `/cobuilder-architect:publish`, or `/cobuilder-architect:submit`.
 ---
 
 # Codebase Odyssey Generator
@@ -38,10 +38,10 @@ labels, no reviewers, no merges. See Submit mode.
 
 Where that bundle actually lands depends on whether the target is the
 session's own repo or a foreign one. Every bundle lives under one parent,
-`<hub>/.prodyssey/`. Self-analysis bundles land at
-`<hub>/.prodyssey/self/` — because target and hub are the same repo in
+`<hub>/.cobuilder-architect/`. Self-analysis bundles land at
+`<hub>/.cobuilder-architect/self/` — because target and hub are the same repo in
 that case, this sits inside the analyzed repo and is committed alongside
-its code. Foreign-repo bundles land at `<hub>/.prodyssey/<repo-slug>/`.
+its code. Foreign-repo bundles land at `<hub>/.cobuilder-architect/<repo-slug>/`.
 See Hub resolution below for the exact rule.
 
 Reference material lives in `references/` and is loaded on demand, not inlined here.
@@ -53,7 +53,7 @@ Scripts live in `scripts/` and are called via `uv run`, never edited by the skil
 
 1. An explicit `--repo <path>` argument forwarded by the command. This may be ANY
    local checkout, not just the repo the session is running in (e.g.
-   `/prodyssey:generate --repo ~/code/other-project --prs 12`).
+   `/cobuilder-architect:generate --repo ~/code/other-project --prs 12`).
 2. Otherwise: the git toplevel of the session's working directory.
 
 When `--repo` points outside the session's working directory, narrative authoring
@@ -72,13 +72,16 @@ where the bundle actually lands (`<bundle-dir>`), overridable with
 bundles — resolves the same way `<target>` falls back in step 2 above: the
 git toplevel of the session's own working directory. `--repo` never
 affects `<hub>`. It is always about the session's own checkout, not the
-repo being analyzed.
+repo being analyzed. Before any mode assigns `<bundle-dir>`, it migrates
+a leftover `.prodyssey/` store to `.cobuilder-architect/` if one is still
+on disk. See Consumer store rename below. The check runs against `<hub>`,
+and also against `<target>` when the two differ.
 
 **Storage rule** — where a given invocation's bundle actually lives:
 
 - **Self-analysis** (no `--repo` given, or `--repo` resolves to the same repo
   as `<hub>` — i.e. `<target>`'s git toplevel equals `<hub>`): the bundle lives
-  at `<hub>/.prodyssey/self/`. `self` is a **fixed literal, never a computed
+  at `<hub>/.cobuilder-architect/self/`. `self` is a **fixed literal, never a computed
   slug** — do not "fix" this into a hashed slug. The slug hash (below) is a
   `shasum` of the resolved absolute target path. A self-bundle committed
   under a hashed name would be undiscoverable from any other clone
@@ -88,16 +91,16 @@ repo being analyzed.
   hub where the invocation computed them, so their path-dependence is
   harmless.
 - **Foreign repo** (`--repo <other-path>` resolves to a DIFFERENT repo than
-  `<hub>`): the bundle lives at `<hub>/.prodyssey/<repo-slug>/`, unchanged.
+  `<hub>`): the bundle lives at `<hub>/.cobuilder-architect/<repo-slug>/`, unchanged.
 
 An optional `--store local|central` flag overrides the automatic rule
 regardless of the self/foreign check: `--store local` forces
-`<target>/.prodyssey/self/`, `--store central` forces
-`<hub>/.prodyssey/<repo-slug>/`. This preserves today's meaning of `local`
+`<target>/.cobuilder-architect/self/`, `--store central` forces
+`<hub>/.cobuilder-architect/<repo-slug>/`. This preserves today's meaning of `local`
 (writing into the target repo itself). Note that for self-analysis the two
 branches converge — `<target>` and `<hub>` are the same repo, so
 `--store local` is a no-op there. Do not read `local` as
-"`<hub>/.prodyssey/self`" instead. That reading would put a *foreign*
+"`<hub>/.cobuilder-architect/self`" instead. That reading would put a *foreign*
 repo's bundle under `self/` whenever a user passes `--store local` for it,
 breaking the invariant that makes the fixed literal safe to leave
 un-slugged.
@@ -112,17 +115,51 @@ HASH=$(printf '%s' "<resolved-abs-target-path>" | shasum | cut -c1-8)
 SLUG="${NAME}-${HASH}"
 ```
 
-Then set `<bundle-dir>` once, at the top of every baseline/generate invocation:
+Every odyssey mode — Baseline, Generate, Submit, View, and Publish — runs the consumer store rename below **before** it assigns `BUNDLE_DIR`. This is not a `LAYOUT_MIGRATIONS` step. That ladder runs inside one `--bundle-dir` and cannot rename its own parent.
+
+**Consumer store rename.** After you have `<hub>` and `<target>` toplevels, and before you assign `BUNDLE_DIR`, migrate a leftover `.prodyssey/` store if one is still on disk. Run the check against `<hub>`. If `<target>` differs from `<hub>`, run it against `<target>` as well — a `--store local` write lands there.
+
+For each of those repo roots:
+
+- If `<repo>/.prodyssey/` exists and `<repo>/.cobuilder-architect/` does not: move it. Use `git mv` when git tracks the directory. Use `mv` when it does not. Report the move.
+- If both exist, STOP. Tell the user both directories are present and that this skill will not merge them. Do not continue.
+- If only `.cobuilder-architect/` exists, do nothing.
+
+The step is idempotent. A new install that never had `.prodyssey/` is a no-op. Unlike the `.odyssey/` detect block below, this step **does** perform the move.
+
+Then set `<bundle-dir>` once, at the top of every mode:
 
 ```bash
 STORE_MODE="<local|central, from --store if the user passed it, else empty>"
 HUB_TOPLEVEL=$(git -C "<hub>" rev-parse --show-toplevel)
 TARGET_TOPLEVEL=$(git -C "<target>" rev-parse --show-toplevel)
 
+migrate_store() {
+  REPO="$1"
+  OLD="$REPO/.prodyssey"
+  NEW="$REPO/.cobuilder-architect"
+  if [ -d "$OLD" ] && [ ! -e "$NEW" ]; then
+    if git -C "$REPO" ls-files --error-unmatch .prodyssey >/dev/null 2>&1; then
+      git -C "$REPO" mv .prodyssey .cobuilder-architect
+    else
+      mv "$OLD" "$NEW"
+    fi
+    echo "moved $OLD -> $NEW"
+  elif [ -d "$OLD" ] && [ -e "$NEW" ]; then
+    echo "STOP: both $OLD and $NEW exist. Do not merge them. Move or remove one, then retry."
+    exit 1
+  fi
+}
+
+migrate_store "$HUB_TOPLEVEL"
+if [ "$HUB_TOPLEVEL" != "$TARGET_TOPLEVEL" ]; then
+  migrate_store "$TARGET_TOPLEVEL"
+fi
+
 if [ "$STORE_MODE" = "central" ] || { [ "$STORE_MODE" != "local" ] && [ "$HUB_TOPLEVEL" != "$TARGET_TOPLEVEL" ]; }; then
-  BUNDLE_DIR="$HUB_TOPLEVEL/.prodyssey/$SLUG"
+  BUNDLE_DIR="$HUB_TOPLEVEL/.cobuilder-architect/$SLUG"
 else
-  BUNDLE_DIR="$TARGET_TOPLEVEL/.prodyssey/self"
+  BUNDLE_DIR="$TARGET_TOPLEVEL/.cobuilder-architect/self"
 fi
 ```
 
@@ -136,9 +173,9 @@ reach outside it.
 immediately — reached by all five modes, since Step 0's prereq gate is
 skipped by View, Publish, and Submit. If `$BUNDLE_DIR` does not exist but
 a legacy `<target>/.odyssey/` does, STOP. Tell the user their bundle
-predates the `.prodyssey/self` layout, and print the exact command:
+predates the `.cobuilder-architect/self` layout, and print the exact command:
 ```
-git -C <target> mv .odyssey .prodyssey/self
+git -C <target> mv .odyssey .cobuilder-architect/self
 ```
 Do not perform the move yourself, and do not fall through to "no baseline
 found". Two reasons make this detect-but-not-migrate rather than an
@@ -150,17 +187,17 @@ found", and silently regenerate over hand-authored narrative at real
 Gemini API cost. This block is removable once legacy `.odyssey/` layouts
 are no longer expected in the wild.
 
-Whenever `<bundle-dir>` resolves under `<hub>/.prodyssey/` and
-`<hub>/.prodyssey/` does not exist yet, create it (`mkdir -p`) and check
+Whenever `<bundle-dir>` resolves under `<hub>/.cobuilder-architect/` and
+`<hub>/.cobuilder-architect/` does not exist yet, create it (`mkdir -p`) and check
 whether the hub's `.gitignore` already covers its four bookkeeping entries.
 If not, print exactly these four lines for the user to add manually:
 ```
-.prodyssey/.view-server.pid
-.prodyssey/.view-server.log
-.prodyssey/active
-.prodyssey/*/.migration-backup/
+.cobuilder-architect/.view-server.pid
+.cobuilder-architect/.view-server.log
+.cobuilder-architect/active
+.cobuilder-architect/*/.migration-backup/
 ```
-Do NOT edit `.gitignore` yourself, and **never suggest ignoring `.prodyssey/`
+Do NOT edit `.gitignore` yourself, and **never suggest ignoring `.cobuilder-architect/`
 as a whole** — bundles are meant to be committed alongside the code they
 narrate. A narrative that is not in the repo is not doing its job. Only
 these four entries are exceptions:
@@ -177,7 +214,7 @@ these four entries are exceptions:
 
 This applies the first time *any* mode (Baseline, Generate, or View)
 creates the directory, not just View mode. It is also a one-time notice,
-not a durable reminder: once `<hub>/.prodyssey/` exists, later invocations
+not a durable reminder: once `<hub>/.cobuilder-architect/` exists, later invocations
 skip the check even if the user never actually added the suggested
 lines.
 
@@ -350,7 +387,7 @@ Per-PR narrative + ADR + art + audio sweep. Steps:
       below). The orchestrating Claude does **not** write the `.mmd` files
       itself. For each PR in this stage, spawn one subagent whose prompt
       must:
-      - tell it to invoke `Skill("prodyssey:mermaid")` first. If that call
+      - tell it to invoke `Skill("cobuilder-architect:mermaid")` first. If that call
         gives `Unknown skill`, tell it to read
         `${CLAUDE_PLUGIN_ROOT}/skills/mermaid/SKILL.md` directly and obey
         that file instead. The skill resolves by name only in a session
@@ -421,7 +458,7 @@ Serves the currently selected bundle's `viewer/` as a static site in the
 background — the session keeps going, the user gets a URL to open. No Gemini
 call, no `uv`, just `python3`'s stdlib `http.server`, bound to localhost only.
 
-One long-lived server process per hub, rooted at `<hub>/.prodyssey/` itself
+One long-lived server process per hub, rooted at `<hub>/.cobuilder-architect/` itself
 (never at a bundle's `viewer/` subfolder directly — see below), always serving
 `http://localhost:<port>/active/viewer/`. Switching which bundle is being
 viewed is just repointing a symlink. It never requires restarting the server.
@@ -442,9 +479,9 @@ is what makes the one-server-plus-symlink design below work.
 
 ### Layout
 
-`<hub>/.prodyssey/` holds:
+`<hub>/.cobuilder-architect/` holds:
 - `self/` — the hub's own self-analysis bundle (the repo that contains this
-  `.prodyssey/`), and one subfolder per foreign-repo bundle (`<repo-slug>/`).
+  `.cobuilder-architect/`), and one subfolder per foreign-repo bundle (`<repo-slug>/`).
   Each is a peer full bundle root (`data/`, `viewer/`, `assets/`), created by
   Baseline/Generate mode per the storage rule in Hub resolution above. Harmless
   side effect worth knowing so nobody "fixes" it later: `self/` is therefore
@@ -452,14 +489,14 @@ is what makes the one-server-plus-symlink design below work.
   addition to the usual `/active/viewer/`.
 - `active` — a symlink to the ABSOLUTE path of whichever bundle root is
   currently selected for viewing. Usually points at a
-  `<hub>/.prodyssey/self/` or `<hub>/.prodyssey/<slug>/` entry, but for a
+  `<hub>/.cobuilder-architect/self/` or `<hub>/.cobuilder-architect/<slug>/` entry, but for a
   foreign bundle stored with `--store local` it points outside the hub
-  entirely, at `<other-target>/.prodyssey/self/` — that is fine, `http.server`
+  entirely, at `<other-target>/.cobuilder-architect/self/` — that is fine, `http.server`
   follows symlinks (see below).
 - `.view-server.pid` / `.view-server.log` — the one long-lived server process
   for this hub.
 
-Compute `<hub>` per Hub resolution above. `<hub>/.prodyssey/` may already exist
+Compute `<hub>` per Hub resolution above. `<hub>/.cobuilder-architect/` may already exist
 from a prior Baseline/Generate run (same `mkdir -p` + `.gitignore` check
 applies — see Hub resolution).
 
@@ -469,8 +506,8 @@ applies — see Hub resolution).
 
 2. **Discover known bundles** — needed for selection, `--list`, and the
    auto-select case:
-   - Entries: immediate children of `<hub>/.prodyssey/` that are real
-     directories, NOT symlinks — e.g. `find <hub>/.prodyssey -mindepth 1 -maxdepth 1 -type d`
+   - Entries: immediate children of `<hub>/.cobuilder-architect/` that are real
+     directories, NOT symlinks — e.g. `find <hub>/.cobuilder-architect -mindepth 1 -maxdepth 1 -type d`
      (`-type d` without `-L` naturally excludes the `active` symlink even
      though it points at a directory. Do not use a glob like `*/`, which
      follows symlinks and would wrongly include `active` as if it were its
@@ -488,8 +525,8 @@ applies — see Hub resolution).
 
 4. **`--stop`**: kill this hub's server and STOP — do not start a new one:
    ```bash
-   PIDFILE="<hub>/.prodyssey/.view-server.pid"
-   LOGFILE="<hub>/.prodyssey/.view-server.log"
+   PIDFILE="<hub>/.cobuilder-architect/.view-server.pid"
+   LOGFILE="<hub>/.cobuilder-architect/.view-server.log"
    if [ -f "$PIDFILE" ] && ps -p "$(cat "$PIDFILE")" -o command= | grep -q "http.server"; then
      kill "$(cat "$PIDFILE")"
      echo "stopped"
@@ -498,18 +535,18 @@ applies — see Hub resolution).
    fi
    rm -f "$PIDFILE" "$LOGFILE"
    ```
-   (The PID/log files live under `<hub>/.prodyssey/` rather than `/tmp` so
+   (The PID/log files live under `<hub>/.cobuilder-architect/` rather than `/tmp` so
    they stay scoped per hub. They and `active` are the only three entries under
-   `.prodyssey/` that should be gitignored — see the gitignore-suggestion
-   paragraph in Hub resolution above. Everything else under `.prodyssey/` is a
+   `.cobuilder-architect/` that should be gitignored — see the gitignore-suggestion
+   paragraph in Hub resolution above. Everything else under `.cobuilder-architect/` is a
    committed bundle, not scratch.)
 
 5. **Select which bundle to view**:
    1. `--repo <path>` given → resolve the storage rule in Hub resolution above
       to a primary candidate bundle-dir. If `data/story.json` is missing
       there, probe the OTHER candidate before giving up — i.e. if the
-      primary was `<target>/.prodyssey/self`, try
-      `<hub>/.prodyssey/<repo-slug>`, and vice versa — and report which of the
+      primary was `<target>/.cobuilder-architect/self`, try
+      `<hub>/.cobuilder-architect/<repo-slug>`, and vice versa — and report which of the
       two was actually found. This is what makes bundles stored with
       `--store local` findable even though the storage rule's default guess
       would otherwise miss them. Only if BOTH candidates lack
@@ -521,11 +558,11 @@ applies — see Hub resolution).
       from step 2 (label + date per entry) and use the `AskUserQuestion` tool
       to ask the user which one to view.
    4. No `--repo`, and discovery found zero bundles → tell the user to run
-      `/prodyssey:baseline` first and STOP.
+      `/cobuilder-architect:baseline` first and STOP.
 
    Whichever bundle-dir is selected, confirm `data/story.json` and
    `viewer/index.html` exist under it before proceeding. If not, STOP and
-   tell the user to run `/prodyssey:baseline` for that repo first (same
+   tell the user to run `/cobuilder-architect:baseline` for that repo first (same
    remediation as 5.4). This also covers the case where `--repo` pointed at
    a real repo that just has not been baselined yet, or was baselined with a
    different `--store` mode than the one this resolution assumed.
@@ -538,19 +575,19 @@ applies — see Hub resolution).
 
 7. **Point `active` at the selection**:
    ```bash
-   ln -sfn "<absolute-selected-bundle-dir>" "<hub>/.prodyssey/active"
+   ln -sfn "<absolute-selected-bundle-dir>" "<hub>/.cobuilder-architect/active"
    ```
 
 8. **Reuse or start the server**:
    ```bash
-   PIDFILE="<hub>/.prodyssey/.view-server.pid"
-   LOGFILE="<hub>/.prodyssey/.view-server.log"
+   PIDFILE="<hub>/.cobuilder-architect/.view-server.pid"
+   LOGFILE="<hub>/.cobuilder-architect/.view-server.log"
    REQUESTED_PORT="<value of --port if the user passed it, else 0 for an OS-assigned port>"
    if [ -f "$PIDFILE" ] && ps -p "$(cat "$PIDFILE")" -o command= | grep -q "http.server"; then
      RUNNING_PORT=$(grep -o "port [0-9]*" "$LOGFILE" | tail -1 | grep -o "[0-9]*")
      echo "already running on port $RUNNING_PORT — active bundle switched, just refresh the browser tab"
    else
-     nohup python3 -u -m http.server "$REQUESTED_PORT" --bind 127.0.0.1 --directory "<hub>/.prodyssey" > "$LOGFILE" 2>&1 &
+     nohup python3 -u -m http.server "$REQUESTED_PORT" --bind 127.0.0.1 --directory "<hub>/.cobuilder-architect" > "$LOGFILE" 2>&1 &
      echo $! > "$PIDFILE"
    fi
    ```
@@ -587,8 +624,8 @@ applies — see Hub resolution).
 10. **Report the URL**: `http://localhost:<port>/active/viewer/`. Tell the
     user the server keeps running in the background, so the session is free
     to continue. Tell them that switching bundles later is just re-running
-    `/prodyssey:view --repo <other>` (or answering the picker) and
-    refreshing the tab. Tell them that `/prodyssey:view --stop` shuts the
+    `/cobuilder-architect:view --repo <other>` (or answering the picker) and
+    refreshing the tab. Tell them that `/cobuilder-architect:view --stop` shuts the
     server down entirely.
 
 ## Publish mode
@@ -608,7 +645,7 @@ export scripts) but not `GEMINI_API_KEY`, and does not touch `<target>` at all.
 3. **Resolve the PR list** from `--prs` (comma list or `N..M` range, same
    parsing as Generate mode). For each requested PR, confirm it exists in
    `<bundle-dir>/data/story.json`'s timeline. If any do not, tell the user to
-   run `/prodyssey:generate --prs <N>` first and STOP before publishing any
+   run `/cobuilder-architect:generate --prs <N>` first and STOP before publishing any
    of the others (a partial publish from a partially-valid PR list is more
    confusing than refusing up front).
 4. **Migrate the bundle**, before any export runs. This makes the stale-viewer
@@ -743,7 +780,7 @@ Two references govern it, both loaded on demand:
     sweep for this PR now that `intent` and `assessment` are captured.
     Frame it as optional — declining just stops here, same as before this
     step existed. If declined, tell the author the same PR can be narrated
-    later with `/prodyssey:generate --prs <N>`.
+    later with `/cobuilder-architect:generate --prs <N>`.
 
     If the author says yes, ask (same or a follow-up `AskUserQuestion`):
     - `--art image` (Gemini-generated scene art) or `--art diagram`
@@ -790,7 +827,7 @@ about whether to open the PR at all.
 `--no-create`, `gh` missing or unauthenticated, and the author declining at
 step 2. In each, tell the user where the files landed
 (`<bundle-dir>/exports/branch-<slug>/`), print the exact `gh pr create` line
-above so nothing is lost, and say that re-running `/prodyssey:submit` once the
+above so nothing is lost, and say that re-running `/cobuilder-architect:submit` once the
 PR exists files the content into `story.json`.
 
 ### Post stage
@@ -821,8 +858,8 @@ Runs after the PR merges. Same steps 1 through 4, then:
   a script (`build_diagrams.py`) to compile and validate the subagent's output into
   `data/diagrams.js`. The author interview and the architecture assessment are the
   same kind of work — `render_review.py` lays out the result and judges none of it.
-- Never touch anything in `<target>` outside `<target>/.prodyssey/` and `<target>/.env`
-  (read-only check, never written by this skill) — `<hub>/.prodyssey/` is also a
+- Never touch anything in `<target>` outside `<target>/.cobuilder-architect/` and `<target>/.env`
+  (read-only check, never written by this skill) — `<hub>/.cobuilder-architect/` is also a
   sanctioned write location, for centrally-stored bundles and view-server bookkeeping.
   Submit mode's `git push` and `gh pr create` are the only actions that reach past
   this line. They never write a source file, and they only run after the explicit
@@ -833,7 +870,7 @@ Runs after the PR merges. Same steps 1 through 4, then:
   of their own. That is what puts them under `migrate_bundle.py`'s authored-field
   guard, and it is why the viewer needs no new global to render them.
 - View mode's PID/log files and the `active` symlink live under
-  `<hub>/.prodyssey/`, never inside a bundle directory — those two files plus
+  `<hub>/.cobuilder-architect/`, never inside a bundle directory — those two files plus
   `active` are the only entries meant to stay out of the commit.
 - Publish mode's `exports/` (per-PR HTML, `index.html`, `publish-manifest.json`)
   lives inside `<bundle-dir>`. It is committable the same way `data/`/`assets/`

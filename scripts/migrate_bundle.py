@@ -286,7 +286,7 @@ def run_data_ladder(story: dict, current_schema: str) -> tuple[dict, list[str], 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--bundle-dir", required=True, help="bundle dir to migrate (e.g. <repo>/.prodyssey/self)")
+    parser.add_argument("--bundle-dir", required=True, help="bundle dir to migrate (e.g. <repo>/.cobuilder-architect/self)")
     parser.add_argument(
         "--dry-run",
         action="store_true",
@@ -300,7 +300,7 @@ def main() -> None:
     if not bundle_dir.exists():
         print(
             f"error: bundle dir {bundle_dir} does not exist.\n"
-            "remediation: run /prodyssey:baseline against this bundle first.",
+            "remediation: run /cobuilder-architect:baseline against this bundle first.",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -314,7 +314,7 @@ def main() -> None:
     if story is None:
         print(
             f"error: {bundle_dir}/data/story.json not found or not valid JSON.\n"
-            "remediation: run /prodyssey:baseline (and /prodyssey:generate) against this bundle first.",
+            "remediation: run /cobuilder-architect:baseline (and /cobuilder-architect:generate) against this bundle first.",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -338,7 +338,7 @@ def main() -> None:
         print(
             f"error: bundle_format {current_format} is newer than this plugin knows "
             f"(CURRENT_BUNDLE_FORMAT={CURRENT_BUNDLE_FORMAT}).\n"
-            "remediation: update the prodyssey plugin (`/plugin update prodyssey@prodyssey` or "
+            "remediation: update the cobuilder-architect plugin (`/plugin update cobuilder-architect@cobuilder-architect` or "
             "re-add the marketplace) before migrating this bundle.",
             file=sys.stderr,
         )
@@ -351,7 +351,7 @@ def main() -> None:
         print(
             f"error: schema_version {current_schema!r} is not one this plugin's migrate_bundle.py "
             f"knows how to read (known: {sorted(known_schemas)}).\n"
-            "remediation: update the prodyssey plugin (`/plugin update prodyssey@prodyssey` or "
+            "remediation: update the cobuilder-architect plugin (`/plugin update cobuilder-architect@cobuilder-architect` or "
             "re-add the marketplace) before migrating this bundle.",
             file=sys.stderr,
         )

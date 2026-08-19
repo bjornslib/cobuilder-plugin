@@ -25,7 +25,7 @@ register (plain vs. developer-precise) stays the same, only the
 tense/certainty changes.
 
 **When the PR carries an `intent` block, read it first.** Submit mode
-(`/prodyssey:submit`) interviews the author before the PR opens and writes
+(`/cobuilder-architect:submit`) interviews the author before the PR opens and writes
 what they said onto the timeline entry — see `references/interview-guide.md`
 §1. Everything below still applies to how you write. What changes is where the
 content comes from:
@@ -189,7 +189,7 @@ Defer to the `ste-writing` skill (`Skill("ste-writing")`) for the rules —
 this section does not restate them, to keep one source of truth. Author the
 same four levels and `beats` structure as the `kleppmann` register above.
 Only the sentence/word/voice rules change. PR #79 in the cobuilder-harness
-bundle (`.prodyssey/cobuilder-harness-a103a550/`) is the worked example of
+bundle (`.cobuilder-architect/cobuilder-harness-a103a550/`) is the worked example of
 this register.
 
 ## 4. Registers
