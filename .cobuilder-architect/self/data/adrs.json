@@ -620,7 +620,7 @@
   "ADR-0012": {
     "id": "ADR-0012",
     "title": "CoBuilder Implement: a design becomes verified code",
-    "state": "decided",
+    "state": "approved",
     "source_pr": null,
     "problem": "Software Factory gates every design decision before code exists, then accepts a slice on the implementer's own word. CoBuilder Guardian scores work independently against a rubric the implementer never reads, but runs only on the pi SDK, DOT pipelines, beads, and Hindsight. Neither can take an approved architecture design and turn it into verified code in an arbitrary coding harness, so the designs cobuilder-architect now produces have nothing that consumes them.",
     "decision": "Ship cobuilder-implement as a separate plugin: a three-tier build (initiative, epic, slice) behind four gates, where a validator that did not write the code executes the test suite, then judges whether the tests cover the declared outcomes, and scores every slice and epic at 0.90 or better against a rubric written before the code existed.",
@@ -693,18 +693,25 @@
       ],
       "rule": "No slice or epic is accepted on the word of the agent that built it. A validator that did not write the code executes the tests, judges their adequacy against the declared outcomes, and scores at 0.90 or better against a rubric written before the code existed."
     },
+    "approved_by": "bjoerns",
     "history": [
       {
         "state": "decided",
         "date": "2026-08-19",
         "note": "Recorded from design mode. Stage 4 produced seven rejected options. Chosen on this branch; not approved until a human merges."
+      },
+      {
+        "state": "approved",
+        "date": "2026-08-19",
+        "by": "bjoerns",
+        "note": "Approved in the design review session, before merge."
       }
     ]
   },
   "ADR-0013": {
     "id": "ADR-0013",
     "title": "Design mode and cobuilder-implement: split the first gate, join through a file",
-    "state": "decided",
+    "state": "approved",
     "source_pr": null,
     "problem": "Design mode and cobuilder-implement both capture intent before code exists. Left alone, each grows a weaker copy of the other: design mode grows a planning tier, and the build workflow grows an architecture interview. ADR-0011 also joins a design to its pull request through the branch name, and that join is one to one, which a Business Spec with several epics cannot express.",
     "decision": "Split the first gate. Design mode owns framing, exploration, and the challenge, and produces the ADR and intent.json. cobuilder-implement owns epic decomposition and everything downstream. The two join through docs/architecture/designs/<name>/intent.json, a file contract and not a code dependency, and goal.json carries an epics array so one design can track many pull requests.",
@@ -756,11 +763,18 @@
       ],
       "rule": "The two plugins join through docs/architecture/designs/<name>/intent.json and never through a code call. Design mode does no epic decomposition; cobuilder-implement does no architecture interview."
     },
+    "approved_by": "bjoerns",
     "history": [
       {
         "state": "decided",
         "date": "2026-08-19",
         "note": "Recorded from the cobuilder-implement design. Amends ADR-0011's one-design-to-one-pull-request assumption. Chosen on this branch; not approved until a human merges."
+      },
+      {
+        "state": "approved",
+        "date": "2026-08-19",
+        "by": "bjoerns",
+        "note": "Approved in the design review session, before merge."
       }
     ]
   },

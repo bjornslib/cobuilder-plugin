@@ -32,12 +32,12 @@
     {
       "id": "E1",
       "branch": "design/design-mode",
-      "pr": null,
-      "state": "planned",
+      "pr": 11,
+      "state": "open",
       "note": "Shares a branch and a pull request with the design-mode design. See ADR-0013: a branch may carry more than one design."
     }
   ],
-  "stage": "review",
+  "stage": "approved",
   "supersedes": null,
   "rounds": [
     {

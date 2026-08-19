@@ -8,9 +8,9 @@ owner: bjoerns
 # --- 42010 decision-record index (schema: references/decision-records.md §2) ---
 id: ADR-0013
 name: "Design mode and cobuilder-implement: split the first gate, join through a file"
-state: decided
+state: approved
 groups: [workflow]
-approved_by: ""
+approved_by: bjoerns
 problem: "Design mode and cobuilder-implement both capture intent before code exists. Left alone, each grows a weaker copy of the other: design mode grows a planning tier, and the build workflow grows an architecture interview. ADR-0011 also joins a design to its pull request through the branch name, and that join is one to one, which a Business Spec with several epics cannot express."
 decision: "Split the first gate. Design mode owns framing, exploration, and the challenge, and produces the ADR and intent.json. cobuilder-implement owns epic decomposition and everything downstream. The two join through docs/architecture/designs/<name>/intent.json, a file contract and not a code dependency, and goal.json carries an epics array so one design can track many pull requests."
 alternatives:
@@ -37,6 +37,7 @@ related_decisions:
 related_concerns: []
 history:
 - {state: decided, date: "2026-08-19", note: "Recorded from the cobuilder-implement design. Amends ADR-0011's one-design-to-one-pull-request assumption. Chosen on this branch; not approved until a human merges."}
+- {state: approved, date: "2026-08-19", by: bjoerns, note: "Approved in the design review session, before merge."}
 maps_to:
   district: skills
   unanchored: true

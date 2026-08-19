@@ -8,9 +8,9 @@ owner: bjoerns
 # --- 42010 decision-record index (schema: references/decision-records.md §2) ---
 id: ADR-0012
 name: "CoBuilder Implement: a design becomes verified code"
-state: decided
+state: approved
 groups: [workflow, verification]
-approved_by: ""
+approved_by: bjoerns
 problem: "Software Factory gates every design decision before code exists, then accepts a slice on the implementer's own word. CoBuilder Guardian scores work independently against a rubric the implementer never reads, but runs only on the pi SDK, DOT pipelines, beads, and Hindsight. Neither can take an approved architecture design and turn it into verified code in an arbitrary coding harness, so the designs cobuilder-architect now produces have nothing that consumes them."
 decision: "Ship cobuilder-implement as a separate plugin: a three-tier build (initiative, epic, slice) behind four gates, where a validator that did not write the code executes the test suite, then judges whether the tests cover the declared outcomes, and scores every slice and epic at 0.90 or better against a rubric written before the code existed."
 alternatives:
@@ -48,6 +48,7 @@ related_decisions:
 related_concerns: []
 history:
 - {state: decided, date: "2026-08-19", note: "Recorded from design mode. Stage 4 produced seven rejected options. Chosen on this branch; not approved until a human merges."}
+- {state: approved, date: "2026-08-19", by: bjoerns, note: "Approved in the design review session, before merge."}
 maps_to:
   district: skills
   unanchored: true
