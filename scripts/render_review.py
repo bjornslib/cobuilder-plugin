@@ -12,13 +12,14 @@ only lays them out.
 Two sources, one shape:
 
   --prs N     reads timeline[N].intent / .assessment from <bundle-dir>/data/
-              story.json, and writes <bundle-dir>/exports/pr-N-description.md
-              and pr-N-assessment.md.
+              story.json, and writes <repo>/docs/pull-requests/pr-<N>/
+              description.md and assessment.md.
 
-  --branch    reads <bundle-dir>/exports/branch-<slug>/{intent,assessment}.json
-              (the pre-submit staging dir extract_diffs.py --branch creates)
-              and writes description.md / assessment.md beside them. Use this
-              before the PR exists, when there is no number to file under.
+  --branch    reads <repo>/docs/pull-requests/branch-<slug>/{intent,assessment}.json
+              (the pre-submit staging dir submit mode writes) and writes
+              description.md / assessment.md beside them. Use this before the
+              PR exists, when there is no number to file under. Works if only
+              the docs dir exists. Never writes authored markdown into the bundle.
 
 `description.md` follows references/pr-description-template.md — it is the PR
 body, and it exists so a reviewer reads the author's argument before the diff.
@@ -398,25 +399,26 @@ def main() -> None:
 
     if args.branch:
         slug = branch_slug(repo, args.branch)
-        stage_dir = bundle_dir / "exports" / f"branch-{slug}"
-        if not stage_dir.exists():
+        docs_dir = repo / "docs" / "pull-requests" / f"branch-{slug}"
+        if not docs_dir.exists():
             print(
-                f"error: {stage_dir} does not exist.\n"
-                f"remediation: run extract_diffs.py --branch {args.branch} first.",
+                f"error: {docs_dir} does not exist.\n"
+                f"remediation: write intent.json and assessment.json to "
+                f"docs/pull-requests/branch-{slug}/ first, then re-run.",
                 file=sys.stderr,
             )
             sys.exit(1)
-        intent = read_json(stage_dir / "intent.json")
-        assessment = read_json(stage_dir / "assessment.json")
+        intent = read_json(docs_dir / "intent.json")
+        assessment = read_json(docs_dir / "assessment.json")
         if not intent and not assessment:
             print(
-                f"error: neither intent.json nor assessment.json found in {stage_dir}.\n"
+                f"error: neither intent.json nor assessment.json found in {docs_dir}.\n"
                 "remediation: run submit mode's interview and assessment before rendering.",
                 file=sys.stderr,
             )
             sys.exit(1)
         title = (intent or {}).get("title") or f"Branch {slug}"
-        written = write_pair(stage_dir, "", title, intent, assessment)
+        written = write_pair(docs_dir, "", title, intent, assessment)
         for path in written:
             print(f"wrote {path}")
         return
@@ -432,7 +434,6 @@ def main() -> None:
 
     timeline = {item.get("pr"): item for item in story.get("timeline", []) if isinstance(item, dict)}
     pr_nums = sorted({int(x.strip()) for x in args.prs.split(",") if x.strip()})
-    exports_dir = bundle_dir / "exports"
 
     exit_code = 0
     for pr_num in pr_nums:
@@ -456,7 +457,8 @@ def main() -> None:
             exit_code = 1
             continue
         title = f"PR #{pr_num} — {entry.get('title', '')}".rstrip(" —")
-        written = write_pair(exports_dir, f"pr-{pr_num}-", title, intent, assessment)
+        out_dir = repo / "docs" / "pull-requests" / f"pr-{pr_num}"
+        written = write_pair(out_dir, "", title, intent, assessment)
         for path in written:
             print(f"PR #{pr_num}: wrote {path}")
 

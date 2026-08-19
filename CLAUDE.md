@@ -114,7 +114,7 @@ asks anything.
 viewer all depend on that. A working branch therefore cannot enter the
 timeline. Rather than mint a synthetic key, the pre stage ends with
 `gh pr create` and files the result under the real number. Before that, the
-content stages in `<bundle-dir>/exports/branch-<slug>/`. Do not "fix" this by
+content stages in `docs/pull-requests/branch-<slug>/`. Do not "fix" this by
 inventing a branch key.
 
 **Pushing and opening a PR are the only actions outside `.cobuilder-architect/`,** and
@@ -233,10 +233,13 @@ and migration below.
   inventory.yaml
   viewer/index.html
   exports/{publish-manifest.json, pr-{N}.html…, index.html}   # written by /cobuilder-architect:publish
-  exports/pr-{N}-{description,assessment}.md                  # written by /cobuilder-architect:submit
-  exports/branch-{slug}/{diff,intent,assessment}.json         # /cobuilder-architect:submit, pre-PR staging
-  exports/branch-{slug}/{description,assessment}.md
+  exports/branch-{slug}/diff.json                             # submit-mode diff cache, gitignored
   .migration-backup/  # pre-migration story.json snapshots, written by migrate_bundle.py
+
+<repo>/
+  docs/architecture/designs/<name>/{goal,intent,assessment}.json, adr-draft.md, pr-draft.md
+  docs/pull-requests/pr-<N>/{description,assessment}.md
+  docs/pull-requests/branch-<slug>/{intent,assessment}.json, {description,assessment}.md
 ```
 
 `data/diagrams/pr{N}-level{L}.mmd` files are the source of truth for the
@@ -269,7 +272,7 @@ entries are gitignored:
   reproducible from `git diff <merge-base>..<head>`, and it is
   self-referential — committing it into the branch it diffs rewrites it on
   every commit, and each version would then contain the last one. The authored
-  `intent.json` and `assessment.json` beside it are committed.
+  `intent.json` and `assessment.json` live under `docs/pull-requests/` and are committed.
 
 The self-bundle and the foreign-repo cache used to live under two separate
 top-level directories. One `.cobuilder-architect/` root now holds both, and the

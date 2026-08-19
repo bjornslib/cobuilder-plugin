@@ -170,8 +170,8 @@ with an author who can.
 
 ### What it writes, and what it opens
 
-Everything lands in the bundle. The PR description and the assessment go to
-`<bundle-dir>/exports/` as markdown. The two structured blocks go onto the
+The PR description and the assessment go to
+`docs/pull-requests/` as markdown. The two structured blocks go onto the
 PR's timeline entry in `story.json`. The viewer shows the assessment on level
 3, behind a badge next to the ADR chips.
 
@@ -305,9 +305,12 @@ repos](#multiple-repos) below.
   inventory.yaml
   viewer/index.html
   exports/{publish-manifest.json, pr-{N}.html…, index.html}   # written by /cobuilder-architect:publish
-  exports/pr-{N}-{description,assessment}.md                  # written by /cobuilder-architect:submit
-  exports/branch-{slug}/{diff,intent,assessment}.json         # /cobuilder-architect:submit, before a PR exists
-  exports/branch-{slug}/{description,assessment}.md
+  exports/branch-{slug}/diff.json                             # submit-mode diff cache, gitignored
+
+<repo>/
+  docs/architecture/designs/<name>/{goal,intent,assessment}.json, adr-draft.md, pr-draft.md
+  docs/pull-requests/pr-<N>/{description,assessment}.md
+  docs/pull-requests/branch-<slug>/{intent,assessment}.json, {description,assessment}.md
 ```
 
 The `diagrams/` and `assets/` entries depend on the `--art` mode that
