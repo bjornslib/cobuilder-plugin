@@ -19,4 +19,4 @@ from __future__ import annotations
 
 SCHEMA_VERSION = "1.2"
 SCHEMA_VERSION_KNOWN = {"1.0", "1.1", "1.2"}
-CURRENT_BUNDLE_FORMAT = 1
+CURRENT_BUNDLE_FORMAT = 2

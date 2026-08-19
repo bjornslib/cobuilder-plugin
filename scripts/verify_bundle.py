@@ -43,6 +43,10 @@ Artifact key names (stable, used in --json output):
                               `verdict` is sound/concerns/rework and which answers
                               all three questions. "incomplete" when a question
                               block is absent, "wrong-verdict:<v>" otherwise.
+    designs                 - data/designs.js assigns window.DESIGNS to an object.
+                              "missing" when the file is absent (foreign fixtures
+                              and old self bundles). Optional unless
+                              --require-review, same as intent/assessment.
 
   `asset.*` and `diagram.*` are always computed and reported, but which family is
   REQUIRED for a passing/"ok" run is controlled by `--art image|diagram|both`
@@ -50,11 +54,12 @@ Artifact key names (stable, used in --json output):
   are listed under a per-section `"_optional"` key (JSON) or marked `(optional)`
   in the table; their real status is still reported, not hidden.
 
-  `intent`/`assessment` follow the same reported-but-optional rule, and are
-  optional by DEFAULT — every PR generated before submit mode existed has
-  neither, and a bundle must not start failing because the plugin grew a new
-  mode. `--require-review` promotes them to required, which is what submit mode
-  passes to confirm its own run landed.
+  `intent`/`assessment`/`designs` follow the same reported-but-optional rule,
+  and are optional by DEFAULT — every bundle generated before submit or design
+  mode existed has none of them, and a bundle must not start failing because
+  the plugin grew a new mode. `--require-review` promotes them to required,
+  which is what submit mode passes to confirm its own run landed. A fixture
+  without designs.js keeps passing when the flag is off.
 
 Exit 0 iff every REQUIRED artifact is "ok" (see `--art` and `--require-review`
 above). Never writes anything.
@@ -81,9 +86,10 @@ DIAGRAM_TYPE_BY_LEVEL = {1: "C4Container", 2: "sequenceDiagram", 3: "classDiagra
 # skills/odyssey/references/review-mode.md §8 and §3.
 ASSESSMENT_VERDICTS = {"sound", "concerns", "rework"}
 ASSESSMENT_QUESTIONS = ("sensible", "maintainability", "pattern")
-# Key prefixes for submit mode's two artifacts. Optional unless --require-review;
-# no other artifact key starts with either string.
-REVIEW_PREFIXES = ("intent", "assessment")
+# Key prefixes for submit mode's two artifacts and the optional designs
+# projection. Optional unless --require-review; no other artifact key starts
+# with these strings.
+REVIEW_PREFIXES = ("intent", "assessment", "designs")
 
 
 def count_inventory_contexts(text: str) -> int:
@@ -184,8 +190,40 @@ def check_baseline(bundle_dir: Path) -> tuple[dict[str, str], dict | None]:
 
     viewer_path = bundle_dir / "viewer" / "index.html"
     results["viewer"] = "ok" if viewer_path.exists() else "missing"
+    results["designs"] = check_designs(bundle_dir)
 
     return results, story
+
+
+def parse_window_object(text: str, name: str) -> dict | None:
+    """Return the object assigned to window.<name>, or None if the file is not
+    that assignment of a JSON object."""
+    prefix = f"window.{name} ="
+    stripped = text.strip()
+    if not stripped.startswith(prefix):
+        return None
+    payload = stripped[len(prefix):].strip()
+    if payload.endswith(";"):
+        payload = payload[:-1].strip()
+    try:
+        value = json.loads(payload)
+    except json.JSONDecodeError:
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def check_designs(bundle_dir: Path) -> str:
+    """"ok" when data/designs.js assigns window.DESIGNS to an object.
+    "missing" when the file is absent. "invalid" when it is present but not
+    that assignment. Absence is the fixture case and must stay optional."""
+    path = bundle_dir / "data" / "designs.js"
+    if not path.exists():
+        return "missing"
+    try:
+        text = path.read_text()
+    except OSError:
+        return "invalid"
+    return "ok" if parse_window_object(text, "DESIGNS") is not None else "invalid"
 
 
 def load_adrs(bundle_dir: Path) -> dict | None:
@@ -370,14 +408,16 @@ def main() -> None:
 
     # Baseline keys (story/inventory/viewer) are never subject to --art — only
     # the per-PR asset.*/diagram.* families are conditionally optional.
-    ok = all_ok(baseline) and all(all_ok(r, optional_prefixes) for r in prs_results.values())
+    ok = all_ok(baseline, optional_prefixes) and all(
+        all_ok(r, optional_prefixes) for r in prs_results.values()
+    )
 
     def optional_keys(results: dict[str, str]) -> list[str]:
         return sorted(k for k in results if k.startswith(optional_prefixes))
 
     if args.json:
         baseline_out = dict(baseline)
-        baseline_out["_optional"] = []  # baseline is never gated by --art
+        baseline_out["_optional"] = optional_keys(baseline)
         prs_out = {
             pr_num: {**results, "_optional": optional_keys(results)}
             for pr_num, results in prs_results.items()
@@ -395,8 +435,10 @@ def main() -> None:
         review_note = ", review required" if args.require_review else ""
         print(f"Baseline (--art {args.art}{review_note})")
         print("--------")
+        baseline_optional = set(optional_keys(baseline))
         for key, status in baseline.items():
-            print(f"  {key:<20} {status:<12} (required)")
+            marker = "(optional)" if key in baseline_optional else "(required)"
+            print(f"  {key:<20} {status:<12} {marker}")
         for pr_num, results in prs_results.items():
             header = f"PR #{pr_num}"
             print(f"\n{header}")

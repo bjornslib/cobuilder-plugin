@@ -7,7 +7,7 @@
 HTML file safe to publish as a Claude Artifact.
 
 The bundled viewer (`viewer/index.html`) is a normal multi-file web page in
-disguise: it loads `window.STORY`/`ODYSSEY`/`DIFFS_BY_PR`/`ADRS`/`DIAGRAMS`
+disguise: it loads `window.STORY`/`ODYSSEY`/`DIFFS_BY_PR`/`ADRS`/`DIAGRAMS`/`DESIGNS`
 via sibling `<script src="../data/*.js">` tags, references scene-art PNGs
 and narration WAVs by relative path, and pulls Google Fonts + the Motion
 animation library + the Mermaid diagram-rendering library from three CDNs.
@@ -21,7 +21,9 @@ This script produces one flattened file per requested PR:
   - that PR's referenced ADRs, its diff file, its manifest (hero/diff_prs
     scoped to just this PR), and its authored Mermaid diagram sources (levels
     1-3, read straight from `<bundle-dir>/data/diagrams/pr{N}-level{L}.mmd`)
-    inlined the same way
+    inlined the same way. `window.DESIGNS` is inlined the same way from
+    `data/designs.js` when that file exists; a missing file becomes `{}`
+    and does not fail the export. A PR artifact may carry an empty designs map.
   - hero PNGs recompressed to JPEG (resize + quality tiers, retried
     progressively tighter if the file would exceed the budget) and embedded
     as data URIs; narration WAVs embedded unmodified unless the budget still
@@ -70,7 +72,8 @@ COMPRESSION_TIERS = [(1400, 78), (1100, 68), (900, 55)]
 TITLE_TAG_RE = re.compile(r"<title>.*?</title>")
 
 SCRIPT_BLOCK_RE = re.compile(
-    r'<script src="\.\./data/story\.js"></script>.*?<script src="\.\./data/diagrams\.js"></script>\n',
+    r'<script src="\.\./data/story\.js"></script>.*?<script src="\.\./data/diagrams\.js"></script>'
+    r'(?:\n<script src="\.\./data/designs\.js"></script>)?\n',
     re.S,
 )
 CDN_LINK_RES = [
@@ -105,6 +108,7 @@ DEFAULTS_BLOCK_OLD = (
     "window.ADRS = window.ADRS || {};\n"
     "window.DIAGRAMS = window.DIAGRAMS || {};\n"
 )
+DEFAULTS_DESIGNS_LINE = "window.DESIGNS = window.DESIGNS || {};\n"
 DEFAULTS_BLOCK_NEW = ""
 
 
@@ -200,6 +204,31 @@ def load_diagrams_for_pr(bundle_dir: Path, pr_num: int) -> dict[str, str]:
     return out
 
 
+def load_designs(bundle_dir: Path) -> dict:
+    """Return the window.DESIGNS object, or {} if designs.js is missing or
+    not that assignment. A PR artifact may carry an empty designs map.
+    Never fail publish because the file is absent."""
+    path = bundle_dir / "data" / "designs.js"
+    if not path.exists():
+        return {}
+    try:
+        text = path.read_text()
+    except OSError:
+        return {}
+    prefix = "window.DESIGNS ="
+    stripped = text.strip()
+    if not stripped.startswith(prefix):
+        return {}
+    payload = stripped[len(prefix):].strip()
+    if payload.endswith(";"):
+        payload = payload[:-1].strip()
+    try:
+        value = json.loads(payload)
+    except json.JSONDecodeError:
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
 def discover_hero_pngs(bundle_dir: Path, pr_num: int) -> list[Path]:
     pr_dir = bundle_dir / "assets" / f"pr-{pr_num}"
     if not pr_dir.is_dir():
@@ -244,6 +273,7 @@ def build_html(
     diffs_js: str | None,
     adrs_obj: dict,
     diagrams_obj: dict[str, str],
+    designs_obj: dict,
     assets_map: dict[str, str],
     audio_map: dict[str, str],
     page_title: str,
@@ -297,7 +327,12 @@ def build_html(
     html = html.replace(HERO_SRC_OLD, HERO_SRC_NEW)
     html = html.replace(DIALOG_IMG_OLD, DIALOG_IMG_NEW)
     html = html.replace(AUDIO_SRC_OLD, AUDIO_SRC_NEW)
-    html = html.replace(DEFAULTS_BLOCK_OLD, DEFAULTS_BLOCK_NEW)
+    defaults_with_designs = DEFAULTS_BLOCK_OLD + DEFAULTS_DESIGNS_LINE
+    if defaults_with_designs in html:
+        html = html.replace(defaults_with_designs, DEFAULTS_BLOCK_NEW)
+    else:
+        html = html.replace(DEFAULTS_BLOCK_OLD, DEFAULTS_BLOCK_NEW)
+        html = html.replace(DEFAULTS_DESIGNS_LINE, DEFAULTS_BLOCK_NEW)
 
     if inline_mermaid_js is not None:
         # Vendor the runtime in place of the CDN fetch instead of dropping it —
@@ -331,6 +366,7 @@ window.ODYSSEY = {json.dumps(manifest_obj, ensure_ascii=False)};
 {diffs_block}
 window.ADRS = {escape_script_close(json.dumps(adrs_obj, ensure_ascii=False))};
 window.DIAGRAMS = {escape_script_close(json.dumps(diagrams_obj, ensure_ascii=False))};
+window.DESIGNS = {escape_script_close(json.dumps(designs_obj, ensure_ascii=False))};
 window.ODYSSEY_ASSETS = {json.dumps(assets_map, ensure_ascii=False)};
 window.ODYSSEY_AUDIO = {json.dumps(audio_map, ensure_ascii=False)};
 </script>
@@ -365,6 +401,7 @@ def render_for_pr(
     # only ever inlines one PR's worth, so diagramSource()'s DIAGRAMS[String(prNum)]
     # lookup keeps working unmodified in the exported page.
     diagrams_obj = {str(pr_num): diagrams_by_level} if diagrams_by_level else {}
+    designs_obj = load_designs(bundle_dir)
 
     # Empty when the PR has no PNGs at all (an --art diagram PR, say) — the loop
     # below and the compression-tier retry loop in main() both handle that fine:
@@ -403,6 +440,7 @@ def render_for_pr(
         diffs_js,
         adrs_obj,
         diagrams_obj,
+        designs_obj,
         assets_map,
         audio_map,
         page_title,

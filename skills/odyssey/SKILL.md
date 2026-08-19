@@ -817,7 +817,8 @@ Two references govern it, both loaded on demand:
    If step 5 found a design, write `intent.design = {name, epic}` onto that
    entry (`epic` is null for the single-epic form). Then fill that epic's
    `pr` and `state` in the design's `goal.json` (`state: "open"` until merge).
-   If the design has one epic and no slug, update that one epic.
+   If the design has one epic and no slug, update that one epic. Then run
+   `uv run "${CLAUDE_PLUGIN_ROOT}/scripts/build_designs.py"`.
 10. **Verify**:
    ```bash
    uv run "${CLAUDE_PLUGIN_ROOT}/scripts/verify_bundle.py" --bundle-dir <bundle-dir> --prs <N> --require-review --json
@@ -897,7 +898,8 @@ Runs after the PR merges. Same steps 1 through 4, then:
 
    If this merge completes the last epic, roll `goal.stage` to `delivered`.
    If some epics remain, set `goal.stage` to `partially-delivered`. Fill that
-   epic's `state` to `merged`.
+   epic's `state` to `merged`. Then run
+   `uv run "${CLAUDE_PLUGIN_ROOT}/scripts/build_designs.py"`.
 
    Stamp `approved_by` on the ADR this design wrote (the proposed record in
    `docs/architecture/adr/`) now that a human merged. Then run
@@ -1057,7 +1059,8 @@ returns. Do not implement that join here.
       `pr-description-template.md`.
    4. **Intent, assessment, and goal.** Write `intent.json`,
       `assessment.json` (`stage: "design"`), and `goal.json` under
-      `docs/architecture/designs/<name>/`.
+      `docs/architecture/designs/<name>/`. Then run
+      `uv run "${CLAUDE_PLUGIN_ROOT}/scripts/build_designs.py"`.
 9. **Stage 6 — Review routing.** Follow `references/design-mode.md` §10. The
    engineer reads the draft and answers in the session. Material feedback
    returns to stage 3. Cosmetic feedback returns to stage 5. Wording,
