@@ -8,16 +8,18 @@ description: >
   architecture, file-changes) with scene art, voice narration, and retro-extracted
   architecture decision records for any locally checked-out git repo. Also interviews
   a change's author before the PR opens, assesses the change against the bundle, and
-  serves the bundle locally for viewing. Use when the user asks to "generate codebase
+  serves the bundle locally for viewing. Also designs a change before any code exists.
+  Use when the user asks to "generate codebase
   odyssey", "generate story for PR", "odyssey baseline", "prodyssey", "narrated PR
   story", "tell the story of this PR as scene art", "explain this PR as a story",
   "build the odyssey bundle", "refresh odyssey baseline", "view the odyssey bundle",
   "serve the bundle", "open the viewer", "start the odyssey server", "stop the
   odyssey server", "publish the odyssey", "submit this PR", "review my PR", "review
   this branch before I open a PR", "architecture review", "should we merge this",
-  "will we regret this change", "interview me about this change", or invokes
+  "will we regret this change", "interview me about this change", "design this change",
+  "design mode", or invokes
   `/cobuilder-architect:baseline`, `/cobuilder-architect:generate`, `/cobuilder-architect:view`,
-  `/cobuilder-architect:publish`, or `/cobuilder-architect:submit`.
+  `/cobuilder-architect:publish`, `/cobuilder-architect:submit`, or `/cobuilder-architect:design`.
 ---
 
 # Codebase Odyssey Generator
@@ -26,15 +28,19 @@ Orchestration procedure for turning merged PRs of **any locally checked-out git
 repo** — the session's own repo, or any other checkout reached via `--repo` — into
 a portable bundle: four-level narrated story, scene art, TTS narration, and ADR
 retro-extraction. It also runs Submit mode, which interviews a change's author,
-assesses the change against that bundle, and opens the pull request.
+assesses the change against that bundle, and opens the pull request. It also
+runs Design mode, which designs a change before any code exists.
 
-**This skill never edits the target repo's source.** It only writes into the
-bundle directory (`<bundle-dir>`, see Hub resolution below). Baseline, Generate,
-View, and Publish are read-only against the target beyond that. Submit mode is
-the one exception, and it is narrow: after an explicit confirmation, it pushes
-the branch and runs `gh pr create`. It still writes no source file, and it takes
-no other outward action — no comments, no edits to an existing PR body, no
-labels, no reviewers, no merges. See Submit mode.
+**This skill never edits application source.** Sanctioned writes are the bundle
+directory (`<bundle-dir>`, see Hub resolution below), `docs/` (self-only: ADRs,
+designs, reviews, pull-request files), and Submit mode's confirmed `git push` /
+`gh pr create`. Baseline, Generate, View, and Publish are read-only against the
+target beyond the bundle. Design mode writes `docs/` in the session's own repo.
+Submit mode is the one outward action, and it is narrow: after an explicit
+confirmation, it pushes the branch and runs `gh pr create`. It still writes no
+application source, and it takes no other outward action — no comments, no edits
+to an existing PR body, no labels, no reviewers, no merges. See Submit mode and
+Design mode.
 
 Where that bundle actually lands depends on whether the target is the
 session's own repo or a foreign one. Every bundle lives under one parent,
@@ -115,7 +121,7 @@ HASH=$(printf '%s' "<resolved-abs-target-path>" | shasum | cut -c1-8)
 SLUG="${NAME}-${HASH}"
 ```
 
-Every odyssey mode — Baseline, Generate, Submit, View, and Publish — runs the consumer store rename below **before** it assigns `BUNDLE_DIR`. This is not a `LAYOUT_MIGRATIONS` step. That ladder runs inside one `--bundle-dir` and cannot rename its own parent.
+Every odyssey mode — Baseline, Generate, Submit, View, Publish, and Design — runs the consumer store rename below **before** it assigns `BUNDLE_DIR`. This is not a `LAYOUT_MIGRATIONS` step. That ladder runs inside one `--bundle-dir` and cannot rename its own parent.
 
 **Consumer store rename.** After you have `<hub>` and `<target>` toplevels, and before you assign `BUNDLE_DIR`, migrate a leftover `.prodyssey/` store if one is still on disk. Run the check against `<hub>`. If `<target>` differs from `<hub>`, run it against `<target>` as well — a `--store local` write lands there.
 
@@ -166,12 +172,12 @@ fi
 (`<repo-slug>`/`$SLUG` is computed only when the foreign path applies — see
 above.) `<bundle-dir>` is the only path Baseline, Generate, and Publish modes
 ever write to. No mode references a literal bundle path directly. Submit mode
-writes there too, and its `git push` / `gh pr create` are the only actions that
-reach outside it.
+writes there too. Design mode writes `docs/` in the session's own repo. Submit
+mode's `git push` / `gh pr create` are the only actions that reach a remote.
 
 **Legacy layout detection.** Compute `BUNDLE_DIR` above, then check this
-immediately — reached by all five modes, since Step 0's prereq gate is
-skipped by View, Publish, and Submit. If `$BUNDLE_DIR` does not exist but
+immediately — reached by all six modes, since Step 0's prereq gate is
+skipped by View, Publish, Submit, and Design. If `$BUNDLE_DIR` does not exist but
 a legacy `<target>/.odyssey/` does, STOP. Tell the user their bundle
 predates the `.cobuilder-architect/self` layout, and print the exact command:
 ```
@@ -220,8 +226,8 @@ lines.
 
 ## Step 0 — Prereq gate (hard, before ANYTHING generative)
 
-Applies to **baseline** and **generate** modes. **View, Publish, and Submit
-modes are exempt**:
+Applies to **baseline** and **generate** modes. **View, Publish, Submit, and
+Design modes are exempt**:
 
 - View only serves static files already on disk (needs neither `uv` nor
   `GEMINI_API_KEY`).
@@ -230,6 +236,8 @@ modes are exempt**:
 - Submit reads git and writes markdown (needs `uv` and a git repo, but
   never calls Gemini — its narrative work is Claude's judgment, and it
   generates no art or audio).
+- Design writes `docs/` and a proposed ADR (needs `uv` and a git repo, but
+  never calls Gemini).
 
 See each mode's own section below.
 
@@ -269,12 +277,12 @@ Only after all three checks pass does mode dispatch begin.
 ## Mode dispatch
 
 The invoking command passes a mode (`baseline`, `generate`, `view`, `publish`,
-or `submit`) plus forwarded args (`--repo`, `--store`, `--prs`, `--force`,
+`submit`, or `design`) plus forwarded args (`--repo`, `--store`, `--prs`, `--force`,
 `--voice`, `--art`, `--dry-run`, `--port`, `--stop`, `--list`, `--format`,
 `--style`, `--stage`, `--branch`, `--base`, `--draft`, `--no-create`,
 `--non-interactive`).
 If invoked with no mode, ask the user whether they want `baseline`,
-`generate`, `view`, `publish`, or `submit`.
+`generate`, `view`, `publish`, `submit`, or `design`.
 
 ## Baseline mode
 
@@ -849,6 +857,177 @@ Runs after the PR merges. Same steps 1 through 4, then:
    (`--art` mode, audio or not), then run Generate mode's per-PR steps as
    pre-stage step 10 describes.
 
+## Design mode
+
+Designs a change before any code exists. Interviews the engineer, explores
+options, challenges the approach, and drafts an ADR. Load
+`references/design-mode.md` on demand. That file is the source of truth for
+what each stage produces. This section is the run order.
+
+This mode is self-only. It needs `uv` and a git repo, never `GEMINI_API_KEY`.
+It generates no art and no audio. It writes `docs/architecture/designs/<name>/`
+and one proposed ADR. It does not enter `data/story.json`. A design has no PR
+number. Submit mode later files it under the number that `gh pr create`
+returns. Do not implement that join here.
+
+`--non-interactive` runs stages 0 through 6 and stops before stage 7.
+
+1. **Self-only.** Refuse `--repo` and `--store`. If the user asks to design
+   against a foreign checkout, refuse. Normalise the repo with
+   `git rev-parse --show-toplevel`. There is no foreign target.
+2. **Resolve `<bundle-dir>`** per Hub resolution above, including the consumer
+   `.prodyssey` → `.cobuilder-architect` pre-step, then **migrate the bundle**:
+   ```bash
+   uv run "${CLAUDE_PLUGIN_ROOT}/scripts/migrate_bundle.py" --bundle-dir <bundle-dir>
+   ```
+3. **Stage 0 — Name and outcome.** The engineer states the outcome and names
+   the design **before** you read a file. The outcome names a state, not an
+   activity. Write it into `goal.outcome` and `goal.done_when`.
+
+   Then search existing designs for a semantic duplicate. Follow
+   `references/design-mode.md` §3. For each candidate under
+   `docs/architecture/designs/*/`, read `goal.outcome`, `intent.problem`, and
+   the ADR draft. Judge whether the candidate addresses the same problem.
+   **Report what you searched and how many designs exist.** Never a bare
+   "none found". If the tree is empty, say so and say this is the first
+   design. If you searched N designs and none match, say that. On a hit, show
+   the match and its `goal.stage`. Let the engineer choose with
+   `AskUserQuestion`: resume it, supersede it, or proceed because it is
+   genuinely different. A superseded design gets `stage: "superseded"` and a
+   pointer to the new name.
+4. **Stage 1 — Ground.** **Auto-baseline check**: if
+   `<bundle-dir>/data/story.json` or `<bundle-dir>/inventory.yaml` is missing,
+   announce "No baseline found — running baseline first" and execute the full
+   Baseline mode above before continuing. If a baseline exists, do not re-run
+   it. Say that baseline will run, then report the elapsed time. Do not run
+   it in silence.
+
+   Then read only now. Load the districts in `inventory.yaml` that the outcome
+   touches. Load the ADRs that cover those districts. Load the matching stack
+   card, and earlier timeline entries in the same districts. Draft a private
+   hypothesis and a gap list. Keep both hidden until stage 2 asks the problem
+   and the approach. See `references/interview-guide.md` §2.
+5. **Stage 2 — Interview.** Follow `references/design-mode.md` §5 and
+   `references/interview-guide.md`. Five topics only: problem, approach,
+   boundaries, assumptions and unknowns, stop condition. **Do not ask which
+   options they rejected.** A rejected option is an outcome of stages 3 and 4,
+   not an input. Never ask a question the evidence already answers. Rank the
+   gaps. Drop a topic the ground step already closed. Ask the problem first,
+   then the approach, before you show the hypothesis from stage 1. Ask
+   authorship as a closed question. Play the interview draft back before you
+   move on. `alternatives` stays empty. That is correct.
+6. **Stage 3 — Explore.** Invoke divergent exploration from the architecture
+   skill, with the design frame set. Use the same dual-path guard as mermaid
+   authoring (Generate mode step 4) and `decision-records-lite.md`:
+
+   1. Invoke `Skill("cobuilder-architect:architecture")` and tell it to run
+      divergent exploration with the design frame set. Return survivors and
+      risks. Do not write the ADR here.
+   2. If that call gives `Unknown skill`, read
+      `${CLAUDE_PLUGIN_ROOT}/skills/architecture/SKILL.md` and
+      `${CLAUDE_PLUGIN_ROOT}/skills/architecture/references/divergent-exploration.md`
+      and obey those files instead. The skill resolves by name only in a
+      session that has an installed plugin version which contains it. A
+      session that runs from a development checkout, or from an installed
+      version older than the skill, does not find it. The path always
+      resolves, because `${CLAUDE_PLUGIN_ROOT}` points at the copy in use.
+
+   State the pre-flight gate result before you proceed either way. The
+   approach the engineer stated is one candidate, not the given. Seed the
+   frames with the interview answers. Survivors and the risk list feed
+   stage 4.
+7. **Stage 4 — Challenge gate.** Follow `references/design-mode.md` §7 in
+   full. This stage is the product. It is the only producer of
+   `intent.alternatives`. A skipped or toothless challenge is a defect.
+
+   Confront unconsidered risks. Contest the approach where a survivor beats
+   it on a stated criterion. **No citation, no challenge.** A challenge must
+   cite an ADR id, a district id from `inventory.yaml`, or a stack-card
+   boundary rule. Never cite a `path:line` location. No line exists yet.
+
+   State an empty result in plain words. Write the sentence the engineer
+   should read: exploration surfaced no risk outside what they already named,
+   and no survivor beat the stated approach. That sentence proves the stage
+   ran. **Do not continue to stage 5 if `alternatives` is still empty and the
+   challenge was silent.** `goal.min_work.challenge_stage_run` must be true
+   before the design can complete.
+8. **Stage 5 — Draft.** Write the assessment first (`stage: "design"`, every
+   finding `kind: "prediction"`). Follow `references/design-mode.md` §8. Show
+   `intent` and `assessment` to the engineer before you write them to disk.
+
+   Then write four artifacts. Run each prose pass through
+   `Skill("ste-writing")` in flavored mode. Use strict mode for ADR
+   procedural text: the constraint introduced, and the boundary rules. The
+   plugin ships no hooks, so "automatic" means this section instructs the
+   step.
+
+   1. **ADR.** Write `docs/architecture/adr/ADR-NNNN-<slug>.md` from
+      `skills/architecture/references/templates/adr-template.md`. Set
+      `state: proposed` and `source_pr: null`. Copy `alternatives` from
+      `intent`. Then run:
+      ```bash
+      uv run "${CLAUDE_PLUGIN_ROOT}/scripts/build_adrs.py"
+      ```
+      Never write `data/adrs.json` by hand.
+   2. **Diagrams.** The orchestrating Claude does **not** write the `.mmd`
+      files itself. Spawn one subagent whose prompt must:
+      - tell it to invoke `Skill("cobuilder-architect:mermaid")` first. If that
+        call gives `Unknown skill`, tell it to read
+        `${CLAUDE_PLUGIN_ROOT}/skills/mermaid/SKILL.md` directly and obey
+        that file instead. The skill resolves by name only in a session
+        that has an installed plugin version which contains it. A session
+        that runs from a development checkout, or from an installed version
+        older than the skill, does not find it. The path always resolves,
+        because `${CLAUDE_PLUGIN_ROOT}` points at the copy in use.
+      - then tell it to read
+        `${CLAUDE_PLUGIN_ROOT}/skills/odyssey/references/diagram-mode.md`.
+      - hand it the grounding inputs: this design's `intent`, the ADR draft,
+        and `<bundle-dir>/inventory.yaml`. Ground each diagram in the
+        proposal, not a diff. There is no PR number yet.
+      - state the three output paths and the diagram type required for
+        each: `docs/architecture/designs/<name>/diagrams/level-1.mmd`
+        (`C4Container`), `docs/architecture/designs/<name>/diagrams/level-2.mmd`
+        (`sequenceDiagram`), and
+        `docs/architecture/designs/<name>/diagrams/level-3.mmd`
+        (`classDiagram`). Level 4 has no diagram.
+      - require the subagent to return only the paths it wrote.
+
+      Do not write `data/diagrams/pr{N}-*.mmd`. Do not run
+      `build_diagrams.py`. That script keys on a PR number. If validation of
+      a source file fails, send the failure back to the **same** subagent to
+      fix it — do not hand-patch the `.mmd` files yourself.
+   3. **Envisioned pull request.** Write
+      `docs/architecture/designs/<name>/pr-draft.md` from
+      `pr-description-template.md`.
+   4. **Intent, assessment, and goal.** Write `intent.json`,
+      `assessment.json` (`stage: "design"`), and `goal.json` under
+      `docs/architecture/designs/<name>/`.
+9. **Stage 6 — Review routing.** Follow `references/design-mode.md` §10. The
+   engineer reads the draft and answers in the session. Material feedback
+   returns to stage 3. Cosmetic feedback returns to stage 5. Wording,
+   diagram layout, and ADR order are cosmetic. **State the classification.
+   Let the engineer overrule it.**
+
+   Detect churn. Each round, hash the ADR draft plus the option set. Two
+   consecutive rounds with no material change mean the loop circles. Say so,
+   name the unresolved disagreement, and ask the engineer to decide. Do not
+   run a third unchanged round. Re-read `goal.json` at the top of every
+   round and restate the outcome. `goal.limits` defaults to warn after three
+   rounds and cut off at six. Do not ask for a budget.
+10. **Stage 7 — Branch.** Unreachable under `--non-interactive`. There is
+    nobody there to confirm. Ask **one question only**, with
+    `AskUserQuestion`: is this one pull request or several? If several,
+    capture the epic slugs the engineer names. **Do not decompose the work.**
+    Decomposition is cobuilder-factory G1 work.
+
+    Then confirm the first branch name with `AskUserQuestion`. Create the
+    **first local branch only**:
+    - One epic: `design/<name>`
+    - Several epics: `design/<name>/<first-epic-slug>`
+
+    Record it in `goal.json.epics[].branch`. No push. No `gh pr create`. No
+    other remote action.
+
 ## Notes
 
 - Narrative authoring and ADR extraction are Claude judgment work — never delegate
@@ -859,12 +1038,15 @@ Runs after the PR merges. Same steps 1 through 4, then:
   a script (`build_diagrams.py`) to compile and validate the subagent's output into
   `data/diagrams.js`. The author interview and the architecture assessment are the
   same kind of work — `render_review.py` lays out the result and judges none of it.
-- Never touch anything in `<target>` outside `<target>/.cobuilder-architect/` and `<target>/.env`
-  (read-only check, never written by this skill) — `<hub>/.cobuilder-architect/` is also a
-  sanctioned write location, for centrally-stored bundles and view-server bookkeeping.
-  Submit mode's `git push` and `gh pr create` are the only actions that reach past
-  this line. They never write a source file, and they only run after the explicit
-  confirmation in Submit mode.
+- Never touch application source in `<target>`. Sanctioned writes are
+  `<target>/.cobuilder-architect/` (the self-bundle), `<hub>/.cobuilder-architect/`
+  (centrally-stored bundles and view-server bookkeeping), and `docs/`
+  (self-only: ADRs, designs, reviews, pull-request files). `<target>/.env` is a
+  read-only check, never written by this skill. Submit mode's `git push` and
+  `gh pr create` are the only actions that reach past this line. They never
+  write a source file, and they only run after the explicit confirmation in
+  Submit mode. Design mode writes `docs/` and creates the first local branch
+  after confirmation. It never pushes and never opens a pull request.
 - `story.json`'s `meta.schema_version` is `"1.2"` — `verify_bundle.py` gates on it.
   `scripts/_bundle_meta.py` is the single source for that constant.
 - Submit mode's `intent` and `assessment` live on the timeline entry, not in a file

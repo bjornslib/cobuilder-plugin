@@ -8,7 +8,7 @@ last_verified: 2026-08-04
 # cobuilder-architect: Explore Design
 
 This command is the architecture skill's divergent-exploration design pass.
-The new seven-stage `/design` mode (not yet written) will wrap it.
+`/cobuilder-architect:design` wraps this pass as its stage 3.
 
 Produces an Architecture Decision Record (ADR) for a new or evolving system,
 with component boundaries and interface contracts. Runs a divergent
