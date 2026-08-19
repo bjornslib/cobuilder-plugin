@@ -8,21 +8,26 @@ status: active
 
 # Architecture Review, Design & Maintenance
 
-A mode-switchable skill for six use cases. System design covers architecture decisions and ADRs. Codebase review runs a security, architecture, and quality audit and produces dual HTML reports. Maintenance covers trend analysis and an incremental backlog. Decision records follow 42010 governance rules, with a state machine and a value facet. Architecture description documents a bounded context to the project standard. Debug diagnoses a root cause through divergent hypothesis generation. Design, review, and maintenance modes load a curated subset of the bundled corpus through `references/corpus-index.md`, plus the detected stack card from `references/stacks/`. Decisions and describe modes follow `references/decision-records.md` and `references/architecture-documentation.md`. Design, review, and debug modes also use `references/divergent-exploration.md`.
+A mode-switchable skill for six use cases. System design covers architecture decisions and ADRs. Codebase review runs a security, architecture, and quality audit and produces dual HTML reports. Maintenance covers trend analysis and an incremental backlog.
+
+Decision records follow 42010 governance rules, with a state machine and a value facet. Architecture description documents a bounded context to the project standard. Debug diagnoses a root cause through divergent hypothesis generation.
+
+Design, review, and maintenance modes load a curated subset of the bundled corpus through `references/corpus-index.md`, plus the detected stack card from `references/stacks/`. Decisions and describe modes follow `references/decision-records.md` and `references/architecture-documentation.md`. Design, review, and debug modes also use `references/divergent-exploration.md`.
 
 ## Mode Invocation
 
-Accept a mode argument when the skill is invoked. Prompt for one if the user gives none.
+Accept a mode argument if the user supplies one at invocation. Prompt for one if the user gives none.
 
 **Argument-based invocation:**
 - `/cobuilder-architect:design` -- Design mode
 - `/cobuilder-architect:review` -- Review mode
 - `/cobuilder-architect:maintenance` -- Maintenance mode
+
 - `/cobuilder-architect:decisions` -- Decision Records mode
 - `/cobuilder-architect:describe` -- Architecture Description mode
 - `/cobuilder-architect:debug` -- Debug mode
 
-These modes are self-only. They analyse the session's own repo. Odyssey can target another checkout. Architecture cannot. If the user asks to analyse a different local checkout, or to override where output lands, refuse.
+These modes are self-only. They analyse only the repo of the current session. Odyssey can target another checkout. Architecture cannot. If the user asks to analyse a different local checkout, or to override where output lands, refuse.
 
 **Interactive fallback:** If invoked without an argument, prompt: "Which mode? (design / review / maintenance / decisions / describe / debug)". Do not assume review mode by default.
 
@@ -32,9 +37,9 @@ Narrated per-PR story generation, meaning explain-diff narratives, scene art, an
 
 ## Repo
 
-The repo is always the session's own git toplevel. Normalise it once with `git rev-parse --show-toplevel`. There is no foreign target.
+The repo is always the git toplevel of the current session. Normalise it once with `git rev-parse --show-toplevel`. There is no foreign target.
 
-**Working directory.** Run READ commands at the repo toplevel. This keeps `references/saas-checklist.md`'s bare `grep` and `find` commands working. It also lets stack cards test bare filenames like `[ -f pyproject.toml ]`. Send WRITES to `{doc_root}` or `{doc_root}/review/`.
+**Working directory.** Run READ commands at the repo toplevel. This keeps the bare `grep` and `find` commands in `references/saas-checklist.md` working. It also lets stack cards test bare filenames like `[ -f pyproject.toml ]`. Send WRITES to `{doc_root}` or `{doc_root}/review/`.
 
 ## Documentation Root
 
@@ -62,11 +67,15 @@ Resulting layout:
 **Corpus chain:**
 1. Read `references/corpus-index.md` Section 1 for symptom mappings.
 2. Load up to 3 files from: `corpus/principles/architecture/*`, `corpus/principles/ddd/*`, `corpus/principles/design_patterns/*`.
-3. Detect the stack through `references/stacks/` (card fields, detection precedence, and fallback rules live in `references/stacks/README.md`), then load the matched card's Corpus Load list. Use the card's Reference Structure as the starting skeleton for component boundaries.
-4. Load `corpus/principles/resilience/*` if the system has external integrations. This step is optional.
-5. Check the pre-flight gate in `references/divergent-exploration.md` §1. This step can legitimately no-op if an abort condition applies. Otherwise, run divergent exploration per that reference using the **design frame set** (§3). Survivors populate the ADR's Considered Options section. Every trap the critic flags becomes a rejected-option entry with its reason recorded. This is what turns the ADR from a record of one choice into a record of a decision.
+3. Detect the stack through `references/stacks/` (card fields, detection precedence, and fallback rules live in `references/stacks/README.md`), then load the Corpus Load list of the matched card. Use its Reference Structure as the starting skeleton for component boundaries.
 
-**Output:** An ADR markdown document (`{doc_root}/adr/ADR-NNNN-<slug>.md`) with component boundaries, interface contracts, and dependency direction. An HTML version can optionally be produced using the report conventions in the Report Generation section below.
+4. Load `corpus/principles/resilience/*` if the system has external integrations. This step is optional.
+
+5. Check the pre-flight gate in `references/divergent-exploration.md` §1. This step can legitimately no-op if an abort condition applies. Otherwise, run divergent exploration per that reference using the **design frame set** (§3).
+
+Survivors populate the Considered Options section of the ADR. Every trap the critic flags becomes a rejected-option entry with its reason recorded. This is what turns the ADR from a record of one choice into a record of a decision.
+
+**Output:** An ADR markdown document (`{doc_root}/adr/ADR-NNNN-<slug>.md`) with component boundaries, interface contracts, and dependency direction. You can optionally produce an HTML version, following the report conventions in the Report Generation section below.
 
 ### Review Mode
 
@@ -75,17 +84,25 @@ Resulting layout:
 **Corpus chain:**
 1. Read `references/corpus-index.md` Section 1 for symptom mappings.
 2. Load design corpus (`corpus/principles/architecture/*`, `corpus/principles/ddd/*`, `corpus/principles/design_patterns/*`).
-3. Detect the stack through `references/stacks/` (precedence and fallback rules live in `references/stacks/README.md`), then load the matched card's Corpus Load list. Apply the card's Boundary Rules and Review Checks. Report deviations from its Reference Structure as architecture findings.
+3. Detect the stack through `references/stacks/` (precedence and fallback rules live in `references/stacks/README.md`), then load the Corpus Load list of the matched card. Apply its Boundary Rules and Review Checks. Report deviations from its Reference Structure as architecture findings.
+
 4. **Load security corpus:** `corpus/principles/security/*` -- ALL 14 files. This is mandatory for review mode.
 5. Load `corpus/principles/testing/*`, `corpus/principles/resilience/*`, and `corpus/principles/data_systems/*` (as design choices).
 6. Load `corpus/refactorings/*` for diagnostic smells.
+
 7. Load `corpus/reviews/*` for worked audit examples.
 8. **Load the SaaS checklist:** `references/saas-checklist.md` -- the detection method for SaaS-specific security, architecture, and quality issues.
-9. Blind-spot hunt: run divergent exploration per `references/divergent-exploration.md` using the **review frame set** (§3), after the checklist above has run. Tell hunters what the checklist already found, and instruct them to look elsewhere. This is what makes it a blind-spot hunt rather than a duplicate scan. Survivors enter the normal P0/P1/P2 severity flow below. The scoring rubric, impact taxonomy, size categorisation, and both report templates need no changes.
+
+9. Blind-spot hunt: run divergent exploration per `references/divergent-exploration.md` using the **review frame set** (§3), after the checklist above finishes. Tell hunters what the checklist already found, and instruct them to look elsewhere. This is what makes it a blind-spot hunt rather than a duplicate scan.
+
+Survivors enter the normal P0/P1/P2 severity flow below. The scoring rubric, impact taxonomy, size categorisation, and both report templates need no changes.
 
 **Output:** Two linked HTML artifacts, written to `docs/architecture/review/`:
 1. **Technical Report (B)** -- First. Severity-tagged findings (P0/P1/P2), file-level evidence blocks, code paths, and remediation prompts. Uses `references/reports/architecture-review-TECHNICAL-TEMPLATE.html` as the design reference.
-2. **Founder Report (A)** -- Second. A plain-language translation of the Technical Report findings. It carries a health score (0-100), a letter grade, and 8 category breakdown bars. Findings are business-impact-first, with right-aligned severity badges (`Blocking` / `Warning` / `Plan` / `Pass`). It also carries a phased remediation plan, AI prompt packs with copy buttons, and a comparison with the previous scan. Uses `references/reports/architecture-review-FOUNDER-TEMPLATE.html` as the design reference.
+
+2. **Founder Report (A)** -- Second. It translates the Technical Report findings into plain language. It carries a health score (0-100), a letter grade, and 8 category breakdown bars.
+
+Findings are business-impact-first, with right-aligned severity badges (`Blocking` / `Warning` / `Plan` / `Pass`). It also carries a phased remediation plan, AI prompt packs with copy buttons, and a comparison with the previous scan. Uses `references/reports/architecture-review-FOUNDER-TEMPLATE.html` as the design reference.
 
 **Always generate both reports.** No toggle to skip either.
 
@@ -93,7 +110,9 @@ Resulting layout:
 
 **Scope:** Trend analysis and net-new finding detection. Reuses the review corpus chain.
 
-**Prior scan detection:** Scan `docs/architecture/review/` for existing `architecture-review-YYYY-MM-DD-technical.html` files. Sort them by the date in the filename. Never scan the repo unbounded. Scan only that one directory. If a prior scan exists:
+**Prior scan detection:** Scan `docs/architecture/review/` for existing `architecture-review-YYYY-MM-DD-technical.html` files. Sort them by the date in the filename. Never scan the repo unbounded. Scan only that one directory.
+
+If a prior scan exists:
 - Compare the current findings with the prior scan.
 - Surface NEW, ESCALATED, STABLE, and RESOLVED items in the Trend section.
 - Highlight regressions in a top callout.
@@ -104,7 +123,7 @@ If no prior report exists, state: "This is the first scan. Future audits will co
 
 **Refactoring invocation:** When diagnostics flag a specific smell (god class, duplicated code, long function, and so on), load the matching `corpus/refactorings/<smell>.yaml` on demand. Do not pre-load all refactoring files.
 
-**Output:** A trend report (HTML or markdown), written to `docs/architecture/review/`, showing the delta, plus an incremental backlog. If structural fixes are required, produce a refactoring plan that references the loaded refactoring YAML.
+**Output:** A trend report (HTML or markdown), written to `docs/architecture/review/`, showing the delta, plus an incremental backlog. If the findings call for structural fixes, produce a refactoring plan that references the loaded refactoring YAML.
 
 ### Decisions Mode
 
@@ -113,22 +132,26 @@ If no prior report exists, state: "This is the first scan. Future audits will co
 **Workflow:**
 1. Read `references/decision-records.md` for the full record schema, the state machine, the transition rules, and the integrity rules. Read it before writing any record.
 2. Start every new record from `references/templates/adr-template.md`. Records live in `{doc_root}/adr/ADR-NNNN-<slug>.md` (zero-padded, next free number).
+
 3. For retro-extraction from a merged PR, write one record per structural decision in the PR. Set `state: approved` (it merged), set `source_pr`, and date `history` entries to the merge. Never invent dates (see the integrity rules).
-4. During retro-extraction, also consult the detected stack card's ADR Topics (`references/stacks/`) as a checklist for decisions the codebase has made but never recorded.
+
+4. During retro-extraction, also consult the ADR Topics of the detected stack card (`references/stacks/`) as a checklist for decisions the codebase made but never recorded.
 5. Every record MUST carry a `delivers` block (capability, benefit, and beneficiary) and a `## Value delivered` body section. A record without value framing fails the standard.
-6. Anchor `maps_to` to a context or module that exists in a `boundary.yaml` under `{doc_root}/contexts/`. If the context is undocumented, flag it, or switch to `describe` mode first.
+6. Anchor `maps_to` to a context or module that exists in a `boundary.yaml` under `{doc_root}/contexts/`. If nothing documents the context, flag it, or switch to `describe` mode first.
 7. After you add or change records, refresh the three viewpoint files in `{doc_root}/decisions/` (relationship, chronology, capabilities), so they stay consistent with the record set.
 
 **Output:** ADR file(s) plus updated viewpoint indexes, under `{doc_root}`. Canonical standard: `references/standard.md` §5.4.
 
 ### Describe Mode (Architecture Description)
 
-**Scope:** Document a bounded context to the project's Architecture Documentation Standard: a ddd-crew canvas, C4 diagrams, and the machine-diffable boundary record that makes drift detectable.
+**Scope:** Document a bounded context to the Architecture Documentation Standard of the project: a ddd-crew canvas, C4 diagrams, and the machine-diffable boundary record that makes drift detectable.
 
 **Workflow:**
 1. Read `references/architecture-documentation.md` for the authoring procedure, and consult `references/standard.md` (canonical) for artifact definitions.
-2. **Verify before writing.** Ground every claim in code. Enumerate the context's modules, grep its real import edges in both directions, and identify its actual public interface. Never write a boundary rule you have not checked against the code.
-3. Produce the context bundle in `{doc_root}/contexts/<context-id>/` from the templates: `canvas.md` (from `references/templates/canvas-template.md`, eight canvas sections plus embedded C2/C3 Mermaid) and `boundary.yaml` (from `references/templates/boundary-template.yaml`). Seed `forbidden_dependencies` candidates from the detected stack card's Boundary Rules (`references/stacks/`), and keep only those verified against the code in step 2.
+2. **Verify before writing.** Ground every claim in code. Enumerate the modules of the context, grep its real import edges in both directions, and identify its actual public interface. Never write a boundary rule you have not checked against the code.
+
+3. Produce the context bundle in `{doc_root}/contexts/<context-id>/` from the templates: `canvas.md` (from `references/templates/canvas-template.md`, eight canvas sections plus embedded C2/C3 Mermaid) and `boundary.yaml` (from `references/templates/boundary-template.yaml`). Seed `forbidden_dependencies` candidates from the Boundary Rules of the detected stack card (`references/stacks/`), and keep only those verified against the code in step 2.
+
 4. Record any boundary violation found during verification, such as inverted imports, schema leakage, or term overloading. Add it to the canvas as a `forbidden_dependencies` entry with a `why`, and flag it as an ADR candidate. Surfacing smells is a primary output, not a side effect.
 5. Update `{doc_root}/INVENTORY.md` (doc status, findings).
 
@@ -141,7 +164,8 @@ If no prior report exists, state: "This is the first scan. Future audits will co
 **Workflow:**
 1. Reproduce the bug first, inside the repo. A hypothesis about an unreproduced bug is a guess.
 2. Diverge hypotheses: run divergent exploration per `references/divergent-exploration.md` using the **debug frame set** (§3).
-3. The critic ranks surviving hypotheses by **cheapest discriminating test**, not by likelihood. This override is defined in `references/divergent-exploration.md` §4.
+3. The critic ranks surviving hypotheses by **cheapest discriminating test**, not by likelihood. `references/divergent-exploration.md` §4 defines this override.
+
 4. Run that test, inside the repo.
 5. Converge on a root cause, or re-diverge on the surviving hypotheses if the test does not resolve it.
 
@@ -154,19 +178,32 @@ When you produce human-consumable deliverables, follow these rules:
 1. **Default to HTML.** Use the Report category (Category 8) and Data-Rich Document (Category 10) patterns.
 2. **Copy the design system:** Use the ivory/slate/clay palette from `assets/design-system.css`. Keep it self-contained, with no external dependencies.
 3. **Include a `.prompt-box`** in the page header. Document the scan parameters and the command that generated the report.
-4. **Generate the Technical Report (B) first, then the Founder Report (A).** The Technical Report contains the "Technical Report Summary" section. The Founder Report contains the "Executive Summary." Founder findings are translations of Technical Report findings. Lock the technical evidence before you translate it.
+
+4. **Generate the Technical Report (B) first, then the Founder Report (A).** The Technical Report contains the "Technical Report Summary" section. The Founder Report contains the "Executive Summary." Founder findings translate Technical Report findings. Lock the technical evidence before you translate it.
+
 5. **Link bidirectionally:** Link every founder finding to its technical counterpart through an anchor (`#SEC-01`), and link back the same way. Filenames follow `architecture-review-YYYY-MM-DD-technical.html` and `architecture-review-YYYY-MM-DD-founder.html`. The two reports link to each other with relative hrefs, so keep them co-located in `docs/architecture/review/`.
 6. **Add copy buttons:** Include "Copy AI prompt" buttons on founder findings, using inline JS clipboard.
+
 7. **Reference templates:** Consult `references/reports/architecture-review-TECHNICAL-TEMPLATE.html` and `references/reports/architecture-review-FOUNDER-TEMPLATE.html` for the exact component structure: severity badges, score bars, impact tags, evidence blocks, and phased plan cards.
-8. **Technical Report Summary, not Executive Summary.** The technical report's top section is titled "Technical Report Summary." It summarises the P0/P1/P2 counts and the audit scope. The Founder Report has the "Executive Summary."
+8. **Technical Report Summary, not Executive Summary.** The top section of the technical report carries the title "Technical Report Summary." It summarises the P0/P1/P2 counts and the audit scope. The Founder Report has the "Executive Summary."
+
 9. **AI prompts reference the technical report filename.** Every AI prompt block in the Founder Report must reference the technical report filename. For example: "Load the full technical context from `architecture-review-YYYY-MM-DD-technical.html` before implementing." This lets a coding agent load the complete evidence.
+
 10. **No developer-hour estimates in founder findings.** Do not estimate hours or days. Instead, categorise every finding as one of: `Bugfix`, `Small Change`, `Medium Change`, `Large Feature or Migration`. Count findings by category in a summary table at the top of the Remediation Plan section.
+
 11. **Large items require a solution design document.** Every finding categorised as `Large Feature or Migration` must include a note: "Before coding: produce a solution design document referencing `architecture-review-YYYY-MM-DD-technical.html`. The coding agent must load the full technical report for context before implementation."
-12. **Founder finding structure.** Each founder finding must contain six parts. A right-aligned severity badge (`Blocking` / `Warning` / `Plan` / `Pass`). Domain and business impact tags. "What We Found," a plain-language description of the discovery. "Impact If Not Fixed," the business consequence. The AI prompt with a copy button. The size category badge.
+12. **Founder finding structure.** Each founder finding must contain six parts:
+
+    - A right-aligned severity badge (`Blocking` / `Warning` / `Plan` / `Pass`).
+    - Domain and business impact tags.
+    - "What We Found," which describes the discovery in plain language.
+    - "Impact If Not Fixed," the business consequence.
+    - The AI prompt with a copy button.
+    - The size category badge.
 
 ## Impact Taxonomy for Founder Reports
 
-Every finding in the Founder Report must carry exactly one **domain** tag and one **business impact** tag:
+Give every finding in the Founder Report exactly one **domain** tag and one **business impact** tag:
 
 | Domain | Business Impact |
 |---|---|
@@ -179,7 +216,7 @@ Clean categories render as `.bubble.pass` with a "PASS" badge. Do not silently o
 
 ## Size Categorisation
 
-Every finding in the Founder Report must be tagged with exactly one size category:
+Tag every finding in the Founder Report with exactly one size category:
 
 | Category | Definition | Requires Solution Design |
 |---|---|---|
@@ -227,7 +264,7 @@ In the Founder Report, each category bar must carry a `title` or tooltip that sh
 
 ### Scripted Computation (preferred)
 
-Instead of asking the LLM to compute scores, emit a JSON snippet of P0/P1/P2 counts and pipe it through the provided scoring script:
+Instead of asking the LLM to compute scores, emit a JSON snippet of P0/P1/P2 counts and pipe it through the scoring script below:
 
 ```bash
 cat scores.json | uv run "${CLAUDE_PLUGIN_ROOT}/scripts/compute_scores.py"
@@ -235,7 +272,7 @@ cat scores.json | uv run "${CLAUDE_PLUGIN_ROOT}/scripts/compute_scores.py"
 
 `${CLAUDE_PLUGIN_ROOT}/scripts/html_to_pdf.py` converts a finished HTML report to an A4 PDF and requires playwright.
 
-**Input JSON shape:** Provide counts for any subset of the 8 categories. An omitted category defaults to zero findings (score 100), and the script lists it under `defaulted` in its output, so a partial payload stays auditable. Category names are case-sensitive and must match one of the 8 exactly. An unrecognised name is a hard error, not a silently ignored key. The eight names are exactly: `Security`, `Architecture`, `Code Quality`, `Scaling`, `Maintainability`, `Technical Debt`, `Dependency Health`, `Testing` (lowercase `"security"`, for example, is rejected).
+**Input JSON shape:** Supply counts for any subset of the 8 categories. An omitted category defaults to zero findings (score 100), and the script lists it under `defaulted` in its output, so a partial payload stays auditable. Category names are case-sensitive and must match one of the 8 exactly. An unrecognised name is a hard error, not a silently ignored key. The eight names are exactly: `Security`, `Architecture`, `Code Quality`, `Scaling`, `Maintainability`, `Technical Debt`, `Dependency Health`, `Testing`. The script rejects a lowercase `"security"`, for example.
 
 ```json
 {
@@ -260,14 +297,16 @@ In Review and Maintenance modes, run a lightweight DDD boundary check in the Arc
 
 1. **Scan import graphs.** Flag a `PLAN`-severity architecture finding if any module is both imported by 8+ domain subdirectories and imports back from 8+ subdirectories. This is bidirectional coupling, or a god class.
 2. **Scan term overloading.** Flag a `PLAN`-severity architecture finding if the same symbol (for example, `Bank`, `Entity`, `User`) appears in more than 100 cross-module references. It must also show 2 or more semantically distinct usage patterns, for example aggregate root versus database row versus configuration namespace.
-3. **Scan schema leakage.** Flag a `PLAN`-severity architecture finding if a domain package imports another's `storage`, `models`, or `schema` module directly. This bypasses an explicit contract or domain event.
-4. **Scan for anti-corruption layers.** Flag a `PLAN`-severity architecture finding if subdomains communicate through a shared database schema, instead of domain events, messages, or explicit adapter interfaces.
+
+3. **Scan schema leakage.** Flag a `PLAN`-severity architecture finding if a domain package imports the `storage`, `models`, or `schema` module of another domain directly. This bypasses an explicit contract or domain event.
+4. **Scan for anti-corruption layers.** Flag a `PLAN`-severity architecture finding if subdomains communicate through a shared database schema. The finding applies whenever domain events, messages, or explicit adapter interfaces are absent.
 
 If any of checks 1-4 trigger, surface a dedicated DDD finding. Recommended remediation: produce a bounded-context glossary and a context map before you decompose god classes or extract services.
 
 ## Historical Trending
 
-For Maintenance mode, scan `docs/architecture/review/` (never the repo unbounded; see the Prior scan detection rule under Maintenance Mode above) for prior `architecture-review-YYYY-MM-DD-*.html` files. Sort them by the date in the filename. Compare with the most recent prior scan:
+For Maintenance mode, scan only `docs/architecture/review/` for prior `architecture-review-YYYY-MM-DD-*.html` files. Never scan the repo unbounded. See the Prior scan detection rule under Maintenance Mode above. Sort the files by the date in the filename. Compare with the most recent prior scan:
+
 - **NEW** -- a finding not present in the prior scan
 - **ESCALATED** -- severity increased since the prior scan
 - **STABLE** -- same severity, still present
@@ -277,7 +316,7 @@ Render the comparison in a table with color-coded status tags. Mark prior scan f
 
 ## Security in Review and Maintenance
 
-Review and Maintenance modes **must** load `corpus/principles/security/*`. This is not optional. The skill's bundled corpus includes 14 dedicated security principle cards. They cover tenant isolation, input validation, secrets management, API security, supply chain, cloud and platform concerns, layer boundaries, XSS/CSRF/CSP, SSRF and deserialization, cryptographic key management, RBAC/ABAC, audit logging, frontend security, and file upload and API hardening. Load all 14 files for any review or maintenance task.
+Review and Maintenance modes **must** load `corpus/principles/security/*`. This is not optional. The bundled corpus of the skill includes 14 dedicated security principle cards. They cover tenant isolation, input validation, secrets management, API security, supply chain, and cloud and platform concerns. They also cover layer boundaries, XSS/CSRF/CSP, SSRF and deserialization, cryptographic key management, RBAC/ABAC, audit logging, frontend security, and file upload and API hardening. Load all 14 files for any review or maintenance task.
 
 ## Quick Reference
 
@@ -288,14 +327,14 @@ Review and Maintenance modes **must** load `corpus/principles/security/*`. This 
 | `references/decision-records.md` | Decisions mode: 42010 record schema, state machine + legal transitions, delivers facet, integrity rules |
 | `references/architecture-documentation.md` | Describe mode: bounded-context authoring procedure (canvas, boundary record, verification discipline) |
 | `references/divergent-exploration.md` | Diverge/focus engine used by design, review, and debug modes: pre-flight abort gate, three frame catalogues, separate critic pass (scores, traps, agreement, starred survivors), output schema |
-| `references/templates/adr-template.md` | Canonical ADR skeleton — scripts validate against this shape |
+| `references/templates/adr-template.md` | Canonical ADR skeleton (scripts validate against this shape) |
 | `references/templates/canvas-template.md` | Canonical Bounded Context Canvas skeleton (8 sections + C2/C3) |
 | `references/templates/boundary-template.yaml` | Canonical machine-diffable boundary record schema |
 | `references/reports/architecture-review-TECHNICAL-TEMPLATE.html` | Visual reference for Technical Report layout, severity bubbles, evidence blocks, module tables |
 | `references/reports/architecture-review-FOUNDER-TEMPLATE.html` | Visual reference for Founder Report layout, score bars, impact tags, AI prompt blocks, phased plan |
 | `${CLAUDE_PLUGIN_ROOT}/scripts/compute_scores.py` | Deterministic scoring engine. Pipe P0/P1/P2 counts JSON → get exact scores and grades. |
 | `${CLAUDE_PLUGIN_ROOT}/scripts/html_to_pdf.py` | Converts a finished HTML report to an A4 PDF. Requires playwright. |
-| `references/saas-checklist.md` | SaaS codebase review checklist — detection commands, remediation patterns, 5-phase scanner pipeline |
+| `references/saas-checklist.md` | SaaS codebase review checklist: detection commands, remediation patterns, 5-phase scanner pipeline |
 | `references/harness-security.md` | LLM-harness security detection rules |
 | `references/agent-legible-principles.md` | 4 agent-legibility principles with before/after examples |
 | `references/mechanical-enforcement.md` | 5 grep-checkable CI rules |
