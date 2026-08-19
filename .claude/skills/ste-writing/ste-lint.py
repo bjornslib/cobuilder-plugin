@@ -58,6 +58,37 @@ STOP_WORDS = {
 }
 
 
+# Stems that form a real contraction with 's ("it's", "that's"). Any other
+# stem before 's ("the script's", "the repo's") is a possessive, which
+# ASD-STE100 does not ban. 'd is left alone: unlike 's, it does not collide
+# with a correct possessive form, so the unambiguous branch below still
+# counts it directly.
+_CONTRACTION_S_STEMS = {
+    "it", "that", "what", "there", "here", "let", "who", "he", "she", "one",
+    "someone", "everyone", "nothing", "something", "everything",
+}
+
+
+def count_contractions(text):
+    """
+    Count contractions, without counting a possessive 's as one.
+
+    "it's a problem" and "that's wrong" are contractions. "the script's
+    output" and "the repo's history" are possessives, correct STE, and must
+    not count. Both parse identically to \\w+['\u2019]s, so the stem decides:
+    only a stem in _CONTRACTION_S_STEMS forms a real contraction with 's.
+    The t/re/ve/ll/m branches stay unambiguous and always count, and so
+    does 'd, per the docstring above.
+    """
+    n = 0
+    for m in re.finditer(r"\b(\w+)['\u2019](t|re|ve|ll|d|s|m)\b", text, re.I):
+        stem, suf = m.group(1).lower(), m.group(2).lower()
+        if suf == "s" and stem not in _CONTRACTION_S_STEMS:
+            continue
+        n += 1
+    return n
+
+
 def strip_code(t):
     """
     Replace each code span with one opaque placeholder token, instead of
@@ -113,6 +144,32 @@ def reflow(text):
                 buf[-1] = buf[-1] + " " + line.strip()
         out.append("\n".join(buf))
     return "\n\n".join(out)
+
+
+def is_prose_block(p):
+    """
+    True if a "\\n\\n"-delimited block is running prose, not a table, a
+    list, a heading, a block quote, or a fenced code block.
+
+    long_paragraph(>6s) counts sentences inside a paragraph. A markdown
+    table has no blank line between rows, so re.split(r"\\n\\s*\\n", ...)
+    hands the whole table back as one "paragraph", and every row reads as
+    a sentence. A table with more than six rows then trips the cap forever
+    -- the only "fix" would be breaking the table, which is never correct.
+    A list, a heading run, or a block quote can hit the same failure for
+    the same reason: no blank lines, several short lines in a row.
+
+    _BLOCK_START already tells a table row, list item, heading, block
+    quote, or fence line apart from a prose line (see reflow() above,
+    which uses it for the same distinction). A block where most lines open
+    with one of those markers is not a prose paragraph, so it is excluded
+    here rather than counted against the six-sentence cap.
+    """
+    lines = [l for l in p.split("\n") if l.strip()]
+    if not lines:
+        return False
+    non_prose = sum(1 for l in lines if _BLOCK_START.match(l))
+    return non_prose <= len(lines) / 2
 
 
 def sentences(text):
@@ -208,7 +265,7 @@ def lint(text, mode="flavored"):
     longs = [(wc(s), s) for s in sents if wc(s) > cap]
     v[cap_key] = len(longs)
     v["semicolon"] = text.count(";")
-    v["contraction"] = len(re.findall(r"\b\w+['’](?:t|re|ve|ll|d|s|m)\b", text))
+    v["contraction"] = count_contractions(text)
     # Known false-positive class: a predicate adjective reads the same as a
     # passive verb to a regex. "the signal files are compiled views" is an
     # adjective and is correct STE, but it counts here. Separating the two
@@ -222,7 +279,8 @@ def lint(text, mode="flavored"):
     v["marketing_adjective"], mh = count_ci(text, MARKETING)
     v["modal_hedge"], _ = count_ci(text, MODAL_HEDGE)
     paras = [p for p in re.split(r"\n\s*\n", raw) if p.strip()]
-    v["long_paragraph(>6s)"] = sum(1 for p in paras if len(sentences(strip_code(p))) > 6)
+    prose_paras = [p for p in paras if is_prose_block(p)]
+    v["long_paragraph(>6s)"] = sum(1 for p in prose_paras if len(sentences(strip_code(p))) > 6)
     em = raw.count("—") + raw.count("–")
 
     # noun_cluster is a real STE rule (rule 2.4, max three nouns in a row) but
