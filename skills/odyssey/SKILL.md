@@ -1021,7 +1021,7 @@ returns. Do not implement that join here.
 
    1. **ADR.** Write `docs/architecture/adr/ADR-NNNN-<slug>.md` from
       `skills/architecture/references/templates/adr-template.md`. Set
-      `state: proposed` and `source_pr: null`. Copy `alternatives` from
+      `state: decided` and `source_pr: null`. Copy `alternatives` from
       `intent`. Then run:
       ```bash
       uv run "${CLAUDE_PLUGIN_ROOT}/scripts/build_adrs.py"

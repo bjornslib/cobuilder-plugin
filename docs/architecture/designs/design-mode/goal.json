@@ -1,6 +1,7 @@
 {
   "name": "design-mode",
-  "title": "Design mode for prodyssey",
+  "title": "Design mode for cobuilder-architect",
+  "adr": "ADR-0011",
   "created": "2026-08-19",
   "outcome": "An engineer can design a change with the plugin before writing it, and the resulting intent, ADR, and diagrams carry through to the pull request that implements it.",
   "done_when": [
