@@ -1,0 +1,55 @@
+{
+  "captured": "2026-08-19",
+  "source": "design",
+  "design_name": "design-mode",
+  "authorship": "agent-assisted",
+  "problem": "The plugin captures author intent at submit time, after the change exists. Nothing captures it at design time, when the engineer still holds the alternatives, the constraints, and the doubts. Generate mode then reconstructs intent from merged code, which is the guessing the plugin was built to stop.",
+  "why_now": "Submit mode's intent block already has the right shape for a design. The bundle already holds districts, ADRs, and a timeline to design against. The archkit architecture skill already holds the corpus and the divergent exploration that a design needs. The three parts exist and are not connected.",
+  "approach": "A seventh mode, /prodyssey:design, running seven stages: name and outcome, ground, interview, explore, challenge, draft, review, branch. It writes a named design directory under exports/, never the timeline, and ends by creating a branch that submit mode later resolves by name.",
+  "alternatives": [
+    {
+      "option": "Put design mode in archkit instead, next to its existing design mode",
+      "rejected_because": "The interview discipline, the bundle, the diagram pipeline, and the viewer all live in prodyssey. archkit's contribution is a skill call. Building it in archkit would mean porting four subsystems to reach one."
+    },
+    {
+      "option": "Keep archkit a soft, optional dependency and degrade when it is absent",
+      "rejected_because": "A design mode whose substance is optional degrades silently into a chat. The corpus and the divergent exploration are the design content, not an enhancement to it."
+    },
+    {
+      "option": "Ask the engineer which options they rejected, as an interview question",
+      "rejected_because": "Nobody can name a rejected option before the design exists. A rejected option is an outcome of the design process, not an input to it. Stages 3 and 4 produce them instead."
+    },
+    {
+      "option": "Mint a synthetic PR key so a design can enter the story.json timeline directly",
+      "rejected_because": "story.json keys on an integer pr, and verify_bundle.py, record_publish.py, manifest.js, and the viewer all depend on it. Submit mode already stages outside the timeline for this reason."
+    },
+    {
+      "option": "Review designs in a Lavish surface rather than the bundle viewer",
+      "rejected_because": "Element-level annotation is a better review loop, but it adds an external dependency to a plugin that deliberately has none. The viewer already renders assessments and is committed with the repo."
+    }
+  ],
+  "out_of_scope": [
+    "opening a pull request — that stays submit mode's job",
+    "pushing a branch or any other remote action",
+    "element-level annotation or a send-to-agent channel in the viewer",
+    "renaming the repository",
+    "deciding the fate of the archkit repository"
+  ],
+  "risks": [
+    "the agreeable design: exploration finds nothing contradicting the engineer, and the ADR records one choice instead of a decision",
+    "a design-stage prediction read as a verified observation, because it cites an ADR id rather than a path:line",
+    "the design and its branch diverge silently after stage 7",
+    "the duplicate-design subagent reports no match and the engineer trusts it"
+  ],
+  "testing": "Not yet built. This design directory is itself the first test of the layout: it was authored by hand against the proposed shape.",
+  "reviewer_focus": [
+    "stage 4, the challenge gate — it is the sole producer of rejected options",
+    "section 3, the branch-name lookup that joins a design to its pull request",
+    "the CLAUDE.md passages that the merge deliberately breaks"
+  ],
+  "unknowns": [
+    "whether a semantic duplicate-design search is accurate enough that an engineer can trust a no-match answer",
+    "how much the 3.1 MB architecture skill slows a plugin install in practice",
+    "whether material and cosmetic review feedback can be classified reliably enough to route automatically"
+  ]
+}
