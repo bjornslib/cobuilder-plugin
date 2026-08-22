@@ -1,4 +1,4 @@
-{
+window.STORY = {
   "meta": {
     "repo": "prodyssey",
     "generated": "2026-07-22",
@@ -1181,4 +1181,4 @@
       "commit": "6b2fce6"
     }
   ]
-}
+};
