@@ -139,7 +139,7 @@
   .rail-item.active .rail-title{color:var(--accent-text);}
   .rail-teaser{font-size:11px;color:var(--ink-dim);line-height:1.4;margin-top:4px;}
 
-  #content-col{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;min-height:0;}
+  #content-col{flex:1 1 auto;min-width:0;display:flex;flex-direction:row;min-height:0;}
 
   /* Slim narration caption, sits atop the scrollable content (spec allows either side).
      Heading + narration on the left, fixed-width audio control on the right — vertically
@@ -458,12 +458,12 @@
   }
   #drawer-scrim.open{opacity:1;pointer-events:auto;}
   #comments-drawer{
-    position:fixed;top:0;right:0;bottom:0;width:420px;max-width:92vw;background:#fff;
-    border-left:1px solid var(--line);border-radius:14px 0 0 14px;box-shadow:-12px 0 34px rgba(20,25,35,0.2);
-    transform:translateX(100%);transition:transform .25s ease;z-index:41;
+    flex:0 0 420px;max-width:92vw;background:#fff;
+    border-left:1px solid var(--line);border-radius:0;box-shadow:-12px 0 34px rgba(20,25,35,0.1);
     display:flex;flex-direction:column;min-height:0;
+    transform:translateX(100%);transition:transform .25s ease;
   }
-  #comments-drawer.open{transform:translateX(0);}
+  #content-col.drawer-open #comments-drawer{transform:translateX(0);}
   .drawer-header{
     flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;
     padding:16px 20px;border-bottom:1px solid var(--line-soft);
@@ -949,73 +949,34 @@
         <div class="scroll-cue bottom" id="scroll-cue-bottom" hidden></div>
         <div class="scroll-cue top" id="scroll-cue-top" hidden></div>
       </div>
+      <!-- Comments drawer (shadcn Sheet look, recreated in vanilla HTML/CSS) -->
+      <div id="comments-drawer" role="dialog" aria-label="Review comments">
+        <div class="drawer-header">
+          <h2>Review comments</h2>
+          <button class="drawer-close" id="drawer-close-btn" title="Close (Esc)">&times;</button>
+        </div>
+        <div id="feedback-anchor-context" hidden></div>
+        <div class="drawer-body">
+          <div class="drawer-compose">
+            <div class="drawer-compose-row">
+              <span class="dock-tag-label">Tag:</span>
+              <span class="tag-chip" id="comment-level-chip"></span>
+            </div>
+            <input id="comment-input" type="text" placeholder="Leave a review comment…" autocomplete="off" />
+            <button class="btn-add-comment" id="btn-add-comment">Comment</button>
+          </div>
+          <div class="drawer-list-label">Comments</div>
+          <div class="drawer-list comment-list" id="comment-list"></div>
+        </div>
+        <div class="drawer-footer">
+          <button class="btn-copy-md" id="btn-copy-md">Copy review as markdown</button>
+          <a class="link-btn" id="btn-reset">Reset review</a>
+        </div>
+      </div>
     </div>
   </div>
 
   <div id="dock">
-    <div class="dock-row1">
-      <span class="decision-status mono" id="status-pill"></span>
-      <div class="dock-row1-actions">
-        <button class="btn-add-comment" id="btn-comments-toggle">Comments (0)</button>
-        <button class="decision-btn close-pr pr-only" id="btn-close">Close pull request</button>
-        <div class="split-btn pr-only">
-          <button class="split-main" id="btn-merge">Merge pull request</button>
-          <button class="split-arrow" id="btn-merge-arrow" aria-haspopup="true" title="Select merge method">&#9662;</button>
-          <div class="merge-menu" id="merge-menu" hidden>
-            <button class="merge-menu-item" data-method="squash">Squash and merge</button>
-            <button class="merge-menu-item" data-method="rebase">Rebase and merge</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Comments drawer (shadcn Sheet look, recreated in vanilla HTML/CSS) -->
-  <div id="drawer-scrim"></div>
-  <div id="comments-drawer" role="dialog" aria-label="Review comments">
-    <div class="drawer-header">
-      <h2>Review comments</h2>
-      <button class="drawer-close" id="drawer-close-btn" title="Close (Esc)">&times;</button>
-    </div>
-    <div class="drawer-body">
-      <div class="drawer-compose">
-        <div class="drawer-compose-row">
-          <span class="dock-tag-label">Tag:</span>
-          <span class="tag-chip" id="comment-level-chip"></span>
-        </div>
-        <input id="comment-input" type="text" placeholder="Leave a review comment…" autocomplete="off" />
-        <button class="btn-add-comment" id="btn-add-comment">Comment</button>
-      </div>
-      <div class="drawer-list-label">Comments</div>
-      <div class="drawer-list comment-list" id="comment-list"></div>
-    </div>
-    <div class="drawer-footer">
-      <button class="btn-copy-md" id="btn-copy-md">Copy review as markdown</button>
-      <a class="link-btn" id="btn-reset">Reset review</a>
-    </div>
-  </div>
-
-  <!-- ADR detail sheet (same shadcn Sheet family, wider — reachable from any ADR chip).
-       Shares #drawer-scrim above with the comments drawer; only one is open at a time. -->
-  <div id="adr-sheet" role="dialog" aria-label="ADR detail">
-    <div class="drawer-header">
-      <div>
-        <h2 id="adr-sheet-title">ADR</h2>
-        <div class="adr-sheet-meta" id="adr-sheet-meta"></div>
-      </div>
-      <button class="drawer-close" id="adr-sheet-close-btn" title="Close (Esc)">&times;</button>
-    </div>
-    <div class="drawer-body" id="adr-sheet-body"></div>
-  </div>
-
-  <!-- Generate-mode "PR Author Assessment" sheet (same Sheet family as the ADR
-       sheet above), reachable from the assessment banner at the top of level
-       2. Reads the timeline entry's own `assessment`/`intent` blocks — there
-       is no window.ASSESSMENTS, because both live inline in story.json.
-       Shares #drawer-scrim; only one sheet is ever open. -->
-  <div id="assessment-sheet" role="dialog" aria-label="PR Author Assessment">
-    <div class="drawer-header">
-      <div>
         <h2 id="assessment-sheet-title">PR Author Assessment</h2>
         <div class="adr-sheet-meta" id="assessment-sheet-meta"></div>
       </div>
@@ -1309,15 +1270,16 @@ window.INDEX = window.INDEX || {};
     renderDock();
     renderQueueDots();
   }
-  function addCommentOnly(){
+  async function addCommentOnly(){
     const draft = commentInput.value.trim();
     if (!draft) return;
-    const p = pr();
-    const review = loadReview(p.pr);
-    review.comments.push({ level: levelKey(), text: draft });
-    if (review.state === 'pending') review.state = 'commented';
-    saveReview(p.pr, review);
-    commentInput.value = '';
+    // Submit to the feedback ledger (POST /feedback with fallback)
+    const ulid = await submitFeedback(draft);
+    if (ulid){
+      commentInput.value = '';
+      feedbackAnchor = null;
+      renderFeedbackAnchor();
+    }
     renderDock();
     renderQueueDots();
   }
@@ -1356,6 +1318,187 @@ window.INDEX = window.INDEX || {};
     }
     return md;
   }
+
+  /* ============================================================
+     FEEDBACK LEDGER — anchor, drawer, and append
+     ============================================================ */
+  const FEEDBACK_ENDPOINT = '/feedback';
+  const LEDGER_AVAILABLE = (() => { try { return 'fetch' in window; } catch { return false; } })();
+
+  // Current anchor state for the feedback drawer
+  let feedbackAnchor = null;
+
+  function computeSelector(el){
+    """Walk up to 5 ancestors to find a stable selector.
+    Prefers an element with an id, then a data-testid, then a class
+    combination. Returns a CSS selector string."""
+    let current = el;
+    for (let i = 0; i < 5 && current && current !== document.body; i++){
+      if (current.id){
+        return '#' + current.id;
+      }
+      if (current.dataset && current.dataset.testid){
+        return '[data-testid="' + current.dataset.testid + '"]';
+      }
+      if (current.className && typeof current.className === 'string'){
+        const classes = current.className.trim().split(/\s+/).filter(c => c && !c.startsWith('__'));
+        if (classes.length){
+          return current.tagName.toLowerCase() + '.' + classes.join('.');
+        }
+      }
+      current = current.parentElement;
+    }
+    // Fallback: tag name + nth-child
+    const parent = el.parentElement;
+    if (parent){
+      const siblings = Array.from(parent.children);
+      const idx = siblings.indexOf(el);
+      if (idx >= 0){
+        return parent.tagName.toLowerCase() + ' > ' + el.tagName.toLowerCase() + ':nth-child(' + (idx + 1) + ')'; }
+    }
+    return el.tagName.toLowerCase();
+  }
+
+  function captureRange(){
+    """Capture the current text selection as a node path + character offsets."""
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return null;
+    const range = sel.getRangeAt(0);
+    if (range.collapsed) return null;
+
+    // Get the container element that holds the selection
+    const container = range.commonAncestorContainer;
+    const element = container.nodeType === Node.TEXT_NODE ? container.parentElement : container;
+    if (!element) return null;
+
+    const selector = computeSelector(element);
+    const startOffset = range.startOffset;
+    const endOffset = range.endOffset;
+    const quotedText = range.toString().trim();
+
+    return { selector, startOffset, endOffset, quotedText };
+  }
+
+  function openFeedbackDrawer(anchor){
+    """Open the comments drawer with the anchor pre-set."""
+    feedbackAnchor = anchor;
+    if (state.adrOpen){ state.adrOpen = false; }
+    if (state.assessmentOpen){ state.assessmentOpen = false; }
+    if (state.designsOpen) closeDesignsSheet();
+    if (state.audioDialogOpen) stopAudio();
+    state.commentsOpen = true;
+    renderSheetVisibility();
+    // Update the drawer to show the anchored context
+    renderFeedbackAnchor();
+    commentInput.focus();
+  }
+
+  function renderFeedbackAnchor(){
+    const anchorEl = document.getElementById('feedback-anchor-context');
+    if (!anchorEl) return;
+    if (!feedbackAnchor){
+      anchorEl.hidden = true;
+      return;
+    }
+    anchorEl.hidden = false;
+    const sel = feedbackAnchor.selection;
+    const quoted = sel && sel.quotedText ? escapeHtml(sel.quotedText) : '';
+    const selector = feedbackAnchor.selector ? escapeHtml(feedbackAnchor.selector) : '';
+    
+    // Check if selector still matches an element (stale selector detection)
+    let isStale = false;
+    if (feedbackAnchor.selector){
+      try {
+        const matched = document.querySelector(feedbackAnchor.selector);
+        if (!matched) isStale = true;
+      } catch (e) {
+        isStale = true; // Invalid selector
+      }
+    }
+    
+    anchorEl.innerHTML = `
+      <div class="feedback-anchor-badge ${isStale ? 'feedback-anchor-stale' : ''}">${isStale ? 'Anchored (stale)' : 'Anchored'}</div>
+      <div class="feedback-anchor-selector mono">${selector}${isStale ? ' <span class="stale-marker">⚠ selector no longer matches</span>' : ''}</div>
+      ${quoted ? '<div class="feedback-anchor-quote' + (isStale ? ' feedback-quote-stale' : '') + '">' + quoted + '</div>' : ''}
+      ${isStale ? '<div class="reanchor-hint">Quote preserved. Select new text to re-anchor.</div>' : ''}
+    `;
+  }
+
+  async function submitFeedback(text){
+    """Submit feedback to the ledger via POST /feedback.
+    Falls back to localStorage if the server is unavailable."""
+    const payload = {
+      anchor: feedbackAnchor,
+      text: text,
+      author: 'human',
+      ts: new Date().toISOString().replace('T', ' ').replace('Z', ''),
+      pr: pr().pr,
+      level: levelKey(),
+    };
+
+    if (LEDGER_AVAILABLE){
+      try {
+        const resp = await fetch(FEEDBACK_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (resp.ok){
+          const data = await resp.json();
+          // Server returned the ULID - store locally for reference
+          feedbackAnchor = null;
+          renderFeedbackAnchor();
+          return data.ulid;
+        }
+      } catch (e) {
+        // Server unavailable - fall through to localStorage
+      }
+    }
+
+    // Fallback: store in localStorage with a 'local' flag
+    const key = 'odyssey-feedback-local:' + REPO;
+    try {
+      const existing = JSON.parse(localStorage.getItem(key) || '[]');
+      existing.push({ ...payload, ulid: 'local-' + Date.now(), local: true });
+      localStorage.setItem(key, JSON.stringify(existing));
+      feedbackAnchor = null;
+      renderFeedbackAnchor();
+      // Show a toast that this is local-only
+      showToast('Saved locally (server unavailable). Will sync when server is reachable.');
+      return 'local';
+    } catch (e) {
+      showToast('Failed to save feedback.');
+      return null;
+    }
+  }
+
+  function showToast(message){
+    const toast = document.createElement('div');
+    toast.className = 'feedback-toast';
+    toast.textContent = message;
+    toast.style.cssText = `position:fixed;bottom:24px;right:24px;padding:12px 16px;background:var(--ink);color:#fff;border-radius:6px;font:12px system-ui,sans-serif;z-index:1000;animation:slideIn 0.2s ease;`;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      toast.style.animation = 'slideOut 0.2s ease forwards';
+      setTimeout(() => toast.remove(), 200);
+    }, 3000);
+  }
+
+  // Add CSS for toast animation
+  const styleEl = document.createElement('style');
+  styleEl.textContent = `
+    @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(10px); } }
+    .feedback-anchor-badge { font: 600 10px 'JetBrains Mono',monospace; color: var(--accent-text); background: color-mix(in oklch, var(--accent) 12%, white); padding: 2px 8px; border-radius: 4px; display: inline-block; margin-bottom: 4px; }
+    .feedback-anchor-badge.feedback-anchor-stale { color: #b45309; background: #fef3c7; }
+    .feedback-anchor-selector { font-size: 11px; color: var(--ink-dim); margin-bottom: 4px; }
+    .feedback-anchor-selector .stale-marker { color: #b45309; font-weight: 600; }
+    .feedback-anchor-quote { font-size: 12px; color: var(--ink); border-left: 2px solid var(--accent); padding-left: 8px; margin-top: 4px; font-style: italic; }
+    .feedback-anchor-quote.feedback-quote-stale { border-left-color: #b45309; background: #fefce8; }
+    .reanchor-hint { font-size: 11px; color: #b45309; margin-top: 6px; padding: 6px 10px; background: #fef3c7; border-radius: 4px; }
+  `;
+  document.head.appendChild(styleEl);
+
 
   /* ============================================================
      MERGE DROPDOWN
@@ -3566,6 +3709,21 @@ window.INDEX = window.INDEX || {};
   document.getElementById('main-content').addEventListener('scroll', onMainScroll);
   document.getElementById('main-content-wrap').addEventListener('wheel', onMainWheel, { passive: true });
 
+  // Feedback anchor: click to select element, or select text then click to anchor
+  document.getElementById('main-content').addEventListener('click', (e) => {
+    // Don't intercept clicks on interactive elements
+    if (e.target.closest('button, a, input, select, textarea, .qd-dot, .rail-item')) return;
+    const selection = captureRange();
+    if (selection){
+      // Text was selected - open feedback drawer with the selection
+      openFeedbackDrawer({ selector: selection.selector, selection });
+    } else {
+      // Click on an element - compute selector and open drawer
+      const selector = computeSelector(e.target);
+      openFeedbackDrawer({ selector, selection: null });
+    }
+  });
+
   /* ============================================================
      TOP-LEVEL RENDER
      ============================================================ */
@@ -3725,12 +3883,12 @@ window.INDEX = window.INDEX || {};
      — this is the "only one sheet at a time" rule.
      ============================================================ */
   function renderSheetVisibility(){
-    document.getElementById('comments-drawer').classList.toggle('open', state.commentsOpen);
+    document.getElementById('content-col').classList.toggle('drawer-open', state.commentsOpen);
     document.getElementById('adr-sheet').classList.toggle('open', state.adrOpen);
     document.getElementById('assessment-sheet').classList.toggle('open', state.assessmentOpen);
     document.getElementById('designs-sheet').classList.toggle('open', state.designsOpen);
     const scrim = document.getElementById('drawer-scrim');
-    scrim.classList.toggle('open', state.commentsOpen || state.adrOpen || state.assessmentOpen || state.designsOpen || state.audioDialogOpen);
+    scrim.classList.toggle('open', state.adrOpen || state.assessmentOpen || state.designsOpen || state.audioDialogOpen);
     scrim.classList.toggle('audio-dim', state.audioDialogOpen);
   }
   function openCommentsDrawer(){

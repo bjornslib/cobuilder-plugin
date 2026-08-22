@@ -212,10 +212,20 @@ def migrate_layout_2_to_3(bundle_dir: Path) -> None:
     this function has no bundle_meta of its own to work from."""
 
 
+def migrate_layout_3_to_4(bundle_dir: Path) -> None:
+    """3 -> 4 creates the feedback ledger file if missing.
+    The ledger is append-only and must exist before the first write.
+    An empty file is valid (no lines = no threads)."""
+    ledger_path = bundle_dir / "feedback-ledger.jsonl"
+    if not ledger_path.exists():
+        ledger_path.touch()
+
+
 LAYOUT_MIGRATIONS: list[tuple[int, int, object, str]] = [
     (0, 1, migrate_layout_0_to_1, "stamp bundle_format 1 (no directory changes)"),
     (1, 2, migrate_layout_1_to_2, "stamp bundle_format 2 (empty designs.js if missing)"),
     (2, 3, migrate_layout_2_to_3, "stamp bundle_format 3 (min_reader_schema + generators map)"),
+    (3, 4, migrate_layout_3_to_4, "stamp bundle_format 4 (create feedback ledger if missing)"),
 ]
 
 

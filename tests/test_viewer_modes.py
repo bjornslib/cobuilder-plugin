@@ -22,15 +22,17 @@ import migrate_bundle as mb  # noqa: E402
 VIEWER_PATH = REPO_ROOT / "plugins" / "cobuilder-artifact" / "viewer" / "index.html"
 
 
-def test_viewer_contains_all_four_mode_buttons():
-    """C5: Topbar must contain mode buttons for prs, designs, decisions, contexts."""
+def test_viewer_contains_all_five_mode_buttons():
+    """C6: Topbar must contain mode buttons for prs, designs, decisions, contexts, builds."""
     content = VIEWER_PATH.read_text()
     assert 'data-mode="designs"' in content
     assert 'data-mode="prs"' in content
     assert 'data-mode="decisions"' in content
     assert 'data-mode="contexts"' in content
+    assert 'data-mode="builds"' in content
     assert 'id="mode-btn-decisions"' in content
     assert 'id="mode-btn-contexts"' in content
+    assert 'id="mode-btn-builds"' in content
 
 
 def test_decisions_mode_lists_all_records_and_anchor_distinction():

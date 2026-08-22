@@ -26,7 +26,7 @@ from pathlib import Path
 
 SCHEMA_VERSION = "1.3"
 SCHEMA_VERSION_KNOWN = {"1.0", "1.1", "1.2", "1.3"}
-CURRENT_BUNDLE_FORMAT = 3
+CURRENT_BUNDLE_FORMAT = 4
 
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 
