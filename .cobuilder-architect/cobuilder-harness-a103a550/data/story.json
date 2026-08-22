@@ -2,7 +2,7 @@
   "meta": {
     "repo": "cobuilder-harness",
     "generated": "2026-07-21",
-    "schema_version": "1.2",
+    "schema_version": "1.3",
     "title": "cobuilder-harness — Codebase Odyssey",
     "description": "CoBuilder: a pipeline execution engine that turns product requirements into working software through autonomous multi-agent workflows. The runner has zero LLM intelligence — it reads a DOT graph, dispatches project-owned agents, and transitions node states mechanically.",
     "levels": [

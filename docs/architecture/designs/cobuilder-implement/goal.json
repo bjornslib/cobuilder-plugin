@@ -1,6 +1,6 @@
 {
   "name": "cobuilder-implement",
-  "title": "CoBuilder Implement — a design becomes verified code",
+  "title": "CoBuilder Implement \u2014 a design becomes verified code",
   "adr": "ADR-0012",
   "adrs": [
     "ADR-0012",
@@ -35,6 +35,13 @@
       "pr": 11,
       "state": "open",
       "note": "Shares a branch and a pull request with the design-mode design. See ADR-0013: a branch may carry more than one design."
+    },
+    {
+      "id": "E2",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "Write a technical solution design for each epic, before the slices of that epic are built. Gate 3 produces one program design for a whole feature, which is the right grain for a feature and the wrong grain for an epic that carries four slices. This session skipped the per-epic step and felt the cost twice: the pull-request mode rename reached a slice brief still carrying a shape the user had already corrected, and a command-name collision surfaced during implementation rather than during design. Backlog, raised 2026-08-22."
     }
   ],
   "stage": "approved",

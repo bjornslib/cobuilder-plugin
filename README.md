@@ -1,6 +1,6 @@
 # cobuilder-architect
 
-cobuilder-architect is a Claude Code plugin for design, submit, and review
+cobuilder-architect is a Claude Code plugin for design, generate, and review
 (the architecture lifecycle except build), plus narrated history. Odyssey
 turns a merged pull request into a four-level narrated story: PR Landscape,
 Problem and Solution, Architecture, and File Changes. The story includes
@@ -49,7 +49,7 @@ the repo in Claude Code, you can generate its story.
 ### One command, full sweep
 
 ```
-/cobuilder-architect:generate --prs 73,75
+/cobuilder-architect:review --prs 73,75
 ```
 
 For each PR, Odyssey runs these steps in order: it writes the story
@@ -60,8 +60,8 @@ runs `baseline` first, on its own (AC G3). You do not need to know that this
 is a separate step.
 
 ```
-/cobuilder-architect:generate --latest        # the most recent merged PR
-/cobuilder-architect:generate --prs 12..18   # a range
+/cobuilder-architect:review --latest        # the most recent merged PR
+/cobuilder-architect:review --prs 12..18   # a range
 ```
 
 ### Visual form: `--art`
@@ -79,7 +79,7 @@ is a separate step.
   existed.
 
 ```
-/cobuilder-architect:generate --prs 79 --art diagram
+/cobuilder-architect:review --prs 79 --art diagram
 ```
 
 ### Baseline (explicit)
@@ -108,7 +108,7 @@ This command derives the architecture baseline of the repo into
    has no architecture docs of its own.
 
 Run the command again at any time to refresh the baseline in place. The
-`generate` command warns when the baseline falls more than 200 commits
+`review` command warns when the baseline falls more than 200 commits
 behind `HEAD`.
 
 ### Targeting another local checkout
@@ -117,7 +117,7 @@ You do not need to open a session inside the target repo. The `--repo` flag
 points the whole sweep at any local checkout:
 
 ```
-/cobuilder-architect:generate --repo ~/code/other-project --prs 42,43
+/cobuilder-architect:review --repo ~/code/other-project --prs 42,43
 /cobuilder-architect:baseline --repo ~/code/other-project
 ```
 
@@ -130,13 +130,13 @@ repo. See [Multiple repos](#multiple-repos) below for where it goes.
 
 ---
 
-## Reviewing before you merge
+## Generating and opening a PR
 
 The four commands above narrate history. This one runs before the history
 exists.
 
 ```
-/cobuilder-architect:submit
+/cobuilder-architect:generate
 ```
 
 Run it on a branch that has no pull request. Odyssey reads the diff, the
@@ -183,11 +183,11 @@ Opening the pull request is the only thing Odyssey does outside
 else on GitHub. Use `--no-create` to stop before that and keep the files.
 
 ```
-/cobuilder-architect:submit --no-create          # write the files, open nothing
-/cobuilder-architect:submit --draft              # open it as a draft
-/cobuilder-architect:submit --base develop       # a base branch other than the default
-/cobuilder-architect:submit --prs 73             # review an open PR instead of creating one
-/cobuilder-architect:submit --prs 73 --stage post
+/cobuilder-architect:generate --no-create          # write the files, open nothing
+/cobuilder-architect:generate --draft              # open it as a draft
+/cobuilder-architect:generate --base develop       # a base branch other than the default
+/cobuilder-architect:generate --prs 73             # assess an open PR instead of creating one
+/cobuilder-architect:generate --prs 73 --stage post
 ```
 
 `--stage post` runs after the merge. It compares what shipped against what
@@ -197,7 +197,7 @@ adopted. It never rewrites what you said earlier.
 
 ### It makes the story better
 
-The intent captured here stays in the bundle. When `/cobuilder-architect:generate` runs
+The intent captured here stays in the bundle. When `/cobuilder-architect:review` runs
 on that PR later, it reads your stated problem and your rejected alternatives
 instead of inferring them from the diff. The ADR it extracts is marked
 `provenance: authored`, not `inferred`.
@@ -271,14 +271,14 @@ still lands at `.cobuilder-architect/self/`, portable and ready to commit. Point
 `--repo <path>` at a different local checkout, and by default Odyssey
 writes nothing into that repo. Instead, it caches the bundle locally, under
 the hub's `.cobuilder-architect/<repo-slug>/` directory. The hub is the repo you run
-Claude Code from. This scoping makes it safe to generate stories for a repo
+Claude Code from. This scoping makes it safe to narrate stories for a repo
 you do not own or do not want to change. Use `--store local` to opt into
 writing the bundle into the foreign repo instead, at
 `<target>/.cobuilder-architect/self/`. Use `--store central` to force the hub-cached
 location even when the automatic choice would pick local.
 
 ```
-/cobuilder-architect:generate --repo ~/code/other-project --prs 42,43
+/cobuilder-architect:review --repo ~/code/other-project --prs 42,43
 ```
 
 `/cobuilder-architect:view` finds every bundle a hub holds under its `.cobuilder-architect/`
@@ -308,7 +308,7 @@ repos](#multiple-repos) below.
   inventory.yaml
   viewer/index.html
   exports/{publish-manifest.json, pr-{N}.html…, index.html}   # written by /cobuilder-architect:publish
-  exports/branch-{slug}/diff.json                             # submit-mode diff cache, gitignored
+  exports/branch-{slug}/diff.json                             # generate-mode diff cache, gitignored
 
 <repo>/
   docs/architecture/designs/<name>/{goal,intent,assessment}.json, adr-draft.md, pr-draft.md
@@ -320,7 +320,7 @@ The `diagrams/` and `assets/` entries depend on the `--art` mode that
 generated the PR. `--art diagram` writes only `.mmd` files and no PNGs.
 `--art image` writes only PNGs. `--art both`, the default, writes both.
 
-`/cobuilder-architect:submit` also writes two blocks onto the PR's own timeline entry
+`/cobuilder-architect:generate` also writes two blocks onto the PR's own timeline entry
 in `story.json`: `intent`, which holds what the author said, and
 `assessment`, which holds the judgment written against it. They live there,
 and not in a file of their own, so the migration guard protects them the way
@@ -351,32 +351,34 @@ cobuilder-architect/
 │   └── marketplace.json      # one-plugin marketplace: name "cobuilder-architect", plugins: [{source: "."}]
 ├── commands/
 │   ├── baseline.md           # odyssey: Skill("odyssey", args="baseline")
-│   ├── generate.md           # odyssey: Skill("odyssey", args="generate --prs ...")
+│   ├── review.md     # odyssey: Skill("odyssey", args="review --prs ...")
 │   ├── view.md                # odyssey: Skill("odyssey", args="view ...")
 │   ├── publish.md             # odyssey: Skill("odyssey", args="publish --prs ...")
-│   ├── submit.md              # odyssey: Skill("odyssey", args="submit ...")
+│   ├── generate.md            # odyssey: Skill("odyssey", args="generate ...")
+│   ├── design.md              # architecture: Skill("architecture", args="design")
 │   ├── review.md              # architecture: Skill("architecture", args="review")
 │   ├── maintenance.md         # architecture: Skill("architecture", args="maintenance")
 │   ├── decisions.md           # architecture: Skill("architecture", args="decisions")
 │   ├── describe.md            # architecture: Skill("architecture", args="describe")
-│   ├── debug.md               # architecture: Skill("architecture", args="debug")
-│   └── explore-design.md      # architecture divergent-exploration pass, not a seven-stage design mode
+│   └── debug.md               # architecture: Skill("architecture", args="debug")
 ├── skills/
 │   ├── odyssey/
-│   │   ├── SKILL.md          # orchestration: prereq gate → baseline → per-PR sweep → submit → view → publish → verify
+│   │   ├── SKILL.md          # orchestration: prereq gate → baseline → per-PR sweep → generate → view → publish → verify
 │   │   └── references/       # Odyssey path onto the architecture skill (see below)
 │   │       ├── story-mode.md
 │   │       ├── decision-records-lite.md
 │   │       ├── baseline-derivation.md      # describe-lite: district + inventory procedure
-│   │       ├── diagram-mode.md             # authoring rules for the per-PR Mermaid diagrams
-│   │       ├── review-mode.md              # submit mode: the three questions, verdicts, risk tiers
-│   │       ├── interview-guide.md          # submit mode: what to ask the author, and what not to
+│   │       ├── review-mode.md              # generate mode: the three questions, verdicts, risk tiers
+│   │       ├── interview-guide.md          # generate mode: what to ask the author, and what not to
 │   │       ├── pr-description-template.md  # the PR body skeleton render_review.py fills
 │   │       ├── adr-template.md             # pointer to the architecture template
 │   │       └── stacks/{README,nextjs,react-typescript,python-fastapi,swift,swiftui-app,vapor,generic}.md
-│   ├── architecture/          # six self-only modes: review, maintenance, decisions, describe, debug, explore-design
+│   ├── architecture/          # six self-only modes: design, review, maintenance, decisions, describe, debug
 │   ├── mermaid/               # authoring rules for Mermaid diagrams, invoked by the
-│                               # diagram-authoring subagent, not the orchestrator directly
+│                               # diagram-authoring subagent, not the orchestrator directly.
+│                               # references/diagram-mode.md holds the per-PR and per-design
+│                               # diagram contract, vendored here because both odyssey and
+│                               # architecture need it (ADR-0017)
 │   └── ste-writing/           # STE writing rules and ste-lint.py
 ├── scripts/                   # top-level, not nested under skills/. Called via ${CLAUDE_PLUGIN_ROOT}/scripts/...
 │   ├── extract_story.py       # generalized: any repo path, writes <bundle-dir>/story.json
@@ -384,7 +386,7 @@ cobuilder-architect/
 │   ├── generate_audio.py      # TTS narration (Gemini voices)
 │   ├── extract_diffs.py       # per-PR diff extraction into the bundle
 │   ├── build_diagrams.py      # compiles authored .mmd files into data/diagrams.js, and validates them
-│   ├── build_adrs.py          # full rebuild of the self-bundle ADR projection from docs/architecture/adr/
+│   ├── build_index.py         # full rebuild of the self-bundle record index from docs/, plus the legacy adrs.js/designs.js projections
 │   ├── validate_decision_state.py
 │   ├── compute_scores.py      # review and maintenance health scores
 │   ├── html_to_pdf.py         # review and maintenance report export
@@ -439,7 +441,7 @@ Contact the author for more information.
 | `references/architecture-documentation.md` | `references/baseline-derivation.md` | Keeps describe-mode's verification discipline as the inventory procedure: enumerate modules, grep import edges in both directions, and never assert a boundary that is not verified. Drops the 8-section canvas, `boundary.yaml` authoring, and INVENTORY.md bookkeeping, replaced by one flat `inventory.yaml` file |
 | `references/stacks/*` (4 cards + README) | `references/stacks/*` | Kept verbatim. Detection precedence and ADR-topic checklists drive stack detection and extraction prompts. The `swift`, `swiftui-app`, and `vapor` cards were authored in this repo, not extracted |
 | `references/templates/adr-template.md` | `references/adr-template.md` | Pointer to the architecture template. |
-| `references/stacks/*`'s `## Boundary Rules` and `## Review Checks` | `references/review-mode.md` | Submit mode runs the grep commands in `Boundary Rules`. It never reads `## Corpus Load`. Review mode loads those paths from the architecture skill. |
+| `references/stacks/*`'s `## Boundary Rules` and `## Review Checks` | `references/review-mode.md` | Generate mode runs the grep commands in `Boundary Rules`. It never reads `## Corpus Load`. Review mode loads those paths from the architecture skill. |
 | `docs/prototypes/codebase-evolution/data/extract_story.py` | `scripts/extract_story.py` | Generalized. Takes a repo path as a parameter, selects a PR by number through merge-commit lookup, writes to `<bundle-dir>/`, and never overwrites an authored or generated narrative field |
 | `docs/prototypes/codebase-evolution/nanobanana/generate_prompts.py` | `scripts/generate_prompts.py` | Reads district and world data from the bundle instead of hand-authored `story.json` fields |
 | `utils/generate_audio.py` | `scripts/generate_audio.py` | Keeps the same flow: voice scripts feed Gemini TTS. The output path changes to `<bundle-dir>/data/audio/` |
@@ -448,7 +450,7 @@ Contact the author for more information.
 
 | Not extracted into Odyssey | Where it lives now |
 |---|---|
-| **review** and **maintenance** modes, `saas-checklist.md`, `harness-security.md`, report templates, `compute_scores.py`, `html_to_pdf.py` | `/cobuilder-architect:review` and `/cobuilder-architect:maintenance`. Self-only. Submit already reversed part of this exclusion. The full audit (scores, checklists, dual HTML reports) ships as `/cobuilder-architect:review`. |
+| **review** and **maintenance** modes, `saas-checklist.md`, `harness-security.md`, report templates, `compute_scores.py`, `html_to_pdf.py` | `/cobuilder-architect:review` and `/cobuilder-architect:maintenance`. Self-only. Generate mode already reversed part of this exclusion. The full audit (scores, checklists, dual HTML reports) ships as `/cobuilder-architect:review`. |
 | **corpus/** (~170 principle YAMLs) + **books/** (14 vendored volumes) | `skills/architecture/references/{corpus,books}/` |
 | **decisions-mode governance** (state machine, viewpoints, ADR numbering) | The architecture skill. `decision-records-lite.md` is a short Odyssey path onto that schema. |
 | **describe-mode full canvas** | `/cobuilder-architect:describe`. Self-only. Odyssey still uses the flat inventory. |

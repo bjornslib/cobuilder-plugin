@@ -706,6 +706,9 @@
         "by": "bjoerns",
         "note": "Approved in the design review session, before merge."
       }
+    ],
+    "related": [
+      "docs/architecture/designs/cobuilder-implement/intent.json"
     ]
   },
   "ADR-0013": {
@@ -776,6 +779,9 @@
         "by": "bjoerns",
         "note": "Approved in the design review session, before merge."
       }
+    ],
+    "related": [
+      "docs/architecture/designs/cobuilder-implement/intent.json"
     ]
   },
   "ADR-0014": {
@@ -883,5 +889,297 @@
       }
     ],
     "provenance": "authored"
+  },
+  "ADR-0016": {
+    "id": "ADR-0016",
+    "title": "Five sibling plugins, with the bundle as the only seam",
+    "state": "approved",
+    "source_pr": null,
+    "problem": "One plugin now carries the whole architecture lifecycle. Its four skills, thirteen commands, and twenty-two scripts serve four separate jobs, and a user who wants one job installs all four.",
+    "decision": "Split the plugin into five sibling plugins in one marketplace repository, and let them integrate only through the bundle directory on disk.",
+    "alternatives": [
+      {
+        "option": "Keep one plugin and organise inside it with directories and modes",
+        "rejected_because": "The install surface is the unit a user chooses. A directory is not installable, so a user who wants only pull-request narration still takes the whole corpus, the viewer, and the paid-art pipeline."
+      },
+      {
+        "option": "Two plugins, one per pillar, with view and publish duplicated into both",
+        "rejected_because": "The viewer reads projections that both pillars write. Two copies of one viewer drift, and the Designs / Pull-requests toggle then renders differently depending on which plugin last refreshed it."
+      },
+      {
+        "option": "Let plugins call each other's scripts directly through a shared path",
+        "rejected_because": "Not possible. A cached plugin cannot read outside its own directory, and ${CLAUDE_PLUGIN_ROOT} resolves only to that plugin's own cache."
+      },
+      {
+        "option": "Abandon the plugin format and ship one cloned repository with entry-point scripts",
+        "rejected_because": "It removes version skew by removing the install surface, which is the product. `/plugin install` and nothing else is a deliberate constraint of this project."
+      }
+    ],
+    "forces": [
+      "The install surface is fixed: no agents, no hooks, no MCP servers. A plugin installs with /plugin install and nothing else.",
+      "A cached plugin cannot reference files outside its own directory. The dependencies field guarantees co-installation, not file access.",
+      "A user can hold four different plugin versions on one machine at the same time.",
+      "The bundle holds authored prose, paid images, and paid audio. A wrong write is not recoverable by regeneration.",
+      "There is no CI, no test suite, and no package manager in this repository."
+    ],
+    "delivers": {
+      "capability": "A user installs one stage of the architecture lifecycle without installing the other three.",
+      "benefit": "Each pillar releases on its own cadence, and a team that wants only PR narration does not carry the review corpus, the viewer, and the paid-art pipeline.",
+      "beneficiary": [
+        "operator",
+        "developer"
+      ]
+    },
+    "body": "# ADR-0016 — Five sibling plugins, with the bundle as the only seam\n\n## Context\n\nThe plugin ships as one unit. It holds 4 skills, 13 commands, 22 Python\nscripts, and 1 HTML viewer. Those parts serve four separate jobs: design\na change, build it, submit and narrate the pull request, and render the\nresult. A user who wants one job installs all four.\n\nThe names have drifted with the scope. The same short words mean\ndifferent things in the two skill families, and `CLAUDE.md` now carries a\nvocabulary table to keep them apart. A vocabulary table is a symptom. The\nwords collide because one install surface holds four bounded contexts.\n\nThree facts constrain any split.\n\nThe install surface is fixed. No agents, no hooks, and no MCP servers.\nThis is deliberate, so the plugin never touches another session's\npermission surface.\n\nA cached plugin cannot read outside its own directory. The reference\ndocumentation states that paths which traverse outside the plugin root do\nnot work after installation, because those files are not copied to the\ncache. `${CLAUDE_PLUGIN_ROOT}` resolves to one plugin's own cache and\nnothing above it. The `dependencies` field in `plugin.json` guarantees\nco-installation. It does not grant file access.\n\nThe output directory holds content that a rerun cannot replace. It carries\nauthored narrative prose, paid image generation, and paid text-to-speech\naudio. `migrate_bundle.py` already treats this as the primary risk. It\nruns its whole ladder in memory over a deepcopy and refuses to write when\nan authored field changes outside a declared `touches` set.\n\n## Options considered\n\nFive options came out of a divergent exploration across five frames,\nfollowed by an isolated critic pass. `references/divergent-exploration.md`\ngoverns the procedure.\n\n1. **Abandon the plugin format.** Ship one cloned repository, invoke entry\n   points by path, and let a normal Python import handle shared modules.\n   Version skew becomes impossible by construction. Rejected: it removes\n   skew by removing the install surface, and the install surface is the\n   product.\n\n2. **Keep one plugin, organise internally.** Rejected: a directory is not\n   installable. This is the status quo, and it is what the split exists to\n   change.\n\n3. **Two plugins, one per pillar.** Duplicate the viewer into each.\n   Rejected: both pillars write projections the one viewer reads. Two\n   copies drift, and the Designs / Pull-requests toggle then depends on\n   which plugin last refreshed the file.\n\n4. **Four plugins plus a shared non-plugin directory.** Chosen, and\n   extended to five. See the Decision below.\n\n5. **Five plugins with a write-log ledger** that records which plugin\n   wrote what, so a person can reconstruct the causal chain after a\n   failure. Kept, but demoted. It is forensics, not a contract. It reports\n   a mismatch after the mismatch has already been written. ADR-0017 folds\n   the useful part of it into the compatibility record.\n\nThe critic flagged one trap. An option that shares code by symlink and\nadds a single scalar version comparison scores well on fit, and it hides\nthe hard part. A scalar comparison cannot express a sequenced migration\nladder with per-step `touches` sets. It would give false confidence while\nthe ladder logic still diverges between two installed copies. ADR-0017\nrecords what replaces it.\n\n## Decision\n\nSplit into five sibling plugins in one marketplace repository. None is\nnested inside another.\n\n| Plugin | Owns |\n|---|---|\n| `cobuilder-architect` | design, describe, decisions, review, maintenance, debug, baseline |\n| `cobuilder-pr` | generate, assess, review |\n| `cobuilder-artifact` | view, publish, and the viewer |\n| `cobuilder-implement` | builds an epic from a design |\n| `cobuilder-full-lifecycle` | one orientation skill, and the other four as dependencies |\n\nEvery plugin name carries the `cobuilder-` prefix. Duplicate-name\nvalidation in `marketplace.json` is scoped to one marketplace file, so two\nmarketplaces can each publish a plugin named `architect`. Skill namespacing\nruns off the bare `name` field, so that collision would be real.\n\n**The bundle is the only seam.** No plugin reads or imports another\nplugin's files. `cobuilder-architect` writes `designs.js` and\n`adrs.js`. `cobuilder-pr` writes `story.json`, the diffs, the diagrams, and\nthe audio. `cobuilder-artifact` reads all of it and renders.\n`cobuilder-implement` hands off through a git branch and a real pull\nrequest, which is a file-and-state seam, not a call.\n\n**A handoff is allowed. A file reference is not.** The lifecycle does hand\nwork across pillars. A finished design hands off to `cobuilder-implement`,\nand a finished implementation hands off to `cobuilder-pr:generate`. That\nhandoff names the next mode and stops. The mode reads the design directory\nand the bundle for itself. The plugin that handed off never resolves a path\ninto the other plugin's root, so the handoff survives a version skew that a\npath reference would not. This is the line the split enforces: a named mode\nis a public interface, and a file path is an internal one.\n\nIn domain-driven terms the bundle is a Published Language, not a shared\nkernel. Its shape is documented, versioned, and the contract between\ncontexts. `corpus/principles/ddd/bounded_context_integration.yaml` names\nthe anti-pattern this avoids: one shared domain package that erases the\nboundaries. The shape belongs to the bundle. It does not belong to any\nplugin that writes into it.\n\n**Out of scope for this record.** How the plugins share Python and shared\nskills, and how they stay compatible across versions, is ADR-0017. That\nseparation is deliberate. This record establishes that the seam is the\nbundle. ADR-0017 makes the seam safe.\n\n## Consequences\n\n- **Positive:** A user installs one stage without the other three.\n  `cobuilder-full-lifecycle` still installs the whole family in one\n  command.\n- **Positive:** The vocabulary collision resolves structurally. The\n  architect pillar's `review` and the pull-request pillar's `review` are\n  different commands in different namespaces, not two meanings of one\n  word.\n- **Constraint introduced:** No plugin reads or imports another plugin's\n  files. A plugin may hand off to another plugin's mode by name, and the\n  state that crosses the handoff travels in the bundle and in `docs/`.\n- **Negative / accepted:** Four plugins can be four different versions on\n  one machine. Today one plugin writes the bundle, so this failure mode\n  does not exist. The split creates it. ADR-0017 answers it, and this\n  record does not stand without that one.\n- **Negative / accepted:** Shared code must be duplicated into each\n  plugin's cache. There is no shared runtime copy, and there cannot be\n  one.\n\n## Value delivered\n\n- **New capability:** A user installs one stage of the architecture\n  lifecycle without installing the other three.\n- **Benefit:** Each pillar releases on its own cadence. A team that wants\n  only pull-request narration does not carry the review corpus, the\n  viewer, and the paid-art pipeline.\n- **Beneficiary:** operator, developer.\n\n## Maps to\n\nContext `cobuilder-packaging`, modules `.claude-plugin/`, `commands/`,\n`skills/`, `scripts/`, `viewer/`.\n\n**Flagged:** `docs/architecture/contexts/` does not exist yet, so this\nrecord has no `boundary.yaml` to anchor against. Run\n`/cobuilder-architect:describe` for the `cobuilder-packaging` context and\nwrite the boundary record before this ADR moves to `approved`. The\ninvariant above is the rule that record must carry.\n",
+    "maps_to": {
+      "context": "cobuilder-packaging",
+      "modules": [
+        ".claude-plugin/",
+        "commands/",
+        "skills/",
+        "scripts/",
+        "viewer/"
+      ],
+      "rule": "No plugin reads or imports another plugin's files. A plugin may hand off to another plugin's mode by name, and the state that crosses the handoff travels in the bundle and in docs/, never through a file path into another plugin's root."
+    },
+    "approved_by": "bjornslib",
+    "history": [
+      {
+        "state": "tentative",
+        "date": "2026-08-20"
+      },
+      {
+        "state": "decided",
+        "date": "2026-08-21"
+      },
+      {
+        "state": "approved",
+        "date": "2026-08-21"
+      }
+    ],
+    "related": [
+      "docs/architecture/adr/ADR-0017-vendored-shared-code-and-bundle-compatibility.md"
+    ]
+  },
+  "ADR-0017": {
+    "id": "ADR-0017",
+    "title": "Vendored shared code, and a compatibility gate the bundle owns",
+    "state": "approved",
+    "source_pr": null,
+    "problem": "The split of ADR-0016 gives four plugins their own vendored copy of the bundle-writing code, and a user can hold four different versions at once. Three writers already stamp a schema version into the bundle with no check at all.",
+    "decision": "Vendor shared code from one marketplace-level shared/ directory by symlink, and move the compatibility gate out of skill prose into a single required function that every writer calls before it writes.",
+    "alternatives": [
+      {
+        "option": "Copy-paste the shared modules into each plugin and keep them in step by hand",
+        "rejected_because": "Nothing keeps them in step. A stale ladder meeting a newer bundle is the exact path that discards paid art and authored prose."
+      },
+      {
+        "option": "One scalar version comparison in each entry point",
+        "rejected_because": "A scalar cannot express a sequenced ladder with per-step touches sets. Two copies can agree on the number and still disagree on what a step is allowed to change."
+      },
+      {
+        "option": "A write-log ledger as the compatibility mechanism",
+        "rejected_because": "It records a mismatch after the mismatch is written. It is forensics, not a contract. The useful half is kept as the generators map below."
+      },
+      {
+        "option": "Rely on the skill prose that already says migrate_bundle.py runs first",
+        "rejected_because": "Prose in one plugin's SKILL.md cannot bind another plugin. Across a plugin boundary the invariant has to be code."
+      }
+    ],
+    "forces": [
+      "A cached plugin cannot read a sibling plugin's files. Vendoring is the only way to share code.",
+      "A symlink elsewhere within the same marketplace is dereferenced at install, and the target content is copied into the cache in its place.",
+      "The bundle holds authored prose, paid images, and paid audio. A wrong write is not recoverable.",
+      "There is no CI and no test suite, so the gate must be runtime code, not a build check.",
+      "migrate_bundle.py already refuses on an unknown schema or a newer bundle_format, so the posture exists and needs extending, not inventing."
+    ],
+    "delivers": {
+      "capability": "Four independently-installed plugins write into one bundle without a stale copy silently destroying authored or paid content.",
+      "benefit": "The failure mode the split introduces becomes a loud refusal that names the plugin needing an update, instead of a quiet overwrite discovered weeks later.",
+      "beneficiary": [
+        "operator",
+        "developer",
+        "validator-agent"
+      ]
+    },
+    "body": "# ADR-0017 — Vendored shared code, and a compatibility gate the bundle owns\n\n## Context\n\nADR-0016 splits one plugin into five. Three of them write into one bundle\ndirectory. Four Python modules and two skills are needed by more than one\nplugin.\n\n| Shared item | Needed by |\n|---|---|\n| `_bundle_meta.py` — `SCHEMA_VERSION`, `SCHEMA_VERSION_KNOWN`, `CURRENT_BUNDLE_FORMAT` | architect, pr, artifact |\n| `_manifest.py`, `migrate_bundle.py`, `verify_bundle.py` | architect, pr, artifact |\n| `ste-writing` skill | all five |\n| `mermaid` skill | pr |\n\nA cached plugin cannot read a sibling plugin's files, so a shared runtime\ncopy is not available. Every plugin that needs a module gets its own copy\nof it. A user can then hold four different versions of that copy on one\nmachine at the same time.\n\nThree facts about the current code decide the shape of the answer.\n\n**The refusal posture already exists.** `migrate_bundle.py` lines 351 to\n372 exit with status 1 when `bundle_format` is newer than\n`CURRENT_BUNDLE_FORMAT`, and again when `schema_version` is not one the\nladder knows how to read. Both messages name the remediation.\n`verify_bundle.py` computes a `too-new` status for the same two fields.\n\n**Three writers bypass that posture.** `extract_story.py` line 599 sets\n`meta.schema_version` to its own compiled constant with no check.\n`export_artifact.py` line 428 and `_manifest.py` line 76 stamp the same\nconstant. None of the three reads `bundle.json` first. Today this is safe\nonly because the skill prose runs `migrate_bundle.py` before anything\nelse. After the split, that invariant would live as prose in four\n`SKILL.md` files owned by four plugins. Prose in one plugin cannot bind\nanother.\n\n**`generator_version` becomes wrong on the day of the split.**\n`migrate_bundle.py` line 238 writes one scalar, read from the running\nplugin's own `plugin.json`. With one writer that is accurate. With four\nwriters it records whichever plugin migrated last and silently misreports\nthe other three.\n\n## Options considered\n\n1. **Copy-paste the shared modules into each plugin.** Rejected. Nothing\n   keeps them in step. The inversion frame produced the failure recipe\n   directly: an old `cobuilder-pr` with `SCHEMA_VERSION_KNOWN` frozen at\n   `{1.0, 1.1}` runs its stale ladder against a bundle a newer\n   `cobuilder-architect` already advanced, and drops the fields it does\n   not recognise.\n\n2. **Symlink the shared modules, and add one scalar version comparison to\n   each entry point.** Rejected as a trap. It scores well because the\n   symlink half is right and the check sounds like defence in depth. A\n   scalar cannot express a sequenced ladder with per-step `touches` sets.\n   Two copies can agree on the version number and still disagree on what a\n   step may change. Its correct half is absorbed into option 4.\n\n3. **A write-log ledger.** Each script appends what it wrote, and a person\n   reconstructs the causal chain afterwards. Kept in part, demoted as a\n   mechanism. It reports the mismatch after the mismatch is on disk. Its\n   useful half is the plugin identity, which option 4 keeps as a map.\n\n4. **Vendor by symlink, and let the bundle own the gate.** Chosen. See\n   below.\n\n5. **Cut all five plugins from one marketplace tag.** Kept as the release\n   discipline underneath option 4. It makes skew within a tag impossible,\n   which narrows what the gate has to catch. It is a policy and not\n   enforceable by the install mechanism, so it supports the gate and does\n   not replace it.\n\n## Decision\n\n**Vendor shared code from one place.** A `shared/` directory at the\nmarketplace repository root holds `bundle-core/` (the four modules) and\nthe two shared skills. It is not itself a plugin. Each plugin symlinks\nwhat it needs. The documented dereference copies the target content into\nthat plugin's cache at install, so every plugin ships byte-identical code\nand no plugin reads outside itself at runtime.\n\n**Move the gate from prose into code.** `_bundle_meta.py` gains one\nfunction:\n\n```python\ndef require_compatible(bundle_dir: Path, plugin: str) -> None:\n    \"\"\"Refuse to write when this copy is older than the bundle requires.\"\"\"\n```\n\nEvery script that writes into a bundle calls it before its first write.\nThat is `extract_story.py`, `export_artifact.py`, `_manifest.py`,\n`build_adrs.py`, `build_designs.py`, and both existing gate holders. The\ninvariant stops being a sentence in a `SKILL.md` that one plugin cannot\nenforce on another, and becomes a call in the module every plugin\nvendors.\n\n**The bundle carries the floor, not the plugin.** `bundle.json` gains\n`min_reader_schema`: the schema version of the newest migration that has\never touched this bundle. `require_compatible()` refuses when that floor\nexceeds the caller's own compiled `SCHEMA_VERSION`, before any ladder step\nruns. This inverts who decides compatibility. A plugin no longer asks\nwhether its own number looks recent. It asks the bundle what the bundle\ndemands. That is the same posture as a wire format, and it is the only\nversion of the check that keeps working when nobody can enumerate the\nreaders.\n\n**`generator_version` becomes `generators`, a map.** Keyed by plugin name,\nvalued by version. Each writer updates only its own key. The scalar is\nkept as a mirror of the last writer for one migration cycle, then dropped.\nThis is the surviving half of the ledger option, at the cost of one field\ninstead of a second log file.\n\nThese changes are a `story.json` and `bundle.json` shape change, so they\nstep `SCHEMA_VERSION` to `1.3` and take a `SCHEMA_MIGRATIONS` entry with a\n`touches` set, per ADR-0006. `min_reader_schema` defaults to the bundle's\ncurrent `schema_version` for a bundle that predates the field, so no\nexisting bundle is locked out by its own new floor.\n\n**Out of scope.** Signing, checksums, or any attempt to verify that a\nvendored copy was not edited after install. The threat model here is\nversion skew between honest copies, not tampering.\n\n## Consequences\n\n- **Positive:** A stale plugin meeting a newer bundle stops before it\n  writes, and the error names the plugin that needs updating.\n- **Positive:** The gate holds for a plugin this repository does not ship\n  and did not review, because the floor lives in the data and the check\n  lives in the module that plugin vendored.\n- **Constraint introduced:** A script that writes into a bundle calls\n  `require_compatible()` first and refuses to write when the bundle's\n  `min_reader_schema` exceeds its own compiled `SCHEMA_VERSION`.\n- **Negative / accepted:** Every plugin ships its own copy of the same\n  four modules. There is no single running copy and there cannot be one.\n- **Negative / accepted:** A vendored copy goes stale the moment its\n  plugin is not reinstalled. The gate turns that into a refusal rather\n  than a corruption, and it does not prevent it.\n- **Negative / accepted:** The one-tag release discipline is policy.\n  Nothing in the install mechanism enforces it.\n\n## Value delivered\n\n- **New capability:** Four independently-installed plugins write into one\n  bundle without a stale copy silently destroying authored or paid\n  content.\n- **Benefit:** The failure mode the split introduces becomes a loud\n  refusal that names the plugin needing an update, instead of a quiet\n  overwrite found weeks later, after the paid art and the authored\n  narrative are already gone.\n- **Beneficiary:** operator, developer, validator-agent.\n\n## Maps to\n\nContext `cobuilder-packaging`, modules `scripts/_bundle_meta.py`,\n`scripts/migrate_bundle.py`, `scripts/verify_bundle.py`,\n`scripts/extract_story.py`, `scripts/export_artifact.py`,\n`scripts/_manifest.py`.\n\n**Flagged:** as with ADR-0016, `docs/architecture/contexts/` does not\nexist. The `cobuilder-packaging` boundary record must carry the invariant\nabove before this record moves to `approved`.\n\n## Unverified before implementation\n\nThe symlink dereference is documented for sharing files within a\nmarketplace, and the example given is a meta-plugin's `skills/` directory.\nIt is not stated for a directory of Python that a skill later runs through\n`${CLAUDE_PLUGIN_ROOT}`. Install a two-plugin draft from a local\nmarketplace and read what lands in the cache before this decision leaves\n`tentative`. If the dereference does not cover it, the fallback is a copy\nstep before publish. That changes the mechanism and none of the\ncompatibility reasoning above.\n",
+    "maps_to": {
+      "context": "cobuilder-packaging",
+      "modules": [
+        "scripts/_bundle_meta.py",
+        "scripts/migrate_bundle.py",
+        "scripts/verify_bundle.py",
+        "scripts/extract_story.py",
+        "scripts/export_artifact.py",
+        "scripts/_manifest.py"
+      ],
+      "rule": "A script that writes into a bundle calls require_compatible() first and refuses to write when the bundle's min_reader_schema exceeds its own compiled SCHEMA_VERSION."
+    },
+    "approved_by": "bjornslib",
+    "history": [
+      {
+        "state": "tentative",
+        "date": "2026-08-20"
+      },
+      {
+        "state": "decided",
+        "date": "2026-08-21"
+      },
+      {
+        "state": "approved",
+        "date": "2026-08-21"
+      }
+    ],
+    "related": [
+      "docs/architecture/adr/ADR-0016-five-sibling-plugins-bundle-as-seam.md"
+    ]
+  },
+  "ADR-0018": {
+    "id": "ADR-0018",
+    "title": "One lifecycle surface, and a record index that joins it",
+    "state": "approved",
+    "source_pr": null,
+    "problem": "The lifecycle produces 41 artifacts across seven reading surfaces. The joins between them are declared in the authored source and resolved nowhere, so a decision is reachable only when a change happens to cite it.",
+    "decision": "Extend the viewer to one surface covering designs, decisions, contexts, builds, and pull requests, and give it a single derived index that resolves every join between them.",
+    "alternatives": [
+      {
+        "option": "A separate page per artifact family",
+        "rejected_because": "A reader does not open eleven files to review a pull request. They open one page. Seven surfaces already exist and adding more widens the problem the index exists to close."
+      },
+      {
+        "option": "A local SQLite store for the records",
+        "rejected_because": "The viewer cannot read it. Six script tags assign window globals and export_artifact.py inlines each as literal JSON. Reaching SQLite needs a WASM build, which breaks the buildless viewer and the artifact size budget."
+      },
+      {
+        "option": "A Postgres service behind the plugin",
+        "rejected_because": "It is a service. The install surface is /plugin install and nothing else, with no agents, no hooks, and no MCP servers."
+      },
+      {
+        "option": "One file per entity type beside the existing projections",
+        "rejected_because": "It matches the pattern in data/ and it leaves the joins unresolved, which is the actual problem. One index that references everything is what makes a record reachable."
+      },
+      {
+        "option": "Leave adrs.js and designs.js in place and add the index beside them",
+        "rejected_because": "Two sources for the same records drift. The index subsumes both."
+      }
+    ],
+    "forces": [
+      "The viewer loads sibling script tags that assign window globals. That is its only input channel.",
+      "export_artifact.py inlines each projection as literal JSON into a published page.",
+      "Authored source lives in docs/ and derived projections live in the bundle. A projection is a full rebuild, never a merge.",
+      "A derived index goes stale the moment an authored file changes.",
+      "17 of 17 ADRs declare a maps_to join. Two resolve to a context. One record is reachable from nowhere."
+    ],
+    "delivers": {
+      "capability": "A person browses the decisions, the contexts, the builds, and the pull requests of a repo in one place, and follows a join from any one of them to the others.",
+      "benefit": "A decision stops being reachable by accident. The cost of finding why something was built the way it was drops from a search to a click.",
+      "beneficiary": [
+        "operator",
+        "developer"
+      ]
+    },
+    "body": "# ADR-0018 — One lifecycle surface, and a record index that joins it\n\n## Context\n\nThe lifecycle produces 41 artifacts. They land on seven reading surfaces:\nthe viewer, chat, a git diff, a GitHub pull request, a standalone report\nfile, a published page, and nothing at all.\n\nTwo surfaces carry eleven artifacts each. The git diff can be answered. The\nviewer, which is the surface built for a person to sit and read, cannot.\n\nThe joins between the records are worse. Measured against the tree on\n2026-08-21:\n\n- 17 of 17 ADRs declare a `maps_to` block.\n- 2 resolve to a bounded context. The other 15 carry `unanchored: true` and\n  point at a district, which is the inferred concept rather than the\n  verified one.\n- 16 are reachable through an `.adr-badge` chip. ADR-0013 is reachable from\n  nowhere.\n- A boundary record declares `governed_by`, the reverse of that join.\n  Nothing populates it.\n\nReachability today is incidental. A record is visible because some pull\nrequest or design happens to cite it. There is no index. A reader cannot\nbrowse the decisions, only stumble on one.\n\n## Options considered\n\n1. **A separate page per artifact family.** Rejected. Seven surfaces already\n   exist, and more of them widen the problem.\n\n2. **A local SQLite store.** A file and not a service, in the Python\n   standard library, with real query semantics. Rejected for one reason:\n   the viewer cannot read it. `viewer/index.html` loads six\n   `<script src=\"../data/*.js\">` tags that assign window globals, and\n   `export_artifact.py` inlines each as literal JSON. Reaching SQLite needs\n   a WASM build, which breaks the buildless viewer and pushes against the\n   16 MiB artifact budget. It would serve scripts and not the viewer, which\n   is two stores for one set of facts.\n\n3. **A Postgres service.** Rejected. It is a service, and the install\n   surface forbids one.\n\n4. **One file per entity type.** Rejected. It matches the pattern in `data/`\n   and leaves every join unresolved.\n\n5. **One index that references everything.** Chosen.\n\n## Decision\n\n**The viewer becomes one surface with five modes.** Designs and Pull\nrequests exist. Decisions, Contexts, and Builds are added.\n\n- **Decisions** is the index of ADRs. Its value is not the list. It is the\n  anchor column, which shows at a glance which records resolve to a verified\n  context and which do not.\n- **Contexts** renders `canvas.md` and `boundary.yaml`. Boundary violations\n  lead, because each one is recorded as an ADR candidate. The view also\n  lists the districts no context covers, which is the unverified half of\n  the map. Nobody runs Describe to reach this view. Design mode calls it\n  when a design needs a verified region to anchor against, so a context\n  bundle is a by-product of designing rather than a step a person schedules.\n- **Builds** renders a feature's gate documents. `00-status.md` is not a\n  document to display. It is the state that drives the view, so approval\n  marks and slice scores become chrome. **Builds also carries a Backlog\n  lane**, showing every epic with a null branch and every slice not yet\n  scored, ranked by the count of ADRs that depend on the epic. The lane is a\n  query over the index and not a file, so no backlog document exists to go\n  stale. This is what makes an epic the backlog record and removes the need\n  for a separate store of planned work. The view always presents work\n  epic-first, with each epic's slices nested under it, never as a flat\n  slice list with an epic column.\n\n**One index, `data/index.json` plus `index.js`.** It references every entity\nand resolves the joins. `build_index.py` rebuilds it in full from `docs/`\nplus git, and **it subsumes `build_adrs.py` and `build_designs.py`** rather\nthan sitting beside them. Two sources for one set of records would drift.\n\n**Every entity carries a stable id.** Most already do. Two do not:\n\n| Entity | Id | Status |\n|---|---|---|\n| `adr` | `ADR-NNNN` | stable |\n| `design`, `context` | directory name | stable |\n| `epic` | `<design>/<epic-id>` | must be scoped, because `E1` repeats |\n| `pull_request` | integer | stable |\n| `district` | `world.districts[].id` | already stable, newly joined |\n| `boundary_rule` | `<context>/<kind>/<n>` | new |\n| `comment` | ulid | new, see ADR-0019 |\n\n**A district joins to a context, and that join is what gives a district\nweight.** A district is inferred and a context is verified, and until now\nthey were two vocabularies for one idea with nothing between them. That is\nwhy 15 of 17 ADRs anchor to a district and are recorded as `unanchored`:\nthe anchor they do have resolves to nothing.\n\nSo a boundary record declares `verifies: [<district-id>]`, naming the\ndistricts the context covers. The index resolves the edge in both\ndirections. Three facts follow that nothing states today:\n\n- An ADR anchored to a district reaches a context through that district,\n  once one covers it. The existing anchors start resolving without a\n  rewrite.\n- A district with no context is **unverified coverage**, and the list of\n  them is the describe backlog, ranked by how many ADRs point at each.\n- A district is now the coarse map and a context is the surveyed part of\n  it. The inferred layer stops being a parallel vocabulary and becomes the\n  first pass of the verified one.\n\n**The index carries the state of a pull request, and realisation is derived\nfrom it.** An ADR's own state machine describes the lifecycle of the\n*decision*: `idea → tentative → decided → approved → challenged`. It says\nnothing about whether the code matches the decision yet, and it should not.\nThose are two axes, and collapsing them into one enum breaks both.\n\nSo the index holds `pull_request.state` as `open`, `merged`, or `closed`, and\nan ADR reaches its pull request two ways: directly through `source_pr`, or\nthrough the design and epic that delivered it. A merged pull request means the\ndecision shipped. Nothing declares that. It is computed.\n\nThis is why no new ADR state is added. `approved` stays the most final state a\nperson grants, and shipped is a fact the index reads off git.\n\nA boundary rule has three kinds, and one entity carries all three with a\n`kind` discriminator: a `forbidden_dependencies` edge prohibition, a\n`modules[].rule` invariant with its inbound and outbound lists, and a\n`context_map[]` integration pattern. They answer one question, which is what\nmay cross this boundary.\n\n**The index records what it was built from.** A `sources` block holds a\ncontent hash per `docs/` subtree plus the git head. Any mode that reads the\nindex compares the hashes first and rebuilds on a mismatch, in the same\nplace `migrate_bundle.py` already runs before every mode.\n\n**Out of scope.** The reply channel is ADR-0019. This record covers what is\nrendered and how the records join, not how a reader answers back.\n\n## Consequences\n\n- **Positive:** A decision becomes reachable by browsing rather than by\n  accident, and the anchor column makes an unresolved join visible instead\n  of silent.\n- **Positive:** Identity is the durable half of this decision and the engine\n  is the reversible half. With stable ids, a local SQLite index can be added\n  later as a build-time projection beside `index.json` without touching one\n  authored record.\n- **Constraint introduced:** Every record carries a stable id, and\n  `data/index.json` is the single derived projection that resolves the joins\n  between them.\n- **Negative / accepted:** A sixth build script, and the two it replaces\n  must be retired in the same change rather than left in place.\n- **Positive:** An approved but unshipped decision becomes visible, because\n  the index can show an ADR whose pull request is still open. Today nothing\n  distinguishes a decision that describes a target state from one the code\n  already meets. ADR-0016 is exactly that case.\n- **Negative / accepted:** A JSON index answers a lookup by id and a one-hop\n  join by loading the file. It cannot answer an arbitrary traversal without\n  loading everything. That is the threshold that would later earn SQLite.\n\n## Value delivered\n\n- **New capability:** A person browses the decisions, the contexts, the\n  builds, and the pull requests of a repo in one place, and follows a join\n  from any one of them to the others.\n- **Benefit:** A decision stops being reachable by accident. The cost of\n  finding why something was built a certain way drops from a search to a\n  click.\n- **Beneficiary:** operator, developer.\n\n## Maps to\n\nContext `cobuilder-packaging`, modules `viewer/index.html`,\n`scripts/build_adrs.py`, `scripts/build_designs.py`, `docs/architecture`.\nSee `docs/architecture/contexts/cobuilder-packaging/boundary.yaml`.\n\n## Unverified before implementation\n\nA prototype of the Decisions mode exists at\n`.lavish/decisions-register.html`, generated from the real `adrs.json`. It\nproves the data supports the view. It does not prove the viewer can carry\nfive modes without the mode switch becoming the navigation problem this\nrecord set out to solve.\n",
+    "maps_to": {
+      "context": "cobuilder-packaging",
+      "modules": [
+        "viewer/index.html",
+        "scripts/build_adrs.py",
+        "scripts/build_designs.py",
+        "docs/architecture"
+      ],
+      "rule": "Every record carries a stable id, data/index.json is the single derived projection that resolves the joins between them, a boundary record declares the districts it verifies, and realisation is derived from a pull request state rather than declared on a record."
+    },
+    "approved_by": "bjornslib",
+    "history": [
+      {
+        "state": "tentative",
+        "date": "2026-08-21"
+      },
+      {
+        "state": "decided",
+        "date": "2026-08-21"
+      },
+      {
+        "state": "approved",
+        "date": "2026-08-21"
+      }
+    ],
+    "related": [
+      "docs/plans/cobuilder-family/02a-artifact-map.md",
+      "docs/plans/cobuilder-family/02c-record-model.md"
+    ]
+  },
+  "ADR-0019": {
+    "id": "ADR-0019",
+    "title": "Anchored comments, kept as a durable ledger",
+    "state": "approved",
+    "source_pr": null,
+    "problem": "The viewer is the largest reading surface in the system and carries no way to answer. A person reads a whole pull request and has nowhere to put a reaction the agent will ever see.",
+    "decision": "Compute the anchor from the live DOM at annotation time, and append every comment to a durable append-only ledger with a stable id and an open, answered, or resolved state.",
+    "alternatives": [
+      {
+        "option": "Write a data-fb attribute into every commentable element at build time",
+        "rejected_because": "It forces the generator to decide in advance what is commentable, it pollutes the markup, and it cannot express a selection that crosses part of an element."
+      },
+      {
+        "option": "Adopt the lavish CLI",
+        "rejected_because": "It needs Node 22, npx on every call, a background Express server, and a blocking foreground poll. Against an install surface of /plugin install and nothing else, that is disqualifying."
+      },
+      {
+        "option": "Keep the clipboard hand-off that the viewer already ships",
+        "rejected_because": "It works and it needs a manual paste every time. It is kept as the fallback, not as the mechanism."
+      },
+      {
+        "option": "Publish the bundle and use the Artifact platform's own comment threads",
+        "rejected_because": "It is a real answer and it needs no new code, but it makes commenting a deliberate act rather than an available one. Kept as the second transport, not the only one."
+      },
+      {
+        "option": "Delete a comment from the store once it is delivered, as the lavish CLI does",
+        "rejected_because": "It destroys the only record of what a person said. A read must never delete."
+      }
+    ],
+    "forces": [
+      "The viewer already ships a comments drawer with localStorage persistence and a markdown export. It must be upgraded, not replaced.",
+      "A comment is the first record that is neither authored in docs/ nor derivable from it. No rebuild can reconstruct one.",
+      "view mode serves static files with python3 -m http.server. A write endpoint makes it a small application.",
+      "A reaction without its quote forces the agent to reconstruct what it referred to, which is the problem this plugin exists to remove.",
+      "The install surface forbids a hook and an MCP server, so a background command is the only wake path available."
+    ],
+    "delivers": {
+      "capability": "A reader points at one paragraph of a generated page and asks a question the agent will find.",
+      "benefit": "The largest reading surface in the system stops being one-directional, and the reaction survives the session that produced it.",
+      "beneficiary": [
+        "operator",
+        "developer"
+      ]
+    },
+    "body": "# ADR-0019 — Anchored comments, kept as a durable ledger\n\n## Context\n\nEleven artifacts converge on the viewer, more than on any other surface\nexcept a git diff. A reader can answer a git diff. A reader cannot answer\nthe viewer.\n\nThe viewer is not empty on this point. `viewer/index.html` line 705 already\nships a comments drawer. It takes a comment tagged to a whole level, keeps a\nlist, persists to `localStorage` under `odyssey-f:<repo>:<pr>`, and offers\n**Copy review as markdown**. That is a working clipboard transport, and it\nis the thing to upgrade rather than to replace.\n\nTwo problems remain. The anchor is a whole level, which is too coarse to\npoint at a claim. And the clipboard needs a person to paste, so the agent\nlearns nothing unless somebody carries it across.\n\nThe lavish CLI solves the anchoring problem well and the persistence problem\nbadly. Read from `dist/cli.mjs`, its `selector(el)` walks up to five\nancestors at annotation time, short-circuits on a real `id`, and falls back\nto `:nth-of-type`. A text selection captures a real DOM range, with a node\npath and a character offset at each end. Its `takeFeedback()` at line 7522\nthen returns the queued prompts and clears them in the same transaction.\nVerified on one machine: all 18 sessions in `~/.lavish-axi/state.json` hold\n`prompts: []`. The only lifecycle it ships anywhere belongs to\nauto-detected layout warnings, not to anything a person wrote.\n\n## Options considered\n\n1. **A `data-fb` attribute written into the page at build time.** Rejected.\n   It forces the generator to decide in advance what is commentable, it\n   pollutes the markup, and it cannot express a selection that crosses part\n   of an element.\n\n2. **Adopt the lavish CLI.** Rejected. Node 22, `npx` on every call, a\n   background Express server on port 4387, a blocking foreground poll, and a\n   dependency tree including Express, Excalidraw, Tailwind, and Mermaid. Its\n   `share` path uploads to a third-party host. The install surface forbids\n   all of it.\n\n3. **Keep the clipboard hand-off.** Kept as the fallback, not as the\n   mechanism. It needs a manual paste every time.\n\n4. **Publish the bundle and use the Artifact platform's comment threads.** A\n   real answer that needs no new code. Kept as the second transport. It\n   makes commenting deliberate rather than available.\n\n5. **Compute the anchor live, and append to a durable ledger.** Chosen.\n\n## Decision\n\n**Take the anchor from the lavish CLI. Keep the ledger it does not have.**\n\nThe anchor is computed from the live DOM when a reader selects something,\nnot written into the page when the page is built. Any element and any\nmid-sentence selection becomes annotatable with no prior authoring.\n\nOne line is appended per thread to `<bundle-dir>/feedback/threads.ndjson`:\n\n```json\n{\"id\":\"01JCXZ...\", \"state\":\"open\",\n \"entity\":{\"type\":\"pull_request\",\"id\":11,\"level\":2},\n \"anchor\":{\"selector\":\"div.level-stack > p:nth-of-type(2)\",\n           \"range\":{\"start\":[0,58],\"end\":[0,101]},\n           \"quote\":\"each carries its own vendored copy of the code\"},\n \"body\":\"is this still true after the split?\",\n \"author\":\"human\", \"ts\":\"2026-08-21T14:02:00Z\",\n \"queue_key\":\"pr11/l2/p2\"}\n```\n\n**The drawer opens on the click, and the text stays in view.** Today the\ndrawer is a mode a reader enters with the `c` key, and it covers what they\nwere reading. Reversed: a click on any element on the page opens the drawer\nwith that element already anchored, and the page shifts rather than hides\nbehind it. A reader must see the sentence they are commenting on while they\nwrite the comment. Commenting becomes the available action rather than a\nmode, which is the whole difference between a channel a person uses and one\nthey remember exists.\n\n- `state` is `open`, `answered`, or `resolved`.\n- `quote` is the fallback when a selector goes stale. It is also what makes\n  the comment readable on its own.\n- `queue_key` deduplicates a re-annotated spot before it is sent.\n- **A read never deletes.** The ledger is append-only and each reader tracks\n  its own offset. This is the single point where this record departs from\n  the mechanism it borrows from.\n\n**The agent answers in the thread, not in chat.** A reply is another line in\nthe same ledger, carrying `\"author\": \"agent\"` and `\"replies_to\": \"<thread\nid>\"`, and the drawer renders it under the comment that prompted it. The\nreader sees the answer beside the sentence they asked about, which is where\nthe question came from and where its answer belongs. A state change is a\nthird line naming only `id`, `state`, and `ts`.\n\n**The ledger keeps the history and a projection keeps the current state.**\nThe append-only rule is about not destroying what a person said. It is not a\nreason to make every reader recompute a state that a file can hold.\n`feedback/threads-state.json` maps each thread id to its current state, who\nmoved it, when, and the reply count. It is rebuilt in full from the ledger\nafter each append, and deleting it costs nothing. The ledger is the truth and\nthe field is the cache, so a writer appends first and projects second, and a\ndisagreement between the two is a bug in the projection. This is the same\nderived-projection discipline `index.json` follows.\n\nThis turns a one-way channel into a conversation. Today an answer arrives in\na chat session that the reader may not be looking at, and it loses the anchor\nthe question carried. **Threaded replies in the viewer are a required part of\nthe reply channel, and E6 delivers the record shape and the ledger they need.\nRendering a thread as a conversation is deliberately deferred past E6**, so\nthe first version ships the durable record rather than the interface. The\nrecord shape is designed for it now, because retrofitting `replies_to` onto a\nledger with real content in it is the change this deferral must not cost.\n\n**Machine findings stay in a separate channel.** An automatically detected\nproblem must not compete with human intent in one inbox.\n\n**Two transports, one record.** A published page carries the Artifact\nplatform's own threads and needs no new code. The local viewer needs\n`view` mode to accept a `POST /feedback` and append. That turns a static\nfile server into a small application, which is the real cost of the local\nhalf.\n\n**The write endpoint lands with the anchor, in the same epic.** It was open\nwhether to ship the anchor first and let a published page carry the threads\nuntil the endpoint arrived. It does not, for two reasons. A published page\nis a deliberate act and the local viewer is where the reading happens, so\nthe deferred half is the half that matters. And a comment written into\n`localStorage` before the ledger exists is a record with no id and no\nmigration guard, which is the loss this record was written to prevent. The\n`POST /feedback` endpoint is therefore part of E6 and not a follow-on.\n\n**The agent finds new threads through a background command.** The install\nsurface forbids a hook and an MCP server, so a background command that\nblocks until the ledger grows is the only wake path available. It must also\nexit on a timeout, so a session never waits forever on a reader who left.\n\n**A comment is the first record that is neither authored source nor\nderivable from it.** No rebuild can reconstruct one. It joins the paid art\nand the authored narrative as content a rebuild would destroy, so it comes\nunder `migrate_bundle.py`'s guard from the first commit rather than once one\nis worth losing.\n\n## Consequences\n\n- **Positive:** The largest reading surface in the system stops being\n  one-directional.\n- **Positive:** A reaction carries its quote, so the agent never has to\n  reconstruct what it referred to.\n- **Constraint introduced:** A comment is appended to\n  `feedback/threads.ndjson` with a stable id and a state, and a read of that\n  ledger never deletes from it.\n- **Negative / accepted:** `view` mode stops being a bare file server.\n- **Negative / accepted:** A computed selector can go stale when a page is\n  regenerated. `quote` is the recovery path, and it is a human-readable one\n  rather than an automatic one.\n\n## Value delivered\n\n- **New capability:** A reader points at one paragraph of a generated page\n  and asks a question the agent will find.\n- **Benefit:** The reaction survives the session that produced it, which is\n  what the mechanism this borrows from gets wrong.\n- **Beneficiary:** operator, developer.\n\n## Maps to\n\nContext `cobuilder-packaging`, modules `viewer/index.html`,\n`scripts/migrate_bundle.py`.\n\n## Unverified before implementation\n\nThe selector walk and the range capture were read from `dist/cli.mjs` around\nlines 5037 and 5354, and the drain behaviour at line 7522. None of it was\nrun. The Artifact platform's comment threads are documented and this session\nhas not carried one end to end.\n",
+    "maps_to": {
+      "context": "cobuilder-packaging",
+      "modules": [
+        "viewer/index.html",
+        "scripts/migrate_bundle.py"
+      ],
+      "rule": "A comment is appended to feedback/threads.ndjson with a stable id and a state, and a read of that ledger never deletes from it."
+    },
+    "approved_by": "bjornslib",
+    "history": [
+      {
+        "state": "tentative",
+        "date": "2026-08-21"
+      },
+      {
+        "state": "decided",
+        "date": "2026-08-21"
+      },
+      {
+        "state": "approved",
+        "date": "2026-08-21"
+      }
+    ],
+    "related": [
+      "docs/plans/cobuilder-family/02b-view-designs.md",
+      "docs/plans/cobuilder-family/02c-record-model.md"
+    ]
   }
 }

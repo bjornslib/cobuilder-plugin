@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoBuilder Factory — Design Review</title>
+<style>
+/*
+ * HTML Document Design System
+ * Copy this entire file into the <style> block of every document.
+ * Then extend with category-specific components as needed.
+ */
+
+:root {
+  --ivory:    #FAF9F5;
+  --slate:    #141413;
+  --clay:     #D97757;
+  --oat:      #E3DACC;
+  --olive:    #788C5D;
+  --rust:     #B04A3F;
+  --sky:      #6A8CAF;
+  --gray-150: #F0EEE6;
+  --gray-300: #D1CFC5;
+  --gray-500: #87867F;
+  --gray-700: #3D3D3A;
+  --white:    #FFFFFF;
+
+  --serif: ui-serif, Georgia, 'Times New Roman', serif;
+  --sans:  system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono:  ui-monospace, 'SF Mono', Menlo, Monaco, monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--sans);
+  background: var(--ivory);
+  color: var(--gray-700);
+  line-height: 1.55;
+  padding: 56px 32px 120px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+/* Typography */
+
+h1 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 38px;
+  line-height: 1.15;
+  color: var(--slate);
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 26px;
+  color: var(--slate);
+  letter-spacing: -0.01em;
+}
+
+h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 19px;
+  color: var(--slate);
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+}
+
+.lead {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--gray-700);
+  max-width: 640px;
+}
+
+p {
+  font-size: 15px;
+  margin-bottom: 12px;
+  max-width: 720px;
+}
+
+/* Header with Prompt Box */
+
+header.page-head {
+  margin-bottom: 48px;
+  max-width: 820px;
+}
+
+.prompt-box {
+  background: var(--gray-150);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-size: 14.5px;
+  color: var(--gray-700);
+}
+
+.prompt-box .label {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray-500);
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* Cards / Panels */
+
+.card {
+  background: var(--white);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.card-head {
+  padding: 16px 20px;
+  border-bottom: 1.5px solid var(--gray-300);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Chips / Pills / Tags */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--gray-300);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--slate);
+  background: var(--white);
+}
+
+.tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1.5px solid var(--gray-300);
+  background: var(--gray-150);
+}
+
+.tag.safe   { background: rgba(120,140,93,0.12); border-color: rgba(120,140,93,0.4); color: var(--olive); }
+.tag.medium { background: var(--oat); color: #7A6A4F; }
+.tag.risk   { background: rgba(217,119,87,0.12); border-color: rgba(217,119,87,0.45); color: var(--clay); }
+.tag.critical { background: rgba(176,74,63,0.12); border-color: rgba(176,74,63,0.4); color: var(--rust); }
+
+.risk-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.risk-dot.safe   { background: var(--olive); }
+.risk-dot.medium { background: #B89B6E; }
+.risk-dot.risk   { background: var(--clay); }
+.risk-dot.critical { background: var(--rust); }
+
+/* Tables */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+thead th {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray-500);
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1.5px solid var(--gray-300);
+}
+
+tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--gray-150);
+  color: var(--gray-700);
+}
+
+tbody tr:hover { background: var(--gray-150); }
+
+/* Code Blocks */
+
+code {
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.code-block {
+  background: var(--slate);
+  color: #E8E6DC;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.7;
+  padding: 18px 20px;
+  border-radius: 10px;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.code-block .comment { color: #8A98A0; }
+.code-block .keyword { color: #C792EA; }
+.code-block .string  { color: var(--olive); }
+
+/* Diff Blocks */
+
+.diff {
+  background: var(--slate);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+  overflow-x: auto;
+  border-radius: 10px;
+}
+
+.diff-row {
+  display: grid;
+  grid-template-columns: 48px 18px 1fr;
+  align-items: baseline;
+  padding: 0 14px 0 0;
+  white-space: pre;
+}
+
+.diff-row .ln   { text-align: right; padding-right: 14px; color: var(--gray-500); user-select: none; }
+.diff-row .mark { text-align: center; color: var(--gray-500); }
+.diff-row .code { color: #E8E6DC; }
+.diff-row.ctx .code { color: #B8B6AC; }
+.diff-row.add       { background: rgba(120,140,93,0.15); }
+.diff-row.add .mark { color: var(--olive); }
+.diff-row.del       { background: rgba(176,74,63,0.15); }
+.diff-row.del .mark { color: var(--rust); }
+.diff-row.hunk .code { color: var(--gray-500); }
+
+/* Buttons */
+
+button.primary {
+  background: var(--slate);
+  color: var(--ivory);
+  border: 1.5px solid var(--slate);
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 9px 20px;
+  cursor: pointer;
+}
+button.primary:hover { background: var(--gray-700); }
+button.primary.copied { background: var(--olive); border-color: var(--olive); }
+
+button.ghost {
+  background: transparent;
+  color: var(--gray-700);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 9px 20px;
+  cursor: pointer;
+}
+button.ghost:hover { border-color: var(--gray-500); }
+
+/* Section Structure */
+
+section { margin-bottom: 64px; }
+
+.sec-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+.sec-head .num {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--oat);
+  color: var(--slate);
+  padding: 3px 9px;
+  border-radius: 8px;
+}
+
+.sec-intro {
+  font-size: 14.5px;
+  color: var(--gray-500);
+  max-width: 720px;
+  margin-bottom: 28px;
+}
+
+/* Comment Bubbles (for code review) */
+
+.bubble {
+  position: relative;
+  background: var(--white);
+  border: 1.5px solid var(--gray-300);
+  border-left-width: 4px;
+  border-radius: 8px;
+  padding: 12px 14px 12px 16px;
+}
+
+.bubble.blocking { border-left-color: var(--clay); }
+.bubble.nit      { border-left-color: var(--gray-300); }
+
+.bubble .author {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--slate);
+  margin-bottom: 4px;
+}
+
+.bubble .text {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--gray-700);
+}
+
+/* SVG Diagrams */
+
+.diagram {
+  background: var(--white);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 12px;
+  padding: 28px;
+  overflow-x: auto;
+}
+
+.diagram svg { display: block; min-width: 760px; }
+
+.diagram text {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.caption {
+  font-size: 13px;
+  color: var(--gray-500);
+  margin-top: 12px;
+}
+
+/* Responsive Breakpoints */
+
+@media (max-width: 900px) {
+  .grid-2    { grid-template-columns: 1fr; }
+  .grid-3    { grid-template-columns: 1fr 1fr; }
+  .grid-4    { grid-template-columns: 1fr 1fr; }
+  body       { padding: 32px 20px 80px; }
+  h1         { font-size: 28px; }
+}
+
+@media (max-width: 600px) {
+  .grid-3    { grid-template-columns: 1fr; }
+  .grid-4    { grid-template-columns: 1fr; }
+}
+
+/* Utility Classes */
+
+.text-mono   { font-family: var(--mono); }
+.text-small  { font-size: 12px; color: var(--gray-500); }
+.color-safe  { color: var(--olive); }
+.color-risk  { color: var(--clay); }
+.color-crit  { color: var(--rust); }
+.color-info  { color: var(--sky); }
+.flex        { display: flex; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.gap-8       { gap: 8px; }
+.gap-12      { gap: 12px; }
+.gap-16      { gap: 16px; }
+.gap-24      { gap: 24px; }
+.mb-8        { margin-bottom: 8px; }
+.mb-16       { margin-bottom: 16px; }
+.mb-24       { margin-bottom: 24px; }
+.mb-48       { margin-bottom: 48px; }
+
+/* page-scoped extensions */
+button.primary {
+  font-family: var(--sans); font-size: 14px; font-weight: 500;
+  padding: 9px 16px; border-radius: 8px; border: 1.5px solid var(--slate);
+  background: var(--slate); color: var(--ivory); cursor: pointer;
+}
+button.primary:hover { background: var(--gray-700); }
+label input[type=radio] { margin-right: 8px; }
+label { font-size: 14px; cursor: pointer; }
+section > table { margin-top: 8px; }
+.mermaid { background: var(--white); border: 1.5px solid var(--gray-300);
+  border-radius: 12px; padding: 24px; margin: 20px 0; overflow-x: auto; }
+.mermaid svg { max-width: 100%; height: auto; }
+.card { min-width: 0; }
+.code-block { overflow-x: auto; white-space: pre; }
+@media (max-width: 900px) {
+  .page [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+}
+
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="page-head">
+  <div class="eyebrow">TECHNICAL PLAN &middot; SKILL DESIGN &middot; REV 2</div>
+  <h1>CoBuilder Factory</h1>
+  <p class="lead">A gate-driven build process that merges the Software Factory approval workflow with the CoBuilder Guardian validation pattern &mdash; and runs in any coding harness, with no pi SDK, no DOT pipeline runtime, and no external services.</p>
+  <div class="prompt-box" style="margin-top:24px">
+    <span class="label">Round 2 &mdash; what your review changed</span>
+    Round 3: division of labour with design mode settled (&sect;11), join-contract path corrected, all six questions resolved (&sect;12), plan written to docs/ (&sect;13). Round 2: answered your challenge on TS slicing (&sect;02). Light path for single-epic initiatives, dropping the research panel and skeptic (&sect;06). Epic hard-gate with remediation looping back to GREEN (&sect;05). Rubric drift solved by a BS/TS loop workflow (&sect;10). Gate names proposed (&sect;04). Design-mode integration and my recommendation (&sect;11). The 0.90-unreachable risk is removed; blindness is marked an accepted risk.
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════ -->
+<section class="mb-48">
+  <div class="eyebrow mb-8">01 &middot; WHERE THIS LANDED</div>
+  <h2 class="mb-16">The shape changed twice</h2>
+  <p>The first draft was <strong>feature &rarr; slices</strong>: four gates, then vertical slices, each gated at &ge;&nbsp;0.90 by a blind rubric. Your two interventions reshaped it.</p>
+  <p><em>&ldquo;Wouldn&rsquo;t we then have one TS for each capability/feature/epic in the BS?&rdquo;</em> &mdash; that added the middle tier. <em>&ldquo;Skeleton up front, detail just-in-time&rdquo;</em> &mdash; that made the technical design a rolling artifact instead of a big-bang one. Together they reproduce the outer/inner loop your <code>collaborative-prd</code> template already had, without the DOT graph underneath it.</p>
+
+  <div class="grid-2 gap-24 mb-24" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px">
+    <div class="card">
+      <div class="eyebrow mb-8">BEFORE &mdash; first draft</div>
+      <div class="code-block" style="font-size:12.5px">feature
+ ├─ slice 1  tracer bullet
+ ├─ slice 2  happy path
+ └─ slice 3  edge cases
+
+4 gates, 1 product doc,
+1 architecture doc,
+1 program design.</div>
+      <p class="text-small" style="margin-top:12px">Every technical decision made up front, against an imagined codebase.</p>
+    </div>
+    <div class="card" style="border-color:rgba(120,140,93,0.5)">
+      <div class="eyebrow mb-8">AFTER &mdash; this plan</div>
+      <div class="code-block" style="font-size:12.5px">BS-CHECKOUT-001   the initiative
+ ├─ E1 "guest checkout"  = feature
+ │   ├─ TS-E1  (detail, JIT)
+ │   ├─ slice 1 tracer bullet
+ │   ├─ slice 2 happy path
+ │   └─ slice 3 declined card
+ └─ E2 "saved cards"     = feature
+     ├─ TS-E2  (skeleton → detail)
+     └─ slice 1 …</div>
+      <p class="text-small" style="margin-top:12px">TS&nbsp;E2 is written <em>after</em> E1 ships, so it knows what the build actually taught you.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<section class="mb-48">
+  <div class="eyebrow mb-8">02 &middot; YOUR CHALLENGE, ANSWERED</div>
+  <h2 class="mb-16">&ldquo;Will slicing the TS really work, or is it diverging from Software Factory?&rdquo;</h2>
+  <p>It is a fair challenge and it deserves a direct answer: <strong>it is not a divergence &mdash; it is Software Factory applied recursively.</strong></p>
+  <p>Software Factory&rsquo;s scope is one <em>feature</em>. Its whole run &mdash; product doc, architecture, program design, slices &mdash; lives under a single <code>docs/plans/&lt;feature-slug&gt;/</code>. It has no opinion about what happens when you have six features, because it was never asked that question.</p>
+  <p>What we have called the <strong>epic gate is exactly a Software Factory run</strong>. One epic = one feature = Gate&nbsp;1 product framing, Gate&nbsp;2 architecture, Gate&nbsp;3 program design, Gate&nbsp;4 slices. Nothing in it is modified. The BS is a <em>new tier above</em> that scope, not a change to it.</p>
+
+  <div class="grid-2 gap-24" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px">
+    <div class="card">
+      <div class="eyebrow mb-8">SOFTWARE FACTORY, UNCHANGED</div>
+      <div class="code-block" style="font-size:12.5px">docs/plans/&lt;feature&gt;/
+  01-product.md
+  02-architecture.md
+  03-program-design.md
+  04-slices.md</div>
+      <p class="text-small" style="margin-top:12px;margin-bottom:0">One feature. Four gates. Slices at the end.</p>
+    </div>
+    <div class="card" style="border-color:rgba(106,140,175,0.5)">
+      <div class="eyebrow mb-8">SAME THING, INSIDE AN EPIC</div>
+      <div class="code-block" style="font-size:12.5px">TS-E1.md
+  §Fit / Endpoints / Data / Flow   ← 02
+  §Files / Types / Call stack      ← 03
+  §Test plan
+04-slices for E1                   ← 04</div>
+      <p class="text-small" style="margin-top:12px;margin-bottom:0">The BS carries Gate&nbsp;1 for every epic at once, because the product framing <em>is</em> initiative-wide.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:24px;border-color:rgba(217,119,87,0.5);background:rgba(217,119,87,0.05)">
+    <div class="flex gap-12" style="align-items:flex-start">
+      <span class="risk-dot risk" style="margin-top:6px"></span>
+      <div>
+        <h3 class="mb-8">But the challenge does expose a real risk</h3>
+        <p style="margin-bottom:8px">Just-in-time TS only works if epics are genuinely separable. If E3 needs a contract that E1 quietly decided differently, you find out late &mdash; exactly the failure JIT was supposed to avoid.</p>
+        <p style="margin-bottom:0"><strong>Mitigation, now part of the design:</strong> the BS declares epic <em>dependencies</em>, and each skeleton TS names the <em>cross-epic contracts</em> it exposes or consumes. Those contracts are frozen at BS approval and are the one part of a skeleton that later detailing may not silently change &mdash; altering one is a backtrack to G1, with re-approval.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<section class="mb-48">
+  <div class="eyebrow mb-8">03 &middot; TIER MODEL</div>
+  <h2 class="mb-16">One initiative, N features, M slices</h2>
+  <p>A <strong>feature is an epic</strong>, one to one. An epic is itself a vertical slice of the product &mdash; it ships something a user can see, and <strong>it must always be testable</strong>. That is the admission test for an epic: if you cannot state how you would prove it works, it is not an epic yet, and the BS is not finished.</p>
+  <div class="mermaid">flowchart TD
+    BS["BS &mdash; Business Spec<br/>one per initiative<br/><small>problem, metric, NFRs,<br/>epics + deps, risks</small>"]
+    BS --> E1["E1 &mdash; feature/epic<br/><small>own acceptance criteria<br/>MUST be testable</small>"]
+    BS --> E2["E2 &mdash; feature/epic"]
+    BS --> E3["E3 &mdash; feature/epic"]
+    E1 --> T1["TS-E1<br/><small>skeleton at BS time,<br/>detail just-in-time</small>"]
+    T1 --> S1["slice 1<br/>tracer bullet"]
+    T1 --> S2["slice 2<br/>happy path"]
+    T1 --> S3["slice 3<br/>edge cases"]
+    S1 --> R1{{"blind rubric<br/>&ge; 0.90"}}
+    S2 --> R2{{"blind rubric<br/>&ge; 0.90"}}
+    S3 --> R3{{"blind rubric<br/>&ge; 0.90"}}
+    R1 --> EG{{"EPIC RUBRIC<br/>from BS criteria<br/>HARD GATE &ge; 0.90"}}
+    R2 --> EG
+    R3 --> EG
+    EG -->|"&lt; 0.90"| REM["remediation slice<br/><small>back to GREEN with<br/>the epic feedback</small>"]
+    REM --> EG
+    EG -->|"&ge; 0.90"| E2
+    E2 -.-> T2["TS-E2 detailed<br/>only now"]
+    style BS fill:#E3DACC,stroke:#B89B6E
+    style EG fill:#D97757,stroke:#B04A3F,color:#fff
+    style REM fill:#F0EEE6,stroke:#D97757
+    style T2 fill:#F0EEE6,stroke:#D1CFC5
+  </div>
+  <p class="caption">The epic rubric is the gate the first draft did not have. It catches the gap that falls <em>between</em> slices &mdash; each slice passes on its own terms while the feature as a whole still misses a criterion the BS declared.</p>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<section class="mb-48">
+  <div class="eyebrow mb-8">04 &middot; GATES</div>
+  <h2 class="mb-16">Four numbered gates, two of them repeating</h2>
+  <p>You asked to keep G1&ndash;G4 with the repeating gate marked. Here are the names I propose.</p>
+  <table>
+    <thead><tr><th style="width:8%">Gate</th><th style="width:26%">Name</th><th style="width:14%">Cadence</th><th>Produces &mdash; and what it maps to in Software Factory</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>G1</strong></td>
+        <td><strong>Business Spec</strong></td>
+        <td><span class="tag safe">once</span></td>
+        <td><code>BS.md</code> + mockups + skeleton TS per epic. Carries SF Gate&nbsp;1 (product) for the whole initiative, plus the epic breakdown and cross-epic contracts SF never had.</td>
+      </tr>
+      <tr>
+        <td><strong>G2</strong></td>
+        <td><strong>Technical Spec</strong> <span class="tag medium">&#8635; per epic</span></td>
+        <td><span class="tag medium">&#8635; N</span></td>
+        <td><code>TS-En.md</code>, detailed just-in-time, research-verified. Carries SF Gate&nbsp;2 (architecture) and Gate&nbsp;3 (program design) for one epic.</td>
+      </tr>
+      <tr>
+        <td><strong>G3</strong></td>
+        <td><strong>Slice Plan &amp; Rubrics</strong> <span class="tag medium">&#8635; per epic</span></td>
+        <td><span class="tag medium">&#8635; N</span></td>
+        <td>Slice list in build order + the blind epic and slice rubrics. Carries SF Gate&nbsp;4a (slice plan), plus the rubric layer SF never had.</td>
+      </tr>
+      <tr>
+        <td><strong>G4</strong></td>
+        <td><strong>Acceptance</strong> <span class="tag medium">&#8635; per slice, then per epic</span></td>
+        <td><span class="tag medium">&#8635; M</span></td>
+        <td>Red&nbsp;&rarr;&nbsp;green&nbsp;&rarr;&nbsp;validate at &ge;&nbsp;0.90 per slice, then the epic rubric as a hard gate. Carries SF Gate&nbsp;4b (build the slices), with scoring replacing &ldquo;prove it works&rdquo;.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="caption">The <span class="tag medium">&#8635;</span> marker is literal in the docs and in <code>00-status.md</code>: G2 and G3 appear once per epic, G4 once per slice. A checklist that shows &ldquo;G2 &mdash; APPROVED&rdquo; without naming which epic is a bug in the status file.</p>
+
+  <h3 style="margin-top:32px" class="mb-16">The full sequence</h3>
+  <div class="mermaid">flowchart TD
+    subgraph G1G["G1 &mdash; BUSINESS SPEC &mdash; once"]
+      direction TB
+      H1["Hindsight H1<br/><small>optional, asked once</small>"] --> BSD["Draft BS<br/><small>problem, metric, NFRs, epics +<br/>deps + contracts, risks</small>"]
+      BSD --> RP["REFUTE PANEL<br/>3 agents attack the framing<br/><small>majority must fail to refute</small>"]
+      RP --> BSA(["User approves BS"])
+      BSA --> SK["Skeleton TS per epic<br/><small>one paragraph + contracts</small>"]
+    end
+    SK --> H2["Hindsight H2<br/><small>optional</small>"]
+    subgraph G2G["G2 &mdash; TECHNICAL SPEC &mdash; per epic"]
+      direction TB
+      H2 --> TSD["Detail TS-En<br/><small>architecture + program design</small>"]
+      TSD --> RES["RESEARCH<br/><small>verify framework/API/version</small>"]
+      RES --> RRP["REFUTE PANEL<br/>3 agents attack the findings"]
+      RRP --> REF["REFINE<br/><small>rewrite TS with findings as<br/>first-class content</small>"]
+      REF --> SKEP["SKEPTIC<br/><small>1 agent attacks the TS</small>"]
+      SKEP --> TSA(["User approves TS-En"])
+    end
+    TSA --> G3G["G3 &mdash; slice plan +<br/>blind rubrics"]
+    G3G --> G4G["G4 &mdash; build &amp; score"]
+    style RP fill:#D97757,stroke:#B04A3F,color:#fff
+    style RRP fill:#D97757,stroke:#B04A3F,color:#fff
+    style SKEP fill:#E3DACC,stroke:#B89B6E
+    style RES fill:#6A8CAF,stroke:#3D5A80,color:#fff
+    style BSA fill:#788C5D,stroke:#5A6B45,color:#fff
+    style TSA fill:#788C5D,stroke:#5A6B45,color:#fff
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<section class="mb-48">
+  <div class="eyebrow mb-8">05 &middot; THE LOOPS</div>
+  <h2 class="mb-16">Slice loop, and the epic remediation loop you asked for</h2>
+  <p>The slice loop is unchanged and the part I am most confident in. The roles must be separate agents: one that wrote the implementation cannot judge it, because it reads its own intent into the code.</p>
+  <div class="mermaid">flowchart LR
+    RED["RED<br/><small>write failing tests<br/>that define the contract</small>"] --> GREEN["GREEN<br/><small>minimal implementation</small>"]
+    GREEN --> VAL["VALIDATE<br/><small>independent scoring<br/>vs blind rubric</small>"]
+    VAL -->|"&ge; 0.90"| PASS(["accept &rarr; next slice"])
+    VAL -->|"&lt; 0.90, attempt &lt; 3"| GREEN
+    VAL -->|"&lt; 0.90, attempt &ge; 3"| ESC["ESCALATE<br/><small>accept with reservations,<br/>record the gap, move on</small>"]
+    VAL -->|"rigged pass detected"| VOID["VOID<br/><small>rerun from RED,<br/>costs no attempt</small>"]
+    style PASS fill:#788C5D,stroke:#5A6B45,color:#fff
+    style ESC fill:#D97757,stroke:#B04A3F,color:#fff
+    style VOID fill:#B04A3F,stroke:#8A3A31,color:#fff
+  </div>
+
+  <div class="card" style="margin-top:24px;border-color:rgba(217,119,87,0.5)">
+    <h3 class="mb-8">Epic gate: hard, with feedback going back to GREEN</h3>
+    <p>Your two notes on Q3 combine into this. When the last slice of an epic passes, the epic is scored against the BS criteria. Below 0.90 it does <strong>not</strong> close &mdash; a remediation slice is created and <em>the epic-level validator feedback goes back to the GREEN agent to incorporate and improve, until done.</em></p>
+    <p style="margin-bottom:0">One difference from the slice loop, deliberately: the slice loop escalates after 3 attempts, but you said the epic should run <em>until done</em>. So epic remediation has no automatic escalation. It does have a <strong>human circuit breaker</strong> &mdash; after every 3 remediation slices the run stops and asks you whether to continue, re-scope the epic, or accept the gap. Looping without a check-in is how an agent burns an afternoon on an unreachable criterion.</p>
+  </div>
+
+  <div class="grid-3 gap-16" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:24px">
+    <div class="card">
+      <span class="tag safe">0.0 / 0.5 / 1.0</span>
+      <p class="text-small" style="margin-top:10px;margin-bottom:0">Three values, not a continuum. A five-point scale lets a validator split the difference at 0.7 on anything ambiguous, which is how a marginal slice drifts past the gate.</p>
+    </div>
+    <div class="card">
+      <span class="tag risk">CRITICAL override</span>
+      <p class="text-small" style="margin-top:10px;margin-bottom:0">A failed critical criterion blocks acceptance regardless of average. Four perfect criteria plus one broken auth check averages 0.80 and must never ship.</p>
+    </div>
+    <div class="card">
+      <span class="tag critical">VOID &ne; low score</span>
+      <p class="text-small" style="margin-top:10px;margin-bottom:0">A test edited, skipped, weakened, or one that would pass against pre-change code &mdash; voids the run. Rerun from RED. It does not consume an attempt, because what was measured was not the thing.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<section class="mb-48">
+  <div class="eyebrow mb-8">06 &middot; LIGHT PATH</div>
+  <h2 class="mb-16">One epic means one document and no panels</h2>
+  <p>You were blunt about this and you were right: a three-epic initiative running 1 refute panel + 3 research panels + 3 skeptics is heavier than many features deserve, and <em>&ldquo;we should absolutely not run the 3 research + skeptics panel if there is only one epic&rdquo;</em>.</p>
+  <table>
+    <thead><tr><th style="width:34%">Stage</th><th style="width:33%">Full path &mdash; 2+ epics</th><th style="width:33%">Light path &mdash; 1 epic</th></tr></thead>
+    <tbody>
+      <tr><td>Documents</td><td><code>BS.md</code> + <code>TS-En.md</code> per epic</td><td><span class="tag safe">collapsed</span> one <code>SPEC.md</code></td></tr>
+      <tr><td>Refute panel on framing</td><td>3 agents</td><td><span class="tag safe">skipped</span></td></tr>
+      <tr><td>Research + refute on findings</td><td>blocking, per epic</td><td><span class="tag safe">skipped</span> unless the spec names a new dependency</td></tr>
+      <tr><td>Skeptic on the TS</td><td>1 agent per epic</td><td><span class="tag safe">skipped</span></td></tr>
+      <tr><td>Epic rubric</td><td>hard gate &ge; 0.90</td><td><span class="tag safe">skipped</span> &mdash; the slice rubrics are the epic</td></tr>
+      <tr><td>Slice rubrics + red/green/validate</td><td><span class="tag risk">always</span></td><td><span class="tag risk">always</span></td></tr>
+    </tbody>
+  </table>
+  <p class="caption">The slice loop and the &ge;&nbsp;0.90 blind gate never switch off &mdash; they are the point of the skill. What the light path removes is the design apparatus that only pays for itself when several epics must stay coherent with each other. Research still triggers on a new library, external API, or version bump, because that risk does not scale with epic count.</p>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<section class="mb-48">
+  <div class="eyebrow mb-8">07 &middot; ARTIFACTS ON DISK</div>
+  <h2 class="mb-16">Visible plan, blind rubric</h2>
+  <div class="grid-2 gap-24" style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+    <div>
+      <div class="chip mb-8"><span class="risk-dot safe"></span> VISIBLE &mdash; shared with everyone</div>
+      <div class="code-block" style="font-size:12.5px">docs/initiatives/&lt;ID&gt;/
+  00-status.md      G1..G4 per epic, scores,
+                    escalations, Hindsight flag
+  BS.md             the Business Spec
+  mockups/          one plain HTML per screen
+  TS-E1.md          per-epic Technical Spec
+  TS-E2.md
+  research-E1.md    findings + refutations</div>
+    </div>
+    <div>
+      <div class="chip mb-8"><span class="risk-dot critical"></span> BLIND &mdash; implementer must never read</div>
+      <div class="code-block" style="font-size:12.5px">.cobuilder/rubrics/&lt;ID&gt;/
+  manifest.yaml     weights, thresholds
+  epic-E1.md        cites BS criterion IDs
+  epic-E1-slice-1.md
+  epic-E1-slice-2.md
+  evidence/
+    E1-slice-1-attempt-1.md
+    E1-slice-1-feedback.md
+.cobuilder/state/&lt;ID&gt;/progress.json</div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:24px">
+    <h3 class="mb-8">Blindness is enforced three ways, not by location alone</h3>
+    <p style="margin-bottom:0">You chose an in-repo hidden folder, so the path alone protects nothing. Every implementer prompt carries <em>&ldquo;do not read anything under <code>.cobuilder/</code>&rdquo;</em>; the implementer is handed the slice description, never the rubric path; and if it reads the rubric anyway the score is <strong>voided rather than lowered</strong> &mdash; rerun from RED at no attempt cost. The one carve-out is the validator&rsquo;s <code>feedback.md</code>, which carries guidance but never criteria.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<section class="mb-48">
+  <div class="eyebrow mb-8">08 &middot; WHO CHALLENGES WHAT</div>
+  <h2 class="mb-16">Independent challenge map</h2>
+  <table>
+    <thead><tr><th>Artifact</th><th>Challenge</th><th>Rule</th><th>Light path</th></tr></thead>
+    <tbody>
+      <tr><td><strong>BS</strong> &mdash; framing &amp; epic breakdown</td><td><span class="tag critical">3-agent refute panel</span></td><td>Survives only if the majority fail to refute</td><td>skipped</td></tr>
+      <tr><td><strong>Research findings</strong></td><td><span class="tag critical">3-agent refute panel</span></td><td>Currency, version applicability, over-generalisation</td><td>only on a new dependency</td></tr>
+      <tr><td><strong>TS-En</strong></td><td><span class="tag risk">1 skeptic</span></td><td>What breaks, what was assumed without evidence, what is over-built</td><td>skipped</td></tr>
+      <tr><td><strong>Slice</strong></td><td><span class="tag medium">1 validator</span></td><td>&ge; 0.90 vs blind slice rubric</td><td><strong>always</strong></td></tr>
+      <tr><td><strong>Epic</strong></td><td><span class="tag medium">1 validator</span></td><td>&ge; 0.90 vs BS criteria &mdash; hard gate, remediation loop</td><td>skipped</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<section class="mb-48">
+  <div class="eyebrow mb-8">09 &middot; SHIPPING</div>
+  <h2 class="mb-16">Where the workflow scripts live</h2>
+  <p>A skill directory is <strong>not</strong> a workflow discovery path. Named workflows resolve from a project&rsquo;s <code>.claude/workflows/</code>; plugins auto-discover a <code>workflows/</code> directory. There is no <code>~/.claude/workflows/</code>.</p>
+  <p>Your note on rubric drift &mdash; <em>&ldquo;we can define this all in a workflow for how to run the BS/TS loop&rdquo;</em> &mdash; means there are now <strong>two</strong> scripts, not one:</p>
+  <div class="grid-2 gap-24" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:16px">
+    <div class="card">
+      <div class="eyebrow mb-8">WORKFLOW 1</div>
+      <h3 class="mb-8"><code>spec-loop.js</code></h3>
+      <p class="text-small" style="margin-bottom:0">Runs G1&ndash;G3: draft BS &rarr; refute panel &rarr; skeleton TS &rarr; per-epic detail &rarr; research &rarr; refute &rarr; refine &rarr; skeptic &rarr; rubric authoring. <strong>Also owns rubric sync</strong>: when a BS criterion changes, an agent re-derives the affected epic and slice rubrics rather than leaving them to drift.</p>
+    </div>
+    <div class="card">
+      <div class="eyebrow mb-8">WORKFLOW 2</div>
+      <h3 class="mb-8"><code>slice-loop.js</code></h3>
+      <p class="text-small" style="margin-bottom:0">Runs G4: red &rarr; green &rarr; validate per slice with the retry counter and escalation cutoff enforced in code, then the epic rubric and its remediation loop.</p>
+    </div>
+  </div>
+  <div class="card" style="margin-top:24px;border-color:rgba(106,140,175,0.5)">
+    <h3 class="mb-8">Now &rarr; planned</h3>
+    <p style="margin-bottom:0"><strong>Now:</strong> the skill copies both scripts into the target repo&rsquo;s <code>.claude/workflows/</code> on first use, with a version header so a newer skill overwrites an older copy. <strong>Planned:</strong> convert <code>cobuilder-factory</code> to a plugin &mdash; plugins auto-discover <code>workflows/</code>, <code>skills/</code>, <code>commands/</code>, and <code>agents/</code>, which removes the per-repo copy and adds <code>/cobuilder:*</code> commands. This will be documented in the skill so the copy-on-first-use reads as a bridge, not a destination.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<section class="mb-48">
+  <div class="eyebrow mb-8">10 &middot; RISKS, REVISED</div>
+  <h2 class="mb-16">What is left after your review</h2>
+  <div class="grid-2 gap-16" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div class="card" style="border-color:rgba(120,140,93,0.5)">
+      <div class="flex gap-12 mb-8" style="align-items:center"><span class="risk-dot safe"></span><strong>Ceremony exceeds the work</strong> <span class="tag safe">resolved</span></div>
+      <p class="text-small" style="margin-bottom:0">Light path (&sect;06). One epic collapses to a single spec with no panels and no epic rubric.</p>
+    </div>
+    <div class="card" style="border-color:rgba(120,140,93,0.5)">
+      <div class="flex gap-12 mb-8" style="align-items:center"><span class="risk-dot safe"></span><strong>Rubric drift across tiers</strong> <span class="tag safe">resolved</span></div>
+      <p class="text-small" style="margin-bottom:0">Epic rubrics cite BS criterion IDs, and <code>spec-loop.js</code> owns rubric re-derivation when a criterion changes. A mismatch is a gate failure, not a warning.</p>
+    </div>
+    <div class="card" style="border-color:rgba(135,134,127,0.4)">
+      <div class="flex gap-12 mb-8" style="align-items:center"><span class="risk-dot medium"></span><strong>Blindness is honour-based</strong> <span class="tag medium">accepted</span></div>
+      <p class="text-small" style="margin-bottom:0">Marked an accepted risk per your note. Nothing mechanically prevents an implementer reading <code>.cobuilder/</code>; the void rule punishes it after the fact and detection depends on the validator noticing.</p>
+    </div>
+    <div class="card">
+      <div class="flex gap-12 mb-8" style="align-items:center"><span class="risk-dot risk"></span><strong>Cross-epic contract drift</strong> <span class="tag risk">new</span></div>
+      <p class="text-small" style="margin-bottom:0">Raised by your TS-slicing challenge. JIT detailing can quietly redefine a contract another epic depends on. Mitigated by freezing declared contracts at G1, but the mitigation is a rule, not a mechanism &mdash; it depends on the skeleton naming the contracts honestly.</p>
+    </div>
+  </div>
+  <p class="caption">Removed: &ldquo;0.90 is unreachable on integration-heavy epics&rdquo; &mdash; you said it is not, so it is gone rather than restated.</p>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<section class="mb-48">
+  <div class="eyebrow mb-8">11 &middot; DESIGN MODE</div>
+  <h2 class="mb-16">The division of labour, settled</h2>
+  <p>My rev&nbsp;2 recommendation said design mode should <em>replace</em> G1. Your amendment to ADR-0011 draws the line more precisely, and better: <strong>design mode does not do epic decomposition &mdash; that is the factory&rsquo;s G1 work.</strong> Design mode&rsquo;s stage&nbsp;7 asks only whether this is one PR or several, captures the epic slugs when several, and creates the first branch.</p>
+  <p>So G1 splits in two. That keeps design mode from growing a second, weaker planning tier, which is the reason you gave and it is the right one.</p>
+
+  <div class="mermaid">flowchart LR
+    subgraph DM["DESIGN MODE &mdash; optional, prodyssey"]
+      direction TB
+      D0["0-2 name, ground, interview"] --> D3["3 explore<br/><small>divergent options</small>"]
+      D3 --> D4["4 CHALLENGE<br/><small>contests the approach</small>"]
+      D4 --> D5["5 draft<br/><small>ADR + diagrams + intent</small>"]
+      D5 --> D7["7 one PR or several?<br/><small>captures epic slugs,<br/>creates first branch</small>"]
+    end
+    D7 -->|"intent.json"| F1
+    subgraph FAC["COBUILDER FACTORY &mdash; any harness"]
+      direction TB
+      F1["G1b epic decomposition<br/><small>testable criteria, deps,<br/>cross-epic contracts</small>"] --> F2["G2 TS per epic"]
+      F2 --> F3["G3 slice plan + blind rubrics"]
+      F3 --> F4["G4 red/green/validate<br/>&ge; 0.90"]
+    end
+    style D4 fill:#D97757,stroke:#B04A3F,color:#fff
+    style F4 fill:#788C5D,stroke:#5A6B45,color:#fff
+    style F1 fill:#E3DACC,stroke:#B89B6E
+  </div>
+
+  <div class="card mb-16" style="border-color:rgba(176,74,63,0.5);background:rgba(176,74,63,0.05)">
+    <div class="flex gap-12" style="align-items:flex-start">
+      <span class="risk-dot critical" style="margin-top:6px"></span>
+      <div>
+        <h3 class="mb-8">Corrected: the join contract path</h3>
+        <p style="margin-bottom:0">Rev&nbsp;2 named the contract as <code>exports/design-&lt;name&gt;/intent.json</code>. Your cross-plan warning is correct &mdash; phase&nbsp;4b moves it. The contract is <code>docs/architecture/designs/&lt;name&gt;/intent.json</code>, and <strong>both plans must change together or the contract breaks silently</strong>. This is now recorded in the ADR rather than left in a review page, precisely because a file path agreed in a browser is a path nobody can find in six months.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-16">
+    <h3 class="mb-8">What the factory writes back</h3>
+    <p>Design mode owns <code>goal.json</code>. The factory fills in the parts only decomposition can know, after G1b:</p>
+    <div class="code-block" style="font-size:12.5px">"epics": [
+  {"id": "E1", "slug": "guest-checkout",
+   "outcome": "&lt;testable criterion&gt;",     ← factory writes
+   "branch": "design/checkout/guest-checkout",
+   "pr": 42, "state": "merged"},
+  {"id": "E2", "slug": "saved-cards",
+   "outcome": "&lt;...&gt;", "branch": null, "pr": null, "state": "planned"}
+],
+"stage": "partially-delivered"     ← delivered when every epic has a merged PR</div>
+    <p class="text-small" style="margin-top:12px;margin-bottom:0">Branch convention <code>design/&lt;design-name&gt;/&lt;epic-slug&gt;</code>, which makes the join a prefix parse. A single-epic design keeps the plain <code>design/&lt;name&gt;</code> form, so the common case adds nothing to remember. That aligns exactly with the factory&rsquo;s light path.</p>
+  </div>
+
+  <div class="card" style="border-color:rgba(120,140,93,0.5);background:rgba(120,140,93,0.06)">
+    <h3 class="mb-8">One question your amendment leaves open &mdash; my answer</h3>
+    <p style="margin-bottom:0">Rev&nbsp;2 asked whether the factory still runs its refute panel when design mode already challenged the approach (Q5, unanswered). The division of labour answers it: <strong>yes, and on a different target.</strong> Design mode&rsquo;s stage&nbsp;4 challenges <em>the approach</em>. It never challenges <em>the epic decomposition</em>, because it does not produce one. So the factory&rsquo;s refute panel moves to what it is now uniquely positioned to attack: are these epics genuinely independent, is each one testable, is one missing, do the declared cross-epic contracts hold? No signal is paid for twice.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<section class="mb-48">
+  <div class="eyebrow mb-8">12 &middot; RESOLVED</div>
+  <h2 class="mb-16">Every question from this review</h2>
+  <table>
+    <thead><tr><th style="width:8%"></th><th style="width:38%">Question</th><th>Answer</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag safe">Q1</span></td><td>Light path for small initiatives?</td><td>Yes. One epic collapses BS+TS into one spec, skips the epic rubric, and skips the research panel and skeptic.</td></tr>
+      <tr><td><span class="tag medium">Q2</span></td><td>Who writes the BS?</td><td><strong>Parked</strong> pending the design-mode merge, at your request.</td></tr>
+      <tr><td><span class="tag safe">Q3</span></td><td>Epic rubric &mdash; gate or report?</td><td>Hard gate. A remediation slice returns the epic feedback to the GREEN agent and loops until done.</td></tr>
+      <tr><td><span class="tag safe">Q4</span></td><td>Gate vocabulary?</td><td>G1&ndash;G4 kept, with G2 and G3 marked <span class="tag medium">&#8635; per epic</span> and G4 <span class="tag medium">&#8635; per slice</span>. Names in &sect;04.</td></tr>
+      <tr><td><span class="tag safe">Q5</span></td><td>Design-mode integration?</td><td>Answered by your ADR-0011 amendment: G1 splits. Design mode owns framing and challenge, the factory owns decomposition. Refute panel retargets to the decomposition.</td></tr>
+      <tr><td><span class="tag safe">Q6</span></td><td>Epic remediation circuit breaker?</td><td>Check in every 3 remediation slices.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<section class="mb-48">
+  <div class="eyebrow mb-8">13 &middot; WRITTEN OUT</div>
+  <h2 class="mb-16">The plan is now on disk, not only in this page</h2>
+  <p>Per your instruction: written as decision records and a plan document, with <strong>no implementation started</strong>. The skill files are still untouched beyond the rename.</p>
+  <table>
+    <thead><tr><th style="width:44%">File</th><th>Holds</th></tr></thead>
+    <tbody>
+      <tr><td><code>docs/adr/ADR-0012-cobuilder-factory.md</code></td><td>The three-tier build model, blind rubrics, the &ge;&nbsp;0.90 gate, the light path, and the rejected alternatives.</td></tr>
+      <tr><td><code>docs/adr/ADR-0013-design-mode-factory-join.md</code></td><td>The division of labour, the <code>intent.json</code> contract path, the <code>epics</code> array, and the branch convention.</td></tr>
+      <tr><td><code>docs/plans/cobuilder-factory.md</code></td><td>The final plan: gates, loops, artifacts, workflows, open risks, and the build order for implementing the skill.</td></tr>
+    </tbody>
+  </table>
+  <div class="card" style="margin-top:24px;background:var(--gray-150)">
+    <p style="margin-bottom:0" class="text-small">Both ADRs follow the repo&rsquo;s lite decision-record schema, and the prose follows the repo&rsquo;s STE writing standard. ADR-0013 records the contract-path coupling as a <em>constraint introduced</em>, so a future session changing either plan is told the other one moves with it.</p>
+  </div>
+</section>
+
+</div>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.15.0/dist/mermaid.esm.min.mjs";
+  const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+  const paint = document.createElement("canvas").getContext("2d");
+  function toRgba(color) {
+    paint.clearRect(0, 0, 1, 1);
+    paint.fillStyle = "#000";
+    paint.fillStyle = color;
+    paint.fillRect(0, 0, 1, 1);
+    return paint.getImageData(0, 0, 1, 1).data;
+  }
+  function compositeRgba(fg, bg) {
+    const fa = fg[3] / 255, ba = bg[3] / 255;
+    const a = fa + ba * (1 - fa);
+    if (a === 0) return [0, 0, 0, 0];
+    return [
+      (fg[0] * fa + bg[0] * ba * (1 - fa)) / a,
+      (fg[1] * fa + bg[1] * ba * (1 - fa)) / a,
+      (fg[2] * fa + bg[2] * ba * (1 - fa)) / a,
+      a * 255,
+    ];
+  }
+  function pageIsDark() {
+    const root = document.documentElement;
+    const rb = toRgba(getComputedStyle(root).backgroundColor);
+    const bb = document.body ? toRgba(getComputedStyle(document.body).backgroundColor) : [0,0,0,0];
+    const [r, g, b, a] = compositeRgba(bb, rb);
+    if (a > 0) return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 < 0.5;
+    const cs = getComputedStyle(root).colorScheme;
+    if (cs.includes("dark") && !cs.includes("light")) return true;
+    if (cs.includes("light") && !cs.includes("dark")) return false;
+    return darkQuery.matches;
+  }
+  const diagrams = [...document.querySelectorAll(".mermaid")].map((el) => ({ el, src: el.textContent }));
+  let applied, rendering = false, queued = false;
+  function queueRender() { queued = true; if (rendering) return; void render(); }
+  async function render() {
+    rendering = true;
+    try {
+      while (queued) {
+        queued = false;
+        const theme = pageIsDark() ? "dark" : "default";
+        if (theme === applied) continue;
+        mermaid.initialize({ startOnLoad: false, theme, securityLevel: "strict" });
+        for (const { el, src } of diagrams) { el.removeAttribute("data-processed"); el.textContent = src; }
+        try { await mermaid.run({ nodes: diagrams.map((d) => d.el) }); }
+        catch (error) { console.error("Mermaid diagram render failed:", error); return; }
+        applied = theme;
+      }
+    } finally { rendering = false; if (queued) queueRender(); }
+  }
+  if (document.readyState === "complete") queueRender();
+  else window.addEventListener("load", queueRender, { once: true });
+  const themeObserver = new MutationObserver(queueRender);
+  for (const el of [document.documentElement, document.body]) {
+    if (!el) continue;
+    themeObserver.observe(el, { attributes: true, attributeFilter: ["data-theme", "class", "style"] });
+  }
+  document.addEventListener("change", queueRender, true);
+  document.addEventListener("transitionend", ({ propertyName }) => {
+    if (propertyName === "background-color") queueRender();
+  }, true);
+  darkQuery.addEventListener("change", queueRender);
+</script>
+</body>
+</html>
