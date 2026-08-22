@@ -709,7 +709,7 @@ def collect_publications(bundle_dir: Path) -> tuple[list[dict], list[str]]:
 # adr_to_district. See ADR-0018 and 03-program-design.md.
 # --------------------------------------------------------------------------
 
-SLICE_TABLE_ROW_RE = re.compile(r"^\|\s*(.*?)\s*\|\s*(.*?)\s*\|\s*(.*?)\s*\|\s*(.*?)\s*\|\s*$")
+SLICE_TABLE_ROW_RE = re.compile(r"^\|\s*(.*?)\s*\|\s*(.*?)\s*\|\s*(.*?)\s*\|\s*(.*?)\s*\|(?:\s*(.*?)\s*\|)?(?:\s*(.*?)\s*\|)?")
 EPIC_HEADER_CELL_RE = re.compile(r"`([^`]+)`\s*[—–-]")
 
 
@@ -722,8 +722,8 @@ def parse_slice_header(line: str) -> str | None:
     match = SLICE_TABLE_ROW_RE.match(line)
     if not match:
         return None
-    number, epic_cell, ends_with, trailing = match.groups()
-    if number or ends_with or trailing:
+    number, epic_cell, ends_with, score, state, trailing = match.groups()
+    if number or ends_with or score or state or trailing:
         return None
     cell_match = EPIC_HEADER_CELL_RE.search(epic_cell)
     if not cell_match:
