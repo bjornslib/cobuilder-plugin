@@ -4,7 +4,7 @@
   "min_reader_schema": "1.3",
   "generators": {
     "cobuilder-architect": "0.4.0",
-    "cobuilder-pr": "0.4.0",
+    "cobuilder-pr": "0.0.0",
     "cobuilder-artifact": "0.4.0",
     "unknown-plugin": "0.0.0"
   },
