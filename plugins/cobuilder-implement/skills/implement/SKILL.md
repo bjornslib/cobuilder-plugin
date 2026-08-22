@@ -406,6 +406,7 @@ Load reference files as needed:
 | [references/rubric-authoring.md](references/rubric-authoring.md) | Authoring blind rubrics and manifest files |
 | [references/slice-loop.md](references/slice-loop.md) | Role prompts for RED, GREEN, and VALIDATE |
 | [references/validation-scoring.md](references/validation-scoring.md) | Scoring criteria and gap routing |
+| [references/goal-sync.md](references/goal-sync.md) | Sync epic status to goal.json after slice acceptance |
 | [workflows/slice-loop.js](workflows/slice-loop.js) | Multi-agent workflow automation |
 
 ---
