@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Codebase Odyssey — Option F: Merged Review</title>
+<title>CoBuilder-Architect</title>
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
@@ -56,8 +56,20 @@
     border-bottom:1px solid var(--line);background:#fff;
   }
   .tb-brand{flex:0 0 auto;justify-self:start;min-width:0;}
-  .tb-brand .brand-title{font:700 12.5px 'JetBrains Mono',monospace;letter-spacing:.14em;color:oklch(0.22 0.02 250);}
+  .tb-brand .brand-title{font:700 12.5px 'JetBrains Mono',monospace;letter-spacing:.04em;color:oklch(0.22 0.02 250);}
   .tb-brand .brand-repo{font:10.5px 'JetBrains Mono',monospace;color:var(--ink-dim);letter-spacing:.02em;margin-top:2px;}
+  .mode-switch{
+    display:flex;align-items:stretch;margin-top:8px;width:fit-content;max-width:100%;
+    border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fff;
+  }
+  .mode-switch-btn{
+    font:600 10.5px 'JetBrains Mono',monospace;letter-spacing:.03em;padding:4px 10px;
+    border:none;background:transparent;color:var(--ink-dim);cursor:pointer;white-space:nowrap;
+  }
+  .mode-switch-btn + .mode-switch-btn{border-left:1px solid var(--line);}
+  .mode-switch-btn:hover:not(.active){background:oklch(0.97 0.005 250);color:var(--ink);}
+  .mode-switch-btn.active{background:color-mix(in oklch, var(--accent) 12%, white);color:var(--accent-text);}
+  .mode-switch-btn:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
 
   .tb-center{justify-self:center;min-width:0;display:flex;align-items:center;gap:12px;}
   .tb-nav-btn{
@@ -307,15 +319,24 @@
   .adr-badge:hover{background:oklch(0.94 0.04 60);border-color:oklch(0.48 0.13 60);}
   .no-adrs{font:11.5px system-ui,sans-serif;color:var(--ink-dim);}
 
-  /* Submit-mode assessment badge: same row as the ADR badges, deliberately a
-     different hue so a verdict never reads as an ADR id. */
-  .assessment-badge{
-    font:10.5px 'JetBrains Mono',monospace;padding:4px 10px;border-radius:3px;cursor:pointer;
-    border:1px solid oklch(0.55 0.12 265);color:oklch(0.44 0.12 265);background:oklch(0.97 0.02 265);
-    display:inline-flex;align-items:center;gap:6px;
+  /* Submit-mode "PR Author Assessment" banner: sits at the top of level 2,
+     the PR's most-viewed level, since the assessment covers the whole PR
+     rather than one level specifically. Opens the same detail sheet the
+     ADR badges use. Deliberately a different hue (265) from the ADR badge's
+     (60) so a verdict never reads as an ADR id. */
+  .pr-assessment-banner{
+    display:flex;flex-direction:column;gap:8px;text-align:left;width:100%;
+    border-radius:10px;border:1px solid var(--line);background:#fff;padding:14px 18px;cursor:pointer;
+    font-family:inherit;transition:border-color .15s, box-shadow .15s;
   }
-  .assessment-badge:hover{background:oklch(0.94 0.04 265);border-color:oklch(0.48 0.13 265);}
-  .assessment-badge .ab-dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+  .pr-assessment-banner:hover{border-color:oklch(0.55 0.12 265);box-shadow:0 2px 10px rgba(30,40,55,0.06);}
+  .pr-assessment-banner:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .pab-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .pab-label{font:700 11px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:oklch(0.44 0.12 265);}
+  .pab-badges{display:flex;gap:6px;flex-wrap:wrap;}
+  .pab-summary{margin:0;font-size:13px;line-height:1.55;color:oklch(0.28 0.02 250);}
+  .pab-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;font:10.5px 'JetBrains Mono',monospace;color:var(--ink-dim);}
+  .pab-cta{color:var(--accent-text);}
 
   .beats-stack{display:flex;flex-direction:column;gap:10px;}
   .beat-card.fixed-card{height:180px;}
@@ -467,21 +488,61 @@
      just wider — reuses .drawer-header/.drawer-close/.drawer-body). Shares
      #drawer-scrim with the comments drawer; JS enforces only one open at a time. ================= */
   #adr-sheet,
-  #assessment-sheet{
+  #assessment-sheet,
+  #designs-sheet{
     position:fixed;top:0;right:0;bottom:0;width:clamp(480px, 40vw, 720px);max-width:92vw;background:#fff;
     border-left:1px solid var(--line);border-radius:14px 0 0 14px;box-shadow:-12px 0 34px rgba(20,25,35,0.2);
     transform:translateX(100%);transition:transform .25s ease;z-index:41;
     display:flex;flex-direction:column;min-height:0;
   }
   #adr-sheet.open,
-  #assessment-sheet.open{transform:translateX(0);}
+  #assessment-sheet.open,
+  #designs-sheet.open{transform:translateX(0);}
   #adr-sheet .drawer-header,
-  #assessment-sheet .drawer-header{align-items:flex-start;}
+  #assessment-sheet .drawer-header,
+  #designs-sheet .drawer-header{align-items:flex-start;}
   .adr-sheet-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px;}
   .adr-state-badge{font:10px 'JetBrains Mono',monospace;letter-spacing:.04em;padding:3px 9px;border-radius:10px;border:1px solid;text-transform:uppercase;white-space:nowrap;}
   .adr-sheet-sourceline{font:11px 'JetBrains Mono',monospace;color:var(--ink-dim);}
   #adr-sheet .drawer-body,
-  #assessment-sheet .drawer-body{overflow-y:auto;gap:16px;}
+  #assessment-sheet .drawer-body,
+  #designs-sheet .drawer-body{overflow-y:auto;gap:16px;}
+
+  /* Designs sheet — list of named designs, then a reading view. Not a fifth level. */
+  .design-list{display:flex;flex-direction:column;gap:10px;}
+  .design-card{
+    display:block;width:100%;text-align:left;border-radius:10px;border:1px solid var(--line);
+    background:#fff;padding:14px 16px;cursor:pointer;color:inherit;font:inherit;
+  }
+  .design-card:hover{border-color:var(--accent);}
+  .design-card:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .design-card-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .design-card-name{font:700 13px 'JetBrains Mono',monospace;color:oklch(0.22 0.02 250);}
+  .design-card-title{font-size:13px;line-height:1.45;color:oklch(0.3 0.02 250);margin-top:4px;}
+  .design-card-meta{font:11px 'JetBrains Mono',monospace;color:var(--ink-dim);margin-top:8px;}
+  .design-epic-list{display:flex;flex-direction:column;gap:4px;margin-top:8px;}
+  .design-epic-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font:11.5px 'JetBrains Mono',monospace;color:oklch(0.3 0.02 250);}
+  .design-epic-pr{
+    font:600 10.5px 'JetBrains Mono',monospace;padding:2px 7px;border-radius:8px;
+    border:1px solid var(--line);background:oklch(0.98 0.005 250);color:var(--ink-dim);
+  }
+  .design-epic-pr.has-pr{border-color:color-mix(in oklch, var(--accent) 50%, transparent);color:var(--accent-text);cursor:pointer;background:color-mix(in oklch, var(--accent) 6%, white);}
+  .design-epic-pr.has-pr:hover{border-color:var(--accent);}
+  #designs-sheet .diagram-viewport{height:280px;border-radius:8px;border:1px solid var(--line);}
+
+  /* A prediction is a guess, never a check. Dashed purple, not the solid
+     severity rail a pre-stage finding uses. */
+  .asm-finding.prediction{
+    border-style:dashed;border-left-style:dashed;border-left-width:3px;
+    border-left-color:oklch(0.58 0.16 300);background:oklch(0.985 0.018 300);
+  }
+  .asm-finding.prediction .asm-sev{color:oklch(0.46 0.16 300);}
+  .asm-kind-prediction{
+    display:inline-block;font:700 9.5px 'JetBrains Mono',monospace;letter-spacing:.1em;
+    text-transform:uppercase;color:oklch(0.46 0.16 300);background:oklch(0.94 0.04 300);
+    border:1px dashed oklch(0.62 0.14 300);border-radius:8px;padding:1px 7px;
+  }
+  .asm-prediction-note{font:11.5px system-ui,sans-serif;font-style:italic;color:oklch(0.46 0.16 300);margin:0 0 8px;}
 
   /* Assessment-only blocks. Everything else in the sheet reuses .adr-block,
      .ab-kicker, .force-chip, .alt-section-label, and .adr-body-md. */
@@ -573,8 +634,12 @@
 
   <div id="topbar">
     <div class="tb-brand">
-      <div class="brand-title">CODEBASE ODYSSEY</div>
+      <div class="brand-title">CoBuilder-Architect</div>
       <div class="brand-repo" id="repo-label"></div>
+      <div class="mode-switch" id="mode-switch" role="tablist" aria-label="View mode">
+        <button type="button" role="tab" class="mode-switch-btn" id="mode-btn-designs" data-mode="designs" aria-selected="false">Designs</button>
+        <button type="button" role="tab" class="mode-switch-btn" id="mode-btn-prs" data-mode="prs" aria-selected="true">Pull requests</button>
+      </div>
     </div>
     <div class="tb-center">
       <button class="tb-nav-btn" id="tb-prev" title="Previous PR (&larr;)">&#8249;</button>
@@ -588,7 +653,7 @@
   </div>
 
   <div id="queue-dots-row">
-    <span class="qd-label">Queue</span>
+    <span class="qd-label" id="qd-label">Queue</span>
     <div id="queue-dots-track"><div class="qd-line"></div></div>
   </div>
 
@@ -622,8 +687,8 @@
       <span class="decision-status mono" id="status-pill"></span>
       <div class="dock-row1-actions">
         <button class="btn-add-comment" id="btn-comments-toggle">Comments (0)</button>
-        <button class="decision-btn close-pr" id="btn-close">Close pull request</button>
-        <div class="split-btn">
+        <button class="decision-btn close-pr pr-only" id="btn-close">Close pull request</button>
+        <div class="split-btn pr-only">
           <button class="split-main" id="btn-merge">Merge pull request</button>
           <button class="split-arrow" id="btn-merge-arrow" aria-haspopup="true" title="Select merge method">&#9662;</button>
           <div class="merge-menu" id="merge-menu" hidden>
@@ -673,20 +738,34 @@
     <div class="drawer-body" id="adr-sheet-body"></div>
   </div>
 
-  <!-- Submit-mode assessment sheet (same Sheet family as the ADR sheet above,
-       reachable from the Assessment badge on level 3). Reads the timeline
-       entry's own `assessment`/`intent` blocks — there is no window.ASSESSMENTS,
-       because both live inline in story.json. Shares #drawer-scrim; only one
-       sheet is ever open. -->
-  <div id="assessment-sheet" role="dialog" aria-label="Architecture assessment">
+  <!-- Submit-mode "PR Author Assessment" sheet (same Sheet family as the ADR
+       sheet above), reachable from the assessment banner at the top of level
+       2. Reads the timeline entry's own `assessment`/`intent` blocks — there
+       is no window.ASSESSMENTS, because both live inline in story.json.
+       Shares #drawer-scrim; only one sheet is ever open. -->
+  <div id="assessment-sheet" role="dialog" aria-label="PR Author Assessment">
     <div class="drawer-header">
       <div>
-        <h2 id="assessment-sheet-title">Assessment</h2>
+        <h2 id="assessment-sheet-title">PR Author Assessment</h2>
         <div class="adr-sheet-meta" id="assessment-sheet-meta"></div>
       </div>
       <button class="drawer-close" id="assessment-sheet-close-btn" title="Close (Esc)">&times;</button>
     </div>
     <div class="drawer-body" id="assessment-sheet-body"></div>
+  </div>
+
+  <!-- Designs sheet (same Sheet family as ADR / assessment). Lists every
+       design in window.DESIGNS, then a reading view for one. Not a fifth
+       level. Shares #drawer-scrim; only one sheet is ever open. -->
+  <div id="designs-sheet" role="dialog" aria-label="Designs">
+    <div class="drawer-header">
+      <div>
+        <h2 id="designs-sheet-title">Designs</h2>
+        <div class="adr-sheet-meta" id="designs-sheet-meta"></div>
+      </div>
+      <button class="drawer-close" id="designs-sheet-close-btn" title="Close (Esc)">&times;</button>
+    </div>
+    <div class="drawer-body" id="designs-sheet-body"></div>
   </div>
 
   <!-- Narration audio dialog (shadcn Dialog look, centered). Shares #drawer-scrim above;
@@ -718,10 +797,12 @@
 </script>
 <script src="../data/adrs.js"></script>
 <script src="../data/diagrams.js"></script>
+<script src="../data/designs.js"></script>
 <script>
 window.DIFFS = window.DIFFS || {};
 window.ADRS = window.ADRS || {};
 window.DIAGRAMS = window.DIAGRAMS || {};
+window.DESIGNS = window.DESIGNS || {};
 (function(){
   'use strict';
 
@@ -731,9 +812,12 @@ window.DIAGRAMS = window.DIAGRAMS || {};
   const TIMELINE = STORY.timeline.filter(p => !EXCLUDED_PRS.includes(p.pr));
   const REPO = STORY.meta.repo;
   const N_LEVELS = 4;
+  const DESIGN_N_LEVELS = 3;
   const LEVEL_KEYS = ['landscape','problem_solution','architecture','file_changes'];
   const LEVEL_LABELS = ['Overview', 'Problem & Solution', 'Architecture', 'File Changes'];
   const LEVEL_TEASER_FALLBACK = ['World state at this point.', 'Why this PR exists.', 'How it fits the system.', 'What actually changed.'];
+  const DESIGN_LEVEL_LABELS = ['Overview', 'Problem & Solution', 'Architecture'];
+  const DESIGN_LEVEL_TEASER_FALLBACK = ['Intent, boundaries, and outcome.', 'Why this design exists.', 'How it fits the system.'];
 
   const districtsById = {};
   DISTRICTS.forEach(d => districtsById[d.id] = d);
@@ -804,6 +888,13 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     activeAdrId: null,
     // Submit-mode assessment sheet: mutually exclusive with both panels above.
     assessmentOpen: false,
+    // First-class view mode. 'prs' is the current pull-request viewer.
+    // 'designs' mirrors it with a three-level design view. Persisted.
+    viewMode: 'prs',
+    designIndex: 0,
+    // Designs sheet: leftover drawer. Main chrome no longer opens it.
+    designsOpen: false,
+    activeDesignName: null,
     // Audio dialog: mutually exclusive with every sheet above (see openAudioDialog).
     audioDialogOpen: false,
     // true while a level/PR content transition animation is in flight — guards re-entrant
@@ -875,6 +966,8 @@ window.DIAGRAMS = window.DIAGRAMS || {};
   function pr(){ return TIMELINE[state.prIndex]; }
   function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
   function levelKey(){ return LEVEL_KEYS[state.level - 1]; }
+  function viewLevelMax(){ return state.viewMode === 'designs' ? DESIGN_N_LEVELS : N_LEVELS; }
+  function isDesignsMode(){ return state.viewMode === 'designs'; }
 
   /* ============================================================
      REVIEW PERSISTENCE — localStorage odyssey-f:<repo>:<pr>
@@ -1051,6 +1144,24 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     const src = forPr && forPr[String(levelIdx)];
     return (typeof src === 'string' && src.trim()) ? src : null;
   }
+  // Designs carry their own Mermaid sources on the design object (design.diagrams),
+  // or fall back to window.DIAGRAMS keyed by the design name. Never interpolate
+  // the source into HTML — mountOneDiagram injects via .textContent.
+  function designDiagramSource(name, levelIdx){
+    const d = lookupDesign(name);
+    const diagrams = d && d.diagrams;
+    if (diagrams && typeof diagrams === 'object'){
+      const raw = diagrams[String(levelIdx)] || diagrams[levelIdx]
+        || diagrams['level-' + levelIdx] || diagrams['level' + levelIdx];
+      if (typeof raw === 'string' && raw.trim()) return raw;
+      if (raw && typeof raw.source === 'string' && raw.source.trim()) return raw.source;
+    }
+    return diagramSource(name, levelIdx);
+  }
+  function resolveDiagramSource(viewport){
+    if (viewport.dataset.design) return designDiagramSource(viewport.dataset.design, viewport.dataset.level);
+    return diagramSource(viewport.dataset.pr, viewport.dataset.level);
+  }
   // Builds just the frame's inner markup (toggle + active view) — split out from
   // heroFrame() so onArtModeToggle can replace a single frame's contents in place
   // without touching the rest of the level's DOM (and its scroll position).
@@ -1159,9 +1270,7 @@ window.DIAGRAMS = window.DIAGRAMS || {};
   async function mountOneDiagram(viewport){
     const token = String(++diagramToken);
     viewport.dataset.diagramToken = token;
-    const prNum = viewport.dataset.pr;
-    const levelIdx = viewport.dataset.level;
-    const src = diagramSource(prNum, levelIdx) || '';
+    const src = resolveDiagramSource(viewport) || '';
     const pre = viewport.querySelector('pre.mermaid');
     if (!pre) return;
 
@@ -1340,12 +1449,35 @@ window.DIAGRAMS = window.DIAGRAMS || {};
      RENDER: TOPBAR
      ============================================================ */
   function renderTopbar(){
-    const p = pr();
     document.getElementById('repo-label').textContent = REPO;
-    document.getElementById('tb-pr-label').innerHTML = `<b>PR #${p.pr}</b> · ${escapeHtml(p.title)}`;
-    document.getElementById('tb-queue-count').textContent = `${state.prIndex + 1} / ${TIMELINE.length}`;
-    document.getElementById('tb-prev').disabled = state.prIndex === 0;
-    document.getElementById('tb-next').disabled = state.prIndex === TIMELINE.length - 1;
+    const designs = isDesignsMode();
+    document.querySelectorAll('.mode-switch-btn').forEach(btn => {
+      const on = btn.dataset.mode === state.viewMode;
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    if (designs){
+      const keys = designKeys();
+      const name = currentDesignName();
+      const d = name ? lookupDesign(name) : null;
+      const title = d ? (designTitle(d) || designName(d, name)) : 'No designs';
+      document.getElementById('tb-pr-label').innerHTML = `<b>${escapeHtml(title)}</b>`;
+      document.getElementById('tb-queue-count').textContent = keys.length ? `${state.designIndex + 1} / ${keys.length}` : '0 / 0';
+      document.getElementById('tb-prev').disabled = !keys.length || state.designIndex === 0;
+      document.getElementById('tb-next').disabled = !keys.length || state.designIndex === keys.length - 1;
+      document.getElementById('tb-prev').title = 'Previous design (\u2190)';
+      document.getElementById('tb-next').title = 'Next design (\u2192)';
+    } else {
+      const p = pr();
+      document.getElementById('tb-pr-label').innerHTML = p
+        ? `<b>PR #${p.pr}</b> · ${escapeHtml(p.title)}`
+        : '<b>No pull requests</b>';
+      document.getElementById('tb-queue-count').textContent = `${state.prIndex + 1} / ${TIMELINE.length}`;
+      document.getElementById('tb-prev').disabled = state.prIndex === 0;
+      document.getElementById('tb-next').disabled = state.prIndex === TIMELINE.length - 1;
+      document.getElementById('tb-prev').title = 'Previous PR (\u2190)';
+      document.getElementById('tb-next').title = 'Next PR (\u2192)';
+    }
     renderHintsWidget();
   }
 
@@ -1378,6 +1510,20 @@ window.DIAGRAMS = window.DIAGRAMS || {};
   function saveArtMode(v){
     try { localStorage.setItem(ART_MODE_KEY, v); } catch (e) { /* unavailable */ }
   }
+
+  /* ============================================================
+     VIEW MODE PERSISTENCE — same try/catch-guarded localStorage
+     pattern as ART_MODE_KEY. Global: Designs vs Pull requests.
+     ============================================================ */
+  const VIEW_MODE_KEY = 'odyssey-f:view-mode';
+  function loadViewMode(){
+    try {
+      return localStorage.getItem(VIEW_MODE_KEY) === 'designs' ? 'designs' : 'prs';
+    } catch (e) { return 'prs'; }
+  }
+  function saveViewMode(v){
+    try { localStorage.setItem(VIEW_MODE_KEY, v === 'designs' ? 'designs' : 'prs'); } catch (e) { /* unavailable */ }
+  }
   let hintsCollapseTimer = null;
   function collapseHints(){
     if (state.hintsPinned) return; // pinned — never auto-collapses
@@ -1403,10 +1549,11 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     if (state.hintsExpanded){
       wrap.innerHTML = `
         <span class="kbd-hints">
-          <span><kbd>&larr;&rarr;</kbd>PR</span>
+          <span><kbd>&larr;&rarr;</kbd>${isDesignsMode() ? 'design' : 'PR'}</span>
           <span><kbd>&uarr;&darr;</kbd>level</span>
-          <span><kbd>m</kbd>merge</span>
+          ${isDesignsMode() ? '' : '<span><kbd>m</kbd>merge</span>'}
           <span><kbd>c</kbd>comment</span>
+          <span><kbd>d</kbd>designs</span>
           <span><kbd>space</kbd>audio</span>
         </span>
         <button class="hints-collapse-btn" id="hints-collapse-btn" title="Hide shortcuts">&#9656;</button>`;
@@ -1427,7 +1574,37 @@ window.DIAGRAMS = window.DIAGRAMS || {};
      ============================================================ */
   function renderQueueDots(){
     const track = document.getElementById('queue-dots-track');
+    const label = document.getElementById('qd-label');
+    if (label) label.textContent = isDesignsMode() ? 'Designs' : 'Queue';
     track.querySelectorAll('.qd-dot').forEach(el => el.remove());
+    if (isDesignsMode()){
+      const keys = designKeys();
+      const N = keys.length;
+      keys.forEach((name, i) => {
+        const pct = N > 1 ? (1.5 + (i / (N - 1)) * 97) : 50;
+        const isCurrent = i === state.designIndex;
+        const d = lookupDesign(name) || {};
+        const title = designTitle(d) || designName(d, name);
+        const stage = designStage(d);
+        const size = isCurrent ? 12 : 8;
+        const el = document.createElement('button');
+        el.className = 'qd-dot';
+        el.title = `${title} — ${stage}`;
+        el.style.width = size + 'px';
+        el.style.height = size + 'px';
+        el.style.left = pct + '%';
+        if (isCurrent) el.style.boxShadow = `0 0 0 3px color-mix(in oklch, ${ACCENT} 45%, transparent)`;
+        const fill = document.createElement('span');
+        fill.className = 'qd-dot-fill';
+        fill.style.background = isCurrent ? ACCENT : '#fff';
+        fill.style.border = `2px solid ${isCurrent ? ACCENT : 'rgba(30,40,55,0.35)'}`;
+        el.appendChild(fill);
+        el.addEventListener('click', () => selectDesign(i));
+        track.appendChild(el);
+        if (isCurrent) anim(fill, { scale: [1, 1.35, 1] }, { duration: 0.25, ease: 'ease-out' });
+      });
+      return;
+    }
     const N = TIMELINE.length;
     TIMELINE.forEach((p, i) => {
       const pct = N > 1 ? (1.5 + (i / (N - 1)) * 97) : 50;
@@ -1457,22 +1634,37 @@ window.DIAGRAMS = window.DIAGRAMS || {};
      RENDER: LEFT RAIL (levels + review-state chip)
      ============================================================ */
   function renderLevelRail(){
-    const p = pr();
-    // Review status now lives solely in the dock (see renderDock/pillLabel) — no duplicate
-    // chip up here.
-    const content = deriveLevelContent(p);
     const wrap = document.getElementById('rail-items');
-    wrap.innerHTML = LEVEL_LABELS.map((label, i) => {
-      const n = i + 1;
-      const active = n === state.level;
-      const key = LEVEL_KEYS[i];
-      const t = teaser((content[key] && content[key].narration) || LEVEL_TEASER_FALLBACK[i], 12);
-      return `<div class="rail-item${active ? ' active' : ''}" data-level="${n}">
-        <span class="rail-num mono">${n}</span>
-        <div class="rail-title">${escapeHtml(label)}</div>
-        <div class="rail-teaser">${escapeHtml(t)}</div>
-      </div>`;
-    }).join('');
+    if (isDesignsMode()){
+      const d = currentDesign();
+      const teasers = designRailTeasers(d);
+      wrap.innerHTML = DESIGN_LEVEL_LABELS.map((label, i) => {
+        const n = i + 1;
+        const active = n === state.level;
+        const t = teasers[i] || DESIGN_LEVEL_TEASER_FALLBACK[i];
+        return `<div class="rail-item${active ? ' active' : ''}" data-level="${n}">
+          <span class="rail-num mono">${n}</span>
+          <div class="rail-title">${escapeHtml(label)}</div>
+          <div class="rail-teaser">${escapeHtml(t)}</div>
+        </div>`;
+      }).join('');
+    } else {
+      const p = pr();
+      // Review status now lives solely in the dock (see renderDock/pillLabel) — no duplicate
+      // chip up here.
+      const content = deriveLevelContent(p);
+      wrap.innerHTML = LEVEL_LABELS.map((label, i) => {
+        const n = i + 1;
+        const active = n === state.level;
+        const key = LEVEL_KEYS[i];
+        const t = teaser((content[key] && content[key].narration) || LEVEL_TEASER_FALLBACK[i], 12);
+        return `<div class="rail-item${active ? ' active' : ''}" data-level="${n}">
+          <span class="rail-num mono">${n}</span>
+          <div class="rail-title">${escapeHtml(label)}</div>
+          <div class="rail-teaser">${escapeHtml(t)}</div>
+        </div>`;
+      }).join('');
+    }
     wrap.querySelectorAll('.rail-item').forEach(el => {
       el.addEventListener('click', () => setLevel(Number(el.dataset.level)));
     });
@@ -1484,13 +1676,25 @@ window.DIAGRAMS = window.DIAGRAMS || {};
      RENDER: NARRATION CAPTION
      ============================================================ */
   function renderCaption(){
+    if (isDesignsMode()){
+      const name = currentDesignName();
+      const d = currentDesign();
+      const label = DESIGN_LEVEL_LABELS[state.level - 1] || 'Overview';
+      const title = d ? (designTitle(d) || designName(d, name) || 'Design') : 'Design';
+      document.getElementById('caption-title').textContent = `${title} — ${label}`;
+      document.getElementById('caption-narration').textContent = designCaptionNarration(d, state.level);
+      renderContentAudio();
+      return;
+    }
     const p = pr();
     const content = deriveLevelContent(p);
     const block = content[levelKey()];
     // Reflects the current LEVEL, not the PR title again — the topbar already carries
     // "PR #73 · <title>", so repeating it here was pure duplication.
-    document.getElementById('caption-title').textContent = `PR #${p.pr} — ${LEVEL_LABELS[state.level - 1]}`;
-    document.getElementById('caption-narration').textContent = (block && block.narration) || p.tagline || '';
+    document.getElementById('caption-title').textContent = p
+      ? `PR #${p.pr} — ${LEVEL_LABELS[state.level - 1]}`
+      : (LEVEL_LABELS[state.level - 1] || '');
+    document.getElementById('caption-narration').textContent = (block && block.narration) || (p && p.tagline) || '';
     renderContentAudio();
   }
 
@@ -1500,7 +1704,7 @@ window.DIAGRAMS = window.DIAGRAMS || {};
   const commentInput = document.getElementById('comment-input');
   function renderDock(){
     const p = pr();
-    const review = loadReview(p.pr);
+    const review = p ? loadReview(p.pr) : defaultReview();
 
     const activeMethod = state.draftMergeMethod || review.mergeMethod || 'merge';
     const mergeBtn = document.getElementById('btn-merge');
@@ -1510,13 +1714,23 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     mergeArrow.classList.toggle('is-merged', review.state === 'merged');
 
     document.getElementById('btn-close').classList.toggle('active', review.state === 'closed');
+    document.querySelectorAll('.pr-only').forEach(el => { el.hidden = isDesignsMode(); });
 
     const pill = document.getElementById('status-pill');
-    const colors = STATE_COLOR[review.state] || STATE_COLOR.pending;
-    pill.textContent = pillLabel(review);
-    pill.style.color = review.state === 'pending' ? 'var(--ink-dim)' : colors.border;
-    pill.style.borderColor = colors.border;
-    pill.style.background = review.state === 'pending' ? 'transparent' : `color-mix(in oklch, ${colors.border} 10%, white)`;
+    if (isDesignsMode()){
+      const d = currentDesign();
+      const stage = d ? designStage(d) : 'none';
+      pill.textContent = String(stage).toUpperCase();
+      pill.style.color = 'var(--ink-dim)';
+      pill.style.borderColor = 'var(--line)';
+      pill.style.background = 'transparent';
+    } else {
+      const colors = STATE_COLOR[review.state] || STATE_COLOR.pending;
+      pill.textContent = pillLabel(review);
+      pill.style.color = review.state === 'pending' ? 'var(--ink-dim)' : colors.border;
+      pill.style.borderColor = colors.border;
+      pill.style.background = review.state === 'pending' ? 'transparent' : `color-mix(in oklch, ${colors.border} 10%, white)`;
+    }
 
     document.getElementById('btn-comments-toggle').textContent = `Comments (${review.comments.length})`;
     document.getElementById('comment-level-chip').textContent = levelKey();
@@ -1543,7 +1757,9 @@ window.DIAGRAMS = window.DIAGRAMS || {};
      reflows whether or not a track exists for the current level)
      ============================================================ */
   function currentAudioFile(){
+    if (isDesignsMode()) return '';
     const p = pr();
+    if (!p) return '';
     return `pr${p.pr}_${levelKey()}.wav`;
   }
   function renderContentAudio(){
@@ -1573,6 +1789,10 @@ window.DIAGRAMS = window.DIAGRAMS || {};
      ============================================================ */
   function renderMainContent(){
     const main = document.getElementById('main-content');
+    if (isDesignsMode()){
+      renderDesignMainContent(main);
+      return;
+    }
     const p = pr();
     const touched = p.touched || {};
     const content = deriveLevelContent(p);
@@ -1660,11 +1880,14 @@ window.DIAGRAMS = window.DIAGRAMS || {};
 
       setMainHtml(main, `
         <div class="level-stack narrow">
+          ${assessmentBannerHtml(p)}
           ${heroFrame(p.pr, 2, `Before/after PR #${p.pr}`)}
           <div class="chip-row">${touchHtml}</div>
           ${grid}
           ${altHtml}
         </div>`);
+      const bannerEl = main.querySelector('#pr-assessment-banner');
+      if (bannerEl) bannerEl.addEventListener('click', openAssessmentSheet);
 
     } else if (state.level === 3){
       const arch = content.architecture;
@@ -1674,15 +1897,6 @@ window.DIAGRAMS = window.DIAGRAMS || {};
       const adrHtml = adrs.length
         ? adrs.map(a => `<button class="adr-badge" data-adr-id="${escapeHtml(a)}">${escapeHtml(a)}</button>`).join('')
         : `<span class="no-adrs">No ADRs recorded for this PR.</span>`;
-
-      // Assessment badge, only when submit mode actually left one behind. A PR
-      // generated before submit mode existed simply shows no badge.
-      const asm = p.assessment;
-      const assessmentHtml = (asm && asm.verdict)
-        ? `<button class="assessment-badge" id="assessment-badge" title="Architecture assessment (submit mode)">
-             <span class="ab-dot"></span>Assessment: ${escapeHtml(asm.verdict)}
-           </button>`
-        : '';
 
       const boxesHtml = DISTRICTS.map(d => {
         const isTouched = !!touched[d.id];
@@ -1704,15 +1918,13 @@ window.DIAGRAMS = window.DIAGRAMS || {};
       setMainHtml(main, `
         <div class="level-stack narrow">
           ${heroFrame(p.pr, 3, `PR #${p.pr} architecture diagram`)}
-          <div class="adr-row">${adrHtml}${assessmentHtml}</div>
+          <div class="adr-row">${adrHtml}</div>
           <div class="district-boxes">${boxesHtml}</div>
           ${beatsHtml}
         </div>`);
       main.querySelectorAll('.adr-badge[data-adr-id]').forEach(btn => {
         btn.addEventListener('click', () => openAdrSheet(btn.dataset.adrId));
       });
-      const asmBtn = main.querySelector('#assessment-badge');
-      if (asmBtn) asmBtn.addEventListener('click', openAssessmentSheet);
 
     } else {
       const fc = content.file_changes;
@@ -1778,6 +1990,141 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     }
 
     // Reset scroll + cue state whenever content is rebuilt.
+    main.scrollTop = 0;
+    hideCue();
+  }
+
+  function renderDesignMainContent(main){
+    const name = currentDesignName();
+    const d = currentDesign();
+    if (!name || !d){
+      setMainHtml(main, `
+        <div class="level-stack narrow">
+          <div class="empty-card">
+            <div class="empty-detail">No designs yet. Run <code>/cobuilder-architect:design</code> to author one.</div>
+          </div>
+        </div>`);
+      main.scrollTop = 0;
+      hideCue();
+      return;
+    }
+
+    if (state.level === 1){
+      const intent = d.intent || {};
+      const g = designGoal(d);
+      const oos = [].concat(intent.out_of_scope || (g && g.out_of_scope) || []).filter(Boolean);
+      const outcome = designOutcome(d);
+      const hasIntent = !!(intent.problem || intent.approach || intent.why_now);
+      const intentHtml = `
+        <div class="adr-block problem">
+          <div class="ab-kicker">Intent</div>
+          ${intent.problem ? `<p>${escapeHtml(intent.problem)}</p>` : ''}
+          ${intent.approach ? `<p>${escapeHtml(intent.approach)}</p>` : ''}
+          ${intent.why_now ? `<p>${escapeHtml(intent.why_now)}</p>` : ''}
+          ${hasIntent ? '' : '<p>No intent recorded for this design.</p>'}
+        </div>`;
+      const boundsHtml = `
+        <div class="adr-block">
+          <div class="ab-kicker" style="color:var(--accent-text);">Boundaries</div>
+          ${oos.length
+            ? `<div class="chip-row">${oos.map(x => `<span class="force-chip">${escapeHtml(x)}</span>`).join('')}</div>`
+            : '<p>No out-of-scope boundaries recorded.</p>'}
+        </div>`;
+      const outcomeHtml = `
+        <div class="adr-block decision">
+          <div class="ab-kicker">Outcome</div>
+          <p>${escapeHtml(outcome || 'No outcome recorded.')}</p>
+        </div>`;
+      setMainHtml(main, `
+        <div class="level-stack narrow">
+          ${intentHtml}
+          ${boundsHtml}
+          ${outcomeHtml}
+          ${designHeroFrame(name, 1, `${designTitle(d) || name} overview diagram`)}
+        </div>`);
+    } else if (state.level === 2){
+      const ps = designProblemSolution(d);
+      const bgTexts = (ps.beats || []).filter(b => b.kind === 'background').map(b => b.text);
+      const intTexts = (ps.beats || []).filter(b => b.kind === 'intuition').map(b => b.text);
+      const cardHtml = (kicker, cls, texts, emptyMsg) => `
+        <div class="fixed-card evidence ${cls}">
+          <div class="fc-kicker">${escapeHtml(kicker)}</div>
+          <div class="fc-body">${texts.length ? texts.map(t => `<p>${escapeHtml(t)}</p>`).join('') : `<span class="fc-empty">${escapeHtml(emptyMsg)}</span>`}</div>
+        </div>`;
+      const grid = `
+        <div class="grid-2x2">
+          ${cardHtml('Background', '', bgTexts, 'No background evidence recorded.')}
+          ${cardHtml('Intuition', '', intTexts, 'No intuition evidence recorded.')}
+          <div class="fixed-card problem">
+            <div class="fc-kicker">&#9888; The Problem</div>
+            <div class="fc-body"><p>${escapeHtml(ps.problem || 'No problem statement recorded.')}</p></div>
+          </div>
+          <div class="fixed-card solution">
+            <div class="fc-kicker">&#128161; The Solution</div>
+            <div class="fc-body"><p>${escapeHtml(ps.solution || 'No solution statement recorded.')}</p></div>
+          </div>
+        </div>`;
+      const alternatives = (ps.alternatives || []).filter(a => a.option || a.rejected);
+      const altHtml = alternatives.length ? `
+        <div>
+          <div class="alt-section-label">Rejected alternatives</div>
+          <div class="alt-row">
+            ${alternatives.map(alt => `
+              <div class="alt-card">
+                <div class="alt-opt">${escapeHtml(alt.option)}</div>
+                <div class="alt-rej">&times; ${escapeHtml(alt.rejected)}</div>
+              </div>`).join('')}
+          </div>
+        </div>` : '';
+      setMainHtml(main, `
+        <div class="level-stack narrow">
+          ${grid}
+          ${altHtml}
+        </div>`);
+    } else {
+      const adrIds = designAdrIds(d);
+      const adrHtml = adrIds.length
+        ? adrIds.map(a => `<button class="adr-badge" data-adr-id="${escapeHtml(a)}">${escapeHtml(a)}</button>`).join('')
+        : '<span class="no-adrs">No ADRs recorded for this design.</span>';
+      const epics = designEpics(d);
+      const epicBlocks = epics.length ? epics.map(epic => {
+        const label = epic.name || epic.slug || epic.id || 'epic';
+        const prNum = epicPrNumber(epic);
+        const prChip = prNum == null
+          ? '<span class="design-epic-pr">no PR yet</span>'
+          : `<button type="button" class="design-epic-pr has-pr" data-pr="${prNum}">PR #${prNum}</button>`;
+        const stateChip = epic.state
+          ? `<span class="adr-state-badge" style="background:oklch(0.96 0.02 250);color:var(--ink-dim);border-color:var(--line);">${escapeHtml(String(epic.state))}</span>`
+          : '';
+        const outcome = epic.outcome || '';
+        return `
+          <div class="adr-block">
+            <div class="ab-kicker" style="color:var(--accent-text);">${escapeHtml(String(label))}</div>
+            <div class="design-epic-row">${prChip}${stateChip}</div>
+            ${outcome ? `<p>${escapeHtml(outcome)}</p>` : ''}
+          </div>`;
+      }).join('') : `<div class="empty-card"><div class="empty-detail">No epics recorded for this design.</div></div>`;
+      const beats = designArchitectureBeats(d);
+      const beatsHtml = beats.length
+        ? `<div class="beats-stack">${beats.map(beatCard).join('')}</div>`
+        : '';
+      const diagramLevels = [2, 3].filter(lvl => !!designDiagramSource(name, lvl));
+      const diagramsHtml = diagramLevels.length
+        ? diagramLevels.map(lvl => designHeroFrame(name, lvl, `${designTitle(d) || name} ${DESIGN_LEVEL_LABELS[lvl - 1]} diagram`)).join('')
+        : `<div class="empty-card"><div class="empty-detail">No diagrams authored for this design.</div></div>`;
+      setMainHtml(main, `
+        <div class="level-stack narrow">
+          <div class="adr-row">${adrHtml}</div>
+          ${epicBlocks}
+          ${beatsHtml}
+          ${diagramsHtml}
+        </div>`);
+      main.querySelectorAll('.adr-badge[data-adr-id]').forEach(btn => {
+        btn.addEventListener('click', () => openAdrSheet(btn.dataset.adrId));
+      });
+      wireDesignEpicPrButtons(main);
+    }
+
     main.scrollTop = 0;
     hideCue();
   }
@@ -1954,6 +2301,7 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     if (state.commentsOpen) state.commentsOpen = false;
     if (state.adrOpen) state.adrOpen = false;
     if (state.assessmentOpen) state.assessmentOpen = false;
+    if (state.designsOpen) closeDesignsSheet();
     state.audioDialogOpen = true;
     renderAudioDialogContent();
     const dialog = document.getElementById('audio-dialog');
@@ -2028,7 +2376,10 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     const bottomEl = document.getElementById('scroll-cue-bottom');
     const topEl = document.getElementById('scroll-cue-top');
     if (state.scrollCue === 'bottom'){
-      const nextLabel = state.level < N_LEVELS ? LEVEL_LABELS[state.level] : 'next PR →';
+      const labels = isDesignsMode() ? DESIGN_LEVEL_LABELS : LEVEL_LABELS;
+      const nextLabel = state.level < viewLevelMax()
+        ? labels[state.level]
+        : (isDesignsMode() ? 'next design →' : 'next PR →');
       bottomEl.textContent = `⌄ keep scrolling → ${nextLabel}`;
       const wasHidden = bottomEl.hidden;
       bottomEl.hidden = false;
@@ -2094,8 +2445,10 @@ window.DIAGRAMS = window.DIAGRAMS || {};
   function advanceFromCue(dir){
     hideCue();
     if (dir === 'down'){
-      if (state.level < N_LEVELS) setLevel(state.level + 1);
-      else if (state.prIndex < TIMELINE.length - 1) selectPR(state.prIndex + 1);
+      if (state.level < viewLevelMax()) setLevel(state.level + 1);
+      else if (isDesignsMode()){
+        if (state.designIndex < designKeys().length - 1) selectDesign(state.designIndex + 1);
+      } else if (state.prIndex < TIMELINE.length - 1) selectPR(state.prIndex + 1);
     } else {
       if (state.level > 1) setLevel(state.level - 1);
       // No defined behavior for "previous PR" at level 1's top per spec — clamp.
@@ -2176,7 +2529,11 @@ window.DIAGRAMS = window.DIAGRAMS || {};
      ============================================================ */
   function selectPR(i){
     if (state.transitioning) return;
-    const next = clamp(i, 0, TIMELINE.length - 1);
+    if (state.viewMode !== 'prs'){
+      state.viewMode = 'prs';
+      saveViewMode('prs');
+    }
+    const next = clamp(i, 0, Math.max(0, TIMELINE.length - 1));
     const dir = next > state.prIndex ? 1 : (next < state.prIndex ? -1 : 0);
     const prevIndex = state.prIndex;
     const apply = () => {
@@ -2197,7 +2554,7 @@ window.DIAGRAMS = window.DIAGRAMS || {};
   }
   function setLevel(lvl){
     if (state.transitioning) return;
-    const next = clamp(lvl, 1, N_LEVELS);
+    const next = clamp(lvl, 1, viewLevelMax());
     const dir = next > state.level ? 1 : (next < state.level ? -1 : 0);
     const apply = () => {
       state.level = next;
@@ -2206,6 +2563,37 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     };
     if (dir === 0){ apply(); return; }
     transitionContent('y', dir, apply);
+  }
+  function selectDesign(i){
+    if (state.transitioning) return;
+    const keys = designKeys();
+    if (!keys.length) return;
+    const next = clamp(i, 0, keys.length - 1);
+    const dir = next > state.designIndex ? 1 : (next < state.designIndex ? -1 : 0);
+    const apply = () => {
+      state.designIndex = next;
+      if (state.level > DESIGN_N_LEVELS) state.level = 1;
+      stopAudio();
+      renderAll();
+    };
+    if (dir === 0){ apply(); return; }
+    transitionContent('x', dir, apply);
+  }
+  function setViewMode(mode){
+    if (mode !== 'prs' && mode !== 'designs') return;
+    if (state.viewMode === mode) return;
+    if (state.transitioning) return;
+    state.viewMode = mode;
+    saveViewMode(mode);
+    if (mode === 'designs'){
+      if (state.level > DESIGN_N_LEVELS) state.level = DESIGN_N_LEVELS;
+      const keys = designKeys();
+      if (state.designIndex >= keys.length) state.designIndex = Math.max(0, keys.length - 1);
+      if (state.designsOpen) closeDesignsSheet();
+    }
+    closeMergeMenu();
+    stopAudio();
+    renderAll();
   }
   function jumpToFileChanges(districtId){
     state.level = 4;
@@ -2219,22 +2607,24 @@ window.DIAGRAMS = window.DIAGRAMS || {};
   }
 
   /* ============================================================
-     COMMENTS DRAWER + ADR SHEET + ASSESSMENT SHEET (shadcn Sheet look, recreated
-     in vanilla JS/CSS). All three panels share one #drawer-scrim; opening any one
-     closes the others first, so at most one sheet is ever open — this is the
-     "only one sheet at a time" rule.
+     COMMENTS DRAWER + ADR SHEET + ASSESSMENT SHEET + DESIGNS SHEET (shadcn Sheet
+     look, recreated in vanilla JS/CSS). All four panels share one #drawer-scrim;
+     opening any one closes the others first, so at most one sheet is ever open
+     — this is the "only one sheet at a time" rule.
      ============================================================ */
   function renderSheetVisibility(){
     document.getElementById('comments-drawer').classList.toggle('open', state.commentsOpen);
     document.getElementById('adr-sheet').classList.toggle('open', state.adrOpen);
     document.getElementById('assessment-sheet').classList.toggle('open', state.assessmentOpen);
+    document.getElementById('designs-sheet').classList.toggle('open', state.designsOpen);
     const scrim = document.getElementById('drawer-scrim');
-    scrim.classList.toggle('open', state.commentsOpen || state.adrOpen || state.assessmentOpen || state.audioDialogOpen);
+    scrim.classList.toggle('open', state.commentsOpen || state.adrOpen || state.assessmentOpen || state.designsOpen || state.audioDialogOpen);
     scrim.classList.toggle('audio-dim', state.audioDialogOpen);
   }
   function openCommentsDrawer(){
     if (state.adrOpen){ state.adrOpen = false; }
     if (state.assessmentOpen){ state.assessmentOpen = false; }
+    if (state.designsOpen) closeDesignsSheet();
     if (state.audioDialogOpen) stopAudio(); // mutual exclusivity: closes + stops the audio dialog
     state.commentsOpen = true;
     renderSheetVisibility();
@@ -2247,6 +2637,7 @@ window.DIAGRAMS = window.DIAGRAMS || {};
   function openAdrSheet(id){
     if (state.commentsOpen){ state.commentsOpen = false; }
     if (state.assessmentOpen){ state.assessmentOpen = false; }
+    if (state.designsOpen) closeDesignsSheet();
     if (state.audioDialogOpen) stopAudio(); // mutual exclusivity: closes + stops the audio dialog
     state.adrOpen = true;
     state.activeAdrId = id;
@@ -2260,6 +2651,7 @@ window.DIAGRAMS = window.DIAGRAMS || {};
   function openAssessmentSheet(){
     if (state.commentsOpen){ state.commentsOpen = false; }
     if (state.adrOpen){ state.adrOpen = false; }
+    if (state.designsOpen) closeDesignsSheet();
     if (state.audioDialogOpen) stopAudio(); // mutual exclusivity: closes + stops the audio dialog
     state.assessmentOpen = true;
     renderAssessmentSheet();
@@ -2269,10 +2661,28 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     state.assessmentOpen = false;
     renderSheetVisibility();
   }
+  function openDesignsSheet(){
+    if (state.commentsOpen){ state.commentsOpen = false; }
+    if (state.adrOpen){ state.adrOpen = false; }
+    if (state.assessmentOpen){ state.assessmentOpen = false; }
+    if (state.audioDialogOpen) stopAudio();
+    state.designsOpen = true;
+    state.activeDesignName = null;
+    renderDesignsSheet();
+    renderSheetVisibility();
+  }
+  function closeDesignsSheet(){
+    if (!state.designsOpen) return;
+    state.designsOpen = false;
+    const body = document.getElementById('designs-sheet-body');
+    if (body) unmountDiagrams(body);
+    renderSheetVisibility();
+  }
   function closeAnyOpenSheet(){
     if (state.commentsOpen) closeCommentsDrawer();
     else if (state.adrOpen) closeAdrSheet();
     else if (state.assessmentOpen) closeAssessmentSheet();
+    else if (state.designsOpen) closeDesignsSheet();
     else if (state.audioDialogOpen) stopAudio();
   }
 
@@ -2477,7 +2887,49 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     return `<span class="adr-state-badge" style="background:${bg};color:${fg};border-color:${border};">${escapeHtml((v || 'unknown').toUpperCase())}</span>`;
   }
 
-  /* `leadHtml`/`tailHtml` are pre-escaped markup slotted above the answer and
+  const AUTHORSHIP_LABEL = {
+    human: 'Human-authored',
+    'agent-assisted': 'Agent-supported',
+    'agent-generated': 'Agent-driven',
+  };
+  const AUTHORSHIP_COLOR = {
+    human:             ['oklch(0.96 0.02 250)', 'oklch(0.4 0.03 250)',  'oklch(0.6 0.03 250)'],
+    'agent-assisted':  ['oklch(0.95 0.05 265)', 'oklch(0.42 0.12 265)', 'oklch(0.6 0.1 265)'],
+    'agent-generated': ['oklch(0.94 0.07 300)', 'oklch(0.42 0.15 300)', 'oklch(0.6 0.13 300)'],
+  };
+
+  function authorshipBadgeHtml(authorship){
+    if (!authorship) return '';
+    const label = AUTHORSHIP_LABEL[authorship] || authorship;
+    const [bg, fg, border] = AUTHORSHIP_COLOR[authorship] || ['oklch(0.96 0.02 250)', 'var(--ink-dim)', 'var(--line)'];
+    return `<span class="adr-state-badge" style="background:${bg};color:${fg};border-color:${border};">${escapeHtml(label.toUpperCase())}</span>`;
+  }
+
+  // "PR Author Assessment" banner — sits at the top of level 2 (see level-2
+  // render branch). Opens the same #assessment-sheet the old level-3 badge
+  // used to. Verdict and authorship are shown side by side, deliberately
+  // neither replacing the other: verdict is a judgment about the change,
+  // authorship is a fact about who wrote it, and conflating them would lose
+  // information a reviewer needs.
+  function assessmentBannerHtml(p){
+    const a = p.assessment;
+    if (!a || !a.verdict) return '';
+    const intent = p.intent || null;
+    return `
+      <button class="pr-assessment-banner" id="pr-assessment-banner" title="Open the full PR Author Assessment">
+        <div class="pab-top">
+          <span class="pab-label">PR Author Assessment</span>
+          <span class="pab-badges">${verdictBadgeHtml(a.verdict)}${authorshipBadgeHtml(intent && intent.authorship)}</span>
+        </div>
+        ${a.summary ? `<p class="pab-summary">${escapeHtml(a.summary)}</p>` : ''}
+        <div class="pab-foot">
+          <span>${a.risk_tier ? `risk: ${escapeHtml(a.risk_tier)}` : ''}</span>
+          <span class="pab-cta">View full assessment &rarr;</span>
+        </div>
+      </button>`;
+  }
+
+    /* `leadHtml`/`tailHtml` are pre-escaped markup slotted above the answer and
      below the evidence row. They exist so the Q3 caller can compose its verdict
      label and its `duplicates` citation in one pass. Patching this function's
      output with .replace() afterwards silently lost the citation whenever the
@@ -2505,22 +2957,23 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     const body = document.getElementById('assessment-sheet-body');
 
     if (!a){
-      titleEl.textContent = 'Assessment';
+      titleEl.textContent = 'PR Author Assessment';
       metaEl.innerHTML = '';
       body.innerHTML = `
         <div class="empty-card">
-          <div class="empty-detail">No assessment recorded for this PR. Run <code>/prodyssey:submit</code> against it.</div>
+          <div class="empty-detail">No assessment recorded for this PR. Run <code>/cobuilder-architect:submit</code> against it.</div>
         </div>`;
       return;
     }
 
-    titleEl.textContent = `PR #${p.pr} — assessment`;
+    titleEl.textContent = `PR #${p.pr} — PR Author Assessment`;
     const metaBits = [
       a.risk_tier ? `risk: ${a.risk_tier}` : '',
       a.stage === 'post' ? 'post-merge' : 'pre-merge',
       a.generated ? a.generated : '',
     ].filter(Boolean).join(' · ');
     metaEl.innerHTML = verdictBadgeHtml(a.verdict)
+      + authorshipBadgeHtml(intent && intent.authorship)
       + (metaBits ? `<span class="adr-sheet-sourceline">${escapeHtml(metaBits)}</span>` : '');
 
     const summaryHtml = a.summary ? `
@@ -2534,7 +2987,6 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     if (intent && intent.problem){
       const flags = [
         intent.source === 'inferred' ? 'intent inferred, not stated by the author' : '',
-        intent.authorship && intent.authorship !== 'human' ? `authorship: ${intent.authorship}` : '',
         (intent.unknowns || []).length ? `${intent.unknowns.length} author-flagged unknown(s)` : '',
       ].filter(Boolean);
       intentHtml = `
@@ -2647,8 +3099,463 @@ window.DIAGRAMS = window.DIAGRAMS || {};
     }
   }
 
-  document.getElementById('tb-prev').addEventListener('click', () => selectPR(state.prIndex - 1));
-  document.getElementById('tb-next').addEventListener('click', () => selectPR(state.prIndex + 1));
+  /* ============================================================
+     DESIGNS SHEET — list every key in window.DESIGNS, then a
+     reading view for one design. Predictions never look like checks.
+     ============================================================ */
+  function designsRecord(){
+    return window.DESIGNS || {};
+  }
+  function designKeys(){
+    const rec = designsRecord();
+    if (Array.isArray(rec)){
+      return rec.map((d, i) => (d && (d.name || d.id)) || String(i));
+    }
+    return Object.keys(rec);
+  }
+  function lookupDesign(name){
+    const rec = designsRecord();
+    if (Array.isArray(rec)){
+      return rec.find(d => d && ((d.goal && d.goal.name === name) || d.name === name || d.id === name)) || rec[Number(name)] || null;
+    }
+    return Object.prototype.hasOwnProperty.call(rec, name) ? rec[name] : null;
+  }
+  // build_designs.py nests goal.json under `goal`. A flat record (name/title/stage
+  // on the design itself) is also accepted so a hand-written designs.js still renders.
+  function designGoal(d){
+    return (d && d.goal && typeof d.goal === 'object') ? d.goal : (d || {});
+  }
+  function designTitle(d){
+    const g = designGoal(d);
+    return (g && g.title) || (d && d.title) || '';
+  }
+  function designName(d, fallback){
+    const g = designGoal(d);
+    return (g && g.name) || (d && d.name) || fallback || '';
+  }
+  function designStage(d){
+    const g = designGoal(d);
+    return (g && g.stage) || (d && d.stage) || 'unknown';
+  }
+  function roundsCount(d){
+    const g = designGoal(d);
+    const rounds = (g && g.rounds) || (d && d.rounds);
+    if (Array.isArray(rounds)) return rounds.length;
+    if (typeof rounds === 'number') return rounds;
+    return 0;
+  }
+  function designEpics(d){
+    const g = designGoal(d);
+    if (g && Array.isArray(g.epics)) return g.epics;
+    return (d && Array.isArray(d.epics)) ? d.epics : [];
+  }
+  function designAdrIds(d){
+    if (!d) return [];
+    const g = designGoal(d);
+    const seen = new Set();
+    const out = [];
+    const add = (id) => {
+      if (typeof id !== 'string') return;
+      const t = id.trim();
+      if (!t || seen.has(t)) return;
+      seen.add(t);
+      out.push(t);
+    };
+    if (g && Array.isArray(g.adrs)) g.adrs.forEach(add);
+    if (g){
+      if (typeof g.adr === 'string') add(g.adr);
+      else if (g.adr && typeof g.adr === 'object') add(g.adr.id || g.adr.adr_id);
+      add(g.adr_id);
+    }
+    if (typeof d.adr === 'string') add(d.adr);
+    else if (d.adr && typeof d.adr === 'object') add(d.adr.id || d.adr.adr_id);
+    add(d.adr_id || d.adrId);
+    return out;
+  }
+  function designAdrId(d){
+    const ids = designAdrIds(d);
+    return ids.length ? ids[0] : null;
+  }
+  function currentDesignName(){
+    const keys = designKeys();
+    if (!keys.length) return null;
+    return keys[clamp(state.designIndex, 0, keys.length - 1)] || null;
+  }
+  function currentDesign(){
+    const name = currentDesignName();
+    return name ? lookupDesign(name) : null;
+  }
+  function designProblemSolution(d){
+    const n = d && d.narrative && d.narrative.problem_solution;
+    if (n && typeof n === 'object'){
+      const alts = Array.isArray(n.alternatives) ? n.alternatives : [];
+      return {
+        problem: n.problem || '',
+        solution: n.solution || n.approach || '',
+        beats: Array.isArray(n.beats) ? n.beats : [],
+        alternatives: alts.map(a => ({
+          option: (a && (a.option || a.title)) || '',
+          rejected: (a && (a.rejected || a.rejected_because)) || '',
+        })),
+        narration: n.narration || '',
+      };
+    }
+    const intent = (d && d.intent) || {};
+    const beats = [];
+    if (intent.why_now) beats.push({ kind: 'background', text: intent.why_now });
+    const alts = Array.isArray(intent.alternatives) ? intent.alternatives : [];
+    return {
+      problem: intent.problem || '',
+      solution: intent.approach || '',
+      beats,
+      alternatives: alts.map(a => ({
+        option: (a && (a.option || a.title)) || '',
+        rejected: (a && (a.rejected || a.rejected_because)) || '',
+      })),
+      narration: intent.problem || '',
+    };
+  }
+  function designArchitectureBeats(d){
+    const arch = d && d.narrative && d.narrative.architecture;
+    if (!arch || typeof arch !== 'object') return [];
+    if (Array.isArray(arch.beats)) return arch.beats.filter(b => b && b.text);
+    const beats = [];
+    ['forces', 'contract', 'boundary'].forEach(kind => {
+      const v = arch[kind];
+      if (typeof v === 'string' && v.trim()) beats.push({ kind, text: v });
+      else if (Array.isArray(v)){
+        v.forEach(item => {
+          const text = typeof item === 'string' ? item : (item && item.text) || '';
+          if (text) beats.push({ kind, text });
+        });
+      }
+    });
+    return beats;
+  }
+  function designRailTeasers(d){
+    const ps = designProblemSolution(d);
+    const outcome = designOutcome(d);
+    const intent = (d && d.intent) || {};
+    const epics = designEpics(d);
+    return [
+      teaser(outcome || intent.problem || DESIGN_LEVEL_TEASER_FALLBACK[0], 12),
+      teaser(ps.problem || DESIGN_LEVEL_TEASER_FALLBACK[1], 12),
+      teaser((epics[0] && (epics[0].outcome || epics[0].name || epics[0].slug || epics[0].id)) || DESIGN_LEVEL_TEASER_FALLBACK[2], 12),
+    ];
+  }
+  function designCaptionNarration(d, level){
+    if (!d) return '';
+    const n = d.narrative || {};
+    if (level === 1){
+      return (n.overview && n.overview.narration) || designOutcome(d) || (d.intent && d.intent.problem) || '';
+    }
+    if (level === 2){
+      const ps = designProblemSolution(d);
+      return ps.narration || ps.problem || '';
+    }
+    if (n.architecture && n.architecture.narration) return n.architecture.narration;
+    const epics = designEpics(d);
+    if (epics.length) return `${epics.length} epic${epics.length === 1 ? '' : 's'} on this design.`;
+    return '';
+  }
+  function designHeroFrame(name, levelIdx, alt){
+    if (levelIdx > 3) return '';
+    if (!name || !designDiagramSource(name, levelIdx)){
+      return `<div class="empty-card"><div class="empty-detail">No diagrams authored for this design.</div></div>`;
+    }
+    return `<div class="hero-frame" data-design="${escapeHtml(name)}" data-level="${levelIdx}" data-alt="${escapeHtml(alt)}"><div class="diagram-viewport" data-diagram data-design="${escapeHtml(name)}" data-level="${levelIdx}"><pre class="mermaid"></pre></div></div>`;
+  }
+  function designPrDraft(d){
+    if (!d) return '';
+    return d['pr-draft'] || d.pr_draft || d.prDraft || '';
+  }
+  function designOutcome(d){
+    const g = designGoal(d);
+    return (g && g.outcome) || (d && d.outcome) || '';
+  }
+  function epicPrNumber(epic){
+    if (!epic || epic.pr == null || epic.pr === '') return null;
+    const n = Number(epic.pr);
+    return Number.isFinite(n) ? n : null;
+  }
+  function designEpicRowsHtml(epics){
+    if (!epics.length){
+      return '<div class="design-card-meta">No epics recorded.</div>';
+    }
+    return `<div class="design-epic-list">${epics.map(epic => {
+      const prNum = epicPrNumber(epic);
+      const label = epic.slug || epic.id || 'epic';
+      const prChip = prNum == null
+        ? '<span class="design-epic-pr">no PR yet</span>'
+        : `<button type="button" class="design-epic-pr has-pr" data-pr="${prNum}">PR #${prNum}</button>`;
+      const stateChip = epic.state
+        ? `<span class="adr-state-badge" style="background:oklch(0.96 0.02 250);color:var(--ink-dim);border-color:var(--line);">${escapeHtml(String(epic.state))}</span>`
+        : '';
+      return `<div class="design-epic-row"><span>${escapeHtml(String(label))}</span>${prChip}${stateChip}</div>`;
+    }).join('')}</div>`;
+  }
+  function designFindingCard(f){
+    const isPred = f && f.kind === "prediction";
+    const sev = (f && f.severity) || 'note';
+    const kindLabel = isPred
+      ? '<span class="asm-kind-prediction">prediction</span>'
+      : escapeHtml(sev);
+    const extra = [
+      isPred && sev ? escapeHtml(sev) : '',
+      f && f.district ? escapeHtml(f.district) : '',
+    ].filter(Boolean).join(' · ');
+    return `
+      <div class="asm-finding ${isPred ? 'prediction' : escapeHtml(sev)}">
+        <div class="asm-sev">${kindLabel}${extra ? ` · ${extra}` : ''}</div>
+        <div class="asm-claim">${escapeHtml((f && f.claim) || '')}</div>
+        ${f && f.evidence ? `<div class="asm-ev">${escapeHtml(f.evidence)}</div>` : ''}
+        ${f && f.suggestion ? `<div class="asm-fix">${escapeHtml(f.suggestion)}</div>` : ''}
+      </div>`;
+  }
+  function renderDesignAssessment(a, intent){
+    if (!a){
+      return `
+        <div class="empty-card">
+          <div class="empty-detail">No design assessment recorded.</div>
+        </div>`;
+    }
+    const summaryHtml = a.summary ? `
+      <div class="adr-block decision">
+        <div class="ab-kicker">Summary</div>
+        <p>${escapeHtml(a.summary)}</p>
+      </div>` : '';
+    let intentHtml = '';
+    if (intent && intent.problem){
+      intentHtml = `
+        <div class="adr-block problem">
+          <div class="ab-kicker">The author's stated problem</div>
+          <p>${escapeHtml(intent.problem)}</p>
+        </div>`;
+    }
+    const findings = a.findings || [];
+    const hasPrediction = findings.some(f => f && f.kind === "prediction");
+    let findingsHtml = '';
+    if (findings.length){
+      findingsHtml = `
+        <div>
+          <div class="alt-section-label">Findings</div>
+          ${hasPrediction ? '<p class="asm-prediction-note">Predictions are guesses. No code exists yet to check them.</p>' : ''}
+          <div class="asm-stack">${findings.map(designFindingCard).join('')}</div>
+        </div>`;
+    }
+    const checks = a.boundary_checks || [];
+    const checksHtml = checks.length ? `
+      <div>
+        <div class="alt-section-label">Boundary checks</div>
+        <div class="asm-stack">${checks.map(c => `
+          <div class="asm-check ${escapeHtml(c.result || '')}">
+            <span class="asm-res">${escapeHtml(c.result || '?')}</span>
+            <span>${escapeHtml(c.rule || '')}${c.source ? ` <span class="adr-sheet-sourceline">(${escapeHtml(c.source)})</span>` : ''}</span>
+          </div>`).join('')}</div>
+      </div>` : '';
+    const regretHtml = a.regret_risk ? `
+      <div class="adr-block">
+        <div class="ab-kicker" style="color:oklch(0.5 0.15 25);">Will we regret this?</div>
+        <p>${escapeHtml(a.regret_risk)}</p>
+      </div>` : '';
+    let patternHtml = '';
+    if (a.pattern && a.pattern.answer){
+      const label = ownLookup(PATTERN_LABEL, a.pattern.verdict, a.pattern.verdict || '');
+      const lead = label ? `<p style="margin-bottom:8px;"><strong>${escapeHtml(label)}</strong></p>` : '';
+      patternHtml = asmQuestionHtml('Q3 — pattern, duplicate, or reinvention', a.pattern, '', '', lead, '');
+    }
+    return `
+      ${summaryHtml}
+      ${intentHtml}
+      ${asmQuestionHtml('Q1 — is this sensible?', a.sensible)}
+      ${asmQuestionHtml('Q2 — maintainability and readability', a.maintainability, 'Constraint introduced', 'constraint_introduced')}
+      ${patternHtml}
+      ${regretHtml}
+      ${findingsHtml}
+      ${checksHtml}`;
+  }
+  function renderDesignsList(titleEl, metaEl, body){
+    const keys = designKeys();
+    titleEl.textContent = 'Designs';
+    metaEl.innerHTML = keys.length
+      ? `<span class="adr-sheet-sourceline">${keys.length} design${keys.length === 1 ? '' : 's'}</span>`
+      : '';
+    if (!keys.length){
+      body.innerHTML = `
+        <div class="empty-card">
+          <div class="empty-detail">No designs yet. Run <code>/cobuilder-architect:design</code> to author one.</div>
+        </div>`;
+      return;
+    }
+    body.innerHTML = `<div class="design-list">${keys.map(name => {
+      const d = lookupDesign(name) || {};
+      const title = designTitle(d);
+      const stage = designStage(d);
+      const nRounds = roundsCount(d);
+      const epics = designEpics(d);
+      return `
+        <div class="design-card" role="button" tabindex="0" data-design-name="${escapeHtml(name)}">
+          <div class="design-card-top">
+            <span class="design-card-name">${escapeHtml(designName(d, name))}</span>
+            <span class="adr-state-badge" style="background:oklch(0.96 0.02 250);color:var(--ink-dim);border-color:var(--line);">${escapeHtml(String(stage))}</span>
+          </div>
+          ${title ? `<div class="design-card-title">${escapeHtml(title)}</div>` : ''}
+          <div class="design-card-meta">${nRounds} round${nRounds === 1 ? '' : 's'} · ${epics.length} epic${epics.length === 1 ? '' : 's'}</div>
+          ${designEpicRowsHtml(epics)}
+        </div>`;
+    }).join('')}</div>`;
+    const openCard = (card) => {
+      state.activeDesignName = card.dataset.designName;
+      renderDesignsSheet();
+    };
+    body.querySelectorAll('.design-card').forEach(card => {
+      card.addEventListener('click', () => openCard(card));
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); e.stopPropagation(); openCard(card); }
+      });
+    });
+    wireDesignEpicPrButtons(body);
+  }
+  function renderDesignReading(name, titleEl, metaEl, body){
+    const d = lookupDesign(name);
+    if (!d){
+      titleEl.textContent = name || 'Design';
+      metaEl.innerHTML = '';
+      body.innerHTML = `
+        <div class="empty-card">
+          <div class="empty-detail">Design not found. Run <code>/cobuilder-architect:design</code>.</div>
+        </div>`;
+      return;
+    }
+    const stage = designStage(d);
+    const nRounds = roundsCount(d);
+    titleEl.textContent = designTitle(d) || designName(d, name);
+    const verdict = d.assessment && d.assessment.verdict;
+    metaEl.innerHTML = (verdict ? verdictBadgeHtml(verdict) : '')
+      + `<span class="adr-state-badge" style="background:oklch(0.96 0.02 250);color:var(--ink-dim);border-color:var(--line);">${escapeHtml(String(stage))}</span>`
+      + `<span class="adr-sheet-sourceline">${escapeHtml(designName(d, name))} · ${nRounds} round${nRounds === 1 ? '' : 's'}</span>`;
+
+    const outcome = designOutcome(d);
+    const outcomeHtml = outcome ? `
+      <div class="adr-block decision">
+        <div class="ab-kicker">Outcome</div>
+        <p>${escapeHtml(outcome)}</p>
+      </div>` : '';
+
+    const adrIds = designAdrIds(d);
+    const adrHtml = adrIds.length ? `
+      <div>
+        <div class="alt-section-label">ADR</div>
+        <div class="adr-row">${adrIds.map(id => `<button type="button" class="adr-badge" data-adr-id="${escapeHtml(id)}">${escapeHtml(id)}</button>`).join('')}</div>
+      </div>` : '';
+
+    const epics = designEpics(d);
+    const epicsHtml = `
+      <div>
+        <div class="alt-section-label">Epics</div>
+        ${designEpicRowsHtml(epics)}
+      </div>`;
+
+    const diagramLevels = [1, 2, 3].filter(lvl => !!designDiagramSource(name, lvl));
+    let diagramsHtml;
+    if (!diagramLevels.length){
+      diagramsHtml = `
+        <div>
+          <div class="alt-section-label">Diagrams</div>
+          <div class="empty-card"><div class="empty-detail">No diagrams authored for this design.</div></div>
+        </div>`;
+    } else {
+      diagramsHtml = `
+        <div>
+          <div class="alt-section-label">Diagrams</div>
+          <div class="asm-stack">${diagramLevels.map(lvl => `
+            <div>
+              <div class="design-card-meta" style="margin:0 0 6px;">Level ${lvl} — ${escapeHtml(LEVEL_LABELS[lvl - 1] || '')}</div>
+              <div class="diagram-viewport" data-diagram data-design="${escapeHtml(name)}" data-level="${lvl}"><pre class="mermaid"></pre></div>
+            </div>`).join('')}</div>
+        </div>`;
+    }
+
+    const draft = designPrDraft(d);
+    const draftHtml = draft ? `
+      <div>
+        <div class="alt-section-label">Envisioned pull request</div>
+        <div class="adr-block"><div class="adr-body-md">${renderMarkdown(draft)}</div></div>
+      </div>` : `
+      <div>
+        <div class="alt-section-label">Envisioned pull request</div>
+        <div class="empty-card"><div class="empty-detail">No pr-draft recorded for this design.</div></div>
+      </div>`;
+
+    const assessmentHtml = `
+      <div>
+        <div class="alt-section-label">Design assessment</div>
+        ${renderDesignAssessment(d.assessment, d.intent || null)}
+      </div>`;
+
+    body.innerHTML = `
+      <button type="button" class="link-btn" id="designs-back-btn">← All designs</button>
+      ${outcomeHtml}
+      ${adrHtml}
+      ${epicsHtml}
+      ${diagramsHtml}
+      ${draftHtml}
+      ${assessmentHtml}`;
+
+    const back = document.getElementById('designs-back-btn');
+    if (back) back.addEventListener('click', () => {
+      state.activeDesignName = null;
+      renderDesignsSheet();
+    });
+    body.querySelectorAll('.adr-badge[data-adr-id]').forEach(btn => {
+      btn.addEventListener('click', () => openAdrSheet(btn.dataset.adrId));
+    });
+    wireDesignEpicPrButtons(body);
+    mountDiagrams(body);
+  }
+  function wireDesignEpicPrButtons(root){
+    root.querySelectorAll('.design-epic-pr.has-pr').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const n = Number(btn.dataset.pr);
+        const idx = TIMELINE.findIndex(p => p.pr === n);
+        if (idx >= 0) selectPR(idx);
+      });
+    });
+  }
+  function renderDesignsSheet(){
+    const titleEl = document.getElementById('designs-sheet-title');
+    const metaEl = document.getElementById('designs-sheet-meta');
+    const body = document.getElementById('designs-sheet-body');
+    if (!titleEl || !metaEl || !body) return;
+    unmountDiagrams(body);
+    const keys = designKeys();
+    if (!keys.length){
+      titleEl.textContent = 'Designs';
+      metaEl.innerHTML = '';
+      body.innerHTML = `
+        <div class="empty-card">
+          <div class="empty-detail">No designs yet. Run <code>/cobuilder-architect:design</code> to author one.</div>
+        </div>`;
+      return;
+    }
+    if (state.activeDesignName){
+      renderDesignReading(state.activeDesignName, titleEl, metaEl, body);
+      return;
+    }
+    renderDesignsList(titleEl, metaEl, body);
+  }
+  document.getElementById('tb-prev').addEventListener('click', () => {
+    if (isDesignsMode()) selectDesign(state.designIndex - 1);
+    else selectPR(state.prIndex - 1);
+  });
+  document.getElementById('tb-next').addEventListener('click', () => {
+    if (isDesignsMode()) selectDesign(state.designIndex + 1);
+    else selectPR(state.prIndex + 1);
+  });
+  document.querySelectorAll('.mode-switch-btn').forEach(btn => {
+    btn.addEventListener('click', () => setViewMode(btn.dataset.mode));
+  });
 
   document.getElementById('btn-merge').addEventListener('click', mergePR);
   document.getElementById('btn-merge-arrow').addEventListener('click', (e) => { e.stopPropagation(); toggleMergeMenu(); });
@@ -2667,6 +3574,7 @@ window.DIAGRAMS = window.DIAGRAMS || {};
   document.getElementById('drawer-close-btn').addEventListener('click', closeCommentsDrawer);
   document.getElementById('adr-sheet-close-btn').addEventListener('click', closeAdrSheet);
   document.getElementById('assessment-sheet-close-btn').addEventListener('click', closeAssessmentSheet);
+  document.getElementById('designs-sheet-close-btn').addEventListener('click', closeDesignsSheet);
   document.getElementById('drawer-scrim').addEventListener('click', closeAnyOpenSheet);
   document.getElementById('btn-add-comment').addEventListener('click', addCommentOnly);
   commentInput.addEventListener('keydown', (e) => { if (e.key === 'Enter'){ e.preventDefault(); addCommentOnly(); } });
@@ -2689,17 +3597,22 @@ window.DIAGRAMS = window.DIAGRAMS || {};
   window.addEventListener('keydown', (e) => {
     // Escape must close whichever sheet is open, even while the comment input is
     // focused — checked before the input/textarea early-return below so it always works.
-    if (e.key === 'Escape' && (state.commentsOpen || state.adrOpen || state.assessmentOpen || state.audioDialogOpen)){ closeAnyOpenSheet(); return; }
+    if (e.key === 'Escape' && (state.commentsOpen || state.adrOpen || state.assessmentOpen || state.designsOpen || state.audioDialogOpen)){ closeAnyOpenSheet(); return; }
 
     const tag = document.activeElement && document.activeElement.tagName;
     if (tag === 'TEXTAREA' || tag === 'INPUT') return;
     if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) e.preventDefault();
-    if (e.key === 'ArrowLeft') selectPR(state.prIndex - 1);
-    else if (e.key === 'ArrowRight') selectPR(state.prIndex + 1);
-    else if (e.key === 'ArrowUp') setLevel(state.level - 1);
+    if (e.key === 'ArrowLeft'){
+      if (isDesignsMode()) selectDesign(state.designIndex - 1);
+      else selectPR(state.prIndex - 1);
+    } else if (e.key === 'ArrowRight'){
+      if (isDesignsMode()) selectDesign(state.designIndex + 1);
+      else selectPR(state.prIndex + 1);
+    } else if (e.key === 'ArrowUp') setLevel(state.level - 1);
     else if (e.key === 'ArrowDown') setLevel(state.level + 1);
-    else if (e.key === 'm') mergePR();
+    else if (e.key === 'm') { if (!isDesignsMode()) mergePR(); }
     else if (e.key === 'c') { e.preventDefault(); openCommentsDrawer(); }
+    else if (e.key === 'd') { e.preventDefault(); setViewMode('designs'); }
     else if (e.key === ' '){
       // Always preventDefault so Space never page-scrolls the content pane. Spec: space
       // starts playback (opening the dialog) when it's closed, but once the dialog is
@@ -2712,7 +3625,9 @@ window.DIAGRAMS = window.DIAGRAMS || {};
 
   // Start on the most recent PR in the bundle (timeline is chronological).
   state.prIndex = Math.max(0, TIMELINE.length - 1);
-  document.title = `${REPO} — Codebase Odyssey`;
+  state.viewMode = loadViewMode();
+  if (state.viewMode === 'designs' && state.level > DESIGN_N_LEVELS) state.level = 1;
+  document.title = `${REPO} — CoBuilder-Architect`;
 
   // Loaded before the first render (unlike hintsPinned below) because it decides which
   // side of the image/diagram toggle renderMainContent's first heroFrame() call renders.

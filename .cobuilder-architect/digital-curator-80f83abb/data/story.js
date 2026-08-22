@@ -2,7 +2,7 @@ window.STORY = {
   "meta": {
     "repo": "digital-curator",
     "generated": "2026-07-21",
-    "schema_version": "1.2",
+    "schema_version": "1.3",
     "title": "digital-curator — Codebase Odyssey",
     "description": "",
     "levels": [

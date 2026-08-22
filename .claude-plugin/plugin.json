@@ -1,9 +1,0 @@
-{
-  "name": "cobuilder-architect",
-  "version": "0.4.0",
-  "description": "Design, submit, review, and narrated PR history for a local git repo. Output is a portable .cobuilder-architect/ bundle.",
-  "author": { "name": "bjornslib" },
-  "repository": "https://github.com/bjornslib/cobuilder-architect",
-  "license": "MIT",
-  "keywords": ["claude-code", "storytelling", "architecture", "adr", "pr-review", "code-review", "codebase-odyssey"]
-}

@@ -1,0 +1,39 @@
+{
+  "captured": "2026-08-20",
+  "source": "design",
+  "design_name": "plugin-split",
+  "authorship": "agent-assisted",
+  "problem": "One plugin carries the whole architecture lifecycle. Its four skills, thirteen commands, and twenty-two scripts serve four separate jobs, and a user who wants one job installs all four. The names have drifted with the scope: the same short words mean different things across the two skill families, and CLAUDE.md now carries a vocabulary table to keep them apart. A vocabulary table is a symptom. The words collide because one install surface holds four bounded contexts.",
+  "why_now": "The pieces the split needs are all present and none of them are wired. The architecture skill merged in. Design mode and cobuilder-implement are designed and joined through intent.json. The viewer already has a Designs and Pull-requests toggle, so it already reads projections written by what would become two different plugins, and neither writer knows the other exists. The seam is real before the split, which is why the split is a packaging change rather than a rewrite.",
+  "approach": "Five sibling plugins in one marketplace repository, none nested inside another: cobuilder-architect, cobuilder-pr, cobuilder-artifact, cobuilder-implement, and cobuilder-full-lifecycle, which ships one orientation skill and lists the other four as dependencies. No plugin reads or imports another plugin's files, though a plugin may hand off to another plugin's mode by name. They integrate only by reading and writing the bundle directory, which becomes a Published Language rather than a shared kernel. Shared Python and shared skills travel by a marketplace-level shared/ directory, symlinked into each plugin and dereferenced into its own cache at install. The compatibility gate moves out of skill prose into require_compatible(), a function in the module every plugin vendors, and bundle.json carries the floor that gate reads.",
+  "alternatives": [
+    {
+      "option": "Keep one plugin and organise internally with directories and modes",
+      "rejected": "A directory is not installable. The install surface is the unit a user chooses, so a user who wants only PR narration still takes the review corpus, the viewer, and the paid-art pipeline."
+    },
+    {
+      "option": "Two plugins, one per pillar, with the viewer duplicated into both",
+      "rejected": "Both pillars write projections the one viewer reads. Two copies drift, and the Designs toggle then renders differently depending on which plugin last refreshed the file."
+    },
+    {
+      "option": "Let plugins reach each other's scripts through a shared path",
+      "rejected": "Not possible. A cached plugin cannot read outside its own directory, and CLAUDE_PLUGIN_ROOT resolves only to that plugin's own cache."
+    },
+    {
+      "option": "Abandon the plugin format and ship one cloned repository with entry-point scripts",
+      "rejected": "It removes version skew by removing the install surface, and the install surface is the product."
+    },
+    {
+      "option": "Symlink the shared modules and add one scalar version comparison per entry point",
+      "rejected": "A scalar cannot express a sequenced ladder with per-step touches sets. Two copies can agree on the number and still disagree on what a step may change, which is false confidence rather than a gate."
+    },
+    {
+      "option": "A write-log ledger as the compatibility mechanism",
+      "rejected": "It records a mismatch after the mismatch is on disk. Kept in part: its useful half is the plugin identity, which survives as the generators map."
+    }
+  ],
+  "doubts": [
+    "The symlink dereference is documented for sharing files within a marketplace, and the worked example is a meta-plugin's skills/ directory. It is not stated for a directory of Python that a skill later runs through CLAUDE_PLUGIN_ROOT.",
+    "The one-tag release discipline is policy. Nothing in the install mechanism enforces it, so the gate has to hold on its own."
+  ]
+}

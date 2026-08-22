@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cobuilder Gazetteer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ivory: #FAF9F5;
+  --paper: #F3F1E9;
+  --ink: #201F1C;
+  --ink-soft: #4A4842;
+  --ink-faint: #86837A;
+  --line: #DEDACC;
+  --line-strong: #C7C2AF;
+  --clay: #C1552F;
+  --clay-soft: #E7C6B4;
+  --olive: #5C6E45;
+  --olive-soft: #DCE3CE;
+  --rust: #9A3324;
+  --rust-soft: #E9CFC6;
+  --sky: #3F6480;
+  --sky-soft: #CFDCE3;
+  --card: #FFFFFF;
+
+  --display: 'Fraunces', ui-serif, Georgia, serif;
+  --body: 'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ivory: #1B1A17;
+    --paper: #222019;
+    --ink: #F2EFE7;
+    --ink-soft: #C7C2B6;
+    --ink-faint: #8B877C;
+    --line: #38352C;
+    --line-strong: #4A4638;
+    --clay: #E38A5F;
+    --clay-soft: #4A3226;
+    --olive: #9FB37E;
+    --olive-soft: #313A25;
+    --rust: #D97B68;
+    --rust-soft: #402420;
+    --sky: #8FB4CC;
+    --sky-soft: #23343D;
+    --card: #221F1A;
+  }
+}
+
+:root[data-theme="dark"] {
+  --ivory: #1B1A17;
+  --paper: #222019;
+  --ink: #F2EFE7;
+  --ink-soft: #C7C2B6;
+  --ink-faint: #8B877C;
+  --line: #38352C;
+  --line-strong: #4A4638;
+  --clay: #E38A5F;
+  --clay-soft: #4A3226;
+  --olive: #9FB37E;
+  --olive-soft: #313A25;
+  --rust: #D97B68;
+  --rust-soft: #402420;
+  --sky: #8FB4CC;
+  --sky-soft: #23343D;
+  --card: #221F1A;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--body);
+  background: var(--ivory);
+  color: var(--ink);
+  line-height: 1.6;
+}
+
+::selection { background: var(--clay-soft); color: var(--ink); }
+
+.shell {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+/* ---- Sidebar ---- */
+
+nav.rail {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 40px 20px 40px 32px;
+  border-right: 1px solid var(--line);
+}
+
+.rail .mark {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+
+.rail .mark span { color: var(--clay); }
+
+.rail .sub {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 36px;
+  display: block;
+}
+
+.rail .group-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 22px 0 8px;
+}
+
+.rail ol {
+  list-style: none;
+  counter-reset: item;
+}
+
+.rail li {
+  counter-increment: item;
+}
+
+.rail a {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  text-decoration: none;
+  color: var(--ink-soft);
+  font-size: 13.5px;
+  padding: 6px 0;
+  border-left: 2px solid transparent;
+  padding-left: 10px;
+  margin-left: -12px;
+  transition: color .15s ease, border-color .15s ease;
+}
+
+.rail a::before {
+  content: counter(item, decimal-leading-zero);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  flex-shrink: 0;
+}
+
+.rail a:hover, .rail a:focus-visible { color: var(--clay); border-left-color: var(--clay); }
+
+/* ---- Main ---- */
+
+main { padding: 56px 56px 140px; min-width: 0; }
+
+header.hero {
+  max-width: 720px;
+  margin-bottom: 64px;
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--clay);
+  margin-bottom: 14px;
+}
+
+h1 {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(34px, 4.4vw, 46px);
+  line-height: 1.08;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  text-wrap: balance;
+  margin-bottom: 18px;
+}
+
+.hero .lead {
+  font-size: 17px;
+  color: var(--ink-soft);
+  max-width: 620px;
+}
+
+.prompt-box {
+  margin-top: 28px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.prompt-box .label {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ink-faint);
+  display: block;
+  margin-bottom: 6px;
+}
+
+section { max-width: 780px; margin-bottom: 76px; scroll-margin-top: 32px; }
+section.wide { max-width: 940px; }
+
+.section-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+  letter-spacing: 0.06em;
+}
+
+h2 {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 27px;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  margin: 4px 0 6px;
+  text-wrap: balance;
+}
+
+h2 + .dek {
+  color: var(--ink-soft);
+  font-size: 15px;
+  max-width: 640px;
+  margin-bottom: 28px;
+}
+
+h3 {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--ink);
+  margin: 28px 0 10px;
+}
+
+p { font-size: 15px; color: var(--ink-soft); margin-bottom: 12px; max-width: 680px; }
+p strong { color: var(--ink); font-weight: 600; }
+code {
+  font-family: var(--mono);
+  font-size: 0.87em;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--ink);
+}
+
+/* ---- Tags ---- */
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-weight: 500;
+}
+.tag.olive { background: var(--olive-soft); color: var(--olive); }
+.tag.rust  { background: var(--rust-soft);  color: var(--rust);  }
+.tag.sky   { background: var(--sky-soft);   color: var(--sky);   }
+.tag.clay  { background: var(--clay-soft);  color: var(--clay);  }
+
+/* ---- Decision log ---- */
+
+.decision {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  padding: 22px 24px;
+  margin-bottom: 16px;
+}
+
+.decision-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.decision-head h3 { margin: 0; font-size: 17px; }
+
+.decision p:last-child { margin-bottom: 0; }
+
+.decision .rationale {
+  border-left: 2px solid var(--line-strong);
+  padding-left: 14px;
+  margin-top: 12px;
+  font-size: 13.5px;
+  color: var(--ink-faint);
+}
+
+/* ---- Glossary table ---- */
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+
+th {
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+td {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-soft);
+  vertical-align: top;
+}
+
+tr:last-child td { border-bottom: none; }
+
+td.term {
+  font-family: var(--mono);
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/* ---- Diagram panel ---- */
+
+.diagram-panel {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  padding: 32px;
+}
+
+figure { margin: 0; }
+figcaption {
+  font-size: 13px;
+  color: var(--ink-faint);
+  margin-top: 16px;
+  max-width: 640px;
+}
+
+svg text { font-family: var(--mono); fill: currentColor; }
+svg .lbl-display { font-family: var(--display); }
+
+/* ---- Tree listings & phase steps ---- */
+
+pre.tree {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px 22px;
+  overflow-x: auto;
+  color: var(--ink-soft);
+  margin: 0 0 24px;
+}
+pre.tree b { color: var(--clay); font-weight: 600; }
+pre.tree i { color: var(--ink-faint); font-style: normal; }
+
+ol.phases { list-style: none; counter-reset: ph; padding: 0; margin: 0; }
+ol.phases > li {
+  counter-increment: ph;
+  position: relative;
+  padding: 0 0 22px 46px;
+  border-left: 1px solid var(--line);
+  margin-left: 13px;
+}
+ol.phases > li:last-child { border-left-color: transparent; padding-bottom: 0; }
+ol.phases > li::before {
+  content: counter(ph);
+  position: absolute;
+  left: -13px; top: 0;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  color: var(--ink-faint);
+  font-family: var(--mono);
+  font-size: 12px;
+  display: grid; place-items: center;
+}
+ol.phases h4 { margin: 2px 0 6px; font-size: 15px; }
+ol.phases p { margin: 0; font-size: 14.5px; color: var(--ink-soft); }
+
+/* ---- Footer ---- */
+
+footer {
+  max-width: 780px;
+  padding-top: 32px;
+  border-top: 1px solid var(--line);
+  font-size: 12.5px;
+  color: var(--ink-faint);
+}
+
+@media (max-width: 860px) {
+  .shell { grid-template-columns: 1fr; }
+  nav.rail { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--line); }
+  main { padding: 40px 24px 100px; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<nav class="rail">
+  <div class="mark">cobuilder<span>.</span></div>
+  <span class="sub">gazetteer &middot; 2026-08-20</span>
+
+  <div class="group-label">Session</div>
+  <ol>
+    <li><a href="#decisions">Decisions carried</a></li>
+    <li><a href="#vocabulary">Vocabulary</a></li>
+    <li><a href="#structure">Repo &amp; skill structure</a></li>
+    <li><a href="#target">Target architecture</a></li>
+    <li><a href="#path">Migration path</a></li>
+    <li><a href="#pr11">PR #11 findings</a></li>
+    <li><a href="#open">Open questions</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<header class="hero">
+  <div class="eyebrow">Working session record</div>
+  <h1>A vocabulary for a plugin whose names had started to drift</h1>
+  <p class="lead">This session reviewed <code>cobuilder-architect</code>'s architecture and PR&nbsp;#11, then spent most of its length on something the review surfaced: the same words meaning different things across the <code>odyssey</code> and <code>architecture</code> skills. What follows is the resolved vocabulary, the ten decisions still needing an ADR, and the architecture those decisions produce: five sibling plugins in one <code>cobuilder</code> repository, every existing file given an owner, and a five-phase path from here to there.</p>
+  <div class="prompt-box">
+    <span class="label">Session scope</span>
+    Architecture review of <code>cobuilder-architect</code> &middot; review of PR&nbsp;#11 (<code>design/design-mode</code> &rarr; <code>master</code>) &middot; naming and structure discussion carried across the remaining turns.
+  </div>
+</header>
+
+<section id="decisions">
+  <div class="section-num">01</div>
+  <h2>Decisions carried, pending an ADR</h2>
+  <p class="dek">Ten separate calls came out of this session. Each stands on its own evidence and should not be folded into one document.</p>
+
+  <div class="decision">
+    <div class="decision-head">
+      <h3>1&nbsp;&middot;&nbsp;Repo topology &mdash; three sibling plugins, one repository</h3>
+      <span class="tag sky">Amends ADR-0013</span>
+    </div>
+    <p><strong>One <code>cobuilder</code> repository, three plugin packages, none nested inside another.</strong> The <code>architect</code> and <code>pull-request</code> pillars stop being two skills inside a single <code>cobuilder-architect</code> manifest and become sibling directories in their own right, alongside <code>cobuilder-implement</code>. Each carries its own <code>plugin.json</code> and installs on its own. <code>architect</code>&rsquo;s design mode keeps joining <code>cobuilder-implement</code> through <code>intent.json</code> on disk &mdash; never a code call, never a shared install.</p>
+    <div class="rationale">ADR-0013 rejected a hard dependency and a code-call join between the design step and the build step, reasoning that the build step &ldquo;must run in any harness.&rdquo; It never ruled on physical repo location. This resolves the two-versus-three-plugin question from an earlier round of this document: three, each independently installable, all in one repository for one visible lifecycle.</div>
+  </div>
+
+  <div class="decision">
+    <div class="decision-head">
+      <h3>2&nbsp;&middot;&nbsp;Command renaming, applied uniformly</h3>
+      <span class="tag olive">New ADR</span>
+    </div>
+    <p>Submit splits along a seam its own docs already name &mdash; &ldquo;the author&rsquo;s side&hellip; and the reviewer&rsquo;s side.&rdquo; The narration sweep gets its own name instead of inheriting Submit&rsquo;s. Every mode name is a bare verb &mdash; <code>generate</code>, <code>assess</code>, <code>review</code> &mdash; and decision&nbsp;1 supplies the qualifier for free: <code>/cobuilder-pr:generate</code>, not a hyphenated compound.</p>
+    <div class="rationale"><code>pull-request:generate-pr</code> repeated a word the plugin boundary already carries. <code>pr-story</code> removed the repeat but broke the fit test for two of its three modes &mdash; only <code>review</code> produces a story; <code>generate</code> and <code>assess</code> do not. Once the pull-request pillar is its own plugin rather than a skill sharing a manifest, the slash-command prefix does the qualifying job on its own, and no mode name needs a suffix at all.</div>
+  </div>
+
+  <div class="decision">
+    <div class="decision-head">
+      <h3>3&nbsp;&middot;&nbsp;Fold pull-request&rsquo;s design flow into cobuilder-architect:design</h3>
+      <span class="tag rust">Amends ADR-0011 &amp; ADR-0013</span>
+    </div>
+    <p>Odyssey&rsquo;s interview-and-challenge design flow merges into the architecture skill&rsquo;s own design mode, which already wraps it as an internal stage. The merged mode keeps producing <code>intent.json</code>, and its final step names <code>cobuilder-implement</code> as the next tool to run.</p>
+    <div class="rationale">This is a real amendment, not a rename: ADR-0011 and ADR-0013 chose to keep the two design flows separate on purpose, reasoning that Odyssey&rsquo;s version does more &mdash; framing, exploration, and the challenge &mdash; than the architecture skill&rsquo;s exploration pass alone. Reopening that call needs the same decision-record path those two used. It should run <em>through</em> that path &mdash; design this restructuring with <code>cobuilder-architect:design</code> itself, once decision&nbsp;2 is approved, rather than plan it outside the tool that exists to plan it.</div>
+  </div>
+
+  <div class="decision">
+    <div class="decision-head">
+      <h3>4&nbsp;&middot;&nbsp;Baseline, View, and Publish belong to neither pillar alone</h3>
+      <span class="tag sky">Resolved this round</span>
+    </div>
+    <p><strong>Baseline moves to the architect pillar</strong> &mdash; it already overlaps <code>cobuilder-architect:describe</code> at a lighter tier. <strong>View and Publish stay shared</strong> (see decision&nbsp;5). The viewer&rsquo;s own chrome switches between <code>data-mode="designs"</code> and <code>data-mode="prs"</code> as one toggle on one page (<code>viewer/index.html:640-641</code>), and every published artifact inlines <code>window.DESIGNS</code> beside <code>window.ODYSSEY</code> (<code>export_artifact.py:369</code>). Neither reads as PR-only or architect-only; both read the one bundle both pillars write into.</p>
+    <div class="rationale">A plugin named &ldquo;pull-request&rdquo; that still owned View and Publish would repeat the exact fit problem &ldquo;odyssey&rdquo; had &mdash; a name that covers most of its modes but not all. Leaving View and Publish outside both pillars, as bundle-level utilities, is what lets the pull-request pillar fit all three of the modes it does own.</div>
+  </div>
+
+  <div class="decision">
+    <div class="decision-head">
+      <h3>5&nbsp;&middot;&nbsp;cobuilder-artifact ships as a fourth plugin, joined by declared dependency</h3>
+      <span class="tag olive">Verified against docs</span>
+    </div>
+    <p><code>view</code> and <code>publish</code> become their own plugin, <code>cobuilder-artifact</code>, rather than living inside <code>cobuilder-architect</code> or <code>cobuilder-pr</code>. Both of those declare it in their own <code>plugin.json</code>:</p>
+    <p><code>"dependencies": ["cobuilder-artifact"]</code></p>
+    <p>Installing either plugin auto-installs <code>cobuilder-artifact</code> alongside it. Each then calls <code>Skill("cobuilder-artifact:view")</code> / <code>Skill("cobuilder-artifact:publish")</code> directly &mdash; the same fully-qualified, namespaced call this repo already uses today for <code>Skill("cobuilder-architect:mermaid")</code> and <code>Skill("cobuilder-architect:ste-writing")</code>, just crossing a plugin boundary instead of a skill boundary inside one plugin.</p>
+    <div class="rationale">A symlinked skill directory was the proposed mechanism, and it does work: the plugin loader dereferences a symlink that points elsewhere within the same marketplace repository, copying the target&rsquo;s content into each installing plugin&rsquo;s own cache, specifically to let &ldquo;a meta-plugin&rsquo;s <code>skills/</code> directory link to skills defined by other plugins in the marketplace&rdquo; (<a href="https://code.claude.com/docs/en/plugins-reference">Plugins reference</a>). But that mechanism solves a different problem &mdash; sharing skill <em>content</em> into a namespace that does not otherwise have it. It does not guarantee <code>cobuilder-artifact</code> gets installed at all. The <code>dependencies</code> field does exactly that, is part of the documented manifest schema, and needs no file duplication into either neighbor&rsquo;s cache. Verified directly against <a href="https://code.claude.com/docs/en/plugins-reference">Plugins reference</a> and <a href="https://code.claude.com/docs/en/plugins">Create plugins</a>, not assumed &mdash; an initial research pass flagged the dependency field as undocumented, which a direct fetch of the reference page shows is out of date.</div>
+  </div>
+
+  <div class="decision">
+    <div class="decision-head">
+      <h3>6&nbsp;&middot;&nbsp;Every plugin carries the cobuilder- prefix</h3>
+      <span class="tag olive">Verified against docs</span>
+    </div>
+    <p><code>architect</code> becomes <code>cobuilder-architect</code> and <code>pull-request</code> becomes <code>cobuilder-pr</code>, matching <code>cobuilder-implement</code> and <code>cobuilder-artifact</code>, which already carried the prefix. All four plugin names are consistent now, not three prefixed and two bare.</p>
+    <div class="rationale"><code>marketplace.json</code> validation only catches a duplicate plugin name <em>within one marketplace</em> &mdash; the error is literally &ldquo;Duplicate plugin name &lsquo;x&rsquo; found in marketplace,&rdquo; scoped to one file (<a href="https://code.claude.com/docs/en/plugin-marketplaces">Plugin marketplaces</a>). Two different marketplaces can each publish a plugin named <code>architect</code> with nothing stopping them, and skill namespacing runs off that bare <code>name</code> field &mdash; installing both in one session would collide on <code>/architect:*</code>. Generic single-word names carry that risk; <code>cobuilder-</code> removes it the same way it already protected <code>cobuilder-artifact</code>. <code>pr</code>, not <code>pull-request</code>, because this document already uses &ldquo;PR&rdquo; as the working abbreviation throughout &mdash; PR&nbsp;#11, &ldquo;opens a PR,&rdquo; and so on &mdash; so <code>cobuilder-pr</code> matches vocabulary already in use rather than introducing a second one.</div>
+  </div>
+
+  <div class="decision">
+    <div class="decision-head">
+      <h3>7&nbsp;&middot;&nbsp;A fifth plugin, cobuilder-full-lifecycle, bundles the other four</h3>
+      <span class="tag sky">Resolved this round</span>
+    </div>
+    <p>A fifth plugin, <code>cobuilder-full-lifecycle</code>, lists <code>cobuilder-architect</code>, <code>cobuilder-pr</code>, <code>cobuilder-artifact</code>, and <code>cobuilder-implement</code> as direct dependencies &mdash; all four named explicitly, not just two of them left to carry the others along underneath. One <code>/plugin install cobuilder-full-lifecycle</code> installs the whole family; each of the four stays separately installable for anyone who wants less.</p>
+    <div class="rationale">Naming all four directly, rather than two and trusting their own nested dependency on <code>cobuilder-artifact</code> to carry through, matters because transitive dependency resolution is the one part of this mechanism the documentation does not fully confirm. It describes enabling a plugin&rsquo;s declared dependencies &ldquo;transitively at the same scope,&rdquo; but that quote is scoped to the <code>plugin enable</code> command, not shown end-to-end for install. Listing every dependency directly sidesteps the question instead of resting on the answer. What remains genuinely unconfirmed: a plugin shipping no skills, commands, or agents of its own &mdash; only a manifest and a <code>dependencies</code> list &mdash; is not a pattern the documentation states outright works, though <code>name</code> being the only required manifest field points that way. Worth a <code>claude plugin validate</code> pass on a draft manifest before this ships, not assumed. Decision&nbsp;10 removes the exposure regardless.</div>
+  </div>
+
+  <div class="decision">
+    <div class="decision-head">
+      <h3>8&nbsp;&middot;&nbsp;Two mechanisms, not one: dependencies co-install, symlinks share files</h3>
+      <span class="tag rust">Refines decision 5</span>
+    </div>
+    <p>The <code>dependencies</code> field guarantees that <code>cobuilder-artifact</code> is <em>installed</em> alongside <code>cobuilder-architect</code> and <code>cobuilder-pr</code>. It does not give any of them access to another&rsquo;s <em>files</em>. Shared Python and shared skills travel by a second mechanism: a real directory under <code>shared/</code> at the repository root, symlinked into each plugin that needs it, dereferenced into that plugin&rsquo;s own cache at install time.</p>
+    <div class="rationale">The reference page is explicit that a cached plugin cannot read outside itself: &ldquo;Copied plugins cannot reference files outside their directory. Paths that traverse outside the plugin root (such as <code>../shared-utils</code>) will not work after installation because those external files are not copied to the cache&rdquo; (<a href="https://code.claude.com/docs/en/plugins-reference">Plugins reference</a>). <code>${CLAUDE_PLUGIN_ROOT}</code> resolves to one plugin&rsquo;s own cache directory and nothing above it, so today&rsquo;s single flat <code>scripts/</code> tree cannot simply be pointed at from four plugins. The same page names the fix: a symlink <em>elsewhere within the same marketplace</em> is dereferenced, and the target&rsquo;s content is copied into the cache in its place. The cost is honest and worth stating &mdash; every plugin that needs <code>_bundle_meta.py</code> ships its own copy of it. That copy is what makes the version-skew rule in decision&nbsp;9 load-bearing rather than theoretical.</div>
+  </div>
+
+  <div class="decision">
+    <div class="decision-head">
+      <h3>9&nbsp;&middot;&nbsp;The bundle is the only seam between plugins</h3>
+      <span class="tag sky">New ADR</span>
+    </div>
+    <p>No plugin calls another plugin&rsquo;s code, imports its modules, or invokes its skills. They read and write one versioned directory: <code>.cobuilder-architect/&lt;target&gt;/</code>. <code>cobuilder-architect</code> writes <code>designs.js</code> and <code>adrs.js</code>. <code>cobuilder-pr</code> writes <code>story.json</code>, diffs, diagrams, and audio. <code>cobuilder-artifact</code> reads all of it and renders. Each plugin stamps its own <code>generator_version</code>. <code>verify_bundle.py</code> gates on <code>schema_version</code>.</p>
+    <div class="rationale">This is what the split actually costs and what makes it survivable. Four separately-installable plugins can be four different versions on one machine, and each carries a vendored copy of the schema constant per decision&nbsp;8. A plugin that meets a bundle newer than it understands must fail loudly on the version gate rather than write a half-shape into it &mdash; the existing <code>SCHEMA_VERSION_KNOWN</code> set already does exactly this and becomes the split&rsquo;s safety rail rather than a migration convenience. The seam is also already real: the viewer&rsquo;s Designs / Pull&nbsp;requests toggle reads two globals written by what will become two different plugins, and neither writer knows the other exists.</div>
+  </div>
+
+  <div class="decision">
+    <div class="decision-head">
+      <h3>10&nbsp;&middot;&nbsp;cobuilder-full-lifecycle ships a SKILL.md, so it is not an empty plugin</h3>
+      <span class="tag olive">Resolved this round</span>
+    </div>
+    <p>The bundling plugin carries one skill of its own: an orientation document naming the four plugins, the order the lifecycle runs in, and which command to reach for at which stage. The <code>dependencies</code> list stays exactly as decision&nbsp;7 set it &mdash; all four named directly.</p>
+    <div class="rationale">This earns its place twice. It retires the one open item decision&nbsp;7 left behind: a plugin with a skill is an ordinary plugin, so the unconfirmed zero-component pattern stops being load-bearing and <code>claude plugin validate</code> becomes a routine check rather than a gate. And it fills a real gap the split creates &mdash; a user installing four plugins at once meets thirteen commands across four namespaces with nothing telling them that design precedes implement precedes generate precedes review. That orientation exists nowhere else once <code>CLAUDE.md</code> is no longer one file describing one plugin.</div>
+  </div>
+
+</section>
+
+<section id="vocabulary" class="wide">
+  <div class="section-num">02</div>
+  <h2>Vocabulary</h2>
+  <p class="dek">Every term below collided with another term somewhere in the plugin&rsquo;s prose before this session. The right-hand column is the fix, verified against the code and skill files that use it &mdash; not assumed.</p>
+
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>Term</th><th>Belongs to</th><th>Meaning</th><th>Resolved against</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="term">cobuilder-pr : generate</td><td><span class="tag olive">pull-request</span></td><td>Interviews the author, packages the change, opens the real pull request. Today&rsquo;s Submit, author-side.</td><td>&ldquo;the author&rsquo;s side&rdquo;, <code>SKILL.md</code></td></tr>
+      <tr><td class="term">cobuilder-pr : assess</td><td><span class="tag olive">pull-request</span></td><td>Renders the verdict &mdash; drift findings, judgment work. Today&rsquo;s Submit, reviewer-side. May reuse the architect pillar&rsquo;s Review machinery, scoped to one diff instead of the whole codebase.</td><td>&ldquo;the reviewer&rsquo;s side&rdquo;, <code>SKILL.md</code></td></tr>
+      <tr><td class="term">cobuilder-pr : review</td><td><span class="tag olive">pull-request</span></td><td>The narrative, ADR, art, and audio sweep over a PR already in the timeline. Renders no verdict &mdash; the name follows the reader&rsquo;s job, not the mode&rsquo;s output.</td><td>&ldquo;review each other&rsquo;s PRs as an odyssey&rdquo;, <code>CLAUDE.md:343</code></td></tr>
+      <tr><td class="term">cobuilder-architect : review</td><td><span class="tag clay">architect</span></td><td>The self-only security/architecture/quality audit. Paired Technical and Founder HTML reports.</td><td>distinct from <code>cobuilder-pr:review</code> by plugin, not suffix</td></tr>
+      <tr><td class="term">cobuilder-architect : design</td><td><span class="tag clay">architect</span></td><td>After decision&nbsp;3: the merged design flow &mdash; framing, exploration, challenge &mdash; ending in <code>intent.json</code> and a handoff to cobuilder-implement.</td><td>ADR-0011, ADR-0013</td></tr>
+      <tr><td class="term">a design</td><td><span class="tag clay">architect</span></td><td>One <code>docs/architecture/designs/&lt;name&gt;/</code> directory. Not the mode that produced it, not the ADR it also writes.</td><td>design-mode.md artifact list</td></tr>
+      <tr><td class="term">epic</td><td><span class="tag rust">implement</span></td><td>One entry in a design&rsquo;s <code>goal.json.epics[]</code>. Maps to zero or one PR through <code>epics[].branch</code>. The join key between a design and a PR &mdash; not a design, an ADR, or a PR itself.</td><td>ADR-0013 &sect;goal.json</td></tr>
+      <tr><td class="term">district</td><td><span class="tag clay">architect</span></td><td>An inferred, unverified entry in <code>world.districts</code>, derived by <code>cobuilder-architect:baseline</code>. The lite counterpart to a bounded context &mdash; usable on a foreign repo nobody maintains.</td><td>baseline-derivation.md, &ldquo;describe-lite&rdquo;</td></tr>
+      <tr><td class="term">bounded context</td><td><span class="tag clay">architect</span></td><td>A <code>docs/architecture/contexts/&lt;id&gt;/</code> bundle: <code>canvas.md</code> + <code>boundary.yaml</code>. Every claim grep-verified against real import edges. Self-only.</td><td>architecture-documentation.md</td></tr>
+      <tr><td class="term">cobuilder-artifact : view / publish</td><td><span class="tag sky">shared</span></td><td>Serve and export the one bundle both pillars write into &mdash; the viewer&rsquo;s Designs/Pull&nbsp;requests toggle is one page, not two. Its own plugin, declared as a dependency of both <code>cobuilder-architect</code> and <code>cobuilder-pr</code>.</td><td><code>viewer/index.html:640-641</code>, <code>export_artifact.py:369</code>; dependency mechanism per <a href="https://code.claude.com/docs/en/plugins-reference">Plugins reference</a></td></tr>
+      <tr><td class="term">bundle</td><td><span class="tag sky">shared</span></td><td>The whole derived-output tree for one target: <code>.cobuilder-architect/self/</code> or <code>&lt;repo-slug&gt;/</code>. Not <code>docs/</code>, which is authored and never derived.</td><td>CLAUDE.md, Bundle output shape</td></tr>
+      <tr><td class="term">self / foreign</td><td><span class="tag sky">shared</span></td><td>Self is the session&rsquo;s own checkout &mdash; the only target the architect pillar accepts. Foreign is a <code>--repo</code> target, reachable only through the pull-request pillar&rsquo;s narration side.</td><td>CLAUDE.md, repo scope note</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section id="structure" class="wide">
+  <div class="section-num">03</div>
+  <h2>Repo &amp; skill structure</h2>
+  <p class="dek">One org, four sibling plugins, no plugin nested inside another, and every one of them carries the <code>cobuilder-</code> prefix. <code>cobuilder-architect</code> and <code>cobuilder-pr</code> stand on their own feet, exactly as <code>cobuilder-implement</code> already did.</p>
+
+  <div class="diagram-panel">
+    <figure>
+      <svg viewBox="0 0 900 585" role="img" aria-label="The cobuilder org contains four sibling plugins, all named with the cobuilder- prefix: cobuilder-architect, cobuilder-pr, cobuilder-implement, and cobuilder-artifact, none nested inside another. cobuilder-architect owns design, review, maintenance, decisions, describe, debug, and baseline. cobuilder-pr owns generate, assess, and review. Below both, cobuilder-artifact owns view and publish, and is declared as a plugin dependency of both its neighbors, shown as dashed depends-on connectors rather than a code call — installing cobuilder-architect or cobuilder-pr auto-installs cobuilder-artifact. cobuilder-implement does not depend on it. cobuilder-architect's design box hands off to cobuilder-implement over the top of cobuilder-pr, through the intent.json file. cobuilder-implement builds the epics and opens a pull request that flows back, over a short direct arrow, into cobuilder-pr's own review mode.">
+
+        <!-- org boundary -->
+        <rect x="16" y="16" width="868" height="545" rx="16" fill="none" stroke="var(--line-strong)" stroke-width="1.5" stroke-dasharray="2 5"/>
+        <text x="36" y="42" class="lbl-display" font-size="15" font-weight="600">cobuilder</text>
+        <text x="36" y="60" font-size="10.5" fill="var(--ink-faint)" letter-spacing="0.06em">ONE REPOSITORY, FOUR PLUGIN PACKAGES</text>
+
+        <!-- handoff arrow: cobuilder-architect:design -> cobuilder-implement, arcing over cobuilder-pr -->
+        <path d="M 174 88 C 174 44, 722 44, 722 88" fill="none" stroke="var(--rust)" stroke-width="1.75" marker-end="url(#arrowRust)"/>
+        <text x="448" y="40" font-size="9.5" fill="var(--rust)" text-anchor="middle" letter-spacing="0.02em">cobuilder-architect:design hands off via intent.json</text>
+
+        <!-- cobuilder-architect plugin -->
+        <rect x="44" y="88" width="260" height="326" rx="12" fill="var(--card)" stroke="var(--clay)" stroke-width="1.5"/>
+        <text x="60" y="112" class="lbl-display" font-size="12.5" font-weight="600" fill="var(--clay)">cobuilder-architect</text>
+        <text x="60" y="130" font-size="9.5" fill="var(--ink-faint)" letter-spacing="0.04em">CLAUDE CODE PLUGIN</text>
+
+        <text x="60" y="156" font-size="11">review &middot; maintenance</text>
+        <text x="60" y="174" font-size="11">decisions &middot; describe</text>
+        <text x="60" y="192" font-size="11">debug &middot; baseline</text>
+
+        <rect x="60" y="210" width="228" height="58" rx="8" fill="var(--rust-soft)" stroke="var(--rust)" stroke-width="1.25"/>
+        <text x="74" y="230" font-size="11" font-weight="600" fill="var(--rust)">design</text>
+        <text x="74" y="245" font-size="9.5" fill="var(--ink-soft)">frame &middot; explore &middot; challenge</text>
+        <text x="74" y="259" font-size="9.5" fill="var(--ink-soft)">writes intent.json</text>
+
+        <text x="60" y="290" font-size="9.5" fill="var(--ink-faint)">produces, self-only:</text>
+        <text x="60" y="306" font-size="10.5">a design &middot; bounded context</text>
+        <text x="60" y="324" font-size="10.5">ADR &middot; district</text>
+
+        <!-- cobuilder-pr plugin -->
+        <rect x="316" y="88" width="260" height="326" rx="12" fill="var(--card)" stroke="var(--olive)" stroke-width="1.5"/>
+        <text x="332" y="114" class="lbl-display" font-size="14" font-weight="600" fill="var(--olive)">cobuilder-pr</text>
+        <text x="332" y="130" font-size="9.5" fill="var(--ink-faint)" letter-spacing="0.04em">CLAUDE CODE PLUGIN</text>
+
+        <text x="332" y="158" font-size="11">generate</text>
+        <text x="332" y="178" font-size="11">assess</text>
+        <text x="332" y="198" font-size="11">review</text>
+
+        <text x="332" y="232" font-size="9.5" fill="var(--ink-faint)">--repo targets a foreign checkout</text>
+        <text x="332" y="250" font-size="10.5">writes to the shared bundle</text>
+
+        <!-- dependency connectors: cobuilder-architect + cobuilder-pr declare cobuilder-artifact in plugin.json -->
+        <line x1="174" y1="414" x2="174" y2="438" stroke="var(--sky)" stroke-width="1.25" stroke-dasharray="2 4"/>
+        <line x1="446" y1="414" x2="446" y2="438" stroke="var(--sky)" stroke-width="1.25" stroke-dasharray="2 4"/>
+        <text x="196" y="429" font-size="8" fill="var(--sky)" letter-spacing="0.02em">depends on</text>
+
+        <!-- cobuilder-artifact plugin -->
+        <rect x="44" y="438" width="532" height="70" rx="12" fill="var(--card)" stroke="var(--sky)" stroke-width="1.5"/>
+        <text x="60" y="463" class="lbl-display" font-size="13" font-weight="600" fill="var(--sky)">cobuilder-artifact</text>
+        <text x="60" y="479" font-size="9.5" fill="var(--ink-faint)" letter-spacing="0.04em">CLAUDE CODE PLUGIN</text>
+        <text x="380" y="463" font-size="11">view</text>
+        <text x="450" y="463" font-size="11">publish</text>
+        <text x="60" y="498" font-size="9.5" fill="var(--ink-soft)">reads and ships the one bundle cobuilder-architect and cobuilder-pr both write into</text>
+
+        <!-- cobuilder-implement plugin -->
+        <rect x="588" y="88" width="268" height="200" rx="12" fill="var(--card)" stroke="var(--rust)" stroke-width="1.5" stroke-dasharray="3 4"/>
+        <text x="604" y="112" class="lbl-display" font-size="12.5" font-weight="600" fill="var(--rust)">cobuilder-implement</text>
+        <text x="604" y="130" font-size="9.5" fill="var(--ink-faint)" letter-spacing="0.04em">RUNS IN ANY HARNESS</text>
+
+        <text x="604" y="156" font-size="10.5">1. reads goal.json.epics[]</text>
+        <text x="604" y="174" font-size="10.5">2. red team: failing tests</text>
+        <text x="604" y="192" font-size="10.5">3. green team: minimal code</text>
+        <text x="604" y="210" font-size="10.5">4. validator scores &ge; 0.90</text>
+        <text x="604" y="234" font-size="10.5" font-weight="500" fill="var(--rust)">opens a PR per epic</text>
+
+        <!-- return arrow: cobuilder-implement -> cobuilder-pr:review, short and direct -->
+        <path d="M 588 262 L 580 262" fill="none" stroke="var(--olive)" stroke-width="1.75" marker-end="url(#arrowOlive)"/>
+        <text x="717" y="262" font-size="9" fill="var(--olive)" text-anchor="middle">opens PR &rarr; cobuilder-pr:review narrates it</text>
+
+        <defs>
+          <marker id="arrowRust" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--rust)"/>
+          </marker>
+          <marker id="arrowOlive" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--olive)"/>
+          </marker>
+        </defs>
+      </svg>
+      <figcaption>Four plugins, four manifests, one repository, one shared naming prefix &mdash; per decisions&nbsp;1 and&nbsp;6. The handoff from <code>cobuilder-architect:design</code> arcs over <code>cobuilder-pr</code> rather than through it, because the join is a file on disk, not a call between the two neighbors it happens to pass over. <code>cobuilder-artifact</code> is its own plugin, not a band shared between the other two &mdash; each declares it in <code>plugin.json</code>&rsquo;s <code>dependencies</code> field, per decision&nbsp;5, so it installs automatically alongside either one.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="target" class="wide">
+  <div class="section-num">04</div>
+  <h2>Target architecture</h2>
+  <p class="dek">Decisions 1 through 10 settle the shape. This is that shape applied to every file the repository holds today: 13 commands, 4 skills, 22 scripts, 9 references, and one viewer, each given exactly one owner.</p>
+
+  <h3>Repository layout</h3>
+  <pre class="tree">cobuilder/
+  .claude-plugin/marketplace.json     <i>one file, five entries</i>
+  <b>shared/</b>                              <i>not a plugin &mdash; the symlink target of record</i>
+    bundle-core/                      <i>_bundle_meta, _manifest, migrate_bundle, verify_bundle</i>
+    skills/ste-writing/               <i>vendored into all five</i>
+    skills/mermaid/                   <i>vendored into cobuilder-pr only</i>
+  plugins/
+    <b>cobuilder-architect/</b>
+      commands/  design describe decisions review maintenance
+                 debug explore-design baseline
+      skills/architecture/            <i>corpus, stack cards, templates</i>
+      skills/ste-writing -&gt; shared    <i>symlink</i>
+      scripts/   build_adrs build_designs compute_scores
+                 html_to_pdf validate_decision_state
+      scripts/_shared -&gt; shared/bundle-core
+    <b>cobuilder-pr/</b>
+      commands/  generate assess review
+      skills/pull-request/            <i>story, interview, review, diagram,
+                                       decision-records-lite, baseline-derivation</i>
+      skills/mermaid -&gt; shared
+      skills/ste-writing -&gt; shared
+      scripts/   extract_story extract_diffs generate_prompts
+                 generate_audio build_diagrams render_review
+      scripts/_shared -&gt; shared/bundle-core
+    <b>cobuilder-artifact/</b>
+      commands/  view publish
+      skills/artifact/
+      viewer/index.html
+      scripts/   export_artifact export_index record_publish
+      scripts/_shared -&gt; shared/bundle-core
+    <b>cobuilder-implement/</b>
+      commands/  <i>owned by that plugin, out of scope here</i>
+    <b>cobuilder-full-lifecycle/</b>
+      skills/full-lifecycle/SKILL.md  <i>orientation only &mdash; decision 10</i>
+      plugin.json dependencies: all four above</pre>
+
+  <h3>Where today&rsquo;s files land</h3>
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>Moves from</th><th>To</th><th>Why this owner</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="term">commands/submit.md</td><td><span class="tag olive">pr</span> generate + assess</td><td>Splits in two per decision&nbsp;2. The interview and <code>gh pr create</code> half is <code>generate</code>. The verdict half is <code>assess</code>.</td></tr>
+      <tr><td class="term">commands/generate.md</td><td><span class="tag olive">pr</span> review</td><td>The narration sweep. Renamed, not moved &mdash; the plugin prefix now supplies the qualifier the old name carried.</td></tr>
+      <tr><td class="term">commands/baseline.md</td><td><span class="tag clay">architect</span> baseline</td><td>Decision&nbsp;4. Districts are architecture description, whatever consumes them.</td></tr>
+      <tr><td class="term">commands/design.md (odyssey)</td><td><span class="tag clay">architect</span> design</td><td>Decision&nbsp;3. Folds into the architect pillar&rsquo;s design mode; the odyssey copy stops existing.</td></tr>
+      <tr><td class="term">commands/view.md, publish.md</td><td><span class="tag sky">artifact</span></td><td>Decision&nbsp;5. Neither pillar owns the rendering of a bundle both write into.</td></tr>
+      <tr><td class="term">skills/odyssey/</td><td><span class="tag olive">pr</span> skills/pull-request/</td><td>Renamed. Loses <code>design-mode.md</code> to architect; keeps story, interview, review, diagram.</td></tr>
+      <tr><td class="term">skills/odyssey/references/<br>baseline-derivation.md</td><td><span class="tag clay">architect</span></td><td>Follows its command. Sits next to the Describe mode it is the lite counterpart of.</td></tr>
+      <tr><td class="term">skills/ste-writing/, mermaid/</td><td><span class="tag sky">shared/</span></td><td>Decision&nbsp;8. Symlinked outward; each plugin ships its own dereferenced copy.</td></tr>
+      <tr><td class="term">scripts/_bundle_meta.py<br>_manifest.py<br>migrate_bundle.py<br>verify_bundle.py</td><td><span class="tag sky">shared/bundle-core</span></td><td>Every plugin that opens a bundle runs the migration ladder first. That rule cannot survive living in only one of them.</td></tr>
+      <tr><td class="term">scripts/build_designs.py<br>build_adrs.py</td><td><span class="tag clay">architect</span></td><td>They compile authored <code>docs/</code> content into the bundle. The authoring side owns the projection.</td></tr>
+      <tr><td class="term">viewer/index.html</td><td><span class="tag sky">artifact</span></td><td>The only consumer of every projection, and the only file <code>migrate_bundle.py</code> refreshes unconditionally.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="diagram-panel" style="margin-top:32px">
+    <figure>
+      <svg viewBox="0 0 860 420" role="img" aria-label="Three plugins write projections into one versioned bundle directory; cobuilder-artifact reads all of them and renders the viewer and exports. No plugin calls another. A shared vendored layer of bundle-core scripts and writing skills is copied into every plugin at install time." style="max-width:100%;height:auto;color:var(--ink)">
+
+        <!-- writers -->
+        <rect x="20" y="34" width="200" height="58" rx="8" fill="none" stroke="var(--clay)" stroke-width="1.5"/>
+        <text x="120" y="58" font-size="11.5" text-anchor="middle" fill="var(--clay)">cobuilder-architect</text>
+        <text x="120" y="76" font-size="9.5" text-anchor="middle" fill="var(--ink-faint)">design describe decisions review</text>
+
+        <rect x="20" y="126" width="200" height="58" rx="8" fill="none" stroke="var(--olive)" stroke-width="1.5"/>
+        <text x="120" y="150" font-size="11.5" text-anchor="middle" fill="var(--olive)">cobuilder-pr</text>
+        <text x="120" y="168" font-size="9.5" text-anchor="middle" fill="var(--ink-faint)">generate assess review</text>
+
+        <rect x="20" y="218" width="200" height="58" rx="8" fill="none" stroke="var(--rust)" stroke-width="1.5"/>
+        <text x="120" y="242" font-size="11.5" text-anchor="middle" fill="var(--rust)">cobuilder-implement</text>
+        <text x="120" y="260" font-size="9.5" text-anchor="middle" fill="var(--ink-faint)">builds the epic, opens the branch</text>
+
+        <!-- the bundle -->
+        <rect x="330" y="34" width="180" height="242" rx="10" fill="none" stroke="currentColor" stroke-width="2"/>
+        <text x="420" y="60" font-size="12" text-anchor="middle">the bundle</text>
+        <text x="420" y="77" font-size="9" text-anchor="middle" fill="var(--ink-faint)">.cobuilder-architect/&lt;target&gt;/</text>
+        <line x1="348" y1="90" x2="492" y2="90" stroke="var(--line-strong)" stroke-width="1"/>
+        <text x="420" y="110" font-size="9.5" text-anchor="middle" fill="var(--clay)">designs.js &middot; adrs.js</text>
+        <text x="420" y="130" font-size="9.5" text-anchor="middle" fill="var(--olive)">story.js &middot; diffs &middot; diagrams &middot; audio</text>
+        <text x="420" y="150" font-size="9.5" text-anchor="middle" fill="var(--ink-faint)">inventory.yaml &middot; assets/</text>
+        <line x1="348" y1="166" x2="492" y2="166" stroke="var(--line-strong)" stroke-width="1"/>
+        <text x="420" y="186" font-size="9.5" text-anchor="middle">bundle.json</text>
+        <text x="420" y="203" font-size="9" text-anchor="middle" fill="var(--ink-faint)">schema_version</text>
+        <text x="420" y="217" font-size="9" text-anchor="middle" fill="var(--ink-faint)">bundle_format</text>
+        <text x="420" y="245" font-size="9" text-anchor="middle" fill="var(--ink-faint)">the version gate every</text>
+        <text x="420" y="258" font-size="9" text-anchor="middle" fill="var(--ink-faint)">plugin checks on open</text>
+
+        <!-- writer arrows -->
+        <line x1="222" y1="63" x2="326" y2="63" stroke="var(--clay)" stroke-width="1.5" marker-end="url(#arrowClay)"/>
+        <text x="274" y="55" font-size="8.5" text-anchor="middle" fill="var(--clay)">writes</text>
+        <line x1="222" y1="155" x2="326" y2="155" stroke="var(--olive)" stroke-width="1.5" marker-end="url(#arrowOlive)"/>
+        <text x="274" y="147" font-size="8.5" text-anchor="middle" fill="var(--olive)">writes</text>
+        <path d="M 222 247 L 274 247 L 274 175" fill="none" stroke="var(--rust)" stroke-width="1.25" stroke-dasharray="4 3" marker-end="url(#arrowRust)"/>
+        <text x="300" y="285" font-size="8.5" text-anchor="middle" fill="var(--rust)">opens the PR that</text>
+        <text x="300" y="297" font-size="8.5" text-anchor="middle" fill="var(--rust)">cobuilder-pr then reads</text>
+
+        <!-- reader -->
+        <rect x="620" y="126" width="200" height="58" rx="8" fill="none" stroke="var(--sky)" stroke-width="1.5"/>
+        <text x="720" y="150" font-size="11.5" text-anchor="middle" fill="var(--sky)">cobuilder-artifact</text>
+        <text x="720" y="168" font-size="9.5" text-anchor="middle" fill="var(--ink-faint)">view &middot; publish</text>
+        <line x1="512" y1="155" x2="616" y2="155" stroke="var(--sky)" stroke-width="1.5" marker-end="url(#arrowSky)"/>
+        <text x="564" y="147" font-size="8.5" text-anchor="middle" fill="var(--sky)">reads all</text>
+        <text x="720" y="205" font-size="9" text-anchor="middle" fill="var(--ink-faint)">viewer &middot; standalone artifacts</text>
+
+        <!-- shared band -->
+        <rect x="20" y="330" width="800" height="62" rx="10" fill="none" stroke="var(--line-strong)" stroke-width="1.25" stroke-dasharray="6 4"/>
+        <text x="420" y="354" font-size="11" text-anchor="middle" fill="var(--ink-faint)">shared/ &mdash; vendored by symlink, dereferenced into each plugin&rsquo;s own cache at install</text>
+        <text x="420" y="374" font-size="9.5" text-anchor="middle" fill="var(--ink-faint)">bundle-core (_bundle_meta &middot; _manifest &middot; migrate_bundle &middot; verify_bundle) &nbsp;&middot;&nbsp; ste-writing &nbsp;&middot;&nbsp; mermaid</text>
+        <line x1="120" y1="278" x2="120" y2="326" stroke="var(--line-strong)" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="720" y1="186" x2="720" y2="326" stroke="var(--line-strong)" stroke-width="1" stroke-dasharray="3 3"/>
+
+        <defs>
+          <marker id="arrowClay" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--clay)"/>
+          </marker>
+          <marker id="arrowSky" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--sky)"/>
+          </marker>
+        </defs>
+      </svg>
+      <figcaption>Decision&nbsp;9 drawn. Every arrow crossing between plugins terminates in the bundle &mdash; there is no arrow from one plugin box to another, and that absence is the design. <code>cobuilder-implement</code> is the one exception in kind rather than in mechanism: it hands off through a git branch and a real pull request, which is still a file-and-state seam, not a call. The dashed band is not a runtime layer. It is copied into each plugin at install time, so four installed plugins hold four copies of the same schema constant &mdash; which is exactly why <code>bundle.json</code>&rsquo;s version gate sits at the center of the picture.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="path">
+  <div class="section-num">05</div>
+  <h2>Migration path</h2>
+  <p class="dek">Five phases, ordered so that the repository installs and runs at the end of each one. Nothing here needs a flag day.</p>
+
+  <ol class="phases">
+    <li>
+      <h4>Land the vocabulary and the renames inside today&rsquo;s single plugin</h4>
+      <p>Split <code>submit</code> into <code>generate</code> and <code>assess</code>, rename the narration sweep to <code>review</code>, fold odyssey&rsquo;s design mode into the architect pillar, and move <code>baseline</code> across. One plugin still, one manifest, no packaging change. Every decision from 1 through 4 is testable at the end of this phase.</p>
+    </li>
+    <li>
+      <h4>Extract <code>shared/</code> and prove the symlink dereference</h4>
+      <p>Move the four bundle-core scripts and the two shared skills into <code>shared/</code>, symlink them back into place, and confirm an installed copy still resolves them. This is the one phase that can fail on a platform behavior rather than on our own code, so it goes early and alone.</p>
+    </li>
+    <li>
+      <h4>Split the manifests</h4>
+      <p>Create the five plugin directories, five <code>plugin.json</code> files, and one <code>marketplace.json</code> listing all of them. Wire the <code>dependencies</code> fields. Run <code>claude plugin validate</code> on each.</p>
+    </li>
+    <li>
+      <h4>Harden the seam</h4>
+      <p>Make every plugin stamp its own <code>generator_version</code>, and make the <code>schema_version</code> gate fail loudly rather than proceed when a bundle is newer than the reader. Until this lands, a mixed-version install degrades silently &mdash; which is the only genuinely new failure mode the split introduces.</p>
+    </li>
+    <li>
+      <h4>Write the orientation skill and the ADRs</h4>
+      <p><code>cobuilder-full-lifecycle</code>&rsquo;s <code>SKILL.md</code> per decision&nbsp;10, and the decision records this document has been deferring throughout: new ADRs for decisions 8 and 9, amendments to ADR&#8209;0011 and ADR&#8209;0013 for decision 3, and to ADR&#8209;0013 again for decision 1.</p>
+    </li>
+  </ol>
+</section>
+
+<section id="pr11">
+  <div class="section-num">06</div>
+  <h2>PR #11 &mdash; findings that held up</h2>
+  <p class="dek"><code>design/design-mode</code> &rarr; <code>master</code>, unmerged. Three claimed fixes, checked directly against the diff rather than the PR body.</p>
+
+  <h3>Confirmed <span class="tag olive">verified in code</span></h3>
+  <p>The <code>ste-writing</code> skill-resolution fix is complete at all three sites the PR touched &mdash; <code>SKILL.md</code>, <code>design-mode.md</code>, <code>story-mode.md</code> &mdash; each now falling back to a direct file read on <code>Unknown skill</code>. The multi-design branch resolution in Submit mode now collects every matching design and asks the author which ones a PR delivers, rather than silently taking the first match. ADR-0013&rsquo;s file-only join is reasoned, not assumed.</p>
+
+  <h3>Found during this review <span class="tag rust">missed by the PR</span></h3>
+  <p>A fourth, unguarded call site: <code>CLAUDE.md</code>&rsquo;s own Writing standard section instructed <code>Skill("ste-writing")</code> with no fallback. It only worked here because this repo carries a second copy under <code>.claude/skills/</code> &mdash; the same coincidence that hid the other three. Fixed in this session.</p>
+  <p>The plugin manifest names a repository that is not this one: <code>plugin.json</code> declares <code>github.com/bjornslib/cobuilder-architect</code>; the actual git remote is <code>github.com/bjornslib/prodyssey.git</code>. Not yet fixed.</p>
+
+  <h3>Open, self-flagged by the PR</h3>
+  <p>The <code>cobuilder-implement</code> validator judges test adequacy after executing the suite &mdash; a single LLM judgment call at a 0.90 gate. The PR&rsquo;s own reasoning against an &ldquo;amnesia&rdquo; two-pass design applies here too: one policy scoring itself carries correlated error. Worth a stress test before implementation starts.</p>
+</section>
+
+<section id="open">
+  <div class="section-num">07</div>
+  <h2>Open questions</h2>
+  <p class="dek">Every naming and structural question raised this session is resolved. Two things remain unverified, and both are platform behavior rather than design.</p>
+
+  <h3>The symlink dereference, end to end <span class="tag rust">blocks phase 2</span></h3>
+  <p>The reference page states that a symlink elsewhere within the same marketplace is dereferenced and its target copied into the cache. The whole <code>shared/</code> layer rests on that sentence holding for a directory of Python that a skill later executes through <code>${CLAUDE_PLUGIN_ROOT}</code>, not only for a skill directory. Install a two-plugin draft from a local marketplace and read what actually lands in the cache before committing phase&nbsp;2. If the dereference does not cover it, the fallback is a build step that copies <code>shared/</code> into each plugin before publish &mdash; more machinery, same result.</p>
+
+  <h3>Transitive dependency resolution <span class="tag sky">already routed around</span></h3>
+  <p>Still unconfirmed for <code>plugin install</code> as opposed to <code>plugin enable</code>. Decision&nbsp;7 names all four dependencies directly so that nothing depends on the answer. Recorded here only so a later reader does not mistake the redundancy for an oversight and tidy it away.</p>
+
+  <h3>Retired this round</h3>
+  <p>The empty-plugin question is closed by decision&nbsp;10: <code>cobuilder-full-lifecycle</code> ships a skill, so it is an ordinary plugin and never tests the pattern.</p>
+</section>
+
+<footer>
+  Drafted from the working session on <code>cobuilder-architect</code>, 2026&#8209;08&#8209;20. Companion files in <code>.lavish/</code>: <code>design-mode.html</code>, <code>cobuilder-factory.html</code>.
+</footer>
+
+</main>
+</div>
+</body>
+</html>
