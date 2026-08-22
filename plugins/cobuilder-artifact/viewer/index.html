@@ -2245,37 +2245,12 @@ window.INDEX = window.INDEX || {};
      RENDER: NARRATION CAPTION
      ============================================================ */
   function renderCaption(){
-    if (isBuildsMode()){
-      const sub = state.level === 2 ? 'Backlog Lane' : (state.level === 3 ? 'Slice Ladder' : 'Overview & Gates');
-      document.getElementById('caption-title').textContent = `Builds — ${sub}`;
-      document.getElementById('caption-narration').textContent = 'Feature gates, computed backlog query over index, and epic-first slice ladder.';
-      renderContentAudio();
+    const caption = document.getElementById('narration-caption');
+    if (!isPrsMode()){
+      caption.hidden = true;
       return;
     }
-    if (isDecisionsMode()){
-      const sub = state.level === 2 ? 'Verified Anchors' : (state.level === 3 ? 'Inferred / Unanchored' : 'All Decisions');
-      document.getElementById('caption-title').textContent = `Decisions — ${sub}`;
-      document.getElementById('caption-narration').textContent = 'Every architecture decision record with lifecycle state and anchor verification status.';
-      renderContentAudio();
-      return;
-    }
-    if (isContextsMode()){
-      const sub = state.level === 2 ? 'Violations & Backlog' : (state.level === 3 ? 'Bounded Contexts' : 'Overview');
-      document.getElementById('caption-title').textContent = `Contexts — ${sub}`;
-      document.getElementById('caption-narration').textContent = 'Verified architecture boundaries, boundary rules, graph violations, and uncovered district backlog.';
-      renderContentAudio();
-      return;
-    }
-    if (isDesignsMode()){
-      const name = currentDesignName();
-      const d = currentDesign();
-      const label = DESIGN_LEVEL_LABELS[state.level - 1] || 'Overview';
-      const title = d ? (designTitle(d) || designName(d, name) || 'Design') : 'Design';
-      document.getElementById('caption-title').textContent = `${title} — ${label}`;
-      document.getElementById('caption-narration').textContent = designCaptionNarration(d, state.level);
-      renderContentAudio();
-      return;
-    }
+    caption.hidden = false;
     const p = pr();
     const content = deriveLevelContent(p);
     const block = content[levelKey()];
