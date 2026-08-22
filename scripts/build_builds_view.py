@@ -54,7 +54,7 @@ ASK_NOTES = {
 GATE_LINE = re.compile(r"- Gate (\d) — ([^:]+): (.+)")
 
 
-SLICE_ROW = re.compile(r"^\|\s*(\d+)\s*\|\s*(.+?)\s*\|\s*`([^`]+)`\s*\|")
+SLICE_ROW = re.compile(r"^\|\s*(\d+)\s*\|\s*`([^`]+)`\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|")
 
 
 def read_epics(designs_dir: Path, slices_md: str) -> list[dict]:
@@ -67,8 +67,9 @@ def read_epics(designs_dir: Path, slices_md: str) -> list[dict]:
     for line in slices_md.splitlines():
         m = SLICE_ROW.match(line.strip())
         if m:
-            by_epic.setdefault(m.group(3), []).append(
-                {"n": int(m.group(1)), "name": m.group(2).replace("**", "")})
+            by_epic.setdefault(m.group(2), []).append(
+                {"n": int(m.group(1)), "name": m.group(3).replace("**", ""),
+                 "score": m.group(5).strip(), "state": m.group(6).strip()})
 
     epics = []
     for goal in sorted(designs_dir.glob("*/goal.json")):
@@ -151,9 +152,6 @@ def render(page: Path, plan_dir: Path, designs_dir: Path, rubrics_dir: Path) -> 
     lines = page.read_text().split("\n")
     for i, line in enumerate(lines):
         if line.startswith("<script>window.BUILD="):
-            # The whole payload is one line, closing tag included. Dropping
-            # that tag leaves the rest of the page inside a string literal
-            # and renders a blank page, so it is written back explicitly.
             lines[i] = f"<script>window.BUILD={blob};</script>"
         elif line.startswith("var GATEDOC="):
             lines[i] = f"var GATEDOC={json.dumps(present)};"

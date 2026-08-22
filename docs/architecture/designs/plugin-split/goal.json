@@ -60,17 +60,17 @@
     },
     {
       "id": "E5",
-      "branch": null,
-      "pr": null,
-      "state": "planned",
-      "note": "One lifecycle surface. The Decisions, Contexts, and Builds modes, the Backlog lane, and moving generated pages out of the foreign directory into the bundle. Two slices."
+      "branch": "feature/lifecycle-surface",
+      "pr": 12,
+      "state": "open",
+      "note": "One lifecycle surface. The Decisions, Contexts, and Builds modes, the Backlog lane, and moving generated pages out of the foreign directory into the bundle. Two slices (10, 11)."
     },
     {
       "id": "E6",
-      "branch": null,
-      "pr": null,
-      "state": "planned",
-      "note": "The reply channel. The append-only ledger and its projection, the anchor computed from the live DOM, the write endpoint, and the background wake command. Three slices."
+      "branch": "feature/reply-channel",
+      "pr": 13,
+      "state": "open",
+      "note": "The reply channel. The append-only ledger and its projection, the anchor computed from the live DOM, the write endpoint, and the background wake command. Three slices (12, 13, 14)."
     },
     {
       "id": "E7",
