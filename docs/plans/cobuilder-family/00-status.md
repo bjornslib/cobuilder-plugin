@@ -38,9 +38,9 @@ Six epics, fourteen slices. A seventh epic is deferred and carries none.
 - [x] Slice 11 — the Builds mode and the Backlog lane             score: 0.92
 
 **E6 — the reply channel**
-- [ ] Slice 12 — the ledger and its projection                    score: —
-- [ ] Slice 13 — the anchor and the write endpoint                score: —
-- [ ] Slice 14 — the wake command and the whole loop              score: —
+- [x] Slice 12 — the ledger and its projection                    score: 0.92
+- [x] Slice 13 — the anchor and the write endpoint                score: 1.00
+- [x] Slice 14 — the wake command and the whole loop              score: 1.00
 
 **E7 — threads read as conversations**: deferred, no slice yet.
 
@@ -628,6 +628,95 @@ context map integration patterns rather than raw YAML configuration.
 across Pull requests, Designs, Decisions, and Contexts modes.
 
 198 tests pass in the test suite.
+
+## Slice 12 — ACCEPT at 0.92. The ledger and its projection.
+
+Five of six criteria passed independent validation. Both critical criteria (C1, C2) scored 1.00.
+
+**A read never deletes (C1).** `read_ledger()`, `fold_threads()`, `project_threads()`, and `write_projection()` all operate read-only on the ledger file. The test `test_read_does_not_delete` verifies the file remains byte-identical after three read-fold-project cycles.
+
+**An append never rewrites an earlier line (C2).** `append_line()` opens the file in append mode (`'a'`), never seeks or truncates. Tests verify: sequential appends leave the first line untouched; concurrent appends both survive; state changes are new lines, not edits.
+
+**Current state is a lookup, history intact (C3).** `project_threads()` builds a projection with `current_state`, `updated_by`, `updated_at`, plus full `replies[]` and `state_changes[]` arrays. One lookup returns the thread state; the ledger retains every transition with actor and timestamp.
+
+**Projection is disposable (C4).** `rebuild_projection()` reads the ledger and rebuilds from scratch. Tests verify deleting the projection and rebuilding yields identical content.
+
+**Agent reply is a record (C6).** `append_reply()` sets `author="agent"` and `thread_ulid`. Folding places replies under their root thread in append order. Tests verify both fields and ordering.
+
+**Migration guard for ledger (C5: partial).** The ledger is protected by its append-only architecture (C1/C2). The formal migration guard in `migrate_bundle.py` covers `story.json` authored fields; extending it to the ledger file is a follow-up item.
+
+210 tests pass in the test suite (198 existing + 12 new ledger tests).
+
+## Slice 13 — ACCEPT at 1.00. The anchor and the write endpoint.
+
+All five criteria passed independent validation. All three critical criteria (C1, C2, C3) scored 1.00.
+
+**Reader points at one sentence, not a whole section (C1).** `captureRange()` uses
+`window.getSelection()` to capture the exact selection range (start/end offsets)
+and quoted text. The click handler first checks for a non-collapsed selection;
+if present, it anchors to that exact range. Otherwise `computeSelector()` walks
+up to 5 ancestors to find a stable CSS selector (id → data-testid → class
+combination → nth-child fallback). Nothing is tagged at build time — selectors
+are computed entirely at runtime.
+
+**Reader sees the text while writing (C2).** The comments drawer is a 420px side
+panel in a flex row. When opened, the main content **shifts** to make room —
+it is not covered by an overlay. `openFeedbackDrawer()` sets the anchor, opens
+the drawer, then renders the anchored context before focusing the input, so
+the target is already visible when the drawer appears.
+
+**Server accepts exactly one write (C3).** `serve_bundle.py` only implements
+`POST /feedback`; all other paths return 404. The endpoint validates required
+`anchor` and `text` fields. When `allow_write=False`, returns 403. Server
+binds to `127.0.0.1` only (loopback). Tests verify all three requirements.
+
+**Comment survives with no server (C4).** `submitFeedback()` tries the server
+first; on failure falls back to `localStorage` with `local: true` flag.
+Explicit toast informs the user: "Saved locally (server unavailable). Will
+sync when server is reachable." Comment persists across reloads.
+
+**Stale selector recovers through the quote (C5).** `renderFeedbackAnchor()`
+checks `document.querySelector()` against the stored selector. If no match,
+renders "Anchored (stale)" badge (amber), selector with "⚠ selector no
+longer matches" marker, quoted text preserved with amber border and yellow
+background, and hint: "Quote preserved. Select new text to re-anchor."
+
+219 tests pass in the test suite (210 existing + 9 new server/watch tests).
+
+## Slice 14 — ACCEPT at 1.00. The wake command and the whole loop.
+
+All four criteria passed independent validation. Both critical criteria (C1, C4) scored 1.00.
+
+**Command distinguishes new work from no work (C1).** `watch_feedback.py` blocks
+until the ledger grows past the given `--since` offset. On new lines, prints
+only the new lines (JSONL) and exits **0**. On timeout, prints nothing and exits
+**2**. Distinct exit codes; never reprints the whole file. Tests verify both
+paths: `test_watch_exits_0_on_new_lines` and `test_watch_exits_2_on_timeout`.
+
+**Never waits forever (C2).** Default timeout **30 seconds**, override via
+`--timeout`. `watch_feedback()` tracks elapsed time against timeout and returns
+immediately when exceeded. Test confirms 1-second timeout terminates cleanly.
+
+**Each reader tracks its own place (C3).** The ledger is append-only; offsets
+are caller-managed. `test_watch_tracks_offset_per_reader` demonstrates:
+Reader 1 from `--since 0` gets lines 1–2, tracks offset 2; after "Third" is
+appended, Reader 1's second run from `--since 2` gets only "Third"; Reader 2
+from `--since 2` also gets only "Third". Neither consumes the other's lines.
+
+**Whole loop runs once end-to-end (C4).** `test_full_loop_comment_to_reply`:
+1. Human comment posted with anchor containing `"quotedText": "selected text"`
+2. Offset tracked from ledger length (simulating wake command `--since`)
+3. Agent reply appended via `append_reply`
+4. State change to "resolved" via `append_state`
+5. Projection verified: `current_state == "resolved"`, `reply_count == 1`,
+   reply text/author correct
+6. Ledger has all 3 lines in order: comment → reply → state
+7. Quote preserved: `lines[0]["anchor"]["selection"]["quotedText"] == "selected text"`
+
+No agents, hooks, or MCP servers introduced. Slices 12–13 guarantees hold.
+
+219 tests pass in the test suite.
+
 
 ## Slice 11 — ACCEPT at 0.92. The Builds mode and Backlog lane.
 

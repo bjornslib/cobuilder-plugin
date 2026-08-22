@@ -252,11 +252,20 @@ def watch_feedback(
 ) -> tuple[list[dict[str, Any]], int]:
     """Block until new lines appear after `since_offset`.
 
-    Returns (new_lines, new_offset). If timeout expires, returns ([], since_offset)
-    with no new lines printed. Exit codes: 0 = new lines, 2 = timeout.
+    Returns (new_lines, new_offset). If timeout expires with no new lines,
+    returns ([], since_offset). Exit codes: 0 = new lines, 2 = timeout.
+    First returns any existing lines at or after since_offset, then blocks
+    for newly appended lines.
     """
     import select
     start = time.time()
+    # First, return any existing lines at or after since_offset
+    if ledger_path.exists():
+        lines = read_ledger(ledger_path)
+        if len(lines) > since_offset:
+            new_lines = lines[since_offset:]
+            return new_lines, len(lines)
+    # Then block for new lines
     while True:
         if ledger_path.exists():
             lines = read_ledger(ledger_path)

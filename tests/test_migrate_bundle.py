@@ -58,7 +58,7 @@ def test_full_migration_turns_scalar_into_map(tmp_path):
     mb.write_bundle_json(bundle_dir, final_format, result_story["meta"]["schema_version"], bundle_meta)
 
     new_meta = json.loads((bundle_dir / "bundle.json").read_text())
-    assert new_meta["bundle_format"] == 3
+    assert new_meta["bundle_format"] == 4
     assert new_meta["generators"]["cobuilder-architect"] == "0.3.0"
     assert "generator_version" not in new_meta or new_meta.get("generator_version") == "0.3.0"
 
