@@ -977,13 +977,23 @@
   </div>
 
   <div id="dock">
-        <h2 id="assessment-sheet-title">PR Author Assessment</h2>
-        <div class="adr-sheet-meta" id="assessment-sheet-meta"></div>
+    <div class="dock-row1">
+      <span class="decision-status mono" id="status-pill"></span>
+      <div class="dock-row1-actions">
+        <button class="btn-add-comment" id="btn-comments-toggle">Comments (0)</button>
+        <button class="decision-btn close-pr pr-only" id="btn-close">Close pull request</button>
+        <div class="split-btn pr-only">
+          <button class="split-main" id="btn-merge">Merge pull request</button>
+          <button class="split-arrow" id="btn-merge-arrow" aria-haspopup="true" title="Select merge method">&#9662;</button>
+          <div class="merge-menu" id="merge-menu" hidden>
+            <button class="merge-menu-item" data-method="squash">Squash and merge</button>
+            <button class="merge-menu-item" data-method="rebase">Rebase and merge</button>
+          </div>
+        </div>
       </div>
-      <button class="drawer-close" id="assessment-sheet-close-btn" title="Close (Esc)">&times;</button>
     </div>
-    <div class="drawer-body" id="assessment-sheet-body"></div>
-  </div>
+
+  <div id="drawer-scrim"></div>
 
   <!-- Designs sheet (same Sheet family as ADR / assessment). Lists every
        design in window.DESIGNS, then a reading view for one. Not a fifth
@@ -1329,9 +1339,9 @@ window.INDEX = window.INDEX || {};
   let feedbackAnchor = null;
 
   function computeSelector(el){
-    """Walk up to 5 ancestors to find a stable selector.
-    Prefers an element with an id, then a data-testid, then a class
-    combination. Returns a CSS selector string."""
+    // Walk up to 5 ancestors to find a stable selector.
+    // Prefers an element with an id, then a data-testid, then a class
+    // combination. Returns a CSS selector string.
     let current = el;
     for (let i = 0; i < 5 && current && current !== document.body; i++){
       if (current.id){
@@ -1360,7 +1370,7 @@ window.INDEX = window.INDEX || {};
   }
 
   function captureRange(){
-    """Capture the current text selection as a node path + character offsets."""
+    // Capture the current text selection as a node path + character offsets.
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) return null;
     const range = sel.getRangeAt(0);
@@ -1380,7 +1390,7 @@ window.INDEX = window.INDEX || {};
   }
 
   function openFeedbackDrawer(anchor){
-    """Open the comments drawer with the anchor pre-set."""
+    // Open the comments drawer with the anchor pre-set.
     feedbackAnchor = anchor;
     if (state.adrOpen){ state.adrOpen = false; }
     if (state.assessmentOpen){ state.assessmentOpen = false; }
@@ -1404,16 +1414,29 @@ window.INDEX = window.INDEX || {};
     const sel = feedbackAnchor.selection;
     const quoted = sel && sel.quotedText ? escapeHtml(sel.quotedText) : '';
     const selector = feedbackAnchor.selector ? escapeHtml(feedbackAnchor.selector) : '';
+    
+    // Check if selector still matches an element (stale selector detection)
+    let isStale = false;
+    if (feedbackAnchor.selector){
+      try {
+        const matched = document.querySelector(feedbackAnchor.selector);
+        if (!matched) isStale = true;
+      } catch (e) {
+        isStale = true; // Invalid selector
+      }
+    }
+    
     anchorEl.innerHTML = `
-      <div class="feedback-anchor-badge">Anchored</div>
-      <div class="feedback-anchor-selector mono">${selector}</div>
-      ${quoted ? '<div class="feedback-anchor-quote">' + quoted + '</div>' : ''}
+      <div class="feedback-anchor-badge ${isStale ? 'feedback-anchor-stale' : ''}">${isStale ? 'Anchored (stale)' : 'Anchored'}</div>
+      <div class="feedback-anchor-selector mono">${selector}${isStale ? ' <span class="stale-marker">⚠ selector no longer matches</span>' : ''}</div>
+      ${quoted ? '<div class="feedback-anchor-quote' + (isStale ? ' feedback-quote-stale' : '') + '">' + quoted + '</div>' : ''}
+      ${isStale ? '<div class="reanchor-hint">Quote preserved. Select new text to re-anchor.</div>' : ''}
     `;
   }
 
   async function submitFeedback(text){
-    """Submit feedback to the ledger via POST /feedback.
-    Falls back to localStorage if the server is unavailable."""
+    // Submit feedback to the ledger via POST /feedback.
+    // Falls back to localStorage if the server is unavailable.
     const payload = {
       anchor: feedbackAnchor,
       text: text,
@@ -1477,8 +1500,12 @@ window.INDEX = window.INDEX || {};
     @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes slideOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(10px); } }
     .feedback-anchor-badge { font: 600 10px 'JetBrains Mono',monospace; color: var(--accent-text); background: color-mix(in oklch, var(--accent) 12%, white); padding: 2px 8px; border-radius: 4px; display: inline-block; margin-bottom: 4px; }
+    .feedback-anchor-badge.feedback-anchor-stale { color: #b45309; background: #fef3c7; }
     .feedback-anchor-selector { font-size: 11px; color: var(--ink-dim); margin-bottom: 4px; }
+    .feedback-anchor-selector .stale-marker { color: #b45309; font-weight: 600; }
     .feedback-anchor-quote { font-size: 12px; color: var(--ink); border-left: 2px solid var(--accent); padding-left: 8px; margin-top: 4px; font-style: italic; }
+    .feedback-anchor-quote.feedback-quote-stale { border-left-color: #b45309; background: #fefce8; }
+    .reanchor-hint { font-size: 11px; color: #b45309; margin-top: 6px; padding: 6px 10px; background: #fef3c7; border-radius: 4px; }
   `;
   document.head.appendChild(styleEl);
 
@@ -4810,9 +4837,12 @@ window.INDEX = window.INDEX || {};
     btn.addEventListener('click', () => setViewMode(btn.dataset.mode));
   });
 
-  document.getElementById('btn-merge').addEventListener('click', mergePR);
-  document.getElementById('btn-merge-arrow').addEventListener('click', (e) => { e.stopPropagation(); toggleMergeMenu(); });
-  document.getElementById('merge-menu').querySelectorAll('.merge-menu-item').forEach(item => {
+  const btnMerge = document.getElementById('btn-merge');
+  if (btnMerge) btnMerge.addEventListener('click', mergePR);
+  const btnMergeArrow = document.getElementById('btn-merge-arrow');
+  if (btnMergeArrow) btnMergeArrow.addEventListener('click', (e) => { e.stopPropagation(); toggleMergeMenu(); });
+  const mergeMenu = document.getElementById('merge-menu');
+  if (mergeMenu) mergeMenu.querySelectorAll('.merge-menu-item').forEach(item => {
     item.addEventListener('click', () => {
       state.draftMergeMethod = item.dataset.method;
       closeMergeMenu();
@@ -4822,17 +4852,27 @@ window.INDEX = window.INDEX || {};
   document.addEventListener('click', (e) => {
     if (state.mergeMenuOpen && !e.target.closest('.split-btn')) closeMergeMenu();
   });
-  document.getElementById('btn-close').addEventListener('click', closePR);
-  document.getElementById('btn-comments-toggle').addEventListener('click', openCommentsDrawer);
-  document.getElementById('drawer-close-btn').addEventListener('click', closeCommentsDrawer);
-  document.getElementById('adr-sheet-close-btn').addEventListener('click', closeAdrSheet);
-  document.getElementById('assessment-sheet-close-btn').addEventListener('click', closeAssessmentSheet);
-  document.getElementById('designs-sheet-close-btn').addEventListener('click', closeDesignsSheet);
-  document.getElementById('drawer-scrim').addEventListener('click', closeAnyOpenSheet);
-  document.getElementById('btn-add-comment').addEventListener('click', addCommentOnly);
-  commentInput.addEventListener('keydown', (e) => { if (e.key === 'Enter'){ e.preventDefault(); addCommentOnly(); } });
-  document.getElementById('btn-reset').addEventListener('click', resetReview);
-  document.getElementById('btn-copy-md').addEventListener('click', () => {
+  const btnClose = document.getElementById('btn-close');
+  if (btnClose) btnClose.addEventListener('click', closePR);
+  const btnCommentsToggle = document.getElementById('btn-comments-toggle');
+  if (btnCommentsToggle) btnCommentsToggle.addEventListener('click', openCommentsDrawer);
+  const drawerCloseBtn = document.getElementById('drawer-close-btn');
+  if (drawerCloseBtn) drawerCloseBtn.addEventListener('click', closeCommentsDrawer);
+  const adrSheetCloseBtn = document.getElementById('adr-sheet-close-btn');
+  if (adrSheetCloseBtn) adrSheetCloseBtn.addEventListener('click', closeAdrSheet);
+  const assessmentSheetCloseBtn = document.getElementById('assessment-sheet-close-btn');
+  if (assessmentSheetCloseBtn) assessmentSheetCloseBtn.addEventListener('click', closeAssessmentSheet);
+  const designsSheetCloseBtn = document.getElementById('designs-sheet-close-btn');
+  if (designsSheetCloseBtn) designsSheetCloseBtn.addEventListener('click', closeDesignsSheet);
+  const drawerScrim = document.getElementById('drawer-scrim');
+  if (drawerScrim) drawerScrim.addEventListener('click', closeAnyOpenSheet);
+  const btnAddComment = document.getElementById('btn-add-comment');
+  if (btnAddComment) btnAddComment.addEventListener('click', addCommentOnly);
+  if (commentInput) commentInput.addEventListener('keydown', (e) => { if (e.key === 'Enter'){ e.preventDefault(); addCommentOnly(); } });
+  const btnReset = document.getElementById('btn-reset');
+  if (btnReset) btnReset.addEventListener('click', resetReview);
+  const btnCopyMd = document.getElementById('btn-copy-md');
+  if (btnCopyMd) btnCopyMd.addEventListener('click', () => {
     const md = buildMarkdown();
     const btn = document.getElementById('btn-copy-md');
     const flash = (ok) => {

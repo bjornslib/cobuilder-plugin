@@ -1,12 +1,12 @@
 {
   "schema_version": "1.3",
   "sources": {
-    "git_head": "d694f95d63beb031550739b417be9e3084ba3369",
+    "git_head": "7c675ad3934846cfa57c55dc7efb3c74a0c656ac",
     "trees": {
       "docs/architecture/adr": "sha256:0c52b8fe1e8cf4f63453c71babde84f56a69083f4b19de31d7a21274fa8ab5ce",
       "docs/architecture/designs": "sha256:c60a126caf5bba73a34b81adabd11419dd891d60f2493000f755bccf8d0a4788",
       "docs/architecture/contexts": "sha256:4626a327bd28df972d97d40dc1325c28808eb48789649b87eadd218b3528c907",
-      "docs/plans": "sha256:7b976e8a7da73722e3166be3fe46ff238945468e30cd7b3699a35e349a9d6cb4"
+      "docs/plans": "sha256:32f55d3753ba2e60d8a918194c2c68350dabed92b4c93f96f395d5e0904f102e"
     }
   },
   "entities": {
@@ -627,7 +627,7 @@
         "feature": "cobuilder-family",
         "n": 4,
         "title": "Renames inside today's single plugin",
-        "ends_with": "Six architecture modes, `explore-design` deleted, `submit` renamed to `generate`, and the old `generate` renamed to `review`",
+        "ends_with": "Six architecture modes, `explore-design` deleted, `submit` renamed to `generate`, and the old `generate` renamed to `review` | 1.00 | completed",
         "score": "1.00",
         "attempts": 2,
         "state": "completed"
@@ -637,7 +637,7 @@
         "feature": "cobuilder-family",
         "n": 5,
         "title": "The 33 cross-pillar references are fixed",
-        "ends_with": "The grep regression test passes while the repo is still one plugin",
+        "ends_with": "The grep regression test passes while the repo is still one plugin | 1.00 | completed",
         "score": "1.00",
         "attempts": 3,
         "state": "completed"
@@ -647,7 +647,7 @@
         "feature": "cobuilder-family",
         "n": 6,
         "title": "Five plugins, five manifests",
-        "ends_with": "`claude plugin validate` passes on each, and the family installs",
+        "ends_with": "`claude plugin validate` passes on each, and the family installs | 1.00 | completed",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -657,7 +657,7 @@
         "feature": "cobuilder-family",
         "n": 7,
         "title": "The two ports land",
-        "ends_with": "`cobuilder-implement` renamed and shipped, `collaborate-with-user` folded in, the orientation skill written",
+        "ends_with": "`cobuilder-implement` renamed and shipped, `collaborate-with-user` folded in, the orientation skill written | 1.00 | completed",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -667,7 +667,7 @@
         "feature": "cobuilder-family",
         "n": 1,
         "title": "**Tracer bullet: two plugins, one shared module**",
-        "ends_with": "Two throwaway plugins install from a local marketplace and both resolve the shared module from their own cache",
+        "ends_with": "Two throwaway plugins install from a local marketplace and both resolve the shared module from their own cache | 1.00 | completed",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -677,7 +677,7 @@
         "feature": "cobuilder-family",
         "n": 2,
         "title": "The compatibility gate exists",
-        "ends_with": "`require_compatible()` and `stamp_generator()` pass their tests, called by nothing yet",
+        "ends_with": "`require_compatible()` and `stamp_generator()` pass their tests, called by nothing yet | 1.00 | completed",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -687,7 +687,7 @@
         "feature": "cobuilder-family",
         "n": 3,
         "title": "The gate is wired and the bundle migrates",
-        "ends_with": "Format 3, `min_reader_schema`, the generators map, every writer gated",
+        "ends_with": "Format 3, `min_reader_schema`, the generators map, every writer gated | 1.00 | completed",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -697,7 +697,7 @@
         "feature": "cobuilder-family",
         "n": 8,
         "title": "The index holds the entities",
-        "ends_with": "`build_index.py` emits every entity, and the two scripts it replaces are gone",
+        "ends_with": "`build_index.py` emits every entity, and the two scripts it replaces are gone | 1.00 | completed",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -707,7 +707,7 @@
         "feature": "cobuilder-family",
         "n": 9,
         "title": "The index resolves the joins",
-        "ends_with": "`adr_to_pull_request`, `slice_to_epic`, `district_uncovered`, and freshness",
+        "ends_with": "`adr_to_pull_request`, `slice_to_epic`, `district_uncovered`, and freshness | 1.00 | completed",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -717,7 +717,7 @@
         "feature": "cobuilder-family",
         "n": 10,
         "title": "The Decisions and Contexts modes",
-        "ends_with": "A person browses every decision and every context, with the anchor distinction visible",
+        "ends_with": "A person browses every decision and every context, with the anchor distinction visible | 1.00 | completed",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -727,7 +727,7 @@
         "feature": "cobuilder-family",
         "n": 11,
         "title": "The Builds mode and the Backlog lane",
-        "ends_with": "Gates driven by the status document, the Backlog lane computed from the index, pages moved into the bundle",
+        "ends_with": "Gates driven by the status document, the Backlog lane computed from the index, pages moved into the bundle | 0.92 | completed",
         "score": "0.92",
         "attempts": 1,
         "state": "completed"
@@ -737,7 +737,7 @@
         "feature": "cobuilder-family",
         "n": 12,
         "title": "The ledger and its projection",
-        "ends_with": "Append, fold, and project, with no server involved",
+        "ends_with": "Append, fold, and project, with no server involved | 0.92 | completed",
         "score": "0.92",
         "attempts": 1,
         "state": "completed"
@@ -747,7 +747,7 @@
         "feature": "cobuilder-family",
         "n": 13,
         "title": "The anchor and the write endpoint",
-        "ends_with": "Click to anchor a sentence, `POST /feedback` appends, the drawer keeps the text in view",
+        "ends_with": "Click to anchor a sentence, `POST /feedback` appends, the drawer keeps the text in view | 1.00 | completed",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -757,7 +757,7 @@
         "feature": "cobuilder-family",
         "n": 14,
         "title": "The wake command and the whole loop",
-        "ends_with": "The background command blocks and returns new threads, and the loop runs once end to end",
+        "ends_with": "The background command blocks and returns new threads, and the loop runs once end to end | 1.00 | completed",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
