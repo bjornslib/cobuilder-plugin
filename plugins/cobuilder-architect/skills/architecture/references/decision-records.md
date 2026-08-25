@@ -91,7 +91,16 @@ change with it (see `.github/pull_request_template.md`).
    it; anything else needs the human's explicit word.
 4. **`maps_to` must resolve.** If the anchored context has no `boundary.yaml`, either document the
    context first (describe mode) or flag the record as unanchored.
-5. **Examples never live in the register.** Sample/demo records go in skill references, not
+5. **An ADR holds two kinds of content, and they follow opposite rules.** The Context, Decision,
+   Considered Options, and Consequences sections are a record of what was believed and chosen on a
+   date. Never edit them to match the current tree. A changed decision gets a new record that
+   supersedes this one, through the `replaces` edge and `rejected` state that §3 defines.
+   The frontmatter index fields — `maps_to`, `state`, `last_verified`, `source_pr` — point into the
+   current tree instead, and keeping them accurate is expected maintenance, not history. For
+   example, ADR-0011's `maps_to.modules` named `skills/odyssey` and `commands`, and the five-plugin
+   split moved both paths. Repoint `maps_to` to the paths that exist today. Leave the ADR's Decision
+   prose alone, because it was true when the team chose it.
+6. **Examples never live in the register.** Sample/demo records go in skill references, not
    `{doc_root}/adr/`.
 
 ## 6. Workflows

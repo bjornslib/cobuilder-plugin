@@ -14,7 +14,11 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "shared"))
+import slice_table  # noqa: E402
 
 RUBRIC_COUNT = 14
 
@@ -54,9 +58,6 @@ ASK_NOTES = {
 GATE_LINE = re.compile(r"- Gate (\d) — ([^:]+): (.+)")
 
 
-SLICE_ROW = re.compile(r"^\|\s*(\d+)\s*\|\s*`([^`]+)`\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|")
-
-
 def read_epics(designs_dir: Path, slices_md: str) -> list[dict]:
     """Every epic of every design, with the slices that advance it.
 
@@ -64,12 +65,10 @@ def read_epics(designs_dir: Path, slices_md: str) -> list[dict]:
     started, which is the state the Builds view's Backlog lane shows.
     """
     by_epic: dict[str, list[dict]] = {}
-    for line in slices_md.splitlines():
-        m = SLICE_ROW.match(line.strip())
-        if m:
-            by_epic.setdefault(m.group(2), []).append(
-                {"n": int(m.group(1)), "name": m.group(3).replace("**", ""),
-                 "score": m.group(5).strip(), "state": m.group(6).strip()})
+    for row in slice_table.parse_table(slices_md).rows:
+        by_epic.setdefault(row.epic_id, []).append(
+            {"n": row.n, "name": row.name.replace("**", ""),
+             "score": (row.score or "").strip(), "state": (row.state or "").strip()})
 
     epics = []
     for goal in sorted(designs_dir.glob("*/goal.json")):

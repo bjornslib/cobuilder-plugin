@@ -1,0 +1,94 @@
+{
+  "stage": "retrospective",
+  "verdict": "proceed",
+  "risk_tier": "medium",
+  "regret_risk": "low",
+  "summary": "This assessment was written on 2026-08-25, after design mode shipped, because the file was found missing from the design directory. It is a retrospective, not a design-stage prediction. Every finding below states what a check against the tree today found, not what an author foresaw before the code existed. Design mode shipped, moved from the odyssey skill into the architecture skill, and its command now lives at plugins/cobuilder-architect/commands/design.md. The design's own record carries two stale paths from before the five-plugin split, and its lone epic sits in a state the index cannot yet resolve because its pull request is open, not merged.",
+  "findings": [
+    {
+      "kind": "observation",
+      "id": "F1",
+      "severity": "low",
+      "title": "Design mode shipped and moved, as goal.json's outcome describes",
+      "detail": "plugins/cobuilder-architect/commands/design.md exists and dispatches to the architecture skill. No skills/odyssey directory or root-level commands/ directory exists anywhere in the tree today. The mode is not present under plugins/cobuilder-pr, which now ships five modes (baseline, review, generate, view, publish) with no design mode among them. This matches CLAUDE.md's Recent history entry: design mode moved from the odyssey skill into the architecture skill, leaving odyssey with five modes.",
+      "cites": "plugins/cobuilder-architect/commands/design.md; absence of skills/odyssey and commands/ at the repository root",
+      "mitigation": "None needed. This is the shipped, intended state."
+    },
+    {
+      "kind": "observation",
+      "id": "F2",
+      "severity": "low",
+      "title": "commands/explore-design.md is confirmed deleted",
+      "detail": "No file named explore-design.md exists anywhere in the current tree. git log on docs/architecture/designs/design-mode/adr-draft.md and the surrounding commit history are consistent with CLAUDE.md's Recent history note that explore-design.md was deleted as a duplicate of design.md.",
+      "cites": "find . -iname 'explore-design*' returns no results",
+      "mitigation": "None needed."
+    },
+    {
+      "kind": "drift",
+      "id": "F3",
+      "severity": "medium",
+      "title": "ADR-0011's maps_to.modules names two paths that predate the five-plugin split",
+      "detail": "ADR-0011's frontmatter lists maps_to.modules as skills/odyssey and commands. Neither path exists today. The command that implements this decision lives at plugins/cobuilder-architect/commands/design.md, and the skill it dispatches to is plugins/cobuilder-architect/skills/architecture/. The ADR was decided on 2026-08-19, before ADR-0016 and ADR-0017 split the single plugin into five and moved every root-level skills/ and commands/ directory into per-plugin roots. Nothing updated the ADR's maps_to block afterward.",
+      "cites": "docs/architecture/adr/ADR-0011-design-mode.md, maps_to.modules; plugins/cobuilder-architect/commands/design.md",
+      "mitigation": "Update ADR-0011's maps_to.modules to plugins/cobuilder-architect/commands and plugins/cobuilder-architect/skills/architecture, or mark the field historical and add a current-location note."
+    },
+    {
+      "kind": "drift",
+      "id": "F4",
+      "severity": "low",
+      "title": "intent.json's approach paragraph names a dropped plugin name and a rejected output location",
+      "detail": "intent.json's approach field reads: \"A seventh mode, /prodyssey:design ... It writes a named design directory under exports/, never the timeline.\" The plugin was renamed from prodyssey to cobuilder-architect, and the shipped command is /cobuilder-architect:design. The shipped output location is docs/architecture/designs/<name>/, per goal.json's done_when and ADR-0011's decision text, not exports/. This sentence was captured on 2026-08-19, the same day as the ADR, and reads as an early draft overtaken by the decision recorded in the same design.",
+      "cites": "docs/architecture/designs/design-mode/intent.json, approach field; docs/architecture/designs/design-mode/goal.json, done_when[0]",
+      "mitigation": "Either update the approach sentence to match the shipped command and path, or add a note that intent.json is a point-in-time capture and the ADR supersedes it on naming and location."
+    },
+    {
+      "kind": "observation",
+      "id": "F5",
+      "severity": "low",
+      "title": "The design's pr-draft.md is now projected into the record index",
+      "detail": "shared/build_index.py reads pr_draft_path = path.parent / 'pr-draft.md' at line 431, inside the function that walks each design directory. This design directory has no pr-draft.md of its own to project, but the code path that was missing is present in the script this branch ships.",
+      "cites": "shared/build_index.py:431",
+      "mitigation": "None needed for this design. Worth reconfirming the same line exists in each plugin's vendored shared/build_index.py copy before this fix is treated as universal."
+    },
+    {
+      "kind": "observation",
+      "id": "F6",
+      "severity": "low",
+      "title": "adr-draft.md is gone, consistent with promotion to ADR-0011",
+      "detail": "docs/architecture/designs/design-mode/ holds no adr-draft.md today. The file was deleted on 2026-08-25, as part of the change on this branch that retires adr-draft.md as a documented artifact type, with the matching line removed from CLAUDE.md and README.md in the same change. The draft was ADR-0011, already promoted to docs/architecture/adr/ADR-0011-design-mode.md. It was stale on the same two counts F4 records for intent.json: it named /prodyssey:design and it named exports/ as the output location. git status --short confirms the deletion is uncommitted at the time of writing.",
+      "cites": "git log --oneline -- docs/architecture/designs/design-mode/adr-draft.md",
+      "mitigation": "None needed. Flagging only the unverified deletion commit for completeness."
+    },
+    {
+      "kind": "observation",
+      "id": "F7",
+      "severity": "medium",
+      "title": "Epic E1's pull request is open, and the index cannot resolve that state",
+      "detail": "goal.json.epics[0] declares pr: 11 and state: 'open'. gh pr view 11 confirms pull request 11 is OPEN on GitHub today, so the declared state matches reality. But shared/build_index.py's collect_pull_requests() (line 641) reads only entries already present in data/story.json's timeline, which holds narrated, merged pull requests. refine_epic_status() (line 791) looks up each epic's pull request number in that same narrowed set and only overwrites the placeholder status when a match exists. Pull request 11 has not been narrated, so no match exists, and the index cannot derive its open state from the bundle alone. The goal.json field is the only place that state is recorded correctly right now.",
+      "cites": "shared/build_index.py:641-665 (collect_pull_requests), shared/build_index.py:791-797 (refine_epic_status); goal.json epics[0]; gh pr view 11",
+      "mitigation": "Either narrate pull request 11 once it is available to review mode, so the index can pick up its real state, or extend refine_epic_status to fall back to a live gh pr view lookup for epics whose pull request never entered the timeline."
+    }
+  ],
+  "boundary_checks": [
+    { "rule": "No agents, no hooks, no MCP servers in the install surface", "result": "holds", "note": "Design mode is a skill dispatch from a command file, the same shape as every other architecture mode." },
+    { "rule": "Architecture modes are self-only and take no --repo", "result": "holds", "note": "plugins/cobuilder-architect/commands/design.md carries no --repo handling, consistent with the other five architecture commands." },
+    { "rule": "A design lives under docs/architecture/designs/<name>/ and never enters story.json until a real PR number exists", "result": "holds", "note": "This design's own directory is exactly that shape, and its pull request, 11, is a real number returned by gh pr create, not a synthetic key." }
+  ],
+  "drift": [
+    {
+      "kind": "drift",
+      "title": "ADR-0011's maps_to.modules names pre-split paths",
+      "detail": "See F3. skills/odyssey and commands no longer exist as top-level paths after the five-plugin split (ADR-0016, ADR-0017). The ADR's own maps_to block was never updated to name plugins/cobuilder-architect/commands and plugins/cobuilder-architect/skills/architecture."
+    },
+    {
+      "kind": "drift",
+      "title": "intent.json still names the pre-rename plugin and a rejected output root",
+      "detail": "See F4. The approach field says /prodyssey:design writing under exports/. The shipped command is /cobuilder-architect:design, writing under docs/architecture/designs/<name>/."
+    },
+    {
+      "kind": "drift",
+      "title": "Epic E1's real-world pull request state is invisible to the generated index",
+      "detail": "See F7. Pull request 11 is open on GitHub and correctly recorded as such in goal.json, but shared/build_index.py can only refine an epic's status from pull requests already narrated into data/story.json's timeline. An open, un-narrated pull request leaves the index with only its initial placeholder, not the live GitHub state."
+    }
+  ]
+}

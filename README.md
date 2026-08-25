@@ -16,13 +16,23 @@ before code exists.
 
 ## Install
 
-The plugin lives in its own repository, `bjornslib/cobuilder-architect`, with a
-one-plugin marketplace. Installation takes two commands in a Claude Code
-session:
+The plugin family lives in one repository, `bjornslib/cobuilder-architect`,
+as a marketplace of five sibling plugins. Add the marketplace once, then
+install the plugin or plugins you need:
 
 ```
 /plugin marketplace add bjornslib/cobuilder-architect
 /plugin install cobuilder-architect@cobuilder-architect
+```
+
+`cobuilder-architect` covers design, review, maintenance, decisions,
+describe, and debug. Install `cobuilder-pr` for narrated history and
+generate mode, `cobuilder-artifact` to view or publish a bundle, and
+`cobuilder-implement` to build a design's epics. Install
+`cobuilder-full-lifecycle` instead to get all four in one step:
+
+```
+/plugin install cobuilder-full-lifecycle@cobuilder-architect
 ```
 
 GitHub redirects a renamed repository, so an existing
@@ -311,7 +321,7 @@ repos](#multiple-repos) below.
   exports/branch-{slug}/diff.json                             # generate-mode diff cache, gitignored
 
 <repo>/
-  docs/architecture/designs/<name>/{goal,intent,assessment}.json, adr-draft.md, pr-draft.md
+  docs/architecture/designs/<name>/{goal,intent,narrative,assessment}.json, pr-draft.md
   docs/pull-requests/pr-<N>/{description,assessment}.md
   docs/pull-requests/branch-<slug>/{intent,assessment}.json, {description,assessment}.md
 ```
@@ -344,86 +354,64 @@ just to modernize.
 
 ## Plugin structure
 
+The marketplace ships five sibling plugins under one repository. Each has
+its own `.claude-plugin/plugin.json`, its own `skills/` and `commands/`
+(both auto-discovered, so no manifest declares them), and its own
+`scripts/`. A `shared/` directory at the repository root holds the code
+more than one plugin needs — vendored in as a `shared/` symlink inside
+each plugin that uses it, so a script resolves it at
+`${CLAUDE_PLUGIN_ROOT}/shared/<script>.py` regardless of which plugin runs it.
+
 ```
-cobuilder-architect/
-├── .claude-plugin/
-│   ├── plugin.json           # manifest: name "cobuilder-architect", version, keywords
-│   └── marketplace.json      # one-plugin marketplace: name "cobuilder-architect", plugins: [{source: "."}]
-├── commands/
-│   ├── baseline.md           # odyssey: Skill("odyssey", args="baseline")
-│   ├── review.md     # odyssey: Skill("odyssey", args="review --prs ...")
-│   ├── view.md                # odyssey: Skill("odyssey", args="view ...")
-│   ├── publish.md             # odyssey: Skill("odyssey", args="publish --prs ...")
-│   ├── generate.md            # odyssey: Skill("odyssey", args="generate ...")
-│   ├── design.md              # architecture: Skill("architecture", args="design")
-│   ├── review.md              # architecture: Skill("architecture", args="review")
-│   ├── maintenance.md         # architecture: Skill("architecture", args="maintenance")
-│   ├── decisions.md           # architecture: Skill("architecture", args="decisions")
-│   ├── describe.md            # architecture: Skill("architecture", args="describe")
-│   └── debug.md               # architecture: Skill("architecture", args="debug")
-├── skills/
-│   ├── odyssey/
-│   │   ├── SKILL.md          # orchestration: prereq gate → baseline → per-PR sweep → generate → view → publish → verify
-│   │   └── references/       # Odyssey path onto the architecture skill (see below)
-│   │       ├── story-mode.md
-│   │       ├── decision-records-lite.md
-│   │       ├── baseline-derivation.md      # describe-lite: district + inventory procedure
-│   │       ├── review-mode.md              # generate mode: the three questions, verdicts, risk tiers
-│   │       ├── interview-guide.md          # generate mode: what to ask the author, and what not to
-│   │       ├── pr-description-template.md  # the PR body skeleton render_review.py fills
-│   │       ├── adr-template.md             # pointer to the architecture template
-│   │       └── stacks/{README,nextjs,react-typescript,python-fastapi,swift,swiftui-app,vapor,generic}.md
-│   ├── architecture/          # six self-only modes: design, review, maintenance, decisions, describe, debug
-│   ├── mermaid/               # authoring rules for Mermaid diagrams, invoked by the
-│                               # diagram-authoring subagent, not the orchestrator directly.
-│                               # references/diagram-mode.md holds the per-PR and per-design
-│                               # diagram contract, vendored here because both odyssey and
-│                               # architecture need it (ADR-0017)
-│   └── ste-writing/           # STE writing rules and ste-lint.py
-├── scripts/                   # top-level, not nested under skills/. Called via ${CLAUDE_PLUGIN_ROOT}/scripts/...
-│   ├── extract_story.py       # generalized: any repo path, writes <bundle-dir>/story.json
-│   ├── generate_prompts.py    # nanobanana scene-art prompts
-│   ├── generate_audio.py      # TTS narration (Gemini voices)
-│   ├── extract_diffs.py       # per-PR diff extraction into the bundle
-│   ├── build_diagrams.py      # compiles authored .mmd files into data/diagrams.js, and validates them
-│   ├── build_index.py         # full rebuild of the self-bundle record index from docs/, plus the legacy adrs.js/designs.js projections
-│   ├── validate_decision_state.py
-│   ├── compute_scores.py      # review and maintenance health scores
-│   ├── html_to_pdf.py         # review and maintenance report export
-│   ├── migrate_bundle.py      # refreshes the viewer, and steps bundle layout + data shape forward
-│   ├── _bundle_meta.py        # the version constants that the other scripts import
-│   ├── verify_bundle.py       # schema_version + completeness check (drives resumability)
-│   ├── export_artifact.py     # flattens one PR into a self-contained artifact-safe HTML
-│   ├── export_index.py        # renders the cross-PR index artifact from publish-manifest.json
-│   ├── record_publish.py      # records a published Artifact URL back into publish-manifest.json
-│   └── render_review.py       # lays out the captured intent + assessment as two markdown files
-├── viewer/
-│   └── index.html            # portable bundle viewer
-└── README.md                 # this file
+.claude-plugin/marketplace.json   the one marketplace manifest, listing all five plugins
+shared/                            vendored into every plugin as plugins/<name>/shared/
+                                    _bundle_meta.py, _manifest.py, build_index.py, ledger.py,
+                                    migrate_bundle.py, slice_table.py, validate_decision_state.py,
+                                    verify_bundle.py, skills/{mermaid,ste-writing}/
+plugins/
+  cobuilder-architect/    design, review, maintenance, decisions, describe, debug. Self-only
+    commands/             design.md, review.md, maintenance.md, decisions.md, describe.md, debug.md
+    skills/architecture/  the six self-only modes, plus corpus and books
+    scripts/              compute_scores.py, html_to_pdf.py
+  cobuilder-pr/           the five Odyssey history modes, and generate mode
+    commands/             baseline.md, generate.md, review.md
+    skills/odyssey/       SKILL.md, references/{story-mode, decision-records-lite,
+                           baseline-derivation, review-mode, interview-guide,
+                           adr-template, pr-description-template, stacks/*}
+    scripts/              extract_story.py, extract_diffs.py, build_diagrams.py,
+                           generate_prompts.py, generate_audio.py, render_review.py
+  cobuilder-artifact/     serve the bundle locally, publish a level as an Artifact
+    commands/             view.md, publish.md
+    skills/artifact/
+    scripts/              export_artifact.py, export_index.py, record_publish.py, serve_bundle.py
+    viewer/index.html     the portable bundle viewer, one file
+  cobuilder-implement/    build a design's epics, one vertical slice at a time
+    commands/             implement.md
+    skills/implement/
+    scripts/              verify_gate.py
+  cobuilder-full-lifecycle/   umbrella plugin, depends on the other four
+    skills/orientation/
 ```
 
-Key manifest fields (`plugin.json`):
+Key manifest fields, one per plugin (`plugins/<name>/.claude-plugin/plugin.json`):
 
 ```json
 {
   "name": "cobuilder-architect",
-  "version": "0.4.0"
+  "version": "0.5.0"
 }
 ```
 
-The plugin ships no agents, no hooks, no MCP servers, and no output styles.
-This is deliberate: the plugin must work in any session without touching
-that session's permission or hook surface. Claude Code auto-discovers
-`skills/` and `commands/` from their default directory locations, so the
-manifest does not need to declare them.
+No plugin ships agents, hooks, MCP servers, or output styles. This is
+deliberate: a plugin must work in any session without touching that
+session's permission or hook surface.
 
-The plugin ships four skills. `odyssey` runs the history modes this README
-describes. `architecture` runs the six self-only modes.
-
-`mermaid` holds authoring rules for the level 1 through 3 diagrams that the
-`--art` flag can generate (see Visual form above). The per-PR
-diagram-authoring subagent invokes `mermaid` for itself. You never invoke
-it directly. `ste-writing` holds the writing rules and `ste-lint.py`.
+`mermaid` and `ste-writing` are shared skills, vendored the same way
+`shared/`'s scripts are. `mermaid` holds authoring rules for the level 1
+through 3 diagrams that the `--art` flag can generate (see Visual form
+above). The per-PR diagram-authoring subagent invokes `mermaid` for
+itself. You never invoke it directly. `ste-writing` holds the writing
+rules and `ste-lint.py`.
 
 ---
 
@@ -464,7 +452,7 @@ A bundle keeps its own copy of the viewer, and it records the layout and the
 data shape it was written with. A newer plugin can therefore find an older
 bundle on disk. You do not upgrade it by hand.
 
-`scripts/migrate_bundle.py` does the work, and every `/cobuilder-architect:*` command
+`shared/migrate_bundle.py` does the work, and every `/cobuilder-architect:*` command
 runs it against the bundle before it does anything else. An older bundle
 catches up on its first use. The script does three things, in this order:
 
@@ -484,7 +472,7 @@ disposable.
 Run the script directly to inspect an upgrade before it happens:
 
 ```
-uv run scripts/migrate_bundle.py --bundle-dir .cobuilder-architect/self --dry-run
+uv run plugins/cobuilder-pr/shared/migrate_bundle.py --bundle-dir .cobuilder-architect/self --dry-run
 ```
 
 `--dry-run` reports the three phases and prints a diff of `story.json`. It

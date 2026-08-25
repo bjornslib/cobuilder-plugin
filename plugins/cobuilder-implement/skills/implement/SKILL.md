@@ -77,44 +77,29 @@ Apply skeptical curiosity to every claim in the workflow:
 Hindsight memory stores lessons from past sessions in this repository. Use it
 when available to avoid repeating documented mistakes.
 
+**Determine availability first.** Hindsight tools appear in this harness as
+`hindsight_recall`, `hindsight_reflect`, and `hindsight_retain`, or
+MCP-prefixed as `mcp__hindsight__recall`, `mcp__hindsight__reflect`, and
+`mcp__hindsight__retain`. Availability means these tools are registered and
+callable, not merely advertised. A tool that appears in a system prompt list
+but errors or returns nothing when called is unavailable. This repository's
+own `docs/plans/cobuilder-family/00-status.md` records exactly this case:
+`Hindsight: unavailable (tools advertised in this session but not
+registered)`.
+
 **Ask once at the start after the user states their intent:**
 
-> "Should I check Hindsight for prior art before we begin? It adds two short
-> recall steps."
+> "Should I check Hindsight for prior art before we begin? It adds a short
+> memory checkpoint at each gate."
 
-Record the answer in `00-status.md` (`Hindsight: yes | no | unavailable`).
+Record the answer in `00-status.md` (`Hindsight: yes | no | unavailable`). Do
+not ask again for this feature.
 
-If the user opts in, execute two checkpoints:
-
-**Checkpoint H1 — after intent, before Gate 1.** Check past attempts in this
-problem domain:
-
-```
-recall("<the feature domain>, prior attempts, related initiatives")
-reflect("What should a <feature domain> effort account for here, given past
-         sessions? What went wrong in similar prior work?")
-```
-
-**Checkpoint H2 — after Gate 1 approval, before Gate 2.** Check known technical
-constraints:
-
-```
-recall("<the modules and services this will touch>, past design decisions,
-        known constraints")
-reflect("What has broken before in these modules? Which designs were tried and
-         abandoned, and why?")
-```
-
-Three rules govern recall:
-
-1. **Read results.** If output writes to a file, read that file completely.
-2. **Write findings into the gate document.** Record insights in `01-product.md`
-   or `02-architecture.md`.
-3. **Skills override memories.** User instructions and skill rules take
-   precedence over past memories.
-
-At feature completion, store a short reflection describing the slices, any
-escalations, and lessons learned.
+If the user opts in and the tools are available, read
+[references/hindsight-routine.md](references/hindsight-routine.md) and
+follow its checkpoints and its retain step. If Hindsight is unavailable, do
+not read that file. Proceed through every gate and every slice with no
+checkpoint and no retain step.
 
 ---
 
@@ -163,7 +148,10 @@ Template for `00-status.md`:
 - Gate 1 — Product: pending | in progress | APPROVED <date>
 - Gate 2 — Architecture: pending | in progress | APPROVED <date>
 - Gate 3 — Program Design: pending | in progress | APPROVED <date>
-- Gate 4 — Slice plan + rubrics: pending | in progress | APPROVED <date>
+- Gate 4 — Slice plan, epic designs, and rubrics: pending | in progress | APPROVED <date>
+  - 4a Slice plan: pending | APPROVED <date>
+  - 4b Epic technical solution designs: pending | APPROVED <date> | n/a (no epic carries more than one slice)
+  - 4c Blind rubrics: pending | APPROVED <date>
 
 Hindsight: yes | no | unavailable
 
@@ -278,7 +266,11 @@ Request user approval.
 
 ## Gate 4 — Slice plan, epic technical solution designs, and blind rubrics
 
-Gate 4 prepares all artifacts needed for implementation.
+Gate 4 prepares all artifacts needed for implementation. It has three
+sub-steps, and each needs its own approval line in `00-status.md` (see the
+template above). Gate 4 as a whole cannot read APPROVED while any sub-step
+still reads pending. Approve 4a, then 4b, then 4c, in order, using the
+approval protocol above for each.
 
 ### 4a. The slice plan
 
@@ -324,7 +316,9 @@ Epic ID: <epic-id>
 ```
 
 Present this document to the user and obtain approval before authoring rubrics
-for the epic.
+for the epic. Record the approval on the `4b` line in `00-status.md`. When no
+epic in `04-slices.md` carries more than one slice, mark `4b` as `n/a` instead
+of pending, and skip straight to 4c.
 
 ### 4c. Blind rubrics
 
@@ -335,8 +329,9 @@ Write one rubric per slice at `.cobuilder/rubrics/<slug>/slice-N.md`. Write
 Check before implementation starts:
 
 ```bash
-ls .cobuilder/rubrics/<feature-slug>/slice-*.md 2>/dev/null | wc -l
-# Must be greater than 0 before starting slices.
+uv run plugins/cobuilder-implement/scripts/verify_gate.py --plan docs/plans/<feature-slug>
+# Exit code 0 required before starting slices. A non-zero exit names which
+# of 4a, 4b, or 4c is missing or incomplete, and for which epic.
 ```
 
 ---
@@ -402,7 +397,7 @@ Load reference files as needed:
 
 | Reference | Purpose |
 |---|---|
-| [references/hindsight-recall.md](references/hindsight-recall.md) | Prior-art recall instructions |
+| [references/hindsight-routine.md](references/hindsight-routine.md) | Hindsight checkpoints and retain steps, read only when Hindsight is available |
 | [references/rubric-authoring.md](references/rubric-authoring.md) | Authoring blind rubrics and manifest files |
 | [references/slice-loop.md](references/slice-loop.md) | Role prompts for RED, GREEN, and VALIDATE |
 | [references/validation-scoring.md](references/validation-scoring.md) | Scoring criteria and gap routing |

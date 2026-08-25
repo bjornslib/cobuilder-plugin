@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs'
+
 export const meta = {
   name: 'slice-loop',
   description: 'Build approved vertical slices via red-green-validate, gated on an independent blind score',
@@ -100,13 +102,56 @@ const VALIDATE_SCHEMA = {
 
 const results = []
 
+// How many slices, across the whole build, each epic carries. An epic that
+// carries more than one slice needed a Gate 4b design (SKILL.md, Gate 4b).
+// A single-slice epic — e.g. a spike — legitimately has none.
+const slicesPerEpic = {}
+for (const s of slices) {
+  if (s.epicId) slicesPerEpic[s.epicId] = (slicesPerEpic[s.epicId] || 0) + 1
+}
+
 // Slices are sequential by construction — slice N builds on slice N-1.
 // The parallelism here is inside a slice (the retry loop), not across slices.
 for (const s of slices) {
   phase('Red')
   log(`Slice ${s.id} — ${s.name}: writing the contract`)
 
-  const epicDesignDoc = s.epicId ? `${plan}/epic-${s.epicId}-design.md` : `${plan}/03-program-design.md`
+  const needsEpicDesign = Boolean(s.epicId) && slicesPerEpic[s.epicId] > 1
+  const epicDesignPath = s.epicId ? `${plan}/epic-${s.epicId}-design.md` : null
+
+  // Gate 4b requires a per-epic technical solution design for any epic that
+  // carries more than one slice. Earlier versions of this loop fell back to
+  // 03-program-design.md silently when the file was absent, which let six
+  // epics ship with zero epic-*-design.md files while 00-status.md still
+  // read Gate 4 as approved. Stop here instead, the same way a missing
+  // rubric already stops scoring — an absent artifact must halt the loop,
+  // not be routed around.
+  if (needsEpicDesign && !existsSync(epicDesignPath)) {
+    log(
+      `Slice ${s.id} stopped: epic ${s.epicId} carries ${slicesPerEpic[s.epicId]} slices, `
+      + `so Gate 4b requires ${epicDesignPath}, which does not exist.`,
+    )
+    results.push({
+      slice: s,
+      verdict: 'ERROR',
+      reason: `Gate 4b missing: ${epicDesignPath} does not exist for epic ${s.epicId}`,
+    })
+    break
+  }
+
+  let epicDesignDoc
+  if (needsEpicDesign) {
+    epicDesignDoc = epicDesignPath
+  } else {
+    epicDesignDoc = `${plan}/03-program-design.md`
+    if (s.epicId) {
+      // Deliberate fallback, not the silent one this fix removes: epic
+      // ${s.epicId} carries exactly one slice, so Gate 4b never required a
+      // design for it (SKILL.md, Gate 4b: "For an epic carrying multiple
+      // slices").
+      log(`Slice ${s.id}: epic ${s.epicId} carries one slice, so Gate 4b needs no epic design. Reading ${epicDesignDoc} instead.`)
+    }
+  }
 
   const red = await agent(
     `You are the RED role in a test-driven slice. Write failing tests. Write no implementation.
@@ -284,4 +329,7 @@ return {
   notRun: notRun.map(s => s.id),
   // Deliberately not written to 00-status.md here — the orchestrating session
   // records scores and takes escalations to the user at a slice boundary.
+  // The goal.json sync and, if Hindsight is available, the per-slice retain
+  // (see references/goal-sync.md and references/hindsight-routine.md) also
+  // run in the orchestrating session, not in this script.
 }

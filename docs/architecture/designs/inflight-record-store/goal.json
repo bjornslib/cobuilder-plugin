@@ -1,0 +1,49 @@
+{
+  "name": "inflight-record-store",
+  "title": "A record store for in-flight pull requests",
+  "adr": null,
+  "adrs": ["ADR-0018"],
+  "created": "2026-08-25",
+  "outcome": "A reader on the main branch sees every piece of in-flight work across all open pull requests, and no pull request owner hits a merge conflict caused by that view.",
+  "done_when": [],
+  "abort_if": [],
+  "min_work": {
+    "derived_from": "collect_pull_requests() in shared/build_index.py reads data/story.json, which holds narrated, merged pull requests only. Eight epics in goal.json files point at pull request 11, which is not a pull_request entity, so refine_epic_status() cannot derive its state and leaves a hardcoded placeholder. A daily agent that pulls every branch and writes one consolidated view onto main guarantees a merge conflict for every pull request owner, because each of them touches the same generated file. File-based single-document storage cannot carry concurrent in-flight state. This constraint makes the work a program, not a single fix. The role model is beads (bd), which stores one record per file with append-only semantics and a defined merge strategy.",
+    "challenge_stage_run": false,
+    "note": "Stage 0 and stage 1 grounding did not run. Stages 2 through 7 are deliberately deferred. This design is a backlog entry, not an approved design. It carries no intent.json, narrative.json, assessment.json, or diagrams, and it must not be implemented until design mode runs to completion."
+  },
+  "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
+  "epics": [
+    {
+      "id": "E1",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "Open pull requests become entities. collect_pull_requests() merges gh pr list --state all metadata over the narrated story.json entities. An open pull request gets an entity with state: \"open\" and a narrated: false flag. This removes the placeholder in refine_epic_status(). It reads metadata only, checks out no branch, and creates no conflict. This is the tracer bullet, and it is useful on its own. It does not depend on E2, E3, or E4, and can ship alone."
+    },
+    {
+      "id": "E2",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "A record store with a merge strategy. One file per record, append-only, with a defined resolution rule for a concurrent write. Modelled on beads. This epic decides the storage shape and nothing else."
+    },
+    {
+      "id": "E3",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "Cross-branch collection without a conflict. Records written by a session on a branch reach the shared view without any branch writing a shared generated file."
+    },
+    {
+      "id": "E4",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "The active-work view. The viewer renders in-flight work beside merged history, so a reader sees one timeline rather than two."
+    }
+  ],
+  "stage": "backlog",
+  "supersedes": null,
+  "rounds": []
+}
