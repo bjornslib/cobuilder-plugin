@@ -139,15 +139,24 @@
   .rail-item.active .rail-title{color:var(--accent-text);}
   .rail-teaser{font-size:11px;color:var(--ink-dim);line-height:1.4;margin-top:4px;}
 
-  #content-col{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;min-height:0;}
+  /* #content-col holds exactly two children: #content-main-col (caption + scrollable
+     content, stacked vertically) and #comments-drawer, laid out side by side. The row
+     direction lives here, on the outer element, so the drawer can push the column
+     narrower without disturbing the caption-over-content stack below it (defect D2). */
+  #content-col{flex:1 1 auto;min-width:0;display:flex;flex-direction:row;min-height:0;}
+  #content-main-col{flex:1 1 auto;min-width:0;min-height:0;display:flex;flex-direction:column;}
 
   /* Slim narration caption, sits atop the scrollable content (spec allows either side).
      Heading + narration on the left, fixed-width audio control on the right — vertically
-     centered against the heading block. */
+     centered against the heading block. renderCaption() toggles the `hidden` attribute
+     for every non-PR view mode. The explicit `display:flex` below wins over the
+     user-agent `[hidden]{display:none}` rule by specificity, so an explicit
+     `[hidden]` override is required here too, or the caption stays visible (defect D1). */
   #narration-caption{
     flex:0 0 auto;padding:12px 26px;border-bottom:1px solid var(--line-soft);background:#fff;
     display:flex;align-items:center;justify-content:space-between;gap:20px;
   }
+  #narration-caption[hidden]{display:none;}
   .caption-text{min-width:0;flex:1 1 auto;}
   .caption-text .pr-title-line{font:700 13px system-ui,sans-serif;color:oklch(0.22 0.02 250);margin-bottom:3px;}
   .caption-text .narration-text{margin:0;font-size:13px;line-height:1.5;font-style:italic;color:var(--ink-dim);max-width:80ch;}
@@ -319,7 +328,7 @@
   .adr-badge:hover{background:oklch(0.94 0.04 60);border-color:oklch(0.48 0.13 60);}
   .no-adrs{font:11.5px system-ui,sans-serif;color:var(--ink-dim);}
 
-  /* Submit-mode "PR Author Assessment" banner: sits at the top of level 2,
+  /* Generate-mode "PR Author Assessment" banner: sits at the top of level 2,
      the PR's most-viewed level, since the assessment covers the whole PR
      rather than one level specifically. Opens the same detail sheet the
      ADR badges use. Deliberately a different hue (265) from the ADR badge's
@@ -457,13 +466,23 @@
     transition:opacity .2s ease;z-index:40;
   }
   #drawer-scrim.open{opacity:1;pointer-events:auto;}
+  /* ADR-0019: the drawer PUSHES the content column narrower, it never covers it — the
+     reader must still see the text they are commenting on. `transform` only moves the
+     paint, so a translateX-based drawer always reserved its 420px track in the flex
+     layout, leaving dead whitespace when closed (defect D3). Animating flex-basis
+     instead makes the closed state occupy zero width, and the open state take real
+     layout space that #content-main-col yields. `overflow:hidden` on the closed drawer
+     clips its fixed-width inner content instead of letting it reflow mid-transition. */
   #comments-drawer{
-    position:fixed;top:0;right:0;bottom:0;width:420px;max-width:92vw;background:#fff;
-    border-left:1px solid var(--line);border-radius:14px 0 0 14px;box-shadow:-12px 0 34px rgba(20,25,35,0.2);
-    transform:translateX(100%);transition:transform .25s ease;z-index:41;
+    flex:0 0 0;max-width:92vw;background:#fff;overflow:hidden;
+    border-left:1px solid var(--line);border-radius:0;box-shadow:-12px 0 34px rgba(20,25,35,0.1);
     display:flex;flex-direction:column;min-height:0;
+    transition:flex-basis .25s ease;
   }
-  #comments-drawer.open{transform:translateX(0);}
+  /* Fixed width on the inner content, independent of the animating flex-basis above, so
+     the drawer's contents do not reflow while the basis tweens from 0 to 420px. */
+  #comments-drawer > *{width:420px;}
+  #content-col.drawer-open #comments-drawer{flex:0 0 420px;}
   .drawer-header{
     flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;
     padding:16px 20px;border-bottom:1px solid var(--line-soft);
@@ -488,39 +507,23 @@
      just wider — reuses .drawer-header/.drawer-close/.drawer-body). Shares
      #drawer-scrim with the comments drawer; JS enforces only one open at a time. ================= */
   #adr-sheet,
-  #assessment-sheet,
-  #designs-sheet{
+  #assessment-sheet{
     position:fixed;top:0;right:0;bottom:0;width:clamp(480px, 40vw, 720px);max-width:92vw;background:#fff;
     border-left:1px solid var(--line);border-radius:14px 0 0 14px;box-shadow:-12px 0 34px rgba(20,25,35,0.2);
     transform:translateX(100%);transition:transform .25s ease;z-index:41;
     display:flex;flex-direction:column;min-height:0;
   }
   #adr-sheet.open,
-  #assessment-sheet.open,
-  #designs-sheet.open{transform:translateX(0);}
+  #assessment-sheet.open{transform:translateX(0);}
   #adr-sheet .drawer-header,
-  #assessment-sheet .drawer-header,
-  #designs-sheet .drawer-header{align-items:flex-start;}
+  #assessment-sheet .drawer-header{align-items:flex-start;}
   .adr-sheet-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px;}
   .adr-state-badge{font:10px 'JetBrains Mono',monospace;letter-spacing:.04em;padding:3px 9px;border-radius:10px;border:1px solid;text-transform:uppercase;white-space:nowrap;}
   .adr-sheet-sourceline{font:11px 'JetBrains Mono',monospace;color:var(--ink-dim);}
   #adr-sheet .drawer-body,
-  #assessment-sheet .drawer-body,
-  #designs-sheet .drawer-body{overflow-y:auto;gap:16px;}
+  #assessment-sheet .drawer-body{overflow-y:auto;gap:16px;}
 
-  /* Designs sheet — list of named designs, then a reading view. Not a fifth level. */
-  .design-list{display:flex;flex-direction:column;gap:10px;}
-  .design-card{
-    display:block;width:100%;text-align:left;border-radius:10px;border:1px solid var(--line);
-    background:#fff;padding:14px 16px;cursor:pointer;color:inherit;font:inherit;
-  }
-  .design-card:hover{border-color:var(--accent);}
-  .design-card:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
-  .design-card-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;}
-  .design-card-name{font:700 13px 'JetBrains Mono',monospace;color:oklch(0.22 0.02 250);}
-  .design-card-title{font-size:13px;line-height:1.45;color:oklch(0.3 0.02 250);margin-top:4px;}
-  .design-card-meta{font:11px 'JetBrains Mono',monospace;color:var(--ink-dim);margin-top:8px;}
-  .design-epic-list{display:flex;flex-direction:column;gap:4px;margin-top:8px;}
+  /* Design epic row — the Designs tab's level-3 epic blocks (renderDesignMainContent). */
   .design-epic-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font:11.5px 'JetBrains Mono',monospace;color:oklch(0.3 0.02 250);}
   .design-epic-pr{
     font:600 10.5px 'JetBrains Mono',monospace;padding:2px 7px;border-radius:8px;
@@ -528,7 +531,6 @@
   }
   .design-epic-pr.has-pr{border-color:color-mix(in oklch, var(--accent) 50%, transparent);color:var(--accent-text);cursor:pointer;background:color-mix(in oklch, var(--accent) 6%, white);}
   .design-epic-pr.has-pr:hover{border-color:var(--accent);}
-  #designs-sheet .diagram-viewport{height:280px;border-radius:8px;border:1px solid var(--line);}
 
   /* A prediction is a guess, never a check. Dashed purple, not the solid
      severity rail a pre-stage finding uses. */
@@ -597,6 +599,161 @@
   .adr-body-md pre.md-table{background:oklch(0.98 0.005 250);border:1px solid var(--line);border-radius:6px;padding:10px 12px;overflow-x:auto;margin:0 0 10px;font-size:11.5px;}
   .adr-body-md a{color:var(--accent-text);}
 
+  /* Decisions view styles */
+  .decisions-view{
+    padding:20px 24px;max-width:1100px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:16px;
+  }
+  .decisions-header-bar{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 16px;background:#fff;border:1px solid var(--line);border-radius:8px;
+  }
+  .decisions-stats{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;font:11.5px 'JetBrains Mono',monospace;color:var(--ink-dim);
+  }
+  .decisions-stats .stat-item.verified strong{color:#10666e;}
+  .decisions-stats .stat-item.inferred strong{color:#92400e;}
+  .decisions-stats .stat-sep{color:var(--line);}
+  .decisions-filter-note{font:11px 'JetBrains Mono',monospace;color:var(--accent-text);background:color-mix(in oklch, var(--accent) 8%, white);padding:2px 8px;border-radius:4px;border:1px solid color-mix(in oklch, var(--accent) 25%, transparent);}
+  .decisions-table-wrap{
+    background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.03);
+  }
+  .decisions-table{
+    width:100%;border-collapse:collapse;text-align:left;font-size:12.5px;line-height:1.5;
+  }
+  .decisions-table th{
+    background:oklch(0.98 0.005 250);font:700 10.5px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim);padding:10px 14px;border-bottom:1px solid var(--line);
+  }
+  .decisions-table td{
+    padding:12px 14px;border-bottom:1px solid var(--line-soft);vertical-align:top;
+  }
+  .decisions-row:last-child td{border-bottom:none;}
+  .decisions-row:hover{background:oklch(0.99 0.003 250);}
+  .adr-id-btn{
+    font:700 11px 'JetBrains Mono',monospace;color:var(--accent-text);background:color-mix(in oklch, var(--accent) 8%, white);border:1px solid color-mix(in oklch, var(--accent) 30%, transparent);border-radius:6px;padding:3px 8px;cursor:pointer;
+  }
+  .adr-id-btn:hover{background:color-mix(in oklch, var(--accent) 18%, white);border-color:var(--accent);}
+  .adr-title-line{font-weight:600;color:oklch(0.22 0.02 250);cursor:pointer;}
+  .adr-title-line:hover{color:var(--accent-text);}
+  .adr-problem-text{font-size:11.5px;color:var(--ink-dim);line-height:1.45;margin-top:4px;}
+  .adr-pr-chip{
+    font:600 11px 'JetBrains Mono',monospace;padding:2px 7px;border-radius:6px;background:color-mix(in oklch, var(--accent) 8%, white);border:1px solid color-mix(in oklch, var(--accent) 25%, transparent);color:var(--accent-text);display:inline-block;white-space:nowrap;
+  }
+  .adr-unref-chip{
+    font:10.5px 'JetBrains Mono',monospace;padding:2px 7px;border-radius:6px;background:oklch(0.97 0.005 250);border:1px solid var(--line);color:var(--ink-dim);font-style:italic;display:inline-block;white-space:nowrap;
+  }
+
+  /* Anchor distinction styles (CRITICAL C2) */
+  .anchor-badge{
+    display:inline-flex;align-items:center;gap:6px;font:11px 'JetBrains Mono',monospace;padding:3px 8px;border-radius:6px;white-space:nowrap;max-width:100%;
+  }
+  .anchor-badge.anchor-verified{
+    background:color-mix(in oklch, #2f8f9d 12%, white);border:1px solid #2f8f9d;color:#10666e;
+  }
+  .anchor-badge.anchor-inferred{
+    background:color-mix(in oklch, oklch(0.7 0.15 65) 12%, white);border:1px dashed oklch(0.66 0.15 70);color:#92400e;
+  }
+  .anchor-badge.anchor-unanchored{
+    background:oklch(0.97 0.005 250);border:1px dashed var(--line);color:var(--ink-dim);
+  }
+  .anchor-tag{
+    font:700 9px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.04em;padding:1px 5px;border-radius:3px;
+  }
+  .anchor-tag.verified{background:#2f8f9d;color:#fff;}
+  .anchor-tag.inferred{background:oklch(0.66 0.15 70);color:#fff;}
+  .anchor-type{font-weight:600;}
+  .anchor-name{font-weight:600;}
+
+  /* State badges */
+  .adr-state-badge.state-approved{color:oklch(0.42 0.13 145);background:color-mix(in oklch, oklch(0.45 0.12 155) 12%, white);border-color:oklch(0.45 0.12 155);}
+  .adr-state-badge.state-decided{color:var(--accent-text);background:color-mix(in oklch, var(--accent) 12%, white);border-color:var(--accent);}
+  .adr-state-badge.state-tentative, .adr-state-badge.state-proposed{color:oklch(0.5 0.14 70);background:color-mix(in oklch, oklch(0.66 0.15 70) 12%, white);border-color:oklch(0.66 0.15 70);}
+  .adr-state-badge.state-deprecated{color:var(--ink-dim);background:oklch(0.96 0.005 250);border-color:var(--line);}
+
+  /* Contexts view styles */
+  .contexts-view{
+    padding:20px 24px;max-width:1100px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:24px;
+  }
+  .contexts-section{display:flex;flex-direction:column;gap:12px;}
+  .section-title-bar{
+    display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:2px solid var(--line);padding-bottom:6px;
+  }
+  .section-title{font:700 14px 'JetBrains Mono',monospace;color:oklch(0.22 0.02 250);margin:0;}
+  .section-count{font:11px 'JetBrains Mono',monospace;color:var(--ink-dim);}
+  .section-intro{margin:0;font-size:12.5px;line-height:1.5;color:var(--ink-dim);}
+  .violations-list{display:flex;flex-direction:column;gap:10px;}
+  .violation-card{
+    background:#fff;border:1px solid var(--line);border-left:4px solid oklch(0.55 0.19 25);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;
+  }
+  .violation-card.is-smell{border-left-color:oklch(0.66 0.15 70);background:oklch(0.995 0.005 70);}
+  .violation-header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+  .violation-badges{display:flex;align-items:center;gap:6px;}
+  .badge-candidate{
+    font:700 9.5px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;background:oklch(0.94 0.06 25);border:1px solid oklch(0.6 0.16 25);color:oklch(0.45 0.18 25);padding:2px 7px;border-radius:6px;
+  }
+  .badge-smell{
+    font:700 9.5px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;background:oklch(0.94 0.06 70);border:1px solid oklch(0.66 0.15 70);color:oklch(0.45 0.15 70);padding:2px 7px;border-radius:6px;
+  }
+  .badge-rule{
+    font:700 9.5px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;background:oklch(0.94 0.03 250);border:1px solid var(--line);color:var(--ink-dim);padding:2px 7px;border-radius:6px;
+  }
+  .violation-edge{
+    font-size:12px;line-height:1.5;color:oklch(0.25 0.02 250);background:rgba(30,40,55,0.03);padding:6px 10px;border-radius:5px;border:1px solid var(--line-soft);
+  }
+  .violation-why{font-size:12.5px;line-height:1.55;color:oklch(0.3 0.02 250);}
+  .violation-why-label{font:700 11px 'JetBrains Mono',monospace;text-transform:uppercase;color:var(--ink-dim);margin-right:4px;}
+  .violation-adrs{display:flex;align-items:center;gap:6px;margin-top:4px;}
+  .violation-adrs-label{font:11px 'JetBrains Mono',monospace;color:var(--ink-dim);}
+  .adr-ref-btn{
+    font:700 10.5px 'JetBrains Mono',monospace;color:var(--accent-text);background:color-mix(in oklch, var(--accent) 10%, white);border:1px solid var(--accent);border-radius:6px;padding:2px 8px;cursor:pointer;
+  }
+  .adr-ref-btn:hover{background:color-mix(in oklch, var(--accent) 22%, white);}
+  .uncovered-list{display:flex;flex-direction:column;gap:8px;}
+  .uncovered-district-card{
+    background:#fff;border:1px dashed oklch(0.66 0.15 70);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;
+  }
+  .uncovered-header{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .uncovered-name{font-weight:700;font-size:12.5px;color:oklch(0.22 0.02 250);}
+  .uncovered-paths{font-size:11.5px;color:var(--ink-dim);}
+  .uncovered-summary{font-size:12px;line-height:1.5;color:oklch(0.35 0.02 250);}
+  .badge-uncovered{
+    font:700 9.5px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;background:oklch(0.95 0.05 70);border:1px dashed oklch(0.66 0.15 70);color:oklch(0.45 0.15 70);padding:2px 7px;border-radius:6px;
+  }
+  .contexts-list{display:flex;flex-direction:column;gap:14px;}
+  .context-card{
+    background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 1px 3px rgba(0,0,0,0.03);
+  }
+  .context-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .context-title{font:700 15px system-ui,sans-serif;color:oklch(0.2 0.02 250);margin:0;}
+  .context-meta{display:flex;gap:12px;font-size:11.5px;color:var(--ink-dim);margin-top:4px;}
+  .badge-verified-context{
+    font:700 10.5px 'JetBrains Mono',monospace;background:color-mix(in oklch, #2f8f9d 15%, white);border:1px solid #2f8f9d;color:#10666e;padding:3px 9px;border-radius:8px;
+  }
+  .context-verifies-row, .context-governing-adrs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-dim);}
+  .cv-label{font:600 10.5px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-dim);}
+  .badge-district{
+    font:600 10.5px 'JetBrains Mono',monospace;background:oklch(0.97 0.005 250);border:1px solid var(--line);padding:2px 7px;border-radius:5px;color:oklch(0.3 0.02 250);
+  }
+  .context-rules-section{border-top:1px solid var(--line-soft);padding-top:14px;}
+  .context-rules-title{font:700 12px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim);margin:0 0 10px;}
+  .module-rules-list, .context-map-list{display:flex;flex-direction:column;gap:8px;}
+  .module-rule-card, .context-map-card{
+    background:oklch(0.99 0.003 250);border:1px solid var(--line-soft);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;
+  }
+  .mrule-header, .cmap-header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:11.5px;}
+  .badge-leaf{
+    font:700 9px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;background:color-mix(in oklch, var(--accent) 12%, white);border:1px solid var(--accent);color:var(--accent-text);padding:1px 6px;border-radius:4px;
+  }
+  .badge-pattern{
+    font:700 9.5px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;background:oklch(0.94 0.04 300);border:1px solid oklch(0.62 0.14 300);color:oklch(0.46 0.16 300);padding:2px 7px;border-radius:6px;
+  }
+  .mrule-statement{font-size:12.5px;line-height:1.5;color:oklch(0.25 0.02 250);}
+  .mrule-flows{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px;margin-top:2px;}
+  .mrule-interface{font-size:11px;line-height:1.5;margin-top:2px;}
+  .flow-label{font:600 10.5px 'JetBrains Mono',monospace;color:var(--ink-dim);margin-right:4px;}
+  .cmap-note{font-size:12px;line-height:1.5;color:oklch(0.3 0.02 250);}
+  .empty-card.ok{border-color:oklch(0.45 0.12 155);background:color-mix(in oklch, oklch(0.45 0.12 155) 6%, white);}
+  .empty-card.ok .empty-detail{color:oklch(0.35 0.12 155);}
+  .text-candidate{color:oklch(0.5 0.18 25);font-weight:600;}
+
   /* ================= AUDIO DIALOG (shadcn Dialog look, centered) =================
      #audio-dialog-layer is a full-viewport flex centering box (pointer-events:none so
      it never blocks clicks when empty) — the dialog is centered by flexbox, not by a
@@ -627,6 +784,118 @@
   .audio-dialog-controls{display:flex;align-items:center;gap:10px;}
   .audio-dialog-controls .audio-btn{width:28px;height:28px;font-size:10px;}
   .audio-dialog-controls .audio-progress{flex:1 1 auto;height:4px;}
+
+  /* Builds view styles (Slice 11 — plugin-split/E5) */
+  .builds-view{
+    padding:20px 24px;max-width:1100px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:24px;
+  }
+  .builds-section{display:flex;flex-direction:column;gap:14px;}
+  .section-title-wrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .badge-computed{
+    font:700 9.5px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;background:color-mix(in oklch, #2f8f9d 14%, white);border:1px solid #2f8f9d;color:#10666e;padding:2px 7px;border-radius:6px;
+  }
+  .gate-rail-grid{
+    display:grid;grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));gap:12px;
+  }
+  .gate-card{
+    background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;transition:box-shadow .15s ease;
+  }
+  .gate-card.is-approved{border-left:4px solid oklch(0.5 0.14 145);background:oklch(0.995 0.005 145);}
+  .gate-card.is-current{border-left:4px solid var(--accent);background:color-mix(in oklch, var(--accent) 5%, white);box-shadow:0 1px 4px rgba(0,0,0,0.06);}
+  .gate-card.is-planned{border-left:4px solid var(--line2);background:#fff;}
+  .gate-header{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+  .gate-num-badge{font:700 11px 'JetBrains Mono',monospace;color:var(--ink-dim);}
+  .gate-status-pill{font:700 9px 'JetBrains Mono',monospace;letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;border-radius:4px;}
+  .gate-status-pill.ok{background:oklch(0.92 0.08 145);color:oklch(0.35 0.14 145);border:1px solid oklch(0.7 0.12 145);}
+  .gate-status-pill.now{background:color-mix(in oklch, var(--accent) 15%, white);color:var(--accent-text);border:1px solid var(--accent);}
+  .gate-status-pill.wait{background:oklch(0.96 0.005 250);color:var(--ink-dim);border:1px solid var(--line);}
+  .gate-name{font-weight:700;font-size:13.5px;color:oklch(0.22 0.02 250);}
+  .gate-desc{font-size:12px;line-height:1.45;color:var(--ink-dim);}
+
+  .backlog-info-banner{
+    display:flex;align-items:flex-start;gap:10px;background:oklch(0.985 0.01 250);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:6px;padding:10px 12px;font-size:12px;line-height:1.5;color:var(--ink-dim);
+  }
+  .backlog-info-banner .info-icon{font-size:14px;color:var(--accent-text);flex:none;margin-top:1px;}
+  .backlog-grid{
+    display:grid;grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));gap:14px;
+  }
+  .backlog-card{
+    background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:10px;
+  }
+  .backlog-card.is-deferred{
+    border-style:dashed;border-color:oklch(0.75 0.08 70);background:oklch(0.995 0.005 70);
+  }
+  .backlog-card-header{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .backlog-card-id code{font:700 12px 'JetBrains Mono',monospace;color:var(--accent-text);background:color-mix(in oklch, var(--accent) 8%, white);padding:2px 6px;border-radius:4px;}
+  .backlog-badge{font:700 9.5px 'JetBrains Mono',monospace;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:5px;}
+  .backlog-badge.badge-planned{background:oklch(0.95 0.005 250);color:var(--ink-dim);border:1px solid var(--line);}
+  .backlog-badge.badge-deferred{background:oklch(0.94 0.06 70);color:oklch(0.45 0.15 70);border:1px solid oklch(0.66 0.15 70);}
+  .backlog-epic-note{font-size:12.5px;line-height:1.5;color:oklch(0.25 0.02 250);margin:0;}
+  .backlog-slices-list{display:flex;flex-direction:column;gap:5px;border-top:1px solid var(--line-soft);padding-top:8px;}
+  .backlog-slices-label{font:700 10.5px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-dim);}
+  .backlog-slice-item{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;background:rgba(30,40,55,0.02);padding:4px 8px;border-radius:4px;border:1px solid var(--line-soft);
+  }
+  .slice-num-chip{font:700 10.5px 'JetBrains Mono',monospace;color:var(--accent-text);background:color-mix(in oklch, var(--accent) 8%, white);padding:1px 5px;border-radius:3px;flex:none;}
+  .slice-title-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:oklch(0.25 0.02 250);}
+  .slice-score-mini{font:700 10.5px 'JetBrains Mono',monospace;padding:1px 5px;border-radius:3px;}
+  .slice-score-mini.ok{color:oklch(0.35 0.14 145);background:oklch(0.93 0.08 145);}
+  .slice-score-mini.pending{color:var(--ink-dim);background:oklch(0.96 0.005 250);}
+  .backlog-deferred-note{
+    display:flex;align-items:center;gap:6px;font-size:11.5px;color:oklch(0.45 0.15 70);background:oklch(0.95 0.05 70);padding:6px 10px;border-radius:5px;border:1px solid oklch(0.7 0.12 70);
+  }
+  .badge-deferred-inline{font:700 10px 'JetBrains Mono',monospace;text-transform:uppercase;}
+
+  .epic-groups-stack{display:flex;flex-direction:column;gap:16px;}
+  .epic-group-card{
+    background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.03);display:flex;flex-direction:column;
+  }
+  .epic-group-header{
+    padding:12px 16px;background:oklch(0.985 0.005 250);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:6px;
+  }
+  .epic-group-title-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .epic-id-badge code{font:700 12.5px 'JetBrains Mono',monospace;color:var(--accent-text);}
+  .epic-design-name{font:600 12px 'JetBrains Mono',monospace;color:var(--ink-dim);}
+  .epic-progress-pill{font:700 10px 'JetBrains Mono',monospace;padding:2px 8px;border-radius:5px;}
+  .epic-progress-pill.ok{background:oklch(0.92 0.08 145);color:oklch(0.35 0.14 145);border:1px solid oklch(0.7 0.12 145);}
+  .epic-progress-pill.now{background:color-mix(in oklch, var(--accent) 12%, white);color:var(--accent-text);border:1px solid var(--accent);}
+  .epic-group-note{font-size:12.5px;line-height:1.5;color:oklch(0.3 0.02 250);}
+
+  .epic-slices-table-wrap{overflow-x:auto;}
+  .epic-slices-table{width:100%;border-collapse:collapse;text-align:left;font-size:12.5px;}
+  .epic-slices-table th{
+    background:oklch(0.975 0.005 250);font:700 10px 'JetBrains Mono',monospace;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-dim);padding:8px 14px;border-bottom:1px solid var(--line);
+  }
+  .epic-slices-table td{padding:10px 14px;border-bottom:1px solid var(--line-soft);vertical-align:top;}
+  .slice-ladder-row:last-child td{border-bottom:none;}
+  .slice-ladder-row:hover{background:oklch(0.99 0.003 250);}
+  .slice-num-badge{
+    font:700 11px 'JetBrains Mono',monospace;background:oklch(0.95 0.005 250);border:1px solid var(--line);padding:2px 7px;border-radius:5px;color:oklch(0.25 0.02 250);
+  }
+  .slice-name-text{font-weight:600;color:oklch(0.22 0.02 250);}
+  .slice-ends-text{font-size:11.5px;color:var(--ink-dim);margin-top:2px;line-height:1.4;}
+  .score-pill{
+    font:700 11px 'JetBrains Mono',monospace;padding:2px 7px;border-radius:5px;display:inline-block;
+  }
+  .score-pill.score-ok{background:oklch(0.92 0.08 145);color:oklch(0.35 0.14 145);border:1px solid oklch(0.7 0.12 145);}
+  .score-pill.score-wait{background:oklch(0.96 0.005 250);color:var(--ink-dim);border:1px solid var(--line);}
+  .slice-state-chip{
+    font:700 9.5px 'JetBrains Mono',monospace;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:4px;display:inline-block;
+  }
+  .slice-state-chip.state-completed{background:oklch(0.92 0.08 145);color:oklch(0.35 0.14 145);}
+  .slice-state-chip.state-in-progress{background:color-mix(in oklch, var(--accent) 15%, white);color:var(--accent-text);border:1px solid var(--accent);}
+  .slice-state-chip.state-planned{background:oklch(0.96 0.005 250);color:var(--ink-dim);border:1px solid var(--line);}
+
+  .pinned-action-box{
+    background:#fff;border:2px solid oklch(0.22 0.02 250);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;box-shadow:0 2px 6px rgba(0,0,0,0.05);
+  }
+  .pinned-action-header{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .pinned-action-tag{
+    font:700 10px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;background:oklch(0.93 0.08 145);color:oklch(0.35 0.14 145);padding:2px 7px;border-radius:4px;
+  }
+  .pinned-action-epic{font:600 11px 'JetBrains Mono',monospace;color:var(--ink-dim);}
+  .pinned-action-title{font-size:15px;font-weight:700;color:oklch(0.18 0.02 250);margin:0;}
+  .pinned-action-text{font-size:13px;line-height:1.55;color:var(--ink-dim);margin:0;}
 </style>
 </head>
 <body>
@@ -639,6 +908,9 @@
       <div class="mode-switch" id="mode-switch" role="tablist" aria-label="View mode">
         <button type="button" role="tab" class="mode-switch-btn" id="mode-btn-designs" data-mode="designs" aria-selected="false">Designs</button>
         <button type="button" role="tab" class="mode-switch-btn" id="mode-btn-prs" data-mode="prs" aria-selected="true">Pull requests</button>
+        <button type="button" role="tab" class="mode-switch-btn" id="mode-btn-decisions" data-mode="decisions" aria-selected="false">Decisions</button>
+        <button type="button" role="tab" class="mode-switch-btn" id="mode-btn-contexts" data-mode="contexts" aria-selected="false">Contexts</button>
+        <button type="button" role="tab" class="mode-switch-btn" id="mode-btn-builds" data-mode="builds" aria-selected="false">Builds</button>
       </div>
     </div>
     <div class="tb-center">
@@ -663,21 +935,50 @@
       <div id="rail-items"></div>
     </nav>
     <div id="content-col">
-      <div id="narration-caption">
-        <div class="caption-text">
-          <div class="pr-title-line" id="caption-title"></div>
-          <p class="narration-text" id="caption-narration"></p>
+      <!-- #content-main-col stacks the caption above the scrollable content. It is the
+           flex sibling that #comments-drawer pushes narrower, keeping #content-col
+           itself a plain two-child row (this wrapper, plus the drawer). -->
+      <div id="content-main-col">
+        <div id="narration-caption">
+          <div class="caption-text">
+            <div class="pr-title-line" id="caption-title"></div>
+            <p class="narration-text" id="caption-narration"></p>
+          </div>
+          <div id="tb-audio">
+            <button class="audio-btn" id="tb-audio-btn">&#9654;</button>
+            <div class="audio-progress"><div class="audio-fill" id="tb-audio-fill"></div></div>
+            <span class="audio-label" id="tb-audio-label">narration audio</span>
+          </div>
         </div>
-        <div id="tb-audio">
-          <button class="audio-btn" id="tb-audio-btn">&#9654;</button>
-          <div class="audio-progress"><div class="audio-fill" id="tb-audio-fill"></div></div>
-          <span class="audio-label" id="tb-audio-label">narration audio</span>
+        <div id="main-content-wrap">
+          <div id="main-content"></div>
+          <div class="scroll-cue bottom" id="scroll-cue-bottom" hidden></div>
+          <div class="scroll-cue top" id="scroll-cue-top" hidden></div>
         </div>
       </div>
-      <div id="main-content-wrap">
-        <div id="main-content"></div>
-        <div class="scroll-cue bottom" id="scroll-cue-bottom" hidden></div>
-        <div class="scroll-cue top" id="scroll-cue-top" hidden></div>
+      <!-- Comments drawer (shadcn Sheet look, recreated in vanilla HTML/CSS) -->
+      <div id="comments-drawer" role="dialog" aria-label="Review comments">
+        <div class="drawer-header">
+          <h2>Review comments</h2>
+          <button class="drawer-close" id="drawer-close-btn" title="Close (Esc)">&times;</button>
+        </div>
+        <div id="feedback-anchor-context" hidden></div>
+        <div class="drawer-body">
+          <div class="drawer-compose">
+            <div class="drawer-compose-row">
+              <span class="dock-tag-label">Tag:</span>
+              <span class="tag-chip" id="comment-level-chip"></span>
+            </div>
+            <input id="comment-input" type="text" placeholder="Leave a review comment…" autocomplete="off" />
+            <button class="btn-add-comment" id="btn-add-comment">Comment</button>
+          </div>
+          <div class="drawer-list-label">Comments</div>
+          <div class="drawer-list comment-list" id="comment-list"></div>
+        </div>
+        <div class="drawer-footer">
+          <button class="btn-copy-md" id="btn-copy-md">Copy review as markdown</button>
+          <a class="link-btn" id="btn-reset">Reset review</a>
+        </div>
       </div>
     </div>
   </div>
@@ -698,35 +999,12 @@
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Comments drawer (shadcn Sheet look, recreated in vanilla HTML/CSS) -->
   <div id="drawer-scrim"></div>
-  <div id="comments-drawer" role="dialog" aria-label="Review comments">
-    <div class="drawer-header">
-      <h2>Review comments</h2>
-      <button class="drawer-close" id="drawer-close-btn" title="Close (Esc)">&times;</button>
-    </div>
-    <div class="drawer-body">
-      <div class="drawer-compose">
-        <div class="drawer-compose-row">
-          <span class="dock-tag-label">Tag:</span>
-          <span class="tag-chip" id="comment-level-chip"></span>
-        </div>
-        <input id="comment-input" type="text" placeholder="Leave a review comment…" autocomplete="off" />
-        <button class="btn-add-comment" id="btn-add-comment">Comment</button>
-      </div>
-      <div class="drawer-list-label">Comments</div>
-      <div class="drawer-list comment-list" id="comment-list"></div>
-    </div>
-    <div class="drawer-footer">
-      <button class="btn-copy-md" id="btn-copy-md">Copy review as markdown</button>
-      <a class="link-btn" id="btn-reset">Reset review</a>
-    </div>
-  </div>
 
-  <!-- ADR detail sheet (same shadcn Sheet family, wider — reachable from any ADR chip).
-       Shares #drawer-scrim above with the comments drawer; only one is open at a time. -->
+  <!-- ADR detail sheet, first of the Sheet family (ADR / assessment).
+       Reads window.ADRS for the clicked badge's record. Shares
+       #drawer-scrim; only one sheet is ever open. -->
   <div id="adr-sheet" role="dialog" aria-label="ADR detail">
     <div class="drawer-header">
       <div>
@@ -738,7 +1016,7 @@
     <div class="drawer-body" id="adr-sheet-body"></div>
   </div>
 
-  <!-- Submit-mode "PR Author Assessment" sheet (same Sheet family as the ADR
+  <!-- Generate-mode "PR Author Assessment" sheet (same Sheet family as the ADR
        sheet above), reachable from the assessment banner at the top of level
        2. Reads the timeline entry's own `assessment`/`intent` blocks — there
        is no window.ASSESSMENTS, because both live inline in story.json.
@@ -752,20 +1030,6 @@
       <button class="drawer-close" id="assessment-sheet-close-btn" title="Close (Esc)">&times;</button>
     </div>
     <div class="drawer-body" id="assessment-sheet-body"></div>
-  </div>
-
-  <!-- Designs sheet (same Sheet family as ADR / assessment). Lists every
-       design in window.DESIGNS, then a reading view for one. Not a fifth
-       level. Shares #drawer-scrim; only one sheet is ever open. -->
-  <div id="designs-sheet" role="dialog" aria-label="Designs">
-    <div class="drawer-header">
-      <div>
-        <h2 id="designs-sheet-title">Designs</h2>
-        <div class="adr-sheet-meta" id="designs-sheet-meta"></div>
-      </div>
-      <button class="drawer-close" id="designs-sheet-close-btn" title="Close (Esc)">&times;</button>
-    </div>
-    <div class="drawer-body" id="designs-sheet-body"></div>
   </div>
 
   <!-- Narration audio dialog (shadcn Dialog look, centered). Shares #drawer-scrim above;
@@ -798,11 +1062,13 @@
 <script src="../data/adrs.js"></script>
 <script src="../data/diagrams.js"></script>
 <script src="../data/designs.js"></script>
+<script src="../data/index.js"></script>
 <script>
 window.DIFFS = window.DIFFS || {};
 window.ADRS = window.ADRS || {};
 window.DIAGRAMS = window.DIAGRAMS || {};
 window.DESIGNS = window.DESIGNS || {};
+window.INDEX = window.INDEX || {};
 (function(){
   'use strict';
 
@@ -886,15 +1152,12 @@ window.DESIGNS = window.DESIGNS || {};
     // ADR sheet: mutually exclusive with the comments drawer (see openCommentsDrawer/openAdrSheet).
     adrOpen: false,
     activeAdrId: null,
-    // Submit-mode assessment sheet: mutually exclusive with both panels above.
+    // Generate-mode assessment sheet: mutually exclusive with both panels above.
     assessmentOpen: false,
     // First-class view mode. 'prs' is the current pull-request viewer.
     // 'designs' mirrors it with a three-level design view. Persisted.
     viewMode: 'prs',
     designIndex: 0,
-    // Designs sheet: leftover drawer. Main chrome no longer opens it.
-    designsOpen: false,
-    activeDesignName: null,
     // Audio dialog: mutually exclusive with every sheet above (see openAudioDialog).
     audioDialogOpen: false,
     // true while a level/PR content transition animation is in flight — guards re-entrant
@@ -966,8 +1229,15 @@ window.DESIGNS = window.DESIGNS || {};
   function pr(){ return TIMELINE[state.prIndex]; }
   function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
   function levelKey(){ return LEVEL_KEYS[state.level - 1]; }
-  function viewLevelMax(){ return state.viewMode === 'designs' ? DESIGN_N_LEVELS : N_LEVELS; }
+  function viewLevelMax(){
+    if (state.viewMode === 'designs' || state.viewMode === 'decisions' || state.viewMode === 'contexts' || state.viewMode === 'builds') return DESIGN_N_LEVELS;
+    return N_LEVELS;
+  }
   function isDesignsMode(){ return state.viewMode === 'designs'; }
+  function isDecisionsMode(){ return state.viewMode === 'decisions'; }
+  function isContextsMode(){ return state.viewMode === 'contexts'; }
+  function isBuildsMode(){ return state.viewMode === 'builds'; }
+  function isPrsMode(){ return state.viewMode === 'prs'; }
 
   /* ============================================================
      REVIEW PERSISTENCE — localStorage odyssey-f:<repo>:<pr>
@@ -1030,15 +1300,16 @@ window.DESIGNS = window.DESIGNS || {};
     renderDock();
     renderQueueDots();
   }
-  function addCommentOnly(){
+  async function addCommentOnly(){
     const draft = commentInput.value.trim();
     if (!draft) return;
-    const p = pr();
-    const review = loadReview(p.pr);
-    review.comments.push({ level: levelKey(), text: draft });
-    if (review.state === 'pending') review.state = 'commented';
-    saveReview(p.pr, review);
-    commentInput.value = '';
+    // Submit to the feedback ledger (POST /feedback with fallback)
+    const ulid = await submitFeedback(draft);
+    if (ulid){
+      commentInput.value = '';
+      feedbackAnchor = null;
+      renderFeedbackAnchor();
+    }
     renderDock();
     renderQueueDots();
   }
@@ -1077,6 +1348,186 @@ window.DESIGNS = window.DESIGNS || {};
     }
     return md;
   }
+
+  /* ============================================================
+     FEEDBACK LEDGER — anchor, drawer, and append
+     ============================================================ */
+  const FEEDBACK_ENDPOINT = '/feedback';
+  const LEDGER_AVAILABLE = (() => { try { return 'fetch' in window; } catch { return false; } })();
+
+  // Current anchor state for the feedback drawer
+  let feedbackAnchor = null;
+
+  function computeSelector(el){
+    // Walk up to 5 ancestors to find a stable selector.
+    // Prefers an element with an id, then a data-testid, then a class
+    // combination. Returns a CSS selector string.
+    let current = el;
+    for (let i = 0; i < 5 && current && current !== document.body; i++){
+      if (current.id){
+        return '#' + current.id;
+      }
+      if (current.dataset && current.dataset.testid){
+        return '[data-testid="' + current.dataset.testid + '"]';
+      }
+      if (current.className && typeof current.className === 'string'){
+        const classes = current.className.trim().split(/\s+/).filter(c => c && !c.startsWith('__'));
+        if (classes.length){
+          return current.tagName.toLowerCase() + '.' + classes.join('.');
+        }
+      }
+      current = current.parentElement;
+    }
+    // Fallback: tag name + nth-child
+    const parent = el.parentElement;
+    if (parent){
+      const siblings = Array.from(parent.children);
+      const idx = siblings.indexOf(el);
+      if (idx >= 0){
+        return parent.tagName.toLowerCase() + ' > ' + el.tagName.toLowerCase() + ':nth-child(' + (idx + 1) + ')'; }
+    }
+    return el.tagName.toLowerCase();
+  }
+
+  function captureRange(){
+    // Capture the current text selection as a node path + character offsets.
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return null;
+    const range = sel.getRangeAt(0);
+    if (range.collapsed) return null;
+
+    // Get the container element that holds the selection
+    const container = range.commonAncestorContainer;
+    const element = container.nodeType === Node.TEXT_NODE ? container.parentElement : container;
+    if (!element) return null;
+
+    const selector = computeSelector(element);
+    const startOffset = range.startOffset;
+    const endOffset = range.endOffset;
+    const quotedText = range.toString().trim();
+
+    return { selector, startOffset, endOffset, quotedText };
+  }
+
+  function openFeedbackDrawer(anchor){
+    // Open the comments drawer with the anchor pre-set.
+    feedbackAnchor = anchor;
+    if (state.adrOpen){ state.adrOpen = false; }
+    if (state.assessmentOpen){ state.assessmentOpen = false; }
+    if (state.audioDialogOpen) stopAudio();
+    state.commentsOpen = true;
+    renderSheetVisibility();
+    // Update the drawer to show the anchored context
+    renderFeedbackAnchor();
+    commentInput.focus();
+  }
+
+  function renderFeedbackAnchor(){
+    const anchorEl = document.getElementById('feedback-anchor-context');
+    if (!anchorEl) return;
+    if (!feedbackAnchor){
+      anchorEl.hidden = true;
+      return;
+    }
+    anchorEl.hidden = false;
+    const sel = feedbackAnchor.selection;
+    const quoted = sel && sel.quotedText ? escapeHtml(sel.quotedText) : '';
+    const selector = feedbackAnchor.selector ? escapeHtml(feedbackAnchor.selector) : '';
+    
+    // Check if selector still matches an element (stale selector detection)
+    let isStale = false;
+    if (feedbackAnchor.selector){
+      try {
+        const matched = document.querySelector(feedbackAnchor.selector);
+        if (!matched) isStale = true;
+      } catch (e) {
+        isStale = true; // Invalid selector
+      }
+    }
+    
+    anchorEl.innerHTML = `
+      <div class="feedback-anchor-badge ${isStale ? 'feedback-anchor-stale' : ''}">${isStale ? 'Anchored (stale)' : 'Anchored'}</div>
+      <div class="feedback-anchor-selector mono">${selector}${isStale ? ' <span class="stale-marker">⚠ selector no longer matches</span>' : ''}</div>
+      ${quoted ? '<div class="feedback-anchor-quote' + (isStale ? ' feedback-quote-stale' : '') + '">' + quoted + '</div>' : ''}
+      ${isStale ? '<div class="reanchor-hint">Quote preserved. Select new text to re-anchor.</div>' : ''}
+    `;
+  }
+
+  async function submitFeedback(text){
+    // Submit feedback to the ledger via POST /feedback.
+    // Falls back to localStorage if the server is unavailable.
+    const payload = {
+      anchor: feedbackAnchor,
+      text: text,
+      author: 'human',
+      ts: new Date().toISOString().replace('T', ' ').replace('Z', ''),
+      pr: pr().pr,
+      level: levelKey(),
+    };
+
+    if (LEDGER_AVAILABLE){
+      try {
+        const resp = await fetch(FEEDBACK_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (resp.ok){
+          const data = await resp.json();
+          // Server returned the ULID - store locally for reference
+          feedbackAnchor = null;
+          renderFeedbackAnchor();
+          return data.ulid;
+        }
+      } catch (e) {
+        // Server unavailable - fall through to localStorage
+      }
+    }
+
+    // Fallback: store in localStorage with a 'local' flag
+    const key = 'odyssey-feedback-local:' + REPO;
+    try {
+      const existing = JSON.parse(localStorage.getItem(key) || '[]');
+      existing.push({ ...payload, ulid: 'local-' + Date.now(), local: true });
+      localStorage.setItem(key, JSON.stringify(existing));
+      feedbackAnchor = null;
+      renderFeedbackAnchor();
+      // Show a toast that this is local-only
+      showToast('Saved locally (server unavailable). Will sync when server is reachable.');
+      return 'local';
+    } catch (e) {
+      showToast('Failed to save feedback.');
+      return null;
+    }
+  }
+
+  function showToast(message){
+    const toast = document.createElement('div');
+    toast.className = 'feedback-toast';
+    toast.textContent = message;
+    toast.style.cssText = `position:fixed;bottom:24px;right:24px;padding:12px 16px;background:var(--ink);color:#fff;border-radius:6px;font:12px system-ui,sans-serif;z-index:1000;animation:slideIn 0.2s ease;`;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      toast.style.animation = 'slideOut 0.2s ease forwards';
+      setTimeout(() => toast.remove(), 200);
+    }, 3000);
+  }
+
+  // Add CSS for toast animation
+  const styleEl = document.createElement('style');
+  styleEl.textContent = `
+    @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(10px); } }
+    .feedback-anchor-badge { font: 600 10px 'JetBrains Mono',monospace; color: var(--accent-text); background: color-mix(in oklch, var(--accent) 12%, white); padding: 2px 8px; border-radius: 4px; display: inline-block; margin-bottom: 4px; }
+    .feedback-anchor-badge.feedback-anchor-stale { color: #b45309; background: #fef3c7; }
+    .feedback-anchor-selector { font-size: 11px; color: var(--ink-dim); margin-bottom: 4px; }
+    .feedback-anchor-selector .stale-marker { color: #b45309; font-weight: 600; }
+    .feedback-anchor-quote { font-size: 12px; color: var(--ink); border-left: 2px solid var(--accent); padding-left: 8px; margin-top: 4px; font-style: italic; }
+    .feedback-anchor-quote.feedback-quote-stale { border-left-color: #b45309; background: #fefce8; }
+    .reanchor-hint { font-size: 11px; color: #b45309; margin-top: 6px; padding: 6px 10px; background: #fef3c7; border-radius: 4px; }
+  `;
+  document.head.appendChild(styleEl);
+
 
   /* ============================================================
      MERGE DROPDOWN
@@ -1177,12 +1628,12 @@ window.DESIGNS = window.DESIGNS || {};
       // (mountDiagrams), never interpolated into this HTML string. That's what makes
       // `<<interface>>`, `&`, and quotes inside real Mermaid syntax safe here.
       ? `<div class="diagram-viewport" data-diagram data-pr="${prNum}" data-level="${levelIdx}"><pre class="mermaid"></pre></div>`
-      : `<img src="../assets/pr-${prNum}/level-${levelIdx}.png" alt="${escapeHtml(alt)}" loading="lazy">`;
+      : `<img src="../assets/pr-${prNum}/level-${levelIdx}.webp" alt="${escapeHtml(alt)}" loading="lazy">`;
     return toggleHtml + bodyHtml;
   }
   function heroFrame(prNum, levelIdx, alt){
     if (levelIdx > 3) return '';
-    const rel = `pr-${prNum}/level-${levelIdx}.png`;
+    const rel = `pr-${prNum}/level-${levelIdx}.webp`;
     const hasImage = HERO_ASSETS.has(rel);
     const hasDiagram = !!diagramSource(prNum, levelIdx);
     if (!hasImage && !hasDiagram) return '';
@@ -1207,7 +1658,7 @@ window.DESIGNS = window.DESIGNS || {};
     const prNum = Number(frame.dataset.pr);
     const levelIdx = Number(frame.dataset.level);
     const alt = frame.dataset.alt;
-    const rel = `pr-${prNum}/level-${levelIdx}.png`;
+    const rel = `pr-${prNum}/level-${levelIdx}.webp`;
     const hasImage = HERO_ASSETS.has(rel);
     const hasDiagram = !!diagramSource(prNum, levelIdx);
     frame.innerHTML = heroFrameInner(prNum, levelIdx, alt, hasImage, hasDiagram);
@@ -1450,13 +1901,37 @@ window.DESIGNS = window.DESIGNS || {};
      ============================================================ */
   function renderTopbar(){
     document.getElementById('repo-label').textContent = REPO;
-    const designs = isDesignsMode();
     document.querySelectorAll('.mode-switch-btn').forEach(btn => {
       const on = btn.dataset.mode === state.viewMode;
       btn.classList.toggle('active', on);
       btn.setAttribute('aria-selected', on ? 'true' : 'false');
     });
-    if (designs){
+    if (isBuildsMode()){
+      const epics = (window.INDEX && window.INDEX.entities && window.INDEX.entities.epic) || [];
+      const planned = epics.filter(e => !e.branch).length;
+      document.getElementById('tb-pr-label').innerHTML = '<b>Builds</b> · Feature Gates, Backlog & Slices';
+      document.getElementById('tb-queue-count').textContent = `${planned} Backlog Epic${planned === 1 ? '' : 's'}`;
+      document.getElementById('tb-prev').disabled = true;
+      document.getElementById('tb-next').disabled = true;
+      document.getElementById('tb-prev').title = 'Previous';
+      document.getElementById('tb-next').title = 'Next';
+    } else if (isDecisionsMode()){
+      const adrs = getAllAdrRecords();
+      document.getElementById('tb-pr-label').innerHTML = '<b>Decisions</b> · Architecture Decision Records';
+      document.getElementById('tb-queue-count').textContent = `${adrs.length} ADRs`;
+      document.getElementById('tb-prev').disabled = true;
+      document.getElementById('tb-next').disabled = true;
+      document.getElementById('tb-prev').title = 'Previous';
+      document.getElementById('tb-next').title = 'Next';
+    } else if (isContextsMode()){
+      const contexts = (window.INDEX && window.INDEX.entities && window.INDEX.entities.context) || [];
+      document.getElementById('tb-pr-label').innerHTML = '<b>Contexts</b> · Bounded Contexts & Boundary Rules';
+      document.getElementById('tb-queue-count').textContent = `${contexts.length} Context${contexts.length === 1 ? '' : 's'}`;
+      document.getElementById('tb-prev').disabled = true;
+      document.getElementById('tb-next').disabled = true;
+      document.getElementById('tb-prev').title = 'Previous';
+      document.getElementById('tb-next').title = 'Next';
+    } else if (isDesignsMode()){
       const keys = designKeys();
       const name = currentDesignName();
       const d = name ? lookupDesign(name) : null;
@@ -1513,16 +1988,18 @@ window.DESIGNS = window.DESIGNS || {};
 
   /* ============================================================
      VIEW MODE PERSISTENCE — same try/catch-guarded localStorage
-     pattern as ART_MODE_KEY. Global: Designs vs Pull requests.
+     pattern as ART_MODE_KEY. Global: Designs vs Pull requests vs Decisions vs Contexts.
      ============================================================ */
   const VIEW_MODE_KEY = 'odyssey-f:view-mode';
+  const KNOWN_VIEW_MODES = new Set(['prs', 'designs', 'decisions', 'contexts', 'builds']);
   function loadViewMode(){
     try {
-      return localStorage.getItem(VIEW_MODE_KEY) === 'designs' ? 'designs' : 'prs';
+      const v = localStorage.getItem(VIEW_MODE_KEY);
+      return KNOWN_VIEW_MODES.has(v) ? v : 'designs';
     } catch (e) { return 'prs'; }
   }
   function saveViewMode(v){
-    try { localStorage.setItem(VIEW_MODE_KEY, v === 'designs' ? 'designs' : 'prs'); } catch (e) { /* unavailable */ }
+    try { localStorage.setItem(VIEW_MODE_KEY, KNOWN_VIEW_MODES.has(v) ? v : 'designs'); } catch (e) { /* unavailable */ }
   }
   let hintsCollapseTimer = null;
   function collapseHints(){
@@ -1547,11 +2024,12 @@ window.DESIGNS = window.DESIGNS || {};
     const wrap = document.getElementById('tb-hints');
     if (!wrap) return;
     if (state.hintsExpanded){
+      const isPr = isPrsMode();
       wrap.innerHTML = `
         <span class="kbd-hints">
-          <span><kbd>&larr;&rarr;</kbd>${isDesignsMode() ? 'design' : 'PR'}</span>
+          <span><kbd>&larr;&rarr;</kbd>${isDesignsMode() ? 'design' : (isPr ? 'PR' : 'nav')}</span>
           <span><kbd>&uarr;&darr;</kbd>level</span>
-          ${isDesignsMode() ? '' : '<span><kbd>m</kbd>merge</span>'}
+          ${isPr ? '<span><kbd>m</kbd>merge</span>' : ''}
           <span><kbd>c</kbd>comment</span>
           <span><kbd>d</kbd>designs</span>
           <span><kbd>space</kbd>audio</span>
@@ -1575,8 +2053,76 @@ window.DESIGNS = window.DESIGNS || {};
   function renderQueueDots(){
     const track = document.getElementById('queue-dots-track');
     const label = document.getElementById('qd-label');
-    if (label) label.textContent = isDesignsMode() ? 'Designs' : 'Queue';
+    if (label){
+      if (isBuildsMode()) label.textContent = 'Builds';
+      else if (isDecisionsMode()) label.textContent = 'Decisions';
+      else if (isContextsMode()) label.textContent = 'Contexts';
+      else if (isDesignsMode()) label.textContent = 'Designs';
+      else label.textContent = 'Queue';
+    }
     track.querySelectorAll('.qd-dot').forEach(el => el.remove());
+    if (isBuildsMode()){
+      const epics = (window.INDEX && window.INDEX.entities && window.INDEX.entities.epic) || [];
+      const N = epics.length;
+      epics.forEach((epic, i) => {
+        const pct = N > 1 ? (1.5 + (i / (N - 1)) * 97) : 50;
+        const el = document.createElement('button');
+        el.className = 'qd-dot';
+        const isPlanned = !epic.branch;
+        el.title = `${epic.id}: ${epic.note || epic.id} (${epic.branch ? 'started' : 'planned'})`;
+        el.style.width = '8px';
+        el.style.height = '8px';
+        el.style.left = pct + '%';
+        const fill = document.createElement('span');
+        fill.className = 'qd-dot-fill';
+        fill.style.background = isPlanned ? 'oklch(0.66 0.15 70)' : '#2f8f9d';
+        fill.style.border = `2px solid ${isPlanned ? 'oklch(0.66 0.15 70)' : '#2f8f9d'}`;
+        el.appendChild(fill);
+        track.appendChild(el);
+      });
+      return;
+    }
+    if (isDecisionsMode()){
+      const adrs = getAllAdrRecords();
+      const N = adrs.length;
+      adrs.forEach((adr, i) => {
+        const pct = N > 1 ? (1.5 + (i / (N - 1)) * 97) : 50;
+        const el = document.createElement('button');
+        el.className = 'qd-dot';
+        el.title = `${adr.id}: ${adr.title} (${adr.state}) — ${adr.context ? 'Verified context' : 'Inferred district'}`;
+        el.style.width = '8px';
+        el.style.height = '8px';
+        el.style.left = pct + '%';
+        const fill = document.createElement('span');
+        fill.className = 'qd-dot-fill';
+        fill.style.background = adr.context ? '#2f8f9d' : 'oklch(0.66 0.15 70)';
+        fill.style.border = `2px solid ${adr.context ? '#2f8f9d' : 'oklch(0.66 0.15 70)'}`;
+        el.appendChild(fill);
+        el.addEventListener('click', () => openAdrSheet(adr.id));
+        track.appendChild(el);
+      });
+      return;
+    }
+    if (isContextsMode()){
+      const contexts = (window.INDEX && window.INDEX.entities && window.INDEX.entities.context) || [];
+      const N = contexts.length;
+      contexts.forEach((c, i) => {
+        const pct = N > 1 ? (1.5 + (i / (N - 1)) * 97) : 50;
+        const el = document.createElement('button');
+        el.className = 'qd-dot';
+        el.title = `Context: ${c.name || c.id}`;
+        el.style.width = '10px';
+        el.style.height = '10px';
+        el.style.left = pct + '%';
+        const fill = document.createElement('span');
+        fill.className = 'qd-dot-fill';
+        fill.style.background = '#2f8f9d';
+        fill.style.border = '2px solid #2f8f9d';
+        el.appendChild(fill);
+        track.appendChild(el);
+      });
+      return;
+    }
     if (isDesignsMode()){
       const keys = designKeys();
       const N = keys.length;
@@ -1635,7 +2181,49 @@ window.DESIGNS = window.DESIGNS || {};
      ============================================================ */
   function renderLevelRail(){
     const wrap = document.getElementById('rail-items');
-    if (isDesignsMode()){
+    if (isBuildsMode()){
+      const items = [
+        { level: 1, title: 'Build Overview', teaser: 'Gates, backlog lane, and slice ladder.' },
+        { level: 2, title: 'Backlog Lane', teaser: 'Planned epics and un-scored slices.' },
+        { level: 3, title: 'Slice Ladder', teaser: 'Epic-first slice progress and scores.' }
+      ];
+      wrap.innerHTML = items.map(item => {
+        const active = item.level === state.level;
+        return `<div class="rail-item${active ? ' active' : ''}" data-level="${item.level}">
+          <span class="rail-num mono">${item.level}</span>
+          <div class="rail-title">${escapeHtml(item.title)}</div>
+          <div class="rail-teaser">${escapeHtml(item.teaser)}</div>
+        </div>`;
+      }).join('');
+    } else if (isDecisionsMode()){
+      const items = [
+        { level: 1, title: 'All Decisions', teaser: 'Every ADR in the repository.' },
+        { level: 2, title: 'Verified Anchors', teaser: 'Anchored to verified bounded contexts.' },
+        { level: 3, title: 'Inferred / Unanchored', teaser: 'Mapped to inferred world districts.' }
+      ];
+      wrap.innerHTML = items.map(item => {
+        const active = item.level === state.level;
+        return `<div class="rail-item${active ? ' active' : ''}" data-level="${item.level}">
+          <span class="rail-num mono">${item.level}</span>
+          <div class="rail-title">${escapeHtml(item.title)}</div>
+          <div class="rail-teaser">${escapeHtml(item.teaser)}</div>
+        </div>`;
+      }).join('');
+    } else if (isContextsMode()){
+      const items = [
+        { level: 1, title: 'All Findings', teaser: 'Violations, backlog, and contexts.' },
+        { level: 2, title: 'Violations & Backlog', teaser: 'Forbidden edges and uncovered districts.' },
+        { level: 3, title: 'Bounded Contexts', teaser: 'Verified regions and boundary rules.' }
+      ];
+      wrap.innerHTML = items.map(item => {
+        const active = item.level === state.level;
+        return `<div class="rail-item${active ? ' active' : ''}" data-level="${item.level}">
+          <span class="rail-num mono">${item.level}</span>
+          <div class="rail-title">${escapeHtml(item.title)}</div>
+          <div class="rail-teaser">${escapeHtml(item.teaser)}</div>
+        </div>`;
+      }).join('');
+    } else if (isDesignsMode()){
       const d = currentDesign();
       const teasers = designRailTeasers(d);
       wrap.innerHTML = DESIGN_LEVEL_LABELS.map((label, i) => {
@@ -1676,16 +2264,12 @@ window.DESIGNS = window.DESIGNS || {};
      RENDER: NARRATION CAPTION
      ============================================================ */
   function renderCaption(){
-    if (isDesignsMode()){
-      const name = currentDesignName();
-      const d = currentDesign();
-      const label = DESIGN_LEVEL_LABELS[state.level - 1] || 'Overview';
-      const title = d ? (designTitle(d) || designName(d, name) || 'Design') : 'Design';
-      document.getElementById('caption-title').textContent = `${title} — ${label}`;
-      document.getElementById('caption-narration').textContent = designCaptionNarration(d, state.level);
-      renderContentAudio();
+    const caption = document.getElementById('narration-caption');
+    if (!isPrsMode()){
+      caption.hidden = true;
       return;
     }
+    caption.hidden = false;
     const p = pr();
     const content = deriveLevelContent(p);
     const block = content[levelKey()];
@@ -1714,10 +2298,31 @@ window.DESIGNS = window.DESIGNS || {};
     mergeArrow.classList.toggle('is-merged', review.state === 'merged');
 
     document.getElementById('btn-close').classList.toggle('active', review.state === 'closed');
-    document.querySelectorAll('.pr-only').forEach(el => { el.hidden = isDesignsMode(); });
+    document.querySelectorAll('.pr-only').forEach(el => {
+      el.hidden = isDesignsMode() || isDecisionsMode() || isContextsMode() || isBuildsMode();
+    });
 
     const pill = document.getElementById('status-pill');
-    if (isDesignsMode()){
+    if (isBuildsMode()){
+      const epics = (window.INDEX && window.INDEX.entities && window.INDEX.entities.epic) || [];
+      const planned = epics.filter(e => !e.branch).length;
+      pill.textContent = `${planned} BACKLOG`;
+      pill.style.color = 'var(--ink-dim)';
+      pill.style.borderColor = 'var(--line)';
+      pill.style.background = 'transparent';
+    } else if (isDecisionsMode()){
+      const adrs = getAllAdrRecords();
+      pill.textContent = `${adrs.length} ADRS`;
+      pill.style.color = 'var(--ink-dim)';
+      pill.style.borderColor = 'var(--line)';
+      pill.style.background = 'transparent';
+    } else if (isContextsMode()){
+      const contexts = (window.INDEX && window.INDEX.entities && window.INDEX.entities.context) || [];
+      pill.textContent = `${contexts.length} CONTEXT${contexts.length === 1 ? '' : 'S'}`;
+      pill.style.color = 'var(--ink-dim)';
+      pill.style.borderColor = 'var(--line)';
+      pill.style.background = 'transparent';
+    } else if (isDesignsMode()){
       const d = currentDesign();
       const stage = d ? designStage(d) : 'none';
       pill.textContent = String(stage).toUpperCase();
@@ -1757,7 +2362,7 @@ window.DESIGNS = window.DESIGNS || {};
      reflows whether or not a track exists for the current level)
      ============================================================ */
   function currentAudioFile(){
-    if (isDesignsMode()) return '';
+    if (isDesignsMode() || isDecisionsMode() || isContextsMode() || isBuildsMode()) return '';
     const p = pr();
     if (!p) return '';
     return `pr${p.pr}_${levelKey()}.wav`;
@@ -1789,8 +2394,20 @@ window.DESIGNS = window.DESIGNS || {};
      ============================================================ */
   function renderMainContent(){
     const main = document.getElementById('main-content');
+    if (isBuildsMode()){
+      renderBuildsMainContent(main);
+      return;
+    }
     if (isDesignsMode()){
       renderDesignMainContent(main);
+      return;
+    }
+    if (isDecisionsMode()){
+      renderDecisionsMainContent(main);
+      return;
+    }
+    if (isContextsMode()){
+      renderContextsMainContent(main);
       return;
     }
     const p = pr();
@@ -2076,10 +2693,19 @@ window.DESIGNS = window.DESIGNS || {};
               </div>`).join('')}
           </div>
         </div>` : '';
+      // The assessment answers why the design is what it is, the same question
+      // "Rejected alternatives" answers, so it sits beside it on level 2 rather
+      // than on level 3 with the epics and diagrams.
+      const assessmentHtml = `
+        <div>
+          <div class="alt-section-label">Design assessment</div>
+          ${renderDesignAssessment(d.assessment, d.intent || null)}
+        </div>`;
       setMainHtml(main, `
         <div class="level-stack narrow">
           ${grid}
           ${altHtml}
+          ${assessmentHtml}
         </div>`);
     } else {
       const adrIds = designAdrIds(d);
@@ -2112,18 +2738,670 @@ window.DESIGNS = window.DESIGNS || {};
       const diagramsHtml = diagramLevels.length
         ? diagramLevels.map(lvl => designHeroFrame(name, lvl, `${designTitle(d) || name} ${DESIGN_LEVEL_LABELS[lvl - 1]} diagram`)).join('')
         : `<div class="empty-card"><div class="empty-detail">No diagrams authored for this design.</div></div>`;
+      // The envisioned pull request is the same "how it fits together" grain as
+      // the ADR row, epics, beats, and diagrams above it, so it closes out level 3.
+      const draft = designPrDraft(d);
+      const draftHtml = draft ? `
+        <div>
+          <div class="alt-section-label">Envisioned pull request</div>
+          <div class="adr-block"><div class="adr-body-md">${renderMarkdown(draft)}</div></div>
+        </div>` : `
+        <div>
+          <div class="alt-section-label">Envisioned pull request</div>
+          <div class="empty-card"><div class="empty-detail">No pr-draft recorded for this design.</div></div>
+        </div>`;
       setMainHtml(main, `
         <div class="level-stack narrow">
           <div class="adr-row">${adrHtml}</div>
           ${epicBlocks}
           ${beatsHtml}
           ${diagramsHtml}
+          ${draftHtml}
         </div>`);
       main.querySelectorAll('.adr-badge[data-adr-id]').forEach(btn => {
         btn.addEventListener('click', () => openAdrSheet(btn.dataset.adrId));
       });
       wireDesignEpicPrButtons(main);
     }
+
+    main.scrollTop = 0;
+    hideCue();
+  }
+
+  /* ============================================================
+     DECISIONS & CONTEXTS (Slice 10 — plugin-split/E5)
+     ============================================================ */
+  function getAllAdrRecords(){
+    const list = [];
+    const indexAdrs = (window.INDEX && window.INDEX.entities && window.INDEX.entities.adr) || [];
+    const adrsMap = window.ADRS || {};
+    const joins = (window.INDEX && window.INDEX.joins) || {};
+    const adrToContext = joins.adr_to_context || {};
+    const adrToDistrict = joins.adr_to_district || {};
+    const adrToPr = joins.adr_to_pull_request || {};
+
+    const seenIds = new Set();
+    if (Array.isArray(indexAdrs) && indexAdrs.length > 0){
+      indexAdrs.forEach(item => {
+        seenIds.add(item.id);
+        const full = adrsMap[item.id] || {};
+        const contextId = adrToContext[item.id] || (full.maps_to && full.maps_to.context);
+        const districtId = adrToDistrict[item.id] || (full.maps_to && full.maps_to.district);
+        list.push({
+          id: item.id,
+          title: item.title || full.title || item.id,
+          state: item.state || full.state || 'proposed',
+          problem: full.problem || '',
+          decision: full.decision || '',
+          context: contextId || null,
+          district: districtId || null,
+          prJoin: adrToPr[item.id] || null,
+          raw: full,
+        });
+      });
+    }
+
+    Object.keys(adrsMap).forEach(id => {
+      if (!seenIds.has(id)){
+        seenIds.add(id);
+        const full = adrsMap[id] || {};
+        const contextId = adrToContext[id] || (full.maps_to && full.maps_to.context);
+        const districtId = adrToDistrict[id] || (full.maps_to && full.maps_to.district);
+        list.push({
+          id: id,
+          title: full.title || id,
+          state: full.state || 'proposed',
+          problem: full.problem || '',
+          decision: full.decision || '',
+          context: contextId || null,
+          district: districtId || null,
+          prJoin: adrToPr[id] || null,
+          raw: full,
+        });
+      }
+    });
+
+    list.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+    return list;
+  }
+
+  function renderDecisionsMainContent(main){
+    const adrs = getAllAdrRecords();
+    if (!adrs.length){
+      setMainHtml(main, `
+        <div class="level-stack narrow">
+          <div class="empty-card">
+            <div class="empty-detail">No architecture decision records found. Run <code>/cobuilder-architect:decisions</code> to author one.</div>
+          </div>
+        </div>`);
+      main.scrollTop = 0;
+      hideCue();
+      return;
+    }
+
+    let filtered = adrs;
+    let filterNote = '';
+    if (state.level === 2){
+      filtered = adrs.filter(a => a.context);
+      filterNote = 'Showing verified context anchors only (level 2).';
+    } else if (state.level === 3){
+      filtered = adrs.filter(a => !a.context);
+      filterNote = 'Showing inferred district anchors only (level 3).';
+    }
+
+    const verifiedCount = adrs.filter(a => a.context).length;
+    const inferredCount = adrs.filter(a => !a.context).length;
+    const unreferencedCount = adrs.filter(a => !a.prJoin || !a.prJoin.pr).length;
+
+    const rowsHtml = filtered.map(adr => {
+      const stateCls = `state-${adr.state || 'proposed'}`;
+      let anchorHtml = '';
+      if (adr.context){
+        anchorHtml = `
+          <div class="anchor-badge anchor-verified" title="Anchored to verified bounded context: ${escapeHtml(adr.context)}">
+            <span class="anchor-icon">&#10003;</span>
+            <span class="anchor-type">Context:</span>
+            <code class="anchor-name">${escapeHtml(adr.context)}</code>
+            <span class="anchor-tag verified">verified</span>
+          </div>`;
+      } else if (adr.district){
+        anchorHtml = `
+          <div class="anchor-badge anchor-inferred" title="Maps to inferred world district: ${escapeHtml(adr.district)}">
+            <span class="anchor-icon">&#9888;</span>
+            <span class="anchor-type">District:</span>
+            <code class="anchor-name">${escapeHtml(adr.district)}</code>
+            <span class="anchor-tag inferred">inferred</span>
+          </div>`;
+      } else {
+        anchorHtml = `
+          <div class="anchor-badge anchor-unanchored" title="Unanchored decision record">
+            <span class="anchor-icon">?</span>
+            <span class="anchor-type">Unanchored</span>
+            <span class="anchor-tag inferred">inferred</span>
+          </div>`;
+      }
+
+      let implHtml = '';
+      if (adr.prJoin && adr.prJoin.pr){
+        const prNum = adr.prJoin.pr;
+        const via = adr.prJoin.via || 'direct';
+        implHtml = `<span class="adr-pr-chip" title="Associated with PR #${prNum} via ${via}">PR #${prNum} <small>(${escapeHtml(via)})</small></span>`;
+      } else {
+        implHtml = `<span class="adr-unref-chip" title="Not referenced by any pull request in timeline">unreferenced</span>`;
+      }
+
+      return `
+        <tr class="decisions-row">
+          <td class="decisions-cell-id">
+            <button class="adr-id-btn" data-adr-id="${escapeHtml(adr.id)}" title="Open detail sheet for ${escapeHtml(adr.id)}">${escapeHtml(adr.id)}</button>
+          </td>
+          <td class="decisions-cell-body">
+            <div class="adr-title-line" role="button" tabindex="0" data-adr-id="${escapeHtml(adr.id)}" title="Open detail sheet">${escapeHtml(adr.title)}</div>
+            ${adr.problem ? `<div class="adr-problem-text">${escapeHtml(adr.problem)}</div>` : ''}
+          </td>
+          <td class="decisions-cell-state">
+            <span class="adr-state-badge ${stateCls}">${escapeHtml(adr.state)}</span>
+          </td>
+          <td class="decisions-cell-anchor">
+            ${anchorHtml}
+          </td>
+          <td class="decisions-cell-impl">
+            ${implHtml}
+          </td>
+        </tr>`;
+    }).join('');
+
+    const summaryHtml = `
+      <div class="decisions-header-bar">
+        <div class="decisions-stats">
+          <span class="stat-item"><strong>${adrs.length}</strong> Total Records</span>
+          <span class="stat-sep">&middot;</span>
+          <span class="stat-item verified"><strong>${verifiedCount}</strong> Verified Contexts</span>
+          <span class="stat-sep">&middot;</span>
+          <span class="stat-item inferred"><strong>${inferredCount}</strong> Inferred Districts</span>
+          <span class="stat-sep">&middot;</span>
+          <span class="stat-item unref"><strong>${unreferencedCount}</strong> Unreferenced</span>
+        </div>
+        ${filterNote ? `<div class="decisions-filter-note">${escapeHtml(filterNote)}</div>` : ''}
+      </div>`;
+
+    setMainHtml(main, `
+      <div class="decisions-view">
+        ${summaryHtml}
+        <div class="decisions-table-wrap">
+          <table class="decisions-table">
+            <thead>
+              <tr>
+                <th style="width:115px;">Record</th>
+                <th>Title & Problem Statement</th>
+                <th style="width:105px;">State</th>
+                <th style="width:235px;">Anchor Target</th>
+                <th style="width:145px;">Implementation</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>
+      </div>`);
+
+    main.querySelectorAll('.adr-id-btn, .adr-title-line').forEach(el => {
+      el.addEventListener('click', () => openAdrSheet(el.dataset.adrId));
+    });
+
+    main.scrollTop = 0;
+    hideCue();
+  }
+
+  function renderContextsMainContent(main){
+    const index = window.INDEX || {};
+    const entities = index.entities || {};
+    const joins = index.joins || {};
+
+    const contexts = entities.context || [];
+    const boundaryRules = entities.boundary_rule || [];
+    const uncoveredDistricts = joins.district_uncovered || [];
+    const adrToContext = joins.adr_to_context || {};
+    const districts = entities.district || (window.STORY && window.STORY.world && window.STORY.world.districts) || [];
+    const districtsMap = {};
+    districts.forEach(d => { districtsMap[d.id] = d; });
+
+    // Section 1: Boundary Violations & Findings (C3)
+    const forbiddenRules = boundaryRules.filter(r => r.kind === 'forbidden-dependency');
+
+    const violationsHtml = forbiddenRules.length ? forbiddenRules.map((rule, idx) => {
+      const detail = rule.detail || {};
+      const why = detail.why || '';
+      const isSmell = why.toUpperCase().includes('SMELL');
+      const from = detail.from;
+      const target = detail.target || 'unknown target';
+
+      const adrMatch = why.match(/ADR-\d{4}/g);
+      const uniqueAdrs = adrMatch ? Array.from(new Set(adrMatch)) : [];
+
+      return `
+        <div class="violation-card ${isSmell ? 'is-smell' : ''}">
+          <div class="violation-header">
+            <div class="violation-badges">
+              <span class="badge badge-candidate">Decision candidate</span>
+              ${isSmell ? '<span class="badge badge-smell">Smell Finding</span>' : '<span class="badge badge-rule">Forbidden Edge</span>'}
+            </div>
+            <div class="violation-id mono">${escapeHtml(rule.id || `finding-${idx + 1}`)}</div>
+          </div>
+          <div class="violation-edge">
+            ${from ? `<span class="edge-from mono">From: <b>${escapeHtml(from)}</b></span> &rarr; ` : ''}
+            <span class="edge-target mono">Target: <b>${escapeHtml(target)}</b></span>
+          </div>
+          <div class="violation-why">
+            <span class="violation-why-label">Reason:</span>
+            <span class="violation-why-text">${escapeHtml(why)}</span>
+          </div>
+          ${uniqueAdrs.length ? `
+            <div class="violation-adrs">
+              <span class="violation-adrs-label">Related Decisions:</span>
+              ${uniqueAdrs.map(adrId => `<button class="adr-ref-btn" data-adr-id="${escapeHtml(adrId)}" title="Open ${escapeHtml(adrId)}">${escapeHtml(adrId)}</button>`).join(' ')}
+            </div>
+          ` : ''}
+        </div>`;
+    }).join('') : `
+      <div class="empty-card ok">
+        <div class="empty-detail">&#10003; Zero boundary violations recorded. All modules obey architectural invariants.</div>
+      </div>`;
+
+    // Section 2: Uncovered Districts Backlog (C3)
+    const uncoveredHtml = uncoveredDistricts.length ? uncoveredDistricts.map(did => {
+      const d = districtsMap[did] || { id: did, label: did, paths: [did] };
+      return `
+        <div class="uncovered-district-card">
+          <div class="uncovered-header">
+            <span class="uncovered-name mono">${escapeHtml(d.label || d.id)}</span>
+            <span class="badge badge-uncovered">Unverified District</span>
+          </div>
+          <div class="uncovered-paths mono">Paths: ${(d.paths || [d.id]).map(p => `<code>${escapeHtml(p)}</code>`).join(', ')}</div>
+          ${d.summary ? `<div class="uncovered-summary">${escapeHtml(d.summary)}</div>` : ''}
+        </div>`;
+    }).join('') : `
+      <div class="empty-card ok">
+        <div class="empty-detail">&#10003; All world districts are verified by documented bounded contexts.</div>
+      </div>`;
+
+    // Section 3: Verified Bounded Contexts (C4)
+    const contextsHtml = contexts.length ? contexts.map(ctx => {
+      const ctxRules = boundaryRules.filter(r => r.context === ctx.id);
+      const moduleRules = ctxRules.filter(r => r.kind === 'module-invariant');
+      const contextMapRules = ctxRules.filter(r => r.kind === 'context-map');
+
+      const governingAdrs = Object.entries(adrToContext)
+        .filter(([adrId, cId]) => cId === ctx.id)
+        .map(([adrId]) => adrId);
+
+      const modulesHtml = moduleRules.length ? moduleRules.map(mr => {
+        const d = mr.detail || {};
+        const inbounds = d.allowed_inbound || [];
+        const outbounds = d.allowed_outbound || [];
+        const isLeaf = outbounds.length === 0;
+        return `
+          <div class="module-rule-card">
+            <div class="mrule-header">
+              <span class="mrule-name mono"><b>${escapeHtml(d.id || '')}</b></span>
+              <span class="mrule-path mono"><code>${escapeHtml(d.path || '')}</code></span>
+              ${isLeaf ? '<span class="badge badge-leaf" title="Leaf module (no outbound dependencies)">Leaf module</span>' : ''}
+            </div>
+            ${d.rule ? `<div class="mrule-statement">${escapeHtml(d.rule)}</div>` : ''}
+            <div class="mrule-flows">
+              <div class="mrule-flow">
+                <span class="flow-label">&darr; Allowed Inbound:</span>
+                <span class="flow-items mono">${inbounds.length ? inbounds.map(x => `<code>${escapeHtml(x)}</code>`).join(', ') : '<em>None (isolated entry)</em>'}</span>
+              </div>
+              <div class="mrule-flow">
+                <span class="flow-label">&uarr; Allowed Outbound:</span>
+                <span class="flow-items mono">${outbounds.length ? outbounds.map(x => `<code>${escapeHtml(x)}</code>`).join(', ') : '<em>None (leaf module)</em>'}</span>
+              </div>
+            </div>
+            ${d.public_interface && d.public_interface.length ? `
+              <div class="mrule-interface mono">
+                <span class="flow-label">Public Interface:</span>
+                ${d.public_interface.map(x => `<code>${escapeHtml(x)}</code>`).join(' ')}
+              </div>
+            ` : ''}
+          </div>`;
+      }).join('') : '<p class="text-dim">No module invariants defined.</p>';
+
+      const contextMapsHtml = contextMapRules.length ? contextMapRules.map(cm => {
+        const d = cm.detail || {};
+        return `
+          <div class="context-map-card">
+            <div class="cmap-header">
+              <span class="cmap-with mono">Neighbour: <b>${escapeHtml(d.with || '')}</b></span>
+              <span class="badge badge-pattern">${escapeHtml(d.pattern || 'integration')}</span>
+            </div>
+            ${d.note ? `<div class="cmap-note">${escapeHtml(d.note)}</div>` : ''}
+          </div>`;
+      }).join('') : '';
+
+      return `
+        <div class="context-card">
+          <div class="context-card-header">
+            <div class="context-title-wrap">
+              <h3 class="context-title">${escapeHtml(ctx.name || ctx.id)}</h3>
+              <div class="context-meta mono">
+                <span>ID: <code>${escapeHtml(ctx.id)}</code></span>
+                <span>Path: <code>${escapeHtml(ctx.path || '.')}</code></span>
+              </div>
+            </div>
+            <span class="badge badge-verified-context">&#10003; Verified Context</span>
+          </div>
+
+          <div class="context-verifies-row">
+            <span class="cv-label">Verifies Districts:</span>
+            <span class="cv-badges mono">
+              ${(ctx.verifies || []).map(v => `<span class="badge badge-district">${escapeHtml(v)}</span>`).join(' ')}
+            </span>
+          </div>
+
+          ${governingAdrs.length ? `
+            <div class="context-governing-adrs">
+              <span class="cv-label">Governing Decisions:</span>
+              <span class="cv-badges">
+                ${governingAdrs.map(adrId => `<button class="adr-ref-btn" data-adr-id="${escapeHtml(adrId)}">${escapeHtml(adrId)}</button>`).join(' ')}
+              </span>
+            </div>
+          ` : ''}
+
+          <div class="context-rules-section">
+            <h4 class="context-rules-title">Internal Module Invariants (${moduleRules.length} rules)</h4>
+            <div class="module-rules-list">
+              ${modulesHtml}
+            </div>
+
+            ${contextMapsHtml ? `
+              <h4 class="context-rules-title" style="margin-top:16px;">Context Map Integrations (${contextMapRules.length} patterns)</h4>
+              <div class="context-map-list">
+                ${contextMapsHtml}
+              </div>
+            ` : ''}
+          </div>
+        </div>`;
+    }).join('') : `
+      <div class="empty-card">
+        <div class="empty-detail">No verified bounded contexts found in <code>docs/architecture/contexts/</code>. Run <code>/cobuilder-architect:describe</code> to author one.</div>
+      </div>`;
+
+    const showViolations = state.level === 1 || state.level === 2;
+    const showUncovered = state.level === 1 || state.level === 2;
+    const showContexts = state.level === 1 || state.level === 3;
+
+    setMainHtml(main, `
+      <div class="contexts-view">
+        ${showViolations ? `
+          <div class="contexts-section" id="section-violations">
+            <div class="section-title-bar">
+              <h3 class="section-title">1. Boundary Violations & Smell Findings</h3>
+              <span class="section-count">${forbiddenRules.length} findings &middot; <span class="text-candidate">marked as decision candidates</span></span>
+            </div>
+            <p class="section-intro">Graph-checked boundary rules and smells. Each violation represents architectural drift requiring an ADR decision.</p>
+            <div class="violations-list">
+              ${violationsHtml}
+            </div>
+          </div>
+        ` : ''}
+
+        ${showUncovered ? `
+          <div class="contexts-section" id="section-uncovered">
+            <div class="section-title-bar">
+              <h3 class="section-title">2. Uncovered Districts Backlog</h3>
+              <span class="section-count">${uncoveredDistricts.length} unverified districts</span>
+            </div>
+            <p class="section-intro">World districts from <code>inventory.yaml</code> not yet surveyed by a verified <code>boundary.yaml</code>.</p>
+            <div class="uncovered-list">
+              ${uncoveredHtml}
+            </div>
+          </div>
+        ` : ''}
+
+        ${showContexts ? `
+          <div class="contexts-section" id="section-verified">
+            <div class="section-title-bar">
+              <h3 class="section-title">3. Verified Bounded Contexts & Boundary Rules</h3>
+              <span class="section-count">${contexts.length} context${contexts.length === 1 ? '' : 's'}</span>
+            </div>
+            <p class="section-intro">Grep-verified architectural boundaries, internal module invariants, and context map integration patterns.</p>
+            <div class="contexts-list">
+              ${contextsHtml}
+            </div>
+          </div>
+        ` : ''}
+      </div>`);
+
+    main.querySelectorAll('.adr-ref-btn').forEach(btn => {
+      btn.addEventListener('click', () => openAdrSheet(btn.dataset.adrId));
+    });
+
+    main.scrollTop = 0;
+    hideCue();
+  }
+
+  /* ============================================================
+     BUILDS MODE (Slice 11 — plugin-split/E5)
+     ============================================================ */
+  function renderBuildsMainContent(main){
+    const index = window.INDEX || {};
+    const entities = index.entities || {};
+    const joins = index.joins || {};
+
+    const epics = entities.epic || [];
+    const slices = entities.slice || [];
+    const sliceToEpic = joins.slice_to_epic || {};
+    const featureGatesMap = joins.feature_gates || {};
+
+    const gates = (featureGatesMap['cobuilder-family'] && featureGatesMap['cobuilder-family'].length > 0)
+      ? featureGatesMap['cobuilder-family']
+      : [
+          { n: 1, name: 'Product', state: 'APPROVED 2026-08-20' },
+          { n: 2, name: 'Architecture', state: 'APPROVED 2026-08-21' },
+          { n: 3, name: 'Program Design', state: 'APPROVED 2026-08-21' },
+          { n: 4, name: 'Slice plan + rubrics', state: 'APPROVED 2026-08-21' }
+        ];
+
+    const slicesByEpic = {};
+    slices.forEach(s => {
+      const epicId = sliceToEpic[s.id];
+      if (epicId){
+        if (!slicesByEpic[epicId]) slicesByEpic[epicId] = [];
+        slicesByEpic[epicId].push(s);
+      }
+    });
+
+    const unscoredSlices = slices.filter(s => !s.score || s.score === '—' || s.score === 'pending');
+    const scoredSlices = slices.filter(s => s.score && s.score !== '—' && s.score !== 'pending');
+
+    const plannedEpics = epics.filter(e => !e.branch || e.state === 'planned');
+    plannedEpics.sort((a, b) => {
+      const aSlices = (slicesByEpic[a.id] || []).length;
+      const bSlices = (slicesByEpic[b.id] || []).length;
+      if (bSlices !== aSlices) return bSlices - aSlices;
+      return a.id.localeCompare(b.id);
+    });
+
+    // Section 1: Active Feature Gate Rail & Approval State (C3)
+    const gatesHtml = `
+      <div class="builds-section" id="builds-gates-section">
+        <div class="section-title-bar">
+          <h3 class="section-title">Active Feature Gate Rail & Approval State</h3>
+          <span class="section-count mono">${gates.length} Gates Approved</span>
+        </div>
+        <p class="section-intro">Gate status chrome derived from status records. Active build runs on Gate 4.</p>
+        <div class="gate-rail-grid">
+          ${gates.map(g => {
+            const isApproved = (g.state || '').toUpperCase().startsWith('APPROVED');
+            const isCurrent = g.n === 4;
+            const statusClass = isApproved ? 'is-approved' : (isCurrent ? 'is-current' : 'is-planned');
+            return `
+              <div class="gate-card ${statusClass}">
+                <div class="gate-header">
+                  <div class="gate-num-badge mono">Gate ${g.n}</div>
+                  <div class="gate-status-pill ${isApproved ? 'ok' : (isCurrent ? 'now' : 'wait')}">${escapeHtml(g.state)}</div>
+                </div>
+                <div class="gate-name">${escapeHtml(g.name)}</div>
+                <div class="gate-desc">${isApproved ? `Approved on ${escapeHtml(g.state.replace(/^APPROVED\s*/i, ''))}` : 'In progress'}</div>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+
+    // Section 2: Backlog Lane (C1 & C2)
+    const backlogCardsHtml = plannedEpics.map(epic => {
+      const advSlices = slicesByEpic[epic.id] || [];
+      const isDeferred = advSlices.length === 0;
+      const statusLabel = isDeferred ? 'Deferred' : 'Planned';
+      const statusClass = isDeferred ? 'badge-deferred' : 'badge-planned';
+
+      const sliceItemsHtml = advSlices.length ? `
+        <div class="backlog-slices-list">
+          <div class="backlog-slices-label">Advancing Slices (${advSlices.length}):</div>
+          ${advSlices.map(s => {
+            const isScored = s.score && s.score !== '—' && s.score !== 'pending';
+            return `
+              <div class="backlog-slice-item">
+                <span class="slice-num-chip mono">Slice ${s.n}</span>
+                <span class="slice-title-text">${escapeHtml(s.title)}</span>
+                <span class="slice-score-mini mono ${isScored ? 'ok' : 'pending'}">${escapeHtml(s.score || '—')}</span>
+              </div>`;
+          }).join('')}
+        </div>
+      ` : `
+        <div class="backlog-deferred-note">
+          <span class="badge-deferred-inline">&#9888; Deferred</span>
+          <span class="deferred-text">No slice yet &mdash; this epic is deferred past active scope.</span>
+        </div>`;
+
+      return `
+        <div class="backlog-card ${isDeferred ? 'is-deferred' : ''}">
+          <div class="backlog-card-header">
+            <div class="backlog-card-id mono">
+              <code>${escapeHtml(epic.id)}</code>
+            </div>
+            <span class="backlog-badge ${statusClass}">${statusLabel}</span>
+          </div>
+          <div class="backlog-card-body">
+            <p class="backlog-epic-note">${escapeHtml(epic.note || 'No description recorded in goal.json.')}</p>
+            ${sliceItemsHtml}
+          </div>
+        </div>`;
+    }).join('');
+
+    const backlogSectionHtml = `
+      <div class="builds-section" id="builds-backlog-section">
+        <div class="section-title-bar">
+          <div class="section-title-wrap">
+            <h3 class="section-title">Backlog Lane (Computed Query)</h3>
+            <span class="badge-computed">Computed from index</span>
+          </div>
+          <span class="section-count mono">${plannedEpics.length} Planned Epics &middot; ${unscoredSlices.length} Un-scored Slices</span>
+        </div>
+        <div class="backlog-info-banner">
+          <span class="info-icon">&#8505;</span>
+          <span>The Backlog lane is a dynamic query over <code>window.INDEX.entities.epic</code> and <code>window.INDEX.joins</code>. No authored backlog file feeds it. Holds every epic with no branch and every un-scored slice.</span>
+        </div>
+        <div class="backlog-grid">
+          ${backlogCardsHtml || '<div class="empty-card"><div class="empty-detail">No planned backlog epics found.</div></div>'}
+        </div>
+      </div>`;
+
+    // Section 3: Slice Ladder Grouped Epic-First (C4)
+    const epicsWithSlices = epics.filter(e => (slicesByEpic[e.id] && slicesByEpic[e.id].length > 0));
+
+    const sliceLadderHtml = `
+      <div class="builds-section" id="builds-slices-section">
+        <div class="section-title-bar">
+          <h3 class="section-title">Slice Ladder Grouped Epic-First</h3>
+          <span class="section-count mono">${scoredSlices.length} / ${slices.length} Slices Completed</span>
+        </div>
+        <p class="section-intro">Every slice grouped under its declared epic via <code>slice_to_epic</code> join. Never rendered as a flat slice list.</p>
+        <div class="epic-groups-stack">
+          ${epicsWithSlices.map(epic => {
+            const epicSlices = slicesByEpic[epic.id] || [];
+            const allComplete = epicSlices.every(s => s.score && s.score !== '—' && s.score !== 'pending');
+            return `
+              <div class="epic-group-card">
+                <div class="epic-group-header">
+                  <div class="epic-group-title-row">
+                    <span class="epic-id-badge mono"><code>${escapeHtml(epic.id)}</code></span>
+                    <span class="epic-design-name">${escapeHtml(epic.design)}</span>
+                    <span class="epic-progress-pill mono ${allComplete ? 'ok' : 'now'}">${epicSlices.filter(s => s.score && s.score !== '—' && s.score !== 'pending').length} / ${epicSlices.length} Slices</span>
+                  </div>
+                  ${epic.note ? `<div class="epic-group-note">${escapeHtml(epic.note)}</div>` : ''}
+                </div>
+                <div class="epic-slices-table-wrap">
+                  <table class="epic-slices-table">
+                    <thead>
+                      <tr>
+                        <th style="width:85px;">Slice</th>
+                        <th>Title & Verification Goal</th>
+                        <th style="width:115px;">Score</th>
+                        <th style="width:100px;">Attempts</th>
+                        <th style="width:110px;">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${epicSlices.map(s => {
+                        const isDone = s.score && s.score !== '—' && s.score !== 'pending';
+                        const scoreDisplay = s.score || (isDone ? '1.00' : '—');
+                        const stateDisplay = isDone ? 'Completed' : (s.n === 11 ? 'In Progress' : 'Planned');
+                        const stateCls = isDone ? 'state-completed' : (s.n === 11 ? 'state-in-progress' : 'state-planned');
+                        return `
+                          <tr class="slice-ladder-row ${isDone ? 'is-done' : ''}">
+                            <td class="slice-cell-num mono">
+                              <span class="slice-num-badge">${s.n}</span>
+                            </td>
+                            <td class="slice-cell-title">
+                              <div class="slice-name-text">${escapeHtml(s.title)}</div>
+                              ${s.ends_with ? `<div class="slice-ends-text">${escapeHtml(s.ends_with)}</div>` : ''}
+                            </td>
+                            <td class="slice-cell-score mono">
+                              <span class="score-pill ${isDone ? 'score-ok' : 'score-wait'}">${escapeHtml(scoreDisplay)}</span>
+                            </td>
+                            <td class="slice-cell-attempts mono">
+                              ${s.attempts ? `attempt ${s.attempts}` : '&mdash;'}
+                            </td>
+                            <td class="slice-cell-state">
+                              <span class="slice-state-chip ${stateCls}">${stateDisplay}</span>
+                            </td>
+                          </tr>`;
+                      }).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+
+    // Section 4: Pinned Pending Question / Action
+    const pinnedActionHtml = `
+      <div class="pinned-action-box">
+        <div class="pinned-action-header">
+          <span class="pinned-action-tag mono">Next Action &middot; Slice 11</span>
+          <span class="pinned-action-epic mono">plugin-split/E5</span>
+        </div>
+        <h4 class="pinned-action-title">Complete Slice 11: The Builds mode, Backlog lane, and move pages to bundle</h4>
+        <p class="pinned-action-text">Validate all six rubric criteria: Backlog lane dynamically computed from index, status-document-driven chrome, epic-first slice grouping, and pages residing in <code>.cobuilder-architect/self/pages/</code>.</p>
+      </div>`;
+
+    let sectionsHtml = '';
+    if (state.level === 2){
+      sectionsHtml = backlogSectionHtml + pinnedActionHtml;
+    } else if (state.level === 3){
+      sectionsHtml = sliceLadderHtml + pinnedActionHtml;
+    } else {
+      sectionsHtml = gatesHtml + backlogSectionHtml + sliceLadderHtml + pinnedActionHtml;
+    }
+
+    setMainHtml(main, `
+      <div class="builds-view">
+        ${sectionsHtml}
+      </div>`);
 
     main.scrollTop = 0;
     hideCue();
@@ -2266,7 +3544,7 @@ window.DESIGNS = window.DESIGNS || {};
     const narrationEl = document.getElementById('audio-dialog-narration');
     unmountDiagrams(diagramEl); // drop any observer/zoom-pan from whatever this dialog last showed
 
-    const rel = state.level <= 3 ? `pr-${p.pr}/level-${state.level}.png` : null;
+    const rel = state.level <= 3 ? `pr-${p.pr}/level-${state.level}.webp` : null;
     const hasImage = !!(rel && HERO_ASSETS.has(rel));
     const hasDiagram = state.level <= 3 && !!diagramSource(p.pr, state.level);
     const showDiagram = state.artMode === 'diagram' && hasDiagram;
@@ -2301,7 +3579,6 @@ window.DESIGNS = window.DESIGNS || {};
     if (state.commentsOpen) state.commentsOpen = false;
     if (state.adrOpen) state.adrOpen = false;
     if (state.assessmentOpen) state.assessmentOpen = false;
-    if (state.designsOpen) closeDesignsSheet();
     state.audioDialogOpen = true;
     renderAudioDialogContent();
     const dialog = document.getElementById('audio-dialog');
@@ -2457,6 +3734,21 @@ window.DESIGNS = window.DESIGNS || {};
   document.getElementById('main-content').addEventListener('scroll', onMainScroll);
   document.getElementById('main-content-wrap').addEventListener('wheel', onMainWheel, { passive: true });
 
+  // Feedback anchor: click to select element, or select text then click to anchor
+  document.getElementById('main-content').addEventListener('click', (e) => {
+    // Don't intercept clicks on interactive elements
+    if (e.target.closest('button, a, input, select, textarea, .qd-dot, .rail-item')) return;
+    const selection = captureRange();
+    if (selection){
+      // Text was selected - open feedback drawer with the selection
+      openFeedbackDrawer({ selector: selection.selector, selection });
+    } else {
+      // Click on an element - compute selector and open drawer
+      const selector = computeSelector(e.target);
+      openFeedbackDrawer({ selector, selection: null });
+    }
+  });
+
   /* ============================================================
      TOP-LEVEL RENDER
      ============================================================ */
@@ -2580,7 +3872,7 @@ window.DESIGNS = window.DESIGNS || {};
     transitionContent('x', dir, apply);
   }
   function setViewMode(mode){
-    if (mode !== 'prs' && mode !== 'designs') return;
+    if (!KNOWN_VIEW_MODES.has(mode)) return;
     if (state.viewMode === mode) return;
     if (state.transitioning) return;
     state.viewMode = mode;
@@ -2589,7 +3881,8 @@ window.DESIGNS = window.DESIGNS || {};
       if (state.level > DESIGN_N_LEVELS) state.level = DESIGN_N_LEVELS;
       const keys = designKeys();
       if (state.designIndex >= keys.length) state.designIndex = Math.max(0, keys.length - 1);
-      if (state.designsOpen) closeDesignsSheet();
+    } else if (mode === 'decisions' || mode === 'contexts' || mode === 'builds'){
+      if (state.level > 3) state.level = 1;
     }
     closeMergeMenu();
     stopAudio();
@@ -2607,24 +3900,22 @@ window.DESIGNS = window.DESIGNS || {};
   }
 
   /* ============================================================
-     COMMENTS DRAWER + ADR SHEET + ASSESSMENT SHEET + DESIGNS SHEET (shadcn Sheet
-     look, recreated in vanilla JS/CSS). All four panels share one #drawer-scrim;
+     COMMENTS DRAWER + ADR SHEET + ASSESSMENT SHEET (shadcn Sheet
+     look, recreated in vanilla JS/CSS). All three panels share one #drawer-scrim;
      opening any one closes the others first, so at most one sheet is ever open
      — this is the "only one sheet at a time" rule.
      ============================================================ */
   function renderSheetVisibility(){
-    document.getElementById('comments-drawer').classList.toggle('open', state.commentsOpen);
+    document.getElementById('content-col').classList.toggle('drawer-open', state.commentsOpen);
     document.getElementById('adr-sheet').classList.toggle('open', state.adrOpen);
     document.getElementById('assessment-sheet').classList.toggle('open', state.assessmentOpen);
-    document.getElementById('designs-sheet').classList.toggle('open', state.designsOpen);
     const scrim = document.getElementById('drawer-scrim');
-    scrim.classList.toggle('open', state.commentsOpen || state.adrOpen || state.assessmentOpen || state.designsOpen || state.audioDialogOpen);
+    scrim.classList.toggle('open', state.adrOpen || state.assessmentOpen || state.audioDialogOpen);
     scrim.classList.toggle('audio-dim', state.audioDialogOpen);
   }
   function openCommentsDrawer(){
     if (state.adrOpen){ state.adrOpen = false; }
     if (state.assessmentOpen){ state.assessmentOpen = false; }
-    if (state.designsOpen) closeDesignsSheet();
     if (state.audioDialogOpen) stopAudio(); // mutual exclusivity: closes + stops the audio dialog
     state.commentsOpen = true;
     renderSheetVisibility();
@@ -2637,7 +3928,6 @@ window.DESIGNS = window.DESIGNS || {};
   function openAdrSheet(id){
     if (state.commentsOpen){ state.commentsOpen = false; }
     if (state.assessmentOpen){ state.assessmentOpen = false; }
-    if (state.designsOpen) closeDesignsSheet();
     if (state.audioDialogOpen) stopAudio(); // mutual exclusivity: closes + stops the audio dialog
     state.adrOpen = true;
     state.activeAdrId = id;
@@ -2651,7 +3941,6 @@ window.DESIGNS = window.DESIGNS || {};
   function openAssessmentSheet(){
     if (state.commentsOpen){ state.commentsOpen = false; }
     if (state.adrOpen){ state.adrOpen = false; }
-    if (state.designsOpen) closeDesignsSheet();
     if (state.audioDialogOpen) stopAudio(); // mutual exclusivity: closes + stops the audio dialog
     state.assessmentOpen = true;
     renderAssessmentSheet();
@@ -2661,28 +3950,10 @@ window.DESIGNS = window.DESIGNS || {};
     state.assessmentOpen = false;
     renderSheetVisibility();
   }
-  function openDesignsSheet(){
-    if (state.commentsOpen){ state.commentsOpen = false; }
-    if (state.adrOpen){ state.adrOpen = false; }
-    if (state.assessmentOpen){ state.assessmentOpen = false; }
-    if (state.audioDialogOpen) stopAudio();
-    state.designsOpen = true;
-    state.activeDesignName = null;
-    renderDesignsSheet();
-    renderSheetVisibility();
-  }
-  function closeDesignsSheet(){
-    if (!state.designsOpen) return;
-    state.designsOpen = false;
-    const body = document.getElementById('designs-sheet-body');
-    if (body) unmountDiagrams(body);
-    renderSheetVisibility();
-  }
   function closeAnyOpenSheet(){
     if (state.commentsOpen) closeCommentsDrawer();
     else if (state.adrOpen) closeAdrSheet();
     else if (state.assessmentOpen) closeAssessmentSheet();
-    else if (state.designsOpen) closeDesignsSheet();
     else if (state.audioDialogOpen) stopAudio();
   }
 
@@ -2850,7 +4121,7 @@ window.DESIGNS = window.DESIGNS || {};
     }
   }
 
-  /* ---------- Submit-mode assessment sheet ----------
+  /* ---------- Generate-mode assessment sheet ----------
      Reads pr().assessment / pr().intent straight off window.STORY. No new
      global and no new data file: both blocks live inline on the timeline
      entry, which is what gives them migrate_bundle.py's authored-field guard.
@@ -2961,7 +4232,7 @@ window.DESIGNS = window.DESIGNS || {};
       metaEl.innerHTML = '';
       body.innerHTML = `
         <div class="empty-card">
-          <div class="empty-detail">No assessment recorded for this PR. Run <code>/cobuilder-architect:submit</code> against it.</div>
+          <div class="empty-detail">No assessment recorded for this PR. Run <code>/cobuilder-architect:generate</code> against it.</div>
         </div>`;
       return;
     }
@@ -3100,8 +4371,8 @@ window.DESIGNS = window.DESIGNS || {};
   }
 
   /* ============================================================
-     DESIGNS SHEET — list every key in window.DESIGNS, then a
-     reading view for one design. Predictions never look like checks.
+     DESIGN HELPERS — read window.DESIGNS for the Designs tab
+     (renderDesignMainContent). Predictions never look like checks.
      ============================================================ */
   function designsRecord(){
     return window.DESIGNS || {};
@@ -3136,13 +4407,6 @@ window.DESIGNS = window.DESIGNS || {};
   function designStage(d){
     const g = designGoal(d);
     return (g && g.stage) || (d && d.stage) || 'unknown';
-  }
-  function roundsCount(d){
-    const g = designGoal(d);
-    const rounds = (g && g.rounds) || (d && d.rounds);
-    if (Array.isArray(rounds)) return rounds.length;
-    if (typeof rounds === 'number') return rounds;
-    return 0;
   }
   function designEpics(d){
     const g = designGoal(d);
@@ -3278,22 +4542,6 @@ window.DESIGNS = window.DESIGNS || {};
     const n = Number(epic.pr);
     return Number.isFinite(n) ? n : null;
   }
-  function designEpicRowsHtml(epics){
-    if (!epics.length){
-      return '<div class="design-card-meta">No epics recorded.</div>';
-    }
-    return `<div class="design-epic-list">${epics.map(epic => {
-      const prNum = epicPrNumber(epic);
-      const label = epic.slug || epic.id || 'epic';
-      const prChip = prNum == null
-        ? '<span class="design-epic-pr">no PR yet</span>'
-        : `<button type="button" class="design-epic-pr has-pr" data-pr="${prNum}">PR #${prNum}</button>`;
-      const stateChip = epic.state
-        ? `<span class="adr-state-badge" style="background:oklch(0.96 0.02 250);color:var(--ink-dim);border-color:var(--line);">${escapeHtml(String(epic.state))}</span>`
-        : '';
-      return `<div class="design-epic-row"><span>${escapeHtml(String(label))}</span>${prChip}${stateChip}</div>`;
-    }).join('')}</div>`;
-  }
   function designFindingCard(f){
     const isPred = f && f.kind === "prediction";
     const sev = (f && f.severity) || 'note';
@@ -3374,145 +4622,6 @@ window.DESIGNS = window.DESIGNS || {};
       ${findingsHtml}
       ${checksHtml}`;
   }
-  function renderDesignsList(titleEl, metaEl, body){
-    const keys = designKeys();
-    titleEl.textContent = 'Designs';
-    metaEl.innerHTML = keys.length
-      ? `<span class="adr-sheet-sourceline">${keys.length} design${keys.length === 1 ? '' : 's'}</span>`
-      : '';
-    if (!keys.length){
-      body.innerHTML = `
-        <div class="empty-card">
-          <div class="empty-detail">No designs yet. Run <code>/cobuilder-architect:design</code> to author one.</div>
-        </div>`;
-      return;
-    }
-    body.innerHTML = `<div class="design-list">${keys.map(name => {
-      const d = lookupDesign(name) || {};
-      const title = designTitle(d);
-      const stage = designStage(d);
-      const nRounds = roundsCount(d);
-      const epics = designEpics(d);
-      return `
-        <div class="design-card" role="button" tabindex="0" data-design-name="${escapeHtml(name)}">
-          <div class="design-card-top">
-            <span class="design-card-name">${escapeHtml(designName(d, name))}</span>
-            <span class="adr-state-badge" style="background:oklch(0.96 0.02 250);color:var(--ink-dim);border-color:var(--line);">${escapeHtml(String(stage))}</span>
-          </div>
-          ${title ? `<div class="design-card-title">${escapeHtml(title)}</div>` : ''}
-          <div class="design-card-meta">${nRounds} round${nRounds === 1 ? '' : 's'} · ${epics.length} epic${epics.length === 1 ? '' : 's'}</div>
-          ${designEpicRowsHtml(epics)}
-        </div>`;
-    }).join('')}</div>`;
-    const openCard = (card) => {
-      state.activeDesignName = card.dataset.designName;
-      renderDesignsSheet();
-    };
-    body.querySelectorAll('.design-card').forEach(card => {
-      card.addEventListener('click', () => openCard(card));
-      card.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); e.stopPropagation(); openCard(card); }
-      });
-    });
-    wireDesignEpicPrButtons(body);
-  }
-  function renderDesignReading(name, titleEl, metaEl, body){
-    const d = lookupDesign(name);
-    if (!d){
-      titleEl.textContent = name || 'Design';
-      metaEl.innerHTML = '';
-      body.innerHTML = `
-        <div class="empty-card">
-          <div class="empty-detail">Design not found. Run <code>/cobuilder-architect:design</code>.</div>
-        </div>`;
-      return;
-    }
-    const stage = designStage(d);
-    const nRounds = roundsCount(d);
-    titleEl.textContent = designTitle(d) || designName(d, name);
-    const verdict = d.assessment && d.assessment.verdict;
-    metaEl.innerHTML = (verdict ? verdictBadgeHtml(verdict) : '')
-      + `<span class="adr-state-badge" style="background:oklch(0.96 0.02 250);color:var(--ink-dim);border-color:var(--line);">${escapeHtml(String(stage))}</span>`
-      + `<span class="adr-sheet-sourceline">${escapeHtml(designName(d, name))} · ${nRounds} round${nRounds === 1 ? '' : 's'}</span>`;
-
-    const outcome = designOutcome(d);
-    const outcomeHtml = outcome ? `
-      <div class="adr-block decision">
-        <div class="ab-kicker">Outcome</div>
-        <p>${escapeHtml(outcome)}</p>
-      </div>` : '';
-
-    const adrIds = designAdrIds(d);
-    const adrHtml = adrIds.length ? `
-      <div>
-        <div class="alt-section-label">ADR</div>
-        <div class="adr-row">${adrIds.map(id => `<button type="button" class="adr-badge" data-adr-id="${escapeHtml(id)}">${escapeHtml(id)}</button>`).join('')}</div>
-      </div>` : '';
-
-    const epics = designEpics(d);
-    const epicsHtml = `
-      <div>
-        <div class="alt-section-label">Epics</div>
-        ${designEpicRowsHtml(epics)}
-      </div>`;
-
-    const diagramLevels = [1, 2, 3].filter(lvl => !!designDiagramSource(name, lvl));
-    let diagramsHtml;
-    if (!diagramLevels.length){
-      diagramsHtml = `
-        <div>
-          <div class="alt-section-label">Diagrams</div>
-          <div class="empty-card"><div class="empty-detail">No diagrams authored for this design.</div></div>
-        </div>`;
-    } else {
-      diagramsHtml = `
-        <div>
-          <div class="alt-section-label">Diagrams</div>
-          <div class="asm-stack">${diagramLevels.map(lvl => `
-            <div>
-              <div class="design-card-meta" style="margin:0 0 6px;">Level ${lvl} — ${escapeHtml(LEVEL_LABELS[lvl - 1] || '')}</div>
-              <div class="diagram-viewport" data-diagram data-design="${escapeHtml(name)}" data-level="${lvl}"><pre class="mermaid"></pre></div>
-            </div>`).join('')}</div>
-        </div>`;
-    }
-
-    const draft = designPrDraft(d);
-    const draftHtml = draft ? `
-      <div>
-        <div class="alt-section-label">Envisioned pull request</div>
-        <div class="adr-block"><div class="adr-body-md">${renderMarkdown(draft)}</div></div>
-      </div>` : `
-      <div>
-        <div class="alt-section-label">Envisioned pull request</div>
-        <div class="empty-card"><div class="empty-detail">No pr-draft recorded for this design.</div></div>
-      </div>`;
-
-    const assessmentHtml = `
-      <div>
-        <div class="alt-section-label">Design assessment</div>
-        ${renderDesignAssessment(d.assessment, d.intent || null)}
-      </div>`;
-
-    body.innerHTML = `
-      <button type="button" class="link-btn" id="designs-back-btn">← All designs</button>
-      ${outcomeHtml}
-      ${adrHtml}
-      ${epicsHtml}
-      ${diagramsHtml}
-      ${draftHtml}
-      ${assessmentHtml}`;
-
-    const back = document.getElementById('designs-back-btn');
-    if (back) back.addEventListener('click', () => {
-      state.activeDesignName = null;
-      renderDesignsSheet();
-    });
-    body.querySelectorAll('.adr-badge[data-adr-id]').forEach(btn => {
-      btn.addEventListener('click', () => openAdrSheet(btn.dataset.adrId));
-    });
-    wireDesignEpicPrButtons(body);
-    mountDiagrams(body);
-  }
   function wireDesignEpicPrButtons(root){
     root.querySelectorAll('.design-epic-pr.has-pr').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -3522,28 +4631,6 @@ window.DESIGNS = window.DESIGNS || {};
         if (idx >= 0) selectPR(idx);
       });
     });
-  }
-  function renderDesignsSheet(){
-    const titleEl = document.getElementById('designs-sheet-title');
-    const metaEl = document.getElementById('designs-sheet-meta');
-    const body = document.getElementById('designs-sheet-body');
-    if (!titleEl || !metaEl || !body) return;
-    unmountDiagrams(body);
-    const keys = designKeys();
-    if (!keys.length){
-      titleEl.textContent = 'Designs';
-      metaEl.innerHTML = '';
-      body.innerHTML = `
-        <div class="empty-card">
-          <div class="empty-detail">No designs yet. Run <code>/cobuilder-architect:design</code> to author one.</div>
-        </div>`;
-      return;
-    }
-    if (state.activeDesignName){
-      renderDesignReading(state.activeDesignName, titleEl, metaEl, body);
-      return;
-    }
-    renderDesignsList(titleEl, metaEl, body);
   }
   document.getElementById('tb-prev').addEventListener('click', () => {
     if (isDesignsMode()) selectDesign(state.designIndex - 1);
@@ -3557,9 +4644,12 @@ window.DESIGNS = window.DESIGNS || {};
     btn.addEventListener('click', () => setViewMode(btn.dataset.mode));
   });
 
-  document.getElementById('btn-merge').addEventListener('click', mergePR);
-  document.getElementById('btn-merge-arrow').addEventListener('click', (e) => { e.stopPropagation(); toggleMergeMenu(); });
-  document.getElementById('merge-menu').querySelectorAll('.merge-menu-item').forEach(item => {
+  const btnMerge = document.getElementById('btn-merge');
+  if (btnMerge) btnMerge.addEventListener('click', mergePR);
+  const btnMergeArrow = document.getElementById('btn-merge-arrow');
+  if (btnMergeArrow) btnMergeArrow.addEventListener('click', (e) => { e.stopPropagation(); toggleMergeMenu(); });
+  const mergeMenu = document.getElementById('merge-menu');
+  if (mergeMenu) mergeMenu.querySelectorAll('.merge-menu-item').forEach(item => {
     item.addEventListener('click', () => {
       state.draftMergeMethod = item.dataset.method;
       closeMergeMenu();
@@ -3569,17 +4659,25 @@ window.DESIGNS = window.DESIGNS || {};
   document.addEventListener('click', (e) => {
     if (state.mergeMenuOpen && !e.target.closest('.split-btn')) closeMergeMenu();
   });
-  document.getElementById('btn-close').addEventListener('click', closePR);
-  document.getElementById('btn-comments-toggle').addEventListener('click', openCommentsDrawer);
-  document.getElementById('drawer-close-btn').addEventListener('click', closeCommentsDrawer);
-  document.getElementById('adr-sheet-close-btn').addEventListener('click', closeAdrSheet);
-  document.getElementById('assessment-sheet-close-btn').addEventListener('click', closeAssessmentSheet);
-  document.getElementById('designs-sheet-close-btn').addEventListener('click', closeDesignsSheet);
-  document.getElementById('drawer-scrim').addEventListener('click', closeAnyOpenSheet);
-  document.getElementById('btn-add-comment').addEventListener('click', addCommentOnly);
-  commentInput.addEventListener('keydown', (e) => { if (e.key === 'Enter'){ e.preventDefault(); addCommentOnly(); } });
-  document.getElementById('btn-reset').addEventListener('click', resetReview);
-  document.getElementById('btn-copy-md').addEventListener('click', () => {
+  const btnClose = document.getElementById('btn-close');
+  if (btnClose) btnClose.addEventListener('click', closePR);
+  const btnCommentsToggle = document.getElementById('btn-comments-toggle');
+  if (btnCommentsToggle) btnCommentsToggle.addEventListener('click', openCommentsDrawer);
+  const drawerCloseBtn = document.getElementById('drawer-close-btn');
+  if (drawerCloseBtn) drawerCloseBtn.addEventListener('click', closeCommentsDrawer);
+  const adrSheetCloseBtn = document.getElementById('adr-sheet-close-btn');
+  if (adrSheetCloseBtn) adrSheetCloseBtn.addEventListener('click', closeAdrSheet);
+  const assessmentSheetCloseBtn = document.getElementById('assessment-sheet-close-btn');
+  if (assessmentSheetCloseBtn) assessmentSheetCloseBtn.addEventListener('click', closeAssessmentSheet);
+  const drawerScrim = document.getElementById('drawer-scrim');
+  if (drawerScrim) drawerScrim.addEventListener('click', closeAnyOpenSheet);
+  const btnAddComment = document.getElementById('btn-add-comment');
+  if (btnAddComment) btnAddComment.addEventListener('click', addCommentOnly);
+  if (commentInput) commentInput.addEventListener('keydown', (e) => { if (e.key === 'Enter'){ e.preventDefault(); addCommentOnly(); } });
+  const btnReset = document.getElementById('btn-reset');
+  if (btnReset) btnReset.addEventListener('click', resetReview);
+  const btnCopyMd = document.getElementById('btn-copy-md');
+  if (btnCopyMd) btnCopyMd.addEventListener('click', () => {
     const md = buildMarkdown();
     const btn = document.getElementById('btn-copy-md');
     const flash = (ok) => {
@@ -3597,20 +4695,20 @@ window.DESIGNS = window.DESIGNS || {};
   window.addEventListener('keydown', (e) => {
     // Escape must close whichever sheet is open, even while the comment input is
     // focused — checked before the input/textarea early-return below so it always works.
-    if (e.key === 'Escape' && (state.commentsOpen || state.adrOpen || state.assessmentOpen || state.designsOpen || state.audioDialogOpen)){ closeAnyOpenSheet(); return; }
+    if (e.key === 'Escape' && (state.commentsOpen || state.adrOpen || state.assessmentOpen || state.audioDialogOpen)){ closeAnyOpenSheet(); return; }
 
     const tag = document.activeElement && document.activeElement.tagName;
     if (tag === 'TEXTAREA' || tag === 'INPUT') return;
     if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) e.preventDefault();
     if (e.key === 'ArrowLeft'){
       if (isDesignsMode()) selectDesign(state.designIndex - 1);
-      else selectPR(state.prIndex - 1);
+      else if (isPrsMode()) selectPR(state.prIndex - 1);
     } else if (e.key === 'ArrowRight'){
       if (isDesignsMode()) selectDesign(state.designIndex + 1);
-      else selectPR(state.prIndex + 1);
+      else if (isPrsMode()) selectPR(state.prIndex + 1);
     } else if (e.key === 'ArrowUp') setLevel(state.level - 1);
     else if (e.key === 'ArrowDown') setLevel(state.level + 1);
-    else if (e.key === 'm') { if (!isDesignsMode()) mergePR(); }
+    else if (e.key === 'm') { if (isPrsMode()) mergePR(); }
     else if (e.key === 'c') { e.preventDefault(); openCommentsDrawer(); }
     else if (e.key === 'd') { e.preventDefault(); setViewMode('designs'); }
     else if (e.key === ' '){
@@ -3626,7 +4724,7 @@ window.DESIGNS = window.DESIGNS || {};
   // Start on the most recent PR in the bundle (timeline is chronological).
   state.prIndex = Math.max(0, TIMELINE.length - 1);
   state.viewMode = loadViewMode();
-  if (state.viewMode === 'designs' && state.level > DESIGN_N_LEVELS) state.level = 1;
+  if ((state.viewMode === 'designs' || state.viewMode === 'decisions' || state.viewMode === 'contexts' || state.viewMode === 'builds') && state.level > 3) state.level = 1;
   document.title = `${REPO} — CoBuilder-Architect`;
 
   // Loaded before the first render (unlike hintsPinned below) because it decides which
