@@ -138,7 +138,7 @@ def resolve_repo(repo_arg: str | None) -> Path:
 
 
 def level_num_from_filename(name: str) -> int:
-    m = re.match(r"level-(\d+)\.png$", name)
+    m = re.match(r"level-(\d+)\.webp$", name)
     return int(m.group(1)) if m else 0
 
 
@@ -269,7 +269,7 @@ def discover_hero_pngs(bundle_dir: Path, pr_num: int) -> list[Path]:
     pr_dir = bundle_dir / "assets" / f"pr-{pr_num}"
     if not pr_dir.is_dir():
         return []
-    return sorted(pr_dir.glob("level-*.png"), key=lambda p: level_num_from_filename(p.name))
+    return sorted(pr_dir.glob("level-*.webp"), key=lambda p: level_num_from_filename(p.name))
 
 
 def discover_audio(bundle_dir: Path, pr_num: int) -> list[Path]:
