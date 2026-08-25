@@ -195,7 +195,7 @@ def build_prompts(story: dict, prs_filter: list[int] | None, levels_filter: list
                     "pr": pr["pr"],
                     "level": i,
                     "level_name": level_name,
-                    "output_path": f"assets/pr-{pr['pr']}/level-{i}.png",
+                    "output_path": f"assets/pr-{pr['pr']}/level-{i}.webp",
                     "prompt": prompt,
                     "aspect_ratio": "16:9",
                 }
@@ -238,11 +238,11 @@ def call_gemini(prompt: str, model: str, client) -> tuple[bytes, str | None]:
             if image.mode == "RGBA":
                 rgb_image = PILImage.new("RGB", image.size, (255, 255, 255))
                 rgb_image.paste(image, mask=image.split()[3])
-                rgb_image.save(buf, "PNG")
+                rgb_image.save(buf, "WEBP", quality=90)
             elif image.mode == "RGB":
-                image.save(buf, "PNG")
+                image.save(buf, "WEBP", quality=90)
             else:
-                image.convert("RGB").save(buf, "PNG")
+                image.convert("RGB").save(buf, "WEBP", quality=90)
             image_bytes = buf.getvalue()
 
     if image_bytes is None:
