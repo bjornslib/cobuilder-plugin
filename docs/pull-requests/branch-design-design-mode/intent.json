@@ -1,11 +1,11 @@
 {
-  "captured": "2026-08-19",
+  "captured": "2026-08-25",
   "source": "author",
   "authorship": "agent-assisted",
   "design": {"name": "design-mode", "epic": null},
-  "problem": "The plugin captures author intent at submit time, after the change exists. Nothing captures it at design time, when the engineer still holds the alternatives, the constraints, and the doubts. Generate mode then reconstructs intent from merged code.",
-  "why_now": "Submit mode's intent block already has the right shape. The bundle already holds districts and ADRs. The architecture skill holds the corpus. Those parts were not connected, and the lite ADR store no longer had a premise once architecture modes became self-only.",
-  "approach": "Merge archkit main into this plugin, rename it cobuilder-architect, put authored source in docs/, and add /cobuilder-architect:design. One design joins N pull requests through an epics array and the branch name design/<name>[/<epic-slug>]. Submit loads that design's intent instead of interviewing cold.",
+  "problem": "The plugin captured author intent at submit time, after the change existed. Nothing captured it at design time, when the engineer still held the alternatives, the constraints, and the doubts. Generate mode then reconstructed intent from merged code. Once design mode landed, three more problems surfaced: the single plugin could not scale to five modes without one lifecycle surface, the viewer had grown to 4917 lines with no committed way to split it, and Gate 4b, a design per multi-slice epic, ran for zero of the epics that needed it because nothing downstream mechanically required its output.",
+  "why_now": "Submit mode's intent block already had the right shape. The bundle already held districts and ADRs. The architecture skill held the corpus. Those parts were not connected, and the lite ADR store no longer had a premise once architecture modes became self-only. Using design mode across five epics then exposed the plugin-split, viewer-size, and gate-enforcement gaps directly, so this branch closes them in the same pass.",
+  "approach": "Merge archkit main into this plugin, rename it cobuilder-architect, put authored source in docs/, and add /cobuilder-architect:design. One design joins N pull requests through an epics array and the branch name design/<name>[/<epic-slug>]. Submit loads that design's intent instead of interviewing cold. The single plugin then split into five siblings under plugins/ with the bundle as the seam (ADR-0016) and shared code vendored by symlink (ADR-0017). ADR-0018 gives the family one lifecycle surface with realization derived from pull request state. ADR-0019 adds anchored comments as a durable ledger. ADR-0020 records authoring the viewer as parts under viewer/src/ with an author-time build, narrowing the build-free rule rather than abandoning it; the split itself is not yet done. The branch also fixed three viewer layout defects, restored markup deleted by a regression commit, retired the Designs sheet into the Designs tab, closed the Gate 4b enforcement gap with a script that fails loud, and replaced three divergent slice-table parsers with one shared module.",
   "alternatives": [
     {
       "option": "Put design mode in archkit instead",
@@ -30,6 +30,18 @@
     {
       "option": "Leave designs and PR documents in exports/",
       "rejected_because": "exports/ is the publish pipeline. Authored intent belongs in docs/."
+    },
+    {
+      "option": "Split the viewer into real sibling files loaded by script and link tags",
+      "rejected_because": "A published Artifact is a single file under a CSP that blocks every external request, and export_artifact.py inlines data because sibling files do not survive publishing."
+    },
+    {
+      "option": "Adopt a bundler such as esbuild or Vite for the viewer",
+      "rejected_because": "It adds a Node toolchain to a repository of prose, Python scripts, and one HTML file. Concatenation of ordered parts is the whole requirement."
+    },
+    {
+      "option": "Let a status file assert Gate 4b ran, on trust",
+      "rejected_because": "That is exactly how the gate went unenforced for five epics. A script that exits non-zero replaces the honor system."
     }
   ],
   "out_of_scope": [
@@ -39,24 +51,35 @@
     "renaming the GitHub repository (the plugin and bundle directory are renamed; GitHub redirects)",
     "deciding the fate of the archkit repository",
     "foreign-repo architecture analysis",
-    "epic decomposition (cobuilder-factory G1)"
+    "epic decomposition (cobuilder-factory G1)",
+    "actually splitting viewer/index.html into viewer/src/ parts (ADR-0020 records the decision; the split is separate, not-yet-started work tracked by the maintainable-viewer design)",
+    "writing Gate 4b design documents for the plugin-split epics (the enforcement script now exists and correctly fails; writing the five missing designs is follow-up work)"
   ],
   "risks": [
-    "a 390-file PR mixes rename, merge, store move, and design mode, so a reviewer cannot isolate one decision",
+    "a very large diff mixes rename, merge, store move, design mode, a five-way plugin split, and three ADRs, so a reviewer cannot isolate one decision",
     "ADR-0004 still says ste-writing is off the install surface",
     "a toothless challenge stage leaves an ADR with one option",
-    "the designs view ships thinner than the PR view unless the three-level chrome lands"
+    "the designs view ships thinner than the PR view unless the three-level chrome lands",
+    "Gate 4b fails today for five epics (plugin-split E1, E3, E4, E5, E6), which is the intended honest state but means the plugin-split design is incomplete by its own gate",
+    "refine_epic_status() leaves a hardcoded placeholder for any epic pointing at an open pull request, because collect_pull_requests() reads only narrated merged pull requests from data/story.json; the displayed status for pull request 11 is correct today by luck, not by derivation",
+    "the branch carries a large amount of uncommitted work in addition to its 32 commits"
   ],
-  "testing": "verify_bundle on the self bundle and both fixtures. build_adrs.py and build_designs.py each run twice. validate_decision_state.py over docs/architecture/adr/. Design resolve on this branch hits docs/architecture/designs/design-mode/.",
+  "testing": "verify_bundle on the self bundle and both fixtures. build_adrs.py and build_designs.py each run twice. validate_decision_state.py over docs/architecture/adr/. Design resolve on this branch hits docs/architecture/designs/design-mode/. shared/slice_table.py was proven byte-identical against the three regex sets it replaced before fixing the corruption it exposed as its own change. uv run pytest tests/ -q passes 254 tests, including tests/test_verify_gate.py, tests/test_slice_table.py, and tests/test_deny_git_stash_hook.py. uv run plugins/cobuilder-implement/scripts/verify_gate.py --plan docs/plans/cobuilder-family reports FAIL for Gate 4b on the five outstanding plugin-split epics, as expected.",
   "reviewer_focus": [
     "the challenge gate in design-mode.md",
     "submit's branch-name lookup and per-epic drift",
     "authored source in docs/ versus the bundle projection",
-    "the Designs | Pull requests switcher and the three-level design view"
+    "the Designs | Pull requests switcher and the three-level design view",
+    "ADR-0016 and ADR-0017 as the map for the five-plugin split, not the raw file-move diff",
+    "ADR-0020's build-free narrowing, and whether the maintainable-viewer backlog design correctly scopes the not-yet-done part of that decision",
+    "verify_gate.py's exit-1 behavior for Gate 4b, and whether slice-loop.js now stopping instead of skipping is the right failure mode for every caller",
+    "the #adr-sheet / #assessment-sheet regression repair, to confirm nothing else was silently broken by the same commit that deleted the markup",
+    "refine_epic_status()'s placeholder for open pull requests, since it is the one place the record index currently reads correctly by coincidence"
   ],
   "unknowns": [
     "whether a semantic duplicate-design search is accurate enough",
     "how much the architecture skill slows a plugin install",
-    "whether GitHub marketplace redirects cover every existing prodyssey install"
+    "whether GitHub marketplace redirects cover every existing prodyssey install",
+    "whether the Gate 4b enforcement script should also run automatically at a point earlier than slice-loop.js discovering the gap mid-loop"
   ]
 }

@@ -51,6 +51,17 @@ accepted. The header count in this file determines the attempt number.
 Spawn a subagent. Give it the slice description, the program design, and the
 epic technical solution design. **Do not give it the rubric.**
 
+**Before spawning, check the epic design document exists.** An epic that
+carries more than one slice needed an approved Gate 4b design
+(`docs/plans/<slug>/epic-<epic-id>-design.md`). If the slice's epic carries
+more than one slice and that file is absent, stop the slice and report the
+missing file. Do not fall back to `03-program-design.md` for that case —
+that silent fallback is what let six epics ship with no Gate 4b design in
+the `cobuilder-family` feature.
+`plugins/cobuilder-implement/scripts/verify_gate.py` checks this before
+implementation starts (see SKILL.md, Gate 4c). A single-slice epic never
+needed a design, and falls through to `03-program-design.md` on purpose.
+
 ```
 You are the RED role in a test-driven slice. Write failing tests. Write no
 implementation.
@@ -196,7 +207,7 @@ Return: verdict, overall_score, and per-criterion scores.
 
 | Verdict | Action |
 |---|---|
-| **PASS** | Delete `slice-<N>-feedback.md`. Record the score in `00-status.md`, check the slice off. **Sync epic status to goal.json** (see `goal-sync.md`). Prove the slice works to the user with a test or demo. Ask whether to continue or adjust direction. |
+| **PASS** | Delete `slice-<N>-feedback.md`. Record the score in `00-status.md`, check the slice off. **Sync epic status to goal.json** (see `goal-sync.md`). **If Hindsight is available, retain the slice outcome** (see `hindsight-routine.md`, "Retain after every accepted slice"). Prove the slice works to the user with a test or demo. Ask whether to continue or adjust direction. |
 | **FAIL** | Re-run GREEN with the feedback file. Do not re-run RED because the contract did not change. |
 | **ESCALATION** | Do not loop again. Record the slice under `## Escalated` in `00-status.md` with the score and reason. Discuss with the user. See the gap decision tree in `validation-scoring.md`. |
 
