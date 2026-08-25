@@ -162,9 +162,6 @@ scripts/build_builds_view.py   NOT part of any plugin. A local tool for this
                        repository root. Do not move it into a plugin.
 ```
 
-(`scripts/` is top-level, a sibling of `skills/`, not nested under
-`skills/odyssey/` — `SKILL.md` calls it via `${CLAUDE_PLUGIN_ROOT}/scripts/...`.)
-
 A shared skill (`mermaid`, `ste-writing`) resolves at `${CLAUDE_PLUGIN_ROOT}/shared/skills/<name>/`
 from inside any plugin, because the symlink dereferences into the plugin's own
 cache at install time. A shared script resolves the same way, at
@@ -389,9 +386,7 @@ and migration below.
   inventory.yaml
   viewer/index.html
   exports/{publish-manifest.json, pr-{N}.html…, index.html}   # written by /cobuilder-architect:publish
-  exports/pr-{N}-{description,assessment}.md                  # written by /cobuilder-architect:submit
-  exports/branch-{slug}/{diff,intent,assessment}.json         # /cobuilder-architect:submit, pre-PR staging
-  exports/branch-{slug}/{description,assessment}.md
+  exports/branch-{slug}/diff.json                             # generate-mode diff cache, gitignored
   .migration-backup/  # pre-migration story.json snapshots, written by migrate_bundle.py
 
 <repo>/
@@ -433,7 +428,7 @@ entries are gitignored:
   reproducible from `git diff <merge-base>..<head>`, and it is
   self-referential — committing it into the branch it diffs rewrites it on
   every commit, and each version would then contain the last one. The authored
-  `intent.json` and `assessment.json` beside it are committed.
+  `intent.json` and `assessment.json` live under `docs/pull-requests/` and are committed.
 
 The self-bundle and the foreign-repo cache used to live under two separate
 top-level directories. One `.cobuilder-architect/` root now holds both, and the

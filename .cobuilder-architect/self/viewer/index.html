@@ -139,15 +139,24 @@
   .rail-item.active .rail-title{color:var(--accent-text);}
   .rail-teaser{font-size:11px;color:var(--ink-dim);line-height:1.4;margin-top:4px;}
 
+  /* #content-col holds exactly two children: #content-main-col (caption + scrollable
+     content, stacked vertically) and #comments-drawer, laid out side by side. The row
+     direction lives here, on the outer element, so the drawer can push the column
+     narrower without disturbing the caption-over-content stack below it (defect D2). */
   #content-col{flex:1 1 auto;min-width:0;display:flex;flex-direction:row;min-height:0;}
+  #content-main-col{flex:1 1 auto;min-width:0;min-height:0;display:flex;flex-direction:column;}
 
   /* Slim narration caption, sits atop the scrollable content (spec allows either side).
      Heading + narration on the left, fixed-width audio control on the right — vertically
-     centered against the heading block. */
+     centered against the heading block. renderCaption() toggles the `hidden` attribute
+     for every non-PR view mode. The explicit `display:flex` below wins over the
+     user-agent `[hidden]{display:none}` rule by specificity, so an explicit
+     `[hidden]` override is required here too, or the caption stays visible (defect D1). */
   #narration-caption{
     flex:0 0 auto;padding:12px 26px;border-bottom:1px solid var(--line-soft);background:#fff;
     display:flex;align-items:center;justify-content:space-between;gap:20px;
   }
+  #narration-caption[hidden]{display:none;}
   .caption-text{min-width:0;flex:1 1 auto;}
   .caption-text .pr-title-line{font:700 13px system-ui,sans-serif;color:oklch(0.22 0.02 250);margin-bottom:3px;}
   .caption-text .narration-text{margin:0;font-size:13px;line-height:1.5;font-style:italic;color:var(--ink-dim);max-width:80ch;}
@@ -457,13 +466,23 @@
     transition:opacity .2s ease;z-index:40;
   }
   #drawer-scrim.open{opacity:1;pointer-events:auto;}
+  /* ADR-0019: the drawer PUSHES the content column narrower, it never covers it — the
+     reader must still see the text they are commenting on. `transform` only moves the
+     paint, so a translateX-based drawer always reserved its 420px track in the flex
+     layout, leaving dead whitespace when closed (defect D3). Animating flex-basis
+     instead makes the closed state occupy zero width, and the open state take real
+     layout space that #content-main-col yields. `overflow:hidden` on the closed drawer
+     clips its fixed-width inner content instead of letting it reflow mid-transition. */
   #comments-drawer{
-    flex:0 0 420px;max-width:92vw;background:#fff;
+    flex:0 0 0;max-width:92vw;background:#fff;overflow:hidden;
     border-left:1px solid var(--line);border-radius:0;box-shadow:-12px 0 34px rgba(20,25,35,0.1);
     display:flex;flex-direction:column;min-height:0;
-    transform:translateX(100%);transition:transform .25s ease;
+    transition:flex-basis .25s ease;
   }
-  #content-col.drawer-open #comments-drawer{transform:translateX(0);}
+  /* Fixed width on the inner content, independent of the animating flex-basis above, so
+     the drawer's contents do not reflow while the basis tweens from 0 to 420px. */
+  #comments-drawer > *{width:420px;}
+  #content-col.drawer-open #comments-drawer{flex:0 0 420px;}
   .drawer-header{
     flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;
     padding:16px 20px;border-bottom:1px solid var(--line-soft);
@@ -488,39 +507,23 @@
      just wider — reuses .drawer-header/.drawer-close/.drawer-body). Shares
      #drawer-scrim with the comments drawer; JS enforces only one open at a time. ================= */
   #adr-sheet,
-  #assessment-sheet,
-  #designs-sheet{
+  #assessment-sheet{
     position:fixed;top:0;right:0;bottom:0;width:clamp(480px, 40vw, 720px);max-width:92vw;background:#fff;
     border-left:1px solid var(--line);border-radius:14px 0 0 14px;box-shadow:-12px 0 34px rgba(20,25,35,0.2);
     transform:translateX(100%);transition:transform .25s ease;z-index:41;
     display:flex;flex-direction:column;min-height:0;
   }
   #adr-sheet.open,
-  #assessment-sheet.open,
-  #designs-sheet.open{transform:translateX(0);}
+  #assessment-sheet.open{transform:translateX(0);}
   #adr-sheet .drawer-header,
-  #assessment-sheet .drawer-header,
-  #designs-sheet .drawer-header{align-items:flex-start;}
+  #assessment-sheet .drawer-header{align-items:flex-start;}
   .adr-sheet-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px;}
   .adr-state-badge{font:10px 'JetBrains Mono',monospace;letter-spacing:.04em;padding:3px 9px;border-radius:10px;border:1px solid;text-transform:uppercase;white-space:nowrap;}
   .adr-sheet-sourceline{font:11px 'JetBrains Mono',monospace;color:var(--ink-dim);}
   #adr-sheet .drawer-body,
-  #assessment-sheet .drawer-body,
-  #designs-sheet .drawer-body{overflow-y:auto;gap:16px;}
+  #assessment-sheet .drawer-body{overflow-y:auto;gap:16px;}
 
-  /* Designs sheet — list of named designs, then a reading view. Not a fifth level. */
-  .design-list{display:flex;flex-direction:column;gap:10px;}
-  .design-card{
-    display:block;width:100%;text-align:left;border-radius:10px;border:1px solid var(--line);
-    background:#fff;padding:14px 16px;cursor:pointer;color:inherit;font:inherit;
-  }
-  .design-card:hover{border-color:var(--accent);}
-  .design-card:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
-  .design-card-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;}
-  .design-card-name{font:700 13px 'JetBrains Mono',monospace;color:oklch(0.22 0.02 250);}
-  .design-card-title{font-size:13px;line-height:1.45;color:oklch(0.3 0.02 250);margin-top:4px;}
-  .design-card-meta{font:11px 'JetBrains Mono',monospace;color:var(--ink-dim);margin-top:8px;}
-  .design-epic-list{display:flex;flex-direction:column;gap:4px;margin-top:8px;}
+  /* Design epic row — the Designs tab's level-3 epic blocks (renderDesignMainContent). */
   .design-epic-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font:11.5px 'JetBrains Mono',monospace;color:oklch(0.3 0.02 250);}
   .design-epic-pr{
     font:600 10.5px 'JetBrains Mono',monospace;padding:2px 7px;border-radius:8px;
@@ -528,7 +531,6 @@
   }
   .design-epic-pr.has-pr{border-color:color-mix(in oklch, var(--accent) 50%, transparent);color:var(--accent-text);cursor:pointer;background:color-mix(in oklch, var(--accent) 6%, white);}
   .design-epic-pr.has-pr:hover{border-color:var(--accent);}
-  #designs-sheet .diagram-viewport{height:280px;border-radius:8px;border:1px solid var(--line);}
 
   /* A prediction is a guess, never a check. Dashed purple, not the solid
      severity rail a pre-stage finding uses. */
@@ -933,21 +935,26 @@
       <div id="rail-items"></div>
     </nav>
     <div id="content-col">
-      <div id="narration-caption">
-        <div class="caption-text">
-          <div class="pr-title-line" id="caption-title"></div>
-          <p class="narration-text" id="caption-narration"></p>
+      <!-- #content-main-col stacks the caption above the scrollable content. It is the
+           flex sibling that #comments-drawer pushes narrower, keeping #content-col
+           itself a plain two-child row (this wrapper, plus the drawer). -->
+      <div id="content-main-col">
+        <div id="narration-caption">
+          <div class="caption-text">
+            <div class="pr-title-line" id="caption-title"></div>
+            <p class="narration-text" id="caption-narration"></p>
+          </div>
+          <div id="tb-audio">
+            <button class="audio-btn" id="tb-audio-btn">&#9654;</button>
+            <div class="audio-progress"><div class="audio-fill" id="tb-audio-fill"></div></div>
+            <span class="audio-label" id="tb-audio-label">narration audio</span>
+          </div>
         </div>
-        <div id="tb-audio">
-          <button class="audio-btn" id="tb-audio-btn">&#9654;</button>
-          <div class="audio-progress"><div class="audio-fill" id="tb-audio-fill"></div></div>
-          <span class="audio-label" id="tb-audio-label">narration audio</span>
+        <div id="main-content-wrap">
+          <div id="main-content"></div>
+          <div class="scroll-cue bottom" id="scroll-cue-bottom" hidden></div>
+          <div class="scroll-cue top" id="scroll-cue-top" hidden></div>
         </div>
-      </div>
-      <div id="main-content-wrap">
-        <div id="main-content"></div>
-        <div class="scroll-cue bottom" id="scroll-cue-bottom" hidden></div>
-        <div class="scroll-cue top" id="scroll-cue-top" hidden></div>
       </div>
       <!-- Comments drawer (shadcn Sheet look, recreated in vanilla HTML/CSS) -->
       <div id="comments-drawer" role="dialog" aria-label="Review comments">
@@ -995,18 +1002,34 @@
 
   <div id="drawer-scrim"></div>
 
-  <!-- Designs sheet (same Sheet family as ADR / assessment). Lists every
-       design in window.DESIGNS, then a reading view for one. Not a fifth
-       level. Shares #drawer-scrim; only one sheet is ever open. -->
-  <div id="designs-sheet" role="dialog" aria-label="Designs">
+  <!-- ADR detail sheet, first of the Sheet family (ADR / assessment).
+       Reads window.ADRS for the clicked badge's record. Shares
+       #drawer-scrim; only one sheet is ever open. -->
+  <div id="adr-sheet" role="dialog" aria-label="ADR detail">
     <div class="drawer-header">
       <div>
-        <h2 id="designs-sheet-title">Designs</h2>
-        <div class="adr-sheet-meta" id="designs-sheet-meta"></div>
+        <h2 id="adr-sheet-title">ADR</h2>
+        <div class="adr-sheet-meta" id="adr-sheet-meta"></div>
       </div>
-      <button class="drawer-close" id="designs-sheet-close-btn" title="Close (Esc)">&times;</button>
+      <button class="drawer-close" id="adr-sheet-close-btn" title="Close (Esc)">&times;</button>
     </div>
-    <div class="drawer-body" id="designs-sheet-body"></div>
+    <div class="drawer-body" id="adr-sheet-body"></div>
+  </div>
+
+  <!-- Generate-mode "PR Author Assessment" sheet (same Sheet family as the ADR
+       sheet above), reachable from the assessment banner at the top of level
+       2. Reads the timeline entry's own `assessment`/`intent` blocks — there
+       is no window.ASSESSMENTS, because both live inline in story.json.
+       Shares #drawer-scrim; only one sheet is ever open. -->
+  <div id="assessment-sheet" role="dialog" aria-label="PR Author Assessment">
+    <div class="drawer-header">
+      <div>
+        <h2 id="assessment-sheet-title">PR Author Assessment</h2>
+        <div class="adr-sheet-meta" id="assessment-sheet-meta"></div>
+      </div>
+      <button class="drawer-close" id="assessment-sheet-close-btn" title="Close (Esc)">&times;</button>
+    </div>
+    <div class="drawer-body" id="assessment-sheet-body"></div>
   </div>
 
   <!-- Narration audio dialog (shadcn Dialog look, centered). Shares #drawer-scrim above;
@@ -1135,9 +1158,6 @@ window.INDEX = window.INDEX || {};
     // 'designs' mirrors it with a three-level design view. Persisted.
     viewMode: 'prs',
     designIndex: 0,
-    // Designs sheet: leftover drawer. Main chrome no longer opens it.
-    designsOpen: false,
-    activeDesignName: null,
     // Audio dialog: mutually exclusive with every sheet above (see openAudioDialog).
     audioDialogOpen: false,
     // true while a level/PR content transition animation is in flight — guards re-entrant
@@ -1394,7 +1414,6 @@ window.INDEX = window.INDEX || {};
     feedbackAnchor = anchor;
     if (state.adrOpen){ state.adrOpen = false; }
     if (state.assessmentOpen){ state.assessmentOpen = false; }
-    if (state.designsOpen) closeDesignsSheet();
     if (state.audioDialogOpen) stopAudio();
     state.commentsOpen = true;
     renderSheetVisibility();
@@ -1976,11 +1995,11 @@ window.INDEX = window.INDEX || {};
   function loadViewMode(){
     try {
       const v = localStorage.getItem(VIEW_MODE_KEY);
-      return KNOWN_VIEW_MODES.has(v) ? v : 'prs';
+      return KNOWN_VIEW_MODES.has(v) ? v : 'designs';
     } catch (e) { return 'prs'; }
   }
   function saveViewMode(v){
-    try { localStorage.setItem(VIEW_MODE_KEY, KNOWN_VIEW_MODES.has(v) ? v : 'prs'); } catch (e) { /* unavailable */ }
+    try { localStorage.setItem(VIEW_MODE_KEY, KNOWN_VIEW_MODES.has(v) ? v : 'designs'); } catch (e) { /* unavailable */ }
   }
   let hintsCollapseTimer = null;
   function collapseHints(){
@@ -2674,10 +2693,19 @@ window.INDEX = window.INDEX || {};
               </div>`).join('')}
           </div>
         </div>` : '';
+      // The assessment answers why the design is what it is, the same question
+      // "Rejected alternatives" answers, so it sits beside it on level 2 rather
+      // than on level 3 with the epics and diagrams.
+      const assessmentHtml = `
+        <div>
+          <div class="alt-section-label">Design assessment</div>
+          ${renderDesignAssessment(d.assessment, d.intent || null)}
+        </div>`;
       setMainHtml(main, `
         <div class="level-stack narrow">
           ${grid}
           ${altHtml}
+          ${assessmentHtml}
         </div>`);
     } else {
       const adrIds = designAdrIds(d);
@@ -2710,12 +2738,25 @@ window.INDEX = window.INDEX || {};
       const diagramsHtml = diagramLevels.length
         ? diagramLevels.map(lvl => designHeroFrame(name, lvl, `${designTitle(d) || name} ${DESIGN_LEVEL_LABELS[lvl - 1]} diagram`)).join('')
         : `<div class="empty-card"><div class="empty-detail">No diagrams authored for this design.</div></div>`;
+      // The envisioned pull request is the same "how it fits together" grain as
+      // the ADR row, epics, beats, and diagrams above it, so it closes out level 3.
+      const draft = designPrDraft(d);
+      const draftHtml = draft ? `
+        <div>
+          <div class="alt-section-label">Envisioned pull request</div>
+          <div class="adr-block"><div class="adr-body-md">${renderMarkdown(draft)}</div></div>
+        </div>` : `
+        <div>
+          <div class="alt-section-label">Envisioned pull request</div>
+          <div class="empty-card"><div class="empty-detail">No pr-draft recorded for this design.</div></div>
+        </div>`;
       setMainHtml(main, `
         <div class="level-stack narrow">
           <div class="adr-row">${adrHtml}</div>
           ${epicBlocks}
           ${beatsHtml}
           ${diagramsHtml}
+          ${draftHtml}
         </div>`);
       main.querySelectorAll('.adr-badge[data-adr-id]').forEach(btn => {
         btn.addEventListener('click', () => openAdrSheet(btn.dataset.adrId));
@@ -3538,7 +3579,6 @@ window.INDEX = window.INDEX || {};
     if (state.commentsOpen) state.commentsOpen = false;
     if (state.adrOpen) state.adrOpen = false;
     if (state.assessmentOpen) state.assessmentOpen = false;
-    if (state.designsOpen) closeDesignsSheet();
     state.audioDialogOpen = true;
     renderAudioDialogContent();
     const dialog = document.getElementById('audio-dialog');
@@ -3841,10 +3881,8 @@ window.INDEX = window.INDEX || {};
       if (state.level > DESIGN_N_LEVELS) state.level = DESIGN_N_LEVELS;
       const keys = designKeys();
       if (state.designIndex >= keys.length) state.designIndex = Math.max(0, keys.length - 1);
-      if (state.designsOpen) closeDesignsSheet();
     } else if (mode === 'decisions' || mode === 'contexts' || mode === 'builds'){
       if (state.level > 3) state.level = 1;
-      if (state.designsOpen) closeDesignsSheet();
     }
     closeMergeMenu();
     stopAudio();
@@ -3862,8 +3900,8 @@ window.INDEX = window.INDEX || {};
   }
 
   /* ============================================================
-     COMMENTS DRAWER + ADR SHEET + ASSESSMENT SHEET + DESIGNS SHEET (shadcn Sheet
-     look, recreated in vanilla JS/CSS). All four panels share one #drawer-scrim;
+     COMMENTS DRAWER + ADR SHEET + ASSESSMENT SHEET (shadcn Sheet
+     look, recreated in vanilla JS/CSS). All three panels share one #drawer-scrim;
      opening any one closes the others first, so at most one sheet is ever open
      — this is the "only one sheet at a time" rule.
      ============================================================ */
@@ -3871,15 +3909,13 @@ window.INDEX = window.INDEX || {};
     document.getElementById('content-col').classList.toggle('drawer-open', state.commentsOpen);
     document.getElementById('adr-sheet').classList.toggle('open', state.adrOpen);
     document.getElementById('assessment-sheet').classList.toggle('open', state.assessmentOpen);
-    document.getElementById('designs-sheet').classList.toggle('open', state.designsOpen);
     const scrim = document.getElementById('drawer-scrim');
-    scrim.classList.toggle('open', state.adrOpen || state.assessmentOpen || state.designsOpen || state.audioDialogOpen);
+    scrim.classList.toggle('open', state.adrOpen || state.assessmentOpen || state.audioDialogOpen);
     scrim.classList.toggle('audio-dim', state.audioDialogOpen);
   }
   function openCommentsDrawer(){
     if (state.adrOpen){ state.adrOpen = false; }
     if (state.assessmentOpen){ state.assessmentOpen = false; }
-    if (state.designsOpen) closeDesignsSheet();
     if (state.audioDialogOpen) stopAudio(); // mutual exclusivity: closes + stops the audio dialog
     state.commentsOpen = true;
     renderSheetVisibility();
@@ -3892,7 +3928,6 @@ window.INDEX = window.INDEX || {};
   function openAdrSheet(id){
     if (state.commentsOpen){ state.commentsOpen = false; }
     if (state.assessmentOpen){ state.assessmentOpen = false; }
-    if (state.designsOpen) closeDesignsSheet();
     if (state.audioDialogOpen) stopAudio(); // mutual exclusivity: closes + stops the audio dialog
     state.adrOpen = true;
     state.activeAdrId = id;
@@ -3906,7 +3941,6 @@ window.INDEX = window.INDEX || {};
   function openAssessmentSheet(){
     if (state.commentsOpen){ state.commentsOpen = false; }
     if (state.adrOpen){ state.adrOpen = false; }
-    if (state.designsOpen) closeDesignsSheet();
     if (state.audioDialogOpen) stopAudio(); // mutual exclusivity: closes + stops the audio dialog
     state.assessmentOpen = true;
     renderAssessmentSheet();
@@ -3916,28 +3950,10 @@ window.INDEX = window.INDEX || {};
     state.assessmentOpen = false;
     renderSheetVisibility();
   }
-  function openDesignsSheet(){
-    if (state.commentsOpen){ state.commentsOpen = false; }
-    if (state.adrOpen){ state.adrOpen = false; }
-    if (state.assessmentOpen){ state.assessmentOpen = false; }
-    if (state.audioDialogOpen) stopAudio();
-    state.designsOpen = true;
-    state.activeDesignName = null;
-    renderDesignsSheet();
-    renderSheetVisibility();
-  }
-  function closeDesignsSheet(){
-    if (!state.designsOpen) return;
-    state.designsOpen = false;
-    const body = document.getElementById('designs-sheet-body');
-    if (body) unmountDiagrams(body);
-    renderSheetVisibility();
-  }
   function closeAnyOpenSheet(){
     if (state.commentsOpen) closeCommentsDrawer();
     else if (state.adrOpen) closeAdrSheet();
     else if (state.assessmentOpen) closeAssessmentSheet();
-    else if (state.designsOpen) closeDesignsSheet();
     else if (state.audioDialogOpen) stopAudio();
   }
 
@@ -4355,8 +4371,8 @@ window.INDEX = window.INDEX || {};
   }
 
   /* ============================================================
-     DESIGNS SHEET — list every key in window.DESIGNS, then a
-     reading view for one design. Predictions never look like checks.
+     DESIGN HELPERS — read window.DESIGNS for the Designs tab
+     (renderDesignMainContent). Predictions never look like checks.
      ============================================================ */
   function designsRecord(){
     return window.DESIGNS || {};
@@ -4391,13 +4407,6 @@ window.INDEX = window.INDEX || {};
   function designStage(d){
     const g = designGoal(d);
     return (g && g.stage) || (d && d.stage) || 'unknown';
-  }
-  function roundsCount(d){
-    const g = designGoal(d);
-    const rounds = (g && g.rounds) || (d && d.rounds);
-    if (Array.isArray(rounds)) return rounds.length;
-    if (typeof rounds === 'number') return rounds;
-    return 0;
   }
   function designEpics(d){
     const g = designGoal(d);
@@ -4533,22 +4542,6 @@ window.INDEX = window.INDEX || {};
     const n = Number(epic.pr);
     return Number.isFinite(n) ? n : null;
   }
-  function designEpicRowsHtml(epics){
-    if (!epics.length){
-      return '<div class="design-card-meta">No epics recorded.</div>';
-    }
-    return `<div class="design-epic-list">${epics.map(epic => {
-      const prNum = epicPrNumber(epic);
-      const label = epic.slug || epic.id || 'epic';
-      const prChip = prNum == null
-        ? '<span class="design-epic-pr">no PR yet</span>'
-        : `<button type="button" class="design-epic-pr has-pr" data-pr="${prNum}">PR #${prNum}</button>`;
-      const stateChip = epic.state
-        ? `<span class="adr-state-badge" style="background:oklch(0.96 0.02 250);color:var(--ink-dim);border-color:var(--line);">${escapeHtml(String(epic.state))}</span>`
-        : '';
-      return `<div class="design-epic-row"><span>${escapeHtml(String(label))}</span>${prChip}${stateChip}</div>`;
-    }).join('')}</div>`;
-  }
   function designFindingCard(f){
     const isPred = f && f.kind === "prediction";
     const sev = (f && f.severity) || 'note';
@@ -4629,145 +4622,6 @@ window.INDEX = window.INDEX || {};
       ${findingsHtml}
       ${checksHtml}`;
   }
-  function renderDesignsList(titleEl, metaEl, body){
-    const keys = designKeys();
-    titleEl.textContent = 'Designs';
-    metaEl.innerHTML = keys.length
-      ? `<span class="adr-sheet-sourceline">${keys.length} design${keys.length === 1 ? '' : 's'}</span>`
-      : '';
-    if (!keys.length){
-      body.innerHTML = `
-        <div class="empty-card">
-          <div class="empty-detail">No designs yet. Run <code>/cobuilder-architect:design</code> to author one.</div>
-        </div>`;
-      return;
-    }
-    body.innerHTML = `<div class="design-list">${keys.map(name => {
-      const d = lookupDesign(name) || {};
-      const title = designTitle(d);
-      const stage = designStage(d);
-      const nRounds = roundsCount(d);
-      const epics = designEpics(d);
-      return `
-        <div class="design-card" role="button" tabindex="0" data-design-name="${escapeHtml(name)}">
-          <div class="design-card-top">
-            <span class="design-card-name">${escapeHtml(designName(d, name))}</span>
-            <span class="adr-state-badge" style="background:oklch(0.96 0.02 250);color:var(--ink-dim);border-color:var(--line);">${escapeHtml(String(stage))}</span>
-          </div>
-          ${title ? `<div class="design-card-title">${escapeHtml(title)}</div>` : ''}
-          <div class="design-card-meta">${nRounds} round${nRounds === 1 ? '' : 's'} · ${epics.length} epic${epics.length === 1 ? '' : 's'}</div>
-          ${designEpicRowsHtml(epics)}
-        </div>`;
-    }).join('')}</div>`;
-    const openCard = (card) => {
-      state.activeDesignName = card.dataset.designName;
-      renderDesignsSheet();
-    };
-    body.querySelectorAll('.design-card').forEach(card => {
-      card.addEventListener('click', () => openCard(card));
-      card.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); e.stopPropagation(); openCard(card); }
-      });
-    });
-    wireDesignEpicPrButtons(body);
-  }
-  function renderDesignReading(name, titleEl, metaEl, body){
-    const d = lookupDesign(name);
-    if (!d){
-      titleEl.textContent = name || 'Design';
-      metaEl.innerHTML = '';
-      body.innerHTML = `
-        <div class="empty-card">
-          <div class="empty-detail">Design not found. Run <code>/cobuilder-architect:design</code>.</div>
-        </div>`;
-      return;
-    }
-    const stage = designStage(d);
-    const nRounds = roundsCount(d);
-    titleEl.textContent = designTitle(d) || designName(d, name);
-    const verdict = d.assessment && d.assessment.verdict;
-    metaEl.innerHTML = (verdict ? verdictBadgeHtml(verdict) : '')
-      + `<span class="adr-state-badge" style="background:oklch(0.96 0.02 250);color:var(--ink-dim);border-color:var(--line);">${escapeHtml(String(stage))}</span>`
-      + `<span class="adr-sheet-sourceline">${escapeHtml(designName(d, name))} · ${nRounds} round${nRounds === 1 ? '' : 's'}</span>`;
-
-    const outcome = designOutcome(d);
-    const outcomeHtml = outcome ? `
-      <div class="adr-block decision">
-        <div class="ab-kicker">Outcome</div>
-        <p>${escapeHtml(outcome)}</p>
-      </div>` : '';
-
-    const adrIds = designAdrIds(d);
-    const adrHtml = adrIds.length ? `
-      <div>
-        <div class="alt-section-label">ADR</div>
-        <div class="adr-row">${adrIds.map(id => `<button type="button" class="adr-badge" data-adr-id="${escapeHtml(id)}">${escapeHtml(id)}</button>`).join('')}</div>
-      </div>` : '';
-
-    const epics = designEpics(d);
-    const epicsHtml = `
-      <div>
-        <div class="alt-section-label">Epics</div>
-        ${designEpicRowsHtml(epics)}
-      </div>`;
-
-    const diagramLevels = [1, 2, 3].filter(lvl => !!designDiagramSource(name, lvl));
-    let diagramsHtml;
-    if (!diagramLevels.length){
-      diagramsHtml = `
-        <div>
-          <div class="alt-section-label">Diagrams</div>
-          <div class="empty-card"><div class="empty-detail">No diagrams authored for this design.</div></div>
-        </div>`;
-    } else {
-      diagramsHtml = `
-        <div>
-          <div class="alt-section-label">Diagrams</div>
-          <div class="asm-stack">${diagramLevels.map(lvl => `
-            <div>
-              <div class="design-card-meta" style="margin:0 0 6px;">Level ${lvl} — ${escapeHtml(LEVEL_LABELS[lvl - 1] || '')}</div>
-              <div class="diagram-viewport" data-diagram data-design="${escapeHtml(name)}" data-level="${lvl}"><pre class="mermaid"></pre></div>
-            </div>`).join('')}</div>
-        </div>`;
-    }
-
-    const draft = designPrDraft(d);
-    const draftHtml = draft ? `
-      <div>
-        <div class="alt-section-label">Envisioned pull request</div>
-        <div class="adr-block"><div class="adr-body-md">${renderMarkdown(draft)}</div></div>
-      </div>` : `
-      <div>
-        <div class="alt-section-label">Envisioned pull request</div>
-        <div class="empty-card"><div class="empty-detail">No pr-draft recorded for this design.</div></div>
-      </div>`;
-
-    const assessmentHtml = `
-      <div>
-        <div class="alt-section-label">Design assessment</div>
-        ${renderDesignAssessment(d.assessment, d.intent || null)}
-      </div>`;
-
-    body.innerHTML = `
-      <button type="button" class="link-btn" id="designs-back-btn">← All designs</button>
-      ${outcomeHtml}
-      ${adrHtml}
-      ${epicsHtml}
-      ${diagramsHtml}
-      ${draftHtml}
-      ${assessmentHtml}`;
-
-    const back = document.getElementById('designs-back-btn');
-    if (back) back.addEventListener('click', () => {
-      state.activeDesignName = null;
-      renderDesignsSheet();
-    });
-    body.querySelectorAll('.adr-badge[data-adr-id]').forEach(btn => {
-      btn.addEventListener('click', () => openAdrSheet(btn.dataset.adrId));
-    });
-    wireDesignEpicPrButtons(body);
-    mountDiagrams(body);
-  }
   function wireDesignEpicPrButtons(root){
     root.querySelectorAll('.design-epic-pr.has-pr').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -4777,28 +4631,6 @@ window.INDEX = window.INDEX || {};
         if (idx >= 0) selectPR(idx);
       });
     });
-  }
-  function renderDesignsSheet(){
-    const titleEl = document.getElementById('designs-sheet-title');
-    const metaEl = document.getElementById('designs-sheet-meta');
-    const body = document.getElementById('designs-sheet-body');
-    if (!titleEl || !metaEl || !body) return;
-    unmountDiagrams(body);
-    const keys = designKeys();
-    if (!keys.length){
-      titleEl.textContent = 'Designs';
-      metaEl.innerHTML = '';
-      body.innerHTML = `
-        <div class="empty-card">
-          <div class="empty-detail">No designs yet. Run <code>/cobuilder-architect:design</code> to author one.</div>
-        </div>`;
-      return;
-    }
-    if (state.activeDesignName){
-      renderDesignReading(state.activeDesignName, titleEl, metaEl, body);
-      return;
-    }
-    renderDesignsList(titleEl, metaEl, body);
   }
   document.getElementById('tb-prev').addEventListener('click', () => {
     if (isDesignsMode()) selectDesign(state.designIndex - 1);
@@ -4837,8 +4669,6 @@ window.INDEX = window.INDEX || {};
   if (adrSheetCloseBtn) adrSheetCloseBtn.addEventListener('click', closeAdrSheet);
   const assessmentSheetCloseBtn = document.getElementById('assessment-sheet-close-btn');
   if (assessmentSheetCloseBtn) assessmentSheetCloseBtn.addEventListener('click', closeAssessmentSheet);
-  const designsSheetCloseBtn = document.getElementById('designs-sheet-close-btn');
-  if (designsSheetCloseBtn) designsSheetCloseBtn.addEventListener('click', closeDesignsSheet);
   const drawerScrim = document.getElementById('drawer-scrim');
   if (drawerScrim) drawerScrim.addEventListener('click', closeAnyOpenSheet);
   const btnAddComment = document.getElementById('btn-add-comment');
@@ -4865,7 +4695,7 @@ window.INDEX = window.INDEX || {};
   window.addEventListener('keydown', (e) => {
     // Escape must close whichever sheet is open, even while the comment input is
     // focused — checked before the input/textarea early-return below so it always works.
-    if (e.key === 'Escape' && (state.commentsOpen || state.adrOpen || state.assessmentOpen || state.designsOpen || state.audioDialogOpen)){ closeAnyOpenSheet(); return; }
+    if (e.key === 'Escape' && (state.commentsOpen || state.adrOpen || state.assessmentOpen || state.audioDialogOpen)){ closeAnyOpenSheet(); return; }
 
     const tag = document.activeElement && document.activeElement.tagName;
     if (tag === 'TEXTAREA' || tag === 'INPUT') return;

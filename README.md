@@ -22,6 +22,7 @@ install the plugin or plugins you need:
 
 ```
 /plugin marketplace add bjornslib/cobuilder-architect
+/plugin install cobuilder-architect@cobuilder-architect
 ```
 
 `cobuilder-architect` covers design, review, maintenance, decisions,
