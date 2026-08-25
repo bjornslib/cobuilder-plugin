@@ -1,0 +1,33 @@
+sequenceDiagram
+    participant Engineer
+    participant EpicDesign as epic-E{N}-design.md
+    participant Status as 00-status.md
+    participant VerifyGate as verify_gate.py
+    participant SliceTable as slice_table.py
+    participant Assessment as design-mode/assessment.json
+
+    Engineer->>EpicDesign: Write retrospective design for epic E{N}
+    EpicDesign-->>Engineer: Opens with "gate did not run before implementation"
+
+    loop for each of the five multi-slice plugin-split epics
+        Engineer->>EpicDesign: Author epic-E1..E6-design.md
+    end
+
+    Engineer->>Status: Mark Gate 4b APPROVED (retrospective)
+    Status-->>Engineer: 00-status.md records qualifier, not silent pass
+
+    Engineer->>VerifyGate: Run verify_gate.py against docs/plans/cobuilder-family/
+    VerifyGate->>Status: Read Gate 4a/4b/4c status lines
+    VerifyGate->>SliceTable: Parse 04-slices.md via slice_table.py
+    SliceTable-->>VerifyGate: Slice counts per epic
+    VerifyGate->>EpicDesign: Check a design doc exists for each multi-slice epic
+    EpicDesign-->>VerifyGate: Five retrospective designs found
+
+    alt All three sub-steps satisfied
+        VerifyGate-->>Engineer: Exit 0, Gate 4 passes honestly
+    else A sub-step still pending
+        VerifyGate-->>Engineer: Exit 1, names the missing sub-step
+    end
+
+    Engineer->>Assessment: Add missing retrospective assessment
+    Assessment-->>Engineer: stage "retrospective", findings kind observation/drift, never prediction

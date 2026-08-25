@@ -1,0 +1,48 @@
+C4Container
+    title PR 12 - retires adr-draft, closes Gate 4b, records two ADR rules
+
+    Person(engineer, "Engineer", "Writes retrospective epic designs and ADR maintenance rules")
+
+    Container_Boundary(plans, "docs/plans/cobuilder-family/ - authored") {
+        Container(epicdesigns, "epic-E1..E6-design.md", "Markdown", "Five retrospective Gate 4b designs, one per multi-slice epic")
+        Container(status, "00-status.md", "Markdown", "Gate 4a/4b/4c status, now APPROVED with retrospective qualifier")
+    }
+
+    Container_Boundary(designs, "docs/architecture/designs/ - authored") {
+        Container(designmode, "design-mode/", "JSON + Markdown", "goal.json, assessment.json with observation/drift findings, adr-draft.md deleted")
+        Container(backlog, "inflight-record-store/, maintainable-viewer/", "JSON", "New goal.json-only backlog designs")
+    }
+
+    Container_Boundary(refs, "Reference docs - authored") {
+        Container(claudemd, "CLAUDE.md / README.md", "Markdown", "adr-draft.md artifact type retired")
+        Container(decisionrules, "decision-records.md", "Markdown", "Rule: ADR prose never edited to match tree")
+        Container(reviewmode, "review-mode.md", "Markdown", "Rule: a drift finding is a report, not a work item")
+    }
+
+    Container_Boundary(gate, "plugins/cobuilder-implement/ + shared/ - code") {
+        Container(verifygate, "verify_gate.py", "Python", "Checks Gate 4a/4b/4c against 00-status.md and epic designs")
+        Container(slicetable, "slice_table.py", "Python", "Parses the slice table verify_gate.py reads")
+    }
+
+    Container_Boundary(hook, "Local dev tooling - new in PR 12") {
+        Container(denystash, ".claude/hooks/deny-git-stash.py", "Python", "Blocks git stash for subagents after the recovery incident")
+    }
+
+    Container_Boundary(bundle, "Self-bundle record index") {
+        Container(buildindex, "shared/build_index.py", "Python", "Rebuilds adrs.json, designs.js, index.json from docs/")
+        ContainerDb(indexjson, "data/index.json, adrs.json", "JSON", "Derived record index the viewer reads")
+    }
+
+    Rel(engineer, epicdesigns, "Writes, one per multi-slice epic")
+    Rel(engineer, status, "Marks Gate 4b approved with qualifier")
+    Rel(epicdesigns, verifygate, "Read by, as Gate 4b evidence")
+    Rel(status, verifygate, "Read by, for Gate 4a/4b/4c state")
+    Rel(verifygate, slicetable, "Uses to parse slice table")
+    Rel(engineer, designmode, "Adds missing retrospective assessment")
+    Rel(engineer, claudemd, "Removes adr-draft.md as documented output")
+    Rel(engineer, decisionrules, "Records ADR-prose-never-edited rule")
+    Rel(engineer, reviewmode, "Records drift-is-a-report rule")
+    Rel(engineer, denystash, "Adds after a git-stash recovery incident")
+    Rel(designs, buildindex, "New/changed designs feed")
+    Rel(refs, buildindex, "Retired adr-draft.md reflected in")
+    Rel(buildindex, indexjson, "Rebuilds")
