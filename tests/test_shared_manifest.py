@@ -75,3 +75,34 @@ def test_shared_python_files_do_not_hardcode_plugin_name_constants():
                         raise AssertionError(
                             f"{py_file.name} defines a hardcoded PLUGIN_NAME constant"
                         )
+
+
+def test_rewrite_manifest_discovers_webp_hero_assets(tmp_path: Path):
+    """rewrite_manifest must list .webp hero assets, not .png."""
+    import sys
+
+    if str(SHARED_DIR) not in sys.path:
+        sys.path.insert(0, str(SHARED_DIR))
+
+    import _manifest
+    import json as _json
+
+    bundle_dir = tmp_path / "bundle"
+    data_dir = bundle_dir / "data"
+    data_dir.mkdir(parents=True)
+    manifest_path = data_dir / "manifest.js"
+
+    pr_dir = bundle_dir / "assets" / "pr-7"
+    pr_dir.mkdir(parents=True)
+    (pr_dir / "level-1.webp").write_bytes(b"fake-webp-bytes")
+    (pr_dir / "level-2.webp").write_bytes(b"fake-webp-bytes")
+    (pr_dir / "level-1.png").write_bytes(b"stale-png-should-be-ignored")
+
+    with patch("_manifest.require_compatible"):
+        _manifest.rewrite_manifest(bundle_dir, manifest_path)
+
+    text = manifest_path.read_text()
+    prefix = "window.ODYSSEY = "
+    payload = _json.loads(text[len(prefix):text.rindex(";")])
+
+    assert payload["hero"] == ["pr-7/level-1.webp", "pr-7/level-2.webp"]
