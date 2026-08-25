@@ -2,7 +2,11 @@
   "name": "design-mode",
   "title": "Design mode for cobuilder-architect",
   "adr": "ADR-0011",
-  "adrs": ["ADR-0011", "ADR-0014", "ADR-0015"],
+  "adrs": [
+    "ADR-0011",
+    "ADR-0014",
+    "ADR-0015"
+  ],
   "created": "2026-08-19",
   "outcome": "An engineer can design a change with the plugin before writing it, and the resulting intent, ADR, and diagrams carry through to the pull request that implements it.",
   "done_when": [
@@ -20,20 +24,36 @@
     "boundary_rules_checked": true,
     "challenge_stage_run": true
   },
-  "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
+  "limits": {
+    "warn_after_rounds": 3,
+    "cutoff_rounds": 6
+  },
   "epics": [
     {
       "id": "E1",
       "branch": "design/design-mode",
-      "pr": null,
-      "state": "planned"
+      "pr": 11,
+      "state": "open",
+      "note": "Design mode as a pre-code interview and challenge gate. Shares a branch and a pull request with the cobuilder-implement design. See ADR-0013: a branch may carry more than one design."
     }
   ],
-  "stage": "review",
+  "stage": "implemented",
   "supersedes": null,
   "rounds": [
-    { "n": 1, "changed": true, "feedback_class": "material" },
-    { "n": 2, "changed": true, "feedback_class": "material" },
-    { "n": 3, "changed": true, "feedback_class": "cosmetic" }
+    {
+      "n": 1,
+      "changed": true,
+      "feedback_class": "material"
+    },
+    {
+      "n": 2,
+      "changed": true,
+      "feedback_class": "material"
+    },
+    {
+      "n": 3,
+      "changed": true,
+      "feedback_class": "cosmetic"
+    }
   ]
 }

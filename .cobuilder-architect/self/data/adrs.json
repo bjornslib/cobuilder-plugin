@@ -1181,5 +1181,70 @@
       "docs/plans/cobuilder-family/02b-view-designs.md",
       "docs/plans/cobuilder-family/02c-record-model.md"
     ]
+  },
+  "ADR-0020": {
+    "id": "ADR-0020",
+    "title": "Viewer parts and an author-time build",
+    "state": "decided",
+    "source_pr": null,
+    "problem": "viewer/index.html is 4917 lines in one file: 881 lines of CSS and 3872 lines of JavaScript in a single IIFE holding 145 functions. Five view modes interleave through 50 scattered mode-predicate calls, 45 innerHTML string blocks carry no shared template, and one card fragment is copy-pasted 18 times. The file must ship as one self-contained file, so nobody has been able to split it.",
+    "decision": "Author the viewer as parts under viewer/src/, and compile them into the committed viewer/index.html with build_viewer.py. The build runs when an engineer changes the viewer, never at install and never in the browser, and a test fails when the committed file does not equal a fresh build.",
+    "alternatives": [
+      {
+        "option": "Leave the viewer as one hand-edited file and remove only the duplication",
+        "rejected_because": "It delivers easier maintenance without smaller parts. The file stays near 4000 lines, so a reader still holds five interleaved modes in one scroll, and the next mode is as invasive to add as the last one was."
+      },
+      {
+        "option": "Split the viewer into real sibling files loaded by script and link tags",
+        "rejected_because": "ADR-0001 forbids it. A published Artifact is a single file under a CSP that blocks every external request, and export_artifact.py inlines the data because sibling files do not survive publishing."
+      },
+      {
+        "option": "Generate index.html into the bundle at migrate time and never commit it",
+        "rejected_because": "/plugin install runs no build, so an installed plugin would ship no viewer at all. migrate_bundle.py and export_artifact.py both read the plugin's own viewer/index.html as an existing file."
+      },
+      {
+        "option": "Adopt a bundler such as esbuild or Vite",
+        "rejected_because": "It adds a Node toolchain to a repository of prose, Python scripts, and one HTML file. Concatenation of ordered parts is the whole requirement, and PEP 723 already covers every other script here."
+      }
+    ],
+    "forces": [
+      "ADR-0001: the published viewer is one self-contained file under a CSP that blocks every external request.",
+      "The install surface is /plugin install and nothing else, with no agents, no hooks, and no MCP servers. Install runs no build.",
+      "export_artifact.py rewrites the viewer by verbatim string replacement and hard-errors with not-found-verbatim when the literal text moves. Any refactor can break publishing silently until somebody publishes.",
+      "migrate_bundle.py copies the plugin's viewer/index.html into every bundle unconditionally, so the built file must exist in the plugin.",
+      "A generated file that is also committed goes stale the moment somebody edits the output instead of the parts."
+    ],
+    "delivers": {
+      "capability": "An engineer changes one view mode by opening one file of a few hundred lines, instead of finding it inside 3872 lines of one function scope.",
+      "benefit": "The cost of a viewer change stops scaling with the size of the whole viewer. A sixth mode becomes a new part plus one registry entry, rather than another pass of scattered predicate calls.",
+      "beneficiary": [
+        "developer",
+        "validator-agent"
+      ]
+    },
+    "body": "# ADR-0020 — Viewer parts and an author-time build\n\n## Context\n\n`viewer/index.html` is the largest authored file in the repository. Measured\non 2026-08-24:\n\n| Property | Value |\n|---|---|\n| Total lines | 4917 |\n| CSS | 881 lines |\n| JavaScript | 3872 lines, one IIFE, 145 functions |\n| Mode-predicate calls | 50, across five view modes |\n| `innerHTML` string assignments | 45 |\n| `<template>` elements | 0 |\n| The `empty-card` fragment | repeated 16 times, `empty-detail` 18 times |\n| Longest functions | 231, 222, and 219 lines |\n\nThe five view modes do not live in five places. They interleave. A single\nfunction, `renderLevelRail`, carries the same rail-item template four times\nand differs only in the data behind it. Three separate functions of over\n200 lines each render main content for one mode apiece.\n\nTwo facts have kept this file whole. `/plugin install` runs no build step,\nso whatever the plugin ships is what runs. And ADR-0001 records that a\npublished Artifact is one file under a CSP that blocks every external\nrequest, which is why `export_artifact.py` inlines the data rather than\nloading it. A viewer split into sibling files loaded at runtime cannot be\npublished.\n\nA third fact makes the situation worse rather than merely awkward.\n`export_artifact.py` edits the viewer by verbatim string replacement and\nfails with a not-found-verbatim error when a literal moves. The publish\npipeline is coupled to exact source text inside the viewer. Nobody sees\nthat coupling until a publish fails, so the file resists refactoring by\npunishing it late.\n\nTwo regressions this month show the cost. A `[hidden]` attribute was\ndefeated by a `display:flex` rule 100 lines away, and the caption it was\nmeant to hide stayed visible in four of five modes. Separately, the\n`#adr-sheet` and `#assessment-sheet` markup blocks were deleted while\ntheir CSS and every JavaScript reference survived, so `renderSheetVisibility`\nthrew on every call. Neither defect is exotic. Both are what a 4917-line\nfile with no seams produces.\n\n## Options considered\n\n1. **Remove the duplication in place, and keep one hand-edited file.**\n   A template helper and a mode registry would cut real repetition, and\n   the convention would survive untouched. Rejected because it delivers\n   half the ask. The file stays near 4000 lines, a reader still holds\n   five interleaved modes in one scroll, and \"smaller parts\" is not\n   delivered at all.\n\n2. **Split into sibling files loaded by `<script>` and `<link>`.**\n   Rejected. ADR-0001 already settled this. A published Artifact has no\n   sibling files.\n\n3. **Generate the viewer into the bundle at migrate time, and commit no\n   output.** The cleanest source tree of the four. Rejected because\n   `/plugin install` runs no build, so an installed plugin would carry no\n   viewer. Both `migrate_bundle.py` and `export_artifact.py` read the\n   plugin's own `viewer/index.html` as a file that already exists.\n\n4. **Adopt a bundler.** Rejected. It puts a Node toolchain into a\n   repository of prose, Python scripts, and one HTML file, to do a job\n   that is ordered concatenation.\n\n5. **Author-time build with a committed output.** Chosen.\n\n## Decision\n\nThe viewer is authored as ordered parts under\n`plugins/cobuilder-artifact/viewer/src/`. `build_viewer.py` concatenates\nthem into `plugins/cobuilder-artifact/viewer/index.html`, which stays\ncommitted and stays the file that ships.\n\n**Build-free is narrowed, not abandoned.** The property that matters is\nthat no build runs at install and no build runs in the browser. Both hold.\nWhat ends is build-free authoring, which is the half that has been paying\nfor itself in defects rather than in simplicity.\n\n**The output is guarded, not trusted.** A committed generated file goes\nstale the moment somebody edits the output. A test rebuilds from the parts\nand fails when the result differs from the committed file. That test is\nthe whole reason this arrangement is safe.\n\n**The exporter seam becomes declared.** `export_artifact.py` stops\nmatching incidental literals and matches named markers that the parts\nemit on purpose. The coupling between the viewer and the publish pipeline\nbecomes a stated contract rather than an accident of formatting.\n\n**Out of scope.** This record decides the packaging of the viewer source\nand the guard on its output. It does not decide the part boundaries, the\ntemplate mechanism, or the shape of the mode registry. Those belong to the\n`maintainable-viewer` design, which is deliberately deferred and sits in\nthe backlog as four planned epics.\n\n## Consequences\n\n- **Positive:** A view mode becomes one file of a few hundred lines. A\n  sixth mode is a new part plus one registry entry.\n- **Positive:** The publish coupling stops being invisible. A moved marker\n  fails a test instead of failing a publish.\n- **Constraint introduced:** `viewer/index.html` is a build artifact\n  compiled from `viewer/src/`. An engineer edits a part, never the output,\n  and a test fails when the committed output does not equal a fresh build.\n- **Negative / accepted:** A generated file is committed, so every viewer\n  change shows a large diff in the output beside a small diff in a part. A\n  reviewer must learn to read the part and ignore the output.\n- **Negative / accepted:** An engineer who edits `index.html` directly\n  loses that edit at the next build. The guard test converts the loss into\n  a failure, but it cannot prevent the mistake.\n- **Negative / accepted:** One more script to maintain, and one more test\n  that must run before the viewer is trusted.\n\n## Value delivered\n\n- **New capability:** An engineer changes one view mode by opening one\n  file of a few hundred lines, instead of locating it inside 3872 lines of\n  a single function scope.\n- **Benefit:** The cost of a viewer change stops scaling with the size of\n  the whole viewer.\n- **Beneficiary:** developer, validator-agent.\n\n## Maps to\n\nContext `cobuilder-packaging`, modules\n`plugins/cobuilder-artifact/viewer/index.html`,\n`plugins/cobuilder-artifact/scripts/export_artifact.py`,\n`shared/migrate_bundle.py`. See\n`docs/architecture/contexts/cobuilder-packaging/boundary.yaml`.\n\n## Unverified before implementation\n\nThe part boundaries in the backlog are drawn from the file's own 35 banner\ncomments and have not been tested by an actual split. A section that reads\nas self-contained may still close over state defined elsewhere in the\nIIFE, because everything currently shares one scope. The first epic exists\nto find that out.\n\nNo measurement yet supports the claim that ordered concatenation is\nsufficient. If any part must be reordered at build time rather than\nconcatenated in filename order, this record needs revisiting.\n",
+    "maps_to": {
+      "context": "cobuilder-packaging",
+      "modules": [
+        "plugins/cobuilder-artifact/viewer/index.html",
+        "plugins/cobuilder-artifact/scripts/export_artifact.py",
+        "shared/migrate_bundle.py"
+      ],
+      "rule": "viewer/index.html is a build artifact compiled from viewer/src/. An engineer edits a part, never the output, and a test fails when the committed output does not equal a fresh build."
+    },
+    "history": [
+      {
+        "state": "tentative",
+        "date": "2026-08-24"
+      },
+      {
+        "state": "decided",
+        "date": "2026-08-24"
+      }
+    ],
+    "related": [
+      "docs/architecture/contexts/cobuilder-packaging/boundary.yaml",
+      "docs/architecture/designs/maintainable-viewer/goal.json"
+    ]
   }
 }
