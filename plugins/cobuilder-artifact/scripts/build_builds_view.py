@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
 """Refresh the embedded payload of .cobuilder-architect/self/pages/builds-view.html from docs/plans.
 
 The page carries the plan markdown as text and renders it in the browser, so
@@ -7,7 +11,7 @@ script rewrites only the three generated lines: the window.BUILD payload, the
 gate-to-document map, and the document titles. Everything else in the page is
 authored by hand and is left alone.
 
-Usage: uv run scripts/build_builds_view.py [--plan docs/plans/cobuilder-family]
+Usage: uv run plugins/cobuilder-artifact/scripts/build_builds_view.py [--plan docs/plans/cobuilder-family]
 """
 from __future__ import annotations
 
@@ -19,6 +23,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "shared"))
 import slice_table  # noqa: E402
+
+# This script sits at <repo_root>/plugins/cobuilder-artifact/scripts/, so the
+# repo root is three parents up. The defaults below resolve against it, so
+# the script works from any working directory.
+REPO_ROOT = Path(__file__).resolve().parents[3]
 
 RUBRIC_COUNT = 14
 
@@ -177,10 +186,10 @@ def render(page: Path, plan_dir: Path, designs_dir: Path, rubrics_dir: Path) -> 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--plan", default="docs/plans/cobuilder-family")
-    ap.add_argument("--page", default=".cobuilder-architect/self/pages/builds-view.html")
-    ap.add_argument("--designs", default="docs/architecture/designs")
-    ap.add_argument("--rubrics", default=".cobuilder/rubrics/cobuilder-family")
+    ap.add_argument("--plan", default=str(REPO_ROOT / "docs" / "plans" / "cobuilder-family"))
+    ap.add_argument("--page", default=str(REPO_ROOT / ".cobuilder-architect" / "self" / "pages" / "builds-view.html"))
+    ap.add_argument("--designs", default=str(REPO_ROOT / "docs" / "architecture" / "designs"))
+    ap.add_argument("--rubrics", default=str(REPO_ROOT / ".cobuilder" / "rubrics" / "cobuilder-family"))
     a = ap.parse_args()
     render(Path(a.page), Path(a.plan), Path(a.designs), Path(a.rubrics))
 
