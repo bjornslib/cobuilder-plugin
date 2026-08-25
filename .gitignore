@@ -20,4 +20,9 @@ __pycache__/
 
 .mcp.json
 .serena/
+
+# cobuilder-implement's blind rubrics ARE committed (they're the question
+# sheet); the validator evidence they're scored against is not, per
+# implement/SKILL.md's "Files and state" rule.
+.cobuilder/rubrics/*/evidence/
 .cobuilder-architect/digital-curator-80f83abb/docs/
