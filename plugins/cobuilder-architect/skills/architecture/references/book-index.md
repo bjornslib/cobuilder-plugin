@@ -6,7 +6,12 @@ status: active
 
 # Book Reference Index
 
-Read this file **first** to pick a book. Do not Read any `books/<name>.md` until a row below clearly fits the task — except when a Self-load default fires (see next section).
+Read this file **first** to pick a book. Do not Read any `books/<name>.md` (or its `.nano.md`/`.mini.md` sibling) until a row below clearly fits the task — except when a Self-load default fires (see next section).
+
+Per ADR-0021, each book below is vendored in three tiers: `<name>.nano.md`
+(about 20-40 lines), `<name>.mini.md` (about 80-150 lines), and `<name>.md`
+(the full 300-1000 line reference). `unified-software-engineering.md` has
+no nano/mini tier — it stays load-alone regardless (see below).
 
 ## When to Escalate to Books (Tier 2)
 
@@ -16,6 +21,15 @@ Books are loaded ONLY after the corpus (Tier 1) has been consulted and found ins
 - The corpus YAML covers the topic but at a level too shallow for the specific question (e.g., corpus has DDD intro but you need strategic context mapping).
 - The question spans multiple corpus categories and needs a synthesized treatment.
 - A full architecture audit requires cross-cutting canonical depth (use `unified-software-engineering.md`).
+
+### Tier 2 escalation: nano first, mini or full only when it matters
+
+Once Tier 1 has narrowed the candidate books for the task:
+
+1. **Load a minimum of three `nano`-tier excerpts** for the candidate books — never fewer, and never zero. This is the mandatory first read of Tier 2, cheap enough to happen even when the topic turns out not to matter.
+2. **Escalate any one of those three books to `mini` or `full` only when you judge that book's principles matter for the specific problem at hand.** A book that does not clear that judgment stays at the nano tier for the rest of the task. Do not escalate all three. Do not escalate none when one clearly matters.
+3. **Full-tier loading is never automatic.** Reading `<name>.md` in full is the expensive step in this ladder, and it is conditional on what the nano (and, where escalated, mini) tier already showed — not a default that follows the nano read on every task.
+4. `unified-software-engineering.md` never enters this ladder. It has no nano/mini tier upstream, and it stays load-alone per the existing rule below (a full architecture audit still loads it directly, with nothing else).
 
 ### Anti-match: when NOT to escalate
 - If a corpus YAML file already covers the pattern with before/after examples and heuristics, use it instead of a book.
@@ -59,4 +73,17 @@ Books are loaded ONLY after the corpus (Tier 1) has been consulted and found ins
 
 ## Combination rules (load-bearing)
 
-Load **at most one primary** book per task. Optionally add **one companion** from the `Optional companion` column in SKILL.md's *Book References* decision table — never one of your own choosing. **Never** load `unified-software-engineering.md` alongside any other book; it is a pre-resolved synthesis intended to be loaded standalone for cross-cutting work. For DDD, follow the progression: Distilled → Blue Book (Evans) for strategic depth → IDDD (Vernon) for tactical/implementation depth.
+**This section is superseded by ADR-0021 for book loading.** The prior cap
+read "at most one primary book, plus one optional companion." The current
+rule is: **a minimum of three `nano`-tier loads**, from the candidate books
+Tier 1 narrows the task to, plus **judgment-gated escalation to `mini` or
+`full`, per book**, never automatic and never applied to all three
+candidates at once. See *Tier 2 escalation* above for the full rule.
+
+The prior guidance below still governs which books are legitimate
+candidates to narrow to, and still applies once a book is escalated past
+nano: **never** load `unified-software-engineering.md` alongside any other
+book; it is a pre-resolved synthesis intended to be loaded standalone for
+cross-cutting work, and it never enters the nano/mini/full ladder at all.
+For DDD, follow the progression: Distilled → Blue Book (Evans) for
+strategic depth → IDDD (Vernon) for tactical/implementation depth.

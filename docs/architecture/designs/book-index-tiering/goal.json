@@ -18,7 +18,16 @@
     "challenge_stage_run": true
   },
   "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
-  "epics": [],
+  "epics": [
+    {
+      "id": "E1",
+      "slug": "book-index-tiering",
+      "outcome": "book-index.md, books/README.md, and design-mode.md all reflect the 3-nano-minimum, judgment-gated nano/mini/full escalation rule from ADR-0021",
+      "branch": "design/book-index-tiering",
+      "pr": null,
+      "state": "planned"
+    }
+  ],
   "stage": "review",
   "supersedes": null,
   "rounds": [

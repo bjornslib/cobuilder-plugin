@@ -128,6 +128,11 @@ that join here.
       skeleton for component boundaries.
    4. Load `references/corpus/principles/resilience/*` if the system has
       external integrations. This step is optional.
+   5. If the corpus above leaves the topic under-covered, escalate to
+      `references/book-index.md`'s Tier 2: load a minimum of 3 nano-tier
+      excerpts for the candidate books, then escalate any one of them to
+      mini or full only when its principles are judged to matter for this
+      design (ADR-0021). Full-tier loading is never automatic.
 
    Draft a private hypothesis and a gap list from this grounding. Keep
    both hidden until stage 2 asks the problem and the approach. The
@@ -313,6 +318,7 @@ is the source of truth for each artifact's exact shape.
 4. **Load security corpus:** `references/corpus/principles/security/*` -- ALL 14 files. This is mandatory for review mode.
 5. Load `references/corpus/principles/testing/*`, `references/corpus/principles/resilience/*`, and `references/corpus/principles/data_systems/*` (as design choices).
 6. Load `references/corpus/refactorings/*` for diagnostic smells.
+6a. If the corpus above leaves a finding's topic under-covered, escalate to `references/book-index.md`'s Tier 2 rule (ADR-0021): load a minimum of 3 nano-tier excerpts for the candidate books, then escalate any one of them to mini or full only when its principles are judged to matter for the finding. Full-tier loading is never automatic. This step is separate from, and does not replace, the mandatory 14-file security corpus load in step 4.
 
 7. Load `references/corpus/reviews/*` for worked audit examples.
 8. **Load the SaaS checklist:** `references/saas-checklist.md` -- the detection method for SaaS-specific security, architecture, and quality issues.
@@ -562,4 +568,4 @@ Review and Maintenance modes **must** load `references/corpus/principles/securit
 | `references/harness-security.md` | LLM-harness security detection rules |
 | `references/agent-legible-principles.md` | 4 agent-legibility principles with before/after examples |
 | `references/mechanical-enforcement.md` | 5 grep-checkable CI rules |
-| `references/book-index.md` | Catalog of 14 vendored books. Load at most one per task (Tier 2 fallback). |
+| `references/book-index.md` | Catalog of 14 vendored books, each in nano/mini/full tiers. Tier 2 fallback: load a minimum of 3 nano excerpts, then escalate any one book to mini or full only when it's judged to matter (ADR-0021). |

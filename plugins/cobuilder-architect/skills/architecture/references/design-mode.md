@@ -79,7 +79,13 @@ stack card, and earlier timeline entries in the same districts.
 
 If the bundle has no baseline, `SKILL.md` instructs you to run `baseline`
 and continue. Say that it will run, then report the elapsed time. Do not
-run it in silence. Draft a private hypothesis and a gap list. Keep both
+run it in silence. If the corpus leaves the topic under-covered, escalate to
+`references/book-index.md`'s Tier 2 rule (ADR-0021): load a minimum of
+three nano-tier book excerpts for the candidate books, then escalate any
+one of them to mini or full only when its principles are judged to matter
+for this design. Full-tier loading is never automatic.
+
+Draft a private hypothesis and a gap list. Keep both
 hidden until §5 asks the problem and the approach. See
 the odyssey skill's `references/interview-guide.md` §2.
 
