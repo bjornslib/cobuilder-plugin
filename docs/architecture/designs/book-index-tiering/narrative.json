@@ -1,0 +1,34 @@
+{
+  "landscape": {
+    "tagline": "Three cheap reads before one expensive one.",
+    "narration": "book-index.md picks one book to load per task, and today it only owns one size: the full one. Upstream already publishes two smaller ones. This design wires them in."
+  },
+  "problem_solution": {
+    "problem": "book-index.md's escalation jumps straight from a cheap corpus heuristic to a 300-1000 line full book. Upstream ciembor/agent-rules-books now ships nano and mini tiers for the same 14 books, and none of them are vendored or used here.",
+    "solution": "Vendor nano.md and mini.md alongside each book's existing full.md. Require a minimum of three nano loads before any book may be judgment-escalated to mini or full, and make full-tier loading conditional instead of automatic.",
+    "narration": "The fix is not a bigger corpus. It is using the sizes that already exist instead of reaching for the biggest one every time.",
+    "beats": [
+      {"kind": "grounding", "text": "Grounding found the escalation policy itself violates its own stated cap, and a documented sync script that was never actually written."},
+      {"kind": "divergence", "text": "Six divergent frames produced a ledger, a cold-storage index, a subagent-fan-out pattern, a live-fetch approach that a security classifier blocked outright, a pre-concatenated ladder file, and a panic-grep pre-filter."},
+      {"kind": "challenge", "text": "The critic scored the ladder file highest, then flagged that its own stop-early discipline has no mechanical enforcement — the same failure mode this repo's Gate 4b history already lived through. The engineer chose to accept that same risk in a simpler, separate-files form instead of adopting the ladder file's mechanism."},
+      {"kind": "decision", "text": "3 nanos minimum, judgment-gated escalation to mini or full, separate files per tier, the old 1+1 cap rewritten to say so explicitly."}
+    ],
+    "alternatives": [
+      {"option": "3 nanos, then always the full book, unconditionally", "rejected_because": "Defeats the point of a cheap tier, and breaks the existing cap with no replacement stated."},
+      {"option": "Signed evidence ledger", "rejected_because": "Solves auditability, a problem nobody named, at the cost of a new file surface."},
+      {"option": "Content-addressed cold storage", "rejected_because": "Sized for 140+ books; this repo has 14."},
+      {"option": "Live-fetch from upstream URLs at task time", "rejected_because": "Blocked by a security classifier — a real injection and supply-chain risk."},
+      {"option": "Pre-concatenated ladder file with a stop-early marker", "rejected_because": "Scored highest, but its stop-early rule has no mechanical consumer."},
+      {"option": "Ad hoc subagent fan-out", "rejected_because": "Would need to ship as an agent, which ADR-0015 forbids."},
+      {"option": "Panic-grep pre-filter", "rejected_because": "The critic's starred survivor, deferred rather than bundled into this design."}
+    ]
+  },
+  "architecture": {
+    "narration": "book-index.md becomes the single owner of a three-tier vendored shelf, with an explicit, stated ceiling on how much of it any one task may read.",
+    "beats": [
+      {"kind": "component", "text": "references/books/<name>/{nano,mini,full}.md — 42 files, replacing the current 14 full-only files."},
+      {"kind": "rule", "text": "book-index.md: load a minimum of 3 nano excerpts; escalate any one book to mini or full only when its principles are judged to matter; full is never automatic."},
+      {"kind": "consumer", "text": "Design mode Stage 1 (Ground) and Stage 3 (Explore), and Review/Maintenance's corpus-to-book escalation, both read the new rule instead of the old 1+1 cap."}
+    ]
+  }
+}

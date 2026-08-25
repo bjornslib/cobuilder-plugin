@@ -1,0 +1,32 @@
+sequenceDiagram
+    participant Session as Design-mode session (Stage 1: Ground)
+    participant Corpus as corpus-index.md
+    participant Index as book-index.md
+    participant BookA as clean-architecture (nano/mini/full)
+    participant BookB as domain-driven-design-distilled (nano/mini/full)
+    participant BookC as refactoring (nano/mini/full)
+
+    Session->>Corpus: Consult Tier 1 heuristic for the task
+    Corpus-->>Session: Narrows candidates to 3 books (A, B, C)
+    Session->>Index: Escalate per new rule (ADR-0021)
+
+    Index->>BookA: Read nano.md (~20-40 lines)
+    BookA-->>Index: Excerpt returned
+    Index->>BookB: Read nano.md (~20-40 lines)
+    BookB-->>Index: Excerpt returned
+    Index->>BookC: Read nano.md (~20-40 lines)
+    BookC-->>Index: Excerpt returned
+
+    Note over Index: Minimum of 3 nano loads satisfied.\nJudge each book's principles against the task.
+
+    Index->>Index: Judge Book A's principles matter for this task
+    Index->>BookA: Escalate - read mini.md or full.md
+    BookA-->>Index: Deeper tier content returned
+
+    Index->>Index: Judge Book B's principles do not clear the bar
+    Note over Index,BookB: Book B stays at nano tier. No further Read call.
+
+    Index->>Index: Judge Book C's principles do not clear the bar
+    Note over Index,BookC: Book C stays at nano tier. No further Read call.
+
+    Index-->>Session: Grounding = 3 nanos + 1 escalated book (A)
