@@ -92,9 +92,9 @@ CDN_LINK_RES = [
 # instead, same graceful-degradation posture as the Motion no-op above), or replaced
 # in place with a vendored runtime when --inline-mermaid is passed.
 MERMAID_CDN_RE = re.compile(r'<script src="https://cdn\.jsdelivr\.net/npm/mermaid[^>]*></script>\n')
-HERO_SRC_OLD = ': `<img src="../assets/pr-${prNum}/level-${levelIdx}.png" alt="${escapeHtml(alt)}" loading="lazy">`;'
+HERO_SRC_OLD = ': `<img src="../assets/pr-${prNum}/level-${levelIdx}.webp" alt="${escapeHtml(alt)}" loading="lazy">`;'
 HERO_SRC_NEW = (
-    ": `<img src=\"${window.ODYSSEY_ASSETS['pr-' + prNum + '/level-' + levelIdx + '.png'] || ''}\" "
+    ": `<img src=\"${window.ODYSSEY_ASSETS['pr-' + prNum + '/level-' + levelIdx + '.webp'] || ''}\" "
     'alt="${escapeHtml(alt)}" loading="lazy">`;'
 )
 DIALOG_IMG_OLD = "img.src = `../assets/${rel}`;"
@@ -138,7 +138,7 @@ def resolve_repo(repo_arg: str | None) -> Path:
 
 
 def level_num_from_filename(name: str) -> int:
-    m = re.match(r"level-(\d+)\.png$", name)
+    m = re.match(r"level-(\d+)\.webp$", name)
     return int(m.group(1)) if m else 0
 
 
@@ -269,7 +269,7 @@ def discover_hero_pngs(bundle_dir: Path, pr_num: int) -> list[Path]:
     pr_dir = bundle_dir / "assets" / f"pr-{pr_num}"
     if not pr_dir.is_dir():
         return []
-    return sorted(pr_dir.glob("level-*.png"), key=lambda p: level_num_from_filename(p.name))
+    return sorted(pr_dir.glob("level-*.webp"), key=lambda p: level_num_from_filename(p.name))
 
 
 def discover_audio(bundle_dir: Path, pr_num: int) -> list[Path]:

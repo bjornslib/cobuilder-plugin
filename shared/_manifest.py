@@ -44,7 +44,7 @@ def rewrite_manifest(bundle_dir: Path, manifest_path: Path) -> None:
         return int(m.group(1)) if m else 0
 
     def level_num_from_filename(name: str) -> int:
-        m = re.match(r"level-(\d+)\.png$", name)
+        m = re.match(r"level-(\d+)\.webp$", name)
         return int(m.group(1)) if m else 0
 
     def pr_level_from_diagram_filename(name: str) -> tuple[int, int]:
@@ -56,8 +56,8 @@ def rewrite_manifest(bundle_dir: Path, manifest_path: Path) -> None:
         for pr_dir in sorted(assets_dir.glob("pr-*"), key=lambda p: pr_num_from_dirname(p.name)):
             if not pr_dir.is_dir():
                 continue
-            for png in sorted(pr_dir.glob("level-*.png"), key=lambda p: level_num_from_filename(p.name)):
-                hero.append(f"{pr_dir.name}/{png.name}")
+            for webp in sorted(pr_dir.glob("level-*.webp"), key=lambda p: level_num_from_filename(p.name)):
+                hero.append(f"{pr_dir.name}/{webp.name}")
 
     diff_prs = []
     if data_dir.exists():

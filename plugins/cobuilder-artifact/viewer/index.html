@@ -1628,12 +1628,12 @@ window.INDEX = window.INDEX || {};
       // (mountDiagrams), never interpolated into this HTML string. That's what makes
       // `<<interface>>`, `&`, and quotes inside real Mermaid syntax safe here.
       ? `<div class="diagram-viewport" data-diagram data-pr="${prNum}" data-level="${levelIdx}"><pre class="mermaid"></pre></div>`
-      : `<img src="../assets/pr-${prNum}/level-${levelIdx}.png" alt="${escapeHtml(alt)}" loading="lazy">`;
+      : `<img src="../assets/pr-${prNum}/level-${levelIdx}.webp" alt="${escapeHtml(alt)}" loading="lazy">`;
     return toggleHtml + bodyHtml;
   }
   function heroFrame(prNum, levelIdx, alt){
     if (levelIdx > 3) return '';
-    const rel = `pr-${prNum}/level-${levelIdx}.png`;
+    const rel = `pr-${prNum}/level-${levelIdx}.webp`;
     const hasImage = HERO_ASSETS.has(rel);
     const hasDiagram = !!diagramSource(prNum, levelIdx);
     if (!hasImage && !hasDiagram) return '';
@@ -1658,7 +1658,7 @@ window.INDEX = window.INDEX || {};
     const prNum = Number(frame.dataset.pr);
     const levelIdx = Number(frame.dataset.level);
     const alt = frame.dataset.alt;
-    const rel = `pr-${prNum}/level-${levelIdx}.png`;
+    const rel = `pr-${prNum}/level-${levelIdx}.webp`;
     const hasImage = HERO_ASSETS.has(rel);
     const hasDiagram = !!diagramSource(prNum, levelIdx);
     frame.innerHTML = heroFrameInner(prNum, levelIdx, alt, hasImage, hasDiagram);
@@ -3544,7 +3544,7 @@ window.INDEX = window.INDEX || {};
     const narrationEl = document.getElementById('audio-dialog-narration');
     unmountDiagrams(diagramEl); // drop any observer/zoom-pan from whatever this dialog last showed
 
-    const rel = state.level <= 3 ? `pr-${p.pr}/level-${state.level}.png` : null;
+    const rel = state.level <= 3 ? `pr-${p.pr}/level-${state.level}.webp` : null;
     const hasImage = !!(rel && HERO_ASSETS.has(rel));
     const hasDiagram = state.level <= 3 && !!diagramSource(p.pr, state.level);
     const showDiagram = state.artMode === 'diagram' && hasDiagram;

@@ -27,7 +27,7 @@ Artifact key names (stable, used in --json output):
                               (landscape, problem_solution, architecture, file_changes)
     adr.<id>                - each id in this entry's adrs[] exists in data/adrs.json
                               (missing data/adrs.json => every adr check is "missing")
-    asset.level-1/2/3       - PNG exists and is >1KB
+    asset.level-1/2/3       - WebP exists and is >1KB
     diagram.level-1/2/3     - data/diagrams/pr{N}-level{L}.mmd exists, is non-empty
                               after stripping whitespace and `%%` comment lines, and
                               its first meaningful line starts with the level's
@@ -324,10 +324,10 @@ def check_pr(bundle_dir: Path, story: dict | None, adrs: dict | None, pr_num: in
             results[f"adr.{adr_id}"] = "missing"
 
     for i in (1, 2, 3):
-        png_path = bundle_dir / "assets" / f"pr-{pr_num}" / f"level-{i}.png"
-        if not png_path.exists():
+        asset_path = bundle_dir / "assets" / f"pr-{pr_num}" / f"level-{i}.webp"
+        if not asset_path.exists():
             results[f"asset.level-{i}"] = "missing"
-        elif png_path.stat().st_size <= MIN_ASSET_BYTES:
+        elif asset_path.stat().st_size <= MIN_ASSET_BYTES:
             results[f"asset.level-{i}"] = "too-small"
         else:
             results[f"asset.level-{i}"] = "ok"
