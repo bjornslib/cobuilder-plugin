@@ -5,6 +5,7 @@ thresholds:
   investigate: 0.70
 max_attempts: 3
 epics:
-  - { id: "E1", name: "book-index-tiering", slices: [1] }
+  - { id: "E1", name: "book-index-tiering", slices: [1, 2] }
 slices:
-  - { id: 1, name: "book-index.md Tier 2 escalation (ADR-0021)", epic: "E1", weight: 1.0 }
+  - { id: 1, name: "book-index.md Tier 2 escalation (ADR-0021)", epic: "E1", weight: 0.5 }
+  - { id: 2, name: "security corpus applicability read (ADR-0021 addendum)", epic: "E1", weight: 0.5 }

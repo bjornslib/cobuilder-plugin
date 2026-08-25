@@ -12,7 +12,7 @@ state: decided
 groups: [book-corpus]
 approved_by: ""
 problem: "book-index.md escalates straight from the Tier 1 corpus heuristic to one full vendored book (300-1000 lines). Upstream ciembor/agent-rules-books has since published nano (~20-40 line) and mini (~80-150 line) tiers for the same 14 books, and books/README.md's manifest still only vendors full. Nothing in this plugin uses the smaller tiers."
-decision: "Vendor nano.md and mini.md alongside the existing full.md for each of the 14 books. book-index.md's escalation rule changes: after Tier 1 narrows the candidate set, load a minimum of three nano-tier excerpts, then escalate any one of those books to mini or full only when its principles are judged to matter for the task at hand. Full-tier loading is never unconditional. The existing 'one primary + one optional companion' cap is rewritten to state this new ceiling explicitly. This applies to Design mode's Stage 1 (Ground) and Stage 3 (Explore) grounding, and to Review/Maintenance mode's corpus-to-book escalation."
+decision: "Vendor nano.md and mini.md alongside the existing full.md for each of the 14 books. book-index.md's escalation rule changes: after Tier 1 narrows the candidate set, load a minimum of three nano-tier excerpts, then escalate any one of those books to mini or full only when its principles are judged to matter for the task at hand. Full-tier loading is never unconditional. The existing 'one primary + one optional companion' cap is rewritten to state this new ceiling explicitly. This applies to Design mode's Stage 1 (Ground) and Stage 3 (Explore) grounding, and to Review/Maintenance mode's corpus-to-book escalation. Addendum (2026-08-26): Review/Maintenance's mandatory 14-file security corpus load gets the same cheap-signal-before-expensive-read shape, but with the opposite default bias and no vendoring — read each security corpus file's first ~30 lines (id/name/tags/summary, already structurally separate from its worked examples) unconditionally for all 14, never skipping a category's summary, then read the rest in full unless the summary clearly shows the category has no applicable surface area in the codebase under review. Ambiguous cases default to reading the full file, not to skipping it."
 alternatives:
   - option: "Ship the engineer's original approach unmodified: load 3 nanos, then always load the full book, unconditionally"
     rejected_because: "Making the full-book read unconditional defeats the point of a cheap tier — nano/mini exist to let a session skip the expensive read, not precede it. It also leaves the existing 1-primary+1-companion cap silently violated with no stated replacement ceiling."
@@ -41,6 +41,7 @@ related_decisions:
 related_concerns: []
 history:
   - {state: decided, date: "2026-08-25", note: "Chosen on this branch; not approved until a human merges."}
+  - {state: decided, date: "2026-08-26", note: "Addendum: extended to Review/Maintenance's mandatory 14-file security corpus load, using a same-file partial-read gate instead of separate vendored tiers."}
 maps_to:
   district: skills
   unanchored: true
@@ -48,7 +49,9 @@ maps_to:
   - plugins/cobuilder-architect/skills/architecture/references/book-index.md
   - plugins/cobuilder-architect/skills/architecture/references/books
   - plugins/cobuilder-architect/skills/architecture/references/design-mode.md
-  rule: "A design or review-mode session must load a minimum of three nano-tier book excerpts before it may escalate any one book to mini or full tier. Full-tier loading is judgment-gated per book, never unconditional, and the total load per task is bounded by the ceiling this ADR states — not by the prior one-primary-plus-one-companion cap, which this ADR supersedes for book loading."
+  - plugins/cobuilder-architect/skills/architecture/SKILL.md
+  - plugins/cobuilder-architect/skills/architecture/references/corpus/principles/security
+  rule: "A design or review-mode session must load a minimum of three nano-tier book excerpts before it may escalate any one book to mini or full tier. Full-tier loading is judgment-gated per book, never unconditional, and the total load per task is bounded by the ceiling this ADR states — not by the prior one-primary-plus-one-companion cap, which this ADR supersedes for book loading. A review or maintenance session must read the first ~30 lines of all 14 security corpus files unconditionally, never skipping a category's summary, and may read a file's remainder in full only when the summary shows the category applies or the applicability is ambiguous — never when judgment alone says to skip."
 delivers:
   capability: "A design or review session can ground itself against three books' worth of signal for close to the token cost of one, and escalate to deeper tiers only for the book that actually turns out to matter."
   benefit: "The vendored nano/mini tiers upstream already publishes stop sitting unused, and the escalation ladder starts trading cost for depth instead of jumping straight to the most expensive read available."
@@ -140,9 +143,9 @@ book loading specifically.
 
 Applies to Design mode's Stage 1 (Ground) and Stage 3 (Explore) grounding,
 and to Review and Maintenance mode's existing corpus-to-book escalation
-path. Does not change Review/Maintenance's separate, mandatory 14-file
-security corpus load — that corpus is unconditional by a different rule
-and is untouched here.
+path. See the Addendum below for Review/Maintenance's separate, mandatory
+14-file security corpus load, which was originally out of scope for this
+ADR and was folded in on 2026-08-26.
 
 ## Consequences
 
@@ -173,9 +176,72 @@ and is untouched here.
   depth instead of jumping straight to the most expensive read available.
 - **Beneficiary:** developer, validator-agent.
 
+## Addendum (2026-08-26) — security corpus applicability read
+
+### Context
+
+Review and Maintenance mode load all 14 `references/corpus/principles/security/*.yaml`
+files unconditionally, in full, on every run — 2179 lines total, larger
+than a single vendored full book. Each file front-loads its checkable
+signal (`id`, `name`, `category`, `canonical_tags`, `sources`, `summary`)
+before its worked before/after code examples; across all 14 files, that
+metadata-plus-summary block ends between line 17 and line 24. The examples
+that follow account for most of each file's length.
+
+Judgment-gating whether to read a security category at all — the same
+mechanism this ADR gives books — was considered and rejected for security
+specifically. A missed vulnerability in a report that carries compliance
+weight (GDPR, SOC2, per this skill's own Impact Taxonomy) is a worse
+failure than a design session that under-read one book. Security is
+already the highest-weighted category in the scoring rubric (25%). The
+existing "load all 14, mandatory, no toggle" rule is correct in its
+"never silently skip a category" half. It has never been scrutinized on
+its "always read the full 150-180 lines regardless of relevance" half.
+
+### Decision
+
+Read the first ~30 lines of all 14 security corpus files unconditionally,
+every review or maintenance run — this covers the metadata-plus-summary
+block for every file with margin, and costs about 420 lines total instead
+of 2179. A category's summary is never skipped; this is what preserves the
+existing audit-completeness guarantee.
+
+For each file, read the remainder in full — the worked examples — unless
+the summary clearly shows the category has no applicable surface area in
+the codebase under review (for example, `file_upload_api_hardening.yaml`'s
+summary describes upload-endpoint risk, and the codebase has no upload
+endpoints). **Ambiguous cases default to reading the full file, not to
+skipping it.** This is the opposite default from book escalation on
+purpose: a book's cost of being wrong is worse engineering advice, and a
+security category's cost of being wrong is a missed finding in a
+compliance-weighted report.
+
+This is a same-file partial read, not a separate vendored tier. No new
+files are created, and `books/README.md`'s manifest is untouched — this
+addendum applies only to `references/corpus/principles/security/`, never
+to `references/books/`.
+
+### Consequences
+
+- **Positive:** Unconditional cost drops from 2179 lines to about 420 for
+  the categories that turn out not to apply, while every category's
+  summary is still read on every run, so the "never silently skip" audit
+  guarantee is unchanged.
+- **Constraint introduced:** A review or maintenance session must read the
+  first ~30 lines of all 14 security corpus files before it may skip any
+  one file's remainder. Skipping a file's remainder requires the summary
+  to clearly rule out applicability. Ambiguity defaults to reading in
+  full.
+- **Negative / accepted:** Like the book-escalation rule above, this gate
+  has no mechanical enforcement — nothing stops a session from reading all
+  14 in full regardless (safe, if wasteful) or, worse, judging a category
+  inapplicable when it was actually ambiguous (the failure mode the
+  default-to-full bias exists to make less likely, not impossible).
+
 ## Maps to
 
 District `skills` (unanchored — no formal bounded context exists for this
 area yet). Modules `plugins/cobuilder-architect/skills/architecture/references/book-index.md`,
-`.../references/books`, `.../references/design-mode.md`. See this ADR's
-`maps_to.rule` for the invariant.
+`.../references/books`, `.../references/design-mode.md`,
+`.../SKILL.md`, `.../references/corpus/principles/security`. See this
+ADR's `maps_to.rule` for both invariants.

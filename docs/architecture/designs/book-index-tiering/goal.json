@@ -4,15 +4,16 @@
   "adr": "ADR-0021",
   "adrs": ["ADR-0021"],
   "created": "2026-08-25",
-  "outcome": "book-index.md offers nano, mini, and full tiers for all 14 vendored books, and its escalation rule requires a minimum of three nano loads before any book may be judgment-escalated to mini or full.",
+  "outcome": "book-index.md offers nano, mini, and full tiers for all 14 vendored books, with a 3-nano-minimum judgment-gated escalation rule; Review/Maintenance's mandatory 14-file security corpus load gets the same cheap-signal-before-expensive-read shape, opposite default bias, no vendoring.",
   "done_when": [
     "books/README.md's manifest lists nano.md, mini.md, and full.md for each of the 14 books",
     "book-index.md states the 3-nano-minimum, judgment-gated escalation rule, replacing the prior 1-primary-plus-1-companion cap for book loading",
-    "design-mode.md's Stage 1/3 grounding section and the architecture skill's Review/Maintenance corpus-to-book escalation both reference the new rule"
+    "design-mode.md's Stage 1/3 grounding section and the architecture skill's Review/Maintenance corpus-to-book escalation both reference the new rule",
+    "SKILL.md's Review mode security corpus step reads the first ~30 lines of all 14 security files unconditionally, then reads a file's remainder in full unless its summary clearly rules out applicability, defaulting to full on ambiguity"
   ],
   "abort_if": [],
   "min_work": {
-    "derived_from": "1 district (skills), 2 colliding ADRs (ADR-0015, ADR-0017), 1 boundary rule (book-index.md's own prior 1+1 cap)",
+    "derived_from": "1 district (skills), 2 colliding ADRs (ADR-0015, ADR-0017), 2 boundary rules (book-index.md's prior 1+1 cap, Review mode's mandatory-14-file security rule)",
     "alternatives_explored": 7,
     "boundary_rules_checked": true,
     "challenge_stage_run": true
@@ -22,7 +23,7 @@
     {
       "id": "E1",
       "slug": "book-index-tiering",
-      "outcome": "book-index.md, books/README.md, and design-mode.md all reflect the 3-nano-minimum, judgment-gated nano/mini/full escalation rule from ADR-0021",
+      "outcome": "book-index.md, books/README.md, design-mode.md, and SKILL.md's Review mode security corpus step all reflect ADR-0021's two escalation rules (book tiering, and the security corpus applicability read)",
       "branch": "design/book-index-tiering",
       "pr": null,
       "state": "planned"
@@ -31,6 +32,7 @@
   "stage": "review",
   "supersedes": null,
   "rounds": [
-    { "n": 1, "changed": false, "feedback_class": "approved" }
+    { "n": 1, "changed": false, "feedback_class": "approved" },
+    { "n": 2, "changed": true, "feedback_class": "material", "note": "Folded in the security corpus applicability read after a live discussion of whether the mandatory 14-file security load deserved the same scrutiny as book loading; resolved with an opposite default bias (full-on-ambiguity, not skip-on-ambiguity)." }
   ]
 }
