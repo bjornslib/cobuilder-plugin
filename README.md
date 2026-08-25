@@ -35,6 +35,12 @@ generate mode, `cobuilder-artifact` to view or publish a bundle, and
 /plugin install cobuilder-full-lifecycle@cobuilder-architect
 ```
 
+`cobuilder-architect` and `cobuilder-pr` both hand off to
+`cobuilder-artifact`'s view and publish modes, so each declares
+`cobuilder-artifact` as a dependency. Installing either one also installs
+`cobuilder-artifact`. Nothing here adds an agent, a hook, or an MCP server.
+The install surface stays `/plugin install` alone.
+
 GitHub redirects a renamed repository, so an existing
 `/plugin marketplace add bjornslib/prodyssey` install should keep resolving.
 
@@ -383,7 +389,8 @@ plugins/
   cobuilder-artifact/     serve the bundle locally, publish a level as an Artifact
     commands/             view.md, publish.md
     skills/artifact/
-    scripts/              export_artifact.py, export_index.py, record_publish.py, serve_bundle.py
+    scripts/              export_artifact.py, export_index.py, record_publish.py, serve_bundle.py,
+                           build_builds_view.py
     viewer/index.html     the portable bundle viewer, one file
   cobuilder-implement/    build a design's epics, one vertical slice at a time
     commands/             implement.md
@@ -392,6 +399,11 @@ plugins/
   cobuilder-full-lifecycle/   umbrella plugin, depends on the other four
     skills/orientation/
 ```
+
+`cobuilder-architect` and `cobuilder-pr` each declare `cobuilder-artifact`
+as a `dependencies` entry in their manifest, because each hands off to
+`cobuilder-artifact`'s view or publish mode. Installing either plugin
+installs `cobuilder-artifact` with it.
 
 Key manifest fields, one per plugin (`plugins/<name>/.claude-plugin/plugin.json`):
 

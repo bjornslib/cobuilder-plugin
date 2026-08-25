@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
 """Refresh the embedded payload of .cobuilder-architect/self/pages/builds-view.html from docs/plans.
 
 The page carries the plan markdown as text and renders it in the browser, so
 there is one file per document on disk and no hand-authored HTML twin. This
-script rewrites only the three generated lines: the window.BUILD payload, the
-gate-to-document map, and the document titles. Everything else in the page is
-authored by hand and is left alone.
+script rewrites only the generated lines between the `<!-- BEGIN GENERATED -->`
+and `<!-- END GENERATED -->` markers. A line outside the markers is never
+inspected and never changed. Everything else in the page is authored by hand
+and is left alone.
 
-Usage: uv run scripts/build_builds_view.py [--plan docs/plans/cobuilder-family]
+Usage: uv run plugins/cobuilder-artifact/scripts/build_builds_view.py [--plan docs/plans/cobuilder-family]
 """
 from __future__ import annotations
 
@@ -19,6 +24,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "shared"))
 import slice_table  # noqa: E402
+
+# This script sits at <repo_root>/plugins/cobuilder-artifact/scripts/, so the
+# repo root is three parents up. The defaults below resolve against it, so
+# the script works from any working directory.
+REPO_ROOT = Path(__file__).resolve().parents[3]
 
 RUBRIC_COUNT = 14
 
@@ -56,6 +66,42 @@ ASK_NOTES = {
 }
 
 GATE_LINE = re.compile(r"- Gate (\d) — ([^:]+): (.+)")
+
+BEGIN_MARKER = "<!-- BEGIN GENERATED -->"
+END_MARKER = "<!-- END GENERATED -->"
+
+
+def find_fence(page: Path, lines: list[str]) -> tuple[int, int]:
+    """The line indexes of the BEGIN and END markers, exclusive of both.
+
+    A missing marker, a duplicated marker, or an END that appears before or
+    at BEGIN is an error. The fence must be unambiguous, because it is the
+    only thing that stops a hand-authored line from being overwritten by
+    accident.
+    """
+    begins = [i for i, line in enumerate(lines) if line.strip() == BEGIN_MARKER]
+    ends = [i for i, line in enumerate(lines) if line.strip() == END_MARKER]
+
+    def fail(reason: str) -> None:
+        print(
+            f"error: {page} {reason}.\n"
+            f"remediation: add exactly one `{BEGIN_MARKER}` line before the "
+            f"generated block and exactly one `{END_MARKER}` line after it.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    if len(begins) == 0:
+        fail("has no `<!-- BEGIN GENERATED -->` marker")
+    if len(begins) > 1:
+        fail("has more than one `<!-- BEGIN GENERATED -->` marker")
+    if len(ends) == 0:
+        fail("has no `<!-- END GENERATED -->` marker")
+    if len(ends) > 1:
+        fail("has more than one `<!-- END GENERATED -->` marker")
+    if ends[0] <= begins[0]:
+        fail("has `<!-- END GENERATED -->` before or at `<!-- BEGIN GENERATED -->`")
+    return begins[0], ends[0]
 
 
 def read_epics(designs_dir: Path, slices_md: str) -> list[dict]:
@@ -149,7 +195,9 @@ def render(page: Path, plan_dir: Path, designs_dir: Path, rubrics_dir: Path) -> 
     blob = json.dumps(payload).replace("</", r"<\/")
 
     lines = page.read_text().split("\n")
-    for i, line in enumerate(lines):
+    begin, end = find_fence(page, lines)
+    for i in range(begin + 1, end):
+        line = lines[i]
         if line.startswith("<script>window.BUILD="):
             lines[i] = f"<script>window.BUILD={blob};</script>"
         elif line.startswith("var GATEDOC="):
@@ -177,10 +225,10 @@ def render(page: Path, plan_dir: Path, designs_dir: Path, rubrics_dir: Path) -> 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--plan", default="docs/plans/cobuilder-family")
-    ap.add_argument("--page", default=".cobuilder-architect/self/pages/builds-view.html")
-    ap.add_argument("--designs", default="docs/architecture/designs")
-    ap.add_argument("--rubrics", default=".cobuilder/rubrics/cobuilder-family")
+    ap.add_argument("--plan", default=str(REPO_ROOT / "docs" / "plans" / "cobuilder-family"))
+    ap.add_argument("--page", default=str(REPO_ROOT / ".cobuilder-architect" / "self" / "pages" / "builds-view.html"))
+    ap.add_argument("--designs", default=str(REPO_ROOT / "docs" / "architecture" / "designs"))
+    ap.add_argument("--rubrics", default=str(REPO_ROOT / ".cobuilder" / "rubrics" / "cobuilder-family"))
     a = ap.parse_args()
     render(Path(a.page), Path(a.plan), Path(a.designs), Path(a.rubrics))
 
