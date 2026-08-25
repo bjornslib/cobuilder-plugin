@@ -1,0 +1,395 @@
+id: stream-processing-001
+name: Stream Processing
+category: data_systems
+canonical_tags: ['data-systems', 'streaming', 'resilience']
+sources:
+  - books/designing-data-intensive-applications.md
+summary: >
+  Stream processing treats unbounded event streams as first-class data, not
+  as a transient transport layer. Logs and streams are durable histories —
+  consumers replay, reprocess, and rebuild from them. Every stream processor
+  must be designed for replay safety: state must be rebuildable from the
+  source event log, processing must be idempotent under retries, and
+  checkpoints must be durable for fast recovery. Derived projections
+  (materialized views, aggregates, caches) must be discardable and
+  rebuildable — they are not sources of truth. Choose between stateless
+  operators (filter, map, enrich) and stateful operators (windowed
+  aggregation, joins, sessionization) based on the computation shape.
+  Monitor lag, consumer health, checkpoint size, and replay time to ensure
+  operational integrity.
+examples:
+  - language: python
+    bad: |
+      import json
+      from typing import Any
+
+
+      class FragileStreamProcessor:
+          """Non-idempotent, non-rebuildable — one failure and state is corrupted."""
+
+          def __init__(self) -> None:
+              self._total_spent: dict[str, float] = {}  # In-memory only, not durable
+              self._alerted_users: set[str] = set()
+
+          def process(self, event: dict) -> None:
+              user_id = event["user_id"]
+              amount = event["amount"]
+
+              # Non-idempotent: duplicate event doubles the total
+              self._total_spent[user_id] = self._total_spent.get(user_id, 0) + amount
+
+              # Side effect emitted with no guard
+              if self._total_spent[user_id] > 10_000 and user_id not in self._alerted_users:
+                  self._send_alert(user_id)
+                  self._alerted_users.add(user_id)
+
+              # State stored nowhere — crash = total loss, no rebuild path
+    good: |
+      from __future__ import annotations
+
+      import json
+      from dataclasses import dataclass, field
+      from typing import Any, Callable, Iterable
+
+
+      @dataclass
+      class StreamProcessorConfig:
+          app_id: str
+          checkpoint_interval_seconds: int = 30
+          max_replay_seconds: int = 600
+
+
+      @dataclass
+      class Checkpoint:
+          """Durable state snapshot — restart from here, not from zero."""
+
+          checkpoint_id: str
+          offset: int
+          state: dict[str, Any]
+          timestamp: float
+
+
+      class IdempotentStreamProcessor:
+          """Every operation survives replay and crashes."""
+
+          def __init__(
+              self,
+              config: StreamProcessorConfig,
+              state_store: Any,     # RocksDB or similar durable store
+              checkpoint_store: Any,
+              event_log: Any,
+          ) -> None:
+              self._config = config
+              self._state = state_store
+              self._checkpoints = checkpoint_store
+              self._event_log = event_log
+              self._seen_ids: set[str] = set()  # Deduplication
+
+          def process(self, event: dict) -> None:
+              event_id = event["event_id"]
+
+              # Deduplicate: skip if already processed
+              if event_id in self._seen_ids:
+                  return
+              self._seen_ids.add(event_id)
+
+              user_id = event["user_id"]
+              amount = event["amount"]
+
+              # Idempotent write: state store keyed by user_id + event_id
+              key = f"spent:{user_id}"
+              current = self._state.get(key, 0.0)
+
+              # Conditional side effect: only emit alert once
+              if current <= 10_000 and current + amount > 10_000:
+                  alert_key = f"alerted:{user_id}"
+                  if not self._state.get(alert_key):
+                      self._send_alert(user_id)
+                      self._state.put(alert_key, True)
+
+              self._state.put(key, current + amount)
+
+          def checkpoint(self, current_offset: int) -> None:
+              """Durable checkpoint — recovery restores from here."""
+              state_snapshot = {
+                  k: self._state.get(k)
+                  for k in self._state.keys()  # All keys, or differential
+              }
+              checkpoint = Checkpoint(
+                  checkpoint_id=f"ckpt-{current_offset}",
+                  offset=current_offset,
+                  state=state_snapshot,
+                  timestamp=__import__("time").time(),
+              )
+              self._checkpoints.save(checkpoint.checkpoint_id, checkpoint)
+
+          def restore_from_checkpoint(self) -> int:
+              """Restore state and return offset to resume from."""
+              latest = self._checkpoints.latest()
+              if latest is None:
+                  return 0  # Start from beginning
+              for key, value in latest.state.items():
+                  self._state.put(key, value)
+              return latest.offset
+
+          def rebuild_from_source(self, start_offset: int = 0) -> None:
+              """Full rebuild: replay events from the source of truth."""
+              self._state.clear()
+              self._seen_ids.clear()
+              for event in self._event_log.iterate(start_offset):
+                  self.process(event)
+
+
+      class RebuildableProjection:
+          """Materialized view that can be discarded and rebuilt from the log."""
+
+          def __init__(self, event_log: Any, projection_store: Any) -> None:
+              self._event_log = event_log
+              self._store = projection_store
+
+          def apply(self, event: dict) -> None:
+              """Apply event to projection — idempotent key-value update."""
+              user_id = event["user_id"]
+              # User profile projection: last event wins for each field
+              key = f"user_profile:{user_id}"
+              existing = json.loads(self._store.get(key) or "{}")
+              for field in ("display_name", "email", "role"):
+                  if field in event:
+                      existing[field] = event[field]
+              self._store.put(key, json.dumps(existing))
+
+          def rebuild(self) -> None:
+              """Discard and rebuild from scratch — test this weekly."""
+              start = __import__("time").time()
+              self._store.clear()
+              count = 0
+              for event in self._event_log.iterate():
+                  self.apply(event)
+                  count += 1
+              elapsed = __import__("time").time() - start
+              if elapsed > 300:  # SLA: rebuild in under 5 minutes
+                  raise RuntimeError(f"Rebuild took {elapsed:.1f}s — exceeds SLA")
+
+          def query(self, user_id: str) -> dict:
+              raw = self._store.get(f"user_profile:{user_id}")
+              return json.loads(raw) if raw else {}
+
+
+      class WindowingProcessor:
+          """Tumbling and sliding windows with late-event handling."""
+
+          WATERMARK_DELAY = 10  # seconds
+
+          def __init__(self) -> None:
+              self._windows: dict[str, list[dict]] = {}  # window_key → events
+
+          def process(self, event: dict, watermark: float) -> list[dict] | None:
+              """Add event to window; emit results for closed windows."""
+              event_time = event["timestamp"]
+              window_start = event_time - (event_time % 60)  # 1-minute tumbling window
+              window_key = str(window_start)
+
+              self._windows.setdefault(window_key, []).append(event)
+
+              # Emit windows that are closed (watermark has passed)
+              results: list[dict] = []
+              closed = [
+                  k for k, w_events in self._windows.items()
+                  if float(k) + 60 < watermark
+              ]
+              for key in closed:
+                  events = self._windows.pop(key)
+                  results.append({
+                      "window_start": float(key),
+                      "window_end": float(key) + 60,
+                      "event_count": len(events),
+                      "total_amount": sum(e.get("amount", 0) for e in events),
+                  })
+              return results if results else None
+  - language: typescript
+    bad: |
+      // Non-idempotent, in-memory-only stream processor
+      class FragileProcessor {
+        private totalSpent = new Map<string, number>(); // in-memory, lost on crash
+        private alertedUsers = new Set<string>();
+
+        process(event: { userId: string; amount: number }): void {
+          const current = this.totalSpent.get(event.userId) ?? 0;
+          // Duplicate events corrupt the total
+          this.totalSpent.set(event.userId, current + event.amount);
+
+          // Side effect with no idempotency guard
+          if ((current + event.amount) > 10_000 && !this.alertedUsers.has(event.userId)) {
+            this.sendAlert(event.userId);
+            this.alertedUsers.add(event.userId);
+          }
+        }
+        // No checkpoint, no rebuild path, no deduplication
+      }
+    good: |
+      interface StreamProcessorConfig {
+        appId: string;
+        checkpointIntervalSeconds: number;
+        maxReplaySeconds: number;
+      }
+
+      interface Checkpoint {
+        checkpointId: string;
+        offset: number;
+        state: Record<string, unknown>;
+        timestamp: number;
+      }
+
+      interface StateStore {
+        get(key: string): Promise<unknown | null>;
+        put(key: string, value: unknown): Promise<void>;
+        clear(): Promise<void>;
+        keys(): AsyncIterable<string>;
+      }
+
+      // -- Idempotent processor with durable state and deduplication --
+      class IdempotentStreamProcessor {
+        private seenIds = new Set<string>();
+
+        constructor(
+          private config: StreamProcessorConfig,
+          private state: StateStore,
+          private checkpoints: CheckpointStore,
+          private eventLog: EventLog,
+        ) {}
+
+        async process(event: { eventId: string; userId: string; amount: number }): Promise<void> {
+          // Deduplicate
+          if (this.seenIds.has(event.eventId)) return;
+          this.seenIds.add(event.eventId);
+
+          const { userId, amount } = event;
+          const key = `spent:${userId}`;
+          const current = (await this.state.get(key)) as number ?? 0;
+
+          // Conditional side effect: emit alert exactly once
+          if (current <= 10_000 && current + amount > 10_000) {
+            const alertKey = `alerted:${userId}`;
+            const alreadyAlerted = await this.state.get(alertKey);
+            if (!alreadyAlerted) {
+              await this.sendAlert(userId);
+              await this.state.put(alertKey, true);
+            }
+          }
+
+          await this.state.put(key, current + amount);
+        }
+
+        async checkpoint(offset: number): Promise<void> {
+          const snapshot: Record<string, unknown> = {};
+          for await (const key of this.state.keys()) {
+            snapshot[key] = await this.state.get(key);
+          }
+          await this.checkpoints.save({
+            checkpointId: `ckpt-${offset}`,
+            offset,
+            state: snapshot,
+            timestamp: Date.now(),
+          });
+        }
+
+        async restoreFromCheckpoint(): Promise<number> {
+          const latest = await this.checkpoints.latest();
+          if (!latest) return 0;
+          for (const [key, value] of Object.entries(latest.state)) {
+            await this.state.put(key, value);
+          }
+          return latest.offset;
+        }
+
+        async rebuildFromSource(): Promise<void> {
+          await this.state.clear();
+          this.seenIds.clear();
+          for await (const event of this.eventLog.iterate()) {
+            await this.process(event);
+          }
+        }
+      }
+
+      // -- Rebuildable projection: discard and reconstruct from log --
+      class RebuildableProjection {
+        constructor(
+          private eventLog: EventLog,
+          private store: StateStore,
+        ) {}
+
+        async apply(event: Record<string, unknown>): Promise<void> {
+          const userId = event.userId as string;
+          const key = `user_profile:${userId}`;
+          const raw = await this.store.get(key);
+          const existing = raw ? JSON.parse(raw as string) : {};
+          for (const field of ["displayName", "email", "role"]) {
+            if (field in event) existing[field] = event[field];
+          }
+          await this.store.put(key, JSON.stringify(existing));
+        }
+
+        async rebuild(): Promise<void> {
+          const start = Date.now();
+          await this.store.clear();
+          let count = 0;
+          for await (const event of this.eventLog.iterate()) {
+            await this.apply(event);
+            count++;
+          }
+          const elapsed = (Date.now() - start) / 1000;
+          if (elapsed > 300) {
+            throw new Error(`Rebuild took ${elapsed}s — exceeds SLA`);
+          }
+        }
+
+        async query(userId: string): Promise<Record<string, unknown>> {
+          const raw = await this.store.get(`user_profile:${userId}`);
+          return raw ? JSON.parse(raw as string) : {};
+        }
+      }
+
+      // -- Windowed aggregation with watermark for late events --
+      class WindowingProcessor {
+        private windows = new Map<string, Array<{ timestamp: number; amount: number }>>();
+        static readonly WATERMARK_DELAY_MS = 10_000;
+
+        process(
+          event: { timestamp: number; amount: number },
+          watermark: number,
+        ): Array<{ windowStart: number; windowEnd: number; count: number; total: number }> | null {
+          // Tumbling 60-second window
+          const windowStart = event.timestamp - (event.timestamp % 60_000);
+          const windowKey = String(windowStart);
+
+          if (!this.windows.has(windowKey)) this.windows.set(windowKey, []);
+          this.windows.get(windowKey)!.push(event);
+
+          // Emit closed windows
+          const results: Array<{ windowStart: number; windowEnd: number; count: number; total: number }> = [];
+          for (const [key, events] of this.windows) {
+            const start = Number(key);
+            if (start + 60_000 < watermark) {
+              results.push({
+                windowStart: start,
+                windowEnd: start + 60_000,
+                count: events.length,
+                total: events.reduce((sum, e) => sum + e.amount, 0),
+              });
+              this.windows.delete(key);
+            }
+          }
+          return results.length > 0 ? results : null;
+        }
+      }
+heuristics:
+  - Logs and streams are durable histories — not just transport pipes. Design consumers to replay and rebuild from them.
+  - Idempotency is mandatory: every stream processor must tolerate duplicate delivery. Use deduplication keys or naturally idempotent operations.
+  - Checkpoint state durably at regular intervals. Recovery restores from checkpoint, not from zero.
+  - Every derived projection must be rebuildable from the source log. Test full rebuild weekly — if it doesn't complete within SLA, fix it.
+  - Monitor consumer lag, checkpoint size, and replay time. A projection that cannot be rebuilt is a ticking time bomb.
+  - Stateful operators (aggregations, joins, windowing) require durable state stores (RocksDB, persistent volumes) — never rely on in-memory state alone.
+  - Watermarks handle late events in windowed computations: define a watermark delay, emit results when the watermark passes the window boundary.
+  - Distinguish commands (requests), events (facts), and materialized views (derived state) clearly in the data model.
+  - Event retention must exceed the maximum window or replay requirement — if Kafka retains 24 hours but a consumer needs 30 hours to rebuild, archive to long-term storage.
+related_tags: [stream-processing, idempotency, checkpoint, materialized-view, rebuild, consumer-lag, watermark, event-sourcing, data-systems, ddia]

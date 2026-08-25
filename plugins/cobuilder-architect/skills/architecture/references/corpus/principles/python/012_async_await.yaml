@@ -1,0 +1,230 @@
+id: async-await-012
+name: Async/Await Concurrency Patterns
+category: design
+canonical_tags: ['python', 'concurrency', 'async']
+sources:
+  - books/clean-code.md
+  - books/the-pragmatic-programmer.md
+  - books/release-it.md
+summary: >-
+  Async/await in Python enables cooperative concurrency — a single-threaded event loop interleaves I/O-bound
+  tasks without OS threads. Use `async def`/`await` for network requests, database queries, and file I/O
+  where waiting dominates CPU time. Run CPU-bound work in a thread pool (`asyncio.to_thread` or
+  `loop.run_in_executor`) to avoid blocking the event loop. Gather concurrent tasks with `asyncio.gather`
+  for fire-and-collect, `asyncio.TaskGroup` (3.11+) for structured concurrency with guaranteed cleanup,
+  and `asyncio.create_task` for fire-and-forget. Async context managers (`async with`, `__aenter__`/`__aexit__`)
+  manage async resource lifecycles — connection pools, client sessions, lock acquisition — and ensure cleanup
+  even on cancellation. Use `asyncio.Semaphore` to bound concurrent operations (rate limiting, connection
+  pooling). Never call a blocking function inside an async coroutine — one `time.sleep(10)` stalls every
+  other task. The mental model: `async def` declares a coroutine; `await` is a checkpoint where the event loop
+  may switch to another task — between awaits, your coroutine runs uninterrupted. Async is for I/O-bound
+  throughput, not CPU speed — add it only when you have many waiting operations.
+examples:
+  - language: python
+    bad: |
+      """Blocking calls inside async coroutines — the event loop
+      stalls, all concurrency is lost, and latencies compound.
+      Also: mixing sync and async haphazardly, manual resource
+      cleanup instead of async context managers, no concurrency
+      bounding, and sequential awaits instead of structured
+      concurrency."""
+
+      import asyncio
+      import time
+      import requests  # Synchronous HTTP — blocks the event loop.
+
+      async def fetch_prices_bad(symbols):
+          """Fetches sequentially because `requests.get` blocks."""
+          results = {}
+          for sym in symbols:
+              # BLOCKING: the entire async program freezes here.
+              resp = requests.get(f"https://api.example.com/price/{sym}")
+              results[sym] = resp.json()["price"]
+          return results
+
+      async def slow_calculation():
+          """time.sleep blocks the event loop — NOT asyncio.sleep."""
+          time.sleep(5)  # Freezes ALL coroutines for 5 seconds.
+          return 42
+
+      async def fire_and_forget_unsafe():
+          """create_task without keeping a reference — the task
+          may be garbage-collected before it finishes."""
+          asyncio.create_task(do_work())  # Lost reference.
+          return "done"  # do_work() may never complete.
+
+      async def parallel_without_gather():
+          """Sequential awaits instead of gather — no concurrency."""
+          prices = await fetch_price("AAPL")
+          weather = await fetch_weather()  # Waits for AAPL first!
+          return prices, weather
+
+      # MANUAL resource cleanup — no async context manager.
+      async def bad_db_query(conn_string, sql):
+          conn = await asyncpg.connect(conn_string)
+          try:
+              return await conn.fetch(sql)
+          finally:
+              await conn.close()  # Verbose, forgettable.
+
+      # UNBOUNDED concurrency — fire 1000 requests at once.
+      async def fetch_all_no_limit(urls):
+          """No semaphore — may overwhelm the server or your
+          own network/sockets."""
+          async with httpx.AsyncClient() as client:
+              coros = [client.get(u) for u in urls]
+              return await asyncio.gather(*coros)  # All 1000 at once.
+
+      # No structured concurrency — exceptions in one task
+      # don't cancel siblings, leading to orphaned work.
+      async def unstructured_workers():
+          tasks = [asyncio.create_task(work(i)) for i in range(10)]
+          # If work(3) raises, tasks[0..2,4..9] keep running silently.
+    good: |
+      """Async/await done right: non-blocking I/O, true concurrency
+      via gather and TaskGroup, thread pools for CPU work, async
+      context managers for resource lifecycle, semaphores for
+      bounded concurrency, and proper task lifecycle."""
+
+      import asyncio
+      import httpx  # Async HTTP client.
+      from contextlib import asynccontextmanager
+
+      # ---- Concurrent fetches with gather ----
+      async def fetch_price(client: httpx.AsyncClient, symbol: str) -> float:
+          resp = await client.get(f"https://api.example.com/price/{symbol}")
+          resp.raise_for_status()
+          return resp.json()["price"]
+
+      async def fetch_prices(symbols: list[str]) -> dict[str, float]:
+          """All symbols fetched concurrently via gather."""
+          async with httpx.AsyncClient() as client:
+              coros = [fetch_price(client, sym) for sym in symbols]
+              results = await asyncio.gather(*coros)
+              return dict(zip(symbols, results))
+
+      # ---- Offload CPU-bound work to thread pool ----
+      def compute_heavy(n: int) -> int:
+          """Synchronous, CPU-bound — safe to run in thread pool."""
+          return sum(i * i for i in range(n))
+
+      async def cpu_task():
+          """asyncio.to_thread keeps the event loop free."""
+          result = await asyncio.to_thread(compute_heavy, 10_000_000)
+          return result
+
+      # ---- Fire-and-forget with proper lifecycle ----
+      background_tasks: set[asyncio.Task] = set()
+
+      async def spawn_background(work_id: str):
+          task = asyncio.create_task(do_work(work_id))
+          background_tasks.add(task)
+          task.add_done_callback(background_tasks.discard)
+
+      # ---- True parallel awaits with gather ----
+      async def parallel():
+          prices, weather = await asyncio.gather(
+              fetch_price(httpx.AsyncClient(), "AAPL"),
+              fetch_weather(),
+          )
+          return prices, weather
+
+      # ---- Timeout pattern ----
+      async def with_timeout(coro, seconds: float = 10.0):
+          try:
+              return await asyncio.wait_for(coro, timeout=seconds)
+          except asyncio.TimeoutError:
+              logger.warning("Operation timed out after %.1fs", seconds)
+              return None
+
+      # ---- Async context manager for connection pools ----
+      class AsyncConnectionPool:
+          """Async context manager: __aenter__ acquires resources,
+          __aexit__ releases them — even on cancellation."""
+
+          def __init__(self, dsn: str, min_size: int = 2, max_size: int = 10):
+              self.dsn = dsn
+              self.min_size = min_size
+              self.max_size = max_size
+              self._pool = None
+
+          async def __aenter__(self):
+              """Acquire async resources on entry."""
+              self._pool = await asyncpg.create_pool(
+                  self.dsn, min_size=self.min_size, max_size=self.max_size
+              )
+              return self._pool
+
+          async def __aexit__(self, exc_type, exc_val, exc_tb):
+              """Release async resources on exit — always called."""
+              if self._pool:
+                  await self._pool.close()
+
+      async def query_with_pool(dsn: str, sql: str):
+          """Pool lifecycle managed by async context manager."""
+          async with AsyncConnectionPool(dsn) as pool:
+              async with pool.acquire() as conn:
+                  return await conn.fetch(sql)
+          # Pool is closed here, even if fetch raised.
+
+      # ---- Async generator + yield patterns ----
+      async def list_s3_objects(bucket: str, prefix: str):
+          """Async generator: yields results as they arrive,
+          client-side memory stays O(1)."""
+          async with aioboto3.client("s3") as client:
+              paginator = client.get_paginator("list_objects_v2")
+              async for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+                  for obj in page.get("Contents", []):
+                      yield obj["Key"]
+
+      # ---- Semaphore bounded concurrency (rate limiting) ----
+      async def fetch_all_bounded(urls: list[str], max_concurrent: int = 10):
+          """Semaphore caps concurrent requests — protects both
+          client and server from connection storms."""
+          sem = asyncio.Semaphore(max_concurrent)
+
+          async def fetch_one(client, url):
+              async with sem:  # Acquire a slot; wait if at capacity.
+                  resp = await client.get(url)
+                  return resp.status_code
+
+          async with httpx.AsyncClient() as client:
+              coros = [fetch_one(client, u) for u in urls]
+              return await asyncio.gather(*coros)
+
+      # ---- Structured concurrency with TaskGroup (3.11+) ----
+      async def task_group_example(urls: list[str]):
+          """TaskGroup: if any task fails, all siblings are cancelled
+          and the exception propagates. No orphaned tasks."""
+          results: dict[str, str] = {}
+
+          async with httpx.AsyncClient() as client:
+              async with asyncio.TaskGroup() as tg:
+                  for url in urls:
+                      tg.create_task(fetch_and_store(client, url, results))
+          # All tasks done or all cancelled — results is complete.
+          return results
+
+      async def fetch_and_store(client, url, results):
+          resp = await client.get(url)
+          results[url] = resp.text[:100]
+
+      # ---- @asynccontextmanager for simple async resources ----
+      @asynccontextmanager
+      async def async_db_transaction(conn):
+          """Async generator-based context manager for transactions."""
+          async with conn.transaction():
+              try:
+                  yield conn
+              except Exception:
+                  await conn.execute("ROLLBACK")
+                  raise
+          # Auto-commits on clean exit.
+
+      async def transfer_funds(conn, from_acct, to_acct, amount):
+          async with async_db_transaction(conn) as txn:
+              await txn.execute("UPDATE accounts SET bal = bal - $1 WHERE id = $2",
+                                amount, from_acct)
+              await txn.execute("UPDATE accounts SET bal = bal + $1 WHERE id = $2",
+                                amount, to_acct)
+          # Committed atomically — or rolled back.

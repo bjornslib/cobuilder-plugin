@@ -1,0 +1,66 @@
+{
+  "landscape": {
+    "tagline": "One install surface, four jobs.",
+    "narration": "The plugin grew until one install carried the whole architecture lifecycle: design a change, build it, submit and narrate the pull request, render the result. Four jobs, one manifest. The first sign was not a bug. It was a vocabulary table appearing in CLAUDE.md to stop the same short words meaning two things, because review meant one thing in the architecture skill and another in the odyssey skill. This design splits the install surface along the seam the words were already drawing."
+  },
+  "problem_solution": {
+    "problem": "One plugin holds four bounded contexts. A user who wants pull-request narration installs the review corpus, the viewer, and the paid-art pipeline as well. The names collide because nothing in the packaging keeps the contexts apart, so the prose has to.",
+    "solution": "Five sibling plugins in one marketplace repository, integrating only through the bundle directory on disk. No plugin reads or imports another plugin's files, though a plugin may hand off to another plugin's mode by name. The bundle becomes a Published Language: its shape is documented and versioned, and it belongs to no plugin that writes into it.",
+    "narration": "The split is easy to state and the cost is easy to miss. Today one plugin writes the bundle, so the bundle cannot disagree with itself. Four plugins can be four different versions on one machine, and each carries its own vendored copy of the code that decides what a bundle is allowed to contain. That copy is the whole risk, because the bundle holds authored prose, paid images, and paid audio that no rerun can replace.",
+    "beats": [
+      {
+        "kind": "background",
+        "text": "A cached plugin cannot read outside its own directory. CLAUDE_PLUGIN_ROOT resolves to one plugin's own cache and nothing above it. The dependencies field guarantees co-installation, not file access. So shared code must be copied, not referenced."
+      },
+      {
+        "kind": "discovery",
+        "text": "The refusal posture already exists. migrate_bundle.py exits with status 1 on a bundle_format or schema_version newer than it knows, and names the remediation. What was missing was not the idea of refusing."
+      },
+      {
+        "kind": "discovery",
+        "text": "Three writers bypass it entirely. extract_story.py overwrites meta.schema_version with its own compiled constant, and export_artifact.py and _manifest.py stamp the same constant. None of them reads bundle.json first. Today that is safe only because the skill prose runs migrate first."
+      },
+      {
+        "kind": "turn",
+        "text": "Prose in one plugin's SKILL.md cannot bind another plugin. Across a plugin boundary the invariant has to be code, so the gate moves into require_compatible() in the module every plugin vendors."
+      },
+      {
+        "kind": "turn",
+        "text": "The bundle carries the floor, not the plugin. A plugin stops asking whether its own version looks recent and asks the bundle what the bundle demands. That is the only form of the check that still works when nobody can enumerate the readers."
+      }
+    ],
+    "alternatives": [
+      { "option": "Keep one plugin, organise internally", "rejected": "A directory is not installable." },
+      { "option": "Two plugins, viewer duplicated into both", "rejected": "Both pillars write projections one viewer reads. Two copies drift." },
+      { "option": "Reach a sibling plugin's files at a shared path", "rejected": "Not possible after install. The docs are explicit." },
+      { "option": "Abandon the plugin format, ship a cloned repo", "rejected": "It removes skew by removing the install surface, which is the product." },
+      { "option": "Symlink plus one scalar version compare", "rejected": "A scalar cannot express a sequenced ladder with per-step touches sets. False confidence." },
+      { "option": "A write-log ledger as the mechanism", "rejected": "It reports the mismatch after it is written. Kept as the generators map." }
+    ]
+  },
+  "architecture": {
+    "narration": "Three plugins write projections into one versioned directory, one reads all of them, and no arrow runs from any plugin to any other. That absence is the design. cobuilder-implement is the exception in kind, not in mechanism: it hands off through a git branch and a real pull request, which is still a file-and-state seam rather than a call.",
+    "beats": [
+      {
+        "kind": "forces",
+        "text": "The install surface is fixed: no agents, no hooks, no MCP servers. There is no CI, no test suite, and no package manager, so any gate has to be runtime code rather than a build check."
+      },
+      {
+        "kind": "boundary",
+        "text": "shared/ sits at the marketplace root and is not itself a plugin. Each plugin symlinks what it needs, and the documented dereference copies the target content into that plugin's own cache at install. Every plugin ships byte-identical code and no plugin reads outside itself at runtime."
+      },
+      {
+        "kind": "boundary",
+        "text": "bundle.json gains min_reader_schema, the schema version of the newest migration that has ever touched this bundle. require_compatible() refuses when that floor exceeds the caller's own compiled SCHEMA_VERSION, before any ladder step runs."
+      },
+      {
+        "kind": "consequence",
+        "text": "generator_version becomes generators, a map keyed by plugin. One scalar written from the running plugin's own manifest is accurate with one writer and silently wrong with four."
+      },
+      {
+        "kind": "open",
+        "text": "The symlink dereference is documented for a meta-plugin's skills/ directory, not for a directory of Python a skill later runs. Install a two-plugin draft from a local marketplace and read the cache before this leaves tentative. The fallback is a copy step before publish."
+      }
+    ]
+  }
+}

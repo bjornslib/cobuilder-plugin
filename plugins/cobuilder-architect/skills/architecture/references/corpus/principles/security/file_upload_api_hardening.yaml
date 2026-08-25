@@ -1,0 +1,169 @@
+id: security-file-upload-api-hardening-001
+name: File Upload Security and API Endpoint Hardening
+category: security
+canonical_tags: ['security', 'file-upload', 'api-hardening', 'rate-limiting', 'owasp-a04']
+sources:
+  - owasp/top-ten.md
+  - cwe/unrestricted-upload.md
+  - cwe/resource-exhaustion.md
+summary: >
+  File upload endpoints are a primary attack surface when they accept
+  unvalidated file types, lack size limits, or store files in the web root.
+  An uploaded .php, .jsp, or .exe file served from the document root
+  executes on the server. A 10 GB upload exhausts disk and memory. A bulk
+  endpoint accepting an array of 100,000 items causes DoS via CPU and
+  database exhaustion. Missing request timeouts allow slowloris-style
+  connection starvation. These vulnerabilities share a common pattern: the
+  endpoint trusts the client to provide reasonable inputs without enforcing
+  server-side limits. Defense requires extension allowlisting, file size
+  caps, content-type verification via magic bytes, storage outside the web
+  root, bulk endpoint array limits, and per-endpoint timeouts.
+examples:
+  - language: python
+    bad: |
+      import os
+      from fastapi import FastAPI, UploadFile, File
+      from sqlalchemy import select
+
+      app = FastAPI()
+
+
+      # ---- No extension or size validation on upload ----
+      @app.post("/upload")
+      def upload_file(file: UploadFile = File()):
+          # Accepts anything: .php, .exe, .svg with embedded JS, 10 GB file
+          dest = f"/var/www/uploads/{file.filename}"
+          with open(dest, "wb") as f:
+              f.write(file.file.read())  # reads entire file into memory
+          return {"filename": file.filename}
+
+
+      # ---- Stored in web root: uploaded files are directly executable ----
+      # If someone uploads shell.php, visiting /uploads/shell.php executes it.
+
+
+      # ---- Bulk endpoint: no array size limit ----
+      @app.post("/items/bulk")
+      def create_bulk(items: list[dict]):
+          # Accepts array of any length — 100,000 items = DB timeout
+          for item in items:
+              db.save(Item(**item))
+          return {"count": len(items)}
+
+
+      # ---- No request timeout: slow request holds connection forever ----
+      # Default timeout is None — a slow POST can hold a worker indefinitely.
+    good: |
+      import os
+      import shutil
+      from pathlib import Path
+      from fastapi import FastAPI, HTTPException, UploadFile, File
+      from pydantic import BaseModel, Field
+
+      app = FastAPI()
+
+      # ---- Extension allowlist + file size cap ----
+      ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp", "pdf"}
+      MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+
+      UPLOAD_DIR = Path("/var/data/uploads")  # outside web root
+      UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
+      def validate_upload(file: UploadFile) -> None:
+          # Check extension against allowlist
+          ext = Path(file.filename).suffix.lstrip(".").lower()
+          if ext not in ALLOWED_EXTENSIONS:
+              raise HTTPException(400, f"File type .{ext} not allowed")
+
+          # Check size before reading full content
+          file.file.seek(0, 2)
+          size = file.file.tell()
+          file.file.seek(0)
+          if size > MAX_FILE_SIZE:
+              raise HTTPException(400, f"File exceeds {MAX_FILE_SIZE} byte limit")
+
+          # Validate magic bytes (file signature), not just extension
+          header = file.file.read(32)
+          file.file.seek(0)
+          if not validate_magic_bytes(header, ext):
+              raise HTTPException(400, "File content does not match extension")
+
+
+      @app.post("/upload")
+      def upload_file(file: UploadFile = File()):
+          validate_upload(file)
+          # Generate safe filename — never trust user-supplied name
+          safe_name = f"{uuid4().hex}.{Path(file.filename).suffix.lstrip('.')}"
+          dest = UPLOAD_DIR / safe_name
+          with open(dest, "wb") as f:
+              shutil.copyfileobj(file.file, f)  # streaming, not full read
+          return {"filename": safe_name}
+
+
+      # ---- Bulk endpoint: array size limit via Pydantic ----
+      class BulkItemCreate(BaseModel):
+          items: list[dict] = Field(max_length=100)  # max 100 items
+
+
+      @app.post("/items/bulk")
+      def create_bulk(payload: BulkItemCreate):
+          for item in payload.items:
+              db.save(Item(**item))
+          return {"count": len(payload.items)}
+
+
+      # ---- Per-endpoint timeout via middleware ----
+      @app.middleware("http")
+      async def request_timeout(request, call_next):
+          try:
+              return await asyncio.wait_for(call_next(request), timeout=30.0)
+          except asyncio.TimeoutError:
+              raise HTTPException(504, "Request timed out")
+heuristics:
+  - >
+    Whitelist allowed file extensions — never use a blacklist. A blacklist
+    misses executable extensions (.php, .jsp, .aspx), double extensions
+    (.jpg.php), and case-sensitivity bypasses (.PhP). An allowlist of
+    known-safe extensions (png, jpg, pdf) is deterministic and maintainable.
+    Reject anything not on the list.
+  - >
+    Enforce a maximum file size at multiple layers: reverse proxy
+    (client_max_body_size in nginx), application middleware, and at the
+    handler level before reading the body. Reject oversized uploads early
+    to prevent memory exhaustion. Stream large files to disk rather than
+    buffering the entire upload in memory.
+  - >
+    Store uploaded files outside the web root. If files must be served,
+    use a dedicated endpoint that sets Content-Disposition: attachment and
+    never serves files with executable MIME types. Never store uploads in
+    a directory that the web server can execute scripts from.
+  - >
+    Validate file content using magic bytes (file signatures), not just the
+    file extension. An attacker can rename malware.exe to report.pdf. Read
+    the first 4-8 bytes and compare against known file signatures (PNG:
+    89 50 4E 47, PDF: 25 50 44 46, JPEG: FF D8 FF). Reject files whose
+    content does not match their claimed extension.
+  - >
+    Limit bulk endpoint array sizes. Use Pydantic Field(max_length=N) or
+    explicit len() checks to cap the number of items a bulk endpoint will
+    process. An unbounded array is a DoS vector — 100,000 items can
+    exhaust database connections, memory, and CPU even if each item is
+    small. A reasonable cap (50-500 items) prevents abuse.
+  - >
+    Set per-endpoint request timeouts. A request without a timeout can
+    hold a worker indefinitely, enabling connection-starvation DoS
+    (slowloris). Configure timeouts at the reverse proxy (nginx
+    proxy_read_timeout), application middleware (asyncio.wait_for), and
+    database level (statement_timeout in PostgreSQL). Defense in depth:
+    if one layer fails, the next catches it.
+  - >
+    Scan uploaded files for malware when possible. Even with extension
+    allowlisting and magic-byte validation, a legitimate PDF or image can
+    contain embedded exploits. Integrate with a virus scanning service
+    asynchronously — quarantine files until the scan completes, and delete
+    files that fail the scan. Log all scan results for audit purposes.
+related_tags:
+  [security, file-upload, extension-whitelist, magic-bytes, web-root,
+   api-hardening, bulk-endpoints, request-timeout, dos-prevention,
+   owasp-a04, cwe-434, cwe-400, cwe-770, rate-limiting, content-disposition]

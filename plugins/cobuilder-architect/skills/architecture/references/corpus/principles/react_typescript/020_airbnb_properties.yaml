@@ -1,0 +1,65 @@
+id: airbnb-properties-020
+name: Airbnb Properties — Dot Notation, Bracket Access, Exponentiation
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  Airbnb property access rules: use dot notation for static property names
+  (user.name), bracket notation only when the property name is a variable
+  or computed expression (obj[propName]). Prefer the exponentiation operator
+  ** over Math.pow() for cleaner math expressions. These conventions make
+  property access intent explicit and code more readable.
+examples:
+  - language: typescript
+    bad: |
+      const luke = {
+        jedi: true,
+        age: 28,
+      };
+
+      // Bracket notation for static keys — noisy
+      const isJedi = luke["jedi"];
+
+      // Dot notation with variable key — doesn't work
+      function getProp(prop: string) {
+        return luke.prop; // always returns undefined
+      }
+
+      // Math.pow — verbose, less readable
+      const binary = Math.pow(2, 10);
+      const kilobytes = Math.pow(2, 10);
+    good: |
+      const luke = {
+        jedi: true,
+        age: 28,
+      };
+
+      // Dot notation for static keys — clean
+      const isJedi = luke.jedi;
+
+      // Bracket notation for variable/computed keys
+      function getProp(prop: string) {
+        return luke[prop];
+      }
+      const isJedi = getProp("jedi");
+
+      // Exponentiation operator — concise
+      const binary = 2 ** 10;
+
+      // Works with assignment too
+      let value = 2;
+      value **= 10;
+
+      // TypeScript: bracket access with keyof
+      function getProperty<T, K extends keyof T>(obj: T, key: K): T[K] {
+        return obj[key];
+      }
+heuristics:
+  - Use dot notation (obj.prop) when accessing properties with a known, static identifier.
+  - Use bracket notation (obj[expr]) only when the property name is a variable or computed at runtime. The brackets signal "dynamic access".
+  - Prefer the exponentiation operator ** over Math.pow(). It's shorter, more readable, and supports the **= compound assignment.
+  - "In TypeScript, use keyof and generics to type-safe bracket access: `function getProperty<T, K extends keyof T>(obj: T, key: K): T[K]`."
+  - Avoid mixing dot and bracket notation for accessing the same object in the same block — it creates inconsistency.
+  - For deeply nested optional properties, use optional chaining (obj?.a?.b) rather than repetitive guards.
+related_tags: [airbnb, properties, dot-notation, bracket-notation, exponentiation, keyof]

@@ -1,0 +1,843 @@
+id: backpressure-load-shedding-001
+name: Backpressure and Load Shedding
+category: resilience
+canonical_tags: ['resilience', 'release-it', 'production-readiness', 'ddia']
+sources:
+  - books/release-it.md
+  - books/designing-data-intensive-applications.md
+summary: >
+  Every system has finite capacity. When demand exceeds capacity, the system
+  must choose: degrade intentionally or collapse indiscriminately. Backpressure
+  propagates saturation signals upstream so producers slow down before queues
+  overflow. Load shedding drops low-value work at the boundary to preserve
+  core function. Together they form the overload strategy: backpressure tells
+  callers to stop sending so much; load shedding decides what to drop when
+  they don't. Rate limiting algorithms (token bucket, leaky bucket) enforce
+  these boundaries; queue management ensures buffers are bounded and observable;
+  admission control rejects work early rather than accepting it and failing
+  later. Without these, a system under load does not degrade gracefully — it
+  accelerates toward collapse as queues fill memory, latencies spike, retries
+  amplify, and the whole thing tips over.
+examples:
+  - language: python
+    bad: |
+      import asyncio
+      from collections import deque
+      from typing import Any
+
+
+      # ---- Unbounded queue: accepts work forever, memory grows without limit ----
+      class BackgroundWorker:
+          """No backpressure. Queue grows until OOM."""
+
+          def __init__(self) -> None:
+              self._queue: deque[Any] = deque()
+              self._running = True
+
+          def enqueue(self, task: Any) -> None:
+              """Always accepts. Always. Even when 100K items deep."""
+              self._queue.append(task)
+
+          async def run(self) -> None:
+              while self._running:
+                  if self._queue:
+                      task = self._queue.popleft()
+                      await self._process(task)
+                  else:
+                      await asyncio.sleep(0.01)
+
+
+      # ---- No rate limiting: one misbehaving caller floods the API ----
+      import asyncio
+      from typing import Optional
+      import httpx
+
+
+      class ApiGateway:
+          """Every request passes through. No admission control."""
+
+          def __init__(self, backend_url: str) -> None:
+              self._backend = backend_url
+              self._client = httpx.AsyncClient()
+
+          async def handle(self, request: Any) -> dict:
+              """No limit check. If 10K req/s arrive, we try to serve 10K."""
+              resp = await self._client.post(
+                  f"{self._backend}/process",
+                  json=request,
+                  timeout=30.0,  # at least there's a timeout, but too late
+              )
+              return resp.json()
+
+
+      # ---- No load shedding: everything is critical, nothing is optional ----
+      class RecommendationService:
+          """Treats recommendations as critical as payments."""
+
+          async def get_dashboard(self, user_id: str) -> dict:
+              # Payment fetch
+              balance = await self._fetch_balance(user_id)
+              # Recommendations: same priority, will block dashboard if slow
+              recs = await self._fetch_recommendations(user_id)
+              # Analytics: also blocks the response
+              await self._track_page_view(user_id)
+              return {"balance": balance, "recommendations": recs}
+
+          async def _fetch_balance(self, user_id: str) -> float:
+              ...
+
+          async def _fetch_recommendations(self, user_id: str) -> list:
+              ...
+
+          async def _track_page_view(self, user_id: str) -> None:
+              ...
+    good: |
+      import asyncio
+      import time
+      import asyncio
+      from collections import deque
+      from dataclasses import dataclass, field
+      from enum import Enum
+      from typing import Any, Optional
+      import threading
+
+
+      # ======================================================================
+      # 1. TOKEN BUCKET — rate limiter with burst tolerance
+      # ======================================================================
+      @dataclass
+      class TokenBucket:
+          """
+          Classic token bucket algorithm.
+
+          Tokens refill at a steady rate (refill_rate/sec) up to a maximum
+          capacity (burst). Each request consumes one token. If no tokens
+          are available, the request is rejected immediately.
+
+          Unlike a simple counter, the bucket allows bursts up to 'capacity'
+          while enforcing a long-term average rate.
+          """
+          refill_rate: float       # tokens per second
+          capacity: int            # max tokens (burst size)
+          _tokens: float = field(init=False, default=0.0)
+          _last_refill: float = field(init=False, default_factory=time.monotonic)
+          _lock: threading.Lock = field(init=False, default_factory=threading.Lock)
+
+          def __post_init__(self) -> None:
+              self._tokens = float(self.capacity)
+
+          def _refill(self) -> None:
+              now = time.monotonic()
+              elapsed = now - self._last_refill
+              self._tokens = min(
+                  float(self.capacity),
+                  self._tokens + elapsed * self.refill_rate,
+              )
+              self._last_refill = now
+
+          def try_consume(self, tokens: int = 1) -> bool:
+              """Return True if tokens were consumed, False if rate limited."""
+              with self._lock:
+                  self._refill()
+                  if self._tokens >= tokens:
+                      self._tokens -= tokens
+                      return True
+                  return False
+
+          @property
+          def available(self) -> float:
+              with self._lock:
+                  self._refill()
+                  return self._tokens
+
+
+      # ======================================================================
+      # 2. LEAKY BUCKET — smooths bursty traffic into steady outflow
+      # ======================================================================
+      class LeakyBucket:
+          """
+          Leaky bucket algorithm.
+
+          Requests arrive at variable rates. The bucket processes them at a
+          fixed rate. If the bucket is full, arriving requests are dropped.
+          This enforces a strict upper bound on processing rate independent
+          of arrival pattern — traffic shaping, not just rate limiting.
+          """
+          def __init__(self, capacity: int, drain_rate_per_sec: float) -> None:
+              self._capacity = capacity
+              self._drain_interval = 1.0 / drain_rate_per_sec
+              self._queue: deque[Any] = deque()
+              self._lock = threading.Lock()
+              self._processing = False
+
+          def enqueue(self, item: Any) -> bool:
+              """Return True if accepted, False if bucket full."""
+              with self._lock:
+                  if len(self._queue) >= self._capacity:
+                      return False
+                  self._queue.append(item)
+                  if not self._processing:
+                      self._processing = True
+                      threading.Thread(target=self._drain, daemon=True).start()
+                  return True
+
+          def _drain(self) -> None:
+              while True:
+                  with self._lock:
+                      if not self._queue:
+                          self._processing = False
+                          return
+                      item = self._queue.popleft()
+                  # Process the item
+                  self._process(item)
+                  time.sleep(self._drain_interval)
+
+          def _process(self, item: Any) -> None:
+              """Override or replace to define processing logic."""
+              ...
+
+          @property
+          def queue_depth(self) -> int:
+              with self._lock:
+                  return len(self._queue)
+
+
+      # ======================================================================
+      # 3. BOUNDED QUEUE WITH BACKPRESSURE — propagate saturation upstream
+      # ======================================================================
+      class BackpressureQueue:
+          """
+          A bounded queue that applies backpressure when near capacity.
+
+          Three thresholds:
+          - GREEN (< warn_pct): accept normally
+          - YELLOW (warn_pct to reject_pct): accept but emit backpressure
+            signal so upstream callers slow down
+          - RED (> reject_pct): reject outright
+
+          Backpressure signals propagate upstream: an HTTP 429 or a gRPC
+          RESOURCE_EXHAUSTED tells the producer to throttle. Without this,
+          the queue fills silently until OOM.
+          """
+          def __init__(
+              self,
+              max_size: int,
+              warn_threshold_pct: float = 0.7,
+              reject_threshold_pct: float = 0.9,
+          ) -> None:
+              self._max_size = max_size
+              self._warn_at = int(max_size * warn_threshold_pct)
+              self._reject_at = int(max_size * reject_threshold_pct)
+              self._queue: deque[Any] = deque()
+              self._lock = threading.Lock()
+              self._total_accepted = 0
+              self._total_rejected = 0
+
+          def try_enqueue(self, item: Any) -> tuple[bool, str]:
+              """
+              Return (accepted, status) where status is 'ok', 'backpressure',
+              or 'rejected'.
+              """
+              with self._lock:
+                  depth = len(self._queue)
+
+                  if depth >= self._reject_at:
+                      self._total_rejected += 1
+                      return False, "rejected"
+
+                  self._queue.append(item)
+                  self._total_accepted += 1
+
+                  if depth >= self._warn_at:
+                      return True, "backpressure"
+                  return True, "ok"
+
+          def try_dequeue(self) -> Optional[Any]:
+              with self._lock:
+                  if self._queue:
+                      return self._queue.popleft()
+                  return None
+
+          @property
+          def stats(self) -> dict:
+              with self._lock:
+                  return {
+                      "depth": len(self._queue),
+                      "max": self._max_size,
+                      "warn_at": self._warn_at,
+                      "reject_at": self._reject_at,
+                      "accepted": self._total_accepted,
+                      "rejected": self._total_rejected,
+                      "utilization": len(self._queue) / self._max_size,
+                  }
+
+
+      # ======================================================================
+      # 4. ADMISSION CONTROL — reject early, fail fast
+      # ======================================================================
+      class Priority(Enum):
+          CRITICAL = 0    # payments, auth — never shed
+          HIGH = 1        # user-facing core — rarely shed
+          NORMAL = 2      # standard API — shed under moderate load
+          LOW = 3         # analytics, logging — first to go
+          BACKGROUND = 4  # batch ETL, reporting — shed aggressively
+
+
+      @dataclass
+      class AdmissionController:
+          """
+          Reject low-priority work before the system saturates.
+
+          Under load, shed work in priority order: BACKGROUND first, then
+          LOW, then NORMAL. CRITICAL traffic is always admitted. The
+          controller uses CPU utilization or queue depth as its saturation
+          signal.
+          """
+          max_cpu_utilization: float = 0.85
+
+          def admit(
+              self,
+              priority: Priority,
+              current_cpu_util: float,
+          ) -> tuple[bool, str]:
+              """
+              Decision matrix:
+              - CPU < 70%: admit everything
+              - CPU 70-85%: shed BACKGROUND
+              - CPU 85-95%: shed BACKGROUND + LOW
+              - CPU > 95%: shed BACKGROUND + LOW + NORMAL
+              """
+              if current_cpu_util < 0.70:
+                  return True, "admitted"
+
+              if priority == Priority.CRITICAL:
+                  return True, "admitted"
+
+              if current_cpu_util > 0.95:
+                  if priority in (Priority.HIGH, Priority.CRITICAL):
+                      return True, "admitted"
+                  return False, "shed: overload"
+
+              if current_cpu_util > 0.85:
+                  if priority in (Priority.HIGH, Priority.CRITICAL, Priority.NORMAL):
+                      return True, "admitted"
+                  return False, "shed: high-load"
+
+              # 70-85%
+              if priority == Priority.BACKGROUND:
+                  return False, "shed: moderate-load"
+              return True, "admitted"
+
+
+      # ======================================================================
+      # 5. REACTIVE-STREAM BACKPRESSURE — async producer-consumer with demand
+      # ======================================================================
+      @dataclass
+      class ReactivePipe:
+          """
+          A bounded async channel that propagates backpressure via demand
+          signaling — the reactive streams pattern.
+
+          The producer only produces when the consumer has signaled demand.
+          This is the inverse of a queue: instead of pushing into a buffer
+          and hoping the consumer keeps up, the consumer PULLS. This
+          eliminates unbounded buffer growth entirely.
+          """
+          max_inflight: int
+          _requests: int = field(default=0, init=False)
+          _condition: asyncio.Condition = field(
+              init=False,
+              default_factory=asyncio.Condition,
+          )
+
+          async def request(self, n: int = 1) -> None:
+              """Consumer signals demand: 'I can handle n more items'."""
+              async with self._condition:
+                  self._requests += n
+                  self._condition.notify_all()
+
+          async def produce(self, items: int = 1) -> None:
+              """
+              Producer waits until the consumer has requested capacity.
+              Blocks (async) when there is no demand — this IS backpressure.
+              """
+              async with self._condition:
+                  while self._requests < items:
+                      await self._condition.wait()
+                  self._requests -= items
+
+
+      # ======================================================================
+      # 6. COMPOSED SERVICE WITH ALL MECHANISMS
+      # ======================================================================
+      @dataclass
+      class ResilientGateway:
+          rate_limiter: TokenBucket
+          queue: BackpressureQueue
+          admission: AdmissionController
+
+          async def handle_request(
+              self,
+              priority: Priority,
+              payload: Any,
+              cpu_util: float,
+          ) -> tuple[int, dict]:
+              """
+              Full admission pipeline:
+              1. Admission control — shed low-priority work first
+              2. Rate limiting — enforce per-client quotas
+              3. Queue with backpressure — accept, warn, or reject
+              """
+              # Step 1: Admission control
+              admitted, reason = self.admission.admit(priority, cpu_util)
+              if not admitted:
+                  return 503, {"error": "service overloaded", "reason": reason}
+
+              # Step 2: Rate limiting (token bucket)
+              if not self.rate_limiter.try_consume():
+                  return 429, {"error": "rate limited", "retry_after_ms": 1000}
+
+              # Step 3: Queue with backpressure
+              accepted, status = self.queue.try_enqueue(payload)
+              if not accepted:
+                  return 503, {"error": "queue saturated", "status": status}
+
+              # Emit backpressure signal to caller
+              headers = {}
+              if status == "backpressure":
+                  headers["X-Backpressure"] = "1"
+                  headers["Retry-After"] = "2"
+
+              # Process the request
+              return 200, {"status": "accepted", "queue_status": status}
+
+
+      # ---- Usage ----
+      gateway = ResilientGateway(
+          rate_limiter=TokenBucket(refill_rate=100.0, capacity=200),
+          queue=BackpressureQueue(max_size=10000, warn_threshold_pct=0.7),
+          admission=AdmissionController(),
+      )
+
+
+      async def api_handler(request: Any) -> tuple[int, dict]:
+          return await gateway.handle_request(
+              priority=Priority.NORMAL,
+              payload=request,
+              cpu_util=0.72,  # from metrics
+          )
+  - language: typescript
+    bad: |
+      import { EventEmitter } from "events";
+
+
+      // ---- Unbounded event emitter — no backpressure, no drop ----
+      class FirehoseProcessor extends EventEmitter {
+        private handlers: Map<string, Array<(data: unknown) => void>> = new Map();
+
+        push(event: string, data: unknown): void {
+          // Always emits. Always. No check on listener backlog.
+          this.emit(event, data);
+        }
+      }
+
+      const firehose = new FirehoseProcessor();
+
+      firehose.on("order", async (order) => {
+        // Slow handler: 100ms per order. At 1000 orders/sec, queue grows
+        // unbounded in the event loop. Memory climbs until crash.
+        await processOrder(order as Order);
+      });
+
+      for (let i = 0; i < 100_000; i++) {
+        firehose.push("order", { id: i });  // OOM incoming
+      }
+
+
+      // ---- No rate limiting on API ----
+      import express from "express";
+
+      const app = express();
+
+      app.post("/api/charge", async (req, res) => {
+        // No rate limit. A single IP can fire 10K req/s.
+        const result = await chargeCustomer(req.body);
+        res.json(result);
+      });
+    good: |
+      import { EventEmitter } from "events";
+
+
+      // ======================================================================
+      // 1. TOKEN BUCKET — rate limiter with burst tolerance
+      // ======================================================================
+      class TokenBucket {
+        private tokens: number;
+        private lastRefill: number;
+        private totalConsumed = 0;
+        private totalRejected = 0;
+
+        constructor(
+          private readonly refillRate: number,    // tokens/sec
+          private readonly capacity: number,       // burst size
+        ) {
+          this.tokens = capacity;
+          this.lastRefill = Date.now();
+        }
+
+        refill(): void {
+          const now = Date.now();
+          const elapsed = (now - this.lastRefill) / 1000;
+          this.tokens = Math.min(this.capacity, this.tokens + elapsed * this.refillRate);
+          this.lastRefill = now;
+        }
+
+        tryConsume(tokens: number = 1): boolean {
+          this.refill();
+          if (this.tokens >= tokens) {
+            this.tokens -= tokens;
+            this.totalConsumed++;
+            return true;
+          }
+          this.totalRejected++;
+          return false;
+        }
+
+        get stats() {
+          return {
+            available: this.tokens,
+            capacity: this.capacity,
+            consumed: this.totalConsumed,
+            rejected: this.totalRejected,
+          };
+        }
+      }
+
+
+      // ======================================================================
+      // 2. LEAKY BUCKET — smooths bursty traffic into steady outflow
+      // ======================================================================
+      class LeakyBucket<T> {
+        private queue: T[] = [];
+        private processing = false;
+
+        constructor(
+          private readonly capacity: number,
+          private readonly drainIntervalMs: number,  // time between processing each item
+          private readonly processFn: (item: T) => Promise<void>,
+        ) {}
+
+        enqueue(item: T): boolean {
+          if (this.queue.length >= this.capacity) return false;
+          this.queue.push(item);
+          if (!this.processing) {
+            this.processing = true;
+            this.drain();
+          }
+          return true;
+        }
+
+        private async drain(): Promise<void> {
+          while (this.queue.length > 0) {
+            const item = this.queue.shift()!;
+            try {
+              await this.processFn(item);
+            } catch {
+              // Poison item: log and continue
+            }
+            await new Promise((r) => setTimeout(r, this.drainIntervalMs));
+          }
+          this.processing = false;
+        }
+
+        get queueDepth(): number {
+          return this.queue.length;
+        }
+      }
+
+
+      // ======================================================================
+      // 3. BOUNDED QUEUE WITH BACKPRESSURE SIGNALS
+      // ======================================================================
+      interface QueueStats {
+        depth: number;
+        max: number;
+        utilization: number;
+        accepted: number;
+        rejected: number;
+      }
+
+      type EnqueueResult =
+        | { accepted: true; status: "ok" | "backpressure" }
+        | { accepted: false; status: "rejected" };
+
+      class BackpressureQueue<T> {
+        private queue: T[] = [];
+        private accepted = 0;
+        private rejected = 0;
+
+        constructor(
+          private readonly maxSize: number,
+          private readonly warnPct: number = 0.7,
+          private readonly rejectPct: number = 0.9,
+        ) {}
+
+        tryEnqueue(item: T): EnqueueResult {
+          const depth = this.queue.length;
+          const rejectAt = Math.floor(this.maxSize * this.rejectPct);
+          const warnAt = Math.floor(this.maxSize * this.warnPct);
+
+          if (depth >= rejectAt) {
+            this.rejected++;
+            return { accepted: false, status: "rejected" };
+          }
+
+          this.queue.push(item);
+          this.accepted++;
+
+          if (depth >= warnAt) {
+            return { accepted: true, status: "backpressure" };
+          }
+          return { accepted: true, status: "ok" };
+        }
+
+        tryDequeue(): T | null {
+          return this.queue.shift() ?? null;
+        }
+
+        get stats(): QueueStats {
+          return {
+            depth: this.queue.length,
+            max: this.maxSize,
+            utilization: this.queue.length / this.maxSize,
+            accepted: this.accepted,
+            rejected: this.rejected,
+          };
+        }
+      }
+
+
+      // ======================================================================
+      // 4. ADMISSION CONTROL WITH PRIORITY SHEDDING
+      // ======================================================================
+      enum Priority {
+        CRITICAL = 0,
+        HIGH = 1,
+        NORMAL = 2,
+        LOW = 3,
+        BACKGROUND = 4,
+      }
+
+      interface AdmissionDecision {
+        admitted: boolean;
+        reason: string;
+      }
+
+      class AdmissionController {
+        constructor(private readonly maxCpuUtil: number = 0.85) {}
+
+        admit(priority: Priority, cpuUtil: number): AdmissionDecision {
+          // Healthy: admit everything
+          if (cpuUtil < 0.70) return { admitted: true, reason: "admitted" };
+
+          // Critical always admitted
+          if (priority === Priority.CRITICAL) return { admitted: true, reason: "admitted" };
+
+          // Severe overload: only CRITICAL and HIGH survive
+          if (cpuUtil > 0.95) {
+            if (priority === Priority.HIGH) return { admitted: true, reason: "admitted" };
+            return { admitted: false, reason: "shed: overload" };
+          }
+
+          // High load: shed BACKGROUND + LOW
+          if (cpuUtil > 0.85) {
+            if (priority <= Priority.NORMAL) return { admitted: true, reason: "admitted" };
+            return { admitted: false, reason: "shed: high-load" };
+          }
+
+          // Moderate load (70-85%): shed BACKGROUND only
+          if (priority === Priority.BACKGROUND) {
+            return { admitted: false, reason: "shed: moderate-load" };
+          }
+          return { admitted: true, reason: "admitted" };
+        }
+      }
+
+
+      // ======================================================================
+      // 5. REACTIVE BACKPRESSURE — consumer-driven demand signaling
+      // ======================================================================
+      class ReactiveChannel<T> {
+        private buffer: T[] = [];
+        private demand = 0;
+        private resolvers: Array<() => void> = [];
+
+        constructor(private readonly maxInflight: number) {}
+
+        /** Consumer: signal that it can accept n more items */
+        request(n: number): void {
+          this.demand = Math.min(this.maxInflight, this.demand + n);
+          // Wake any waiting producer
+          while (this.resolvers.length > 0 && this.demand > 0) {
+            this.resolvers.shift()!();
+          }
+        }
+
+        /** Producer: wait until consumer has signaled demand */
+        async produce(item: T): Promise<void> {
+          while (this.demand <= 0 || this.buffer.length >= this.maxInflight) {
+            await new Promise<void>((resolve) => {
+              this.resolvers.push(resolve);
+            });
+          }
+          this.buffer.push(item);
+          this.demand--;
+        }
+
+        /** Consumer: take the next available item */
+        consume(): T | null {
+          return this.buffer.shift() ?? null;
+        }
+
+        get stats() {
+          return {
+            buffered: this.buffer.length,
+            demand: this.demand,
+            maxInflight: this.maxInflight,
+          };
+        }
+      }
+
+
+      // ======================================================================
+      // 6. COMPOSED GATEWAY MIDDLEWARE
+      // ======================================================================
+      import { Request, Response, NextFunction } from "express";
+
+      class ResilientMiddleware {
+        constructor(
+          private readonly rateLimiter: TokenBucket,
+          private readonly admission: AdmissionController,
+          private readonly queue: BackpressureQueue<string>,
+        ) {}
+
+        handler(req: Request, res: Response, next: NextFunction): void {
+          // Resolve priority from request (default NORMAL)
+          const priority = (req.headers["x-priority"] as string)
+            ? parseInt(req.headers["x-priority"] as string, 10)
+            : Priority.NORMAL;
+
+          // Fake CPU util — in production, read from a shared atomic gauge
+          const cpuUtil = 0.72;
+
+          // 1. Admission control
+          const decision = this.admission.admit(priority, cpuUtil);
+          if (!decision.admitted) {
+            res.status(503).json({ error: "overloaded", reason: decision.reason });
+            return;
+          }
+
+          // 2. Rate limiting
+          if (!this.rateLimiter.tryConsume()) {
+            res.status(429).json({ error: "rate_limited", retryAfterMs: 1000 });
+            return;
+          }
+
+          // 3. Queue enrollment with backpressure
+          const result = this.queue.tryEnqueue(req.ip ?? "unknown");
+          if (!result.accepted) {
+            res.status(503).json({ error: "queue_saturated" });
+            return;
+          }
+
+          if (result.status === "backpressure") {
+            res.setHeader("X-Backpressure", "1");
+            res.setHeader("Retry-After", "2");
+          }
+
+          next();
+        }
+      }
+
+
+      // ---- Usage ----
+      const gateway = new ResilientMiddleware(
+        new TokenBucket(100, 200),           // 100 req/s, burst 200
+        new AdmissionController(0.85),        // shed at 85% CPU
+        new BackpressureQueue(10_000, 0.7),  // 10K capacity, warn at 7K
+      );
+
+      const app = express();
+      app.use((req, res, next) => gateway.handler(req, res, next));
+heuristics:
+  - >
+    "The system must have a strategy for overload. Reject, defer, queue, or
+    degrade intentionally. Unbounded acceptance of work is forbidden" (Release
+    It!). Every entry point must decide what to do when demand exceeds capacity
+    — the worst choice is to pretend it doesn't.
+  - >
+    Token bucket is the right default for API rate limiting: it allows bursts
+    (the bucket's capacity) while enforcing a long-term average rate (the refill
+    rate). Use it when you want to say "100 req/s average, but tolerate short
+    bursts of 200." Leaky bucket is for traffic shaping: it enforces a strict
+    maximum processing rate regardless of arrival pattern. Use it when you need
+    a hard ceiling on downstream throughput, not just an average.
+  - >
+    Backpressure must propagate. A full queue must translate into a signal the
+    producer can act on: HTTP 429 with Retry-After, gRPC RESOURCE_EXHAUSTED, a
+    rejected Promise, or a Reactive Streams request(n) going to zero. A full
+    queue that silently accepts more work is not backpressure — it's a memory
+    leak.
+  - >
+    Reactive streams invert the control flow: the consumer PULLS, the producer
+    waits for demand. This eliminates unbounded buffering entirely. Use reactive
+    backpressure when data flows through pipelines of stages with different
+    processing speeds — a slow downstream stage naturally throttles upstream
+    stages without any separate rate limiter.
+  - >
+    Load shedding must be priority-ordered. Shed low-value work first:
+    analytics events, log enrichment, non-critical recommendations, dashboard
+    widgets. Preserve CRITICAL (payments, auth) and HIGH (core user flows)
+    under all but the most extreme load. The priority ladder gives you a
+    graduated degradation surface instead of a binary on/off switch.
+  - >
+    Every queue must be bounded with a defined behavior at capacity: reject
+    (drop the item), block (wait for space), or drop-oldest (ring buffer). An
+    unbounded queue is a deferred crash — it works fine until the one day
+    producers outpace consumers and memory fills.
+  - >
+    Queue metrics are mandatory: depth, age of oldest item, throughput, and
+    rejection rate. A queue at 80% capacity with zero age is healthy; a queue
+    at 30% capacity where the oldest item is 30 seconds old means the consumer
+    is dead and the buffer is just delaying the inevitable.
+  - >
+    Admission control should reject work at the boundary — early rejection is
+    orders of magnitude cheaper than accepting work, starting processing,
+    allocating resources, and THEN failing. A 503 at the edge costs
+    microseconds. A timeout deep in the call stack costs seconds and burns
+    threads, connections, and memory.
+  - >
+    "Know what happens when producers outpace consumers" (Release It!). The
+    system behavior under sustained overload must be designed, not discovered
+    in production. Run overload tests: push the system past its capacity and
+    verify that latency stays bounded, rejection rates rise predictably, and
+    core functions survive.
+  - >
+    Rate limiting, admission control, backpressure, and load shedding compose
+    into a layered defense: admission control sheds by priority classes, rate
+    limiting enforces per-client quotas, backpressure tells callers to slow
+    down, and load shedding drops optional work when none of that is enough.
+    Together they ensure the system degrades predictably under load rather
+    than collapsing nonlinearly.
+  - >
+    Token bucket parameters must be measured, not guessed. Start with:
+    capacity = expected p99 burst size (requests arriving within one refill
+    interval), refill_rate = steady-state throughput. Monitor rejection rate
+    and tune. A bucket that never rejects is oversized; a bucket that
+    constantly rejects is undersized.
+related_tags:
+  [resilience, backpressure, load-shedding, rate-limiting, token-bucket,
+   leaky-bucket, reactive-streams, admission-control, queue-management,
+   overload-protection, traffic-shaping, backpressure-propagation,
+   priority-shedding, bounded-queue, flow-control, release-it, ddia,
+   production-readiness, capacity-planning, graceful-degradation]

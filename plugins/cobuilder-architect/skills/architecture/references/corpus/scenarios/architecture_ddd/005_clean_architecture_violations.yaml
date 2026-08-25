@@ -1,0 +1,326 @@
+id: clean-architecture-violations-005
+name: Clean Architecture Dependency Rule Violations
+category: architecture
+canonical_tags: [clean-architecture, ddd, refactoring]
+principle: >
+  The Dependency Rule states: source code dependencies must point inward, toward
+  higher-level policies. Inner layers (domain, application) must never import or
+  depend on outer layers (adapters, infrastructure). Business rules must not depend
+  on frameworks, databases, web handlers, ORMs, or vendor SDKs. When a dependency
+  points the wrong way, the architecture becomes rigid, untestable, and coupled to
+  implementation details.
+sources:
+  - books/clean-architecture.md
+  - books/domain-driven-design.md
+  - books/implementing-domain-driven-design.md
+  - books/the-pragmatic-programmer.md
+summary: >
+  The Clean Architecture Dependency Rule requires inward-pointing dependencies:
+  inner layers must never import outer layers. Business rules must not depend on
+  frameworks, databases, ORMs, web handlers, or vendor SDKs. Scenarios cover ORM
+  annotation violations, HTTP request/response coupling in use cases, repository
+  interface direction, utils dumping grounds, and configuration leaking via
+  environment variables.
+
+scenarios:
+  - id: ca-1
+    title: "Domain entity importing ORM annotations"
+    context: >
+      A team uses Hibernate/JPA for persistence. Their User entity looks like:
+      @Entity @Table(name="users") public class User { @Id @GeneratedValue private
+      Long id; @Column(name="email") private String email; ... }. The domain
+      package imports javax.persistence.*. The User entity is used everywhere:
+      in domain services, application services, and even returned directly from
+      REST controllers. The team argues "this is practical — we need persistence,
+      why fight the framework?"
+    question: >
+      Is this a dependency rule violation? What are the concrete problems, and
+      how should it be restructured?
+    answer: >
+      This is a textbook dependency rule violation. The domain layer (User entity)
+      depends on the infrastructure layer (javax.persistence, the ORM framework).
+      This inverts the dependency direction: the inner, high-level policy (what
+      a User is in the business) now depends on a low-level detail (how it gets
+      stored).
+
+      Concrete problems:
+      1. Test coupling: You cannot test User business logic without the JPA
+         provider. Every unit test needs a Spring context or in-memory database.
+      2. Framework lock-in: Migrating from Hibernate to jOOQ, DynamoDB, or a
+         document store means rewriting the domain model. The business rules
+         are collateral damage of a persistence change.
+      3. Leaky abstractions: @Column(name="email") exposes the database schema
+         in the domain. If you rename the column, you change domain code.
+      4. Serialization contamination: Returning User from controllers exposes
+         JPA proxies, lazy-loading exceptions, and internal fields to the API.
+         Jackson accidentally serializes Hibernate internals.
+      5. Domain purity loss: The entity cannot enforce invariants because JPA
+         requires a no-arg constructor and setters. The domain is shaped by the
+         ORM, not by the business.
+
+      Correct restructuring:
+      - Domain layer: User class with pure Java/Kotlin — no annotations, no
+        ORM imports. private constructor, factory methods, invariant checks.
+        User has behavior: changeEmail(), deactivate(), upgradeTier().
+      - Infrastructure layer: UserJpaEntity — the ORM-annotated class that maps
+        to the database. It mirrors the domain fields but is a separate class.
+      - Infrastructure layer: JpaUserRepository — implements the UserRepository
+        interface defined in the domain or application layer. Maps between
+        UserJpaEntity and User at the boundary.
+      - Application layer: Use cases operate on domain User, never UserJpaEntity.
+      - Interface adapters: Controllers receive/return UserDto, mapped from/to
+        domain User.
+
+      The cost: a mapper between User and UserJpaEntity. The benefit: every
+      business rule testable without a database, JPA, or Spring; persistence
+      replaceable; domain expresses business meaning without framework noise.
+      Source: Clean Architecture (dependency rule, database as detail, entities
+      must be pure), DDD (persistence ignorance), IDDD (infrastructure isolation).
+    decisions:
+      - Domain objects must not import ORM, web, or vendor annotations
+      - Separate persistence class (JpaEntity) from domain class (Entity)
+      - Repository interface owned by domain/application; implementation in infrastructure
+      - Mapper at infrastructure boundary translates between JPA and domain objects
+
+  - id: ca-2
+    title: "Use case depending on HTTP request/response objects"
+    context: >
+      In a Node.js/Express application, the "PlaceOrder" use case receives the
+      Express req and res objects directly:
+      function placeOrder(req, res) { const order = req.body; if (req.user.role
+      !== 'customer') { return res.status(403)... } const result =
+      orderService.process(order); res.json(result); }
+      The use case file imports express and uses req.user, req.body, res.status(),
+      and res.json() throughout. All business validation is interleaved with
+      HTTP concerns.
+    question: >
+      Identify every dependency rule violation and show how to restructure the
+      use case.
+    answer: >
+      There are multiple violations. The use case (application layer) directly
+      depends on the web framework (Express — an infrastructure detail). This
+      means the business logic cannot be tested without a real or mocked HTTP
+      request/response cycle.
+
+      Specific violations:
+      1. req.body: The use case depends on the HTTP request body format. If you
+         add a CLI or gRPC interface, the use case is unusable.
+      2. req.user.role: Authorization logic embedded in the use case. Role
+         checking is a cross-cutting concern that should happen in middleware,
+         not business logic.
+      3. res.status(403): The use case knows about HTTP status codes. What status
+         code should a CLI command return? This is a presentation concern.
+      4. res.json(result): The use case formats the output as JSON. What if a
+         different client needs XML? The use case is coupled to a serialization
+         format.
+
+      Correct restructuring:
+      - Controller (adapter layer): Extracts input from req.body, calls the use
+        case with a plain data object (PlaceOrderRequest).
+        function placeOrderController(req, res) {
+          const request = { items: req.body.items, customerId: req.user.id };
+          const result = placeOrderUseCase(request);  // pure function
+          res.status(mapToHttp(result.status)).json(result);
+        }
+      - Middleware handles auth: req.user is set by auth middleware. Role checks
+        happen before the controller is reached.
+      - Use case (application layer): Pure function with no HTTP imports.
+        function placeOrderUseCase(request: PlaceOrderRequest): PlaceOrderResult
+        { ... }. Takes a plain object, returns a plain object.
+      - Presenter maps the result to HTTP: mapToHttp() translates domain results
+        to status codes. This is an adapter concern.
+
+      Now testable: const result = placeOrderUseCase({ items: [...], customerId: 123 });
+      No Express, no HTTP, no mocking req/res. The business logic is completely
+      decoupled from the delivery mechanism.
+      Source: Clean Architecture (treat the web as a detail, dependency rule,
+      use cases must orchestrate), DDD (application services).
+    decisions:
+      - Use cases must not import or depend on web framework types
+      - Controllers extract plain data from HTTP; use cases receive plain objects
+      - Auth and authorization belong in middleware, not business logic
+      - HTTP status codes, serialization, and format concerns are adapter-layer responsibilities
+
+  - id: ca-3
+    title: "Repository interface defined in infrastructure, consumed by domain"
+    context: >
+      A Java project organizes repository interfaces in the infrastructure package:
+      com.example.infrastructure.persistence.OrderRepository. The domain service
+      PricingService imports this interface: import com.example.infrastructure
+      .persistence.OrderRepository. The interface returns List<OrderEntity> where
+      OrderEntity is a JPA-annotated class.
+    question: >
+      What specific dependency rule is violated, and how should the repository
+      relationship be inverted?
+    answer: >
+      The violation: the domain layer (PricingService) depends on the
+      infrastructure layer (OrderRepository in the infrastructure package).
+      The dependency arrow points outward — from high-level business policy
+      to low-level persistence detail. This is exactly what the Dependency
+      Rule forbids.
+
+      Additional violations:
+      - OrderEntity is a JPA-annotated class in infrastructure. By importing it,
+        the domain now transitively depends on javax.persistence.
+      - The repository interface is shaped by persistence concerns (it returns
+        JPA entities, not domain objects). The domain must adapt to the
+        infrastructure's shape.
+      - If you change databases (from JPA to MongoDB), the domain breaks because
+        its imports changed.
+
+      The inversion (Dependency Inversion Principle):
+      - Domain/Application layer defines the interface:
+        com.example.order.domain.OrderRepository (or application port).
+        This interface returns domain Order objects, not JPA entities.
+      - Infrastructure layer implements the interface:
+        com.example.infrastructure.persistence.JpaOrderRepository implements
+        OrderRepository. It maps JPA entities to domain objects inside its
+        implementation.
+      - Domain imports only its own OrderRepository interface and Order domain
+        class. It has zero knowledge of JPA, Hibernate, or SQL.
+      - The dependency direction is now correct: infrastructure depends on
+        domain (it imports OrderRepository to implement it), but domain does
+        not depend on infrastructure.
+
+      This is the standard Inversion of Control pattern: interfaces live with
+      the client (the domain that needs them), not with the implementation
+      (the infrastructure that provides them). The dependency arrow points
+      from infrastructure → domain, not domain → infrastructure.
+      Source: Clean Architecture (dependency rule, ports and adapters),
+      DDD (repository pattern, domain layer isolation),
+      Patterns of Enterprise Application Architecture (repository, data mapper).
+    decisions:
+      - Repository interfaces must be owned by the domain/application layer
+      - Infrastructure implements domain-owned interfaces, never the reverse
+      - Domain must never import infrastructure package classes
+      - Dependency Inversion: high-level policy owns the abstractions it depends on
+
+  - id: ca-4
+    title: "Utility dumping ground as dependency rule escape hatch"
+    context: >
+      A team has a shared/utils package that everyone imports. It contains:
+      - formatCurrency(amount) — formats money for display
+      - validateEmail(email) — regex validation
+      - sendNotification(user, message) — calls AWS SES, Firebase, and Twilio
+      - generateId() — UUID generation
+      - currentTime() — wraps new Date()
+      - isProduction() — reads environment variable
+      Domain entities import currentTime() and generateId(). Application services
+      import sendNotification() and formatCurrency(). Controllers import
+      validateEmail(). Every layer imports from utils, creating a web of hidden
+      dependencies.
+    question: >
+      Why is this a Clean Architecture violation, and how should each utility
+      be correctly placed?
+    answer: >
+      The utils package is an anti-pattern because it erases dependency direction.
+      It creates a sideways dependency web where domain code silently depends on
+      infrastructure (AWS SES, Firebase, Twilio, environment variables) through
+      a convenience import. The word "utils" hides the fact that the dependency
+      rule is being violated everywhere.
+
+      Correct placement of each utility:
+      1. formatCurrency(amount) → Presentation/adapter concern. Currency formatting
+         is a locale-aware display decision. It belongs in a presenter or view
+         helper, never in domain logic. Domain uses BigDecimal or Money value
+         object; formatting happens at the boundary.
+      2. validateEmail(email) → If this is simple syntactic validation, it is a
+         value object concern: EmailAddress value object in the domain layer
+         validates itself on construction. If it calls an external verification
+         service, that's an infrastructure adapter behind a port.
+      3. sendNotification(user, message) → Infrastructure adapter. The domain
+         never sends notifications. The application layer defines a
+         NotificationPort interface; an infrastructure adapter implements it
+         with AWS SES/Firebase/Twilio. The domain does not know notifications
+         exist.
+      4. generateId() → This is an infrastructure concern (UUID generation is
+         a technical detail). But domain objects need IDs. Solution: the domain
+         receives its ID from the caller (constructor parameter or factory).
+         The application service generates the ID via an IdGenerator port and
+         passes it in. The domain never calls generateId() directly.
+      5. currentTime() → Time is a volatile dependency. The domain should receive
+         a Clock interface (owned by domain). Infrastructure provides
+         SystemClock. This makes time testable (you can freeze time in tests).
+      6. isProduction() → Environment detection is an infrastructure concern.
+         The domain never branches on "production vs staging." If behavior must
+         differ, the application layer reads config and passes the decision as
+         a parameter to the domain.
+
+      The fix: Delete the utils package. Each function finds its correct home
+      in the appropriate layer: domain layer (pure business logic), application
+      layer (orchestration/ports), adapter layer (formatting/I/O), or
+      infrastructure (implementation behind ports). Nothing lives in "utils."
+      Source: Clean Architecture (dependency rule, avoid utility dumping grounds,
+      ports for volatile dependencies), The Pragmatic Programmer (orthogonality).
+    decisions:
+      - '``utils`` packages hide dependency rule violations behind generic names'
+      - Every utility must be placed in the appropriate architectural layer
+      - Domain must not call infrastructure utilities (IDs, time, notifications)
+      - Volatile dependencies (time, IDs, notifications) go behind ports
+      - Domain objects receive dependencies they need; never import them directly
+
+  - id: ca-5
+    title: "Configuration leaking into domain via environment variables"
+    context: >
+      A domain service PricingEngine reads environment variables directly:
+      process.env.DISCOUNT_RATE, process.env.TAX_RATE, process.env.FREE_SHIPPING_
+      THRESHOLD. The team argues "these are business parameters that change
+      between markets — they ARE domain logic." The PricingEngine is untestable
+      without setting environment variables before each test run.
+    question: >
+      Are these business parameters or infrastructure? How should they be
+      injected into the domain?
+    answer: >
+      The values (discount rate, tax rate, free shipping threshold) are indeed
+      business parameters — they express business policy. But the mechanism
+      of reading them (process.env, a config file, a database, a feature flag
+      service) is infrastructure. The domain service should not know WHERE the
+      values come from, only WHAT the values are.
+
+      The distinction:
+      - Business policy: "The discount rate for premium customers is 10%."
+        Domain concern.
+      - Infrastructure: "The discount rate is stored in an environment variable
+        called DISCOUNT_RATE on the production server." Infrastructure concern.
+      The PricingEngine currently conflates them by calling process.env directly.
+
+      Correct approach:
+      - PricingEngine (domain service) accepts PricingParameters as a constructor
+        argument or method parameter. PricingParameters is a domain value object:
+        { discountRate, taxRate, freeShippingThreshold }. The domain validates
+        them (e.g., discount rate cannot exceed 50%).
+      - Application layer / composition root: reads the values from wherever
+        they live (environment, database, config service, feature flag).
+        Constructs PricingParameters and passes it to PricingEngine.
+      - Infrastructure: provides a PricingConfigProvider that reads from the
+        environment. But this is called at startup/wiring time, not at runtime
+        inside the domain.
+
+      Now testable: new PricingEngine(new PricingParameters(0.10, 0.08, 50.00)).
+      No environment variables. You can test edge cases by passing any parameters
+      you want. The domain is decoupled from the configuration mechanism.
+
+      Advanced: If parameters change at runtime (dynamic pricing), the application
+      layer re-reads config and creates a new PricingParameters, passed to
+      PricingEngine for each request. The domain still doesn't call process.env.
+      Source: Clean Architecture (treat configuration as detail, business rules
+      must be pure), DDD (value objects for parameters), The Pragmatic Programmer
+      (configuration, decoupling).
+    decisions:
+      - Business values are domain; the mechanism of reading them is infrastructure
+      - Domain services accept parameters as value objects, never read config directly
+      - Composition root reads config and injects parameters into domain objects
+      - Domain testable without environment variables or config files
+      - Distinguish "what the value is" (domain) from "where the value comes from" (infrastructure)
+
+related_tags: [clean-architecture, dependency-rule, dependency-inversion, ports-and-adapters, framework-independence]
+heuristics:
+  - Domain objects must not import ORM, web, or vendor annotations.
+  - Use cases must not import or depend on web framework types (req/res objects).
+  - Repository interfaces must be owned by the domain/application layer, not infrastructure.
+  - Treat the web as a detail, treat the database as a detail, treat frameworks as details.
+  - >-
+    "Utils" packages hide dependency rule violations behind generic names — delete them.
+  - Business values are domain; the mechanism of reading them (env vars, config files) is infrastructure.
+  - >-
+    Distinguish "what the value is" (domain) from "where the value comes from" (infrastructure).

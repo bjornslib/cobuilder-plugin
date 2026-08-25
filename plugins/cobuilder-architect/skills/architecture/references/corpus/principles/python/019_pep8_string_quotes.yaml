@@ -1,0 +1,65 @@
+id: pep8-string-quotes-019
+name: PEP 8 String Quotes — Single vs. Double Quotes, Escape Avoidance, Triple-Quote Consistency
+category: readability
+canonical_tags: ['python', 'readability']
+sources:
+  - open_sources/python/pep-0008.html
+summary: >
+  PEP 8 does not mandate single vs. double quotes for string literals — Python treats them
+  identically. The rule is: pick one and be consistent. When a string contains quote characters,
+  use the other quoting style to avoid backslash escapes. For triple-quoted strings (multiline
+  strings and docstrings), always use double quotes (""") to stay consistent with PEP 257's
+  docstring convention, even if the string doesn't contain embedded quotes.
+examples:
+  - language: python
+    bad: |
+      # Inconsistent quoting style within the same file — confusing.
+      name = "Alice"
+      path = '/usr/local/bin'
+      message = "Hello, world"
+
+      # Using backslash escapes when the other quote style would avoid them.
+      quote = 'He said, \'Hello!\''
+      filename = "\"my file.txt\""
+
+      # Triple-quoted string with single quotes — breaks docstring convention.
+      long_text = '''A multi-line
+      string that spans
+      multiple lines.'''
+
+      # Backslash in triple-quoted string without raw prefix.
+      regex = """
+      A backslash-heavy pattern: \\d+\\.\\d+
+      """
+    good: |
+      """PEP 8 string quoting: consistent style within a project, alternating
+      quote types to avoid backslash escapes, and triple double-quotes for
+      all multi-line strings per PEP 257.
+      """
+
+      # Consistent single-quote style throughout.
+      name = 'Alice'
+      path = '/usr/local/bin'
+      message = 'Hello, world'
+
+      # Use the opposite quote to avoid escaping embedded quotes.
+      quote = "He said, 'Hello!'"
+      filename = '"my file.txt"'
+
+      # Triple double-quotes for multi-line strings — stays aligned with docstrings.
+      long_text = """A multi-line
+      string that spans
+      multiple lines."""
+
+      # Raw triple double-quotes for backslash-heavy content (regex, TeX, Windows paths).
+      regex = r"""
+      A backslash-heavy pattern: \d+\.\d+
+      """
+heuristics:
+  - "No official PEP 8 preference for single vs. double quotes. Choose one and apply it consistently across the project. Do not mix quote styles arbitrarily in the same file."
+  - "When a string literal contains the quote character matching its outer delimiter, switch to the other delimiter to avoid backslash escapes. This improves readability: 'He said, \"Hello!\"' or \"He said, 'Hello!'\"."
+  - "Always use triple double quotes (\"\"\") for multi-line strings, even when the string doesn't contain any embedded quotes. This aligns with PEP 257's docstring convention and avoids inconsistency."
+  - "Use raw triple-quoted strings (r\"\"\"...\"\"\") when the content contains many backslashes — regular expressions, TeX math, Windows file paths, or ASCII art."
+  - "The same rule applies to f-strings and format strings: consistency within a codebase matters more than any absolute preference for ' or \"."
+  - "Do not switch quoting styles mid-file to 'save a character' or 'look clever' — readability is the only goal."
+related_tags: [pep8, string-quotes, quoting, triple-quotes, raw-strings, f-strings, consistency, readability]

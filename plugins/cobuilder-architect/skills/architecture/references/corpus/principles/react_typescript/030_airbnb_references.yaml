@@ -1,0 +1,104 @@
+id: airbnb-references-030
+name: Airbnb References — const, let, var, and Block Scoping
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  Use `const` for all references that won't be reassigned; use `let` for
+  those that must change. Never use `var`. Both `const` and `let` are
+  block-scoped, which eliminates an entire class of bugs caused by
+  function-scoped `var` leaking across blocks. The compiler enforces
+  `const` immutability — you can't accidentally reassign it, which makes
+  code easier to reason about and refactor.
+examples:
+  - language: typescript
+    bad: |
+      // var leaks out of blocks — silent bug factory
+      function processItems(items: string[]) {
+        for (var i = 0; i < items.length; i++) {
+          fetchItem(items[i]).then((result) => {
+            // i is always items.length — stale closure
+            cache.set(items[i], result);
+          });
+        }
+      }
+
+      // var is function-scoped, so this leaks
+      var count = 0;
+      if (condition) {
+        var count = 1; // same variable, overwrites outer
+      }
+      console.log(count); // 1 — probably not what you intended
+
+      // let where const would suffice
+      let apiUrl = "https://api.example.com";
+      let maxRetries = 3;
+    good: |
+      // let is block-scoped — fresh binding per iteration
+      function processItems(items: string[]) {
+        for (let i = 0; i < items.length; i++) {
+          fetchItem(items[i]).then((result) => {
+            cache.set(items[i], result); // correct closure
+          });
+        }
+      }
+
+      // const and let don't leak across blocks
+      const count = 0;
+      if (condition) {
+        const count = 1; // new variable, no outer mutation
+        console.log(count); // 1
+      }
+      console.log(count); // 0 — outer count is intact
+
+      // const signals intent: this reference never changes
+      const apiUrl = "https://api.example.com";
+      const maxRetries = 3;
+
+      // let only when you must reassign
+      let attempts = 0;
+      while (attempts < maxRetries) {
+        attempts++;
+      }
+  - language: typescript
+    bad: |
+      // var in async callback — classic footgun
+      for (var j = 0; j < urls.length; j++) {
+        setTimeout(() => {
+          console.log(`Fetched ${urls[j]}`); // j is always urls.length
+        }, 100);
+      }
+
+      // Reassigning const would be caught, but this pattern is confused
+      let userId = getCurrentUserId();
+      // ... 100 lines later ...
+      userId = null; // someone mutated it — hard to track down
+    good: |
+      // let in for-loop — expected behavior with closures
+      for (let j = 0; j < urls.length; j++) {
+        setTimeout(() => {
+          console.log(`Fetched ${urls[j]}`); // j is correct per iteration
+        }, 100);
+      }
+
+      // Better yet: forEach or for-of for clarity
+      urls.forEach((url) => {
+        setTimeout(() => console.log(`Fetched ${url}`), 100);
+      });
+
+      // const signals "don't touch this"
+      const userId = getCurrentUserId();
+      if (!userId) {
+        throw new Error("User must be authenticated");
+      }
+      // userId can never become null below this point
+heuristics:
+  - Use `const` as the default. Only use `let` when you genuinely need to reassign.
+  - Never use `var`. It's function-scoped, hoists in surprising ways, and enables stale-closure bugs in loops. Enable the `no-var` ESLint rule.
+  - "`const` prevents reassignment, not immutability. `const arr = [1,2]; arr.push(3)` is fine — push mutates the array, it doesn't reassign `arr`. Use `Object.freeze()` or `ReadonlyArray<T>` if you need deeper immutability."
+  - Both `const` and `let` are block-scoped — they only exist inside `{}`. This prevents variable leakage across blocks and eliminates an entire category of unintended name collisions.
+  - "In `for` loops where you need the loop index in closures inside the body, use `let` — each iteration gets a fresh binding. `const` won't work here because `i++` reassigns."
+  - Prefer `for...of` or `Array.prototype.forEach` over classic `for` loops with an index variable. They're clearer and avoid the loop-variable closure trap entirely.
+  - If a variable must be reassigned (counters, accumulators, state machines), use `let` and keep its scope as tight as possible.
+related_tags: [airbnb, const, let, var, block-scoping, references, es6]

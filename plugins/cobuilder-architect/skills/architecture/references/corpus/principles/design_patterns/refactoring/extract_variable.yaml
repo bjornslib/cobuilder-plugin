@@ -1,0 +1,299 @@
+id: extract-variable-001
+name: "Refactoring — Extract Variable (Introduce Explaining Variable)"
+category: design-patterns
+canonical_tags: ['refactoring', 'composing-methods', 'extract-variable', 'introduce-explaining-variable', 'readability', 'self-documenting-code']
+sources:
+  - books/refactoring.md
+  - books/clean-code.md
+  - open_sources/design_patterns/refactoring-guru-patterns.txt
+  - open_sources/design_patterns/augmentcode-refactoring.html
+summary: >
+  Extract Variable (also called Introduce Explaining Variable) takes a complex
+  expression and assigns it to a well-named local variable. The variable's name
+  replaces the expression at every usage site, so the code reads as a narrative
+  rather than a puzzle. Unlike Replace Temp with Query, the extracted variable
+  stays local — it does not become a method. Use this when the expression is
+  complex enough to need a name but too local-scoped to justify a method, or
+  when the expression is used only within one method and extracting a method
+  would over-abstract. The variable name should explain *what* the expression
+  represents, not *how* it's computed. This is the lowest-cost readability
+  refactoring: no callers change, no interface changes, no test changes.
+  Combine with Extract Method: first extract variables to make a method's
+  logic readable, then extract coherent blocks into methods.
+examples:
+  - language: python
+    bad: |
+      # The `is_eligible` expression is a wall of boolean logic. A reader
+      # must parse `age >= 18`, `not has_felony`, the `or` grouping, and
+      # the residency check all at once. Every consumer repeats the wall.
+
+      from datetime import date
+      from dataclasses import dataclass
+
+
+      @dataclass
+      class Applicant:
+          name: str
+          birth_date: date
+          citizenship: str
+          has_felony: bool
+          income: float
+
+      @dataclass
+      class Property:
+          address: str
+          price: float
+          in_flood_zone: bool
+
+
+      def can_qualify(applicant: Applicant, property: Property) -> bool:
+          today = date.today()
+          return (
+              (today.year - applicant.birth_date.year >= 18)
+              and not applicant.has_felony
+              and (
+                  applicant.citizenship in ("US", "CA")
+                  or applicant.income >= 80_000
+              )
+              and property.price <= applicant.income * 4.5
+              and not property.in_flood_zone
+          )
+
+
+      def recommend_alternative(
+          applicant: Applicant, properties: list[Property]
+      ) -> list[str]:
+          # Identical wall of logic repeated — copy-paste drift waiting to happen
+          today = date.today()
+          return [
+              p.address
+              for p in properties
+              if (
+                  (today.year - applicant.birth_date.year >= 18)
+                  and not applicant.has_felony
+                  and (
+                      applicant.citizenship in ("US", "CA")
+                      or applicant.income >= 80_000
+                  )
+                  and p.price <= applicant.income * 4.5
+                  and not p.in_flood_zone
+              )
+          ]
+    good: |
+      # Extract Variable: each sub-expression gets a name that tells the story.
+      # The method reads like business rules: "is an adult, has clean record,
+      # meets residency or income threshold, property is affordable, not in
+      # flood zone." A reader can verify each rule independently.
+
+      from datetime import date
+      from dataclasses import dataclass
+
+
+      @dataclass
+      class Applicant:
+          name: str
+          birth_date: date
+          citizenship: str
+          has_felony: bool
+          income: float
+
+      @dataclass
+      class Property:
+          address: str
+          price: float
+          in_flood_zone: bool
+
+
+      def can_qualify(applicant: Applicant, property: Property) -> bool:
+          today = date.today()
+
+          # Each variable explains one business rule
+          is_adult = today.year - applicant.birth_date.year >= 18
+          has_clean_record = not applicant.has_felony
+          is_privileged_citizen = applicant.citizenship in ("US", "CA")
+          meets_income_threshold = applicant.income >= 80_000
+          is_eligible_resident = is_privileged_citizen or meets_income_threshold
+          is_affordable = property.price <= applicant.income * 4.5
+          is_safe_location = not property.in_flood_zone
+
+          return (
+              is_adult
+              and has_clean_record
+              and is_eligible_resident
+              and is_affordable
+              and is_safe_location
+          )
+
+
+      def recommend_alternative(
+          applicant: Applicant, properties: list[Property]
+      ) -> list[str]:
+          # Same logic, same variable names — no copy-paste drift.
+          # Better: extract `is_eligible(applicant, property)` as a function
+          # and call it from both places.
+          today = date.today()
+
+          return [
+              p.address
+              for p in properties
+              if can_qualify(applicant, p)
+          ]
+
+      # Bonus: variables make debugging trivial — set a breakpoint on
+      # `return (...)` and inspect every boolean in the debugger.
+      # The original wall of logic requires stepping into sub-expressions.
+
+  - language: typescript
+    bad: |
+      // The discount calculation is a dense ternary chain. What does
+      // `customer.yearsSinceRegistration > 5 && orderCount > 20` mean?
+      // A reader must decode the numbers to understand the business rule.
+
+      interface Customer {
+        id: string;
+        yearsSinceRegistration: number;
+        isVip: boolean;
+      }
+
+      interface Order {
+        id: string;
+        customerId: string;
+        lineItems: { price: number; quantity: number }[];
+        orderCount: number;
+      }
+
+      function calculateDiscount(customer: Customer, order: Order): number {
+        const subtotal = order.lineItems.reduce(
+          (sum, li) => sum + li.price * li.quantity, 0
+        );
+
+        // Wall of math — what do 0.20, 0.15, 0.10 actually mean?
+        const rate =
+          customer.isVip
+            ? 0.20
+            : customer.yearsSinceRegistration > 5 && order.orderCount > 20
+              ? 0.15
+              : customer.yearsSinceRegistration > 2
+                ? 0.10
+                : 0.05;
+
+        return subtotal * rate;
+      }
+
+      // Six months later, a new developer changes 5 -> 3 in one branch
+      // but not the other. The bug ships because no one can read the
+      // expression well enough to spot the inconsistency.
+    good: |
+      // Extract Variable: each business rule gets a name. The discount
+      // logic reads like policy: "VIPs get 20%, loyal high-volume accounts
+      // get 15%, established accounts get 10%, everyone else 5%."
+
+      interface Customer {
+        id: string;
+        yearsSinceRegistration: number;
+        isVip: boolean;
+      }
+
+      interface Order {
+        id: string;
+        customerId: string;
+        lineItems: { price: number; quantity: number }[];
+        orderCount: number;
+      }
+
+      function calculateDiscount(customer: Customer, order: Order): number {
+        const subtotal = order.lineItems.reduce(
+          (sum, li) => sum + li.price * li.quantity, 0
+        );
+
+        // Business rules extracted and named
+        const isVip = customer.isVip;
+        const isLongTermCustomer = customer.yearsSinceRegistration > 5;
+        const isHighVolume = order.orderCount > 20;
+        const isLoyalPowerUser = isLongTermCustomer && isHighVolume;
+        const isEstablishedCustomer = customer.yearsSinceRegistration > 2;
+
+        const VIP_DISCOUNT = 0.20;
+        const LOYAL_POWER_USER_DISCOUNT = 0.15;
+        const ESTABLISHED_DISCOUNT = 0.10;
+        const STANDARD_DISCOUNT = 0.05;
+
+        const rate = isVip
+          ? VIP_DISCOUNT
+          : isLoyalPowerUser
+            ? LOYAL_POWER_USER_DISCOUNT
+            : isEstablishedCustomer
+              ? ESTABLISHED_DISCOUNT
+              : STANDARD_DISCOUNT;
+
+        return subtotal * rate;
+      }
+
+      // Better still: extract the rate computation into a pure function
+      // `function discountRate(customer: Customer, order: Order): number`
+      // so it's independently testable and reusable.
+
+      test("loyal power users get 15%", () => {
+        const customer = {
+          id: "1",
+          yearsSinceRegistration: 6,
+          isVip: false,
+        };
+        const order = {
+          id: "o1",
+          customerId: "1",
+          lineItems: [{ price: 100, quantity: 1 }],
+          orderCount: 25,
+        };
+        // After extracting discountRate():
+        // expect(discountRate(customer, order)).toBe(0.15);
+      });
+
+heuristics:
+  - >
+    "Introduce Explaining Variable: put the result of the expression, or parts
+    of the expression, in a temporary variable with a name that explains the
+    purpose" (Fowler, Refactoring). The variable name should answer "what does
+    this mean?" not "how was this computed?"
+  - >
+    Apply when an expression is hard to read in its raw form. The threshold is
+    subjective but practical — if you need to pause and mentally parse the
+    expression, extract a variable.
+  - The variable name is the documentation. `is_eligible_for_benefits` is better
+    than `qualifies`. The name should be a boolean phrase (is/can/has/should) for
+    conditions, or a noun phrase for computed values.
+  - Extract Variable is the *lightest* refactoring. It requires zero call-site
+    changes, zero test changes, zero interface changes. When you're unsure whether
+    to extract a method, extract a variable first — it costs nothing and often
+    makes the Extract Method decision obvious.
+  - If the same expression appears in multiple places, prefer Extract Method over
+    Extract Variable. Variables are local; methods are reusable. A duplicated
+    variable definition in two functions is copy-paste drift waiting to happen.
+  - Extract Variable can be a stepping stone to Extract Method — first name the
+    pieces with variables so you can see the structure, then group related
+    variables and their consumers into a method.
+  - The variable should be immutable after assignment. If you need to mutate it,
+    the variable is carrying too many meanings — use Split Temporary Variable
+    first.
+  - Do NOT extract trivial expressions. `const tax_rate = 0.08` adds ceremony
+    without clarity — the literal is already self-explanatory. Extract when the
+    expression has multiple operators, nested calls, or non-obvious intent.
+  - Consider the scope carefully. A variable extracted at the top of a 200-line
+    function forces a reader to scroll back to remember its meaning. Extract
+    variables as close to their use site as the language allows (block scope
+    in modern languages, near the consuming if-statement).
+  - In expressions with side effects, extraction can change evaluation order and
+    thus behavior. Never extract a sub-expression containing a function call with
+    side effects unless you've verified the ordering doesn't matter.
+  - For magic numbers in expressions, use Extract Constant (or Replace Magic
+    Number with Symbolic Constant) instead. The constant should live at module or
+    class scope so it's discoverable. Extract Variable is for *computed* values,
+    not configuration values.
+  - "This refactoring is reversible: Inline Temp removes a variable that no longer earns its name (the expression became simpler, or the variable name is now misleading). Both directions are valid — the goal is readability, not always more variables."
+
+related_tags:
+  [extract-variable, introduce-explaining-variable, extract-method,
+   composing-methods, refactoring, readability, self-documenting-code,
+   inline-temp, split-temporary-variable, fowler-refactoring,
+   replace-magic-number, declarative-code, code-smells,
+   preparatory-refactoring]

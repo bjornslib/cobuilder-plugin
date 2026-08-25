@@ -1,0 +1,237 @@
+id: introduce-null-object-012
+name: Introduce Null Object
+category: refactoring
+canonical_tags: ['refactoring', 'design']
+sources:
+  - books/refactoring.md
+  - books/clean-code.md
+summary: |
+  Introduce Null Object replaces repeated null checks with a polymorphic object that
+  implements the same interface but provides neutral (do-nothing or default-returning)
+  behavior. Instead of cluttering every call site with `if x is not None`, you return a
+  Null Object that harmlessly absorbs the method calls. This centralizes the "absent"
+  behavior in one class, eliminates null-check duplication, and prevents
+  NullPointerException / AttributeError at the cost of one new class. The Null Object
+  is a special case of the Special Case pattern: it models the absence of a value as
+  a first-class object rather than a null sentinel.
+examples:
+  - language: python
+    bad: |
+      class Customer:
+          def __init__(self, name: str, plan: "BillingPlan | None" = None):
+              self.name = name
+              self.plan = plan
+
+      class BillingPlan:
+          def __init__(self, name: str, monthly_rate: float):
+              self.name = name
+              self.monthly_rate = monthly_rate
+
+          def charge(self, amount: float) -> None:
+              print(f"Charging ${amount:.2f} to {self.name}")
+
+      def generate_invoice(customer: Customer) -> dict:
+          # Null checks scattered everywhere
+          plan_name = customer.plan.name if customer.plan else "No Plan"
+          rate = customer.plan.monthly_rate if customer.plan else 0.0
+          if customer.plan:
+              customer.plan.charge(rate)
+          else:
+              print("Skipping charge — no billing plan")
+
+          return {"customer": customer.name, "plan": plan_name, "amount": rate}
+
+      def send_renewal_notice(customer: Customer) -> str:
+          if customer.plan and customer.plan.name == "Premium":
+              return f"{customer.name}: Your Premium plan renews next month."
+          elif customer.plan:
+              return f"{customer.name}: Your plan renews next month."
+          else:
+              return f"{customer.name}: You have no active plan."
+
+      def calculate_annual_revenue(customers: list[Customer]) -> float:
+          total = 0.0
+          for c in customers:
+              if c.plan:
+                  total += c.plan.monthly_rate
+          return total * 12
+    good: |
+      from abc import ABC, abstractmethod
+
+      class BillingPlan(ABC):
+          """Abstract billing plan — NullPlan provides the 'absent' variant."""
+
+          @abstractmethod
+          def charge(self, amount: float) -> None: ...
+
+          @abstractmethod
+          def is_premium(self) -> bool: ...
+
+          @property
+          @abstractmethod
+          def monthly_rate(self) -> float: ...
+
+          @property
+          @abstractmethod
+          def display_name(self) -> str: ...
+
+
+      class RealPlan(BillingPlan):
+          def __init__(self, name: str, monthly_rate: float):
+              self._name = name
+              self._monthly_rate = monthly_rate
+
+          def charge(self, amount: float) -> None:
+              print(f"Charging ${amount:.2f} to {self._name}")
+
+          def is_premium(self) -> bool:
+              return self._name == "Premium"
+
+          @property
+          def monthly_rate(self) -> float:
+              return self._monthly_rate
+
+          @property
+          def display_name(self) -> str:
+              return self._name
+
+
+      class NullPlan(BillingPlan):
+          """Null Object — silently absorbs all billing operations."""
+
+          def charge(self, amount: float) -> None:
+              pass  # No charge, nothing to log
+
+          def is_premium(self) -> bool:
+              return False
+
+          @property
+          def monthly_rate(self) -> float:
+              return 0.0
+
+          @property
+          def display_name(self) -> str:
+              return "No Plan"
+
+
+      class Customer:
+          def __init__(self, name: str, plan: BillingPlan | None = None):
+              self.name = name
+              self.plan = plan if plan is not None else NullPlan()
+
+
+      # ── Callers never check for null again ──
+
+      def generate_invoice(customer: Customer) -> dict:
+          rate = customer.plan.monthly_rate
+          customer.plan.charge(rate)
+          return {
+              "customer": customer.name,
+              "plan": customer.plan.display_name,
+              "amount": rate,
+          }
+
+      def send_renewal_notice(customer: Customer) -> str:
+          if customer.plan.is_premium():
+              return f"{customer.name}: Your Premium plan renews next month."
+          return f"{customer.name}: Your plan renews next month."
+
+      def calculate_annual_revenue(customers: list[Customer]) -> float:
+          return sum(c.plan.monthly_rate for c in customers) * 12
+  - language: typescript
+    bad: |
+      interface Logger {
+        log(message: string): void;
+        error(message: string): void;
+      }
+
+      class FileLogger implements Logger {
+        constructor(private filepath: string) {}
+        log(message: string): void {
+          fs.appendFileSync(this.filepath, `[INFO] ${message}\n`);
+        }
+        error(message: string): void {
+          fs.appendFileSync(this.filepath, `[ERROR] ${message}\n`);
+        }
+      }
+
+      class OrderService {
+        constructor(private logger: Logger | null = null) {}
+
+        placeOrder(order: Order): void {
+          // Null checks before every log call
+          if (this.logger) {
+            this.logger.log(`Placing order ${order.id}`);
+          }
+
+          try {
+            this._processPayment(order);
+            if (this.logger) {
+              this.logger.log(`Order ${order.id} placed successfully`);
+            }
+          } catch (err) {
+            if (this.logger) {
+              this.logger.error(`Order ${order.id} failed: ${err}`);
+            }
+            throw err;
+          }
+        }
+
+        private _processPayment(order: Order): void { /* ... */ }
+      }
+    good: |
+      interface Logger {
+        log(message: string): void;
+        error(message: string): void;
+      }
+
+      class FileLogger implements Logger {
+        constructor(private filepath: string) {}
+        log(message: string): void {
+          fs.appendFileSync(this.filepath, `[INFO] ${message}\n`);
+        }
+        error(message: string): void {
+          fs.appendFileSync(this.filepath, `[ERROR] ${message}\n`);
+        }
+      }
+
+      /** Null Object — discards all log messages. */
+      class NullLogger implements Logger {
+        log(_message: string): void { /* no-op */ }
+        error(_message: string): void { /* no-op */ }
+      }
+
+      class OrderService {
+        private logger: Logger;
+
+        constructor(logger: Logger | null = null) {
+          // Default to Null Object instead of keeping null
+          this.logger = logger ?? new NullLogger();
+        }
+
+        placeOrder(order: Order): void {
+          // No null checks — NullLogger safely absorbs calls
+          this.logger.log(`Placing order ${order.id}`);
+
+          try {
+            this._processPayment(order);
+            this.logger.log(`Order ${order.id} placed successfully`);
+          } catch (err) {
+            this.logger.error(`Order ${order.id} failed: ${err}`);
+            throw err;
+          }
+        }
+
+        private _processPayment(order: Order): void { /* ... */ }
+      }
+heuristics:
+  - Apply when you see the same null check pattern repeated across 3+ call sites for the same field — the duplication signals that "absent" behavior deserves a proper object.
+  - Apply when `if not field` or `if field is None` guards appear before every method call on an optional collaborator — replace the optional with a Null Object.
+  - Apply when a method returns `None` to mean "not found" and every caller has to branch on that — return a Null Object instead.
+  - Define the Null Object as a singleton when it is stateless — saves allocation and makes identity checks fast (`plan is NullPlan.INSTANCE`).
+  - Do NOT apply when the null case has truly different control flow (e.g. "if no logger, throw") — the Null Object pattern is about neutralizing behavior, not varying it.
+  - Do NOT apply when only one call site checks for null — the cost of a new class outweighs one null check.
+  - Do NOT apply when the interface has 20+ methods — the Null Object becomes a maintenance burden; if you have that many nullable callers, reconsider the design.
+  - Name the Null Object class to signal intent: NullLogger, NoDiscount, GuestUser, MissingPlan — not Default or Empty.
+  - Mechanical sequence: (1) create an abstract base class or interface with the methods callers use, (2) make the real class inherit/implement it, (3) create a null variant implementing the same interface with neutral behavior, (4) change the field/property to default to the Null Object instead of null, (5) remove all null checks from call sites, (6) run the test suite — every test that previously checked for null should still pass (or be updated to assert through the Null Object).
+related_tags: [null-object, special-case, polymorphism, guard-clauses, optional, null-safety, defensive-programming]

@@ -1,0 +1,187 @@
+id: 12factor-port-binding-007
+name: "12-Factor App — Port Binding (Self-Contained Services)"
+category: cloud-native
+canonical_tags: ['12factor', 'port-binding', 'self-contained', 'http', 'web-server', 'microservices']
+sources:
+  - open_sources/design_patterns/12factor-app.txt
+  - open_sources/design_patterns/12factor-port-binding.html
+summary: >
+  A twelve-factor app is completely self-contained and exports HTTP as a
+  service by binding to a port and listening for incoming requests. The app
+  does not rely on runtime injection of a webserver into the execution
+  environment (like Apache mod_php, mod_wsgi, or Passenger). Instead, the
+  app embeds a web server library (Tornado, Flask with gunicorn, Express,
+  Jetty) and binds to a port assigned by the execution environment via the
+  PORT environment variable. This self-contained nature means the app is
+  not dependent on a specific webserver configuration outside its control,
+  and one app can naturally become a backing service for another app by
+  providing a URL.
+examples:
+  - language: python
+    bad: |
+      # BAD: App relies on external webserver injection (mod_wsgi, Passenger).
+      # The app is a WSGI application that requires Apache or Nginx to host it.
+      # Configuration is split between app code and webserver config files.
+      # The app cannot start itself — it depends on the execution environment
+      # to provide a webserver.
+
+      # wsgi.py — BAD: This file is just a callable. It needs mod_wsgi
+      # loaded into Apache, or gunicorn started separately, or uWSGI
+      # configured externally. The app is not self-contained.
+
+      def application(environ, start_response):
+          path = environ["PATH_INFO"]
+          if path == "/":
+              start_response("200 OK", [("Content-Type", "text/plain")])
+              return [b"Hello from WSGI"]
+          start_response("404 Not Found", [("Content-Type", "text/plain")])
+          return [b"Not Found"]
+
+      # WHY: To run this, you need Apache + mod_wsgi configuration:
+      # WSGIScriptAlias / /path/to/wsgi.py
+      # Or gunicorn wsgi:application
+      # Or uWSGI --http :8000 --wsgi-file wsgi.py
+      #
+      # The app is not self-contained. The deploy target must know how
+      # to host WSGI apps. Different environments may use different
+      # webservers with different configs.
+
+    good: |
+      # GOOD: Self-contained app that embeds a web server library.
+      # Binds to a port from the PORT environment variable. No external
+      # webserver needed. Starts with a single command.
+
+      import os
+      from http.server import HTTPServer, BaseHTTPRequestHandler
+
+      class AppHandler(BaseHTTPRequestHandler):
+          def do_GET(self):
+              if self.path == "/":
+                  self.send_response(200)
+                  self.send_header("Content-Type", "text/plain")
+                  self.end_headers()
+                  self.wfile.write(b"Hello from self-contained app")
+              else:
+                  self.send_response(404)
+                  self.end_headers()
+
+      if __name__ == "__main__":
+          # WHY: PORT from environment — the execution environment assigns it.
+          # In dev: `python app.py` listens on localhost:8000.
+          # In prod: the platform sets PORT=80 and the app binds there.
+          port = int(os.environ.get("PORT", "8000"))
+          server = HTTPServer(("0.0.0.0", port), AppHandler)
+          print(f"Listening on port {port}")
+          server.serve_forever()
+
+      # WHY: The app is now a backing service for anything that can make
+      # HTTP requests. Another app can call this app at http://myapp:8000/.
+      # Port binding makes microservices natural.
+
+      # For production: use a production-grade embedded server
+      # from waitress import serve
+      # serve(AppHandler, host="0.0.0.0", port=port)
+
+  - language: typescript
+    bad: |
+      // BAD: App relies on being served behind Nginx or Apache as a reverse
+      // proxy. The app code assumes it runs on localhost and the external
+      // webserver handles ports, SSL, and routing. Deploy requires
+      // coordinating app code + webserver config.
+
+      // server.ts — BAD: hardcoded to listen on localhost:3000 only.
+      // Assumes Nginx is configured to proxy :80 → :3000.
+      // Breaks if the platform assigns a different port.
+
+      import express from "express";
+
+      const app = express();
+      app.get("/", (_req, res) => res.send("Hello"));
+
+      // WHY: hardcoded localhost:3000 — not configurable.
+      // If the platform assigns PORT=8080, this app ignores it.
+      app.listen(3000, "localhost", () => {
+        console.log("Listening on localhost:3000");
+      });
+
+      // WHY: Needs an nginx.conf file coordinated with this:
+      // server {
+      //     listen 80;
+      //     location / {
+      //         proxy_pass http://localhost:3000;
+      //     }
+      // }
+      // Now you have TWO things to configure and deploy together.
+
+    good: |
+      // GOOD: Self-contained app that binds to the assigned port.
+      // No external webserver needed. Starts with `node server.js`
+      // or `npm start`. The platform routes traffic directly to the app.
+
+      import express from "express";
+
+      const app = express();
+      app.get("/", (_req, res) => res.send("Hello from self-contained app"));
+
+      // WHY: PORT from environment — the execution environment sets it.
+      // In dev: PORT=3000 node server.js
+      // In prod on Heroku/Render/Cloud Run: the platform sets PORT.
+      // The app is self-contained and needs no external webserver.
+      const port = parseInt(process.env.PORT || "3000", 10);
+
+      app.listen(port, "0.0.0.0", () => {
+        console.log(`Listening on port ${port}`);
+      });
+
+      // WHY: For production, you might add a reverse proxy inside the
+      // container (e.g., Nginx sidecar) for static file serving or SSL
+      // termination. But the app itself binds to a port and is fully
+      // functional without external webserver injection.
+
+      // Dockerfile:
+      // EXPOSE 3000
+      // CMD ["node", "dist/server.js"]
+      // The platform maps $PORT → container:3000 automatically.
+
+heuristics:
+  - >
+    "Export services via port binding. The twelve-factor app is completely
+    self-contained and does not rely on runtime injection of a webserver
+    into the execution environment" (12factor.net/port-binding).
+  - >
+    Embed a web server library in the app (Tornado, Express, Jetty, Flask
+    with gunicorn). The app starts itself by binding to a port — it does
+    not need Apache/PHP-FPM/mod_wsgi to be pre-installed.
+  - >
+    Read the port from the PORT environment variable. Never hardcode a port
+    number. The execution environment assigns ports; the app must respect
+    that assignment.
+  - >
+    By binding to a port, one app can naturally become a backing service for
+    another app. Service A at http://service-a:5000/ is just a URL that
+    Service B can call. No special integration layer needed.
+  - >
+    The app should bind to "0.0.0.0", not "localhost" or "127.0.0.1".
+    Binding to localhost only works for same-machine connections; binding to
+    0.0.0.0 accepts connections from anywhere.
+  - >
+    For local development, the developer visits http://localhost:PORT in
+    their browser. No virtual host configuration, no Apache httpd.conf
+    editing. The app serves itself.
+  - >
+    Port binding decouples the app from the deployment mechanism. The same
+    app runs on a developer laptop, a PaaS (Heroku), a container platform
+    (Kubernetes), or a VM — just set PORT and run.
+  - >
+    In containerized environments, the Dockerfile EXPOSE directive documents
+    the port, but the actual port mapping is done by the orchestration layer.
+    The app just binds to PORT.
+  - >
+    Avoid frameworks that require external webserver configuration to
+    function (mod_php, mod_perl, Passenger). Choose frameworks that can
+    start an HTTP server independently.
+
+related_tags:
+  [port-binding, self-contained, http, web-server, embedded-server,
+   express, flask, gunicorn, tornado, jetty, port, microservices,
+   backing-service, twelve-factor, paas, heroku, docker, kubernetes]

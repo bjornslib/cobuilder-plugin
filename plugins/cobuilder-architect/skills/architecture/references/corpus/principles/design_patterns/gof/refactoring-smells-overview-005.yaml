@@ -1,0 +1,261 @@
+id: refactoring-smells-overview-005
+name: "Refactoring — Code Smells Overview"
+category: design-patterns
+canonical_tags: ['refactoring', 'code-smells', 'bloaters', 'couplers', 'dispensables', 'change-preventers', 'oo-abusers']
+sources:
+  - open_sources/design_patterns/refactoring-guru-patterns.txt
+  - open_sources/design_patterns/refactoring-guru-patterns.html
+  - books/refactoring.md
+summary: >
+  Code smells are surface indicators that usually correspond to deeper problems
+  in a system. They are not bugs — the code still works — but they signal
+  structural weaknesses that make the code harder to understand, modify, and
+  test. Refactoring.Guru classifies smells into five groups: Bloaters (things
+  that have grown too large), Object-Orientation Abusers (incorrect application
+  of OO principles), Change Preventers (changes in one place force cascading
+  changes elsewhere), Dispensables (things you can remove without losing
+  functionality), and Couplers (excessive coupling between classes). Each smell
+  has one or more refactoring techniques that address it. Learning to recognize
+  smells is the first step toward proactive refactoring — fixing structural
+  problems before they become architectural debt.
+examples:
+  - language: python
+    bad: |
+      # BAD: Long Method — a function that does too many things. It validates,
+      # processes, formats, and persists — 80 lines of mixed responsibilities.
+      # This is a Bloater smell. A reader cannot understand the function at a
+      # glance. Changing one responsibility risks breaking another.
+
+      def process_order(order: dict) -> dict:
+          # Validation (15 lines)
+          if not order.get("customer_id"):
+              raise ValueError("Missing customer_id")
+          if not order.get("items"):
+              raise ValueError("No items")
+          for item in order["items"]:
+              if item.get("quantity", 0) <= 0:
+                  raise ValueError(f"Invalid quantity for {item['name']}")
+              if item.get("price", 0) < 0:
+                  raise ValueError(f"Negative price for {item['name']}")
+
+          # Pricing (20 lines) — Bloater: unrelated to validation
+          subtotal = 0.0
+          for item in order["items"]:
+              subtotal += item["quantity"] * item["price"]
+          tax = subtotal * 0.08
+          discount = 0.0
+          if order.get("coupon"):
+              if order["coupon"] == "SAVE10":
+                  discount = subtotal * 0.10
+              elif order["coupon"] == "SAVE20":
+                  discount = subtotal * 0.20
+          total = subtotal + tax - discount
+
+          # Formatting (10 lines) — Bloater: unrelated to business logic
+          result = {
+              "order_id": order.get("id"),
+              "customer": order.get("customer_id"),
+              "subtotal": f"${subtotal:.2f}",
+              "tax": f"${tax:.2f}",
+              "discount": f"${discount:.2f}",
+              "total": f"${total:.2f}",
+          }
+          return result
+
+      # WHY: This function smells. Extract Method would pull validation,
+      # pricing, and formatting into separate named functions. The reader
+      # then sees: validate → calculate → format → return.
+
+    good: |
+      # GOOD: Extracted methods. Each function has one responsibility.
+      # The process_order function reads like a recipe. Individual functions
+      # are independently testable and reusable. No Bloater smell.
+
+      from dataclasses import dataclass
+      from typing import Sequence
+
+
+      @dataclass
+      class LineItem:
+          name: str
+          quantity: int
+          price: float
+
+
+      @dataclass
+      class Order:
+          id: str
+          customer_id: str
+          items: Sequence[LineItem]
+          coupon: str | None = None
+
+
+      @dataclass
+      class OrderResult:
+          order_id: str
+          customer: str
+          subtotal: str
+          tax: str
+          discount: str
+          total: str
+
+
+      def validate_order(order: Order) -> None:
+          """Validate order preconditions — single responsibility."""
+          if not order.customer_id:
+              raise ValueError("Missing customer_id")
+          if not order.items:
+              raise ValueError("No items")
+          for item in order.items:
+              if item.quantity <= 0:
+                  raise ValueError(f"Invalid quantity for {item.name}")
+              if item.price < 0:
+                  raise ValueError(f"Negative price for {item.name}")
+
+
+      def calculate_pricing(order: Order) -> tuple[float, float, float]:
+          """Calculate subtotal, tax, and discount — pure function."""
+          subtotal = sum(item.quantity * item.price for item in order.items)
+          tax = subtotal * 0.08
+
+          discounts = {"SAVE10": 0.10, "SAVE20": 0.20}
+          discount_rate = discounts.get(order.coupon or "", 0.0)
+          discount = subtotal * discount_rate
+
+          return subtotal, tax, discount
+
+
+      def format_result(order: Order, subtotal: float, tax: float, discount: float) -> OrderResult:
+          """Format the result — presentation concern only."""
+          total = subtotal + tax - discount
+          return OrderResult(
+              order_id=order.id,
+              customer=order.customer_id,
+              subtotal=f"${subtotal:.2f}",
+              tax=f"${tax:.2f}",
+              discount=f"${discount:.2f}",
+              total=f"${total:.2f}",
+          )
+
+
+      def process_order(order: Order) -> OrderResult:
+          """Process an order — orchestrates, doesn't do the work."""
+          validate_order(order)
+          subtotal, tax, discount = calculate_pricing(order)
+          return format_result(order, subtotal, tax, discount)
+
+  - language: typescript
+    bad: |
+      // BAD: Large Class — a UserService that handles authentication,
+      // profile management, permissions, notifications, and analytics.
+      // 300+ lines. Adding a feature touches existing code — risk of
+      // breaking unrelated functionality. This is a Bloater smell.
+
+      class UserService {
+        // Auth methods
+        async login(email: string, password: string) { /* ... */ }
+        async logout(userId: string) { /* ... */ }
+        async resetPassword(email: string) { /* ... */ }
+
+        // Profile methods
+        async updateProfile(userId: string, data: any) { /* ... */ }
+        async getProfile(userId: string) { /* ... */ }
+        async deleteAccount(userId: string) { /* ... */ }
+
+        // Permission methods
+        async checkPermission(userId: string, resource: string) { /* ... */ }
+        async grantRole(userId: string, role: string) { /* ... */ }
+
+        // Notification methods
+        async sendWelcomeEmail(userId: string) { /* ... */ }
+        async sendPasswordResetEmail(email: string) { /* ... */ }
+
+        // Analytics methods
+        async trackLogin(userId: string) { /* ... */ }
+        async trackFeatureUsage(userId: string, feature: string) { /* ... */ }
+
+        // 10 more methods...
+      }
+      // WHY: This class has too many reasons to change. Extract Class
+      // would split it into AuthService, ProfileService, PermissionService,
+      // NotificationService, and AnalyticsService.
+
+    good: |
+      // GOOD: Split into focused services. Each class has a single
+      // responsibility. Services depend on each other via injection.
+      // No Large Class smell.
+
+      class AuthService {
+        constructor(private readonly userRepo: UserRepository) {}
+        async login(email: string, password: string): Promise<User> { /* ... */ }
+        async logout(userId: string): Promise<void> { /* ... */ }
+        async resetPassword(email: string): Promise<void> { /* ... */ }
+      }
+
+      class ProfileService {
+        constructor(private readonly userRepo: UserRepository) {}
+        async updateProfile(userId: string, data: Partial<User>): Promise<void> { /* ... */ }
+        async getProfile(userId: string): Promise<User> { /* ... */ }
+      }
+
+      class PermissionService {
+        async checkPermission(userId: string, resource: string): Promise<boolean> { /* ... */ }
+        async grantRole(userId: string, role: string): Promise<void> { /* ... */ }
+      }
+
+      class NotificationService {
+        async sendWelcomeEmail(userId: string): Promise<void> { /* ... */ }
+        async sendPasswordResetEmail(email: string): Promise<void> { /* ... */ }
+      }
+
+      class AnalyticsService {
+        async trackLogin(userId: string): Promise<void> { /* ... */ }
+        async trackFeatureUsage(userId: string, feature: string): Promise<void> { /* ... */ }
+      }
+      // WHY: Each class is small, focused, and independently testable.
+      // Adding a new notification type only touches NotificationService.
+
+heuristics:
+  - >
+    Bloaters (Long Method, Large Class, Primitive Obsession, Long Parameter List,
+    Data Clumps): code, methods, and classes that have grown so large they are
+    hard to work with. Extract, split, or replace with objects.
+  - >
+    Object-Orientation Abusers (Switch Statements, Temporary Field, Refused
+    Bequest, Alternative Classes with Different Interfaces): incorrect or
+    incomplete application of OOP. Replace conditionals with polymorphism,
+    push down unused inheritance.
+  - >
+    Change Preventers (Divergent Change, Shotgun Surgery, Parallel Inheritance
+    Hierarchies): one change forces many changes elsewhere. Split classes by
+    reason-to-change, move methods to the right owner.
+  - >
+    Dispensables (Comments, Duplicate Code, Lazy Class, Data Class, Dead Code,
+    Speculative Generality): things whose absence would make the code cleaner.
+    Delete with confidence — they add noise, not value.
+  - >
+    Couplers (Feature Envy, Inappropriate Intimacy, Message Chains, Middle Man):
+    excessive coupling between classes. Move methods to where the data lives,
+    hide delegates, or remove unnecessary intermediaries.
+  - >
+    "A smell is not a bug — the code still works. But it's a warning sign that
+    the design is degrading. Fix smells early, before they compound into
+    architectural debt" (Fowler, Refactoring).
+  - >
+    Each smell has a corresponding refactoring. Long Method → Extract Method.
+    Large Class → Extract Class. Switch Statements → Replace Conditional with
+    Polymorphism. Learn the smell → refactoring mapping.
+  - >
+    Smells are context-dependent. A 10-line function in a simple script is fine;
+    a 10-line function in a complex domain model may be a Long Method. Judge
+    smell severity relative to the module's responsibilities.
+  - >
+    When you see a smell, ask: "Does this make the code harder to change?" If
+    yes, refactor. If no (e.g., a Data Class that truly has no behavior), leave
+    it — not every smell needs fixing.
+
+related_tags:
+  [code-smells, bloaters, oo-abusers, change-preventers, dispensables,
+   couplers, long-method, large-class, primitive-obsession, feature-envy,
+   duplicate-code, switch-statements, shotgun-surgery, refactoring,
+   fowler, design-patterns]

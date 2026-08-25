@@ -1,0 +1,230 @@
+id: replace-conditional-with-polymorphism-003
+name: Replace Conditional with Polymorphism
+category: refactoring
+canonical_tags: ['refactoring', 'readability']
+sources:
+  - books/refactoring.md
+  - books/domain-driven-design.md
+summary: |
+  Replace Conditional with Polymorphism replaces repeated branching on type, status, or mode
+  with a class hierarchy where each variant encapsulates its own behavior. This eliminates 
+  cascading if/elif/switch chains, makes adding new variants safe (add a class, don't edit existing code),
+  and keeps each variant's logic locally coherent rather than smeared across the codebase.
+examples:
+  - language: python
+    bad: |
+      class PaymentProcessor:
+          def process(self, payment: Payment) -> Receipt:
+              if payment.method == "credit_card":
+                  # Validate card
+                  if not self._validate_card(payment.card_number, payment.expiry):
+                      raise PaymentError("Invalid card")
+                  # Authorize
+                  response = self._gateway.authorize(payment.amount, payment.card_number)
+                  if response.status != "approved":
+                      raise PaymentError(response.message)
+                  fee = payment.amount * 0.029 + 0.30
+
+              elif payment.method == "paypal":
+                  # Redirect to PayPal
+                  redirect_url = self._paypal.create_payment(payment.amount, payment.currency)
+                  # Poll for completion
+                  status = self._paypal.poll_completion(payment.id)
+                  if status != "completed":
+                      raise PaymentError("PayPal payment incomplete")
+                  fee = payment.amount * 0.034 + 0.49
+
+              elif payment.method == "crypto":
+                  # Wait for blockchain confirmation
+                  if payment.confirmations < 3:
+                      raise PaymentError("Insufficient confirmations")
+                  fee = max(payment.amount * 0.005, 1.00)
+
+              elif payment.method == "bank_transfer":
+                  if payment.amount < 10:
+                      raise PaymentError("Minimum bank transfer is $10")
+                  reference = self._bank.initiate_transfer(payment.amount, payment.iban)
+                  fee = 2.50
+
+              else:
+                  raise PaymentError(f"Unknown payment method: {payment.method}")
+
+              receipt = Receipt(
+                  amount=payment.amount,
+                  fee=fee,
+                  net=payment.amount - fee,
+                  method=payment.method,
+              )
+              self._ledger.record(receipt)
+              return receipt
+    good: |
+      from abc import ABC, abstractmethod
+
+      class PaymentMethod(ABC):
+          """Each payment method encapsulates its own validation, processing, and fee calculation."""
+
+          @abstractmethod
+          def validate(self, payment: Payment) -> None: ...
+
+          @abstractmethod
+          def execute(self, payment: Payment) -> PaymentResult: ...
+
+          @abstractmethod
+          def calculate_fee(self, amount: float) -> float: ...
+
+      class CreditCardPayment(PaymentMethod):
+          def validate(self, payment: Payment) -> None:
+              if not card_validator.is_valid(payment.card_number, payment.expiry):
+                  raise PaymentError("Invalid card")
+
+          def execute(self, payment: Payment) -> PaymentResult:
+              response = self._gateway.authorize(payment.amount, payment.card_number)
+              if response.status != "approved":
+                  raise PaymentError(response.message)
+              return PaymentResult(provider_id=response.id)
+
+          def calculate_fee(self, amount: float) -> float:
+              return amount * 0.029 + 0.30
+
+      class PayPalPayment(PaymentMethod):
+          def validate(self, payment: Payment) -> None:
+              pass  # PayPal validates on its side
+
+          def execute(self, payment: Payment) -> PaymentResult:
+              redirect_url = self._paypal.create_payment(payment.amount, payment.currency)
+              status = self._paypal.poll_completion(payment.id)
+              if status != "completed":
+                  raise PaymentError("PayPal payment incomplete")
+              return PaymentResult(provider_id=payment.id)
+
+          def calculate_fee(self, amount: float) -> float:
+              return amount * 0.034 + 0.49
+
+      class CryptoPayment(PaymentMethod):
+          def validate(self, payment: Payment) -> None:
+              if payment.confirmations < 3:
+                  raise PaymentError("Insufficient confirmations")
+
+          def execute(self, payment: Payment) -> PaymentResult:
+              return PaymentResult(provider_id=payment.tx_hash)
+
+          def calculate_fee(self, amount: float) -> float:
+              return max(amount * 0.005, 1.00)
+
+      class BankTransferPayment(PaymentMethod):
+          def validate(self, payment: Payment) -> None:
+              if payment.amount < 10:
+                  raise PaymentError("Minimum bank transfer is $10")
+
+          def execute(self, payment: Payment) -> PaymentResult:
+              reference = self._bank.initiate_transfer(payment.amount, payment.iban)
+              return PaymentResult(provider_id=reference)
+
+          def calculate_fee(self, amount: float) -> float:
+              return 2.50
+
+      class PaymentProcessor:
+          METHODS: dict[str, type[PaymentMethod]] = {
+              "credit_card": CreditCardPayment,
+              "paypal": PayPalPayment,
+              "crypto": CryptoPayment,
+              "bank_transfer": BankTransferPayment,
+          }
+
+          def process(self, payment: Payment) -> Receipt:
+              handler = self._resolve_handler(payment.method)
+              handler.validate(payment)
+
+              result = handler.execute(payment)
+              fee = handler.calculate_fee(payment.amount)
+
+              receipt = Receipt(
+                  amount=payment.amount,
+                  fee=fee,
+                  net=payment.amount - fee,
+                  method=payment.method,
+              )
+              self._ledger.record(receipt)
+              return receipt
+
+          def _resolve_handler(self, method: str) -> PaymentMethod:
+              klass = self.METHODS.get(method)
+              if klass is None:
+                  raise PaymentError(f"Unknown payment method: {method}")
+              return klass()  # In production, inject dependencies via constructor or factory
+  - language: typescript
+    bad: |
+      function calculateShipping(
+        method: string,
+        weightKg: number,
+        distanceKm: number,
+        isExpress: boolean
+      ): number {
+        if (method === "standard") {
+          const base = weightKg * 0.5;
+          return base + distanceKm * 0.1;
+        } else if (method === "express") {
+          const base = weightKg * 1.2;
+          const surcharge = isExpress ? 5.0 : 0;
+          return base + distanceKm * 0.3 + surcharge;
+        } else if (method === "overnight") {
+          return Math.max(weightKg * 3.0 + distanceKm * 0.8, 25.0);
+        } else if (method === "international") {
+          const base = weightKg * 2.5;
+          const customsFee = weightKg > 10 ? 15 : 5;
+          return base + distanceKm * 0.5 + customsFee;
+        } else {
+          throw new Error(`Unknown shipping method: ${method}`);
+        }
+      }
+    good: |
+      interface ShippingStrategy {
+        calculate(weightKg: number, distanceKm: number): number;
+      }
+
+      class StandardShipping implements ShippingStrategy {
+        calculate(weightKg: number, distanceKm: number): number {
+          return weightKg * 0.5 + distanceKm * 0.1;
+        }
+      }
+
+      class ExpressShipping implements ShippingStrategy {
+        calculate(weightKg: number, distanceKm: number): number {
+          return weightKg * 1.2 + distanceKm * 0.3;
+        }
+      }
+
+      class OvernightShipping implements ShippingStrategy {
+        calculate(weightKg: number, distanceKm: number): number {
+          return Math.max(weightKg * 3.0 + distanceKm * 0.8, 25.0);
+        }
+      }
+
+      class InternationalShipping implements ShippingStrategy {
+        calculate(weightKg: number, distanceKm: number): number {
+          const customsFee = weightKg > 10 ? 15 : 5;
+          return weightKg * 2.5 + distanceKm * 0.5 + customsFee;
+        }
+      }
+
+      const strategies: Record<string, ShippingStrategy> = {
+        standard: new StandardShipping(),
+        express: new ExpressShipping(),
+        overnight: new OvernightShipping(),
+        international: new InternationalShipping(),
+      };
+
+      function calculateShipping(method: string, weightKg: number, distanceKm: number): number {
+        const strategy = strategies[method];
+        if (!strategy) throw new Error(`Unknown shipping method: ${method}`);
+        return strategy.calculate(weightKg, distanceKm);
+      }
+heuristics:
+  - Apply when the same type/status field is branched on in 3+ places — the branching is a hidden type system.
+  - Apply when adding a new variant forces you to find and edit every if/elif/switch chain in the codebase.
+  - Apply when each branch has nontrivial logic — if branches are one-liners, a lookup table or dictionary dispatch may be sufficient.
+  - Do NOT apply when there is only one branch point and it's simple — polymorphism adds indirection; the payoff must exceed the cost.
+  - Prefer composition (strategy pattern) over inheritance when variants share no meaningful common state.
+  - Register strategies in a dictionary/map so the dispatch point stays self-contained — don't scatter instanceof checks.
+  - After refactoring: old tests should still pass; add a test for each variant class; add a test proving new variants can be added without touching existing code.
+related_tags: [polymorphism, strategy-pattern, open-closed-principle, switch-statement, type-code]

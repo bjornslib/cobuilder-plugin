@@ -1,0 +1,528 @@
+id: introduce-parameter-object-001
+name: "Refactoring — Introduce Parameter Object"
+category: design-patterns
+canonical_tags: ['refactoring', 'organizing-data', 'introduce-parameter-object', 'data-clump', 'long-parameter-list', 'value-object', 'domain-modeling', 'reduce-arity']
+sources:
+  - books/refactoring.md
+  - books/clean-code.md
+  - open_sources/design_patterns/refactoring-guru-patterns.txt
+  - open_sources/design_patterns/augmentcode-refactoring.html
+summary: >
+  Introduce Parameter Object replaces a group of parameters that consistently
+  travel together across function signatures with a single object that bundles
+  them. Instead of `createReport(startDate, endDate, timezone, format)`, you
+  define a `DateRange(start, end, tz)` and pass that. The parameter object has
+  a name, making the grouping explicit as a domain concept — a DateRange, a
+  ShippingAddress, a SearchCriteria. This refactoring attacks two problems:
+  (1) the long parameter list smell — functions with 4+ positional parameters
+  are hard to call correctly (argument order errors) and hard to read (every
+  call site is a wall of unnamed values); and (2) the data clump smell — the
+  same 3-4 parameters appear together in 3+ different function signatures,
+  indicating a hidden concept that deserves a proper type. After introducing the
+  parameter object, behavior that previously operated on the individual fields
+  can be moved into the object as methods — `dateRange.contains(date)`,
+  `address.isInternational()`, `criteria.matches(record)`. This is the
+  transformation sequence: data clump → parameter object → behavior-rich
+  value object.
+
+  Apply this when the same group of parameters appears together in three or more
+  method signatures. The signal: adding a new field to this conceptual group
+  forces you to edit every function that takes the parameters. A DateRange that
+  appears in `search()`, `filter()`, `aggregate()`, and `export()` is a data
+  clump — bundle it once, pass it everywhere. Do NOT apply when the parameters
+  are genuinely independent (a standalone int, a standalone string), when only
+  one function takes the group, or when the group has no meaningful domain
+  name. A parameter object called `ProcessArgs` or `HelperParams` adds ceremony
+  without meaning — the name must encode a domain concept.
+examples:
+  - language: python
+    bad: |
+      # BAD: The same four parameters (min_price, max_price, min_rating,
+      # max_rating) appear in FOUR function signatures. Adding a new filter
+      # (e.g., `min_stock`) means editing every function that searches or
+      # filters products. The repeated parameter list is a data clump
+      # pretending to be independent values. No domain concept is named.
+
+      from dataclasses import dataclass
+      from decimal import Decimal
+
+
+      @dataclass
+      class Product:
+          id: str
+          name: str
+          price: Decimal
+          rating: float
+          stock: int
+          category: str
+
+
+      def search_products(
+          products: list[Product],
+          min_price: Decimal | None,
+          max_price: Decimal | None,
+          min_rating: float | None,
+          max_rating: float | None,
+      ) -> list[Product]:
+          result = []
+          for p in products:
+              if min_price is not None and p.price < min_price:
+                  continue
+              if max_price is not None and p.price > max_price:
+                  continue
+              if min_rating is not None and p.rating < min_rating:
+                  continue
+              if max_rating is not None and p.rating > max_rating:
+                  continue
+              result.append(p)
+          return result
+
+
+      def count_matching_products(
+          products: list[Product],
+          min_price: Decimal | None,
+          max_price: Decimal | None,
+          min_rating: float | None,
+          max_rating: float | None,
+      ) -> int:
+          return len(
+              search_products(products, min_price, max_price, min_rating, max_rating)
+          )
+
+
+      def average_price_of_matching(
+          products: list[Product],
+          min_price: Decimal | None,
+          max_price: Decimal | None,
+          min_rating: float | None,
+          max_rating: float | None,
+      ) -> Decimal:
+          matches = search_products(
+              products, min_price, max_price, min_rating, max_rating
+          )
+          if not matches:
+              return Decimal("0")
+          return sum(p.price for p in matches) / len(matches)
+
+
+      def group_by_category(
+          products: list[Product],
+          min_price: Decimal | None,
+          max_price: Decimal | None,
+          min_rating: float | None,
+          max_rating: float | None,
+      ) -> dict[str, list[Product]]:
+          matches = search_products(
+              products, min_price, max_price, min_rating, max_rating
+          )
+          groups: dict[str, list[Product]] = {}
+          for p in matches:
+              groups.setdefault(p.category, []).append(p)
+          return groups
+
+
+      # Adding `min_stock: int | None` means changing 4 function signatures
+      # and every call site. Adding `category_filter: str` means 4 more edits.
+      # Every new dimension doubles the editing surface.
+
+    good: |
+      # GOOD: Introduce Parameter Object bundles the price and rating ranges
+      # into `ProductFilter` — a named domain concept. All four functions
+      # take a single parameter. Adding a new filter field is ONE edit to
+      # the ProductFilter class, and then `matches()` automatically picks it
+      # up. Every function reads `filter.matches(product)` — the logic is
+      # centralized, testable, and named.
+
+      from dataclasses import dataclass, field
+      from decimal import Decimal
+
+
+      @dataclass
+      class Product:
+          id: str
+          name: str
+          price: Decimal
+          rating: float
+          stock: int
+          category: str
+
+
+      @dataclass
+      class ProductFilter:
+          """Criteria for filtering a product catalog.
+
+          Any `None` field means 'no constraint on that dimension.'
+          """
+          min_price: Decimal | None = None
+          max_price: Decimal | None = None
+          min_rating: float | None = None
+          max_rating: float | None = None
+          min_stock: int | None = None
+          category: str | None = None
+
+          def matches(self, product: Product) -> bool:
+              """Return True if product satisfies all set constraints."""
+              if self.min_price is not None and product.price < self.min_price:
+                  return False
+              if self.max_price is not None and product.price > self.max_price:
+                  return False
+              if self.min_rating is not None and product.rating < self.min_rating:
+                  return False
+              if self.max_rating is not None and product.rating > self.max_rating:
+                  return False
+              if self.min_stock is not None and product.stock < self.min_stock:
+                  return False
+              if self.category is not None and product.category != self.category:
+                  return False
+              return True
+
+
+      # Every function now takes ONE parameter object:
+
+      def search_products(
+          products: list[Product], filter_: ProductFilter
+      ) -> list[Product]:
+          return [p for p in products if filter_.matches(p)]
+
+
+      def count_matching_products(
+          products: list[Product], filter_: ProductFilter
+      ) -> int:
+          return len(search_products(products, filter_))
+
+
+      def average_price_of_matching(
+          products: list[Product], filter_: ProductFilter
+      ) -> Decimal:
+          matches = search_products(products, filter_)
+          return (
+              sum(p.price for p in matches) / len(matches) if matches else Decimal("0")
+          )
+
+
+      def group_by_category(
+          products: list[Product], filter_: ProductFilter
+      ) -> dict[str, list[Product]]:
+          matches = search_products(products, filter_)
+          groups: dict[str, list[Product]] = {}
+          for p in matches:
+              groups.setdefault(p.category, []).append(p)
+          return groups
+
+
+      # Adding a new filter dimension — `exclude_discontinued: bool` — is
+      # one field on ProductFilter, one check in `matches()`. Zero changes to
+      # search_products, count_matching_products, average_price_of_matching,
+      # or group_by_category.
+
+      # The filter is independently testable:
+      def test_filter_matches_expensive_high_rated():
+          f = ProductFilter(min_price=Decimal("50"), min_rating=4.0)
+          cheap = Product("1", "Widget", Decimal("10"), 4.5, 100, "electronics")
+          expensive = Product("2", "Gadget", Decimal("100"), 4.5, 10, "electronics")
+          assert not f.matches(cheap)
+          assert f.matches(expensive)
+
+      # Call sites read clearly:
+      cheap_widgets = search_products(
+          catalog,
+          ProductFilter(max_price=Decimal("20"), category="electronics"),
+      )
+
+      # --- Parameter Object with behavior: it grows richer over time ---
+      # After introducing the object, move behavior that works on its fields
+      # into the object itself:
+
+      @dataclass
+      class DateRange:
+          start: str  # ISO date
+          end: str
+
+          def contains(self, date: str) -> bool:
+              return self.start <= date <= self.end
+
+          def duration_days(self) -> int:
+              from datetime import date as dt
+              d = dt.fromisoformat(self.end) - dt.fromisoformat(self.start)
+              return d.days
+
+          def overlaps(self, other: "DateRange") -> bool:
+              return self.start <= other.end and other.start <= self.end
+
+      # The parameter object becomes a value object in the domain model.
+      # It started as a bundle of parameters; it ends as a meaningful type
+      # with its own behavior, tested in isolation, and reusable everywhere
+      # a date range is needed.
+
+  - language: typescript
+    bad: |
+      // BAD: The same five parameters (name, street, city, state, zip)
+      // appear across three function signatures. They represent a concept
+      // — a shipping address — but that concept has no type. Adding
+      // `country` means editing all three functions and every call site.
+      // Argument-order bugs are invisible to the type checker (all strings).
+
+      function formatShippingLabel(
+        name: string,
+        street: string,
+        city: string,
+        state: string,
+        zip: string,
+      ): string {
+        return `${name}\n${street}\n${city}, ${state} ${zip}`;
+      }
+
+      function validateShippingAddress(
+        name: string,
+        street: string,
+        city: string,
+        state: string,
+        zip: string,
+      ): string | null {
+        if (!name.trim()) return "Name is required";
+        if (!street.trim()) return "Street is required";
+        if (!city.trim()) return "City is required";
+        if (!state.trim()) return "State is required";
+        if (!/^\d{5}(-\d{4})?$/.test(zip)) return "Invalid ZIP code";
+        return null; // valid
+      }
+
+      function isDomestic(
+        _name: string,
+        _street: string,
+        _city: string,
+        state: string,
+        _zip: string,
+      ): boolean {
+        // Unused parameters clutter the signature because they're part of
+        // the data clump — this function only needs `state`, but must
+        // accept the whole clump because it travels together.
+        const domesticStates = new Set(["NY", "CA", "TX", /* ... */]);
+        return domesticStates.has(state);
+      }
+
+      // Call site: 5 positional strings, easy to swap city and state by
+      // accident. No compiler error — everything is `string`.
+      formatShippingLabel("Alice", "123 Main", "NY", "New York", "10001");
+      //                                  city=NY?   state=New York?   — swapped!
+
+    good: |
+      // GOOD: Introduce Parameter Object — `ShippingAddress` bundles the
+      // five fields into a typed object. Function signatures drop from 5
+      // params to 1. The type checker prevents field-swapping bugs. Adding
+      // `country` is one field on ShippingAddress — zero signature changes.
+      // The parameter object becomes a domain type with behavior.
+
+      interface ShippingAddress {
+        name: string;
+        street: string;
+        city: string;
+        state: string;
+        zip: string;
+      }
+
+      function formatShippingLabel(addr: ShippingAddress): string {
+        return `${addr.name}\n${addr.street}\n${addr.city}, ${addr.state} ${addr.zip}`;
+      }
+
+      function validateShippingAddress(
+        addr: ShippingAddress
+      ): string | null {
+        if (!addr.name.trim()) return "Name is required";
+        if (!addr.street.trim()) return "Street is required";
+        if (!addr.city.trim()) return "City is required";
+        if (!addr.state.trim()) return "State is required";
+        if (!/^\d{5}(-\d{4})?$/.test(addr.zip)) return "Invalid ZIP code";
+        return null;
+      }
+
+      // Now only the fields actually used appear in the method body:
+      function isDomestic(addr: ShippingAddress): boolean {
+        const domesticStates = new Set([
+          "AL", "AK", "AZ", "AR", "CA", /* ... all 50 ... */ "WY",
+        ]);
+        return domesticStates.has(addr.state);
+      }
+
+      // Call sites: one object, named fields — impossible to swap
+      formatShippingLabel({
+        name: "Alice",
+        street: "123 Main St",
+        city: "New York",     // type checker knows this is city
+        state: "NY",          // type checker knows this is state
+        zip: "10001",
+      });
+
+      // --- Adding a field: one edit to the interface, zero to callers ---
+      interface InternationalShippingAddress extends ShippingAddress {
+        country: string;
+      }
+
+      function formatInternationalLabel(
+        addr: InternationalShippingAddress
+      ): string {
+        return `${formatShippingLabel(addr)}\n${addr.country}`;
+      }
+
+      // --- Evolving toward a value object with behavior ---
+
+      class ShippingAddressValue {
+        constructor(
+          public readonly name: string,
+          public readonly street: string,
+          public readonly city: string,
+          public readonly state: string,
+          public readonly zip: string,
+          public readonly country: string = "US",
+        ) {}
+
+        isDomestic(): boolean {
+          return this.country === "US";
+        }
+
+        display(): string {
+          const base = `${this.name}\n${this.street}\n${this.city}, ${this.state} ${this.zip}`;
+          return this.isDomestic() ? base : `${base}\n${this.country}`;
+        }
+
+        // Behavior that used to live in a separate validator now lives on
+        // the address itself:
+        validate(): string[] {
+          const errors: string[] = [];
+          if (!this.name.trim()) errors.push("Name is required");
+          if (!this.street.trim()) errors.push("Street is required");
+          if (!this.city.trim()) errors.push("City is required");
+          if (!/^\d{5}(-\d{4})?$/.test(this.zip)) errors.push("Invalid ZIP code");
+          return errors;
+        }
+
+        isValid(): boolean {
+          return this.validate().length === 0;
+        }
+      }
+
+      // Each function is independently testable:
+      import { describe, it, expect } from "vitest";
+
+      describe("ShippingAddressValue", () => {
+        const addr = new ShippingAddressValue(
+          "Bob", "456 Oak Ave", "Austin", "TX", "78701"
+        );
+
+        it("knows a domestic address is domestic", () => {
+          expect(addr.isDomestic()).toBe(true);
+        });
+
+        it("validates a complete address as valid", () => {
+          expect(addr.isValid()).toBe(true);
+        });
+
+        it("rejects an empty name", () => {
+          const bad = new ShippingAddressValue(
+            "  ", "x", "y", "CA", "90210"
+          );
+          expect(bad.validate()).toContain("Name is required");
+        });
+      });
+
+      // What started as a parameter object ("bundle these 5 strings
+      // so we don't have to repeat them") became a shipping address
+      // domain type with its own behavior, tests, and invariants.
+
+heuristics:
+  - >
+    "Introduce Parameter Object: you have a group of parameters that naturally
+    go together. Replace them with an object" (Fowler, Refactoring). The object's
+    name should capture the concept the parameters represent — DateRange,
+    SearchCriteria, ShippingAddress — not the fact that they are parameters.
+  - >
+    The signal: the same group of 3+ parameters appears in 3+ function
+    signatures. This is a data clump. If the group changes together (adding a
+    field forces changes in many signatures), it's a candidate for bundling.
+  - >
+    After introducing the parameter object, look for behavior that can be moved
+    into the object. `dateRange.contains(date)` replaces
+    `start <= date && date <= end` scattered across call sites. The parameter
+    object often evolves into a proper value object or domain entity over time.
+  - >
+    The mechanical sequence: (1) define a new class/struct/dataclass with the
+    parameter fields. (2) add the object as a new parameter to the target
+    function, keeping the old parameters. (3) at the call sites, create the
+    object and pass it alongside the old params — verify tests pass at this
+    intermediate state. (4) update the function body to use the object's fields
+    instead of the individual parameters. (5) remove the old parameters one by
+    one, updating call sites. (6) repeat for other functions that take the same
+    clump.
+  - >
+    Use a dataclass (Python) or interface (TypeScript) for the initial
+    parameter object — simple, immutable by convention, no hidden behavior.
+    Only add methods to it after the extraction is stable and you've identified
+    common operations on its fields. Don't front-load behavior; let the usage
+    patterns guide what methods to add.
+  - >
+    "If the parameter object is purely a container with no behavior, consider
+    whether a named tuple (Python) or a plain type alias (TypeScript
+    `type SearchParams = {...}`) is sufficient. Adding a full class for a
+    five-field struct that never grows methods is ceremony. Use the lightest
+    construct that carries the name."
+  - >
+    "The inverse is Remove Parameter Object: when the object has become a
+    grab-bag of unrelated fields that don't travel together in practice, inline
+    it back to individual parameters. The goal is the right grouping, not
+    always-more-objects."
+  - >
+    In Python, use `@dataclass` with `frozen=True` (immutable) for parameter
+    objects unless they need mutation. Immutable parameter objects prevent a
+    class of bugs where one call site mutates the object and another call site
+    sees the stale value.
+  - >
+    "Consider whether the parameter object should be created at the outermost
+    boundary (API controller, CLI parser, message handler) and threaded inward,
+    or created at the innermost call site just before the first function that
+    needs it. The earlier you create it, the more functions benefit from the
+    shorter signature. Rule of thumb: create it at the boundary that first has
+    all the field values."
+  - >
+    In TypeScript, use discriminated unions for parameter objects that have
+    mutually exclusive modes. Instead of `{ mode: string, sql?: string,
+    restPath?: string }`, define `type DataSource = { kind: "sql", query: string }
+    | { kind: "rest", path: string }`. The type checker enforces that you never
+    pass a SQL query to a REST handler.
+  - >
+    "After introducing the parameter object, the call sites become more
+    readable: `search(catalog, ProductFilter(minPrice=10, maxRating=4.5))` reads
+    like a declarative query, while `search(catalog, 10, None, 4.5, None,
+    None)` reads like a puzzle. The parameter object is self-documenting."
+  - >
+    "Beware of the parameter-object-as-config antipattern: a 20-field parameter
+    object where only 2 fields are used in any given call site, and the other
+    18 must be set to null/undefined/default. This is a sign that the object
+    should be split — probably into a hierarchy of smaller, mode-specific
+    parameter objects."
+  - >
+    In functional pipelines, the parameter object can be threaded through a
+    chain of transformations: `pipe(createFilter, search(catalog), groupBy,
+    sortByRevenue)(rawParams)`. Each function in the pipe takes and returns the
+    parameter object (possibly enriched). This is the "Context Object" pattern
+    for pipelines.
+  - >
+    "When the parameter object carries state that accumulates through a
+    computation (e.g., a SearchResult that starts empty and gets filled), it's
+    no longer a parameter object — it's a result accumulator or a context
+    object. Introduce a separate type for the result and keep the parameter
+    object purely input."
+  - >
+    In REST API handlers and GraphQL resolvers, parameter objects map cleanly
+    to request bodies, query params, and input types. If your language's web
+    framework can deserialize JSON into your parameter object type directly,
+    the boundary between HTTP and domain logic becomes one typed object — no
+    manual field-by-field extraction.
+
+related_tags:
+  [introduce-parameter-object, data-clump, long-parameter-list,
+   organizing-data, reduce-arity, value-object, domain-modeling,
+   fowler-refactoring, extract-class, move-method, dataclass,
+   discriminated-unions, immutable-objects, named-tuple,
+   self-documenting-code, call-site-readability, interface-design,
+   parameter-object, context-object, result-accumulator,
+   type-safety, refactoring, clean-code]

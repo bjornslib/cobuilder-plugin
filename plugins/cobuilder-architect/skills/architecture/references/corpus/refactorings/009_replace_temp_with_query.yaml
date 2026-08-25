@@ -1,0 +1,105 @@
+id: replace-temp-with-query-009
+name: Replace Temp with Query
+category: refactoring
+canonical_tags: ['refactoring', 'readability']
+sources:
+  - books/refactoring.md
+summary: |
+  Replace Temp with Query refactors temporary local variables into standalone methods.
+  Instead of computing a value once and storing it in a temp, call a query method each
+  time the value is needed. This eliminates mutable intermediate state from the method,
+  makes each extracted query independently testable, and allows other methods to reuse
+  the computation without duplicating the formula. It also shortens the original method
+  by pulling out calculation details while keeping the top-level flow readable.
+examples:
+  - language: python
+    bad: |
+      def price(order: Order) -> float:
+          # Compute temps from order state
+          base_price = order.quantity * order.item_price
+          if base_price > 1000:
+              discount_factor = 0.95
+          else:
+              discount_factor = 0.98
+          discounted = base_price * discount_factor
+          shipping = max(order.quantity * order.item_price * 0.1, 10.0)
+          return discounted + shipping
+    good: |
+      def price(order: Order) -> float:
+          return _discounted_price(order) + _shipping_cost(order)
+
+      def _base_price(order: Order) -> float:
+          return order.quantity * order.item_price
+
+      def _discount_factor(order: Order) -> float:
+          return 0.95 if _base_price(order) > 1000 else 0.98
+
+      def _discounted_price(order: Order) -> float:
+          return _base_price(order) * _discount_factor(order)
+
+      def _shipping_cost(order: Order) -> float:
+          return max(_base_price(order) * 0.1, 10.0)
+  - language: typescript
+    bad: |
+      function generateInvoice(order: Order): Invoice {
+        const subtotal = order.items.reduce(
+          (sum, item) => sum + item.price * item.quantity, 0
+        );
+        const discountRate =
+          subtotal > 500 ? 0.1 : subtotal > 200 ? 0.05 : 0;
+        const discounted = subtotal * (1 - discountRate);
+        const taxRate = order.shippingCountry === "US" ? 0.08 : 0.20;
+        const tax = discounted * taxRate;
+        const shipping = order.weight * 2.5 + 5;
+        const total = discounted + tax + shipping;
+
+        return { subtotal, discountRate, discounted, tax, shipping, total };
+      }
+    good: |
+      function generateInvoice(order: Order): Invoice {
+        const subtotal = calculateSubtotal(order);
+        const discountRate = calculateDiscountRate(subtotal);
+        const discounted = applyDiscount(subtotal, discountRate);
+        const tax = calculateTax(discounted, order.shippingCountry);
+        const shipping = calculateShipping(order.weight);
+        const total = discounted + tax + shipping;
+
+        return { subtotal, discountRate, discounted, tax, shipping, total };
+      }
+
+      function calculateSubtotal(order: Order): number {
+        return order.items.reduce(
+          (sum, item) => sum + item.price * item.quantity, 0
+        );
+      }
+
+      function calculateDiscountRate(subtotal: number): number {
+        if (subtotal > 500) return 0.1;
+        if (subtotal > 200) return 0.05;
+        return 0;
+      }
+
+      function applyDiscount(subtotal: number, rate: number): number {
+        return subtotal * (1 - rate);
+      }
+
+      function calculateTax(discounted: number, country: string): number {
+        const rate = country === "US" ? 0.08 : 0.20;
+        return discounted * rate;
+      }
+
+      function calculateShipping(weight: number): number {
+        return weight * 2.5 + 5;
+      }
+heuristics:
+  - Apply when a temp holds the result of an expression and you only use it once or twice — extract the expression into a method so the formula lives in one place and other methods can call it.
+  - Apply when a temp is assigned once and never reassigned — that's a candidate for a query method.
+  - Apply when the method has many temps that obscure the top-level flow — extracting them reveals the structure.
+  - Apply when the same calculation formula appears in two methods — extract into a query so both call the same source of truth.
+  - Do NOT apply if the expression is expensive (database query, network call) and you need to cache the result — keep the temp or add memoization.
+  - Do NOT apply if the expression mutates state — a query method should be side-effect-free.
+  - Do NOT replace every temp automatically — sometimes a temp with a good name is clearer than a method call, especially if the value is used heavily in the next 5 lines.
+  - After extracting: verify the original method reads like a recipe (step 1, step 2, step 3) without calculation noise.
+  - Use as a preparatory refactoring for Extract Method: temps are local variables that tether code to its enclosing method. Removing them frees blocks of code to be extracted into standalone methods without passing a pile of local state as parameters. First run Replace Temp with Query to dissolve the temps, then Extract Method on the now-untethered blocks.
+  - Mechanical sequence: (1) find a temp assigned once, (2) check that the right-hand expression is side-effect-free (query, not command), (3) extract the right-hand side into a method named for what it computes, (4) replace all references to the temp with the method call, (5) compile and test, (6) if the temp was the last tether holding a block in the original method, extract that block into a method next, (7) repeat for the next temp.
+related_tags: [replace-temp-with-query, extract-method, immutability, declarative-style, single-responsibility, readability]

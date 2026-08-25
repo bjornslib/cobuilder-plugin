@@ -1,0 +1,89 @@
+id: component-architecture-001
+name: Component Architecture — Container/Presentational Split
+category: architecture
+canonical_tags: ['react-ts', 'clean-architecture']
+sources:
+  - books/clean-architecture.md
+  - books/clean-code.md
+summary: Separate components that handle data fetching and state management (containers) from components that render UI (presentational). Containers know how things work; presentational components know how things look. This enforces single responsibility and makes components easier to test, reuse, and refactor.
+examples:
+  - language: typescript
+    bad: |
+      // One component does everything — fetch, state, render, styles
+      function UserDashboard() {
+        const [user, setUser] = useState<User | null>(null);
+        const [loading, setLoading] = useState(true);
+
+        useEffect(() => {
+          fetch("/api/user")
+            .then((res) => res.json())
+            .then((data) => {
+              setUser(data);
+              setLoading(false);
+            });
+        }, []);
+
+        if (loading) return <div className="spinner">Loading...</div>;
+        if (!user) return <div>No user found</div>;
+
+        return (
+          <div className="dashboard">
+            <h1>Welcome, {user.name}</h1>
+            <ul className="stats">
+              <li>Email: {user.email}</li>
+              <li>Role: {user.role}</li>
+              <li>Joined: {new Date(user.joinedAt).toLocaleDateString()}</li>
+            </ul>
+          </div>
+        );
+      }
+    good: |
+      // Container — owns data fetching and state, passes data down
+      function UserDashboardContainer() {
+        const { user, isLoading, error } = useUserQuery();
+
+        if (isLoading) return <LoadingSpinner />;
+        if (error) return <ErrorBanner message={error.message} />;
+        if (!user) return <EmptyState message="No user found" />;
+
+        return <UserDashboardView user={user} />;
+      }
+
+      // Presentational — pure render, no side effects
+      interface UserDashboardViewProps {
+        user: User;
+      }
+
+      function UserDashboardView({ user }: UserDashboardViewProps) {
+        return (
+          <div className="dashboard">
+            <WelcomeHeader name={user.name} />
+            <UserStats user={user} />
+          </div>
+        );
+      }
+
+      // Custom hook encapsulates data fetching
+      function useUserQuery() {
+        const [user, setUser] = useState<User | null>(null);
+        const [isLoading, setIsLoading] = useState(true);
+        const [error, setError] = useState<Error | null>(null);
+
+        useEffect(() => {
+          fetch("/api/user")
+            .then((res) => res.json())
+            .then(setUser)
+            .catch(setError)
+            .finally(() => setIsLoading(false));
+        }, []);
+
+        return { user, isLoading, error };
+      }
+heuristics:
+  - Presentational components should be pure functions: given the same props, they render the same output.
+  - Containers own the wiring: data fetching, state, callbacks, and side effects. Presentational components own rendering.
+  - If a component has both `useEffect`/`useState` and complex JSX, split it.
+  - Custom hooks are the modern container — prefer `useXxxQuery()` or `useXxxState()` over class-based containers.
+  - Keep presentational components small and focused. Compose them rather than building monolithic renders.
+  - Test presentational components with props alone; test containers by mocking hooks or APIs.
+related_tags: [component-architecture, container-presentational, separation-of-concerns, react]

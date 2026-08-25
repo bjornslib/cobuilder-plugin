@@ -1,0 +1,398 @@
+id: decompose-consolidate-conditional-008
+name: Decompose and Consolidate Conditional
+category: refactoring
+canonical_tags: ['refactoring', 'readability']
+sources:
+  - books/refactoring.md
+summary: |
+  Decompose Conditional and Consolidate Conditional are two complementary refactoring moves
+  for taming complex if/else chains. Decompose Conditional extracts (a) the condition itself into an
+  intention-revealing predicate method and (b) each branch body into a named method, so the if/else
+  reads like high-level prose. Consolidate Conditional pulls duplicated code fragments that appear
+  in every branch out before or after the conditional, eliminating the repetition and making the
+  branching structure focused on what actually differs. Together they turn a tangled 40-line
+  if/elif/else pyramid into a few readable lines of dispatch.
+examples:
+  - language: python
+    bad: |
+      def calculate_shipping(order: Order) -> ShippingQuote:
+          # International? Complex checks scattered across branches
+          if (
+              order.destination_country != "US"
+              and order.destination_country not in ("CA", "MX")
+              and order.weight_kg > 0
+          ):
+              # Validate customs forms exist
+              if order.customs_form is None:
+                  raise ShippingError("Customs form required for international orders")
+              if order.weight_kg > 20:
+                  base = order.weight_kg * 12.50 + 45.00
+              else:
+                  base = order.weight_kg * 8.00 + 25.00
+              # Express surcharge
+              if order.is_express:
+                  base *= 1.5
+              # Calculate insurance
+              insurance = order.declared_value * 0.015
+              total = base + insurance
+              logger.info(f"International shipping quote: ${total:.2f} for order {order.id}")
+              return ShippingQuote(
+                  order_id=order.id, method="international", cost=total, currency="USD"
+              )
+
+          # Domestic heavyweight
+          elif order.weight_kg > 30 and order.destination_country == "US":
+              if order.weight_kg > 50:
+                  base = order.weight_kg * 3.50 + 20.00
+              else:
+                  base = order.weight_kg * 2.80 + 10.00
+              if order.is_express:
+                  base *= 1.3
+              insurance = order.declared_value * 0.015
+              total = base + insurance
+              logger.info(f"Domestic heavyweight shipping quote: ${total:.2f} for order {order.id}")
+              return ShippingQuote(
+                  order_id=order.id, method="domestic_freight", cost=total, currency="USD"
+              )
+
+          # Domestic standard
+          elif order.destination_country == "US":
+              if order.is_express:
+                  base = order.weight_kg * 2.20 + 12.00
+              else:
+                  base = order.weight_kg * 1.10 + 5.00
+              insurance = order.declared_value * 0.015
+              total = base + insurance
+              logger.info(f"Domestic standard shipping quote: ${total:.2f} for order {order.id}")
+              return ShippingQuote(
+                  order_id=order.id,
+                  method="express" if order.is_express else "standard",
+                  cost=total,
+                  currency="USD",
+              )
+
+          else:
+              logger.warning(f"No shipping route for order {order.id}")
+              raise ShippingError(f"No shipping route available for {order.destination_country}")
+    good: |
+      def calculate_shipping(order: Order) -> ShippingQuote:
+          _validate_shippable(order)
+
+          base = _calculate_base_rate(order)
+          insurance = _calculate_insurance(order.declared_value)
+          total = base + insurance
+
+          _log_shipping_quote(order, total)
+          return ShippingQuote(
+              order_id=order.id,
+              method=_resolve_method(order),
+              cost=total,
+              currency="USD",
+          )
+
+
+      # ── Decomposed predicates ──
+      def _is_international(order: Order) -> bool:
+          return order.destination_country not in ("US", "CA", "MX")
+
+      def _is_domestic_heavyweight(order: Order) -> bool:
+          return order.destination_country == "US" and order.weight_kg > 30
+
+      def _is_oversized(order: Order) -> bool:
+          return order.weight_kg > 50
+
+
+      # ── Decomposed branch bodies ──
+      def _calculate_base_rate(order: Order) -> float:
+          base = _base_rate_by_category(order)
+          if order.is_express:
+              base *= _express_multiplier(order)
+          return base
+
+      def _base_rate_by_category(order: Order) -> float:
+          if _is_international(order):
+              return (
+                  order.weight_kg * 12.50 + 45.00
+                  if order.weight_kg > 20
+                  else order.weight_kg * 8.00 + 25.00
+              )
+          if _is_domestic_heavyweight(order):
+              return (
+                  order.weight_kg * 3.50 + 20.00
+                  if _is_oversized(order)
+                  else order.weight_kg * 2.80 + 10.00
+              )
+          # Domestic standard
+          return order.weight_kg * 1.10 + 5.00
+
+      def _express_multiplier(order: Order) -> float:
+          if _is_international(order):
+              return 1.5
+          if _is_domestic_heavyweight(order):
+              return 1.3
+          return 2.0  # standard domestic express markup
+
+
+      # ── Consolidated fragments ──
+      def _calculate_insurance(declared_value: float) -> float:
+          """Extracted from all branches — identical 1.5% across the board."""
+          return declared_value * 0.015
+
+      def _log_shipping_quote(order: Order, total: float) -> None:
+          """Extracted from all branches — every branch logged the same shape."""
+          logger.info(f"Shipping quote: ${total:.2f} for order {order.id}")
+
+      def _resolve_method(order: Order) -> str:
+          if _is_international(order):
+              return "international"
+          if _is_domestic_heavyweight(order):
+              return "domestic_freight"
+          return "express" if order.is_express else "standard"
+
+      def _validate_shippable(order: Order) -> None:
+          if _is_international(order) and order.customs_form is None:
+              raise ShippingError("Customs form required for international orders")
+          if not _is_international(order) and order.destination_country != "US":
+              raise ShippingError(f"No shipping route available for {order.destination_country}")
+  - language: typescript
+    bad: |
+      function assessLoanApplication(application: LoanApplication): LoanDecision {
+        // Credit score branch
+        if (
+          application.creditScore >= 700 &&
+          application.employmentYears >= 2 &&
+          application.debtToIncomeRatio <= 0.36
+        ) {
+          const baseRate = 4.5;
+          const riskAdjustment =
+            application.loanAmount > 500_000
+              ? 0.5
+              : application.loanAmount > 250_000
+                ? 0.25
+                : 0;
+          const rate = baseRate + riskAdjustment;
+          const maxLoan =
+            application.annualIncome * 3.5 * (application.creditScore / 850);
+          const approvedAmount = Math.min(application.loanAmount, maxLoan);
+
+          auditLog.record("LOAN_APPROVED", {
+            applicantId: application.applicantId,
+            amount: approvedAmount,
+            rate,
+          });
+
+          return {
+            approved: true,
+            amount: approvedAmount,
+            rate,
+            tier: "prime",
+          };
+        }
+
+        // Near-prime branch — slightly looser criteria
+        else if (
+          application.creditScore >= 620 &&
+          application.employmentYears >= 1 &&
+          application.debtToIncomeRatio <= 0.43 &&
+          !application.hasPriorDefault
+        ) {
+          const baseRate = 6.0;
+          const riskAdjustment =
+            application.loanAmount > 300_000
+              ? 1.0
+              : application.loanAmount > 150_000
+                ? 0.5
+                : 0.25;
+          const rate = baseRate + riskAdjustment;
+          const maxLoan =
+            application.annualIncome * 2.5 * (application.creditScore / 850);
+          const approvedAmount = Math.min(application.loanAmount, maxLoan);
+
+          auditLog.record("LOAN_APPROVED", {
+            applicantId: application.applicantId,
+            amount: approvedAmount,
+            rate,
+          });
+
+          return {
+            approved: true,
+            amount: approvedAmount,
+            rate,
+            tier: "near-prime",
+          };
+        }
+
+        // Subprime branch
+        else if (
+          application.creditScore >= 500 &&
+          application.employmentYears >= 0.5 &&
+          application.debtToIncomeRatio <= 0.50
+        ) {
+          const baseRate = 9.0;
+          const riskAdjustment =
+            application.loanAmount > 100_000 ? 2.0 : 1.0;
+          const rate = baseRate + riskAdjustment;
+          const maxLoan =
+            application.annualIncome * 1.5 * (application.creditScore / 850);
+          const approvedAmount = Math.min(application.loanAmount, maxLoan);
+
+          auditLog.record("LOAN_APPROVED", {
+            applicantId: application.applicantId,
+            amount: approvedAmount,
+            rate,
+          });
+
+          return {
+            approved: true,
+            amount: approvedAmount,
+            rate,
+            tier: "subprime",
+            requiresCoSigner: true,
+          };
+        }
+
+        // Denial
+        else {
+          auditLog.record("LOAN_DENIED", {
+            applicantId: application.applicantId,
+            reason: "Insufficient credit profile",
+          });
+
+          return { approved: false, reason: "Insufficient credit profile" };
+        }
+      }
+    good: |
+      function assessLoanApplication(application: LoanApplication): LoanDecision {
+        const tier = determineTier(application);
+
+        if (tier === null) {
+          return denyApplication(application, "Insufficient credit profile");
+        }
+
+        const rate = calculateRate(application, tier);
+        const approvedAmount = calculateMaxLoan(application, tier, rate);
+
+        auditLog.record("LOAN_APPROVED", {
+          applicantId: application.applicantId,
+          amount: approvedAmount,
+          rate,
+        });
+
+        return buildApproval(approvedAmount, rate, tier);
+      }
+
+
+      // ── Decomposed predicates ──
+      type LoanTier = "prime" | "near-prime" | "subprime" | null;
+
+      function determineTier(app: LoanApplication): LoanTier {
+        if (isPrimeBorrower(app)) return "prime";
+        if (isNearPrimeBorrower(app)) return "near-prime";
+        if (isSubprimeBorrower(app)) return "subprime";
+        return null;
+      }
+
+      function isPrimeBorrower(app: LoanApplication): boolean {
+        return (
+          app.creditScore >= 700 &&
+          app.employmentYears >= 2 &&
+          app.debtToIncomeRatio <= 0.36
+        );
+      }
+
+      function isNearPrimeBorrower(app: LoanApplication): boolean {
+        return (
+          app.creditScore >= 620 &&
+          app.employmentYears >= 1 &&
+          app.debtToIncomeRatio <= 0.43 &&
+          !app.hasPriorDefault
+        );
+      }
+
+      function isSubprimeBorrower(app: LoanApplication): boolean {
+        return (
+          app.creditScore >= 500 &&
+          app.employmentYears >= 0.5 &&
+          app.debtToIncomeRatio <= 0.50
+        );
+      }
+
+
+      // ── Decomposed branch computations ──
+      const TIER_CONFIG: Record<
+        Exclude<LoanTier, null>,
+        { baseRate: number; incomeMultiplier: number; thresholds: [number, number][] }
+      > = {
+        prime: {
+          baseRate: 4.5,
+          incomeMultiplier: 3.5,
+          thresholds: [
+            [500_000, 0.5],
+            [250_000, 0.25],
+          ],
+        },
+        "near-prime": {
+          baseRate: 6.0,
+          incomeMultiplier: 2.5,
+          thresholds: [
+            [300_000, 1.0],
+            [150_000, 0.5],
+          ],
+        },
+        subprime: {
+          baseRate: 9.0,
+          incomeMultiplier: 1.5,
+          thresholds: [
+            [100_000, 2.0],
+          ],
+        },
+      };
+
+      function calculateRate(app: LoanApplication, tier: Exclude<LoanTier, null>): number {
+        const config = TIER_CONFIG[tier];
+        const riskAdjustment =
+          config.thresholds.find(([limit]) => app.loanAmount > limit)?.[1] ?? 0;
+        return config.baseRate + riskAdjustment;
+      }
+
+      function calculateMaxLoan(
+        app: LoanApplication,
+        tier: Exclude<LoanTier, null>,
+        rate: number
+      ): number {
+        const maxLoan =
+          app.annualIncome *
+          TIER_CONFIG[tier].incomeMultiplier *
+          (app.creditScore / 850);
+        return Math.min(app.loanAmount, maxLoan);
+      }
+
+
+      // ── Consolidated fragments ──
+      function buildApproval(amount: number, rate: number, tier: string): LoanDecision {
+        const base: LoanDecision = { approved: true, amount, rate, tier };
+        if (tier === "subprime") {
+          (base as any).requiresCoSigner = true;
+        }
+        return base;
+      }
+
+      function denyApplication(app: LoanApplication, reason: string): LoanDecision {
+        auditLog.record("LOAN_DENIED", {
+          applicantId: app.applicantId,
+          reason,
+        });
+        return { approved: false, reason };
+      }
+heuristics:
+  - Apply Decompose Conditional when a condition expression takes more than 3 seconds to understand at a glance — extract it into a predicate method named for what it means (isEligible, hasExpired, exceedsThreshold).
+  - Apply Decompose Conditional when an if/else chain mixes levels of abstraction — high-level policy checks next to low-level arithmetic — extract each branch body so the top-level conditional reads like a decision table.
+  - Apply Consolidate Conditional when the same statement appears at the end of every branch — it belongs after the conditional.
+  - Apply Consolidate Conditional when the same setup or validation runs at the start of every branch — it belongs before the conditional.
+  - Apply both together when you have a long if/elif/else where each branch is 10+ lines and 80% of the code is identical scaffolding around a few differing calculations.
+  - Do NOT decompose a simple two-branch conditional with one-line bodies — the indirection of an extracted method outweighs the clarity gain.
+  - Do NOT consolidate fragments that look identical but differ subtly (different log levels, different error types, different units) — verify behavioral equivalence before consolidating.
+  - After decomposing: the top-level conditional should read like "if premium customer then premium flow else standard flow" — no arithmetic, no logging, no I/O call details.
+  - After consolidating: run the full test suite — consolidation is the riskiest move because duplicated code can hide accidental divergence.
+  - Mechanical sequence: (1) extract predicates first so the condition reads clearly, (2) extract branch bodies so each branch is a single call, (3) scan for duplicated lines that now stand out, (4) pull them before/after the conditional, (5) run tests between each step.
+related_tags: [decompose-conditional, consolidate-conditional, extract-method, guard-clauses, predicate-methods, readability, control-flow, duplication]

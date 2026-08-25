@@ -1,0 +1,296 @@
+id: caching-strategies-001
+name: Caching Strategies
+category: data_systems
+canonical_tags: ['data-systems', 'performance', 'resilience']
+sources:
+  - books/designing-data-intensive-applications.md
+summary: >
+  Caches are derived data, not sources of truth. Choose a caching strategy
+  based on consistency requirements and access patterns: cache-aside for
+  lazy population with application-managed invalidation, read-through/
+  write-through for cache-as-facade consistency, and write-behind for
+  write-heavy workloads tolerant of data loss windows. Every cache must
+  have a defined invalidation strategy (TTL, explicit invalidation, or
+  event-driven purge), coherence guarantees (stale-read tolerance), and a
+  rebuild path from the primary store. A cache that cannot be safely
+  discarded and rebuilt is not a cache — it is an unacknowledged source
+  of truth.
+examples:
+  - language: python
+    bad: |
+      import redis
+      from typing import Optional
+
+
+      def get_user(user_id: int) -> Optional[dict]:
+          """Cache-aside with no TTL, no invalidation, stale forever."""
+          r = redis.Redis()
+          cached = r.get(f"user:{user_id}")
+          if cached:
+              return eval(cached)  # unsafe deserialization
+          user = db.query("SELECT * FROM users WHERE id = ?", user_id)
+          r.set(f"user:{user_id}", str(user))  # no TTL — never expires
+          return user
+
+
+      def update_user(user_id: int, name: str):
+          """Write path forgets to invalidate cache — staleness bug."""
+          db.execute("UPDATE users SET name = ? WHERE id = ?", name, user_id)
+          # cache still holds old name — reads will be stale indefinitely
+    good: |
+      import json
+      import redis
+      from datetime import timedelta
+      from typing import Optional
+
+
+      class UserCache:
+          """Cache-aside with TTL, explicit invalidation, and JSON safety."""
+
+          DEFAULT_TTL = timedelta(minutes=5)
+
+          def __init__(self, redis_client: redis.Redis) -> None:
+              self._redis = redis_client
+
+          def get(self, user_id: int) -> Optional[dict]:
+              cached = self._redis.get(f"user:{user_id}")
+              if cached is not None:
+                  return json.loads(cached)
+              return None
+
+          def set(self, user_id: int, user: dict) -> None:
+              self._redis.setex(
+                  f"user:{user_id}",
+                  self.DEFAULT_TTL,
+                  json.dumps(user),
+              )
+
+          def invalidate(self, user_id: int) -> None:
+              self._redis.delete(f"user:{user_id}")
+
+          def get_or_load(self, user_id: int, loader) -> dict:
+              """Cache-aside: check cache, fall back to primary store."""
+              user = self.get(user_id)
+              if user is not None:
+                  return user
+              user = loader(user_id)
+              self.set(user_id, user)
+              return user
+
+
+      # Read-through + write-through facade for cache-as-source-of-truth illusion
+      class ReadWriteThroughCache:
+          """Every read/update goes through cache — cache is always in sync."""
+
+          def __init__(
+              self, redis_client: redis.Redis, db, ttl: timedelta
+          ) -> None:
+              self._redis = redis_client
+              self._db = db
+              self._ttl = ttl
+
+          def get_user(self, user_id: int) -> dict:
+              key = f"user:{user_id}"
+              cached = self._redis.get(key)
+              if cached is not None:
+                  return json.loads(cached)
+              # Read-through: load from DB, populate cache, return
+              user = self._db.query_user(user_id)
+              self._redis.setex(key, self._ttl, json.dumps(user))
+              return user
+
+          def update_user(self, user_id: int, fields: dict) -> dict:
+              # Write-through: write to DB, then update cache atomically
+              user = self._db.update_user(user_id, fields)
+              key = f"user:{user_id}"
+              self._redis.setex(key, self._ttl, json.dumps(user))
+              return user
+
+
+      # Write-behind: write to cache first, async flush to DB
+      class WriteBehindCache:
+          """Writes hit cache immediately; a background worker flushes to DB.
+          Trades durability for latency. Acceptable for metrics, not payments."""
+
+          def __init__(self, redis_client: redis.Redis, flush_queue) -> None:
+              self._redis = redis_client
+              self._flush_queue = flush_queue
+              self._ttl = timedelta(hours=24)
+
+          def record_view(self, article_id: int) -> None:
+              key = f"views:{article_id}"
+              self._redis.incr(key)
+              self._redis.expire(key, self._ttl)
+              self._flush_queue.enqueue("flush_views", article_id)
+
+
+      # Invalidation via event-driven purge (cache coherence)
+      class EventDrivenInvalidation:
+          """Subscribe to data-change events and invalidate affected keys."""
+
+          def __init__(self, redis_client: redis.Redis) -> None:
+              self._redis = redis_client
+
+          def on_user_updated(self, event: dict) -> None:
+              user_id = event["user_id"]
+              # Invalidate all cache keys derived from this user
+              keys_to_purge = [
+                  f"user:{user_id}",
+                  f"user_profile:{user_id}",
+                  f"user_permissions:{user_id}",
+              ]
+              if keys_to_purge:
+                  self._redis.delete(*keys_to_purge)
+  - language: typescript
+    bad: |
+      import Redis from "ioredis";
+
+      // Cache-aside with no invalidation and no error handling
+      async function getOrder(orderId: string): Promise<Order | null> {
+        const redis = new Redis();
+        const cached = await redis.get(`order:${orderId}`);
+        if (cached) return JSON.parse(cached); // no TTL, no validation
+
+        const order = await db.orders.findById(orderId);
+        await redis.set(`order:${orderId}`, JSON.stringify(order));
+        return order;
+      }
+
+      // Update forgets to invalidate — read-your-own-write broken
+      async function updateOrderStatus(
+        orderId: string,
+        status: string,
+      ): Promise<void> {
+        await db.orders.updateOne({ _id: orderId }, { $set: { status } });
+        // Cache still has old status — next read will be stale
+      }
+    good: |
+      import Redis from "ioredis";
+
+      interface Order {
+        id: string;
+        status: string;
+        total: number;
+      }
+
+      const DEFAULT_TTL_SECONDS = 300;
+
+      // -- Cache-aside with TTL, invalidation, and rebuild safety --
+      class OrderCache {
+        constructor(private readonly redis: Redis) {}
+
+        private key(orderId: string): string {
+          return `order:${orderId}`;
+        }
+
+        async get(orderId: string): Promise<Order | null> {
+          const raw = await this.redis.get(this.key(orderId));
+          if (raw === null) return null;
+          return JSON.parse(raw) as Order;
+        }
+
+        async set(orderId: string, order: Order): Promise<void> {
+          await this.redis.setex(
+            this.key(orderId),
+            DEFAULT_TTL_SECONDS,
+            JSON.stringify(order),
+          );
+        }
+
+        async invalidate(orderId: string): Promise<void> {
+          await this.redis.del(this.key(orderId));
+        }
+
+        /** Cache-aside: check cache, fall back to primary store. */
+        async getOrLoad(
+          orderId: string,
+          loader: (id: string) => Promise<Order>,
+        ): Promise<Order> {
+          const cached = await this.get(orderId);
+          if (cached !== null) return cached;
+          const order = await loader(orderId);
+          await this.set(orderId, order);
+          return order;
+        }
+      }
+
+      // -- Write-through: update DB, then immediately update cache --
+      class ReadWriteThroughOrderCache {
+        constructor(
+          private readonly redis: Redis,
+          private readonly db: OrderRepository,
+        ) {}
+
+        async getOrder(orderId: string): Promise<Order> {
+          const key = `order:${orderId}`;
+          const cached = await this.redis.get(key);
+          if (cached !== null) return JSON.parse(cached) as Order;
+
+          const order = await this.db.findById(orderId);
+          await this.redis.setex(key, DEFAULT_TTL_SECONDS, JSON.stringify(order));
+          return order;
+        }
+
+        async updateOrder(orderId: string, fields: Partial<Order>): Promise<Order> {
+          const order = await this.db.update(orderId, fields);
+          const key = `order:${orderId}`;
+          await this.redis.setex(key, DEFAULT_TTL_SECONDS, JSON.stringify(order));
+          return order;
+        }
+      }
+
+      // -- Write-behind for analytics counters --
+      class WriteBehindCounter {
+        constructor(
+          private readonly redis: Redis,
+          private readonly flushQueue: FlushQueue,
+        ) {}
+
+        async incrementPageView(articleId: string): Promise<void> {
+          const key = `views:article:${articleId}`;
+          await this.redis.incr(key);
+          // Enqueue async flush to durable store; tolerate loss window
+          await this.flushQueue.enqueue("flush_page_views", { articleId });
+        }
+      }
+
+      // -- Event-driven invalidation for cache coherence --
+      class EventDrivenCacheInvalidation {
+        constructor(private readonly redis: Redis) {}
+
+        /** Called when a domain event indicates data has changed. */
+        async onOrderUpdated(event: { orderId: string }): Promise<void> {
+          const keys = [
+            `order:${event.orderId}`,
+            `order_summary:${event.orderId}`,
+            `order_items:${event.orderId}`,
+          ];
+          if (keys.length > 0) {
+            await this.redis.del(...keys);
+          }
+        }
+
+        /** Bulk invalidation by pattern (use sparingly in production). */
+        async invalidateUserOrders(userId: string): Promise<void> {
+          const stream = this.redis.scanStream({
+            match: `order:*:user:${userId}`,
+          });
+          for await (const keys of stream) {
+            if ((keys as string[]).length > 0) {
+              await this.redis.del(...(keys as string[]));
+            }
+          }
+        }
+      }
+heuristics:
+  - A cache is derived data — never the source of truth. The primary store (DB, event log) is authoritative; the cache is discardable and rebuildable.
+  - Cache-aside is the default pattern: application checks cache, loads from primary store on miss, and populates cache. The application owns invalidation logic.
+  - Read-through / write-through present the cache as a facade: every read/write passes through the cache so it stays consistent with the primary store. Best for read-heavy workloads with strong consistency needs.
+  - Write-behind (write-back) buffers writes in the cache and flushes asynchronously to the primary store. It reduces write latency but trades durability — acceptable for metrics, counters, and non-critical data.
+  - Every cache entry must have a TTL. Infinite TTL is a stale-data time bomb.
+  - Invalidation must be explicit and immediate on writes. The write path is responsible for purging or updating affected cache keys.
+  - Cache coherence across services requires event-driven invalidation: when a domain event signals data change, all consumers purge the affected keys.
+  - Do not use scan/keys-based invalidation on hot paths — prefer key-level deletes derived from the event payload.
+  - Stale-read tolerance is a product decision. Define it: how long can a user see old data? Monitor cache-hit staleness.
+  - A cache that cannot be rebuilt from the primary store in under N minutes is not a cache — it is an unacknowledged source of truth with no repair strategy.
+related_tags: [caching, cache-aside, read-through, write-through, write-behind, cache-invalidation, cache-coherence, derived-data, data-systems, ddia]

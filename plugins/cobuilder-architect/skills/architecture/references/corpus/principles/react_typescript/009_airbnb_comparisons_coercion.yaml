@@ -1,0 +1,161 @@
+id: airbnb-comparison-001
+name: Airbnb Comparisons & Coercion — Explicit Type Handling
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  Airbnb requires strict equality (=== and !==), explicit boolean shortcuts for conditionals,
+  explicit comparisons for strings and numbers, block-scoped case clauses in switch statements,
+  and proper type casting using String(), Number(), and Boolean() rather than new wrappers or
+  implicit coercion tricks. Use nullish coalescing (??) to distinguish null/undefined from other
+  falsy values. These rules prevent silent bugs from type coercion and make developer intent explicit.
+examples:
+  - language: typescript
+    bad: |
+      // Loose equality — unexpected coercion
+      if (value == null) { /* matches both null and undefined — intentional? */ }
+
+      // Redundant boolean comparison
+      if (isValid === true) {
+        return "valid";
+      }
+
+      // Truthy check on string — empty string is falsy but may be valid
+      if (name) {
+        return name.toUpperCase();
+      }
+
+      // Truthy check on number — 0 is falsy but valid
+      if (collection.length) {
+        return collection.map(process);
+      }
+
+      // Nested ternary — hard to parse
+      const foo = maybe1 > maybe2
+        ? "bar"
+        : value1 > value2 ? "baz" : null;
+
+      // Unnecessary ternary
+      const bar = a ? a : b;
+      const baz = c ? true : false;
+
+      // Mixed operators without parentheses — ambiguous precedence
+      const result = a && b < 0 || c > 0 || d + 1 === 0;
+    good: |
+      // Strict equality — explicit intent
+      if (value === null || value === undefined) {
+        return defaultValue;
+      }
+
+      // Boolean shortcut — clean
+      if (isValid) {
+        return "valid";
+      }
+
+      // Explicit string comparison
+      if (name !== "") {
+        return name.toUpperCase();
+      }
+
+      // Explicit number comparison — 0 is handled correctly
+      if (collection.length > 0) {
+        return collection.map(process);
+      }
+
+      // No nested ternaries — split or use if/else
+      const maybeNull = value1 > value2 ? "baz" : null;
+      const foo = maybe1 > maybe2 ? "bar" : maybeNull;
+
+      // Use logical operators instead of unnecessary ternaries
+      const bar = a || b;
+      const baz = !!c;
+
+      // Parenthesize mixed operators — precedence is explicit
+      const result = (a && b < 0) || c > 0 || (d + 1 === 0);
+  - language: typescript
+    bad: |
+      // new String() — creates object, not primitive
+      const totalScore = new String(this.reviewScore);
+
+      // Implicit string coercion — calls valueOf(), unexpected for some types
+      const totalScore = this.reviewScore + "";
+
+      // parseInt without radix — may interpret as octal or hex
+      const val = parseInt(inputValue);
+
+      // new Number() / new Boolean() — wrapper objects, not primitives
+      const val = new Number(inputValue);
+      const hasAge = new Boolean(age);
+
+      // Using || when 0 or "" is a valid value
+      const value = count || 10; // 0 becomes 10 — likely unintended
+    good: |
+      // String() — clear intent, always returns primitive string
+      const totalScore = String(this.reviewScore);
+
+      // Number() — explicit type casting
+      const val = Number(inputValue);
+
+      // parseInt always with explicit radix
+      const val = parseInt(inputValue, 10);
+
+      // Boolean() or !! — explicit coercion
+      const hasAge = Boolean(age);
+      const hasName = !!name;
+
+      // Nullish coalescing — only null/undefined trigger fallback
+      const value = count ?? 10; // 0 stays 0
+  - language: typescript
+    bad: |
+      // Switch without block scoping — variable leaks across cases
+      switch (foo) {
+        case 1:
+          let x = 1;
+          break;
+        case 2:
+          const y = 2;
+          break;
+        default:
+          class C {}
+      }
+
+      // Selection operator as control flow — harder to read
+      !isRunning && startRunning();
+    good: |
+      // Block-scoped case clauses — no variable leakage
+      switch (foo) {
+        case 1: {
+          let x = 1;
+          break;
+        }
+        case 2: {
+          const y = 2;
+          break;
+        }
+        case 3:
+          bar();
+          break;
+        default: {
+          class C {}
+        }
+      }
+
+      // Use if statement for control flow — explicit intent
+      if (!isRunning) {
+        startRunning();
+      }
+heuristics:
+  - Use === and !== over == and !=. Strict equality prevents unexpected coercion.
+  - Use shortcuts for booleans (if (isValid) not if (isValid === true)). Redundant comparisons add noise.
+  - Use explicit comparisons for strings and numbers (if (name !== "") not if (name)). Truthiness on strings/numbers is ambiguous — an empty string or 0 might be intentional.
+  - Ternaries should not be nested. Split into separate expressions or use if/else.
+  - "Avoid unnecessary ternaries: use a || b instead of a ? a : b, use !!c instead of c ? true : false, use a ?? b instead of a != null ? a : b."
+  - When mixing operators, parenthesize to make precedence explicit. Only +, -, and ** are widely understood without parens.
+  - Use nullish coalescing (??) to distinguish null/undefined from other falsy values (0, "", false).
+  - Use braces to create blocks in case and default clauses that contain lexical declarations (let, const, function, class).
+  - Do not use selection operators (&&, ||) in place of if statements for control flow.
+  - Perform type coercion at the beginning of the statement. Use String(), Number(), Boolean() — not new wrappers or implicit tricks.
+  - Always pass a radix to parseInt (e.g., parseInt(value, 10)).
+  - If using bitshift for performance, leave a comment explaining why. Bitshift returns 32-bit integers regardless of input size.
+related_tags: [comparison, equality, coercion, casting, nullish-coalescing, switch, airbnb, type-safety]

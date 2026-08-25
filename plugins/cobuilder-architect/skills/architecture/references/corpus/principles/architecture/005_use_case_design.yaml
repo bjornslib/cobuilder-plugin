@@ -1,0 +1,650 @@
+id: use-case-design-005
+name: Use Case Design — Input/Output Models, Orchestration & Application Boundaries
+category: architecture
+canonical_tags: ['clean-architecture', 'use-cases']
+sources:
+  - books/clean-architecture.md
+  - books/unified-software-engineering.md
+summary: >
+  A use case represents one application action. It coordinates entities, repositories,
+  gateways, and side effects — but must not contain delivery concerns, ORM concerns,
+  or presentation formatting. Use cases own their input and output models, define
+  the ports they need, and keep orchestration logic in one place. Controllers translate
+  delivery input into use-case input; presenters translate use-case output into delivery
+  output. The use case is the seam between the domain model and the outside world:
+  when designed correctly, the same use case can serve a REST API, a CLI command,
+  a queue consumer, or a test harness without modification.
+examples:
+  - language: python
+    bad: |
+      # Use case entangled with HTTP request/response objects.
+      # Cannot be reused by CLI, queue consumer, or batch job.
+      # Business validation mixed with HTTP error codes.
+      # Output formatting (JSON) hard-coded inside use case.
+
+      from fastapi import Request, HTTPException
+      from sqlalchemy.orm import Session
+
+      class RegisterUser:
+          async def __call__(self, request: Request, db: Session) -> dict:
+              body = await request.json()
+              email = body.get("email", "")
+              password = body.get("password", "")
+
+              # Business rules mixed with HTTP awareness
+              if "@" not in email:
+                  raise HTTPException(400, "Invalid email format")
+              if len(password) < 8:
+                  raise HTTPException(400, "Password too short")
+
+              # Direct ORM access from use case
+              existing = db.query(UserRow).filter_by(email=email).first()
+              if existing:
+                  raise HTTPException(409, "Email already registered")
+
+              # Raw password hashing in use case
+              import hashlib
+              hashed = hashlib.sha256(password.encode()).hexdigest()
+
+              user = UserRow(email=email, password_hash=hashed)
+              db.add(user)
+              db.commit()
+
+              # Presentation formatting in use case
+              return {
+                  "data": {
+                      "type": "users",
+                      "id": str(user.id),
+                      "attributes": {"email": user.email, "created_at": user.created_at.isoformat()},
+                  },
+                  "meta": {"version": "1.0"},
+              }
+
+    good: |
+      # Use case owns plain input/output models. Zero framework imports.
+      # Same use case serves HTTP, CLI, queue — controllers adapt to it.
+      # Input validation is explicit; output is plain data.
+
+      from abc import ABC, abstractmethod
+      from dataclasses import dataclass
+      from typing import Protocol, Optional
+
+
+      # ---- Input model (owned by application layer) ----
+      @dataclass
+      class RegisterUserRequest:
+          email: str
+          password: str
+          ip_address: str | None = None
+
+          def validate(self) -> None:
+              if "@" not in self.email or "." not in self.email.split("@")[-1]:
+                  raise ValueError("Invalid email format")
+              if len(self.password) < 8:
+                  raise ValueError("Password must be at least 8 characters")
+
+
+      # ---- Output model (owned by application layer) ----
+      @dataclass
+      class RegisterUserResponse:
+          user_id: int
+          email: str
+          created_at: str
+
+
+      # ---- Domain entity (no framework dependencies) ----
+      @dataclass
+      class User:
+          id: int | None
+          email: str
+          password_hash: str
+          created_at: str | None = None
+
+          @classmethod
+          def register(cls, email: str, hashed_password: str) -> "User":
+              return cls(id=None, email=email, password_hash=hashed_password)
+
+
+      # ---- Port: user persistence (owned by application layer) ----
+      class UserRepository(ABC):
+          @abstractmethod
+          def find_by_email(self, email: str) -> User | None: ...
+
+          @abstractmethod
+          def save(self, user: User) -> User: ...
+
+
+      # ---- Port: password hasher (owned by application layer) ----
+      class PasswordHasher(ABC):
+          @abstractmethod
+          def hash(self, plaintext: str) -> str: ...
+
+
+      # ---- Port: registration auditor (owned by application layer) ----
+      class RegistrationAudit(ABC):
+          @abstractmethod
+          def record(self, user_id: int, email: str, ip: str | None) -> None: ...
+
+
+      # ---- Use case: orchestrates, owns no framework code ----
+      class RegisterUserUseCase:
+          """One application action: register a new user."""
+
+          def __init__(
+              self,
+              repo: UserRepository,
+              hasher: PasswordHasher,
+              audit: RegistrationAudit,
+          ) -> None:
+              self._repo = repo
+              self._hasher = hasher
+              self._audit = audit
+
+          def execute(self, request: RegisterUserRequest) -> RegisterUserResponse:
+              request.validate()
+
+              existing = self._repo.find_by_email(request.email)
+              if existing is not None:
+                  raise ValueError("Email already registered")
+
+              hashed = self._hasher.hash(request.password)
+              user = User.register(request.email, hashed)
+              saved = self._repo.save(user)
+
+              self._audit.record(saved.id, saved.email, request.ip_address)
+
+              return RegisterUserResponse(
+                  user_id=saved.id,
+                  email=saved.email,
+                  created_at=saved.created_at or "",
+              )
+
+
+      # ---- HTTP Controller: translates HTTP → use case input → use case output → HTTP ----
+      class RegisterUserController:
+          """Thin controller. Business logic lives in the use case."""
+
+          def __init__(self, use_case: RegisterUserUseCase) -> None:
+              self._use_case = use_case
+
+          async def handle(self, request) -> tuple[int, dict]:
+              try:
+                  body = await request.json()
+                  req = RegisterUserRequest(
+                      email=body.get("email", ""),
+                      password=body.get("password", ""),
+                      ip_address=request.client.host if request.client else None,
+                  )
+                  result = self._use_case.execute(req)
+                  return 201, {
+                      "data": {
+                          "id": str(result.user_id),
+                          "email": result.email,
+                          "created_at": result.created_at,
+                      }
+                  }
+              except ValueError as e:
+                  return 400, {"error": str(e)}
+
+
+      # ---- CLI adapter: same use case, zero changes ----
+      class RegisterUserCliCommand:
+          def __init__(self, use_case: RegisterUserUseCase) -> None:
+              self._use_case = use_case
+
+          def run(self, email: str, password: str) -> int:
+              try:
+                  result = self._use_case.execute(
+                      RegisterUserRequest(email=email, password=password)
+                  )
+                  print(f"User {result.user_id} registered: {result.email}")
+                  return 0
+              except ValueError as e:
+                  print(f"Error: {e}", file=__import__("sys").stderr)
+                  return 1
+
+
+      # ---- Test: use case in complete isolation ----
+      class InMemUserRepository(UserRepository):
+          def __init__(self):
+              self._users: dict[str, User] = {}
+              self._next_id = 1
+
+          def find_by_email(self, email: str) -> User | None:
+              return self._users.get(email)
+
+          def save(self, user: User) -> User:
+              user.id = self._next_id
+              self._next_id += 1
+              self._users[user.email] = user
+              return user
+
+      class PlainPasswordHasher(PasswordHasher):
+          def hash(self, plaintext: str) -> str:
+              import hashlib
+              return hashlib.sha256(plaintext.encode()).hexdigest()
+
+      class NullAudit(RegistrationAudit):
+          def record(self, user_id, email, ip):
+              pass
+
+      use_case = RegisterUserUseCase(
+          repo=InMemUserRepository(),
+          hasher=PlainPasswordHasher(),
+          audit=NullAudit(),
+      )
+
+  - language: typescript
+    bad: |
+      // Use case depending on Express Request/Response.
+      // Business rules and HTTP concerns are inseparable.
+      // Cannot be reused by a worker process or admin CLI.
+
+      import { Request, Response } from "express";
+      import { PrismaClient } from "@prisma/client";
+      import bcrypt from "bcrypt";
+
+      const prisma = new PrismaClient();
+
+      export async function registerUser(req: Request, res: Response): Promise<void> {
+        const { email, password } = req.body;
+
+        // Validation in route handler
+        if (!email?.includes("@")) {
+          res.status(400).json({ error: "Invalid email" });
+          return;
+        }
+        if (!password || password.length < 8) {
+          res.status(400).json({ error: "Password too short" });
+          return;
+        }
+
+        // Direct database access
+        const existing = await prisma.user.findUnique({ where: { email } });
+        if (existing) {
+          res.status(409).json({ error: "Email already registered" });
+          return;
+        }
+
+        const hashed = await bcrypt.hash(password, 10);
+        const user = await prisma.user.create({
+          data: { email, passwordHash: hashed },
+        });
+
+        // Audit side effect inline
+        await prisma.auditLog.create({
+          data: { action: "user_registered", userId: user.id, ip: req.ip },
+        });
+
+        // Presentation formatting inline
+        res.status(201).json({
+          data: { id: user.id, email: user.email },
+          meta: { version: "1.0" },
+        });
+      }
+
+    good: |
+      // Use case owns plain models. Zero Express, Prisma, or bcrypt imports.
+      // Same use case serves HTTP, CLI, message consumer, tests.
+
+      // ---- Input model (application layer) ----
+      interface RegisterUserInput {
+        email: string;
+        password: string;
+        ipAddress?: string;
+      }
+
+      // ---- Output model (application layer) ----
+      interface RegisterUserOutput {
+        userId: number;
+        email: string;
+        createdAt: Date;
+      }
+
+      // ---- Domain entity ----
+      interface User {
+        id: number | null;
+        email: string;
+        passwordHash: string;
+        createdAt: Date | null;
+      }
+
+      // ---- Ports (application layer) ----
+      interface UserRepository {
+        findByEmail(email: string): Promise<User | null>;
+        save(user: User): Promise<User>;
+      }
+
+      interface PasswordHasher {
+        hash(plaintext: string): Promise<string>;
+      }
+
+      interface RegistrationAudit {
+        record(userId: number, email: string, ip?: string): Promise<void>;
+      }
+
+      // ---- Use case: pure orchestration, zero delivery/infrastructure code ----
+      export class RegisterUserUseCase {
+        constructor(
+          private readonly repo: UserRepository,
+          private readonly hasher: PasswordHasher,
+          private readonly audit: RegistrationAudit,
+        ) {}
+
+        async execute(input: RegisterUserInput): Promise<RegisterUserOutput> {
+          // Input validation (owned by use case)
+          if (!input.email.includes("@")) throw new Error("Invalid email format");
+          if (input.password.length < 8) throw new Error("Password must be at least 8 characters");
+
+          const existing = await this.repo.findByEmail(input.email);
+          if (existing) throw new Error("Email already registered");
+
+          const hashed = await this.hasher.hash(input.password);
+          const user: User = { id: null, email: input.email, passwordHash: hashed, createdAt: null };
+          const saved = await this.repo.save(user);
+
+          await this.audit.record(saved.id!, saved.email, input.ipAddress);
+
+          return { userId: saved.id!, email: saved.email, createdAt: saved.createdAt! };
+        }
+      }
+
+      // ---- HTTP Controller: thin translation layer ----
+      import { Request, Response } from "express";
+
+      export class RegisterUserController {
+        constructor(private readonly useCase: RegisterUserUseCase) {}
+
+        async handle(req: Request, res: Response): Promise<void> {
+          try {
+            const result = await this.useCase.execute({
+              email: req.body.email ?? "",
+              password: req.body.password ?? "",
+              ipAddress: req.ip,
+            });
+            res.status(201).json({
+              data: { id: result.userId, email: result.email },
+            });
+          } catch (err: any) {
+            res.status(400).json({ error: err.message });
+          }
+        }
+      }
+
+      // ---- CLI adapter: same use case, no changes ----
+      export async function cliRegister(email: string, password: string): Promise<void> {
+        const useCase = buildUseCase();
+        try {
+          const result = await useCase.execute({ email, password });
+          console.log(`User ${result.userId} registered: ${result.email}`);
+        } catch (err: any) {
+          console.error(`Error: ${err.message}`);
+          process.exit(1);
+        }
+      }
+
+  - language: python
+    bad: |
+      # Cross-cutting concerns hardcoded: UTC now() inline, UUID generated
+      # inside, logger imported globally, transaction committed manually.
+      # Cannot test with a frozen clock, cannot swap ID strategy,
+      # cannot verify log output, cannot participate in outer transaction.
+
+      import uuid
+      import logging
+      from datetime import datetime, timezone
+      from sqlalchemy.orm import Session
+
+      logger = logging.getLogger(__name__)
+
+      class CreateOrderUseCase:
+          def __init__(self, db: Session):
+              self._db = db
+
+          def execute(self, customer_id: int, items: list[dict]) -> dict:
+              order_id = str(uuid.uuid4())
+              now = datetime.now(timezone.utc)
+              logger.info("Creating order %s for customer %d", order_id, customer_id)
+
+              total = sum(i["price"] * i["qty"] for i in items)
+              order = OrderRow(id=order_id, customer_id=customer_id, total=total, created_at=now)
+              self._db.add(order)
+              self._db.commit()
+
+              logger.info("Order %s created, total=%.2f", order_id, total)
+              return {"order_id": order_id, "total": total}
+
+    good: |
+      # Every cross-cutting concern is a port. The use case owns nothing
+      # concrete — clock, ID gen, logger, and transaction runner are all
+      # injected abstractions. Tests can freeze time, capture logs, stub
+      # IDs, and skip commits.
+
+      from abc import ABC, abstractmethod
+      from dataclasses import dataclass
+
+      # ---- Input / Output models ----
+      @dataclass
+      class OrderItem:
+          product_id: str
+          quantity: int
+          unit_price: float
+
+      @dataclass
+      class CreateOrderRequest:
+          customer_id: int
+          items: list[OrderItem]
+
+      @dataclass
+      class CreateOrderResponse:
+          order_id: str
+          total: float
+          placed_at: str
+
+      # ---- Domain entity ----
+      @dataclass
+      class Order:
+          id: str
+          customer_id: int
+          total: float
+          created_at: str
+          status: str = "placed"
+
+      # ---- Cross-cutting ports (application layer owns them all) ----
+      class Clock(ABC):
+          """Time is a detail. Abstract it so tests can freeze it."""
+          @abstractmethod
+          def now_utc(self) -> str: ...
+
+      class IdGenerator(ABC):
+          """ID strategy is a detail. Swap UUID ↔ ULID ↔ Snowflake."""
+          @abstractmethod
+          def generate(self) -> str: ...
+
+      class Logger(ABC):
+          """Log output is a detail. Abstract it so tests can capture it."""
+          @abstractmethod
+          def info(self, msg: str, **kwargs) -> None: ...
+          @abstractmethod
+          def error(self, msg: str, **kwargs) -> None: ...
+
+      class UnitOfWork(ABC):
+          """Transaction boundary is a detail. Abstract commit/rollback."""
+          @abstractmethod
+          def commit(self) -> None: ...
+
+          @abstractmethod
+          def rollback(self) -> None: ...
+
+      # ---- Functional ports ----
+      class OrderRepository(ABC):
+          @abstractmethod
+          def save(self, order: Order) -> None: ...
+
+      class InventoryGateway(ABC):
+          @abstractmethod
+          def reserve(self, product_id: str, qty: int) -> bool: ...
+
+      # ---- Use case: clean orchestration with cross-cutting ports ----
+      class CreateOrderUseCase:
+          def __init__(
+              self,
+              repo: OrderRepository,
+              inventory: InventoryGateway,
+              clock: Clock,
+              ids: IdGenerator,
+              logger: Logger,
+              uow: UnitOfWork,
+          ):
+              self._repo = repo
+              self._inventory = inventory
+              self._clock = clock
+              self._ids = ids
+              self._logger = logger
+              self._uow = uow
+
+          def execute(self, request: CreateOrderRequest) -> CreateOrderResponse:
+              self._logger.info("create_order_started", customer_id=request.customer_id)
+
+              for item in request.items:
+                  ok = self._inventory.reserve(item.product_id, item.quantity)
+                  if not ok:
+                      self._logger.error("create_order_failed",
+                                         reason="insufficient_inventory",
+                                         product_id=item.product_id)
+                      self._uow.rollback()
+                      raise ValueError(f"Insufficient inventory for {item.product_id}")
+
+              order_id = self._ids.generate()
+              placed_at = self._clock.now_utc()
+              total = sum(i.unit_price * i.quantity for i in request.items)
+
+              order = Order(id=order_id, customer_id=request.customer_id,
+                            total=total, created_at=placed_at)
+              self._repo.save(order)
+              self._uow.commit()
+
+              self._logger.info("create_order_completed",
+                                order_id=order_id, total=total)
+              return CreateOrderResponse(order_id=order_id, total=total,
+                                         placed_at=placed_at)
+
+
+      # ---- Fakes for testing cross-cutting concerns ----
+      class FrozenClock(Clock):
+          def __init__(self, at: str): self._at = at
+          def now_utc(self) -> str: return self._at
+
+      class SequentialIds(IdGenerator):
+          def __init__(self): self._next = 0
+          def generate(self) -> str:
+              self._next += 1
+              return f"order-{self._next:04d}"
+
+      class CapturingLogger(Logger):
+          def __init__(self):
+              self.infos: list[dict] = []
+              self.errors: list[dict] = []
+          def info(self, msg, **kw): self.infos.append({"msg": msg, **kw})
+          def error(self, msg, **kw): self.errors.append({"msg": msg, **kw})
+
+      class NoOpUnitOfWork(UnitOfWork):
+          committed = False; rolled_back = False
+          def commit(self): self.committed = True
+          def rollback(self): self.rolled_back = True
+
+
+      # Orchestration example: composing two use cases together.
+      # Each use case remains focused; the orchestrator wires the flow.
+      class PlaceOrderAndNotifyOrchestrator:
+          """Composes RegisterUserUseCase + CreateOrderUseCase into one flow.
+             Still delivery-agnostic — any controller can call this."""
+
+          def __init__(
+              self,
+              register_user: RegisterUserUseCase,
+              create_order: CreateOrderUseCase,
+          ):
+              self._register = register_user
+              self._create_order = create_order
+
+          def execute(
+              self,
+              email: str,
+              password: str,
+              items: list[OrderItem],
+          ) -> CreateOrderResponse:
+              # Step 1: register (or find) user
+              user_result = self._register.execute(
+                  RegisterUserRequest(email=email, password=password)
+              )
+              # Step 2: place the order for the registered user
+              return self._create_order.execute(
+                  CreateOrderRequest(customer_id=user_result.user_id, items=items)
+              )
+
+heuristics:
+  - >
+    "A use case represents one application action. It coordinates entities,
+    repositories, and gateways. It should not contain delivery concerns, ORM
+    concerns, or presentation formatting concerns" (Clean Architecture).
+  - >
+    For every non-trivial feature, identify the use case first: define the
+    input, define the output, define required ports, keep orchestration in
+    one place. The implementation order should be: domain rule → use case →
+    boundary interfaces → presenter contract → repository/gateway contract →
+    adapters → framework wiring.
+  - >
+    Use cases own their request and response models. These are plain data
+    structures with no framework or ORM types. If a use case takes a FastAPI
+    `Request` or returns an Express `Response`, it has been captured by the
+    delivery mechanism.
+  - >
+    Input validation lives in the use case (or its request model), not in
+    controllers. Business rules about what constitutes valid input are policy,
+    not transport concerns. Controllers may validate JSON shape; use cases
+    validate business meaning.
+  - >
+    A use case should be thin enough to read in one screen but thick enough
+    that its orchestration tells the whole story. If a use case delegates every
+    decision to a god service, the architecture is not screaming its intent.
+  - >
+    Name use cases with verbs: `PlaceOrder`, `RegisterUser`, `WithdrawFunds`,
+    `CancelSubscription`. The name should describe the application action,
+    not the implementation pattern.
+  - >
+    Use cases must not return framework response types (`Response`, `IActionResult`,
+    `HttpResponse`). Return plain output models. Convert to framework types in
+    the controller/presenter layer.
+  - >
+    Every port a use case needs is defined by the application layer where the
+    use case lives. Repositories, gateways, notifiers, hashers, auditors — each
+    is a contract the use case depends on, and each is implemented in the
+    adapter layer.
+  - >
+    Controllers and endpoints translate delivery input into use-case input.
+    A controller is a thin adapter — if it contains branching business rules,
+    those rules should move into the use case or domain model.
+  - >
+    Test use cases with fakes for every port. A use case test should never
+    need a real database, real HTTP server, real SMTP, or real clock. The
+    test verifies orchestration correctness, not infrastructure behavior.
+  - >
+    Cross-cutting concerns (logging, metrics, caching, authorization, clock,
+    ID generation, unit-of-work) are details just like databases and HTTP.
+    Each belongs behind a port owned by the application layer. Inject them;
+    never import them as global singletons. This lets you: (a) freeze time
+    in tests, (b) swap ID strategies without touching use case code,
+    (c) capture log output for assertion, (d) compose use cases inside an
+    outer transactional boundary controlled by infrastructure.
+  - >
+    When a use case needs to compose other use cases, create a dedicated
+    orchestrator that depends on both — do not stuff orchestration into one
+    of the child use cases or dump it into a controller. Orchestrators are
+    still delivery-agnostic and follow the same port-injection pattern.
+related_tags:
+  [use-cases, application-layer, input-models, output-models, orchestration,
+   clean-architecture, ports, boundaries, controllers, thin-controllers,
+   feature-first, application-actions, presenter-pattern, request-response-models,
+   cross-cutting-concerns, clock-abstraction, id-generation, unit-of-work,
+   structured-logging, transaction-management, orchestrator-pattern]

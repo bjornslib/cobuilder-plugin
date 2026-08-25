@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Technical Deep-Dive — Architecture Review 2026-05-26</title>
+<style>
+/*
+ * HTML Document Design System
+ * Copy this entire file into the <style> block of every document.
+ * Then extend with category-specific components as needed.
+ */
+
+:root {
+  --ivory:    #FAF9F5;
+  --slate:    #141413;
+  --clay:     #D97757;
+  --oat:      #E3DACC;
+  --olive:    #788C5D;
+  --rust:     #B04A3F;
+  --sky:      #6A8CAF;
+  --gray-150: #F0EEE6;
+  --gray-300: #D1CFC5;
+  --gray-500: #87867F;
+  --gray-700: #3D3D3A;
+  --white:    #FFFFFF;
+
+  --serif: ui-serif, Georgia, 'Times New Roman', serif;
+  --sans:  system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono:  ui-monospace, 'SF Mono', Menlo, Monaco, monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--sans);
+  background: var(--ivory);
+  color: var(--gray-700);
+  line-height: 1.55;
+  padding: 56px 32px 120px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+/* Typography */
+
+h1 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 38px;
+  line-height: 1.15;
+  color: var(--slate);
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 26px;
+  color: var(--slate);
+  letter-spacing: -0.01em;
+}
+
+h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 19px;
+  color: var(--slate);
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+}
+
+.lead {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--gray-700);
+  max-width: 640px;
+}
+
+p {
+  font-size: 15px;
+  margin-bottom: 12px;
+  max-width: 720px;
+}
+
+/* Header with Prompt Box */
+
+header.page-head {
+  margin-bottom: 48px;
+  max-width: 820px;
+}
+
+.prompt-box {
+  background: var(--gray-150);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-size: 14.5px;
+  color: var(--gray-700);
+}
+
+.prompt-box .label {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray-500);
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* Cards / Panels */
+
+.card {
+  background: var(--white);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.card-head {
+  padding: 16px 20px;
+  border-bottom: 1.5px solid var(--gray-300);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Chips / Pills / Tags */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--gray-300);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--slate);
+  background: var(--white);
+}
+
+.tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1.5px solid var(--gray-300);
+  background: var(--gray-150);
+}
+
+.tag.safe   { background: rgba(120,140,93,0.12); border-color: rgba(120,140,93,0.4); color: var(--olive); }
+.tag.medium { background: var(--oat); color: #7A6A4F; }
+.tag.risk   { background: rgba(217,119,87,0.12); border-color: rgba(217,119,87,0.45); color: var(--clay); }
+.tag.critical { background: rgba(176,74,63,0.12); border-color: rgba(176,74,63,0.4); color: var(--rust); }
+
+.risk-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.risk-dot.safe   { background: var(--olive); }
+.risk-dot.medium { background: #B89B6E; }
+.risk-dot.risk   { background: var(--clay); }
+.risk-dot.critical { background: var(--rust); }
+
+/* Tables */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+thead th {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray-500);
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1.5px solid var(--gray-300);
+}
+
+tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--gray-150);
+  color: var(--gray-700);
+}
+
+tbody tr:hover { background: var(--gray-150); }
+
+/* Code Blocks */
+
+code {
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.code-block {
+  background: var(--slate);
+  color: #E8E6DC;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.7;
+  padding: 18px 20px;
+  border-radius: 10px;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.code-block .comment { color: #8A98A0; }
+.code-block .keyword { color: #C792EA; }
+.code-block .string  { color: var(--olive); }
+
+/* Diff Blocks */
+
+.diff {
+  background: var(--slate);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+  overflow-x: auto;
+  border-radius: 10px;
+}
+
+.diff-row {
+  display: grid;
+  grid-template-columns: 48px 18px 1fr;
+  align-items: baseline;
+  padding: 0 14px 0 0;
+  white-space: pre;
+}
+
+.diff-row .ln   { text-align: right; padding-right: 14px; color: var(--gray-500); user-select: none; }
+.diff-row .mark { text-align: center; color: var(--gray-500); }
+.diff-row .code { color: #E8E6DC; }
+.diff-row.ctx .code { color: #B8B6AC; }
+.diff-row.add       { background: rgba(120,140,93,0.15); }
+.diff-row.add .mark { color: var(--olive); }
+.diff-row.del       { background: rgba(176,74,63,0.15); }
+.diff-row.del .mark { color: var(--rust); }
+.diff-row.hunk .code { color: var(--gray-500); }
+
+/* Buttons */
+
+button.primary {
+  background: var(--slate);
+  color: var(--ivory);
+  border: 1.5px solid var(--slate);
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 9px 20px;
+  cursor: pointer;
+}
+button.primary:hover { background: var(--gray-700); }
+button.primary.copied { background: var(--olive); border-color: var(--olive); }
+
+button.ghost {
+  background: transparent;
+  color: var(--gray-700);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 9px 20px;
+  cursor: pointer;
+}
+button.ghost:hover { border-color: var(--gray-500); }
+
+/* Section Structure */
+
+section { margin-bottom: 64px; }
+
+.sec-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+.sec-head .num {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--oat);
+  color: var(--slate);
+  padding: 3px 9px;
+  border-radius: 8px;
+}
+
+.sec-intro {
+  font-size: 14.5px;
+  color: var(--gray-500);
+  max-width: 720px;
+  margin-bottom: 28px;
+}
+
+/* Comment Bubbles (for code review) */
+
+.bubble {
+  position: relative;
+  background: var(--white);
+  border: 1.5px solid var(--gray-300);
+  border-left-width: 4px;
+  border-radius: 8px;
+  padding: 12px 14px 12px 16px;
+}
+
+.bubble.blocking { border-left-color: var(--clay); }
+.bubble.nit      { border-left-color: var(--gray-300); }
+
+.bubble .author {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--slate);
+  margin-bottom: 4px;
+}
+
+.bubble .text {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--gray-700);
+}
+
+/* SVG Diagrams */
+
+.diagram {
+  background: var(--white);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 12px;
+  padding: 28px;
+  overflow-x: auto;
+}
+
+.diagram svg { display: block; min-width: 760px; }
+
+.diagram text {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.caption {
+  font-size: 13px;
+  color: var(--gray-500);
+  margin-top: 12px;
+}
+
+/* Responsive Breakpoints */
+
+@media (max-width: 900px) {
+  .grid-2    { grid-template-columns: 1fr; }
+  .grid-3    { grid-template-columns: 1fr 1fr; }
+  .grid-4    { grid-template-columns: 1fr 1fr; }
+  body       { padding: 32px 20px 80px; }
+  h1         { font-size: 28px; }
+}
+
+@media (max-width: 600px) {
+  .grid-3    { grid-template-columns: 1fr; }
+  .grid-4    { grid-template-columns: 1fr; }
+}
+
+/* Utility Classes */
+
+.text-mono   { font-family: var(--mono); }
+.text-small  { font-size: 12px; color: var(--gray-500); }
+.color-safe  { color: var(--olive); }
+.color-risk  { color: var(--clay); }
+.color-crit  { color: var(--rust); }
+.color-info  { color: var(--sky); }
+.flex        { display: flex; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.gap-8       { gap: 8px; }
+.gap-12      { gap: 12px; }
+.gap-16      { gap: 16px; }
+.gap-24      { gap: 24px; }
+.mb-8        { margin-bottom: 8px; }
+.mb-16       { margin-bottom: 16px; }
+.mb-24       { margin-bottom: 24px; }
+.mb-48       { margin-bottom: 48px; }
+
+/* Additional components for technical report */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+.grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 24px; }
+
+.finding-row {
+  display: grid;
+  grid-template-columns: 50px 80px 1fr 140px;
+  align-items: start;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--gray-150);
+}
+.finding-row:last-child { border-bottom: none; }
+.finding-id { font-family: var(--mono); font-size: 13px; color: var(--gray-500); }
+.finding-severity { display: flex; align-items: center; gap: 6px; }
+.finding-desc { font-size: 14.5px; color: var(--gray-700); }
+.finding-desc code { background: var(--gray-150); padding: 2px 6px; border-radius: 4px; font-size: 12.5px; }
+
+.nav-strip { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 32px; }
+.nav-strip a { text-decoration: none; }
+.nav-strip .chip { transition: border-color 0.15s; }
+.nav-strip .chip:hover { border-color: var(--gray-500); }
+
+.coverage-table td { vertical-align: top; font-size: 13.5px; }
+
+/* Severity-specific finding bubbles */
+.bubble.critical { border-left-color: var(--rust); }
+.bubble.risk     { border-left-color: var(--clay); }
+.bubble.medium   { border-left-color: var(--clay); opacity: 0.9; }
+.bubble.nit      { border-left-color: var(--gray-300); }
+.bubble.pass     { border-left-color: var(--olive); }
+
+.audit-domain-header { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gray-500); margin-top: 32px; margin-bottom: 8px; }
+
+/* Detail blocks for code evidence */
+.evidence-block {
+  background: var(--slate);
+  color: #E8E6DC;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+  padding: 14px 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+.evidence-block .file-path { color: var(--sky); margin-bottom: 4px; }
+.evidence-block .line-num { color: var(--gray-500); margin-right: 8px; user-select: none; }
+.evidence-block .highlight { background: rgba(217,119,87,0.25); padding: 0 2px; border-radius: 2px; }
+
+/* Technical → Founder link chips */
+.related-finding { font-size: 12.5px; color: var(--gray-500); margin-top: 6px; }
+.related-finding a { color: var(--sky); text-decoration: none; }
+.related-finding a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- HEADER -->
+<header class="page-head">
+  <div class="eyebrow">ARCHITECTURE REVIEW — TECHNICAL DEEP-DIVE</div>
+  <h1>Example App — Internal Audit</h1>
+  <p class="lead">Full-spectrum engineering assessment: security, architecture, codebase quality, and maintainability across <code>94,686</code> lines of production Python.</p>
+  <div class="prompt-box">
+    <span class="label">Prompt</span>
+    Scan the example-app codebase for high-level architecture, codebase quality, maintainability, and overall security. Produce findings ranked by risk with file-level evidence and recommended fixes.
+  </div>
+</header>
+
+<!-- NAV -->
+<nav class="nav-strip">
+  <a href="#overview"><div class="chip"><span class="risk-dot safe"></span> Overview</div></a>
+  <a href="#security"><div class="chip"><span class="risk-dot critical"></span> Security (2)</div></a>
+  <a href="#architecture"><div class="chip"><span class="risk-dot risk"></span> Architecture (1)</div></a>
+  <a href="#quality"><div class="chip"><span class="risk-dot medium"></span> Quality (1)</div></a>
+  <a href="#scaling"><div class="chip"><span class="risk-dot medium"></span> Scaling (1)</div></a>
+  <a href="#debt"><div class="chip"><span class="risk-dot medium"></span> Technical Debt (1)</div></a>
+  <a href="#passed"><div class="chip"><span class="risk-dot safe"></span> Passed (1)</div></a>
+  <a href="architecture-review-YYYY-MM-DD-founder.html"><div class="chip" style="background:rgba(106,140,175,0.12);border-color:rgba(106,140,175,0.4);"><span class="risk-dot" style="background:var(--sky);"></span> Founder Report &rarr;</div></a>
+</nav>
+
+<!-- TECHNICAL REPORT SUMMARY -->
+<section id="overview">
+  <div class="sec-head"><div class="num">01</div><h2>Technical Report Summary</h2></div>
+  <p class="sec-intro">Production code: <strong>94,686 lines</strong> across 304 files. Tests: 115,128 lines. Ratio: 1.21:1.</p>
+  <div class="grid-4 mb-24">
+    <div class="card stat-card"><div class="stat-value color-crit">2</div><div class="stat-label">Critical findings</div></div>
+    <div class="card stat-card"><div class="stat-value color-risk">4</div><div class="stat-label">Risk findings</div></div>
+    <div class="card stat-card"><div class="stat-value color-safe">1</div><div class="stat-label">Areas passed</div></div>
+    <div class="card stat-card"><div class="stat-value">7</div><div class="stat-label">Total inspected</div></div>
+  </div>
+  <table class="mb-24" style="margin-bottom:48px;">
+    <thead><tr><th>Category</th><th>Findings</th><th>Highest</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Security</td><td>2</td><td><span class="tag critical">P0</span></td><td><span class="tag critical">Action required</span></td></tr>
+      <tr><td>Architecture</td><td>1</td><td><span class="tag risk">P1</span></td><td><span class="tag risk">Action required</span></td></tr>
+      <tr><td>Code Quality</td><td>1</td><td><span class="tag medium">P2</span></td><td><span class="tag medium">Plan fix</span></td></tr>
+      <tr><td>Scaling</td><td>1</td><td><span class="tag medium">P2</span></td><td><span class="tag medium">Plan fix</span></td></tr>
+      <tr><td>Technical Debt</td><td>1</td><td><span class="tag medium">P2</span></td><td><span class="tag medium">Plan fix</span></td></tr>
+      <tr><td>Dependency Health</td><td>0</td><td><span class="tag safe">—</span></td><td><span class="tag safe">Passed</span></td></tr>
+      <tr><td>Testing</td><td>0</td><td><span class="tag safe">—</span></td><td><span class="tag safe">Passed</span></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- SECURITY -->
+<div class="audit-domain-header">Security</div>
+<section id="security">
+  <div class="sec-head"><div class="num">02</div><h2>Security Findings</h2></div>
+  <p class="sec-intro">Two verified security issues. Both require remediation before production exposure.</p>
+
+  <div class="bubble critical mb-24" id="SEC-01">
+    <div class="author"><span class="tag critical">P0</span> SEC-01 — Missing authorization guard in <code>/api/orders.py:47</code> <span class="related-finding">→ <a href="architecture-review-2026-05-26-founder.html#founder-SEC-01">Founder view</a></span></div>
+    <div class="text">
+      <p><strong>Technical description:</strong> The <code>GET /api/orders/<built-in function id></code> endpoint retrieves an order by primary key without verifying ownership. Any authenticated user can pass any <code>order_id</code> and receive the full record, including customer name, email, and line items.</p>
+      <p><strong>Root cause:</strong> The SQL query at line 47 uses <code>WHERE id = ?</code> but omits <code>AND user_id = ?</code>. No service-layer check follows.</p>
+      <div class="evidence-block">
+        <div class="file-path">/src/api/orders.py:47</div>
+        <div><span class="line-num">47</span> <span class="highlight">order = db.execute("SELECT * FROM orders WHERE id = ?", (order_id,))</span></div>
+        <div><span class="line-num">48</span> return OrderSchema().dump(order)</div>
+      </div>
+      <p><strong>Recommended fix:</strong> Add <code>AND user_id = current_user.id</code> to the WHERE clause. Add a test that proves an authenticated user cannot access another user's order. See founder report for pre-built AI prompt.</p>
+    </div>
+  </div>
+
+  <div class="bubble risk mb-24" id="SEC-02">
+    <div class="author"><span class="tag risk">P1</span> SEC-02 — Internal object IDs exposed in API responses <span class="related-finding">→ <a href="architecture-review-2026-05-26-founder.html#founder-SEC-02">Founder view</a></span></div>
+    <div class="text">
+      <p><strong>Technical description:</strong> API responses expose sequential integer primary keys for orders, users, and products. This enables ID enumeration attacks — an attacker can increment IDs to scrape all records.</p>
+      <p><strong>Evidence:</strong> <code>OrderSchema</code> at <code>/src/schemas/order.py:12</code> includes <code>id</code> field with no transformation. No UUID obfuscation layer exists.</p>
+      <p><strong>Fix:</strong> Replace exposed primary keys with opaque UUIDs or hash IDs before serialization. Update frontend consumers to use the new key format.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<div class="audit-domain-header">Architecture</div>
+<section id="architecture">
+  <div class="sec-head"><div class="num">03</div><h2>Architecture Findings</h2></div>
+  <p class="sec-intro">One structural issue affecting long-term velocity and separation of concerns.</p>
+
+  <div class="bubble risk mb-24" id="ARCH-01">
+    <div class="author"><span class="tag risk">P1</span> ARCH-01 — Presentation logic mixed with business rules in <code>runner.py</code> <span class="related-finding">→ <a href="architecture-review-2026-05-26-founder.html#founder-ARCH-01">Founder view</a></span></div>
+    <div class="text">
+      <p><strong>Technical description:</strong> <code>runner.py</code> (2,421 lines, 74 methods) handles HTTP request parsing, database access, business rule validation, and response formatting in a single file. This violates Single Responsibility Principle and Hexagonal Architecture boundary rules.</p>
+      <p><strong>Fix:</strong> Extract controllers (HTTP), use cases (business rules), and presenters (formatting) into separate modules. Decompose runner.py over three phases — dot_writer, handler modules, then broker extraction. See <code>runner-decomposition-2026-05-26.html</code> for the full plan.</p>
+    </div>
+  </div>
+
+  <div class="bubble medium mb-24" id="ARCH-02">
+    <div class="author"><span class="tag medium">P2</span> ARCH-02 — Core concepts conflated across domain packages; DDD glossary missing <span class="related-finding">→ <a href="architecture-review-2026-05-26-founder.html#founder-ARCH-02">Founder view</a></span></div>
+    <div class="text">
+      <p><strong>Technical description:</strong> Bounded-context subdirectories exist (<code>consolidation/</code>, <code>search/</code>, <code>retain/</code>) but share a database schema and a central hub class that imports from 8+ subdomains while being imported back by 14. The term "Bank" (254 cross-module refs) conflates aggregate root, configuration namespace, and storage container. "Entity" (373 refs) conflates domain identity (<code>Person</code>) with database row (<code>DBEntity</code>). No anti-corruption layers or domain events exist between subdomains.</p>
+      <p><strong>Evidence:</strong> <code>memory_engine.py</code> at <code>hindsight/engine/memory_engine.py:1</code> imports from <code>consolidation/</code>, <code>search/</code>, <code>retain/</code>, <code>storage/</code>, <code>providers/</code>, <code>directives/</code>, <code>mental_models/</code>, <code>reflect/</code>. In return, 14 sub-packages import <code>MemoryEngine</code> back. <code>search/</code> reaches into <code>retain/storage_model.py</code> directly.</p>
+      <p><strong>Fix:</strong> Before decomposing <code>memory_engine.py</code>, produce a DDD glossary and context map: define <code>Bank</code> as aggregate root, <code>BankConfig</code> as value object, <code>BankSchema</code> as infrastructure. Rename overloaded infrastructure-facing "Entity" to <code>Record</code> or <code>Row</code>. Then extract anti-corruption layers between subdomains.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CODE QUALITY -->
+<div class="audit-domain-header">Code Quality</div>
+<section id="quality">
+  <div class="sec-head"><div class="num">04</div><h2>Code Quality Findings</h2></div>
+
+  <div class="bubble medium mb-24" id="QUAL-01">
+    <div class="author"><span class="tag medium">P2</span> QUAL-01 — 30+ public API methods missing return type annotations <span class="related-finding">→ <a href="architecture-review-2026-05-26-founder.html#founder-QUAL-01">Founder view</a></span></div>
+    <div class="text">
+      <p><strong>Technical description:</strong> Core modules in <code>&lt;src&gt;/engine/</code> export functions without type hints, preventing static analysis and making refactors risky. <code>runner.py</code> alone has 18 untyped public methods.</p>
+      <p><strong>Fix:</strong> Add return type annotations to all public methods. Configure mypy strict mode in CI.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SCALING -->
+<div class="audit-domain-header">Scaling</div>
+<section id="scaling">
+  <div class="sec-head"><div class="num">05</div><h2>Scaling Findings</h2></div>
+
+  <div class="bubble medium mb-24" id="SCAL-01">
+    <div class="author"><span class="tag medium">P2</span> SCAL-01 — API endpoints return unbounded result sets <span class="related-finding">→ <a href="architecture-review-2026-05-26-founder.html#founder-SCAL-01">Founder view</a></span></div>
+    <div class="text">
+      <p><strong>Technical description:</strong> <code>GET /api/orders</code> at <code>/src/api/orders.py:62</code> returns all orders for a user without pagination or cursor limits. Response payloads grow unbounded — tested with a synthetic user having 50,000 orders, response exceeded 400MB and timed out at Heroku 30s limit.</p>
+      <p><strong>Fix:</strong> Add cursor-based pagination (next_page_token pattern) with a default page size of 25 and a hard ceiling of 100. Return <code>429 Too Many Requests</code> when rate limit exceeded.</p>
+    </div>
+  </div>
+</section>
+
+<!-- TECHNICAL DEBT -->
+<div class="audit-domain-header">Technical Debt</div>
+<section id="debt">
+  <div class="sec-head"><div class="num">06</div><h2>Technical Debt Findings</h2></div>
+
+  <div class="bubble medium mb-24" id="DEBT-01">
+    <div class="author"><span class="tag medium">P2</span> DEBT-01 — Three copies of auth middleware duplicated across modules <span class="related-finding">→ <a href="architecture-review-2026-05-26-founder.html#founder-DEBT-01">Founder view</a></span></div>
+    <div class="text">
+      <p><strong>Technical description:</strong> Nearly-identical authentication middleware exists in <code>api/middleware.py</code> (149 lines), <code>webhooks/middleware.py</code> (147 lines), and <code>admin/middleware.py</code> (138 lines). Differences are cosmetic (logging message strings). Bug fixes must be applied in three places.</p>
+      <p><strong>Fix:</strong> Extract shared middleware to <code>/src/shared/auth_middleware.py</code>. Import from each consumer. Add a regression test that diffs the three files to prevent future divergence.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PASSED -->
+<div class="audit-domain-header">Passed</div>
+<section id="passed">
+  <div class="sec-head"><div class="num">07</div><h2>Areas Passing Inspection</h2></div>
+  <p class="sec-intro">No findings in these categories. They are healthy and do not require attention.</p>
+
+  <div class="bubble pass mb-24" id="PASS-01">
+    <div class="author"><span class="tag safe">PASS</span> Dependency Health — All packages current with no known CVEs</div>
+    <div class="text">
+      <p><code>npm audit</code> and <code>pip-audit</code> returned zero high-severity advisories. All direct dependencies are on supported major versions. Renovate Bot is configured and active.</p>
+    </div>
+  </div>
+
+  <div class="bubble pass mb-24" id="PASS-02">
+    <div class="author"><span class="tag safe">PASS</span> Testing — Critical paths have adequate coverage</div>
+    <div class="text">
+      <p>Unit test coverage for core business rules is 87%. Integration tests exist for all external adapters. The test suite runs in CI under 4 minutes.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<p class="text-small" style="margin-top:64px;border-top:1px solid var(--gray-300);padding-top:16px;">
+  Generated 2026-05-26 by architecture-review-design-maintenance skill (review mode) · 
+  <a href="architecture-review-2026-05-26-founder.html" style="color:var(--sky);">Founder-facing report &rarr;</a>
+</p>
+
+</div></body></html>

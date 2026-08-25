@@ -1,0 +1,250 @@
+id: factories-001
+name: "Domain-Driven Design — Factories: Domain Object Creation, Valid Construction, and Encapsulated Assembly"
+category: architecture
+canonical_tags: ['ddd', 'factories']
+sources:
+  - books/domain-driven-design.md
+  - books/domain-driven-design-distilled.md
+  - books/implementing-domain-driven-design.md
+summary: >
+  Factories encapsulate the creation of domain objects when that creation is
+  complex, carries business rules, or requires multiple collaborating values.
+  A factory guarantees that every object it produces is valid from the moment
+  it exists — no partially initialized aggregates, no invalid value objects
+  awaiting later correction. Factories belong in the domain layer when the
+  creation logic itself is domain-significant; simpler factories may live in
+  the application layer. The canonical anti-pattern is building invalid objects
+  first and fixing them later, or scattering construction logic across
+  controllers, endpoints, and mappers so that no single place owns what "valid"
+  means. Use factories whenever construction involves domain rules beyond simple
+  field assignment — assembling an aggregate from multiple value objects,
+  applying business policies during creation, or ensuring invariants hold across
+  several collaborating components.
+examples:
+  - language: python
+    bad: |
+      # Construction scattered across endpoints — no single place owns validity
+      from dataclasses import dataclass
+      from decimal import Decimal
+      from typing import Any
+      from uuid import uuid4
+
+      @dataclass
+      class OrderLine:
+          product_id: str
+          quantity: int
+          unit_price: Decimal
+
+      class Order:
+          def __init__(self) -> None:
+              self.id: str = ""
+              self.customer_id: str = ""
+              self.lines: list[OrderLine] = []
+              self.status: str = "draft"
+              self.total: Decimal = Decimal("0")
+
+          def add_line(self, line: OrderLine) -> None:
+              self.lines.append(line)
+              self.total += line.unit_price * line.quantity
+
+      # Endpoint 1: creates order from HTTP data — duplicates construction logic
+      def create_order_from_request(request_data: dict[str, Any]) -> Order:
+          order = Order()
+          order.id = str(uuid4())
+          order.customer_id = request_data["customer_id"]
+          for item in request_data.get("items", []):
+              if item["quantity"] <= 0:  # validation duplicated here
+                  raise ValueError("Quantity must be positive")
+              line = OrderLine(
+                  product_id=item["product_id"],
+                  quantity=item["quantity"],
+                  unit_price=Decimal(str(item["price"]))
+              )
+              order.add_line(line)
+          return order  # order could have no lines — is that valid? Unclear.
+
+      # Endpoint 2: creates order from CSV import — same logic, different place
+      def create_order_from_csv_row(row: list[str]) -> Order:
+          order = Order()
+          order.id = str(uuid4())
+          order.customer_id = row[0]
+          for i in range(1, len(row), 3):
+              qty = int(row[i+1])
+              if qty <= 0:  # same validation, third copy
+                  raise ValueError("Quantity must be positive")
+              line = OrderLine(
+                  product_id=row[i],
+                  quantity=qty,
+                  unit_price=Decimal(row[i+2])
+              )
+              order.add_line(line)
+          return order
+
+    good: |
+      from __future__ import annotations
+
+      from dataclasses import dataclass, field
+      from decimal import Decimal
+      from typing import Protocol
+      from uuid import UUID, uuid4
+
+      # --- Value Objects ---
+
+      @dataclass(frozen=True)
+      class Money:
+          amount: Decimal
+          currency: str = "USD"
+
+          def __post_init__(self) -> None:
+              if self.amount < 0:
+                  raise ValueError("Money cannot be negative")
+
+          def __mul__(self, qty: int) -> Money:
+              return Money(self.amount * qty, self.currency)
+
+      @dataclass(frozen=True)
+      class OrderId:
+          value: UUID = field(default_factory=uuid4)
+
+      @dataclass(frozen=True)
+      class ProductId:
+          value: str
+
+      @dataclass(frozen=True)
+      class CustomerId:
+          value: str
+
+      @dataclass(frozen=True)
+      class Quantity:
+          value: int
+
+          def __post_init__(self) -> None:
+              if self.value <= 0:
+                  raise ValueError(f"Quantity must be positive, got {self.value}")
+
+      # --- Domain Objects ---
+
+      @dataclass(frozen=True)
+      class OrderLine:
+          product_id: ProductId
+          quantity: Quantity
+          unit_price: Money
+
+          def subtotal(self) -> Money:
+              return self.unit_price * self.quantity.value
+
+      class Order:
+          """Aggregate root — created through a factory, never directly by external code."""
+
+          def __init__(self, order_id: OrderId, customer_id: CustomerId,
+                       lines: list[OrderLine]) -> None:
+              self._id = order_id
+              self._customer_id = customer_id
+              self._lines = lines
+              self._status = "draft"
+
+          @property
+          def id(self) -> OrderId:
+              return self._id
+
+          @property
+          def status(self) -> str:
+              return self._status
+
+          @property
+          def lines(self) -> list[OrderLine]:
+              return list(self._lines)
+
+          def total(self) -> Money:
+              return Money(
+                  sum(line.subtotal().amount for line in self._lines),
+                  self._lines[0].unit_price.currency if self._lines else "USD"
+              )
+
+          def place(self) -> None:
+              if not self._lines:
+                  raise ValueError("Cannot place empty order")
+              self._status = "placed"
+
+      # --- Factory (domain layer) ---
+
+      class OrderFactory:
+          """Single source of truth for creating valid Orders. Encapsulates all creation rules."""
+
+          def create(self, customer_id: CustomerId,
+                     line_specs: list[tuple[ProductId, Quantity, Money]]) -> Order:
+              """Create a valid Order from specifications. Guarantees validity or raises."""
+              if not line_specs:
+                  raise ValueError("Order must have at least one line item")
+
+              lines: list[OrderLine] = []
+              for product_id, quantity, unit_price in line_specs:
+                  lines.append(OrderLine(
+                      product_id=product_id,
+                      quantity=quantity,     # Quantity validates itself
+                      unit_price=unit_price,  # Money validates itself
+                  ))
+
+              order = Order(
+                  order_id=OrderId(),
+                  customer_id=customer_id,
+                  lines=lines,
+              )
+
+              # Additional domain creation rules
+              if self._is_duplicate(order):
+                  raise ValueError(f"Duplicate order detected for customer {customer_id.value}")
+
+              return order
+
+          def _is_duplicate(self, order: Order) -> bool:
+              # Domain logic: check for duplicate orders within a time window
+              return False
+
+          def reconstitute(self, order_id: OrderId, customer_id: CustomerId,
+                          lines: list[OrderLine], status: str) -> Order:
+              """Reconstitute from persistence — bypasses creation validation."""
+              order = Order.__new__(Order)  # skip normal __init__
+              order._id = order_id          # type: ignore[attr-defined]
+              order._customer_id = customer_id
+              order._lines = lines
+              order._status = status
+              return order
+
+      # --- Application service uses the factory ---
+
+      class CreateOrderUseCase:
+          def __init__(self, factory: OrderFactory, repo: object) -> None:
+              self._factory = factory
+              self._repo = repo
+
+          def execute(self, customer_id: str, items: list[dict]) -> Order:
+              line_specs = [
+                  (ProductId(i["product_id"]), Quantity(i["quantity"]), Money(Decimal(str(i["price"]))))
+                  for i in items
+              ]
+              order = self._factory.create(CustomerId(customer_id), line_specs)
+              # self._repo.save(order)
+              return order
+
+      # Usage: creation logic lives in exactly one place
+      factory = OrderFactory()
+      order = factory.create(
+          CustomerId("cust-123"),
+          [(ProductId("prod-1"), Quantity(2), Money(Decimal("29.99"))),
+           (ProductId("prod-2"), Quantity(1), Money(Decimal("49.99")))],
+      )
+      # order is guaranteed valid — no post-creation patching needed
+
+heuristics:
+  - Use factories when construction involves business rules beyond simple field assignment. If creating an object requires checking policies, combining multiple value objects, or enforcing invariants across collaborators, a factory earns its cost.
+  - Factories guarantee valid objects on return. A caller should never receive a partially initialized or invalid object from a factory. If construction fails, the factory raises an exception — not return an object that "still needs setup."
+  - Place factories in the domain layer when the creation logic itself is domain-significant. Move simpler factories to the application layer when they only orchestrate technical assembly.
+  - Provide a separate reconstitution path for loading from persistence. Reconstitution (loading from a database) must bypass creation validation because the stored object was already valid when first created. Use a `reconstitute()` method or a dedicated constructor.
+  - Controllers, endpoints, and mappers must not contain business construction logic. An HTTP handler should translate request data into factory inputs, then delegate creation to the factory. Construction rules should never live at the transport boundary.
+  - Factories can protect aggregate integrity by controlling which internal entities can be created. If only the aggregate root should create child entities, the factory enforces that by being the only entry point.
+  - Do not use a factory just to hide a trivial constructor. If construction is `MyObject(field1, field2)` with no rules, a factory adds ceremony without value. Use factories where the creation has domain meaning.
+  - Factories can depend on domain services or repositories for ID generation when the domain needs it. The factory is the right place to call `repository.next_identity()` and assemble the result.
+  - Test factory creation paths separately from reconstitution paths. Creation should reject invalid inputs and produce valid outputs. Reconstitution should faithfully restore any previously valid state without re-applying creation rules.
+
+related_tags: [factories, domain-factories, object-creation, valid-construction, aggregate-factories, ddd-tactical, reconstitution, creation-patterns]

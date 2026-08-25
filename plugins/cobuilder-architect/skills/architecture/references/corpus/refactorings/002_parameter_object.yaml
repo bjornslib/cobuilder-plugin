@@ -1,0 +1,160 @@
+id: parameter-object-002
+name: Introduce Parameter Object
+category: refactoring
+canonical_tags: ['refactoring', 'readability']
+sources:
+  - books/refactoring.md
+  - books/the-pragmatic-programmer.md
+summary: |
+  Introduce Parameter Object replaces a clump of parameters that always travel together with a single object.
+  This reduces signature noise, prevents argument-ordering bugs, gives the clump a meaningful name, 
+  and provides a natural place for validation and derived behavior that would otherwise scatter across call sites.
+examples:
+  - language: python
+    bad: |
+      def schedule_meeting(
+          title: str,
+          organizer_email: str,
+          start_hour: int,
+          start_minute: int,
+          end_hour: int,
+          end_minute: int,
+          timezone: str,
+          room_name: str,
+          attendees: list[str],
+          recurring: bool,
+          recurrence_days: int,
+      ) -> Meeting:
+          # Start time
+          start = datetime.time(start_hour, start_minute)
+          end = datetime.time(end_hour, end_minute)
+
+          if start >= end:
+              raise ValueError("Start time must be before end time")
+
+          return Meeting(
+              title=title,
+              organizer=organizer_email,
+              slot=TimeSlot(start=start, end=end, timezone=timezone),
+              room=room_name,
+              attendees=attendees,
+              recurrence=RecurrencePattern(days=recurrence_days) if recurring else None,
+          )
+
+      # Every call site must pass 11 positional arguments in correct order
+      meeting = schedule_meeting(
+          "Sprint Planning",
+          "alice@example.com",
+          9, 0, 10, 0,
+          "America/Chicago",
+          "Boardroom A",
+          ["bob@example.com", "carol@example.com"],
+          True, 14,
+      )
+    good: |
+      @dataclass
+      class MeetingRequest:
+          title: str
+          organizer_email: str
+          slot: TimeSlot
+          room_name: str
+          attendees: list[str]
+          recurrence: RecurrencePattern | None = None
+
+      @dataclass
+      class TimeSlot:
+          start: datetime.time
+          end: datetime.time
+          timezone: str
+
+          def __post_init__(self) -> None:
+              if self.start >= self.end:
+                  raise ValueError("Start time must be before end time")
+
+      def schedule_meeting(request: MeetingRequest) -> Meeting:
+          return Meeting(
+              title=request.title,
+              organizer=request.organizer_email,
+              slot=request.slot,
+              room=request.room_name,
+              attendees=request.attendees,
+              recurrence=request.recurrence,
+          )
+
+      # Call sites become self-documenting
+      meeting = schedule_meeting(MeetingRequest(
+          title="Sprint Planning",
+          organizer_email="alice@example.com",
+          slot=TimeSlot(
+              start=datetime.time(9, 0),
+              end=datetime.time(10, 0),
+              timezone="America/Chicago",
+          ),
+          room_name="Boardroom A",
+          attendees=["bob@example.com", "carol@example.com"],
+          recurrence=RecurrencePattern(days=14),
+      ))
+  - language: typescript
+    bad: |
+      function renderAddress(
+        street: string,
+        city: string,
+        state: string,
+        zip: string,
+        country: string,
+        isPrimary: boolean,
+        label: string,
+        verifiedAt?: Date
+      ): string {
+        const lines: string[] = [];
+        lines.push(street);
+        lines.push(`${city}, ${state} ${zip}`);
+        if (country !== "US") lines.push(country);
+        if (isPrimary) lines.unshift(`[PRIMARY] ${label}`);
+        if (verifiedAt) lines.push(`Verified: ${verifiedAt.toISOString()}`);
+        return lines.join("\n");
+      }
+
+      // Usage scattered across the codebase
+      renderAddress("123 Main St", "Austin", "TX", "78701", "US", true, "Home", new Date());
+      renderAddress("456 Oak Ave", "Seattle", "WA", "98101", "US", false, "Work");
+    good: |
+      interface Address {
+        street: string;
+        city: string;
+        state: string;
+        zip: string;
+        country: string;
+      }
+
+      interface AddressDisplayOptions {
+        isPrimary: boolean;
+        label: string;
+        verifiedAt?: Date;
+      }
+
+      function renderAddress(address: Address, options: AddressDisplayOptions): string {
+        const lines: string[] = [];
+        lines.push(address.street);
+        lines.push(`${address.city}, ${address.state} ${address.zip}`);
+        if (address.country !== "US") lines.push(address.country);
+        if (options.isPrimary) lines.unshift(`[PRIMARY] ${options.label}`);
+        if (options.verifiedAt) lines.push(`Verified: ${options.verifiedAt.toISOString()}`);
+        return lines.join("\n");
+      }
+
+      // Usage: parameters are grouped by meaning
+      renderAddress(
+        { street: "123 Main St", city: "Austin", state: "TX", zip: "78701", country: "US" },
+        { isPrimary: true, label: "Home", verifiedAt: new Date() }
+      );
+heuristics:
+  - Apply when 3+ parameters consistently appear together across multiple call sites.
+  - Apply when callers keep passing the same values in the same order — argument ordering is a bug magnet.
+  - Apply when parameter validation would be repeated at every call site (move it into the object's constructor / __post_init__).
+  - Apply when the parameter group represents a domain concept worth naming (Address, TimeSlot, SearchFilter).
+  - Do NOT wrap single parameters or genuinely unrelated arguments — the object must carry meaning.
+  - In Python: prefer @dataclass for pure data carriers; add __post_init__ for validation.
+  - In TypeScript: prefer interfaces for input shapes; add branded types for additional safety.
+  - Run tests after introducing the object — this is a signature change; all call sites must be updated.
+related_tags: [parameter-object, data-clump, encapsulation, domain-modeling, type-safety]

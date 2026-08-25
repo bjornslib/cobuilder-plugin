@@ -1,0 +1,112 @@
+id: airbnb-compat-proposals-031
+name: Airbnb ECMAScript 5/6+ Compatibility — Polyfill Awareness and TC39 Proposal Restraint
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  Airbnb's stance on language compatibility: reference Kangax's ES5
+  compatibility table to verify browser support for features you use.
+  Crucially: do NOT use TC39 proposals that haven't reached stage 3.
+  Stage-0/1/2 proposals are not finalized and may change or be withdrawn
+  entirely. This is about writing JavaScript that works reliably today,
+  not chasing syntax that may never ship.
+examples:
+  - language: typescript
+    bad: |
+      // Using stage-2 decorator proposal — subject to change
+      function log(target: any, key: string, descriptor: PropertyDescriptor) {
+        const original = descriptor.value;
+        descriptor.value = function (...args: unknown[]) {
+          console.log(`Calling ${key} with`, args);
+          return original.apply(this, args);
+        };
+        return descriptor;
+      }
+
+      class PaymentService {
+        @log // TC39 decorators at stage 2 — not finalized
+        processPayment(amount: number) {
+          return stripe.charges.create({ amount });
+        }
+      }
+
+      // Using a stage-1 pipeline operator proposal
+      const result = fetch("/api/users")
+        |> await %>
+        |> (response) => response.json() %>
+        |> (data) => data.filter(isActive);
+
+      // Symbols without checking browser support — crashes in older envs
+      const PRIVATE_KEY = Symbol("private");
+      class Store {
+        [PRIVATE_KEY]: Map<string, unknown> = new Map();
+      }
+    good: |
+      // Use stable, standardized JavaScript — no proposals
+      function log(target: any, key: string, descriptor: PropertyDescriptor) {
+        const original = descriptor.value;
+        descriptor.value = function (...args: unknown[]) {
+          console.log(`Calling ${key} with`, args);
+          return original.apply(this, args);
+        };
+        return descriptor;
+      }
+
+      class PaymentService {
+        processPayment(amount: number) {
+          // Apply decorator-style logic directly or use a factory
+          return log(PaymentService.prototype, "processPayment", {
+            value(this: PaymentService, amount: number) {
+              return stripe.charges.create({ amount });
+            },
+          }).value.call(this, amount);
+        }
+      }
+
+      // Or better: use a higher-order function pattern
+      function withLogging<F extends (...args: any[]) => any>(fn: F): F {
+        return ((...args: Parameters<F>) => {
+          console.log(`Calling with`, args);
+          return fn(...args);
+        }) as F;
+      }
+
+      const processPayment = withLogging((amount: number) =>
+        stripe.charges.create({ amount })
+      );
+
+      // Check feature support before using Symbols
+      if (typeof Symbol !== "undefined") {
+        const PRIVATE_KEY = Symbol("private");
+        // safe to use
+      }
+
+      // Reference Kangax compatibility table before adopting new features
+      // https://compat-table.github.io/compat-table/es6/
+  - language: typescript
+    bad: |
+      // Optional chaining with proposal-stage operator — before ?. was stage 4
+      const userName = user && user.profile && user.profile.name;
+
+      // Using BigInt without polyfill check
+      const maxId = 9007199254740991n; // BigInt — breaks in unsupported engines
+    good: |
+      // Optional chaining — now stage 4, safe to use with modern targets
+      const userName = user?.profile?.name;
+
+      // BigInt with explicit check — Symbols and BigInts can't be polyfilled
+      if (typeof BigInt !== "undefined") {
+        const maxId = BigInt("9007199254740991");
+      } else {
+        // Fallback path for environments without BigInt
+        const maxId = Number.MAX_SAFE_INTEGER;
+      }
+heuristics:
+  - Do not use TC39 proposals that have not reached stage 3. They are not finalized and subject to change or withdrawal. You're writing JavaScript, not a draft spec.
+  - When adopting new ES features, check Kangax's compatibility table (https://compat-table.github.io/compat-table/) against your target browsers.
+  - Symbols and BigInts cannot be faithfully polyfilled. Only use them when you know your target environments support them natively, or guard them behind feature-detection checks.
+  - This rule applies to compile-to-JS languages too (TypeScript, Babel) — just because a transpiler can emit it doesn't mean it should. Transpiled decorator output can be large, brittle, and misaligned with the eventual spec.
+  - ES6+ features already covered elsewhere (arrow functions, classes, destructuring, template strings, default params, rest/spread, modules, iterators) are all stage 4 and safe to use.
+  - Prefer the simplest, most standardized syntax available. Don't reach for proposals just because they look clever.
+related_tags: [airbnb, tc39, ecmascript, compatibility, proposals, polyfill, es5, es6]

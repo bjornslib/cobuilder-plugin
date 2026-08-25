@@ -4,20 +4,20 @@ __pycache__/
 .env
 .DS_Store
 
-# prodyssey view-server bookkeeping — machine-local only.
-# The bundles under .prodyssey/ ARE committed; that's the point of the format.
-.prodyssey/.view-server.pid
-.prodyssey/.view-server.log
-.prodyssey/active
+# cobuilder-architect view-server bookkeeping — machine-local only.
+# The bundles under .cobuilder-architect/ ARE committed; that's the point of the format.
+.cobuilder-architect/.view-server.pid
+.cobuilder-architect/.view-server.log
+.cobuilder-architect/active
 # migrate_bundle.py's pre-migration story.json snapshot — disposable once a
 # migration proves sound, and machine-local like the entries above.
-.prodyssey/*/.migration-backup/
+.cobuilder-architect/*/.migration-backup/
 # submit mode's pre-PR diff cache. Exactly reproducible from
 # `git diff <merge-base>..<head>`, and self-referential: committing it into the
 # branch it diffs rewrites it on every commit, and each version would then
 # contain the last one. The authored intent/assessment beside it ARE committed.
-.prodyssey/*/exports/branch-*/diff.json
+.cobuilder-architect/*/exports/branch-*/diff.json
 
 .mcp.json
 .serena/
-.prodyssey/digital-curator-80f83abb/docs/
+.cobuilder-architect/digital-curator-80f83abb/docs/

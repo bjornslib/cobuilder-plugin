@@ -1,0 +1,160 @@
+id: security-crypto-key-management-001
+name: Cryptography, Key Management, and TLS Configuration
+category: security
+canonical_tags: ['security', 'cryptography', 'key-management', 'tls', 'owasp-a02']
+sources:
+  - owasp/top-ten.md
+  - cwe/crypto-failures.md
+  - nist/sp-800-57.md
+summary: >
+  Cryptographic failures — weak algorithms, poor key management, and
+  misconfigured TLS — are the second most common web vulnerability class.
+  Using MD5 or SHA1 for password hashing allows near-instant cracking on
+  modern GPUs. AES in ECB mode leaks structural patterns in ciphertext.
+  Hardcoded keys that never rotate turn a single compromise into permanent
+  exposure. TLS misconfigurations (supporting 1.0/1.1, weak cipher suites)
+  enable man-in-the-middle attacks. Storing keys alongside encrypted data
+  defeats the purpose of encryption. Defense requires modern password
+  hashing (bcrypt, argon2), authenticated encryption (AES-GCM, ChaCha20-
+  Poly1305), key rotation via a KMS, and TLS 1.2+ with strong cipher suites
+  on every connection.
+examples:
+  - language: python
+    bad: |
+      import hashlib
+      import os
+      from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+      from cryptography.hazmat.primitives.ciphers.algorithms import AES
+      from fastapi import FastAPI
+
+      app = FastAPI()
+
+      API_KEY = "a1b2c3d4e5f6"  # hardcoded, never rotated
+
+
+      # ---- Weak password hashing: MD5 ----
+      @app.post("/register")
+      def register(username: str, password: str):
+          # MD5 is broken: 5 billion hashes/second on a single GPU
+          pw_hash = hashlib.md5(password.encode()).hexdigest()
+          db.save(User(username=username, password_hash=pw_hash))
+          return {"ok": True}
+
+
+      # ---- AES-ECB: leaks structural patterns ----
+      @app.post("/encrypt")
+      def encrypt_data(plaintext: bytes):
+          # ECB mode encrypts identical blocks identically — patterns visible
+          key = b"0123456789abcdef"  # 128-bit hardcoded key
+          cipher = Cipher(AES(key), modes.ECB())
+          encryptor = cipher.encryptor()
+          ct = encryptor.update(plaintext) + encryptor.finalize()
+          return {"ciphertext": ct.hex()}
+
+
+      # ---- TLS 1.0 still enabled on server ----
+      # nginx config: ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+      # Allows downgrade attacks to broken protocol versions.
+    good: |
+      import os
+      from fastapi import FastAPI
+      import argon2
+      from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+      from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+      from cryptography.hazmat.primitives import hashes
+
+      app = FastAPI()
+
+      # Key fetched from KMS, rotated on schedule
+      def get_encryption_key() -> bytes:
+          """Derive key from KMS master key per deployment."""
+          master = kms.get_key("data-encryption-master")
+          hkdf = HKDF(
+              algorithm=hashes.SHA256(),
+              length=32,
+              salt=os.environ["KEY_SALT"].encode(),
+              info=b"data-encryption-v1",
+          )
+          return hkdf.derive(master)
+
+
+      # ---- Strong password hashing: argon2 ----
+      ph = argon2.PasswordHasher()
+
+      @app.post("/register")
+      def register(username: str, password: str):
+          # Argon2id: memory-hard, resistant to GPU cracking
+          pw_hash = ph.hash(password)
+          db.save(User(username=username, password_hash=pw_hash))
+          return {"ok": True}
+
+
+      @app.post("/login")
+      def login(username: str, password: str):
+          user = db.find_user(username)
+          ph.verify(user.password_hash, password)  # raises on mismatch
+          return {"ok": True}
+
+
+      # ---- AES-GCM: authenticated encryption ----
+      @app.post("/encrypt")
+      def encrypt_data(plaintext: bytes):
+          key = get_encryption_key()
+          nonce = os.urandom(12)  # GCM nonce: 12 bytes, never reuse with same key
+          aesgcm = AESGCM(key)
+          ct = aesgcm.encrypt(nonce, plaintext, associated_data=None)
+          return {"nonce": nonce.hex(), "ciphertext": ct.hex()}
+
+
+      # ---- TLS 1.2+ only with strong ciphers ----
+      # nginx config:
+      # ssl_protocols TLSv1.2 TLSv1.3;
+      # ssl_prefer_server_ciphers on;
+      # ssl_ciphers ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384;
+heuristics:
+  - >
+    Never use MD5, SHA1, or unsalted SHA-256 for password hashing. These
+    are designed for speed and can be brute-forced at billions of attempts
+    per second on modern GPUs. Use bcrypt (cost factor 12+), argon2id
+    (memory 64MB+, time 3 iterations), or scrypt. These are intentionally
+    slow and memory-hard, making GPU cracking infeasible.
+  - >
+    Rotate encryption keys and API keys on a defined schedule. Store keys
+    in a KMS (AWS KMS, GCP KMS, HashiCorp Vault) — never in source code,
+    environment variables checked into config files, or database columns
+    adjacent to the encrypted data. Key rotation without re-encryption
+    requires a dual-key period where both old and new keys are valid.
+  - >
+    Enforce TLS 1.2 minimum on all connections — client-to-server,
+    server-to-server, and server-to-database. Disable TLS 1.0 and 1.1
+    entirely. Prefer TLS 1.3 where both parties support it. Configure
+    strong cipher suites (AES-GCM, ChaCha20-Poly1305) and forward-secret
+    key exchange (ECDHE). Remove support for RC4, DES, and 3DES.
+  - >
+    Encrypt personally identifiable information (PII) at rest: email
+    addresses, phone numbers, government IDs, and financial data. Use
+    AES-GCM (256-bit) or ChaCha20-Poly1305 for authenticated encryption.
+    Never use ECB mode — it leaks structural patterns in the ciphertext.
+    Always generate a unique nonce per encryption operation.
+  - >
+    Use a Key Management Service for key storage and derivation. Never
+    hardcode keys, never store keys in the same database as the encrypted
+    data, and never commit keys to version control. Derive per-deployment
+    keys from a KMS master using HKDF with a deployment-specific salt.
+  - >
+    Prefer AEAD (Authenticated Encryption with Associated Data) ciphers
+    over encrypt-then-MAC constructions. AES-GCM and ChaCha20-Poly1305
+    provide both confidentiality and integrity in a single primitive.
+    Never use encryption without authentication — unauthenticated modes
+    (CTR, CBC without HMAC) are vulnerable to bit-flipping and padding
+    oracle attacks.
+  - >
+    Verify TLS certificates and hostname on outbound connections. Set
+    verify=True (or omit — it is the default) in requests and httpx.
+    Suppressing certificate validation (verify=False) enables MITM
+    attacks. In test environments, use a local CA rather than disabling
+    verification globally.
+related_tags:
+  [security, cryptography, password-hashing, bcrypt, argon2, aes-gcm,
+   tls, key-management, kms, key-rotation, encryption-at-rest,
+   owasp-a02, cwe-327, cwe-328, cwe-295, pii-encryption]

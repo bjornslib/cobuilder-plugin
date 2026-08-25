@@ -1,0 +1,213 @@
+id: feature-envy-007
+name: Feature Envy (Code Smell)
+category: code-smell
+canonical_tags: ['refactoring', 'readability']
+sources:
+  - books/refactoring.md
+  - books/clean-code.md
+summary: |
+  Feature Envy occurs when a method in one class is more interested in another class's data than its own.
+  The method spends most of its lines accessing fields, calling getters, or computing values on another object.
+  Fowler's heuristic: "The method clearly wants to be elsewhere." The cure is Move Method — relocate 
+  the behavior to the class that owns the data it operates on. This follows the principle that 
+  behavior should live near the data it manipulates (Clean Code's "things that change together, stay together").
+examples:
+  - language: python
+    bad: |
+      @dataclass
+      class Order:
+          items: list[OrderItem]
+          customer_id: str
+          discount_code: str | None
+
+      @dataclass
+      class OrderItem:
+          sku: str
+          price: float
+          quantity: int
+
+      class InvoiceGenerator:
+          """This method is obsessed with Order's data — it barely touches its own state."""
+
+          def generate(self, order: Order) -> Invoice:
+              # Feature envy: digging into order.items, order.discount_code, each item's fields
+              subtotal = 0.0
+              for item in order.items:
+                  line_total = item.price * item.quantity
+                  if item.quantity >= 10:
+                      line_total *= 0.95  # volume discount
+                  subtotal += line_total
+
+              # Still envious: reading order.discount_code
+              if order.discount_code:
+                  discount = self._resolve_discount(order.discount_code, subtotal)
+                  subtotal -= discount
+
+              tax = subtotal * 0.08
+              total = subtotal + tax
+
+              # Even more envy: iterating order.items again for line items
+              line_items = []
+              for item in order.items:
+                  line_items.append(InvoiceLine(
+                      sku=item.sku,
+                      description=f"{item.quantity}x @ ${item.price:.2f}",
+                      amount=item.price * item.quantity,
+                  ))
+
+              return Invoice(
+                  order_id=order.id if hasattr(order, 'id') else "",
+                  line_items=line_items,
+                  subtotal=subtotal,
+                  tax=tax,
+                  total=total,
+              )
+
+          def _resolve_discount(self, code: str, amount: float) -> float:
+              # This is fine — self-contained logic
+              discounts = {"SAVE10": 0.10, "VIP20": 0.20, "WELCOME5": 0.05}
+              return amount * discounts.get(code, 0.0)
+    good: |
+      @dataclass
+      class OrderItem:
+          sku: str
+          price: float
+          quantity: int
+
+          @property
+          def line_total(self) -> float:
+              """Behavior near data: the item knows how to price itself."""
+              base = self.price * self.quantity
+              return base * 0.95 if self.quantity >= 10 else base
+
+      @dataclass
+      class Order:
+          items: list[OrderItem]
+          customer_id: str
+          discount_code: str | None
+
+          @property
+          def subtotal(self) -> float:
+              """Order owns its pricing logic — no envy needed."""
+              return sum(item.line_total for item in self.items)
+
+          def total_with_tax(self, discount: float = 0.0) -> OrderTotals:
+              """One place for all money math on this order."""
+              net = self.subtotal - discount
+              tax = net * 0.08
+              return OrderTotals(subtotal=self.subtotal, discount=discount, tax=tax, total=net + tax)
+
+          @property
+          def line_items(self) -> list[InvoiceLine]:
+              """Order knows how to describe its own items."""
+              return [
+                  InvoiceLine(
+                      sku=item.sku,
+                      description=f"{item.quantity}x @ ${item.price:.2f}",
+                      amount=item.line_total,
+                  )
+                  for item in self.items
+              ]
+
+      @dataclass
+      class OrderTotals:
+          subtotal: float
+          discount: float
+          tax: float
+          total: float
+
+      class InvoiceGenerator:
+          """Now focused on invoice generation, not order arithmetic."""
+
+          DISCOUNTS = {"SAVE10": 0.10, "VIP20": 0.20, "WELCOME5": 0.05}
+
+          def generate(self, order: Order) -> Invoice:
+              discount = self._resolve_discount(order.discount_code, order.subtotal)
+              totals = order.total_with_tax(discount)
+
+              return Invoice(
+                  order_id="",
+                  line_items=order.line_items,
+                  subtotal=totals.subtotal,
+                  discount=totals.discount,
+                  tax=totals.tax,
+                  total=totals.total,
+              )
+
+          def _resolve_discount(self, code: str | None, amount: float) -> float:
+              if not code:
+                  return 0.0
+              return amount * self.DISCOUNTS.get(code, 0.0)
+  - language: typescript
+    bad: |
+      class DashboardWidget {
+        render(user: User): string {
+          // Feature envy: reading 6 fields from User just to format a greeting
+          const fullName = `${user.firstName} ${user.lastName}`;
+          const initials = `${user.firstName[0]}${user.lastName[0]}`;
+          const memberSince = user.createdAt.toLocaleDateString("en-US", {
+            year: "numeric", month: "long",
+          });
+          const planLabel = user.subscription.plan === "pro" ? "PRO" : "Free";
+          const unread = user.notifications.filter(n => !n.read).length;
+
+          return `<div>
+            <h2>Welcome back, ${fullName}</h2>
+            <span class="avatar">${initials}</span>
+            <p>Member since ${memberSince} · ${planLabel} plan</p>
+            <p>${unread} unread notifications</p>
+          </div>`;
+        }
+      }
+    good: |
+      class User {
+        constructor(
+          readonly firstName: string,
+          readonly lastName: string,
+          readonly createdAt: Date,
+          readonly subscription: Subscription,
+          readonly notifications: Notification[]
+        ) {}
+
+        get fullName(): string { return `${this.firstName} ${this.lastName}`; }
+        get initials(): string { return `${this.firstName[0]}${this.lastName[0]}`; }
+        get memberSinceLabel(): string {
+          return this.createdAt.toLocaleDateString("en-US", { year: "numeric", month: "long" });
+        }
+        get planLabel(): string { return this.subscription.plan === "pro" ? "PRO" : "Free"; }
+        get unreadCount(): number { return this.notifications.filter(n => !n.read).length; }
+      }
+
+      class DashboardWidget {
+        render(user: User): string {
+          return `<div>
+            <h2>Welcome back, ${user.fullName}</h2>
+            <span class="avatar">${user.initials}</span>
+            <p>Member since ${user.memberSinceLabel} · ${user.planLabel} plan</p>
+            <p>${user.unreadCount} unread notifications</p>
+          </div>`;
+        }
+      }
+heuristics:
+  - >-
+    Count the number of accesses to another object's data inside a method.
+    If most of the method's lines read fields or call getters on a parameter, it's feature envy.
+  - >-
+    Ask: "Would this method be shorter and clearer if it lived on the other class?"
+    If yes, move it.
+  - >-
+    The inverse is also a smell: a class that has all the data but none of the behavior (anemic domain model).
+    Move the envious methods into it.
+  - >-
+    Refactoring.md line 146: "If a method mostly manipulates another object's data, move it or reshape the model."
+  - >-
+    Clean Code: "Objects expose behavior and hide data. Data structures expose data and have no significant behavior."
+    Feature envy reveals a class that should be an object but is being treated as a data structure.
+  - When the envied class is in a different module/package, consider Extract Method first, then Move Method.
+  - >-
+    Sometimes the envy is legitimate — when the behavior genuinely belongs at a higher orchestration level.
+    The smell is a heuristic, not a law.
+  - >-
+    After moving the method, run tests.
+    Feature envy refactoring typically reduces method size by moving code into smaller, focused methods on the data-owning class.
+related_tags: [feature-envy, move-method, anemic-domain-model, tell-dont-ask, cohesion]

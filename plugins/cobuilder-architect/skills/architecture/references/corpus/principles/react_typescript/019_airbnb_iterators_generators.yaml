@@ -1,0 +1,72 @@
+id: airbnb-iterators-019
+name: Airbnb Iterators & Generators — Higher-Order Functions Over Loops
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  Airbnb rejects iterators and generators in favor of higher-order functions
+  (map, filter, reduce, every, some, find, findIndex). Pure functional
+  transformations are easier to reason about and enforce immutable data
+  patterns. For objects, use Object.keys(), Object.values(), Object.entries()
+  to produce arrays for iteration. Generators are discouraged because they
+  don't transpile well to ES5 — if unavoidable, use function* spacing
+  correctly.
+examples:
+  - language: typescript
+    bad: |
+      // for-of loop — imperative, mutating state
+      let sum = 0;
+      for (let num of numbers) {
+        sum += num;
+      }
+
+      // Classic for loop with manual index
+      const increasedByOne: number[] = [];
+      for (let i = 0; i < numbers.length; i++) {
+        increasedByOne.push(numbers[i] + 1);
+      }
+
+      // for-in on arrays — enumerates prototype properties too
+      for (const index in array) {
+        process(array[index]);
+      }
+
+      // Generator for simple iteration
+      function* counter() {
+        let i = 0;
+        while (true) yield i++;
+      }
+
+      // Generator spacing — inconsistent and unclear
+      function * foo() { yield 1; }
+      const bar = function * () { yield 2; };
+      function*foo() { yield 3; }
+    good: |
+      // reduce for aggregation — functional, no mutation
+      const sum = numbers.reduce((total, num) => total + num, 0);
+
+      // map for transformation — pure, declarative
+      const increasedByOne = numbers.map((num) => num + 1);
+
+      // forEach only when side effects are intentional
+      numbers.forEach((num) => {
+        console.log(num);
+      });
+
+      // Objects: convert to arrays first, then use functional methods
+      const ages = Object.values(users).map((user) => user.age);
+      const entries = Object.entries(config).filter(([, value]) => value != null);
+
+      // If generators are truly needed: function* spacing
+      function* foo() { yield 1; }
+      const bar = function* () { yield 2; };
+heuristics:
+  - Never use iterators — prefer JavaScript's higher-order functions (map, filter, reduce, every, some, find, findIndex) over loops like for-in or for-of.
+  - Use reduce() for accumulation, map() for 1:1 transformation, filter() for subset selection, find() for single-item lookup, and some()/every() for boolean checks.
+  - Use forEach() only for intentional side effects (logging, DOM updates) — not for transformation.
+  - For objects, use Object.keys(), Object.values(), or Object.entries() to create arrays, then chain functional methods.
+  - Don't use generators for now — they don't transpile well to ES5. If you must, use function* with no space between function and *, and a space after *: function* foo().
+  - Pure functions that return values are easier to test, compose, and reason about than imperative loops that mutate state.
+  - Never use for-in on arrays — it enumerates inherited properties and has unpredictable ordering.
+related_tags: [airbnb, iterators, generators, higher-order-functions, map, filter, reduce, functional]

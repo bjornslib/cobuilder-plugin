@@ -1,0 +1,299 @@
+id: consolidate-conditional-expression-001
+name: "Refactoring — Consolidate Conditional Expression"
+category: design-patterns
+canonical_tags: ['refactoring', 'simplifying-conditionals', 'consolidate-conditional-expression', 'extract-method', 'readability', 'dry']
+sources:
+  - books/refactoring.md
+  - books/clean-code.md
+  - open_sources/design_patterns/refactoring-guru-patterns.txt
+  - open_sources/design_patterns/augmentcode-refactoring.html
+summary: >
+  Consolidate Conditional Expression merges multiple separate conditions that
+  lead to the same outcome into a single, well-named boolean method. Instead of
+  a cascading sequence of `if (a) return X; if (b) return X; if (c) return X`,
+  the consolidated form reads `if (shouldDisableDiscount()) return X`. Each
+  individual condition (a, b, c) becomes part of the consolidated predicate's
+  body. This refactoring attacks two problems at once: (1) the duplication of
+  the same outcome across multiple condition branches — a maintenance hazard,
+  because adding a new condition means copy-pasting the outcome block — and
+  (2) the opacity of the business rule. The consolidated method's name encodes
+  the business meaning of "these conditions all mean the same thing." The reader
+  no longer has to check whether every branch truly returns the same value; the
+  method is the single source of truth for that decision. This is a
+  preparatory refactoring: after consolidating, the named condition becomes a
+  candidate for further extraction (Decompose Conditional) or a predicate in a
+  validation chain.
+
+  Apply when a set of separate `if` checks produce the same result, AND
+  they represent a single business concept ("this order is free," "this user
+  is a high-risk account"). Do NOT apply when the conditions are genuinely
+  unrelated but happen to share the same outcome by coincidence — consolidating
+  unrelated conditions creates a misleading predicate name. Also do NOT apply
+  when the conditions have side effects (e.g., logging, incrementing counters)
+  that differ between branches; consolidation changes the evaluation order and
+  may hide those effects.
+examples:
+  - language: python
+    bad: |
+      # `is_free_shipment` — the same `return 0.0` — is duplicated three
+      # times. A new shipping-exemption rule must be copy-pasted into
+      # another `if` block with the same outcome. Miss one, and you get
+      # inconsistent shipping logic. The reader must scan all three blocks
+      # to confirm they all return the same thing.
+
+      from decimal import Decimal
+      from dataclasses import dataclass
+
+
+      @dataclass
+      class Order:
+          is_member: bool
+          total: Decimal
+          promo_code: str
+          weight_kg: float
+
+
+      def calculate_shipping(order: Order) -> Decimal:
+          # Condition 1: members over $100 get free shipping
+          if order.is_member and order.total > Decimal("100"):
+              return Decimal("0")
+
+          # Condition 2: "FREESHIP" promo code grants free shipping
+          if order.promo_code == "FREESHIP":
+              return Decimal("0")
+
+          # Condition 3: orders under 1kg ship free
+          if order.weight_kg < 1.0:
+              return Decimal("0")
+
+          # Regular shipping — flat rate
+          return Decimal("9.99")
+
+      # Adding a new free-shipping condition (e.g., "holiday season")
+      # means copy-pasting the `return Decimal("0")` block. Over time
+      // the same logic drifts — one branch might change to `return
+      // Decimal("0.01")` while the others stay at `Decimal("0")`.
+
+    good: |
+      # Consolidate Conditional Expression: all three "free shipping"
+      # conditions merge into `qualifies_for_free_shipping()`. The name
+      # encodes the business concept. Adding a new condition is one line
+      # in the predicate. The outcome is stated exactly once.
+
+      from decimal import Decimal
+      from dataclasses import dataclass
+
+
+      @dataclass
+      class Order:
+          is_member: bool
+          total: Decimal
+          promo_code: str
+          weight_kg: float
+
+
+      # --- Consolidated predicate: all free-shipping rules in one place ---
+
+      def qualifies_for_free_shipping(order: Order) -> bool:
+          """Return True if the order meets any free-shipping condition."""
+          # Member orders over $100
+          if order.is_member and order.total > Decimal("100"):
+              return True
+
+          # "FREESHIP" promo code
+          if order.promo_code == "FREESHIP":
+              return True
+
+          # Items under 1kg
+          if order.weight_kg < 1.0:
+              return True
+
+          return False
+
+
+      # --- Orchestration: the outcome appears exactly once ---
+
+      def calculate_shipping(order: Order) -> Decimal:
+          if qualifies_for_free_shipping(order):
+              return Decimal("0")
+          return Decimal("9.99")
+
+
+      # Each sub-condition is independently testable through the predicate:
+
+      def test_member_order_qualifies():
+          order = Order(is_member=True, total=Decimal("150"),
+                        promo_code="", weight_kg=5.0)
+          assert qualifies_for_free_shipping(order) is True
+
+
+      def test_freeship_promo_qualifies():
+          order = Order(is_member=False, total=Decimal("50"),
+                        promo_code="FREESHIP", weight_kg=5.0)
+          assert qualifies_for_free_shipping(order) is True
+
+
+      def test_non_member_pays_shipping():
+          order = Order(is_member=False, total=Decimal("50"),
+                        promo_code="", weight_kg=5.0)
+          assert qualifies_for_free_shipping(order) is False
+
+      # Adding a holiday-season rule: add one condition to the predicate
+      # and one test. The outcome is guaranteed consistent across all paths.
+
+  - language: typescript
+    bad: |
+      // `DISABLED` is returned from three separate conditions. The reader
+      // must scan each to confirm they all produce the same result. A new
+      // disability condition means copy-pasting the `return DISABLED` block,
+      // risking drift (one branch might return "DISABLED_TEMP" by mistake).
+
+      const enum DiscountTier {
+        DISABLED = "DISABLED",
+        STANDARD = "STANDARD",
+      }
+
+      interface Account {
+        isFlagged: boolean;
+        isUnderReview: boolean;
+        isInRestrictedRegion: boolean;
+      }
+
+      function getDiscountTier(account: Account): DiscountTier {
+        // Condition 1: flagged accounts get no discount
+        if (account.isFlagged) {
+          return DiscountTier.DISABLED;
+        }
+
+        // Condition 2: accounts under review get no discount
+        if (account.isUnderReview) {
+          return DiscountTier.DISABLED;
+        }
+
+        // Condition 3: restricted regions get no discount
+        if (account.isInRestrictedRegion) {
+          return DiscountTier.DISABLED;
+        }
+
+        return DiscountTier.STANDARD;
+      }
+
+    good: |
+      // Consolidate Conditional Expression: all three "no discount"
+      // conditions merge into `isDiscountDisabled()`. The outcome
+      // `DISABLED` appears exactly once. The predicate name encodes
+      // the business concept ("this account cannot receive discounts").
+
+      const enum DiscountTier {
+        DISABLED = "DISABLED",
+        STANDARD = "STANDARD",
+      }
+
+      interface Account {
+        isFlagged: boolean;
+        isUnderReview: boolean;
+        isInRestrictedRegion: boolean;
+      }
+
+      function isDiscountDisabled(account: Account): boolean {
+        return account.isFlagged
+            || account.isUnderReview
+            || account.isInRestrictedRegion;
+      }
+
+      function getDiscountTier(account: Account): DiscountTier {
+        if (isDiscountDisabled(account)) {
+          return DiscountTier.DISABLED;
+        }
+        return DiscountTier.STANDARD;
+      }
+
+      // Adding "suspended" accounts: add `|| account.isSuspended` to
+      // `isDiscountDisabled`. One line, one place, guaranteed consistent.
+
+      test("flagged accounts get no discount", () => {
+        const account: Account = {
+          isFlagged: true, isUnderReview: false, isInRestrictedRegion: false,
+        };
+        expect(getDiscountTier(account)).toBe(DiscountTier.DISABLED);
+      });
+
+      test("clean accounts get standard discount", () => {
+        const account: Account = {
+          isFlagged: false, isUnderReview: false, isInRestrictedRegion: false,
+        };
+        expect(getDiscountTier(account)).toBe(DiscountTier.STANDARD);
+      });
+
+      // Even better: use short-circuit OR with early return
+      // for maximum clarity at a glance:
+
+      function isDiscountDisabledAlt(account: Account): boolean {
+        return (
+          account.isFlagged
+          || account.isUnderReview
+          || account.isInRestrictedRegion
+        );
+      }
+
+heuristics:
+  - >
+    "Consolidate Conditional Expression: you have a sequence of conditional
+    tests with the same result. Combine them into a single conditional
+    expression and extract it" (Fowler, Refactoring). The extracted method
+    name should capture the business meaning of the combined conditions.
+  - Apply when the same outcome appears across multiple `if` branches, AND
+    the conditions represent facets of a single business concept. The signal
+    is the duplicated outcome block — not the duplicated condition structure.
+  - The name of the consolidated method is the primary deliverable.
+    `isDiscountDisabled()` tells the reader WHY these conditions are grouped,
+    not just that they happen to share a return value.
+  - Use OR (`||` / `or`) for consolidating independent conditions that each
+    individually trigger the outcome. Use AND (`&&` / `and`) when all
+    conditions must hold simultaneously for the outcome.
+  - "If the conditions are complex (multi-line, nested), combine them first
+    with OR/AND operators, then use Extract Method on the combined expression.
+    The extraction order matters: consolidate the logic, then name it."
+  - "The consolidation changes short-circuit evaluation order. In the original
+    code, three separate if-blocks are checked sequentially. In the consolidated
+    form, they may be evaluated in a single OR chain. If any condition has side
+    effects (logging, audit trail), consolidation may change the order those
+    effects occur. Verify no critical side effects before consolidating."
+  - After consolidation, the outcome is stated exactly once. This eliminates
+    the class of bugs where one branch's outcome drifts from the others over
+    time (e.g., one branch returns 0, another returns 0.01).
+  - " Consider the readability trade-off: a consolidated OR chain of 8
+    conditions may be harder to scan than 8 separate if-blocks with clear
+    comments. When the list grows long (5+ conditions), consider extracting
+    sub-groups into intermediate predicates and combining them meaningfully."
+  - For mutually exclusive conditions that all produce the same result,
+    consolidation into a single predicate is clearly correct. For overlapping
+    conditions, the consolidated short-circuit form may behave differently if
+    any condition has side effects — be conservative.
+  - "The mechanical sequence: (1) identify all branches that return the same
+    value. (2) Verify no critical side effects exist in any branch. (3) Combine
+    conditions into a single expression. (4) Extract that expression into a
+    named method. (5) Replace all the original if-blocks with a single call to
+    the new method. (6) Run tests — the consolidated version should behave
+    identically."
+  - Do NOT consolidate conditions that are genuinely unrelated but coincidentally
+    return the same value. If "is a weekend" and "is a VIP member" both return
+    a 20% discount for entirely different business reasons, consolidating them
+    into `qualifiesForWeekendOrVIPDiscount()` creates a misleading abstraction.
+  - In Python, use `any()` or `all()` for consolidating many conditions with a
+    generator expression: `any(rule(order) for rule in FREE_SHIPPING_RULES)`.
+    This is more extensible than a long OR chain if rules change dynamically.
+  - In TypeScript, consider extracting the consolidated predicate into a
+    separate module if it depends on many different interfaces — the predicate
+    becomes a domain decision that crosses bounded contexts.
+  - "Consolidate Conditional Expression is the preparatory refactoring for
+    Decompose Conditional: first consolidate the scattered conditions into a
+    single predicate, then decompose the cleaned-up if/else structure into
+    named predicate + named branches."
+
+related_tags:
+  [consolidate-conditional-expression, simplify-conditionals, extract-method,
+   refactoring, dry, fowler-refactoring, decompose-conditional, guard-clauses,
+   intention-revealing-names, predicate-methods, code-smells,
+   duplicated-code, preparatory-refactoring, readability, short-circuit,
+   boolean-logic, clean-code]

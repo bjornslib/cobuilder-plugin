@@ -1,0 +1,68 @@
+id: airbnb-destructuring-015
+name: Airbnb Destructuring — Object & Array Unpacking, Return Value Patterns
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  Airbnb mandates destructuring for accessing multiple object properties or
+  array elements. Object destructuring avoids repetitive access and creates a
+  single site of definition for what's consumed from an object. For multiple
+  return values, use object destructuring over array destructuring — callers
+  can select only what they need, and properties can be reordered or added
+  without breaking call sites. Parameter destructuring makes function
+  signatures self-documenting.
+examples:
+  - language: typescript
+    bad: |
+      // Repetitive property access — verbose and error-prone
+      function getFullName(user: User): string {
+        const firstName = user.firstName;
+        const lastName = user.lastName;
+        return `${firstName} ${lastName}`;
+      }
+
+      // Array destructuring for return values — fragile to reordering
+      function processInput(input: string) {
+        return [left, right, top, bottom];
+      }
+      const [left, __, top] = processInput(input);
+
+      // Accessing array elements by index
+      const arr = [1, 2, 3, 4];
+      const first = arr[0];
+      const second = arr[1];
+    good: |
+      // Object destructuring in body — clear what's consumed
+      function getFullName(user: User): string {
+        const { firstName, lastName } = user;
+        return `${firstName} ${lastName}`;
+      }
+
+      // Parameter destructuring — self-documenting signature
+      function getFullName({ firstName, lastName }: User): string {
+        return `${firstName} ${lastName}`;
+      }
+
+      // Object return for multiple values — flexible for callers
+      function processInput(input: string) {
+        return { left, right, top, bottom };
+      }
+      const { left, top } = processInput(input);
+
+      // Array destructuring — concise, declarative
+      const arr = [1, 2, 3, 4];
+      const [first, second] = arr;
+
+      // Default values in destructuring
+      const { name = "Unknown", role = "guest" } = props;
+heuristics:
+  - Use object destructuring when accessing multiple properties — it creates a single point of definition for what the block consumes.
+  - Use array destructuring for extracting positional values from tuples or small arrays.
+  - For functions returning multiple values, always use object destructuring over array destructuring. Object property order doesn't matter, and callers pick only what they need.
+  - Never use underscore placeholders to skip array elements in object return patterns — that's a code smell indicating object destructuring should be used instead.
+  - Use default values in destructuring patterns to eliminate manual fallback boilerplate.
+  - "Rename destructured properties when the original name doesn't fit the local context: `const { firstName: givenName } = user`."
+  - Nest destructuring sparingly — deeply nested patterns are hard to read. Extract intermediate objects instead.
+  - Destructure function parameters in the signature for maximum readability, especially when the function needs only a subset of the object's properties.
+related_tags: [airbnb, destructuring, objects, arrays, readability, parameters]

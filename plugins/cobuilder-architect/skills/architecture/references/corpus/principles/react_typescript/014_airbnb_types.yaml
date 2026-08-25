@@ -1,0 +1,72 @@
+id: airbnb-types-014
+name: Airbnb Types & References — Primitives, Complex Types, const vs let
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  Airbnb's type and reference rules establish foundational patterns: understand
+  primitive (value) vs complex (reference) types to avoid mutation surprises,
+  use const by default for all references to prevent unintended reassignment,
+  use let only when reassignment is genuinely needed, and never use var due to
+  function-scoping hazards. Block-scoped const and let make variable lifetimes
+  predictable and eliminate hoisting confusion.
+examples:
+  - language: typescript
+    bad: |
+      // var is function-scoped — leaks outside intended scope
+      function doWork() {
+        var count = 1;
+        if (true) {
+          var count = 2; // same variable, overwrites
+          console.log(count); // 2
+        }
+        console.log(count); // 2 — still 2! Unexpected.
+      }
+
+      // var used where reassignment isn't needed
+      var API_URL = "https://api.example.com";
+      var MAX_RETRIES = 3;
+
+      // Complex types share references — mutation leaks
+      const a = [1, 2];
+      const b = a;
+      b.push(3);
+      console.log(a); // [1, 2, 3] — a mutated through b
+    good: |
+      // const by default — prevents accidental reassignment
+      const API_URL = "https://api.example.com";
+      const MAX_RETRIES = 3;
+
+      // let only when reassignment is intentional
+      let attemptCount = 0;
+      while (attemptCount < MAX_RETRIES) {
+        attemptCount += 1;
+        tryRequest();
+      }
+
+      // Block scope with const/let — predictable lifetimes
+      function doWork() {
+        const count = 1;
+        if (true) {
+          const count = 2; // different variable, block-scoped
+          console.log(count); // 2
+        }
+        console.log(count); // 1 — outer count preserved
+      }
+
+      // Defensive copy to avoid shared-reference mutation
+      const a = [1, 2];
+      const b = [...a]; // shallow copy, independent
+      b.push(3);
+      console.log(a); // [1, 2] — unaffected
+heuristics:
+  - Understand the difference between primitive types (string, number, boolean, null, undefined, symbol, bigint) accessed by value and complex types (object, array, function) accessed by reference.
+  - Use const for all variable declarations by default. It prevents accidental reassignment and signals immutability intent.
+  - Use let only when reassignment is necessary (counters, accumulators, flag variables). Never use var.
+  - Both const and let are block-scoped — they only exist within the { ... } block where they're defined.
+  - var is function-scoped and hoisted in confusing ways; it has no place in modern TypeScript/JavaScript.
+  - When working with complex types, remember that assignment creates a shared reference. Use spread or structuredClone for independent copies.
+  - If you assign a complex type to const, the reference is fixed but the contents are still mutable. Use Readonly<T> or immutable patterns when full immutability is needed.
+  - Never use symbols or bigints in environments that need ES5 transpilation — they cannot be faithfully polyfilled.
+related_tags: [airbnb, types, references, const, let, block-scope, primitives, immutability]

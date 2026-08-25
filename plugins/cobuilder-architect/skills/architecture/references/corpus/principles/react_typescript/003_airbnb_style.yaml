@@ -1,0 +1,133 @@
+id: airbnb-style-001
+name: Airbnb JavaScript Style — Readability & Consistency Patterns
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: "Follow Airbnb's JavaScript style conventions for consistency, readability, and reducing cognitive load. Key patterns include: const by default, destructuring over repeated property access, arrow functions for callbacks, template literals over concatenation, and immutable data patterns over mutation."
+examples:
+  - language: typescript
+    bad: |
+      var API_URL = "https://api.example.com";
+      var MAX_RETRIES = 3;
+
+      function getUserInfo(user) {
+        var name = user.name;
+        var email = user.email;
+        var age = user.age;
+        return "User " + name + " (" + email + ") is " + age + " years old.";
+      }
+    good: |
+      const API_URL = "https://api.example.com";
+      const MAX_RETRIES = 3;
+
+      function getUserInfo(user: User): string {
+        const { name, email } = user;
+        return `User ${name} (${email})`;
+      }
+  - language: typescript
+    bad: |
+      // Mutation everywhere — hard to trace state changes
+      function addDiscount(cart: Cart): Cart {
+        cart.total = cart.total * 0.9;
+        cart.items.forEach((item) => {
+          item.price = item.price * 0.9;
+        });
+        return cart;
+      }
+
+      // for-of loop instead of higher-order functions
+      const activeUsers = [];
+      for (const user of users) {
+        if (user.isActive) {
+          activeUsers.push(user);
+        }
+      }
+    good: |
+      // Immutable — new objects, no side effects
+      function addDiscount(cart: Cart): Cart {
+        return {
+          ...cart,
+          total: cart.total * 0.9,
+          items: cart.items.map((item) => ({
+            ...item,
+            price: item.price * 0.9,
+          })),
+        };
+      }
+
+      // Declarative higher-order functions
+      const activeUsers = users.filter((user) => user.isActive);
+  - language: typescript
+    bad: |
+      // Anonymous function keyword instead of arrow
+      items.map(function (item) {
+        return item.name;
+      });
+
+      // String concatenation
+      const url = "/api/" + resource + "/" + id + "?format=json";
+
+      // Unnecessary braces — single expression, no return
+      items.filter((item) => {
+        return item.visible;
+      });
+
+      // new Object / new Array
+      const config = new Object();
+      const list = new Array();
+    good: |
+      // Arrow function for callbacks
+      items.map((item) => item.name);
+
+      // Template literal
+      const url = `/api/${resource}/${id}?format=json`;
+
+      // Implicit return for single expressions
+      items.filter((item) => item.visible);
+
+      // Literal syntax
+      const config = {};
+      const list: string[] = [];
+  - language: typescript
+    bad: |
+      // Named export with mutable binding
+      let currentUser: User | null = null;
+      export { currentUser };
+
+      // Parameter reassignment
+      function updateUser(user: User, data: Partial<User>) {
+        user = { ...user, ...data };
+        return user;
+      }
+
+      // Prototype.hasOwnProperty called directly on object
+      if (obj.hasOwnProperty("key")) {
+        // obj might shadow hasOwnProperty
+      }
+    good: |
+      // Constant export
+      const DEFAULT_USER: User = { id: "", name: "Guest" };
+      export { DEFAULT_USER };
+
+      // Parameter reassignment avoided
+      function updateUser(user: User, data: Partial<User>): User {
+        return { ...user, ...data };
+      }
+
+      // Safe hasOwnProperty access
+      if (Object.prototype.hasOwnProperty.call(obj, "key")) {
+        // Works even if obj has its own hasOwnProperty
+      }
+heuristics:
+  - Use `const` by default; `let` only when reassignment is necessary; never `var`.
+  - Destructure objects and arrays instead of accessing properties repeatedly.
+  - Use arrow functions for all anonymous callbacks; named function expressions for standalone functions.
+  - Prefer template literals over string concatenation; use single quotes for plain strings.
+  - Use object/array spread over `Object.assign` or manual loops; prefer immutability over mutation.
+  - Use higher-order functions (`map`, `filter`, `reduce`) over imperative loops (`for`, `for-of`, `for-in`).
+  - Never mutate or reassign function parameters; use default parameters instead of `||` fallbacks inside the body.
+  - Group shorthand properties at the top of object literals; use literal syntax (`{}`, `[]`) over `new Object()`/`new Array()`.
+  - One import per module — merge multiple imports from the same path.
+  - Always parenthesize arrow function arguments, even single args, for consistency.
+related_tags: [airbnb, style-guide, javascript, consistency, immutability]

@@ -1,0 +1,451 @@
+id: introduce-null-object-001
+name: "Refactoring — Introduce Null Object and Special Case"
+category: design-patterns
+canonical_tags: ['refactoring', 'simplifying-conditionals', 'null-object', 'special-case', 'polymorphism', 'null-safety', 'defensive-programming']
+sources:
+  - books/refactoring.md
+  - books/clean-code.md
+  - open_sources/design_patterns/refactoring-guru-patterns.txt
+  - open_sources/design_patterns/augmentcode-refactoring.html
+summary: >
+  Introduce Null Object replaces repeated null checks across codebase with a
+  polymorphic object that implements the same interface as the real object but
+  provides neutral, do-nothing, or default-returning behavior. Instead of
+  scattering `if x is not None` guards before every method call, you return a
+  Null Object that harmlessly absorbs the calls — billing charges become no-ops,
+  logging becomes silent, missing data becomes "guest" or "no plan." The Special
+  Case pattern is the broader idea: model domain-specific edge cases (not just
+  absence) as first-class objects. A "student discount" is a Special Case of a
+  pricing rule; a "guest user" is a Special Case of a user account. Both
+  patterns eliminate null-check duplication, centralize edge-case behavior in
+  one class, and prevent NullPointerException / AttributeError at the cost of
+  one new class. The core insight: null is not a value — it's the absence of a
+  value. Replace absence with an object that correctly expresses "nothing
+  happens" or "default behavior" in the domain language.
+
+  The null object interface is the contract that makes this work: define an
+  abstract base class or interface declaring every method callers need, then
+  implement two variants — the real object and the null variant. The null
+  variant returns zero, empty string, false, empty list, or does nothing,
+  depending on what makes sense for the domain. Callers never branch on null
+  again; they call through the interface and get correct behavior whether the
+  real object or the null variant is present. This is polymorphism replacing
+  conditionals: the `if not null` branch becomes a different class.
+
+  When NOT to use: if only one call site checks for null, a new class is
+  overkill — keep the guard. If the null case triggers genuinely different
+  control flow (throw an exception, redirect, abort), a Null Object that
+  silently does nothing is wrong because it hides the exceptional path. If the
+  interface has 20+ methods, the null variant becomes a maintenance burden.
+  If null is genuinely a sentinel for "not yet initialized" rather than "absent
+  forever," the null object misleads — use a Maybe/Optional type instead.
+examples:
+  - language: python
+    bad: |
+      # Every caller that touches `customer.plan` must check for None.
+      # The null-check pattern is duplicated across generate_invoice,
+      # send_renewal_notice, calculate_annual_revenue, and any future
+      # function that reads the plan. One missed check = AttributeError.
+      # The "no plan" behavior (skip charge, show "No Plan", count $0)
+      # is scattered across every call site instead of centralized.
+
+      from dataclasses import dataclass
+
+
+      @dataclass
+      class BillingPlan:
+          name: str
+          monthly_rate: float
+
+          def charge(self, amount: float) -> None:
+              print(f"Charging ${amount:.2f} to {self.name}")
+
+
+      @dataclass
+      class Customer:
+          name: str
+          plan: BillingPlan | None = None
+
+
+      def generate_invoice(customer: Customer) -> dict:
+          # Null check #1
+          plan_name = customer.plan.name if customer.plan else "No Plan"
+          rate = customer.plan.monthly_rate if customer.plan else 0.0
+          if customer.plan:
+              customer.plan.charge(rate)   # Null check #2
+          else:
+              print("Skipping — no billing plan")  # Null check #3
+          return {"customer": customer.name, "plan": plan_name, "amount": rate}
+
+
+      def send_renewal_notice(customer: Customer) -> str:
+          # Null check #4 — plus domain logic tangled with null handling
+          if customer.plan and customer.plan.name == "Premium":
+              return f"{customer.name}: Premium renews next month."
+          elif customer.plan:
+              return f"{customer.name}: Plan renews next month."
+          else:
+              return f"{customer.name}: No active plan."  # Null check #5
+
+
+      def calculate_annual_revenue(customers: list[Customer]) -> float:
+          total = 0.0
+          for c in customers:
+              if c.plan:                         # Null check #6
+                  total += c.plan.monthly_rate
+          return total * 12
+
+      # Adding a new caller? Add another null check. Forgetting one
+      # produces a runtime crash. The "absent plan" behavior is defined
+      # implicitly by whatever each caller happens to write.
+    good: |
+      # Introduce Null Object: NullPlan implements the same BillingPlan
+      # interface with neutral behavior. Customer defaults to NullPlan
+      # instead of None. Every caller drops null checks — NullPlan
+      # silently absorbs charge(), returns 0.0 for monthly_rate, and
+      # "No Plan" for display_name. The "absent" behavior is centralized
+      # in one class, testable in isolation, and consistent everywhere.
+
+      from abc import ABC, abstractmethod
+      from dataclasses import dataclass
+
+
+      # --- Interface: defines the contract callers depend on ---
+      class BillingPlan(ABC):
+          @abstractmethod
+          def charge(self, amount: float) -> None: ...
+
+          @abstractmethod
+          def is_premium(self) -> bool: ...
+
+          @property
+          @abstractmethod
+          def monthly_rate(self) -> float: ...
+
+          @property
+          @abstractmethod
+          def display_name(self) -> str: ...
+
+
+      # --- Real implementation ---
+      class RealPlan(BillingPlan):
+          def __init__(self, name: str, monthly_rate: float) -> None:
+              self._name = name
+              self._monthly_rate = monthly_rate
+
+          def charge(self, amount: float) -> None:
+              print(f"Charging ${amount:.2f} to {self._name}")
+
+          def is_premium(self) -> bool:
+              return self._name == "Premium"
+
+          @property
+          def monthly_rate(self) -> float:
+              return self._monthly_rate
+
+          @property
+          def display_name(self) -> str:
+              return self._name
+
+
+      # --- Null Object: neutral variant — no null checks needed ---
+      class NullPlan(BillingPlan):
+          """Represents a customer with no billing plan."""
+
+          def charge(self, amount: float) -> None:
+              pass  # No plan, nothing to charge
+
+          def is_premium(self) -> bool:
+              return False
+
+          @property
+          def monthly_rate(self) -> float:
+              return 0.0
+
+          @property
+          def display_name(self) -> str:
+              return "No Plan"
+
+
+      @dataclass
+      class Customer:
+          name: str
+          plan: BillingPlan  # Never None — defaults to NullPlan
+
+          def __init__(self, name: str, plan: BillingPlan | None = None) -> None:
+              self.name = name
+              self.plan = plan if plan is not None else NullPlan()
+
+
+      # --- Callers: no null checks, ever ---
+      def generate_invoice(customer: Customer) -> dict:
+          rate = customer.plan.monthly_rate
+          customer.plan.charge(rate)
+          return {
+              "customer": customer.name,
+              "plan": customer.plan.display_name,
+              "amount": rate,
+          }
+
+
+      def send_renewal_notice(customer: Customer) -> str:
+          if customer.plan.is_premium():
+              return f"{customer.name}: Premium renews next month."
+          return f"{customer.name}: Plan renews next month."
+
+
+      def calculate_annual_revenue(customers: list[Customer]) -> float:
+          return sum(c.plan.monthly_rate for c in customers) * 12
+
+
+      # --- NullPlan is independently testable ---
+      def test_null_plan_is_neutral():
+          null = NullPlan()
+          assert null.monthly_rate == 0.0
+          assert null.display_name == "No Plan"
+          assert null.is_premium() is False
+          null.charge(99.99)  # Does nothing — no crash
+
+
+      # --- Singleton pattern when stateless ---
+      class NullPlan(BillingPlan):
+          _instance: "NullPlan | None" = None
+
+          def __new__(cls) -> "NullPlan":
+              if cls._instance is None:
+                  cls._instance = super().__new__(cls)
+              return cls._instance
+
+          # ... same methods as above ...
+
+      # Usage: `plan is NullPlan()` — fast identity check when needed
+
+  - language: typescript
+    bad: |
+      // Null checks for `this.logger` appear before every log call.
+      // OrderService.placeOrder has three null guards; every other
+      // method that logs will add three more. One missed guard on a
+      // refactor = runtime crash. The "no logging" behavior is defined
+      // implicitly by omission — if you skip a guard, you crash.
+
+      import * as fs from "fs";
+
+      interface Logger {
+        log(message: string): void;
+        error(message: string): void;
+      }
+
+      class FileLogger implements Logger {
+        constructor(private filepath: string) {}
+
+        log(message: string): void {
+          fs.appendFileSync(this.filepath, `[INFO] ${message}\n`);
+        }
+        error(message: string): void {
+          fs.appendFileSync(this.filepath, `[ERROR] ${message}\n`);
+        }
+      }
+
+      interface Order {
+        id: string;
+        amount: number;
+      }
+
+      class OrderService {
+        // Nullable logger — every method must guard
+        constructor(private logger: Logger | null = null) {}
+
+        placeOrder(order: Order): void {
+          if (this.logger) {                          // guard #1
+            this.logger.log(`Placing order ${order.id}`);
+          }
+
+          try {
+            this._processPayment(order);
+            if (this.logger) {                        // guard #2
+              this.logger.log(`Order ${order.id} placed`);
+            }
+          } catch (err) {
+            if (this.logger) {                        // guard #3
+              this.logger.error(`Order ${order.id} failed: ${err}`);
+            }
+            throw err;
+          }
+        }
+
+        cancelOrder(orderId: string): void {
+          // Another method, same guards repeated...
+          if (this.logger) {
+            this.logger.log(`Cancelling order ${orderId}`);
+          }
+          // ...
+        }
+
+        private _processPayment(order: Order): void { /* ... */ }
+      }
+    good: |
+      // Introduce Null Object: NullLogger implements Logger with no-op
+      // methods. OrderService defaults to NullLogger instead of null.
+      // Every log call is unconditional — NullLogger safely discards
+      // messages. The "no logging" behavior is centralized in one class,
+      // testable in isolation, and consistent across every method.
+
+      import * as fs from "fs";
+
+      interface Logger {
+        log(message: string): void;
+        error(message: string): void;
+      }
+
+      class FileLogger implements Logger {
+        constructor(private filepath: string) {}
+
+        log(message: string): void {
+          fs.appendFileSync(this.filepath, `[INFO] ${message}\n`);
+        }
+        error(message: string): void {
+          fs.appendFileSync(this.filepath, `[ERROR] ${message}\n`);
+        }
+      }
+
+      /** Null Object — discards all log messages. Stateless singleton. */
+      class NullLogger implements Logger {
+        static readonly INSTANCE = new NullLogger();
+
+        private constructor() {}
+
+        log(_message: string): void { /* no-op */ }
+        error(_message: string): void { /* no-op */ }
+      }
+
+      interface Order {
+        id: string;
+        amount: number;
+      }
+
+      class OrderService {
+        // Never null — guaranteed to be a valid Logger
+        private readonly logger: Logger;
+
+        constructor(logger: Logger | null = null) {
+          this.logger = logger ?? NullLogger.INSTANCE;
+        }
+
+        placeOrder(order: Order): void {
+          // No null checks — NullLogger safely absorbs all calls
+          this.logger.log(`Placing order ${order.id}`);
+
+          try {
+            this._processPayment(order);
+            this.logger.log(`Order ${order.id} placed successfully`);
+          } catch (err) {
+            this.logger.error(`Order ${order.id} failed: ${err}`);
+            throw err;
+          }
+        }
+
+        cancelOrder(orderId: string): void {
+          this.logger.log(`Cancelling order ${orderId}`);
+          // ...
+        }
+
+        private _processPayment(order: Order): void { /* ... */ }
+      }
+
+      // --- NullLogger is independently testable ---
+      test("NullLogger does nothing", () => {
+        const logger = NullLogger.INSTANCE;
+        // No crash, no output, no side effects
+        logger.log("should be discarded");
+        logger.error("should be discarded");
+        // If we got here without throwing, it works
+      });
+
+      // --- Special Case pattern: richer than null ---
+      /** Guest checkout — a Special Case of Customer, not just null. */
+      class GuestCustomer implements Customer {
+        readonly id = "guest";
+        readonly isAuthenticated = false;
+
+        getDiscount(): number {
+          return 0; // Guests never get discounts
+        }
+
+        canCheckout(): boolean {
+          return true; // Guests CAN check out (unlike null — would crash)
+        }
+
+        getShippingAddress(): Address | null {
+          return null; // Must collect at checkout
+        }
+      }
+
+      // GuestCustomer carries domain rules ("guests can checkout but
+      // get no discount") that a bare null could never express. This is
+      // the Special Case pattern: model the edge case as a first-class
+      // object with its own behavior, not as a missing value.
+
+heuristics:
+  - >
+    "Introduce Null Object: replace null checks with a null object that
+    implements the same interface but does nothing" (Fowler, Refactoring).
+    The null object is not a hack — it's the Null Object pattern from
+    Woolf's original paper, generalized by Fowler.
+  - Apply when the same null check pattern appears across 3+ call sites
+    for the same nullable field or parameter. The duplication signals that
+    "absent" behavior deserves a proper object with a name and a contract.
+  - >
+    The null object interface is the backbone. Define an abstract base class
+    or interface with every method callers need. The real class and the null
+    variant both implement it. Callers depend on the interface, not on either
+    concrete class — that is what eliminates the null check (the interface
+    guarantees the method exists).
+  - "The Special Case pattern is the generalization: model any domain-specific edge case as a first-class object, not just absence. A \"free shipping\" rule, a \"guest\" user, a \"provisional\" account, a \"cash\" payment method — each is a Special Case with its own behavior. Null Object is a Special Case where the behavior is \"nothing happens.\""
+  - " Design the null variant to return neutral values: 0 for numbers, empty string for text, empty list for collections, false for booleans, no-op for void methods. The neutral value must make sense for the domain — `0.0` for a billing rate is correct; `0.0` for a temperature reading is likely a bug (maybe use `NaN` or a sentinel)."
+  - " Name the null class to signal intent: NullLogger, NoDiscount, GuestUser, MissingPlan, UnauthenticatedSession. Names like Default, Empty, or Dummy describe mechanism, not domain meaning. A name like NullPlan tells the reader exactly what it is and why it exists."
+  - " Mechanical sequence: (1) Create an abstract base class or interface with the methods callers use. (2) Make the real class inherit/implement it. (3) Create the null variant implementing the same interface with neutral behavior for every method. (4) Change the field, property, or factory to default to the null object instead of null/None. (5) Remove all null checks from call sites — the compiler/type checker should now guarantee the field is non-null. (6) Run the test suite: every test that previously checked for null should either pass through the Null Object or be updated."
+  - Make the null object a singleton when it's stateless. This saves allocation,
+    makes identity checks fast (`plan is NullPlan.INSTANCE`), and signals that
+    there's conceptually only one "absent" value. Use a module-level constant,
+    a class-level INSTANCE, or the Singleton pattern.
+  - " Do NOT apply when the null case requires genuinely different control flow: throwing an exception, returning a 404, redirecting to login, aborting a transaction. A Null Object that silently does nothing in these cases hides a critical path and turns a loud failure into a silent bug."
+  - Do NOT apply when only ONE call site checks for null. The cost of a new
+    class (interface + real impl + null variant + tests) outweighs a single
+    null guard. The pattern pays off when null checks are duplicated.
+  - Do NOT apply when the interface has 20+ methods. Every method you add to
+    the real class forces a matching no-op in the null variant. A large null
+    class is a maintenance drag and signals that the real class is doing too
+    much — refactor the class first.
+  - Do NOT apply when null genuinely means "not yet initialized" rather than
+    "absent forever." A null object implies permanent absence; using it for a
+    transient `null` that will be populated later (e.g., lazy-loaded property)
+    is misleading. Use Optional/Maybe types or an explicit `isInitialized()`
+    check instead.
+  - >
+    In languages with null-safety (Kotlin, TypeScript strict mode, Python with
+    mypy strict), the null object pattern serves a different purpose: it's not
+    about preventing crashes (the type checker does that) but about centralizing
+    behavior. Instead of `plan?.name ?? "No Plan"` at every call site, a NullPlan
+    defines "No Plan" once.
+  - >
+    The null object can carry domain logic beyond simple neutrals. A
+    NullDiscount could return 0.0, but a GuestDiscount could return 0.05
+    ("guests always get 5% off first order"). That's the Special Case pattern:
+    the edge case is not neutral — it has specific behavior.
+  - " Combine with Replace Conditional with Polymorphism: if callers branch on `instanceof` or type codes to handle different variants, the null object is one variant in a polymorphic hierarchy. The interface eliminates both null checks AND type-code switches."
+  - " Consider the lifecycle: if callers sometimes need to check \"is this the null variant?\" for business logic (`if customer.plan is NullPlan`), add an `isNull()` or `isPresent()` method to the interface. The null variant returns true; the real variant returns false. This is better than `instanceof` checks because it stays within the interface contract."
+  - In tests, null objects double as test doubles. A NullLogger in a test
+    verifies that no unexpected log calls happen (silence is success), while
+    a NullPaymentGateway lets you test order flow without hitting a real
+    payment API. This is the "null as stub" pattern — it's often simpler than
+    a full mocking framework.
+  - " Performance note: indirection through an interface/virtual dispatch has a small cost. In hot paths (rendering loop, physics engine, packet processing), a null check may be faster than polymorphic dispatch. Profile before optimizing, and prefer correctness first."
+  - " This refactoring is partially reversible via Inline Class: if the null variant becomes trivial (all methods are one-liners) and callers churn, inline it back to null checks. Both directions are valid — the goal is the right abstraction level, not the maximum number of classes."
+
+related_tags:
+  [introduce-null-object, null-object-pattern, special-case-pattern,
+   polymorphism, simplify-conditionals, null-safety, defensive-programming,
+   fowler-refactoring, replace-conditional-with-polymorphism, guard-clauses,
+   optional, maybe-monad, singleton, test-doubles, design-patterns,
+   code-smells, duplicated-code, self-encapsulate-field, preparatory-refactoring,
+   guest-user, sentinel-value]

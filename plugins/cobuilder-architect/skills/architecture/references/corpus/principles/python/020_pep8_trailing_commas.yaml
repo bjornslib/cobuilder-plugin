@@ -1,0 +1,97 @@
+id: pep8-trailing-commas-020
+name: PEP 8 Trailing Commas — VCS-Friendly Lists, Dicts, and Function Calls
+category: readability
+canonical_tags: ['python', 'readability']
+sources:
+  - open_sources/python/pep-0008.html
+summary: >
+  PEP 8 recommends trailing commas for multi-line sequences and function calls to make version
+  control diffs cleaner and reordering easier. Each element goes on its own line with a trailing
+  comma; the closing delimiter (], }, )) appears on the next line. Trailing commas are mandatory
+  for one-element tuples: use the redundant-parentheses form (FILES = ('setup.cfg',)). A trailing
+  comma on the same line as the closing delimiter is discouraged — the only exception is the
+  singleton tuple case.
+examples:
+  - language: python
+    bad: |
+      # Multi-line list without trailing commas — diffs add commas to adjacent lines.
+      FILES = [
+          'setup.cfg',
+          'tox.ini'
+      ]
+
+      # Function call with trailing comma on closing line — visually inconsistent.
+      initialize(
+          FILES,
+          error=True)
+
+      # Trailing comma on same line as closing bracket (non-singleton).
+      TASKS = [
+          'lint',
+          'test',
+          'deploy',]
+
+      # Singleton tuple without parentheses — easy to misread.
+      FILES = 'setup.cfg',
+
+      # Inconsistent: some args trailing, some not.
+      def register(
+          name,
+          email,  # trailing
+          role  # no trailing
+      ):
+          ...
+    good: |
+      """PEP 8 trailing commas: every element on its own line, consistent
+      trailing commas, closing delimiter on the next line. Cleaner diffs,
+      simpler reordering, and no ambiguity.
+      """
+
+      # Multi-line list: trailing comma on every line including the last.
+      # Adding, removing, or reordering a line only touches that line in diffs.
+      FILES = [
+          'setup.cfg',
+          'tox.ini',
+          'pyproject.toml',
+      ]
+
+      # Same pattern for function calls.
+      initialize(
+          FILES,
+          error=True,
+      )
+
+      # Dictionary with trailing commas.
+      config = {
+          'host': 'localhost',
+          'port': 5432,
+          'debug': False,
+      }
+
+      # Singleton tuple: use redundant parentheses for clarity.
+      FILES = ('setup.cfg',)
+
+      # Multi-line import with trailing comma — reordering is trivial.
+      from typing import (
+          Any,
+          Callable,
+          Optional,
+          TypeVar,
+          Union,
+      )
+
+      # Argument list with trailing comma.
+      def register(
+          name: str,
+          email: str,
+          role: str = 'user',
+      ) -> User:
+          ...
+heuristics:
+  - "For multi-line lists, dicts, sets, function calls, and imports: put each element on its own line with a trailing comma. The closing delimiter goes on the next line, flush with the start of the opening."
+  - "Trailing commas produce cleaner version control diffs. Adding or removing an element changes exactly one line — no trailing-comma noise on the line above."
+  - "Never put a trailing comma on the same line as the closing delimiter (except for singleton tuples). This includes lists (['a', 'b',]) and function calls (foo(a, b,))."
+  - "Singleton tuples require a trailing comma and should use redundant parentheses: (value,) — do not write value, (bare trailing-comma tuple)."
+  - "The trailing-comma rule applies equally to regular function calls and their argument lists, but not to function definitions (signatures), where trailing commas around parameter lists are optional."
+  - "Be consistent within the same syntactic context. Don't mix trailing and non-trailing commas in the same list/dict/call."
+related_tags: [pep8, trailing-commas, vcs, diffs, lists, tuples, function-calls, readability, consistency]

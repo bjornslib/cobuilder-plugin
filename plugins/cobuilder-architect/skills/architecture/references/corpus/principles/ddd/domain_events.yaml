@@ -1,0 +1,460 @@
+id: domain-events-001
+name: "Domain-Driven Design — Domain Events: Design, Publishing, and Integration Patterns"
+category: architecture
+canonical_tags: ['ddd', 'domain-events']
+sources:
+  - books/implementing-domain-driven-design.md
+summary: >
+  Domain events capture meaningful business facts that have already happened. They
+  decouple side effects from domain logic, coordinate work across aggregates without
+  distributed transactions, and serve as the backbone of eventual consistency. Events
+  are part of the model — not transport mechanics — with past-tense names, minimal
+  payloads carrying only what downstream consumers need, and explicit ownership by
+  the aggregate that produced them. Publishing strategies range from collecting events
+  inside the aggregate for application-layer dispatch to dedicated event stores.
+  Integration events translate internal domain events into external contract models
+  through anti-corruption layers, keeping foreign schemas out of the local domain.
+examples:
+  - language: python
+    bad: |
+      # Events as commands, mixed with infrastructure, fired for every property change
+      import smtplib
+      from typing import Any
+
+      class Order:
+          def __init__(self) -> None:
+              self.items: list[dict[str, Any]] = []
+              self.status = "draft"
+
+          def add_item(self, item: dict[str, Any]) -> None:
+              self.items.append(item)
+              # Event for every mutation — noise, not signal
+              self._publish_event("ItemAddedToOrder", {"item": item})
+
+          def set_status(self, new_status: str) -> None:
+              self.status = new_status
+
+          def place(self) -> None:
+              if not self.items:
+                  raise ValueError("Cannot place empty order")
+              self.status = "placed"
+              # Event name is a command (imperative), not a fact
+              # Infrastructure (SMTP) leaked into domain entity
+              event = {"type": "PlaceOrder", "order": self.__dict__}
+              self._publish_event(event["type"], event)
+              self._send_email(event)
+
+          def _publish_event(self, event_type: str, data: dict[str, Any]) -> None:
+              # Domain entity owns message broker connection — dependency inversion broken
+              pass
+
+          def _send_email(self, event: dict[str, Any]) -> None:
+              smtplib.SMTP("localhost").sendmail("noreply@acme.com", ["user@acme.com"],
+                                                  f"Order placed: {event}")
+    good: |
+      from __future__ import annotations
+
+      from dataclasses import dataclass, field
+      from datetime import datetime, timezone
+      from uuid import uuid4
+
+      # --- Domain Events are immutable facts, named in past tense ---
+
+      @dataclass(frozen=True)
+      class DomainEvent:
+          event_id: str = field(default_factory=lambda: uuid4().hex)
+          occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+
+      @dataclass(frozen=True)
+      class OrderPlaced(DomainEvent):
+          """Fact: an order was successfully placed."""
+          order_id: str = ""
+          customer_id: str = ""
+          total: float = 0.0
+          item_count: int = 0
+
+      @dataclass(frozen=True)
+      class OrderCancelled(DomainEvent):
+          """Fact: an order was cancelled — with the business reason, not a stack trace."""
+          order_id: str = ""
+          customer_id: str = ""
+          reason: str = ""  # e.g. "out_of_stock", "customer_requested"
+
+      # --- Aggregate collects events internally, no infrastructure ---
+
+      class Order:
+          def __init__(self, order_id: str, customer_id: str) -> None:
+              self._id = order_id
+              self._customer_id = customer_id
+              self._items: list[OrderLine] = []
+              self._status = "draft"
+              self._events: list[DomainEvent] = []
+
+          def add_item(self, product_id: str, quantity: int, unit_price: float) -> None:
+              if self._status != "draft":
+                  raise ValueError("Can only add items to draft orders")
+              self._items.append(OrderLine(product_id, quantity, unit_price))
+              # No event — adding items is not a meaningful business fact by itself
+
+          def place(self) -> None:
+              if not self._items:
+                  raise ValueError("Cannot place an empty order")
+              if self._status != "draft":
+                  raise ValueError(f"Order is already {self._status}")
+              self._status = "placed"
+              self._events.append(OrderPlaced(
+                  order_id=self._id,
+                  customer_id=self._customer_id,
+                  total=sum(line.total for line in self._items),
+                  item_count=len(self._items),
+              ))
+
+          def cancel(self, reason: str) -> None:
+              if self._status not in ("placed", "confirmed"):
+                  raise ValueError(f"Cannot cancel order in status {self._status}")
+              self._status = "cancelled"
+              self._events.append(OrderCancelled(
+                  order_id=self._id,
+                  customer_id=self._customer_id,
+                  reason=reason,
+              ))
+
+          def collect_events(self) -> list[DomainEvent]:
+              events, self._events = self._events, []
+              return events
+
+      # --- Application service publishes events AFTER persistence ---
+
+      class PlaceOrderUseCase:
+          def __init__(self, order_repo: OrderRepository, event_bus: EventBus) -> None:
+              self._repo = order_repo
+              self._bus = event_bus
+
+          def execute(self, order_id: str) -> Order:
+              order = self._repo.get_by_id(order_id)
+              order.place()
+              self._repo.save(order)
+              for event in order.collect_events():
+                  self._bus.publish(event)
+              return order
+
+      # --- Infrastructure ports are interfaces the domain never imports ---
+
+      from abc import ABC, abstractmethod
+
+      class EventBus(ABC):
+          @abstractmethod
+          def publish(self, event: DomainEvent) -> None: ...
+
+      class OrderRepository(ABC):
+          @abstractmethod
+          def get_by_id(self, order_id: str) -> Order: ...
+          @abstractmethod
+          def save(self, order: Order) -> None: ...
+
+      @dataclass(frozen=True)
+      class OrderLine:
+          product_id: str
+          quantity: int
+          unit_price: float
+
+          @property
+          def total(self) -> float:
+              return self.quantity * self.unit_price
+
+  - language: typescript
+    bad: |
+      // Events as imperative commands with full entity dumps
+      import { Kafka } from "kafkajs";
+
+      class Order {
+        public items: OrderItem[] = [];
+        public status: string = "draft";
+
+        addItem(productId: string, qty: number, price: number): void {
+          this.items.push({ productId, qty, price });
+          // Noise event for every mutation
+          this.emit("ItemAdded", { productId, qty });
+        }
+
+        place(): void {
+          if (this.items.length === 0) throw new Error("Empty order");
+          this.status = "placed";
+          // Imperative name, entire entity leaked, infrastructure import
+          const kafka = new Kafka({ brokers: ["localhost:9092"] });
+          const producer = kafka.producer();
+          producer.send({
+            topic: "orders",
+            messages: [{ value: JSON.stringify({ type: "PlaceOrder", order: this }) }],
+          });
+        }
+
+        private emit(name: string, payload: unknown): void {
+          /* direct broker coupling */
+        }
+      }
+
+      // Integration event with no translation — foreign schema pollutes consumers
+      interface StripePaymentSucceeded {
+        id: string;
+        object: "event";
+        data: {
+          object: {
+            id: string;
+            amount: number;
+            currency: string;
+            status: string;
+            metadata: Record<string, string>;
+          };
+        };
+      }
+    good: |
+      // --- Domain Events are immutable, past-tense, minimal payload ---
+
+      interface DomainEvent {
+        readonly eventId: string;
+        readonly occurredAt: Date;
+      }
+
+      interface OrderPlaced extends DomainEvent {
+        readonly kind: "OrderPlaced";
+        readonly orderId: string;
+        readonly customerId: string;
+        readonly total: number;
+        readonly itemCount: number;
+      }
+
+      interface OrderCancelled extends DomainEvent {
+        readonly kind: "OrderCancelled";
+        readonly orderId: string;
+        readonly customerId: string;
+        readonly reason: string;
+      }
+
+      type OrderEvent = OrderPlaced | OrderCancelled;
+
+      // --- Aggregate collects events; no infrastructure ---
+
+      class Order {
+        private events: DomainEvent[] = [];
+
+        constructor(
+          public readonly id: string,
+          public readonly customerId: string,
+          private items: OrderLine[] = [],
+          private status: OrderStatus = "draft",
+        ) {}
+
+        addItem(line: OrderLine): void {
+          if (this.status !== "draft") throw new Error("Can only add items to draft orders");
+          this.items.push(line);
+          // No event for low-level mutations
+        }
+
+        place(): void {
+          if (this.items.length === 0) throw new Error("Cannot place empty order");
+          if (this.status !== "draft") throw new Error(`Order is already ${this.status}`);
+          this.status = "placed";
+          this.events.push({
+            kind: "OrderPlaced",
+            eventId: crypto.randomUUID(),
+            occurredAt: new Date(),
+            orderId: this.id,
+            customerId: this.customerId,
+            total: this.items.reduce((sum, li) => sum + li.unitPrice * li.quantity, 0),
+            itemCount: this.items.length,
+          });
+        }
+
+        cancel(reason: string): void {
+          if (this.status !== "placed" && this.status !== "confirmed") {
+            throw new Error(`Cannot cancel order in status ${this.status}`);
+          }
+          this.status = "cancelled";
+          this.events.push({
+            kind: "OrderCancelled",
+            eventId: crypto.randomUUID(),
+            occurredAt: new Date(),
+            orderId: this.id,
+            customerId: this.customerId,
+            reason,
+          });
+        }
+
+        collectEvents(): DomainEvent[] {
+          const pending = [...this.events];
+          this.events = [];
+          return pending;
+        }
+      }
+
+      // --- Application service publishes after persistence ---
+
+      interface EventPublisher {
+        publish(event: DomainEvent): Promise<void>;
+      }
+
+      interface OrderRepository {
+        getById(id: string): Promise<Order>;
+        save(order: Order): Promise<void>;
+      }
+
+      class PlaceOrderUseCase {
+        constructor(
+          private readonly orderRepo: OrderRepository,
+          private readonly eventPublisher: EventPublisher,
+        ) {}
+
+        async execute(orderId: string): Promise<Order> {
+          const order = await this.orderRepo.getById(orderId);
+          order.place();
+          await this.orderRepo.save(order);
+          for (const event of order.collectEvents()) {
+            await this.eventPublisher.publish(event);
+          }
+          return order;
+        }
+      }
+
+  - language: python
+    bad: |
+      # Using domain events to paper over missing aggregate design
+      # — a distributed transaction disguised as events
+
+      def transfer_funds(from_account_id: str, to_account_id: str, amount: float) -> None:
+          """Try to coordinate two aggregates with events inside one 'transaction'."""
+          from_account = account_repo.get(from_account_id)
+          to_account = account_repo.get(to_account_id)
+
+          from_account.withdraw(amount)
+          to_account.deposit(amount)
+
+          # "If saving fails, replay events" — fragile, non-atomic
+          try:
+              account_repo.save(from_account)
+              account_repo.save(to_account)
+          except Exception:
+              # Compensating action — what if this also fails?
+              from_account.deposit(amount)
+              account_repo.save(from_account)
+              raise
+    good: |
+      # Eventual consistency: one aggregate per transaction, events drive the rest
+
+      class TransferMoneyUseCase:
+          """Each aggregate change is its own transaction. Events connect them."""
+
+          def __init__(self, account_repo: AccountRepository, bus: EventBus) -> None:
+              self._repo = account_repo
+              self._bus = bus
+
+          def execute(self, from_id: str, to_id: str, amount: float) -> None:
+              from_account = self._repo.get_by_id(from_id)
+              from_account.withdraw(amount)
+              self._repo.save(from_account)
+              for event in from_account.collect_events():
+                  self._bus.publish(event)
+              # MoneyWithdrawn event triggers DepositMoneyHandler in a separate
+              # transaction — the deposit may happen seconds later. That's fine
+              # because eventual consistency is explicit, not hidden.
+
+
+      class DepositMoneyHandler:
+          """Handles MoneyWithdrawn — runs in its own transaction."""
+
+          def __init__(self, account_repo: AccountRepository) -> None:
+              self._repo = account_repo
+
+          def handle(self, event: MoneyWithdrawn) -> None:
+              to_account = self._repo.get_by_id(event.to_account_id)
+              to_account.deposit(event.amount)
+              self._repo.save(to_account)
+              # Emits MoneyDeposited — fully decoupled, each step atomic
+
+  - language: typescript
+    bad: |
+      // Integration event leaking internal domain model to external consumers
+      import { Order } from "../domain/Order";
+
+      async function publishOrderPlaced(order: Order): Promise<void> {
+        // Sending the full aggregate — consumers now depend on internal model
+        await messageBroker.publish("order.placed", {
+          eventType: "OrderPlaced",
+          payload: order,  // entire aggregate leaked
+        });
+      }
+    good: |
+      // Anti-Corruption Layer: translate domain events into integration contracts
+
+      // --- This is the external contract, versioned and stable ---
+      interface OrderPlacedV1 {
+        eventType: "order.placed.v1";
+        eventId: string;
+        occurredAt: string;  // ISO-8601
+        payload: {
+          orderId: string;
+          customerId: string;
+          totalCents: number;
+          currency: string;
+          itemCount: number;
+        };
+      }
+
+      // --- ACL translates domain events to integration events ---
+      class OrderIntegrationEventTranslator {
+        toIntegrationEvent(domainEvent: OrderPlaced): OrderPlacedV1 {
+          return {
+            eventType: "order.placed.v1",
+            eventId: domainEvent.eventId,
+            occurredAt: domainEvent.occurredAt.toISOString(),
+            payload: {
+              orderId: domainEvent.orderId,
+              customerId: domainEvent.customerId,
+              totalCents: Math.round(domainEvent.total * 100),
+              currency: "USD",
+              itemCount: domainEvent.itemCount,
+            },
+          };
+        }
+      }
+
+      // Application layer wires translation before publishing externally
+      class PlaceOrderUseCase {
+        constructor(
+          private readonly orderRepo: OrderRepository,
+          private readonly domainEventBus: EventPublisher,
+          private readonly integrationEventBus: IntegrationEventPublisher,
+          private readonly translator: OrderIntegrationEventTranslator,
+        ) {}
+
+        async execute(orderId: string): Promise<Order> {
+          const order = await this.orderRepo.getById(orderId);
+          order.place();
+          await this.orderRepo.save(order);
+
+          for (const event of order.collectEvents()) {
+            // Internal consumers get domain events
+            await this.domainEventBus.publish(event);
+            // External consumers get translated integration events
+            if (event.kind === "OrderPlaced") {
+              await this.integrationEventBus.publish(
+                this.translator.toIntegrationEvent(event),
+              );
+            }
+          }
+          return order;
+        }
+      }
+
+heuristics:
+  - Domain events are facts, not commands. Name them in past tense: OrderPlaced, PaymentAuthorized, ShipmentDelayed — never PlaceOrder or AuthorizePayment.
+  - Publish events only for meaningful business facts, not every property change. An OrderPlaced event matters; an OrderStatusFieldUpdated event is noise.
+  - Keep event payloads minimal and domain-local. Include the identifiers and values consumers need — not the entire aggregate, not framework objects, not database rows.
+  - Events are part of the domain model. They live in the domain layer, owned by the aggregate that produces them. Event bus interfaces are ports in the application layer; message broker implementations are infrastructure.
+  - Collect events inside the aggregate during domain operations. The application service publishes them AFTER the aggregate is successfully persisted — never before, never inside the aggregate itself.
+  - Use domain events to coordinate across aggregates within the same bounded context (eventual consistency). One aggregate, one transaction. The event triggers the next aggregate's work in a separate transaction.
+  - For cross-context communication, translate domain events into integration events through an anti-corruption layer. Integration event schemas are external contracts — versioned, stable, and independent of internal domain model changes.
+  - Never import another bounded context's domain package. Use integration events and explicit contract models instead.
+  - Domain events are testable as pure outcomes of aggregate behavior — no message broker, no database, no network required.
+  - If an event handler fails, the event remains in the event store or outbox for retry. Design handlers to be idempotent so redelivery is safe.
+related_tags: [domain-events, eventual-consistency, anti-corruption-layer, aggregates, integration-events, event-driven, ddd-tactical]

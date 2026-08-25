@@ -1,0 +1,231 @@
+id: split-phase-016
+name: Split Phase
+category: refactoring
+canonical_tags: ['refactoring', 'readability']
+sources:
+  - books/refactoring.md
+summary: |
+  Split Phase separates a function that does multiple sequential kinds of work
+  (parsing, validation, computation, I/O, formatting) into distinct, named phases,
+  each in its own function. This eliminates the "kitchen sink" function where the
+  reader has to mentally switch between different modes of thinking mid-function.
+  After splitting, the top-level reads like a pipeline: "parse parameters, validate
+  input, compute results, format output, send response." Each phase gets its own
+  interface (input and output types), making the data flow between phases explicit
+  and each phase independently testable.
+examples:
+  - language: python
+    bad: |
+      def handle_checkout(request: dict, customer_id: str) -> dict:
+          # Phase 1 — parse and deserialize (mixed with logic)
+          if "cart_id" not in request:
+              return {"error": "Missing cart_id"}
+          cart_id = request["cart_id"]
+
+          # Phase 2 — fetch data from DB (mixed with validation)
+          cart = db.carts.find_one({"_id": cart_id, "customer_id": customer_id})
+          if cart is None:
+              return {"error": "Cart not found"}
+          if not cart.get("line_items"):
+              return {"error": "Empty cart"}
+
+          # Phase 3 — business logic (compute totals)
+          subtotal = 0.0
+          line_items = []
+          for item in cart["line_items"]:
+              product = db.products.find_one({"_id": item["product_id"]})
+              if product is None:
+                  return {"error": f"Product {item['product_id']} not found"}
+              price = product["price"] * (1 - product.get("discount_pct", 0) / 100)
+              subtotal += price * item["quantity"]
+              line_items.append({"product_id": item["product_id"], "price": price})
+
+          tax = subtotal * 0.08
+          shipping = 9.99 if subtotal < 75 else 0.0
+          total = subtotal + tax + shipping
+
+          # Phase 4 — persist and respond (mixed concerns)
+          order = db.orders.insert_one({
+              "customer_id": customer_id,
+              "items": line_items,
+              "subtotal": subtotal,
+              "tax": tax,
+              "shipping": shipping,
+              "total": total,
+          })
+          db.carts.delete_one({"_id": cart_id})
+
+          # Phase 5 — notification (inline formatting)
+          email.send(customer_id, f"Order placed! Total: ${total:.2f}")
+
+          return {"order_id": str(order.inserted_id), "total": total}
+    good: |
+      from dataclasses import dataclass
+
+      @dataclass
+      class CheckoutRequest:
+          cart_id: str
+
+      @dataclass
+      class Cart:
+          id: str
+          line_items: list[dict]
+          customer_id: str
+
+      @dataclass
+      class PricedItem:
+          product_id: str
+          price: float
+          quantity: int
+
+      @dataclass
+      class Invoice:
+          items: list[PricedItem]
+          subtotal: float
+          tax: float
+          shipping: float
+          total: float
+
+
+      # ── Phase 1: Parse ──
+      def _parse_request(raw: dict) -> CheckoutRequest:
+          if "cart_id" not in raw:
+              raise ValueError("Missing cart_id")
+          return CheckoutRequest(cart_id=raw["cart_id"])
+
+      # ── Phase 2: Load ──
+      def _load_cart(request: CheckoutRequest, customer_id: str) -> Cart:
+          cart = db.carts.find_one({"_id": request.cart_id, "customer_id": customer_id})
+          if cart is None:
+              raise ValueError("Cart not found")
+          if not cart.get("line_items"):
+              raise ValueError("Empty cart")
+          return Cart(id=request.cart_id, line_items=cart["line_items"], customer_id=customer_id)
+
+      # ── Phase 3: Compute ──
+      def _build_invoice(cart: Cart) -> Invoice:
+          items = [_price_item(it) for it in cart.line_items]
+          subtotal = sum(item.price * item.quantity for item in items)
+          tax = subtotal * 0.08
+          shipping = 0.0 if subtotal >= 75 else 9.99
+          return Invoice(items=items, subtotal=subtotal, tax=tax, shipping=shipping,
+                         total=subtotal + tax + shipping)
+
+      def _price_item(item: dict) -> PricedItem:
+          product = db.products.find_one({"_id": item["product_id"]})
+          if product is None:
+              raise ValueError(f"Product {item['product_id']} not found")
+          price = product["price"] * (1 - product.get("discount_pct", 0) / 100)
+          return PricedItem(product_id=item["product_id"], price=price, quantity=item["quantity"])
+
+      # ── Phase 4: Persist ──
+      def _save_order(invoice: Invoice, customer_id: str) -> str:
+          result = db.orders.insert_one({
+              "customer_id": customer_id,
+              "items": [{"product_id": i.product_id, "price": i.price} for i in invoice.items],
+              "subtotal": invoice.subtotal,
+              "tax": invoice.tax,
+              "shipping": invoice.shipping,
+              "total": invoice.total,
+          })
+          return str(result.inserted_id)
+
+      # ── Phase 5: Notify ──
+      def _notify_customer(customer_id: str, invoice: Invoice) -> None:
+          email.send(customer_id, f"Order placed! Total: ${invoice.total:.2f}")
+
+
+      # ── Orchestrator: the pipeline ──
+      def handle_checkout(request: dict, customer_id: str) -> dict:
+          try:
+              parsed = _parse_request(request)
+              cart = _load_cart(parsed, customer_id)
+              invoice = _build_invoice(cart)
+              order_id = _save_order(invoice, customer_id)
+              _notify_customer(customer_id, invoice)
+              db.carts.delete_one({"_id": cart.id})
+              return {"order_id": order_id, "total": invoice.total}
+          except ValueError as e:
+              return {"error": str(e)}
+  - language: typescript
+    bad: |
+      function importUsers(csvText: string): ImportResult {
+        // Parsing, validation, transformation, persistence all mixed
+        const lines = csvText.split("\n").slice(1);
+        const imported: string[] = [];
+        const errors: string[] = [];
+
+        for (const line of lines) {
+          const [name, email, role] = line.split(",");
+          if (!email.includes("@")) {
+            errors.push(`Invalid email: ${email}`);
+            continue;
+          }
+          if (role !== "admin" && role !== "member") {
+            errors.push(`Unknown role: ${role}`);
+            continue;
+          }
+          const existing = db.users.findOne({ email });
+          if (existing) {
+            errors.push(`Duplicate: ${email}`);
+            continue;
+          }
+          db.users.insert({ name: name.trim(), email: email.trim(), role, createdAt: new Date() });
+          imported.push(email.trim());
+        }
+        return { imported: imported.length, errors };
+      }
+    good: |
+      interface ParsedRow { name: string; email: string; role: string; }
+      interface ValidatedRow { name: string; email: string; role: "admin" | "member"; }
+
+      // ── Phase 1: Parse ──
+      function parseCsv(csvText: string): ParsedRow[] {
+        const lines = csvText.split("\n").slice(1).filter(Boolean);
+        return lines.map((line) => {
+          const [name, email, role] = line.split(",");
+          return { name: name?.trim() ?? "", email: email?.trim() ?? "", role: role?.trim() ?? "" };
+        });
+      }
+
+      // ── Phase 2: Validate ──
+      type Validation = { ok: ValidatedRow } | { error: string };
+      function validateRow(row: ParsedRow): Validation {
+        if (!row.email.includes("@")) return { error: `Invalid email: ${row.email}` };
+        if (row.role !== "admin" && row.role !== "member") return { error: `Unknown role: ${row.role}` };
+        if (db.users.findOne({ email: row.email })) return { error: `Duplicate: ${row.email}` };
+        return { ok: { name: row.name, email: row.email, role: row.role } };
+      }
+
+      // ── Phase 3: Persist ──
+      function persistRow(row: ValidatedRow): void {
+        db.users.insert({ ...row, createdAt: new Date() });
+      }
+
+      // ── Orchestrator: pipeline ──
+      function importUsers(csvText: string): ImportResult {
+        const rows = parseCsv(csvText);
+        let imported = 0;
+        const errors: string[] = [];
+
+        for (const row of rows) {
+          const result = validateRow(row);
+          if ("error" in result) { errors.push(result.error); continue; }
+          persistRow(result.ok);
+          imported++;
+        }
+
+        return { imported, errors };
+      }
+heuristics:
+  - Apply when a function mixes different "kinds" of code — validation next to SQL queries next to string formatting — the reader's brain has to context-switch.
+  - Apply when intermediate data is passed through local variables that get overwritten — explicit data types between phases make the data flow visible and testable.
+  - Apply when you notice you could test "the business logic" but it's impossible because database calls are embedded in the same function — splitting lets you test business logic in isolation.
+  - Name phases after what they produce: `_parse_request`, `_validate_order`, `_build_invoice`, `_persist_result`, `_format_response`.
+  - Define explicit types or data classes for the data that flows between phases — this is your "API contract" between pipeline stages.
+  - Do NOT split when the function is already small (15-20 lines) and the phases are trivial — one split may be enough; don't create 5 three-line functions.
+  - Do NOT split when the phases are tightly coupled and performance-critical (e.g. a streaming parser that processes one byte at a time) — splitting adds overhead.
+  - After splitting: the top-level orchestrator should read like a recipe with 3-5 steps, each a single function call.
+  - Each phase function should take the output of the previous phase and return the input for the next phase — no shared mutable state between phases.
+  - Mechanical sequence: (1) identify the distinct kinds of work in the function (parse, validate, compute, persistence, I/O, format), (2) extract the last phase first — it's usually the easiest because it only consumes intermediate data, (3) work backward through the function, extracting each earlier phase, (4) define explicit data structures between each phase, (5) run tests between each extraction.
+related_tags: [split-phase, pipeline, separation-of-concerns, orchestration, data-flow, single-responsibility, testability]

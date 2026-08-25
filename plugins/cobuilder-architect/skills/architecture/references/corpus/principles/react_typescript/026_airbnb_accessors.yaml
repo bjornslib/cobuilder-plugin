@@ -1,0 +1,94 @@
+id: airbnb-accessors-026
+name: Airbnb Accessors — No Getters/Setters, Explicit Methods, Boolean Prefixes
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  Airbnb rejects JavaScript getters and setters — they cause unexpected side
+  effects, are harder to test and maintain, and make code harder to reason
+  about. Instead, use explicit accessor methods (getVal()/setVal()). Boolean
+  accessors should use isVal() or hasVal() prefixes. If you implement generic
+  get()/set() methods, be internally consistent. Accessor functions should
+  have no hidden side effects.
+examples:
+  - language: typescript
+    bad: |
+      // JavaScript getters/setters — hidden logic, hard to debug
+      class Dragon {
+        get age(): number {
+          return this._age + (this.isAncient ? 100 : 0);
+        }
+
+        set age(value: number) {
+          this._age = value;
+          this.notifyObservers(); // hidden side effect
+        }
+      }
+
+      // Boolean without is/has prefix — ambiguous
+      class Dragon {
+        age(): boolean {
+          return this._age > 0;
+        }
+      }
+
+      // Inconsistent get()/set() convention
+      class Jedi {
+        fetch(key: string) {
+          return this[key];
+        }
+        store(key: string, val: unknown) {
+          this[key] = val;
+        }
+      }
+    good: |
+      // Explicit accessor methods — clear, testable
+      class Dragon {
+        getAge(): number {
+          return this._age + (this.isAncient ? 100 : 0);
+        }
+
+        setAge(value: number): void {
+          this._age = value;
+          this.notifyObservers();
+        }
+      }
+
+      // Boolean accessor with has prefix — reads like a question
+      class Dragon {
+        hasAge(): boolean {
+          return this._age > 0;
+        }
+      }
+
+      // Boolean with is prefix — natural language
+      class User {
+        isActive(): boolean {
+          return this.status === "active";
+        }
+
+        hasPermission(permission: string): boolean {
+          return this.permissions.includes(permission);
+        }
+      }
+
+      // Consistent get()/set() pattern — predictable
+      class Jedi {
+        set(key: string, val: unknown): void {
+          this[key] = val;
+        }
+
+        get(key: string): unknown {
+          return this[key];
+        }
+      }
+heuristics:
+  - Do not use JavaScript getters/setters (get/set keywords). They hide computation and side effects, making code harder to understand and debug.
+  - Use explicit accessor methods: getAge(), setAge(). The method name signals that work may happen.
+  - Boolean accessors should use is or has prefixes: isActive(), hasPermission(), isEmpty(). They read naturally as questions.
+  - If you need generic property access, implement consistent get(key) and set(key, value) methods — don't mix fetch/retrieve/store/put.
+  - Accessor functions should have no side effects beyond their stated purpose. A getAge() should not update caches or notify observers.
+  - In TypeScript, prefer public readonly properties for simple data exposure over accessor methods. Only add methods when computation or validation is needed.
+  - Test accessor methods independently — they should be trivial to verify.
+related_tags: [airbnb, accessors, getters, setters, boolean-prefix, explicit-methods]

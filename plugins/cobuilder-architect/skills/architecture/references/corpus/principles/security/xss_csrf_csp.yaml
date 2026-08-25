@@ -1,0 +1,175 @@
+id: security-xss-csrf-csp-001
+name: XSS, CSRF, and Content Security Policy Defense
+category: security
+canonical_tags: ['security', 'xss', 'csrf', 'csp', 'cookie-security', 'owasp-a07']
+sources:
+  - owasp/top-ten.md
+  - cwe/xss-patterns.md
+  - mdn/content-security-policy.md
+summary: >
+  Cross-Site Scripting (XSS) — reflected, stored, and DOM-based — allows
+  attackers to inject malicious scripts that execute in a victim's browser.
+  Cross-Site Request Forgery (CSRF) tricks authenticated users into making
+  unintended state-changing requests. Content Security Policy (CSP) headers
+  and secure cookie flags form the defense-in-depth layer that limits damage
+  when primary controls fail. XSS persists because developers render
+  unsanitized user input as HTML, use dangerous APIs like innerHTML or
+  dangerouslySetInnerHTML, and fail to escape output contextually. CSRF
+  persists because state-changing endpoints accept requests without verifying
+  the origin. Secure cookies (HttpOnly, Secure, SameSite) prevent session
+  hijacking via JavaScript access and cross-site request attachment. CSP
+  restricts which scripts, styles, and resources the browser may load,
+  reducing the blast radius of any successful injection.
+examples:
+  - language: python
+    bad: |
+      from fastapi import FastAPI, Response
+      from starlette.middleware.sessions import SessionMiddleware
+
+      app = FastAPI()
+      app.add_middleware(SessionMiddleware, secret_key="hardcoded-secret")
+
+
+      # ---- Stored XSS: rendering unsanitized user HTML ----
+      @app.post("/comments")
+      def post_comment(body: dict):
+          # User HTML stored and rendered verbatim — script injection
+          db.save(Comment(text=body["text"]))
+          return {"ok": True}
+
+
+      # ---- React: dangerouslySetInnerHTML with raw user input ----
+      # <div dangerouslySetInnerHTML={{ __html: comment.text }} />
+      # Any <script> or event handler in comment.text executes.
+
+
+      # ---- CSRF: no token verification on state-changing endpoint ----
+      @app.post("/transfer")
+      def transfer(from_id: int, to_id: int, amount: float):
+          # No CSRF token checked. A malicious site can POST here
+          # using the victim's session cookie.
+          execute_transfer(from_id, to_id, amount)
+          return {"ok": True}
+
+
+      # ---- Cookie without security flags ----
+      @app.post("/login")
+      def login(response: Response):
+          response.set_cookie("session", session_token)
+          # Missing: HttpOnly, Secure, SameSite — session cookie
+          # accessible to JavaScript, sent over HTTP, attached to
+          # cross-site requests.
+          return {"ok": True}
+    good: |
+      from fastapi import FastAPI, Depends, HTTPException, Request, Response
+      from starlette.middleware.sessions import SessionMiddleware
+      import secrets
+      import dompurify  # conceptual: server-side HTML sanitization
+
+      app = FastAPI()
+      app.add_middleware(SessionMiddleware, secret_key=os.environ["SESSION_SECRET"])
+
+
+      # ---- Stored XSS defense: sanitize all user HTML before rendering ----
+      @app.post("/comments")
+      def post_comment(body: dict):
+          clean_text = sanitize_html(body["text"])  # strip <script>, event handlers
+          db.save(Comment(text=clean_text))
+          return {"ok": True}
+
+
+      # ---- React: DOMPurify before dangerouslySetInnerHTML ----
+      # import DOMPurify from 'dompurify';
+      # <div dangerouslySetInnerHTML={{
+      #   __html: DOMPurify.sanitize(comment.text, { USE_PROFILES: { html: true } })
+      # }} />
+
+
+      # ---- CSRF defense: double-submit cookie pattern or token ----
+      @app.middleware("http")
+      async def csrf_guard(request: Request, call_next):
+          if request.method in ("POST", "PUT", "DELETE", "PATCH"):
+              cookie_token = request.cookies.get("csrf_token")
+              header_token = request.headers.get("X-CSRF-Token")
+              if not cookie_token or cookie_token != header_token:
+                  raise HTTPException(403, "CSRF token mismatch")
+          return await call_next(request)
+
+
+      @app.post("/login")
+      def login(response: Response):
+          csrf_token = secrets.token_hex(32)
+          response.set_cookie(
+              "csrf_token", csrf_token,
+              httponly=False,    # JS must read it to send in header
+              secure=True,
+              samesite="Strict",
+          )
+          # Session cookie with full security flags
+          response.set_cookie(
+              "session", session_token,
+              httponly=True,    # inaccessible to JavaScript
+              secure=True,      # HTTPS only
+              samesite="Strict",  # no cross-site attachment
+          )
+          return {"csrf_token": csrf_token}
+
+
+      # ---- CSP header with nonce for inline scripts ----
+      @app.middleware("http")
+      async def csp_header(request: Request, call_next):
+          nonce = secrets.token_urlsafe(16)
+          request.state.csp_nonce = nonce
+          response = await call_next(request)
+          response.headers["Content-Security-Policy"] = (
+              f"default-src 'self'; "
+              f"script-src 'self' 'nonce-{nonce}'; "
+              f"style-src 'self' 'nonce-{nonce}'; "
+              f"frame-ancestors 'none'; "
+              f"object-src 'none'"
+          )
+          return response
+heuristics:
+  - >
+    Sanitize all user-supplied HTML before rendering. Use DOMPurify (client)
+    or a server-side HTML sanitizer to strip <script> tags, event handler
+    attributes (onclick, onerror), and javascript: URIs. Never render raw user
+    input as HTML — escape by default, allow HTML only after sanitization.
+  - >
+    Protect every state-changing endpoint (POST, PUT, DELETE, PATCH) with a
+    CSRF token. The double-submit cookie pattern (token in cookie and header)
+    is the simplest defense. Synchronizer-token patterns are more rigorous
+    but require server-side state. Never rely on SameSite cookies alone as
+    CSRF defense — they are a mitigation, not a guarantee.
+  - >
+    Deploy Content-Security-Policy headers as defense-in-depth. Start with
+    report-only mode to identify legitimate resource loads, then enforce.
+    Use nonces for inline scripts instead of 'unsafe-inline'. Set
+    frame-ancestors 'none' to prevent clickjacking and object-src 'none' to
+    block plugin content.
+  - >
+    Set HttpOnly, Secure, and SameSite=Strict (or Lax) on all session
+    cookies. HttpOnly prevents JavaScript access (mitigates XSS session
+    theft). Secure prevents transmission over HTTP. SameSite=Strict blocks
+    cross-site cookie attachment (mitigates CSRF). Never set session cookies
+    without all three flags.
+  - >
+    Escape output contextually: HTML context requires HTML-entity encoding,
+    JavaScript context requires JavaScript escaping, URL context requires
+    URL encoding. A single global escape function is insufficient — the
+    context determines which characters are dangerous.
+  - >
+    Test with XSS payloads systematically. Use known cheat-sheet payloads
+    (onerror, onload, SVG animate, template literals) against every input
+    field and every rendering context. Automated scanners catch low-hanging
+    fruit; manual testing with diverse payloads catches context-specific
+    bypasses.
+  - >
+    Never use dangerouslySetInnerHTML (React), v-html (Vue), or innerHTML
+    (vanilla JS) with unsanitized user input. If you must render rich HTML,
+    sanitize first with DOMPurify configured for the allowed tag set. The
+    default should always be textContent or JSX escaped rendering.
+related_tags:
+  [security, xss, reflected-xss, stored-xss, dom-xss, csrf, csp,
+   content-security-policy, cookie-security, httponly, samesite,
+   dompurify, owasp-a07, cwe-79, cwe-352, defense-in-depth]

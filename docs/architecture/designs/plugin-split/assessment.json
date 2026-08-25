@@ -1,0 +1,75 @@
+{
+  "stage": "design",
+  "verdict": "proceed",
+  "risk_tier": "high",
+  "regret_risk": "medium",
+  "summary": "The split is sound and the compatibility gate is the load-bearing half. Two findings are about the change itself. Four are about the skill mode that produced it: running /cobuilder-architect:design against this design surfaced that architecture's design mode writes an ADR and nothing else, so every design-directory artifact the viewer renders had to be written by hand afterwards.",
+  "findings": [
+    {
+      "kind": "skill-gap",
+      "id": "F1",
+      "severity": "high",
+      "title": "Architecture design mode does not know design directories exist",
+      "detail": "skills/architecture/SKILL.md's Design Mode section names one output: an ADR markdown document, optionally with an HTML version. The design directory — goal.json, intent.json, narrative.json, assessment.json, diagrams/ — came from the odyssey design mode and is specified in skills/odyssey/references/design-mode.md. Session decision 3 folds odyssey design into the architect pillar, but the architecture skill was never given that responsibility. Running the mode therefore produced two well-formed ADRs and no design at all. The Designs view stayed empty because nothing in the mode it ran was ever told to fill it.",
+      "cites": "skills/architecture/SKILL.md, Design Mode, Output",
+      "mitigation": "Design mode's Output section must name the design directory as a first-class output alongside the ADR, and reference the seven stages in design-mode.md rather than stopping at the corpus chain. This is merge debt from folding the two skills together, not a new feature."
+    },
+    {
+      "kind": "skill-gap",
+      "id": "F2",
+      "severity": "high",
+      "title": "narrative.json is the only design artifact with no projection and no validation",
+      "detail": "build_designs.py projects goal, intent, and assessment through explicit field tuples (GOAL_FIELDS, INTENT_FIELDS, ASSESSMENT_FIELDS) and validates their shape. narrative.json is attached raw at line 277 with one isinstance check. Its four-level structure — landscape, problem_solution, architecture, file_changes — is written down nowhere: not in the script, not in the architecture skill, not in a template. An author has to read design-mode/narrative.json and infer the shape. A missing or misshapen level fails silently in the viewer rather than loudly in the build.",
+      "cites": "scripts/build_designs.py:277, viewer/index.html:816",
+      "mitigation": "Give narrative.json a NARRATIVE_FIELDS projection and a per-level check, the same treatment the other three artifacts already get. Add the level shape to the design-mode reference so it can be authored without reverse-engineering an example."
+    },
+    {
+      "kind": "skill-gap",
+      "id": "F3",
+      "severity": "medium",
+      "title": "verify_bundle checks PRs level by level and designs file-by-existence",
+      "detail": "check_designs() returns ok when data/designs.js parses as an object assignment. It never looks inside a design. A design carrying only goal.json passes as ok, which is exactly what happened here. The per-PR checks verify each of the four narrative levels, each asset, and each diagram individually. Two artifact families feed the same four-level viewer under two completely different standards of proof.",
+      "cites": "scripts/verify_bundle.py:215-226",
+      "mitigation": "Extend check_designs to report per-design completeness in the same vocabulary the PR checks use, with narrative levels required and intent, assessment, and diagrams optional."
+    },
+    {
+      "kind": "skill-gap",
+      "id": "F4",
+      "severity": "low",
+      "title": "The corpus path in the skill body does not match the corpus on disk",
+      "detail": "SKILL.md and corpus-index.md both reference corpus/principles/... The files live at references/corpus/principles/... A first read from the skill base directory finds nothing.",
+      "cites": "skills/architecture/SKILL.md, Design Mode corpus chain",
+      "mitigation": "Make the paths relative to the skill base directory, or state the base the paths are relative to."
+    },
+    {
+      "kind": "prediction",
+      "id": "F5",
+      "severity": "high",
+      "title": "The compatibility gate is only as good as its least-updated vendored copy",
+      "detail": "require_compatible() lives in a module each plugin vendors. A plugin forked before the function existed carries no gate, and the safety property collapses without a signal. The one-tag release discipline narrows this to cross-tag skew but does not close it, because nothing in the install mechanism enforces a shared tag.",
+      "cites": "ADR-0017",
+      "mitigation": "Have the writer record its own key in the generators map on every write. A bundle whose generators map holds a plugin that never advanced its key is then visible evidence of an ungated writer, rather than an invisible one."
+    },
+    {
+      "kind": "prediction",
+      "id": "F6",
+      "severity": "medium",
+      "title": "Neither ADR can reach approved, because the context they map to does not exist",
+      "detail": "ADR-0016 and ADR-0017 both anchor maps_to at context cobuilder-packaging. docs/architecture/contexts/ is empty, so there is no boundary.yaml carrying the invariant either record establishes. The decision-records standard requires that anchor.",
+      "cites": "ADR-0016, ADR-0017, Maps to",
+      "mitigation": "Run /cobuilder-architect:describe for cobuilder-packaging before either record leaves tentative. That is epic E5."
+    }
+  ],
+  "boundary_checks": [
+    { "rule": "No agents, no hooks, no MCP servers in the install surface", "result": "holds", "note": "The split adds manifests and symlinks only." },
+    { "rule": "Authored source lives in docs/, derived projections in the bundle", "result": "holds", "note": "shared/ is authored source at the marketplace root, outside both." },
+    { "rule": "Architecture modes are self-only and refuse a foreign target", "result": "holds", "note": "The split does not move any mode across that line." }
+  ],
+  "drift": [
+    {
+      "kind": "drift",
+      "title": "Two design modes still coexist",
+      "detail": "skills/odyssey/references/design-mode.md and skills/architecture/SKILL.md both define a design mode. Decision 3 folds one into the other. Until that lands, which mode a user gets depends on which command they type, and only one of them writes a design directory."
+    }
+  ]
+}

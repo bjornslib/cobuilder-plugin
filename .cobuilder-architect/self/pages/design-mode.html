@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design Mode — prodyssey</title>
+<style>
+/*
+ * HTML Document Design System
+ * Copy this entire file into the <style> block of every document.
+ * Then extend with category-specific components as needed.
+ */
+
+:root {
+  --ivory:    #FAF9F5;
+  --slate:    #141413;
+  --clay:     #D97757;
+  --oat:      #E3DACC;
+  --olive:    #788C5D;
+  --rust:     #B04A3F;
+  --sky:      #6A8CAF;
+  --gray-150: #F0EEE6;
+  --gray-300: #D1CFC5;
+  --gray-500: #87867F;
+  --gray-700: #3D3D3A;
+  --white:    #FFFFFF;
+
+  --serif: ui-serif, Georgia, 'Times New Roman', serif;
+  --sans:  system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono:  ui-monospace, 'SF Mono', Menlo, Monaco, monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--sans);
+  background: var(--ivory);
+  color: var(--gray-700);
+  line-height: 1.55;
+  padding: 56px 32px 120px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+/* Typography */
+
+h1 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 38px;
+  line-height: 1.15;
+  color: var(--slate);
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 26px;
+  color: var(--slate);
+  letter-spacing: -0.01em;
+}
+
+h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 19px;
+  color: var(--slate);
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+}
+
+.lead {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--gray-700);
+  max-width: 640px;
+}
+
+p {
+  font-size: 15px;
+  margin-bottom: 12px;
+  max-width: 720px;
+}
+
+/* Header with Prompt Box */
+
+header.page-head {
+  margin-bottom: 48px;
+  max-width: 820px;
+}
+
+.prompt-box {
+  background: var(--gray-150);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-size: 14.5px;
+  color: var(--gray-700);
+}
+
+.prompt-box .label {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray-500);
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* Cards / Panels */
+
+.card {
+  background: var(--white);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.card-head {
+  padding: 16px 20px;
+  border-bottom: 1.5px solid var(--gray-300);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Chips / Pills / Tags */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--gray-300);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--slate);
+  background: var(--white);
+}
+
+.tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1.5px solid var(--gray-300);
+  background: var(--gray-150);
+}
+
+.tag.safe   { background: rgba(120,140,93,0.12); border-color: rgba(120,140,93,0.4); color: var(--olive); }
+.tag.medium { background: var(--oat); color: #7A6A4F; }
+.tag.risk   { background: rgba(217,119,87,0.12); border-color: rgba(217,119,87,0.45); color: var(--clay); }
+.tag.critical { background: rgba(176,74,63,0.12); border-color: rgba(176,74,63,0.4); color: var(--rust); }
+
+.risk-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.risk-dot.safe   { background: var(--olive); }
+.risk-dot.medium { background: #B89B6E; }
+.risk-dot.risk   { background: var(--clay); }
+.risk-dot.critical { background: var(--rust); }
+
+/* Tables */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+thead th {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray-500);
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1.5px solid var(--gray-300);
+}
+
+tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--gray-150);
+  color: var(--gray-700);
+}
+
+tbody tr:hover { background: var(--gray-150); }
+
+/* Code Blocks */
+
+code {
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.code-block {
+  background: var(--slate);
+  color: #E8E6DC;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.7;
+  padding: 18px 20px;
+  border-radius: 10px;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.code-block .comment { color: #8A98A0; }
+.code-block .keyword { color: #C792EA; }
+.code-block .string  { color: var(--olive); }
+
+/* Diff Blocks */
+
+.diff {
+  background: var(--slate);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+  overflow-x: auto;
+  border-radius: 10px;
+}
+
+.diff-row {
+  display: grid;
+  grid-template-columns: 48px 18px 1fr;
+  align-items: baseline;
+  padding: 0 14px 0 0;
+  white-space: pre;
+}
+
+.diff-row .ln   { text-align: right; padding-right: 14px; color: var(--gray-500); user-select: none; }
+.diff-row .mark { text-align: center; color: var(--gray-500); }
+.diff-row .code { color: #E8E6DC; }
+.diff-row.ctx .code { color: #B8B6AC; }
+.diff-row.add       { background: rgba(120,140,93,0.15); }
+.diff-row.add .mark { color: var(--olive); }
+.diff-row.del       { background: rgba(176,74,63,0.15); }
+.diff-row.del .mark { color: var(--rust); }
+.diff-row.hunk .code { color: var(--gray-500); }
+
+/* Buttons */
+
+button.primary {
+  background: var(--slate);
+  color: var(--ivory);
+  border: 1.5px solid var(--slate);
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 9px 20px;
+  cursor: pointer;
+}
+button.primary:hover { background: var(--gray-700); }
+button.primary.copied { background: var(--olive); border-color: var(--olive); }
+
+button.ghost {
+  background: transparent;
+  color: var(--gray-700);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 9px 20px;
+  cursor: pointer;
+}
+button.ghost:hover { border-color: var(--gray-500); }
+
+/* Section Structure */
+
+section { margin-bottom: 64px; }
+
+.sec-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+.sec-head .num {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--oat);
+  color: var(--slate);
+  padding: 3px 9px;
+  border-radius: 8px;
+}
+
+.sec-intro {
+  font-size: 14.5px;
+  color: var(--gray-500);
+  max-width: 720px;
+  margin-bottom: 28px;
+}
+
+/* Comment Bubbles (for code review) */
+
+.bubble {
+  position: relative;
+  background: var(--white);
+  border: 1.5px solid var(--gray-300);
+  border-left-width: 4px;
+  border-radius: 8px;
+  padding: 12px 14px 12px 16px;
+}
+
+.bubble.blocking { border-left-color: var(--clay); }
+.bubble.nit      { border-left-color: var(--gray-300); }
+
+.bubble .author {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--slate);
+  margin-bottom: 4px;
+}
+
+.bubble .text {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--gray-700);
+}
+
+/* SVG Diagrams */
+
+.diagram {
+  background: var(--white);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 12px;
+  padding: 28px;
+  overflow-x: auto;
+}
+
+.diagram svg { display: block; min-width: 760px; }
+
+.diagram text {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.caption {
+  font-size: 13px;
+  color: var(--gray-500);
+  margin-top: 12px;
+}
+
+/* Responsive Breakpoints */
+
+@media (max-width: 900px) {
+  .grid-2    { grid-template-columns: 1fr; }
+  .grid-3    { grid-template-columns: 1fr 1fr; }
+  .grid-4    { grid-template-columns: 1fr 1fr; }
+  body       { padding: 32px 20px 80px; }
+  h1         { font-size: 28px; }
+}
+
+@media (max-width: 600px) {
+  .grid-3    { grid-template-columns: 1fr; }
+  .grid-4    { grid-template-columns: 1fr; }
+}
+
+/* Utility Classes */
+
+.text-mono   { font-family: var(--mono); }
+.text-small  { font-size: 12px; color: var(--gray-500); }
+.color-safe  { color: var(--olive); }
+.color-risk  { color: var(--clay); }
+.color-crit  { color: var(--rust); }
+.color-info  { color: var(--sky); }
+.flex        { display: flex; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.gap-8       { gap: 8px; }
+.gap-12      { gap: 12px; }
+.gap-16      { gap: 16px; }
+.gap-24      { gap: 24px; }
+.mb-8        { margin-bottom: 8px; }
+.mb-16       { margin-bottom: 16px; }
+.mb-24       { margin-bottom: 24px; }
+.mb-48       { margin-bottom: 48px; }
+/* ---- extensions ---- */
+*, *::before, *::after { box-sizing: border-box; }
+:where(.grid2, .grid3, .optgrid) > * { min-width: 0; }
+:where(p, h1, h2, h3, li, td, th, .chip) { overflow-wrap: anywhere; }
+section.block { margin-bottom: 56px; }
+section.block > h2 { margin-bottom: 6px; }
+section.block > .sub { color: var(--gray-500); font-size: 14px; margin-bottom: 22px; max-width: 720px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 18px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 18px; }
+@media (max-width: 900px) { .grid2, .grid3 { grid-template-columns: minmax(0,1fr); } }
+.card { background: var(--white); border: 1.5px solid var(--gray-300); border-radius: 12px; padding: 20px 22px; }
+.card h3 { margin-bottom: 8px; }
+.card p:last-child { margin-bottom: 0; }
+.chip { display: inline-block; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em;
+  text-transform: uppercase; padding: 3px 9px; border-radius: 20px; border: 1.5px solid var(--gray-300);
+  color: var(--gray-500); background: var(--gray-150); white-space: nowrap; }
+.chip.new  { border-color: var(--clay);  color: #8c3f24; background: #FBEFE9; }
+.chip.keep { border-color: var(--olive); color: #46552f; background: #EEF2E7; }
+.chip.risk { border-color: var(--rust);  color: var(--rust); background: #F8EBE9; }
+.chip.info { border-color: var(--sky);   color: #3f5a7a; background: #EAF0F6; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; background: var(--white);
+  border: 1.5px solid var(--gray-300); border-radius: 12px; overflow: hidden; }
+th { text-align: left; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--gray-500); background: var(--gray-150);
+  padding: 10px 14px; border-bottom: 1.5px solid var(--gray-300); vertical-align: bottom; }
+td { padding: 12px 14px; border-bottom: 1px solid var(--gray-300); vertical-align: top; }
+tbody tr:last-child td { border-bottom: none; }
+.tw { overflow-x: auto; border-radius: 12px; }
+pre.code { background: var(--slate); color: #E8E6DF; border-radius: 12px; padding: 16px 18px;
+  font-family: var(--mono); font-size: 12.5px; line-height: 1.6; overflow-x: auto; }
+pre.code .k { color: #E5B27A; } pre.code .c { color: #8E8C84; font-style: italic; }
+.stage { display: grid; grid-template-columns: 46px minmax(0,1fr); gap: 16px; padding: 18px 0;
+  border-bottom: 1px solid var(--gray-300); }
+.stage:last-child { border-bottom: none; }
+.stage .num { font-family: var(--mono); font-size: 15px; color: var(--white); background: var(--slate);
+  width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; }
+.stage.isnew .num { background: var(--clay); }
+.stage h3 { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
+.stage p { font-size: 14.5px; margin-bottom: 8px; }
+.mermaid { background: var(--white); border: 1.5px solid var(--gray-300); border-radius: 12px;
+  padding: 20px; text-align: center; overflow-x: auto; }
+.rec { border-left: 4px solid var(--olive); background: #EEF2E7; border-radius: 0 12px 12px 0;
+  padding: 16px 20px; margin-top: 18px; }
+.warn { border-left: 4px solid var(--rust); background: #F8EBE9; border-radius: 0 12px 12px 0;
+  padding: 16px 20px; }
+.opt { background: var(--white); border: 1.5px solid var(--gray-300); border-radius: 12px; padding: 20px; }
+.opt.win { border-color: var(--olive); border-width: 2.5px; }
+.opt h3 { margin-bottom: 4px; }
+.opt .verdict { font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--gray-500); margin-bottom: 12px; display: block; }
+.opt ul { margin: 0 0 0 18px; font-size: 13.5px; }
+.opt li { margin-bottom: 5px; }
+form.q { background: var(--gray-150); border: 1.5px solid var(--gray-300); border-radius: 12px;
+  padding: 18px 20px; margin-top: 14px; }
+form.q .qt { font-weight: 600; color: var(--slate); font-size: 15px; margin-bottom: 10px; display: block; }
+form.q label { display: block; font-size: 14px; padding: 6px 0; cursor: pointer; }
+form.q input[type=radio] { margin-right: 8px; }
+form.q textarea { width: 100%; font-family: var(--sans); font-size: 14px; padding: 10px;
+  border: 1.5px solid var(--gray-300); border-radius: 8px; background: var(--white); resize: vertical; }
+form.q button { margin-top: 12px; font-family: var(--sans); font-size: 13.5px; font-weight: 600;
+  background: var(--slate); color: var(--white); border: none; border-radius: 8px;
+  padding: 9px 18px; cursor: pointer; }
+form.q button:hover { background: var(--clay); }
+.foot { margin-top: 72px; padding-top: 22px; border-top: 1.5px solid var(--gray-300);
+  font-size: 13px; color: var(--gray-500); }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="page-head">
+  <div class="eyebrow">TECHNICAL DESIGN &middot; PRODYSSEY &middot; ROUND 2</div>
+  <h1>Design Mode: interview-led architecture, before the code exists</h1>
+  <p class="lead">The interview got shorter, not longer. The branch name became the join key between a
+  design and its pull request. archkit merges in. This is <code>/prodyssey:design</code> after your
+  nineteen annotations.</p>
+  <div class="prompt-box">
+    <span class="label">Round 2 &mdash; what you sent back</span>
+    Cut three interview questions (<em>rejected</em>, <em>budget</em>, <em>minimum work</em>) &mdash;
+    a rejected option is an <strong>outcome</strong> of the design process, not an input to it. Rename
+    <em>worry</em> to <em>assumptions &amp; unknowns</em>. Go straight to option B, one repo with three
+    skills, and ship <code>ste-writing</code> so it is invoked automatically. Keep the prodyssey name for
+    now. Submit mode must read the design slug from the branch. Explore existing designs with a subagent
+    before starting a new one. Run baseline automatically, not on offer. Confirm the branch with option
+    questions. A new <em>designs</em> view in the odyssey viewer, review in-browser, feedback in Claude Code.
+  </div>
+</header>
+
+<section class="block">
+  <h2>1. What round 2 changed</h2>
+  <p class="sub">Your three interview cuts did more than shorten a list. They resolved the one structural
+  conflict in the round-1 design.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th style="width:20%">Topic</th><th style="width:30%">Round 1</th><th style="width:32%">Round 2</th><th style="width:18%">Consequence</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Rejected options</strong></td>
+        <td>An interview question. "What did you consider and drop?"</td>
+        <td><strong>Removed.</strong> Nobody can name a rejected option at the start of an architecture design. <code>intent.alternatives</code> is filled by stages 3 and 4 instead.</td>
+        <td>The Challenge gate is now the <em>only</em> producer of rejected options. It went from valuable to load-bearing.</td>
+      </tr>
+      <tr>
+        <td><strong>Budget &amp; minimum work</strong></td>
+        <td>Two pi-goals questions asked of the engineer.</td>
+        <td><strong>Removed as questions.</strong> Both fall out of the intent and the interview naturally, so the agent derives them and states what it derived.</td>
+        <td>The mechanism survives; the interrogation does not.</td>
+      </tr>
+      <tr>
+        <td><strong>Interview length</strong></td>
+        <td>Ten topics against a six-topic cap &mdash; an unresolved conflict needing a budget override.</td>
+        <td><strong>Five topics in stage 2.</strong> Under the existing cap, with room to spare. No override, no per-stage split, no change to <code>interview-guide.md</code> &sect;3.</td>
+        <td><span class="chip keep">conflict dissolved</span></td>
+      </tr>
+      <tr>
+        <td><strong>Worry</strong></td>
+        <td>"Which part of this do you least trust?"</td>
+        <td><strong>Assumptions &amp; unknowns.</strong> Your second suggestion, over "risks &amp; concerns".</td>
+        <td>Better name: it invites what the engineer <em>does not know</em>, not just what they fear.</td>
+      </tr>
+      <tr>
+        <td><strong>Design &harr; PR join</strong></td>
+        <td>Unspecified. The design "hands off" to submit mode.</td>
+        <td><strong>The branch name is the key.</strong> <code>design/&lt;name&gt;</code> resolves to <code>exports/design-&lt;name&gt;/</code>. Submit mode reads it. See &sect;3.</td>
+        <td>The loop actually closes. This was the biggest hole in round 1.</td>
+      </tr>
+      <tr>
+        <td><strong>archkit</strong></td>
+        <td>A now, B at the rename.</td>
+        <td><strong>Straight to B</strong>, plus <code>ste-writing</code> shipped and auto-invoked. Keep the prodyssey name for now. See &sect;8.</td>
+        <td><strong>Four</strong> shipped skills: <code>odyssey</code> and <code>mermaid</code> today, plus <code>architecture</code> and <code>ste-writing</code>. <code>mermaid</code> is the one easily forgotten &mdash; it ships so the diagram subagent can invoke it. <code>CLAUDE.md</code> needs a deliberate rewrite.</td>
+      </tr>
+      <tr>
+        <td><strong>Duplicate designs</strong></td>
+        <td>List existing designs before starting a new one.</td>
+        <td><strong>A subagent searches them</strong> for a design that already covers this problem.</td>
+        <td>Catches a re-discussion the engineer has forgotten, not just a name collision.</td>
+      </tr>
+      <tr>
+        <td><strong>Baseline</strong></td>
+        <td>Offer to run it.</td>
+        <td><strong>Run it automatically</strong> when it does not exist.</td>
+        <td>One fewer gate between the engineer and the work.</td>
+      </tr>
+      <tr>
+        <td><strong>Review surface</strong></td>
+        <td>Viewer for the record, Lavish optionally for the loop.</td>
+        <td><strong>A designs view in the odyssey viewer.</strong> Read in the browser, respond in Claude Code. No Lavish dependency. See &sect;6.</td>
+        <td>No new external dependency enters the plugin.</td>
+      </tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="block">
+  <h2>2. The named design</h2>
+  <p class="sub">The engineer names it. That name becomes the directory, the ADR title, the branch, and the
+  key submit mode looks it up by.</p>
+
+  <div class="mermaid">
+flowchart LR
+  A["Engineer names it<br/>'streaming ingest'"] --> B["exports/design-streaming-ingest/<br/>goal.json - intent.json - adr-draft.md<br/>diagrams/ - assessment.json - pr-draft.md"]
+  B --> C["Stage 7: confirmed with the engineer<br/>branch design/streaming-ingest"]
+  C --> D["Engineer implements on that branch"]
+  D --> E["/prodyssey:submit<br/>reads the branch name<br/>resolves design-streaming-ingest"]
+  E --> F["gh pr create returns PR #42"]
+  F --> G["story.json entry 42<br/>intent + assessment stage post<br/>drift measured vs the design"]
+  style B fill:#FBEFE9,stroke:#D97757
+  style C fill:#EEF2E7,stroke:#788C5D
+  style E fill:#EAF0F6,stroke:#6A8CAF
+  style G fill:#EAF0F6,stroke:#6A8CAF
+  </div>
+
+  <div class="rec">
+    <strong>Naming rule.</strong> The engineer supplies the name in plain words. Normalise to kebab-case for
+    the directory and the branch, keep the original string in <code>goal.json.title</code>, and use it
+    verbatim in the ADR title and the diagram captions. One name for one thing, per this repo's writing
+    standard.
+  </div>
+</section>
+
+<section class="block">
+  <h2>3. How submit mode finds the design <span class="chip new">round 2</span></h2>
+  <p class="sub">You asked the right question: what actually connects a design to the pull request that
+  implements it? Answer &mdash; the branch name, and nothing else.</p>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>The resolution rule</h3>
+      <p>Submit mode already computes a branch slug for <code>exports/branch-&lt;slug&gt;/</code>. It gains
+      one step before that:</p>
+      <pre class="code">BRANCH=$(git rev-parse --abbrev-ref HEAD)
+<span class="c"># design/streaming-ingest  ->  streaming-ingest</span>
+NAME=${BRANCH#design/}
+DESIGN="$BUNDLE/exports/design-$NAME"
+
+<span class="c"># fall back to goal.json.branch on any branch</span>
+<span class="c"># whose name does not carry the prefix</span>
+[ -d "$DESIGN" ] || DESIGN=$(grep -l "\"branch\": \"$BRANCH\"" \
+    "$BUNDLE"/exports/design-*/goal.json | xargs -r dirname)</pre>
+      <p>The <code>design/</code> prefix is the fast path. <code>goal.json.branch</code>, written at stage 7,
+      is the authoritative record &mdash; so an engineer who renames the branch does not break the link.</p>
+    </div>
+    <div class="card">
+      <h3>What submit mode does with it</h3>
+      <p><strong>1. Skips the cold interview.</strong> <code>intent.json</code> is loaded as the starting
+      hypothesis. The interview asks only what changed between the design and the build, which is usually
+      one or two topics rather than six.</p>
+      <p><strong>2. Measures drift for the first time.</strong> <code>review-mode.md</code> &sect;7 defines a
+      <code>drift</code> array that has never had a baseline to compare against. The design's ADR and its
+      <code>constraint_introduced</code> now supply one. "The design established invariant X; the branch
+      does not hold it" becomes a finding with evidence.</p>
+      <p><strong>3. Carries the design forward.</strong> The ADR draft moves into <code>adrs.json</code>
+      under the real PR number, with its rejected options already written.</p>
+      <div style="margin-top:10px"><span class="chip info">no design present</span> &mdash; submit mode
+      behaves exactly as it does today. This is additive.</div>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <h2>4. The seven stages</h2>
+  <p class="sub">Stage 0 gained a duplicate-design search. Stage 1 runs baseline automatically. Stage 2 is
+  five topics. Stage 7 confirms with option questions.</p>
+
+  <div class="mermaid">
+flowchart TD
+  S0["0 - NAME &amp; OUTCOME<br/><i>engineer speaks first</i>"] --> DUP{"subagent: does a design<br/>for this already exist?"}
+  DUP -->|"yes"| RESUME["resume or supersede<br/><i>engineer chooses</i>"]
+  DUP -->|"no"| S1["1 - GROUND<br/><i>baseline auto-run if missing</i>"]
+  RESUME --> S1
+  S1 --> S2["2 - INTERVIEW<br/><i>5 topics, under the existing cap</i>"]
+  S2 --> S3["3 - EXPLORE<br/><i>archkit divergent exploration,<br/>seeded by the answers</i>"]
+  S3 --> S4["4 - CHALLENGE<br/><i>grill the engineer;<br/>produces the rejected options</i>"]
+  S4 --> S5["5 - DRAFT<br/><i>ADR + diagrams + envisioned PR</i>"]
+  S5 --> S6{"6 - REVIEW<br/><i>designs view in the viewer</i>"}
+  S6 -->|"material"| S3
+  S6 -->|"cosmetic"| S5
+  S6 -->|"accepted"| S7["7 - BRANCH<br/><i>confirmed by option question</i>"]
+  S7 --> OUT2["/prodyssey:submit resolves it<br/>by branch name"]
+  style S0 fill:#FBEFE9,stroke:#D97757
+  style DUP fill:#FBEFE9,stroke:#D97757
+  style S4 fill:#FBEFE9,stroke:#D97757
+  style S6 fill:#EAF0F6,stroke:#6A8CAF
+  style S7 fill:#EEF2E7,stroke:#788C5D
+  </div>
+
+  <div style="margin-top:26px">
+    <div class="stage isnew">
+      <div class="num">0</div>
+      <div>
+        <h3>Name &amp; Outcome <span class="chip new">+ duplicate search</span></h3>
+        <p>The engineer states the outcome they want and names the design, before the agent reads a file.
+        Then a subagent searches every existing <code>exports/design-*/</code> for a design that already covers this problem. <strong>The match is semantic, not a keyword grep.</strong> The subagent reads <code>goal.outcome</code>, <code>intent.problem</code>, and the ADR draft of each candidate and judges whether it addresses the same problem &mdash; two designs can share every word and solve different things, or share none and collide completely. A grep over titles would find neither case.</p>
+        <p>On a hit, show the match and its stage, and let the engineer choose: <strong>resume</strong> it,
+        <strong>supersede</strong> it (the old one gets <code>stage: "superseded"</code> and a pointer to
+        the new one), or <strong>proceed anyway</strong> because it is genuinely different. This catches
+        the re-discussion nobody remembers having, which a name-collision check never would.</p>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="num">1</div>
+      <div>
+        <h3>Ground <span class="chip new">baseline auto-runs</span></h3>
+        <p>Read narrowly, and only now. Load the districts from <code>inventory.yaml</code> that the stated
+        outcome touches, the ADRs covering those districts, the matched stack card, and the earlier timeline
+        entries in the same districts. Load the archkit corpus chain for the detected stack.</p>
+        <p><strong>If the bundle has no baseline, run <code>baseline</code> and continue</strong> &mdash; do
+        not stop to ask. Say that it ran and how long it took. The only hard stop is the existing prereq
+        gate: a git repo, <code>uv</code> on PATH, and <code>GEMINI_API_KEY</code>.</p>
+        <p><strong>Output:</strong> a private hypothesis and a gap list, not shown yet
+        (<code>interview-guide.md</code> &sect;2).</p>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="num">2</div>
+      <div>
+        <h3>Interview <span class="chip keep">five topics</span></h3>
+        <p>See &sect;5 for the full set. Never ask what stage 1 already answered. The existing budget and
+        closed-question discipline carry over without amendment, because the set now fits inside them.</p>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="num">3</div>
+      <div>
+        <h3>Explore <span class="chip keep">archkit</span></h3>
+        <p>Run archkit's divergent exploration with the <strong>design frame set</strong>
+        (<code>divergent-exploration.md</code> &sect;3), seeded by the interview answers rather than by the
+        repo alone. The engineer's stated approach enters as one candidate among several, never as the
+        given.</p>
+        <p><strong>Output:</strong> ranked surviving options, and a risk list the engineer has not seen.</p>
+      </div>
+    </div>
+
+    <div class="stage isnew">
+      <div class="num">4</div>
+      <div>
+        <h3>Challenge <span class="chip new">now load-bearing</span></h3>
+        <p>Full specification in &sect;6. Removing the "what did you reject?" interview question makes this
+        stage the <em>only</em> place <code>intent.alternatives</code> can come from. A design mode that
+        skips it produces an ADR with an empty Considered Options section &mdash; which is exactly the
+        retro-extraction failure the plugin exists to fix.</p>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="num">5</div>
+      <div>
+        <h3>Draft</h3>
+        <p>Four artifacts in the named design directory: an ADR against <code>adr-template.md</code>; level
+        1&ndash;3 Mermaid diagrams from the existing per-PR diagram subagent, drawn from the proposal rather
+        than a diff; an envisioned pull request from <code>pr-description-template.md</code>; and a
+        <code>stage: "design"</code> assessment. All of it written through <code>ste-writing</code> in
+        flavored mode &mdash; see &sect;8.</p>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="num">6</div>
+      <div>
+        <h3>Review <span class="chip info">loops &mdash; see &sect;7</span></h3>
+        <p>The engineer reads the draft in the viewer's new designs view and responds in Claude Code.
+        Material feedback returns to stage 3; cosmetic feedback returns to stage 5. The agent states which
+        classification it chose, and the engineer can overrule it.</p>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="num">7</div>
+      <div>
+        <h3>Branch <span class="chip new">option-question confirm</span></h3>
+        <p>Propose <code>design/&lt;name&gt;</code> and confirm it with an <code>AskUserQuestion</code>
+        option set &mdash; the proposed name, a plain <code>&lt;name&gt;</code> without the prefix, an
+        existing branch to reuse, or the engineer's own. Create it, commit the design directory onto it, and
+        record the final branch in <code>goal.json.branch</code> so &sect;3's fallback lookup works.</p>
+        <p><strong>Hard limits:</strong> a local branch only. No push, no <code>gh pr create</code>, no
+        remote of any kind. Unreachable under <code>--non-interactive</code>, because there is nobody there
+        to confirm.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <h2>5. The interview, after your cuts</h2>
+  <p class="sub">Five topics in stage 2, plus the outcome stated in stage 0. Everything the removed
+  questions were reaching for is either derived by the agent or produced by a later stage.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th style="width:9%">Stage</th><th style="width:20%">Topic</th><th style="width:39%">The question</th><th style="width:32%">Fills</th></tr></thead>
+    <tbody>
+      <tr><td>0</td><td><strong>Outcome</strong></td><td>What do you want to be true when this is done? Name the state, not the activity.</td><td><code>goal.outcome</code>, <code>goal.done_when</code></td></tr>
+      <tr><td>2</td><td><strong>Problem</strong></td><td>What is broken or missing, and why is now the moment?</td><td><code>intent.problem</code>, <code>why_now</code></td></tr>
+      <tr><td>2</td><td><strong>Approach</strong></td><td>How would you build it, and why that way?</td><td><code>intent.approach</code></td></tr>
+      <tr><td>2</td><td><strong>Boundaries</strong></td><td>What are you deliberately not doing here?</td><td><code>intent.out_of_scope</code></td></tr>
+      <tr><td>2</td><td><strong>Assumptions &amp; unknowns</strong></td><td>What are you taking on faith, and what do you not know yet?</td><td><code>intent.risks</code>, <code>intent.unknowns</code></td></tr>
+      <tr><td>2</td><td><strong>Stop condition</strong></td><td>What would make you abandon this design entirely?</td><td><code>goal.abort_if</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="grid3" style="margin-top:20px">
+    <div class="card">
+      <h3><span class="chip risk">cut</span> Rejected options</h3>
+      <p>You are right that nobody can name a rejected option before the design exists. It is an outcome of
+      the process. <strong>Now produced by stages 3 and 4</strong>, where an option is explored, argued
+      against, and dropped with a reason on the record.</p>
+    </div>
+    <div class="card">
+      <h3><span class="chip risk">cut</span> Minimum work</h3>
+      <p>Falls out of the intent and the interview naturally, as you said. <strong>The agent derives it</strong>
+      from the scope: how many districts the outcome touches, how many ADRs it collides with, whether it
+      crosses a boundary rule. It states what it derived rather than asking.</p>
+    </div>
+    <div class="card">
+      <h3><span class="chip risk">cut</span> Budget</h3>
+      <p>Not required. <strong>Defaults stand</strong> &mdash; warn after three review rounds, cut off at
+      six. An engineer who wants a different budget says so; the agent does not open with an
+      accounting question.</p>
+    </div>
+  </div>
+
+  <div class="rec">
+    <strong>Net effect on <code>interview-guide.md</code>: no change needed.</strong> Round 1 needed a
+    per-stage budget split to fit ten topics into a six-topic cap. Five topics fit the existing rule as
+    written. The guide gains a design-mode question set, and nothing in it has to be relaxed.
+  </div>
+</section>
+
+<section class="block">
+  <h2>6. Stage 4 &mdash; the Challenge gate</h2>
+  <p class="sub">Grill the engineer on risks that surfaced which they had not considered, and on anything
+  that ought to be done differently to how they suggested it. After your cuts, this stage is the sole
+  producer of the ADR's Considered Options section.</p>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>What it does</h3>
+      <p><strong>1. Confront the unconsidered risks.</strong> Every risk exploration surfaced that does not
+      appear in <code>intent.risks</code> gets stated with its evidence, and put to the engineer directly:
+      accept, mitigate, or dispute. The answer is recorded.</p>
+      <p><strong>2. Contest the approach.</strong> Where a survivor option beats <code>intent.approach</code>
+      on a stated criterion, say so and argue for it. The engineer may overrule &mdash; and that overrule is
+      recorded as a rejected option with the engineer's own reason, which is the ADR field the
+      retro-extraction path always loses.</p>
+      <p><strong>3. Name what nobody checked.</strong> Anything the agent could not verify goes on the record
+      as an open question, never as a silent gap.</p>
+    </div>
+    <div class="card">
+      <h3>What keeps it honest</h3>
+      <p><strong>Evidence or silence.</strong> <code>review-mode.md</code> &sect;2 holds with one inversion:
+      no <code>path:line</code> exists yet, so a challenge must cite an ADR id, a district id from
+      <code>inventory.yaml</code>, a stack-card boundary rule, or a corpus principle. A challenge with no
+      citation does not get raised. This is the guard against manufactured disagreement.</p>
+      <p><strong>Disagreement is allowed to end.</strong> Cap each challenge at a few exchanges. If it does
+      not resolve, record both positions and move on.</p>
+      <p><strong>An empty challenge stage is valid, but must be stated.</strong> "Exploration surfaced no
+      risk outside what you already named" is a sentence the engineer should read, because it proves the
+      stage ran.</p>
+    </div>
+  </div>
+
+  <div class="warn">
+    <strong>The failure this now guards against is worse than in round 1.</strong> With no interview
+    question asking for rejected options, a skipped or toothless Challenge gate leaves
+    <code>intent.alternatives</code> empty. The mode would then emit an ADR that records one choice instead
+    of a decision &mdash; readable, well-structured, and worthless. The derived
+    <code>goal.min_work</code> must therefore block completion until this stage has run and its outcomes
+    are recorded.
+  </div>
+</section>
+
+<section class="block">
+  <h2>7. Stage 6 &mdash; the review loop and the designs view <span class="chip new">round 2</span></h2>
+  <p class="sub">Your call: a new view mode in the odyssey viewer, read in the browser, respond in Claude
+  Code. No Lavish dependency enters the plugin.</p>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>The designs view</h3>
+      <p>The viewer today navigates a PR timeline. It gains a second mode &mdash; a list of every design in
+      the bundle with its name, stage, round count, and branch, and a reading surface for one design: the
+      ADR draft, the level 1&ndash;3 diagrams, the envisioned PR, and the design-stage assessment.</p>
+      <p><strong>Cost is low, because the pattern already exists.</strong> A
+      <code>data/designs.js</code> file populating <code>window.DESIGNS</code> is the same sibling-script-tag
+      pattern <code>story.js</code>, <code>manifest.js</code>, <code>adrs.js</code>, and
+      <code>diagrams.js</code> already use. The assessment sheet renders with the component the viewer has.
+      No new dependency, no build step, and it survives
+      <code>export_artifact.py</code> unchanged &mdash; a design is text and Mermaid, so it carries no PNG
+      weight against the 16&nbsp;MiB budget.</p>
+      <div style="margin-top:10px"><span class="chip info">agreed: not a Lavish clone</span> Element-level
+      annotation and a send-to-agent channel would be a genuine project of its own. Recorded as a future
+      option, not scoped here.</div>
+    </div>
+    <div class="card">
+      <h3>What bounds the loop</h3>
+      <p>Multiple rounds is where an agent session degrades: context compacts, the objective blurs, and the
+      loop starts agreeing in order to finish. Three guards, all read from <code>goal.json</code>:</p>
+      <p><strong>Durable objective.</strong> Re-read the file and restate the outcome at the top of every
+      round. The file is the memory; the conversation is not.</p>
+      <p><strong>Churn detection.</strong> Hash the ADR draft plus the option set each round. Two
+      consecutive rounds with no material change means the loop is circling &mdash; say so, name the
+      unresolved disagreement, and ask the engineer to decide. Do not run a third.</p>
+      <p><strong>Minimum work.</strong> Block "ready" until the derived threshold is met: alternatives
+      explored, boundary rules checked, Challenge run and recorded, diagrams authored.</p>
+    </div>
+  </div>
+
+  <div class="rec">
+    <strong>Why material feedback returns to stage 3, not stage 5.</strong> A real objection usually
+    invalidates an option or surfaces a constraint, which changes what should have been explored. Returning
+    only to drafting produces a rewritten document defending the same choice. Cosmetic feedback &mdash;
+    wording, diagram layout, ADR ordering &mdash; goes straight back to stage 5. The agent states which it
+    chose; the engineer overrules it when it guesses wrong.
+  </div>
+</section>
+
+<section class="block">
+  <h2>8. Packaging: one repo, four skills</h2>
+  <p class="sub">You chose option B directly, and added <code>ste-writing</code> to it. That makes this a
+  merge, not a manifest edit &mdash; see the sequencing note below.</p>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>The target shape</h3>
+      <pre class="code">skills/
+  odyssey/        <span class="c"># orchestration, + design mode</span>
+  architecture/   <span class="c"># from archkit: 3.1 MB, 233 files</span>
+  mermaid/        <span class="c"># diagram authoring rules</span>
+  ste-writing/    <span class="c"># promoted from .claude/skills/</span>
+scripts/          <span class="c"># 11 uv scripts, unchanged</span>
+commands/         <span class="c"># + design.md</span>
+viewer/index.html <span class="c"># + designs view</span></pre>
+      <p style="margin-top:12px">One plugin, one install, one version number. Design mode can then
+      <em>depend</em> on the corpus rather than hope for it, which was your objection to round 1 and was
+      correct.</p>
+    </div>
+    <div class="card">
+      <h3>Automatic <code>ste-writing</code> <span class="chip new">round 2</span></h3>
+      <p>Every authored artifact &mdash; the ADR draft, the envisioned PR body, the assessment, the diagram
+      captions &mdash; is written through <code>ste-writing</code> in <strong>flavored</strong> mode, using
+      the condensed standard already in <code>CLAUDE.md</code>: active voice, plain verbs, no marketing
+      adjectives, one topic per paragraph, one name for one thing. Not the full strict pass, which would
+      strip the register the narrative deliberately keeps.</p>
+      <p><strong>Strict mode applies to one thing:</strong> the procedural text inside the ADR &mdash; the
+      constraint introduced, and the boundary rules. Those are instructions, and
+      <code>CLAUDE.md</code> already reserves strict mode for procedures.</p>
+    </div>
+  </div>
+
+  <div class="warn" style="margin-top:18px">
+    <strong>Two things this breaks on purpose, and both are in <code>CLAUDE.md</code> today.</strong>
+    <br><br>
+    <strong>1.</strong> "An install of <code>prodyssey@prodyssey</code> gets exactly the two skills under
+    <code>skills/</code> &hellip; and never a third." That sentence, and the minimal-install-surface
+    paragraph above it, must be rewritten deliberately rather than quietly contradicted. The rationale for
+    minimalism &mdash; no agents, no hooks, no MCP servers, so the plugin never touches another session's
+    permission surface &mdash; still holds, and should be restated as the actual constraint. Skill count
+    was never the point.
+    <br><br>
+    <strong>2.</strong> "<code>ste-writing</code> stays a repo-local dev tool instead." It becomes a shipped
+    skill. Its linter ships with it, and the caveat that it checks rules only and does not certify
+    ASD-STE100 dictionary compliance must travel with it.
+  </div>
+
+  <div class="rec">
+    <strong>Sequence, decided.</strong> Move <code>skills/architecture/</code> into this repo straight away
+    &mdash; it gets modified as part of design mode, so working on it in place is simpler than coordinating
+    across two repos. Promote <code>ste-writing</code> alongside it. Rewrite the two
+    <code>CLAUDE.md</code> passages above in the same change. Only then build the mode, because its stages 1
+    and 3 both call the architecture skill.
+    <br><br>
+    <strong>The archkit repo stays untouched for now.</strong> That is a deliberate deferral, not an
+    oversight, and it carries one cost worth naming: from the moment the architecture skill is edited here,
+    the two copies diverge. Record the merge commit and the archkit commit it came from, so the decision to
+    archive or re-sync later is made against a known point rather than a guess.
+  </div>
+</section>
+
+<section class="block">
+  <h2>9. Data contracts</h2>
+  <p class="sub">One new file, one new viewer data file, two additive fields. No schema migration for the
+  design directory itself.</p>
+
+  <div class="grid2">
+    <div>
+      <h3 style="margin-bottom:10px">New: <code>goal.json</code></h3>
+      <pre class="code"><span class="c">// exports/design-streaming-ingest/goal.json</span>
+{
+  <span class="k">"name"</span>: "streaming-ingest",
+  <span class="k">"title"</span>: "Streaming ingest for the event pipeline",
+  <span class="k">"created"</span>: "2026-08-19",
+  <span class="k">"outcome"</span>: "&lt;stage 0, before any file is read&gt;",
+  <span class="k">"done_when"</span>: ["&lt;observable state, not activity&gt;"],
+  <span class="k">"abort_if"</span>: ["&lt;what would kill this design&gt;"],
+
+  <span class="c">// derived by the agent, not asked of the engineer</span>
+  <span class="k">"min_work"</span>: {
+    <span class="k">"derived_from"</span>: "3 districts, 2 colliding ADRs",
+    <span class="k">"alternatives_explored"</span>: 3,
+    <span class="k">"boundary_rules_checked"</span>: true,
+    <span class="k">"challenge_stage_run"</span>: true
+  },
+  <span class="k">"limits"</span>: { <span class="k">"warn_after_rounds"</span>: 3, <span class="k">"cutoff_rounds"</span>: 6 },
+
+  <span class="k">"stage"</span>: "review",   <span class="c">// …|superseded|branched</span>
+  <span class="k">"supersedes"</span>: null,
+  <span class="k">"rounds"</span>: [
+    { <span class="k">"n"</span>: 1, <span class="k">"hash"</span>: "a91c…", <span class="k">"changed"</span>: true,
+      <span class="k">"feedback_class"</span>: "material" }
+  ],
+  <span class="k">"branch"</span>: "design/streaming-ingest"  <span class="c">// stage 7</span>
+}</pre>
+    </div>
+    <div>
+      <h3 style="margin-bottom:10px">Additive: <code>intent</code>, <code>assessment</code>, <code>designs.js</code></h3>
+      <pre class="code"><span class="c">// intent.json — the timeline's intent shape, plus two</span>
+<span class="c">// optional fields every existing reader ignores.</span>
+{
+  <span class="k">"source"</span>: <span class="c">"author" | "inferred" | </span>"design",
+  <span class="k">"design_name"</span>: "streaming-ingest",
+  <span class="k">"alternatives"</span>: [],  <span class="c">// EMPTY after the interview.</span>
+                       <span class="c">// Filled by stages 3 and 4.</span>
+  <span class="c">"…every existing field, unchanged…"</span>
+}
+
+<span class="c">// assessment.json — one new value on an existing enum.</span>
+{
+  <span class="k">"stage"</span>: <span class="c">"pre" | "post" | </span>"design",
+  <span class="k">"findings"</span>: [
+    { <span class="k">"kind"</span>: "prediction",  <span class="c">// never "observation"</span>
+      <span class="k">"claim"</span>: "…",
+      <span class="k">"evidence"</span>: "ADR-0007"  <span class="c">// id or district,</span>
+    }                             <span class="c">// never path:line</span>
+  ]
+}
+
+<span class="c">// data/designs.js — same sibling-script-tag pattern as</span>
+<span class="c">// story.js / manifest.js / adrs.js / diagrams.js</span>
+window.DESIGNS = [ { <span class="c">/* goal.json + rendered drafts */</span> } ];</pre>
+    </div>
+  </div>
+
+  <div class="rec">
+    <strong>Migration cost stays near zero.</strong> The design directory lives under <code>exports/</code>,
+    which <code>verify_bundle.py</code> does not gate on and no ladder step touches. <code>intent</code> and
+    <code>assessment</code> reach <code>story.json</code> only when submit mode files them under a real PR
+    number, and both names are already in <code>AUTHORED_TIMELINE_FIELDS</code>, so
+    <code>migrate_bundle.py</code>'s authored-field guard protects them already. Adding a value to the
+    <code>stage</code> enum needs no schema bump, because nothing gates on that enum.
+    <br><br>
+    <strong>The one real migration:</strong> <code>designs.js</code> is a new bundle file, so it needs a
+    <code>LAYOUT_MIGRATIONS</code> entry and a <code>CURRENT_BUNDLE_FORMAT</code> bump in
+    <code>scripts/_bundle_meta.py</code>. The viewer refresh that ships the designs view is unconditional
+    and already handled &mdash; that is exactly the case <code>migrate_bundle.py</code> refreshes on every
+    run without a version gate.
+    <br><br>
+    <strong>Gitignore:</strong> nothing new. Unlike submit mode's <code>diff.json</code>, a design directory
+    is authored content with no self-referential problem. Commit all of it.
+  </div>
+</section>
+
+<section class="block">
+  <h2>10. Risks, and what is still open</h2>
+
+  <h3 style="margin-bottom:14px">Failure modes</h3>
+  <div class="grid2">
+    <div class="card">
+      <h3><span class="chip risk">high</span> &nbsp;The agreeable design</h3>
+      <p>The agent explores, finds nothing that contradicts the engineer, and writes their opening idea up
+      as an ADR. It reads well and is worth nothing. <strong>Now more likely than in round 1</strong>,
+      because no interview question asks for rejected options any more. <strong>Guard:</strong> derived
+      <code>goal.min_work</code> blocks completion until Challenge has run and recorded outcomes; an empty
+      Challenge stage must be stated as an explicit finding.</p>
+    </div>
+    <div class="card">
+      <h3><span class="chip risk">high</span> &nbsp;Prediction read as observation</h3>
+      <p>A design-stage finding cites no code because none exists. Rendered like a <code>pre</code>-stage
+      finding, a reviewer reads a guess as a check. <strong>Guard:</strong> <code>kind: "prediction"</code>,
+      and a distinct visual treatment in the designs view.</p>
+    </div>
+    <div class="card">
+      <h3><span class="chip risk">medium</span> &nbsp;The lost design link</h3>
+      <p>The engineer renames or rebases the branch and the design becomes unreachable.
+      <strong>Guard:</strong> &sect;3's two-step lookup &mdash; the <code>design/</code> prefix is the fast
+      path, <code>goal.json.branch</code> is authoritative, and submit mode degrades to today's behavior
+      when neither resolves.</p>
+    </div>
+    <div class="card">
+      <h3><span class="chip risk">medium</span> &nbsp;Duplicate-search false confidence</h3>
+      <p>The stage 0 subagent misses an existing design, and the engineer trusts the "no match" answer.
+      <strong>Guard:</strong> report what was searched and how many designs exist, never a bare "none
+      found". The engineer chooses; the subagent only surfaces.</p>
+    </div>
+    <div class="card">
+      <h3><span class="chip risk">low</span> &nbsp;Branch creation surprises the engineer</h3>
+      <p>Stage 7 writes outside <code>.prodyssey/</code>, which only submit mode's push otherwise does.
+      <strong>Guard:</strong> <code>AskUserQuestion</code> confirmation, local branch only, never a push,
+      unreachable under <code>--non-interactive</code>.</p>
+    </div>
+    <div class="card">
+      <h3><span class="chip risk">low</span> &nbsp;Auto-baseline surprises on a large repo</h3>
+      <p>Running baseline unasked is right, but it is not instant on a big history.
+      <strong>Guard:</strong> say it is running and why before it starts, and report the elapsed time. Never
+      run it silently.</p>
+    </div>
+  </div>
+
+  <h3 style="margin: 30px 0 6px">Decisions taken</h3>
+  <p class="sub">All four open questions are answered. Nothing in this document is waiting on you.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th style="width:26%">Question</th><th style="width:36%">Decision</th><th style="width:38%">What it commits us to</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Sequence</strong></td>
+        <td>Merge the architecture skill and promote <code>ste-writing</code> first. Build design mode second.</td>
+        <td>The mode is built against a skill that is already present and already editable in place.</td>
+      </tr>
+      <tr>
+        <td><strong>archkit repo</strong></td>
+        <td>Leave it untouched. Decide on archiving later.</td>
+        <td>Two copies diverge from the first edit. Record both commit SHAs at merge time so the later decision has a baseline.</td>
+      </tr>
+      <tr>
+        <td><strong>Designs view</strong></td>
+        <td>Ships complete in the first release &mdash; the list and the reading surface.</td>
+        <td>A <code>LAYOUT_MIGRATIONS</code> entry for <code>designs.js</code>, a <code>CURRENT_BUNDLE_FORMAT</code> bump, and viewer work in the same change as the mode.</td>
+      </tr>
+      <tr>
+        <td><strong>Next step</strong></td>
+        <td>Write this design up as an ADR in the repo.</td>
+        <td>Done &mdash; see the note below.</td>
+      </tr>
+    </tbody>
+  </table></div>
+
+  <div class="rec">
+    <strong>Where the ADR went, and why it is a test of this design.</strong> This repo has no
+    <code>docs/adr/</code> tree. Its ADRs live in <code>.prodyssey/self/data/adrs.json</code>, keyed
+    ADR-0001 to ADR-0010, and every one of them is retro-extracted from a merged PR. A forward-looking ADR
+    for something not yet built has no PR to key on &mdash; which is precisely the staging problem
+    &sect;2 and &sect;3 exist to solve.
+    <br><br>
+    So this design is written into its own first design directory:
+    <code>.prodyssey/self/exports/design-design-mode/</code>, holding <code>goal.json</code>,
+    <code>intent.json</code>, and <code>adr-draft.md</code>. The mode's first artifact is the mode itself.
+    If the layout is awkward to author by hand, that is worth knowing before any code enforces it.
+  </div>
+
+  <h3 style="margin: 30px 0 6px">Build order</h3>
+  <ol style="font-size:15px; margin-left:20px; max-width:760px">
+    <li style="margin-bottom:8px">Move <code>skills/architecture/</code> in; promote <code>ste-writing</code> from <code>.claude/skills/</code>. Record both source commits.</li>
+    <li style="margin-bottom:8px">Rewrite the two <code>CLAUDE.md</code> passages &mdash; restate the real constraint (no agents, hooks, or MCP servers) instead of the skill count.</li>
+    <li style="margin-bottom:8px"><code>references/design-mode.md</code>, the design-mode section of <code>SKILL.md</code>, and <code>commands/design.md</code>.</li>
+    <li style="margin-bottom:8px">Submit mode's branch-name lookup (&sect;3) &mdash; small, additive, and independently testable.</li>
+    <li style="margin-bottom:8px">The designs view: <code>designs.js</code>, the layout migration, the format bump, and the viewer mode.</li>
+  </ol>
+</section>
+
+<div class="foot">
+  <strong>Round 2.</strong> Nineteen annotations applied. Resolved questions were folded into the sections
+  above and removed rather than left standing.<br>
+  <strong>Design source:</strong> the <code>collaboration-with-user</code> design system, read from
+  <code>~/Documents/Windsurf/think-with-ai/.claude/skills/collaboration-with-user/assets/design-system.css</code>
+  &mdash; you named that skill, so it takes priority over prodyssey's own viewer tokens.<br>
+  <strong>Verified against:</strong> <code>skills/odyssey/references/{interview-guide,review-mode}.md</code>,
+  <code>CLAUDE.md</code>, both <code>.claude-plugin/</code> manifests, <code>skills/architecture/SKILL.md</code>
+  and its measured size in archkit, and <code>cobuilder-harness/docs/research/pi-sdk-exploration.md</code>
+  &sect;6.2 for the pi-goals pattern. Neither <code>collaboration-with-user</code> nor <code>lavish</code>
+  is installed in this repo; both were read from other checkouts and followed directly.
+</div>
+
+</div>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.15.0/dist/mermaid.esm.min.mjs";
+  const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+  const paint = document.createElement("canvas").getContext("2d");
+  function toRgba(color) {
+    paint.clearRect(0, 0, 1, 1); paint.fillStyle = "#000"; paint.fillStyle = color;
+    paint.fillRect(0, 0, 1, 1); return paint.getImageData(0, 0, 1, 1).data;
+  }
+  function compositeRgba(f, b) {
+    const fa = f[3]/255, ba = b[3]/255, a = fa + ba*(1-fa);
+    if (a === 0) return [0,0,0,0];
+    return [(f[0]*fa + b[0]*ba*(1-fa))/a, (f[1]*fa + b[1]*ba*(1-fa))/a, (f[2]*fa + b[2]*ba*(1-fa))/a, a*255];
+  }
+  function pageIsDark() {
+    const root = document.documentElement;
+    const rb = toRgba(getComputedStyle(root).backgroundColor);
+    const bb = document.body ? toRgba(getComputedStyle(document.body).backgroundColor) : [0,0,0,0];
+    const [r,g,b,a] = compositeRgba(bb, rb);
+    if (a > 0) return (0.2126*r + 0.7152*g + 0.0722*b)/255 < 0.5;
+    const cs = getComputedStyle(root).colorScheme;
+    if (cs.includes("dark") && !cs.includes("light")) return true;
+    if (cs.includes("light") && !cs.includes("dark")) return false;
+    return darkQuery.matches;
+  }
+  const diagrams = [...document.querySelectorAll(".mermaid")].map((el) => ({ el, src: el.textContent }));
+  let applied, rendering = false, queued = false;
+  function queueRender() { queued = true; if (rendering) return; void render(); }
+  async function render() {
+    rendering = true;
+    try {
+      while (queued) {
+        queued = false;
+        const theme = pageIsDark() ? "dark" : "default";
+        if (theme === applied) continue;
+        mermaid.initialize({ startOnLoad: false, theme, securityLevel: "strict" });
+        for (const { el, src } of diagrams) { el.removeAttribute("data-processed"); el.textContent = src; }
+        try { await mermaid.run({ nodes: diagrams.map((d) => d.el) }); }
+        catch (error) { console.error("Mermaid diagram render failed:", error); return; }
+        applied = theme;
+      }
+    } finally { rendering = false; if (queued) queueRender(); }
+  }
+  if (document.readyState === "complete") queueRender();
+  else window.addEventListener("load", queueRender, { once: true });
+  const themeObserver = new MutationObserver(queueRender);
+  for (const el of [document.documentElement, document.body]) {
+    if (!el) continue;
+    themeObserver.observe(el, { attributes: true, attributeFilter: ["data-theme", "class", "style"] });
+  }
+  darkQuery.addEventListener("change", queueRender);
+</script>
+</body>
+</html>

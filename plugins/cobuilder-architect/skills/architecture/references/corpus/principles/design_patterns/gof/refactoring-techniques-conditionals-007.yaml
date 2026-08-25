@@ -1,0 +1,208 @@
+id: refactoring-techniques-conditionals-007
+name: "Refactoring — Simplifying Conditional Expressions"
+category: design-patterns
+canonical_tags: ['refactoring', 'conditional-logic', 'guard-clauses', 'polymorphism', 'null-object', 'decompose-conditional']
+sources:
+  - open_sources/design_patterns/refactoring-guru-patterns.txt
+  - open_sources/design_patterns/refactoring-guru-patterns.html
+  - books/refactoring.md
+summary: >
+  Conditionals tend to grow more complex over time as new branches are added.
+  This family of refactorings simplifies conditional logic: Decompose
+  Conditional extracts the condition, then-branch, and else-branch into named
+  methods; Consolidate Conditional Expression merges multiple conditions that
+  lead to the same outcome; Consolidate Duplicate Conditional Fragments moves
+  identical code out of branches; Remove Control Flag replaces boolean flags
+  with break/return; Replace Nested Conditional with Guard Clauses flattens
+  nested if-else into early returns; Replace Conditional with Polymorphism
+  uses subclasses instead of type-code branching; Introduce Null Object returns
+  a null-behaving object instead of null checks everywhere; and Introduce
+  Assertion makes implicit assumptions explicit.
+examples:
+  - language: python
+    bad: |
+      # BAD: Type-code branching with if/elif chain. Adding a new animal type
+      # means adding another elif — violation of Open/Closed Principle.
+      # The animal class knows about every possible subtype.
+
+      class Animal:
+          def __init__(self, kind: str, name: str):
+              self.kind = kind
+              self.name = name
+
+          def speak(self) -> str:
+              # WHY: Conditional branching on type code. Every new animal
+              # type requires modifying this method. Violates OCP.
+              if self.kind == "dog":
+                  return f"{self.name} says woof!"
+              elif self.kind == "cat":
+                  return f"{self.name} says meow!"
+              elif self.kind == "cow":
+                  return f"{self.name} says moo!"
+              else:
+                  return f"{self.name} makes a sound"
+
+          def move(self) -> str:
+              # WHY: Same type-code branching duplicated. Two places to update
+              # for each new animal. Shotgun Surgery smell.
+              if self.kind == "dog":
+                  return f"{self.name} runs"
+              elif self.kind == "cat":
+                  return f"{self.name} prowls"
+              elif self.kind == "cow":
+                  return f"{self.name} walks slowly"
+              else:
+                  return f"{self.name} moves"
+
+    good: |
+      # GOOD: Replace Conditional with Polymorphism. Each animal is a subclass.
+      # Adding a new animal is a new file — no existing code changes. OCP
+      # satisfied. No type-code branching anywhere.
+
+      from abc import ABC, abstractmethod
+
+
+      class Animal(ABC):
+          def __init__(self, name: str):
+              self.name = name
+
+          @abstractmethod
+          def speak(self) -> str: ...
+
+          @abstractmethod
+          def move(self) -> str: ...
+
+
+      class Dog(Animal):
+          def speak(self) -> str:
+              return f"{self.name} says woof!"
+
+          def move(self) -> str:
+              return f"{self.name} runs"
+
+
+      class Cat(Animal):
+          def speak(self) -> str:
+              return f"{self.name} says meow!"
+
+          def move(self) -> str:
+              return f"{self.name} prowls"
+
+
+      class Cow(Animal):
+          def speak(self) -> str:
+              return f"{self.name} says moo!"
+
+          def move(self) -> str:
+              return f"{self.name} walks slowly"
+
+      # WHY: Adding a new animal — create a new subclass. Zero changes to
+      # existing code. The factory creates the right subclass from config.
+
+  - language: typescript
+    bad: |
+      // BAD: Null checks everywhere. Every caller checks `if (user)` before
+      // accessing properties. Forgetting one null check causes a runtime
+      // crash. The null value has no behavior — it's a sentinel.
+
+      interface User {
+        id: string;
+        name: string;
+        email: string;
+      }
+
+      function getGreeting(user: User | null): string {
+        // WHY: null check at every call site. Callers must remember.
+        if (user === null) {
+          return "Hello, Guest!";
+        }
+        return `Hello, ${user.name}!`;
+      }
+
+      function sendNotification(user: User | null, message: string): void {
+        // WHY: Duplicated null check. Three call sites = three null checks.
+        // Miss one, and you get "Cannot read property 'email' of null".
+        if (user !== null) {
+          console.log(`Sending to ${user.email}: ${message}`);
+        }
+      }
+
+    good: |
+      // GOOD: Introduce Null Object. A GuestUser implements the same
+      // interface with default behavior. Callers never check null —
+      // they just call methods. No NullPointerExceptions.
+
+      interface User {
+        readonly id: string;
+        readonly name: string;
+        readonly email: string;
+      }
+
+      class RealUser implements User {
+        constructor(
+          public readonly id: string,
+          public readonly name: string,
+          public readonly email: string,
+        ) {}
+      }
+
+      class GuestUser implements User {
+        public readonly id = "guest";
+        public readonly name = "Guest";
+        public readonly email = "guest@example.com";
+      }
+
+      function getGreeting(user: User): string {
+        // WHY: No null check. GuestUser handles its own greeting.
+        return `Hello, ${user.name}!`;
+      }
+
+      function sendNotification(user: User, message: string): void {
+        // WHY: No null check. GuestUser's email is harmless.
+        console.log(`Sending to ${user.email}: ${message}`);
+      }
+      // WHY: The null check disappeared. The GuestUser IS the null case.
+      // Adding a new behavior just means adding it to GuestUser — no
+      // conditional logic at call sites.
+
+heuristics:
+  - >
+    "Decompose Conditional: extract the condition, then-part, and else-part
+    into separate methods with intention-revealing names" (Fowler, Refactoring).
+  - >
+    Replace Nested Conditional with Guard Clauses: when one branch is the
+    normal path and the other is an exit, invert and use early return. The
+    happy path sits at the left margin.
+  - >
+    Replace Conditional with Polymorphism: when a conditional branches on
+    type code (string, enum, class name), use subclasses instead. Adding a
+    new type is a new file, not a new elif.
+  - >
+    Consolidate Conditional Expression: when multiple conditions lead to the
+    same outcome, combine them into a single named method. The combined
+    condition is easier to understand and modify.
+  - >
+    Introduce Null Object: instead of returning null and checking everywhere,
+    return an object with neutral/default behavior. The null case becomes a
+    first-class type.
+  - >
+    Introduce Assertion: when code assumes a condition is true (e.g., a
+    parameter must be positive), assert it at the top of the function. The
+    assertion documents the assumption and fails fast if violated.
+  - >
+    Remove Control Flag: replace boolean flags used for loop control with
+    break, continue, or return. Control flags force the reader to track
+    state across the loop body.
+  - >
+    Consolidate Duplicate Conditional Fragments: if the same code appears at
+    the end of every branch, move it after the conditional. If it appears at
+    the start, move it before. Don't repeat yourself.
+  - >
+    Conditional logic should read like a decision table, not a maze. A reader
+    should see all outcomes at a glance. If they can't, decompose.
+
+related_tags:
+  [simplifying-conditionals, decompose-conditional, guard-clauses,
+   replace-conditional-with-polymorphism, null-object, assertions,
+   consolidate-conditional, remove-control-flag, refactoring,
+   fowler, ocp, open-closed-principle, design-patterns]

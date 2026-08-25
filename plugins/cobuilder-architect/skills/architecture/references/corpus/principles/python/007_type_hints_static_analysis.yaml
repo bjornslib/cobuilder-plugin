@@ -1,0 +1,264 @@
+id: type-hints-007
+name: Type Hints and Static Analysis
+category: readability
+canonical_tags: ['python', 'readability']
+sources:
+  - open_sources/python/pep-0008.html
+  - open_sources/python/hypermodern-python.html
+summary: Type hints make code self-documenting, catch bugs before runtime via static analysis (mypy, pyright), and enable powerful IDE completions. Protocol defines structural contracts (any object with the right shape qualifies), ABC enforces nominal inheritance (explicit subclass registration), TypeVar enables generic functions and classes, overload handles multiple valid signatures, TypedDict constrains dictionary shapes without full class overhead, and Pydantic models add runtime validation and serialization. Progressive typing is the pragmatic strategy — start with basic hints on public APIs, tighten over time as boundaries stabilize — never let perfect be the enemy of good.
+examples:
+  - language: python
+    bad: |
+      # No type hints: intent is hidden, tools can't help, bugs surface at runtime.
+      # Duck typing without contracts — caller has to read implementation to
+      # understand what shape is expected.
+      import json
+
+
+      def fetch_user(user_id):
+          """Returns user dict or None — but what keys are in the dict?"""
+          response = api.get(f"/users/{user_id}")
+          if response.status_code != 200:
+              return None
+          return response.json()
+
+
+      def notify_users(users):
+          """Takes a list of users — but what attribute holds the email?"""
+          for u in users:
+              send_email(u["email"], "Hello!")  # KeyError if shape is wrong
+
+
+      def find_first(items, target):
+          """Generic search — but does it work on strings? lists?"""
+          for i, item in enumerate(items):
+              if item == target:
+                  return i
+          return -1
+
+
+      config = {"host": "localhost", "port": 5432}  # Is port int or str?
+      connect(config["host"], config["port"])        # Hope it's correct...
+    good: |
+      """Type hints + static analysis: contracts are explicit, tools verify
+      correctness, and the code is its own documentation.
+
+      Covers: Protocol (structural), ABC (nominal), TypeVar (generics),
+      overload (multiple signatures), TypedDict (dict shapes), and
+      Pydantic (runtime validation).
+      """
+      from abc import ABC, abstractmethod
+      from typing import Protocol, TypeVar, overload, TypedDict
+      from pydantic import BaseModel, EmailStr
+
+
+      # ---- Protocol: structural subtyping (any object with the right shape) ----
+      class Notifier(Protocol):
+          """Any object with a `notify(email, message)` method qualifies."""
+
+          def notify(self, email: str, message: str) -> None: ...
+
+
+      class EmailNotifier:
+          """No explicit inheritance — satisfies Notifier by structure alone."""
+
+          def notify(self, email: str, message: str) -> None:
+              ...
+
+
+      def broadcast(notifier: Notifier, recipients: list[str]) -> None:
+          """Accepts any object matching the Notifier shape — no ABC required."""
+          for email in recipients:
+              notifier.notify(email, "Welcome!")
+
+
+      # ---- ABC: nominal subtyping (explicit inheritance contract) ----
+      class UserRepository(ABC):
+          """Subclasses must implement these methods — enforced at instantiation."""
+
+          @abstractmethod
+          def get_by_id(self, user_id: int) -> "User | None": ...
+
+          @abstractmethod
+          def save(self, user: "User") -> None: ...
+
+
+      class PostgresUserRepository(UserRepository):
+          def get_by_id(self, user_id: int) -> "User | None":
+              ...  # compiler error if this method is missing
+
+          def save(self, user: "User") -> None:
+              ...
+
+
+      # ---- TypeVar: generic functions/classes ----
+      T = TypeVar("T")
+
+      def find_first(items: list[T], target: T) -> int:
+          """Works on list[int], list[str], list[User] — type-safe at each call site."""
+          for i, item in enumerate(items):
+              if item == target:
+                  return i
+          return -1
+
+      # Usage: mypy infers T = int here; T = str there — no cast needed.
+      idx_int = find_first([1, 2, 3], 2)       # T = int
+      idx_str = find_first(["a", "b"], "b")     # T = str
+
+
+      # ---- overload: multiple valid signatures ----
+      @overload
+      def parse_value(raw: str) -> str: ...
+
+      @overload
+      def parse_value(raw: bytes) -> bytes: ...
+
+      @overload
+      def parse_value(raw: None) -> None: ...
+
+      def parse_value(raw: str | bytes | None) -> str | bytes | None:
+          """Tooling shows the correct overload for each call site."""
+          if raw is None:
+              return None
+          return raw.strip() if isinstance(raw, str) else raw.decode().strip()
+
+
+      # ---- TypedDict: typed dict shapes without full class overhead ----
+      class APIConfig(TypedDict):
+          host: str
+          port: int
+          use_tls: bool
+
+
+      def connect_db(cfg: APIConfig) -> None:
+          """mypy catches: connect_db({"host": "x", "port": "bad"})  # type error!"""
+          print(f"Connecting to {cfg['host']}:{cfg['port']}")
+
+
+      # ---- Pydantic: runtime validation + serialization ----
+      class User(BaseModel):
+          id: int
+          name: str
+          email: EmailStr  # validated at runtime
+          is_active: bool = True
+
+
+      def create_user(raw_data: dict[str, object]) -> User:
+          """Pydantic validates types, raises descriptive ValidationError on bad input."""
+          return User.model_validate(raw_data)
+
+
+      # Progressive typing in practice: start with basic hints on public APIs,
+      # add Protocol/ABC at module boundaries, tighten internal signatures later.
+  - language: typescript
+    bad: |
+      // No type annotations — `any` everywhere, zero tooling support.
+      function fetchUser(userId) {
+        return fetch(`/users/${userId}`).then(r => r.json());
+      }
+
+      function notifyUsers(users) {
+        // What properties does a `user` have? Nobody knows.
+        users.forEach(u => sendEmail(u.email, "Hello!"));
+      }
+
+      function findFirst(items, target) {
+        // Works on any array — but no guarantee target type matches item type.
+        return items.findIndex(item => item === target);
+      }
+    good: |
+      // TypeScript's structural type system: interfaces define shapes,
+      // any object with the right shape satisfies the contract — no `implements` needed.
+      // Generics, overloads, and utility types provide the same power as Python's typing module.
+
+      // ---- Structural interface (TypeScript's equivalent of Protocol) ----
+      interface Notifier {
+        notify(email: string, message: string): void;
+      }
+
+      class EmailNotifier {
+        // No `implements Notifier` needed — structural typing accepts the shape.
+        notify(email: string, message: string): void {
+          // ...
+        }
+      }
+
+      function broadcast(notifier: Notifier, recipients: string[]): void {
+        recipients.forEach(email => notifier.notify(email, "Welcome!"));
+      }
+
+      // ---- Abstract class (ABC equivalent) ----
+      abstract class UserRepository {
+        abstract getById(userId: number): User | null;
+        abstract save(user: User): void;
+      }
+
+      class PostgresUserRepository extends UserRepository {
+        // TypeScript enforces all abstract methods are implemented.
+        getById(userId: number): User | null {
+          return null; // stub
+        }
+        save(user: User): void {
+          // ...
+        }
+      }
+
+      // ---- Generics (TypeVar equivalent) ----
+      function findFirst<T>(items: T[], target: T): number {
+        return items.findIndex(item => item === target);
+      }
+
+      // Usage: T is inferred at each call site.
+      const idxNum = findFirst([1, 2, 3], 2);       // T = number
+      const idxStr = findFirst(["a", "b"], "b");     // T = string
+
+      // ---- Function overloads ----
+      function parseValue(raw: string): string;
+      function parseValue(raw: Uint8Array): Uint8Array;
+      function parseValue(raw: null): null;
+      function parseValue(raw: string | Uint8Array | null): string | Uint8Array | null {
+        if (raw === null) return null;
+        if (typeof raw === "string") return raw.trim();
+        return new TextDecoder().decode(raw).trim() as unknown as Uint8Array;
+      }
+
+      // ---- Mapped/utility types (TypedDict equivalent) ----
+      interface DbConfig {
+        host: string;
+        port: number;
+        useTls: boolean;
+      }
+
+      function connectDb(cfg: DbConfig): void {
+        console.log(`Connecting to ${cfg.host}:${cfg.port}`);
+      }
+
+      // ---- Runtime validation with Zod (Pydantic equivalent) ----
+      import { z } from "zod";
+
+      const UserSchema = z.object({
+        id: z.number(),
+        name: z.string(),
+        email: z.string().email(),
+        isActive: z.boolean().default(true),
+      });
+
+      type User = z.infer<typeof UserSchema>;
+
+      function createUser(rawData: unknown): User {
+        // Zod validates at runtime, throws ZodError with descriptive messages.
+        return UserSchema.parse(rawData);
+      }
+
+      // Progressive typing: enable strict mode, start with interface boundaries,
+      // tighten internal types as the codebase matures.
+heuristics:
+  - Use Protocol when you want structural subtyping — any object with the right methods qualifies without explicit inheritance. Use ABC when you need nominal guarantees and want to enforce that subclasses consciously opt in.
+  - TypeVar makes functions and classes generic without sacrificing type safety. The type checker infers the concrete type at each call site, so callers get full checking without casts.
+  - Use overload when a function has multiple valid input/output type combinations that a Union alone can't express. Each overload declares one specific pairing; the implementation handles all cases.
+  - TypedDict is ideal for typed dictionaries (API payloads, config dicts, JSON shapes) where creating a full class would be overhead. Pydantic models add runtime validation, serialization, and default values — use them at system boundaries.
+  - 'Progressive typing: begin with basic hints on public function signatures (arguments and return types). Add Protocol/ABC at module boundaries as dependencies stabilize. Tighten internal signatures and enable strict mypy/pyright modes incrementally.'
+  - Never let perfect be the enemy of good — a codebase with 60% type coverage and passing mypy is dramatically better than one with zero hints and an aspiration for 100%. Ship the hints you have.
+  - Static analysis tools (mypy, pyright, pyre) find entire classes of bugs — None handling, missing attributes, wrong argument types — before a single test runs. Treat type errors as build failures.
+  - 'A type hint is a promise to the reader: "this function accepts exactly this shape and returns exactly that shape." When you break the promise, the type checker tells you before your users do.'
+related_tags: [type-hints, static-analysis, protocol, abc, typevar, overload, typeddict, pydantic, mypy, pyright, progressive-typing, generics]

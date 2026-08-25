@@ -1,0 +1,51 @@
+id: deep-modules-001
+name: Deep Modules
+category: complexity
+canonical_tags: ['refactoring', 'readability']
+sources:
+  - books/a-philosophy-of-software-design.md
+  - books/clean-code.md
+summary: A deep module provides a simple interface that hides a large amount of internal complexity, reducing the cognitive load for clients.
+examples:
+  - language: python
+    bad: |
+      def process_order(order):
+          """Process an order and persist it."""
+          validate(order)
+          # 50 lines of pricing logic...
+          price = calculate_price(order)
+          # 20 lines of formatting...
+          order.total_price = price
+          # 10 lines of database saving...
+          save_to_db(order)
+          # 5 lines of sending receipt...
+          send_receipt(order)
+    good: |
+      def process_order(order):
+          """Process an order and persist it."""
+          order = pricing_engine.calculate(order)
+          order_repository.save(order)
+          receipt_sender.send(order)
+  - language: typescript
+    bad: |
+      class OrderComponent extends React.Component {
+        render() {
+          // Fetches data, formats it, calculates tax, and renders HTML
+          fetch(`/api/orders/${this.props.id}`)
+            .then(res => res.json())
+            .then(data => {
+              this.setState({ order: data, tax: data.price * 1.1 });
+            });
+          return <div>Tax: {this.state.tax}</div>;
+        }
+      }
+    good: |
+      function OrderSummary({ orderId }) {
+        const { order } = useOrderQuery(orderId);
+        return <TaxDisplay amount={order.tax} />;
+      }
+heuristics:
+  - Public functions should be short; complexity should live in private helpers.
+  - If changing internals frequently changes many call sites, the module is too shallow.
+  - Prefer composition over deep inheritance trees.
+related_tags: [deep-modules, complexity, info-hiding]

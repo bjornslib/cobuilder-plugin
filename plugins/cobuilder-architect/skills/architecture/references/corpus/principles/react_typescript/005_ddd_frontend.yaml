@@ -1,0 +1,179 @@
+id: ddd-frontend-001
+name: Domain-Driven Design — Frontend State Management with Bounded Contexts
+category: architecture
+canonical_tags: ['react-ts', 'ddd']
+sources:
+  - books/domain-driven-design-distilled.md
+  - books/implementing-domain-driven-design.md
+  - books/clean-architecture.md
+summary: Apply DDD strategic patterns to frontend state management by modeling distinct bounded contexts, using ubiquitous language in state atoms and selectors, and isolating domain logic from UI frameworks. Treat each feature area as a bounded context with its own state slice, vocabulary, and invariants.
+examples:
+  - language: typescript
+    bad: |
+      // One giant store with mixed concerns and no domain vocabulary
+      interface AppState {
+        // User stuff
+        user: User | null;
+        userLoading: boolean;
+        // Cart stuff
+        cartItems: CartItem[];
+        cartTotal: number;
+        cartDiscount: number;
+        // Product stuff
+        products: Product[];
+        productFilters: Filter[];
+        productSortBy: string;
+        // Order stuff
+        orders: Order[];
+        orderStatus: string;
+        // Auth stuff
+        token: string | null;
+        isAuthenticated: boolean;
+      }
+
+      function cartReducer(state: AppState, action: any): AppState {
+        switch (action.type) {
+          case "ADD_ITEM":
+            return {
+              ...state,
+              cartItems: [...state.cartItems, action.payload],
+              cartTotal: state.cartTotal + action.payload.price,
+            };
+          case "APPLY_DISCOUNT":
+            return { ...state, cartDiscount: action.payload };
+          default:
+            return state;
+        }
+      }
+    good: |
+      // Each bounded context owns its state, language, and invariants
+      // Context: Shopping Cart
+      interface CartState {
+        items: LineItem[];
+        appliedPromoCode: PromoCode | null;
+      }
+
+      type CartEvent =
+        | { type: "ItemAdded"; item: LineItem }
+        | { type: "ItemRemoved"; itemId: string }
+        | { type: "PromoCodeApplied"; code: PromoCode };
+
+      class Cart {
+        constructor(
+          public readonly items: LineItem[],
+          public readonly promoCode: PromoCode | null,
+        ) {}
+
+        static empty(): Cart {
+          return new Cart([], null);
+        }
+
+        addItem(item: LineItem): Cart {
+          if (this.items.some((i) => i.productId === item.productId)) {
+            throw new Error("Item already in cart");
+          }
+          return new Cart([...this.items, item], this.promoCode);
+        }
+
+        get subtotal(): Money {
+          return this.items.reduce((sum, item) => sum + item.price, Money.zero());
+        }
+
+        get total(): Money {
+          const base = this.subtotal;
+          return this.promoCode ? this.promoCode.applyTo(base) : base;
+        }
+      }
+
+      // Value Objects encode domain rules
+      class LineItem {
+        constructor(
+          public readonly productId: string,
+          public readonly name: string,
+          public readonly price: Money,
+          public readonly quantity: Quantity,
+        ) {
+          if (quantity.value < 1) throw new Error("Quantity must be positive");
+        }
+      }
+
+      class PromoCode {
+        constructor(
+          public readonly code: string,
+          private readonly discountPercentage: number,
+        ) {
+          if (discountPercentage <= 0 || discountPercentage > 100) {
+            throw new Error("Invalid discount percentage");
+          }
+        }
+
+        applyTo(amount: Money): Money {
+          return amount.multiply(1 - this.discountPercentage / 100);
+        }
+      }
+
+      // React integration — thin adapter layer
+      function useCart() {
+        const [cart, setCart] = useState<Cart>(Cart.empty());
+
+        const addItem = useCallback((item: LineItem) => {
+          setCart((prev) => prev.addItem(item));
+        }, []);
+
+        return { cart, addItem, total: cart.total, itemCount: cart.items.length };
+      }
+
+  - language: typescript
+    bad: |
+      // Shared User type with different meanings for different features
+      interface User {
+        id: string;
+        name: string;
+        email: string;
+        shippingAddress?: Address;  // only relevant for checkout
+        preferences?: Preferences;  // only relevant for settings
+        lastLoginIp?: string;        // only relevant for admin
+      }
+
+      // One hook used everywhere, returns irrelevant fields
+      function useCurrentUser(): User {
+        // Always fetches everything
+      }
+    good: |
+      // Separate views of User per bounded context
+      // Context: Profile
+      interface UserProfile {
+        id: string;
+        displayName: string;
+        avatarUrl: string;
+      }
+
+      // Context: Checkout
+      interface CheckoutCustomer {
+        id: string;
+        shippingAddress: Address;
+        savedPaymentMethods: PaymentMethod[];
+      }
+
+      // Context: Admin
+      interface AuditableUser {
+        id: string;
+        email: string;
+        lastLoginIp: string;
+        accountStatus: AccountStatus;
+      }
+
+      // Each context has its own hook returning only relevant data
+      function useUserProfile(): UserProfile { /* ... */ }
+      function useCheckoutCustomer(): CheckoutCustomer { /* ... */ }
+      function useAuditableUser(): AuditableUser { /* ... */ }
+heuristics:
+  - Model each feature area as a bounded context with its own state, vocabulary, and rules.
+  - Use domain names in state, actions, and selectors: Cart.itemAdded, not cart/ADD_ITEM.
+  - Keep domain objects (entities, value objects, aggregates) as plain TypeScript classes — no React dependency.
+  - React hooks and state management libraries are infrastructure adapters. They should wrap domain objects, not define them.
+  - A single concept (e.g., User) may appear differently in different bounded contexts. Create separate view types rather than one uber-type.
+  - Value objects (Money, Email, Quantity) prevent primitive obsession and encode validation at construction.
+  - Never spread raw API responses into state. Map through an anti-corruption layer that translates external models into domain models.
+  - Start simple — most frontend state doesn't need full DDD ceremony. Apply tactical patterns (aggregates, domain events) only when complexity warrants them.
+related_tags: [ddd, bounded-contexts, frontend-state, domain-modeling, value-objects]

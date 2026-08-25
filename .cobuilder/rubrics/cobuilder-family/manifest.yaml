@@ -1,0 +1,29 @@
+feature: cobuilder-family
+test_command: "uv run --with pytest pytest tests/ -v"
+thresholds:
+  accept: 0.90
+  investigate: 0.70
+max_attempts: 3
+epics:
+  - { id: "plugin-split/E1", name: "one plugin becomes five",        slices: [4, 5, 6, 7] }
+  - { id: "plugin-split/E2", name: "shared code survives an install", slices: [1] }
+  - { id: "plugin-split/E3", name: "the seam is version-safe",        slices: [2, 3] }
+  - { id: "plugin-split/E4", name: "the record index",                slices: [8, 9] }
+  - { id: "plugin-split/E5", name: "one lifecycle surface",           slices: [10, 11] }
+  - { id: "plugin-split/E6", name: "the reply channel",               slices: [12, 13, 14] }
+  - { id: "plugin-split/E7", name: "threads read as conversations",   slices: [] }
+slices:
+  - { id: 1,  name: "tracer bullet: two plugins, one shared module", epic: "plugin-split/E2", weight: 0.12 }
+  - { id: 2,  name: "the compatibility gate exists",                 epic: "plugin-split/E3", weight: 0.05 }
+  - { id: 3,  name: "the gate is wired and the bundle migrates",     epic: "plugin-split/E3", weight: 0.09 }
+  - { id: 4,  name: "renames inside today's single plugin",          epic: "plugin-split/E1", weight: 0.05 }
+  - { id: 5,  name: "the 33 cross-pillar references are fixed",      epic: "plugin-split/E1", weight: 0.07 }
+  - { id: 6,  name: "five plugins, five manifests",                  epic: "plugin-split/E1", weight: 0.11 }
+  - { id: 7,  name: "the two ports land",                            epic: "plugin-split/E1", weight: 0.07 }
+  - { id: 8,  name: "the index holds the entities",                  epic: "plugin-split/E4", weight: 0.08 }
+  - { id: 9,  name: "the index resolves the joins",                  epic: "plugin-split/E4", weight: 0.08 }
+  - { id: 10, name: "the Decisions and Contexts modes",              epic: "plugin-split/E5", weight: 0.06 }
+  - { id: 11, name: "the Builds mode and the Backlog lane",          epic: "plugin-split/E5", weight: 0.07 }
+  - { id: 12, name: "the ledger and its projection",                 epic: "plugin-split/E6", weight: 0.05 }
+  - { id: 13, name: "the anchor and the write endpoint",             epic: "plugin-split/E6", weight: 0.06 }
+  - { id: 14, name: "the wake command and the whole loop",           epic: "plugin-split/E6", weight: 0.04 }

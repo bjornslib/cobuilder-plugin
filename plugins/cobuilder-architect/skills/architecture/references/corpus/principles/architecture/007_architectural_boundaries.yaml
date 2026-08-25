@@ -1,0 +1,340 @@
+id: architectural-boundaries-007
+name: "Architectural Boundaries — Seams, Isolation, and Boundary Economics"
+category: architecture
+canonical_tags: ['clean-architecture', 'boundaries', 'hexagonal-architecture']
+sources:
+  - books/clean-architecture.md
+  - books/unified-software-engineering.md
+summary: >
+  An architectural boundary is a deliberate seam that separates code that changes
+  for different reasons and at different rates. Boundaries protect high-level policy
+  from low-level detail volatility — databases, frameworks, vendor SDKs, message
+  brokers, file systems, and foreign domain models. A well-placed boundary makes
+  one side replaceable without touching the other. The boundary is defined by an
+  interface owned by the inner layer and implemented by the outer layer; the
+  dependency arrow always points inward. Boundaries are not free — they impose
+  upfront cost in abstraction, mapping, and indirection — and must be placed where
+  the isolation they provide exceeds that cost. The art of boundary design is
+  knowing when a full boundary is justified, when a partial boundary preserves
+  future extraction, and when no boundary at all is the right call.
+examples:
+  - language: python
+    bad: |
+      # No boundaries — everything tangled together.
+      # Database types, HTTP framework, vendor SDK, and business rules
+      # all share one module. Any change ripples everywhere.
+      # Testing requires real PostgreSQL, real Stripe, and real SMTP.
+
+      import psycopg2
+      import stripe
+      import smtplib
+      from fastapi import FastAPI, Request, HTTPException
+      from email.mime.text import MIMEText
+
+      app = FastAPI()
+      DB = psycopg2.connect("dbname=orders")
+      stripe.api_key = "sk_live_xxx"
+      SMTP = smtplib.SMTP("smtp.example.com", 587)
+
+      @app.post("/orders")
+      async def create_order(request: Request):
+          body = await request.json()
+          user_id = body["user_id"]
+          items = body["items"]
+
+          # Business rule: price calculation
+          total = 0
+          cur = DB.cursor()
+          for item in items:
+              cur.execute("SELECT price, stock FROM products WHERE id = %s", (item["product_id"],))
+              prod = cur.fetchone()
+              if not prod or prod[1] < item["qty"]:
+                  return HTTPException(400, "No stock")
+              total += prod[0] * item["qty"]
+
+          # Stripe charge
+          charge = stripe.Charge.create(
+              amount=int(total * 100), currency="usd",
+              source=body["stripe_token"], metadata={"user_id": str(user_id)}
+          )
+
+          # Direct database write
+          cur.execute(
+              "INSERT INTO orders (user_id, total, stripe_charge_id) VALUES (%s, %s, %s)",
+              (user_id, total, charge.id)
+          )
+          DB.commit()
+
+          # Direct email
+          cur.execute("SELECT email FROM users WHERE id = %s", (user_id,))
+          email = cur.fetchone()[0]
+          msg = MIMEText(f"Order confirmed. Total: ${total:.2f}")
+          msg["To"] = email
+          SMTP.send_message(msg)
+
+          return {"status": "ok", "charge_id": charge.id}
+
+    good: |
+      # Four deliberate boundaries, each isolating one axis of volatility.
+      # No business rule touches a database driver, HTTP framework,
+      # vendor SDK, or transport format directly.
+
+      from abc import ABC, abstractmethod
+      from dataclasses import dataclass
+      from typing import Protocol
+
+      # ═══════════════════════════════════════════════════════════
+      # BOUNDARY 1: Domain ↔ Application
+      # Domain objects own business invariants. Application layer
+      # owns orchestration. Neither knows infrastructure.
+      # ═══════════════════════════════════════════════════════════
+
+      @dataclass(frozen=True)
+      class Money:
+          amount_cents: int
+          currency: str = "usd"
+
+          def __post_init__(self):
+              if self.amount_cents < 0:
+                  raise ValueError("Money cannot be negative")
+
+          def __add__(self, other: "Money") -> "Money":
+              if self.currency != other.currency:
+                  raise ValueError("Currency mismatch")
+              return Money(self.amount_cents + other.amount_cents, self.currency)
+
+      class Order(ABC):
+          @abstractmethod
+          def total(self) -> Money: ...
+
+      # ═══════════════════════════════════════════════════════════
+      # BOUNDARY 2: Application ↔ Persistence
+      # Port defined by application layer. Adapter in infrastructure.
+      # ═══════════════════════════════════════════════════════════
+
+      class ProductRepository(Protocol):
+          def find_by_ids(self, ids: list[str]) -> list[dict]: ...
+          def decrement_stock(self, product_id: str, qty: int) -> None: ...
+
+      class OrderRepository(Protocol):
+          def save(self, order_data: dict) -> int: ...
+
+      # ═══════════════════════════════════════════════════════════
+      # BOUNDARY 3: Application ↔ External Services
+      # Payment, notification, and user lookup are all ports.
+      # ═══════════════════════════════════════════════════════════
+
+      class PaymentGateway(Protocol):
+          def charge(self, amount: Money, token: str, metadata: dict) -> str: ...
+
+      class NotificationService(Protocol):
+          def send_order_confirmation(self, email: str, total: Money) -> None: ...
+
+      class UserLookup(Protocol):
+          def find_email(self, user_id: int) -> str: ...
+
+      # ═══════════════════════════════════════════════════════════
+      # BOUNDARY 4: Application ↔ Delivery
+      # Use case input/output models + presenter port.
+      # ═══════════════════════════════════════════════════════════
+
+      @dataclass
+      class CreateOrderInput:
+          user_id: int
+          items: list[dict]
+          stripe_token: str
+
+      @dataclass
+      class CreateOrderOutput:
+          order_id: int
+          total: Money
+          charge_id: str
+
+      class CreateOrderPresenter(Protocol):
+          def present_success(self, output: CreateOrderOutput) -> dict: ...
+          def present_error(self, message: str) -> dict: ...
+
+      # ═══════════════════════════════════════════════════════════
+      # APPLICATION LAYER (use case — depends only on ports)
+      # ═══════════════════════════════════════════════════════════
+
+      class CreateOrderUseCase:
+          def __init__(
+              self,
+              products: ProductRepository,
+              orders: OrderRepository,
+              payment: PaymentGateway,
+              notifier: NotificationService,
+              users: UserLookup,
+              presenter: CreateOrderPresenter,
+          ):
+              self._products = products
+              self._orders = orders
+              self._payment = payment
+              self._notifier = notifier
+              self._users = users
+              self._presenter = presenter
+
+          def execute(self, input_: CreateOrderInput) -> dict:
+              # Business rule: stock check + price calculation
+              prod_map = {p["id"]: p for p in self._products.find_by_ids(
+                  [i["product_id"] for i in input_.items]
+              )}
+              total = Money(0)
+              for item in input_.items:
+                  prod = prod_map.get(item["product_id"])
+                  if not prod or prod["stock"] < item["qty"]:
+                      return self._presenter.present_error(
+                          f"Insufficient stock for {item['product_id']}"
+                      )
+                  total += Money(int(prod["price"] * 100))  # simplified
+
+              # Crosses payment boundary
+              charge_id = self._payment.charge(
+                  total, input_.stripe_token, {"user_id": str(input_.user_id)}
+              )
+              # Crosses persistence boundary
+              order_id = self._orders.save({
+                  "user_id": input_.user_id,
+                  "total_cents": total.amount_cents,
+                  "charge_id": charge_id,
+              })
+              # Crosses notification boundary
+              email = self._users.find_email(input_.user_id)
+              self._notifier.send_order_confirmation(email, total)
+
+              return self._presenter.present_success(
+                  CreateOrderOutput(order_id, total, charge_id)
+              )
+
+      # ═══════════════════════════════════════════════════════════
+      # INFRASTRUCTURE (adapters — implements ports)
+      # ═══════════════════════════════════════════════════════════
+
+      import psycopg2  # NOW SAFE — only in adapter layer
+
+      class PostgresProductRepository:
+          def __init__(self, conn):
+              self._conn = conn
+
+          def find_by_ids(self, ids):
+              cur = self._conn.cursor()
+              cur.execute(
+                  "SELECT id, price, stock FROM products WHERE id = ANY(%s)", (ids,)
+              )
+              return [
+                  {"id": r[0], "price": float(r[1]), "stock": r[2]}
+                  for r in cur.fetchall()
+              ]
+
+          def decrement_stock(self, product_id, qty):
+              cur = self._conn.cursor()
+              cur.execute(
+                  "UPDATE products SET stock = stock - %s WHERE id = %s",
+                  (qty, product_id)
+              )
+
+      import stripe  # NOW SAFE — only in adapter layer
+
+      class StripePaymentGateway:
+          def __init__(self, client):
+              self._client = client
+
+          def charge(self, amount, token, metadata):
+              c = self._client.Charge.create(
+                  amount=amount.amount_cents, currency=amount.currency,
+                  source=token, metadata=metadata,
+              )
+              return c.id
+
+      # Composition root — wires adapters into ports
+      def wire():
+          conn = psycopg2.connect("dbname=orders")
+          stripe_client = stripe  # in real code: configured client
+          products = PostgresProductRepository(conn)
+          orders = PostgresOrderRepository(conn)
+          payment = StripePaymentGateway(stripe_client)
+          notifier = SmtpNotificationService(SmtpConfig.from_env())
+          users = PostgresUserLookup(conn)
+          presenter = JsonApiPresenter()
+          return CreateOrderUseCase(
+              products, orders, payment, notifier, users, presenter
+          )
+
+heuristics:
+  - >
+    Boundary = Interface + Dependency Rule. The inner layer defines the interface
+    (port). The outer layer implements it (adapter). The dependency arrow always
+    points inward. If a boundary has dependencies pointing in both directions, it
+    is not a boundary — it is a coupling knot.
+  - >
+    Place boundaries around volatility, not around every class. Volatile things —
+    databases, web frameworks, vendor SDKs, message brokers, file formats, cloud
+    providers, foreign domain models — change for reasons outside your control.
+    Boundaries isolate that volatility so the core never feels it.
+  - >
+    Full boundary: a proper interface, separate input/output models, an adapter
+    implementation, and a composition root that wires them. Worth it when both
+    sides change independently and frequently. Partial boundary: a strategy
+    pattern or a single method interface that preserves the option of a full
+    boundary later without paying the full abstraction tax today.
+  - >
+    "Boundaries vs Overengineering" (unified-software-engineering.md): introduce
+    explicit boundaries around volatility, external systems, persistence, frameworks,
+    time, randomness, and cross-context translation. Do NOT add layers that only
+    forward calls — every abstraction must reduce coupling, hide complexity, clarify
+    ownership, or protect a contract.
+  - >
+    Four canonical boundary types in Clean Architecture: (1) Domain ↔ Application —
+    domain objects own business invariants; application owns orchestration. Neither
+    knows infrastructure. (2) Application ↔ Persistence — repository ports in
+    application layer, implemented by database adapters. (3) Application ↔ External
+    Services — gateway ports for payment, email, messaging; the use case never imports
+    a vendor SDK. (4) Application ↔ Delivery — controller and presenter ports; the
+    use case never sees an HTTP request or produces an HTTP response.
+  - >
+    Enterprise boundary rules (unified-software-engineering.md): DTOs are boundary
+    structures, not domain models. Mapping must be explicit and testable. Transaction
+    boundaries must be explicit in application workflow. Avoid transactions that span
+    remote calls. Keep transactions short. Remote APIs must be coarse-grained and
+    version-aware. Never pretend network calls are local method calls.
+  - >
+    "When in doubt, introduce a boundary sooner. Partial boundaries are acceptable
+    if they preserve future extraction options" (Clean Architecture, Chapter 17).
+    A partial boundary today — an interface with one implementation, a single port
+    in the application layer — costs little and makes a full boundary cheap tomorrow
+    if volatility materializes.
+  - >
+    Testing across boundaries: test the inner layer with fakes for every port.
+    A use case test should never need a real database, HTTP server, or payment
+    gateway. Test adapters separately — repository against a test database, gateway
+    against a vendor sandbox, controller with mock use cases. Integration tests
+    belong at the boundary, not inside business logic tests.
+  - >
+    Boundary smell: an import of a vendor type (stripe.Charge, psycopg2.connect,
+    fastapi.Request) inside a module that also contains business rules. This means
+    the boundary was either never placed or has been breached. The fix: extract the
+    business rule into a port-dependent use case, move the vendor import into an
+    adapter, and wire them at the composition root.
+  - >
+    Feature-first boundaries: organize boundaries by business capability (orders/,
+    billing/, users/) rather than by technical layer (controllers/, repositories/,
+    services/). Each feature owns its domain, application, and adapter code. The
+    architecture screams the domain, not the framework.
+  - >
+    Composition root resides at the outermost edge. It is the only place that knows
+    which concrete adapter implements which port. Inner layers never construct their
+    own dependencies — they receive them. This is what makes boundaries testable,
+    replaceable, and migration-safe: swap the adapter at the composition root and
+    nothing else changes.
+  - >
+    "Choose the design that minimizes long-term coupling, not the one that is only
+    shortest today" (Clean Architecture). A boundary may feel like overengineering
+    on day one. On day 100, when the database changes, the payment provider is
+    replaced, and the web framework is upgraded, the boundary pays for itself
+    in unchanged code.
+related_tags:
+  [architectural-boundaries, seams, ports-and-adapters, dependency-inversion,
+   clean-architecture, hexagonal-architecture, partial-boundaries, full-boundaries,
+   composition-root, adapter-pattern, volatility-isolation, feature-first,
+   enterprise-patterns, boundary-economics, plugin-architecture]
