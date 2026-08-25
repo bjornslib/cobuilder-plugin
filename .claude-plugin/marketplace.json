@@ -1,8 +1,8 @@
 {
-  "name": "cobuilder-architect",
+  "name": "cobuilder-plugin",
   "owner": {
     "name": "bjornslib",
-    "url": "https://github.com/bjornslib"
+    "url": "https://github.com/bjornslib/cobuilder-plugin"
   },
   "plugins": [
     {
