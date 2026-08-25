@@ -1,0 +1,29 @@
+sequenceDiagram
+    participant Author
+    participant DesignCmd as commands/design.md
+    participant ArchSkill as skills/architecture (Design Mode)
+    participant Goal as docs/architecture/designs/<name>/goal.json
+    participant Intent as docs/architecture/designs/<name>/intent.json
+    participant ADR as docs/architecture/adr/ADR-NNNN-<slug>.md
+    participant Implement as cobuilder-implement skills/implement
+    participant VerifyGate as scripts/verify_gate.py
+
+    Author->>DesignCmd: /cobuilder-architect:design
+    DesignCmd->>ArchSkill: Invoke architecture skill in Design Mode
+    ArchSkill->>Author: Interview about the change
+    Author-->>ArchSkill: Answers, options, tradeoffs
+    ArchSkill->>ArchSkill: Explore options, challenge the approach
+    ArchSkill->>Goal: Write planned epics
+    ArchSkill->>Intent: Write captured intent
+    ArchSkill->>ADR: Draft proposed ADR
+
+    Note over Goal,ADR: Design stays off the timeline until generate mode files it under a real PR number
+
+    Author->>Implement: /cobuilder-implement:implement runs an epic from goal.json
+    Implement->>Implement: Slice the epic (Gate 4a, 04-slices.md)
+    Implement->>Implement: Write technical solution design (Gate 4b, required when an epic has more than one slice)
+    Implement->>Implement: Run blind rubrics (Gate 4c)
+    Implement->>VerifyGate: Check gates 4a, 4b, 4c for the plan directory
+    VerifyGate->>Goal: Read epics and slice counts
+    VerifyGate-->>Implement: Exit non-zero if any gate is pending
+    Implement-->>Author: Gate status per epic

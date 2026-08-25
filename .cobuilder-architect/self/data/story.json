@@ -28,7 +28,7 @@
         "id": "scripts",
         "label": "Scripts",
         "kind": "core",
-        "files": 2,
+        "files": 0,
         "blurb": "Eighteen PEP 723 uv scripts that move data mechanically. Each skill mode calls them; none of them author narrative, ADRs, or diagrams. build_adrs.py and build_designs.py compile authored markdown into JSON the viewer reads. render_review.py lays out an assessment without judging it.",
         "root_paths": [
           "scripts"
@@ -58,7 +58,7 @@
         "id": "docs",
         "label": "Docs",
         "kind": "authored-source",
-        "files": 65,
+        "files": 75,
         "blurb": "Authored source that no script regenerates: architecture decision records under architecture/adr and adr, design proposals under architecture/designs, two architecture review reports, a plan for cobuilder-factory, and staged pull-request content under pull-requests. Submit and design mode write here. Generate mode never does.",
         "root_paths": [
           "docs"
@@ -68,7 +68,7 @@
         "id": ".cobuilder-architect",
         "label": "Bundle Store",
         "kind": "tooling",
-        "files": 89,
+        "files": 91,
         "blurb": "The plugin's own generated output, committed alongside the code it narrates. self holds this repo's own bundle. Two named subfolders hold committed test fixtures generated against other local checkouts. An active symlink and view-server pid and log files are the only entries meant to stay out of git.",
         "root_paths": [
           ".cobuilder-architect"
@@ -1179,6 +1179,336 @@
       "levels": {},
       "status": "merged",
       "commit": "6b2fce6"
+    },
+    {
+      "pr": 11,
+      "date": "2026-08-25",
+      "title": "Design cobuilder-architect and cobuilder-implement, split repo into five plugins and skills",
+      "tagline": "One plugin doing four jobs became five, a new design mode now interviews before code exists, and the biggest ADR of the batch admits the viewer split it decided is not built yet.",
+      "depth": "detailed",
+      "size": {
+        "files": 558,
+        "adds": 101594,
+        "dels": 2507
+      },
+      "touched": {
+        ".claude-plugin": 2,
+        ".claude": 3,
+        ".cobuilder-architect": 91,
+        ".cobuilder": 15,
+        "(root)": 4,
+        ".lavish": 8,
+        ".prodyssey": 6,
+        ".serena": 1,
+        "docs": 64,
+        "plugins": 298,
+        "scripts": 2,
+        "shared": 49,
+        "skills": 3,
+        "tests": 12
+      },
+      "status": "merged",
+      "commit": "a389892",
+      "adrs": [
+        "ADR-0016",
+        "ADR-0017",
+        "ADR-0018",
+        "ADR-0019",
+        "ADR-0020"
+      ],
+      "levels": {
+        "landscape": {
+          "narration": "This PR reorganized the whole plugin around five jobs instead of one, and gave it a way to capture a design's intent before the first line of code exists. Five hundred fifty-eight files moved, most of them carried unchanged into their new plugin home under the new plugins directory, with about a hundred thousand lines added against twenty-five hundred removed.",
+          "voice": "This one change reshapes the whole plugin. What used to be a single install now splits into five separate plugins, one per job, so a person who only wants pull request narration no longer has to take the design tooling and the paid art pipeline along with it. It also adds a brand new design mode, so a decision gets written down before anyone writes the code that follows from it. Five hundred fifty-eight files moved in this one change, most of them carried into their new home unchanged, with roughly a hundred thousand lines added against twenty-five hundred removed."
+        },
+        "problem_solution": {
+          "problem": "The plugin had grown to cover four separate jobs inside one install: narrating merged history, generating and reviewing pull requests, serving and publishing the bundle, and auditing architecture. A user who wanted only one of those jobs installed the whole corpus anyway, including the paid Gemini art pipeline. Separately, every mode operated only after code existed. Nothing captured why a change was being made until a diff was already sitting there to read, so review mode spent its effort reconstructing intent nobody had written down. And `viewer/index.html` had grown to 4917 lines in one file, with 145 functions in a single JavaScript closure and one card fragment copy-pasted eighteen times, with no plan for how a future engineer could split it.",
+          "solution": "The plugin split into five sibling plugins under a new `plugins/` directory: `cobuilder-architect` for design, review, maintenance, decisions, describe, and debug; `cobuilder-pr` for the five Odyssey history modes plus the new generate mode; `cobuilder-artifact` for serving and publishing the bundle; `cobuilder-implement` for building a design's epics; and `cobuilder-full-lifecycle` as an umbrella that depends on the other four. Code every plugin needs moved into one marketplace-level `shared/` directory, vendored into each plugin's own root by a symlink, so a cached plugin never reaches across another plugin's file path. A new `/cobuilder-architect:design` mode now runs an interview before any code exists, producing an ADR plus an `intent.json` that later review work can read instead of re-deriving. Four architecture decisions from this same change now live in the bundle as ADR-0016 through ADR-0019, covering the five-plugin split, the vendored shared code, one lifecycle surface with a derived record index, and an anchored-comments ledger. A fifth, ADR-0020, records a plan to split the viewer into authored parts under `viewer/src/`, compiled by a build step that runs only when an engineer changes the viewer — decided, but deliberately not executed in this PR.",
+          "narration": "The plugin used to be one thing that did four jobs. Now it is five separate things, each doing one job, sharing their common code through one folder instead of copying it around. On top of that split, a brand new mode sits at the very start of the process: before anyone writes code, it interviews the person making the change and writes down what they intend, so nobody has to guess at it later by reading a diff. And the file that draws the viewer, which had grown past five thousand lines with no way to split it, now has a written plan for how it will be split — though that plan is not carried out yet.",
+          "beats": [
+            {
+              "kind": "background",
+              "text": "Before this PR, one plugin held four skills, thirteen commands, and twenty-two scripts, installed as a single unit. `viewer/index.html` was the one file every one of those four jobs read from or wrote to, which is why the split could not simply divide the plugin down the middle without duplicating the viewer."
+            },
+            {
+              "kind": "background",
+              "text": "Gate 4b, the technical-solution-design sub-step of `cobuilder-implement`'s Gate 4, existed in documentation before this PR but had never actually run for any multi-slice epic. This PR's own five `plugin-split` epics are the first real test of that gate, and Gate 4b came back outstanding for all five, which is why `verify_gate.py` now exits non-zero by design rather than by bug."
+            },
+            {
+              "kind": "intuition",
+              "text": "The clearest number in this change is `viewer/index.html` itself: 4917 lines, 881 of them CSS, 3872 of them JavaScript packed into a single IIFE holding 145 functions, with one card fragment duplicated eighteen times across five interleaved view modes. ADR-0020 names that exact shape as the reason nobody had been able to split the file before now, and the fix it records — parts under `viewer/src/`, compiled by `build_viewer.py` only when an engineer touches the viewer — is deliberately a decision on paper, not a change to the file in this diff."
+            }
+          ],
+          "voice": "The problem this change set out to fix was that one plugin was doing the work of four. Anyone who wanted just one of those jobs, say narrating pull requests, ended up installing the design tooling and the paid image generation pipeline too, whether they wanted them or not. On top of that, every mode only ever ran after the code already existed, so review work spent real effort guessing at intent that nobody had written down. The fix splits the plugin into five separate plugins, one per job, sharing their common code through a single shared folder. It also adds a new design mode that interviews the person making a change before any code is written, so that intent is captured once, at the source, instead of reconstructed later from a diff."
+        },
+        "architecture": {
+          "narration": "Five decisions carry the structural weight of this change. Splitting into five plugins fixes the install-surface problem, at the cost of needing a seam between them that is not a file path. Vendoring shared code by symlink keeps that seam from drifting between plugins that each hold their own copy. One lifecycle surface with a derived record index keeps the viewer from splintering into one page per artifact family as the family of artifacts grows. An anchored-comments ledger gives the viewer, the largest reading surface in the system, a way for a reader to talk back. And a viewer split into authored parts is recorded as the plan for the file that none of the other four decisions could touch without first agreeing on how it would be maintained going forward.",
+          "beats": [
+            {
+              "kind": "forces",
+              "text": "The install surface is the unit a user actually chooses at `/plugin install` time. A directory inside one plugin is not separately installable, so a user who wanted only pull-request narration still took the whole corpus, the viewer, and the paid-art pipeline along with it (ADR-0016)."
+            },
+            {
+              "kind": "forces",
+              "text": "A cached plugin cannot read outside its own directory: `${CLAUDE_PLUGIN_ROOT}` resolves only to that plugin's own cache. Splitting into five plugins therefore could not let one plugin call another's script by file path, and needed a vendoring mechanism instead (ADR-0017)."
+            },
+            {
+              "kind": "forces",
+              "text": "The lifecycle now produces forty-one artifacts across seven reading surfaces, with the joins between them declared in authored source and resolved nowhere — a decision was reachable only when some other change happened to cite it (ADR-0018)."
+            },
+            {
+              "kind": "forces",
+              "text": "The viewer is the largest reading surface in the system, and until this PR it carried no way for a reader to respond to what they read: someone could read a whole pull request narrative and have nowhere to leave a reaction the agent would ever see (ADR-0019)."
+            },
+            {
+              "kind": "forces",
+              "text": "`viewer/index.html` had to keep shipping as one self-contained file, because a published Artifact is a single file under a content-security policy that blocks every external request. That constraint is exactly why nobody had split the file before, and why ADR-0020 proposes a build step rather than real sibling files loaded by script tags (ADR-0020)."
+            },
+            {
+              "kind": "contract",
+              "text": "The plugin split into five siblings under `plugins/`, integrating only through the bundle directory on disk. Shared code moved into one marketplace-level `shared/` directory, vendored into each plugin by symlink, with a compatibility gate that every writer calls before it writes rather than a promise kept only in skill prose. The viewer became one lifecycle surface backed by a derived `data/index.json` record index. Comments on that viewer get computed from the live DOM at annotation time and appended to a durable, append-only ledger. And the viewer's own future split was decided — authored parts under `viewer/src/`, compiled by `build_viewer.py`, run only when an engineer changes the viewer — without being executed in this PR."
+            },
+            {
+              "kind": "boundary",
+              "text": "None of the five plugins ships an agent, a hook, or an MCP server, by design, so no plugin in the family can touch another session's permission surface. A known gap ships alongside the split: `refine_epic_status()` in `shared/build_index.py` reads only narrated, merged pull requests from `data/story.json`, so an open pull request is not yet a real entity in the record index. This repo's own PR 11 is the case in point — eight epics across the family point their `branch` at it, and the index falls back to a hardcoded `\"open\"` placeholder for every one of them, a recorded gap that `inflight-record-store`'s first epic exists to close, not a bug introduced here."
+            }
+          ],
+          "voice": "Five decisions give this change its architectural shape. Splitting one plugin into five fixes who has to install what, at the price of needing a seam between them that is not just a shared file path. Vendoring the shared code by symlink keeps that seam from drifting out of step. Turning the viewer into one surface, backed by one derived index, keeps new kinds of records from each demanding a new page of their own. Giving that viewer a durable, appended ledger of comments means a reader finally has somewhere to leave a reaction. And the plan to split the viewer file itself into authored parts, compiled at build time, is written down and agreed, even though it is not built yet in this change."
+        },
+        "file_changes": {
+          "narration": "Five hundred fifty-eight files moved in seven groups: the new five-plugin scaffold, the shared code vendored by symlink, the design-mode skill and its references, Gate 4b enforcement in cobuilder-implement, the five ADRs this PR wrote to record its own decisions, the bundle store carried over from its old .prodyssey/ location, and the new tests covering the packaging invariants this split introduced.",
+          "groups": [
+            {
+              "title": "Five-plugin scaffold",
+              "note": "New `plugins/` directory holding five plugin manifests and their own commands, skills, and scripts, replacing the single top-level plugin this repo used to ship.",
+              "files": [
+                ".claude-plugin/marketplace.json",
+                "plugins/cobuilder-architect/.claude-plugin/plugin.json",
+                "plugins/cobuilder-pr/.claude-plugin/plugin.json",
+                "plugins/cobuilder-artifact/.claude-plugin/plugin.json",
+                "plugins/cobuilder-implement/.claude-plugin/plugin.json",
+                "plugins/cobuilder-full-lifecycle/.claude-plugin/plugin.json"
+              ]
+            },
+            {
+              "title": "shared/ vendored by symlink",
+              "note": "One marketplace-level shared/ directory holding bundle-meta, manifest, build_index, ledger, migration, and slice-table code, symlinked into each plugin's own root per ADR-0017.",
+              "files": [
+                "shared/_bundle_meta.py",
+                "shared/_manifest.py",
+                "shared/build_index.py",
+                "shared/ledger.py",
+                "shared/migrate_bundle.py",
+                "shared/validate_decision_state.py",
+                "shared/verify_bundle.py"
+              ]
+            },
+            {
+              "title": "Design mode skill and references",
+              "note": "The new /cobuilder-architect:design mode, its interview and challenge references, and the design-mode ADR that records the mode's own shape.",
+              "files": [
+                "plugins/cobuilder-architect/skills/architecture/SKILL.md",
+                "docs/architecture/adr/ADR-0011-design-mode.md",
+                "docs/architecture/adr/ADR-0012-cobuilder-implement.md",
+                "docs/architecture/adr/ADR-0013-design-mode-implement-join.md",
+                "docs/architecture/designs/design-mode/goal.json",
+                "docs/architecture/designs/design-mode/intent.json",
+                "docs/architecture/designs/design-mode/narrative.json"
+              ]
+            },
+            {
+              "title": "Gate 4b enforcement",
+              "note": "cobuilder-implement's first script, checking Gates 4a, 4b, and 4c and failing closed when a multi-slice epic is missing an approved technical solution design.",
+              "files": [
+                "plugins/cobuilder-implement/scripts/verify_gate.py",
+                "docs/plans/cobuilder-family/00-status.md",
+                "docs/plans/cobuilder-family/04-slices.md",
+                "tests/test_gate_hardening.py"
+              ]
+            },
+            {
+              "title": "New ADRs for this PR's own decisions",
+              "note": "ADR-0016 through ADR-0020, authored by design mode itself to record the five-plugin split, the vendored shared code, the one-surface record index, the anchored-comments ledger, and the (not-yet-executed) viewer-parts plan.",
+              "files": [
+                "docs/architecture/adr/ADR-0016-five-sibling-plugins-bundle-as-seam.md",
+                "docs/architecture/adr/ADR-0017-vendored-shared-code-and-bundle-compatibility.md",
+                "docs/architecture/adr/ADR-0018-one-lifecycle-surface-and-a-record-index.md",
+                "docs/architecture/adr/ADR-0019-anchored-comments-as-a-durable-ledger.md",
+                "docs/architecture/adr/ADR-0020-viewer-parts-and-an-author-time-build.md"
+              ]
+            },
+            {
+              "title": "Bundle store rename and self-bundle carryover",
+              "note": "The bundle root moved from .prodyssey/ to .cobuilder-architect/, carrying this repo's own self bundle and its two committed foreign-repo test fixtures along with it.",
+              "files": [
+                ".cobuilder-architect/self/bundle.json",
+                ".cobuilder-architect/self/data/story.json",
+                ".cobuilder-architect/self/viewer/index.html",
+                ".cobuilder-architect/cobuilder-harness-a103a550/bundle.json",
+                ".cobuilder-architect/digital-curator-80f83abb/bundle.json"
+              ]
+            },
+            {
+              "title": "Test suite growth for the new packaging invariants",
+              "note": "New tests covering plugin manifests, pillar boundaries, the shared-code symlinks, the migration ladder, and the viewer's mode switching, added alongside the split rather than after it.",
+              "files": [
+                "tests/test_plugin_manifests.py",
+                "tests/test_pillar_boundaries.py",
+                "tests/test_shared_manifest.py",
+                "tests/test_migrate_bundle.py",
+                "tests/test_viewer_modes.py",
+                "tests/test_build_index.py"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "pr": 12,
+      "date": "2026-08-25",
+      "title": "Retire adr-draft, close Gate 4b retrospectively, and record two ADR maintenance rules",
+      "tagline": "Pull request eleven left three kinds of debt, and this change pays each one off honestly, including a recovery that could have lost the whole branch.",
+      "depth": "detailed",
+      "size": {
+        "files": 46,
+        "adds": 3635,
+        "dels": 1143
+      },
+      "touched": {
+        ".claude": 2,
+        ".cobuilder-architect": 7,
+        "(root)": 2,
+        "docs": 18,
+        "plugins": 11,
+        "scripts": 1,
+        "shared": 2,
+        "tests": 3
+      },
+      "status": "merged",
+      "commit": "be93c04",
+      "adrs": [],
+      "levels": {
+        "landscape": {
+          "narration": "This change cleans up three loose ends that pull request eleven left behind: a documented artifact type nobody ever produced, a review gate that never actually ran, and pull-request notes that stopped a third of the way through the work. Forty-six files changed, most of them documentation and process records rather than working code.",
+          "voice": "This change cleans up after the big five-plugin split. It retires a documented step that no tool ever carried out, it closes a review gate for five pieces of work after the fact and says so plainly, and it writes down two rules about how architecture decision records should age. Forty-six files changed, and almost all of them are documentation rather than application code."
+        },
+        "problem_solution": {
+          "problem": "Pull request eleven left three kinds of debt. `adr-draft.md` was named in `CLAUDE.md` and `README.md` as an output of design mode, but no skill procedure ever told anyone to write one. The one draft that existed on disk, for `ADR-0011`, had already been promoted to a real record and still named a retired command and a retired export path. Separately, Gate 4b, which requires a technical solution design for any epic with more than one slice, had run for none of the five `plugin-split` epics, because it was the only Gate 4 sub-step with no downstream consumer forcing it to happen. And the four pull-request documents for the cleanup branch itself described only the first third of the work, stopping at an early commit.",
+          "solution": "The `adr-draft.md` artifact type is gone from both documents, and the stale draft is deleted outright. Five retrospective epic designs, one per multi-slice `plugin-split` epic, now live at `docs/plans/cobuilder-family/epic-E{1,3,4,5,6}-design.md`, each opening with a block that says plainly the gate did not run before implementation and the document records what was built after the fact. `00-status.md` marks Gate 4b approved with that same qualifier, so `verify_gate.py` passes honestly instead of by omission. Two rules that were missing are now recorded: an ADR's Context, Decision, and Consequences prose is never edited to match the tree, only its index fields (`maps_to`, `state`, `last_verified`, `source_pr`) are kept current, and a drift finding is a report to weigh, not a work item to clear. The design-mode design gets the retrospective assessment it was missing, with findings of kind `observation` and `drift`, never `prediction`, so the record does not dress up hindsight as foresight.",
+          "narration": "Pull request eleven's big split left some paperwork unfinished. This change finishes it. It removes a process step that nobody ever actually performed, it closes out a review gate for five pieces of already-shipped work while saying clearly that the gate ran late, and it writes down two rules for keeping decision records honest as the codebase around them keeps changing.",
+          "beats": [
+            {
+              "kind": "background",
+              "text": "`adr-draft.md` sat in `CLAUDE.md` and `README.md` as a documented output of design mode, but the skill procedure never produced one. The single draft on disk was for `ADR-0011`, already promoted to `docs/architecture/adr/`, and it still referenced the retired `/prodyssey:design` command and a retired `exports/` path."
+            },
+            {
+              "kind": "background",
+              "text": "Gate 4b requires a technical solution design for any epic carrying more than one slice. It had run for zero of the five `plugin-split` epics, because nothing downstream mechanically consumed its output, so a documented step went silently unenforced until `verify_gate.py` and `00-status.md`'s sub-steps started checking for it."
+            },
+            {
+              "kind": "background",
+              "text": "The pull-request documents on the cleanup branch itself, `docs/pull-requests/branch-design-design-mode/{description,assessment,intent}`, described only the first third of the branch's real work, stopping at an earlier commit than the branch actually reached."
+            },
+            {
+              "kind": "intuition",
+              "text": "A git stash round-trip popped a modern working tree onto a local `master` that was 33 commits stale, predating the five-plugin split. Conflict markers landed in four files, and in regions the tool considered unconflicted it silently kept the old side, reverting whole paragraphs to pre-rename naming. `git fsck --unreachable` found the dropped commit `80ce0367` still intact, and a second commit took its content verbatim, leaving only a difference in test count against the reconstructed branch."
+            }
+          ],
+          "voice": "Pull request eleven, the big five-plugin split, left some paperwork unfinished. This change finishes it. It removes a process step that nobody ever actually performed, it closes out a review gate for five pieces of already-shipped work while saying plainly that the gate ran late, and it writes down two rules for keeping decision records honest as the codebase around them keeps changing. Along the way, a git stash round trip nearly lost real work: a modern tree landed on a local main branch that was thirty-three commits stale, and four files picked up silent conflict-marker corruption. A file system check for unreachable commits found the dropped stash still intact, and its content was taken verbatim into the fix."
+        },
+        "architecture": {
+          "narration": "This change makes no new decision about a module boundary, a dependency direction, or a public interface. It closes a documentation and process gap that a prior decision, the five-plugin split, left open, and it records two rules for keeping existing decision records honest over time.",
+          "beats": [
+            {
+              "kind": "boundary",
+              "text": "This is a retrospective process-cleanup and documentation change, not a module-boundary or interface decision. It carries no new structural ADR: it retires an undelivered artifact type, closes a review gate after the fact with the outcome stated plainly, and writes two maintenance rules into existing reference documents."
+            },
+            {
+              "kind": "contract",
+              "text": "What was actually decided is procedural, not architectural: a technical solution design produced after implementation must say so on its face, rather than reading as if the gate ran on time. A drift finding recorded against an ADR is a report to weigh, with three valid responses, only one of which is routine index maintenance. An ADR's Context, Decision, and Consequences prose is never edited to match the current tree; only its index fields (`maps_to`, `state`, `last_verified`, `source_pr`) get kept current."
+            }
+          ],
+          "voice": "This change makes no new decision about a module boundary, a dependency direction, or a public interface. It closes a documentation and process gap that an earlier decision, the five-plugin split, left open, and it records two rules for keeping existing decision records honest over time. First, a decision record never gets its context, decision, or considered options edited to match the current tree. Only its index fields, such as its state and its source pull request, get kept current. Second, a drift finding is a report, not a work item. The correct response can be to leave the record alone, as a true account of what was believed at the time."
+        },
+        "file_changes": {
+          "groups": [
+            {
+              "files": [
+                "docs/plans/cobuilder-family/epic-E1-design.md",
+                "docs/plans/cobuilder-family/epic-E3-design.md",
+                "docs/plans/cobuilder-family/epic-E4-design.md",
+                "docs/plans/cobuilder-family/epic-E5-design.md",
+                "docs/plans/cobuilder-family/epic-E6-design.md",
+                "docs/plans/cobuilder-family/00-status.md"
+              ],
+              "note": "Five retrospective Gate 4b designs, one per multi-slice `plugin-split` epic, each declaring itself written after implementation, plus the status file recording Gate 4b as approved with that qualifier."
+            },
+            {
+              "files": [
+                "docs/architecture/designs/inflight-record-store/goal.json",
+                "docs/architecture/designs/maintainable-viewer/goal.json"
+              ],
+              "note": "Two new backlog designs, correctly shaped as `goal.json` only, since design mode's later stages have not run for either yet."
+            },
+            {
+              "files": [
+                "docs/architecture/designs/design-mode/adr-draft.md",
+                "docs/architecture/designs/design-mode/assessment.json",
+                "docs/architecture/designs/design-mode/goal.json",
+                "CLAUDE.md",
+                "README.md"
+              ],
+              "note": "The `adr-draft.md` artifact type retired from both top-level documents, the one stale draft deleted, and the design-mode design's missing retrospective assessment added with `observation`/`drift` findings."
+            },
+            {
+              "files": [
+                "tests/test_verify_gate.py",
+                "tests/test_slice_table.py",
+                "shared/slice_table.py",
+                "plugins/cobuilder-implement/scripts/verify_gate.py"
+              ],
+              "note": "`test_verify_gate.py` rewritten to assert the script's contract rather than a fixed pass/fail state, with a new test pinning that an `APPROVED` status line keeps its retrospective qualifier and never silently downgrades."
+            },
+            {
+              "files": [
+                ".claude/hooks/deny-git-stash.py",
+                ".claude/settings.json",
+                "tests/test_deny_git_stash_hook.py"
+              ],
+              "note": "A local development-only hook added after the recovery incident recorded in the Intuition beat, plus its test."
+            },
+            {
+              "files": [
+                "plugins/cobuilder-architect/skills/architecture/references/decision-records.md",
+                "plugins/cobuilder-pr/skills/odyssey/references/review-mode.md"
+              ],
+              "note": "The two new ADR maintenance rules: an ADR's Context/Decision/Consequences prose is never edited to match the tree, and a drift finding is a report, not a work item, recorded into the two reference documents that govern decision records and per-PR review."
+            },
+            {
+              "files": [
+                "docs/pull-requests/branch-design-design-mode/description.md",
+                "docs/pull-requests/branch-design-design-mode/assessment.md",
+                "docs/pull-requests/branch-design-design-mode/assessment.json",
+                "docs/pull-requests/branch-design-design-mode/intent.json"
+              ],
+              "note": "The branch's own pull-request documents brought current, replacing the earlier draft that stopped a third of the way through the work."
+            },
+            {
+              "files": [
+                ".cobuilder-architect/self/data/adrs.json",
+                ".cobuilder-architect/self/data/adrs.js",
+                ".cobuilder-architect/self/data/designs.js",
+                ".cobuilder-architect/self/data/index.json",
+                ".cobuilder-architect/self/data/index.js",
+                "shared/build_index.py"
+              ],
+              "note": "The self-bundle record index rebuilt to reflect the new designs, the retired `adr-draft.md` reference, and the design-mode design's added assessment."
+            }
+          ],
+          "narration": "The forty-six changed files split into eight groups: the five retrospective epic designs and the status file that closes Gate 4b, two new backlog designs, the retired `adr-draft.md` reference plus the design-mode design's missing assessment, the rewritten Gate 4b tests, a new local development hook plus its test, the two new ADR maintenance rules in their reference documents, the branch's own updated pull-request notes, and the self-bundle record index rebuilt to match all of it."
+        }
+      }
     }
   ]
 }

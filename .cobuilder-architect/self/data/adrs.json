@@ -894,7 +894,7 @@
     "id": "ADR-0016",
     "title": "Five sibling plugins, with the bundle as the only seam",
     "state": "approved",
-    "source_pr": null,
+    "source_pr": 11,
     "problem": "One plugin now carries the whole architecture lifecycle. Its four skills, thirteen commands, and twenty-two scripts serve four separate jobs, and a user who wants one job installs all four.",
     "decision": "Split the plugin into five sibling plugins in one marketplace repository, and let them integrate only through the bundle directory on disk.",
     "alternatives": [
@@ -965,7 +965,7 @@
     "id": "ADR-0017",
     "title": "Vendored shared code, and a compatibility gate the bundle owns",
     "state": "approved",
-    "source_pr": null,
+    "source_pr": 11,
     "problem": "The split of ADR-0016 gives four plugins their own vendored copy of the bundle-writing code, and a user can hold four different versions at once. Three writers already stamp a schema version into the bundle with no check at all.",
     "decision": "Vendor shared code from one marketplace-level shared/ directory by symlink, and move the compatibility gate out of skill prose into a single required function that every writer calls before it writes.",
     "alternatives": [
@@ -1038,7 +1038,7 @@
     "id": "ADR-0018",
     "title": "One lifecycle surface, and a record index that joins it",
     "state": "approved",
-    "source_pr": null,
+    "source_pr": 11,
     "problem": "The lifecycle produces 41 artifacts across seven reading surfaces. The joins between them are declared in the authored source and resolved nowhere, so a decision is reachable only when a change happens to cite it.",
     "decision": "Extend the viewer to one surface covering designs, decisions, contexts, builds, and pull requests, and give it a single derived index that resolves every join between them.",
     "alternatives": [
@@ -1113,7 +1113,7 @@
     "id": "ADR-0019",
     "title": "Anchored comments, kept as a durable ledger",
     "state": "approved",
-    "source_pr": null,
+    "source_pr": 11,
     "problem": "The viewer is the largest reading surface in the system and carries no way to answer. A person reads a whole pull request and has nowhere to put a reaction the agent will ever see.",
     "decision": "Compute the anchor from the live DOM at annotation time, and append every comment to a durable append-only ledger with a stable id and an open, answered, or resolved state.",
     "alternatives": [
@@ -1186,7 +1186,7 @@
     "id": "ADR-0020",
     "title": "Viewer parts and an author-time build",
     "state": "decided",
-    "source_pr": null,
+    "source_pr": 11,
     "problem": "viewer/index.html is 4917 lines in one file: 881 lines of CSS and 3872 lines of JavaScript in a single IIFE holding 145 functions. Five view modes interleave through 50 scattered mode-predicate calls, 45 innerHTML string blocks carry no shared template, and one card fragment is copy-pasted 18 times. The file must ship as one self-contained file, so nobody has been able to split it.",
     "decision": "Author the viewer as parts under viewer/src/, and compile them into the committed viewer/index.html with build_viewer.py. The build runs when an engineer changes the viewer, never at install and never in the browser, and a test fails when the committed file does not equal a fresh build.",
     "alternatives": [
@@ -1245,6 +1245,80 @@
     "related": [
       "docs/architecture/contexts/cobuilder-packaging/boundary.yaml",
       "docs/architecture/designs/maintainable-viewer/goal.json"
+    ]
+  },
+  "ADR-0021": {
+    "id": "ADR-0021",
+    "title": "book-index.md gains a nano tier, and full-book loading stops being unconditional",
+    "state": "decided",
+    "source_pr": null,
+    "problem": "book-index.md escalates straight from the Tier 1 corpus heuristic to one full vendored book (300-1000 lines). Upstream ciembor/agent-rules-books has since published nano (~20-40 line) and mini (~80-150 line) tiers for the same 14 books, and books/README.md's manifest still only vendors full. Nothing in this plugin uses the smaller tiers.",
+    "decision": "Vendor nano.md and mini.md alongside the existing full.md for each of the 14 books. book-index.md's escalation rule changes: after Tier 1 narrows the candidate set, load a minimum of three nano-tier excerpts, then escalate any one of those books to mini or full only when its principles are judged to matter for the task at hand. Full-tier loading is never unconditional. The existing 'one primary + one optional companion' cap is rewritten to state this new ceiling explicitly. This applies to Design mode's Stage 1 (Ground) and Stage 3 (Explore) grounding, and to Review/Maintenance mode's corpus-to-book escalation.",
+    "alternatives": [
+      {
+        "option": "Ship the engineer's original approach unmodified: load 3 nanos, then always load the full book, unconditionally",
+        "rejected_because": "Making the full-book read unconditional defeats the point of a cheap tier — nano/mini exist to let a session skip the expensive read, not precede it. It also leaves the existing 1-primary+1-companion cap silently violated with no stated replacement ceiling."
+      },
+      {
+        "option": "Signed evidence ledger: an append-only book-loads.jsonl entry, hash-pinned, gating the full-book read behind three committed nano entries",
+        "rejected_because": "Solves auditability, a problem nobody named. Adds a new shim and a new file surface on top of the 42-file vendoring cost already at issue, without reducing token cost or file count."
+      },
+      {
+        "option": "Content-addressed cold storage: ship only a book-id-to-hash index, materialize nano/mini/full into a per-session scratch path on first read, evict by LRU",
+        "rejected_because": "Sized for a corpus of 140+ books; this repo vendors 14. Conflicts with the plugin family's vendor-in-tree convention — no plugin ships infrastructure beyond the files it carries itself (ADR-0017)."
+      },
+      {
+        "option": "Live-fetch the nano tier from upstream raw.githubusercontent.com URLs at task time instead of vendoring it",
+        "rejected_because": "The divergent-exploration frame that proposed this was blocked by a security classifier. Fetching remote content into prompt context at runtime is an injection and supply-chain risk this plugin family's self-only, no-network-dependency design deliberately avoids."
+      },
+      {
+        "option": "Pre-concatenated per-book ladder file: nano, then mini, then a <!-- FULL:path --> marker, in one file with a shared stop-early instruction",
+        "rejected_because": "Collapses the vendored surface back to 14 files and scored highest with the critic, but its 'stop reading early' discipline has no mechanical consumer. This repo's own CLAUDE.md names exactly this failure mode from the Gate 4b history: a documented process step with no mechanical consumer gets skipped, however well it is documented. Rejected in favor of keeping separate tier files, at the cost of accepting the same unenforced-step risk in the chosen design instead."
+      },
+      {
+        "option": "Ad hoc subagent fan-out: spawn one short-lived Task-tool call per candidate book, each reads that book's full text and returns only a verdict, keeping full text out of the orchestrating context entirely",
+        "rejected_because": "Scored well on isolating context growth, but ADR-0015's rule is that this plugin ships skills and no agents, hooks, or MCP servers. The pattern could only ever be an ad hoc in-turn Task-tool call, never installed infrastructure, and was declined even in that ad hoc form to keep this design's scope to the vendored-file mechanism."
+      },
+      {
+        "option": "Panic-grep pre-filter: one hand-written 'panic:' frontmatter line per nano file, grepped across all 14 before any tier loads",
+        "rejected_because": "The critic's starred non-obvious survivor — cheap, and the only candidate that stays fully inside the existing 1+1 cap. Deferred rather than bundled into this design; it does not conflict with the chosen mechanism and can be proposed separately if the 3-nano step proves too slow in practice."
+      }
+    ],
+    "forces": [
+      "All loading happens through an LLM agent's own Read tool calls, directly into the same context window the rest of the task uses. There is no retrieval index or RAG layer today.",
+      "book-index.md already caps loading at one primary book plus one optional companion, and the stated 3-nano-plus-full approach exceeds that cap as written.",
+      "The plugin ships no agents, hooks, or MCP servers (ADR-0015), which rules out shipping the subagent-fan-out alternative as installed infrastructure.",
+      "books/README.md documents a scripts/sync-books.sh drift-check script that does not exist anywhere in the repo — the vendoring pipeline was already incomplete before this decision, though fixing it is out of scope here.",
+      "CLAUDE.md's own Gate 4b history: a process step with no mechanical consumer gets skipped, however well it is documented."
+    ],
+    "delivers": {
+      "capability": "A design or review session can ground itself against three books' worth of signal for close to the token cost of one, and escalate to deeper tiers only for the book that actually turns out to matter.",
+      "benefit": "The vendored nano/mini tiers upstream already publishes stop sitting unused, and the escalation ladder starts trading cost for depth instead of jumping straight to the most expensive read available.",
+      "beneficiary": [
+        "developer",
+        "validator-agent"
+      ]
+    },
+    "body": "# ADR-0021 — book-index.md gains a nano tier, and full-book loading stops being unconditional\n\n## Context\n\n`book-index.md` is Tier 2 of a two-tier escalation: a cheap corpus heuristic\n(Tier 1) picks a symptom, and Tier 2 loads one full vendored book, a\n300-1000 line markdown file distilled from a canonical software-engineering\nbook. `books/README.md` vendors these full-length files from\n`ciembor/agent-rules-books`, at a pinned commit that predates that upstream\nrepo's own addition of `nano` (about 20-40 lines) and `mini` (about\n80-150 lines) tiers per book. Fourteen books are vendored today. None of\nthem have a nano or mini counterpart in this repo, and nothing in\n`book-index.md`'s escalation rule accounts for them.\n\nSeparately, `books/README.md` documents `scripts/sync-books.sh` as the way\nto check for upstream drift. That script does not exist anywhere in this\nrepository. The vendoring pipeline was already incomplete before this\ndecision. Fixing it is explicitly out of scope here.\n\n## Options considered\n\n1. **3 nanos, then always the full book, unconditionally (the engineer's\n   original approach).** Rejected. Making the full-book read unconditional\n   defeats the reason a cheap tier exists — nano and mini are supposed to\n   let a session skip the expensive read when the topic turns out not to\n   matter, not run ahead of it every time. It also silently breaks the\n   existing \"one primary plus one optional companion\" cap with no stated\n   replacement.\n2. **Signed evidence ledger.** Rejected. Solves an auditability problem\n   nobody raised, and adds its own file and shim surface on top of the\n   vendoring cost already under discussion.\n3. **Content-addressed cold storage.** Rejected. Solves for a corpus two\n   orders of magnitude larger than the 14 books this repo actually vendors,\n   and conflicts with the vendor-in-tree convention ADR-0017 already\n   established for shared code.\n4. **Live-fetch nano tier from upstream at task time.** Rejected outright —\n   the divergent-exploration branch that proposed it was blocked by a\n   security classifier. Fetching remote content into prompt context at\n   runtime is exactly the risk this plugin family's self-only design avoids.\n5. **Pre-concatenated per-book ladder file.** Scored highest with the\n   critic pass — it collapses the vendored surface back to 14 files and\n   makes the full-book section physically follow the mini section in the\n   same document. Rejected anyway, because its \"stop reading before the\n   FULL marker\" discipline is enforced by nothing but instructional prose,\n   and this repo's own CLAUDE.md names that exact failure mode from the\n   Gate 4b history.\n6. **Ad hoc subagent fan-out.** Rejected as out of scope. ADR-0015 fixes\n   the install surface at no agents, hooks, or MCP servers. The pattern\n   could only ever run as an in-turn `Agent` tool call, never as shipped\n   infrastructure, and the engineer declined to add even that much for\n   this design.\n7. **Panic-grep pre-filter (chosen: deferred, not rejected on merit).** The\n   critic's starred non-obvious survivor. Cheap, and the only candidate\n   that stays inside the existing cap unmodified. Left out of this design's\n   scope rather than bundled in, because it is orthogonal to the chosen\n   mechanism and can be proposed on its own later.\n8. **3 nanos, then judgment-gated escalation to mini or full (chosen).**\n   See Decision.\n\n## Decision\n\nVendor `nano.md` and `mini.md` alongside the existing `full.md` for each of\nthe 14 books already listed in `books/README.md`'s manifest — 42 files\ntotal, in the same `references/books/` layout used today. Re-vendoring the\nexisting `full/` files against upstream's current commit, and fixing\n`scripts/sync-books.sh`, are both explicitly out of scope for this design.\n\nChange `book-index.md`'s escalation rule: once Tier 1's corpus heuristic\nnarrows the candidate books for a task, a design or review-mode session\nloads a minimum of three `nano` excerpts. It may then escalate any one of\nthose three to `mini` or `full` only when that book's principles are\njudged to matter for the specific problem at hand. A book that does not\nclear that judgment stays at the nano tier for the rest of the task.\nFull-tier loading is never automatic.\n\nThis changes book-index.md's own combination rule. The prior \"at most one\nprimary book, plus one optional companion\" cap is rewritten to state the\nnew ceiling directly: a minimum of three nano loads, plus judgment-gated\nmini or full escalation per book, replacing the old 1+1 count entirely for\nbook loading specifically.\n\nApplies to Design mode's Stage 1 (Ground) and Stage 3 (Explore) grounding,\nand to Review and Maintenance mode's existing corpus-to-book escalation\npath. Does not change Review/Maintenance's separate, mandatory 14-file\nsecurity corpus load — that corpus is unconditional by a different rule\nand is untouched here.\n\n## Consequences\n\n- **Positive:** The nano and mini tiers upstream already publishes get\n  used. A session can ground itself against three books' worth of signal\n  for close to the cost of reading one, and only pays the full-book cost\n  for the book that turns out to matter.\n- **Constraint introduced:** A design or review-mode session must load a\n  minimum of three nano-tier excerpts before it may escalate any one book\n  to mini or full tier. Full-tier loading is judgment-gated per book,\n  never unconditional.\n- **Negative / accepted:** The judgment gate has no mechanical enforcement.\n  The engineer explicitly chose this over the mechanically-stronger\n  ladder-file alternative (option 5), accepting the risk that, under time\n  pressure, a session quietly reverts to reading only `full`, the way this\n  repo's own Gate 4b history shows an unenforced step tends to erode. The\n  vendored surface also triples, from 14 files to 42, with the sync\n  pipeline that would check them against upstream still broken.\n\n## Value delivered\n\n- **New capability:** A design or review session can ground itself\n  against three books' worth of signal for close to the token cost of\n  one, and escalate to deeper tiers only for the book that actually turns\n  out to matter.\n- **Benefit:** The vendored nano/mini tiers upstream already publishes\n  stop sitting unused, and the escalation ladder starts trading cost for\n  depth instead of jumping straight to the most expensive read available.\n- **Beneficiary:** developer, validator-agent.\n\n## Maps to\n\nDistrict `skills` (unanchored — no formal bounded context exists for this\narea yet). Modules `plugins/cobuilder-architect/skills/architecture/references/book-index.md`,\n`.../references/books`, `.../references/design-mode.md`. See this ADR's\n`maps_to.rule` for the invariant.\n",
+    "maps_to": {
+      "district": "skills",
+      "unanchored": true,
+      "modules": [
+        "plugins/cobuilder-architect/skills/architecture/references/book-index.md",
+        "plugins/cobuilder-architect/skills/architecture/references/books",
+        "plugins/cobuilder-architect/skills/architecture/references/design-mode.md"
+      ],
+      "rule": "A design or review-mode session must load a minimum of three nano-tier book excerpts before it may escalate any one book to mini or full tier. Full-tier loading is judgment-gated per book, never unconditional, and the total load per task is bounded by the ceiling this ADR states — not by the prior one-primary-plus-one-companion cap, which this ADR supersedes for book loading."
+    },
+    "history": [
+      {
+        "state": "decided",
+        "date": "2026-08-25",
+        "note": "Chosen on this branch; not approved until a human merges."
+      }
+    ],
+    "related": [
+      "docs/architecture/designs/book-index-tiering/goal.json"
     ]
   }
 }

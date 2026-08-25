@@ -1,0 +1,55 @@
+classDiagram
+    class EpicRetrospectiveDesign {
+        +epicId string
+        +retrospective bool
+        +openingQualifier string "gate did not run before implementation"
+        +describesWhatWasBuilt() string
+    }
+
+    class StatusFile {
+        +gate4a string
+        +gate4b string "APPROVED (retrospective)"
+        +gate4c string
+        +isGateFourApproved() bool
+    }
+
+    class VerifyGate {
+        +checkGate4a(planDir) bool
+        +checkGate4b(planDir) bool
+        +checkGate4c(planDir) bool
+        +exitNonZeroOnFailure() void
+    }
+
+    class SliceTable {
+        +parse(slicesMd) list
+    }
+
+    class AssessmentJson {
+        +stage string "retrospective"
+        +findings List~Finding~
+        +verdict string
+    }
+
+    class Finding {
+        +kind string "observation or drift, never prediction"
+        +text string
+    }
+
+    class DecisionRecordsRule {
+        +rule string "ADR Context/Decision/Consequences prose never edited to match tree"
+        +mutableFields List~string~ "maps_to, state, last_verified, source_pr"
+    }
+
+    class ReviewModeRule {
+        +rule string "a drift finding is a report to weigh, not a work item to clear"
+    }
+
+    VerifyGate --> StatusFile : reads Gate 4a/4b/4c lines
+    VerifyGate --> EpicRetrospectiveDesign : requires one per multi-slice epic
+    VerifyGate --> SliceTable : uses to count slices per epic
+    AssessmentJson --> Finding : contains
+    AssessmentJson ..> DecisionRecordsRule : design-mode assessment obeys
+    AssessmentJson ..> ReviewModeRule : drift findings obey
+
+    note for EpicRetrospectiveDesign "Closes Gate 4b after the fact\nfor five plugin-split epics"
+    note for AssessmentJson "stage retrospective, never prediction:\nhindsight is not dressed up as foresight"

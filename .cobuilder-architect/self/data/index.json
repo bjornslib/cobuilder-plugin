@@ -1,10 +1,10 @@
 {
   "schema_version": "1.3",
   "sources": {
-    "git_head": "7ff6653fc7df6de758802da8782bab533a109b7b",
+    "git_head": "80cafffa003aaf58862b1db0e291cf22f6eeed08",
     "trees": {
-      "docs/architecture/adr": "sha256:5a82c1de4d8900199d455e02df448bbf5019063fcfe7eb6b2b327d13234eaac3",
-      "docs/architecture/designs": "sha256:a9ac77e8dc66654c5d37273f6f6e19c5f5601c763b5484ce3de7200751075557",
+      "docs/architecture/adr": "sha256:b10a5410f0fdaa5b673b7d6d2f64c8397ce930ce97686c3f599a9ef7cab5adfb",
+      "docs/architecture/designs": "sha256:2d9c55b1d97a21fb532d341ac0a2c6de2f1c978a8eab92925bf52e43ddf5d21f",
       "docs/architecture/contexts": "sha256:4626a327bd28df972d97d40dc1325c28808eb48789649b87eadd218b3528c907",
       "docs/plans": "sha256:c67537274e380932300bcc53c8943a33ad843a561d7539029a046268af79e32e"
     }
@@ -110,9 +110,20 @@
         "id": "ADR-0020",
         "title": "Viewer parts and an author-time build",
         "state": "decided"
+      },
+      {
+        "id": "ADR-0021",
+        "title": "book-index.md gains a nano tier, and full-book loading stops being unconditional",
+        "state": "decided"
       }
     ],
     "design": [
+      {
+        "id": "book-index-tiering",
+        "name": "book-index-tiering",
+        "outcome": "book-index.md offers nano, mini, and full tiers for all 14 vendored books, and its escalation rule requires a minimum of three nano loads before any book may be judgment-escalated to mini or full.",
+        "stage": "design"
+      },
       {
         "id": "cobuilder-implement",
         "name": "cobuilder-implement",
@@ -759,6 +770,20 @@
         "state": "merged",
         "commit": "6b2fce6",
         "date": "2026-08-06"
+      },
+      {
+        "id": 11,
+        "title": "Design cobuilder-architect and cobuilder-implement, split repo into five plugins and skills",
+        "state": "merged",
+        "commit": "a389892",
+        "date": "2026-08-25"
+      },
+      {
+        "id": 12,
+        "title": "Retire adr-draft, close Gate 4b retrospectively, and record two ADR maintenance rules",
+        "state": "merged",
+        "commit": "be93c04",
+        "date": "2026-08-25"
       }
     ],
     "slice": [
@@ -1020,63 +1045,33 @@
       },
       "ADR-0016": {
         "pr": 11,
-        "via": "epic",
-        "path": [
-          "plugin-split/E1",
-          "plugin-split/E2",
-          "plugin-split/E3",
-          "plugin-split/E4",
-          "plugin-split/E5",
-          "plugin-split/E6",
-          "plugin-split/E7"
-        ]
+        "via": "direct",
+        "path": []
       },
       "ADR-0017": {
         "pr": 11,
-        "via": "epic",
-        "path": [
-          "plugin-split/E1",
-          "plugin-split/E2",
-          "plugin-split/E3",
-          "plugin-split/E4",
-          "plugin-split/E5",
-          "plugin-split/E6",
-          "plugin-split/E7"
-        ]
+        "via": "direct",
+        "path": []
       },
       "ADR-0018": {
-        "pr": null,
-        "via": "epic",
-        "path": [
-          "inflight-record-store/E1",
-          "inflight-record-store/E2",
-          "inflight-record-store/E3",
-          "inflight-record-store/E4",
-          "maintainable-viewer/E1",
-          "maintainable-viewer/E2",
-          "maintainable-viewer/E3",
-          "maintainable-viewer/E4"
-        ]
+        "pr": 11,
+        "via": "direct",
+        "path": []
       },
       "ADR-0019": {
-        "pr": null,
-        "via": "epic",
-        "path": [
-          "maintainable-viewer/E1",
-          "maintainable-viewer/E2",
-          "maintainable-viewer/E3",
-          "maintainable-viewer/E4"
-        ]
+        "pr": 11,
+        "via": "direct",
+        "path": []
       },
       "ADR-0020": {
+        "pr": 11,
+        "via": "direct",
+        "path": []
+      },
+      "ADR-0021": {
         "pr": null,
-        "via": "epic",
-        "path": [
-          "maintainable-viewer/E1",
-          "maintainable-viewer/E2",
-          "maintainable-viewer/E3",
-          "maintainable-viewer/E4"
-        ]
+        "via": "none",
+        "path": []
       }
     },
     "epic_to_pull_request": {
@@ -1091,9 +1086,9 @@
       "plugin-split/E6": 11
     },
     "epic_status": {
-      "cobuilder-implement/E1": "open",
-      "cobuilder-implement/E2": "open",
-      "design-mode/E1": "open",
+      "cobuilder-implement/E1": "merged",
+      "cobuilder-implement/E2": "merged",
+      "design-mode/E1": "merged",
       "inflight-record-store/E1": "unstarted",
       "inflight-record-store/E2": "unstarted",
       "inflight-record-store/E3": "unstarted",
@@ -1102,12 +1097,12 @@
       "maintainable-viewer/E2": "unstarted",
       "maintainable-viewer/E3": "unstarted",
       "maintainable-viewer/E4": "unstarted",
-      "plugin-split/E1": "open",
-      "plugin-split/E2": "open",
-      "plugin-split/E3": "open",
-      "plugin-split/E4": "open",
-      "plugin-split/E5": "open",
-      "plugin-split/E6": "open",
+      "plugin-split/E1": "merged",
+      "plugin-split/E2": "merged",
+      "plugin-split/E3": "merged",
+      "plugin-split/E4": "merged",
+      "plugin-split/E5": "merged",
+      "plugin-split/E6": "merged",
       "plugin-split/E7": "unstarted",
       "ubiquitous-language/E1": "unstarted",
       "ubiquitous-language/E2": "unstarted",
@@ -1166,7 +1161,8 @@
       "ADR-0012": "skills",
       "ADR-0013": "skills",
       "ADR-0014": "scripts",
-      "ADR-0015": "skills"
+      "ADR-0015": "skills",
+      "ADR-0021": "skills"
     },
     "feature_gates": {
       "cobuilder-family": [

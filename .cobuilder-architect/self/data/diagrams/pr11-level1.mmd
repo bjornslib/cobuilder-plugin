@@ -1,0 +1,48 @@
+C4Container
+    title PR 11 - one plugin splits into five, sharing vendored code
+
+    Person(engineer, "Engineer", "Installs one or more CoBuilder plugins and runs their commands")
+
+    Container_Boundary(marketplace, "Marketplace root") {
+        Container(mkt, ".claude-plugin/marketplace.json", "JSON manifest", "Lists all five plugins for /plugin marketplace add")
+        Container(shared, "shared/", "Python", "_bundle_meta.py, build_index.py, migrate_bundle.py, validate_decision_state.py, verify_bundle.py - vendored by symlink into each plugin")
+    }
+
+    Container_Boundary(pArch, "plugins/cobuilder-architect") {
+        Container(archSkill, "skills/architecture", "Skill", "design, review, maintenance, decisions, describe, debug - self-only")
+    }
+
+    Container_Boundary(pPr, "plugins/cobuilder-pr") {
+        Container(prSkill, "skills/odyssey", "Skill", "baseline, review, generate - five history modes plus generate")
+    }
+
+    Container_Boundary(pArtifact, "plugins/cobuilder-artifact") {
+        Container(artSkill, "skills/artifact", "Skill", "view and publish the bundle")
+    }
+
+    Container_Boundary(pImplement, "plugins/cobuilder-implement") {
+        Container(implSkill, "skills/implement", "Skill", "builds a design's epics, runs verify_gate.py")
+    }
+
+    Container_Boundary(pLifecycle, "plugins/cobuilder-full-lifecycle") {
+        Container(lifeSkill, "skills/orientation", "Skill", "umbrella plugin, depends on the other four")
+    }
+
+    ContainerDb(bundle, ".cobuilder-architect/self/", "Bundle directory", "data/, assets/, viewer/, exports/ - read and written by all five plugins")
+
+    Rel(engineer, mkt, "Runs /plugin install against")
+    Rel(mkt, pArch, "Declares")
+    Rel(mkt, pPr, "Declares")
+    Rel(mkt, pArtifact, "Declares")
+    Rel(mkt, pImplement, "Declares")
+    Rel(mkt, pLifecycle, "Declares, depends on other four")
+
+    Rel(archSkill, shared, "Imports via plugins/cobuilder-architect/shared symlink")
+    Rel(prSkill, shared, "Imports via plugins/cobuilder-pr/shared symlink")
+    Rel(artSkill, shared, "Imports via plugins/cobuilder-artifact/shared symlink")
+    Rel(implSkill, shared, "Imports via plugins/cobuilder-implement/shared symlink")
+
+    Rel(archSkill, bundle, "Writes designs, ADRs, reviews into")
+    Rel(prSkill, bundle, "Writes story.json, diffs, diagrams into")
+    Rel(artSkill, bundle, "Serves and publishes")
+    Rel(implSkill, bundle, "Reads goal.json epics from docs/, checks gates against")

@@ -1,0 +1,52 @@
+classDiagram
+    class BundleMeta {
+        <<shared/_bundle_meta.py>>
+        +SCHEMA_VERSION str
+        +SCHEMA_VERSION_KNOWN set
+        +CURRENT_BUNDLE_FORMAT int
+        +require_compatible(bundle_dir, plugin) void
+        +stamp_generator(bundle_dir, plugin, version) void
+    }
+
+    class BuildIndex {
+        <<shared/build_index.py>>
+        +collect_adrs(repo) tuple
+        +collect_designs(...) tuple
+        +collect_contexts(repo) tuple
+        +collect_districts(bundle_dir) tuple
+        +collect_pull_requests(bundle_dir) tuple
+    }
+
+    class MigrateBundle {
+        <<shared/migrate_bundle.py>>
+        +SCHEMA_MIGRATIONS list
+        +LAYOUT_MIGRATIONS list
+        +run_guard(story, migrate_fn, touches) tuple
+        +run_layout_ladder(bundle_dir, current_format, dry_run) tuple
+        +run_data_ladder(story, current_schema) tuple
+        +refresh_viewer(bundle_dir, dry_run) str
+    }
+
+    class VerifyGate {
+        <<plugins/cobuilder-implement/scripts/verify_gate.py>>
+        +check_4a(plan_dir) tuple
+        +check_4b(plan_dir, slices, status_text) dict
+        +check_4c(rubrics_dir, slices) dict
+        +all_ok(flat) bool
+        +main() void
+    }
+
+    class PluginSharedSymlink {
+        <<plugins/*/shared -> ../../shared>>
+    }
+
+    PluginSharedSymlink --> BundleMeta : resolves to
+    PluginSharedSymlink --> BuildIndex : resolves to
+    PluginSharedSymlink --> MigrateBundle : resolves to
+
+    MigrateBundle --> BundleMeta : reads SCHEMA_VERSION and CURRENT_BUNDLE_FORMAT
+    VerifyGate --> BundleMeta : shared/ symlink import (via cobuilder-implement)
+    BuildIndex --> BundleMeta : stamps generator version
+
+    note for VerifyGate "Checks gates 4a, 4b, 4c for a plan directory\nand exits non-zero on any pending gate"
+    note for MigrateBundle "Runs unconditional viewer refresh,\nthen the layout ladder, then the data ladder"
