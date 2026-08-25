@@ -7,9 +7,9 @@
   "license": "MIT",
   "keywords": ["claude-code", "cobuilder", "umbrella"],
   "dependencies": [
-    "cobuilder-architect@cobuilder-architect",
-    "cobuilder-pr@cobuilder-architect",
-    "cobuilder-artifact@cobuilder-architect",
-    "cobuilder-implement@cobuilder-architect"
+    "cobuilder-architect@cobuilder-plugin",
+    "cobuilder-pr@cobuilder-plugin",
+    "cobuilder-artifact@cobuilder-plugin",
+    "cobuilder-implement@cobuilder-plugin"
   ]
 }

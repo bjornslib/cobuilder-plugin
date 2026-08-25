@@ -6,5 +6,5 @@
   "repository": "https://github.com/bjornslib/cobuilder-architect",
   "license": "MIT",
   "keywords": ["claude-code", "architecture", "adr", "code-review", "design"],
-  "dependencies": ["cobuilder-artifact@cobuilder-architect"]
+  "dependencies": ["cobuilder-artifact@cobuilder-plugin"]
 }
