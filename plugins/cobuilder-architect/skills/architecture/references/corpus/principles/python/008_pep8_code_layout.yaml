@@ -1,0 +1,101 @@
+id: pep8-code-layout-008
+name: PEP 8 Code Layout — Indentation, Line Length, Blank Lines, Imports
+category: readability
+canonical_tags: ['python', 'readability']
+sources:
+  - open_sources/python/pep-0008.html
+summary: >
+  PEP 8's code layout rules form the backbone of readable Python. Use 4 spaces per indentation level
+  (never mix tabs). Limit lines to 79 characters (99 for teams that agree). Surround top-level definitions
+  with two blank lines, methods with one. Imports go at the top, grouped in order: standard library,
+  third-party, local — with a blank line between groups. Use absolute imports. Wildcard imports are forbidden
+  except for republishing internal APIs. Module dunders (__all__, __version__) go after docstring but before
+  other imports.
+examples:
+  - language: python
+    bad: |
+      # Indentation chaos: tabs mixed with spaces, inconsistent levels.
+      def process(data, mode, verbose=False):
+      	if mode == "fast":
+              result = quick_scan(data, mode)  # 2-space + tab = unreadable
+      	    return result
+          else:
+              # Multi-line without hanging indent — arguments blend with body.
+              return full_analysis(data, mode,
+              verbose)
+
+      # Wildcard import — pollutes namespace, hides source of names.
+      from utils import *
+
+      # Imports in random order, duplicates everywhere.
+      import os
+      from myapp.models import User
+      import sys
+      from myapp import views
+      import os
+
+      # 120-character line: unreadable in split-pane diff, wraps in code review.
+      user_stats = fetch_user_data(user_id, include_private=True, format="json", timeout=30, retries=3, cache=True)
+    good: |
+      """PEP 8 layout rules in practice: consistent indentation, disciplined
+      line length, structured imports, and logical vertical spacing.
+      """
+
+      from __future__ import annotations
+
+      __all__ = ["process", "ProcessResult"]
+      __version__ = "1.0.0"
+
+      # 1. Standard library imports
+      import os
+      import sys
+      from typing import Any
+
+      # 2. Third-party imports
+      import numpy as np
+
+      # 3. Local application imports
+      from myapp.models import User
+      from myapp.utils import quick_scan, full_analysis
+
+
+      class ProcessResult:
+          """Result of a data processing run."""
+
+
+      def process(data: Any, mode: str, *, verbose: bool = False) -> ProcessResult:
+          """Process data with the given mode.
+
+          4-space indentation throughout. Hanging indent for arguments.
+          """
+          if mode == "fast":
+              result = quick_scan(data, mode)
+              return result
+
+          # Line broken before binary operator (Knuth style) for readability.
+          return full_analysis(
+              data,
+              mode,
+              verbose=verbose,
+          )
+
+
+      # Long line: break inside parentheses — Python's implicit continuation.
+      user_stats = fetch_user_data(
+          user_id,
+          include_private=True,
+          format="json",
+          timeout=30,
+          retries=3,
+          cache=True,
+      )
+heuristics:
+  - "Use 4 spaces per indentation level. Never mix tabs and spaces — Python 3 disallows it outright. Continuation lines should use hanging indents (extra 4 spaces) or align with the opening delimiter."
+  - Limit lines to 79 characters. For teams that prefer longer lines, 99 is acceptable. Docstrings and comments should always wrap at 72 characters. Use implicit line continuation inside parentheses rather than backslashes.
+  - "Surround top-level function and class definitions with two blank lines. Method definitions inside a class get one blank line. Use extra blank lines sparingly to separate logical groups."
+  - Group imports in this order: standard library, third-party, local application. Put a blank line between each group. Use absolute imports; explicit relative imports are an acceptable alternative for complex packages.
+  - "Never use wildcard imports (from x import *). The one exception: republishing an internal interface as a public API when the exact exports aren't known in advance."
+  - "Module-level dunder names (__all__, __version__, __author__) go after the module docstring but before any imports — except __future__ imports, which must come first."
+  - "Break lines before binary operators (Knuth style) — it makes the operator's relationship to its operands visually obvious, as in mathematical typesetting."
+  - Avoid extraneous whitespace inside parentheses/brackets/braces. No space before commas, colons, or opening parentheses of function calls.
+related_tags: [pep8, code-layout, indentation, imports, line-length, blank-lines, hanging-indent, readability, style]

@@ -1,7 +1,39 @@
 {
-  "name": "prodyssey",
-  "owner": { "name": "bjornslib", "url": "https://github.com/bjornslib" },
+  "name": "cobuilder-architect",
+  "owner": {
+    "name": "bjornslib",
+    "url": "https://github.com/bjornslib"
+  },
   "plugins": [
-    { "name": "prodyssey", "source": ".", "description": "Codebase Odyssey generator plugin", "version": "0.3.0" }
+    {
+      "name": "cobuilder-architect",
+      "description": "Design, review, maintenance, decisions, describe, and debug for a local git repo.",
+      "source": "./plugins/cobuilder-architect",
+      "version": "0.5.0"
+    },
+    {
+      "name": "cobuilder-pr",
+      "description": "Narrated PR history and submit-mode review. Output is a portable .cobuilder-architect/ bundle.",
+      "source": "./plugins/cobuilder-pr",
+      "version": "0.5.0"
+    },
+    {
+      "name": "cobuilder-artifact",
+      "description": "Serve a bundle locally and publish a level as a self-contained Claude Artifact.",
+      "source": "./plugins/cobuilder-artifact",
+      "version": "0.5.0"
+    },
+    {
+      "name": "cobuilder-implement",
+      "description": "Build a feature one vertical slice at a time with four approval gates, blind rubrics, and independent validation.",
+      "source": "./plugins/cobuilder-implement",
+      "version": "0.1.0"
+    },
+    {
+      "name": "cobuilder-full-lifecycle",
+      "description": "Umbrella plugin for the CoBuilder family.",
+      "source": "./plugins/cobuilder-full-lifecycle",
+      "version": "0.1.0"
+    }
   ]
 }

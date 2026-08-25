@@ -1,0 +1,333 @@
+id: replace-conditional-with-polymorphism-001
+name: "Refactoring -- Replace Conditional with Polymorphism"
+category: design-patterns
+canonical_tags: ['refactoring', 'simplifying-conditionals', 'replace-conditional-with-polymorphism', 'polymorphism', 'open-closed-principle']
+sources:
+  - books/refactoring.md
+  - books/clean-code.md
+  - open_sources/design_patterns/refactoring-guru-patterns.txt
+summary: >
+  Replace Conditional with Polymorphism replaces a conditional that branches
+  on type code with a polymorphic hierarchy where each branch becomes a subclass
+  that overrides the behavior. Instead of switch/if-elif chains on employee type
+  in calculatePay, getTitle, and getBenefits, create Engineer, Manager, and
+  Salesperson subclasses each with their own implementations. The conditional
+  disappears; the type code becomes the class name itself. This is one of Fowler's
+  most powerful refactorings because it satisfies the Open/Closed Principle:
+  adding a new variant means creating a new subclass in a new file, with zero
+  changes to any existing conditional logic. The factory method becomes the single
+  switch statement that maps external type codes to internal polymorphism. Apply
+  when the same type-code branching structure appears in 3+ methods across the
+  codebase. Do NOT apply when the type code changes at runtime -- use Replace
+  Type Code with State/Strategy instead. Do NOT apply for a single conditional
+  with only 2 simple variants -- the class overhead is not warranted.
+
+  The mechanical sequence: (1) Self-encapsulate the type code field. (2) Create
+  a subclass for each variant. (3) Move one conditional branch at a time into
+  the corresponding subclass as an override. (4) Repeat for every method that
+  branches on the type code. (5) Remove the type code field entirely. (6) Create
+  a factory method with the single switch that constructs the right subclass.
+examples:
+  - language: python
+    bad: |
+      # A string type code controls get_speed() and get_plumage(). Both
+      # methods have identical if/elif chains. Adding a new bird species
+      # means adding elif branches to BOTH methods. Shotgun Surgery.
+
+      class Bird:
+          def __init__(self, name, kind, number_of_coconuts=0,
+                       voltage=0.0, is_nailed=False):
+              self._name = name
+              self._kind = kind
+              self._number_of_coconuts = number_of_coconuts
+              self._voltage = voltage
+              self._is_nailed = is_nailed
+
+          def get_speed(self):
+              if self._kind == "european":
+                  return self._base_speed()
+              elif self._kind == "african":
+                  return max(0, self._base_speed()
+                             - 2.0 * self._number_of_coconuts)
+              elif self._kind == "norwegian_blue":
+                  if self._is_nailed:
+                      return 0.0
+                  return self._base_speed(self._voltage)
+              raise ValueError(f"Unknown bird kind: {self._kind}")
+
+          def get_plumage(self):
+              if self._kind == "european":
+                  return "brown"
+              elif self._kind == "african":
+                  if self._number_of_coconuts > 2:
+                      return "colorful"
+                  return "brown"
+              elif self._kind == "norwegian_blue":
+                  if self._voltage > 100:
+                      return "beautiful"
+                  return "faded"
+              raise ValueError(f"Unknown bird kind: {self._kind}")
+
+          def _base_speed(self, voltage=0.0):
+              return 40.0 + voltage * 0.5
+
+      # Adding "penguin": add elif to get_speed, elif to get_plumage,
+      # elif to every future method. Forget one branch and you get a
+      # runtime crash. The type code is a maintenance shotgun.
+
+    good: |
+      # Replace Conditional with Polymorphism: each bird species is a
+      # subclass. The conditional disappears from business logic entirely.
+      # The factory (Bird.create) is the ONLY switch. Adding a new species
+      # means a new file -- zero changes to existing species.
+
+      from abc import ABC, abstractmethod
+
+
+      class Bird(ABC):
+          def __init__(self, name):
+              self._name = name
+
+          @abstractmethod
+          def get_speed(self): ...
+
+          @abstractmethod
+          def get_plumage(self): ...
+
+          @staticmethod
+          def create(name, kind, **kwargs):
+              """Factory: the single switch that knows all species."""
+              if kind == "european":
+                  return EuropeanSwallow(name)
+              if kind == "african":
+                  return AfricanSwallow(
+                      name, kwargs.get("number_of_coconuts", 0))
+              if kind == "norwegian_blue":
+                  return NorwegianBlueParrot(
+                      name, kwargs.get("voltage", 0.0),
+                      kwargs.get("is_nailed", False))
+              raise ValueError(f"Unknown bird kind: {kind}")
+
+
+      class EuropeanSwallow(Bird):
+          def get_speed(self):
+              return 40.0
+
+          def get_plumage(self):
+              return "brown"
+
+
+      class AfricanSwallow(Bird):
+          def __init__(self, name, number_of_coconuts):
+              super().__init__(name)
+              self._number_of_coconuts = number_of_coconuts
+
+          def get_speed(self):
+              return max(0, 40.0 - 2.0 * self._number_of_coconuts)
+
+          def get_plumage(self):
+              if self._number_of_coconuts > 2:
+                  return "colorful"
+              return "brown"
+
+
+      class NorwegianBlueParrot(Bird):
+          def __init__(self, name, voltage, is_nailed):
+              super().__init__(name)
+              self._voltage = voltage
+              self._is_nailed = is_nailed
+
+          def get_speed(self):
+              if self._is_nailed:
+                  return 0.0
+              return 40.0 + self._voltage * 0.5
+
+          def get_plumage(self):
+              if self._voltage > 100:
+                  return "beautiful"
+              return "faded"
+
+
+      # Each species is independently testable:
+      def test_european():
+          bird = Bird.create("Hedwig", "european")
+          assert bird.get_speed() == 40.0
+          assert bird.get_plumage() == "brown"
+
+      def test_african_with_coconuts():
+          bird = Bird.create("Zazu", "african", number_of_coconuts=3)
+          assert bird.get_speed() == 34.0
+          assert bird.get_plumage() == "colorful"
+
+      # Adding Penguin: create Penguin class, add one elif to Bird.create().
+      # Zero changes to existing species -- Open/Closed Principle satisfied.
+
+  - language: typescript
+    bad: |
+      // switch on employee type controls monthly pay and title.
+      // The same switch structure appears in calculateMonthlyPay,
+      // getTitle, calculateBonus, and getBenefits. Adding
+      // "contractor" means touching ALL 4 switch statements.
+
+      type EmployeeType = "engineer" | "manager" | "salesperson";
+
+      class Employee {
+        constructor(
+          public name: string,
+          public type: EmployeeType,
+          public monthlySalary: number = 0,
+          public commission: number = 0,
+          public bonus: number = 0,
+        ) {}
+
+        calculateMonthlyPay(): number {
+          switch (this.type) {
+            case "engineer":
+              return this.monthlySalary;
+            case "manager":
+              return this.monthlySalary + this.bonus;
+            case "salesperson":
+              return this.monthlySalary + this.commission;
+          }
+        }
+
+        getTitle(): string {
+          switch (this.type) {
+            case "engineer": return "Software Engineer";
+            case "manager": return "Engineering Manager";
+            case "salesperson": return "Sales Representative";
+          }
+        }
+      }
+
+    good: |
+      // Replace Conditional with Polymorphism: each employee type is
+      // a subclass. Switch statements disappear from business logic.
+      // Adding "contractor" means a new file -- zero changes to existing
+      // employee classes.
+
+      abstract class Employee {
+        constructor(public name: string) {}
+
+        abstract calculateMonthlyPay(): number;
+        abstract getTitle(): string;
+      }
+
+      class Engineer extends Employee {
+        constructor(name: string, private monthlySalary: number) {
+          super(name);
+        }
+
+        calculateMonthlyPay(): number {
+          return this.monthlySalary;
+        }
+
+        getTitle(): string {
+          return "Software Engineer";
+        }
+      }
+
+      class Manager extends Employee {
+        constructor(
+          name: string,
+          private monthlySalary: number,
+          private bonus: number,
+        ) {
+          super(name);
+        }
+
+        calculateMonthlyPay(): number {
+          return this.monthlySalary + this.bonus;
+        }
+
+        getTitle(): string {
+          return "Engineering Manager";
+        }
+      }
+
+      class Salesperson extends Employee {
+        constructor(
+          name: string,
+          private monthlySalary: number,
+          private commission: number,
+        ) {
+          super(name);
+        }
+
+        calculateMonthlyPay(): number {
+          return this.monthlySalary + this.commission;
+        }
+
+        getTitle(): string {
+          return "Sales Representative";
+        }
+      }
+
+      // Factory is the single place that maps type to subclass:
+
+      function createEmployee(type: EmployeeType, data: any): Employee {
+        switch (type) {
+          case "engineer":
+            return new Engineer(data.name, data.monthlySalary);
+          case "manager":
+            return new Manager(
+              data.name, data.monthlySalary, data.bonus);
+          case "salesperson":
+            return new Salesperson(
+              data.name, data.monthlySalary, data.commission);
+        }
+      }
+
+      test("engineer pay is base salary only", () => {
+        const emp = new Engineer("Alice", 8000);
+        expect(emp.calculateMonthlyPay()).toBe(8000);
+        expect(emp.getTitle()).toBe("Software Engineer");
+      });
+
+heuristics:
+  - >
+    "Replace Conditional with Polymorphism: you have a conditional that
+    chooses different behavior depending on the type of an object. Move
+    each leg of the conditional to an overriding method in a subclass.
+    Make the original method abstract" (Fowler, Refactoring).
+  - The switch/if-elif chain is the fingerprint. When you see the same
+    type-code branching structure duplicated across multiple methods, the
+    design is screaming for polymorphism -- the type code IS the class
+    hierarchy waiting to be born.
+  - The factory method is the compromise: the switch lives in exactly one
+    place (the factory), while all business logic is polymorphic. The
+    factory is the "necessary evil" that maps external representation
+    (string/enum) to internal polymorphism.
+  - Apply when the type code is fixed at construction time and never changes.
+    If the type code changes at runtime (a document that transitions from
+    "draft" to "review" to "published"), use Replace Type Code with
+    State/Strategy instead.
+  - Before applying this refactoring, self-encapsulate the type code field
+    by wrapping it in a getter so callers do not depend on the raw field
+    access. This isolates the change from clients.
+  - Name subclasses after the domain concept: Engineer, not EmployeeEngineer;
+    AfricanSwallow, not BirdAfrican. The class name IS the type code now,
+    so make it readable as a standalone noun.
+  - Do NOT apply for a single conditional with only 2 variants where behavior
+    differences are simple (e.g., just a parameter change). An if/else is
+    cheaper than a class hierarchy requiring 3 files (abstract base + 2
+    concrete). Apply when branching structure is duplicated across multiple
+    methods.
+  - In TypeScript, discriminated unions are a lighter alternative to class
+    hierarchies when variants are stable (rarely added) and the number of
+    methods is small. Reserve full polymorphism for complex behavior with
+    many methods or when variants are added frequently by different teams.
+  - Test each subclass independently by constructing it directly with known
+    parameters -- not through the factory. The subclass behavior should be
+    fully verifiable without the factory or the abstract base class's other
+    variants.
+  - This refactoring is partially reversible via Inline Class or Collapse
+    Hierarchy. If the subclass hierarchy becomes unmanageable or a subclass
+    no longer justifies its existence, collapse back to a simpler structure.
+
+related_tags:
+  [replace-conditional-with-polymorphism, polymorphism, simplifying-conditionals,
+   refactoring, fowler-refactoring, open-closed-principle, ocp,
+   strategy-pattern, state-pattern, factory-method, switch-statements,
+   code-smells, shotgun-surgery, subclasses, inheritance, design-patterns,
+   replace-type-code, discriminated-union, clean-code]

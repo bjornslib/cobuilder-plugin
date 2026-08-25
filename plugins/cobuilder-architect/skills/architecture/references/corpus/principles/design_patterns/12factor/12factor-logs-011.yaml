@@ -1,0 +1,248 @@
+id: 12factor-logs-011
+name: "12-Factor App — Logs (Treat as Event Streams)"
+category: cloud-native
+canonical_tags: ['12factor', 'logs', 'event-streams', 'observability', 'stdout', 'monitoring']
+sources:
+  - open_sources/design_patterns/12factor-app.txt
+  - open_sources/design_patterns/12factor-logs.html
+summary: >
+  A twelve-factor app treats logs as event streams. Each running process
+  writes its event stream unbuffered to stdout, and the execution environment
+  captures, collates, and routes those streams to final destinations (log
+  indexing systems like Splunk or Elasticsearch, data warehouses like
+  Hadoop/Hive, or real-time tail in a terminal). The app never concerns
+  itself with routing or storage of logs — it never writes to logfiles on
+  disk. This decoupling means the app's logging infrastructure can be
+  changed without touching application code. Logs enable finding specific
+  past events, graphing trends (requests per minute), and active alerting
+  based on user-defined heuristics (error rate thresholds).
+examples:
+  - language: python
+    bad: |
+      # BAD: App manages its own logfiles — opens files, rotates them,
+      # writes to disk. Log routing is hardcoded. Switching from local
+      # files to a centralized log system requires code changes.
+
+      import logging
+      from logging.handlers import RotatingFileHandler
+      from http.server import HTTPServer, BaseHTTPRequestHandler
+
+      # WHY: Rotating file handler — writes to /var/log/myapp/app.log.
+      # The app owns the file lifecycle. Disk fills up if rotation fails.
+      # Multiple processes writing to the same file need file locking.
+      logger = logging.getLogger("badapp")
+      handler = RotatingFileHandler(
+          "/var/log/myapp/app.log",
+          maxBytes=10_000_000,
+          backupCount=5,
+      )
+      handler.setFormatter(logging.Formatter(
+          "%(asctime)s [%(levelname)s] %(message)s"
+      ))
+      logger.addHandler(handler)
+
+      class BadHandler(BaseHTTPRequestHandler):
+          def do_GET(self):
+              # WHY: Logs go to the file, not stdout. The process manager
+              # can't see them. Developers must SSH in to tail the file.
+              logger.info(f"Request: {self.path}")
+              try:
+                  result = 1 / 0
+              except Exception:
+                  logger.exception("Division error")
+              self.send_response(200)
+              self.end_headers()
+
+      server = HTTPServer(("0.0.0.0", 8000), BadHandler)
+      server.serve_forever()
+      # WHY: Logs are invisible to the platform. To see them:
+      # ssh prod-server tail -f /var/log/myapp/app.log
+      # To ship to Splunk: install a log forwarder agent on the VM.
+
+    good: |
+      # GOOD: App writes unbuffered to stdout. The execution environment
+      # captures stdout and routes it. No logfiles, no rotation code,
+      # no file paths. Switch from Logplex to Fluentd with zero code changes.
+
+      import sys
+      import json
+      import logging
+      import time
+      from datetime import datetime, timezone
+      from http.server import HTTPServer, BaseHTTPRequestHandler
+
+      # WHY: StreamHandler to stdout — not a file. The platform captures
+      # stdout automatically. Logs appear in `heroku logs` / `kubectl logs`.
+      # No rotation code, no disk management.
+      logger = logging.getLogger("goodapp")
+      logger.setLevel(logging.INFO)
+
+      handler = logging.StreamHandler(sys.stdout)
+      handler.setFormatter(logging.Formatter(
+          json.dumps({
+              "timestamp": datetime.now(timezone.utc).isoformat(),
+              "level": "%(levelname)s",
+              "message": "%(message)s",
+              "logger": "%(name)s",
+          })
+          # WHY: JSON format — machine-parseable. Splunk, Elasticsearch, and
+          # Loki can index structured logs without regex parsing.
+      ))
+      logger.addHandler(handler)
+
+      class GoodHandler(BaseHTTPRequestHandler):
+          def do_GET(self):
+              start = time.monotonic()
+              try:
+                  # WHY: Logs to stdout via logger → captured by platform.
+                  # Visible in real-time: `kubectl logs -f pod/myapp`
+                  logger.info(f"Request: {self.path}")
+                  self.send_response(200)
+                  self.end_headers()
+              except Exception:
+                  logger.exception("Unhandled error")
+                  self.send_response(500)
+                  self.end_headers()
+              finally:
+                  duration_ms = (time.monotonic() - start) * 1000
+                  # WHY: Request duration logged — enables graphing
+                  # p50/p95/p99 request latency in the log platform.
+                  logger.info(f"Completed {self.path} in {duration_ms:.1f}ms")
+
+      port = int(os.environ.get("PORT", "8000"))
+      server = HTTPServer(("0.0.0.0", port), GoodHandler)
+      server.serve_forever()
+
+      # WHY: In production, the platform routes stdout to:
+      # - Real-time tail: `heroku logs --tail` or `kubectl logs -f`
+      # - Log indexing: Splunk, Elasticsearch, Datadog, Loki
+      # - Data warehouse: S3 + Athena, BigQuery
+      # - Alerting: PagerDuty triggers on error rate spikes
+      # The app code never changes regardless of the log destination.
+
+  - language: typescript
+    bad: |
+      // BAD: App writes to logfiles using a library like winston with
+      // file transports. Log rotation, file paths, and disk management
+      // are the app's responsibility. Switching log backends requires
+      // code changes and a redeploy.
+
+      import express from "express";
+      import winston from "winston";
+
+      // WHY: File transport — writes to /var/log/app.log. The app manages
+      // rotation. Different processes write to different files or need
+      // file locking. Disk cleanup is manual.
+      const logger = winston.createLogger({
+        transports: [
+          new winston.transports.File({
+            filename: "/var/log/app.log",
+            maxsize: 10_000_000,
+            maxFiles: 5,
+          }),
+        ],
+      });
+
+      const app = express();
+      app.get("/", (_req, res) => {
+        logger.info("Request received");
+        res.send("OK");
+      });
+
+      app.listen(3000);
+
+    good: |
+      // GOOD: App writes JSON to stdout via console.log or a structured
+      // logger. The execution environment captures and routes stdout.
+      // Logs are immediately visible via `docker logs` or `kubectl logs`.
+
+      import express from "express";
+
+      const app = express();
+
+      // WHY: Structured JSON logging to stdout. No file paths, no rotation.
+      // The container runtime / kubelet captures stdout. Log aggregation
+      // (Fluentd, Logstash, Datadog agent) collects from the node.
+      function log(level: string, message: string, extra: Record<string, unknown> = {}) {
+        const entry = JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level,
+          message,
+          ...extra,
+        });
+        // WHY: stdout is the universal log transport. Every platform
+        // captures it. No library dependency for log shipping.
+        process.stdout.write(entry + "\n");
+      }
+
+      app.use((req, _res, next) => {
+        const start = Date.now();
+        log("info", `${req.method} ${req.path}`, {
+          method: req.method,
+          path: req.path,
+          ip: req.ip,
+        });
+
+        // WHY: Log on response finish with duration — enables latency
+        // monitoring in the log platform without APM instrumentation.
+        _res.on("finish", () => {
+          log("info", `Completed ${req.method} ${req.path}`, {
+            status: _res.statusCode,
+            duration_ms: Date.now() - start,
+          });
+        });
+        next();
+      });
+
+      app.get("/", (_req, res) => {
+        // WHY: No log library needed. console.log works.
+        // `docker logs` shows this immediately.
+        res.send("OK");
+      });
+
+      const port = parseInt(process.env.PORT || "3000", 10);
+      app.listen(port, "0.0.0.0", () => {
+        log("info", `Server started on port ${port}`);
+      });
+
+heuristics:
+  - >
+    "Treat logs as event streams. Each process writes unbuffered to stdout.
+    The execution environment captures and routes the streams" (12factor.net).
+  - >
+    Never write to logfiles on disk. The app should not know about logfile
+    paths, rotation policies, or disk quotas. Log routing is the execution
+    environment's responsibility, not the app's.
+  - >
+    Write logs unbuffered. Use stdout (not stderr for regular logs — reserve
+    stderr for actual errors). The platform captures both streams but
+    unbuffered stdout ensures real-time visibility.
+  - >
+    Use structured logging (JSON). Machine-parseable logs enable the log
+    platform to index fields without regex extraction. Splunk, Elasticsearch,
+    and Datadog all prefer JSON.
+  - >
+    Logs are a continuous stream with no fixed beginning or end. The stream
+    flows as long as the app operates. The log platform handles retention,
+    archival, and query windows — the app doesn't.
+  - >
+    In local development, the developer sees the log stream in their
+    terminal (Foreman/Honcho displays it). This is sufficient — no special
+    dev-mode logging config needed.
+  - >
+    Log entries should include correlation IDs (request IDs, trace IDs) so
+    related events across services can be joined. The app generates the ID;
+    the log platform joins the events.
+  - >
+    Enable three log use cases: finding specific past events (search),
+    graphing trends over time (aggregation), and active alerting (thresholds
+    on error rates, latency spikes, etc.).
+  - >
+    Never use proprietary log formats or log-shipping libraries in app code.
+    stdout is the universal interface. Switch from Logplex to Fluentd to
+    Datadog without touching a line of application code.
+
+related_tags:
+  [logs, event-streams, stdout, observability, structured-logging, json-logs,
+   splunk, elasticsearch, fluentd, logplex, datadog, loki, monitoring,
+   alerting, correlation-id, tracing, twelve-factor]

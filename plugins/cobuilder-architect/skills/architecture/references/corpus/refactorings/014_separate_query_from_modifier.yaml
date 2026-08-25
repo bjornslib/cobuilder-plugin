@@ -1,0 +1,99 @@
+id: separate-query-from-modifier-014
+name: Separate Query from Modifier
+category: refactoring
+canonical_tags: ['refactoring', 'design']
+sources:
+  - books/clean-code.md
+summary: |
+  Separate Query from Modifier enforces Command-Query Separation (CQS): a function
+  should either answer a question (return a value, no side effects) or perform an
+  action (change state, no return value), never both. When you find a method that
+  returns a result AND modifies state — like `def withdraw(amount) -> balance` — split
+  it into two: a query that returns the answer and a command that performs the change.
+  This makes code predictable: callers never have to wonder whether asking a question
+  will accidentally change something.
+examples:
+  - language: python
+    bad: |
+      class Account:
+          def __init__(self, balance: float):
+              self._balance = balance
+
+          def withdraw(self, amount: float) -> float:
+              """Withdraws money AND returns the new balance. CQS violation."""
+              if amount > self._balance:
+                  raise ValueError("Insufficient funds")
+              self._balance -= amount
+              return self._balance  # Side effect + query in one method
+
+      # Usage — hard to tell what changes state
+      balance = account.withdraw(100)
+      # Did withdraw change anything? Yes. But it looks like a getter.
+    good: |
+      class Account:
+          def __init__(self, balance: float):
+              self._balance = balance
+
+          # Query — pure, no side effects
+          def get_balance(self) -> float:
+              return self._balance
+
+          # Command — changes state, returns nothing
+          def withdraw(self, amount: float) -> None:
+              if amount > self._balance:
+                  raise ValueError("Insufficient funds")
+              self._balance -= amount
+
+      # Usage — intent is clear
+      account.withdraw(100)
+      new_balance = account.get_balance()
+  - language: typescript
+    bad: |
+      class UserSession {
+        private lastActivity: Date | null = null;
+
+        isExpired(timeoutMs: number): boolean {
+          const now = Date.now();
+          if (this.lastActivity && now - this.lastActivity.getTime() > timeoutMs) {
+            this.lastActivity = null;  // Side effect! Clears the session on check.
+            return true;
+          }
+          return false;
+        }
+      }
+    good: |
+      class UserSession {
+        private lastActivity: Date | null = null;
+
+        // Query — answers the question without side effects
+        isExpired(timeoutMs: number): boolean {
+          if (!this.lastActivity) return true;
+          return Date.now() - this.lastActivity.getTime() > timeoutMs;
+        }
+
+        // Command — performs the state change explicitly
+        clearSession(): void {
+          this.lastActivity = null;
+        }
+
+        // Orchestrator if both operations are common together
+        ensureSession(timeoutMs: number): boolean {
+          if (this.isExpired(timeoutMs)) {
+            this.clearSession();
+            return true;
+          }
+          return false;
+        }
+      }
+heuristics:
+  - Apply when a method both mutates state and returns a value — split into `calculateX()` + `applyX()` or `getY()` + `setY()`.
+  - Apply when a method's return value tempts callers to ignore the side effect — a void return makes the mutation explicit.
+  - Apply when tests have to both verify state changes AND assert return values in the same assertion — splitting makes each test single-purpose.
+  - Signal commands with imperative verbs: `saveOrder`, `deleteUser`, `sendNotification`, `markAsShipped`.
+  - Signal queries with nouns or question forms: `getOrderTotal`, `isEligible`, `findByEmail`, `calculateTax`.
+  - Do NOT apply when performance requires a single pass (e.g. `pop()` on a stack — the combined query+modify IS the contract).
+  - Do NOT apply in event-sourced systems where commands returning the resulting event is idiomatic — the return is the event, not state.
+  - Do NOT split functions that the standard library or framework expects to be combined (e.g. `fetch()` calling `save()` on a dirty cache).
+  - After separating: the query should be callable anywhere without worrying about ordering or preconditions — if a caller still must check "did I call the command first", you haven't fully separated.
+  - Mechanical sequence: (1) create a pure query method that computes the result without side effects, (2) change the original method to call the query internally, then perform only the mutation (return void), (3) update callers that needed the return value to call the query before or after the command, (4) if the combined pattern is common, add a convenience orchestrator that calls both.
+related_tags: [command-query-separation, cqs, side-effects, functional, immutability, single-responsibility]

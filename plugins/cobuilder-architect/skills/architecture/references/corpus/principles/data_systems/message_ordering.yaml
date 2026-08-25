@@ -1,0 +1,397 @@
+id: message-ordering-001
+name: Message Ordering
+category: data_systems
+canonical_tags: ['data-systems', 'messaging', 'correctness']
+sources:
+  - books/designing-data-intensive-applications.md
+summary: >
+  Do not assume global total order in distributed systems — it does not exist
+  without a single bottleneck. Scope ordering guarantees to the minimum the
+  business logic actually needs: per-key, per-partition, per-stream, or per-aggregate.
+  Keep ordering-sensitive logic close to the key or stream that defines the order.
+  When ordering matters, encode ordering metadata (sequence numbers, timestamps,
+  version vectors) in every message so consumers can detect and handle out-of-order
+  arrival. Causal ordering — preserving happens-before relationships — is usually
+  sufficient for most workflows and is achievable without total order. Distinguish
+  between event time (when something happened), processing time (when the system
+  processed it), and arrival time (when the message reached the broker). Consumers
+  must handle late and out-of-order events explicitly — never assume perfect arrival.
+examples:
+  - language: python
+    bad: |
+      from typing import Any
+
+
+      class TotalOrderAssumption:
+          """Assumes all messages arrive in perfect global order — fantasy."""
+
+          def __init__(self) -> None:
+              self._balance: int = 0
+              self._last_tx_id: str | None = None
+
+          def process_transaction(self, event: dict) -> None:
+              tx_id = event["tx_id"]
+              amount = event["amount"]
+
+              # Assumes events arrive in perfect order
+              self._balance += amount
+              self._last_tx_id = tx_id
+
+              # No sequence number check, no ordering validation
+              # Out-of-order event: deposit before withdrawal corrupts balance
+              # Parallel consumers on same account with no ordering plan
+
+          def process_order_events(self, event: dict) -> None:
+              # Assumes create_order arrives before update_order_status
+              if event["type"] == "order_created":
+                  self._create_order(event["order_id"], event["items"])
+              elif event["type"] == "order_shipped":
+                  # CRASHES if order_created hasn't been processed yet
+                  self._mark_shipped(event["order_id"], event["tracking"])
+              # No ordering guarantee — just hope
+    good: |
+      from __future__ import annotations
+
+      from dataclasses import dataclass
+      from enum import Enum
+      from typing import Any
+
+
+      class OrderingScope(Enum):
+          GLOBAL = "global"       # Single bottleneck — avoid
+          PER_KEY = "per_key"     # Ordered per partition/entity key
+          PER_STREAM = "per_stream"  # Ordered within a log/topic
+          CAUSAL = "causal"       # Preserves happens-before, not total order
+          NONE = "none"           # No ordering needed
+
+
+      @dataclass
+      class OrderingContract:
+          """Explicit ordering contract — no hidden assumptions."""
+          scope: OrderingScope
+          partition_key: str | None = None  # Which field defines ordering domain
+          sequence_field: str = "sequence_number"
+
+
+      class KeyScopedOrdering:
+          """Per-key ordering: events for the same entity are ordered."""
+
+          def __init__(self, contract: OrderingContract) -> None:
+              self._contract = contract
+              self._last_sequence: dict[str, int] = {}
+              self._out_of_order_buffer: dict[str, list[dict]] = {}
+              self._state: dict[str, Any] = {}
+
+          def process(self, event: dict) -> bool:
+              key = event.get(self._contract.partition_key or "id")
+              seq = event.get(self._contract.sequence_field, 0)
+
+              # Gap detection: if sequence jumped, buffer for reordering
+              expected = self._last_sequence.get(key, -1) + 1
+
+              if seq > expected:
+                  # Out of order or gap — buffer it
+                  self._out_of_order_buffer.setdefault(key, []).append(event)
+                  # Wait for missing events to arrive
+                  return False
+
+              if seq < expected:
+                  # Duplicate or late — already processed, discard
+                  return True
+
+              # In-order: process and drain buffer for this key
+              self._apply_event(key, event)
+              self._last_sequence[key] = seq
+              self._drain_buffer(key)
+              return True
+
+          def _apply_event(self, key: str, event: dict) -> None:
+              """Apply event to state — now safe because ordering is enforced."""
+              match event["type"]:
+                  case "deposit":
+                      self._state.setdefault(key, {"balance": 0})
+                      self._state[key]["balance"] += event["amount"]
+                  case "withdrawal":
+                      state = self._state.setdefault(key, {"balance": 0})
+                      if state["balance"] >= event["amount"]:
+                          state["balance"] -= event["amount"]
+                      else:
+                          raise ValueError(f"Insufficient balance for {key}")
+                  case "order_created":
+                      self._state[key] = {
+                          "status": "created",
+                          "items": event.get("items", []),
+                      }
+                  case "order_shipped":
+                      if key in self._state and self._state[key]["status"] == "created":
+                          self._state[key]["status"] = "shipped"
+                          self._state[key]["tracking"] = event.get("tracking")
+                      else:
+                          # Causal ordering violation: shipped before created
+                          raise ValueError(f"Order {key} not in 'created' state")
+
+          def _drain_buffer(self, key: str) -> None:
+              """Process any buffered events that are now in sequence."""
+              buffer = self._out_of_buffer.get(key, [])
+              buffer.sort(key=lambda e: e.get(self._contract.sequence_field, 0))
+
+              while buffer:
+                  next_event = buffer[0]
+                  next_seq = next_event.get(self._contract.sequence_field, 0)
+                  expected = self._last_sequence.get(key, 0) + 1
+
+                  if next_seq == expected:
+                      self._apply_event(key, buffer.pop(0))
+                      self._last_sequence[key] = next_seq
+                  elif next_seq < expected:
+                      buffer.pop(0)  # Duplicate, discard
+                  else:
+                      break  # Still missing intermediate events
+
+
+      class CausalOrderTracker:
+          """Enforce happens-before using vector clocks."""
+
+          def __init__(self) -> None:
+              self._clock: dict[str, int] = {}
+              self._pending: dict[str, list[dict]] = {}  # events waiting for dependencies
+
+          def process(self, event: dict) -> bool:
+              """Process event if its dependencies are satisfied."""
+              deps = event.get("depends_on", {})  # vector clock of dependencies
+
+              if self._dependencies_satisfied(deps):
+                  self._apply(event)
+                  self._merge_clock(event.get("clock", {}))
+                  self._drain_dependents(event.get("event_id", ""))
+                  return True
+
+              # Buffer: wait for dependencies
+              self._pending.setdefault(event["event_id"], []).append(event)
+              return False
+
+          def _dependencies_satisfied(self, deps: dict[str, int]) -> bool:
+              for node, count in deps.items():
+                  if self._clock.get(node, 0) < count:
+                      return False
+              return True
+
+          def _merge_clock(self, clock: dict[str, int]) -> None:
+              for node, count in clock.items():
+                  self._clock[node] = max(self._clock.get(node, 0), count)
+
+          def _apply(self, event: dict) -> None:
+              # Process event — dependencies are satisfied
+              pass
+
+          def _drain_dependents(self, completed_id: str) -> None:
+              """Process any buffered events that depended on this one."""
+              for eid, events in list(self._pending.items()):
+                  for event in events[:]:
+                      if self._dependencies_satisfied(event.get("depends_on", {})):
+                          self._apply(event)
+                          events.remove(event)
+                  if not events:
+                      del self._pending[eid]
+
+
+      class EventTimeReordering:
+          """Reorder by event time with watermark-based window."""
+
+          MAX_LATE_MS = 30_000  # Accept events up to 30s late
+
+          def __init__(self) -> None:
+              self._buffer: list[dict] = []
+              self._watermark: float = 0.0
+
+          def ingest(self, event: dict, current_watermark: float) -> list[dict]:
+              """Buffer and flush events in event-time order."""
+              event_time = event["timestamp"]
+              self._buffer.append(event)
+              self._watermark = current_watermark
+
+              # Emit all events with timestamp < watermark - max_late
+              cutoff = self._watermark - (self.MAX_LATE_MS / 1000)
+              ready = [e for e in self._buffer if e["timestamp"] <= cutoff]
+              self._buffer = [e for e in self._buffer if e["timestamp"] > cutoff]
+
+              # Sort by event time before emitting
+              ready.sort(key=lambda e: (e["timestamp"], e.get("sequence", 0)))
+              return ready
+
+          def late_events_remaining(self) -> int:
+              """Events that will never be emitted (arrived after watermark)."""
+              return len(self._buffer)
+  - language: typescript
+    bad: |
+      // Assumes total order — no sequence tracking, no reorder buffer
+      class TotalOrderAssumption {
+        private balance = 0;
+
+        process(event: { txId: string; amount: number }): void {
+          this.balance += event.amount; // out-of-order event corrupts balance
+          // No sequence check, no ordering guarantees, no causal tracking
+        }
+      }
+    good: |
+      enum OrderingScope {
+        PER_KEY = "per_key",
+        CAUSAL = "causal",
+        NONE = "none",
+      }
+
+      interface OrderingContract {
+        scope: OrderingScope;
+        partitionKey?: string;
+        sequenceField: string;
+      }
+
+      interface SequencedEvent {
+        id: string;
+        type: string;
+        sequence: number;
+        timestamp: number;
+        clock?: Record<string, number>;
+        [key: string]: unknown;
+      }
+
+      // -- Per-key ordering with sequence gating and out-of-order buffering --
+      class KeyScopedOrdering {
+        private lastSequence = new Map<string, number>();
+        private outOfOrderBuffer = new Map<string, SequencedEvent[]>();
+
+        constructor(private contract: OrderingContract) {}
+
+        process(event: SequencedEvent): boolean {
+          const key = String(event[this.contract.partitionKey ?? "id"] ?? event.id);
+          const seq = event[this.contract.sequenceField] ?? event.sequence;
+          const expected = (this.lastSequence.get(key) ?? -1) + 1;
+
+          if (seq > expected) {
+            // Out of order — buffer and wait
+            const buffer = this.outOfOrderBuffer.get(key) ?? [];
+            buffer.push(event);
+            this.outOfOrderBuffer.set(key, buffer);
+            return false;
+          }
+
+          if (seq < expected) {
+            return true; // Duplicate — skip
+          }
+
+          // In-order: process and drain buffer
+          this.applyEvent(key, event);
+          this.lastSequence.set(key, seq);
+          this.drainBuffer(key);
+          return true;
+        }
+
+        private applyEvent(key: string, event: SequencedEvent): void {
+          switch (event.type) {
+            case "order_created":
+              // Create order state — now safe because ordering is enforced
+              break;
+            case "order_shipped":
+              // Only valid if order_created was already processed
+              break;
+          }
+        }
+
+        private drainBuffer(key: string): void {
+          const buffer = this.outOfOrderBuffer.get(key);
+          if (!buffer) return;
+
+          buffer.sort((a, b) =>
+            (a[this.contract.sequenceField] as number) - (b[this.contract.sequenceField] as number)
+          );
+
+          while (buffer.length > 0) {
+            const next = buffer[0];
+            const nextSeq = next[this.contract.sequenceField] as number;
+            const expected = (this.lastSequence.get(key) ?? 0) + 1;
+
+            if (nextSeq === expected) {
+              this.applyEvent(key, buffer.shift()!);
+              this.lastSequence.set(key, nextSeq);
+            } else if (nextSeq < expected) {
+              buffer.shift(); // Duplicate
+            } else {
+              break; // Gap — wait for missing events
+            }
+          }
+
+          if (buffer.length === 0) this.outOfOrderBuffer.delete(key);
+        }
+      }
+
+      // -- Causal ordering via vector clocks --
+      class CausalOrderTracker {
+        private clock = new Map<string, number>();
+        private pending = new Map<string, SequencedEvent[]>();
+
+        process(event: SequencedEvent): boolean {
+          const deps = event.clock ?? {};
+          if (this.dependenciesSatisfied(deps)) {
+            this.mergeClock(event.clock ?? {});
+            this.drainDependents(event.id);
+            return true;
+          }
+          const pending = this.pending.get(event.id) ?? [];
+          pending.push(event);
+          this.pending.set(event.id, pending);
+          return false;
+        }
+
+        private dependenciesSatisfied(deps: Record<string, number>): boolean {
+          for (const [node, count] of Object.entries(deps)) {
+            if ((this.clock.get(node) ?? 0) < count) return false;
+          }
+          return true;
+        }
+
+        private mergeClock(clock: Record<string, number>): void {
+          for (const [node, cnt] of Object.entries(clock)) {
+            this.clock.set(node, Math.max(this.clock.get(node) ?? 0, cnt));
+          }
+        }
+
+        private drainDependents(completedId: string): void {
+          for (const [eid, events] of this.pending) {
+            for (let i = events.length - 1; i >= 0; i--) {
+              if (this.dependenciesSatisfied(events[i].clock ?? {})) {
+                events.splice(i, 1);
+              }
+            }
+            if (events.length === 0) this.pending.delete(eid);
+          }
+        }
+      }
+
+      // -- Event-time reordering with watermark --
+      class EventTimeReordering {
+        private buffer: SequencedEvent[] = [];
+        private watermark = 0;
+        private static readonly MAX_LATE_MS = 30_000;
+
+        ingest(event: SequencedEvent, currentWatermark: number): SequencedEvent[] {
+          this.buffer.push(event);
+          this.watermark = currentWatermark;
+
+          const cutoff = this.watermark - EventTimeReordering.MAX_LATE_MS / 1000;
+          const ready = this.buffer.filter((e) => e.timestamp <= cutoff);
+          this.buffer = this.buffer.filter((e) => e.timestamp > cutoff);
+
+          return ready.sort((a, b) => a.timestamp - b.timestamp || (a.sequence ?? 0) - (b.sequence ?? 0));
+        }
+      }
+heuristics:
+  - Global total order is a myth in distributed systems — scope ordering to the minimum domain: per-key, per-partition, per-aggregate.
+  - Sequence numbers or timestamps must be embedded by producers; consumers detect and handle out-of-order arrival.
+  - Per-key ordering is the default for event-driven systems: all events for the same entity (user, order, account) arrive in order within that partition.
+  - Causal ordering preserves happens-before relationships without total order — use vector clocks or logical clocks.
+  - Distinguish event time (when it happened), processing time (when the system saw it), and arrival time (when the broker received it).
+  - Gaps in sequence numbers indicate missing events: buffer out-of-order events, wait for gap fill, then process in order.
+  - Watermarks in stream processing define a "no events older than T" threshold — late events arriving after the watermark are discarded or side-logged.
+  - Ordering-sensitive logic must live close to the partition or key that defines the order — do not fan out and re-merge.
+  - Never assume "it probably won't arrive out of order." Network partitions, clock skew, and retries make out-of-order delivery normal.
+related_tags: [message-ordering, causal-ordering, sequence-number, watermark, event-time, per-key-ordering, vector-clock, data-systems, ddia]

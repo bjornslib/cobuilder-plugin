@@ -1,0 +1,119 @@
+id: generators-iterators-011
+name: Generators and Iterators
+category: design
+canonical_tags: ['python', 'design', 'memory-efficiency']
+sources:
+  - books/clean-code.md
+  - books/the-pragmatic-programmer.md
+  - open_sources/python/pep-0008.html
+summary: >-
+  Generators (`yield`) produce values lazily — one at a time, on demand — instead of building an entire
+  collection in memory upfront. Use them for large or infinite sequences, pipeline processing, and any
+  situation where you might not consume every item. Generator expressions (`(x*2 for x in items)`) are the
+  lazy-list-comprehension analogue. `yield from` delegates to sub-generators, enabling composable data
+  pipelines. The iterator protocol (`__iter__` / `__next__`) is the underlying contract that `for` loops
+  and generators satisfy. The principle: prefer pull-based, memory-friendly iteration over building full
+  lists — don't materialise what you can stream.
+examples:
+  - language: python
+    bad: |
+      """Eager materialisation: entire dataset loaded into memory
+      before processing begins. Fine for small lists, catastrophic
+      for large files, streams, or pipelines."""
+
+      # Read entire file into memory, then process.
+      def read_lines(path):
+          with open(path) as f:
+              return f.readlines()  # Whole file → list in memory.
+
+      for line in read_lines("huge.log"):  # Peaks at file size.
+          if "ERROR" in line:
+              print(line)
+
+      # Build complete result list before any downstream work.
+      def squares(nums):
+          result = []
+          for n in nums:
+              result.append(n * n)
+          return result  # All values materialised at once.
+
+      for s in squares(range(10_000_000)):  # 10M ints → memory.
+          ...
+
+      # Manual iterator protocol — verbose and error-prone.
+      class Countdown:
+          def __init__(self, start):
+              self.current = start
+
+          def __iter__(self):
+              return self
+
+          def __next__(self):
+              if self.current < 0:
+                  raise StopIteration
+              val = self.current
+              self.current -= 1
+              return val
+
+      # Nested generator-like logic with manual state.
+      def flatten_nested(nested):
+          result = []
+          for sublist in nested:
+              for item in sublist:
+                  if item is not None:
+                      result.append(item)
+          return result
+    good: |
+      """Lazy generation: values produced on demand, memory footprint
+      proportional to one item, not the whole sequence. Pipelines
+      compose without materialising intermediate collections."""
+
+      from collections.abc import Iterator, Generator
+      from typing import TypeVar
+
+      T = TypeVar("T")
+
+      # Generator function: yield one item at a time.
+      def read_lines(path: str) -> Iterator[str]:
+          """Stream lines from a file — never loads whole file."""
+          with open(path) as f:
+              for line in f:  # File object IS an iterator.
+                  yield line.rstrip("\n")
+
+      for line in read_lines("huge.log"):
+          if "ERROR" in line:
+              print(line)  # Memory: ~one line, not whole file.
+
+      # Generator expression: lazy analogue of list comprehension.
+      squares = (n * n for n in range(10_000_000))  # No allocation.
+
+      for s in squares:  # Values computed on demand.
+          if s > 100:
+              break  # Only computed what we needed.
+
+      # yield from: delegate to sub-generators, composable pipelines.
+      def read_errors(path: str) -> Iterator[str]:
+          """Pipeline: file → filter → yield."""
+          for line in read_lines(path):
+              if "ERROR" in line:
+                  yield line
+
+      def parse_timestamps(lines: Iterator[str]) -> Iterator[str]:
+          """Pipeline stage: extract timestamps."""
+          for line in lines:
+              yield line[:19]  # First 19 chars = timestamp.
+
+      # Compose: read → filter → parse, all lazy.
+      errors = read_errors("app.log")
+      timestamps = parse_timestamps(errors)
+
+      # Flatten with yield from — no intermediate list.
+      def flatten(nested: list[list[T | None]]) -> Iterator[T]:
+          for sublist in nested:
+              yield from (item for item in sublist if item is not None)
+
+      # itertools: the toolbox for generator pipelines.
+      from itertools import islice, takewhile, dropwhile
+      import itertools
+
+      first_10 = list(islice(squares, 10))  # Take first N lazily.

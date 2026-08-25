@@ -1,0 +1,153 @@
+# Boundary record for the cobuilder-packaging bounded context.
+# Machine-diffable architecture baseline — ../../standard.md §5.2.
+# Authoring procedure: skills/architecture/references/architecture-documentation.md.
+# Every edge below was checked against code. Grounded in code as of 2026-08-21.
+
+id: cobuilder-packaging
+path: .
+name: "Plugin packaging and dispatch"
+
+# Symbols other bounded contexts (or operators) may import — the published language.
+# This context has no documented neighbour yet, so this lists what a future context
+# (e.g. one documenting the bundle format itself) would consume.
+public_interface:
+  - commands/baseline.md
+  - commands/generate.md
+  - commands/view.md
+  - commands/publish.md
+  - commands/submit.md
+  - commands/design.md
+  - commands/review.md
+  - commands/maintenance.md
+  - commands/decisions.md
+  - commands/describe.md
+  - commands/debug.md
+  - commands/explore-design.md
+  - skills/architecture (Skill name "architecture")
+  - skills/odyssey (Skill name "odyssey")
+  - skills/mermaid (Skill name "mermaid")
+  - skills/ste-writing (Skill name "ste-writing")
+  - skills/collaborate-with-user (Skill name "collaborate-with-user")
+  - scripts/_bundle_meta.SCHEMA_VERSION
+  - scripts/_bundle_meta.SCHEMA_VERSION_KNOWN
+  - scripts/_bundle_meta.CURRENT_BUNDLE_FORMAT
+  - scripts/_manifest.rewrite_manifest
+
+# Context-ids this context may depend on.
+# None documented yet -- no other context in this repo has a boundary.yaml.
+allowed_dependencies: []
+
+# Integration pattern per neighbour (mirrors canvas §6).
+context_map:
+  - with: bundle-directory
+    pattern: open-host-service
+    note: "Not yet a documented bounded context. Scripts write it, the viewer reads it; neither reads the other's source. Data-only, versioned by bundle.json / story.json meta.schema_version."
+
+# Explicit anti-corruption / direction rules. Graph-checkable.
+# A violating edge with no approving ADR = drift. Discovered violations are marked SMELL.
+forbidden_dependencies:
+  - target: "another plugin's files (post-ADR-0016 split)"
+    why: "ADR-0016: 'No plugin reads or imports another plugin's files. A plugin may hand off to another plugin's mode by name, and the state that crosses the handoff travels in the bundle and in docs/.' Not yet enforceable -- only one plugin (cobuilder-architect) exists today, so there is no sibling to violate this against. Recorded now so the rule is in place before the split lands."
+
+  - target: "skills/odyssey/SKILL.md"
+    from: skills/architecture
+    why: "SMELL: skills/architecture/SKILL.md lines 83-84 hardcode the path 'skills/odyssey/SKILL.md' inside Design mode's Hub-resolution step. Verified by grep. Harmless today (both skills ship in one plugin), but this is exactly the edge ADR-0016 forbids once architecture and odyssey become separate plugins (cobuilder-architect and cobuilder-pr). Needs an ADR-sanctioned fix (e.g. duplicate the Hub-resolution text, or move it to a shared vendored module) before the split, or it becomes real drift the day the split ships."
+
+  - target: "skills/architecture/SKILL.md"
+    from: skills/odyssey
+    why: "SMELL: skills/odyssey/SKILL.md lines 32-33 name and point at 'skills/architecture/SKILL.md' when describing where Design mode lives. Same coupling as the entry above, reversed direction. Verified by grep."
+
+  - target: "skills/architecture/references/*"
+    from: scripts (build_designs.py, build_adrs.py, validate_decision_state.py)
+    why: "SMELL: three scripts embed a literal 'skills/architecture/references/...' path inside a validation-failure error message (build_designs.py:299, build_adrs.py:217, validate_decision_state.py:433). Text, not an import, so it does not execute a cross-plugin call today. Still a coupling a post-split remediation hint cannot resolve, because the reading plugin (e.g. cobuilder-pr) cannot open a path inside cobuilder-architect's cache."
+
+  - target: "skills/odyssey/references/*"
+    from: scripts (build_diagrams.py, render_review.py, verify_bundle.py)
+    why: "SMELL: same pattern, reversed. build_diagrams.py:9 and :273, render_review.py:9, and verify_bundle.py:86 embed 'skills/odyssey/references/...' in comments or error text. Verified by grep."
+
+  - target: "scripts/*.py (as a Python import, not a shell invocation)"
+    from: viewer/index.html
+    why: "The viewer never imports or executes anything under scripts/. Its one mention of 'scripts/' (line 854) is a code comment naming the script that produces data/diagrams.js, not a reference the browser resolves. Recorded as a confirmed absence, not a smell -- this is the rule holding, not breaking."
+
+# C3-level internal modules with dependency invariants.
+modules:
+  - id: plugin-manifest
+    path: .claude-plugin/
+    public_interface: [plugin.json, marketplace.json]
+    allowed_inbound: []          # read only by the Claude Code harness at install time, not by other modules
+    allowed_outbound: []         # leaf: plain JSON, no code
+    rule: "Static JSON only. No module in this repo reads or writes it at runtime."
+
+  - id: commands
+    path: commands/
+    members: [baseline.md, generate.md, view.md, publish.md, submit.md, design.md, review.md, maintenance.md, decisions.md, describe.md, debug.md, explore-design.md]
+    public_interface: []
+    allowed_inbound: []          # invoked by the harness via slash command, not imported by other modules
+    allowed_outbound: [skills-architecture, skills-odyssey]
+    rule: "Each command file makes exactly one Skill(...) dispatch call and nothing else. Verified: every commands/*.md greps to exactly one Skill(\"architecture\"|\"odyssey\", ...) line."
+
+  - id: skills-architecture
+    path: skills/architecture/
+    public_interface: ["Skill(\"architecture\", args=...)"]
+    allowed_inbound: [commands]
+    allowed_outbound: [scripts, skills-mermaid, skills-ste-writing]
+    rule: "SMELL: also reaches skills-odyssey via a hardcoded SKILL.md path reference (see forbidden_dependencies). Should be [] toward skills-odyssey once ADR-0016 lands."
+
+  - id: skills-odyssey
+    path: skills/odyssey/
+    public_interface: ["Skill(\"odyssey\", args=...)"]
+    allowed_inbound: [commands]
+    allowed_outbound: [scripts, skills-mermaid, skills-ste-writing]
+    rule: "SMELL: also reaches skills-architecture via a hardcoded SKILL.md path reference (see forbidden_dependencies). Should be [] toward skills-architecture once ADR-0016 lands."
+
+  - id: skills-mermaid
+    path: skills/mermaid/
+    public_interface: ["Skill(\"mermaid\")", "Skill(\"cobuilder-architect:mermaid\")"]
+    allowed_inbound: [skills-architecture, skills-odyssey]
+    allowed_outbound: []          # leaf: pure authoring rules, no further dispatch verified
+    rule: "Diagram-authoring rules only. Invoked by a per-PR/per-design subagent, never by the orchestrating Claude directly, per CLAUDE.md."
+
+  - id: skills-ste-writing
+    path: skills/ste-writing/
+    public_interface: ["Skill(\"ste-writing\")", "Skill(\"cobuilder-architect:ste-writing\")", "ste-lint.py"]
+    allowed_inbound: [skills-architecture, skills-odyssey]
+    allowed_outbound: []          # leaf
+    rule: "Writing-style rules and a rules-only linter. No dependency on any other module verified."
+
+  - id: skills-collaborate-with-user
+    path: skills/collaborate-with-user/
+    public_interface: ["Skill(\"collaborate-with-user\")"]
+    allowed_inbound: []           # no commands/*.md dispatches to it and no other skill invokes it programmatically; it cross-references architecture's Report Generation section in prose only
+    allowed_outbound: []          # leaf: references skills/architecture/SKILL.md's Report Generation section in prose, not by invocation
+    rule: "References skills/architecture/SKILL.md's 'Report Generation' section in prose (line 95) to say it does not duplicate that convention. This is documentation cross-talk, not a code or Skill-dispatch edge -- no forbidden_dependencies entry warranted."
+
+  - id: scripts
+    path: scripts/
+    members: [_bundle_meta.py, _manifest.py, build_adrs.py, build_designs.py, build_diagrams.py, compute_scores.py, export_artifact.py, export_index.py, extract_diffs.py, extract_story.py, generate_audio.py, generate_prompts.py, html_to_pdf.py, migrate_bundle.py, record_publish.py, render_review.py, validate_decision_state.py, verify_bundle.py]
+    public_interface: ["_bundle_meta.SCHEMA_VERSION", "_bundle_meta.SCHEMA_VERSION_KNOWN", "_bundle_meta.CURRENT_BUNDLE_FORMAT", "_manifest.rewrite_manifest"]
+    allowed_inbound: [skills-architecture, skills-odyssey]   # invoked by shell (`uv run`), not Python-imported by the skills
+    allowed_outbound: []          # scripts import only each other (_bundle_meta.py, _manifest.py); no outbound edge to skills/ or viewer/ as code
+    rule: "Every script that reads or writes bundle data imports _bundle_meta.SCHEMA_VERSION for its own version stamp. _bundle_meta.py itself is a leaf: stdlib-only, no imports beyond __future__. ADR-0017's require_compatible() gate does not exist in this file yet -- verified absent."
+
+  - id: viewer
+    path: viewer/
+    members: [index.html]
+    public_interface: ["window.STORY, window.ODYSSEY, window.DIFFS, window.ADRS, window.DIAGRAMS, window.DESIGNS (populated by sibling <script src> tags)"]
+    allowed_inbound: []            # opened directly by a person via a local HTTP server, not invoked by any module
+    allowed_outbound: []           # leaf: reads only sibling ../data/*.js files and two CDN scripts (Google Fonts is not used here; Motion and Mermaid CDN scripts) at runtime; never imports scripts/
+    rule: "viewer/index.html never reaches into scripts/ (grep-verified: the one 'scripts/' mention is a code comment, not a live reference). It is not self-contained -- see CLAUDE.md 'The viewer is not self-contained' -- and depends on being served from the bundle root, a sibling of viewer/."
+
+# Districts (inventory.yaml world.districts) this context covers.
+# ADR-0018: a district with no verifying context is unverified coverage,
+# and the index ranks that backlog by how many ADRs anchor to it.
+verifies:
+  - commands
+  - skills
+  - scripts
+  - viewer
+  - docs
+
+# ADRs whose maps_to anchors to this context.
+governed_by:
+  - ADR-0016
+  - ADR-0017

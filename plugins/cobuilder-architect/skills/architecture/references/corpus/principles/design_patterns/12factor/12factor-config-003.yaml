@@ -1,0 +1,252 @@
+id: 12factor-config-003
+name: "12-Factor App — Config (Store Config in the Environment)"
+category: cloud-native
+canonical_tags: ['12factor', 'config', 'env-vars', 'secrets', 'environment']
+sources:
+  - open_sources/design_patterns/12factor-app.txt
+  - open_sources/design_patterns/12factor-config.html
+summary: >
+  The Config factor mandates strict separation of configuration from code.
+  Config is defined as everything likely to vary between deploys — database
+  URLs, credentials, third-party API keys, canonical hostnames, and per-deploy
+  resource handles. Unlike code, which stays constant across deploys, config
+  varies substantially and must never be hardcoded or stored in files checked
+  into version control. The mechanism is environment variables: they are easy
+  to change between deploys without touching code, nearly impossible to
+  accidentally check into a repo, and are a language- and OS-agnostic standard.
+  The key anti-patterns are hardcoded constants in source files, config files
+  checked into git (even if templated), and grouping config into named
+  "environments" (development/production groups) which scale poorly as deploys
+  multiply. The litmus test: could you open-source the codebase right now
+  without exposing any credentials?
+examples:
+  - language: python
+    bad: |
+      # BAD: Hardcoded configuration constants. Database credentials, API keys,
+      # and hostnames are embedded in source code. To deploy to staging vs
+      # production, a developer must edit source files — risk of accidentally
+      # shipping staging config to production. The codebase cannot be shared
+      # or open-sourced without leaking secrets.
+
+      import psycopg2
+      import requests
+
+      # WHY: secrets and deploy-specific values hardcoded in source!
+      DATABASE_URL = "postgresql://admin:secretpass123@prod-db:5432/myapp"
+      STRIPE_API_KEY = "sk_live_4eC39HqLyjWDarjtT1zdp7dc"
+      CANONICAL_HOST = "https://myapp.herokuapp.com"
+      DEBUG_MODE = False
+
+      # WHY: to switch environments, you must edit this file and re-deploy.
+      # Every developer sees production credentials. Changing a key requires
+      # a code change, commit, and deploy cycle.
+
+
+      def connect_db():
+          return psycopg2.connect(DATABASE_URL)
+
+
+      def charge_customer(amount: int, token: str) -> dict:
+          # WHY: API key is a Python constant — visible in git history forever
+          resp = requests.post(
+              "https://api.stripe.com/v1/charges",
+              auth=(STRIPE_API_KEY, ""),
+              data={"amount": amount, "currency": "usd", "source": token},
+          )
+          return resp.json()
+
+
+      # config/settings.py — grouped "environment" anti-pattern
+      # WHY: as deploys multiply (staging, qa, joes-staging, load-test),
+      # this approach requires new named groups. Combinatorial explosion.
+      ENV = "production"
+
+      if ENV == "development":
+          DB_URL = "postgresql://localhost/dev_db"
+          DEBUG = True
+      elif ENV == "production":
+          DB_URL = "postgresql://admin:secret@prod-db/main"
+          DEBUG = False
+
+    good: |
+      # GOOD: Configuration loaded from environment variables. The code
+      # contains a single point of config loading with sensible defaults
+      # for non-secret values. No credentials in source. The app can be
+      # open-sourced immediately.
+
+      import os
+      import psycopg2
+      import requests
+
+
+      # WHY: all deploy-variable config comes from the environment.
+      # Internal app config (TIMEOUT) that doesn't vary between deploys
+      # can still be a constant — it's not "config" per 12-factor.
+      DATABASE_URL = os.environ["DATABASE_URL"]
+      STRIPE_API_KEY = os.environ["STRIPE_API_KEY"]
+      CANONICAL_HOST = os.environ.get("CANONICAL_HOST", "http://localhost:5000")
+
+      # WHY: env vars are granular and orthogonal. Each deploy sets exactly
+      # what it needs. No "environment groups" that scale poorly.
+      TIMEOUT_SECONDS = 10  # internal config, same across all deploys
+
+
+      def connect_db():
+          # WHY: connection URL comes from environment, not source code.
+          # Swapping a local Postgres for Amazon RDS requires only changing
+          # DATABASE_URL in the deploy environment — zero code changes.
+          return psycopg2.connect(DATABASE_URL)
+
+
+      def charge_customer(amount: int, token: str) -> dict:
+          resp = requests.post(
+              "https://api.stripe.com/v1/charges",
+              auth=(STRIPE_API_KEY, ""),
+              data={"amount": amount, "currency": "usd", "source": token},
+          )
+          return resp.json()
+
+
+      # Local development uses a .env file (NOT checked into git):
+      # .env (in .gitignore):
+      #   DATABASE_URL=postgresql://localhost:5432/dev_db
+      #   STRIPE_API_KEY=sk_test_xxxxxxxxxxxx
+      #   CANONICAL_HOST=http://localhost:5000
+      #
+      # WHY: .env is gitignored. Each developer has their own. It's never
+      # committed. Production sets real env vars via the platform.
+
+      # Load .env in development only:
+      # from dotenv import load_dotenv
+      # load_dotenv()  # no-op if .env doesn't exist (production)
+
+  - language: typescript
+    bad: |
+      // BAD: Hardcoded config in source. API keys, database URLs, and
+      // feature flags embedded as exported constants. Every developer
+      // can see production credentials. Switching environments requires
+      // editing and recompiling source files.
+
+      // config.ts — WHY: secrets committed to git history forever
+      export const DATABASE_URL =
+        "postgresql://admin:prod-password-123@prod-db:5432/main";
+      export const STRIPE_SECRET_KEY = "sk_live_4eC39HqLyjWDarjtT1zdp7dc";
+      export const SENDGRID_API_KEY =
+        "SG.xxxxxxxxxxxx-xxxxxxxxxxxx-xxxxxxxxxxxx";
+      export const FEATURE_NEW_CHECKOUT = true;
+
+      // WHY: "environment" grouping anti-pattern — doesn't scale
+      const ENVIRONMENT = "production";
+
+      export const CONFIG = {
+        development: {
+          dbUrl: "postgresql://localhost/dev",
+          debug: true,
+        },
+        staging: {
+          dbUrl: "postgresql://staging-db/staging",
+          debug: false,
+        },
+        production: {
+          dbUrl: "postgresql://admin:secret@prod-db/main",
+          debug: false,
+        },
+      }[ENVIRONMENT];
+
+    good: |
+      // GOOD: Configuration loaded from process.env. A single config module
+      // reads env vars with validation. Sensible defaults for non-secrets.
+      // The codebase is safe to open-source immediately.
+
+      // config.ts — WHY: no secrets in source. All deploy-variable values
+      // come from environment variables.
+      function requireEnv(key: string): string {
+        const value = process.env[key];
+        if (!value) {
+          throw new Error(`Missing required environment variable: ${key}`);
+        }
+        return value;
+      }
+
+      export const config = {
+        // WHY: required env vars — app fails fast at startup if missing
+        databaseUrl: requireEnv("DATABASE_URL"),
+        stripeSecretKey: requireEnv("STRIPE_SECRET_KEY"),
+
+        // WHY: optional env vars with safe defaults
+        canonicalHost: process.env.CANONICAL_HOST || "http://localhost:3000",
+        port: parseInt(process.env.PORT || "3000", 10),
+
+        // WHY: internal config that doesn't vary between deploys
+        requestTimeoutMs: 10_000,
+        maxBodySize: "1mb",
+      } as const;
+
+
+      // db.ts — using the config
+      import { config } from "./config";
+      import { Pool } from "pg";
+
+      export const pool = new Pool({
+        connectionString: config.databaseUrl,
+      });
+
+
+      // billing.ts — no hardcoded keys
+      import Stripe from "stripe";
+      import { config } from "./config";
+
+      export const stripe = new Stripe(config.stripeSecretKey, {
+        apiVersion: "2024-11-20.acacia",
+      });
+
+      // WHY: .env file for local development (gitignored):
+      // # .env
+      // DATABASE_URL=postgresql://localhost:5432/dev_db
+      // STRIPE_SECRET_KEY=sk_test_xxxxxxxxxxxx
+
+heuristics:
+  - >
+    "Store config in the environment. Config is everything likely to vary
+    between deploys: resource handles, credentials, per-deploy values"
+    (12factor.net). Strictly separate config from code.
+  - >
+    Use environment variables as the configuration mechanism. They are
+    language-agnostic, OS-agnostic, easy to change per-deploy, and nearly
+    impossible to accidentally commit to version control.
+  - >
+    Never store credentials, API keys, or database URLs in source code.
+    The litmus test: if you can't open-source the repo without redacting
+    secrets, config is not properly factored out.
+  - >
+    Do not group env vars into named "environments" (development, test,
+    production groups). Each env var is granular and orthogonal — independently
+    managed per deploy. Named groups cause combinatorial explosion.
+  - >
+    Internal application config that does not vary between deploys (route
+    definitions, dependency injection wiring, module structure) belongs in
+    code, not in environment variables.
+  - >
+    Use a .env file for local development but NEVER commit it. Add .env to
+    .gitignore. Provide a .env.example with dummy placeholder values for
+    documentation.
+  - >
+    Validate required environment variables at application startup. Fail fast
+    with a clear error message listing which variables are missing. Do not
+    silently use empty strings or nulls.
+  - >
+    In production, set environment variables via the platform's mechanism
+    (Kubernetes secrets, Heroku config vars, AWS Parameter Store, Doppler).
+    Never SSH into production boxes to set env vars manually.
+  - >
+    Avoid storing config in files that might be checked in (config/database.yml,
+    appsettings.Production.json). Even if gitignored, file-based config risks
+    accidental commits and is format-specific.
+  - >
+    Rotate secrets by changing the environment variable and restarting processes.
+    No code changes, no redeploy. This is why env vars beat compiled-in config.
+
+related_tags:
+  [config, environment-variables, secrets, twelve-factor, cloud-native,
+   configuration-management, .env, security, deploy-config, credentials,
+   config-as-code, env-vars, strict-separation]

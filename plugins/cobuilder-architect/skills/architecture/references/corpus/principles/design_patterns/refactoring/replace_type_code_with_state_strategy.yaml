@@ -1,0 +1,437 @@
+id: replace-type-code-with-state-strategy-001
+name: "Refactoring — Replace Type Code with State/Strategy"
+category: design-patterns
+canonical_tags: ['refactoring', 'type-code', 'state-pattern', 'strategy-pattern', 'polymorphism', 'replace-type-code', 'open-closed-principle']
+sources:
+  - books/refactoring.md
+  - books/clean-code.md
+  - open_sources/design_patterns/refactoring-guru-patterns.txt
+  - open_sources/design_patterns/augmentcode-refactoring.html
+summary: >
+  Replace Type Code with State/Strategy is a refactoring that replaces a field
+  whose value controls behavior (a "type code") with a polymorphic object that
+  encapsulates the behavior for that variant. This is the heavyweight cousin of
+  Replace Type Code with Subclasses — use State/Strategy when the type code
+  changes at runtime (so subclasses won't work because you can't change an
+  object's class after construction), or when the type-code behavior is complex
+  enough to deserve its own class anyway. The State pattern models an object
+  whose behavior varies based on its current state, and the state object itself
+  can trigger transitions to other states. The Strategy pattern models an
+  algorithm that can be swapped at runtime — the context delegates work to a
+  strategy object, and callers can inject different strategies. Both patterns
+  share the same refactoring mechanics: define a common interface for the type
+  code's variants, create concrete classes for each variant, delegate behavior
+  from the host class to the variant object, and remove the original type-code
+  branching. The payoff is the Open/Closed Principle: adding a new variant is
+  a new class in a new file, with zero changes to existing type-code branches.
+  The cost is class proliferation — every variant becomes its own file. Apply
+  when the type-code field has 3+ variants AND the behavior differences between
+  them are non-trivial (more than a parameter change). Do NOT apply for 2
+  variants with simple behavior — a subclass or an if/else is cheaper.
+
+  The mechanical sequence: (1) Create an abstract base class or interface
+  declaring the methods that vary by type code. (2) Create a concrete subclass
+  for each type-code value, implementing those methods with the variant-specific
+  behavior. (3) Add a field in the host class to hold the current state/strategy
+  object. (4) Replace every `if/elif` on the old type code with a delegation to
+  the state/strategy object. (5) Add a setter to allow replacing the
+  state/strategy at runtime (for State pattern) or a constructor parameter (for
+  Strategy). (6) Delete the old type-code field.
+examples:
+  - language: python
+    bad: |
+      # A string type code ("draft", "moderation", "published") controls
+      # behavior in 4 methods. Each method has an if/elif chain. Adding
+      # "archived" status means touching ALL 4 chains. The behavior for
+      # each status is scattered across the class — to understand "what
+      # happens in moderation mode?" you must read 4 different methods.
+
+      from __future__ import annotations
+
+      from dataclasses import dataclass
+      from datetime import datetime
+
+
+      class Article:
+          VALID_STATUSES = ("draft", "moderation", "published")
+
+          def __init__(
+              self,
+              title: str,
+              body: str,
+              author: str,
+          ) -> None:
+              self.title = title
+              self.body = body
+              self.author = author
+              self.status: str = "draft"
+              self.published_at: datetime | None = None
+
+          def can_edit(self) -> bool:
+              if self.status == "draft":
+                  return True
+              if self.status == "moderation":
+                  return False
+              if self.status == "published":
+                  return False
+              return False
+
+          def can_publish(self) -> bool:
+              if self.status == "draft":
+                  return True
+              if self.status == "moderation":
+                  return True
+              if self.status == "published":
+                  return False
+              return False
+
+          def publish(self) -> str:
+              if self.status == "draft":
+                  self.status = "moderation"
+                  return "Sent to moderation"
+              if self.status == "moderation":
+                  self.status = "published"
+                  self.published_at = datetime.now()
+                  return "Published"
+              if self.status == "published":
+                  return "Already published"
+              return "Unknown status"
+
+          def display_status(self) -> str:
+              if self.status == "draft":
+                  return "Draft"
+              if self.status == "moderation":
+                  return "Under Review"
+              if self.status == "published":
+                  return "Published"
+              return "Unknown"
+
+      # Adding "archived" means: add to VALID_STATUSES, add 4 elif branches,
+      # and update every test that enumerates statuses. Shotgun surgery.
+
+    good: |
+      # Replace Type Code with State: each status becomes a state object.
+      # Article delegates behavior to `self._state`. Adding "archived" is
+      # a new file (ArchivedState) — zero changes to Article or existing
+      # state classes. The behavior for each status is colocated in
+      # its own class.
+
+      from __future__ import annotations
+
+      from abc import ABC, abstractmethod
+      from dataclasses import dataclass
+      from datetime import datetime
+
+
+      # --- State interface: all methods that vary by status ---
+
+      class ArticleState(ABC):
+          @abstractmethod
+          def can_edit(self, article: Article) -> bool: ...
+
+          @abstractmethod
+          def can_publish(self, article: Article) -> bool: ...
+
+          @abstractmethod
+          def publish(self, article: Article) -> str: ...
+
+          @abstractmethod
+          def display(self, article: Article) -> str: ...
+
+
+      # --- Concrete state: Draft ---
+
+      class DraftState(ArticleState):
+          def can_edit(self, article: Article) -> bool:
+              return True
+
+          def can_publish(self, article: Article) -> bool:
+              return True
+
+          def publish(self, article: Article) -> str:
+              article.set_state(ModerationState())
+              return "Sent to moderation"
+
+          def display(self, article: Article) -> str:
+              return "Draft"
+
+
+      # --- Concrete state: Moderation ---
+
+      class ModerationState(ArticleState):
+          def can_edit(self, article: Article) -> bool:
+              return False
+
+          def can_publish(self, article: Article) -> bool:
+              return True
+
+          def publish(self, article: Article) -> str:
+              article.set_state(PublishedState())
+              article.published_at = datetime.now()
+              return "Published"
+
+          def display(self, article: Article) -> str:
+              return "Under Review"
+
+
+      # --- Concrete state: Published ---
+
+      class PublishedState(ArticleState):
+          def can_edit(self, article: Article) -> bool:
+              return False
+
+          def can_publish(self, article: Article) -> bool:
+              return False
+
+          def publish(self, article: Article) -> str:
+              return "Already published"
+
+          def display(self, article: Article) -> str:
+              return "Published"
+
+
+      # --- Host class: delegates to state, zero type-code branches ---
+
+      class Article:
+          def __init__(
+              self,
+              title: str,
+              body: str,
+              author: str,
+          ) -> None:
+              self.title = title
+              self.body = body
+              self.author = author
+              self._state: ArticleState = DraftState()
+              self.published_at: datetime | None = None
+
+          def set_state(self, state: ArticleState) -> None:
+              self._state = state
+
+          # All status-dependent methods delegate to the state
+          def can_edit(self) -> bool:
+              return self._state.can_edit(self)
+
+          def can_publish(self) -> bool:
+              return self._state.can_publish(self)
+
+          def publish(self) -> str:
+              return self._state.publish(self)
+
+          def display_status(self) -> str:
+              return self._state.display(self)
+
+
+      # Each state is independently testable:
+
+      def test_draft_can_edit_and_publish():
+          article = Article("T", "B", "A")
+          assert article.can_edit() is True
+          assert article.can_publish() is True
+
+      def test_draft_to_moderation_transition():
+          article = Article("T", "B", "A")
+          result = article.publish()
+          assert result == "Sent to moderation"
+          assert article.display_status() == "Under Review"
+
+      def test_full_workflow():
+          article = Article("T", "B", "A")
+          article.publish()  # draft -> moderation
+          article.publish()  # moderation -> published
+          assert article.display_status() == "Published"
+          assert article.can_edit() is False
+
+      # Adding "Archived" state: create ArchivedState(ArticleState) class,
+      # zero changes to Article or existing states. Open/Closed satisfied.
+
+  - language: typescript
+    bad: |
+      // A string type code ("fixed", "percentage", "tiered") controls
+      // discount calculation. calculateDiscount branches on type code
+      // with if/else. Adding "buyOneGetOne" means adding another branch
+      // — violation of Open/Closed. DiscountCalculator has 3 reasons to
+      // change (one per discount algorithm).
+
+      type DiscountType = "fixed" | "percentage" | "tiered";
+
+      class DiscountCalculator {
+        constructor(private type: DiscountType) {}
+
+        calculateDiscount(orderTotal: number): number {
+          if (this.type === "fixed") {
+            return 10; // $10 off
+          }
+          if (this.type === "percentage") {
+            return orderTotal * 0.15;
+          }
+          if (this.type === "tiered") {
+            if (orderTotal > 200) return 50;
+            if (orderTotal > 100) return 20;
+            return 5;
+          }
+          return 0;
+        }
+
+        // Type code pollutes other methods too
+        describe(): string {
+          if (this.type === "fixed") return "Fixed $10 off";
+          if (this.type === "percentage") return "15% off";
+          if (this.type === "tiered") return "Tiered discount";
+          return "No discount";
+        }
+      }
+
+    good: |
+      // Replace Type Code with Strategy: each discount algorithm is a
+      // strategy object implementing DiscountStrategy. DiscountCalculator
+      // delegates to `this.strategy`. Adding "buyOneGetOne" is a new
+      // strategy class — zero changes to existing code. Calculator has
+      // one reason to change (orchestration).
+
+      // --- Strategy interface ---
+
+      interface DiscountStrategy {
+        calculate(orderTotal: number): number;
+        describe(): string;
+      }
+
+      // --- Concrete strategies ---
+
+      class FixedDiscount implements DiscountStrategy {
+        calculate(_orderTotal: number): number {
+          return 10; // $10 off
+        }
+        describe(): string {
+          return "Fixed $10 off";
+        }
+      }
+
+      class PercentageDiscount implements DiscountStrategy {
+        calculate(orderTotal: number): number {
+          return orderTotal * 0.15;
+        }
+        describe(): string {
+          return "15% off";
+        }
+      }
+
+      class TieredDiscount implements DiscountStrategy {
+        calculate(orderTotal: number): number {
+          if (orderTotal > 200) return 50;
+          if (orderTotal > 100) return 20;
+          return 5;
+        }
+        describe(): string {
+          return "Tiered discount";
+        }
+      }
+
+      // --- Host class: pure delegation ---
+
+      class DiscountCalculator {
+        constructor(private strategy: DiscountStrategy) {}
+
+        setStrategy(strategy: DiscountStrategy): void {
+          this.strategy = strategy;
+        }
+
+        calculateDiscount(orderTotal: number): number {
+          return this.strategy.calculate(orderTotal);
+        }
+
+        describe(): string {
+          return this.strategy.describe();
+        }
+      }
+
+      // Strategies are independently testable:
+
+      test("tiered discount over $200", () => {
+        const strategy = new TieredDiscount();
+        expect(strategy.calculate(250)).toBe(50);
+      });
+
+      test("can swap strategy at runtime", () => {
+        const calc = new DiscountCalculator(new FixedDiscount());
+        expect(calc.calculateDiscount(100)).toBe(10);
+
+        calc.setStrategy(new PercentageDiscount());
+        expect(calc.calculateDiscount(100)).toBe(15);
+      });
+
+heuristics:
+  - >
+    "Replace Type Code with State/Strategy: you have a type code that affects
+    behavior but you cannot use subclasses. Replace the type code with a
+    state object" (Fowler, Refactoring). Choose State when the object's
+    behavior changes based on its lifecycle and the state itself governs
+    transitions. Choose Strategy when behavior is swappable independently
+    of lifecycle.
+  - The State pattern is for objects whose behavior varies by lifecycle phase
+    \u2014 an order that is "pending," "confirmed," or "shipped" transitions
+    through states, and each state knows which transitions are legal. The state
+    object itself triggers the transition.
+  - The Strategy pattern is for algorithms that are swappable independently
+    \u2014 a tax calculator that can be "US," "EU," or "CA." The context
+    doesn't change state; it just delegates work to a different strategy.
+  - Apply when the type code changes at runtime. If the type code is fixed
+    at construction time and never changes, use Replace Type Code with
+    Subclasses instead \u2014 it's simpler and doesn't require an extra
+    delegation layer.
+  - Apply when the type-code behavior is non-trivial. If each variant differs
+    only by a parameter (e.g., all variants compute `base * rate` with different
+    rates), Parameterize Method is cheaper than introducing a full State/Strategy
+    hierarchy.
+  - The interface is the contract. Define it in terms of what the host class
+    needs, not what the variants happen to implement. If the host needs
+    `can_edit()`, `can_publish()`, and `publish()`, the interface declares
+    exactly those methods.
+  - "Pass the host object to state methods when the state needs to trigger
+    transitions (`article.set_state(ModerationState())`). This creates a
+    bidirectional dependency" \u2014 the state knows the host's interface. Keep
+    this dependency explicit (pass the host as a parameter) rather than giving
+    the state a back-reference to the host as a field \u2014 it's easier to test
+    states in isolation.
+  - "The mechanical sequence: (1) Self-encapsulate the type code field (wrap
+    it in a getter/setter). (2) Create the state/strategy interface and
+    concrete classes. (3) Add the state/strategy field to the host. (4) Replace
+    each type-code conditional with delegation to the state/strategy, one method
+    at a time. (5) Remove the type code field. (6) Each step should compile and
+    pass tests."
+  - Name the state classes after the domain concept: `DraftState`, not
+    `StateDraft`; `FixedDiscount`, not `DiscountFixed`. The name should read
+    naturally when you say "the Article is in DraftState" or "the Calculator
+    uses FixedDiscount."
+  - "In TypeScript, prefer discriminated unions + exhaustive checks over State
+    pattern for simple (3-5 variant) type codes with stable behavior. A union
+    with `switch` and `never` exhaustiveness check is lighter than a full class
+    hierarchy and still type-safe."
+  - In Python, the State pattern can be implemented with a dict dispatch table
+    when behavior is simple: `self._handlers[self.status](self)`. This is lighter
+    than full classes. Reserve the full State pattern for non-trivial behavior.
+  - Do NOT apply when the type code has only 2 variants with simple behavior
+    differences. The cost of interface + 2 concrete classes + host delegation
+    outweighs a single if/else.
+  - "Test each state/strategy in isolation by constructing it directly and
+    calling its methods. Do NOT require a full host object setup to test
+    state behavior — the interface should accept whatever parameters the
+    state needs."
+  - State objects can accumulate domain logic that was previously scattered
+    across the host class. This is a feature \u2014 the state class becomes
+    the single source of truth for that variant's behavior. But watch for
+    duplicated logic across states; extract shared behavior into the abstract
+    base class or a helper.
+  - "This refactoring is the architectural capstone of the Replace Type Code
+    family: Replace Type Code with Class (just wrap it), Replace Type Code with
+    Subclasses (fixed-at-birth polymorphism), Replace Type Code with State/Strategy
+    (runtime-swappable polymorphism). Choose based on whether the type code
+    changes at runtime and how complex the behavior variants are."
+
+related_tags:
+  [replace-type-code, state-pattern, strategy-pattern, polymorphism,
+   refactoring, fowler-refactoring, open-closed-principle, ocp,
+   replace-conditional-with-polymorphism, simplifying-conditionals,
+   extract-method, self-encapsulate-field, composition, delegation,
+   design-patterns, gang-of-four, code-smells, switch-statements,
+   shotgun-surgery, single-responsibility]

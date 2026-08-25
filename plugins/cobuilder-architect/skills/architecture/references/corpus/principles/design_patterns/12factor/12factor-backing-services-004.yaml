@@ -1,0 +1,299 @@
+id: 12factor-backing-services-004
+name: "12-Factor App — Backing Services (Treat as Attached Resources)"
+category: cloud-native
+canonical_tags: ['12factor', 'backing-services', 'attached-resources', 'database', 'queue', 'cache', 'loose-coupling']
+sources:
+  - open_sources/design_patterns/12factor-app.txt
+  - open_sources/design_patterns/12factor-backing-services.html
+summary: >
+  The Backing Services factor treats every external service the app consumes
+  over the network as an attached resource, accessible via a URL or credentials
+  stored in config. Backing services include databases (MySQL, PostgreSQL),
+  messaging queues (RabbitMQ, Beanstalkd), caches (Memcached, Redis), SMTP
+  servers, and third-party APIs (Amazon S3, Twitter, Stripe). The key insight
+  is that the app makes no distinction between locally-managed and third-party
+  services — both are just resources that can be attached and detached from
+  deploys at will, with no code changes. Swapping a local MySQL for Amazon RDS,
+  or a local SMTP server for Postmark, should require only a config change to
+  the resource handle (URL/credentials). The anti-pattern is code that treats
+  certain services as "local" with special connection logic, preventing the
+  flexibility to swap backing services without modifying and redeploying code.
+examples:
+  - language: python
+    bad: |
+      # BAD: Code has baked-in distinction between local and remote services.
+      # The database connection logic is hardcoded for a local MySQL with a
+      # specific host/port. To switch to Amazon RDS, you must modify the code,
+      # add SSL logic, and redeploy. The SMTP logic assumes a local Postfix
+      # server at localhost:25. The caching logic uses a local dict instead of
+      # Memcached — it works in dev but doesn't scale in production.
+
+      import mysql.connector
+      import smtplib
+
+
+      # WHY: hardcoded for local MySQL. To switch to RDS, you change this line
+      # AND add SSL config AND add credential handling. Code + deploy change.
+      def get_db_connection():
+          return mysql.connector.connect(
+              host="localhost",
+              port=3306,
+              user="app_user",
+              password="local_dev_pass",
+              database="myapp",
+          )
+
+
+      # WHY: assumes local SMTP on localhost:25. In production, this becomes
+      # a third-party service like SendGrid or Postmark — but the code is
+      # hardcoded for a local server with no auth.
+      def send_email(to: str, subject: str, body: str) -> None:
+          server = smtplib.SMTP("localhost", 25)
+          msg = f"Subject: {subject}\n\n{body}"
+          server.sendmail("noreply@myapp.local", to, msg)
+          server.quit()
+
+
+      # WHY: uses Python dict as cache — in-memory, single-process, lost on
+      # restart. Production needs Redis/Memcached but the code is coupled
+      # to dict API. Cannot swap without rewriting call sites.
+      _cache: dict[str, str] = {}
+
+      def get_cached(key: str) -> str | None:
+          return _cache.get(key)
+
+      def set_cached(key: str, value: str) -> None:
+          _cache[key] = value
+
+    good: |
+      # GOOD: All backing services accessed via URL/credentials from config.
+      # The app treats local and third-party services identically — they are
+      # just attached resources. Swapping requires only a config change.
+
+      import os
+      import smtplib
+      from urllib.parse import urlparse
+      from dataclasses import dataclass
+      from typing import Protocol
+
+
+      # WHY: Resource handle in environment variable — local or remote, the
+      # code is the same. Switch MySQL to RDS by changing DATABASE_URL in env.
+      DATABASE_URL = os.environ["DATABASE_URL"]
+      SMTP_URL = os.environ.get("SMTP_URL", "smtp://localhost:25")
+      CACHE_URL = os.environ.get("CACHE_URL", "redis://localhost:6379/0")
+
+
+      # WHY: connection URL parsed generically. The code doesn't care if it's
+      # local MySQL or Amazon RDS — same protocol, same interface.
+      def get_db_connection():
+          import psycopg2  # or mysql.connector — both accept URL
+          return psycopg2.connect(DATABASE_URL)
+
+
+      # WHY: SMTP backed by a URL. Local dev uses localhost:25. Production
+      # can use smtps://user:pass@smtp.sendgrid.net:587. Same code.
+      def send_email(to: str, subject: str, body: str) -> None:
+          parsed = urlparse(SMTP_URL)
+          host = parsed.hostname or "localhost"
+          port = parsed.port or 25
+
+          if parsed.scheme == "smtps":
+              server = smtplib.SMTP_SSL(host, port)
+          else:
+              server = smtplib.SMTP(host, port)
+
+          if parsed.username:
+              server.login(parsed.username, parsed.password or "")
+
+          msg = f"Subject: {subject}\n\n{body}"
+          server.sendmail("noreply@myapp.com", to, msg)
+          server.quit()
+
+
+      # WHY: Cache interface abstracted. Local dev can use Redis or a simple
+      # dict. Production uses Redis/Memcached. The interface is the same;
+      # only the resource handle in CACHE_URL changes.
+      class CacheBackend(Protocol):
+          def get(self, key: str) -> str | None: ...
+          def set(self, key: str, value: str, ttl: int = 3600) -> None: ...
+
+
+      import redis
+      _redis = redis.from_url(CACHE_URL)
+
+      def get_cached(key: str) -> str | None:
+          val = _redis.get(key)
+          return val.decode() if val else None
+
+      def set_cached(key: str, value: str, ttl: int = 3600) -> None:
+          _redis.setex(key, ttl, value)
+
+      # WHY: Each backing service is a resource. Resources attach/detach at will.
+      # If the database fails, spin up a new one from backup, change DATABASE_URL,
+      # restart — zero code changes. The 12-factor promise.
+
+  - language: typescript
+    bad: |
+      // BAD: Code distinguishes between local and remote services. Database
+      // connection is hardcoded for a local Postgres. File storage uses local
+      // filesystem. Cache uses an in-memory Map. To move any of these to a
+      // cloud service, you must rewrite the code and redeploy.
+
+      import { createConnection, Connection } from "mysql2/promise";
+
+      // WHY: hardcoded for local MySQL. Moving to RDS/Cloud SQL means
+      // rewriting this function to handle SSL, different auth, etc.
+      export async function connectDB(): Promise<Connection> {
+        return createConnection({
+          host: "localhost",
+          port: 3306,
+          user: "app_user",
+          password: "dev_password",
+          database: "myapp",
+        });
+      }
+
+      // WHY: local filesystem for uploads. Switching to S3 requires rewriting
+      // every call site that uses fs.writeFile/readFile.
+      import { writeFileSync, readFileSync, existsSync } from "fs";
+
+      export function saveFile(filename: string, data: Buffer): void {
+        writeFileSync(`./uploads/${filename}`, data);
+      }
+
+      export function getFile(filename: string): Buffer | null {
+        const path = `./uploads/${filename}`;
+        return existsSync(path) ? readFileSync(path) : null;
+      }
+
+      // WHY: in-memory cache — lost on restart, doesn't scale across processes.
+      const memoryCache = new Map<string, string>();
+
+      export function cacheGet(key: string): string | undefined {
+        return memoryCache.get(key);
+      }
+
+      export function cacheSet(key: string, value: string): void {
+        memoryCache.set(key, value);
+      }
+
+    good: |
+      // GOOD: All backing services accessed via URLs from environment. The
+      // app uses an abstraction layer so swapping implementations requires
+      // only a config change — never a code change.
+
+      import { createPool, Pool } from "mysql2/promise";
+      import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+      import { createClient, RedisClientType } from "redis";
+
+      // WHY: resource handles from config. DATABASE_URL can point to local
+      // MySQL or Amazon RDS — the code path is identical.
+      const DATABASE_URL = process.env.DATABASE_URL!;
+      const S3_BUCKET = process.env.S3_BUCKET || "local-dev-bucket";
+      const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
+
+      export function connectDB(): Pool {
+        // WHY: URL-based connection. No knowledge of whether this is local
+        // or cloud-hosted. The URL encodes everything.
+        return createPool({ uri: DATABASE_URL });
+      }
+
+      // WHY: S3 client configured once. In local dev, use MinIO or LocalStack
+      // at a local endpoint. In production, point to real S3. Same API.
+      const s3 = new S3Client({
+        region: process.env.AWS_REGION || "us-east-1",
+        endpoint: process.env.S3_ENDPOINT, // local MinIO in dev
+        forcePathStyle: true,
+      });
+
+      export async function saveFile(
+        key: string,
+        data: Buffer,
+        contentType: string = "application/octet-stream"
+      ): Promise<void> {
+        await s3.send(
+          new PutObjectCommand({
+            Bucket: S3_BUCKET,
+            Key: key,
+            Body: data,
+            ContentType: contentType,
+          })
+        );
+      }
+
+      export async function getFile(key: string): Promise<Buffer | null> {
+        try {
+          const resp = await s3.send(
+            new GetObjectCommand({ Bucket: S3_BUCKET, Key: key })
+          );
+          return Buffer.from(await resp.Body!.transformToByteArray());
+        } catch {
+          return null;
+        }
+      }
+
+      // WHY: Redis client from URL. Works for local Redis, Redis Cloud, or
+      // ElastiCache — just change the URL.
+      const redis: RedisClientType = createClient({ url: REDIS_URL });
+      redis.connect();
+
+      export async function cacheGet(key: string): Promise<string | null> {
+        return redis.get(key);
+      }
+
+      export async function cacheSet(
+        key: string,
+        value: string,
+        ttlSeconds: number = 3600
+      ): Promise<void> {
+        await redis.setEx(key, ttlSeconds, value);
+      }
+
+heuristics:
+  - >
+    "Treat backing services as attached resources. A backing service is any
+    service the app consumes over the network: datastores, messaging systems,
+    SMTP, caching, third-party APIs" (12factor.net).
+  - >
+    The app must make no distinction between locally-managed and third-party
+    services. Both are attached resources accessed via URL/credentials in config.
+    Code should not know or care who manages the service.
+  - >
+    Swapping a local MySQL for Amazon RDS, a local SMTP for Postmark, or local
+    disk for S3 should require only a config change — zero code changes. If you
+    touch code, the factor is violated.
+  - >
+    Each distinct backing service is a resource. Two MySQL databases used for
+    sharding qualify as two distinct resources. Model them as separate attached
+    resources, each with its own config handle.
+  - >
+    Resources can be attached and detached from deploys at will. If a database
+    fails, spin up a new one, change the config handle, and reattach — the app
+    should continue working without modification.
+  - >
+    Use abstraction layers (Repository pattern, Provider interfaces) so the
+    app's business logic never directly depends on a specific backing service
+    implementation.
+  - >
+    Never hardcode connection parameters (host, port, credentials) for backing
+    services in source code. All connection details come from the config
+    environment variables.
+  - >
+    In development, use lightweight local versions of backing services (Redis
+    instead of ElastiCache, MinIO instead of S3). But ensure the API surface
+    is identical — the abstraction must not leak.
+  - >
+    Test the app against the actual backing services used in production
+    periodically. Adapter libraries can paper over differences that only
+    surface under real load or edge cases.
+  - >
+    Document each backing service resource needed for a deploy. A new developer
+    should know from the documentation exactly which services are required and
+    how to configure them via environment variables.
+
+related_tags:
+  [backing-services, attached-resources, loose-coupling, database, queue,
+   cache, smtp, s3, redis, memcached, rabbitmq, postgres, mysql,
+   twelve-factor, cloud-native, repository-pattern, abstraction, adapter,
+   resource-detachment]

@@ -1,0 +1,673 @@
+id: observability-001
+name: Observability and Operational Visibility
+category: resilience
+canonical_tags: ['resilience', 'release-it', 'production-readiness', 'ddia']
+sources:
+  - books/release-it.md
+  - books/designing-data-intensive-applications.md
+summary: >
+  Observability is not logging after the fact -- it is designing the system
+  so its internal state can be inferred from its external outputs. Every
+  service must emit structured telemetry at three levels: structured logging
+  with correlation IDs at every boundary and failure point; metrics using
+  the RED pattern (Rate, Errors, Duration) for every operation and the
+  golden signals (latency, throughput, error rate, saturation); and
+  distributed traces that propagate context across service boundaries via
+  OpenTelemetry. Beyond passive telemetry, synthetic monitoring actively
+  probes the system from the outside -- executing canary transactions on a
+  schedule to detect failures before users do. Telemetry is a first-class
+  design concern, not an afterthought bolted on before launch. Without
+  observability, production is a black box -- you learn about failures from
+  users, diagnose from guesses, and fix by restarting. The goal is that when
+  something breaks, an operator can determine what, where, and why from the
+  telemetry alone, without SSH-ing into a container.
+examples:
+  - language: python
+    bad: |
+      import logging
+      from typing import Any
+
+
+      logger = logging.getLogger(__name__)
+
+
+      async def process_order(order_id: str, items: list[dict]) -> dict:
+          """No correlation ID, no structured fields, no measurement."""
+          logger.info("Processing order")  # which order? who called?
+          try:
+              total = sum(item["price"] for item in items)
+              # No latency measurement, no trace
+              result = await charge_payment(order_id, total)
+              logger.info("Order processed")  # success or failure? how long?
+              return result
+          except Exception as e:
+              logger.error(f"Order failed: {e}")  # bare exception no context
+              raise
+    good: |
+      import asyncio
+      import json
+      import logging
+      import time
+      import uuid
+      from contextvars import ContextVar
+      from dataclasses import dataclass, field
+      from typing import Any, Optional
+
+
+      # ---- Correlation context (propagated across async boundaries) ----
+      _correlation_id: ContextVar[str] = ContextVar("correlation_id", default="")
+      _request_id: ContextVar[str] = ContextVar("request_id", default="")
+
+
+      def set_correlation(id_: str) -> None:
+          _correlation_id.set(id_)
+
+      def get_correlation() -> str:
+          return _correlation_id.get()
+
+      def set_request(id_: str) -> None:
+          _request_id.set(id_)
+
+      def get_request() -> str:
+          return _request_id.get()
+
+
+      # ---- Structured logger -------------------------------------------
+      class StructuredLogger:
+          """
+          Wraps logging.Logger with mandatory structured fields.
+
+          Every log line includes: timestamp, correlation_id, request_id,
+          service, and operation. This makes logs queryable by any dimension
+          in your log aggregator (Elasticsearch, Loki, etc.).
+          """
+          def __init__(self, name: str, service: str) -> None:
+              self._logger = logging.getLogger(name)
+              self._service = service
+
+          def _emit(self, level: int, msg: str, **fields: Any) -> None:
+              payload = {
+                  "ts": time.time(),
+                  "service": self._service,
+                  "correlation_id": get_correlation(),
+                  "request_id": get_request(),
+                  "msg": msg,
+                  **fields,
+              }
+              self._logger.log(level, json.dumps(payload, default=str))
+
+          def info(self, msg: str, **fields: Any) -> None:
+              self._emit(logging.INFO, msg, **fields)
+
+          def warning(self, msg: str, **fields: Any) -> None:
+              self._emit(logging.WARNING, msg, **fields)
+
+          def error(self, msg: str, **fields: Any) -> None:
+              self._emit(logging.ERROR, msg, **fields)
+
+          def debug(self, msg: str, **fields: Any) -> None:
+              self._emit(logging.DEBUG, msg, **fields)
+
+
+      LOG = StructuredLogger("order_service", "order-processor")
+
+
+      # ---- Golden-signal metrics collector -----------------------------
+      @dataclass
+      class OperationMetrics:
+          """
+          Collects latency, error count, and throughput per operation.
+
+          In production, emit these to a metrics backend (Prometheus,
+          Datadog, etc.) rather than printing. The structure is what
+          matters: every operation tracked with the same shape.
+          """
+          name: str
+          _count: int = field(default=0, init=False)
+          _errors: int = field(default=0, init=False)
+          _total_latency: float = field(default=0.0, init=False)
+
+          def record(self, latency_s: float, error: bool = False) -> None:
+              self._count += 1
+              self._total_latency += latency_s
+              if error:
+                  self._errors += 1
+
+          @property
+          def avg_latency(self) -> float:
+              return self._total_latency / self._count if self._count else 0.0
+
+          @property
+          def error_rate(self) -> float:
+              return self._errors / self._count if self._count else 0.0
+
+          @property
+          def throughput(self) -> float:
+              """Calls per second (approximate, caller provides interval)."""
+              return self._count  # caller divides by time window
+
+          def snapshot(self) -> dict:
+              return {
+                  "operation": self.name,
+                  "count": self._count,
+                  "avg_latency_s": round(self.avg_latency, 4),
+                  "error_rate": round(self.error_rate, 4),
+                  "errors": self._errors,
+              }
+
+
+      # ---- Instrumented operation decorator ----------------------------
+      class Instrumented:
+          """
+          Wraps an async function with logging + latency measurement.
+
+          Usage:
+              charge_metrics = OperationMetrics("charge_payment")
+
+              @Instrumented(LOG, charge_metrics)
+              async def charge_payment(order_id: str, amount: float) -> dict:
+                  ...
+          """
+          def __init__(self, logger: StructuredLogger, metrics: OperationMetrics):
+              self._log = logger
+              self._metrics = metrics
+
+          def __call__(self, fn):
+              async def wrapper(*args, **kwargs):
+                  op_name = self._metrics.name
+                  start = time.monotonic()
+                  self._log.info(f"{op_name}.start", args=str(args)[:200])
+
+                  try:
+                      result = await fn(*args, **kwargs)
+                      elapsed = time.monotonic() - start
+                      self._metrics.record(elapsed, error=False)
+                      self._log.info(
+                          f"{op_name}.success",
+                          latency_s=round(elapsed, 4),
+                      )
+                      return result
+                  except Exception as e:
+                      elapsed = time.monotonic() - start
+                      self._metrics.record(elapsed, error=True)
+                      self._log.error(
+                          f"{op_name}.failure",
+                          latency_s=round(elapsed, 4),
+                          error_type=type(e).__name__,
+                          error_message=str(e)[:500],
+                      )
+                      raise
+
+              return wrapper
+
+
+      # ---- Saturation signals ------------------------------------------
+      @dataclass
+      class SaturationMetrics:
+          """Track resource saturation that predicts outages."""
+          db_connections_active: int = 0
+          db_connections_max: int = 20
+          queue_depth: int = 0
+          queue_max: int = 1000
+          thread_pool_active: int = 0
+          thread_pool_max: int = 50
+
+          @property
+          def db_connection_utilization(self) -> float:
+              return self.db_connections_active / self.db_connections_max
+
+          @property
+          def queue_utilization(self) -> float:
+              return self.queue_depth / self.queue_max
+
+          def snapshot(self) -> dict:
+              return {
+                  "db_utilization": round(self.db_connection_utilization, 3),
+                  "queue_utilization": round(self.queue_utilization, 3),
+                  "thread_utilization": round(self.thread_pool_active / self.thread_pool_max, 3),
+              }
+
+
+      # ---- Wiring it all together --------------------------------------
+      charge_metrics = OperationMetrics("charge_payment")
+      sat_metrics = SaturationMetrics()
+
+
+      @Instrumented(LOG, charge_metrics)
+      async def charge_payment(order_id: str, amount: float) -> dict:
+          # Simulate: update saturation as resources are consumed
+          sat_metrics.db_connections_active += 1
+          try:
+              await asyncio.sleep(0.05)  # simulated DB call
+              return {"transaction_id": str(uuid.uuid4()), "status": "success"}
+          finally:
+              sat_metrics.db_connections_active -= 1
+
+
+      async def process_order(order_id: str, items: list[dict]) -> dict:
+          set_correlation(order_id)  # correlation follows the entire operation
+          set_request(str(uuid.uuid4()))
+
+          LOG.info("process_order.start", order_id=order_id, item_count=len(items))
+          total = sum(item["price"] for item in items)
+
+          # Payment: critical, measured, logged at boundaries
+          try:
+              result = await charge_payment(order_id, total)
+              LOG.info("process_order.success", transaction_id=result["transaction_id"])
+              return result
+          except Exception:
+              LOG.error("process_order.failed", order_id=order_id, total=total)
+              raise
+
+
+      # ---- Periodically emit metrics snapshot (e.g. every 10s) ---------
+      def emit_metrics_snapshot() -> None:
+          LOG.info("metrics.snapshot",
+                   operations=[charge_metrics.snapshot()],
+                   saturation=sat_metrics.snapshot())
+  - language: typescript
+    bad: |
+      import express from "express";
+
+      const app = express();
+
+      // No correlation IDs, no metrics, no structured logging.
+      app.post("/orders", async (req, res) => {
+        console.log("Creating order"); // which order? which user?
+        try {
+          const order = await createOrder(req.body);
+          console.log("Order created"); // how long? how many items?
+          res.json(order);
+        } catch (err) {
+          console.error("Error:", err); // unstructured, no context
+          res.status(500).json({ error: "something went wrong" });
+        }
+      });
+
+      app.listen(3000);
+    good: |
+      import express from "express";
+      import { randomUUID } from "crypto";
+      import { AsyncLocalStorage } from "async_hooks";
+
+      // ---- Correlation context (propagated across async boundaries) ----
+      const als = new AsyncLocalStorage<{
+        correlationId: string;
+        requestId: string;
+      }>();
+
+      function getContext() {
+        return als.getStore() ?? {
+          correlationId: "unknown",
+          requestId: "unknown",
+        };
+      }
+
+      // ---- Structured logger -------------------------------------------
+      type LogLevel = "info" | "warn" | "error" | "debug";
+
+      interface LogEntry {
+        ts: number;
+        level: LogLevel;
+        service: string;
+        correlationId: string;
+        requestId: string;
+        msg: string;
+        [key: string]: unknown;
+      }
+
+      class StructuredLogger {
+        constructor(private readonly service: string) {}
+
+        private emit(level: LogLevel, msg: string, fields: Record<string, unknown> = {}): void {
+          const ctx = getContext();
+          const entry: LogEntry = {
+            ts: Date.now(),
+            level,
+            service: this.service,
+            correlationId: ctx.correlationId,
+            requestId: ctx.requestId,
+            msg,
+            ...fields,
+          };
+          // In production: write to stdout as JSON for log aggregator
+          process.stdout.write(JSON.stringify(entry) + "\n");
+        }
+
+        info(msg: string, fields?: Record<string, unknown>) {
+          this.emit("info", msg, fields);
+        }
+        warn(msg: string, fields?: Record<string, unknown>) {
+          this.emit("warn", msg, fields);
+        }
+        error(msg: string, fields?: Record<string, unknown>) {
+          this.emit("error", msg, fields);
+        }
+        debug(msg: string, fields?: Record<string, unknown>) {
+          this.emit("debug", msg, fields);
+        }
+      }
+
+      const LOG = new StructuredLogger("order-service");
+
+      // ---- Golden-signal metrics collector ------------------------------
+      interface MetricSnapshot {
+        operation: string;
+        count: number;
+        avgLatencyMs: number;
+        errorRate: number;
+        errors: number;
+      }
+
+      class OperationMetrics {
+        private count = 0;
+        private errors = 0;
+        private totalLatency = 0;
+
+        constructor(public readonly name: string) {}
+
+        record(latencyMs: number, error = false): void {
+          this.count++;
+          this.totalLatency += latencyMs;
+          if (error) this.errors++;
+        }
+
+        snapshot(): MetricSnapshot {
+          return {
+            operation: this.name,
+            count: this.count,
+            avgLatencyMs: this.count ? Math.round(this.totalLatency / this.count) : 0,
+            errorRate: this.count ? +(this.errors / this.count).toFixed(4) : 0,
+            errors: this.errors,
+          };
+        }
+      }
+
+      // ---- Middleware: attach correlation context + latency timer -----
+      function correlationMiddleware(
+        req: express.Request,
+        _res: express.Response,
+        next: express.NextFunction,
+      ): void {
+        const correlationId = (req.headers["x-correlation-id"] as string) || randomUUID();
+        const requestId = randomUUID();
+
+        als.run({ correlationId, requestId }, () => {
+          const start = Date.now();
+          LOG.info("request.start", {
+            method: req.method,
+            path: req.path,
+            userAgent: req.headers["user-agent"],
+          });
+
+          // Track response
+          _res.on("finish", () => {
+            const latency = Date.now() - start;
+            LOG.info("request.end", {
+              method: req.method,
+              path: req.path,
+              statusCode: _res.statusCode,
+              latencyMs: latency,
+            });
+          });
+
+          next();
+        });
+      }
+
+      // ---- Saturation tracker ------------------------------------------
+      class SaturationMetrics {
+        dbConnections = 0;
+        queueDepth = 0;
+
+        constructor(
+          public readonly dbMax: number,
+          public readonly queueMax: number,
+        ) {}
+
+        snapshot() {
+          return {
+            dbUtilization: +(this.dbConnections / this.dbMax).toFixed(3),
+            queueUtilization: +(this.queueDepth / this.queueMax).toFixed(3),
+          };
+        }
+      }
+
+      // ---- Wired application -------------------------------------------
+      const app = express();
+      const chargeMetrics = new OperationMetrics("charge_payment");
+      const sat = new SaturationMetrics(20, 1000);
+
+      app.use(correlationMiddleware);
+
+      app.post("/orders", async (req, res) => {
+        const { items } = req.body;
+        const start = Date.now();
+
+        try {
+          const total = items.reduce(
+            (sum: number, item: { price: number }) => sum + item.price,
+            0,
+          );
+
+          sat.dbConnections++;
+          const chargeResult = await chargePayment(total);
+          chargeMetrics.record(Date.now() - start);
+
+          LOG.info("order.created", {
+            itemCount: items.length,
+            total,
+            transactionId: chargeResult.transactionId,
+          });
+
+          res.json(chargeResult);
+        } catch (err) {
+          chargeMetrics.record(Date.now() - start, true);
+          LOG.error("order.failed", {
+            errorType: (err as Error).constructor.name,
+            errorMessage: (err as Error).message,
+          });
+          res.status(500).json({
+            error: "Order processing failed",
+            correlationId: getContext().correlationId,
+          });
+        } finally {
+          sat.dbConnections = Math.max(0, sat.dbConnections - 1);
+        }
+      });
+
+      // ---- Metrics endpoint --------------------------------------------
+      app.get("/metrics", (_req, res) => {
+        res.json({
+          operations: [chargeMetrics.snapshot()],
+          saturation: sat.snapshot(),
+        });
+      });
+
+      app.listen(3000);
+  - language: python
+    label: "Distributed tracing with OpenTelemetry"
+    good: |
+      """
+      Propagating trace context across service boundaries.
+
+      When a request spans multiple services, every outbound call must
+      carry a trace context (trace_id + span_id) so the tracing backend
+      can reconstruct the full waterfall. Without this, you have N
+      isolated spans with no parent-child relationship -- useless for
+      debugging end-to-end latency.
+      """
+      from opentelemetry import trace
+      from opentelemetry.sdk.trace import TracerProvider
+      from opentelemetry.sdk.trace.export import BatchSpanProcessor
+      from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+          OTLPSpanExporter,
+      )
+      from opentelemetry.propagate import inject, extract
+      from opentelemetry.trace.propagation.tracecontext import (
+          TraceContextTextMapPropagator,
+      )
+
+      import httpx
+      from fastapi import FastAPI, Request
+
+      # ---- Bootstrap OpenTelemetry ---------------------------------------
+      provider = TracerProvider()
+      processor = BatchSpanProcessor(
+          OTLPSpanExporter(endpoint="http://otel-collector:4317")
+      )
+      provider.add_span_processor(processor)
+      trace.set_tracer_provider(provider)
+      tracer = trace.get_tracer("order-service")
+
+      propagate = TraceContextTextMapPropagator()
+      app = FastAPI()
+
+      # ---- Inbound: extract trace context from incoming request ----------
+      @app.middleware("http")
+      async def trace_middleware(request: Request, call_next):
+          # Extract parent trace context from incoming headers
+          carrier = dict(request.headers)
+          ctx = extract(carrier)
+
+          with tracer.start_as_current_span(
+              f"{request.method} {request.url.path}", context=ctx
+          ) as span:
+              span.set_attribute("http.method", request.method)
+              span.set_attribute("http.url", str(request.url))
+              span.set_attribute("correlation_id", get_correlation())
+
+              response = await call_next(request)
+
+              span.set_attribute("http.status_code", response.status_code)
+              return response
+
+      # ---- Outbound: inject trace context into downstream call ----------
+      async def call_payment_service(amount: float) -> dict:
+          carrier: dict[str, str] = {}
+          # Inject current span context into headers for the downstream
+          inject(carrier)
+
+          async with httpx.AsyncClient() as client:
+              resp = await client.post(
+                  "http://payments/charge",
+                  json={"amount": amount},
+                  headers={
+                      **carrier,
+                      "X-Correlation-ID": get_correlation(),
+                  },
+              )
+              resp.raise_for_status()
+              return resp.json()
+
+      @app.post("/orders")
+      async def create_order(request: Request):
+          body = await request.json()
+
+          with tracer.start_as_current_span("create_order") as span:
+              span.set_attribute("item_count", len(body["items"]))
+              total = sum(item["price"] for item in body["items"])
+
+              # Outbound call automatically carries trace context
+              result = await call_payment_service(total)
+
+              span.add_event(
+                  "order_created",
+                  {"transaction_id": result["transaction_id"]},
+              )
+              return result
+heuristics:
+  - >
+    Every log line must carry a correlation ID that traces a single user
+    operation across all services. Without it, you cannot reconstruct what
+    happened to a specific request across microservices -- you have N isolated
+    log streams with no connective tissue.
+  - >
+    Log at boundaries: every inbound request, every outbound call, every error.
+    Include the operation name, dependency, outcome (success/failure/timeout),
+    and key dimensions (user_id, order_id, etc.). This makes every failure
+    self-diagnosing from the log alone.
+  - >
+    Structured logging (JSON) is not optional. Free-text logs are unqueryable at
+    scale. Every log line must be a parseable object so operators can filter by
+    correlation_id, error_type, or operation in their log aggregator.
+  - >
+    RED metrics (Rate, Errors, Duration) are the minimum set for every
+    operation. Rate = calls per second, Errors = percentage that fail,
+    Duration = p50/p95/p99 latency. Every API endpoint, every outbound call,
+    every queue consumer must expose RED. Without per-operation RED, you
+    can't tell which endpoint is degraded when overall latency rises.
+  - >
+    USE metrics (Utilization, Saturation, Errors) complement RED at the
+    resource level. Utilization = how busy a resource is (CPU%, connection
+    pool fullness), Saturation = how much work is queued waiting for the
+    resource, Errors = resource-level failures (disk I/O errors, OOM kills).
+    USE tells you *why* RED is spiking -- if p99 Duration rises and Disk
+    Saturation is at 90%, the disk is the bottleneck.
+  - >
+    The golden signals (Google SRE) map directly: Latency = Duration,
+    Traffic = Rate, Errors = the error subset of Rate, Saturation = USE's
+    Saturation. RED plus USE fully cover the golden signals with a simpler
+    mnemonic.
+  - >
+    Saturation is the leading indicator of failure. Latency spikes are lagging
+    indicators -- by the time p99 latency is high, the queue is already full.
+    Monitor queue depth, connection utilization, and semaphore availability as
+    predictive signals.
+  - >
+    Never log secrets. API keys, tokens, passwords, and PII must be redacted
+    before they hit the log stream. Use a whitelist of safe fields rather than
+    a blacklist of dangerous ones -- it's easier to miss a field than to define
+    what's safe.
+  - >
+    Avoid log spam under retry storms. A downstream outage that triggers 3
+    retries per request and processes 1000 req/s generates 3000 error logs per
+    second. Sample or rate-limit repetitive error logs; the first occurrence and
+    a periodic summary are sufficient.
+  - >
+    Metrics must be per-operation, not per-service. "Average latency of
+    order-service" mixes fast reads and slow writes into one useless number.
+    Track latency separately for get_order, create_order, charge_payment, etc.
+  - >
+    Traces link logs and metrics across service boundaries. A trace ID in every
+    outbound call lets you see the full waterfall of a request through N
+    services. Without traces, you can't determine which service in a chain is
+    the bottleneck.
+  - >
+    "Observability is part of the design" (Release It!). Telemetry hooks must be
+    designed into the code, not retrofitted after bugs appear. Every module
+    should expose its metrics and health as a first-class interface.
+  - >
+    Distributed tracing is not optional in microservice architectures.
+    Propagate trace context (via W3C Trace Context headers: traceparent,
+    tracestate) on every outbound call. Every service must extract the
+    incoming trace context and inject it into downstream calls. Without
+    propagation, your tracing backend sees N disconnected spans instead of
+    one end-to-end waterfall -- you can't determine which service in a chain
+    is the bottleneck.
+  - >
+    Synthetic monitoring (canary transactions) fills the gap that passive
+    telemetry cannot: it catches failures before a real user hits them.
+    Schedule a synthetic transaction every 60 seconds that exercises the
+    critical path end-to-end — create an order, process payment, verify the
+    result. If it fails, page on-call. Synthetic monitoring catches
+    "silent" failures (misconfigured load balancer, broken deployment,
+    expired TLS certificate) that logs and metrics alone cannot detect
+    because no real traffic has hit them yet.
+  - >
+    Synthetic monitors must test the full path, not just the health endpoint.
+    A health check can return 200 while the actual order-creation flow is
+    broken due to a bad deployment or a schema mismatch. The canary must
+    exercise real business logic — write to the database, call downstream
+    services, verify the response — then clean up after itself.
+  - >
+    Health checks are a subset of observability. A health endpoint
+    (/health, /ready) that accurately reflects dependency state is your first
+    signal that something is wrong. A health check that always returns green
+    is worse than no health check -- it trains operators to ignore it.
+related_tags: [observability, logging, metrics, traces, golden-signals,
+  correlation-id, structured-logging, saturation, latency, throughput,
+  health-check, telemetry, monitoring, red-metrics, use-metrics,
+  opentelemetry, distributed-tracing, trace-context, w3c-traceparent,
+  synthetic-monitoring, canary-transactions, release-it, ddia]

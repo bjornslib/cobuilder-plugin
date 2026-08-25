@@ -1,0 +1,536 @@
+id: separate-query-from-modifier-001
+name: "Refactoring — Separate Query from Modifier (Command-Query Separation)"
+category: design-patterns
+canonical_tags: ['refactoring', 'composing-methods', 'separate-query-from-modifier', 'command-query-separation', 'cqs', 'side-effect-free', 'pure-functions', 'readability', 'idempotent-reads']
+sources:
+  - books/refactoring.md
+  - books/clean-code.md
+  - open_sources/design_patterns/refactoring-guru-patterns.txt
+summary: >
+  Separate Query from Modifier (also called Command-Query Separation, or CQS)
+  enforces one of the cleanest contracts in software design: a method should
+  either return a value (a query) OR change observable state (a modifier /
+  command), but never both. A query is side-effect-free, always safe to call,
+  and can be called multiple times with the same result. A modifier changes
+  state and returns nothing (void / None / unit). This is not just a style
+  preference — it's a correctness invariant. When a method like `getNextOrder()`
+  both dequeues an order (modifier) AND returns it (query), every call site
+  becomes a trap: calling it twice dequeues two orders, not one, and you can't
+  peek at the next order without consuming it. The fix: split into
+  `peekNextOrder()` (pure query) and `dequeueNextOrder()` (pure modifier). Every
+  call site then deliberately chooses whether it's observing or mutating.
+
+  This refactoring eliminates a class of bugs that arise from "convenience"
+  methods that compute a value and also write a log, increment a counter, cache
+  a result, update a timestamp, or send a metrics event. These hidden side
+  effects make code non-deterministic from the caller's perspective: the same
+  input produces different outputs depending on unseen system state. Apply this
+  when: (1) a method with a return value also has observable side effects, (2) a
+  caller wants to query state without mutating it but the only available method
+  does both, or (3) you're building an API boundary or a cache layer and need
+  clear read/write semantics. Do NOT apply when the method's side effect is
+  deliberately part of its contract and callers expect it (e.g., `readAndLock()`
+  in a database cursor) — but even then, the name must signal the dual behavior,
+  and the documentation must be explicit.
+examples:
+  - language: python
+    bad: |
+      # BAD: `find_and_lock_next_available` does THREE things: queries for
+      # the next ticket, locks it, and returns it. Every call site MUST
+      # consume the ticket — you can't peek without consuming. Writing a
+      # dashboard that shows "next 5 tickets" is impossible because the
+      # only access method also mutates. The method violates CQS: it is
+      # a query (returns a value) AND a modifier (mutates ticket state).
+      # A caller that just wants to display the next ticket accidentally
+      # locks it. The method name is long enough to warn you — but names
+      # don't enforce behavior.
+
+      from dataclasses import dataclass
+      from enum import Enum
+      from datetime import datetime
+
+
+      class TicketStatus(Enum):
+          OPEN = "open"
+          IN_PROGRESS = "in_progress"
+          CLOSED = "closed"
+
+
+      @dataclass
+      class Ticket:
+          id: str
+          title: str
+          status: TicketStatus
+          assigned_to: str | None = None
+          locked_at: datetime | None = None
+
+
+      class TicketQueue:
+          def __init__(self, tickets: list[Ticket]):
+              self._tickets = tickets
+
+          # BAD: Query + Modifier in one method. Side effects: mutates
+          # ticket.status AND ticket.assigned_to AND ticket.locked_at.
+          def find_and_lock_next_available(self, assignee: str) -> Ticket | None:
+              """Find the next open ticket and lock it for the assignee."""
+              for ticket in self._tickets:
+                  if ticket.status == TicketStatus.OPEN:
+                      ticket.status = TicketStatus.IN_PROGRESS   # mutation
+                      ticket.assigned_to = assignee              # mutation
+                      ticket.locked_at = datetime.now()          # mutation
+                      return ticket                              # query result
+              return None
+
+
+      # Call site — the caller just wants to display "you have no work":
+      def has_available_work(queue: TicketQueue) -> bool:
+          # BUG: `find_and_lock_next_available` MUTATES state. This method
+          # was supposed to be a read-only check, but it locks a ticket for
+          # "system_checker" and then ignores it. That ticket is now locked
+          # forever unless explicitly unlocked.
+          return queue.find_and_lock_next_available("system_checker") is not None
+
+      # Call site — the caller wants to assign the next 3 tickets to Alice.
+      # Simple, right? But the method already does the mutation — the caller
+      # just receives the result.
+      def assign_next_three(queue: TicketQueue) -> list[Ticket]:
+          assigned: list[Ticket] = []
+          for _ in range(3):
+              ticket = queue.find_and_lock_next_available("Alice")
+              if ticket is None:
+                  break
+              assigned.append(ticket)
+          return assigned
+
+      # The method does three things. If you want to do only ONE of them
+      # (e.g., "find next open, but don't lock"), you can't — the method
+      # bundles all three inseparable actions. The API has exactly one knob,
+      // and it turns everything at once.
+
+    good: |
+      # GOOD: Separate Query from Modifier splits `find_and_lock_next_available`
+      # into two methods: `next_open` (pure query — no mutation, safe to call
+      # arbitrarily) and `lock_ticket` (pure modifier — mutates, returns None).
+      # Every call site explicitly chooses observation or mutation. A dashboard
+      # can call `next_open()` 100 times with no side effects. The `assign`
+      # method becomes: peek, then lock — a two-step deliberate process.
+
+      from dataclasses import dataclass
+      from enum import Enum
+      from datetime import datetime
+
+
+      class TicketStatus(Enum):
+          OPEN = "open"
+          IN_PROGRESS = "in_progress"
+          CLOSED = "closed"
+
+
+      @dataclass
+      class Ticket:
+          id: str
+          title: str
+          status: TicketStatus
+          assigned_to: str | None = None
+          locked_at: datetime | None = None
+
+
+      class TicketQueue:
+          def __init__(self, tickets: list[Ticket]):
+              self._tickets = tickets
+
+          # --- Query: pure, no side effects. Safe to call anytime. ---
+          def next_open(self) -> Ticket | None:
+              """Return the next open ticket WITHOUT locking or assigning."""
+              return next(
+                  (t for t in self._tickets if t.status == TicketStatus.OPEN),
+                  None,
+              )
+
+          def open_tickets(self) -> list[Ticket]:
+              """Return all open tickets (pure query)."""
+              return [t for t in self._tickets if t.status == TicketStatus.OPEN]
+
+          def count_open(self) -> int:
+              """Return count of open tickets (pure query)."""
+              return len(self.open_tickets())
+
+          # --- Modifier: changes state, returns nothing ---
+          def lock_ticket(self, ticket_id: str, assignee: str) -> None:
+              """Lock and assign a ticket. Raises if not open or not found."""
+              ticket = next(
+                  (t for t in self._tickets if t.id == ticket_id),
+                  None,
+              )
+              if ticket is None:
+                  raise ValueError(f"Ticket {ticket_id} not found")
+              if ticket.status != TicketStatus.OPEN:
+                  raise ValueError(
+                      f"Ticket {ticket_id} is {ticket.status.value}, not OPEN"
+                  )
+
+              ticket.status = TicketStatus.IN_PROGRESS
+              ticket.assigned_to = assignee
+              ticket.locked_at = datetime.now()
+              # Returns None — the modifier is done; caller gets nothing back.
+
+
+      # Call site — read-only check now uses pure query:
+      def has_available_work(queue: TicketQueue) -> bool:
+          # `next_open()` is a pure query — no mutation. Safe to call
+          # from a health-check endpoint, a dashboard poller, or a cron job
+          // that just wants to know whether to wake up a worker.
+          return queue.next_open() is not None
+
+      # Call site — deliberate two-step: peek, then lock.
+      def assign_next_ticket(queue: TicketQueue, assignee: str) -> bool:
+          """Peek at the next open ticket and lock it. Returns True if
+          assignment succeeded, False if no open tickets."""
+          ticket = queue.next_open()          # pure query — no side effects
+          if ticket is None:
+              return False
+          queue.lock_ticket(ticket.id, assignee)  # pure modifier
+          return True
+
+      # Call site — dashboard can display open tickets without locking them:
+      def dashboard_summary(queue: TicketQueue) -> dict:
+          return {
+              "open_count": queue.count_open(),
+              "open_ids": [t.id for t in queue.open_tickets()],
+              "next_title": queue.next_open().title if queue.next_open() else "NONE",
+              # calling next_open() twice is fine — it's idempotent
+          }
+
+      # Each query and modifier is independently testable:
+      def test_next_open_is_pure():
+          t1 = Ticket("1", "Bug report", TicketStatus.OPEN)
+          t2 = Ticket("2", "Feature request", TicketStatus.IN_PROGRESS)
+          queue = TicketQueue([t1, t2])
+
+          before = queue.count_open()
+          result = queue.next_open()
+          after = queue.count_open()
+
+          assert result is t1
+          # CRUCIAL: the query did NOT change state
+          assert before == after == 1
+
+
+      def test_lock_ticket_returns_nothing():
+          t = Ticket("1", "Bug", TicketStatus.OPEN)
+          queue = TicketQueue([t])
+
+          result = queue.lock_ticket("1", "Alice")
+
+          assert result is None  # modifier returns nothing
+          assert t.status == TicketStatus.IN_PROGRESS
+          assert t.assigned_to == "Alice"
+
+      # The design enforces the invariant: you CANNOT accidentally lock a
+      # ticket by calling `next_open()`. The API separates intent: queries
+      # answer questions; modifiers change the world. The type system and
+      // naming make this clear — `next_open` returns a value, `lock_ticket`
+      // returns None.
+
+  - language: typescript
+    bad: |
+      // BAD: `popNext` both removes an element (modifier) AND returns it
+      // (query). This is the JS Array.shift() pattern applied to a domain
+      // concept. Callers cannot peek. The method is destructive by default,
+      // which is fine for a queue worker but disastrous when called from a
+      // monitoring dashboard that just wants to display the next item.
+
+      interface Job {
+        id: string;
+        payload: string;
+      }
+
+      class JobQueue {
+        private jobs: Job[] = [];
+
+        enqueue(job: Job): void {
+          this.jobs.push(job);
+        }
+
+        // BAD: Query (returns Job) + Modifier (removes from array).
+        // Calling it from a health-check or dashboard destroys work.
+        popNext(): Job | undefined {
+          return this.jobs.shift();  // shift() = query + modifier
+        }
+
+        // BAD: Also query + modifier — increments `_pollCounter` as a
+        // side effect. This counter mutation is invisible at every call
+        // site. A caller that just wants to count won't know it's also
+        // incrementing a hidden metric (which might trigger an alert on
+        // the monitoring system when called too often).
+        count(): number {
+          this._pollCounter++;
+          return this.jobs.length;
+        }
+
+        private _pollCounter = 0;
+      }
+
+      // Call site that just wants to know if there's work:
+      function shouldWakeWorker(queue: JobQueue): boolean {
+        // BUG: `popNext()` removes and discards the job. The worker never
+        // sees it. This is a pure read accidentally turned into a mutation.
+        const next = queue.popNext();
+        if (next) {
+          console.log(`Discarded job: ${next.id}`); // oops
+        }
+        return !!next;
+      }
+
+    good: |
+      // GOOD: Separate Query from Modifier. `peakNext()` (pure query) and
+      // `dequeue()` (pure modifier, returns void). Every call site declares
+      // intent: `peakNext()` says "I'm just looking," `dequeue()` says
+      // "I'm taking this." The API enforces the contract — you cannot
+      // accidentally consume a job by calling a getter.
+
+      interface Job {
+        id: string;
+        payload: string;
+      }
+
+      class JobQueue {
+        private jobs: Job[] = [];
+
+        // --- Queries: pure, side-effect-free ---
+
+        /** Return the next job WITHOUT removing it. Safe — call as often as you
+         *  want. Returns undefined if queue is empty. */
+        peekNext(): Job | undefined {
+          return this.jobs[0];
+        }
+
+        /** Return the next N jobs without removing them. Pure query. */
+        peekNextBatch(n: number): Job[] {
+          return this.jobs.slice(0, n);
+        }
+
+        /** Return total count of pending jobs. Pure query — no counters,
+         *  no side effects. */
+        count(): number {
+          return this.jobs.length;
+        }
+
+        /** Is the queue empty? Pure query. */
+        isEmpty(): boolean {
+          return this.jobs.length === 0;
+        }
+
+        // --- Modifiers: change state, return void ---
+
+        /** Remove and return the next job. This IS a modifier that returns
+         *  a value — deliberately, because dequeue inherently couples
+         *  removal + retrieval. But the name signals it, and a separate
+         *  `peekNext()` exists for when you don't want removal. */
+        dequeue(): Job | undefined {
+          return this.jobs.shift();
+        }
+
+        /** Add a job to the queue. Pure modifier. */
+        enqueue(job: Job): void {
+          this.jobs.push(job);
+        }
+
+        /** Remove all jobs. Bulk modifier. */
+        drain(): Job[] {
+          const all = [...this.jobs];
+          this.jobs = [];
+          return all;
+        }
+      }
+
+      // --- Statistics (query-only, never mutates) ---
+
+      class JobQueueStats {
+        constructor(private readonly queue: JobQueue) {}
+
+        /** Pure query — no mutation, safe for all consumers. */
+        summary(): { count: number; isIdle: boolean; nextJobTitle: string } {
+          const next = this.queue.peekNext();   // pure query
+          return {
+            count: this.queue.count(),          // pure query
+            isIdle: this.queue.isEmpty(),       // pure query
+            nextJobTitle: next?.payload ?? "idle",
+          };
+        }
+
+        /** Monitor-style polling — pure queries only. */
+        poll(): { healthy: boolean } {
+          // Safe: calls pure queries. No jobs consumed, no counters
+          // incremented, no hidden mutations.
+          return { healthy: this.queue.count() >= 0 };
+        }
+      }
+
+      // --- Worker: deliberate dequeue — intentionally destructive ---
+
+      function processNext(queue: JobQueue): void {
+        // `dequeue()` is clearly a modifier. Caller knows they're consuming.
+        const job = queue.dequeue();
+        if (job) {
+          console.log(`Processing: ${job.payload}`);
+        }
+      }
+
+      // A dashboard can safely call `peekNext()` and `count()` forever
+      // without destroying work:
+      import { describe, it, expect } from "vitest";
+
+      describe("JobQueue", () => {
+        it("peekNext is non-destructive", () => {
+          const queue = new JobQueue();
+          queue.enqueue({ id: "1", payload: "do thing" });
+          queue.enqueue({ id: "2", payload: "do another" });
+
+          const peeked1 = queue.peekNext();
+          expect(peeked1?.id).toBe("1");
+
+          const peeked2 = queue.peekNext();
+          expect(peeked2?.id).toBe("1");   // still "1" — not consumed
+
+          expect(queue.count()).toBe(2);   // count unchanged — peek is pure
+        });
+
+        it("dequeue is destructive", () => {
+          const queue = new JobQueue();
+          queue.enqueue({ id: "1", payload: "do thing" });
+
+          const dequeued = queue.dequeue();
+          expect(dequeued?.id).toBe("1");
+          expect(queue.count()).toBe(0);   // removed
+          expect(queue.peekNext()).toBeUndefined();
+        });
+
+        it("statistics never mutate", () => {
+          const queue = new JobQueue();
+          queue.enqueue({ id: "1", payload: "do work" });
+          const stats = new JobQueueStats(queue);
+
+          const before = queue.count();
+          stats.poll();
+          stats.summary();
+
+          // After pure queries, count is unchanged:
+          expect(queue.count()).toBe(before);
+        });
+      });
+
+heuristics:
+  - >
+    "Separate Query from Modifier: you have a method that returns a value but
+    also changes the state of an object. Split into two methods — one for the
+    query and one for the modifier" (Fowler, Refactoring). After splitting,
+    every call site must choose: do I want observation or mutation?
+  - >
+    The Bertrand Meyer origin: "Every method should be either a command that
+    performs an action, or a query that returns data, but not both" (Object-Oriented
+    Software Construction). This is Command-Query Separation (CQS) — one of the
+    most stable invariants in OO design. A codebase that respects CQS is easier
+    to test, debug, cache, and reason about.
+  - >
+    The test for a pure query: calling it twice with the same arguments (and
+    the same system state) must produce the same result. If calling it twice
+    produces different results (a counter advances, a log writes, a cursor
+    moves), it's not a query — it has hidden state and should be a modifier.
+  - >
+    Apply when a method both returns data and mutates observable state. The
+    classic pattern: a getter that lazy-initializes (`if (!this._cache)
+    this._cache = compute()`). The first call mutates (fills cache); the
+    second call doesn't. From the caller's perspective, the side effect on
+    the first call is invisible — if the caller iterates a list and calls the
+    getter, it doesn't know which call created the cache. Make the
+    initialization explicit: `ensureCached()` (modifier) then `get()` (query).
+  - >
+    The mechanical sequence: (1) create a new query method that does only the
+    read part — copy the return-value computation from the original method.
+    (2) remove the return from the original method, change its name to a verb
+    phrase (e.g., `findAndLock` → `lock`), and make it return void/Nothing.
+    (3) find every call site and decide whether it was using the return value
+    (needs the query) or the side effect (needs the modifier) or both (needs
+    both, in sequence). (4) update call sites, run tests.
+  - >
+    "The caching exception: a getter that memoizes is not truly a pure query,
+    but it's often acceptable because the cache population is an internal
+    optimization, not an externally observable side effect. If the cache
+    affects correctness (different callers see different values depending on
+    who called first), it's not a cache — it's a race condition. Separate the
+    cache from the logic."
+  - >
+    "The dequeue exception: a data structure where remove + return is inherent
+    (Queue.dequeue, Stack.pop) can return a value from a modifier — but it
+    must be named as a modifier (verb: dequeue, pop, remove), and a separate
+    pure query (peek, top, head) must exist for read-only access. Callers
+    must never be forced to call a modifier to get information."
+  - >
+    In Python, a method that returns a value and also writes a log
+    (`logger.info(...)`) is technically a modifier (I/O side effect). In
+    production code, logging from a query is usually acceptable — the log is
+    not part of the domain logic. But in performance-critical query methods
+    called in hot loops, logging can become a measurable cost. Move the log
+    to the caller or to a separate decorator/wrapper.
+  - >
+    "In TypeScript, the return type signals intent. A modifier should return
+    `void` — the compiler enforces that the caller can't accidentally use
+    the modifier's result as data. A method that returns `Job | undefined` is
+    a query; a method that returns `void` is a modifier. Use this convention
+    to make CQS visible at the type level."
+  - >
+    "After separating, the query method becomes a candidate for caching,
+    memoization, batching, and deduplication — all safe operations on pure
+    queries. The modifier remains single-use and order-dependent. This
+    separation is the foundation for designing APIs that compose well: a
+    dashboard that polls every 5 seconds can call ten query methods safely;
+    a worker that processes a queue calls one modifier (dequeue) per item."
+  - >
+    In event-sourced and CQRS architectures, Command-Query Separation is
+    elevated to the architectural level: the command model (writes, events,
+    aggregates) and the query model (reads, projections, materialized views)
+    live in entirely separate services. The refactoring in this card is the
+    small-scale, in-process version of that architectural pattern — it's CQS
+    at the method level.
+  - >
+    "Do NOT apply to methods where the combined behavior is the contract. A
+    database cursor's `fetchNext()` both advances the cursor and returns the
+    row — that's the abstraction. But even there, a `peekCurrent()` that
+    returns without advancing is valuable for read-only consumers. The
+    principle is not 'never combine', it's 'always provide a pure read path
+    for callers who only need information.'"
+  - >
+    "After splitting, ask: does the modifier need to return success/failure?
+    If the modifier can fail (e.g., lock a ticket that's already locked),
+    use exceptions (Python) or a `Result` type (TypeScript) — but DON'T
+    return a nullable value that mixes status with data. A modifier that
+    returns `boolean` is still a modifier — the boolean is a side-channel
+    for failure, not domain data. Use `try/catch` or `Result<T, E>` instead."
+  - >
+    "In functional pipelines, queries compose (f ∘ g), modifiers sequence.
+    Separating them makes the composition explicit: map pure queries through
+    the data flow, thread modifiers through a state monad or a reducer. The
+    separation forces you to acknowledge which parts of the pipeline have
+    side effects and which are safe transformations."
+  - >
+    "Consider the naming convention: queries should be noun phrases or
+    predicate questions (`peekNext`, `isReady`, `count`, `findById`).
+    Modifiers should be verb phrases in imperative mood (`lockTicket`,
+    `dequeue`, `assignTo`, `drain`). The name tells the caller whether it's
+    safe to call the method from a read-only context."
+  - >
+    In testing, pure queries are trivial to test: set up state, call query,
+    assert return value. Modifiers need state verification: set up state,
+    call modifier, then call queries to verify the state changed correctly.
+    This two-layer testing pattern (mutate, then query) is exactly what the
+    separation makes systematic.
+
+related_tags:
+  [separate-query-from-modifier, command-query-separation, cqs,
+   pure-functions, side-effect-free, composing-methods,
+   fowler-refactoring, bertrand-meyer, query-method, modifier-method,
+   void-return, read-write-split, monitoring-safety, idempotent-reads,
+   cqrs, command-model, query-model, functional-pipelines,
+   state-verification, testing-patterns, caching-friendly,
+   composable-apis, refactoring, clean-code, hidden-side-effects]

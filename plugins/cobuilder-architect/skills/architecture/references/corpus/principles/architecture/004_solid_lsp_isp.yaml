@@ -1,0 +1,456 @@
+id: solid-lsp-isp-004
+name: SOLID — Liskov Substitution Principle & Interface Segregation Principle
+category: architecture
+canonical_tags: ['solid', 'architecture', 'clean-architecture']
+sources:
+  - books/clean-architecture.md
+  - books/unified-software-engineering.md
+summary: >
+  The Liskov Substitution Principle (LSP) states that subtypes must be substitutable
+  for their base types without altering the correctness of the program. Every
+  derivative must honor the contract of its parent — not just the type signature,
+  but the behavioral semantics: preconditions cannot be strengthened, postconditions
+  cannot be weakened, invariants must be preserved. The Interface Segregation
+  Principle (ISP) says that clients should not be forced to depend on methods they
+  do not use. Fat interfaces cause unnecessary coupling — a change to an unneeded
+  method still forces recompilation, retesting, and redeployment of all dependents.
+  ISP drives interface design toward small, role-specific contracts that give
+  each client exactly what it needs and nothing more.
+examples:
+  - language: python
+    bad: |
+      # LSP VIOLATION: Square inherits from Rectangle but breaks the contract.
+      # Setting width on a Square also changes height — the Rectangle invariant
+      # "width and height are independent" is violated.
+      #
+      # ISP VIOLATION: Fat interface forces EmailService to implement methods
+      # it doesn't need (send_sms, send_push) — coupling to irrelevant concerns.
+
+      # === LSP violation: Square is NOT a substitutable Rectangle ===
+      class Rectangle:
+          def __init__(self, width: float, height: float):
+              self._width = width
+              self._height = height
+
+          @property
+          def width(self) -> float:
+              return self._width
+
+          @width.setter
+          def width(self, value: float) -> None:
+              self._width = value
+
+          @property
+          def height(self) -> float:
+              return self._height
+
+          @height.setter
+          def height(self, value: float) -> None:
+              self._height = value
+
+          def area(self) -> float:
+              return self._width * self._height
+
+
+      class Square(Rectangle):
+          """Broken subtype: setting width also sets height — violates Rectangle contract."""
+          def __init__(self, side: float):
+              super().__init__(side, side)
+
+          @property
+          def width(self) -> float:
+              return self._width
+
+          @width.setter
+          def width(self, value: float) -> None:
+              self._width = value
+              self._height = value  # Side effect violates LSP
+
+          @property
+          def height(self) -> float:
+              return self._height
+
+          @height.setter
+          def height(self, value: float) -> None:
+              self._width = value   # Side effect violates LSP
+              self._height = value
+
+
+      # This client code breaks when given a Square:
+      def stretch_rectangle(rect: Rectangle) -> None:
+          rect.width = rect.width * 2
+          rect.height = rect.height * 1.5
+          # For Rectangle: area doubles in width × 1.5 in height
+          # For Square: width=side*2, height=side*3 → area = 6*side², WRONG
+
+
+      # === ISP violation: fat interface ===
+      class Notifier(ABC):
+          @abstractmethod
+          def send_email(self, to: str, subject: str, body: str) -> None: ...
+          @abstractmethod
+          def send_sms(self, phone: str, message: str) -> None: ...
+          @abstractmethod
+          def send_push(self, device_token: str, title: str, body: str) -> None: ...
+          @abstractmethod
+          def send_slack(self, channel: str, text: str) -> None: ...
+
+
+      class EmailService(Notifier):
+          """Forced to implement send_sms, send_push, send_slack — which it never uses."""
+          def send_email(self, to, subject, body):
+              ...  # real implementation
+          def send_sms(self, phone, message):
+              raise NotImplementedError("EmailService does not send SMS")
+          def send_push(self, device_token, title, body):
+              raise NotImplementedError("EmailService does not send push")
+          def send_slack(self, channel, text):
+              raise NotImplementedError("EmailService does not send Slack")
+
+
+      # Caller depends on Notifier but only uses email — still transitively
+      # coupled to sms/push/slack via the fat interface.
+      class OrderConfirmationUseCase:
+          def __init__(self, notifier: Notifier):
+              self._notifier = notifier
+          def execute(self, email: str, order_id: int) -> None:
+              self._notifier.send_email(email, f"Order #{order_id}",
+                                        f"Your order #{order_id} is confirmed")
+
+    good: |
+      # === LSP fix: Square and Rectangle are separate concepts ===
+      # Neither inherits from the other. Both implement a shared Shape interface
+      # with no behavioral surprise.
+
+      from abc import ABC, abstractmethod
+      from dataclasses import dataclass
+
+
+      class Shape(ABC):
+          """Stable contract: every shape can report its area. No mutable setters."""
+          @abstractmethod
+          def area(self) -> float: ...
+
+
+      @dataclass(frozen=True)
+      class Rectangle(Shape):
+          """Immutable value object. Width and height are independent — contract honored."""
+          width: float
+          height: float
+
+          def __post_init__(self) -> None:
+              if self.width <= 0 or self.height <= 0:
+                  raise ValueError("Dimensions must be positive")
+
+          def area(self) -> float:
+              return self.width * self.height
+
+          def with_width(self, value: float) -> "Rectangle":
+              return Rectangle(value, self.height)
+
+          def with_height(self, value: float) -> "Rectangle":
+              return Rectangle(self.width, value)
+
+
+      @dataclass(frozen=True)
+      class Square(Shape):
+          """Immutable. Side length is the only dimension — no hidden width/height coupling."""
+          side: float
+
+          def __post_init__(self) -> None:
+              if self.side <= 0:
+                  raise ValueError("Side must be positive")
+
+          def area(self) -> float:
+              return self.side * self.side
+
+
+      # Client code works correctly for every Shape subtype — no LSP surprise.
+      def describe(shape: Shape) -> str:
+          return f"Shape area: {shape.area():.2f}"
+
+      assert describe(Rectangle(4, 5)) == "Shape area: 20.00"
+      assert describe(Square(5)) == "Shape area: 25.00"
+
+
+      # === ISP fix: role-specific interfaces ===
+      class EmailSender(ABC):
+          """Only clients that need email depend on this."""
+          @abstractmethod
+          def send(self, to: str, subject: str, body: str) -> None: ...
+
+
+      class SmsSender(ABC):
+          """Only clients that need SMS depend on this."""
+          @abstractmethod
+          def send(self, phone: str, message: str) -> None: ...
+
+
+      class PushSender(ABC):
+          """Only clients that need push depend on this."""
+          @abstractmethod
+          def send(self, device_token: str, title: str, body: str) -> None: ...
+
+
+      # EmailService implements ONLY what it needs.
+      class SmtpEmailService(EmailSender):
+          def __init__(self, host: str) -> None:
+              self._host = host
+
+          def send(self, to: str, subject: str, body: str) -> None:
+              # SMTP integration — no SMS/Push methods to stub out
+              ...
+
+
+      # Composite notifier: assembles role-specific senders for clients that
+      # genuinely need multiple channels. No single fat interface.
+      class MultiChannelNotifier:
+          def __init__(
+              self,
+              email: EmailSender | None = None,
+              sms: SmsSender | None = None,
+              push: PushSender | None = None,
+          ) -> None:
+              self.email = email
+              self.sms = sms
+              self.push = push
+
+
+      # Use case depends ONLY on EmailSender — not on SMS, Push, or Slack.
+      class OrderConfirmationUseCase:
+          def __init__(self, email_sender: EmailSender) -> None:
+              self._email = email_sender
+
+          def execute(self, email: str, order_id: int) -> None:
+              self._email.send(email, f"Order #{order_id}",
+                               f"Your order #{order_id} is confirmed")
+
+
+      # Test: mock only EmailSender — zero SMS/Push noise in test setup.
+      class FakeEmailSender(EmailSender):
+          def __init__(self) -> None:
+              self.sent: list[tuple[str, str, str]] = []
+
+          def send(self, to: str, subject: str, body: str) -> None:
+              self.sent.append((to, subject, body))
+
+  - language: typescript
+    bad: |
+      // LSP VIOLATION: ReadOnlyCollection throws on write methods.
+      // Clients expecting Collection.write() break at runtime.
+      //
+      // ISP VIOLATION: OrderProcessor interface bundles unrelated methods
+      // that no single implementation needs all of.
+
+      // === LSP violation ===
+      interface Collection<T> {
+        get(index: number): T;
+        add(item: T): void;
+        remove(index: number): void;
+        size(): number;
+      }
+
+      class ReadOnlyCollection<T> implements Collection<T> {
+        constructor(private readonly items: T[]) {}
+
+        get(index: number): T {
+          return this.items[index];
+        }
+
+        add(item: T): void {
+          // LSP broken: promises to implement Collection, but throws on add
+          throw new Error("Collection is read-only");
+        }
+
+        remove(index: number): void {
+          throw new Error("Collection is read-only");
+        }
+
+        size(): number {
+          return this.items.length;
+        }
+      }
+
+      // Client breaks when given a ReadOnlyCollection:
+      function populateDefaults(c: Collection<string>, values: string[]): void {
+        for (const v of values) {
+          c.add(v); // Runtime crash if c is ReadOnlyCollection
+        }
+      }
+
+      // === ISP violation ===
+      interface OrderProcessor {
+        validate(order: Order): ValidationResult;
+        calculateTax(order: Order): number;
+        applyDiscount(order: Order, code: string): number;
+        processPayment(order: Order, token: string): Promise<PaymentResult>;
+        createShipment(order: Order, address: Address): Promise<Shipment>;
+        sendConfirmation(order: Order, email: string): Promise<void>;
+        auditLog(order: Order, action: string): Promise<void>;
+      }
+
+      // Tax calculator forced to implement payment, shipping, email, audit
+      class DomesticTaxCalculator implements OrderProcessor {
+        validate(order: Order) { throw new Error("Not applicable"); }
+        calculateTax(order: Order): number { return order.subtotal * 0.08; }
+        applyDiscount(order: Order, code: string) { throw new Error("Not applicable"); }
+        async processPayment(order: Order, token: string) { throw new Error("Not applicable"); }
+        async createShipment(order: Order, address: Address) { throw new Error("Not applicable"); }
+        async sendConfirmation(order: Order, email: string) { throw new Error("Not applicable"); }
+        async auditLog(order: Order, action: string) { throw new Error("Not applicable"); }
+      }
+
+    good: |
+      // === LSP fix: split into readable and mutable contracts ===
+      interface Readable<T> {
+        get(index: number): T;
+        size(): number;
+      }
+
+      interface Mutable<T> extends Readable<T> {
+        add(item: T): void;
+        remove(index: number): void;
+      }
+
+      // Read-only collection implements ONLY Readable — no broken contract.
+      class ReadOnlyCollection<T> implements Readable<T> {
+        constructor(private readonly items: T[]) {}
+
+        get(index: number): T { return this.items[index]; }
+        size(): number { return this.items.length; }
+      }
+
+      // Mutable collection extends Readable and adds mutation — contract honored.
+      class ArrayCollection<T> implements Mutable<T> {
+        private items: T[] = [];
+        get(index: number): T { return this.items[index]; }
+        size(): number { return this.items.length; }
+        add(item: T): void { this.items.push(item); }
+        remove(index: number): void { this.items.splice(index, 1); }
+      }
+
+      // Client that only reads depends on Readable — no runtime surprise.
+      function summarize<T>(c: Readable<T>): string {
+        return `Collection has ${c.size()} items`;
+      }
+
+      // Client that mutates depends on Mutable — can't receive a read-only.
+      function populateDefaults(c: Mutable<string>, values: string[]): void {
+        for (const v of values) c.add(v);
+      }
+
+      // === ISP fix: role-specific interfaces ===
+      interface TaxCalculator {
+        calculate(order: Order): number;
+      }
+
+      interface DiscountEngine {
+        applyDiscount(order: Order, code: string): DiscountResult;
+      }
+
+      interface PaymentProcessor {
+        charge(order: Order, token: string): Promise<PaymentResult>;
+      }
+
+      interface ShipmentCreator {
+        createShipment(order: Order, address: Address): Promise<Shipment>;
+      }
+
+      interface OrderNotifier {
+        sendConfirmation(order: Order, email: string): Promise<void>;
+      }
+
+      interface AuditLogger {
+        log(orderId: string, action: string): Promise<void>;
+      }
+
+      // Each implementation depends on exactly one role — zero stubs.
+      export class DomesticTaxCalculator implements TaxCalculator {
+        calculate(order: Order): number {
+          return order.subtotal * 0.08;
+        }
+      }
+
+      export class StripePaymentProcessor implements PaymentProcessor {
+        constructor(private readonly client: Stripe) {}
+        async charge(order: Order, token: string): Promise<PaymentResult> {
+          const charge = await this.client.charges.create({
+            amount: Math.round(order.total * 100),
+            currency: "usd",
+            source: token,
+          });
+          return { transactionId: charge.id, status: "succeeded" };
+        }
+      }
+
+      // Use case depends on ALL its actual dependencies — no fat interface.
+      export class PlaceOrderUseCase {
+        constructor(
+          private readonly tax: TaxCalculator,
+          private readonly payment: PaymentProcessor,
+          private readonly shipment: ShipmentCreator,
+          private readonly notifier: OrderNotifier,
+          private readonly audit: AuditLogger,
+        ) {}
+
+        async execute(order: Order, email: string, token: string, address: Address) {
+          const taxAmount = this.tax.calculate(order);
+          const total = order.subtotal + taxAmount;
+
+          const payment = await this.payment.charge({ ...order, total }, token);
+          const shipment = await this.shipment.createShipment(order, address);
+
+          await this.notifier.sendConfirmation(order, email);
+          await this.audit.log(order.id!, "placed");
+
+          return { payment, shipment };
+        }
+      }
+
+heuristics:
+  - >
+    "Subtypes must be substitutable for their base types" (Barbara Liskov, 1987).
+    The LSP is a behavioral contract: if code works with a Rectangle, it must
+    work with every subtype of Rectangle, no exceptions at runtime.
+  - >
+    LSP violations often hide in silent side effects. Square changing height when
+    width is set, ReadOnlyCollection throwing on add() — these break the contract
+    of the base type silently. Tests should verify substitutability explicitly.
+  - >
+    Favor composition over inheritance to avoid LSP traps. A Shape interface with
+    multiple independent implementations (Rectangle, Square, Circle) is safer than
+    a Square inheriting from Rectangle and overriding setters.
+  - >
+    "Clients should not be forced to depend on methods they do not use" (Robert C.
+    Martin). ISP reduces coupling: when the EmailSender interface changes, only
+    classes that actually send email are affected. A fat Notifier interface change
+    forces recompilation of every class that imports it, even push-only clients.
+  - >
+    ISP and SRP reinforce each other. A class with a single responsibility naturally
+    needs a narrow interface. A fat interface is almost always backed by a class
+    with multiple reasons to change.
+  - >
+    Role-specific interfaces name the role: `TaxCalculator`, not `OrderProcessor`;
+    `EmailSender`, not `Notifier`. The interface name should describe what the
+    implementor does, not what the aggregate system does.
+  - >
+    In languages with structural typing (TypeScript, Go), ISP can be satisfied
+    implicitly: a function declares only the fields/methods it needs, and any
+    object with those members is accepted. Explicit interfaces add documentation
+    but are not required for ISP compliance.
+  - >
+    Test for LSP: for every subtype, re-run the base type's test suite. If a test
+    fails for a subtype that passes for the base, there is an LSP violation.
+    This is called the "LSP test suite rule."
+  - >
+    Avoid `NotImplementedError` / `throw new Error("not supported")` as a pattern
+    for unneeded interface methods. If an implementation cannot fulfill every
+    method of its declared interface, the interface is too fat — segregate it.
+  - >
+    LSP and ISP together protect against fragile hierarchies: LSP ensures subtypes
+    are honest, ISP ensures interfaces are narrow. Both reduce the blast radius
+    of change and keep the system composable.
+related_tags:
+  [lsp, isp, solid, liskov-substitution, interface-segregation, behavioral-contracts,
+   role-interfaces, fat-interface, composition-over-inheritance, substitutability,
+   clean-architecture, interface-design]

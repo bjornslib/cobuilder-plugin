@@ -1,0 +1,81 @@
+id: airbnb-comments-023
+name: Airbnb Comments — /** */, //, TODO, FIXME, and Spacing
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  Airbnb's comment conventions: use /** ... */ for multiline comments,
+  // for single-line comments placed on their own line above the code they
+  describe, a space after the comment marker, and standard prefixes (FIXME:
+  for known problems, TODO: for planned improvements). Annotate why the code
+  does something rather than what it does — the code itself should describe
+  what.
+examples:
+  - language: typescript
+    bad: |
+      // make() returns a new element
+      // based on the passed in tag name
+      //
+      // @param {String} tag
+      // @return {Element} element
+      function make(tag: string): Element {
+        return element;
+      }
+
+      // Inline comment on same line as code
+      const active = true;  // is current tab
+
+      // Comment without space — hard to read
+      //is current tab
+      const active = true;
+
+      // Missing empty line before comment
+      function getType() {
+        console.log("fetching type...");
+        // set the default type
+        const type = this.type || "no type";
+        return type;
+      }
+
+      // What comment, not why
+      const value = items.map((i) => i.name); // maps items to names
+    good: |
+      /**
+       * Creates and returns a new DOM element for the given tag.
+       *
+       * @param tag - HTML tag name
+       * @returns The constructed element
+       */
+      function make(tag: string): Element {
+        return element;
+      }
+
+      // Single-line comment on its own line with space
+      // Track whether the current tab is active
+      const active = true;
+
+      // Empty line before comment (unless first line of block)
+      function getType() {
+        console.log("fetching type...");
+
+        // Default to "no type" when this.type is falsy
+        const type = this.type || "no type";
+        return type;
+      }
+
+      // TODO: Replace this naive sorting with a stable O(n log n) algorithm
+      items.sort((a, b) => a.priority - b.priority);
+
+      // FIXME: This global reference breaks tree-shaking; inject as a dependency
+      total = 0;
+heuristics:
+  - Use /** ... */ for multiline comments, especially JSDoc-style documentation blocks with @param and @returns.
+  - Use // for single-line comments. Place them on their own line above the code they describe, not inline.
+  - Always start comments with a space (// comment, not //comment; /** text, not /**text).
+  - Put an empty line before a comment unless it's the first line of a block.
+  - Annotate problems with // FIXME: and planned improvements with // TODO:. These are actionable markers distinguishable from explanatory comments.
+  - Comments should explain why, not what. If the code needs a "what" comment, the code itself should be clearer (better naming, extraction).
+  - Remove commented-out code — it rots and confuses readers. Version control remembers old code.
+  - In TypeScript, prefer types and clear function names over comments for describing inputs, outputs, and behavior.
+related_tags: [airbnb, comments, jsdoc, fixme, todo, documentation, readability]

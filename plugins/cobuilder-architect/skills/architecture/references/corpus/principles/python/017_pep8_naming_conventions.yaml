@@ -1,0 +1,126 @@
+id: pep8-naming-017
+name: PEP 8 Naming Conventions — Module, Class, Function, Variable, Method, Constant Names
+category: readability
+canonical_tags: ['python', 'readability']
+sources:
+  - open_sources/python/pep-0008.html
+summary: >
+  PEP 8 prescribes naming conventions for every Python identifier category. Modules and packages
+  use short lowercase names (underscores only for module readability, discouraged in packages).
+  Classes use CapWords/CamelCase — capitalize acronyms fully (HTTPServerError not HttpServerError).
+  Functions, variables, and methods use lowercase_with_underscores. Constants are ALL_CAPS.
+  Instance methods: first argument is always self. Class methods: first argument is always cls.
+  Single leading underscore for internal/non-public names. Double leading underscore for name
+  mangling in subclassable hierarchies. Trailing underscore to avoid keyword conflicts. Never
+  use 'l', 'O', 'I' as single-character names. Exceptions are CapWords with Error suffix.
+examples:
+  - language: python
+    bad: |
+      # Module/package with mixedCase or CapWords.
+      import myModule  # should be mymodule or my_module
+
+      # Class not using CapWords.
+      class http_server_error(Exception): ...
+
+      # Class with incorrectly capitalized acronym.
+      class HttpServerError(Exception): ...
+
+      # Function/variable in mixedCase instead of lowercase_with_underscores.
+      def fetchUserData(userId): ...
+      maxRetries = 3
+
+      # Constants in lowercase.
+      max_overflow = 100
+
+      # Instance method without 'self'.
+      class User:
+          def get_name(cls): ...
+
+      # Single-character name that looks like a number.
+      def update(l, O, I): ...
+
+      # Public attribute with leading underscore.
+      class Service:
+          _name: str = "default"
+
+      # Missing Error suffix on exception.
+      class ValidationFail(Exception): ...
+
+      # Keyword conflict via abbreviation instead of trailing underscore.
+      def register(class_): ...  # this is actually correct! bad would be clss
+    good: |
+      """PEP 8 naming conventions: CapWords for classes, lowercase_underscores
+      for functions and variables, ALL_CAPS for constants, self/cls for method
+      args, and underscore prefix/suffix conventions for visibility/conflicts.
+      """
+
+
+      import mymodule
+      import mymodule_with_long_name
+
+
+      class HTTPServerError(Exception):
+          """Raised when the HTTP server encounters an internal error."""
+
+
+      def fetch_user_data(user_id: int) -> dict:
+          """Return user data for the given user ID."""
+          ...
+
+
+      MAX_OVERFLOW = 100
+      TOTAL_RETRIES = 3
+
+
+      class UserService:
+          """Manage user lifecycle operations."""
+
+          def __init__(self, db: Database) -> None:
+              self._db = db  # Non-public: single leading underscore.
+              self.name = "UserService"  # Public: no underscore.
+
+          def get_name(self) -> str:
+              """Return the user's display name."""
+              return self.name
+
+          @classmethod
+          def from_config(cls, config: Config) -> 'UserService':
+              """Create a UserService from configuration."""
+              db = Database.from_uri(config.db_uri)
+              return cls(db)
+
+          def __validate_email(self, email: str) -> bool:
+              """Internal validation — name-mangled to _UserService__validate_email."""
+              ...
+
+
+      class HTTPResponse:
+          """Wrapper around an HTTP response."""
+
+          def __init__(self, status_code: int, body: bytes) -> None:
+              self.status_code = status_code  # no underscore needed
+              self.body = body
+
+
+      # Keyword conflict: append trailing underscore, don't abbreviate.
+      class DataView:
+          def __init__(self, class_: type) -> None:
+              self.class_ = class_
+
+
+      # Type variables: CapWords, short names.
+      from typing import TypeVar
+      T = TypeVar('T')
+      VT_co = TypeVar('VT_co', covariant=True)
+heuristics:
+  - "Module names: short, all lowercase. Underscores allowed if readability improves. Package names: short, all lowercase, underscores discouraged."
+  - "Class names: CapWords/CamelCase. Capitalize all letters of acronyms (HTTPServerError, not HttpServerError). Exception classes: CapWords + 'Error' suffix if the exception is an error."
+  - "Function and variable names: lowercase, words separated by underscores. mixedCase allowed only in existing codebases for backward compatibility."
+  - "Method names and instance variables: same as functions (lowercase_with_underscores). Use self for first argument of instance methods, cls for class methods."
+  - "Constants: module-level, ALL_CAPS_WITH_UNDERSCORES. Define at the top of the module."
+  - "Non-public: single leading underscore (_internal). Name mangling for subclass safety: double leading underscore (__mangled). Never two trailing underscores (that's for magic methods)."
+  - "Keyword conflicts: append a single trailing underscore (class_, not clss). Never abbreviate or corrupt the spelling."
+  - "Never use lowercase 'l', uppercase 'O', or uppercase 'I' as single-character variable names — they are visually indistinguishable from 1 and 0 in many fonts."
+  - "Type variables: CapWords, prefer short names (T, AnyStr, Num). Use _co and _contra suffixes for covariant/contravariant TypeVars."
+  - "Designing for inheritance: Public = no underscore, subclass API = single underscore (convention), internal only = double underscore (name mangling). Prefer non-public initially — it's easier to make public later."
+related_tags: [pep8, naming, conventions, classes, functions, variables, methods, constants, underscores, name-mangling]

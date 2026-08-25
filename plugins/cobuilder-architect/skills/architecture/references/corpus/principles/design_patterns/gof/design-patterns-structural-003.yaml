@@ -1,0 +1,583 @@
+id: design-patterns-structural-003
+name: Structural Patterns
+category: design-patterns
+canonical_tags: ['design-patterns', 'structural', 'gof', 'adapter', 'decorator', 'facade', 'composite', 'proxy']
+sources:
+  - open_sources/design_patterns/refactoring-guru-patterns.txt
+  - open_sources/design_patterns/refactoring-guru-patterns.html
+  - open_sources/design_patterns/augmentcode-refactoring.html
+summary: >
+  Structural patterns explain how to compose objects and classes into larger
+  structures while keeping those structures flexible and efficient. Rather than
+  inventing new logic, they describe how existing pieces can be glued together
+  through inheritance, composition, and delegation. The key idea is that the
+  whole should be greater than the sum of its parts — a well-structured composition
+  is easier to understand, extend, and test than a monolithic class. Adapter makes
+  incompatible interfaces work together, Decorator adds behavior dynamically,
+  Facade simplifies complex subsystems, Composite treats individual objects and
+  compositions uniformly, and Proxy controls access to another object. Use
+  structural patterns when the relationship between classes becomes the source
+  of complexity — when you're fighting interface mismatches, inheritance hierarchies
+  that are too deep, or God Objects that try to do everything. Avoid structural
+  patterns when a simple wrapper function or a module-level refactor would achieve
+  the same result with less ceremony.
+examples:
+  - language: python
+    bad: |
+      # ----- Adapter missing: incompatible interfaces -----
+      # A notification system must support email, SMS, and Slack. Each
+      # provider has a completely different API signature. The client
+      # code must know every provider's method name and parameter order.
+
+      from dataclasses import dataclass
+
+
+      # Third-party libraries with incompatible interfaces
+      class EmailClient:
+          def send_message(self, to_address: str, subject: str, body: str) -> bool:
+              print(f"[EMAIL] To: {to_address}, Subj: {subject}")
+              return True
+
+
+      class SMSProvider:
+          def dispatch(self, phone: str, text: str, priority: int = 1) -> str:
+              print(f"[SMS] To: {phone}, Text: {text}")
+              return "ok"
+
+
+      class SlackAPI:
+          def post_to_channel(self, channel: str, message: str, token: str) -> dict:
+              print(f"[SLACK] Channel: {channel}, Msg: {message}")
+              return {"ok": True}
+
+
+      # BAD: Client must know every provider's API shape
+      def notify_user(
+          channel: str, recipient: str, title: str, message: str
+      ) -> bool:
+          if channel == "email":
+              client = EmailClient()
+              return client.send_message(recipient, title, message)
+          elif channel == "sms":
+              provider = SMSProvider()
+              result = provider.dispatch(recipient, message)
+              return result == "ok"
+          elif channel == "slack":
+              api = SlackAPI()
+              resp = api.post_to_channel(
+                  recipient, f"*{title}*\\n{message}", "secret-token"
+              )
+              return resp.get("ok", False)
+          return False
+
+      # Adding a new channel means:
+      #   1. Another elif branch with different method names and logic
+      #   2. Risk of misspelling method names (dispatch vs send_message)
+      #   3. Every caller of notify_user() carries this complexity
+
+    good: |
+      # Adapter pattern: a common Notifier interface with per-provider adapters.
+      # The client only knows `notifier.notify(recipient, title, message)`.
+      # Adding a new provider = one new adapter class + one registration.
+
+      from abc import ABC, abstractmethod
+      from dataclasses import dataclass
+
+
+      # Third-party libraries — unchanged
+      class EmailClient:
+          def send_message(self, to_address: str, subject: str, body: str) -> bool:
+              print(f"[EMAIL] To: {to_address}, Subj: {subject}")
+              return True
+
+
+      class SMSProvider:
+          def dispatch(self, phone: str, text: str, priority: int = 1) -> str:
+              print(f"[SMS] To: {phone}, Text: {text}")
+              return "ok"
+
+
+      class SlackAPI:
+          def post_to_channel(self, channel: str, message: str, token: str) -> dict:
+              print(f"[SLACK] Channel: {channel}, Msg: {message}")
+              return {"ok": True}
+
+
+      # Target interface — all adapters conform to this
+      class Notifier(ABC):
+          @abstractmethod
+          def notify(
+              self, recipient: str, title: str, message: str
+          ) -> bool:
+              ...
+
+
+      # Concrete adapters — each wraps one third-party class
+      class EmailNotifierAdapter(Notifier):
+          def __init__(self, client: EmailClient | None = None):
+              self._client = client or EmailClient()
+
+          def notify(
+              self, recipient: str, title: str, message: str
+          ) -> bool:
+              return self._client.send_message(recipient, title, message)
+
+
+      class SMSNotifierAdapter(Notifier):
+          def __init__(self, provider: SMSProvider | None = None):
+              self._provider = provider or SMSProvider()
+
+          def notify(
+              self, recipient: str, title: str, message: str
+          ) -> bool:
+              # Adapter maps `notify` → `dispatch`, combining title + message
+              return self._provider.dispatch(
+                  recipient, f"{title}: {message}"
+              ) == "ok"
+
+
+      class SlackNotifierAdapter(Notifier):
+          def __init__(
+              self, api: SlackAPI | None = None, token: str = "default"
+          ):
+              self._api = api or SlackAPI()
+              self._token = token
+
+          def notify(
+              self, recipient: str, title: str, message: str
+          ) -> bool:
+              resp = self._api.post_to_channel(
+                  recipient, f"*{title}*\\n{message}", self._token
+              )
+              return resp.get("ok", False)
+
+
+      # Registry — add new channels without touching client code
+      _notifiers: dict[str, Notifier] = {
+          "email": EmailNotifierAdapter(),
+          "sms": SMSNotifierAdapter(),
+          "slack": SlackNotifierAdapter(token="secret-token"),
+      }
+
+
+      def get_notifier(channel: str) -> Notifier:
+          notifier = _notifiers.get(channel)
+          if notifier is None:
+              raise ValueError(f"Unknown channel: {channel}")
+          return notifier
+
+
+      # Client code — clean, uniform, unaware of third-party APIs
+      def notify_user(
+          channel: str, recipient: str, title: str, message: str
+      ) -> bool:
+          return get_notifier(channel).notify(recipient, title, message)
+
+    extra: |
+      # ----- Decorator example: adding behavior without subclass explosion -----
+      # Without Decorator, every combination of optional behaviors needs a
+      # new subclass. Two optional features = 2^2 = 4 subclasses.
+      # Three features = 8 subclasses. This is the "class explosion" problem.
+
+      from abc import ABC, abstractmethod
+
+
+      # Component interface
+      class DataSource(ABC):
+          @abstractmethod
+          def read(self) -> str:
+              ...
+
+          @abstractmethod
+          def write(self, data: str) -> None:
+              ...
+
+
+      # Concrete component — reads/writes raw text
+      class FileDataSource(DataSource):
+          def __init__(self, filename: str):
+              self._filename = filename
+
+          def read(self) -> str:
+              print(f"[FileDataSource] Reading {self._filename}")
+              return "raw,data,here"
+
+          def write(self, data: str) -> None:
+              print(f"[FileDataSource] Writing to {self._filename}: {data}")
+
+
+      # Base decorator — passes through to wrapped component
+      class DataSourceDecorator(DataSource):
+          def __init__(self, source: DataSource):
+              self._wrappee = source
+
+          def read(self) -> str:
+              return self._wrappee.read()
+
+          def write(self, data: str) -> None:
+              self._wrappee.write(data)
+
+
+      # Concrete decorators — each adds one independent behavior
+      class EncryptionDecorator(DataSourceDecorator):
+          def read(self) -> str:
+              encrypted = super().read()
+              return self._decrypt(encrypted)
+
+          def write(self, data: str) -> None:
+              super().write(self._encrypt(data))
+
+          def _encrypt(self, data: str) -> str:
+              return f"ENC({data})"
+
+          def _decrypt(self, data: str) -> str:
+              return data.removeprefix("ENC(").removesuffix(")")
+
+
+      class CompressionDecorator(DataSourceDecorator):
+          def read(self) -> str:
+              compressed = super().read()
+              return self._decompress(compressed)
+
+          def write(self, data: str) -> None:
+              super().write(self._compress(data))
+
+          def _compress(self, data: str) -> str:
+              return f"ZIP({data})"
+
+          def _decompress(self, data: str) -> str:
+              return data.removeprefix("ZIP(").removesuffix(")")
+
+
+      class LoggingDecorator(DataSourceDecorator):
+          def read(self) -> str:
+              print("[LOG] Reading data...")
+              result = super().read()
+              print(f"[LOG] Read {len(result)} bytes")
+              return result
+
+          def write(self, data: str) -> None:
+              print(f"[LOG] Writing {len(data)} bytes...")
+              super().write(data)
+
+
+      # Usage: stack decorators in any combination at runtime
+      # No need for CompressionEncryptionLoggingFileDataSource subclass!
+      source = LoggingDecorator(
+          CompressionDecorator(
+              EncryptionDecorator(
+                  FileDataSource("data.txt")
+              )
+          )
+      )
+      source.write("secret data")
+      # Output:
+      #   [LOG] Writing 17 bytes...
+      #   [FileDataSource] Writing to data.txt: ZIP(ENC(secret data))
+      #
+      # You can also read back through the same stack:
+      #   data = source.read()  # Decrypt → Decompress → Log → return raw data
+
+  - language: typescript
+    bad: |
+      // ----- Adapter missing: incompatible analytics providers -----
+      // The app must send events to Google Analytics AND Mixpanel. Each has
+      // a completely different method signature. Every place that sends an
+      // event must know both APIs.
+
+      // Third-party analytics SDKs with incompatible signatures
+      class GoogleAnalytics {
+        send(
+          eventName: string,
+          params: Record<string, string | number>,
+          userId?: string
+        ): void {
+          console.log(`[GA] ${eventName}`, params, userId);
+        }
+      }
+
+      class Mixpanel {
+        track(
+          distinctId: string,
+          event: string,
+          properties: Record<string, unknown>
+        ): void {
+          console.log(`[Mixpanel] ${event} (${distinctId})`, properties);
+        }
+      }
+
+      // BAD: Every event-sending call site knows both SDK APIs
+      class EventTracker {
+        private ga = new GoogleAnalytics();
+        private mixpanel = new Mixpanel();
+
+        trackUserSignedUp(userId: string, plan: string): void {
+          // Google Analytics: send(eventName, params, userId?)
+          this.ga.send("user_signed_up", {
+            plan: plan,
+            timestamp: Date.now(),
+          });
+
+          // Mixpanel: track(distinctId, event, properties)
+          this.mixpanel.track(userId, "Signed Up", {
+            plan_type: plan,
+            $time: new Date().toISOString(),
+          });
+        }
+
+        trackCheckoutCompleted(
+          userId: string, orderId: string, total: number
+        ): void {
+          // Same duplication, different parameter mappings
+          this.ga.send("checkout_completed", {
+            order_id: orderId,
+            value: total,
+          });
+          this.mixpanel.track(userId, "Checkout", {
+            order_number: orderId,
+            revenue: total,
+          });
+        }
+      }
+
+      // Adding a third provider (Amplitude, PostHog) means:
+      //   1. Adding a new member variable
+      //   2. Adding a call in EVERY trackXxx() method
+      //   3. Mapping event names and property names for the new provider
+
+    good: |
+      // Adapter pattern: a common AnalyticsProvider interface with per-vendor
+      // adapters. Adding a new provider = one new adapter class. Event tracking
+      // methods call `this.providers.forEach(p => p.trackEvent(...))`.
+
+      // Unified interface — every analytics provider adapts to this
+      interface AnalyticsEvent {
+        name: string;
+        userId?: string;
+        properties: Record<string, string | number | boolean>;
+      }
+
+      interface AnalyticsProvider {
+        trackEvent(event: AnalyticsEvent): void;
+      }
+
+      // Third-party SDKs (unchanged)
+      class GoogleAnalytics {
+        send(
+          eventName: string,
+          params: Record<string, string | number>,
+          userId?: string
+        ): void {
+          console.log(`[GA] ${eventName}`, params, userId);
+        }
+      }
+
+      class Mixpanel {
+        track(
+          distinctId: string,
+          event: string,
+          properties: Record<string, unknown>
+        ): void {
+          console.log(`[Mixpanel] ${event} (${distinctId})`, properties);
+        }
+      }
+
+      // Adapters — each wraps one third-party SDK
+      class GoogleAnalyticsAdapter implements AnalyticsProvider {
+        constructor(private ga: GoogleAnalytics = new GoogleAnalytics()) {}
+
+        trackEvent(event: AnalyticsEvent): void {
+          this.ga.send(event.name, event.properties, event.userId);
+        }
+      }
+
+      class MixpanelAdapter implements AnalyticsProvider {
+        constructor(private mixpanel: Mixpanel = new Mixpanel()) {}
+
+        trackEvent(event: AnalyticsEvent): void {
+          this.mixpanel.track(
+            event.userId ?? "anonymous",
+            event.name,
+            event.properties
+          );
+        }
+      }
+
+      // Client code — works with any provider through the interface
+      class EventTracker {
+        constructor(private providers: AnalyticsProvider[]) {}
+
+        trackUserSignedUp(userId: string, plan: string): void {
+          const event: AnalyticsEvent = {
+            name: "user_signed_up",
+            userId,
+            properties: { plan },
+          };
+          this.providers.forEach((p) => p.trackEvent(event));
+        }
+
+        trackCheckoutCompleted(
+          userId: string, orderId: string, total: number
+        ): void {
+          const event: AnalyticsEvent = {
+            name: "checkout_completed",
+            userId,
+            properties: { order_id: orderId, total },
+          };
+          this.providers.forEach((p) => p.trackEvent(event));
+        }
+      }
+
+      // Bootstrap — compose providers at startup
+      const tracker = new EventTracker([
+        new GoogleAnalyticsAdapter(),
+        new MixpanelAdapter(),
+      ]);
+
+    extra: |
+      // ----- Decorator example: adding optional features without subclassing -----
+      // A WebSocket connection that can optionally be logged, rate-limited,
+      // or auto-reconnected. Without Decorator: LoggerWs, RateLimitedWs,
+      // AutoReconnectWs, RateLimitedLoggerWs, etc. — class explosion.
+
+      interface WebSocketConnection {
+        send(message: string): void;
+        onMessage(handler: (msg: string) => void): void;
+        close(): void;
+      }
+
+      // Concrete component
+      class BasicWebSocket implements WebSocketConnection {
+        private handlers: ((msg: string) => void)[] = [];
+
+        constructor(private url: string) {
+          console.log(`[WS] Connecting to ${url}`);
+        }
+
+        send(message: string): void {
+          console.log(`[WS ->] ${message}`);
+        }
+
+        onMessage(handler: (msg: string) => void): void {
+          this.handlers.push(handler);
+        }
+
+        close(): void {
+          console.log(`[WS] Closing ${this.url}`);
+        }
+      }
+
+      // Base decorator — delegates to wrapped connection
+      class WebSocketDecorator implements WebSocketConnection {
+        constructor(protected wrappee: WebSocketConnection) {}
+
+        send(message: string): void {
+          this.wrappee.send(message);
+        }
+
+        onMessage(handler: (msg: string) => void): void {
+          this.wrappee.onMessage(handler);
+        }
+
+        close(): void {
+          this.wrappee.close();
+        }
+      }
+
+      // Concrete decorators — each adds one independent behavior
+      class LoggingWebSocket extends WebSocketDecorator {
+        send(message: string): void {
+          console.log(`[LOG] Sending: ${message.substring(0, 100)}`);
+          super.send(message);
+        }
+      }
+
+      class RateLimitedWebSocket extends WebSocketDecorator {
+        private lastSend = 0;
+        private minInterval: number;
+
+        constructor(wrappee: WebSocketConnection, maxPerSecond: number) {
+          super(wrappee);
+          this.minInterval = 1000 / maxPerSecond;
+        }
+
+        send(message: string): void {
+          const now = Date.now();
+          if (now - this.lastSend < this.minInterval) {
+            console.log(`[RATE] Dropped message (rate limit)`);
+            return;
+          }
+          this.lastSend = now;
+          super.send(message);
+        }
+      }
+
+      class AutoReconnectWebSocket extends WebSocketDecorator {
+        send(message: string): void {
+          try {
+            super.send(message);
+          } catch {
+            console.log(`[RECONNECT] Reconnecting and retrying...`);
+            // Reconnect logic here, then retry
+            super.send(message);
+          }
+        }
+      }
+
+      // Usage: stack decorators in any order at runtime
+      const ws = new RateLimitedWebSocket(
+        new LoggingWebSocket(
+          new AutoReconnectWebSocket(
+            new BasicWebSocket("wss://api.example.com/ws")
+          )
+        ),
+        10 // max 10 messages per second
+      );
+
+      ws.send("hello"); // passes through Logging → Rate → Reconnect → Basic
+      // Output:
+      //   [LOG] Sending: hello
+      //   [RATE] (checked, no drop)
+      //   [WS ->] hello
+
+heuristics:
+  - Use Adapter to allow objects with incompatible interfaces to collaborate — wrap the "adaptee" class so callers work against a consistent interface.
+  - Use Bridge to split a large class into two separate hierarchies (abstraction and implementation) that can evolve independently — especially useful for cross-platform UIs.
+  - Use Composite to treat individual objects and compositions of objects uniformly, enabling recursive tree structures — ideal for file systems, UI component trees, and ASTs.
+  - Use Decorator to add behaviors to objects at runtime by wrapping them, avoiding the class explosion that comes from subclassing every combination of features.
+  - Use Facade to provide a simplified interface to a complex library, framework, or subsystem — hide the complexity behind a clean, use-case-specific API.
+  - Use Proxy to control access to another object — lazy loading, access control, logging, or remote communication — without changing the object's interface.
+  - >
+    When choosing between inheritance and composition, prefer composition.
+    Adapter, Decorator, and Proxy all use composition to extend behavior
+    without touching the original class. Inheritance couples you to the
+    superclass implementation; composition only couples to the interface.
+  - >
+    Decorators are stackable and independent — the order of wrapping should
+    not matter. If order matters (encryption must happen before compression),
+    document the required stacking order or consider a Pipeline pattern instead.
+  - >
+    An Adapter changes the interface; a Decorator keeps the same interface.
+    If you find yourself adding new methods that the original class didn't
+    have, you're building an adapter, not a decorator.
+  - >
+    The Facade pattern is NOT "just a wrapper." A good Facade reduces the
+    cognitive load of the subsystem by exposing only the operations that
+    matter for a specific use case. If the Facade exposes everything, it's
+    just indirection.
+  - >
+    In typed languages, the Adapter pattern can also serve as an anti-corruption
+    layer (DDD term). The adapter translates between two bounded contexts,
+    preventing the external model from leaking into the domain.
+  - >
+    Don't use Decorator when the behavior addition is permanent and universal.
+    If every instance of a class should log, add logging to the class itself
+    or use a logging decorator at construction time — don't force every caller
+    to wrap the object.
+
+related_tags:
+  [structural-patterns, adapter, bridge, composite, decorator, facade,
+   flyweight, proxy, gof, gang-of-four, design-patterns, composition-over-inheritance,
+   interface-segregation, wrapping, delegation, anti-corruption-layer,
+   ddd, class-explosion, tree-structures, lazy-loading, access-control,
+   subsystem-simplification, open-closed-principle]

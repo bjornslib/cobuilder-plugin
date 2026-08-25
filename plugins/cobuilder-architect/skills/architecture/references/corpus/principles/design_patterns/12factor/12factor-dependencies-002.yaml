@@ -1,0 +1,233 @@
+id: 12factor-dependencies-002
+name: "12-Factor App — Dependencies (Explicitly Declare and Isolate)"
+category: cloud-native
+canonical_tags: ['12factor', 'dependencies', 'isolation', 'package-management', 'reproducibility']
+sources:
+  - open_sources/design_patterns/12factor-app.txt
+  - open_sources/design_patterns/12factor-dependencies.html
+summary: >
+  The Dependencies factor requires that every dependency be explicitly declared
+  in a manifest file (such as requirements.txt, Gemfile, package.json, or go.mod)
+  and isolated from the surrounding system at execution time. A twelve-factor app
+  never relies on the implicit existence of system-wide packages — it declares
+  all dependencies completely and exactly, then uses a dependency isolation tool
+  (virtualenv, bundler, nix, node_modules) to prevent leakage. This applies to
+  system tools as well: the app must not shell out to system utilities like curl
+  or ImageMagick under the assumption they exist; if needed, those tools should
+  be vendored into the app. The motivation is reproducibility — a new developer
+  should be able to check out the codebase and run a single deterministic build
+  command to set up everything needed. The anti-pattern is an app that "works on
+  my machine" because of unstated system-level dependencies.
+examples:
+  - language: python
+    bad: |
+      # BAD: Implicit system-level dependency on ImageMagick. The code shells
+      # out to `convert` assuming it exists on $PATH. On a fresh machine (or
+      # Docker image) the app crashes mysteriously. The dependency is invisible
+      # in requirements.txt — there's no way to know it's needed until runtime.
+
+      import subprocess
+      import os
+
+
+      def resize_image(input_path: str, output_path: str, width: int) -> None:
+          # WHY: assumes ImageMagick 'convert' is installed system-wide.
+          # No dependency declaration, no version pinning.
+          cmd = ["convert", input_path, "-resize", f"{width}x", output_path]
+          result = subprocess.run(cmd, capture_output=True, text=True)
+          if result.returncode != 0:
+              raise RuntimeError(f"Image resize failed: {result.stderr}")
+
+
+      # requirements.txt — incomplete!
+      # flask==3.0.0
+      # SQLAlchemy==2.0.23
+      # WHY: No mention of ImageMagick. The real dependency is hidden.
+
+      # This also uses system Python packages implicitly:
+      # The developer ran `sudo apt-get install python3-requests` months ago
+      # and forgot about it. The app imports 'requests' but it's NOT in
+      # requirements.txt — it works on their machine but nowhere else.
+
+      import requests  # WHY: works locally but missing from requirements.txt!
+
+
+      def fetch_data(url: str) -> dict:
+          response = requests.get(url, timeout=10)
+          return response.json()
+
+    good: |
+      # GOOD: All dependencies explicitly declared. Image processing uses a
+      # Python library (Pillow) declared in requirements.txt. No system tools
+      # assumed. Dependency isolation via virtualenv ensures nothing leaks.
+
+      # requirements.txt — complete and exact
+      # flask==3.0.0
+      # SQLAlchemy==2.0.23
+      # Pillow==10.1.0
+      # requests==2.31.0
+      # WHY: Every import has a matching pinned entry. A new developer runs:
+      #   python -m venv .venv
+      #   source .venv/bin/activate
+      #   pip install -r requirements.txt
+      # Everything is reproducible.
+
+      from PIL import Image
+      import requests
+
+
+      def resize_image(input_path: str, output_path: str, width: int) -> None:
+          # WHY: Pillow is a declared, isolated dependency. No system tools needed.
+          # The version is pinned — no surprises from system-wide upgrades.
+          with Image.open(input_path) as img:
+              ratio = width / img.width
+              height = int(img.height * ratio)
+              resized = img.resize((width, height), Image.LANCZOS)
+              resized.save(output_path)
+
+
+      def fetch_data(url: str) -> dict:
+          # WHY: requests is in requirements.txt. The dependency is explicit.
+          response = requests.get(url, timeout=10)
+          return response.json()
+
+
+      # If a native system tool is truly unavoidable (e.g., ffmpeg for video),
+      # vendor it into the app directory and reference it by relative path:
+      #
+      # import shutil
+      # FFMPEG_PATH = os.path.join(os.path.dirname(__file__), "vendor", "ffmpeg")
+      # WHY: The tool is vendored and version-controlled. No implicit system
+      # dependency. The Dockerfile or build script installs it deterministically.
+
+  - language: typescript
+    bad: |
+      // BAD: Implicit dependency on system `curl` and `imagemagick`. The code
+      // spawns child processes assuming these binaries exist. The package.json
+      // has no mention of them — a new developer gets runtime errors.
+      // The `sharp` import works locally because it was installed globally
+      // via `npm install -g sharp` months ago, not in package.json.
+
+      import { execSync } from "child_process";
+
+      // @ts-ignore — WHY: sharp is NOT in package.json! Works only because
+      // of a forgotten global install. This will fail in CI.
+      import sharp from "sharp";
+
+      export async function downloadAndResize(
+        url: string,
+        outputPath: string
+      ): Promise<void> {
+        // WHY: shells out to system curl — assumes it exists and is compatible
+        const tmpFile = "/tmp/download_temp";
+        execSync(`curl -o ${tmpFile} ${url}`);
+
+        // WHY: this will throw "Cannot find module 'sharp'" on any machine
+        // that doesn't have it installed globally
+        await sharp(tmpFile).resize(800).toFile(outputPath);
+      }
+
+      // package.json is incomplete:
+      // {
+      //   "dependencies": {
+      //     "express": "^4.18.0"
+      //   }
+      // }
+      // WHY: sharp is missing! The app is broken everywhere except the
+      // developer's machine.
+
+    good: |
+      // GOOD: All dependencies declared in package.json with exact versions.
+      // Native image processing via the `sharp` npm package — no system tool
+      // assumptions. Node_modules provides dependency isolation.
+
+      // package.json — complete
+      // {
+      //   "dependencies": {
+      //     "express": "4.18.2",
+      //     "sharp": "0.33.1",
+      //     "node-fetch": "3.3.2"
+      //   }
+      // }
+
+      import sharp from "sharp";  // WHY: declared in package.json, isolated in node_modules
+      import fetch from "node-fetch";
+      import { writeFileSync } from "fs";
+
+      export async function downloadAndResize(
+        url: string,
+        outputPath: string,
+        width: number = 800
+      ): Promise<void> {
+        // WHY: using node-fetch (declared dependency) instead of system curl.
+        // No assumptions about system binaries. Works identically on macOS,
+        // Linux, and in Docker containers.
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`Download failed: ${response.status}`);
+        }
+        const buffer = Buffer.from(await response.arrayBuffer());
+
+        // WHY: sharp is declared in package.json, installed into node_modules,
+        // and isolated from system-wide packages. Version is pinned.
+        const resized = await sharp(buffer)
+          .resize(width)
+          .toBuffer();
+
+        writeFileSync(outputPath, resized);
+      }
+
+      // If a system tool is unavoidable, vendor it in a `vendor/` directory
+      // and use a relative path:
+      //
+      // import { execFileSync } from "child_process";
+      // import { join } from "path";
+      //
+      // const VENDORED_TOOL = join(__dirname, "..", "vendor", "mytool");
+      // WHY: path is relative to the app, not relying on $PATH.
+
+heuristics:
+  - >
+    "A twelve-factor app never relies on implicit existence of system-wide
+    packages. It declares all dependencies, completely and exactly, via a
+    dependency declaration manifest" (12factor.net).
+  - >
+    Use a dependency declaration file specific to your language ecosystem:
+    requirements.txt / pyproject.toml (Python), Gemfile (Ruby), package.json
+    (Node.js), go.mod (Go), Cargo.toml (Rust).
+  - >
+    Use a dependency isolation tool: virtualenv/venv (Python), bundler (Ruby),
+    node_modules (Node.js), nix (cross-language). Isolation prevents leakage
+    from the surrounding system.
+  - >
+    Declaration and isolation must be used together — one without the other
+    does not satisfy twelve-factor. Pinning versions without isolation still
+    risks system package conflicts.
+  - >
+    Never shell out to system tools (curl, ImageMagick, ffmpeg) as an implicit
+    dependency. If the app needs such a tool, vendor it into the app directory
+    or use a language-native library.
+  - >
+    Pin exact versions of all dependencies (e.g., `requests==2.31.0`, not
+    `requests>=2.0`). This ensures every deploy uses identical dependency
+    versions and prevents "works on my machine" bugs.
+  - >
+    Use lockfiles (poetry.lock, Gemfile.lock, package-lock.json, go.sum) to
+    pin transitive dependencies. Commit lockfiles to version control.
+  - >
+    The build command should be deterministic: `pip install -r requirements.txt`,
+    `npm ci`, `bundle install`. A new developer runs one command and the app
+    is ready.
+  - >
+    Do NOT rely on global package installations (`npm install -g`, `pip install`
+    without a virtualenv). These create hidden dependencies that differ across
+    machines.
+  - >
+    If two apps share a dependency, each declares it independently. Do not
+    assume one app installed it for the other. Shared system-level dependencies
+    are a violation.
+
+related_tags:
+  [dependencies, isolation, package-management, reproducibility, build,
+   vendor, lockfile, virtualenv, bundler, node-modules, system-tools,
+   twelve-factor, cloud-native, deterministic-build, dependency-manifest]

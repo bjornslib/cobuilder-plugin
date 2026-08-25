@@ -1,0 +1,93 @@
+id: airbnb-testing-029
+name: Airbnb Testing & Performance — Regression Tests, Pure Functions, and Layout Awareness
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  Airbnb's testing philosophy: write small pure functions, minimize mutation
+  surfaces, write a regression test for every bug fix, and strive for high
+  coverage. Be cautious with stubs and mocks — they can make tests brittle
+  and tightly coupled to implementation. Performance awareness means
+  understanding DOM layout costs, preferring string concatenation for large
+  build-ups (modern JS engines optimize this), and knowing when to use
+  innerHTML vs textContent.
+examples:
+  - language: typescript
+    bad: |
+      // No regression test — bug will return
+      function calculateTotal(items: Item[]): number {
+        // Bug: doesn't handle empty array
+        return items[0].price + items.slice(1).reduce((s, i) => s + i.price, 0);
+      }
+
+      // Over-mocked test — brittle
+      test("calculateTotal", () => {
+        const mockItems = [
+          { price: mockPriceFunction() },
+          { price: mockPriceFunction() },
+        ];
+        expect(calculateTotal(mockItems)).toBe(mockPriceFunction());
+      });
+
+      // InnerHTML for plain text — overkill
+      element.innerHTML = "Hello, World!";
+
+      // try/catch inside loop — high overhead per iteration
+      for (const item of largeArray) {
+        try {
+          process(item);
+        } catch (e) {
+          handleError(e);
+        }
+      }
+    good: |
+      // Pure function — easy to test
+      function calculateTotal(items: Item[]): number {
+        return items.reduce((sum, item) => sum + item.price, 0);
+      }
+
+      // Test with real data — simple, readable, stable
+      test("calculateTotal sums item prices", () => {
+        const items = [
+          { id: "1", price: 10 },
+          { id: "2", price: 20 },
+        ];
+        expect(calculateTotal(items)).toBe(30);
+      });
+
+      test("calculateTotal handles empty array", () => {
+        expect(calculateTotal([])).toBe(0);
+      });
+
+      // Regression test for the specific bug
+      test("regression: date formatting handles leap years (fixes #1234)", () => {
+        expect(formatDate(new Date("2024-02-29"))).toBe("2024-02-29");
+      });
+
+      // textContent for plain text — faster, safer
+      element.textContent = "Hello, World!";
+
+      // try/catch outside loop — minimal overhead
+      for (const item of largeArray) {
+        processItemSafely(item);
+      }
+
+      function processItemSafely(item: unknown): void {
+        try {
+          process(item);
+        } catch (e) {
+          handleError(e);
+        }
+      }
+heuristics:
+  - Strive to write many small pure functions — they're the easiest to test, reason about, and compose.
+  - When you fix a bug, write a regression test. A bug without a regression test is almost certainly going to break again.
+  - 100% test coverage is a good goal, even if it's not always practical. Focus coverage on business logic and edge cases.
+  - Be cautious with stubs and mocks. They can couple tests to implementation details and make refactoring painful. Prefer real data and integration-style tests when practical.
+  - Use mocha, jest, or vitest for testing. Airbnb primarily uses mocha and jest.
+  - For DOM text content, use textContent over innerHTML when you're setting plain text. innerHTML triggers parsing and is slower.
+  - Avoid try/catch inside hot loops — the per-iteration overhead adds up. Wrap the loop body in a helper that handles its own errors, or restructure to avoid exceptions.
+  - Understand that functional array methods (map, filter, reduce) are well-optimized in modern engines. Premature optimization to for-loops is rarely justified.
+  - For large string concatenations, modern JS engines optimize += well. Array join and template literals are all viable — pick the most readable approach.
+related_tags: [airbnb, testing, regression-tests, performance, pure-functions, mocks, jest]

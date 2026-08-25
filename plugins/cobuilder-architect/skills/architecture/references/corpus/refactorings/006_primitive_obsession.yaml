@@ -1,0 +1,222 @@
+id: primitive-obsession-006
+name: Primitive Obsession (Code Smell)
+category: code-smell
+canonical_tags: ['refactoring', 'readability']
+sources:
+  - books/refactoring.md
+  - books/domain-driven-design.md
+summary: |
+  Primitive Obsession is the overuse of built-in types (strings, ints, floats, dicts) to represent 
+  domain concepts that deserve their own types. Phone numbers become strings, money amounts become floats,
+  coordinates become tuples of ints, and validation scatters across every call site. The smell is cured 
+  by Introduce Parameter Object / Replace Data Value with Object / create Value Objects: small, immutable 
+  types that encapsulate a concept with its validation, formatting, and behavior. Eric Evans' DDD calls 
+  these Value Objects — they have no identity, they're defined by their attributes, and they make 
+  the implicit explicit.
+examples:
+  - language: python
+    bad: |
+      from datetime import date
+
+      def create_event(
+          title: str,
+          start_date: str,        # ISO format string — hope callers remember
+          end_date: str,          # Same — and start <= end? Who checks?
+          location: str,          # "lat,lng" comma-separated string
+          organizer_email: str,   # Any string works — is it even an email?
+          max_attendees: int,     # Must be positive — validated where?
+      ) -> Event:
+          # Validation scattered here — easy to forget at other call sites
+          start = date.fromisoformat(start_date)
+          end = date.fromisoformat(end_date)
+          if end < start:
+              raise ValueError("End date must be after start date")
+
+          lat_str, _, lng_str = location.partition(",")
+          lat, lng = float(lat_str), float(lng_str)
+          if not (-90 <= lat <= 90) or not (-180 <= lng <= 180):
+              raise ValueError("Invalid coordinates")
+
+          if "@" not in organizer_email:
+              raise ValueError("Invalid email")
+          local, _, domain = organizer_email.partition("@")
+          if not local or "." not in domain:
+              raise ValueError("Invalid email")
+
+          if max_attendees < 1:
+              raise ValueError("max_attendees must be positive")
+
+          return Event(
+              title=title,
+              start=start,
+              end=end,
+              lat=lat,
+              lng=lng,
+              organizer=organizer_email,
+              capacity=max_attendees,
+              # ... what if someone passes duration_days as a string? Or fee as float?
+          )
+
+      # Every call site must re-derive these validations, OR forget them.
+      # What if fee is passed as float? 19.99 stored as 19.989999...? 
+    good: |
+      from dataclasses import dataclass
+      from datetime import date, timedelta
+      import re
+
+      # --- Value Objects: each encapsulates a concept + validation ---
+
+      @dataclass(frozen=True)
+      class DateRange:
+          """A closed interval with validation built in."""
+          start: date
+          end: date
+
+          def __post_init__(self) -> None:
+              if self.end < self.start:
+                  raise ValueError(f"End {self.end} is before start {self.start}")
+
+          @property
+          def duration_days(self) -> int:
+              return (self.end - self.start).days
+
+      @dataclass(frozen=True)
+      class GeoCoordinate:
+          """Lat/lng pair. Validate once, trust everywhere."""
+          lat: float
+          lng: float
+
+          def __post_init__(self) -> None:
+              if not (-90 <= self.lat <= 90):
+                  raise ValueError(f"Latitude out of range: {self.lat}")
+              if not (-180 <= self.lng <= 180):
+                  raise ValueError(f"Longitude out of range: {self.lng}")
+
+          def distance_km_to(self, other: "GeoCoordinate") -> float:
+              """Behavior lives with the data."""
+              import math
+              dlat = math.radians(other.lat - self.lat)
+              dlng = math.radians(other.lng - self.lng)
+              a = (math.sin(dlat / 2) ** 2 +
+                   math.cos(math.radians(self.lat)) * math.cos(math.radians(other.lat)) *
+                   math.sin(dlng / 2) ** 2)
+              return 6371 * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+      @dataclass(frozen=True)
+      class EmailAddress:
+          """Not just a string — an email. Validate once, never question again."""
+          value: str
+
+          _PATTERN = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+
+          def __post_init__(self) -> None:
+              if not self._PATTERN.match(self.value):
+                  raise ValueError(f"Invalid email address: {self.value}")
+
+          @property
+          def domain(self) -> str:
+              return self.value.split("@", 1)[1]
+
+      @dataclass(frozen=True)
+      class Capacity:
+          """A positive integer. Named type prevents confusion with other ints."""
+          value: int
+
+          def __post_init__(self) -> None:
+              if self.value < 1:
+                  raise ValueError("Capacity must be positive")
+
+          def __bool__(self) -> bool:
+              return self.value > 0
+
+      # --- Clean function: domain types, no validation noise ---
+
+      def create_event(
+          title: str,
+          dates: DateRange,
+          location: GeoCoordinate,
+          organizer: EmailAddress,
+          capacity: Capacity,
+      ) -> Event:
+          """Intent is clear. Types enforce correctness. No validation needed here."""
+          return Event(
+              title=title,
+              start=dates.start,
+              end=dates.end,
+              lat=location.lat,
+              lng=location.lng,
+              organizer=organizer.value,
+              capacity=capacity.value,
+          )
+
+      # Call site — types are self-documenting
+      event = create_event(
+          title="Team Offsite",
+          dates=DateRange(start=date(2026, 6, 1), end=date(2026, 6, 3)),
+          location=GeoCoordinate(lat=37.7749, lng=-122.4194),
+          organizer=EmailAddress("alice@example.com"),
+          capacity=Capacity(50),
+      )
+  - language: typescript
+    bad: |
+      function scheduleDelivery(
+        orderId: string,
+        address: string,          // "123 Main St, Austin, TX 78701" — parse with split(",")?
+        recipientPhone: string,   // "+1-555-123-4567" or "5551234567" or "(555) 123-4567"?
+        weightLbs: number,        // Can be negative? 0? NaN?
+        deliveryWindow: string,   // "9:00-12:00" — parse the dash? What timezone?
+        isFragile: boolean,
+        requiresSignature: boolean
+      ): Delivery {
+        // Validation + parsing smeared here
+        const [street, city, stateZip] = address.split(",").map(s => s.trim());
+        const cleanPhone = recipientPhone.replace(/[^0-9]/g, "");
+        if (cleanPhone.length < 10) throw new Error("Invalid phone");
+        // ...
+      }
+    good: |
+      interface Address {
+        street: string;
+        city: string;
+        state: string;
+        zip: string;
+      }
+
+      class PhoneNumber {
+        constructor(readonly raw: string) {
+          const cleaned = raw.replace(/[^0-9]/g, "");
+          if (cleaned.length < 10) throw new Error(`Invalid phone: ${raw}`);
+          this.e164 = cleaned.length === 10 ? `+1${cleaned}` : `+${cleaned}`;
+        }
+        readonly e164: string;
+        format(): string {
+          return `(${this.e164.slice(2,5)}) ${this.e164.slice(5,8)}-${this.e164.slice(8)}`;
+        }
+      }
+
+      class Weight {
+        constructor(readonly lbs: number) {
+          if (lbs <= 0 || !isFinite(lbs)) throw new Error(`Invalid weight: ${lbs}`);
+        }
+        get kg(): number { return this.lbs * 0.453592; }
+      }
+
+      function scheduleDelivery(
+        orderId: string,
+        address: Address,
+        phone: PhoneNumber,
+        weight: Weight,
+        deliveryWindow: TimeWindow,
+        options: DeliveryOptions
+      ): Delivery { /* clean */ }
+heuristics:
+  - Look for strings that represent structured data: URLs, emails, phone numbers, dates, coordinates, currency codes.
+  - Look for numbers that carry units or constraints: Money (never float), Weight (lbs/kg), Duration (seconds/minutes), Capacity (> 0).
+  - Look for tuples/lists that always appear together: (lat, lng), (start, end), (street, city, state, zip).
+  - When validation of a primitive repeats at 3+ call sites, extract a type and put validation in its constructor.
+  - Value Objects (DDD) are the target: small, immutable, equality by value, zero identity. "Money" not "float".
+  - Refactoring.md (line 150): "Replace repeated primitive bundles with meaningful types. Give recurring business concepts names and validation."
+  - Domain-Driven Design: Value Objects make implicit concepts explicit. They carry behavior (format, compare, convert) that would otherwise scatter.
+  - The payoff: type-checkers catch passing a PhoneNumber where an EmailAddress is expected. The compiler/runtime becomes a domain enforcer.
+  - Do NOT overdo it: wrapping a single string in a class with no validation or behavior adds ceremony without benefit. The type must earn its keep.
+related_tags: [primitive-obsession, value-object, domain-driven-design, type-safety, introduce-parameter-object]

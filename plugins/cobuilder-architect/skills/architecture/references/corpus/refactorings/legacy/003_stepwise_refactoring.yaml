@@ -1,0 +1,155 @@
+id: stepwise-refactoring-001
+name: Stepwise Refactoring — Preserve Behavior While Improving Structure
+category: refactoring
+canonical_tags: [refactoring, readability]
+sources:
+  - books/working-effectively-with-legacy-code.md
+summary: Refactor legacy code in small, verified steps — each step preserves behavior and is confirmed by tests. Never batch structural changes with behavioral changes. Work near the change point, not across the whole system.
+technique:
+  name: Stepwise / Incremental Refactoring
+  when_to_use: When legacy code needs structural improvement to enable a functional change, but the current behavior must be preserved.
+  steps:
+    - step: 1
+      action: Identify the exact change you need to make — the functional requirement, not a cleanup wishlist.
+      rationale: Scope discipline is the hardest part. Only refactor what's needed for the change.
+    - step: 2
+      action: Add characterization tests around the area you plan to modify if none exist.
+      rationale: You cannot safely refactor without a safety net. Characterization tests lock current behavior.
+    - step: 3
+      action: Find the single dependency that most blocks the change — one hard-coded collaborator, one global access, one mixed responsibility.
+      rationale: Refactoring one dependency at a time keeps each step small and reversible.
+    - step: 4
+      action: Break that dependency with the smallest possible seam (see seams_for_testing).
+      rationale: A small seam is easy to verify and hard to get wrong.
+    - step: 5
+      action: Run the characterization tests. They must still pass — you changed structure, not behavior.
+      rationale: If tests fail, you accidentally changed behavior. Revert to the last passing state and try a smaller step.
+    - step: 6
+      action: Repeat steps 3–5 until the code is testable enough to make the functional change.
+      rationale: Each iteration leaves the code more changeable than before.
+    - step: 7
+      action: Make the functional change, now that the code is isolated and observable.
+      rationale: The structural work was preparation. The real goal — the behavior change — comes last.
+    - step: 8
+      action: Run all tests (characterization + new) and refactor the new code for clarity if justified.
+      rationale: Now you have tests protecting both old and new behavior — cleanup is safe.
+  preferred_techniques:
+    - technique: Sprout Method
+      description: Add new behavior in a new method, called from a minimal insertion point in the old code. Keeps fragile legacy code mostly untouched.
+      rule: Extract the new behavior into a new method; keep the old code mostly untouched; route to the new method from a small insertion point.
+    - technique: Sprout Class
+      description: Add a focused new collaborator class for new behavior; delegate from the legacy class. Slowly move behavior over if later justified.
+      rule: When a new responsibility doesn't fit the old class or the old class is too risky to reshape first.
+    - technique: Wrap Method
+      description: Add pre/post behavior around a risky method by wrapping it — useful for observability or preconditions without editing internals.
+      rule: Use when you need pre/post behavior or better observability around a risky method.
+    - technique: Wrap Class
+      description: Mediate access to a hard-to-test class through a new abstraction (Decorator pattern in spirit).
+      rule: Use when a class is too hard to test directly and behavior can be mediated through a new abstraction.
+  pitfalls:
+    - "Never batch structural changes with behavior changes — if the tests break, you won't know which step caused it."
+    - "Don't start by cleaning the whole module — work near the change point only."
+    - "If you can't make a single dependency break, the design is telling you to split the class first."
+    - "Don't skip characterization tests — they are the only guarantee you haven't broken existing behavior."
+    - "If a test requires too much setup, stop and introduce a seam — don't build complex test harnesses."
+  heuristics:
+    - Work near the change point, not across the whole system.
+    - Prefer one small dependency break over a broad redesign.
+    - If code is impossible to observe, expose outcomes through smaller units.
+    - If code is impossible to invoke without full runtime setup, isolate the policy from the runtime.
+    - If code depends on many details, separate policy from mechanism.
+    - If the old code cannot be safely changed, insert new code beside it and redirect gradually (Sprout pattern).
+    - Once a seam exists, test through the seam.
+  workflow_checklist:
+    - "Did I treat untested code as risky legacy code?"
+    - "Did I capture current behavior where it was unclear?"
+    - "Did I create or exploit a seam?"
+    - "Did I reduce at least one hard dependency?"
+    - "Is the changed area easier to test than before?"
+    - "Did I avoid a rewrite as the first move?"
+    - "Did I keep edits local to the requested change?"
+    - "Did I separate structural changes from behavior changes where practical?"
+    - "Did I leave the code more changeable than I found it?"
+related_tags: [stepwise, incremental, behavior-preservation, safety-net, characterization, sprout-method, sprout-class, wrap-method, wrap-class, dependency-breaking]
+heuristics:
+  - Work near the change point, not across the whole system.
+  - Prefer one small dependency break over a broad redesign.
+  - If code is impossible to observe, expose outcomes through smaller units.
+  - If code depends on many details, separate policy from mechanism.
+  - If the old code cannot be safely changed, insert new code beside it and redirect gradually (Sprout pattern).
+  - Once a seam exists, test through the seam.
+examples:
+  python:
+    bad: |
+      # Attempting a big-bang refactor: changing structure AND behavior at once
+      def process_checkout(cart, user):
+          # Mix of: validation, payment calc, persistence, email — all tangled
+          if not cart.items:
+              return {"error": "empty cart"}
+          total = sum(i.price for i in cart.items)
+          if user.vip:
+              total *= 0.9
+          db.save("orders", {"user": user.id, "items": cart.items, "total": total})
+          email.send(user.email, "Order Confirmed", f"Total: ${total}")
+          return {"ok": True}
+    good: |
+      # Stepwise approach: preserve behavior, introduce seams one at a time
+
+      # Step 1: Add characterization test (lock current behavior)
+      def test_process_checkout_preserves_existing_behavior():
+          result = process_checkout(cart_with_items, normal_user)
+          assert result == {"ok": True}
+
+      # Step 2: Extract payment calculation (structure change, no behavior change)
+      def calculate_total(cart, user):
+          total = sum(i.price for i in cart.items)
+          return total * 0.9 if user.vip else total
+
+      # Step 3: Introduce seam for persistence (still no behavior change)
+      def process_checkout(cart, user, *, db_adapter=None):
+          db_ = db_adapter or DbAdapter()
+          total = calculate_total(cart, user)
+          db_.save_order(user.id, cart.items, total)
+          email.send(user.email, "Order Confirmed", f"Total: $${total}")
+          return {"ok": True}
+
+      # Step 4: NOW make the behavioral change (add discount code)
+      def calculate_total(cart, user, discount_code=None):
+          total = sum(i.price for i in cart.items)
+          if discount_code:
+              total -= apply_discount(discount_code, total)
+          return total * 0.9 if user.vip else total
+  typescript:
+    bad: |
+      // Rewrite everything at once — structure + behavior in one commit
+      function generateReport(month: string): string {
+        const data = db.query(`SELECT * FROM metrics WHERE month = '${month}'`);
+        const report = data.map(row => `${row.name}: ${row.value}`).join('\n');
+        fs.writeFileSync(`/reports/${month}.txt`, report);
+        // Also: changed the format from CSV to plain text in the same commit
+        return report;
+      }
+    good: |
+      // Step 1: Characterization test
+      describe('CHARACTERIZATION: generateReport current format', () => {
+        it('returns CSV-formatted string', () => {
+          db.seed([{ name: 'signups', value: 42 }]);
+          expect(generateReport('2025-01')).toBe('signups,42');
+        });
+      });
+
+      // Step 2: Introduce seam for file output (structure only)
+      function generateReport(month: string, *, fs: FileSystem = new RealFS()): string {
+        const data = db.query(`SELECT * FROM metrics WHERE month = '${month}'`);
+        const report = data.map(row => `${row.name},${row.value}`).join('\n');
+        fs.writeFile(`/reports/${month}.txt`, report);
+        return report;
+      }
+
+      // Step 3: Tests still pass → now change the output format (behavior change)
+      function generateReport(month: string, *, fs: FileSystem = new RealFS()): string {
+        const data = db.query(`SELECT * FROM metrics WHERE month = '${month}'`);
+        const report = data.map(row => `${row.name}: ${row.value}`).join('\n');
+        fs.writeFile(`/reports/${month}.txt`, report);
+        return report;
+      }

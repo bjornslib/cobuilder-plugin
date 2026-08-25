@@ -1,0 +1,419 @@
+id: replace-type-code-with-strategy-011
+name: Replace Type Code with Strategy/State
+category: refactoring
+canonical_tags: ['refactoring', 'design']
+sources:
+  - books/refactoring.md
+summary: |
+  Replace Type Code with Strategy/State eliminates a class field (raw string, int, or enum)
+  that encodes variant identity and drives switch/if-else chains across multiple methods.
+  Instead of checking the type code in every method and branching, you introduce a
+  polymorphic hierarchy: each type-code value becomes a subclass or strategy object that
+  encapsulates the varying behavior. The type-code field disappears, and all branching is
+  replaced by a single polymorphic dispatch.
+
+  TYPE CODES vs ENUM-CLASSES — Type codes often start as raw strings ("uber", "email")
+  or magic integers (1=admin, 2=moderator). A useful intermediate step is to replace these
+  with a proper enum class (Python StrEnum/IntEnum, TypeScript const enum or string union
+  type) to gain exhaustiveness checking, IDE autocomplete, and type safety. However, an
+  enum alone does not eliminate the branching — it just makes the switch safer. The full
+  refactoring goes further: each enum member becomes its own class with encapsulated
+  behavior, eliminating the switch entirely. The enum may still exist as keys in a registry
+  / factory, but the branching logic moves into polymorphic dispatch.
+
+  STRATEGY PATTERN INJECTION — The Strategy variant is used when the behavior choice is
+  algorithmic (e.g., pricing formula, discount calculation, compression algorithm). The
+  strategy is typically injected from outside: via constructor injection (DI container
+  passes the right strategy at construction), a factory function that reads configuration,
+  or a registry that maps type-code keys to strategy classes. Injection decouples the host
+  object from knowledge of which strategies exist — the host only knows the interface.
+  This makes the system open for extension (add a new strategy class) and closed for
+  modification (no existing code changes), following the Open/Closed Principle.
+
+  STATE MACHINES — The State variant is used when the object changes its type code at
+  runtime and behavior shifts with each transition. Classic examples: Order lifecycle
+  (Pending → Confirmed → Shipped → Delivered), TCP connection states, or a document
+  workflow (Draft → Review → Published → Archived). Each state is a separate class
+  implementing a common State interface. The context object delegates behavior to its
+  current state. When a transition occurs, the state object replaces the context's state
+  reference with the next state (often by returning it from the action method). This
+  eliminates sprawling if/else chains checking `self.status == "pending"` and keeps each
+  state's rules locally coherent. Adding a new state means adding one class — no existing
+  state classes need modification.
+
+  POLYMORPHISM-BASED DISPATCH — Both variants rely on the same mechanism: define an
+  interface with one method per varying behavior, create a concrete class per variant,
+  and let the runtime dispatch to the right implementation. The host class no longer
+  needs to know which variant is active — it just calls `self._strategy.do_thing()`. This
+  eliminates duplicate branching logic across methods, reduces the change surface when
+  adding variants, and keeps each variant's behavior in one cohesive unit.
+examples:
+  - language: python
+    bad: |
+      class CourierService:
+          def __init__(self, platform: str, api_key: str):
+              self.platform = platform  # "uber", "lyft", "doordash"
+              self.api_key = api_key
+
+          def estimate(self, pickup: Address, dropoff: Address) -> float:
+              if self.platform == "uber":
+                  distance = pickup.distance_km(dropoff)
+                  return distance * 1.50 + 2.00
+              elif self.platform == "lyft":
+                  distance = pickup.distance_km(dropoff)
+                  return distance * 1.35 + 1.50
+              elif self.platform == "doordash":
+                  distance = pickup.distance_km(dropoff)
+                  return max(distance * 0.80, 4.99)
+              else:
+                  raise ValueError(f"Unknown platform: {self.platform}")
+
+          def request(self, pickup: Address, dropoff: Address) -> str:
+              if self.platform == "uber":
+                  resp = self._call_api("https://api.uber.com/v1/deliveries", ...)
+                  return resp["tracking_id"]
+              elif self.platform == "lyft":
+                  resp = self._call_api("https://api.lyft.com/v1/rides", ...)
+                  return resp["ride_id"]
+              elif self.platform == "doordash":
+                  resp = self._call_api("https://api.doordash.com/v2/delivery", ...)
+                  return resp["id"]
+              else:
+                  raise ValueError(f"Unknown platform: {self.platform}")
+    good: |
+      from abc import ABC, abstractmethod
+
+      class CourierPlatform(ABC):
+          """Strategy interface — each platform provides its own pricing and API."""
+
+          @abstractmethod
+          def estimate(self, pickup: Address, dropoff: Address) -> float: ...
+
+          @abstractmethod
+          def request(self, pickup: Address, dropoff: Address) -> str: ...
+
+
+      class UberCourier(CourierPlatform):
+          def estimate(self, pickup: Address, dropoff: Address) -> float:
+              return pickup.distance_km(dropoff) * 1.50 + 2.00
+
+          def request(self, pickup: Address, dropoff: Address) -> str:
+              resp = self._call_api("https://api.uber.com/v1/deliveries", ...)
+              return resp["tracking_id"]
+
+
+      class LyftCourier(CourierPlatform):
+          def estimate(self, pickup: Address, dropoff: Address) -> float:
+              return pickup.distance_km(dropoff) * 1.35 + 1.50
+
+          def request(self, pickup: Address, dropoff: Address) -> str:
+              resp = self._call_api("https://api.lyft.com/v1/rides", ...)
+              return resp["ride_id"]
+
+
+      class DoorDashCourier(CourierPlatform):
+          def estimate(self, pickup: Address, dropoff: Address) -> float:
+              return max(pickup.distance_km(dropoff) * 0.80, 4.99)
+
+          def request(self, pickup: Address, dropoff: Address) -> str:
+              resp = self._call_api("https://api.doordash.com/v2/delivery", ...)
+              return resp["id"]
+
+
+      # ── Factory for creating the right strategy ──
+      _PLATFORM_REGISTRY: dict[str, type[CourierPlatform]] = {
+          "uber": UberCourier,
+          "lyft": LyftCourier,
+          "doordash": DoorDashCourier,
+      }
+
+      def create_courier(platform: str, api_key: str) -> CourierPlatform:
+          cls = _PLATFORM_REGISTRY.get(platform)
+          if cls is None:
+              raise ValueError(f"Unknown platform: {platform}")
+          return cls(api_key=api_key)
+
+      # Usage:
+      # courier = create_courier("uber", api_key)
+      # quote = courier.estimate(pickup, dropoff)
+      # tracking = courier.request(pickup, dropoff)
+  - language: python-state-machine
+    state_machine: true
+    bad: |
+      class Order:
+          PENDING = "pending"
+          CONFIRMED = "confirmed"
+          SHIPPED = "shipped"
+          DELIVERED = "delivered"
+
+          def __init__(self, order_id: str):
+              self.order_id = order_id
+              self.status = self.PENDING
+
+          def cancel(self) -> str:
+              if self.status == self.PENDING:
+                  self.status = "cancelled"
+                  return f"Order {self.order_id} cancelled"
+              elif self.status == self.CONFIRMED:
+                  # Can only cancel if not yet shipped — charge fee
+                  self.status = "cancelled"
+                  return f"Order {self.order_id} cancelled (restocking fee applies)"
+              elif self.status in (self.SHIPPED, self.DELIVERED):
+                  raise ValueError(f"Cannot cancel order in {self.status!r} state")
+              raise ValueError(f"Unknown status: {self.status}")
+
+          def ship(self, tracking: str) -> str:
+              if self.status == self.CONFIRMED:
+                  self.status = self.SHIPPED
+                  self.tracking = tracking
+                  return f"Order {self.order_id} shipped: {tracking}"
+              raise ValueError(
+                  f"Cannot ship from {self.status!r} — must be confirmed first"
+              )
+
+          def deliver(self) -> str:
+              if self.status == self.SHIPPED:
+                  self.status = self.DELIVERED
+                  return f"Order {self.order_id} delivered"
+              raise ValueError(f"Cannot deliver from {self.status!r} state")
+
+    good: |
+      from abc import ABC, abstractmethod
+      from __future__ import annotations  # for forward references in type hints
+
+
+      class OrderState(ABC):
+          """Each state encapsulates valid transitions and behavior."""
+
+          @abstractmethod
+          def cancel(self, order: Order) -> OrderState: ...
+
+          @abstractmethod
+          def ship(self, order: Order, tracking: str) -> OrderState: ...
+
+          @abstractmethod
+          def deliver(self, order: Order) -> OrderState: ...
+
+
+      class PendingState(OrderState):
+          def cancel(self, order: Order) -> OrderState:
+              return CancelledState()
+
+          def ship(self, order: Order, tracking: str) -> OrderState:
+              raise ValueError("Cannot ship — order must be confirmed first")
+
+          def deliver(self, order: Order) -> OrderState:
+              raise ValueError("Cannot deliver from pending state")
+
+
+      class ConfirmedState(OrderState):
+          def cancel(self, order: Order) -> OrderState:
+              return CancelledState(reason="Customer requested cancellation (fee applies)")
+
+          def ship(self, order: Order, tracking: str) -> OrderState:
+              return ShippedState(tracking=tracking)
+
+          def deliver(self, order: Order) -> OrderState:
+              raise ValueError("Cannot deliver — order must be shipped first")
+
+
+      class ShippedState(OrderState):
+          def cancel(self, order: Order) -> OrderState:
+              raise ValueError("Cannot cancel — order already shipped")
+
+          def ship(self, order: Order, tracking: str) -> OrderState:
+              raise ValueError("Order already shipped")
+
+          def deliver(self, order: Order) -> OrderState:
+              return DeliveredState()
+
+
+      class CancelledState(OrderState):
+          def __init__(self, reason: str = "Cancelled"):
+              self.reason = reason
+
+          def cancel(self, order: Order) -> OrderState:
+              raise ValueError("Order already cancelled")
+
+          def ship(self, order: Order, tracking: str) -> OrderState:
+              raise ValueError("Cannot ship a cancelled order")
+
+          def deliver(self, order: Order) -> OrderState:
+              raise ValueError("Cannot deliver a cancelled order")
+
+
+      class DeliveredState(OrderState):
+          def cancel(self, order: Order) -> OrderState:
+              raise ValueError("Cannot cancel — already delivered")
+
+          def ship(self, order: Order, tracking: str) -> OrderState:
+              raise ValueError("Already delivered")
+
+          def deliver(self, order: Order) -> OrderState:
+              raise ValueError("Already delivered")
+
+
+      class Order:
+          """Context object — delegates behavior to current state."""
+
+          def __init__(self, order_id: str):
+              self.order_id = order_id
+              self._state: OrderState = PendingState()
+
+          def cancel(self) -> str:
+              self._state = self._state.cancel(self)
+              return f"Order {self.order_id} → {type(self._state).__name__}"
+
+          def ship(self, tracking: str) -> str:
+              self._state = self._state.ship(self, tracking)
+              return f"Order {self.order_id} → {type(self._state).__name__} (tracking: {tracking})"
+
+          def deliver(self) -> str:
+              self._state = self._state.deliver(self)
+              return f"Order {self.order_id} → {type(self._state).__name__}"
+
+          @property
+          def status(self) -> str:
+              """Expose current state for external inspection (not for branching)."""
+              return type(self._state).__name__
+
+      # Usage:
+      # order = Order("ORD-42")
+      # order.cancel()           # → PendingState → CancelledState
+      # order.ship("1Z999")      # → ValueError (from cancelled)
+      # order2 = Order("ORD-43")
+      # order2.ship("1Z999")     # → ValueError (not confirmed)
+  - language: typescript-injection
+    injection: true
+    bad: |
+      class ReportGenerator {
+        private format: "pdf" | "csv" | "json";
+
+        constructor(format: "pdf" | "csv" | "json") {
+          this.format = format;
+        }
+
+        generate(data: SalesData[]): Buffer {
+          if (this.format === "pdf") {
+            const styled = pdfLib.layout(data, { orientation: "landscape" });
+            return pdfLib.render(styled);
+          } else if (this.format === "csv") {
+            const rows = data.map((r) =>
+              [r.date, r.product, r.amount].join(",")
+            );
+            return Buffer.from(["date,product,amount", ...rows].join("\n"));
+          } else if (this.format === "json") {
+            return Buffer.from(JSON.stringify(data, null, 2));
+          }
+          throw new Error(`Unknown format: ${this.format}`);
+        }
+
+        getContentType(): string {
+          if (this.format === "pdf") return "application/pdf";
+          if (this.format === "csv") return "text/csv";
+          if (this.format === "json") return "application/json";
+          return "application/octet-stream";
+        }
+
+        getExtension(): string {
+          return { pdf: ".pdf", csv: ".csv", json: ".json" }[this.format] ?? ".bin";
+        }
+      }
+    good: |
+      // ── Strategy interface ──
+      interface ReportFormat {
+        generate(data: SalesData[]): Buffer;
+        readonly contentType: string;
+        readonly extension: string;
+      }
+
+      // ── Concrete strategies ──
+      class PdfReport implements ReportFormat {
+        readonly contentType = "application/pdf";
+        readonly extension = ".pdf";
+
+        generate(data: SalesData[]): Buffer {
+          const styled = pdfLib.layout(data, { orientation: "landscape" });
+          return pdfLib.render(styled);
+        }
+      }
+
+      class CsvReport implements ReportFormat {
+        readonly contentType = "text/csv";
+        readonly extension = ".csv";
+
+        generate(data: SalesData[]): Buffer {
+          const rows = data.map((r) =>
+            [r.date, r.product, r.amount].join(",")
+          );
+          return Buffer.from(["date,product,amount", ...rows].join("\n"));
+        }
+      }
+
+      class JsonReport implements ReportFormat {
+        readonly contentType = "application/json";
+        readonly extension = ".json";
+
+        generate(data: SalesData[]): Buffer {
+          return Buffer.from(JSON.stringify(data, null, 2));
+        }
+      }
+
+      // ── Strategy injected via constructor ──
+      class ReportGenerator {
+        constructor(private format: ReportFormat) {}
+
+        generate(data: SalesData[]): Buffer {
+          return this.format.generate(data);
+        }
+
+        getContentType(): string {
+          return this.format.contentType;
+        }
+
+        getExtension(): string {
+          return this.format.extension;
+        }
+      }
+
+      // ── Registry + factory (type-code → strategy) ──
+      const formatRegistry: Record<string, () => ReportFormat> = {
+        pdf: () => new PdfReport(),
+        csv: () => new CsvReport(),
+        json: () => new JsonReport(),
+      };
+
+      function createReportFormat(kind: string): ReportFormat {
+        const factory = formatRegistry[kind];
+        if (!factory) throw new Error(`Unknown report format: ${kind}`);
+        return factory();
+      }
+
+      // Usage with dependency injection:
+      // const generator = new ReportGenerator(createReportFormat("pdf"));
+      // generator.generate(data);
+      //
+      // Or if using a DI container:
+      // container.bind<ReportFormat>("ReportFormat").to(PdfReport);
+      // container.resolve(ReportGenerator);  // PDF strategy auto-injected
+heuristics:
+  - Apply when a type-code field drives switch/if-chains in multiple methods across the class — each new type-code value forces you to touch every method.
+  - Apply when you keep adding `elif self.type == "new_thing"` branches — that's the sign that polymorphism will reduce change surface.
+  - Apply the Strategy variant when the behavior choice is made once at construction and never changes — each instance gets one strategy for life.
+  - Apply the State variant when the object changes its type code at runtime — the state object replaces itself when a transition occurs.
+  - 'TYPE CODE vs ENUM-CLASS: Start by replacing raw string/int type codes with a proper enum class (Python StrEnum/IntEnum, TypeScript const enum or discriminated union). This gives you exhaustiveness checking, IDE autocomplete, and type safety. The enum is an intermediate step — it makes the switch safer but does not eliminate it. Move on to the full polymorphic hierarchy when adding variants becomes painful (touching many methods per new variant).'
+  - 'TYPE CODE vs ENUM-CLASS: Do NOT stop at the enum if you have 4+ variants with multi-method branching — the enum alone still creates a combinatorial explosion of condition checks. Each new variant still requires touching every method. Push through to polymorphism.'
+  - 'TYPE CODE vs ENUM-CLASS: Retain the enum as keys in your registry/factory — the enum members map nicely to strategy classes and provide a single source of truth for valid variant identities. The enum stays; the switch leaves.'
+  - 'STRATEGY INJECTION: Inject the strategy from the outside — constructor injection is preferred (pass the strategy interface type, not a concrete class). This lets tests inject mock strategies and DI containers resolve the right implementation at runtime.'
+  - 'STRATEGY INJECTION: Use a registry + factory pattern when the strategy is chosen by a type-code string from config, user input, or a database. The registry maps type-code keys to strategy factories; adding a new variant means adding one entry to the registry and one new strategy class.'
+  - 'STRATEGY INJECTION: Do NOT make the host class responsible for creating its own strategy — that re-creates the switch statement you just eliminated. If the host class contains logic to choose between concrete strategies, the refactoring is not done.'
+  - 'STATE MACHINES: Each state class should return the next state from its action methods — never set `self._state` inside a state class. The context (Order, Connection, etc.) owns the state reference; states return their successor and the context updates.'
+  - 'STATE MACHINES: Invalid transitions should raise errors inside the state class — this keeps transition rules in one place per state. Adding a new state means adding one class defining what transitions into/out of it are legal, without touching other states.'
+  - 'STATE MACHINES: Use state-specific fields (tracking number, cancel reason, failure code) as constructor args on state classes — do not pollute the context object with fields that only some states need. The state carries its own data.'
+  - 'STATE MACHINES: Do NOT spread state transition logic across the context object — if you find yourself writing `if isinstance(self._state, ...)` in the context, the refactoring is incomplete. The context should only delegate and update.'
+  - Do NOT apply when there is only one method that branches on the type code — a simple if/else or lookup table is clearer than a full hierarchy.
+  - Do NOT apply when the type code has 2 values and the branching is trivial — the ceremony of creating interfaces and subclasses outweighs the gain.
+  - Do NOT apply when you expect only one additional variant ever — YAGNI; refactor when the second variant actually appears.
+  - 'After replacing: the original class should have no switch-on-type-code logic — adding a new variant means adding one new class, not modifying existing code (Open/Closed Principle).'
+  - 'Mechanical sequence: (1) create a strategy/state interface with one method for each behavior that varies, (2) create a concrete class per type-code value implementing that interface, (3) change the host class to hold a strategy/state reference instead of the type code, (4) delegate each varying method to the strategy/state, (5) create a factory function/method to instantiate the right strategy from the type-code value, (6) remove the type-code field and all switch statements.'
+related_tags: [replace-type-code-with-strategy, replace-type-code-with-state, polymorphism, strategy-pattern, state-pattern, open-closed-principle, replace-conditional-with-polymorphism, enum-classes, dependency-injection, state-machines]

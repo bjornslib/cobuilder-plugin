@@ -1,0 +1,70 @@
+id: airbnb-events-027
+name: Airbnb Events — Object Payloads Over Raw Values
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  When attaching data payloads to events (DOM events, custom events, or
+  framework events), always pass an object literal (hash) instead of a raw
+  value. This allows future contributors to add more data to the event
+  payload without finding and updating every handler for that event. The
+  hash pattern is forward-compatible and self-documenting.
+examples:
+  - language: typescript
+    bad: |
+      // Raw value — can't add fields without breaking all handlers
+      $(element).trigger("listingUpdated", listing.id);
+
+      $(element).on("listingUpdated", (e: Event, listingID: string) => {
+        // What if we need listing.status too? Must update every handler.
+        process(listingID);
+      });
+
+      // CustomEvent with scalar detail
+      element.dispatchEvent(new CustomEvent("userChanged", { detail: userId }));
+    good: |
+      // Object payload — adding fields doesn't break existing handlers
+      $(element).trigger("listingUpdated", {
+        listingID: listing.id,
+      });
+
+      $(element).on("listingUpdated", (e: Event, data: ListingUpdatePayload) => {
+        process(data.listingID);
+      });
+
+      // TypeScript: typed event payload
+      interface ListingUpdatePayload {
+        listingID: string;
+        status?: "active" | "archived";
+        updatedBy?: string;
+      }
+
+      // CustomEvent with typed detail
+      element.dispatchEvent(
+        new CustomEvent<ListingUpdatePayload>("listingUpdated", {
+          detail: { listingID: listing.id },
+        })
+      );
+
+      // React: callback with object parameter
+      <ListingCard
+        onUpdate={({ listingID, status }) => {
+          handleUpdate(listingID, status);
+        }}
+      />
+
+      // Node.js EventEmitter with typed payload
+      emitter.emit("listing:updated", {
+        listingID: listing.id,
+        timestamp: Date.now(),
+      });
+heuristics:
+  - Always pass an object literal as event payload, never a raw scalar value.
+  - The object payload is forward-compatible: add new fields without touching existing handlers.
+  - Define a TypeScript interface for the event payload so all publishers and subscribers share the contract.
+  - This pattern applies to DOM events, jQuery events, Node.js EventEmitter, React callbacks, and any publish-subscribe mechanism.
+  - If a handler only needs one field from the payload, destructure it: ({ listingID }) => ...
+  - For framework-agnostic code, prefer typed callbacks over string-based event systems — they're statically checked.
+  - Avoid overloading event names — use namespaced patterns like "domain:action" (e.g., "cart:itemAdded").
+related_tags: [airbnb, events, payloads, custom-events, pubsub, typescript]

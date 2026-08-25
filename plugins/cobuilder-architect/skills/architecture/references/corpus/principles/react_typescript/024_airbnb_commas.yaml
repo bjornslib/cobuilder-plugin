@@ -1,0 +1,105 @@
+id: airbnb-commas-024
+name: Airbnb Commas — Trailing Commas, Leading Comma Rejection, Clean Diffs
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  Airbnb mandates trailing commas everywhere — in objects, arrays, function
+  parameters, and function call arguments. Trailing commas produce cleaner git
+  diffs (adding an item only changes one line) and make reordering easier.
+  Leading commas are rejected outright. A trailing comma must not appear after
+  a rest element (...args). These rules make multiline data structures and
+  signatures consistent and diff-friendly.
+examples:
+  - language: typescript
+    bad: |
+      // Leading commas — rejected, non-standard
+      const story = [
+          once
+        , upon
+        , aTime
+      ];
+
+      const hero = {
+          firstName: "Ada"
+        , lastName: "Lovelace"
+        , birthYear: 1815
+      };
+
+      // Missing trailing comma — adding an item changes 2 lines in diff
+      const heroes = [
+        "Batman",
+        "Superman"
+      ];
+
+      // No trailing comma in function params
+      function createHero(
+        firstName: string,
+        lastName: string,
+        inventorOf: string[]
+      ) {}
+
+      // No trailing comma in call args
+      createHero(
+        "Ada",
+        "Lovelace",
+        ["computer"]
+      );
+
+      // Trailing comma after rest element — syntax error
+      function createHero(
+        firstName: string,
+        ...heroArgs: string[],
+      ) {}
+    good: |
+      // Trailing commas everywhere
+      const story = [
+        once,
+        upon,
+        aTime,
+      ];
+
+      const hero = {
+        firstName: "Ada",
+        lastName: "Lovelace",
+        birthYear: 1815,
+        superPower: "computers",
+      };
+
+      const heroes = [
+        "Batman",
+        "Superman",
+      ];
+
+      function createHero(
+        firstName: string,
+        lastName: string,
+        inventorOf: string[],
+      ): Hero {
+        return new Hero(firstName, lastName, inventorOf);
+      }
+
+      createHero(
+        "Ada",
+        "Lovelace",
+        ["computer"],
+      );
+
+      // Rest element — no trailing comma after it
+      function createHero(
+        firstName: string,
+        ...heroArgs: string[]
+      ): Hero {
+        return new Hero(firstName, heroArgs);
+      }
+heuristics:
+  - Always use trailing commas in multiline objects, arrays, function parameters, and function call arguments.
+  - Trailing commas make git diffs cleaner: adding or removing an item only touches one line instead of two.
+  - Trailing commas make reordering lines easier — no need to add or remove commas when moving items.
+  - Never use leading commas — they're rejected by the JavaScript community and most style guides.
+  - Do not put a trailing comma after a rest element (...args) — it's a syntax error.
+  - Babel and TypeScript transpilers remove trailing commas in the output, so there's no compatibility concern with legacy environments.
+  - eslint comma-dangle enforces trailing commas; comma-style enforces no leading commas.
+  - "Single-line objects and arrays don't need trailing commas: `{ a: 1, b: 2 }` is fine."
+related_tags: [airbnb, commas, trailing-commas, git-diff, style]

@@ -1,0 +1,348 @@
+id: transactions-distributed-001
+name: Transactions and Distributed Consistency
+category: data_systems
+canonical_tags: ['data-systems', 'correctness', 'resilience']
+sources:
+  - books/designing-data-intensive-applications.md
+summary: >
+  Transactions provide safety guarantees — atomicity, consistency, isolation,
+  durability (ACID) — that let application code treat multi-step operations as
+  a single unit. In single-node databases, ACID is the norm; in distributed
+  systems, BASE (Basically Available, Soft state, Eventual consistency) becomes
+  necessary because strong consistency across nodes is expensive and fragile.
+  Isolation levels define what concurrent transactions can observe: read
+  committed prevents dirty reads, snapshot isolation (MVCC) prevents
+  non-repeatable reads and phantoms, and serializable prevents all anomalies
+  at the cost of throughput. In distributed settings, two-phase commit (2PC)
+  provides atomicity across participants but blocks on coordinator failure.
+  Sagas replace 2PC with a chain of local transactions, each with a compensating
+  action for rollback — they trade atomicity guarantees for availability.
+  The key principle: design transaction boundaries around invariants that MUST
+  hold immediately. Use ACID for those; use sagas, idempotent consumers, and
+  outbox patterns for everything else. Never pretend distributed operations are
+  ACID when they aren't.
+examples:
+  - language: python
+    bad: |
+      """No transaction boundaries — partial writes corrupt state."""
+      from typing import Any
+
+
+      class BrokenTransfer:
+          """Transfers money by updating two accounts sequentially.
+          If step 2 fails, money is lost (credited, never debited)."""
+
+          def __init__(self, db: Any) -> None:
+              self._db = db
+
+          def transfer(self, from_id: str, to_id: str, amount: int) -> None:
+              sender = self._db.accounts.find_one({"_id": from_id})
+              receiver = self._db.accounts.find_one({"_id": to_id})
+
+              sender["balance"] -= amount
+              self._db.accounts.update_one({"_id": from_id}, {"$set": sender})
+
+              # If this fails: sender is debited, receiver never credited
+              receiver["balance"] += amount
+              self._db.accounts.update_one({"_id": to_id}, {"$set": receiver})
+
+              # Also: two concurrent transfers on sender can race —
+              # both read balance=100, both write balance=50 → lost update
+    good: |
+      """Explicit transaction boundaries with isolation level chosen per use case."""
+      from __future__ import annotations
+
+      from dataclasses import dataclass, field
+      from enum import Enum
+      from typing import Any, Protocol
+
+
+      class IsolationLevel(Enum):
+          READ_COMMITTED = "read_committed"
+          SNAPSHOT = "snapshot"
+          SERIALIZABLE = "serializable"
+
+
+      class TransactionError(Exception):
+          """Raised when a transaction must abort."""
+
+
+      @dataclass
+      class TransactionContext:
+          level: IsolationLevel
+          retry_on_conflict: bool = True
+          max_retries: int = 3
+
+
+      class TransactionalDB(Protocol):
+          """Protocol for a database that supports explicit transactions."""
+
+          def begin(self, level: IsolationLevel) -> Any: ...
+          def commit(self, txn: Any) -> None: ...
+          def rollback(self, txn: Any) -> None: ...
+
+
+      class AtomicTransfer:
+          """Transfer money in a single ACID transaction."""
+
+          def __init__(self, db: TransactionalDB) -> None:
+              self._db = db
+              self._ctx = TransactionContext(level=IsolationLevel.SNAPSHOT)
+
+          def transfer(self, from_id: str, to_id: str, amount: int) -> None:
+              for attempt in range(1, self._ctx.max_retries + 1):
+                  txn = self._db.begin(self._ctx.level)
+                  try:
+                      self._debit(txn, from_id, amount)
+                      self._credit(txn, to_id, amount)
+                      self._db.commit(txn)
+                      return
+                  except TransactionError:
+                      self._db.rollback(txn)
+                      if attempt == self._ctx.max_retries:
+                          raise
+              raise RuntimeError("unreachable")
+
+          def _debit(self, txn: Any, account_id: str, amount: int) -> None:
+              account = txn.accounts.with_lock(account_id)
+              if account.balance < amount:
+                  raise TransactionError("insufficient funds")
+              account.balance -= amount
+              # SELECT ... FOR UPDATE ensures no lost updates at READ_COMMITTED
+
+          def _credit(self, txn: Any, account_id: str, amount: int) -> None:
+              account = txn.accounts.with_lock(account_id)
+              account.balance += amount
+
+
+      # -- Saga pattern for distributed (cross-service) transactions --
+      @dataclass
+      class SagaStep:
+          action: str
+          compensate: str
+          service: str
+
+
+      class SagaOrchestrator:
+          """Chains local transactions; compensates on failure."""
+
+          def __init__(self) -> None:
+              self._steps: list[SagaStep] = []
+              self._completed: list[SagaStep] = []
+
+          def add_step(self, step: SagaStep) -> None:
+              self._steps.append(step)
+
+          def execute(self) -> None:
+              try:
+                  for step in self._steps:
+                      self._invoke(step.service, step.action)
+                      self._completed.append(step)
+              except Exception:
+                  self._compensate()
+                  raise
+
+          def _compensate(self) -> None:
+              for step in reversed(self._completed):
+                  try:
+                      self._invoke(step.service, step.compensate)
+                  except Exception:
+                      # Compensating action failed — alert, don't swallow
+                      raise RuntimeError(
+                          f"Compensating action failed for step {step.action}"
+                      )
+
+          @staticmethod
+          def _invoke(service: str, action: str) -> None:
+              # In real code: HTTP call, message queue publish, etc.
+              ...
+
+
+      # Usage: order placement saga
+      saga = SagaOrchestrator()
+      saga.add_step(SagaStep(
+          action="reserve_inventory",
+          compensate="release_inventory",
+          service="inventory",
+      ))
+      saga.add_step(SagaStep(
+          action="charge_payment",
+          compensate="refund_payment",
+          service="billing",
+      ))
+      saga.add_step(SagaStep(
+          action="create_shipment",
+          compensate="cancel_shipment",
+          service="shipping",
+      ))
+  - language: typescript
+    bad: |
+      // No transaction boundary — partial writes leave corrupted state
+      async function brokenTransfer(
+        db: MongoClient,
+        fromId: string,
+        toId: string,
+        amount: number,
+      ): Promise<void> {
+        const sender = await db.collection("accounts").findOne({ _id: fromId });
+        const receiver = await db.collection("accounts").findOne({ _id: toId });
+
+        sender!.balance -= amount;
+        await db.collection("accounts").updateOne({ _id: fromId }, { $set: sender });
+
+        // If this line throws: money is lost — debited but never credited
+        receiver!.balance += amount;
+        await db.collection("accounts").updateOne({ _id: toId }, { $set: receiver });
+
+        // Also: two concurrent transfers both read balance=100, both write 50
+        // → lost update — no isolation to prevent it
+      }
+    good: |
+      enum IsolationLevel {
+        READ_COMMITTED = "read_committed",
+        SNAPSHOT = "snapshot",
+        SERIALIZABLE = "serializable",
+      }
+
+      interface TransactionalDB {
+        begin(level: IsolationLevel): Promise<Txn>;
+        commit(txn: Txn): Promise<void>;
+        rollback(txn: Txn): Promise<void>;
+      }
+
+      interface Txn {
+        accounts: {
+          withLock(id: string): Promise<Account>;
+        };
+      }
+
+      interface Account {
+        id: string;
+        balance: number;
+        save(): Promise<void>;
+      }
+
+      class TransactionError extends Error {
+        constructor(message: string) {
+          super(message);
+          this.name = "TransactionError";
+        }
+      }
+
+      // -- ACID transaction wrapper --
+      async function atomicTransfer(
+        db: TransactionalDB,
+        fromId: string,
+        toId: string,
+        amount: number,
+        maxRetries = 3,
+      ): Promise<void> {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          const txn = await db.begin(IsolationLevel.SNAPSHOT);
+          try {
+            await debit(txn, fromId, amount);
+            await credit(txn, toId, amount);
+            await db.commit(txn);
+            return;
+          } catch (err) {
+            await db.rollback(txn);
+            if (attempt === maxRetries) throw err;
+          }
+        }
+      }
+
+      // SELECT ... FOR UPDATE prevents lost updates even at READ_COMMITTED
+      async function debit(txn: Txn, accountId: string, amount: number): Promise<void> {
+        const account = await txn.accounts.withLock(accountId);
+        if (account.balance < amount) {
+          throw new TransactionError("insufficient funds");
+        }
+        account.balance -= amount;
+        await account.save();
+      }
+
+      async function credit(txn: Txn, accountId: string, amount: number): Promise<void> {
+        const account = await txn.accounts.withLock(accountId);
+        account.balance += amount;
+        await account.save();
+      }
+
+      // -- Saga: distributed transaction via compensating actions --
+      interface SagaStep {
+        action: string;
+        compensate: string;
+        service: string;
+      }
+
+      class SagaOrchestrator {
+        private steps: SagaStep[] = [];
+        private completed: SagaStep[] = [];
+
+        addStep(step: SagaStep): void {
+          this.steps.push(step);
+        }
+
+        async execute(): Promise<void> {
+          try {
+            for (const step of this.steps) {
+              await this.invoke(step.service, step.action);
+              this.completed.push(step);
+            }
+          } catch (err) {
+            await this.compensate();
+            throw err;
+          }
+        }
+
+        private async compensate(): Promise<void> {
+          for (const step of this.completed.reverse()) {
+            try {
+              await this.invoke(step.service, step.compensate);
+            } catch (err) {
+              throw new Error(
+                `Compensating action failed for step ${step.action}: ${err}`,
+              );
+            }
+          }
+        }
+
+        private async invoke(service: string, action: string): Promise<void> {
+          // Real implementation: HTTP call, message queue publish, etc.
+          const response = await fetch(`https://${service}.internal/${action}`, {
+            method: "POST",
+          });
+          if (!response.ok) {
+            throw new Error(`${action} on ${service} failed: ${response.status}`);
+          }
+        }
+      }
+
+      // Usage
+      const saga = new SagaOrchestrator();
+      saga.addStep({
+        action: "reserve_inventory",
+        compensate: "release_inventory",
+        service: "inventory",
+      });
+      saga.addStep({
+        action: "charge_payment",
+        compensate: "refund_payment",
+        service: "billing",
+      });
+      saga.addStep({
+        action: "create_shipment",
+        compensate: "cancel_shipment",
+        service: "shipping",
+      });
+heuristics:
+  - "ACID for invariants that must hold immediately; sagas + idempotent consumers for cross-boundary coordination."
+  - "Choose the weakest isolation level that still prevents the anomalies your use case cannot tolerate — read committed + SELECT FOR UPDATE solves most problems."
+  - "Snapshot isolation (MVCC) prevents non-repeatable reads and most phantoms without the throughput penalty of full serializability."
+  - "Serializable isolation is the safest but slowest — reserve it for operations where correctness trumps throughput (financial ledgers, inventory allocation)."
+  - "Two-phase commit (2PC) works for homogeneous database clusters but blocks on coordinator failure — prefer sagas with compensating actions in heterogeneous/microservice environments."
+  - "Sagas trade atomicity for availability: each step is a committed local transaction. Compensating actions must be idempotent and never fail silently."
+  - "The transactional outbox pattern solves dual-write problems (database + message queue) within a single ACID transaction — write to outbox table, then poll and publish."
+  - "BASE is not 'ACID lite' — it is a fundamentally different contract. Don't pretend a BASE system provides ACID guarantees just because you used a transaction wrapper."
+  - "Lost updates are the most common and most subtle isolation bug — use atomic compare-and-set, SELECT FOR UPDATE, or optimistic locking with version columns."
+  - "Distributed transactions are a last resort, not a default. Most cross-service coordination can be handled by idempotent consumers, outbox patterns, and reconciliation jobs."
+related_tags: [transactions, acid, base, sagas, compensating-transactions, isolation-levels, snapshot-isolation, serializable, read-committed, distributed-transactions, 2pc, outbox-pattern, lost-update, ddia, data-systems]

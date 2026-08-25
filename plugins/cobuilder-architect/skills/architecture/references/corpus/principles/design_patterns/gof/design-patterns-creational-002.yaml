@@ -1,0 +1,520 @@
+id: design-patterns-creational-002
+name: Creational Patterns
+category: design-patterns
+canonical_tags: ['design-patterns', 'creational', 'gof', 'factory', 'builder', 'singleton', 'prototype']
+sources:
+  - open_sources/design_patterns/refactoring-guru-patterns.txt
+  - open_sources/design_patterns/refactoring-guru-patterns.html
+  - open_sources/design_patterns/augmentcode-refactoring.html
+summary: >
+  Creational patterns abstract the instantiation process, decoupling client code
+  from the concrete classes it needs to create. They increase flexibility by
+  hiding *which* class is being instantiated and *how* — the client only knows
+  the interface. The five classic creational patterns each tackle a different
+  creation problem: Factory Method defers instantiation to subclasses, Abstract
+  Factory creates families of related objects, Builder separates construction from
+  representation, Prototype clones existing objects, and Singleton ensures a single
+  instance with global access. Use creational patterns when object creation logic
+  becomes scattered across the codebase (hard to change all at once), when you
+  need to defer concrete type decisions to runtime, or when construction involves
+  many configuration parameters that make constructors unwieldy. Avoid them when
+  the instantiation logic is simple — wrapping every `new Widget()` in a factory
+  adds indirection without benefit. The goal is not to eliminate `new` but to
+  control its blast radius.
+examples:
+  - language: python
+    bad: |
+      # No pattern: the report exporter directly instantiates formatters.
+      # Adding a new format (e.g., Markdown) requires modifying the
+      # `export_report` function — violating Open/Closed. The function
+      # must also pass all configuration parameters to the constructor,
+      # coupling it to every formatter's constructor signature.
+
+      from dataclasses import dataclass
+      from typing import Protocol
+
+
+      @dataclass
+      class Report:
+          title: str
+          rows: list[dict[str, str]]
+          include_header: bool = True
+
+
+      # ----- BAD: Factory Method missing -----
+      # Client code knows about every concrete formatter class.
+
+
+      class PDFFormatter:
+          def __init__(self, page_size: str = "A4"):
+              self.page_size = page_size
+
+          def format(self, report: Report) -> str:
+              return (
+                  f"[PDF:{self.page_size}] {report.title}\\n"
+                  + "\\n".join(str(r) for r in report.rows)
+              )
+
+
+      class CSVFormatter:
+          def __init__(self, delimiter: str = ","):
+              self.delimiter = delimiter
+
+          def format(self, report: Report) -> str:
+              header = list(report.rows[0].keys()) if report.include_header else []
+              lines = [self.delimiter.join(header)] if header else []
+              for row in report.rows:
+                  lines.append(self.delimiter.join(row.values()))
+              return "\\n".join(lines)
+
+
+      def export_report(
+          fmt: str, report: Report, **kwargs
+      ) -> str:
+          # Direct instantiation — every format is a branch
+          if fmt == "pdf":
+              formatter = PDFFormatter(
+                  page_size=kwargs.get("page_size", "A4")
+              )
+          elif fmt == "csv":
+              formatter = CSVFormatter(
+                  delimiter=kwargs.get("delimiter", ",")
+              )
+          else:
+              raise ValueError(f"Unknown format: {fmt}")
+          return formatter.format(report)
+
+
+      # To add JSON formatting you must:
+      #   1. Write a JSONFormatter class
+      #   2. Add an `elif fmt == "json"` branch here
+      #   3. Forward JSON-specific kwargs
+      #   4. Repeat steps 2-3 everywhere export_report() is called
+
+    good: |
+      # Factory Method pattern: a registry maps format names to factory
+      # callables. Adding a new format is one registration call — the
+      # export function never changes. Each factory handles its own config.
+
+      from dataclasses import dataclass
+      from typing import Protocol, Callable
+
+
+      @dataclass
+      class Report:
+          title: str
+          rows: list[dict[str, str]]
+          include_header: bool = True
+
+
+      # Shared interface — all formatters implement it
+      class Formatter(Protocol):
+          def format(self, report: Report) -> str:
+              ...
+
+
+      class PDFFormatter:
+          def __init__(self, page_size: str = "A4"):
+              self.page_size = page_size
+
+          def format(self, report: Report) -> str:
+              return (
+                  f"[PDF:{self.page_size}] {report.title}\\n"
+                  + "\\n".join(str(r) for r in report.rows)
+              )
+
+
+      class CSVFormatter:
+          def __init__(self, delimiter: str = ","):
+              self.delimiter = delimiter
+
+          def format(self, report: Report) -> str:
+              header = (
+                  list(report.rows[0].keys()) if report.include_header else []
+              )
+              lines = [self.delimiter.join(header)] if header else []
+              for row in report.rows:
+                  lines.append(self.delimiter.join(row.values()))
+              return "\\n".join(lines)
+
+
+      # Factory Method registry — the central place where formats are registered
+      # Each entry is: (type_name, factory_callable)
+      _formatter_registry: dict[str, Callable[..., Formatter]] = {}
+
+
+      def register_formatter(
+          name: str, factory: Callable[..., Formatter]
+      ) -> None:
+          _formatter_registry[name] = factory
+
+
+      def create_formatter(fmt: str, **kwargs) -> Formatter:
+          factory = _formatter_registry.get(fmt)
+          if factory is None:
+              raise ValueError(f"Unknown format: {fmt}")
+          return factory(**kwargs)
+
+
+      # Register built-in formatters (could be done via decorator too)
+      register_formatter("pdf", lambda **kw: PDFFormatter(**kw))
+      register_formatter("csv", lambda **kw: CSVFormatter(**kw))
+
+
+      def export_report(
+          report: Report, fmt: str = "pdf", **kwargs
+      ) -> str:
+          formatter = create_formatter(fmt, **kwargs)
+          return formatter.format(report)
+
+      # Adding JSON now:
+      #   class JSONFormatter:
+      #       def format(self, report): ...
+      #   register_formatter("json", lambda **kw: JSONFormatter(**kw))
+      #
+      # The export_report function does NOT change. All callers stay
+      # untouched. The registry is "open for extension, closed for modification."
+
+    extra: |
+      # ----- Builder example: constructing complex objects step by step -----
+      # Without Builder, you either have a constructor with 8 positional params
+      # (fragile, unreadable) or a half-constructed object that you configure
+      # through setters (invalid intermediate states).
+
+      from dataclasses import dataclass, field
+      from typing import Optional
+
+
+      @dataclass
+      class HTTPRequest:
+          method: str
+          url: str
+          headers: dict[str, str] = field(default_factory=dict)
+          body: Optional[str] = None
+          timeout: int = 30
+          retries: int = 0
+          verify_ssl: bool = True
+
+
+      # BAD: constructor with too many positional args
+      #   req = HTTPRequest("POST", "https://api.example.com", {"Auth": "X"},
+      #                     '{"key":"val"}', 10, 3, False)
+      # Which positional argument is retries? Is 10 the timeout?
+
+
+      # GOOD: Builder separates construction steps from the constructor
+      class HTTPRequestBuilder:
+          def __init__(self, method: str, url: str):
+              self._method = method
+              self._url = url
+              self._headers: dict[str, str] = {}
+              self._body: Optional[str] = None
+              self._timeout: int = 30
+              self._retries: int = 0
+              self._verify_ssl: bool = True
+
+          def with_header(self, key: str, value: str) -> "HTTPRequestBuilder":
+              self._headers[key] = value
+              return self  # fluent interface — chain calls
+
+          def with_body(self, body: str) -> "HTTPRequestBuilder":
+              self._body = body
+              return self
+
+          def with_timeout(self, seconds: int) -> "HTTPRequestBuilder":
+              self._timeout = seconds
+              return self
+
+          def with_retries(self, count: int) -> "HTTPRequestBuilder":
+              self._retries = count
+              return self
+
+          def without_ssl_verification(self) -> "HTTPRequestBuilder":
+              self._verify_ssl = False
+              return self
+
+          def build(self) -> HTTPRequest:
+              return HTTPRequest(
+                  method=self._method,
+                  url=self._url,
+                  headers=self._headers,
+                  body=self._body,
+                  timeout=self._timeout,
+                  retries=self._retries,
+                  verify_ssl=self._verify_ssl,
+              )
+
+
+      # Usage: every step is named — self-documenting
+      get_users = (
+          HTTPRequestBuilder("GET", "https://api.example.com/users")
+          .with_header("Authorization", "Bearer token123")
+          .with_timeout(5)
+          .with_retries(2)
+          .build()
+      )
+
+      # The Builder can also validate: e.g., a POST must have a body.
+      # It can enforce invariants that setters on a half-built object cannot.
+
+  - language: typescript
+    bad: |
+      // No pattern: direct instantiation scattered throughout the codebase.
+      // Adding a "crypto" payment method requires hunting down every place
+      // that does `new CreditCardProcessor()` or `new PayPalProcessor()`.
+
+      interface PaymentProcessor {
+        process(amount: number): Promise<string>;
+      }
+
+      class CreditCardProcessor implements PaymentProcessor {
+        constructor(private gatewayApiKey: string) {}
+
+        async process(amount: number): Promise<string> {
+          // Calls credit card gateway API
+          return `Charged $${amount} via credit card (key: ${this.gatewayApiKey})`;
+        }
+      }
+
+      class PayPalProcessor implements PaymentProcessor {
+        constructor(private clientId: string) {}
+
+        async process(amount: number): Promise<string> {
+          // Calls PayPal API
+          return `Charged $${amount} via PayPal (client: ${this.clientId})`;
+        }
+      }
+
+      // Direct instantiation — callers know concrete classes and their config
+      async function checkout(
+        method: string, amount: number
+      ): Promise<string> {
+        let processor: PaymentProcessor;
+        if (method === "credit_card") {
+          processor = new CreditCardProcessor("sk_live_abc123");
+        } else if (method === "paypal") {
+          processor = new PayPalProcessor("client_xyz789");
+        } else {
+          throw new Error(`Unknown payment method: ${method}`);
+        }
+        return await processor.process(amount);
+      }
+
+      // Same instantiation logic duplicated elsewhere:
+      async function refund(method: string, amount: number): Promise<string> {
+        let processor: PaymentProcessor;
+        if (method === "credit_card") {
+          processor = new CreditCardProcessor("sk_live_abc123");
+        } else if (method === "paypal") {
+          processor = new PayPalProcessor("client_xyz789");
+        } else {
+          throw new Error(`Unknown payment method: ${method}`);
+        }
+        return await processor.process(-amount);
+      }
+
+    good: |
+      // Factory Method: registry-based factory centralizes creation.
+      // Adding a new payment method = one new class + one registration.
+
+      interface PaymentProcessor {
+        process(amount: number): Promise<string>;
+      }
+
+      class CreditCardProcessor implements PaymentProcessor {
+        constructor(private gatewayApiKey: string) {}
+
+        async process(amount: number): Promise<string> {
+          return `Charged $${amount} via credit card (key: ${this.gatewayApiKey})`;
+        }
+      }
+
+      class PayPalProcessor implements PaymentProcessor {
+        constructor(private clientId: string) {}
+
+        async process(amount: number): Promise<string> {
+          return `Charged $${amount} via PayPal (client: ${this.clientId})`;
+        }
+      }
+
+      // Factory Method — single source of truth
+      type ProcessorFactory = () => PaymentProcessor;
+
+      const processorRegistry = new Map<string, ProcessorFactory>();
+
+      function registerProcessor(
+        name: string, factory: ProcessorFactory
+      ): void {
+        processorRegistry.set(name, factory);
+      }
+
+      function createProcessor(method: string): PaymentProcessor {
+        const factory = processorRegistry.get(method);
+        if (!factory) {
+          throw new Error(`Unknown payment method: ${method}`);
+        }
+        return factory();
+      }
+
+      // Register implementations — config lives with the registration
+      registerProcessor(
+        "credit_card", () => new CreditCardProcessor("sk_live_abc123")
+      );
+      registerProcessor(
+        "paypal", () => new PayPalProcessor("client_xyz789")
+      );
+
+      // Callers only use `createProcessor` — no concrete class knowledge
+      async function checkout(
+        method: string, amount: number
+      ): Promise<string> {
+        const processor = createProcessor(method);
+        return await processor.process(amount);
+      }
+
+      async function refund(method: string, amount: number): Promise<string> {
+        const processor = createProcessor(method);
+        return await processor.process(-amount);
+      }
+
+    extra: |
+      // ----- Builder example: constructing complex configuration objects -----
+      // Without Builder, you pass a huge options object that may be incomplete
+      // or invalid. The Builder validates at `.build()` time.
+
+      interface DatabaseConfig {
+        host: string;
+        port: number;
+        username: string;
+        password: string;
+        database: string;
+        maxConnections: number;
+        enableSSL: boolean;
+        connectionTimeoutMs: number;
+      }
+
+      // BAD: Partial config object — missing fields, no validation
+      //
+      //   const config: Partial<DatabaseConfig> = {
+      //     host: "localhost",
+      //     port: 5432,
+      //   };
+      //   // Forgot password, database name, etc. — runtime crash later.
+
+
+      // GOOD: Builder with fluent API and `build()` validation
+      class DatabaseConfigBuilder {
+        private config: Partial<DatabaseConfig> = {};
+
+        setHost(host: string): this {
+          this.config.host = host;
+          return this;
+        }
+
+        setPort(port: number): this {
+          this.config.port = port;
+          return this;
+        }
+
+        setCredentials(username: string, password: string): this {
+          this.config.username = username;
+          this.config.password = password;
+          return this;
+        }
+
+        setDatabase(name: string): this {
+          this.config.database = name;
+          return this;
+        }
+
+        setPool(maxConnections: number, timeoutMs: number): this {
+          this.config.maxConnections = maxConnections;
+          this.config.connectionTimeoutMs = timeoutMs;
+          return this;
+        }
+
+        enableSSL(): this {
+          this.config.enableSSL = true;
+          return this;
+        }
+
+        build(): DatabaseConfig {
+          const required: (keyof DatabaseConfig)[] = [
+            "host", "port", "username", "password", "database",
+          ];
+          for (const key of required) {
+            if (this.config[key] === undefined) {
+              throw new Error(
+                `Missing required config field: ${key}`
+              );
+            }
+          }
+          // Apply defaults for optional fields
+          return {
+            host: this.config.host!,
+            port: this.config.port!,
+            username: this.config.username!,
+            password: this.config.password!,
+            database: this.config.database!,
+            maxConnections: this.config.maxConnections ?? 10,
+            enableSSL: this.config.enableSSL ?? false,
+            connectionTimeoutMs: this.config.connectionTimeoutMs ?? 5000,
+          };
+        }
+      }
+
+      // Usage: every step is labeled, `build()` validates completeness
+      const prodConfig = new DatabaseConfigBuilder()
+        .setHost("db.prod.example.com")
+        .setPort(5432)
+        .setCredentials("app_user", process.env.DB_PASSWORD!)
+        .setDatabase("orders")
+        .setPool(25, 3000)
+        .enableSSL()
+        .build();
+
+heuristics:
+  - Use Factory Method when you don't know in advance the exact types of objects your code should work with — let subclasses or a registry decide.
+  - Use Abstract Factory when your code needs to work with families of related products, and you need to guarantee that objects from the same family are used together.
+  - Use Builder to construct complex objects step by step, especially when the object requires many configuration parameters or when construction must happen incrementally.
+  - Use Prototype when creating an object is expensive (network call, large computation) and you can clone a pre-configured prototype instead.
+  - Use Singleton sparingly — it ensures a class has only one instance and provides global access, but it introduces global state that makes testing and concurrency harder.
+  - >
+    Prefer a registry-based factory over a switch/if-else chain. A registry
+    (dict or Map) is open for extension — new entries are added without
+    modifying the dispatch logic. A switch statement is closed for extension
+    and open for bugs (forgotten branches).
+  - >
+    If a constructor has more than 4 parameters — especially when several are
+    optional or the same type — reach for the Builder pattern. The Builder's
+    named methods are self-documenting; positional arguments are not.
+  - >
+    Creational patterns compose well with dependency injection. The DI container
+    is often a collection of factory methods — registering factories and letting
+    the container wire them together.
+  - >
+    Avoid creating factories for every class. A factory is justified when the
+    construction logic is non-trivial, varies at runtime, or is used in many
+    places. For a class that is always instantiated the same way in one place,
+    `new Widget()` is simpler and clearer.
+  - >
+    When using Builder, consider making `build()` the only way to get the
+    product. This prevents clients from working with half-built objects. If
+    the language supports it (e.g., TypeScript), make the product constructor
+    private/package-private.
+  - >
+    In Python and TypeScript, the Prototype pattern can often be replaced by
+    the language's built-in copy mechanisms (`copy.deepcopy`, spread syntax).
+    Only use a formal Prototype interface when the cloning logic is domain-
+    specific (e.g., a graphic editor cloning shapes with different transforms).
+  - >
+    Document which factories exist. A team onboarding document that lists
+    "PaymentProcessorFactory, ReportFormatterFactory, CacheProviderFactory"
+    helps new members understand where object creation happens.
+
+related_tags:
+  [creational-patterns, factory-method, abstract-factory, builder, prototype,
+   singleton, gof, gang-of-four, design-patterns, object-creation,
+   dependency-injection, factory-registry, fluent-interface,
+   open-closed-principle, constructor-complexity, configuration-builder,
+   separation-of-concerns, instantiation, new-operator, pattern-composition]

@@ -1,0 +1,657 @@
+id: replace-type-code-with-polymorphism-001
+name: "Refactoring — Replace Type Code with Strategy/State (Replace Conditional with Polymorphism)"
+category: design-patterns
+canonical_tags: ['refactoring', 'simplifying-conditionals', 'replace-conditional-with-polymorphism', 'replace-type-code', 'strategy-pattern', 'state-pattern', 'polymorphism', 'open-closed-principle', 'type-code-elimination']
+sources:
+  - books/refactoring.md
+  - books/clean-code.md
+  - open_sources/design_patterns/refactoring-guru-patterns.txt
+  - open_sources/design_patterns/augmentcode-refactoring.html
+summary: >
+  Replace Type Code with Strategy/State (also called Replace Conditional with
+  Polymorphism) eliminates if/elif/switch chains that branch on a type code — a
+  string field like `"dog"`, `"cat"`, `"cow"` or an enum like `EmployeeType.SALARIED`
+  — and replaces them with a polymorphic hierarchy where each type becomes a
+  subclass. The type code disappears; the branching moves from a control-flow
+  structure (the switch) to a class structure (the inheritance tree). Each
+  subclass overrides the behaviors that differed by type, and the common behavior
+  stays in the superclass. The Strategy pattern is used when the variant behavior
+  is an algorithm the object delegates to (e.g., a shipping calculator that a
+  cart composes); the State pattern is used when the variant behavior represents
+  the object's own lifecycle phase (e.g., an order that's in Draft, Confirmed,
+  or Shipped state, and transitions between them). Both share the same
+  refactoring mechanic: find the type-code field, create a subclass per type,
+  use Replace Constructor with Factory Method to return the right subclass,
+  and move each type-dependent method into the subclasses.
+
+  This is the heavyweight champion of conditional refactorings. It attacks the
+  Open/Closed Principle violation head-on: in the original code, adding a new
+  type means touching every switch statement (Shotgun Surgery). After
+  polymorphism, adding a new type means writing one new class — zero changes
+  to existing classes. The cost is more files and a class hierarchy. Use this
+  when: (a) the same type code appears in 3+ switch/if chains across the class
+  or codebase, (b) new types are added regularly (the class churns), or (c) the
+  branching behavior is complex enough to deserve named classes. Do NOT use when
+  the type code is used in only one method, the types are truly fixed (e.g., days
+  of the week), or the variation is minor (a single parameter difference) — use
+  Parameterize Method or a lookup table instead. The rule of thumb: if you've
+  patched the same switch statement three times in six months, the polymorphism
+  refactoring will pay for itself within the next two patches.
+examples:
+  - language: python
+    bad: |
+      # BAD: Type-code branching with if/elif chains. `EmployeeType` plus
+      # `monthly_salary` / `hourly_rate` / `commission_rate` / `bonus`
+      # are scattered across pay_amount, get_vacation_days, and get_benefits.
+      # Adding a new employee type (Contractor) means touching every method
+      # that branches on `self.kind`. Violates Open/Closed Principle and
+      # creates Shotgun Surgery. Four methods × four types = 16 paths to
+      # get wrong in one class.
+
+      from dataclasses import dataclass
+      from enum import Enum
+
+
+      class EmployeeType(Enum):
+          ENGINEER = "engineer"
+          SALESMAN = "salesman"
+          MANAGER = "manager"
+          INTERN = "intern"
+
+
+      @dataclass
+      class Employee:
+          name: str
+          kind: EmployeeType
+          monthly_salary: float = 0.0
+          commission_rate: float = 0.0
+          hourly_rate: float = 0.0
+          hours_worked: float = 0.0
+          bonus: float = 0.0
+
+          def pay_amount(self) -> float:
+              if self.kind == EmployeeType.ENGINEER:
+                  return self.monthly_salary
+              elif self.kind == EmployeeType.SALESMAN:
+                  return self.monthly_salary + self.commission_rate * 1000
+              elif self.kind == EmployeeType.MANAGER:
+                  return self.monthly_salary + self.bonus
+              elif self.kind == EmployeeType.INTERN:
+                  return self.hourly_rate * self.hours_worked
+              else:
+                  raise ValueError(f"Unknown employee type: {self.kind}")
+
+          def get_vacation_days(self) -> int:
+              if self.kind == EmployeeType.ENGINEER:
+                  return 15
+              elif self.kind == EmployeeType.SALESMAN:
+                  return 12
+              elif self.kind == EmployeeType.MANAGER:
+                  return 20
+              elif self.kind == EmployeeType.INTERN:
+                  return 0
+              else:
+                  raise ValueError(f"Unknown employee type: {self.kind}")
+
+          def get_benefits(self) -> list[str]:
+              base = ["health_insurance"]
+              if self.kind == EmployeeType.ENGINEER:
+                  return base + ["stock_options", "gym"]
+              elif self.kind == EmployeeType.SALESMAN:
+                  return base + ["car_allowance"]
+              elif self.kind == EmployeeType.MANAGER:
+                  return base + ["stock_options", "executive_plaza"]
+              elif self.kind == EmployeeType.INTERN:
+                  return ["free_lunch"]
+              else:
+                  raise ValueError(f"Unknown employee type: {self.kind}")
+
+      # Adding "Contractor": add CONTRACTOR to EmployeeType enum, add fields
+      # (contract_amount, contract_duration), and add 4 elif branches across
+      # 3 methods + 4 more branches as the codebase grows. One missed branch
+      # = a bug that ships.
+
+    good: |
+      # GOOD: Replace Type Code with Polymorphism. Each employee type is now
+      # a subclass. `kind` is gone. `pay_amount`, `get_vacation_days`, and
+      # `get_benefits` are abstract in the base class and implemented once
+      # per subclass. The base class has zero type-code knowledge. Adding a
+      # new employee type means creating one new class — no changes to
+      # existing classes. Open/Closed Principle satisfied. Each subclass
+      # carries only the fields it needs (no null fields like `commission_rate`
+      # on an Engineer).
+
+      from abc import ABC, abstractmethod
+      from dataclasses import dataclass
+
+
+      # --- Abstract base: defines the interface, no type-code logic ---
+
+      class Employee(ABC):
+          def __init__(self, name: str):
+              self.name = name
+
+          @abstractmethod
+          def pay_amount(self) -> float: ...
+
+          @abstractmethod
+          def get_vacation_days(self) -> int: ...
+
+          @abstractmethod
+          def get_benefits(self) -> list[str]: ...
+
+      # --- Concrete subclasses: one per type, each self-contained ---
+
+      class Engineer(Employee):
+          def __init__(self, name: str, monthly_salary: float):
+              super().__init__(name)
+              self.monthly_salary = monthly_salary
+
+          def pay_amount(self) -> float:
+              return self.monthly_salary
+
+          def get_vacation_days(self) -> int:
+              return 15
+
+          def get_benefits(self) -> list[str]:
+              return ["health_insurance", "stock_options", "gym"]
+
+      class Salesman(Employee):
+          def __init__(self, name: str, monthly_salary: float, commission_rate: float):
+              super().__init__(name)
+              self.monthly_salary = monthly_salary
+              self.commission_rate = commission_rate
+
+          def pay_amount(self) -> float:
+              return self.monthly_salary + self.commission_rate * 1000
+
+          def get_vacation_days(self) -> int:
+              return 12
+
+          def get_benefits(self) -> list[str]:
+              return ["health_insurance", "car_allowance"]
+
+      class Manager(Employee):
+          def __init__(self, name: str, monthly_salary: float, bonus: float):
+              super().__init__(name)
+              self.monthly_salary = monthly_salary
+              self.bonus = bonus
+
+          def pay_amount(self) -> float:
+              return self.monthly_salary + self.bonus
+
+          def get_vacation_days(self) -> int:
+              return 20
+
+          def get_benefits(self) -> list[str]:
+              return ["health_insurance", "stock_options", "executive_plaza"]
+
+      class Intern(Employee):
+          def __init__(self, name: str, hourly_rate: float, hours_worked: float):
+              super().__init__(name)
+              self.hourly_rate = hourly_rate
+              self.hourly_worked = hours_worked
+
+          def pay_amount(self) -> float:
+              return self.hourly_rate * self.hourly_worked
+
+          def get_vacation_days(self) -> int:
+              return 0
+
+          def get_benefits(self) -> list[str]:
+              return ["free_lunch"]
+
+
+      # --- Factory: returns the right subclass from external input ---
+
+      def create_employee(data: dict) -> Employee:
+          """Replace Constructor with Factory Method."""
+          kind = data["type"]
+          name = data["name"]
+
+          factories = {
+              "engineer": lambda: Engineer(name, data["monthly_salary"]),
+              "salesman": lambda: Salesman(name, data["monthly_salary"], data["commission_rate"]),
+              "manager": lambda: Manager(name, data["monthly_salary"], data["bonus"]),
+              "intern": lambda: Intern(name, data["hourly_rate"], data["hours_worked"]),
+          }
+
+          factory = factories.get(kind)
+          if factory is None:
+              raise ValueError(f"Unknown employee type: {kind}")
+          return factory()
+
+
+      # --- Adding a new type: one new class, one entry in the factory ---
+      # Zero changes to Engineer, Salesman, Manager, or Intern.
+
+      class Contractor(Employee):
+          def __init__(self, name: str, contract_amount: float):
+              super().__init__(name)
+              self.contract_amount = contract_amount
+
+          def pay_amount(self) -> float:
+              return self.contract_amount
+
+          def get_vacation_days(self) -> int:
+              return 0
+
+          def get_benefits(self) -> list[str]:
+              return []
+
+      # Each subclass is independently testable:
+      def test_engineer_pay():
+          eng = Engineer("Alice", 8000.0)
+          assert eng.pay_amount() == 8000.0
+          assert eng.get_vacation_days() == 15
+          assert "stock_options" in eng.get_benefits()
+
+      # --- Strategy Pattern variant: algorithm selection, not lifecycle ---
+      # Use Strategy when the variant behavior is a pluggable algorithm,
+      # not the object's identity. A payment processor composes a strategy;
+      # it doesn't BECOME the strategy.
+
+      from typing import Protocol
+
+
+      class PaymentStrategy(Protocol):
+          def pay(self, amount: float) -> str: ...
+
+
+      class CreditCardPayment:
+          def pay(self, amount: float) -> str:
+              return f"Charged ${amount:.2f} to credit card"
+
+      class PayPalPayment:
+          def pay(self, amount: float) -> str:
+              return f"Paid ${amount:.2f} via PayPal"
+
+      class CryptoPayment:
+          def pay(self, amount: float) -> str:
+              return f"Transferred ${amount:.2f} via crypto"
+
+
+      class Checkout:
+          """Composes a strategy — not a subclass per payment type."""
+          def __init__(self, payment: PaymentStrategy):
+              self._payment = payment
+
+          def complete(self, amount: float) -> str:
+              return self._payment.pay(amount)
+
+
+      # --- State Pattern variant: lifecycle, not algorithm ---
+      # Use State when the object transitions through phases. An Order
+      # IS draft, then IS confirmed, then IS shipped — its identity
+      # changes. State handles transitions; Strategy does not.
+
+      class OrderState(ABC):
+          @abstractmethod
+          def next(self, order: "Order") -> None: ...
+
+          @abstractmethod
+          def cancel(self, order: "Order") -> str: ...
+
+
+      class DraftState(OrderState):
+          def next(self, order: "Order") -> None:
+              order._state = ConfirmedState()
+
+          def cancel(self, order: "Order") -> str:
+              order._state = CancelledState()
+              return "Order cancelled while in draft"
+
+      class ConfirmedState(OrderState):
+          def next(self, order: "Order") -> None:
+              order._state = ShippedState()
+
+          def cancel(self, order: "Order") -> str:
+              return "Cannot cancel — already confirmed. Contact support."
+
+      class ShippedState(OrderState):
+          def next(self, order: "Order") -> None:
+              raise ValueError("Order is already shipped")
+
+          def cancel(self, order: "Order") -> str:
+              return "Cannot cancel — already shipped. Initiate a return."
+
+      class CancelledState(OrderState):
+          def next(self, order: "Order") -> None:
+              raise ValueError("Cannot advance a cancelled order")
+
+          def cancel(self, order: "Order") -> str:
+              return "Order is already cancelled"
+
+
+      class Order:
+          def __init__(self, order_id: str):
+              self.order_id = order_id
+              self._state: OrderState = DraftState()
+
+          def advance(self) -> None:
+              self._state.next(self)
+
+          def cancel(self) -> str:
+              return self._state.cancel(self)
+
+  - language: typescript
+    bad: |
+      // BAD: Type-code branching in three methods. `ShippingMethod` enum plus
+      // a switch chain in calculateCost, estimatedDays, and generateLabel.
+      // Adding "drone" shipping means editing three switch statements — each
+      // is a chance to forget a case or get the fallback wrong.
+
+      enum ShippingMethod {
+        STANDARD = "standard",
+        EXPRESS = "express",
+        OVERNIGHT = "overnight",
+      }
+
+      class Shipment {
+        constructor(
+          public readonly id: string,
+          public readonly method: ShippingMethod,
+          public readonly weightKg: number,
+        ) {}
+
+        calculateCost(): number {
+          switch (this.method) {
+            case ShippingMethod.STANDARD:
+              return 5.0 + this.weightKg * 1.0;
+            case ShippingMethod.EXPRESS:
+              return 10.0 + this.weightKg * 2.0;
+            case ShippingMethod.OVERNIGHT:
+              return 25.0 + this.weightKg * 5.0;
+            default:
+              throw new Error(`Unknown method: ${this.method}`);
+          }
+        }
+
+        estimatedDays(): number {
+          switch (this.method) {
+            case ShippingMethod.STANDARD:
+              return 7;
+            case ShippingMethod.EXPRESS:
+              return 3;
+            case ShippingMethod.OVERNIGHT:
+              return 1;
+            default:
+              throw new Error(`Unknown method: ${this.method}`);
+          }
+        }
+
+        generateTrackingLabel(): string {
+          const prefix = this.method.toUpperCase();
+          return `${prefix}-${this.id}-${Date.now()}`;
+        }
+      }
+
+      // Adding "drone": add to enum, add case to calculateCost, add case to
+      // estimatedDays, update generateTrackingLabel. The cost of a new shipping
+      // option is 4 edits across one class. In a codebase with 12 Shipment-like
+      // classes, that's 48 edits.
+
+    good: |
+      // GOOD: Replace Type Code with Strategy. Each shipping method is now a
+      // Strategy class composing into Shipment. The switch statements are gone;
+      // Shipment delegates to the strategy. Adding "drone" means one new class.
+      // Zero changes to Standard, Express, or Overnight.
+
+      // --- Strategy interface ---
+      interface ShippingStrategy {
+        calculateCost(weightKg: number): number;
+        estimatedDays(): number;
+        labelPrefix(): string;
+      }
+
+      // --- Concrete strategies: one per variant ---
+
+      class StandardShipping implements ShippingStrategy {
+        calculateCost(weightKg: number): number {
+          return 5.0 + weightKg * 1.0;
+        }
+        estimatedDays(): number {
+          return 7;
+        }
+        labelPrefix(): string {
+          return "STD";
+        }
+      }
+
+      class ExpressShipping implements ShippingStrategy {
+        calculateCost(weightKg: number): number {
+          return 10.0 + weightKg * 2.0;
+        }
+        estimatedDays(): number {
+          return 3;
+        }
+        labelPrefix(): string {
+          return "EXP";
+        }
+      }
+
+      class OvernightShipping implements ShippingStrategy {
+        calculateCost(weightKg: number): number {
+          return 25.0 + weightKg * 5.0;
+        }
+        estimatedDays(): number {
+          return 1;
+        }
+        labelPrefix(): string {
+          return "OVN";
+        }
+      }
+
+      // --- Shipment composes a strategy — no type code, no switch ---
+
+      class Shipment {
+        constructor(
+          public readonly id: string,
+          private readonly shipping: ShippingStrategy,
+          public readonly weightKg: number,
+        ) {}
+
+        calculateCost(): number {
+          return this.shipping.calculateCost(this.weightKg);
+        }
+
+        estimatedDays(): number {
+          return this.shipping.estimatedDays();
+        }
+
+        generateTrackingLabel(): string {
+          return `${this.shipping.labelPrefix()}-${this.id}-${Date.now()}`;
+        }
+      }
+
+      // --- Factory: maps shipping method string to strategy ---
+      function createShipment(
+        id: string,
+        method: string,
+        weightKg: number,
+      ): Shipment {
+        const strategies: Record<string, ShippingStrategy> = {
+          standard: new StandardShipping(),
+          express: new ExpressShipping(),
+          overnight: new OvernightShipping(),
+        };
+
+        const strategy = strategies[method];
+        if (!strategy) throw new Error(`Unknown shipping method: ${method}`);
+        return new Shipment(id, strategy, weightKg);
+      }
+
+      // --- Adding a new shipping method: one class, one factory entry ---
+
+      class DroneShipping implements ShippingStrategy {
+        calculateCost(weightKg: number): number {
+          return 15.0 + weightKg * 3.0; // drones are weight-sensitive
+        }
+        estimatedDays(): number {
+          return 1; // same-day drone delivery
+        }
+        labelPrefix(): string {
+          return "DRN";
+        }
+      }
+
+      // --- State Pattern variant: discriminator union for lifecycle ---
+
+      type OrderState =
+        | { kind: "draft"; createdAt: Date }
+        | { kind: "confirmed"; confirmedAt: Date }
+        | { kind: "shipped"; trackingNumber: string; shippedAt: Date }
+        | { kind: "cancelled"; reason: string; cancelledAt: Date };
+
+      function transition(order: OrderState, action: string): OrderState {
+        if (order.kind === "draft" && action === "confirm") {
+          return { kind: "confirmed", confirmedAt: new Date() };
+        }
+        if (order.kind === "confirmed" && action === "ship") {
+          return {
+            kind: "shipped",
+            trackingNumber: `TRK-${Date.now()}`,
+            shippedAt: new Date(),
+          };
+        }
+        if ((order.kind === "draft" || order.kind === "confirmed") && action === "cancel") {
+          return {
+            kind: "cancelled",
+            reason: "customer_request",
+            cancelledAt: new Date(),
+          };
+        }
+        throw new Error(`Invalid transition: ${order.kind} → ${action}`);
+      }
+
+      // Each state is independently testable:
+      import { describe, it, expect } from "vitest";
+
+      describe("ShippingStrategy", () => {
+        it("express shipping is calculated correctly", () => {
+          const strategy = new ExpressShipping();
+          expect(strategy.calculateCost(3)).toBe(16.0);
+        });
+      });
+
+      describe("Shipment", () => {
+        it("delegates cost calculation to strategy", () => {
+          const shipment = new Shipment("s1", new StandardShipping(), 5);
+          expect(shipment.calculateCost()).toBe(10.0);
+        });
+      });
+
+heuristics:
+  - >
+    "Replace Conditional with Polymorphism: you have a conditional that chooses
+    different behavior depending on the type of an object. Move each leg of the
+    conditional to a method in a subclass, and make the original method abstract"
+    (Fowler, Refactoring). This is the mechanical essence: find the switch
+    statement, create a subclass per case, move each case's body — no exceptions.
+  - >
+    The signal that this refactoring is due: the same type code appears in 3+
+    switch/if chains. One switch on `EmployeeType` is fine for a small enum with
+    fixed values. Three switches on it means the class has a type-code smell, and
+    adding a fourth type will cost 3+ edits across the class.
+  - >
+    Strategy vs State: the distinction matters for naming and intent. Strategy
+    is for algorithm selection — a ShippingCalculator that a Cart composes; the
+    Cart doesn't change identity when you switch strategies. State is for
+    lifecycle — an Order that transitions from Draft to Confirmed to Shipped;
+    these are different identities, not interchangeable algorithms. Name classes
+    accordingly: `StandardShipping` (Strategy) vs `DraftOrder` (State).
+  - >
+    The Strategy variant uses composition: the host object holds a reference to
+    the strategy and delegates to it. The State variant often uses self-replacement:
+    the state object receives a reference to the host and calls
+    `host.setState(nextState)`. Both eliminate type-code branching, but they
+    encode different domain concepts.
+  - >
+    "Replace Constructor with Factory Method: after creating the subclass
+    hierarchy, you need a way for callers to get the right subclass. The factory
+    maps the old type code (from a database row, API payload, or CLI arg) to the
+    correct subclass constructor. This is the only place the type code survives —
+    and it should be the ONLY place."
+  - >
+    The mechanical sequence: (1) Create the abstract base class with abstract
+    methods for every type-dependent behavior. (2) Create a subclass per type,
+    each implementing the abstract methods with the body from the corresponding
+    case in the original switch. (3) Implement a factory that returns the right
+    subclass. (4) Replace every `new OriginalClass(type_code, ...)` call with
+    `factory.create(type_code, ...)`. (5) Delete the type-code field, the enum,
+    and all switch statements from the original class. (6) Run the test suite —
+    every test that passed before must pass after.
+  - >
+    In the Strategy pattern, the strategy classes are often stateless or
+    single-field (e.g., `taxRate`). In that case, make them singletons or
+    module-level constants to avoid allocation overhead: the factory returns
+    a constant reference instead of `new ExpressShipping()`.
+  - >
+    "Do NOT replace a single honest conditional with polymorphism. If there's
+    only one method that branches on type, and the branching is simple (2-3
+    cases, each 2-3 lines), the subclass hierarchy costs more in complexity than
+    it saves. Polymorphism is for when the branching is pervasive, not for when
+    it's present."
+  - >
+    In TypeScript, discriminated unions are a functional alternative to the
+    State pattern. Instead of classes, define `type OrderState = { kind: "draft"
+    } | { kind: "shipped" }` and use a `switch` on `state.kind` in a single
+    `transition` function. The compiler enforces exhaustiveness. This is lighter
+    weight than a class hierarchy and works well when states have data but few
+    methods.
+  - >
+    In Python, `Protocol` types (structural subtyping) are ideal for the Strategy
+    pattern — the host doesn't need an abstract base class; any object with the
+    right method signatures is a valid strategy. This removes the boilerplate of
+    formal interface classes.
+  - >
+    "Test each subclass independently. Before the refactoring, testing
+    `pay_amount` for a Salesman required constructing an Employee with the right
+    `kind` enum and all fields populated (even the unused ones). After, you
+    construct a `Salesman` directly with only its relevant fields. The test
+    surface becomes smaller and more focused."
+  - >
+    "The factory is the bridge between the old world (type codes from databases,
+    APIs, config files) and the new world (polymorphic objects). It's tempting
+    to push the factory logic into the base class as a static method
+    (`Employee.fromTypeCode(code, data)`), but a separate factory function or
+    class is easier to test and keeps the base class free of type-code knowledge."
+  - >
+    In languages without garbage collection (Rust, C++), favor the Strategy
+    pattern over State (self-replacement). A Strategy is a reference the host
+    holds — the host's lifetime is simple. A State that replaces `self` gets
+    complicated fast and requires either `Box<dyn>` gymnastics or unsafe code.
+    Use a discriminated union (enum with data) for State in Rust instead.
+  - >
+    "Consider the future. If you're refactoring an `Employee` class with 4 types
+    and you KNOW that 'Contractor' is coming in the next sprint, the polymorphism
+    refactoring is justified even with only 2 switch statements — it's
+    preparatory. But if you're not sure, wait until the third switch appears."
+  - >
+    "Combine with other refactorings for maximum leverage. Before Replace
+    Conditional with Polymorphism, use Extract Method on each case body so the
+    switch statement is thin (one method call per case). Then the polymorphism
+    move becomes mechanical: each case's method call becomes the body of one
+    subclass method."
+  - >
+    In a code review, the test for success is the diff: deleting a type-code
+    enum and three switch statements, and adding four small classes, is a net
+    win in changeability — even if the total lines of code go up slightly.
+    Lines are cheaper than branching complexity.
+  - >
+    "The inverse refactoring is Replace Polymorphism with Conditional. Use it
+    when the subclasses have become trivial (one method, one line each) or when
+    the type code values are truly fixed and new types will never be added. Both
+    directions are valid — the goal is the right abstraction level, not
+    maximally polymorphic code."
+
+related_tags:
+  [replace-conditional-with-polymorphism, replace-type-code,
+   strategy-pattern, state-pattern, polymorphism, open-closed-principle,
+   fowler-refactoring, simplifying-conditionals, type-code-elimination,
+   switch-statement-smell, factory-method, replace-constructor-with-factory,
+   extract-method, preparatory-refactoring, subclass-hierarchy,
+   discriminated-unions, protocol-types, composition-over-switch,
+   design-patterns, gof-patterns, code-smells, shotgun-surgery,
+   divergent-change, small-classes, single-responsibility,
+   parameterize-method, lookup-table, conditional-complexity]

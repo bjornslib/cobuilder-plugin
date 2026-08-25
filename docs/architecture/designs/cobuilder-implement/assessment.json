@@ -1,0 +1,69 @@
+{
+  "stage": "design",
+  "verdict": "proceed",
+  "risk_tier": "medium",
+  "regret_risk": "low",
+  "summary": "The design is internally consistent and its constraints are honest. Every finding below is a prediction, because no code exists yet. The two that matter are the honour-based blindness the engineer accepted knowingly, and the cross-plan contract path that breaks silently if one plan moves without the other.",
+  "findings": [
+    {
+      "kind": "prediction",
+      "id": "F1",
+      "severity": "medium",
+      "title": "Blindness has no mechanical enforcement",
+      "detail": "Rubrics live in .cobuilder/rubrics/ inside the repo, so nothing stops an implementing agent reading them. Enforcement is prompt discipline plus a void rule applied after the fact, and detection depends on the validator noticing. The engineer accepted this risk deliberately, choosing in-repo storage over a second repository.",
+      "cites": "ADR-0012",
+      "mitigation": "Three layers rather than one: the prompt forbids the read, the implementer never receives the rubric path, and a detected read voids the score at no attempt cost instead of lowering it."
+    },
+    {
+      "kind": "prediction",
+      "id": "F2",
+      "severity": "high",
+      "title": "The join contract path is written in two plans and can break silently",
+      "detail": "docs/architecture/designs/<name>/intent.json is the only coupling between cobuilder-architect and cobuilder-implement. It appears in this design and in the design-mode plan. A move in one without the other leaves the reader plugin looking at an absent file, and the failure mode is a silent fallback to drafting a Business Spec from scratch rather than an error.",
+      "cites": "ADR-0013",
+      "mitigation": "Record the coupling as a constraint introduced in the ADR, so a future session changing either plan is told the other moves with it. A missing file must report that it looked and found nothing, never fall through silently."
+    },
+    {
+      "kind": "prediction",
+      "id": "F3",
+      "severity": "medium",
+      "title": "Cross-epic contracts freeze by rule, not by mechanism",
+      "detail": "Just-in-time Technical Specs only work when epics are separable. A skeleton names the contracts an epic exposes or consumes, and those freeze at G1. Nothing checks that a later detailing pass honoured them, and nothing checks that the skeleton named them honestly in the first place.",
+      "cites": "district: docs",
+      "mitigation": "A change to a frozen contract is a backtrack to G1 with re-approval. The rule is stated, and the risk of an unhonest skeleton stays open."
+    },
+    {
+      "kind": "prediction",
+      "id": "F4",
+      "severity": "medium",
+      "title": "The validator now carries two jobs, and the second is subjective",
+      "detail": "The validator executes the suite, then reads the code and judges whether the tests are sensible and cover the declared outcomes. Execution is objective. Test adequacy is judgment, and judgment scored on a three-value scale may not repeat run to run. If the second job scores inconsistently, the 0.90 number stops meaning one thing.",
+      "cites": "ADR-0012",
+      "mitigation": "Every criterion cites evidence — a test name, captured output, or a file and line. A score without evidence does not count. Consistency is listed as an unknown to be measured on real slices, not assumed."
+    },
+    {
+      "kind": "prediction",
+      "id": "F5",
+      "severity": "low",
+      "title": "The ledger records claims, not facts",
+      "detail": "An append-only record of each scored slice, with the validator's stated reason per criterion, makes a stalled initiative resumable and makes a score explicable. It does not make a score true. A rigged run writes a plausible entry.",
+      "cites": "district: docs",
+      "mitigation": "State the limit where the ledger is defined. It buys auditability, and it is not a fix for validation integrity."
+    },
+    {
+      "kind": "prediction",
+      "id": "F6",
+      "severity": "low",
+      "title": "Ceremony may exceed the work on small initiatives",
+      "detail": "A multi-epic initiative runs one refute panel, plus a research panel and a skeptic per epic, before the first slice starts. On a two-day feature that is heavier than the feature.",
+      "cites": "ADR-0012",
+      "mitigation": "The light path collapses a single-epic initiative to one spec and removes the panels, the skeptic, and the epic rubric. The slice loop and the 0.90 gate never switch off."
+    }
+  ],
+  "boundary_checks": [
+    "no agents, no hooks, and no MCP servers, so the plugin never touches another session's permission surface",
+    "no code dependency on cobuilder-architect in either direction; the join is one file",
+    "no external service and no pipeline runtime; the manual three-role mode is the portable fallback"
+  ],
+  "drift": []
+}

@@ -1,0 +1,403 @@
+id: aggregates-001
+name: "Domain-Driven Design — Aggregates: Consistency Boundaries, Roots, and Transaction Discipline"
+category: architecture
+canonical_tags: ['ddd', 'aggregates']
+sources:
+  - books/domain-driven-design.md
+  - books/domain-driven-design-distilled.md
+  - books/implementing-domain-driven-design.md
+summary: >
+  Aggregates are the primary consistency boundary in DDD. Each aggregate clusters
+  one or more entities and value objects around a root that enforces all invariants
+  for the cluster. External code must never mutate aggregate internals directly —
+  every state change goes through the root. Reference other aggregates by identity
+  (not object reference), keep aggregates small, and default to modifying one
+  aggregate per transaction. Large aggregates built for ORM traversal convenience
+  are the single most common DDD anti-pattern. When invariants span aggregates,
+  use domain events and eventual consistency instead of stretching transactions.
+examples:
+  - language: python
+    bad: |
+      # Large aggregate designed for ORM navigation, mutable children exposed directly
+      from typing import Any
+
+      class Order:
+          def __init__(self, order_id: str) -> None:
+              self.id = order_id
+              self.status = "draft"
+              self.customer: Any = None          # direct object reference
+              self.lines: list[OrderLine] = []   # mutable list exposed
+              self.payments: list[Payment] = []  # separate aggregate embedded
+              self.shipments: list[Shipment] = []  # another aggregate
+
+          # No invariant protection — external code mutates children directly
+
+      class OrderLine:
+          def __init__(self, product_id: str, quantity: int) -> None:
+              self.product_id = product_id
+              self.quantity = quantity
+              self.price = 0.0
+
+      # Application code mutating aggregate internals directly
+      def add_item(order: Order, product_id: str, qty: int) -> None:
+          order.lines.append(OrderLine(product_id, qty))  # bypasses root
+
+      def apply_discount(order: Order, pct: float) -> None:
+          for line in order.lines:
+              line.price *= (1 - pct)  # bypasses root, no invariant check
+    good: |
+      from __future__ import annotations
+
+      from dataclasses import dataclass, field
+      from decimal import Decimal
+      from typing import Protocol
+      from uuid import uuid4
+
+      # --- Value Objects inside the aggregate boundary ---
+
+      @dataclass(frozen=True)
+      class Money:
+          amount: Decimal
+          currency: str = "USD"
+
+          def __post_init__(self) -> None:
+              if self.amount < 0:
+                  raise ValueError("Money amount cannot be negative")
+
+          def __mul__(self, qty: int) -> Money:
+              return Money(self.amount * qty, self.currency)
+
+          def __add__(self, other: Money) -> Money:
+              if self.currency != other.currency:
+                  raise ValueError("Cannot add different currencies")
+              return Money(self.amount + other.amount, self.currency)
+
+      @dataclass(frozen=True)
+      class OrderLineId:
+          value: str = field(default_factory=lambda: uuid4().hex)
+
+      @dataclass(frozen=True)
+      class ProductId:
+          value: str
+
+      @dataclass(frozen=True)
+      class CustomerId:
+          value: str
+
+      # --- Aggregate root: the single entry point for all mutations ---
+
+      class Order:
+          """Order aggregate root. Every invariant-protecting operation goes through here."""
+
+          def __init__(self, order_id: str, customer_id: CustomerId) -> None:
+              self._id = order_id
+              self._customer_id = customer_id
+              self._lines: dict[str, _Line] = {}
+              self._status = "draft"
+
+          # --- Intention-revealing commands, not setters ---
+
+          def add_line(self, product_id: ProductId, quantity: int, unit_price: Money) -> None:
+              if self._status != "draft":
+                  raise ValueError(f"Cannot add lines to a {self._status} order")
+              if quantity <= 0:
+                  raise ValueError("Quantity must be positive")
+              line_id = OrderLineId().value
+              self._lines[line_id] = _Line(line_id, product_id, quantity, unit_price)
+
+          def place(self) -> None:
+              if not self._lines:
+                  raise ValueError("Cannot place an empty order")
+              if self._status != "draft":
+                  raise ValueError(f"Order is already {self._status}")
+              self._status = "placed"
+
+          def cancel(self, reason: str) -> None:
+              if self._status not in ("placed", "confirmed"):
+                  raise ValueError(f"Cannot cancel order in status {self._status}")
+              if not reason.strip():
+                  raise ValueError("Cancellation requires a reason")
+              self._status = "cancelled"
+
+          # --- Queries — no mutation, safe to expose ---
+
+          @property
+          def id(self) -> str:
+              return self._id
+
+          @property
+          def customer_id(self) -> CustomerId:
+              return self._customer_id
+
+          @property
+          def status(self) -> str:
+              return self._status
+
+          @property
+          def total(self) -> Money:
+              return sum((line.total for line in self._lines.values()), Money(Decimal("0")))
+
+          def line_count(self) -> int:
+              return len(self._lines)
+
+      # --- Internal entity: invisible to outside code ---
+
+      @dataclass
+      class _Line:
+          id: str
+          product_id: ProductId
+          quantity: int
+          unit_price: Money
+
+          @property
+          def total(self) -> Money:
+              return self.unit_price * self.quantity
+
+      # --- Repository port (defined by domain, implemented by infrastructure) ---
+
+      class OrderRepository(Protocol):
+          def get_by_id(self, order_id: str) -> Order: ...
+          def save(self, order: Order) -> None: ...
+
+      # --- Application service — one aggregate per transaction ---
+
+      class PlaceOrderUseCase:
+          def __init__(self, repo: OrderRepository) -> None:
+              self._repo = repo
+
+          def execute(self, order_id: str) -> Order:
+              order = self._repo.get_by_id(order_id)
+              order.place()
+              self._repo.save(order)
+              return order
+
+  - language: typescript
+    bad: |
+      // Large aggregate with direct object references across boundaries
+      // and mutable children exposed for arbitrary external mutation
+
+      class Order {
+        public id: string;
+        public status: string = "draft";
+        public lines: OrderLine[] = [];                // mutable list exposed
+        public customer: Customer;                     // direct reference to another aggregate
+        public payments: Payment[] = [];               // another aggregate embedded
+        public shipments: Shipment[] = [];             // yet another
+
+        constructor(id: string) {
+          this.id = id;
+        }
+        // No behavior — external code mutates everything directly
+      }
+
+      class OrderLine {
+        constructor(
+          public productId: string,
+          public quantity: number,
+          public price: number,
+        ) {}
+      }
+
+      // Application code mutating aggregate internals — no invariant protection
+      function addItem(order: Order, productId: string, qty: number): void {
+        order.lines.push(new OrderLine(productId, qty, 0)); // no validation
+      }
+
+      function applyDiscount(order: Order, pct: number): void {
+        order.lines.forEach(line => line.price *= (1 - pct)); // bypasses root
+      }
+
+      // Transaction spanning many aggregates — consistency nightmare
+      async function checkout(
+        order: Order, payment: Payment, shipment: Shipment
+      ): Promise<void> {
+        order.status = "placed";
+        payment.process(order.total);
+        shipment.schedule(order.id);
+        // If any of these fail, we're in an inconsistent state
+        await db.transaction(async trx => {
+          await trx.save(order);
+          await trx.save(payment);
+          await trx.save(shipment);
+        });
+      }
+    good: |
+      // --- Value Objects within the aggregate boundary ---
+
+      class Money {
+        constructor(
+          public readonly amount: number,
+          public readonly currency: string = "USD",
+        ) {
+          if (amount < 0) throw new Error("Money amount cannot be negative");
+        }
+
+        multiply(qty: number): Money {
+          return new Money(this.amount * qty, this.currency);
+        }
+
+        add(other: Money): Money {
+          if (this.currency !== other.currency)
+            throw new Error("Cannot add different currencies");
+          return new Money(this.amount + other.amount, this.currency);
+        }
+      }
+
+      class LineId {
+        constructor(public readonly value: string = crypto.randomUUID()) {}
+      }
+
+      class ProductId {
+        constructor(public readonly value: string) {}
+      }
+
+      class CustomerId {
+        constructor(public readonly value: string) {}
+      }
+
+      // --- Internal entity — never exposed outside the aggregate ---
+
+      class Line {
+        constructor(
+          public readonly id: LineId,
+          public readonly productId: ProductId,
+          public readonly quantity: number,
+          public readonly unitPrice: Money,
+        ) {
+          if (quantity <= 0) throw new Error("Quantity must be positive");
+        }
+
+        get total(): Money {
+          return this.unitPrice.multiply(this.quantity);
+        }
+      }
+
+      // --- Aggregate root: single entry point for all invariant-protecting mutations ---
+
+      class Order {
+        private lines: Map<string, Line> = new Map();
+        private status: string = "draft";
+
+        constructor(
+          public readonly id: string,
+          public readonly customerId: CustomerId,
+        ) {}
+
+        // --- Intention-revealing commands ---
+
+        addLine(productId: ProductId, quantity: number, unitPrice: Money): void {
+          if (this.status !== "draft")
+            throw new Error(`Cannot add lines to a ${this.status} order`);
+          if (quantity <= 0) throw new Error("Quantity must be positive");
+          const lineId = new LineId();
+          this.lines.set(lineId.value, new Line(lineId, productId, quantity, unitPrice));
+        }
+
+        place(): void {
+          if (this.lines.size === 0) throw new Error("Cannot place an empty order");
+          if (this.status !== "draft")
+            throw new Error(`Order is already ${this.status}`);
+          this.status = "placed";
+        }
+
+        cancel(reason: string): void {
+          if (this.status !== "placed" && this.status !== "confirmed")
+            throw new Error(`Cannot cancel order in status ${this.status}`);
+          if (!reason.trim()) throw new Error("Cancellation requires a reason");
+          this.status = "cancelled";
+        }
+
+        // --- Safe queries ---
+
+        getStatus(): string {
+          return this.status;
+        }
+
+        get total(): Money {
+          return Array.from(this.lines.values())
+            .reduce((sum, line) => sum.add(line.total), new Money(0));
+        }
+
+        get lineCount(): number {
+          return this.lines.size;
+        }
+      }
+
+      // --- Repository port ---
+
+      interface OrderRepository {
+        getById(id: string): Promise<Order>;
+        save(order: Order): Promise<void>;
+      }
+
+      // --- Application service — one aggregate per transaction ---
+
+      class PlaceOrderUseCase {
+        constructor(private readonly repo: OrderRepository) {}
+
+        async execute(orderId: string): Promise<Order> {
+          const order = await this.repo.getById(orderId);
+          order.place();
+          await this.repo.save(order);
+          return order;
+        }
+      }
+
+  - language: python
+    bad: |
+      # Transaction modifying multiple aggregates — the consistency trap
+
+      def fulfill_order(order_id: str) -> None:
+          """Modifies Order, Inventory, and Shipment in one transaction."""
+          order = order_repo.get(order_id)
+          inventory = inventory_repo.get_for_order(order)
+          shipment = shipment_repo.create_for(order)
+
+          order.mark_fulfilled()
+          inventory.reserve(order)
+          shipment.schedule()
+
+          # If any of these saves fail, we have inconsistent state across aggregates
+          order_repo.save(order)
+          inventory_repo.save(inventory)
+          shipment_repo.save(shipment)
+    good: |
+      # Eventual consistency across aggregates — one aggregate per transaction
+
+      class FulfillOrderUseCase:
+          """Saves Order aggregate. Domain event triggers Inventory + Shipment."""
+
+          def __init__(self, order_repo: OrderRepository, bus: EventBus) -> None:
+              self._repo = order_repo
+              self._bus = bus
+
+          def execute(self, order_id: str) -> None:
+              order = self._repo.get_by_id(order_id)
+              order.fulfill()
+              self._repo.save(order)  # single aggregate, single transaction
+              for event in order.collect_events():
+                  self._bus.publish(event)  # OrderFulfilled → triggers Inventory + Shipment
+
+      class ReserveInventoryHandler:
+          """Handles OrderFulfilled in its own transaction."""
+
+          def __init__(self, inventory_repo: InventoryRepository) -> None:
+              self._repo = inventory_repo
+
+          def handle(self, event: OrderFulfilled) -> None:
+              inventory = self._repo.get_for_order(event.order_id)
+              inventory.reserve(event.line_items)
+              self._repo.save(inventory)  # own transaction
+
+heuristics:
+  - Aggregates are consistency boundaries, not convenience clusters. Design them around invariants that must hold immediately — not around screens, forms, or ORM traversal paths.
+  - Keep aggregates small. A small aggregate scales better in both understanding and throughput. If you're unsure, start smaller; you can merge later if real transactional invariants demand it.
+  - Only the aggregate root may be referenced directly from outside. All invariant-changing operations must go through the root. Internal members must never be mutated by external code.
+  - Reference other aggregates by identity (ID), never by direct object reference. Cross-aggregate object graphs are the root cause of oversized transactions and accidental coupling.
+  - Default to modifying one aggregate per transaction. Stretching a transaction across many aggregates creates distributed consistency problems that are harder to reason about than eventual consistency.
+  - When invariants span aggregates, use domain events and eventual consistency. Accept that the system will be temporarily inconsistent and make that fact explicit in the design.
+  - Expose intention-revealing behavior on the aggregate root, not arbitrary setters. Methods like `place()`, `cancel(reason)`, `fulfill()` encode domain meaning; `setStatus()` encodes nothing.
+  - Keep internal entities and value objects encapsulated. If external code can reach into the aggregate and mutate children, the aggregate boundary is not real — it's a naming convention.
+  - Repositories exist for aggregate roots only. Create a repository per aggregate root, never per table or per entity.
+  - Test aggregate invariants directly. Verify that invalid state transitions throw, that valid ones succeed, and that external code cannot bypass the root to mutate internals.
+related_tags: [aggregates, aggregate-root, consistency-boundary, eventual-consistency, identity-references, transactional-boundary, ddd-tactical, invariants]

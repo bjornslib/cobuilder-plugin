@@ -1,0 +1,60 @@
+{
+  "landscape": {
+    "narration": "This design adds a seventh Odyssey mode so an engineer can record intent, alternatives, and constraints before any code exists, then carry that record through to the pull requests that implement it.",
+    "tagline": "Design before the change exists."
+  },
+  "problem_solution": {
+    "narration": "Submit mode already captures intent, but only after the change exists. The alternatives are already closed. Design mode reaches the earlier moment, writes a named design under docs/, and joins N pull requests through an epics array.",
+    "problem": "The plugin captures author intent at submit time, after the change exists. Nothing captures it at design time, when the engineer still holds the alternatives, the constraints, and the doubts.",
+    "solution": "A seven-stage /cobuilder-architect:design mode writes docs/architecture/designs/<name>/, drafts a decided ADR, and joins pull requests through design/<name>[/<epic-slug>].",
+    "beats": [
+      {
+        "kind": "background",
+        "text": "Submit mode already interviews an author before the PR opens. That is later than the moment the alternatives are still open. Generate mode then reconstructs intent from merged code."
+      },
+      {
+        "kind": "intuition",
+        "text": "Name the outcome first. Search existing designs by meaning. Interview five topics. Explore. Challenge until rejected options exist. Draft the ADR. Review. Create the first local branch only."
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "Build design mode in archkit",
+        "rejected": "The interview, bundle, diagrams, and viewer live here."
+      },
+      {
+        "option": "Keep the architecture skill optional",
+        "rejected": "A design without a corpus degrades into a chat."
+      },
+      {
+        "option": "Ask which options they rejected",
+        "rejected": "A rejected option is an outcome of explore and challenge, not an interview input."
+      },
+      {
+        "option": "Mint a synthetic PR key",
+        "rejected": "story.json and four readers require a real integer pr."
+      },
+      {
+        "option": "One branch per design",
+        "rejected": "N epics produce N pull requests."
+      }
+    ]
+  },
+  "architecture": {
+    "narration": "Authored source lives in docs/. The bundle is a full rebuild. Architecture modes are self-only. Odyssey keeps --repo. One design lists every ADR it produced, and drift is measured per epic.",
+    "beats": [
+      {
+        "kind": "forces",
+        "text": "story.json keys on an integer pr. The plugin ships no agents, hooks, or MCP servers. cobuilder-factory owns epic decomposition."
+      },
+      {
+        "kind": "contract",
+        "text": "docs/architecture/designs/<name>/ is the design home. build_adrs.py and build_designs.py rebuild the self bundle only. Submit strips design/ and loads intent.json as the hypothesis."
+      },
+      {
+        "kind": "boundary",
+        "text": "Design mode does not take --repo, does not push, does not open a PR, and does not decompose epics. A design never enters the timeline until gh pr create returns a number."
+      }
+    ]
+  }
+}

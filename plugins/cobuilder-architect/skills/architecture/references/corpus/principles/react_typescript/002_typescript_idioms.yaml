@@ -1,0 +1,97 @@
+id: typescript-idioms-001
+name: TypeScript Idioms — Types as Documentation & Safety Nets
+category: types
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/typescript-deep-dive-readme.md
+  - books/clean-code.md
+summary: Leverage TypeScript's type system to encode domain invariants, eliminate entire classes of runtime errors, and make code self-documenting. Prefer discriminated unions over optional fields, branded types over primitives, and exhaustiveness checking over default fallbacks.
+examples:
+  - language: typescript
+    bad: |
+      // Optional fields everywhere — impossible to know valid combinations
+      interface Order {
+        id?: string;
+        status?: string;
+        paidAt?: string;
+        refundedAt?: string;
+        amount?: number;
+        refundAmount?: number;
+      }
+
+      function processOrder(order: Order) {
+        if (order.status === "paid" && order.paidAt) {
+          // TypeScript doesn't know these are related
+          sendReceipt(order.id!, order.amount!);
+        }
+        if (order.status === "refunded") {
+          // Are paidAt and refundedAt both set? Who knows.
+          processRefund(order.refundAmount ?? order.amount!);
+        }
+      }
+    good: |
+      // Discriminated union — each state has exactly the fields it needs
+      type Order =
+        | { status: "draft"; id: string; items: Item[] }
+        | { status: "paid"; id: string; items: Item[]; paidAt: Date; amount: Money }
+        | { status: "refunded"; id: string; items: Item[]; paidAt: Date; refundedAt: Date; refundAmount: Money };
+
+      function processOrder(order: Order) {
+        switch (order.status) {
+          case "draft":
+            return finalizeDraft(order);
+          case "paid":
+            // TypeScript narrows: order.paidAt and order.amount exist here
+            sendReceipt(order.id, order.amount);
+            return;
+          case "refunded":
+            processRefund(order.refundAmount);
+            return;
+          default:
+            // Exhaustiveness check — compiler error if we add a status
+            const _exhaustive: never = order;
+            throw new Error(`Unhandled order status: ${_exhaustive}`);
+        }
+      }
+
+      // Branded type prevents mixing up raw numbers with domain concepts
+      type Money = number & { readonly __brand: "Money" };
+
+      function createMoney(amount: number): Money {
+        if (amount < 0) throw new Error("Money cannot be negative");
+        return amount as Money;
+      }
+  - language: typescript
+    bad: |
+      // any — the escape hatch that destroys type safety
+      function parseApiResponse(response: any): any {
+        return response.data;
+      }
+
+      // Type assertion overuse — lying to the compiler
+      const user = getUser() as User;
+      user.name.toUpperCase(); // crash at runtime if name is null
+    good: |
+      // Zod or io-ts for runtime validation — types flow from schema
+      import { z } from "zod";
+
+      const UserSchema = z.object({
+        id: z.string(),
+        name: z.string(),
+        email: z.string().email(),
+      });
+
+      type User = z.infer<typeof UserSchema>;
+
+      function parseApiResponse(raw: unknown): User {
+        return UserSchema.parse(raw); // throws with detailed error if invalid
+      }
+heuristics:
+  - Prefer discriminated unions over optional fields when modeling state machines or request lifecycles.
+  - Use `never` for exhaustiveness checks in `switch`/`if-else` chains on discriminated unions.
+  - Avoid `any` — use `unknown` when the shape is truly unknown, then narrow with type guards or validation.
+  - Prefer runtime validation (Zod, io-ts, type-guard functions) over type assertions (`as`), especially at API boundaries.
+  - Use branded types or opaque types to prevent mixing up semantically different primitives (UserId vs OrderId, meters vs feet).
+  - Derive types from schemas rather than writing them twice — single source of truth.
+  - Enable `strict: true` in tsconfig.json — it catches nullability bugs, implicit any, and uninitialized properties.
+related_tags: [typescript, discriminated-unions, branded-types, type-safety, exhaustiveness]

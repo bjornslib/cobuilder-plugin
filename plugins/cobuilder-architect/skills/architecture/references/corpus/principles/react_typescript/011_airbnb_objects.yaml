@@ -1,0 +1,137 @@
+id: airbnb-objects-011
+name: Airbnb Objects — Literal Syntax, Shorthand, Computed Properties, and Spread
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  Airbnb's object conventions favor literal syntax ({} over new Object()), method and property value
+  shorthand, computed property names for dynamic keys, grouping shorthand properties first, only quoting
+  invalid identifiers, avoiding direct Object.prototype method calls, and preferring object spread over
+  Object.assign. These rules produce concise, intention-revealing object expressions and prevent common
+  pitfalls like prototype pollution and accidental mutation.
+examples:
+  - language: typescript
+    bad: |
+      // Constructor instead of literal — verbose and error-prone
+      const item = new Object();
+
+      // Verbose method definition — redundant function keyword
+      const atom = {
+        value: 1,
+        addValue: function (value: number): number {
+          return atom.value + value;
+        },
+      };
+
+      // Redundant property assignment — name equals value
+      const lukeSkywalker = "Luke Skywalker";
+      const obj = {
+        lukeSkywalker: lukeSkywalker,
+      };
+
+      // Two-step property definition for dynamic key
+      function getKey(k: string): string {
+        return `a key named ${k}`;
+      }
+      const config = {
+        id: 5,
+        name: "San Francisco",
+      };
+      config[getKey("enabled")] = true;
+
+      // Quoting valid identifiers — syntax-highlighting noise
+      const bad = {
+        "foo": 3,
+        "bar": 4,
+        "data-blah": 5,
+      };
+
+      // Calling Object.prototype methods directly — shadowing hazard
+      console.log(object.hasOwnProperty(key));
+
+      // Object.assign mutates the first argument — source of bugs
+      const original = { a: 1, b: 2 };
+      const copy = Object.assign(original, { c: 3 });  // original is now {a:1, b:2, c:3}!
+    good: |
+      // Literal syntax — concise and non-surprising
+      const item: Record<string, unknown> = {};
+
+      // Method shorthand — cleaner, no function keyword
+      const atom = {
+        value: 1,
+        addValue(value: number): number {
+          return atom.value + value;
+        },
+      };
+
+      // Property value shorthand — shorter, descriptive
+      const lukeSkywalker = "Luke Skywalker";
+      const obj = { lukeSkywalker };
+
+      // Computed property names — define all properties in one place
+      function getKey(k: string): string {
+        return `a key named ${k}`;
+      }
+      const config = {
+        id: 5,
+        name: "San Francisco",
+        [getKey("enabled")]: true,
+      };
+
+      // Only quote invalid identifiers — clean syntax highlighting
+      const good = {
+        foo: 3,
+        bar: 4,
+        "data-blah": 5,  // hyphens require quotes
+      };
+
+      // Safe Object.prototype access — immune to shadowing
+      const has = Object.prototype.hasOwnProperty;
+      console.log(has.call(object, key));
+      // Even better (ES2022):
+      console.log(Object.hasOwn(object, key));
+
+      // Object spread — no mutation, declarative
+      const original = { a: 1, b: 2 };
+      const copy = { ...original, c: 3 };
+
+      // Rest syntax to omit properties
+      const { a, ...noA } = copy;  // noA = { b: 2, c: 3 }
+  - language: typescript
+    bad: |
+      // Shorthand properties scattered — harder to scan
+      const anakinSkywalker = "Anakin Skywalker";
+      const lukeSkywalker = "Luke Skywalker";
+
+      const obj = {
+        episodeOne: 1,
+        twoJediWalkIntoACantina: 2,
+        lukeSkywalker,
+        episodeThree: 3,
+        mayTheFourth: 4,
+        anakinSkywalker,
+      };
+    good: |
+      // Shorthand properties grouped at the top — immediately visible
+      const anakinSkywalker = "Anakin Skywalker";
+      const lukeSkywalker = "Luke Skywalker";
+
+      const obj = {
+        lukeSkywalker,
+        anakinSkywalker,
+        episodeOne: 1,
+        twoJediWalkIntoACantina: 2,
+        episodeThree: 3,
+        mayTheFourth: 4,
+      };
+heuristics:
+  - Use literal syntax ({} and []) over constructors (new Object(), new Array()). Literals are shorter, faster (no scope-chain lookup for constructor), and not subject to constructor override.
+  - "Use object method shorthand: { addValue(value) { ... } } instead of { addValue: function(value) { ... } }. Shorter and consistent with class syntax."
+  - "Use property value shorthand: { lukeSkywalker } instead of { lukeSkywalker: lukeSkywalker }. Shorter and descriptive."
+  - "Group all shorthand properties at the beginning of the object declaration. Makes it obvious which properties are using shorthand."
+  - Use computed property names ([expression]) when creating objects with dynamic property names. Keeps all property definitions in one place.
+  - "Only quote properties that are invalid identifiers. Quoting valid identifiers adds noise, degrades syntax highlighting, and may inhibit engine optimization."
+  - "Never call Object.prototype methods (hasOwnProperty, propertyIsEnumerable, isPrototypeOf) directly on objects — they can be shadowed. Use Object.prototype.hasOwnProperty.call(obj, key) or Object.hasOwn(obj, key) (ES2022)."
+  - "Prefer object spread ({...original, c: 3}) over Object.assign. Spread is declarative and doesn't risk mutating the source object. Use rest syntax ({a, ...rest}) to omit properties."
+related_tags: [airbnb, objects, shorthand, spread, rest, computed-properties, prototype, immutability, javascript, typescript]

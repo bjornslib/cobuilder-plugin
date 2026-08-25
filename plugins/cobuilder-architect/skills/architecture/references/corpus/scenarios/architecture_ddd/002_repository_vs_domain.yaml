@@ -1,0 +1,172 @@
+id: repository-vs-domain-002
+name: Repository vs Domain Model for Features
+category: architecture
+canonical_tags: [clean-architecture, ddd, refactoring]
+principle: >
+  Repositories are persistence adapters, not domain logic containers. Business rules
+  belong in the domain model; repositories exist solely to retrieve and persist
+  aggregates. When a feature requires both data access and business decisions, the
+  repository handles retrieval and the domain model handles the decisions. The
+  repository interface is owned by the domain or application layer; the implementation
+  belongs in infrastructure.
+sources:
+  - books/clean-architecture.md
+  - books/domain-driven-design.md
+  - books/implementing-domain-driven-design.md
+  - books/patterns-of-enterprise-application-architecture.md
+summary: >
+  Repositories handle data retrieval; domain models handle business rules. The
+  repository interface is owned by the domain/application layer and implemented in
+  infrastructure. Scenarios cover duplicate order detection, business rules in
+  repository vs domain, and when domain logic should remain in the domain model.
+
+scenarios:
+  - id: repo-1
+    title: "Duplicate order detection — repository method or domain rule?"
+    context: >
+      An e-commerce system needs to prevent duplicate orders: if a customer submits
+      the same order (same items, same address) within 5 minutes, the system must
+      reject it as a duplicate. A developer proposes adding a method
+      OrderRepository.findDuplicate(order) that queries recent orders and returns
+      a boolean. The PlaceOrder use case calls this method first, then proceeds
+      or rejects.
+    question: >
+      Where should the duplicate detection logic live — in the repository, in a
+      domain service, or in the use case?
+    answer: >
+      The query belongs in the repository, but the business rule belongs in the
+      domain. The developer's approach conflates the two.
+
+      Correct separation:
+      - Repository: OrderRepository.findRecentByCustomer(customerId, since) —
+        returns a collection of recent orders. This is a pure data access concern:
+        "give me orders placed by this customer in the last 5 minutes." The
+        implementation (SQL query, time window calculation) is an infrastructure
+        detail.
+      - Domain service or use case: The business rule is "an order is a duplicate
+        if it has the same items and shipping address as any recent order." This
+        is a domain concept — it might evolve to include fuzzy matching, item
+        quantity tolerance, or different time windows per product category.
+      - PlaceOrder use case: Calls the repository to fetch recent orders, passes
+        them to the duplicate detection logic (either a domain service or a method
+        on the Order aggregate), and decides whether to accept or reject.
+
+      Anti-pattern: Repository method findDuplicate(order) that contains business
+      rules about what constitutes a duplicate. Now business logic is buried in SQL,
+      untestable without a database, and coupled to the persistence schema.
+      Source: Clean Architecture (treat database as detail, repositories as
+      boundaries), DDD (repositories return domain objects, not business decisions).
+    decisions:
+      - Repositories answer data questions; domain objects answer business questions
+      - The query shape (time window, customer filter) is a repository concern
+      - The sameness rule (what makes two orders duplicates) is a domain concern
+      - Repository interface is defined by the domain, implemented by infrastructure
+
+  - id: repo-2
+    title: "Anemic domain model where repositories do everything"
+    context: >
+      A team built a "DDD" system where all business logic lives in repository
+      classes. The domain objects (Order, Customer, Product) are plain data
+      holders with getters and setters — no behavior. The OrderRepository has
+      methods like placeOrder(), cancelOrder(), applyDiscount(),
+      recalculateShipping(). The "use cases" are thin wrappers that call these
+      repository methods directly.
+    question: >
+      Is this valid DDD? What is wrong with this approach, and how should it
+      be restructured?
+    answer: >
+      This is the classic "anemic domain model" anti-pattern — the exact opposite
+      of DDD. It is repository-centric CRUD with DDD terminology painted on.
+
+      What is wrong:
+      1. Business rules are buried in infrastructure. placeOrder() in a repository
+         means domain invariants are coupled to database access code. You cannot
+         test "an order under $10 does not get free shipping" without a real database.
+      2. Repositories become god objects. A repository should retrieve and persist
+         aggregates, not decide discounts, validate orders, or calculate shipping.
+      3. The domain model is useless. Order with only getters/setters provides zero
+         protection against invalid states — any code anywhere can set
+         order.status = "cancelled" on a shipped order.
+      4. Violates the Dependency Rule. Repositories are outer-layer adapters. If
+         they contain business rules, the dependency direction is inverted.
+
+      Correct restructuring:
+      - Order entity: place() validates inventory, checks duplicate window,
+        transitions state from Draft to Placed. cancel() checks if order is
+        cancellable (not yet shipped). applyDiscount(discount) validates discount
+        rules and recalculates totals.
+      - OrderRepository: save(Order), findById(OrderId), findRecentByCustomer(...).
+        No business logic — pure persistence.
+      - PlaceOrder use case: loads the aggregate via repository, calls order.place(),
+        saves via repository. Orchestration only.
+      - DiscountEngine (domain service): applies pricing rules, validates discount
+        stacking, returns a modified order. Called by use case, not repository.
+
+      Heuristic: "Can I test all business rules without a database?" If yes, the
+      model is rich. If no, business logic has leaked into persistence.
+      Source: DDD (anemic domain model anti-pattern, rich domain model),
+      Clean Architecture (repositories as boundaries), IDDD (aggregate design).
+    decisions:
+      - Anemic domain models are anti-DDD, regardless of terminology used
+      - Business rules in repositories violate Clean Architecture dependency rule
+      - Rich domain objects with behavior are the goal; repositories are accessors only
+
+  - id: repo-3
+    title: "Repository returning DTOs vs domain objects"
+    context: >
+      A team's OrderRepository.findByStatus() returns a list of OrderDTO objects
+      (plain data with all fields public). The use case GetPendingOrders then
+      performs business operations on these DTOs: checks which orders are
+      overdue, calculates late fees, prioritizes by customer tier. Meanwhile,
+      the Order domain object has rich behavior for all these operations but is
+      never instantiated for read use cases.
+    question: >
+      Should repositories return DTOs for read use cases to save the cost of
+      hydrating full domain objects?
+    answer: >
+      This is a legitimate trade-off that requires a deliberate pattern, not
+      accidental bypass.
+
+      The problem: By operating on DTOs, the team has two implementations of
+      every business rule — one in the Order domain object (used for writes)
+      and one in the use case (used for reads). These will inevitably diverge.
+      A "late fee" might be calculated differently in the write path vs the
+      read dashboard, producing inconsistent results.
+
+      Correct approaches (choose based on complexity):
+      Option A — Hydrate domain objects for reads: If the business logic is
+      complex and consistency matters, the repository should return full Order
+      aggregates. The performance cost of hydration is often acceptable and
+      avoids duplication.
+
+      Option B — CQRS with explicit read models: If read performance is critical
+      and the query is complex, define a separate read model (OrderSummary,
+      PendingOrderView) with its own repository. But these read models are
+      projections, not DTOs — they are purpose-built for the query and must
+      not duplicate business rules. Any calculation (late fees, prioritization)
+      should delegate to a shared domain service, not reimplement logic.
+
+      Option C — Thin DTOs with domain service delegation: Repository returns
+      lightweight DTOs, but all business operations go through a domain service.
+      The use case does not reimplement rules; it calls
+      LateFeeCalculator.calculate(dto) which encapsulates the single source of
+      truth.
+
+      Never: Have the use case contain if/else business logic operating on raw
+      DTO fields. This is the anemic model in a different shape.
+      Source: Patterns of Enterprise Application Architecture (CQRS, DTO, domain
+      model), DDD (read models vs domain models), Clean Architecture (DTOs at
+      boundaries).
+    decisions:
+      - DTOs for reads are acceptable but must not duplicate domain logic
+      - CQRS read models are projections, not domain objects
+      - Business rules must have exactly one implementation
+      - Performance optimization must not fork business logic
+
+related_tags: [repository-pattern, domain-model, ddd, anemic-model, cqrs, persistence]
+heuristics:
+  - Repositories answer data questions; domain objects answer business questions.
+  - Can I test all business rules without a database? If yes, the model is rich. If no, business logic has leaked into persistence.
+  - Anemic domain models (getter/setter objects with no behavior) are anti-DDD, regardless of terminology used.
+  - Business rules must have exactly one implementation — never duplicate in both repository and use case.
+  - DTOs for reads are acceptable but must not duplicate domain logic; delegate to shared domain services.

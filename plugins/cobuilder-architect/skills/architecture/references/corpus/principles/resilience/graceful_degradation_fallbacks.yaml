@@ -1,0 +1,556 @@
+id: graceful-degradation-fallbacks-001
+name: Graceful Degradation and Fallbacks
+category: resilience
+canonical_tags: ['resilience', 'release-it', 'production-readiness']
+sources:
+  - books/release-it.md
+summary: >
+  Every dependency can fail. Code must assume this and degrade intentionally
+  rather than crashing the caller. Four patterns work together: feature flags
+  decouple deployment from release and let you disable broken paths without
+  redeploying; static fallback responses keep the user experience alive when
+  a backend is unavailable; circuit breakers stop flooding sick dependencies
+  and promote degraded modes explicitly; and caches treated as survivable
+  stores (cache-as-savior) serve stale data rather than propagating errors
+  when the primary store is down. Together these patterns ensure the system
+  fails visibly and partially — not silently and completely.
+examples:
+  - language: python
+    bad: |
+      import requests
+      from typing import Optional
+
+
+      class PaymentService:
+          """Calls the payment gateway with no degradation plan."""
+
+          def __init__(self, gateway_url: str) -> None:
+              self._url = gateway_url
+
+          def charge(self, user_id: str, amount: float) -> dict:
+              """
+              Happy-path only. No timeout, no circuit breaker, no fallback.
+              If the gateway is slow or down, the caller gets a 500.
+              """
+              resp = requests.post(
+                  f"{self._url}/charge",
+                  json={"user_id": user_id, "amount": amount},
+              )
+              resp.raise_for_status()
+              return resp.json()
+
+          def has_loyalty_discount(self, user_id: str) -> bool:
+              """
+              Hard-coded business rule — requires deploy to change.
+              No feature flag means every rollout touches all users at once.
+              """
+              return True  # rolled out to everyone, can't selective-disable
+
+
+      # ---- Caller: no degradation, just crash ----
+      svc = PaymentService("https://payments.internal")
+      try:
+          result = svc.charge("user_42", 99.95)
+          print(f"Charged: {result['transaction_id']}")
+      except Exception:
+          # user sees a 500 — no degraded response, no retry strategy
+          raise
+    good: |
+      import json
+      import time
+      from dataclasses import dataclass, field
+      from enum import Enum
+      from typing import Optional, Protocol
+      import requests
+
+
+      # ---- Feature Flag service — itself degrades gracefully ----
+      class FeatureState(Enum):
+          OFF = "off"
+          ON = "on"
+          GRADUAL = "gradual"
+
+
+      @dataclass
+      class FeatureFlag:
+          key: str
+          state: FeatureState
+          rollout_percent: int = 100
+
+          def is_enabled(self, actor_id: str) -> bool:
+              if self.state == FeatureState.OFF:
+                  return False
+              if self.state == FeatureState.ON:
+                  return True
+              # Gradual rollout: hash-based deterministic bucketing
+              bucket = hash(f"{self.key}:{actor_id}") % 100
+              return bucket < self.rollout_percent
+
+
+      class FlagStore(Protocol):
+          def get(self, key: str) -> Optional[FeatureFlag]: ...
+
+
+      class RemoteFlagStore:
+          def __init__(self, url: str, timeout: float = 2.0) -> None:
+              self._url = url
+              self._timeout = timeout
+
+          def get(self, key: str) -> Optional[FeatureFlag]:
+              try:
+                  resp = requests.get(
+                      f"{self._url}/flags/{key}", timeout=self._timeout
+                  )
+                  resp.raise_for_status()
+                  data = resp.json()
+                  return FeatureFlag(
+                      key=key,
+                      state=FeatureState(data["state"]),
+                      rollout_percent=data.get("rollout_percent", 100),
+                  )
+              except Exception:
+                  return None  # flag-store failure → flag "off" (safe default)
+
+
+      class StaticFlagStore:
+          """Hard-coded fallback when the flag service is unreachable."""
+
+          _FALLBACKS = {
+              "loyalty_discount": FeatureFlag(
+                  key="loyalty_discount", state=FeatureState.OFF
+              ),
+              "new_checkout_flow": FeatureFlag(
+                  key="new_checkout_flow", state=FeatureState.OFF
+              ),
+          }
+
+          def get(self, key: str) -> Optional[FeatureFlag]:
+              return self._FALLBACKS.get(key)
+
+
+      class DegradingFlagStore:
+          """Tries remote first; falls back to static defaults on failure."""
+
+          def __init__(self, remote: FlagStore, fallback: FlagStore) -> None:
+              self._remote = remote
+              self._fallback = fallback
+
+          def get(self, key: str) -> Optional[FeatureFlag]:
+              flag = self._remote.get(key)
+              if flag is not None:
+                  return flag
+              # Remote unavailable — degrade to static fallback
+              return self._fallback.get(key)
+
+
+      # ---- Circuit Breaker with degraded response ----
+      class CircuitState(Enum):
+          CLOSED = "closed"
+          OPEN = "open"
+          HALF_OPEN = "half_open"
+
+
+      @dataclass
+      class CircuitBreaker:
+          failure_threshold: int = 5
+          recovery_timeout: float = 30.0
+          state: CircuitState = CircuitState.CLOSED
+          failure_count: int = 0
+          last_failure_time: float = 0.0
+          _lock: object = field(default_factory=object, repr=False)
+
+          def call(self, fn, *args, **kwargs):
+              with self._lock:
+                  if self.state == CircuitState.OPEN:
+                      if time.monotonic() - self.last_failure_time >= self.recovery_timeout:
+                          self.state = CircuitState.HALF_OPEN
+                      else:
+                          raise CircuitOpenError("Circuit is open")
+
+              try:
+                  result = fn(*args, **kwargs)
+                  with self._lock:
+                      self.failure_count = 0
+                      if self.state == CircuitState.HALF_OPEN:
+                          self.state = CircuitState.CLOSED
+                  return result
+              except Exception:
+                  with self._lock:
+                      self.failure_count += 1
+                      self.last_failure_time = time.monotonic()
+                      if self.failure_count >= self.failure_threshold:
+                          self.state = CircuitState.OPEN
+                  raise
+
+
+      class CircuitOpenError(Exception):
+          """Raised when the circuit breaker refuses a call."""
+
+
+      @dataclass
+      class DegradedChargeResult:
+          """Static fallback response when the gateway is unreachable."""
+          transaction_id: str = "pending"
+          status: str = "degraded"
+          message: str = (
+              "Payment will be processed when the gateway recovers. "
+              "Your order is saved."
+          )
+
+
+      # ---- Resilient PaymentService composing all patterns ----
+      class PaymentGateway(Protocol):
+          def charge(self, user_id: str, amount: float) -> dict: ...
+
+
+      class HttpPaymentGateway:
+          def __init__(self, url: str, timeout: float = 5.0) -> None:
+              self._url = url
+              self._timeout = timeout
+
+          def charge(self, user_id: str, amount: float) -> dict:
+              resp = requests.post(
+                  f"{self._url}/charge",
+                  json={"user_id": user_id, "amount": amount},
+                  timeout=self._timeout,
+              )
+              resp.raise_for_status()
+              return resp.json()
+
+
+      class ResilientPaymentService:
+          def __init__(
+              self,
+              gateway: PaymentGateway,
+              flags: FlagStore,
+          ) -> None:
+              self._gateway = gateway
+              self._breaker = CircuitBreaker(failure_threshold=3, recovery_timeout=30.0)
+              self._flags = flags
+
+          def charge(self, user_id: str, amount: float) -> dict:
+              # Feature flag: is the new checkout flow enabled for this user?
+              checkout_flag = self._flags.get("new_checkout_flow")
+              if checkout_flag is not None and not checkout_flag.is_enabled(user_id):
+                  return {
+                      "transaction_id": "",
+                      "status": "disabled",
+                      "message": "Checkout temporarily unavailable",
+                  }
+
+              try:
+                  return self._breaker.call(self._gateway.charge, user_id, amount)
+              except CircuitOpenError:
+                  # Circuit open → degrade to static fallback response
+                  degraded = DegradedChargeResult()
+                  return {
+                      "transaction_id": degraded.transaction_id,
+                      "status": degraded.status,
+                      "message": degraded.message,
+                  }
+              except Exception:
+                  # Transient failure before circuit trips → still degrade
+                  return {
+                      "transaction_id": "pending",
+                      "status": "degraded",
+                      "message": "Payment gateway unavailable, order queued",
+                  }
+
+
+      # ---- Composition root ----
+      flags = DegradingFlagStore(
+          remote=RemoteFlagStore("https://flags.internal"),
+          fallback=StaticFlagStore(),
+      )
+      gateway = HttpPaymentGateway("https://payments.internal", timeout=5.0)
+      service = ResilientPaymentService(gateway=gateway, flags=flags)
+
+      result = service.charge("user_42", 99.95)
+      print(f"Result: {result['status']} — {result.get('message', '')}")
+
+  - language: typescript
+    bad: |
+      import { createClient } from "redis";
+      import { Pool } from "pg";
+
+      // No timeout, no circuit breaker, no stale-on-error.
+      // When the DB is slow every request accumulates and the
+      // server runs out of event-loop threads.
+
+      const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+      // Cache treated as always-available, never checked for health
+      const redis = createClient({ url: process.env.REDIS_URL });
+      redis.connect();
+
+      async function getUserProfile(userId: string) {
+        // Cache hit returns fresh data — but if Redis is down, crash
+        const cached = await redis.get(`profile:${userId}`);
+        if (cached) return JSON.parse(cached);
+
+        // Primary DB call — no timeout, blocks event loop
+        const result = await pool.query(
+          "SELECT * FROM user_profiles WHERE id = $1",
+          [userId],
+        );
+        const profile = result.rows[0];
+        if (!profile) throw new Error("User not found");
+
+        // Cache write — fire and forget, may silently fail
+        await redis.set(`profile:${userId}`, JSON.stringify(profile));
+        return profile;
+      }
+
+      // Every caller gets a 500 when DB is slow. No degraded response.
+    good: |
+      import { createClient, RedisClientType } from "redis";
+      import { Pool } from "pg";
+
+      // ---- Stale cache entry — the cache-as-savior building block ----
+      interface CacheEntry<T> {
+        data: T;
+        cachedAt: number;
+        ttlMs: number;
+      }
+
+      const MAX_STALE_MS = 30 * 60 * 1000; // serve up to 30 min stale data
+
+      function isStale(entry: CacheEntry<unknown>, now: number): boolean {
+        return now - entry.cachedAt > entry.ttlMs;
+      }
+
+      function isTooStale(entry: CacheEntry<unknown>, now: number): boolean {
+        return now - entry.cachedAt > MAX_STALE_MS;
+      }
+
+      // ---- Cache-as-savior: serve stale data when primary is down ----
+      class SaviorCache<T> {
+        constructor(
+          private readonly redis: RedisClientType,
+          private readonly keyPrefix: string,
+          private readonly ttlMs: number,
+        ) {}
+
+        private key(id: string): string {
+          return `${this.keyPrefix}:${id}`;
+        }
+
+        async get(
+          id: string,
+          fetchFresh: () => Promise<T>,
+        ): Promise<{ data: T; source: "fresh" | "stale" | "fallback" }> {
+          const now = Date.now();
+          const key = this.key(id);
+
+          // Attempt cache read
+          let cached: CacheEntry<T> | null = null;
+          try {
+            const raw = await this.redis.get(key);
+            if (raw) cached = JSON.parse(raw) as CacheEntry<T>;
+          } catch {
+            // Redis down — we'll try the primary below
+          }
+
+          // Cache hit and still fresh → return immediately
+          if (cached && !isStale(cached, now)) {
+            return { data: cached.data, source: "fresh" };
+          }
+
+          // Try the primary store
+          try {
+            const fresh = await fetchFresh();
+            // Update cache in background — don't block the response
+            const entry: CacheEntry<T> = {
+              data: fresh,
+              cachedAt: now,
+              ttlMs: this.ttlMs,
+            };
+            this.redis.set(key, JSON.stringify(entry)).catch(() => {});
+            return { data: fresh, source: "fresh" };
+          } catch (primaryError) {
+            // Primary is down — cache-as-savior kicks in
+            if (cached && !isTooStale(cached, now)) {
+              // Serve stale data rather than erroring
+              return { data: cached.data, source: "stale" };
+            }
+            // Cache is empty or way too stale — last resort: static fallback
+            throw primaryError;
+          }
+        }
+
+        async invalidate(id: string): Promise<void> {
+          try {
+            await this.redis.del(this.key(id));
+          } catch {
+            // cache write failure is non-fatal
+          }
+        }
+      }
+
+      // ---- Static fallback: hard-coded response for critical data ----
+      interface UserProfile {
+        id: string;
+        name: string;
+        avatarUrl: string;
+        plan: "free" | "pro";
+      }
+
+      const GUEST_PROFILE: UserProfile = {
+        id: "guest",
+        name: "Guest User",
+        avatarUrl: "/img/default-avatar.png",
+        plan: "free",
+      };
+
+      // ---- Circuit breaker (lightweight, in-process) ----
+      class CircuitBreaker {
+        private state: "closed" | "open" | "half-open" = "closed";
+        private failureCount = 0;
+        private lastFailureTime = 0;
+        private readonly threshold: number;
+        private readonly recoveryMs: number;
+
+        constructor(threshold = 5, recoveryMs = 30_000) {
+          this.threshold = threshold;
+          this.recoveryMs = recoveryMs;
+        }
+
+        async call<T>(fn: () => Promise<T>): Promise<T> {
+          if (this.state === "open") {
+            if (Date.now() - this.lastFailureTime >= this.recoveryMs) {
+              this.state = "half-open";
+            } else {
+              throw new Error("CircuitBreaker: circuit is open");
+            }
+          }
+          try {
+            const result = await fn();
+            this.failureCount = 0;
+            if (this.state === "half-open") this.state = "closed";
+            return result;
+          } catch (err) {
+            this.failureCount++;
+            this.lastFailureTime = Date.now();
+            if (this.failureCount >= this.threshold) {
+              this.state = "open";
+            }
+            throw err;
+          }
+        }
+      }
+
+      // ---- Resilient UserProfileService composing all patterns ----
+      class UserProfileService {
+        private readonly cache: SaviorCache<UserProfile>;
+        private readonly dbCircuit = new CircuitBreaker(3, 30_000);
+
+        constructor(
+          private readonly pool: Pool,
+          redis: RedisClientType,
+        ) {
+          this.cache = new SaviorCache<UserProfile>(
+            redis,
+            "profile",
+            5 * 60 * 1000, // 5 min TTL
+          );
+        }
+
+        async getProfile(userId: string): Promise<UserProfile> {
+          try {
+            return (
+              await this.cache.get(userId, () =>
+                this.dbCircuit.call(() => this.fetchFromDb(userId)),
+              )
+            ).data;
+          } catch {
+            // DB down AND cache empty/too-stale → static guest fallback
+            console.warn(
+              `[degraded] user=${userId} served guest profile`,
+            );
+            return GUEST_PROFILE;
+          }
+        }
+
+        private async fetchFromDb(userId: string): Promise<UserProfile> {
+          const result = await this.pool.query(
+            "SELECT * FROM user_profiles WHERE id = $1",
+            [userId],
+          );
+          const row = result.rows[0];
+          if (!row) throw new Error(`User ${userId} not found`);
+          return {
+            id: row.id,
+            name: row.name,
+            avatarUrl: row.avatar_url,
+            plan: row.plan,
+          };
+        }
+      }
+
+      // ---- Usage ----
+      const redis = createClient({ url: process.env.REDIS_URL });
+      await redis.connect();
+
+      const profileService = new UserProfileService(pool, redis as RedisClientType);
+
+      const profile = await profileService.getProfile("user_42");
+      console.log(`Serving: ${profile.name} (plan: ${profile.plan})`);
+
+heuristics:
+  - >
+    Feature flags decouple deployment from release. Every new path must be
+    gated behind a flag that can be turned OFF without a deploy — this is the
+    first line of degradation: disable the broken code path before it affects
+    more users.
+  - >
+    A feature-flag service is itself a dependency, and it too must degrade
+    gracefully. When the flag store is unreachable, fall back to a safe static
+    default (flags OFF) rather than crashing or defaulting ON and activating
+    unproven code paths.
+  - >
+    Static fallback responses are not "nice to have" — they are the difference
+    between a degraded but functional experience and a blank error page. For
+    every critical user-facing data type, define a hard-coded fallback object
+    (guest profile, empty feed, pending-transaction stub) and serve it when the
+    real data is unreachable.
+  - >
+    Circuit breakers exist to stop flooding a dying dependency. When a downstream
+    service is clearly unhealthy (timeouts, 5xx), open the circuit and fail fast
+    rather than queuing more work that will also fail. This preserves caller
+    threads and gives the dependency breathing room to recover.
+  - >
+    The circuit breaker's open state is itself a trigger for degradation: when
+    the circuit is open, surface the degraded mode explicitly — return a static
+    fallback, serve stale cached data, or queue the work for later processing.
+    Never let the circuit translate into a silent 500.
+  - >
+    "Cache is an optimization, not a source of truth" — but in a degradation
+    scenario, it becomes a survival mechanism. The cache-as-savior pattern means:
+    when the primary store is unavailable, serve stale cached data rather than
+    propagating an error. Log the staleness so operators know, but keep the user
+    experience alive.
+  - >
+    Every cache-as-savior implementation needs a staleness ceiling — a
+    maximum age beyond which serving stale data is worse than returning a
+    static fallback. Without this ceiling, stale data can persist indefinitely
+    and mask a prolonged outage.
+  - >
+    Degraded responses must be explicitly identified in telemetry. Tag every
+    degraded response with its degradation source (flag-off, circuit-open,
+    cache-stale, static-fallback) so operators can distinguish "system is
+    fine" from "system is limping along" at a glance.
+  - >
+    "When uncertain, choose the design that fails visibly instead of hanging
+    silently" (Release It!). A degraded response with a clear status field is
+    visible failure. A 30-second timeout that eventually returns a generic 500
+    is silent failure — the user waited and got nothing actionable.
+  - >
+    These four patterns compose: feature flags gate new code, circuit breakers
+    detect unhealthy dependencies, static fallbacks kick in when the circuit is
+    open, and cache-as-savior buys time when the primary store recovers. Design
+    them to work together, not as isolated tactics.
+related_tags:
+  [resilience, graceful-degradation, fallbacks, feature-flags, circuit-breaker,
+   cache-as-savior, static-fallback, production-readiness, release-it,
+   failure-isolation, overload-protection, stale-while-revalidate,
+   degradation-patterns, blast-radius]

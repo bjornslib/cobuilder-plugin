@@ -1,0 +1,244 @@
+id: dependency-isolation-001
+name: Dependency Isolation — Break Hard Dependencies to Enable Testing
+category: refactoring
+canonical_tags: [refactoring, readability]
+sources:
+  - books/working-effectively-with-legacy-code.md
+summary: Legacy code is expensive to change because hard dependencies — time, randomness, files, network, globals, static singletons, and side effect-heavy constructors — prevent observation and isolation. Break these dependencies deliberately to make the code testable without rewriting.
+technique:
+  name: Dependency Isolation and Breaking
+  when_to_use: When code cannot be tested because of hidden inputs, hard outputs, construction problems, or ambient context.
+  dependency_categories:
+    - category: Hidden Inputs
+      description: Values the code consumes but does not explicitly receive as parameters.
+      examples:
+        - "current time (datetime.now(), Date.now())"
+        - "random values (random(), Math.random())"
+        - "environment variables (os.environ, process.env)"
+        - "thread-local state"
+        - "static singletons (Config.instance(), logger.root)"
+        - "global configuration"
+        - "implicit current user or request context"
+      fix: Inject clocks, RNGs, config objects, and request contexts as explicit parameters or constructor dependencies.
+    - category: Hard Outputs
+      description: Side effects the code performs that are difficult to observe or verify in tests.
+      examples:
+        - "direct file writes (open().write(), fs.writeFileSync())"
+        - "direct network calls (requests.get(), fetch())"
+        - "process exits (sys.exit(), process.exit())"
+        - "direct database writes"
+        - "direct message publication (Kafka, SQS, RabbitMQ)"
+        - "logging used as control flow"
+      fix: Extract side effects behind explicit collaborator interfaces (FileSystem, HttpClient, MessageBus) and inject them.
+    - category: Construction Problems
+      description: The code creates its own dependencies deep inside methods or constructors, making them impossible to substitute.
+      examples:
+        - "constructors that do real work (I/O, network, config lookup)"
+        - "new allocations of complex collaborators buried inside methods"
+        - "factory calls hidden deep in behavior"
+        - "object graphs built in the middle of logic"
+      fix: Split construction from use. Move setup into factories, builders, or composition roots. Inject pre-built objects.
+  steps:
+    - step: 1
+      action: Identify which category the blocking dependency falls into — hidden input, hard output, or construction problem.
+      rationale: Different categories require different isolation strategies.
+    - step: 2
+      action: Create an explicit interface or collaborator class that wraps the dependency.
+      rationale: A thin wrapper is the smallest safe abstraction — it adds indirection without redesign.
+    - step: 3
+      action: Move callers to use the wrapper instead of the direct dependency.
+      rationale: Incremental migration — don't change every call site at once.
+    - step: 4
+      action: Inject the wrapper where possible — constructor injection first, parameter injection second.
+      rationale: Explicit injection makes the dependency visible and documentable.
+    - step: 5
+      action: Write tests using a fake, stub, or mock of the wrapper, then reduce direct calls incrementally.
+      rationale: Tests prove the isolation works before you commit to removing all direct access.
+    - step: 6
+      action: Narrow the code under test to a manageable slice — don't test the whole module at once.
+      rationale: Small slices are faster to isolate and easier to verify.
+  code_examples:
+    - scenario: Hiding time dependency
+      language: python
+      bad: |
+        def is_promotion_active(promotion: Promotion) -> bool:
+            now = datetime.now()
+            return promotion.start <= now <= promotion.end
+      good: |
+        def is_promotion_active(promotion: Promotion, *, clock: Clock = None) -> bool:
+            now = (clock or SystemClock()).now()
+            return promotion.start <= now <= promotion.end
+
+        # Test: is_promotion_active(promo, clock=FakeClock(datetime(2025, 6, 1)))
+    - scenario: Hiding file I/O
+      language: python
+      bad: |
+        def load_user_prefs(user_id: str) -> dict:
+            path = f"/data/users/{user_id}/prefs.json"
+            return json.loads(open(path).read())
+      good: |
+        class FileSystem:
+            def read(self, path: str) -> str:
+                with open(path) as f:
+                    return f.read()
+
+        def load_user_prefs(user_id: str, *, fs: FileSystem = None) -> dict:
+            path = f"/data/users/{user_id}/prefs.json"
+            return json.loads((fs or FileSystem()).read(path))
+
+        # Test: load_user_prefs("u1", fs=FakeFS({"/data/users/u1/prefs.json": '{"theme":"dark"}'}))
+    - scenario: Hiding network call
+      language: typescript
+      bad: |
+        async function getExchangeRate(from: string, to: string): Promise<number> {
+          const res = await fetch(`https://api.example.com/rates?from=${from}&to=${to}`);
+          const data = await res.json();
+          return data.rate;
+        }
+      good: |
+        interface HttpClient {
+          get(url: string): Promise<{ json(): Promise<any> }>;
+        }
+
+        async function getExchangeRate(
+          from: string, to: string,
+          http: HttpClient = new FetchClient()
+        ): Promise<number> {
+          const res = await http.get(`https://api.example.com/rates?from=${from}&to=${to}`);
+          const data = await res.json();
+          return data.rate;
+        }
+
+        // Test: getExchangeRate("USD", "EUR", http=new FakeHttpClient({ rate: 0.92 }))
+    - scenario: Hiding global singleton
+      language: python
+      bad: |
+        def process_payment(order: Order) -> None:
+            logger = logging.getLogger("payments")
+            logger.info(f"Processing {order.id}")
+            StripeClient.instance().charge(order.total)
+      good: |
+        def process_payment(
+            order: Order,
+            *,
+            payment_gateway: PaymentGateway = None,
+            logger: Logger = None,
+        ) -> None:
+            log = logger or get_logger("payments")
+            gw = payment_gateway or StripeGateway()
+            log.info(f"Processing {order.id}")
+            gw.charge(order.total)
+  pitfalls:
+    - "Don't add more globals, statics, ambient context, or framework reach-through in already hard-to-test code."
+    - "Don't mock untestable structure instead of improving it — a mock of a global is a band-aid, not a fix."
+    - "Don't introduce huge dependency injection frameworks for a single dependency break — a parameter default is enough."
+    - "Don't leave the old direct access in place alongside the new wrapper — you're adding complexity, not reducing it."
+    - "If the wrapper itself becomes untestable, you've just moved the problem — test the wrapper at integration level."
+  heuristics:
+    - Make dependencies explicit.
+    - Remove hard-coded collaborators.
+    - Break apart mixed responsibilities that force expensive setup.
+    - Reduce constructor side effects and static initialization side effects.
+    - Wrap static and global access.
+    - Inject clocks, RNGs, gateways, and repositories.
+    - Split construction from use.
+    - Extract side effects behind explicit collaborators.
+    - Narrow the code under test to a manageable slice.
+related_tags: [dependency-breaking, isolation, injection, wrapper, hidden-inputs, hard-outputs, construction, global, singleton, time, clock, file-io, network, seams]
+heuristics:
+  - Make dependencies explicit.
+  - Remove hard-coded collaborators.
+  - Break apart mixed responsibilities that force expensive setup.
+  - Reduce constructor side effects and static initialization side effects.
+  - Wrap static and global access.
+  - Inject clocks, RNGs, gateways, and repositories.
+  - Split construction from use.
+  - Extract side effects behind explicit collaborators.
+  - Narrow the code under test to a manageable slice.
+examples:
+  python:
+    bad: |
+      def is_promotion_active(promotion: Promotion) -> bool:
+          now = datetime.now()  # Untestable: depends on real clock
+          return promotion.start <= now <= promotion.end
+
+      def load_user_prefs(user_id: str) -> dict:
+          path = f"/data/users/{user_id}/prefs.json"
+          return json.loads(open(path).read())  # Untestable: depends on filesystem
+
+      def process_payment(order: Order) -> None:
+          logger = logging.getLogger("payments")
+          logger.info(f"Processing {order.id}")
+          StripeClient.instance().charge(order.total)  # Untestable: global singleton
+    good: |
+      def is_promotion_active(promotion: Promotion, *, clock: Clock = None) -> bool:
+          now = (clock or SystemClock()).now()
+          return promotion.start <= now <= promotion.end
+
+      class FileSystem:
+          def read(self, path: str) -> str:
+              with open(path) as f:
+                  return f.read()
+
+      def load_user_prefs(user_id: str, *, fs: FileSystem = None) -> dict:
+          path = f"/data/users/{user_id}/prefs.json"
+          return json.loads((fs or FileSystem()).read(path))
+
+      def process_payment(
+          order: Order,
+          *,
+          payment_gateway: PaymentGateway = None,
+          logger: Logger = None,
+      ) -> None:
+          log = logger or get_logger("payments")
+          gw = payment_gateway or StripeGateway()
+          log.info(f"Processing {order.id}")
+          gw.charge(order.total)
+  typescript:
+    bad: |
+      // All hard dependencies — cannot be tested in isolation
+      async function getExchangeRate(from: string, to: string): Promise<number> {
+        const res = await fetch(`https://api.example.com/rates?from=${from}&to=${to}`);
+        const data = await res.json();
+        return data.rate;
+      }
+
+      class AnalyticsTracker {
+        track(event: string): void {
+          const ts = Date.now();  // Hard: time
+          console.log(`${ts}: ${event}`);  // Hard: stdout
+          fetch('https://analytics.example.com/track', {  // Hard: network
+            method: 'POST', body: JSON.stringify({ event, ts })
+          });
+        }
+      }
+    good: |
+      interface HttpClient {
+        get(url: string): Promise<{ json(): Promise<any> }>;
+        post(url: string, body: any): Promise<void>;
+      }
+
+      interface Clock {
+        now(): number;
+      }
+
+      async function getExchangeRate(
+        from: string, to: string,
+        http: HttpClient = new FetchClient()
+      ): Promise<number> {
+        const res = await http.get(`https://api.example.com/rates?from=${from}&to=${to}`);
+        const data = await res.json();
+        return data.rate;
+      }
+
+      class AnalyticsTracker {
+        constructor(
+          private clock: Clock = new SystemClock(),
+          private http: HttpClient = new FetchClient()
+        ) {}
+
+        track(event: string): void {
+          const ts = this.clock.now();
+          this.http.post('https://analytics.example.com/track', { event, ts });
+        }
+      }

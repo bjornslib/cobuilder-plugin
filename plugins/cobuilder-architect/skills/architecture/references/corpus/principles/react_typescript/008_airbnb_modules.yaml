@@ -1,0 +1,113 @@
+id: airbnb-modules-001
+name: Airbnb Modules — Import/Export Conventions for Clean Dependency Graphs
+category: style
+canonical_tags: ['react-ts', 'readability']
+sources:
+  - open_sources/react_typescript/airbnb-javascript-style.md
+summary: >
+  Airbnb's module conventions mandate ES module syntax (import/export) over CommonJS, forbid wildcard imports,
+  require single-import-per-path (merge duplicates), prohibit mutable exports, prefer default exports for
+  single-export modules, and enforce import ordering. All imports go above non-import statements since they
+  are hoisted anyway. These rules produce clean dependency graphs and prevent surprising behavior from
+  scattered or duplicated imports.
+examples:
+  - language: typescript
+    bad: |
+      // CommonJS — non-standard module system
+      const AirbnbStyleGuide = require("./AirbnbStyleGuide");
+      module.exports = AirbnbStyleGuide.es6;
+
+      // Wildcard import — masks the module's public API
+      import * as AirbnbStyleGuide from "./AirbnbStyleGuide";
+
+      // Direct re-export — hides the import step
+      export { es6 as default } from "./AirbnbStyleGuide";
+
+      // Duplicate imports from same path — harder to audit
+      import foo from "foo";
+      // ... other imports ...
+      import { named1, named2 } from "foo";
+
+      // Mutable export — consumers may get stale or surprising values
+      let currentUser: User | null = null;
+      export { currentUser };
+
+      // Import not at top — hoisted but surprising
+      import foo from "foo";
+      foo.init();
+      import bar from "bar";
+
+      // JavaScript filename extensions — brittle to refactoring
+      import foo from "./foo.js";
+      import bar from "./bar.jsx";
+      import baz from "./baz/index.jsx";
+
+      // Webpack loader syntax in imports — couples to bundler
+      import fooSass from "css!sass!foo.scss";
+    good: |
+      // ES modules — standard, tree-shakeable
+      import { es6 } from "./AirbnbStyleGuide";
+      export default es6;
+
+      // Named import — explicit about what you consume
+      import AirbnbStyleGuide from "./AirbnbStyleGuide";
+
+      // Two-step: import then export — clear, greppable
+      import { es6 } from "./AirbnbStyleGuide";
+      export default es6;
+
+      // Single import per path — merge duplicates
+      import foo, { named1, named2 } from "foo";
+
+      // Only export constant references
+      const DEFAULT_USER: User = { id: "", name: "Guest" };
+      export { DEFAULT_USER };
+
+      // All imports at top
+      import foo from "foo";
+      import bar from "bar";
+
+      foo.init();
+
+      // No file extensions — refactoring-friendly
+      import foo from "./foo";
+      import bar from "./bar";
+      import baz from "./baz";
+
+      // Loader syntax belongs in webpack.config.js, not in source
+      import fooSass from "foo.scss";
+  - language: typescript
+    bad: |
+      // Named export when there's only one — default preferred
+      export function getUser() {
+        return fetchUser();
+      }
+
+      // Multiline import without proper formatting
+      import {longNameA, longNameB, longNameC, longNameD, longNameE} from "path";
+    good: |
+      // Default export for single-export modules
+      export default function getUser() {
+        return fetchUser();
+      }
+
+      // Multiline imports: one per line, trailing comma
+      import {
+        longNameA,
+        longNameB,
+        longNameC,
+        longNameD,
+        longNameE,
+      } from "path";
+heuristics:
+  - Always use ES module syntax (import/export) over CommonJS (require/module.exports). Modules are the standard and tree-shakeable.
+  - Do not use wildcard imports (import * as X). They obscure which exports are used and prevent tree-shaking.
+  - Do not export directly from an import. Use a separate import then export — it's clearer and more greppable.
+  - Only import from a path in one place. Merge multiple imports from the same module into a single import statement.
+  - Do not export mutable bindings (let export). Only constant references should be exported.
+  - In modules with a single export, prefer default export over named export. Encourages focused, single-responsibility modules.
+  - Put all imports above non-import statements. Since imports are hoisted, this prevents surprising behavior.
+  - Multiline imports should be indented with each specifier on its own line and a trailing comma — same as multiline arrays/objects.
+  - Do not include JavaScript filename extensions in imports (.js, .jsx, .ts, .tsx). Extensions inhibit refactoring and couple consumers to file structure details.
+  - Do not use Webpack loader syntax in import statements. It couples code to a specific bundler. Configure loaders in webpack.config.js instead.
+related_tags: [modules, imports, exports, es-modules, dependency-graph, airbnb, tree-shaking]

@@ -1,0 +1,196 @@
+id: bounded-context-splitting-003
+name: Bounded Context Splitting for Monoliths
+category: architecture
+canonical_tags: [ddd, clean-architecture]
+principle: >
+  Bounded contexts are the primary organizational unit in DDD — each owns a
+  consistent model with its own ubiquitous language. In a monolith, bounded contexts
+  are logical boundaries enforced by package structure, not necessarily physical
+  boundaries (microservices). Splitting a monolith into bounded contexts means
+  identifying where language, rules, or invariants diverge, and creating explicit
+  boundaries with translation layers between them.
+sources:
+  - books/domain-driven-design.md
+  - books/domain-driven-design-distilled.md
+  - books/implementing-domain-driven-design.md
+  - books/clean-architecture.md
+summary: >
+  Bounded contexts are logical boundaries enforced by package structure in a monolith,
+  not just physical boundaries in microservices. Splitting means identifying where
+  language, rules, or invariants diverge and creating explicit boundaries with
+  translation layers. Scenarios cover customer model divergence, order vs fulfillment
+  context splitting, and context map dependencies.
+
+scenarios:
+  - id: bc-1
+    title: "\"Customer\" means different things across departments"
+    context: >
+      A SaaS company has a monolithic Rails application. The term "Customer" appears
+      everywhere: in Billing (a customer with a subscription plan and payment method),
+      in Support (a customer with open tickets and SLA tier), in Analytics (a customer
+      with usage metrics and churn risk score), and in Identity (a customer with
+      login credentials and MFA settings). There is one Customer model shared across
+      all modules, with 80+ fields, many of which are null depending on context.
+    question: >
+      How should this monolith be split into bounded contexts, and what happens
+      to the Customer model?
+    answer: >
+      The single Customer model with 80 fields is a classic "one model to rule them
+      all" anti-pattern. The term "Customer" means different things in each
+      department, which signals at least four bounded contexts.
+
+      Splitting approach:
+      1. Identity Context: Owns CustomerIdentity (id, email, password_hash,
+         mfa_enabled). This is the source of truth for "who is this person."
+      2. Billing Context: Owns BillingAccount (id, customerId, plan, paymentMethod,
+         subscriptionStatus). CustomerId is a foreign reference — it does not import
+         the Identity Customer model.
+      3. Support Context: Owns SupportProfile (id, customerId, slaTier, openTickets).
+         Again, CustomerId is a reference, not an import.
+      4. Analytics Context: Owns CustomerAnalytics (id, customerId, usageMetrics,
+         churnRisk). This may be a read model projection, updated via events from
+         other contexts.
+
+      Each context has its own Customer concept with its own ubiquitous language.
+      Identity says "Customer verified their email." Billing says "Account is in
+      good standing." Support says "Customer has an active case." These are different
+      concepts with different rules — they should not share a class.
+
+      Translation between contexts:
+      - Identity publishes CustomerRegistered, EmailVerified events. Billing and
+        Support subscribe to create their local representations.
+      - Anti-corruption layers translate foreign terms. Billing doesn't expose
+        "password_hash" — the ACL strips it.
+      - Shared Kernel: Only the CustomerId (UUID) is shared. Not the Customer class.
+
+      In a monolith: Package boundaries enforce contexts.
+        com.example.identity.customer.*
+        com.example.billing.account.*
+        com.example.support.profile.*
+        com.example.analytics.customer_analytics.*
+      No code in billing imports from identity.domain.Customer. Only CustomerId
+      crosses the boundary.
+      Source: DDD (bounded contexts, context mapping, ubiquitous language),
+      DDD Distilled (context boundaries), IDDD (practical context implementation).
+    decisions:
+      - One shared model for a term with multiple meanings = bounded context violation
+      - Split by meaning: each department's "Customer" is a different concept
+      - Cross-context references use IDs, not object imports
+      - Events propagate state changes between contexts
+
+  - id: bc-2
+    title: "When to split vs when to keep together in a monolith"
+    context: >
+      A team is modernizing a 10-year-old monolith for an insurance company. They
+      have identified three candidate bounded contexts: Policy Administration,
+      Claims Processing, and Underwriting. The Policy and Claims modules currently
+      share a Payment entity. Underwriting needs real-time access to Policy data
+      for risk assessment. The CTO wants to know whether to extract microservices
+      or keep them as logical contexts in the monolith.
+    question: >
+      What factors determine whether bounded contexts should become separate
+      services, and how should the shared Payment entity be handled?
+    answer: >
+      Bounded contexts are a logical design concept, not a deployment concept.
+      The decision to extract a service depends on operational needs, not model
+      boundaries alone.
+
+      Factors for splitting into services:
+      - Independent deployability: Can Claims deploy without coordinating with
+        Policy? If every release touches both, a service boundary adds latency
+        without value.
+      - Different scaling profiles: Does Claims spike during catastrophe events
+        while Policy is steady? If yes, independent scaling matters.
+      - Team autonomy: Are separate teams responsible for each context? Separate
+        services reduce coordination overhead.
+      - Different tech stacks or data stores: If Claims needs a graph database
+        and Policy needs a relational one, separate services make sense.
+      - Failure isolation: Can Policy function if Claims is down? If yes, separate
+        services prevent cascading failures.
+
+      Factors to keep as logical contexts in monolith:
+      - Tight transactional coupling: Underwriting needs ACID consistency with
+        Policy for risk assessment. If they must be in the same transaction, keep
+        them in the same process.
+      - Immature understanding: If the context boundaries are still evolving,
+        logical boundaries are cheaper to refactor than service boundaries.
+      - Low throughput: A monolith can handle the load; service complexity isn't
+        justified.
+
+      The shared Payment entity:
+      Payment means different things: in Policy, it's a premium payment; in Claims,
+        it's a settlement payment. They likely have different fields, rules, and
+        lifecycles. This is a context bleed — split them:
+      - Policy context: PremiumPayment (premium amount, due date, policy reference)
+      - Claims context: ClaimSettlement (settlement amount, claim reference, payee)
+      - If a payment processor is shared, put it in a separate Payment Processing
+        context with its own ubiquitous language, accessed via integration events.
+      Source: DDD Distilled (practical DDD, bounded contexts in monoliths),
+      Clean Architecture (boundaries), IDDD (context mapping in practice).
+    decisions:
+      - Bounded contexts are logical, not physical; microservices are a deployment choice
+      - Split into services only when operational needs demand it
+      - Shared entities across contexts = context bleed; split them
+      - Context boundaries must be explicit in code regardless of deployment topology
+
+  - id: bc-3
+    title: "Discovery process — finding hidden bounded contexts"
+    context: >
+      A team inherits a legacy order management system. The code has an Order class
+      with 200+ fields and a 2000-line OrderService. Team members describe the
+      system as: "It handles orders, but also does fulfillment, invoicing, returns,
+      and somehow customer notifications are in there too." The UI has separate
+      screens for "Warehouse View," "Finance View," and "Customer Service View"
+      of the same order.
+    question: >
+      How do you discover the true bounded contexts hidden in this monolith?
+    answer: >
+      The diverging UI views are the first signal — different stakeholders see
+      different "Orders" because they have different concerns. This is a
+      discovery process, not a reorganization.
+
+      Discovery techniques:
+      1. Listen to language: Do warehouse workers say "pick order" while finance
+         says "invoice" and customer service says "return authorization"? These
+         are different concepts masquerading under one Order class.
+      2. Identify different lifecycles: An order is placed (Sales), picked and
+         packed (Fulfillment), invoiced (Billing), shipped (Logistics), possibly
+         returned (Returns). Each phase may be its own bounded context.
+      3. Find invariant clusters: Which fields must change atomically? If
+         "pickStatus" and "binLocation" always change together but never with
+         "taxAmount," they belong in different aggregates/contexts.
+      4. Map user roles to contexts: The warehouse view maps to Fulfillment
+         context. Finance view maps to Billing context. Customer service view
+         maps to Support context.
+      5. Trace integration points: Where does one team's work hand off to
+         another's? Those are context boundaries waiting to be made explicit.
+
+      Resulting bounded contexts (candidates):
+      - Sales: Order placement, availability check. Ubiquitous language: "cart,
+        checkout, promotion, line item."
+      - Fulfillment: Picking, packing, shipping. Ubiquitous language: "pick list,
+        bin, shipment, carrier."
+      - Billing: Invoicing, payments, credits. Ubiquitous language: "invoice,
+        payment term, credit memo."
+      - Returns: RMA, refund, restock. Ubiquitous language: "return authorization,
+        restocking fee."
+
+      The 2000-line OrderService gets split: domain logic moves to the appropriate
+      context's domain objects; orchestration moves to context-specific application
+      services; cross-context workflows use integration events.
+      Source: DDD (knowledge crunching, making implicit concepts explicit,
+      bounded contexts), IDDD (strategic design in practice).
+    decisions:
+      - Diverging UI views signal different bounded contexts
+      - Listen to language differences between stakeholders
+      - Identify invariant clusters — fields that must stay consistent together
+      - User roles map to contexts; integration handoffs map to boundaries
+
+related_tags: [bounded-contexts, monolith, context-mapping, ddd, discovery, legacy]
+heuristics:
+  - One shared model for a term with multiple meanings is a bounded context violation.
+  - Split by meaning: each department's version of a concept is a different bounded context.
+  - Cross-context references use IDs, not object imports; events propagate state changes between contexts.
+  - Diverging UI views signal different bounded contexts — listen to language differences between stakeholders.
+  - Bounded contexts are logical, not physical; microservices are a deployment choice, not an architectural one.
+  - Split into services only when operational needs (independent deployability, scaling, team autonomy) demand it.

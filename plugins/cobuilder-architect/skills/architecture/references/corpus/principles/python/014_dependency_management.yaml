@@ -1,0 +1,129 @@
+id: dependency-management-014
+name: Dependency Management and Project Tooling
+category: tooling
+canonical_tags: ['python', 'tooling', 'dependencies']
+sources:
+  - books/clean-code.md
+  - books/the-pragmatic-programmer.md
+  - books/clean-architecture.md
+summary: >-
+  Dependency management in Python is about reproducibility, isolation, and intentionality. Use `pyproject.toml`
+  as the single source of truth for build configuration, dependencies, and tool settings (replacing
+  setup.py/setup.cfg/requirements.txt fragmentation). Pin direct dependencies with loose lower bounds
+  (`>=`) in `pyproject.toml` and exact versions in a lockfile (`poetry.lock`, `uv.lock`, or `pip-tools`
+  `requirements.txt`) for reproducible builds. Separate core dependencies from dev/test/docs extras.
+  Virtual environments isolate project dependencies from the system Python — `uv`, `poetry`, or `venv`
+  all serve this role. `uv` is the fastest modern resolver and installer, replacing pip/poetry/pipenv for
+  speed. The principle: every dependency adds a maintenance burden — audit them, lock them, and upgrade
+  deliberately, not reactively. A project whose `pip install` output is non-deterministic is broken.
+examples:
+  - language: python
+    bad: |
+      """Undefined, unreproducible dependency management.
+      No lockfile, no version pins, scattered config, global installs."""
+
+      # setup.py — legacy, imperative, hard to parse programmatically.
+      from setuptools import setup
+
+      setup(
+          name="myapp",
+          version="0.1",
+          install_requires=[
+              "requests",      # No version bound — what did we test against?
+              "flask",         # Tomorrow's release may break us silently.
+              "sqlalchemy",
+          ],
+      )
+
+      # requirements.txt as the lockfile — no hashes, no dev separation.
+      # requirements.txt
+      requests
+      flask>=2.0
+      pytest  # Test dep mixed with runtime deps.
+
+      # Global install: pollutes system Python, no isolation.
+      # $ pip install -r requirements.txt  # Into system Python — chaos.
+
+      # Manual virtualenv activation — forgettable, human-dependent.
+      # $ python -m venv .venv
+      # $ source .venv/bin/activate  # Did the new dev remember?
+
+      # No pinning, no hashes — supply chain invisible.
+      # $ pip freeze > requirements.txt  # Every transitive dep pinned
+      # with no way to distinguish direct vs indirect.
+    good: |
+      """Modern dependency management: pyproject.toml + lockfile + uv.
+      Reproducible, isolated, auditable."""
+
+      # pyproject.toml — single source of truth.
+      #
+      # [project]
+      # name = "myapp"
+      # version = "0.1.0"
+      # requires-python = ">=3.11"
+      # dependencies = [
+      #     "httpx>=0.27",        # Direct deps with lower bounds.
+      #     "fastapi>=0.115",
+      #     "sqlalchemy>=2.0",
+      # ]
+      #
+      # [project.optional-dependencies]
+      # dev = [
+      #     "pytest>=8",
+      #     "pytest-asyncio>=0.24",
+      #     "mypy>=1.11",
+      #     "ruff>=0.6",
+      # ]
+      # docs = ["mkdocs>=1.6"]
+      #
+      # [tool.ruff]
+      # target-version = "py311"
+      # line-length = 100
+      #
+      # [tool.pytest.ini_options]
+      # asyncio_mode = "auto"
+
+      # ---- Workflow with uv (fast modern toolchain) ----
+      # $ uv venv                           # Create isolated .venv.
+      # $ uv sync                           # Install from lockfile.
+      # $ uv sync --group dev               # Include dev deps.
+      # $ uv add httpx                      # Add a dependency.
+      # $ uv lock --upgrade-package httpx   # Upgrade one package.
+      # $ uv run pytest                     # Run in project's venv.
+
+      # ---- Checking dependency health ----
+      # $ uv pip list --outdated            # What needs upgrading?
+      # $ uv pip audit                      # Known vulnerabilities?
+      # $ uv tree                           # Visual dependency graph.
+
+      # ---- Docker: multi-stage, pinned ----
+      # FROM python:3.12-slim AS builder
+      # RUN pip install uv
+      # COPY pyproject.toml uv.lock ./
+      # RUN uv sync --frozen --no-dev
+      # FROM python:3.12-slim
+      # COPY --from=builder /app/.venv /app/.venv
+
+      # ---- Programmatic: guard against outdated deps ----
+      import importlib.metadata
+
+      DEPENDENCY_FLOORS: dict[str, str] = {
+          "httpx": "0.27",
+          "fastapi": "0.115",
+          "sqlalchemy": "2.0",
+      }
+
+      def check_dependency_versions() -> list[str]:
+          """Verify all installed packages meet minimum versions."""
+          violations = []
+          for pkg_name, min_version in DEPENDENCY_FLOORS.items():
+              try:
+                  installed = importlib.metadata.version(pkg_name)
+                  if installed < min_version:
+                      violations.append(
+                          f"{pkg_name}: installed {installed}"
+                          f" < required {min_version}"
+                      )
+              except importlib.metadata.PackageNotFoundError:
+                  violations.append(f"{pkg_name}: not installed")
+          return violations

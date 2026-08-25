@@ -1,0 +1,529 @@
+id: test-boundaries-001
+name: Integration vs Unit Test Boundaries
+category: testing
+canonical_tags: ['testing', 'test-pyramid', 'boundaries', 'architecture']
+sources:
+  - books/unified-software-engineering.md
+  - books/clean-architecture.md
+summary: |
+  Tests form a pyramid: many fast unit tests at the bottom, fewer integration tests
+  in the middle, and a handful of end-to-end tests at the top. The pyramid is not
+  dogma — it is economics. Unit tests verify business rules fast and in isolation;
+  integration tests verify that adapters translate boundaries correctly. The most
+  expensive mistake is test contamination: using slow integration tests to assert
+  business rules, or mocking everything so thoroughly that no test actually proves
+  the system works. Place tests at the right boundary — core logic tested without
+  frameworks, adapters tested with real details, and end-to-end tests reserved for
+  the few critical paths where the cost of a missed integration exceeds the cost
+  of a slow test.
+
+the_test_pyramid:
+  summary: |
+    The test pyramid describes the optimal distribution of tests by speed,
+    isolation, and confidence. Faster, cheaper tests live at the bottom and
+    should be abundant. Slower, more expensive tests live at the top and
+    should be sparse. The pyramid is a design pressure, not a rule — if you
+    cannot write unit tests because the code is tangled, the architecture is
+    telling you something.
+  layers:
+    - name: Unit Tests
+      description: >
+        Test a single unit of behavior — a function, a method, a value object,
+        or an entity. Unit tests run in milliseconds, require no network, no
+        database, no filesystem. They are the workhorse of the suite. A unit
+        test that needs a database connection, a running web server, or a
+        vendor SDK is not a unit test — it is an integration test with the
+        wrong label.
+      characteristics:
+        - "Runs in < 10ms; thousands can execute in seconds."
+        - "Zero external I/O. No database, network, filesystem, or framework."
+        - "Tests business rules, invariants, computations, and state transitions."
+        - "Fails for exactly one reason when something breaks."
+        - "Self-contained: no test-order dependency."
+    - name: Integration Tests
+      description: >
+        Test that two or more real components work together across a boundary.
+        Integration tests verify adapter correctness — does the repository
+        actually write to the database? Does the HTTP controller translate
+        JSON into a use-case input model? Does the Stripe gateway handle card
+        decline responses? Integration tests are slower (network, I/O) but
+        provide confidence the boundary layer isn't lying.
+      characteristics:
+        - "Runs in 10–500ms; hundreds can execute in seconds to low minutes."
+        - "May use real databases, real HTTP, or real vendor sandboxes."
+        - "Tests mapping, translation, serialization, and protocol behavior."
+        - "Does NOT test business rules — those belong in unit tests."
+        - "Can use test containers or in-memory doubles when the real dependency is the boundary concern."
+    - name: End-to-End Tests
+      description: >
+        Exercise a complete user-facing flow through the full stack. These are
+        the most expensive and most brittle tests. Reserve them for the critical
+        happy-path journeys — login, purchase, account creation — where the
+        business cost of a regression justifies the maintenance burden. E2E
+        tests should never be your primary safety net.
+      characteristics:
+        - "Runs in seconds to minutes; dozen(s) in a suite, not hundreds."
+        - "Exercises the full stack: UI, HTTP, business logic, database, external services."
+        - "Catches wiring errors, configuration mismatches, and integration gaps."
+        - "Fragile: changes to UI, timing, or environment break them."
+        - "Never use E2E tests to assert business logic — use unit tests."
+
+testing_at_architectural_boundaries:
+  summary: |
+    Architectural boundaries are where test strategy matters most. Each layer
+    in a clean architecture has different test needs. The rule: test business
+    rules fast and framework-free at the core; test adapters for translation
+    correctness at the edges; never let slow adapter tests masquerade as
+    business-rule verification.
+  rules:
+    - "Core business tests must run without the real web framework, database, network, or vendor SDK."
+    - "Test adapters separately for mapping correctness, repository behavior, controller translation, presenter formatting, and integration with real details."
+    - "Test repositories, mappers, gateways, identity map, unit of work, and locking behavior where they carry risk."
+    - "Do not use slow integration tests as a substitute for testing business rules."
+    - "Domain tests must read in the ubiquitous language."
+
+  boundary_test_strategies:
+    - boundary: Domain Layer (entities, value objects, domain services)
+      test_kind: Unit
+      test_focus: "Invariants, valid/invalid transitions, value semantics, domain events"
+      anti_pattern: "Instantiating entities through an ORM session to run a 'unit' test"
+
+    - boundary: Application Layer (use cases, ports, orchestration)
+      test_kind: Unit (with test doubles for ports)
+      test_focus: "Orchestration logic, transaction boundaries, port invocation order"
+      anti_pattern: "Testing use cases through HTTP controllers or with real database transactions"
+
+    - boundary: Adapter Layer (repositories, controllers, presenters, gateways)
+      test_kind: Integration
+      test_focus: "SQL correctness, JSON mapping, protocol translation, error mapping"
+      anti_pattern: "Mocking the database for a repository test and calling it a unit test"
+
+    - boundary: Infrastructure Layer (framework bootstrap, DI, message bus clients)
+      test_kind: Integration or E2E
+      test_focus: "Wiring correctness, configuration loading, SDK behavior under real conditions"
+      anti_pattern: "Writing a 'unit test' for wiring — wiring failures only appear at integration time"
+
+test_contamination:
+  summary: |
+    Test contamination is when tests cross their proper boundary, producing
+    a suite that is slow, brittle, and dishonest about what it verifies.
+    The three classic contamination patterns: (1) integration tests
+    asserting business rules, (2) unit tests with hidden I/O, and (3)
+    over-mocked tests that prove nothing real ever talks to anything real.
+  patterns:
+    - name: Integration Test Asserting Business Rules
+      description: >
+        A test spins up the full application, posts JSON to an endpoint,
+        inspects the HTTP response, and asserts a business rule like "orders
+        over $100 get 10% off." The test passes, but it took 400ms and
+        coupled the business rule to the HTTP layer. Tomorrow, if the discount
+        logic changes, the test fails for the right reason — but if the JSON
+        key is renamed, it also fails, and you cannot tell the difference.
+      fix: >
+        Extract the discount calculation into a pure domain function. Unit-test
+        the function with values. Keep ONE integration test that verifies the
+        endpoint-to-domain wiring, but let it assert only HTTP status and
+        response shape — not the discount arithmetic.
+    - name: Unit Test with Hidden I/O
+      description: >
+        A test labeled "unit" calls a function that internally connects to a
+        database, reads a config file, or hits an external API. The test runs
+        in 200ms but the developer calls it a unit test because they didn't
+        see the I/O. The suite grows to 2000 "unit tests" that take 8 minutes
+        to run. Nobody runs them before pushing. The feedback loop breaks.
+      fix: >
+        Make I/O explicit in function signatures. A function that needs a
+        database connection should receive it as a parameter, not reach into
+        global state. Then the unit test passes a test double — and the I/O
+        is tested separately at the integration level.
+    - name: Over-Mocked Test Suite
+      description: >
+        Every collaborator is mocked — the repository, the gateway, the
+        message bus, the clock, the UUID generator. The tests pass in
+        milliseconds, but the system crashes in production because the real
+        Stripe gateway returns a different error shape than the mock, and no
+        integration test ever exercised the real boundary.
+      fix: >
+        Mock at architectural boundaries only. Use real implementations for
+        pure logic and value objects. Write focused integration tests for
+        every adapter that touches an external system. A test that mocks the
+        database, the HTTP client, and the message broker isn't "fast" — it's
+        dishonest.
+
+deciding_boundaries:
+  summary: |
+    Every test has a natural home. The question is not "unit or integration?"
+    — it is "what boundary am I testing, and what failure do I need to detect?"
+  decision_flow:
+    - question: "Does this code contain business rules, invariants, or domain logic?"
+      then: "Unit test. No frameworks, no I/O, no test doubles needed."
+    - question: "Does this code translate between two representations (DTO ↔ domain, JSON ↔ use-case input, row ↔ entity)?"
+      then: "Unit test the mapping function with example values. Add one integration test if the mapping uses framework serialization."
+    - question: "Does this code talk to an external system (database, HTTP API, message queue, filesystem, vendor SDK)?"
+      then: "Integration test with the real system (or a faithful test container). Do not mock the external system — test the adapter."
+    - question: "Does this code wire the application together (DI container, framework bootstrap, middleware chain)?"
+      then: "One E2E smoke test that proves the app starts and serves a request. Do not unit-test wiring."
+    - question: "Is this the critical revenue path (checkout, signup, payment) where a regression costs real money?"
+      then: "One E2E test per critical flow. No more. Maintain it or delete it — an E2E test that everyone ignores is worse than no E2E test."
+
+heuristics:
+  - "If a test needs the database to assert a business rule, the business rule is in the wrong place."
+  - "A test suite that takes more than 30 seconds to run locally will not be run before every push. Optimize for the fast path."
+  - "The test pyramid is shaped by economics: unit tests are cheap and fast, E2E tests are expensive and slow. Spend your test budget where the return is highest."
+  - "When a unit test requires 5 mocks, the class has too many dependencies. Fix the design, not the test."
+  - "An integration test that asserts HTTP status 200 and nothing else is a smoke test, not an integration test. It proves wiring, not behavior."
+  - "Don't test the framework. The framework authors tested their code. Test YOUR code — the code you wrote that the framework calls."
+  - "Characterization tests (for legacy code) are integration tests by nature — they capture current behavior at the boundary. Convert them to unit tests as you extract logic."
+
+pitfalls:
+  - "Labeling integration tests as unit tests to feel good about test count — the suite is slow and nobody trusts it."
+  - "Mocking at every boundary produces a suite that passes green but proves nothing about real system behavior."
+  - "Writing E2E tests for every feature — the suite takes 40 minutes, flakes constantly, and developers ignore failures."
+  - "Skipping adapter integration tests because 'the unit tests cover it' — unit tests don't prove the SQL query is valid."
+  - "Testing trivial code (getters, setters, constructors) because 'coverage must reach 100%' — coverage is a metric, not a goal."
+  - "Using slow integration tests as a substitute for extracting pure business logic — if you can't test it fast, the design is the problem."
+
+examples:
+  - language: python
+    bad: |
+      # TEST CONTAMINATION: Integration test asserting business rules.
+      # The discount calculation is a business rule, but this test couples
+      # it to FastAPI, HTTP, JSON serialization, and a real database.
+      # If the JSON key changes, this test fails — but it looks like a
+      # business rule failure. 400ms per test, 200ms of which is framework.
+      # Multiply by 300 "unit" tests and the suite takes 2 minutes for
+      # what should take 3 seconds.
+
+      from fastapi.testclient import TestClient
+      from app import app
+      import pytest
+
+      client = TestClient(app)
+
+      def test_discount_applied_to_orders_over_100():
+          # Setup: create user, products, and an order in the real database
+          response = client.post("/orders", json={
+              "user_id": 1,
+              "items": [
+                  {"product_id": 1, "quantity": 2},
+                  {"product_id": 2, "quantity": 3},
+              ]
+          })
+          assert response.status_code == 200
+          data = response.json()
+          # Business rule assertion buried inside an HTTP test
+          assert data["total"] == 135.0  # 150 * 0.9 discount
+          # What happens when the `total` key is renamed? This test lies:
+          # it fails, but the business rule is still correct.
+
+    good: |
+      # DECOUPLED: Business rule tested at unit level (fast, isolated).
+      # Adapter mapping tested at integration level (verifies wiring).
+
+      # === UNIT: Business rule lives in a pure function ===
+      # This test runs in microseconds. It asserts only the discount logic.
+      # No HTTP, no JSON, no database. The business rule is the star.
+
+      class DiscountCalculator:
+          DISCOUNT_THRESHOLD = 100.0
+          DISCOUNT_RATE = 0.9
+
+          def apply(self, subtotal: float) -> float:
+              """Apply a 10% discount when subtotal exceeds the threshold."""
+              if subtotal > self.DISCOUNT_THRESHOLD:
+                  return round(subtotal * self.DISCOUNT_RATE, 2)
+              return subtotal
+
+
+      class TestDiscountCalculator:
+          def test_no_discount_below_threshold(self):
+              calc = DiscountCalculator()
+              assert calc.apply(99.99) == 99.99
+
+          def test_discount_applied_above_threshold(self):
+              calc = DiscountCalculator()
+              assert calc.apply(150.0) == 135.0  # 150 * 0.9
+
+          def test_exactly_at_threshold_gets_no_discount(self):
+              calc = DiscountCalculator()
+              assert calc.apply(100.0) == 100.0  # Boundary: > not >=
+
+          def test_zero_subtotal_returns_zero(self):
+              calc = DiscountCalculator()
+              assert calc.apply(0.0) == 0.0
+
+
+      # === INTEGRATION: Controller mapping tested with the HTTP layer ===
+      # This test verifies that the controller correctly translates the JSON
+      # body into a use-case input and the use-case output into an HTTP response.
+      # It does NOT re-assert the discount arithmetic — that's the unit test's job.
+
+      from unittest.mock import Mock
+      from app.use_cases import PlaceOrderUseCase
+      from app.controllers import OrderController
+
+
+      class TestOrderControllerMapping:
+          """Verify controller translates HTTP ↔ use-case correctly."""
+
+          def test_request_mapped_to_use_case_input(self):
+              use_case = Mock(spec=PlaceOrderUseCase)
+              use_case.execute.return_value = {"order_id": "abc", "total": 135.0}
+              controller = OrderController(use_case)
+
+              response = controller.place_order({
+                  "user_id": 1,
+                  "items": [{"product_id": 1, "quantity": 2}],
+              })
+
+              # Verify the use case was called with the right input shape
+              use_case.execute.assert_called_once_with(
+                  user_id=1,
+                  items=[{"product_id": 1, "quantity": 2}],
+              )
+              # Verify controller translated use-case output to HTTP response
+              assert response.status_code == 200
+              assert response.body == {"order_id": "abc", "total": 135.0}
+
+          def test_use_case_error_mapped_to_http_400(self):
+              use_case = Mock(spec=PlaceOrderUseCase)
+              use_case.execute.side_effect = ValueError("Insufficient stock")
+              controller = OrderController(use_case)
+
+              response = controller.place_order({
+                  "user_id": 1,
+                  "items": [{"product_id": 1, "quantity": 999}],
+              })
+
+              assert response.status_code == 400
+              assert "Insufficient stock" in response.body["error"]
+
+      # === REAL INTEGRATION: Repository tested against a real database ===
+      # This test proves the SQL is valid, the mapping is correct, and
+      # the database constraints are respected. Use test containers or
+      # a dedicated test database — never mock the database driver.
+
+      import pytest
+      from app.repositories import PostgresOrderRepository
+      from app.domain import Order, LineItem
+
+
+      @pytest.mark.integration
+      class TestPostgresOrderRepository:
+          """Verify repository actually writes to and reads from PostgreSQL."""
+
+          def test_save_and_retrieve_order(self, db_session):
+              repo = PostgresOrderRepository(db_session)
+              order = Order.create(
+                  user_id=42,
+                  items=[LineItem(product_id=1, quantity=2, price=25.0)],
+              )
+
+              repo.save(order)
+              db_session.commit()
+
+              retrieved = repo.find_by_id(order.id)
+              assert retrieved is not None
+              assert retrieved.user_id == 42
+              assert len(retrieved.items) == 1
+              assert retrieved.items[0].subtotal == 50.0
+
+          def test_find_by_id_returns_none_for_missing_order(self, db_session):
+              repo = PostgresOrderRepository(db_session)
+              assert repo.find_by_id("nonexistent-id") is None
+
+  - language: typescript
+    bad: |
+      // TEST CONTAMINATION: Mocking every boundary produces a dishonest suite.
+      // StripeGateway, EmailService, and Database are all mocked. The tests
+      // pass in 3ms, but they prove nothing about real system behavior.
+      // The real Stripe webhook has a different error shape than the mock
+      // returns — the tests are green while production is on fire.
+
+      import { PaymentService } from "./PaymentService";
+      import { StripeGateway } from "./StripeGateway";
+      import { EmailService } from "./EmailService";
+      import { Database } from "./Database";
+
+      jest.mock("./StripeGateway");
+      jest.mock("./EmailService");
+      jest.mock("./Database");
+
+      describe("PaymentService", () => {
+        it("processes payment and sends confirmation email", async () => {
+          // EVERY collaborator is mocked — no real boundary tested
+          const mockStripe = StripeGateway as jest.Mocked<typeof StripeGateway>;
+          const mockEmail = EmailService as jest.Mocked<typeof EmailService>;
+          const mockDb = Database as jest.Mocked<typeof Database>;
+
+          mockStripe.charge.mockResolvedValue({
+            success: true,
+            transactionId: "tx_mock_123",
+          });
+          mockDb.orders.save.mockResolvedValue({ id: "order_mock" });
+          mockEmail.send.mockResolvedValue(undefined);
+
+          const service = new PaymentService(mockStripe, mockEmail, mockDb);
+          const result = await service.processPayment({
+            userId: "user_1",
+            amount: 49.99,
+          });
+
+          // These assertions only prove the mocks were called.
+          // They prove nothing about real Stripe, real email, or real DB.
+          expect(result.success).toBe(true);
+          expect(mockStripe.charge).toHaveBeenCalledTimes(1);
+          expect(mockEmail.send).toHaveBeenCalledTimes(1);
+        });
+      });
+
+    good: |
+      // === UNIT: Business rule — amount validation — tested in isolation ===
+      // Pure logic, no mocks needed. The boundary is a type contract.
+
+      import { PaymentAmount } from "./PaymentAmount";
+
+      describe("PaymentAmount", () => {
+        it("rejects zero amount", () => {
+          expect(() => new PaymentAmount(0)).toThrow(
+            "Payment amount must be positive"
+          );
+        });
+
+        it("rejects negative amount", () => {
+          expect(() => new PaymentAmount(-10)).toThrow(
+            "Payment amount must be positive"
+          );
+        });
+
+        it("accepts positive amount", () => {
+          const amount = new PaymentAmount(49.99);
+          expect(amount.value).toBe(49.99);
+          expect(amount.formatted).toBe("$49.99");
+        });
+
+        it("rounds to two decimal places", () => {
+          const amount = new PaymentAmount(49.999);
+          expect(amount.value).toBe(50.0);
+        });
+      });
+
+      // === INTEGRATION: Stripe gateway tested against Stripe sandbox ===
+      // This test proves the real adapter handles real Stripe responses.
+      // It uses Stripe's test mode — no charges actually occur.
+
+      import { StripePaymentGateway } from "./StripePaymentGateway";
+
+      describe("StripePaymentGateway (integration)", () => {
+        const gateway = new StripePaymentGateway(process.env.STRIPE_TEST_KEY!);
+
+        it("successfully processes a valid payment in test mode", async () => {
+          const result = await gateway.charge({
+            amount: new PaymentAmount(49.99),
+            token: "tok_visa", // Stripe test token — always succeeds
+          });
+
+          expect(result.success).toBe(true);
+          expect(result.transactionId).toMatch(/^ch_/);
+        });
+
+        it("handles card decline gracefully", async () => {
+          const result = await gateway.charge({
+            amount: new PaymentAmount(49.99),
+            token: "tok_chargeDeclined", // Stripe test token — always declines
+          });
+
+          expect(result.success).toBe(false);
+          expect(result.error).toBe("card_declined");
+          expect(result.transactionId).toBeNull();
+        });
+
+        it("surfaces Stripe API errors as domain errors", async () => {
+          // Invalid token triggers a Stripe API error
+          await expect(
+            gateway.charge({
+              amount: new PaymentAmount(49.99),
+              token: "not_a_real_token_at_all",
+            })
+          ).rejects.toThrow("Stripe payment failed");
+        });
+      });
+
+      // === INTEGRATION: Repository tested with real database ===
+      // Proves the SQL/ORM queries work and mappings are correct.
+
+      import { PostgresOrderRepository } from "./PostgresOrderRepository";
+      import { Order } from "../domain/Order";
+      import { LineItem } from "../domain/LineItem";
+
+      describe("PostgresOrderRepository (integration)", () => {
+        let repo: PostgresOrderRepository;
+
+        beforeAll(async () => {
+          repo = new PostgresOrderRepository(testDataSource);
+          await testDataSource.initialize();
+        });
+
+        afterAll(async () => {
+          await testDataSource.destroy();
+        });
+
+        beforeEach(async () => {
+          await repo.clear(); // Reset test data
+        });
+
+        it("saves and retrieves an order with line items", async () => {
+          const order = new Order({
+            userId: "user_42",
+            items: [
+              new LineItem({ productId: "p1", quantity: 2, unitPrice: 25.0 }),
+            ],
+          });
+
+          await repo.save(order);
+          const retrieved = await repo.findById(order.id);
+
+          expect(retrieved).not.toBeNull();
+          expect(retrieved!.userId).toBe("user_42");
+          expect(retrieved!.items).toHaveLength(1);
+          expect(retrieved!.items[0].subtotal).toBe(50.0);
+        });
+
+        it("returns null for nonexistent order", async () => {
+          const result = await repo.findById("nonexistent-id");
+          expect(result).toBeNull();
+        });
+      });
+
+      // === E2E: One critical flow — signup → browse → purchase ===
+      // Only the revenue path. If this breaks, something real is broken.
+
+      import { test, expect } from "@playwright/test";
+
+      test.describe("Checkout flow (E2E)", () => {
+        test("customer can complete a purchase", async ({ page }) => {
+          // Navigate to store
+          await page.goto("/products");
+          await expect(page.locator("h1")).toContainText("Products");
+
+          // Add item to cart
+          await page.click('[data-testid="add-to-cart-p1"]');
+          await page.click('[data-testid="cart-icon"]');
+          await expect(page.locator('[data-testid="cart-count"]')).toContainText("1");
+
+          // Complete checkout
+          await page.click('[data-testid="checkout-button"]');
+          await page.fill('[data-testid="email-input"]', "test@example.com");
+          await page.fill('[data-testid="card-input"]', "4242424242424242");
+          await page.click('[data-testid="pay-button"]');
+
+          // Verify order confirmation
+          await expect(page.locator('[data-testid="confirmation"]')).toBeVisible();
+          await expect(page.locator('[data-testid="order-id"]')).not.toBeEmpty();
+        });
+      });
+
+related_tags:
+  [test-pyramid, unit-test, integration-test, end-to-end-test, test-boundaries,
+   test-contamination, architecture, adapter-tests, mock-discipline, fast-feedback,
+   clean-architecture, hexagonal-architecture, dependency-inversion, seams]

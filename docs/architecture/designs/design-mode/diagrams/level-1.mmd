@@ -1,0 +1,24 @@
+C4Container
+title cobuilder-architect after design mode
+
+Person(eng, "Engineer", "Designs, then submits")
+Person(rev, "Reviewer", "Reads docs/ and the viewer")
+
+System_Boundary(plugin, "cobuilder-architect") {
+  Container(design, "Design mode", "odyssey", "Seven stages, self-only")
+  Container(submit, "Submit mode", "odyssey", "Interview, assess, open PR")
+  Container(odyssey, "Odyssey five", "odyssey", "Baseline, generate, view, publish")
+  Container(arch, "Architecture six", "architecture", "Self-only review and decisions")
+}
+
+System_Ext(docs, "docs/", "Authored ADRs, designs, PR write-ups")
+System_Ext(bundle, ".cobuilder-architect/", "Derived projections and binary")
+
+Rel(eng, design, "Names the outcome")
+Rel(design, docs, "Writes designs/ and a decided ADR")
+Rel(design, arch, "Stage 3 explore, stage 4 challenge")
+Rel(eng, submit, "Confirms the PR")
+Rel(submit, docs, "Reads the design, writes pull-requests/")
+Rel(odyssey, bundle, "Rebuilds adrs.js and designs.js")
+Rel(rev, bundle, "Opens the designs view")
+Rel(rev, docs, "Reviews markdown")

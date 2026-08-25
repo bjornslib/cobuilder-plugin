@@ -1,0 +1,183 @@
+id: value-objects-001
+name: "Domain-Driven Design — Value Objects: Immutable Domain Types, Validation, and Replaceable Behavior"
+category: architecture
+canonical_tags: ['ddd', 'value-objects']
+sources:
+  - books/domain-driven-design.md
+  - books/domain-driven-design-distilled.md
+  - books/implementing-domain-driven-design.md
+summary: >
+  Value objects are domain types defined entirely by their attributes, not by an
+  identity that persists across change. Two value objects with the same attribute
+  values are interchangeable — equality is structural, never by reference. Value
+  objects must be immutable: you don't modify a Money, you replace it with a new
+  Money. Every value object validates itself on construction so an invalid instance
+  can never exist. They carry behavior that expresses the domain concept — addition
+  for Money, domain validation for EmailAddress, containment checks for DateRange.
+  The canonical DDD anti-pattern is primitive obsession: passing raw strings, ints,
+  and decimals for concepts that have meaning, validation, and behavior. Replace
+  primitives with value objects wherever the concept repeats, wherever validation is
+  duplicated, and wherever a bare type cannot prevent incorrect usage.
+examples:
+  - language: python
+    bad: |
+      # Primitive obsession — raw types carry domain meaning with no protection
+      from datetime import date
+      from decimal import Decimal
+      import re
+
+      class Order:
+          def __init__(self, order_id: str, total: Decimal, email: str,
+                       delivery_start: date, delivery_end: date) -> None:
+              self.order_id = order_id
+              self.total = total
+              self.email = email
+              self.delivery_start = delivery_start
+              self.delivery_end = delivery_end
+
+      # Validation scattered across the application — duplicated everywhere
+      def validate_order(order: Order) -> None:
+          if not re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", order.email):
+              raise ValueError("Invalid email")
+          if order.total < 0:
+              raise ValueError("Total cannot be negative")
+          if order.delivery_end < order.delivery_start:
+              raise ValueError("End date must be after start date")
+
+      # Raw decimals with no unit safety — easy to mix currencies
+      def apply_tax(total: Decimal) -> Decimal:
+          return total * Decimal("1.20")  # Is this USD? EUR? No way to know.
+
+      def combine_totals(a: Decimal, b: Decimal) -> Decimal:
+          return a + b  # Adding USD to EUR is silently wrong
+    good: |
+      from __future__ import annotations
+
+      from dataclasses import dataclass
+      from datetime import date
+      from decimal import Decimal
+      from typing import NewType
+      from uuid import uuid4
+
+      # --- Value objects carry their own validation and behavior ---
+
+      @dataclass(frozen=True)
+      class Money:
+          """Immutable. Equality by value. Validates itself. Supports domain operations."""
+          amount: Decimal
+          currency: str = "USD"
+
+          def __post_init__(self) -> None:
+              if self.amount < 0:
+                  raise ValueError(f"Money amount cannot be negative, got {self.amount}")
+              supported = {"USD", "EUR", "GBP", "JPY"}
+              if self.currency not in supported:
+                  raise ValueError(f"Unsupported currency: {self.currency}")
+
+          def __add__(self, other: Money) -> Money:
+              if self.currency != other.currency:
+                  raise ValueError(
+                      f"Cannot add {self.currency} and {other.currency} without conversion"
+                  )
+              return Money(self.amount + other.amount, self.currency)
+
+          def __mul__(self, factor: int) -> Money:
+              return Money(self.amount * factor, self.currency)
+
+          def apply_tax(self, rate: Decimal) -> Money:
+              return Money(self.amount * (1 + rate), self.currency)
+
+          def __repr__(self) -> str:
+              return f"Money({self.amount} {self.currency})"
+
+      @dataclass(frozen=True)
+      class EmailAddress:
+          """Validates structure on construction. Two equal emails are interchangeable."""
+          value: str
+
+          def __post_init__(self) -> None:
+              import re
+              if not re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", self.value):
+                  raise ValueError(f"Invalid email address: {self.value}")
+              # dataclass frozen=True requires object.__setattr__ for post_init mutation
+              object.__setattr__(self, "value", self.value.lower().strip())
+
+          def domain(self) -> str:
+              return self.value.split("@")[1]
+
+      @dataclass(frozen=True)
+      class DateRange:
+          """Guarantees start <= end. Supports containment and overlap checks."""
+          start: date
+          end: date
+
+          def __post_init__(self) -> None:
+              if self.end < self.start:
+                  raise ValueError(
+                      f"DateRange end ({self.end}) must not be before start ({self.start})"
+                  )
+
+          def contains(self, d: date) -> bool:
+              return self.start <= d <= self.end
+
+          def overlaps(self, other: DateRange) -> bool:
+              return self.start <= other.end and other.start <= self.end
+
+          def duration_days(self) -> int:
+              return (self.end - self.start).days
+
+      @dataclass(frozen=True)
+      class Quantity:
+          """Positive integer with domain behavior."""
+          value: int
+
+          def __post_init__(self) -> None:
+              if self.value <= 0:
+                  raise ValueError(f"Quantity must be positive, got {self.value}")
+
+          def __add__(self, other: Quantity) -> Quantity:
+              return Quantity(self.value + other.value)
+
+          def __lt__(self, other: Quantity) -> bool:
+              return self.value < other.value
+
+      # --- Usage: no scattered validation, no primitive confusion ---
+
+      class Order:
+          def __init__(self, order_id: str, total: Money, customer_email: EmailAddress,
+                       delivery_window: DateRange) -> None:
+              self._id = order_id
+              self._total = total          # already validated
+              self._email = customer_email  # already validated
+              self._delivery = delivery_window  # already validated
+
+          def total(self) -> Money:
+              return self._total
+
+          def email(self) -> EmailAddress:
+              return self._email
+
+          def is_delivery_available(self, d: date) -> bool:
+              return self._delivery.contains(d)
+
+      # Domain operations compose naturally — no scattered validation
+      shipping_cost = Money(Decimal("12.50"), "USD")
+      item_total = Money(Decimal("45.00"), "USD")
+      order_total = shipping_cost + item_total + item_total  # Money(102.50 USD)
+
+      customer_email = EmailAddress("Pat.Smith@AcmeCorp.com")
+      # customer_email is now "pat.smith@acmecorp.com" — canonical form
+
+heuristics:
+  - Value objects are defined by their attributes, not by identity. Replace a Money(5 USD) with Money(5 USD) and nothing has changed — they are structurally identical.
+  - Make value objects immutable. Instead of mutating `money.amount += 10`, create `Money(money.amount + 10, money.currency)`. Immutability eliminates accidental state corruption and makes threaded code safe by construction.
+  - Validate on construction, never later. A value object that can exist in an invalid state is a bug waiting to surface. The constructor is the single point where invalid data is rejected.
+  - Equality must be by value (all fields compared), never by object identity. Two EmailAddress("a@b.com") instances must be equal even if they are different objects in memory.
+  - Replace primitives with value objects wherever the concept has rules. If you find yourself writing the same validation for a string or number in three places, extract a value object.
+  - Value objects carry behavior — not just data. Money knows how to add and multiply. DateRange knows how to check containment. EmailAddress knows its domain.
+  - Keep value objects side-effect-free. Their methods should return new values, not mutate state, write to databases, or send messages.
+  - Use value objects aggressively in rich domains. Even small concepts like `Percentage`, `Rating`, `OrderId`, `Version`, or `FilePath` earn their cost when they prevent mistakes and centralize validation.
+  - Value objects need no repository, no lifecycle management, no identity tracking. They are created, used, and discarded. This simplicity is their power.
+  - Prefer many small value objects over a few large ones. A `Money` plus a `Quantity` is clearer than a single `PriceDetail` class that bundles them together.
+
+related_tags: [value-objects, immutability, validation, primitive-obsession, domain-types, equality-by-value, ddd-tactical, side-effect-free]

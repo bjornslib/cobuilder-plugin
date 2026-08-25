@@ -1,0 +1,142 @@
+id: pep257-docstrings-009
+name: PEP 257 Docstring Conventions — One-liners, Multi-line, and Indentation Handling
+category: readability
+canonical_tags: ['python', 'readability']
+sources:
+  - open_sources/python/pep-0257.html
+  - open_sources/python/pep-0008.html
+summary: >
+  PEP 257 standardizes docstring structure: a string literal as the first statement in a module,
+  function, class, or method. Use triple double quotes (""") for all docstrings. One-liners fit on
+  a single line with closing quotes on the same line and prescribe the effect as a command ("Return X").
+  Multi-line docstrings have a summary line, blank line, then detailed description. Closing quotes go
+  on their own line. Docstring processing tools strip uniform indentation from the second line onward.
+  All public modules, functions, classes, and methods should have docstrings.
+examples:
+  - language: python
+    bad: |
+      # Missing docstring — no documentation for tools or readers.
+      def kos_root():
+          global _kos_root
+          if _kos_root:
+              return _kos_root
+          ...
+
+      # One-liner with closing quotes on separate line — wastes vertical space.
+      def get_user(user_id):
+          """Return the user object for the given ID.
+          """
+          ...
+
+      # Signature-style docstring — redundant with introspection.
+      def function(a, b):
+          """function(a, b) -> list"""
+          ...
+
+      # Uses single quotes instead of triple double quotes.
+      def calculate(x):
+          'Multiply x by 2 and return the result.'
+          return x * 2
+
+      # Multi-line without a blank line after summary — tools can't extract it.
+      def complex(real=0.0, imag=0.0):
+          """Form a complex number.
+          Keyword arguments:
+          real -- the real part (default 0.0)
+          imag -- the imaginary part (default 0.0)
+          """
+          ...
+
+      # ALL-CAPS argument names (Emacs convention) — Python is case-sensitive.
+      def send_message(RECIPIENT, MESSAGE):
+          """Send MESSAGE to RECIPIENT."""
+          ...
+    good: |
+      """PEP 257 docstring conventions: triple double quotes, command-style
+      one-liners, structured multi-line docs with blank-line separation.
+      """
+
+
+      def kos_root():
+          """Return the pathname of the KOS root directory."""
+          global _kos_root
+          if _kos_root:
+              return _kos_root
+          ...
+
+
+      def function(a, b):
+          """Do X and return a list."""
+          ...
+
+
+      def complex(real: float = 0.0, imag: float = 0.0) -> complex:
+          """Form a complex number.
+
+          Keyword arguments:
+          real -- the real part (default 0.0)
+          imag -- the imaginary part (default 0.0)
+          """
+          if imag == 0.0 and real == 0.0:
+              return complex_zero
+          ...
+
+
+      class UserService:
+          """Manage user lifecycle operations.
+
+          Provides creation, retrieval, update, and deletion of User entities.
+          Subclasses may override _validate_user to add custom validation.
+
+          Public methods:
+          create_user -- create and persist a new user
+          get_user -- retrieve a user by ID
+          delete_user -- soft-delete a user by ID
+          """
+
+          def create_user(self, email: str, name: str) -> User:
+              """Create and persist a new user.
+
+              Raises ValidationError if email is invalid or name is empty.
+              """
+              ...
+
+
+      def trim(docstring: str) -> str:
+          """Strip uniform indentation from the second and further lines.
+
+          Blank lines at the beginning and end are removed. Relative
+          indentation within the docstring is preserved.
+          """
+          if not docstring:
+              return ""
+          lines = docstring.expandtabs().splitlines()
+          # Find minimum indentation of non-blank lines after the first
+          indent = sys.maxsize
+          for line in lines[1:]:
+              stripped = line.lstrip()
+              if stripped:
+                  indent = min(indent, len(line) - len(stripped))
+          # Remove indentation
+          trimmed = [lines[0].strip()]
+          if indent < sys.maxsize:
+              for line in lines[1:]:
+                  trimmed.append(line[indent:].rstrip())
+          # Strip leading/trailing blank lines
+          while trimmed and not trimmed[-1]:
+              trimmed.pop()
+          while trimmed and not trimmed[0]:
+              trimmed.pop(0)
+          return "\n".join(trimmed)
+heuristics:
+  - "Always use triple double quotes (\"\"\") for docstrings, even for one-liners. This makes it easy to later expand the docstring without changing quoting style."
+  - One-line docstrings: keep closing quotes on the same line. Phrase as a command ("Return X", "Do Y") rather than a description. Never repeat the function signature.
+  - "Multi-line docstrings: start with a summary line (like a one-liner), followed by a blank line, then a detailed description. Closing \"\"\" goes on its own line for the last line."
+  - After every class docstring, insert a blank line to visually separate it from the first method.
+  - "Docstring for a script should serve as its usage message (printed on -h). Document command-line syntax, environment variables, and files."
+  - "Module docstring should list exported classes, exceptions, and functions with one-line summaries. Package docstring should also list exported modules and subpackages."
+  - "Function/method docstring should summarize behavior, document arguments, return values, side effects, exceptions raised, and any restrictions."
+  - "Class docstring should summarize behavior, list public methods and instance variables. Document subclassing interface separately. Constructor is documented in __init__'s docstring."
+  - "When overriding a superclass method, use 'override' if the superclass method is not called, 'extend' if it is."
+  - "Do NOT use EMACS convention (UPPER_CASE argument names in running text). Python is case-sensitive; docstring argument names must match the real parameter names exactly."
+related_tags: [pep257, docstrings, documentation, one-liner, multi-line, indentation, readability, doctools]

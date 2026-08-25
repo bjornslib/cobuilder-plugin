@@ -1,0 +1,90 @@
+classDiagram
+    class Initiative {
+        +businessSpec BusinessSpec
+        +epics Epic[]
+    }
+
+    class BusinessSpec {
+        <<visible>>
+        +problem string
+        +epicList string[]
+    }
+
+    class Epic {
+        +name string
+        +mustBeTestable bool
+        +technicalSpec TechnicalSpec
+        +epicRubric Rubric
+        +slices Slice[]
+    }
+
+    class TechnicalSpec {
+        <<visible>>
+        +writtenJustInTime bool
+        +researchVerified bool
+    }
+
+    class Slice {
+        +blindRubric Rubric
+        +score float
+        +attempts int
+        +maxAttempts int
+    }
+
+    class Rubric {
+        <<blind, implementer never reads it>>
+        +criteria Criterion[]
+    }
+
+    class Criterion {
+        +score float
+        +evidence string
+        +critical bool
+    }
+
+    class LedgerEntry {
+        <<append-only>>
+        +epic string
+        +slice string
+        +perCriterionScore float
+        +validatorReason string
+    }
+
+    class G1_BusinessSpec {
+        <<gate, once>>
+        +producesEpics() void
+    }
+
+    class G2_TechnicalSpec {
+        <<gate, per epic>>
+        +producesTechnicalSpec() void
+    }
+
+    class G3_SlicePlanAndRubrics {
+        <<gate, per epic>>
+        +producesSliceList() void
+        +producesBlindRubrics() void
+    }
+
+    class G4_Acceptance {
+        <<gate, per slice then per epic>>
+        +threshold float
+    }
+
+    Initiative "1" --> "*" Epic : decomposes into
+    Epic "1" --> "1" TechnicalSpec : holds
+    Epic "1" --> "1" Rubric : holds epic rubric
+    Epic "1" --> "*" Slice : holds
+    Slice "1" --> "1" Rubric : holds blind rubric
+    Rubric "1" --> "*" Criterion : contains
+    Slice "1" --> "*" LedgerEntry : scored into
+
+    G1_BusinessSpec ..> Initiative : attaches to
+    G1_BusinessSpec ..> Epic : attaches to
+    G2_TechnicalSpec ..> TechnicalSpec : attaches to
+    G3_SlicePlanAndRubrics ..> Slice : attaches to
+    G3_SlicePlanAndRubrics ..> Rubric : attaches to
+    G4_Acceptance ..> Slice : attaches to
+    G4_Acceptance ..> Epic : attaches to
+
+    note for Rubric "BLIND: the implementer never reads Rubric or Criterion.\nBusinessSpec and TechnicalSpec stay visible."

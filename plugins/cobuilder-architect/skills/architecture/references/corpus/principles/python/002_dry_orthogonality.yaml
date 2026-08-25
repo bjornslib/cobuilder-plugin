@@ -1,0 +1,63 @@
+id: dry-orthogonality-001
+name: DRY & Orthogonality
+category: purity
+canonical_tags: ['refactoring', 'readability']
+sources:
+  - books/the-pragmatic-programmer.md
+summary: Don't Repeat Yourself (DRY) and maintain orthogonality to ensure that changes in one area do not ripple across the codebase.
+examples:
+  - language: python
+    bad: |
+      def create_user(name, email, password):
+          # User creation logic
+          user = User(name=name, email=email, password=password)
+          db.save(user)
+          send_welcome_email(user.email)
+          log_activity("user_created", user.id)
+          send_notification(user.email, "Welcome!")
+
+      def create_admin(name, email, password):
+          # Admin creation logic
+          user = User(name=name, email=email, password=password, role="admin")
+          db.save(user)
+          send_welcome_email(user.email)
+          log_activity("user_created", user.id)
+          send_notification(user.email, "Welcome!")
+    good: |
+      def create_user(name, email, password):
+          user = User(name=name, email=email, password=password)
+          db.save(user)
+          send_welcome_email(user.email)
+          log_activity("user_created", user.id)
+
+      def create_admin(name, email, password):
+          user = User(name=name, email=email, password=password, role="admin")
+          db.save(user)
+          send_welcome_email(user.email)
+          log_activity("user_created", user.id)
+
+      def create_user_with_notifications(name, email, password):
+          user = create_user(name, email, password)
+          send_notification(user.email, "Welcome!")
+          return user
+  - language: typescript
+    bad: |
+      function calculateTotal(cart: CartItem[]) {
+        return cart.reduce((sum, item) => sum + item.price * (1 + 0.1), 0); // 10% tax hardcoded
+      }
+      function calculateDiscount(cart: CartItem[]) {
+        return cart.reduce((sum, item) => sum + item.price * (1 + 0.1), 0) * 0.9; // 10% discount hardcoded
+      }
+    good: |
+      const TAX_RATE = 0.1;
+      function calculateTotal(cart: CartItem[]) {
+        return cart.reduce((sum, item) => sum + item.price * (1 + TAX_RATE), 0);
+      }
+      function calculateDiscount(cart: CartItem[]) {
+        return cart.reduce((sum, item) => sum + item.price, 0) * DISCOUNT_RATE;
+      }
+heuristics:
+  - If you find yourself copying and pasting code, extract it into a function.
+  - Keep related logic grouped together; separate unrelated logic into their own functions.
+  - If a change requires modifying multiple files, check if they could be decoupled.
+related_tags: [dry, orthogonality, dnd, automation]

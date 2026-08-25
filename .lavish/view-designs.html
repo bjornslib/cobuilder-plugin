@@ -1,0 +1,478 @@
+<title>Three Views and a Reply Channel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+:root{
+  --bg:#FBFAF8; --panel:#FFFFFF; --sunk:#F1EFEA; --line:#E3E0D8; --line2:#C8C3B6;
+  --ink:#1A1917; --ink2:#53514A; --ink3:#8B8779;
+  --go:#3F6B47; --go-bg:#E2EDE3;
+  --wait:#96650C; --wait-bg:#F7EAD1;
+  --stop:#9C3A34; --stop-bg:#F6DFDC;
+  --link:#33587A; --link-bg:#DEE8F0;
+  --ser:'Instrument Serif',ui-serif,Georgia,serif;
+  --sans:'Public Sans',ui-sans-serif,system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SF Mono',monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141412; --panel:#1C1C19; --sunk:#100F0E; --line:#2C2B27; --line2:#413F38;
+  --ink:#F0EEE8; --ink2:#B6B3A9; --ink3:#817D72;
+  --go:#8FBE96; --go-bg:#1A2A1C;
+  --wait:#D7A64C; --wait-bg:#302512;
+  --stop:#DE8C84; --stop-bg:#331917;
+  --link:#8CB3D4; --link-bg:#152532;
+}}
+:root[data-theme="dark"]{
+  --bg:#141412; --panel:#1C1C19; --sunk:#100F0E; --line:#2C2B27; --line2:#413F38;
+  --ink:#F0EEE8; --ink2:#B6B3A9; --ink3:#817D72;
+  --go:#8FBE96; --go-bg:#1A2A1C;
+  --wait:#D7A64C; --wait-bg:#302512;
+  --stop:#DE8C84; --stop-bg:#331917;
+  --link:#8CB3D4; --link-bg:#152532;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16.5px;line-height:1.62;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px;margin:0 auto;padding:44px 22px 90px}
+h1,h2,h3,h4{margin:0;text-wrap:balance}
+p{margin:0 0 1em}
+code{font-family:var(--mono);font-size:.85em}
+a{color:var(--link)}
+
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink3);margin-bottom:14px}
+h1{font-family:var(--ser);font-size:clamp(38px,6.5vw,62px);font-weight:400;line-height:1.02;letter-spacing:-.015em}
+.sub{font-size:19px;color:var(--ink2);margin-top:18px;max-width:64ch}
+.crumbs{margin-top:24px;padding-top:14px;border-top:1px solid var(--line);font-family:var(--mono);font-size:11.5px;color:var(--ink3);display:flex;gap:8px 20px;flex-wrap:wrap}
+
+section{margin-top:60px}
+.snum{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin-bottom:8px}
+h2{font-family:var(--ser);font-size:34px;font-weight:400;letter-spacing:-.01em;margin-bottom:6px}
+.dek{font-size:17px;color:var(--ink2);max-width:64ch;margin-bottom:26px}
+h3{font-size:17px;font-weight:600;margin:26px 0 8px}
+
+.settled{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:6px 20px;margin-bottom:8px}
+.settled dl{margin:0}
+.settled dt{font-weight:600;font-size:15px;padding-top:15px}
+.settled dd{margin:3px 0 15px;font-size:15px;color:var(--ink2)}
+
+.tag{font-family:var(--mono);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:500;padding:3px 8px;border-radius:20px;white-space:nowrap;display:inline-block}
+.tag.go{background:var(--go-bg);color:var(--go)}
+.tag.wait{background:var(--wait-bg);color:var(--wait)}
+.tag.stop{background:var(--stop-bg);color:var(--stop)}
+.tag.link{background:var(--link-bg);color:var(--link)}
+
+.mock{border:1px solid var(--line2);border-radius:12px;overflow:hidden;background:var(--panel);margin:8px 0 6px}
+.mock .bar{display:flex;align-items:center;gap:7px;padding:9px 14px;background:var(--sunk);border-bottom:1px solid var(--line)}
+.mock .bar i{width:8px;height:8px;border-radius:50%;background:var(--line2);display:block}
+.mock .bar span{margin-left:7px;font-family:var(--mono);font-size:10.5px;color:var(--ink3)}
+.caption{font-size:13.5px;color:var(--ink3);max-width:68ch;margin-bottom:6px}
+
+/* SDLC modes */
+.modes{display:flex;gap:2px;padding:8px 12px 0;background:var(--sunk);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.modes b{font-family:var(--sans);font-size:13px;font-weight:600;padding:8px 14px;border-radius:7px 7px 0 0;color:var(--ink3);background:transparent}
+.modes b.on{background:var(--panel);color:var(--ink);box-shadow:0 -1px 0 var(--line2) inset}
+.modes b.nu::after{content:'new';margin-left:7px;font-family:var(--mono);font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;background:var(--go-bg);color:var(--go);padding:2px 5px;border-radius:20px;vertical-align:1px}
+.sdlcbody{padding:16px 18px}
+.adridx{display:grid;gap:8px;grid-template-columns:1fr}
+@media(min-width:640px){.adridx{grid-template-columns:1fr 1fr}}
+.ar{display:flex;gap:11px;align-items:baseline;border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:13px}
+.ar .aid{font-family:var(--mono);font-size:11px;color:var(--link);font-weight:500;flex:none}
+.ar .at{flex:1;color:var(--ink2);line-height:1.35}
+.ar .ax{font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:20px;flex:none}
+.ar .ax.un{background:var(--wait-bg);color:var(--wait)}
+.ar .ax.ok{background:var(--go-bg);color:var(--go)}
+.ar .ax.orph{background:var(--stop-bg);color:var(--stop)}
+
+/* build view */
+.bv{display:grid;grid-template-columns:1fr;gap:0}
+@media(min-width:720px){.bv{grid-template-columns:206px 1fr}}
+.bv .rail{background:var(--sunk);border-right:1px solid var(--line);padding:14px 12px}
+.bv .gate{padding:8px 10px;border-radius:7px;margin-bottom:4px;display:flex;gap:9px;align-items:flex-start}
+.bv .gate .no{font-family:var(--mono);font-size:10px;color:var(--ink3);padding-top:2px;min-width:14px}
+.bv .gate .nm{font-size:13.5px;font-weight:600;line-height:1.25}
+.bv .gate .st{font-family:var(--mono);font-size:9.5px;margin-top:2px}
+.bv .gate.done .st{color:var(--go)} .bv .gate.done .nm{color:var(--ink2);font-weight:500}
+.bv .gate.now{background:var(--panel);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.bv .gate.now .st{color:var(--wait)}
+.bv .gate.todo{opacity:.55} .bv .gate.todo .st{color:var(--ink3)}
+.bv .body{padding:18px 20px}
+.bv .body h4{font-family:var(--ser);font-size:23px;font-weight:400;margin-bottom:4px}
+.bv .body .who{font-family:var(--mono);font-size:10px;color:var(--ink3);margin-bottom:12px}
+.bv .body .para{height:8px;border-radius:4px;background:var(--sunk);margin-bottom:7px}
+.bv .body .para.s{width:62%}
+.ladder{border-top:1px solid var(--line);padding:14px 20px;background:var(--panel)}
+.ladder .lh{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:9px}
+.sl{display:flex;align-items:center;gap:11px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.sl:last-child{border-bottom:none}
+.sl .box{width:15px;height:15px;border-radius:4px;border:1px solid var(--line2);display:grid;place-items:center;font-size:10px;flex:none}
+.sl .box.ok{background:var(--go);border-color:var(--go);color:#fff}
+.sl .nmm{flex:1;color:var(--ink2)}
+.sl .sc{font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums}
+.sl .sc.ok{color:var(--go);font-weight:600}
+.sl .sc.esc{color:var(--wait);font-weight:600}
+.sl .sc.pend{color:var(--ink3)}
+
+/* contexts */
+.viol{background:var(--stop-bg);border:1px solid var(--stop);border-radius:9px;padding:12px 14px;margin-bottom:14px}
+.viol .vh{font-size:13.5px;font-weight:700;color:var(--stop);margin-bottom:7px;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.viol .vr{font-family:var(--mono);font-size:11.5px;color:var(--ink2);padding:3px 0;display:flex;gap:9px;flex-wrap:wrap;align-items:baseline}
+.viol .vr b{color:var(--stop);font-weight:500}
+.cgrid{display:grid;gap:11px;grid-template-columns:1fr}
+@media(min-width:640px){.cgrid{grid-template-columns:1fr 1fr}}
+.cc{border:1px solid var(--line);border-radius:9px;padding:13px 15px;background:var(--panel)}
+.cc .cn{font-size:15px;font-weight:700;margin-bottom:3px}
+.cc .cm{font-family:var(--mono);font-size:10.5px;color:var(--ink3);margin-bottom:9px}
+.cc .cs{display:flex;gap:16px;font-size:12px;color:var(--ink2)}
+.cc .cs b{display:block;font-family:var(--mono);font-size:16px;color:var(--ink);font-weight:500}
+.cc .adrs{margin-top:10px;padding-top:9px;border-top:1px solid var(--line);display:flex;gap:5px;flex-wrap:wrap}
+.cc .adrs a{font-family:var(--mono);font-size:10px;background:var(--link-bg);color:var(--link);padding:2px 7px;border-radius:4px;text-decoration:none}
+
+/* comments */
+.cmrow{display:grid;grid-template-columns:1fr;gap:0}
+@media(min-width:760px){.cmrow{grid-template-columns:1fr 268px}}
+.cmtext{padding:18px 20px;border-right:1px solid var(--line)}
+.cmtext p{font-size:14.5px;color:var(--ink2);margin:0 0 10px}
+.cmtext .hl{background:var(--wait-bg);box-shadow:0 0 0 2px var(--wait-bg);border-bottom:2px solid var(--wait)}
+.cmtext .anch{font-family:var(--mono);font-size:9.5px;color:var(--ink3);display:block;margin-top:14px;line-height:1.6}
+.cmside{background:var(--sunk);padding:16px}
+.cmside .sh{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:10px}
+.thread{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:11px 12px;margin-bottom:9px}
+.thread .who{font-family:var(--mono);font-size:9.5px;color:var(--ink3);margin-bottom:5px;display:flex;justify-content:space-between}
+.thread .q{font-size:11.5px;color:var(--ink3);border-left:2px solid var(--wait);padding-left:8px;margin-bottom:7px;font-style:italic}
+.thread .t{font-size:13px;color:var(--ink);line-height:1.45}
+.thread.reply{border-left:2px solid var(--go)}
+.thread.reply .t{color:var(--ink2)}
+.stbadge{font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:20px}
+.stbadge.open{background:var(--wait-bg);color:var(--wait)}
+.stbadge.res{background:var(--go-bg);color:var(--go)}
+
+pre.j{font-family:var(--mono);font-size:11.5px;line-height:1.62;background:var(--sunk);border:1px solid var(--line);border-radius:9px;padding:14px 16px;overflow-x:auto;color:var(--ink2);margin:0 0 16px}
+pre.j b{color:var(--ink);font-weight:500}
+pre.j i{color:var(--go);font-style:normal}
+
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel);margin-bottom:16px}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:14px}
+th{font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);text-align:left;padding:10px 14px;background:var(--sunk);border-bottom:1px solid var(--line2)}
+td{padding:10px 14px;border-bottom:1px solid var(--line);color:var(--ink2);vertical-align:top}
+tr:last-child td{border-bottom:none}
+td.mono{font-family:var(--mono);font-size:12px;color:var(--ink)}
+.nu{font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;background:var(--go-bg);color:var(--go);padding:2px 6px;border-radius:20px}
+
+.opts{display:grid;gap:11px;grid-template-columns:1fr;margin-top:6px}
+@media(min-width:820px){.opts{grid-template-columns:repeat(3,1fr)}}
+.opt{border:1px solid var(--line);border-radius:10px;padding:15px 16px;background:var(--panel)}
+.opt.pick{border-color:var(--go);border-width:2px;padding:14px 15px}
+.opt.out{opacity:.72}
+.opt .on{font-family:var(--mono);font-size:10px;color:var(--ink3);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.opt h4{font-size:15px;font-weight:700;margin-bottom:6px}
+.opt p{font-size:13.5px;color:var(--ink2);margin:0}
+
+.finding{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--stop);border-radius:9px;padding:16px 18px;margin-bottom:12px}
+.finding.fix{border-left-color:var(--go)}
+.finding.warn{border-left-color:var(--wait)}
+.finding h4{font-size:16px;font-weight:700;margin-bottom:6px}
+.finding p{font-size:14.5px;color:var(--ink2);margin:0 0 8px}
+.finding p:last-child{margin-bottom:0}
+.finding ul{margin:0;padding-left:20px;font-size:14px;color:var(--ink2)}
+.finding li{margin-bottom:4px}
+
+ol.q{padding-left:0;list-style:none;counter-reset:q;margin:0}
+ol.q li{counter-increment:q;position:relative;padding:0 0 15px 40px;font-size:15.5px;color:var(--ink2)}
+ol.q li::before{content:counter(q);position:absolute;left:0;top:1px;width:25px;height:25px;border-radius:50%;background:var(--sunk);border:1px solid var(--line2);color:var(--ink3);font-family:var(--mono);font-size:11.5px;display:grid;place-items:center}
+ol.q li b{color:var(--ink)}
+
+.ask{margin-top:56px;background:var(--panel);border:2px solid var(--ink);border-radius:12px;padding:28px 30px}
+.ask h3{font-family:var(--ser);font-size:30px;font-weight:400;margin-bottom:12px;letter-spacing:-.01em}
+.ask p{font-size:15.5px;color:var(--ink2);margin:0 0 .6em}
+.ask p:last-child{margin-bottom:0}
+footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--ink3);line-height:1.75}
+</style>
+
+<div class="wrap">
+
+<div class="kicker">Gate 2 input &middot; cobuilder-family &middot; revised 2026-08-21</div>
+<h1>One surface for the whole lifecycle</h1>
+<p class="sub">Designs, ADRs, contexts, builds and pull requests in one viewer. A reply channel that borrows its anchor from the lavish CLI and keeps a ledger the lavish CLI does not have. And the record model underneath both.</p>
+<div class="crumbs">
+  <span>02b-view-designs.md &middot; 02c-record-model.md</span>
+  <span>revised after reading viewer/index.html and lavish-axi</span>
+</div>
+
+<section>
+  <div class="snum">Corrections</div>
+  <h2>Three things the last version got wrong</h2>
+  <div class="settled">
+    <dl>
+      <dt>The ADRs are not floating <span class="tag go">corrected</span></dt>
+      <dd>All 17 compile into <code>adrs.js</code>. Sixteen are reachable through an <code>.adr-badge</code> chip. Only <b>ADR-0013</b> has no route. <code>unanchored: true</code> describes a different join &mdash; ADR to context &mdash; and says nothing about visibility. Two separate problems, conflated in the last version.</dd>
+      <dt>But reachability is incidental, and that is the real gap <span class="tag stop">stands</span></dt>
+      <dd>An ADR is visible only because some PR entry or design happens to cite it. There is no index. You cannot browse the decisions, only stumble on them.</dd>
+      <dt>The viewer already has a comments drawer <span class="tag stop">I proposed building one</span></dt>
+      <dd><code>viewer/index.html:705</code>. Press <kbd>c</kbd>. Level-tagged comment, a list, persisted to <code>localStorage</code>, and <b>Copy review as markdown</b>. That is option&nbsp;3 of the last version, already shipped. The question is an upgrade, not a build.</dd>
+    </dl>
+  </div>
+</section>
+
+<section>
+  <div class="snum">Design A</div>
+  <h2>One surface, four modes</h2>
+  <p class="dek">The viewer already switches between Designs and Pull requests, ships four sheet dialogs, and reads six projections. Two more modes and an index are an extension of a shape that exists, not a new application.</p>
+
+  <div class="mock">
+    <div class="bar"><i></i><i></i><i></i><span>cobuilder &middot; self</span></div>
+    <div class="modes">
+      <b>Designs</b><b>Pull requests</b><b class="on nu">Decisions</b><b class="nu">Contexts</b><b class="nu">Builds</b>
+    </div>
+    <div class="sdlcbody">
+      <div class="adridx">
+        <div class="ar"><span class="aid">ADR-0016</span><span class="at">Five sibling plugins, bundle as the only seam</span><span class="ax ok">context</span></div>
+        <div class="ar"><span class="aid">ADR-0017</span><span class="at">Vendored shared code, compatibility gate</span><span class="ax ok">context</span></div>
+        <div class="ar"><span class="aid">ADR-0013</span><span class="at">Design mode and implement, the join</span><span class="ax orph">no route</span></div>
+        <div class="ar"><span class="aid">ADR-0011</span><span class="at">Design mode</span><span class="ax un">district only</span></div>
+        <div class="ar"><span class="aid">ADR-0006</span><span class="at">Three-phase bundle self-migration</span><span class="ax un">district only</span></div>
+        <div class="ar"><span class="aid">ADR-0003</span><span class="at">Unify bundle storage</span><span class="ax un">district only</span></div>
+      </div>
+    </div>
+  </div>
+  <p class="caption">The Decisions mode is the index that does not exist. Its value is not the list &mdash; it is the third column, which shows at a glance that 15 of 17 records anchor to an inferred district rather than a verified context, and that one is reachable from nowhere.</p>
+
+  <h3>Builds &mdash; the gate spine</h3>
+  <p><code>00-status.md</code> is not a fifth document to display. It is the <b>state that drives the view</b>. Approval marks and scores become chrome, and the four gate documents become panels.</p>
+  <div class="mock">
+    <div class="bar"><i></i><i></i><i></i><span>builds &middot; cobuilder-family</span></div>
+    <div class="bv">
+      <div class="rail">
+        <div class="gate done"><span class="no">1</span><span><span class="nm">Product</span><span class="st">approved 08-20</span></span></div>
+        <div class="gate now"><span class="no">2</span><span><span class="nm">Architecture</span><span class="st">in progress</span></span></div>
+        <div class="gate todo"><span class="no">3</span><span><span class="nm">Program design</span><span class="st">pending</span></span></div>
+        <div class="gate todo"><span class="no">4</span><span><span class="nm">Slices &amp; rubrics</span><span class="st">pending</span></span></div>
+      </div>
+      <div class="body">
+        <h4>Architecture</h4>
+        <div class="who">02-architecture.md &middot; 02a artifact map &middot; 02b views &middot; 02c record model</div>
+        <div class="para"></div><div class="para"></div><div class="para s"></div>
+      </div>
+    </div>
+    <div class="ladder">
+      <div class="lh">Slices &mdash; threshold 0.90</div>
+      <div class="sl"><span class="box ok">&#10003;</span><span class="nmm">1 &mdash; tracer bullet: one plugin manifest loads</span><span class="sc ok">0.94</span></div>
+      <div class="sl"><span class="box ok">&#10003;</span><span class="nmm">2 &mdash; shared/ symlink resolves from a cache</span><span class="sc esc">0.87 &middot; escalated, attempt 3</span></div>
+      <div class="sl"><span class="box"></span><span class="nmm">3 &mdash; require_compatible refuses on a newer floor</span><span class="sc pend">&mdash;</span></div>
+    </div>
+  </div>
+  <p class="caption">The escalated slice keeps its score and attempt count in view. That is what a status file tends to bury.</p>
+
+  <h3>Contexts &mdash; violations lead</h3>
+  <div class="mock">
+    <div class="bar"><i></i><i></i><i></i><span>contexts</span></div>
+    <div class="sdlcbody">
+      <div class="viol">
+        <div class="vh">3 boundary violations &mdash; each one an ADR candidate <span class="tag stop">act on these</span></div>
+        <div class="vr"><b>bundle-io</b> &rarr; <b>narrative</b> <span>imports story.json shape directly, bypassing the projection</span></div>
+        <div class="vr"><b>viewer</b> &rarr; <b>scripts</b> <span>reads a constant that _bundle_meta owns</span></div>
+      </div>
+      <div class="cgrid">
+        <div class="cc">
+          <div class="cn">cobuilder-packaging</div>
+          <div class="cm">.claude-plugin/ &middot; commands/ &middot; skills/</div>
+          <div class="cs"><span><b>3</b>modules</span><span><b>1</b>violation</span><span><b>2</b>ADRs</span></div>
+          <div class="adrs"><a href="#">ADR-0016</a><a href="#">ADR-0017</a></div>
+        </div>
+        <div class="cc">
+          <div class="cn">bundle-io</div>
+          <div class="cm">scripts/_bundle_meta &middot; migrate &middot; verify</div>
+          <div class="cs"><span><b>4</b>modules</span><span><b>2</b>violations</span><span><b>0</b>ADRs</span></div>
+          <div class="adrs"><span style="font-family:var(--mono);font-size:10px;color:var(--ink3)">no anchored ADR</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="caption">Describe mode records each violation as an ADR candidate, which is a call to action and belongs above the fold. A context with no anchored ADR reads as a gap rather than an absence.</p>
+</section>
+
+<section>
+  <div class="snum">Design B</div>
+  <h2>The reply channel</h2>
+  <p class="dek">Take the anchor from the lavish CLI. Keep the ledger it does not have. Upgrade the drawer that already exists rather than building a second one.</p>
+
+  <div class="mock">
+    <div class="bar"><i></i><i></i><i></i><span>viewer &middot; PR 11 &middot; level 2</span></div>
+    <div class="cmrow">
+      <div class="cmtext">
+        <p>The split is easy to state and the cost is easy to miss. Today one plugin writes the bundle, so the bundle cannot disagree with itself.</p>
+        <p>Four plugins can be four different versions on one machine, and <span class="hl">each carries its own vendored copy of the code</span> that decides what a bundle is allowed to contain.</p>
+        <span class="anch">selector computed on selection, not written into the page:<br>div.level-stack &gt; p:nth-of-type(2) &nbsp;range [0,58]&ndash;[0,101]</span>
+      </div>
+      <div class="cmside">
+        <div class="sh">Threads &middot; 1 open</div>
+        <div class="thread">
+          <div class="who"><span>you</span><span class="stbadge open">open</span></div>
+          <div class="q">&ldquo;each carries its own vendored copy of the code&rdquo;</div>
+          <div class="t">Is this still true after the split, or does the floor check make it moot?</div>
+        </div>
+        <div class="thread reply">
+          <div class="who"><span>claude</span><span class="stbadge res">resolved</span></div>
+          <div class="q">&ldquo;the migration ladder runs in memory&rdquo;</div>
+          <div class="t">Still true. Verified at migrate_bundle.py:282.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>What the lavish CLI does better, and what it lacks</h3>
+  <div class="finding fix">
+    <h4>Better: the anchor is computed at annotation time, from the live DOM</h4>
+    <p>Its <code>selector(el)</code> walks up to five ancestors, short-circuits on a real <code>id</code>, and falls back to <code>:nth-of-type</code>. Text selections capture a real DOM range &mdash; node path plus character offset on both ends. So <b>any</b> element and any mid-sentence selection is annotatable with no prior authoring.</p>
+    <p>The earlier sketch wanted a <code>data-fb</code> attribute written into the page at build time. That forces the generator to decide in advance what is commentable, and it pollutes the markup. Strictly worse. Dropped.</p>
+  </div>
+  <div class="finding warn">
+    <h4>Lacks: any durable record of what a person said</h4>
+    <p><code>store.takeFeedback()</code> returns the queued prompts and clears them in the same transaction. There is no per-comment id that survives a reload &mdash; <code>uid</code> is a WeakMap counter reset on every page load &mdash; no <code>state</code>, no thread, and no author field.</p>
+    <p>Verified on this machine: all <b>18</b> sessions in <code>~/.lavish-axi/state.json</code> hold <code>prompts: []</code>. The only lifecycle state it ships anywhere is <code>detected &rarr; queued &rarr; resolved</code>, and that belongs to auto-detected layout warnings, not to anything a human wrote.</p>
+  </div>
+  <div class="finding">
+    <h4>Cannot be adopted wholesale</h4>
+    <p>Node&nbsp;&ge;22, <code>npx</code> on every call, a background Express server on 127.0.0.1:4387, a blocking foreground poll as the notification path, and a dependency tree including Express, Excalidraw, Tailwind and Mermaid. Its <code>share</code> path uploads to a third-party host, which its own SKILL.md flags. Against an install surface of <code>/plugin install</code> and nothing else, that is disqualifying &mdash; the same test that rules out Postgres below.</p>
+  </div>
+
+  <h3>Two more ideas worth taking</h3>
+  <p><b>A queue-key dedupe.</b> Re-annotating the same spot replaces the pending item instead of duplicating it. Cheap, and the sketch had nothing like it.</p>
+  <p><b>Machine findings stay in their own channel.</b> The lavish CLI keeps layout warnings apart from human prompts. An automated finding must not compete with human intent in one inbox. The sketch collapsed the two.</p>
+
+  <h3>The upgrade, in two steps</h3>
+  <div class="opts">
+    <div class="opt pick">
+      <div class="on"><span>Step 1</span><span class="tag go">viewer only</span></div>
+      <h4>Widen the anchor</h4>
+      <p>From a whole level to a computed selector plus a DOM range plus the quoted text. No build-time tagging.</p>
+    </div>
+    <div class="opt pick">
+      <div class="on"><span>Step 2</span><span class="tag wait">view mode changes</span></div>
+      <h4>Replace the clipboard with a ledger</h4>
+      <p><code>POST /feedback</code> appends to <code>threads.ndjson</code>. The bare file server becomes a small handler. Keep the clipboard as the fallback.</p>
+    </div>
+    <div class="opt out">
+      <div class="on"><span>Not this</span></div>
+      <h4>A second comment system</h4>
+      <p>The drawer, its persistence, and its markdown export already work. Rebuilding them would throw away working code to gain nothing.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="snum">Design C</div>
+  <h2>The record model</h2>
+  <p class="dek">The proposal was a small database. The need is real and already measured. The engine is the part to argue about.</p>
+
+  <div class="opts">
+    <div class="opt out">
+      <div class="on"><span>Postgres</span><span class="tag stop">out</span></div>
+      <h4>A service</h4>
+      <p>Fails the install-surface test that just disqualified the lavish CLI. <code>/plugin install</code> and nothing else means no daemon and no external service.</p>
+    </div>
+    <div class="opt">
+      <div class="on"><span>Local SQLite</span><span class="tag wait">deferred, not rejected</span></div>
+      <h4>A file, not a service &mdash; but no reader yet</h4>
+      <p>Stdlib in Python, zero install, real query semantics. It loses today on one fact: <b>the viewer cannot read it.</b> Six <code>&lt;script src&gt;</code> tags assign window globals, and <code>export_artifact.py</code> inlines each as literal JSON. Reaching SQLite needs WASM, which breaks the buildless viewer and the 16&nbsp;MiB budget. So it would be a third layer with no reader.</p>
+    </div>
+    <div class="opt pick">
+      <div class="on"><span>JSON</span><span class="tag go">forced, not settled for</span></div>
+      <h4>The primary consumer decides</h4>
+      <p><code>data/index.json</code> plus <code>index.js</code>, derived by a new <code>build_index.py</code>, full rebuild, never authored. The same rule <code>build_adrs.py</code> and <code>build_designs.py</code> already follow.</p>
+    </div>
+  </div>
+
+  <div class="finding fix">
+    <h4>The engine is the reversible half. Identity is not.</h4>
+    <p>What makes state referenceable is stable identity and resolvable joins, not the store that holds them. Get the ids right and a local SQLite file can be added later as a build-time index without touching a single authored record. Get the ids wrong and no engine helps.</p>
+    <p><b>The threshold that would earn it.</b> A JSON index answers a lookup by id and a one-hop join by loading the file. It cannot answer an arbitrary traversal without loading everything &mdash; <em>which ADRs govern the contexts touched by pull requests merged after a date</em>. When a real question needs that, SQLite arrives as a build-time index beside <code>index.json</code>, not as a replacement for it.</p>
+  </div>
+
+  <h3>We already have the database</h3>
+  <p><code>story.json</code>, <code>adrs.json</code>, <code>designs.js</code>, <code>inventory.yaml</code> and <code>publish-manifest.json</code> are tables in a file-based store with a <code>schema_version</code>, a migration ladder, and an authored-field guard. What is missing is not an engine. It is a declared entity model, stable identity across types, and an index that resolves the joins.</p>
+
+  <pre class="j">design &#9472;&#9472;&lt; epic &#9472;&#9472;? pull_request
+  &#9474;                     &#9474;
+  &#9474;                     &#9500;&#9472;&#9472;&lt; <i>comment</i>
+  &#9474;                     &#9492;&#9472;&#9472;&gt; adr *
+  &#9500;&#9472;&#9472;&gt; adr *
+  &#9492;&#9472;&#9472;&lt; gate &#9472;&#9472;&lt; slice &#9472;&#9472;&lt; score
+
+adr &#9472;&#9472;&gt; context          <b>maps_to &mdash; declared 17/17, resolves 2/17</b>
+adr &#9472;&#9472;&gt; adr              related_decisions, typed edges
+context &#9472;&#9472;&lt; boundary_rule &#9472;&#9472;? adr   a violation is an ADR candidate
+<i>comment</i> &#9472;&#9472;&gt; any entity   plus the DOM anchor above</pre>
+
+  <p>Two cardinalities are already load-bearing: an epic maps to <b>zero or one</b> pull request through <code>epics[].branch</code>, and a branch may carry <b>more than one</b> design, which ADR-0013 settles.</p>
+
+  <h3>Identity &mdash; two entities have none today</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Entity</th><th>Id</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>adr</td><td class="mono">ADR-NNNN</td><td>stable, from the filename</td></tr>
+        <tr><td>design / context</td><td class="mono">directory name</td><td>stable</td></tr>
+        <tr><td>epic</td><td class="mono">&lt;design&gt;/&lt;epic-id&gt;</td><td>must be scoped &mdash; <code>E1</code> repeats across designs</td></tr>
+        <tr><td>pull_request</td><td class="mono">integer</td><td>already the timeline key</td></tr>
+        <tr><td>boundary_rule</td><td class="mono">&lt;context&gt;/&lt;n&gt;</td><td><span class="nu">new</span> rules have no id today</td></tr>
+        <tr><td>comment</td><td class="mono">ulid</td><td><span class="nu">new</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Where records live &mdash; and the one exception</h3>
+  <p>The existing rule holds: authored source in <code>docs/</code>, derived projections in the bundle. <code>index.json</code> is derived and rebuilt in full.</p>
+  <div class="finding warn">
+    <h4>A comment is the first record that is neither authored source nor derivable from it</h4>
+    <p>A reader writes it at read time. It has no home in <code>docs/</code>, and no rebuild can reconstruct it. It gets an append-only store at <code>&lt;bundle-dir&gt;/feedback/threads.ndjson</code>, and the index reads it without owning it.</p>
+    <p>That asymmetry is worth naming rather than smoothing over. Comments join the paid art and the authored narrative as content a rebuild would destroy, which puts them under the same migration guard.</p>
+  </div>
+
+  <pre class="j">{"id":<b>"01JCXZ…"</b>, "state":<b>"open"</b>,
+ "entity":{"type":"pull_request","id":11,"level":2},
+ "anchor":{"selector":<i>"div.level-stack &gt; p:nth-of-type(2)"</i>,
+           "range":{"start":[0,58],"end":[0,101]},
+           "quote":"each carries its own vendored copy of the code"},
+ "body":"is this still true after the split?",
+ "author":"human", "ts":"2026-08-21T14:02:00Z",
+ "queue_key":"pr11/l2/p2"}
+
+&rarr; &lt;bundle-dir&gt;/feedback/threads.ndjson</pre>
+</section>
+
+<section>
+  <div class="snum">Still open</div>
+  <h2>Four questions</h2>
+  <ol class="q">
+    <li><b>One <code>index.json</code>, or one file per entity type?</b> One file is simpler. Several match the pattern already in <code>data/</code>.</li>
+    <li><b>Does the index subsume <code>adrs.js</code> and <code>designs.js</code>, or sit beside them?</b> <code>build_index.py</code> would be the sixth build script either way.</li>
+    <li><b>Does the write endpoint land now, or does publishing become the default instead?</b> A published page already carries comment threads with no new code. These two answers substitute for each other.</li>
+    <li><b>Do comments join the migration guard from the first commit,</b> or once a reader has written one worth losing?</li>
+  </ol>
+</section>
+
+<section>
+  <div class="snum">Unverified</div>
+  <h2>What this rests on</h2>
+  <div class="finding warn">
+    <h4>The lavish internals were read, not run</h4>
+    <p>The selector walk and range capture come from <code>dist/cli.mjs</code> around lines 5037 and 5354. The drain behaviour of <code>takeFeedback()</code> was read at line 7522 and corroborated against 18 real sessions on disk, but no session was run end to end.</p>
+  </div>
+  <div class="finding warn">
+    <h4>No estimate for build_index.py</h4>
+    <p>Its scope depends on question 2. A subsuming index is a different script from one that sits beside the existing projections.</p>
+  </div>
+</section>
+
+<div class="ask">
+  <h3>Questions 1 and 2 shape the schema. Question 3 decides whether Gate 2 ends here.</h3>
+  <p>The record model is the last architectural piece Gate&nbsp;2 needs. Once the index shape and the write endpoint are decided, <code>02-architecture.md</code> can be written from these three inputs and put to you for approval.</p>
+  <p>One thing worth doing first regardless: <code>/cobuilder-architect:describe</code> for <code>cobuilder-packaging</code>. It writes the first <code>boundary.yaml</code>, gives the Contexts mode something real to render, and unblocks approving ADR-0016 and ADR-0017 &mdash; all from one run.</p>
+</div>
+
+<footer>
+  Sources of record: <code>docs/plans/cobuilder-family/02b-view-designs.md</code> and <code>02c-record-model.md</code>. This page presents them and does not replace them.<br>
+  Gate 1 approved 2026-08-20 &middot; Gate 2 in progress.
+</footer>
+
+</div>

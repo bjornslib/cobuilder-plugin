@@ -1,0 +1,107 @@
+id: srp-defensive-001
+name: Single Responsibility & Defensive Programming
+category: robustness
+canonical_tags: ['refactoring', 'resilience']
+sources:
+  - books/code-complete.md
+  - books/clean-code.md
+summary: Each routine, class, or module should own a focused responsibility. Defensive programming validates inputs at trust boundaries, uses assertions for programmer assumptions, and fails in diagnosable ways rather than silently continuing from corrupted state.
+examples:
+  - language: python
+    bad: |
+      def process_payment(order_id: int, card_token: str):
+          """Process payment, update order, send emails, log everything."""
+          order = db.get_order(order_id)
+          if not order:
+              return  # silent failure
+          total = order["total"]
+          # Charge card...
+          db.update_order_status(order_id, "paid")
+          email_service.send_receipt(order["customer_email"], total)
+          analytics.track("payment_completed", {"order_id": order_id})
+          log_service.info(f"Order {order_id} paid")
+    good: |
+      from dataclasses import dataclass
+      from typing import Optional
+
+
+      @dataclass
+      class Order:
+          id: int
+          total: float
+          customer_email: str
+          status: str
+
+
+      class OrderNotFoundError(Exception):
+          pass
+
+
+      def process_payment(order_repo: OrderRepository,
+                          payment_gateway: PaymentGateway,
+                          notification_service: NotificationService,
+                          order_id: int,
+                          card_token: str) -> None:
+          """Orchestrate payment processing. Each dependency has one job."""
+          order = order_repo.get_by_id(order_id)
+          if order is None:
+              raise OrderNotFoundError(f"Order {order_id} not found")
+          if order.status != "pending":
+              raise ValueError(f"Order {order_id} is already {order.status}")
+
+          payment_gateway.charge(order.total, card_token)
+          order_repo.update_status(order_id, "paid")
+          notification_service.send_receipt(order)
+  - language: typescript
+    bad: |
+      function updateUser(id: string, data: any) {
+        const user = db.find(id);
+        user.name = data.name;       // no validation
+        user.email = data.email;     // could be anything
+        db.save(user);
+        emailService.send("updated", user.email);  // mixed concerns
+      }
+    good: |
+      interface UpdateUserRequest {
+        name: string;
+        email: string;
+      }
+
+      class InvalidUserDataError extends Error {
+        constructor(message: string) {
+          super(message);
+          this.name = "InvalidUserDataError";
+        }
+      }
+
+      function validate(request: UpdateUserRequest): void {
+        if (!request.name?.trim()) {
+          throw new InvalidUserDataError("Name is required");
+        }
+        if (!request.email?.includes("@")) {
+          throw new InvalidUserDataError("Valid email is required");
+        }
+      }
+
+      export async function updateUser(
+        userRepo: UserRepository,
+        id: string,
+        data: UpdateUserRequest,
+      ): Promise<User> {
+        validate(data);
+        const user = await userRepo.findById(id);
+        if (!user) throw new Error(`User ${id} not found`);
+
+        user.name = data.name;
+        user.email = data.email;
+        return userRepo.save(user);
+      }
+heuristics:
+  - Validate inputs at trust boundaries — never assume callers are correct.
+  - Use assertions or invariant checks where programmer assumptions matter.
+  - Distinguish between recoverable conditions and programming errors.
+  - Fail in a way that preserves diagnosability. Do not silently continue from corrupted state.
+  - Each class or module should own a focused responsibility. If you describe it with "and," split it.
+  - Separate orchestration (wiring dependencies together) from business logic (pure computation).
+  - Swallowing exceptions without context creates debugging nightmares — always preserve the original error.
+related_tags: [srp, defensive-programming, input-validation, robustness, single-responsibility]

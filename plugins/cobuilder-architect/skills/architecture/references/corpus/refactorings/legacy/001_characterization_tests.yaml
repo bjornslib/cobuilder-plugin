@@ -1,0 +1,243 @@
+id: characterization-tests-001
+name: Characterization Tests — Capture Current Behavior
+category: refactoring
+canonical_tags: [refactoring, readability]
+sources:
+  - books/working-effectively-with-legacy-code.md
+summary: Before modifying legacy code, write characterization tests that lock down current behavior — even ugly behavior — so you can detect unintended changes during refactoring.
+technique:
+  name: Characterization Testing
+  when_to_use: When you need to modify code whose current behavior is unclear or undocumented.
+  steps:
+    - step: 1
+      action: Identify the exact code area you plan to modify.
+      rationale: Narrow scope prevents analysis paralysis. Only test what you're about to change.
+    - step: 2
+      action: Determine whether trusted tests already protect that behavior.
+      rationale: Don't duplicate existing coverage. Characterization tests fill gaps, not replace good tests.
+    - step: 3
+      action: Observe externally visible behavior — return values, side effects, output.
+      rationale: Test what consumers actually depend on, not internal state.
+    - step: 4
+      action: Write a test that exercises the current code path and asserts today's output.
+      rationale: This test will FAIL if behavior accidentally changes during refactoring.
+    - step: 5
+      action: Label the test as a characterization test with a clear prefix like CHARACTERIZATION.
+      rationale: Future developers know this test captures legacy behavior, not intended design.
+    - step: 6
+      action: Run the test and confirm it passes against current code.
+      rationale: A failing characterization test means you misunderstood current behavior — investigate first.
+    - step: 7
+      action: Proceed with the change. The characterization test now acts as a safety net.
+      rationale: If refactoring breaks legacy behavior, the test catches it immediately.
+  code_examples:
+    - scenario: Characterization test on a mystery function
+      language: python
+      bad: |
+        # No tests. Just change the code and hope.
+        def calculate_shipping(weight: float, destination: str) -> float:
+            base = weight * 2.5
+            if destination in ("AK", "HI"):
+                return base + 15.0
+            if weight > 50:
+                return base + 25.0
+            return max(base, 5.99)
+      good: |
+        import pytest
+
+        # Step 1: Characterize current behavior first
+        class TestCharacterizationCalculateShipping:
+            """CHARACTERIZATION: Locking current behavior before adding express shipping."""
+
+            def test_standard_rate_for_small_package(self):
+                # Observed behavior: min charge is $5.99
+                assert calculate_shipping(1.0, "CA") == 5.99
+
+            def test_alaska_surcharge(self):
+                # Observed behavior: AK/HI adds flat $15
+                assert calculate_shipping(10.0, "AK") == 40.0  # 10*2.5 + 15
+
+            def test_heavy_package_surcharge(self):
+                # Observed behavior: >50 lbs adds $25
+                assert calculate_shipping(60.0, "CA") == 175.0  # 60*2.5 + 25
+
+            def test_zero_weight_edge_case(self):
+                # Captured: 0 weight still charges min $5.99 — may be a bug, but real clients rely on it
+                assert calculate_shipping(0.0, "CA") == 5.99
+    - scenario: Characterization test on side-effect-heavy code
+      language: typescript
+      bad: |
+        // No tests — change at your peril
+        function reconcileOrders(month: string): void {
+          const orders = db.query(`SELECT * FROM orders WHERE month = '${month}'`);
+          const report: string[] = [];
+          for (const o of orders) {
+            if (o.status === 'pending') {
+              report.push(`UNRECONCILED: ${o.id}`);
+            }
+          }
+          fs.writeFileSync(`/reports/${month}.txt`, report.join('\n'));
+          if (report.length > 0) {
+            emailService.send('admin@corp.com', 'Reconciliation Alert', report.join('\n'));
+          }
+        }
+      good: |
+        import { describe, it, expect, vi } from 'vitest';
+
+        // Step 1: Write characterization test — observe what the function produces as output
+        describe('CHARACTERIZATION: reconcileOrders current behavior', () => {
+          it('writes report file with unreconciled orders', () => {
+            // Setup: seed DB with known data
+            db.seed([{ id: 'ORD-1', month: '2025-01', status: 'pending' }]);
+
+            // Spy on the hard outputs to observe behavior
+            const writeSpy = vi.spyOn(fs, 'writeFileSync');
+
+            reconcileOrders('2025-01');
+
+            // Characterization assertion: captured that the file IS written with this exact format
+            expect(writeSpy).toHaveBeenCalledWith(
+              '/reports/2025-01.txt',
+              'UNRECONCILED: ORD-1'
+            );
+          });
+
+          it('sends email when there are unreconciled orders', () => {
+            db.seed([{ id: 'ORD-2', month: '2025-01', status: 'pending' }]);
+
+            const emailSpy = vi.spyOn(emailService, 'send');
+
+            reconcileOrders('2025-01');
+
+            // Characterization assertion: captured that email IS sent for unreconciled orders
+            expect(emailSpy).toHaveBeenCalledWith(
+              'admin@corp.com',
+              'Reconciliation Alert',
+              'UNRECONCILED: ORD-2'
+            );
+          });
+
+          it('writes empty file and sends NO email when all orders reconciled', () => {
+            db.seed([{ id: 'ORD-3', month: '2025-01', status: 'reconciled' }]);
+
+            const writeSpy = vi.spyOn(fs, 'writeFileSync');
+            const emailSpy = vi.spyOn(emailService, 'send');
+
+            reconcileOrders('2025-01');
+
+            // Characterization: empty file still gets written (may be intentional)
+            expect(writeSpy).toHaveBeenCalledWith('/reports/2025-01.txt', '');
+            // Characterization: no email for zero unreconciled orders
+            expect(emailSpy).not.toHaveBeenCalled();
+          });
+        });
+  pitfalls:
+    - "Don't 'fix' ugly behavior in characterization tests — capture reality, then decide intentionally."
+    - "Don't test every code path — focus on the slice you're modifying."
+    - "If a behavior looks like a bug but users depend on it, capture it and add a comment."
+    - "Don't delete characterization tests after refactoring — they document historical behavior decisions."
+heuristics:
+  - Test externally visible behavior first, internal state second.
+  - Prefer narrow tests around the modification point over broad system tests.
+  - If setup is too expensive, the design is telling you to create a seam.
+  - Label characterization tests clearly so future developers know they capture legacy behavior, not design intent.
+examples:
+  python:
+    bad: |
+      # No tests. Just change the code and hope.
+      def calculate_shipping(weight: float, destination: str) -> float:
+          base = weight * 2.5
+          if destination in ("AK", "HI"):
+              return base + 15.0
+          if weight > 50:
+              return base + 25.0
+          return max(base, 5.99)
+    good: |
+      import pytest
+
+      # Step 1: Characterize current behavior first
+      class TestCharacterizationCalculateShipping:
+          """CHARACTERIZATION: Locking current behavior before adding express shipping."""
+
+          def test_standard_rate_for_small_package(self):
+              # Observed behavior: min charge is $5.99
+              assert calculate_shipping(1.0, "CA") == 5.99
+
+          def test_alaska_surcharge(self):
+              # Observed behavior: AK/HI adds flat $15
+              assert calculate_shipping(10.0, "AK") == 40.0  # 10*2.5 + 15
+
+          def test_heavy_package_surcharge(self):
+              # Observed behavior: >50 lbs adds $25
+              assert calculate_shipping(60.0, "CA") == 175.0  # 60*2.5 + 25
+
+          def test_zero_weight_edge_case(self):
+              # Captured: 0 weight still charges min $5.99 — may be a bug, but real clients rely on it
+              assert calculate_shipping(0.0, "CA") == 5.99
+  typescript:
+    bad: |
+      // No tests — change at your peril
+      function reconcileOrders(month: string): void {
+        const orders = db.query(`SELECT * FROM orders WHERE month = '${month}'`);
+        const report: string[] = [];
+        for (const o of orders) {
+          if (o.status === 'pending') {
+            report.push(`UNRECONCILED: ${o.id}`);
+          }
+        }
+        fs.writeFileSync(`/reports/${month}.txt`, report.join('\n'));
+        if (report.length > 0) {
+          emailService.send('admin@corp.com', 'Reconciliation Alert', report.join('\n'));
+        }
+      }
+    good: |
+      import { describe, it, expect, vi } from 'vitest';
+
+      // Step 1: Write characterization test — observe what the function produces as output
+      describe('CHARACTERIZATION: reconcileOrders current behavior', () => {
+        it('writes report file with unreconciled orders', () => {
+          // Setup: seed DB with known data
+          db.seed([{ id: 'ORD-1', month: '2025-01', status: 'pending' }]);
+
+          // Spy on the hard outputs to observe behavior
+          const writeSpy = vi.spyOn(fs, 'writeFileSync');
+
+          reconcileOrders('2025-01');
+
+          // Characterization assertion: captured that the file IS written with this exact format
+          expect(writeSpy).toHaveBeenCalledWith(
+            '/reports/2025-01.txt',
+            'UNRECONCILED: ORD-1'
+          );
+        });
+
+        it('sends email when there are unreconciled orders', () => {
+          db.seed([{ id: 'ORD-2', month: '2025-01', status: 'pending' }]);
+
+          const emailSpy = vi.spyOn(emailService, 'send');
+
+          reconcileOrders('2025-01');
+
+          // Characterization assertion: captured that email IS sent for unreconciled orders
+          expect(emailSpy).toHaveBeenCalledWith(
+            'admin@corp.com',
+            'Reconciliation Alert',
+            'UNRECONCILED: ORD-2'
+          );
+        });
+
+        it('writes empty file and sends NO email when all orders reconciled', () => {
+          db.seed([{ id: 'ORD-3', month: '2025-01', status: 'reconciled' }]);
+
+          const writeSpy = vi.spyOn(fs, 'writeFileSync');
+          const emailSpy = vi.spyOn(emailService, 'send');
+
+          reconcileOrders('2025-01');
+
+          // Characterization: empty file still gets written (may be intentional)
+          expect(writeSpy).toHaveBeenCalledWith('/reports/2025-01.txt', '');
+          // Characterization: no email for zero unreconciled orders
+          expect(emailSpy).not.toHaveBeenCalled();
+        });
+      });
+related_tags: [characterization, testing, safety-net, behavior-preservation, incremental]

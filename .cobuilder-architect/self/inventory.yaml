@@ -1,0 +1,27 @@
+generated: 2026-08-19
+provenance: inferred
+contexts:
+  - id: skills
+    label: Skills
+    paths: [skills]
+    summary: Four skills, invoked by name. odyssey holds the orchestration procedure and on-demand references (story-mode, decision-records-lite, baseline-derivation, design-mode, stack cards). architecture holds review, maintenance, design, decisions, describe, and debug modes. mermaid authors the diagrams. ste-writing is a dev-local prose linter and never ships with the plugin.
+  - id: scripts
+    label: Scripts
+    paths: [scripts]
+    summary: Eighteen PEP 723 uv scripts that move data mechanically, including extract_story, extract_diffs, generate_prompts, generate_audio, verify_bundle, build_adrs, build_designs, and render_review. None of them author narrative, ADRs, or diagrams.
+  - id: commands
+    label: Commands
+    paths: [commands]
+    summary: Thin dispatchers, one per mode (baseline, generate, view, publish, submit, design, review, maintenance, decisions, describe, debug, explore-design). Each forwards its arguments into a skill.
+  - id: viewer
+    label: Viewer
+    paths: [viewer]
+    summary: One HTML file that renders a generated bundle. Depends on sibling data files inside a real bundle directory.
+  - id: docs
+    label: Docs
+    paths: [docs]
+    summary: Authored source that no script regenerates. Architecture decision records, design proposals, architecture review reports, a cobuilder-factory plan, and staged pull-request content.
+  - id: .cobuilder-architect
+    label: Bundle Store
+    paths: [.cobuilder-architect]
+    summary: The plugin's own generated output, committed alongside the code it narrates. self holds this repo's own bundle. Two named subfolders hold committed test fixtures generated against other local checkouts.

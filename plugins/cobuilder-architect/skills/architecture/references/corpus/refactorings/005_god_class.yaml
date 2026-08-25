@@ -1,0 +1,180 @@
+id: god-class-005
+name: God Class (Code Smell)
+category: code-smell
+canonical_tags: ['refactoring', 'readability']
+sources:
+  - books/refactoring.md
+  - books/clean-code.md
+summary: |
+  A God Class is a single class that knows too much, does too much, and is touched by every change.
+  It accumulates methods across every concern — persistence, validation, formatting, orchestration,
+  notification — until no one dares refactor it. Fowler identifies the root cause as Divergent Change:
+  when one class changes for many different reasons, it has too many responsibilities.
+  The cure is Extract Class: split the monolith into focused collaborator classes, each with one reason to change.
+examples:
+  - language: python
+    bad: |
+      class UserAccount:
+          """One class to rule them all — 500+ lines, 30+ methods, touched by every sprint."""
+
+          def __init__(self, user_id: str):
+              self.user_id = user_id
+              self._db = Database.get_instance()
+
+          # --- Authentication (5 methods) ---
+          def authenticate(self, password: str) -> bool:
+              row = self._db.query("SELECT password_hash, salt, failed_attempts, locked_until FROM users WHERE id = ?", self.user_id)
+              if not row: return False
+              if row["locked_until"] and row["locked_until"] > datetime.utcnow():
+                  raise AccountLockedError("Account temporarily locked")
+              if not bcrypt.verify(password, row["password_hash"]):
+                  self._record_failed_attempt()
+                  return False
+              self._reset_failed_attempts()
+              return True
+
+          def _record_failed_attempt(self) -> None:
+              self._db.execute("UPDATE users SET failed_attempts = failed_attempts + 1 WHERE id = ?", self.user_id)
+              row = self._db.query("SELECT failed_attempts FROM users WHERE id = ?", self.user_id)
+              if row["failed_attempts"] >= 5:
+                  lock_until = datetime.utcnow() + timedelta(minutes=15)
+                  self._db.execute("UPDATE users SET locked_until = ? WHERE id = ?", lock_until, self.user_id)
+
+          def _reset_failed_attempts(self) -> None:
+              self._db.execute("UPDATE users SET failed_attempts = 0, locked_until = NULL WHERE id = ?", self.user_id)
+
+          def change_password(self, old_pw: str, new_pw: str) -> None:
+              if not self.authenticate(old_pw):
+                  raise ValueError("Current password is incorrect")
+              if len(new_pw) < 8:
+                  raise ValueError("Password must be at least 8 characters")
+              pw_hash = bcrypt.hashpw(new_pw)
+              self._db.execute("UPDATE users SET password_hash = ? WHERE id = ?", pw_hash, self.user_id)
+              self._audit_log("password_changed")
+
+          # --- Profile settings (4 methods) ---
+          def update_profile(self, data: dict) -> None:
+              allowed = {"display_name", "bio", "avatar_url", "timezone"}
+              updates = {k: data[k] for k in allowed if k in data}
+              if "display_name" in updates and len(updates["display_name"]) < 2:
+                  raise ValueError("Display name must be at least 2 characters")
+              if not updates: return
+              set_clause = ", ".join(f"{k} = ?" for k in updates)
+              self._db.execute(f"UPDATE users SET {set_clause} WHERE id = ?", (*updates.values(), self.user_id))
+              self._audit_log("profile_updated")
+
+          # --- Email preferences (3 methods) ---
+          def get_email_preferences(self) -> dict:
+              return self._db.query("SELECT marketing, transactional, weekly_digest FROM email_prefs WHERE user_id = ?", self.user_id)
+
+          def update_email_preferences(self, prefs: dict) -> None:
+              self._db.execute("UPDATE email_prefs SET marketing = ?, transactional = ?, weekly_digest = ? WHERE user_id = ?",
+                               prefs["marketing"], prefs["transactional"], prefs["weekly_digest"], self.user_id)
+
+          # --- Subscription (4 methods) ---
+          def get_subscription(self) -> dict:
+              return self._db.query("SELECT plan, status, current_period_end FROM subscriptions WHERE user_id = ?", self.user_id)
+
+          def upgrade_plan(self, new_plan: str) -> None:
+              plan = self._db.query("SELECT price, features FROM plans WHERE name = ?", new_plan)
+              if not plan: raise ValueError(f"Unknown plan: {new_plan}")
+              self._db.execute("UPDATE subscriptions SET plan = ? WHERE user_id = ?", new_plan, self.user_id)
+              self._bill_customer(plan["price"], f"Upgrade to {new_plan}")
+              self._audit_log("plan_upgraded", metadata={"new_plan": new_plan})
+
+          # --- Billing (3 methods) ---
+          def _bill_customer(self, amount: float, description: str) -> None:
+              payment_info = self._db.query("SELECT stripe_customer_id, default_payment_method FROM billing WHERE user_id = ?", self.user_id)
+              stripe.Charge.create(customer=payment_info["stripe_customer_id"], amount=int(amount * 100),
+                                   currency="usd", source=payment_info["default_payment_method"],
+                                   description=description)
+
+          def get_invoice_history(self) -> list[dict]:
+              return self._db.query_all("SELECT * FROM invoices WHERE user_id = ? ORDER BY created_at DESC", self.user_id)
+
+          # --- Notifications (2 methods) ---
+          def send_welcome_email(self) -> None:
+              user = self._db.query("SELECT email, display_name FROM users WHERE id = ?", self.user_id)
+              email_service.send_template("welcome", user["email"], {"name": user["display_name"]})
+
+          # --- Utility (2 methods) ---
+          def _audit_log(self, action: str, metadata: dict | None = None) -> None:
+              self._db.execute("INSERT INTO audit_log (user_id, action, metadata, timestamp) VALUES (?, ?, ?, ?)",
+                               self.user_id, action, json.dumps(metadata or {}), datetime.utcnow())
+
+          def to_dict(self) -> dict:
+              user = self._db.query("SELECT * FROM users WHERE id = ?", self.user_id)
+              return {"id": user["id"], "email": user["email"], "display_name": user["display_name"]}
+    good: |
+      class UserAuthentication:
+          """Single responsibility: login attempts, password policy, account locking."""
+
+          def __init__(self, user_repo: UserRepository, audit_log: AuditLog):
+              self._users = user_repo
+              self._audit = audit_log
+
+          def authenticate(self, user_id: str, password: str) -> bool:
+              user = self._users.get_credentials(user_id)
+              if not user:
+                  return False
+              if user.is_locked:
+                  raise AccountLockedError("Account temporarily locked")
+              if not bcrypt.verify(password, user.password_hash):
+                  self._users.increment_failed_attempts(user_id)
+                  if user.failed_attempts + 1 >= 5:
+                      self._users.lock_account(user_id, duration_minutes=15)
+                  return False
+              self._users.reset_failed_attempts(user_id)
+              return True
+
+          def change_password(self, user_id: str, old_pw: str, new_pw: str) -> None:
+              if not self.authenticate(user_id, old_pw):
+                  raise ValueError("Current password is incorrect")
+              PasswordPolicy.validate(new_pw)
+              self._users.update_password(user_id, bcrypt.hashpw(new_pw))
+              self._audit.record(user_id, "password_changed")
+
+      class UserProfile:
+          """Display name, bio, avatar — pure data operations on user profile."""
+
+          def __init__(self, user_repo: UserRepository, audit_log: AuditLog):
+              self._users = user_repo
+              self._audit = audit_log
+
+          def update(self, user_id: str, changes: dict) -> None:
+              validated = ProfileValidator.validate(changes)
+              self._users.update_profile(user_id, validated)
+              self._audit.record(user_id, "profile_updated")
+
+      class SubscriptionManager:
+          """Plan management, upgrades, billing — one reason to change: pricing model."""
+
+          def __init__(self, billing_gateway: BillingGateway, audit_log: AuditLog):
+              self._billing = billing_gateway
+              self._audit = audit_log
+
+          def upgrade(self, user_id: str, new_plan: str) -> None:
+              plan = PlanRepository.get(new_plan)
+              if not plan:
+                  raise ValueError(f"Unknown plan: {new_plan}")
+              self._billing.charge(user_id, plan.price, f"Upgrade to {new_plan}")
+              PlanRepository.assign(user_id, new_plan)
+              self._audit.record(user_id, "plan_upgraded", {"new_plan": new_plan})
+
+      # Each class is under 30 lines, testable in isolation, and has exactly one reason to change.
+heuristics:
+  - >-
+    A God Class is diagnosed by the 'and' test: "This class does X AND Y AND Z."
+    If you need three 'ands' to describe it, it's a God Class.
+  - Every God Class is really a cluster of hidden domain concepts. Name them, then extract them.
+  - Look for groups of methods that share a common prefix or suffix (e.g., all billing_*, all _email_*) — these are extraction candidates.
+  - >-
+    Refactoring.md line 138: "If one class changes for many different reasons, split responsibilities."
+    This is Divergent Change detection.
+  - Extract Class is the primary refactoring. Start with the smallest, most isolated concern (email preferences, audit logging) to build confidence.
+  - After extraction, the original class becomes a Facade or Coordinator that delegates to collaborators — or disappears entirely.
+  - Test each extracted class independently before extracting the next one. Batch extraction is risky.
+  - >-
+    Clean Code: "Classes should have one responsibility — one reason to change."
+    SRP is the yardstick.
+related_tags: [god-class, divergent-change, extract-class, single-responsibility-principle, cohesion]

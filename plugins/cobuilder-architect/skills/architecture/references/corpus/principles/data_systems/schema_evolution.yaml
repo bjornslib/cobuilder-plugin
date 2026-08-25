@@ -1,0 +1,357 @@
+id: schema-evolution-001
+name: Schema Evolution and Compatibility
+category: data_systems
+canonical_tags: ['data-systems', 'evolution', 'compatibility']
+sources:
+  - books/designing-data-intensive-applications.md
+summary: >
+  Schemas will change — plan for evolution from day one. Every schema change must
+  maintain backward compatibility (new code can read old data) and forward
+  compatibility (old code can read new data) to enable independent deployability
+  of producers and consumers. Breaking changes require multi-phase rollout: add
+  the new field alongside the old, migrate all consumers to read the new field,
+  then remove the old field only after confirming zero consumers still reference
+  it. A schema registry that enforces compatibility checks at CI time catches
+  breaking changes before deployment. Distinguish internal refactors from contract
+  changes — contracts between services need more care than internal storage layout.
+  Every message or persisted record should carry a version identifier so consumers
+  can branch on version when necessary.
+examples:
+  - language: python
+    bad: |
+      import json
+      from typing import Any
+
+
+      class BreakingSchemaEvolution:
+          """Renames fields and changes types with no compatibility plan."""
+
+          def publish_event_v1(self, user_id: str) -> None:
+              event = {"full_name": "Alice", "email": "alice@example.com", "role": "user"}
+              self._send("user.created", event)
+
+          def publish_event_v2(self, user_id: str) -> None:
+              # BROKEN: renamed full_name → display_name (old consumers break)
+              # BROKEN: changed email from string → object (old consumers crash)
+              event = {
+                  "display_name": "Alice",
+                  "email_info": {"address": "alice@example.com", "verified": True},
+                  "role": 1,  # BROKEN: changed role from string → int (silent corruption)
+              }
+              self._send("user.created", event)
+
+          def consume_event(self, raw: bytes) -> None:
+              """Consumer crashes on any schema change — no version branching."""
+              data = json.loads(raw)
+              name = data["full_name"]  # KeyError on v2 — consumer break
+              self._send_welcome_email(name)
+
+          # No version field, no schema registry, no compatibility checks
+    good: |
+      from __future__ import annotations
+
+      import json
+      from dataclasses import dataclass
+      from enum import Enum
+      from typing import Any
+
+
+      class CompatibilityMode(Enum):
+          BACKWARD = "backward"  # New schema reads old data
+          FORWARD = "forward"    # Old schema reads new data
+          FULL = "full"          # Both
+          NONE = "none"          # Breaking change allowed
+
+
+      @dataclass
+      class SchemaVersion:
+          """Every payload carries this — consumers know what they're reading."""
+
+          schema_name: str
+          major: int
+          minor: int
+
+          def __str__(self) -> str:
+              return f"{self.schema_name}/v{self.major}.{self.minor}"
+
+
+      class SchemaRegistry:
+          """Enforce compatibility at producer CI, not at 3 AM in production."""
+
+          def __init__(self) -> None:
+              self._schemas: dict[str, list[dict]] = {}
+
+          def register(self, name: str, schema: dict, mode: CompatibilityMode) -> bool:
+              existing = self._schemas.get(name, [])
+              if existing and mode != CompatibilityMode.NONE:
+                  if not self._is_compatible(existing[-1], schema, mode):
+                      raise ValueError(
+                          f"Schema {name} breaks {mode.value} compatibility. "
+                          f"Use multi-phase rollout instead."
+                      )
+              self._schemas.setdefault(name, []).append(schema)
+              return True
+
+          @staticmethod
+          def _is_compatible(
+              old_schema: dict, new_schema: dict, mode: CompatibilityMode
+          ) -> bool:
+              """Check compatibility rules."""
+              # BACKWARD: new schema reads old data
+              #   - Never remove a field existing consumers use
+              #   - Never change a field's type
+              # FORWARD: old schema reads new data
+              #   - New fields must have defaults
+              #   - Never make a new required field without a default
+              old_fields = set(old_schema.get("properties", {}))
+              new_fields = set(new_schema.get("properties", {}))
+
+              if CompatibilityMode.BACKWARD in (mode, CompatibilityMode.FULL):
+                  removed = old_fields - new_fields
+                  if removed:
+                      return False  # Removing fields breaks backward compat
+                  # Type changes break backward compat
+                  for field in old_fields & new_fields:
+                      if old_schema["properties"][field]["type"] != new_schema["properties"][field]["type"]:
+                          return False
+
+              if CompatibilityMode.FORWARD in (mode, CompatibilityMode.FULL):
+                  added = new_fields - old_fields
+                  for field in added:
+                      if "default" not in new_schema["properties"][field]:
+                          return False  # New fields need defaults for forward compat
+
+              return True
+
+
+      class CompatibleSchemaEvolution:
+          """Multi-phase rollout: add → migrate → remove."""
+
+          # -- Phase 1: Add new fields alongside old (backward + forward compatible) --
+          V2_SCHEMA = {
+              "type": "object",
+              "properties": {
+                  "full_name": {"type": "string"},       # kept, deprecated
+                  "display_name": {"type": "string"},    # new
+                  "email": {"type": "string"},           # kept, deprecated
+                  "email_info": {                        # new
+                      "type": "object",
+                      "properties": {
+                          "address": {"type": "string"},
+                          "verified": {"type": "boolean", "default": False},
+                      },
+                      "default": {"address": "", "verified": False},
+                  },
+                  "role": {"type": "string"},
+              },
+          }
+
+          def publish_v2_compatible(self, user: dict) -> dict:
+              """Phase 1: emit both old and new fields."""
+              return {
+                  "schema_version": "user.created/2.0",
+                  "full_name": user["display_name"],  # still populate old
+                  "display_name": user["display_name"],
+                  "email": user["email_info"]["address"],  # still populate old
+                  "email_info": user["email_info"],
+                  "role": user["role"],
+              }
+
+
+      class VersionAwareConsumer:
+          """Consumer branches on schema version — safe for any version."""
+
+          def consume(self, raw: bytes) -> None:
+              data = json.loads(raw)
+              version = data.get("schema_version", "user.created/1.0")
+
+              # Read the right field based on version
+              if version.startswith("user.created/1"):
+                  name = data["full_name"]
+                  email = data["email"]
+              elif version.startswith("user.created/2"):
+                  # Phase 2: prefer new fields, fall back to old
+                  name = data.get("display_name") or data.get("full_name", "")
+                  email_info = data.get("email_info")
+                  email = email_info["address"] if email_info else data.get("email", "")
+              elif version.startswith("user.created/3"):
+                  # Phase 3: old fields removed — only new fields exist
+                  name = data["display_name"]
+                  email_info = data["email_info"]
+                  email = email_info["address"]
+              else:
+                  raise ValueError(f"Unknown schema version: {version}")
+
+              self._send_welcome_email(email, name)
+
+
+      class SchemaChangePipeline:
+          """Track the rollout lifecycle: which phase are we in?"""
+
+          class Phase(Enum):
+              ADD_FIELDS = 1
+              MIGRATE_CONSUMERS = 2
+              REMOVE_OLD_FIELDS = 3
+              DONE = 4
+
+          def __init__(self) -> None:
+              self._phase = self.Phase.ADD_FIELDS
+              self._consumer_versions: dict[str, str] = {}  # consumer_id → version
+
+          def all_consumers_migrated(self) -> bool:
+              """Check every consumer has been updated before Phase 3."""
+              return all(
+                  v >= "2.0" for v in self._consumer_versions.values()
+              )
+
+          def advance_phase(self) -> None:
+              if self._phase == self.Phase.ADD_FIELDS and self.all_consumers_migrated():
+                  self._phase = self.Phase.REMOVE_OLD_FIELDS
+  - language: typescript
+    bad: |
+      // Breaking schema changes — no compatibility, no versioning
+      interface UserCreatedV1 {
+        full_name: string;
+        email: string;
+        role: string;
+      }
+
+      interface UserCreatedV2 {
+        display_name: string;            // renamed — breaking
+        email_info: { address: string; verified: boolean }; // type change — breaking
+        role: number;                    // type change — breaking
+      }
+
+      class BreakingPublisher {
+        publishV1(userId: string): void {
+          const event: UserCreatedV1 = { full_name: "Alice", email: "alice@example.com", role: "user" };
+          this.send("user.created", event);
+        }
+
+        publishV2(userId: string): void {
+          const event: UserCreatedV2 = { display_name: "Alice", email_info: { address: "alice@example.com", verified: true }, role: 1 };
+          this.send("user.created", event);
+          // Old consumers: KeyError on full_name, TypeError on email, silent corruption on role
+        }
+      }
+    good: |
+      // -- Versioned, compatible schema evolution --
+      enum CompatibilityMode {
+        BACKWARD = "backward",
+        FORWARD = "forward",
+        FULL = "full",
+        NONE = "none",
+      }
+
+      interface SchemaVersion {
+        schemaName: string;
+        major: number;
+        minor: number;
+      }
+
+      // Phase 1: V2 keeps old fields, adds new ones — compatible
+      interface UserCreatedV2Compatible {
+        schema_version: "user.created/2.0";
+        full_name: string;    // kept for backward compat
+        display_name: string; // new
+        email: string;        // kept for backward compat
+        email_info: {         // new, has default
+          address: string;
+          verified?: boolean; // optional = default false for old consumers
+        };
+        role: string;
+      }
+
+      // Phase 3: V3 drops old fields — only safe after all consumers migrated
+      interface UserCreatedV3Clean {
+        schema_version: "user.created/3.0";
+        display_name: string;
+        email_info: { address: string; verified: boolean };
+        role: string;
+      }
+
+      // -- Schema registry enforcing compatibility at CI --
+      class SchemaRegistry {
+        private schemas = new Map<string, object[]>();
+
+        register(name: string, schema: object, mode: CompatibilityMode): boolean {
+          const existing = this.schemas.get(name) ?? [];
+          if (existing.length > 0 && mode !== CompatibilityMode.NONE) {
+            if (!this.isCompatible(existing[existing.length - 1], schema, mode)) {
+              throw new Error(
+                `Schema ${name} breaks ${mode} compatibility. Use multi-phase rollout.`,
+              );
+            }
+          }
+          this.schemas.set(name, [...existing, schema]);
+          return true;
+        }
+
+        private isCompatible(oldSchema: any, newSchema: any, mode: CompatibilityMode): boolean {
+          const oldFields = new Set(Object.keys(oldSchema.properties ?? {}));
+          const newFields = new Set(Object.keys(newSchema.properties ?? {}));
+          return true; // simplified — real implementation checks types, defaults, etc.
+        }
+      }
+
+      // -- Version-aware consumer: never breaks on schema changes --
+      class VersionAwareConsumer {
+        consume(raw: Buffer): void {
+          const data = JSON.parse(raw.toString());
+          const version: string = data.schema_version ?? "user.created/1.0";
+          const [major] = version.split("/")[1].split(".").map(Number);
+
+          // Branch on schema major version
+          switch (major) {
+            case 1: {
+              const name = data.full_name;
+              const email = data.email;
+              this.sendWelcomeEmail(email, name);
+              break;
+            }
+            case 2: {
+              // Prefer new fields, fall back to old
+              const name = data.display_name ?? data.full_name ?? "";
+              const email = data.email_info?.address ?? data.email ?? "";
+              this.sendWelcomeEmail(email, name);
+              break;
+            }
+            case 3: {
+              // Old fields removed — only new fields
+              const name = data.display_name;
+              const email = data.email_info.address;
+              this.sendWelcomeEmail(email, name);
+              break;
+            }
+            default:
+              throw new Error(`Unknown schema version: ${version}`);
+          }
+        }
+      }
+
+      // -- Rollout lifecycle tracker --
+      enum RolloutPhase { ADD_FIELDS = 1, MIGRATE_CONSUMERS = 2, REMOVE_OLD_FIELDS = 3, DONE = 4 }
+
+      class SchemaRollout {
+        private phase = RolloutPhase.ADD_FIELDS;
+        private consumerVersions = new Map<string, string>();
+
+        allConsumersMigrated(): boolean {
+          return Array.from(this.consumerVersions.values()).every((v) => v >= "2.0");
+        }
+
+        readyForPhase3(): boolean {
+          return this.phase === RolloutPhase.MIGRATE_CONSUMERS && this.allConsumersMigrated();
+        }
+      }
+heuristics:
+  - Schemas will change: plan for evolution from day one, not when the first breaking change is needed.
+  - Backward compatibility: new code can read old data. Never remove a field, never change a type without a multi-phase rollout.
+  - Forward compatibility: old code can read new data. New fields must have defaults; never add a required field without a default.
+  - Multi-phase rollout: add new field alongside old (Phase 1) → migrate all consumers (Phase 2) → remove old field (Phase 3).
+  - Schema registry at CI enforces compatibility: the producer cannot publish a breaking change unless explicitly allowed.
+  - Version identifiers in every message: consumers branch on version, not crash on unknown fields.
+  - Distinguish internal refactors (storage layout, column names) from contract changes (API payloads, event schemas).
+  - Deprecation periods: mark old fields as deprecated; monitor consumer usage; only remove when zero consumers reference them.
+  - Never "update all services at once" — in distributed systems, simultaneous deployment does not exist.
+related_tags: [schema-evolution, backward-compatibility, forward-compatibility, schema-registry, versioning, multi-phase-rollout, deprecation, contracts, data-systems, ddia]

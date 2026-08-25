@@ -1,0 +1,499 @@
+id: extract-method-001
+name: "Refactoring — Extract Method"
+category: design-patterns
+canonical_tags: ['refactoring', 'composing-methods', 'extract-method', 'small-functions', 'single-responsibility', 'readability', 'naming']
+sources:
+  - books/refactoring.md
+  - books/clean-code.md
+  - open_sources/design_patterns/refactoring-guru-patterns.txt
+  - open_sources/design_patterns/augmentcode-refactoring.html
+summary: >
+  Extract Method is the foundational refactoring: take a coherent fragment of
+  code, give it a descriptive name, and make it a separate method. Every other
+  structural refactoring (Decompose Conditional, Replace Temp with Query,
+  Introduce Parameter Object) depends on Extract Method as its mechanical
+  backbone. The rule: when a code fragment can be grouped together and the group
+  has a clear purpose that can be expressed in a name, extract it. The name is
+  the primary deliverable — a good name eliminates the need for a comment, and
+  a bad name makes the extraction worse than leaving the code inline. The
+  fragment must be coherent: don't extract random lines that happen to be
+  adjacent; extract a logical unit of work. The extracted method should do one
+  thing, operate at a single level of abstraction, and have no hidden side
+  effects beyond what its name implies. Apply this when: (1) a method is too
+  long to understand at a glance (the reader must scroll or mentally chunk), (2)
+  a block of code needs a comment to explain what it does, (3) the same code
+  block appears in two places, or (4) you're making space for a deeper
+  refactoring (extract first to separate concerns, then refactor each concern).
+  Do NOT apply when the extracted fragment is too small (a one-liner whose name
+  is longer than the code) or when the extraction forces awkward parameter
+  passing (too many temps, too many parameters — use Replace Temp with Query
+  first to dissolve local variable dependencies).
+examples:
+  - language: python
+    bad: |
+      # BAD: A monolithic function that mixes filtering, aggregation,
+      # formatting, and I/O. The reader must parse 40+ lines to understand
+      # what each section does. Adding a new filter or format means
+      # touching code inside a function that already has four concerns.
+      # No section is independently testable without setting up the full
+      # function's state.
+
+      import json
+      from datetime import datetime
+
+      def process_and_send_orders(orders: list[dict], customer_id: str) -> str:
+          # Filter: only paid, non-cancelled orders for this customer
+          applicable = []
+          for order in orders:
+              if (
+                  order.get("customer_id") == customer_id
+                  and order.get("status") == "paid"
+                  and order.get("cancelled_at") is None
+                  and order.get("total", 0) > 0
+              ):
+                  applicable.append(order)
+
+          if not applicable:
+              return "No orders to process"
+
+          # Calculate: subtotal, tax, discount, grand total
+          subtotal = sum(o.get("total", 0) for o in applicable)
+          loyalty_discount = subtotal * 0.05 if len(applicable) > 3 else 0.0
+          tax_rate = 0.08
+          tax = (subtotal - loyalty_discount) * tax_rate
+          grand_total = subtotal - loyalty_discount + tax
+
+          # Format: summary with breakdown
+          summary_lines = [
+              f"Order Summary — {datetime.now().strftime('%Y-%m-%d')}",
+              f"Customer: {customer_id}",
+              f"Orders:   {len(applicable)}",
+              f"Subtotal: ${subtotal:.2f}",
+              f"Discount: ${loyalty_discount:.2f}",
+              f"Tax:      ${tax:.2f}",
+              f"Total:    ${grand_total:.2f}",
+          ]
+
+          # I/O: write receipt
+          receipt_path = f"/tmp/receipt_{customer_id}_{int(datetime.now().timestamp())}.json"
+          with open(receipt_path, "w") as f:
+              json.dump(
+                  {
+                      "customer_id": customer_id,
+                      "order_ids": [o["id"] for o in applicable],
+                      "subtotal": subtotal,
+                      "discount": loyalty_discount,
+                      "tax": tax,
+                      "grand_total": grand_total,
+                  },
+                  f,
+              )
+
+          return "\n".join(summary_lines)
+
+      # This function has FOUR separate jobs: filter, calculate, format, write.
+      # Changing any one of them means editing code that lives next to the
+      # other three. A bug in tax calculation is found inside a function
+      # called `process_and_send_orders` — the name doesn't help locate the
+      # source of the bug.
+
+    good: |
+      # GOOD: Extract Method separates the monolithic function into four
+      # small, named functions — each at the same level of abstraction. The
+      # orchestrating function reads like a narrative: filter orders,
+      # calculate totals, format summary, write receipt. Each extracted
+      # function is independently testable, and each has one reason to change.
+
+      import json
+      from datetime import datetime
+
+
+      def _filter_applicable_orders(
+          orders: list[dict], customer_id: str
+      ) -> list[dict]:
+          """Return paid, non-cancelled orders with positive totals for the
+          given customer."""
+          return [
+              o
+              for o in orders
+              if (
+                  o.get("customer_id") == customer_id
+                  and o.get("status") == "paid"
+                  and o.get("cancelled_at") is None
+                  and o.get("total", 0) > 0
+              )
+          ]
+
+
+      def _calculate_totals(
+          applicable_orders: list[dict],
+      ) -> dict[str, float]:
+          """Compute subtotal, loyalty discount, tax, and grand total."""
+          subtotal = sum(o.get("total", 0) for o in applicable_orders)
+          loyalty_discount = subtotal * 0.05 if len(applicable_orders) > 3 else 0.0
+          tax = (subtotal - loyalty_discount) * 0.08
+          return {
+              "subtotal": subtotal,
+              "discount": loyalty_discount,
+              "tax": tax,
+              "grand_total": subtotal - loyalty_discount + tax,
+          }
+
+
+      def _format_summary(
+          customer_id: str,
+          order_count: int,
+          totals: dict[str, float],
+      ) -> str:
+          """Format the order summary as human-readable text."""
+          return "\n".join(
+              [
+                  f"Order Summary — {datetime.now().strftime('%Y-%m-%d')}",
+                  f"Customer: {customer_id}",
+                  f"Orders:   {order_count}",
+                  f"Subtotal: ${totals['subtotal']:.2f}",
+                  f"Discount: ${totals['discount']:.2f}",
+                  f"Tax:      ${totals['tax']:.2f}",
+                  f"Total:    ${totals['grand_total']:.2f}",
+              ]
+          )
+
+
+      def _write_receipt(
+          customer_id: str,
+          applicable_orders: list[dict],
+          totals: dict[str, float],
+      ) -> str:
+          """Write the receipt JSON to disk. Return the file path."""
+          path = f"/tmp/receipt_{customer_id}_{int(datetime.now().timestamp())}.json"
+          with open(path, "w") as f:
+              json.dump(
+                  {
+                      "customer_id": customer_id,
+                      "order_ids": [o["id"] for o in applicable_orders],
+                      **totals,
+                  },
+                  f,
+              )
+          return path
+
+
+      # --- Orchestrator: reads like a spec, one line per step ---
+
+      def process_and_send_orders(orders: list[dict], customer_id: str) -> str:
+          applicable = _filter_applicable_orders(orders, customer_id)
+          if not applicable:
+              return "No orders to process"
+
+          totals = _calculate_totals(applicable)
+          _write_receipt(customer_id, applicable, totals)
+          return _format_summary(customer_id, len(applicable), totals)
+
+
+      # Each extracted function is independently testable:
+      def test_filter_excludes_cancelled():
+          orders = [
+              {"id": "1", "customer_id": "C1", "status": "paid", "total": 50},
+              {"id": "2", "customer_id": "C1", "status": "paid", "cancelled_at": "2025-01-01", "total": 20},
+          ]
+          result = _filter_applicable_orders(orders, "C1")
+          assert len(result) == 1
+          assert result[0]["id"] == "1"
+
+
+      def test_calculate_totals_simple():
+          orders = [{"total": 100}, {"total": 200}]
+          totals = _calculate_totals(orders)
+          assert totals["subtotal"] == 300.0
+          assert totals["discount"] == 0.0  # only 2 orders, no loyalty discount
+          assert totals["tax"] == 24.0
+          assert totals["grand_total"] == 324.0
+
+      # Notice: the orchestrator `process_and_send_orders` is now trivially
+      # correct by inspection. The complexity lives in the named helpers,
+      # each of which has a test. A future developer who needs to change the
+      # tax rate opens `_calculate_totals` — its name tells them exactly
+      # where to look.
+
+  - language: typescript
+    bad: |
+      // BAD: validateAndProcessRegistration does three things: validates
+      // form fields, encrypts the password, and persists the user. These
+      // are three levels of abstraction (validation logic, crypto, database).
+      // Changing the password policy means touching code next to crypto
+      // and persistence — the concerns are mechanically coupled.
+
+      import * as crypto from "crypto";
+      import { db } from "./db";
+
+      interface RegistrationForm {
+        email: string;
+        password: string;
+        confirmPassword: string;
+        age?: number;
+      }
+
+      function validateAndProcessRegistration(
+        form: RegistrationForm
+      ): { success: boolean; userId?: string; error?: string } {
+        // Validation logic — 10 lines of form checks
+        if (!form.email || !form.email.includes("@")) {
+          return { success: false, error: "Invalid email" };
+        }
+        if (!form.password || form.password.length < 8) {
+          return { success: false, error: "Password too short" };
+        }
+        if (form.password !== form.confirmPassword) {
+          return { success: false, error: "Passwords do not match" };
+        }
+        if (form.age !== undefined && form.age < 13) {
+          return { success: false, error: "Must be at least 13" };
+        }
+
+        // Crypto logic — mixed in between validation and database
+        const salt = crypto.randomBytes(16).toString("hex");
+        const hashedPassword = crypto
+          .pbkdf2Sync(form.password, salt, 10000, 64, "sha512")
+          .toString("hex");
+
+        // Database logic — at the bottom of the function
+        const user = db.insertUser({
+          email: form.email,
+          passwordHash: hashedPassword,
+          salt,
+        });
+
+        return { success: true, userId: user.id };
+      }
+
+      // The function violates the "one level of abstraction" rule: the reader
+      // jumps from "is the email valid?" (business rule) to "create a salt
+      // with 16 random bytes" (crypto primitive) to "insert a row" (database
+      // operation) without breathing.
+
+    good: |
+      // GOOD: Extract Method separates validation, hashing, and persistence
+      // into three functions. The orchestrator `registerUser` reads at one
+      // level of abstraction: validate the form, hash the password, insert
+      // the user. Each extracted function is independently testable and
+      // reusable.
+
+      import * as crypto from "crypto";
+      import { db } from "./db";
+
+      interface RegistrationForm {
+        email: string;
+        password: string;
+        confirmPassword: string;
+        age?: number;
+      }
+
+      interface ValidationError {
+        field: string;
+        message: string;
+      }
+
+      // --- Validation: extracted and named ---
+
+      function validateRegistrationForm(
+        form: RegistrationForm
+      ): ValidationError[] {
+        const errors: ValidationError[] = [];
+
+        if (!form.email || !form.email.includes("@")) {
+          errors.push({ field: "email", message: "Invalid email" });
+        }
+        if (!form.password || form.password.length < 8) {
+          errors.push({ field: "password", message: "Password too short" });
+        }
+        if (form.password !== form.confirmPassword) {
+          errors.push({ field: "confirmPassword", message: "Passwords do not match" });
+        }
+        if (form.age !== undefined && form.age < 13) {
+          errors.push({ field: "age", message: "Must be at least 13" });
+        }
+
+        return errors;
+      }
+
+      // --- Crypto: extracted and named ---
+
+      function hashPassword(
+        password: string
+      ): { hash: string; salt: string } {
+        const salt = crypto.randomBytes(16).toString("hex");
+        const hash = crypto
+          .pbkdf2Sync(password, salt, 10000, 64, "sha512")
+          .toString("hex");
+        return { hash, salt };
+      }
+
+      // --- Persistence: extracted and named ---
+
+      function createUser(
+        email: string,
+        passwordHash: string,
+        salt: string
+      ) {
+        return db.insertUser({ email, passwordHash, salt });
+      }
+
+      // --- Orchestrator: one level of abstraction ---
+
+      function registerUser(
+        form: RegistrationForm
+      ): { success: boolean; userId?: string; errors?: ValidationError[] } {
+        const errors = validateRegistrationForm(form);
+        if (errors.length > 0) {
+          return { success: false, errors };
+        }
+
+        const { hash, salt } = hashPassword(form.password);
+        const user = createUser(form.email, hash, salt);
+
+        return { success: true, userId: user.id };
+      }
+
+      // Each extracted function is independently testable:
+      import { describe, it, expect } from "vitest";
+
+      describe("validateRegistrationForm", () => {
+        it("rejects short passwords", () => {
+          const form: RegistrationForm = {
+            email: "a@b.com", password: "123", confirmPassword: "123",
+          };
+          const errors = validateRegistrationForm(form);
+          expect(errors).toHaveLength(1);
+          expect(errors[0].field).toBe("password");
+        });
+      });
+
+      describe("hashPassword", () => {
+        it("produces different salts for different calls", () => {
+          const r1 = hashPassword("secret");
+          const r2 = hashPassword("secret");
+          expect(r1.salt).not.toBe(r2.salt);
+          expect(r1.hash).not.toBe(r2.hash);
+        });
+      });
+
+      // Adding a new validation rule (e.g., "password must contain a digit")
+      // only touches `validateRegistrationForm`. Adding a new hashing algorithm
+      // only touches `hashPassword`. The orchestrator is unchanged.
+
+heuristics:
+  - >
+    "Extract Method: you have a code fragment that can be grouped together.
+    Turn the fragment into a method whose name explains the purpose of the
+    method" (Fowler, Refactoring). This is the single most important
+    refactoring — every other structural transformation builds on it.
+  - >
+    The name test: if you can't think of a good name for the extracted method,
+    don't extract it. A bad name (`doStuff`, `processData`, `handle`) is worse
+    than the inline code — it adds indirection without explanation. The name
+    should read like a command: `calculateTotal`, `filterActiveUsers`,
+    `validateInput`.
+  - >
+    Apply when a block of code has a clear, separate purpose. The block should
+    be contiguous — lines 10-25 are a validation phase, lines 30-45 are a
+    computation phase. Don't extract a non-contiguous block that requires the
+    reader to skip around the original function.
+  - >
+    The extracted method should do exactly one thing. After extraction, ask:
+    could I split this method further? If the method name contains "and"
+    (`validateAndFormatAndSend`), it's doing more than one thing — extract
+    again until each method is named with a single verb phrase.
+  - >
+    Keep the extracted method at the same level of abstraction as its siblings
+    in the calling method. If the orchestrator reads "validate form, hash
+    password, save user," each extracted method should represent one of those
+    high-level steps. Don't mix a high-level `processOrder()` with a low-level
+    `formatPriceAsUSD()` — they live at different floors.
+  - >
+    "The mechanical steps: (1) create a new method named after what the fragment
+    does, not how. (2) copy the fragment into the new method. (3) scan the
+    fragment for references to local variables of the source method — those
+    become parameters. (4) replace the fragment in the source method with a
+    call to the new method. (5) compile and run tests after each extraction.
+    Never extract multiple fragments at once — one extraction, one green test
+    suite, then the next."
+  - >
+    "Local variable handling is the hard part of Extract Method. If the fragment
+    reads a local variable, pass it as a parameter. If the fragment modifies a
+    local variable and the source method needs the modified value, the variable
+    is an output parameter — in languages that support `out` params (C#), use
+    them; in languages that don't (Python, JavaScript), return the value and
+    reassign at the call site. If the fragment modifies MULTIPLE local variables,
+    consider Replace Method with Method Object or use a result object."
+  - >
+    "Do NOT extract when the fragment is too small. Extracting `x = x + 1` into
+    `incrementX()` adds ceremony without meaning. The threshold: the method name
+    plus the call line should be shorter or clearer than the inline code. A
+    one-line extraction is justified when the line is complex
+    (`filter(o => o.status === 'active' && o.age > 18 && o.country === 'US')`) —
+    the name `filterEligibleCustomers` replaces a comment and a cognitive puzzle."
+  - >
+    In Python, use underscore-prefixed names (`_filter_applicable_orders`) to
+    signal that the extracted method is private to the module. In TypeScript,
+    use `private` or module-scoped functions. The extracted method is
+    implementation detail — don't add it to the public API unless it's
+    genuinely reusable outside the original caller.
+  - >
+    "Extract Method often reveals hidden duplication. After extracting
+    `validateRegistrationForm`, you may find the same validation logic in the
+    password-reset form. Now you can reuse the extraction instead of copying
+    it. This is the 'extract first, deduplicate second' pattern."
+  - >
+    "Consider the test impact before extracting. A good extraction makes the
+    extracted method independently testable — you can now test the validation
+    rules without setting up a database mock. If the extraction forces you to
+    make private methods public just for testing, that's a design smell —
+    consider whether the method belongs on a separate class or module instead
+    of staying private to the original."
+  - >
+    "The inverse is Inline Method: when a method body is as clear as its name,
+    replace calls to it with the body and delete the method. Both directions
+    are valid, and the goal is the right level of abstraction — not maximally
+    extracted code. If a method's name is `getX` and its body is `return this.x`,
+    inline it and access `this.x` directly."
+  - >
+    In functional languages or functional-style TypeScript/Python, consider
+    whether the extracted fragment should be a named function or an anonymous
+    arrow function passed as a parameter. If the fragment is a one-off filter
+    or map callback, a named arrow (`const isEligible = (o) => ...`) is often
+    better than a top-level function — it keeps the logic close to its use site.
+  - >
+    "When extracting from a long function, work top-down: extract the
+    highest-level steps first (the outline), then drill into each extracted
+    method. This is the 'Composed Method' pattern from Smalltalk — the
+    orchestrator becomes a table of contents, and each section gets its own
+    chapter."
+  - >
+    "Always run tests after every extraction. A common pitfall: the extracted
+    method accidentally changes behavior because local variable scoping in the
+    new method is different. A variable that was `let` and reassigned in the
+    original now gets passed by value — the mutation doesn't propagate back.
+    The test suite catches this immediately."
+  - >
+    "Naming the extracted method is the hardest part. Spend time on it. A good
+    name is a verb phrase that a non-programmer domain expert could understand:
+    `calculateOverduePenalty` not `applyRule34`. If you're struggling with the
+    name, the fragment may not be coherent enough — don't extract."
+  - >
+    In methods with guard clauses, extract validation into a dedicated
+    `validate()` function rather than inlining the guards in the orchestrator.
+    This keeps the orchestrator focused on the happy path and gives the
+    validation rules a clear home.
+  - >
+    "After extracting a method, ask: does this method belong in this class?
+    If the extracted method uses more fields from another class (Feature Envy),
+    move it there. Extract Method often reveals misplaced responsibilities —
+    the extraction is correct, but the location is wrong."
+
+related_tags:
+  [extract-method, composing-methods, small-functions, single-responsibility,
+   readability, naming, fowler-refactoring, inline-method, extract-variable,
+   replace-temp-with-query, decompose-conditional, clean-code,
+   one-level-of-abstraction, private-methods, independent-testability,
+   preparatory-refactoring, composed-method, boy-scout-rule,
+   deduplication, refactoring, code-smells, long-function, long-method]

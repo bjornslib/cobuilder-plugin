@@ -1,0 +1,248 @@
+id: 12factor-codebase-001
+name: "12-Factor App — Codebase (One Codebase, Many Deploys)"
+category: cloud-native
+canonical_tags: ['12factor', 'cloud-native', 'codebase', 'version-control', 'deploys']
+sources:
+  - open_sources/design_patterns/12factor-app.txt
+  - open_sources/design_patterns/12factor-codebase.html
+summary: >
+  The Codebase factor mandates that every app has exactly one codebase tracked
+  in a version control system such as Git, Mercurial, or Subversion. There is
+  always a one-to-one correlation between the codebase and the app — multiple
+  codebases constitute a distributed system of multiple apps, not a single app.
+  While there is only one codebase per app, there can be many deploys (development,
+  staging, production) running potentially different commits, all sharing the
+  same codebase lineage. The key anti-pattern is multiple apps sharing the same
+  code; shared logic must be extracted into libraries and pulled in via the
+  dependency manager, not duplicated or co-located. A deploy is simply a running
+  instance of the app, and every developer's local checkout also qualifies as a
+  deploy.
+examples:
+  - language: python
+    bad: |
+      # BAD: Three separate apps (web, worker, admin) share a single monorepo
+      # by importing across each other's directories. The 'shared_utils.py' file
+      # is copy-pasted into each app instead of being extracted as a library.
+      # Any bug fix must be manually applied to all three copies — drift is inevitable.
+      #
+      # Directory layout:
+      # mega-repo/
+      #   web_app/
+      #     main.py          # imports from ../shared_utils
+      #     shared_utils.py  # copy #1
+      #   worker_app/
+      #     worker.py        # imports from ../shared_utils
+      #     shared_utils.py  # copy #2
+      #   admin_app/
+      #     admin.py
+      #     shared_utils.py  # copy #3
+
+      # web_app/main.py — violating the codebase factor
+      import sys
+      sys.path.insert(0, "../shared_utils")  # WHY: reaching across app boundaries
+
+      from shared_utils import format_response  # fragile import
+
+
+      def handle_request(data: dict) -> str:
+          return format_response(data)
+
+
+      # worker_app/worker.py — identical bad pattern
+      import sys
+      sys.path.insert(0, "../shared_utils")  # WHY: copy-paste architecture
+
+      from shared_utils import format_response
+
+
+      def process_job(job: dict) -> str:
+          return format_response(job)
+
+      # WHY this is broken: three copies of shared_utils.py must be kept in sync.
+      # The apps are not independently deployable. The "mega-repo" contains
+      # multiple apps — it's a distributed system pretending to be one app.
+
+    good: |
+      # GOOD: One codebase per app. Shared logic extracted into an installable
+      # library (shared-lib) pulled via pip/requirements.txt. Each app has its
+      # own repository and deploys independently.
+      #
+      # Directory layout (each is a separate Git repo):
+      # web-app/          — repo #1, one app
+      #   main.py
+      #   requirements.txt  # declares shared-lib==1.2.0
+      # worker-app/       — repo #2, separate app
+      #   worker.py
+      #   requirements.txt  # declares shared-lib==1.2.0
+      # shared-lib/       — repo #3, a library, NOT an app
+      #   shared_utils.py
+      #   setup.py
+
+      # web-app/main.py — clean 12-factor approach
+      # WHY: shared_utils is an installed library, versioned and isolated.
+      # The import path is clean and standard.
+      from shared_utils import format_response
+
+
+      def handle_request(data: dict) -> str:
+          return format_response(data)
+
+
+      # web-app/requirements.txt
+      # shared-lib==1.2.0
+      # flask==3.0.0
+      # WHY: Every dependency is explicitly declared. A new developer
+      # runs `pip install -r requirements.txt` and everything works.
+
+      # worker-app/worker.py — same clean pattern
+      from shared_utils import format_response
+
+
+      def process_job(job: dict) -> str:
+          return format_response(job)
+
+      # WHY this works: each app is independently versioned and deployable.
+      # The shared library has its own release cycle. Bug fixes happen once
+      # in shared-lib, and each app updates its pinned version intentionally.
+
+      # shared-lib/setup.py — the library is a proper Python package
+      from setuptools import setup, find_packages
+
+      setup(
+          name="shared-lib",
+          version="1.2.0",
+          packages=find_packages(),
+          install_requires=["requests>=2.28.0"],
+      )
+
+  - language: typescript
+    bad: |
+      // BAD: A monorepo containing three distinct services (api, dashboard, jobs)
+      // that all import from a local '../common' directory. The common code is
+      // NOT published as an npm package — it's just a relative-path import.
+      // Each service shares the same codebase lineage but they are separate apps.
+
+      // packages/api/src/server.ts — violating 12-factor
+      // WHY: importing from '../../common' couples the api service to the
+      // monorepo's directory structure. You can't build/deploy this service
+      // independently.
+      import { formatDate, createLogger } from "../../common/src/utils";
+      import { dbConfig } from "../../common/src/config";
+
+      const logger = createLogger("api");
+
+      export function startServer(port: number) {
+        logger.info(`Starting API server on port ${port}...`);
+        // WHY: dbConfig is shared across all services — changing it for the API
+        // might break the dashboard service. The coupling is hidden.
+      }
+
+      // packages/dashboard/src/app.ts — same bad pattern
+      import { formatDate, createLogger } from "../../common/src/utils";
+      import { dbConfig } from "../../common/src/config";
+
+      const logger = createLogger("dashboard");
+      // WHY: If a developer changes utils.ts for the API, the dashboard may
+      // break silently. There's no version contract between the packages.
+
+    good: |
+      // GOOD: Each app has its own repository (or monorepo with proper package
+      // boundaries via npm workspaces). Shared code is published as an npm
+      // package (@myorg/common-utils) with explicit versioning in package.json.
+
+      // api-service/package.json — standalone app, one codebase
+      // {
+      //   "name": "api-service",
+      //   "version": "2.3.0",
+      //   "dependencies": {
+      //     "@myorg/common-utils": "^1.2.0",
+      //     "express": "^4.18.0"
+      //   }
+      // }
+
+      // api-service/src/server.ts — clean 12-factor approach
+      // WHY: importing from a versioned npm package. The dependency is
+      // explicit in package.json. The api-service can be cloned, installed,
+      // and run independently.
+      import { formatDate, createLogger } from "@myorg/common-utils";
+      import express from "express";
+
+      const logger = createLogger("api-service");
+
+      export function startServer(port: number): void {
+        const app = express();
+        app.listen(port, () => {
+          logger.info(`API server listening on port ${port}`);
+        });
+      }
+
+      // dashboard-service/package.json — separate app, separate codebase
+      // {
+      //   "name": "dashboard-service",
+      //   "version": "1.8.0",
+      //   "dependencies": {
+      //     "@myorg/common-utils": "^1.2.0",
+      //     "next": "^14.0.0"
+      //   }
+      // }
+
+      // dashboard-service/src/app.ts — same clean pattern
+      import { formatDate, createLogger } from "@myorg/common-utils";
+
+      const logger = createLogger("dashboard-service");
+
+      export function renderDashboard(): string {
+        const today = formatDate(new Date());
+        logger.info(`Rendering dashboard for ${today}`);
+        return `Dashboard for ${today}`;
+      }
+
+      // WHY this works: each service is versioned independently. @myorg/common-utils
+      // has its own semver contract. The API can upgrade to common-utils v1.3.0
+      // while the dashboard stays on v1.2.0. No hidden coupling.
+
+heuristics:
+  - >
+    "One codebase tracked in revision control, many deploys" (12factor.net).
+    Every app has exactly one codebase — there is always a 1:1 correlation
+    between the codebase and the app.
+  - >
+    If you have multiple codebases in one repository that are not libraries,
+    you have a distributed system of separate apps. Each component should
+    individually comply with twelve-factor.
+  - >
+    Multiple apps sharing the same code is a violation of twelve-factor.
+    Extract shared code into a library (Python package, npm package, Ruby gem)
+    included via the dependency manager.
+  - >
+    A deploy is a running instance of the app — production, staging, and every
+    developer's local checkout all qualify as deploys. The codebase is the same
+    across all deploys, though different versions (commits) may be active.
+  - >
+    Never copy-paste shared utility code between apps. If two apps need the
+    same logic, publish a library. Copy-paste creates drift and prevents
+    independent deployability.
+  - >
+    A single codebase can produce multiple deployable artifacts (e.g., a web
+    process and a worker process) as long as they are built from the same
+    source tree and represent one logical app.
+  - >
+    Shared libraries should have their own version control repositories and
+    release cycles. They are dependencies, not parts of the app.
+  - >
+    In monorepo setups, enforce that each app directory is independently
+    buildable and deployable. Cross-app imports at the source level are a
+    codebase violation.
+  - >
+    Use the dependency manager to pin exact versions of shared libraries
+    (e.g., `shared-lib==1.2.0` not `>=1.0.0`). This ensures every deploy
+    uses the same library version.
+  - >
+    The litmus test: can a new developer clone the repository and run the app
+    with only the language runtime and dependency manager installed? If they
+    need to clone another repo or manually copy files, the codebase factor is violated.
+
+related_tags:
+  [codebase, version-control, deploys, repository, monorepo, library-extraction,
+   dependency-manager, twelve-factor, cloud-native, distributed-system,
+   independent-deployability, git, shared-code, code-organization]
