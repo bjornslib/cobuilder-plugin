@@ -7,6 +7,7 @@ last_verified: 2026-08-21
 owner: bjornslib
 # --- 42010 decision-record index (schema: references/decision-records.md §2) ---
 id: ADR-0019
+source_pr: 11
 name: "Anchored comments, kept as a durable ledger"
 state: approved
 groups: [viewer, feedback]

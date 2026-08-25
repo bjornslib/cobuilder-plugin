@@ -1,0 +1,49 @@
+classDiagram
+    class Book {
+        +name string
+        +nanoPath string
+        +miniPath string
+        +fullPath string
+        +tierLoaded Tier
+        +escalated bool
+    }
+
+    class Tier {
+        <<enumeration>>
+        NANO
+        MINI
+        FULL
+    }
+
+    class EscalationRule {
+        +minNanoLoads int = 3
+        +escalationMode string = "judgment-gated"
+        +cap string = "supersedes prior 1-primary-plus-1-companion cap"
+        +selectCandidates(corpusResult) Book[]
+        +loadNano(book) void
+        +judgePrinciplesMatter(book, task) bool
+        +escalate(book, targetTier) void
+    }
+
+    class CorpusIndex {
+        +narrowCandidates(task) Book[]
+    }
+
+    class BookIndex {
+        +rule EscalationRule
+        +run(task) GroundingResult
+    }
+
+    class GroundingResult {
+        +nanoOnlyBooks Book[]
+        +escalatedBooks Book[]
+    }
+
+    CorpusIndex --> BookIndex : hands off narrowed candidates
+    BookIndex --> EscalationRule : applies
+    EscalationRule --> Book : loads/escalates
+    Book --> Tier : tierLoaded
+    BookIndex --> GroundingResult : produces
+
+    note for Book "escalated=false -> nano-only for rest of task\nescalated=true -> mini or full, judgment-gated per book"
+    note for EscalationRule "Full-tier loading is never unconditional.\nApplies to Design Stage 1/Stage 3 and\nReview/Maintenance corpus-to-book escalation.\nDoes NOT apply to the separate mandatory\n14-file security corpus load."

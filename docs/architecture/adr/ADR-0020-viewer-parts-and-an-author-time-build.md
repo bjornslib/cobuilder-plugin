@@ -7,6 +7,7 @@ last_verified: 2026-08-24
 owner: bjornslib
 # --- 42010 decision-record index (schema: references/decision-records.md §2) ---
 id: ADR-0020
+source_pr: 11
 name: "Viewer parts and an author-time build"
 state: decided
 groups: [viewer, packaging]

@@ -1,0 +1,24 @@
+C4Container
+    title ADR-0021 book-index.md tiering: nano, mini, full escalation
+
+    Person(session, "Design or Review/Maintenance session", "Reads book-index.md through its own Read tool calls")
+
+    Container_Boundary(t1, "Tier 1 (unchanged)") {
+        Container(corpus, "corpus-index.md", "vendored YAML + markdown", "Cheap heuristic; narrows candidate books before any book file is read")
+    }
+
+    Container_Boundary(t2, "Tier 2 - book-index.md (this design)") {
+        Container(index, "book-index.md", "vendored markdown", "Escalation rule: load minimum 3 nano excerpts, then judgment-gate mini/full per book. Replaces the old 1-primary-plus-1-companion cap")
+        Container(books, "references/books/<name>/{nano,mini,full}.md", "42 vendored files, 14 books", "Three tiers per book: nano ~20-40 lines, mini ~80-150 lines, full 300-1000 lines")
+    }
+
+    Container_Boundary(consumers, "Consumers of the escalation rule") {
+        Container(design_stage, "design-mode.md Stage 1 (Ground) / Stage 3 (Explore)", "reference", "Grounds and explores using book-index.md's tiered rule")
+        Container(review_stage, "Review/Maintenance corpus-to-book escalation", "architecture skill mode", "Escalates from corpus-index.md through book-index.md; separate mandatory 14-file security corpus load is untouched by this design")
+    }
+
+    Rel(session, corpus, "Consults first", "Tier 1 heuristic")
+    Rel(corpus, index, "Narrows candidate books, hands off to")
+    Rel(design_stage, index, "Invokes escalation rule")
+    Rel(review_stage, index, "Invokes escalation rule")
+    Rel(index, books, "Loads >= 3 nano, then judgment-gated mini/full per book")

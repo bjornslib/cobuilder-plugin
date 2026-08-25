@@ -7,6 +7,7 @@ last_verified: 2026-08-21
 owner: bjornslib
 # --- 42010 decision-record index (schema: references/decision-records.md §2) ---
 id: ADR-0018
+source_pr: 11
 name: "One lifecycle surface, and a record index that joins it"
 state: approved
 groups: [viewer, data-model]

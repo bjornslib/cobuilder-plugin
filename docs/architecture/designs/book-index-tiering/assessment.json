@@ -1,0 +1,27 @@
+{
+  "stage": "design",
+  "captured": "2026-08-25",
+  "findings": [
+    {
+      "kind": "prediction",
+      "question": "sensible",
+      "citation": "district:skills",
+      "text": "The approach solves the stated problem: the escalation ladder currently skips two tiers upstream already publishes. The problem belongs in the skills district, where book-index.md already lives, not in a new seam."
+    },
+    {
+      "kind": "prediction",
+      "question": "maintainability",
+      "constraint_introduced": "A design or review-mode session must load a minimum of three nano-tier book excerpts before it may escalate any one book to mini or full tier. Full-tier loading is judgment-gated per book, never unconditional.",
+      "text": "This establishes a real invariant on book-index.md's own escalation rule, replacing the prior 1-primary-plus-1-companion cap for book loading specifically."
+    },
+    {
+      "kind": "prediction",
+      "question": "new_pattern_or_duplicate",
+      "verdict_detail": "new_pattern",
+      "citation": "district:skills",
+      "text": "No ADR or existing file in docs/architecture/adr/ or inventory.yaml covers tiered reference-doc escalation today. This is a new pattern for this repo, not a duplicate or reinvention."
+    }
+  ],
+  "regret_risk": "Judgment-gated escalation has no mechanical check. This repo's own CLAUDE.md names exactly this failure mode from the Gate 4b history: a process step with no mechanical consumer gets skipped, however well it is documented. If that happens here, the 42-file vendoring cost is paid while sessions silently keep reading only full, the same as today, and the nano/mini tiers sit unread.",
+  "verdict": "concerns"
+}
