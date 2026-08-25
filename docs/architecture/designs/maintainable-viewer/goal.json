@@ -1,0 +1,59 @@
+{
+  "name": "maintainable-viewer",
+  "title": "The viewer becomes parts, templates, and mode modules",
+  "adr": "ADR-0020",
+  "adrs": ["ADR-0020", "ADR-0001", "ADR-0018", "ADR-0019"],
+  "created": "2026-08-24",
+  "outcome": "An engineer changes one view mode of the bundle viewer by opening one file of a few hundred lines, and the file that ships is still one self-contained HTML page that publishes as an Artifact unchanged.",
+  "done_when": [
+    "viewer/index.html is produced by build_viewer.py from ordered parts under viewer/src/, and a test fails when the committed output does not equal a fresh build",
+    "no part exceeds roughly 400 lines, and each of the five view modes lives in its own part",
+    "the rail-item, empty-card, and empty-detail fragments have one definition each, instead of 4, 16, and 18 copies",
+    "the 50 scattered mode-predicate calls collapse into one mode registry, and adding a sixth mode touches one new part plus one registry entry",
+    "export_artifact.py matches named markers the parts emit on purpose, instead of incidental literals, and publishing a PR still succeeds byte-for-byte equivalently",
+    "the five modes render identically before and after, proven by measurement in a browser rather than by reading the code"
+  ],
+  "abort_if": [
+    "the single IIFE proves not separable, because sections close over shared state in a way that ordered concatenation cannot preserve without rewriting the state model",
+    "ordered concatenation turns out to be insufficient and the build needs real dependency resolution, which would reopen the bundler option ADR-0020 rejected"
+  ],
+  "min_work": {
+    "derived_from": "4917 measured lines (881 CSS, 3872 JS, 145 functions, 50 mode-predicate calls, 45 innerHTML blocks, 0 templates), 4 related ADRs, 1 bounded context, 35 existing banner-comment sections",
+    "challenge_stage_run": false,
+    "note": "Stage 0 and stage 1 grounding ran on 2026-08-24 and produced the measurements above. Stages 2 through 7 are deliberately deferred at the engineer's request. This design is a backlog entry, not an approved design. It carries no intent.json, narrative.json, assessment.json, or diagrams, and it must not be implemented until design mode runs to completion."
+  },
+  "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
+  "epics": [
+    {
+      "id": "E1",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "The build exists and is guarded. build_viewer.py concatenates ordered parts under viewer/src/ into the committed viewer/index.html, and a test rebuilds from the parts and fails on any difference. The first split is mechanical only, cut at the file's own 35 banner comments, with no line rewritten. This epic is the tracer bullet: it proves or disproves that the single IIFE separates by concatenation alone, which is the abort condition the whole design rests on."
+    },
+    {
+      "id": "E2",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "The exporter seam becomes declared. export_artifact.py stops matching incidental literals and matches named markers the parts emit deliberately. Today it hard-errors with not-found-verbatim when a literal moves, so the publish pipeline breaks silently under any refactor until somebody publishes. This must land before the parts are rewritten, not after, or every later epic risks breaking publishing without a test noticing."
+    },
+    {
+      "id": "E3",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "One definition per fragment. A template layer replaces the 45 innerHTML string blocks, and the rail-item, empty-card, and empty-detail fragments collapse from 4, 16, and 18 copies to one each. The viewer uses no template element today, so the mechanism is a design choice this epic makes and does not inherit."
+    },
+    {
+      "id": "E4",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "Each mode owns its own part. The five view modes stop interleaving: the 50 scattered mode-predicate calls collapse into one registry, and renderContextsMainContent, renderBuildsMainContent, and renderMainContent stop being three functions of over 200 lines that live beside each other. Adding a sixth mode becomes one new part plus one registry entry."
+    }
+  ],
+  "stage": "backlog",
+  "supersedes": null,
+  "rounds": []
+}

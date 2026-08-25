@@ -1,12 +1,12 @@
 {
   "schema_version": "1.3",
   "sources": {
-    "git_head": "e017caad8d3fbb5681096e3816dbb54946d7360a",
+    "git_head": "a389892af761f10fe2b83cedc9dc8bfde4443d69",
     "trees": {
-      "docs/architecture/adr": "sha256:0c52b8fe1e8cf4f63453c71babde84f56a69083f4b19de31d7a21274fa8ab5ce",
-      "docs/architecture/designs": "sha256:c60a126caf5bba73a34b81adabd11419dd891d60f2493000f755bccf8d0a4788",
+      "docs/architecture/adr": "sha256:5a82c1de4d8900199d455e02df448bbf5019063fcfe7eb6b2b327d13234eaac3",
+      "docs/architecture/designs": "sha256:08a6cbcd6711297fce59b4f4ee36b1471f1fbf29136c7b37d0126ca44c0efc80",
       "docs/architecture/contexts": "sha256:4626a327bd28df972d97d40dc1325c28808eb48789649b87eadd218b3528c907",
-      "docs/plans": "sha256:32f55d3753ba2e60d8a918194c2c68350dabed92b4c93f96f395d5e0904f102e"
+      "docs/plans": "sha256:c67537274e380932300bcc53c8943a33ad843a561d7539029a046268af79e32e"
     }
   },
   "entities": {
@@ -105,6 +105,11 @@
         "id": "ADR-0019",
         "title": "Anchored comments, kept as a durable ledger",
         "state": "approved"
+      },
+      {
+        "id": "ADR-0020",
+        "title": "Viewer parts and an author-time build",
+        "state": "decided"
       }
     ],
     "design": [
@@ -118,13 +123,25 @@
         "id": "design-mode",
         "name": "design-mode",
         "outcome": "An engineer can design a change with the plugin before writing it, and the resulting intent, ADR, and diagrams carry through to the pull request that implements it.",
-        "stage": "review"
+        "stage": "implemented"
+      },
+      {
+        "id": "inflight-record-store",
+        "name": "inflight-record-store",
+        "outcome": "A reader on the main branch sees every piece of in-flight work across all open pull requests, and no pull request owner hits a merge conflict caused by that view.",
+        "stage": "backlog"
+      },
+      {
+        "id": "maintainable-viewer",
+        "name": "maintainable-viewer",
+        "outcome": "An engineer changes one view mode of the bundle viewer by opening one file of a few hundred lines, and the file that ships is still one self-contained HTML page that publishes as an Artifact unchanged.",
+        "stage": "backlog"
       },
       {
         "id": "plugin-split",
         "name": "plugin-split",
         "outcome": "A user installs one stage of the architecture lifecycle without the other three, and four independently-installed plugins write into one bundle without a stale copy destroying authored or paid content.",
-        "stage": "review"
+        "stage": "implemented"
       }
     ],
     "epic": [
@@ -144,59 +161,131 @@
         "branch": null,
         "pr": null,
         "state": "planned",
-        "note": "Write a technical solution design for each epic, before the slices of that epic are built. Gate 3 produces one program design for a whole feature, which is the right grain for a feature and the wrong grain for an epic that carries four slices. This session skipped the per-epic step and felt the cost twice: the pull-request mode rename reached a slice brief still carrying a shape the user had already corrected, and a command-name collision surfaced during implementation rather than during design. Backlog, raised 2026-08-22."
+        "note": "Gate 4b is enforced instead of merely specified. The per-epic technical solution design already exists in SKILL.md section 4b, with a six-section template, and five downstream files reference the artifact. Nothing checks that it was written. Checked on 2026-08-24: zero epic-<id>-design.md files exist, and six epics shipped without one. Four failures allow that. Gate 4's only exit check counts rubrics, so a Gate 4 that skips 4b still passes. slice-loop.js builds the epic-design path and never checks the file exists, so the red and green agents are told to read a file that is absent and quietly fall back to 03-program-design.md. rubric-authoring.md tells the author to update the technical design first, and nobody checks that either. No test asserts the artifact. The root cause is that 4b is the only Gate 4 sub-step whose output nothing downstream mechanically requires: the loop cannot score without rubrics or iterate without a slice plan, but it can read an absent design. This epic adds the exit check, the existence guard in the workflow, a test, and sub-step tracking in 00-status.md so an approved Gate 4 cannot hide a missing 4b. Raised 2026-08-22, re-scoped 2026-08-24 from 'write the process' to 'enforce the process' after reading the skill."
       },
       {
         "id": "design-mode/E1",
         "design": "design-mode",
         "epic_id": "E1",
         "branch": "design/design-mode",
+        "pr": 11,
+        "state": "open",
+        "note": "Design mode as a pre-code interview and challenge gate. Shares a branch and a pull request with the cobuilder-implement design. See ADR-0013: a branch may carry more than one design."
+      },
+      {
+        "id": "inflight-record-store/E1",
+        "design": "inflight-record-store",
+        "epic_id": "E1",
+        "branch": null,
         "pr": null,
         "state": "planned",
-        "note": null
+        "note": "Open pull requests become entities. collect_pull_requests() merges gh pr list --state all metadata over the narrated story.json entities. An open pull request gets an entity with state: \"open\" and a narrated: false flag. This removes the placeholder in refine_epic_status(). It reads metadata only, checks out no branch, and creates no conflict. This is the tracer bullet, and it is useful on its own. It does not depend on E2, E3, or E4, and can ship alone."
+      },
+      {
+        "id": "inflight-record-store/E2",
+        "design": "inflight-record-store",
+        "epic_id": "E2",
+        "branch": null,
+        "pr": null,
+        "state": "planned",
+        "note": "A record store with a merge strategy. One file per record, append-only, with a defined resolution rule for a concurrent write. Modelled on beads. This epic decides the storage shape and nothing else."
+      },
+      {
+        "id": "inflight-record-store/E3",
+        "design": "inflight-record-store",
+        "epic_id": "E3",
+        "branch": null,
+        "pr": null,
+        "state": "planned",
+        "note": "Cross-branch collection without a conflict. Records written by a session on a branch reach the shared view without any branch writing a shared generated file."
+      },
+      {
+        "id": "inflight-record-store/E4",
+        "design": "inflight-record-store",
+        "epic_id": "E4",
+        "branch": null,
+        "pr": null,
+        "state": "planned",
+        "note": "The active-work view. The viewer renders in-flight work beside merged history, so a reader sees one timeline rather than two."
+      },
+      {
+        "id": "maintainable-viewer/E1",
+        "design": "maintainable-viewer",
+        "epic_id": "E1",
+        "branch": null,
+        "pr": null,
+        "state": "planned",
+        "note": "The build exists and is guarded. build_viewer.py concatenates ordered parts under viewer/src/ into the committed viewer/index.html, and a test rebuilds from the parts and fails on any difference. The first split is mechanical only, cut at the file's own 35 banner comments, with no line rewritten. This epic is the tracer bullet: it proves or disproves that the single IIFE separates by concatenation alone, which is the abort condition the whole design rests on."
+      },
+      {
+        "id": "maintainable-viewer/E2",
+        "design": "maintainable-viewer",
+        "epic_id": "E2",
+        "branch": null,
+        "pr": null,
+        "state": "planned",
+        "note": "The exporter seam becomes declared. export_artifact.py stops matching incidental literals and matches named markers the parts emit deliberately. Today it hard-errors with not-found-verbatim when a literal moves, so the publish pipeline breaks silently under any refactor until somebody publishes. This must land before the parts are rewritten, not after, or every later epic risks breaking publishing without a test noticing."
+      },
+      {
+        "id": "maintainable-viewer/E3",
+        "design": "maintainable-viewer",
+        "epic_id": "E3",
+        "branch": null,
+        "pr": null,
+        "state": "planned",
+        "note": "One definition per fragment. A template layer replaces the 45 innerHTML string blocks, and the rail-item, empty-card, and empty-detail fragments collapse from 4, 16, and 18 copies to one each. The viewer uses no template element today, so the mechanism is a design choice this epic makes and does not inherit."
+      },
+      {
+        "id": "maintainable-viewer/E4",
+        "design": "maintainable-viewer",
+        "epic_id": "E4",
+        "branch": null,
+        "pr": null,
+        "state": "planned",
+        "note": "Each mode owns its own part. The five view modes stop interleaving: the 50 scattered mode-predicate calls collapse into one registry, and renderContextsMainContent, renderBuildsMainContent, and renderMainContent stop being three functions of over 200 lines that live beside each other. Adding a sixth mode becomes one new part plus one registry entry."
       },
       {
         "id": "plugin-split/E1",
         "design": "plugin-split",
         "epic_id": "E1",
-        "branch": null,
-        "pr": null,
-        "state": "planned",
+        "branch": "design/design-mode",
+        "pr": 11,
+        "state": "open",
         "note": "One plugin becomes five. The whole packaging split: the mode renames inside today's single plugin, the deleted duplicate explore-design command, the 33 cross-pillar references, the five manifests, and the two ports. The rename is a rotation, not a split: odyssey submit becomes cobuilder-pr:generate, and the old odyssey generate, which narrates merged history, becomes cobuilder-pr:review. Four slices."
       },
       {
         "id": "plugin-split/E2",
         "design": "plugin-split",
         "epic_id": "E2",
-        "branch": null,
-        "pr": null,
-        "state": "planned",
+        "branch": "design/design-mode",
+        "pr": 11,
+        "state": "open",
         "note": "Shared code survives an install. Prove the marketplace symlink dereference, then vendor the four bundle modules and the two shared skills. One slice, because it is a spike whose result decides whether the rest of the design stands. goal.json.abort_if names its failure."
       },
       {
         "id": "plugin-split/E3",
         "design": "plugin-split",
         "epic_id": "E3",
-        "branch": null,
-        "pr": null,
-        "state": "planned",
+        "branch": "design/design-mode",
+        "pr": 11,
+        "state": "open",
         "note": "The seam is version-safe. require_compatible(), min_reader_schema, the generators map, bundle format 3, and schema 1.3, so two plugins at different versions cannot corrupt one bundle. Two slices."
       },
       {
         "id": "plugin-split/E4",
         "design": "plugin-split",
         "epic_id": "E4",
-        "branch": null,
-        "pr": null,
-        "state": "planned",
+        "branch": "design/design-mode",
+        "pr": 11,
+        "state": "open",
         "note": "The record index. build_index.py replaces the two projection scripts, emits every entity with a stable id, and resolves every join including an ADR to its pull request. Two slices."
       },
       {
         "id": "plugin-split/E5",
         "design": "plugin-split",
         "epic_id": "E5",
-        "branch": "feature/lifecycle-surface",
-        "pr": 12,
+        "branch": "design/design-mode",
+        "pr": 11,
         "state": "open",
         "note": "One lifecycle surface. The Decisions, Contexts, and Builds modes, the Backlog lane, and moving generated pages out of the foreign directory into the bundle. Two slices (10, 11)."
       },
@@ -204,8 +293,8 @@
         "id": "plugin-split/E6",
         "design": "plugin-split",
         "epic_id": "E6",
-        "branch": "feature/reply-channel",
-        "pr": 13,
+        "branch": "design/design-mode",
+        "pr": 11,
         "state": "open",
         "note": "The reply channel. The append-only ledger and its projection, the anchor computed from the live DOM, the write endpoint, and the background wake command. Three slices (12, 13, 14)."
       },
@@ -627,7 +716,7 @@
         "feature": "cobuilder-family",
         "n": 4,
         "title": "Renames inside today's single plugin",
-        "ends_with": "Six architecture modes, `explore-design` deleted, `submit` renamed to `generate`, and the old `generate` renamed to `review` | 1.00 | completed",
+        "ends_with": "Six architecture modes, `explore-design` deleted, `submit` renamed to `generate`, and the old `generate` renamed to `review`",
         "score": "1.00",
         "attempts": 2,
         "state": "completed"
@@ -637,7 +726,7 @@
         "feature": "cobuilder-family",
         "n": 5,
         "title": "The 33 cross-pillar references are fixed",
-        "ends_with": "The grep regression test passes while the repo is still one plugin | 1.00 | completed",
+        "ends_with": "The grep regression test passes while the repo is still one plugin",
         "score": "1.00",
         "attempts": 3,
         "state": "completed"
@@ -647,7 +736,7 @@
         "feature": "cobuilder-family",
         "n": 6,
         "title": "Five plugins, five manifests",
-        "ends_with": "`claude plugin validate` passes on each, and the family installs | 1.00 | completed",
+        "ends_with": "`claude plugin validate` passes on each, and the family installs",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -657,7 +746,7 @@
         "feature": "cobuilder-family",
         "n": 7,
         "title": "The two ports land",
-        "ends_with": "`cobuilder-implement` renamed and shipped, `collaborate-with-user` folded in, the orientation skill written | 1.00 | completed",
+        "ends_with": "`cobuilder-implement` renamed and shipped, `collaborate-with-user` folded in, the orientation skill written",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -667,7 +756,7 @@
         "feature": "cobuilder-family",
         "n": 1,
         "title": "**Tracer bullet: two plugins, one shared module**",
-        "ends_with": "Two throwaway plugins install from a local marketplace and both resolve the shared module from their own cache | 1.00 | completed",
+        "ends_with": "Two throwaway plugins install from a local marketplace and both resolve the shared module from their own cache",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -677,7 +766,7 @@
         "feature": "cobuilder-family",
         "n": 2,
         "title": "The compatibility gate exists",
-        "ends_with": "`require_compatible()` and `stamp_generator()` pass their tests, called by nothing yet | 1.00 | completed",
+        "ends_with": "`require_compatible()` and `stamp_generator()` pass their tests, called by nothing yet",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -687,7 +776,7 @@
         "feature": "cobuilder-family",
         "n": 3,
         "title": "The gate is wired and the bundle migrates",
-        "ends_with": "Format 3, `min_reader_schema`, the generators map, every writer gated | 1.00 | completed",
+        "ends_with": "Format 3, `min_reader_schema`, the generators map, every writer gated",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -697,7 +786,7 @@
         "feature": "cobuilder-family",
         "n": 8,
         "title": "The index holds the entities",
-        "ends_with": "`build_index.py` emits every entity, and the two scripts it replaces are gone | 1.00 | completed",
+        "ends_with": "`build_index.py` emits every entity, and the two scripts it replaces are gone",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -707,7 +796,7 @@
         "feature": "cobuilder-family",
         "n": 9,
         "title": "The index resolves the joins",
-        "ends_with": "`adr_to_pull_request`, `slice_to_epic`, `district_uncovered`, and freshness | 1.00 | completed",
+        "ends_with": "`adr_to_pull_request`, `slice_to_epic`, `district_uncovered`, and freshness",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -717,7 +806,7 @@
         "feature": "cobuilder-family",
         "n": 10,
         "title": "The Decisions and Contexts modes",
-        "ends_with": "A person browses every decision and every context, with the anchor distinction visible | 1.00 | completed",
+        "ends_with": "A person browses every decision and every context, with the anchor distinction visible",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -727,7 +816,7 @@
         "feature": "cobuilder-family",
         "n": 11,
         "title": "The Builds mode and the Backlog lane",
-        "ends_with": "Gates driven by the status document, the Backlog lane computed from the index, pages moved into the bundle | 0.92 | completed",
+        "ends_with": "Gates driven by the status document, the Backlog lane computed from the index, pages moved into the bundle",
         "score": "0.92",
         "attempts": 1,
         "state": "completed"
@@ -737,7 +826,7 @@
         "feature": "cobuilder-family",
         "n": 12,
         "title": "The ledger and its projection",
-        "ends_with": "Append, fold, and project, with no server involved | 0.92 | completed",
+        "ends_with": "Append, fold, and project, with no server involved",
         "score": "0.92",
         "attempts": 1,
         "state": "completed"
@@ -747,7 +836,7 @@
         "feature": "cobuilder-family",
         "n": 13,
         "title": "The anchor and the write endpoint",
-        "ends_with": "Click to anchor a sentence, `POST /feedback` appends, the drawer keeps the text in view | 1.00 | completed",
+        "ends_with": "Click to anchor a sentence, `POST /feedback` appends, the drawer keeps the text in view",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -757,7 +846,7 @@
         "feature": "cobuilder-family",
         "n": 14,
         "title": "The wake command and the whole loop",
-        "ends_with": "The background command blocks and returns new threads, and the loop runs once end to end | 1.00 | completed",
+        "ends_with": "The background command blocks and returns new threads, and the loop runs once end to end",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -879,7 +968,7 @@
         ]
       },
       "ADR-0016": {
-        "pr": null,
+        "pr": 11,
         "via": "epic",
         "path": [
           "plugin-split/E1",
@@ -892,7 +981,7 @@
         ]
       },
       "ADR-0017": {
-        "pr": null,
+        "pr": 11,
         "via": "epic",
         "path": [
           "plugin-split/E1",
@@ -906,29 +995,67 @@
       },
       "ADR-0018": {
         "pr": null,
-        "via": "none",
-        "path": []
+        "via": "epic",
+        "path": [
+          "inflight-record-store/E1",
+          "inflight-record-store/E2",
+          "inflight-record-store/E3",
+          "inflight-record-store/E4",
+          "maintainable-viewer/E1",
+          "maintainable-viewer/E2",
+          "maintainable-viewer/E3",
+          "maintainable-viewer/E4"
+        ]
       },
       "ADR-0019": {
         "pr": null,
-        "via": "none",
-        "path": []
+        "via": "epic",
+        "path": [
+          "maintainable-viewer/E1",
+          "maintainable-viewer/E2",
+          "maintainable-viewer/E3",
+          "maintainable-viewer/E4"
+        ]
+      },
+      "ADR-0020": {
+        "pr": null,
+        "via": "epic",
+        "path": [
+          "maintainable-viewer/E1",
+          "maintainable-viewer/E2",
+          "maintainable-viewer/E3",
+          "maintainable-viewer/E4"
+        ]
       }
     },
     "epic_to_pull_request": {
       "cobuilder-implement/E1": 11,
-      "design-mode/E1": 11
+      "design-mode/E1": 11,
+      "plugin-split/E1": 11,
+      "plugin-split/E2": 11,
+      "plugin-split/E3": 11,
+      "plugin-split/E4": 11,
+      "plugin-split/E5": 11,
+      "plugin-split/E6": 11
     },
     "epic_status": {
       "cobuilder-implement/E1": "open",
       "cobuilder-implement/E2": "unstarted",
       "design-mode/E1": "open",
-      "plugin-split/E1": "unstarted",
-      "plugin-split/E2": "unstarted",
-      "plugin-split/E3": "unstarted",
-      "plugin-split/E4": "unstarted",
-      "plugin-split/E5": "no-pull-request",
-      "plugin-split/E6": "no-pull-request",
+      "inflight-record-store/E1": "unstarted",
+      "inflight-record-store/E2": "unstarted",
+      "inflight-record-store/E3": "unstarted",
+      "inflight-record-store/E4": "unstarted",
+      "maintainable-viewer/E1": "unstarted",
+      "maintainable-viewer/E2": "unstarted",
+      "maintainable-viewer/E3": "unstarted",
+      "maintainable-viewer/E4": "unstarted",
+      "plugin-split/E1": "open",
+      "plugin-split/E2": "open",
+      "plugin-split/E3": "open",
+      "plugin-split/E4": "open",
+      "plugin-split/E5": "open",
+      "plugin-split/E6": "open",
       "plugin-split/E7": "unstarted"
     },
     "slice_to_epic": {
@@ -964,7 +1091,8 @@
       "ADR-0016": "cobuilder-packaging",
       "ADR-0017": "cobuilder-packaging",
       "ADR-0018": "cobuilder-packaging",
-      "ADR-0019": "cobuilder-packaging"
+      "ADR-0019": "cobuilder-packaging",
+      "ADR-0020": "cobuilder-packaging"
     },
     "adr_to_district": {
       "ADR-0001": "scripts",
@@ -1002,8 +1130,8 @@
         },
         {
           "n": 4,
-          "name": "Slice plan + rubrics",
-          "state": "APPROVED 2026-08-21"
+          "name": "Slice plan, epic designs, and rubrics",
+          "state": "APPROVED 2026-08-25"
         }
       ]
     }

@@ -67,6 +67,16 @@ One JSON object on this PR's timeline entry:
 
 `stage` is `pre` or `post`. `drift` stays empty until the post stage. See §7.
 
+**Two meanings of "drift."** This word names two different things. The
+`drift` array above is the per-epic plan-versus-merged-diff delta for a
+pull request, and §7 governs it. A separate use, `kind: "drift"` on a
+finding in a design's `assessment.json` (written by the architecture
+skill's Design mode, not by this mode), reports stale content in an
+already-shipped decision record — for example, an ADR whose `maps_to`
+field points at a path the repo no longer has. `decision-records.md` §5
+governs that second meaning. Neither name changes. Read the section a
+finding cites before you act on it.
+
 ## 2. Evidence discipline
 
 This rule comes from `baseline-derivation.md` §1, and it holds here without
@@ -258,6 +268,29 @@ satisfy all of a multi-epic design.
 Drift is not blame. A change of plan during review is normal and often right.
 The entry records that the plan changed, so that the narrative and the ADRs
 built later describe the change that merged.
+
+**Responding to a `kind: "drift"` finding.** This is the other meaning of
+drift, defined above and reported in a design's `assessment.json`, not in
+this section's `drift` array. A drift finding is a report, not a work item.
+There are exactly three valid responses, and the reviewer must pick one and
+say which.
+
+1. **Repoint an index field.** Use this when the stale content is a pointer,
+   such as an ADR's `maps_to`. This is the routine case, and the only one of
+   the three that counts as routine maintenance.
+2. **Supersede the decision.** Use this when the decision itself no longer
+   holds. `decision-records.md` §3 and §5 define the mechanism.
+3. **Leave the record alone.** Use this when the record is a true account of
+   what was believed at the time. The finding then stands as the note that
+   reconciles the record with the tree, and no edit follows it.
+
+Response 3 is a legitimate outcome, not an omission. Treat every drift
+finding as a bug to fix, and a design's honest history disappears. Take
+`docs/architecture/designs/design-mode/intent.json` as the example.
+Its `approach` field names `/prodyssey:design` and an `exports/` output
+path, both dropped before the design shipped. That sentence is an accurate
+record of what the author believed in August. Editing it to match the
+shipped command and path would forge the interview, so response 3 applies.
 
 ## 8. Verdict
 

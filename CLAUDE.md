@@ -15,7 +15,20 @@ that depends on the other four. Together they narrate the merged PRs of a
 locally checked-out git repo. The result is a four-level story with scene
 art, voice narration, and retro-extracted ADRs, in a portable HTML viewer.
 See ADR-0016 for why the plugin split into five, and ADR-0017 for how the
-five share code through `shared/`.
+five share code through `shared/`. ADR-0018 decided one lifecycle surface
+in the viewer with a derived record index, `data/index.json`, that
+resolves joins between designs, ADRs, contexts, builds, and pull requests.
+`shared/build_index.py` builds it, and it is implemented and in use. ADR-0019
+decided an anchored-comments ledger for the viewer, computed from the live
+DOM at annotation time and appended to a durable, append-only store
+(`shared/ledger.py`). ADR-0020 narrows the build-free viewer rule from
+ADR-0001, rather than reversing it. It decides that authoring moves to
+parts under `viewer/src/`, compiled into the committed `viewer/index.html`
+by a build step that runs only when an engineer changes the viewer, never
+at `/plugin install` and never in the browser. ADR-0020 is **decided and
+not executed**: no `viewer/src/` directory exists yet, and the viewer is
+still the one committed file described below. Treat that ADR as a plan,
+not as the current shape of the file.
 
 The five Odyssey modes still take `--repo`. The six architecture modes are
 self-only. They analyze the session's own repo and refuse a foreign target.
@@ -47,6 +60,12 @@ for all five at once. No agents, no hooks, no MCP servers, in any of the
 five. That is deliberate, so no plugin ever touches another session's
 permission surface.
 
+That rule governs the five plugins only. `.claude/hooks/deny-git-stash.py`
+and its entry in `.claude/settings.json` are local development tooling for
+this repository's own Claude Code sessions. The hook ships to nobody and
+installs nowhere else, so it does not violate the rule above. It denies the
+command for subagents only, and never for the main agent.
+
 Each plugin ships its own skills under its own `plugins/<name>/skills/`.
 `cobuilder-pr` ships `odyssey`, which orchestrates the five history modes
 this file describes. `cobuilder-architect` ships `architecture`, which runs
@@ -74,6 +93,7 @@ other's context.
 |---|---|---|
 | **Design** (capital, mode) | `/cobuilder-architect:design`, the pre-code interview-and-challenge mode that produces an ADR plus `intent.json` | a *design* (lowercase), the artifact directory it produces (see below) |
 | **a design** | One `docs/architecture/designs/<name>/` directory: `goal.json`, `intent.json`, `narrative.json`, `assessment.json`, `pr-draft.md` | an ADR, which a design also produces but which outlives it under `docs/architecture/adr/` |
+| **backlog design** | A design at `stage: "backlog"`: a `goal.json` with planned epics only, and no `intent.json`, `narrative.json`, `assessment.json`, or diagrams. This is a legitimate, deliberately sparse state, because Design mode's stages 2 through 7 have not run yet. `maintainable-viewer/` and `inflight-record-store/` are both backlog designs today | an incomplete or abandoned design — a sparse directory here is the expected shape, not a sign that generation stopped partway |
 | **Epic** | One unit inside a design's `goal.json.epics[]`. Maps to zero or one pull request through `epics[].branch`. Owned and decomposed by `cobuilder-implement`, not by design mode | an ADR, a design, or a PR — an epic is the join key between a design and a PR, not any of the three itself |
 | **District** | A `world.districts` entry in `story.json` / `inventory.yaml`, derived by Odyssey's *describe-lite* procedure (`baseline-derivation.md`) for any repo, including a foreign `--repo` target. Inferred, not verified against import edges | a bounded context (below) — a district is the lightweight version of the same underlying concept, usable when nobody maintains the target repo |
 | **Bounded context** | A `docs/architecture/contexts/<context-id>/` bundle: `canvas.md` + `boundary.yaml`, produced by the self-only Describe mode. Every claim is grep-verified against real import edges before it is written | a district — a bounded context is the heavyweight, verified version; it never covers a foreign repo |
@@ -82,6 +102,9 @@ other's context.
 | **review-mode.md** (Odyssey reference) | The PR-assessment step of `/cobuilder-architect:generate`, governed by `plugins/cobuilder-pr/skills/odyssey/references/review-mode.md`: three questions with evidence, verdicts, drift detection | Odyssey's Review mode (above), which is a different mode with a different job, despite the shared word |
 | **Bundle** | The whole derived-output directory tree for one target repo: `.cobuilder-architect/self/` or `.cobuilder-architect/<repo-slug>/`, holding `data/`, `assets/`, `viewer/`, `exports/` | `docs/` (authored source, never derived) and `story.json` (one file inside the bundle, not the bundle itself) |
 | **Self** vs **foreign** (repo) | *Self* is the session's own checkout — the only target the six Architecture modes accept. *Foreign* is a `--repo`-targeted checkout, only reachable through Odyssey | `<hub>`, which is always the *session's* repo even when analyzing a foreign target — the foreign repo is never the hub |
+| **Gate 4a / 4b / 4c** | The three sub-steps of Gate 4 in `cobuilder-implement`, defined in `plugins/cobuilder-implement/skills/implement/SKILL.md`. 4a is the slice plan (`04-slices.md`). 4b is a technical solution design, required only for an epic that carries more than one slice, and marked `n/a` instead of pending for a single-slice epic. 4c is the blind rubrics. `verify_gate.py` checks all three | Gate 4 as a whole — `00-status.md` used to track Gate 4 as one line and now tracks 4a, 4b, and 4c as three, and the whole gate cannot read APPROVED while any sub-step still reads pending |
+| **Assessment stage** | The `stage` field on `assessment.json`: `"design"` for an assessment written before the code exists, carrying `prediction` findings, or `"retrospective"` for one written after the design shipped, carrying `observation` or `drift` findings. `plugin-split` and `cobuilder-implement` are `"design"`. `design-mode` is `"retrospective"` | a verdict (`proceed`/`concerns`/`rework`, a separate field) — and note that nothing enforces `stage` today: `ASSESSMENT_FIELDS` in `shared/build_index.py` projects only `verdict` and `findings`, and `shared/verify_bundle.py` never checks `stage` |
+| **Drift** (finding kind) | An `assessment.json` finding of `kind: "drift"`: a report that a shipped record no longer matches the tree. The correct response is sometimes to leave the record alone, as a true account of what was believed at the time | a bug — a drift finding is not a defect to fix, and also not `review-mode.md`'s per-PR `intent.drift` array, which Generate mode's `--stage post` populates by comparing a PR's stated intent against its merged diff. Same word, two different records: one on a design's assessment, one on a PR's intent block |
 
 If a future term collides with one of these across the two skill families, resolve the collision here before it ships — do not let two modes silently mean different things by the same word.
 
@@ -92,8 +115,9 @@ If a future term collides with one of these across the two skill families, resol
 shared/                symlinked into every plugin's own root as plugins/<name>/shared/
                        (ADR-0017). Vendored, not itself a plugin:
                        _bundle_meta.py, _manifest.py, build_index.py,
-                       migrate_bundle.py, validate_decision_state.py,
-                       verify_bundle.py, skills/{mermaid,ste-writing}/
+                       ledger.py, migrate_bundle.py, slice_table.py,
+                       validate_decision_state.py, verify_bundle.py,
+                       skills/{mermaid,ste-writing}/
 plugins/
   cobuilder-architect/   design, review, maintenance, decisions, describe, debug. Self-only
     .claude-plugin/plugin.json
@@ -122,11 +146,12 @@ plugins/
     commands/          view.md, publish.md → Skill("artifact", args=...)
     skills/artifact/
     scripts/           export_artifact.py, export_index.py, record_publish.py
-    viewer/index.html  the bundle viewer (~2000 lines, single file, see below)
+    viewer/index.html  the bundle viewer (4747 lines, single file, see below)
     shared/            -> ../../shared (symlink)
   cobuilder-implement/   build a design's epics, one vertical slice at a time
     .claude-plugin/plugin.json
     skills/implement/
+    scripts/           verify_gate.py
     shared/            -> ../../shared (symlink)
   cobuilder-full-lifecycle/   umbrella plugin, depends on the other four
     .claude-plugin/plugin.json
@@ -136,6 +161,9 @@ scripts/build_builds_view.py   NOT part of any plugin. A local tool for this
                        repository's own build-status page. Leave it at the
                        repository root. Do not move it into a plugin.
 ```
+
+(`scripts/` is top-level, a sibling of `skills/`, not nested under
+`skills/odyssey/` — `SKILL.md` calls it via `${CLAUDE_PLUGIN_ROOT}/scripts/...`.)
 
 A shared skill (`mermaid`, `ste-writing`) resolves at `${CLAUDE_PLUGIN_ROOT}/shared/skills/<name>/`
 from inside any plugin, because the symlink dereferences into the plugin's own
@@ -158,6 +186,29 @@ assets. Odyssey `--repo` still writes foreign bundles here under a slug.
 
 Each plugin's `skills/` and `commands/` are auto-discovered — its
 `plugin.json` does not declare them.
+
+`shared/slice_table.py` is the one parser for the slice table in
+`docs/plans/<slug>/04-slices.md`. It replaced three divergent regex sets in
+`shared/build_index.py`, `plugins/cobuilder-implement/scripts/verify_gate.py`,
+and `scripts/build_builds_view.py`. A future format change to that table
+needs one edit, not three.
+
+`plugins/cobuilder-implement/scripts/verify_gate.py` is that plugin's first
+script. It checks Gate 4a, 4b, and 4c for a plan directory and exits
+non-zero on any failure. It exits 1 today, because Gate 4b (an approved
+technical solution design) is outstanding for five `plugin-split` epics.
+That is the honest current state, not a broken script.
+
+**A process step with no mechanical consumer gets skipped, however well it
+is documented.** Gate 4b was the only Gate 4 sub-step nothing downstream
+required, and it ran for zero of five multi-slice epics before this branch.
+It is now enforced at three levels: sub-steps in
+`docs/plans/cobuilder-family/00-status.md`, `verify_gate.py` above, and
+`plugins/cobuilder-implement/skills/implement/workflows/slice-loop.js`,
+which now stops the run instead of falling back silently when a design
+document is missing. Apply the same lesson before adding a new documented
+step anywhere else in this family: give it a mechanical consumer, or expect
+it to be skipped.
 
 ## How generation actually runs
 
@@ -225,6 +276,21 @@ Assessment is Claude judgment work, like narrative and ADRs.
 it. `verify_bundle.py` gained `intent` and `assessment` keys that are
 **optional by default** — a bundle generated before this mode existed must
 keep passing — and `--require-review` promotes them.
+
+`shared/build_index.py` also projects a design's `pr-draft.md` into that
+design's record. Before this branch it did not, so the viewer's
+"Envisioned pull request" section could never populate.
+
+**A known gap in the record index, left for `inflight-record-store` to
+fix.** `collect_pull_requests()` in `shared/build_index.py` reads only
+`data/story.json`, which holds narrated merged pull requests. An open pull
+request is not an entity in the index at all. This repo's own pull request
+11 is one such case: eight epics across the family point their `branch` at
+it, and `refine_epic_status()` has nothing to refine against, so it leaves
+a hardcoded `"open"` placeholder for every one of them instead of a real
+state. `docs/architecture/designs/inflight-record-store/goal.json`'s first
+epic is the planned fix. Do not read the placeholder as a bug to patch in
+passing. It is a recorded, scoped gap.
 
 ## The viewer is not self-contained — this matters for anything artifact-related
 
@@ -323,12 +389,14 @@ and migration below.
   inventory.yaml
   viewer/index.html
   exports/{publish-manifest.json, pr-{N}.html…, index.html}   # written by /cobuilder-architect:publish
-  exports/branch-{slug}/diff.json                             # generate-mode diff cache, gitignored
+  exports/pr-{N}-{description,assessment}.md                  # written by /cobuilder-architect:submit
+  exports/branch-{slug}/{diff,intent,assessment}.json         # /cobuilder-architect:submit, pre-PR staging
+  exports/branch-{slug}/{description,assessment}.md
   .migration-backup/  # pre-migration story.json snapshots, written by migrate_bundle.py
 
 <repo>/
   docs/architecture/adr/ADR-NNNN-<slug>.md                    # review writes these
-  docs/architecture/designs/<name>/{goal,intent,narrative,assessment}.json, adr-draft.md, pr-draft.md
+  docs/architecture/designs/<name>/{goal,intent,narrative,assessment}.json, pr-draft.md
   docs/architecture/review/                                  # /review and /maintenance reports
   docs/architecture/contexts/
   docs/pull-requests/pr-<N>/{description,assessment}.md
@@ -365,7 +433,7 @@ entries are gitignored:
   reproducible from `git diff <merge-base>..<head>`, and it is
   self-referential — committing it into the branch it diffs rewrites it on
   every commit, and each version would then contain the last one. The authored
-  `intent.json` and `assessment.json` live under `docs/pull-requests/` and are committed.
+  `intent.json` and `assessment.json` beside it are committed.
 
 The self-bundle and the foreign-repo cache used to live under two separate
 top-level directories. One `.cobuilder-architect/` root now holds both, and the
@@ -565,7 +633,20 @@ sibling plugins under `plugins/` (`cobuilder-architect`, `cobuilder-pr`,
 with the former root `skills/`, `commands/`, and `scripts/` distributed
 into each plugin's own root, and the code every plugin needs vendored into
 a marketplace-root `shared/` directory, symlinked into each (ADR-0016,
-ADR-0017).
+ADR-0017) → design mode's stage 1 shipped for two backlog designs,
+`maintainable-viewer` (ADR-0020) and `inflight-record-store` (ADR-0018),
+each staged as a `goal.json`-only design → `shared/slice_table.py` replaced
+three divergent slice-table parsers, and `plugins/cobuilder-implement/scripts/verify_gate.py`
+shipped as that plugin's first script, checking Gates 4a, 4b, and 4c →
+Gate 4b enforcement added at three levels after it ran for zero of five
+`plugin-split` epics → `hindsight-routine.md` replaced `hindsight-recall.md`,
+moving retain from once per feature to once per accepted slice → ADR-0018
+(one lifecycle surface, a derived record index) and ADR-0019 (an anchored-comments
+ledger) decided and implemented → ADR-0020 (viewer parts and an author-time
+build) decided, not yet executed → the Designs sheet retired, its two
+sections folded into the Designs tab, and `shared/build_index.py` gained a
+`pr-draft.md` projection.
 No CI config, no package manager — this is prose + Python scripts + one
-HTML file, with a `tests/` suite that checks packaging invariants across
-the five plugins.
+HTML file, with a `tests/` suite of 255 tests that checks packaging
+invariants across the five plugins, plus the slice-table parser, the
+Gate 4 verifier, and the deny-git-stash hook.

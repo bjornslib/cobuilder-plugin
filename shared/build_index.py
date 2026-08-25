@@ -55,6 +55,8 @@ from _bundle_meta import (  # noqa: E402
     require_compatible,
     stamp_generator,
 )
+import slice_table  # noqa: E402
+
 INDEX_SCHEMA_VERSION = "1.3"
 
 SELF_BUNDLE = Path(".cobuilder-architect") / "self"
@@ -65,9 +67,6 @@ PLANS_SOURCE_SUBDIR = Path("docs") / "plans"
 
 ADR_FILENAME_RE = re.compile(r"^(ADR-\d{4})(?:-.*)?\.md$")
 TITLE_PREFIX_RE = re.compile(r"^ADR-\d{4}\s+[—–-]\s+(.*)$")
-SLICE_ROW_RE = re.compile(
-    r"^\|\s*(\d+)\s*\|\s*(.*?)\s*\|\s*(.*?)\s*\|\s*(.*?)\s*\|\s*$"
-)
 
 
 # --------------------------------------------------------------------------
@@ -426,6 +425,15 @@ def collect_designs(
         if diagrams:
             record["diagrams"] = diagrams
 
+        # The pull request draft is authored markdown that accompanies a design.
+        # The viewer reads it to populate the "Envisioned pull request" section.
+        # A design without a draft simply omits the key; do not invent a placeholder.
+        pr_draft_path = path.parent / "pr-draft.md"
+        if pr_draft_path.is_file():
+            draft_text = pr_draft_path.read_text()
+            if draft_text.strip():
+                record["pr_draft"] = draft_text
+
         viewer_records[name] = record
         design_entities.append(
             {"id": design_id, "name": name, "outcome": goal.get("outcome"), "stage": goal.get("stage")}
@@ -598,14 +606,13 @@ def collect_plans(repo: Path) -> tuple[list[dict], list[str]]:
             failures.append(f"{slices_path}: could not read file: {exc}")
             continue
         for line in lines:
-            match = SLICE_ROW_RE.match(line.strip())
-            if not match:
+            row = slice_table.parse_row(line.strip())
+            if row is None:
                 continue
-            number, _epic_cell, slice_cell, ends_with = match.groups()
-            if not slice_cell:
-                # An epic-header row carries no slice text in this column.
-                continue
-            n = int(number)
+            number = row.n
+            slice_cell = row.name
+            ends_with = row.ends_with
+            n = row.n
             st = status_slices.get(n, {})
             checked = st.get("checked", False)
             score = st.get("score", "—")
@@ -708,28 +715,6 @@ def collect_publications(bundle_dir: Path) -> tuple[list[dict], list[str]]:
 # context_verifies_district, district_uncovered, adr_to_context, and
 # adr_to_district. See ADR-0018 and 03-program-design.md.
 # --------------------------------------------------------------------------
-
-SLICE_TABLE_ROW_RE = re.compile(r"^\|\s*(.*?)\s*\|\s*(.*?)\s*\|\s*(.*?)\s*\|\s*(.*?)\s*\|(?:\s*(.*?)\s*\|)?(?:\s*(.*?)\s*\|)?")
-EPIC_HEADER_CELL_RE = re.compile(r"`([^`]+)`\s*[—–-]")
-
-
-def parse_slice_header(line: str) -> str | None:
-    """An epic-header row: an empty slice number, the epic id in column 2,
-    and empty ``ends with`` columns. Returns the raw id text between the
-    backticks, exactly as the row states it. A caller decides whether that
-    text is a scoped id that names a real epic.
-    """
-    match = SLICE_TABLE_ROW_RE.match(line)
-    if not match:
-        return None
-    number, epic_cell, ends_with, score, state, trailing = match.groups()
-    if number or ends_with or score or state or trailing:
-        return None
-    cell_match = EPIC_HEADER_CELL_RE.search(epic_cell)
-    if not cell_match:
-        return None
-    return cell_match.group(1)
-
 
 def gh_pr_for_branch(branch: str, warnings: list[str], gh_state: dict) -> int | None:
     """Look up the pull request whose head branch equals ``branch``.
@@ -901,7 +886,7 @@ def resolve_slice_to_epic(
         current_reason: str | None = None
         for line in slices_path.read_text().splitlines():
             stripped = line.strip()
-            header_id = parse_slice_header(stripped)
+            header_id = slice_table.parse_header_epic_id(stripped)
             if header_id:
                 if "/" not in header_id:
                     current_epic = None
@@ -919,12 +904,10 @@ def resolve_slice_to_epic(
                     current_epic = header_id
                     current_reason = None
                 continue
-            match = SLICE_ROW_RE.match(stripped)
-            if not match:
+            row = slice_table.parse_row(stripped)
+            if row is None:
                 continue
-            number, _epic_cell, slice_cell, _ends_with = match.groups()
-            if not slice_cell:
-                continue
+            number = row.n
             slice_id = f"{feature}/{number}"
             if current_epic:
                 result[slice_id] = current_epic

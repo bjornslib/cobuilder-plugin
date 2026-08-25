@@ -125,7 +125,10 @@ The rubric is the answer key. Follow three practices to keep it effective:
   `01-product.md`, `03-program-design.md`, and the approved Epic Technical
   Solution Design (`docs/plans/<slug>/epic-<epic-id>-design.md`). If you cannot
   write a criterion without guessing, the design documents are incomplete.
-  Update the technical design first.
+  Update the technical design first. For an epic carrying more than one
+  slice, `plugins/cobuilder-implement/scripts/verify_gate.py --plan
+  docs/plans/<slug>` names the missing or incomplete design under `4b`. Run
+  it and fix what it names before writing rubrics for that epic.
 
 ---
 

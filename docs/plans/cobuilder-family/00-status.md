@@ -8,7 +8,12 @@ permits.
 - Gate 1 — Product: APPROVED 2026-08-20
 - Gate 2 — Architecture: APPROVED 2026-08-21
 - Gate 3 — Program Design: APPROVED 2026-08-21
-- Gate 4 — Slice plan + rubrics: APPROVED 2026-08-21
+- Gate 4 — Slice plan, epic designs, and rubrics: APPROVED 2026-08-25
+  - 4a Slice plan: APPROVED 2026-08-21
+  - 4b Epic technical solution designs: APPROVED 2026-08-25 (retrospective —
+    the five designs were written after the slices were built, so the gate
+    did not constrain the work)
+  - 4c Blind rubrics: APPROVED 2026-08-21
 
 Hindsight: unavailable (tools advertised in this session but not registered — substitutes read, see 01-product.md)
 
@@ -763,3 +768,95 @@ Keyboard shortcuts work.
 198 tests pass in the test suite.
 
 
+
+## 2026-08-24 — epic status synced to reality, and three viewer defects
+
+All fourteen slices are accepted, so this entry closes the slice ladder and
+records what the ladder did not cover.
+
+### The goal.json files declared branches and pull requests that never existed
+
+`00-status.md` had every slice checked off, and `goal.json` had not moved. The
+drift was worse than staleness. `plugin-split` declared E5 on branch
+`feature/lifecycle-surface` with pull request 12, and E6 on
+`feature/reply-channel` with pull request 13. Checked on 2026-08-24: neither
+branch exists in `git branch -a`, and `gh pr list --state all` shows nothing
+above 11. Both records were fiction.
+
+Every slice of E1 through E6 was in fact built on one branch,
+`design/design-mode`, which is pull request 11. The three `goal.json` files now
+say that:
+
+| Design | Epics | Branch | PR | State |
+|---|---|---|---|---|
+| `plugin-split` | E1-E6 | `design/design-mode` | 11 | `open` |
+| `plugin-split` | E7 | none | none | `planned` |
+| `design-mode` | E1 | `design/design-mode` | 11 | `open` |
+| `cobuilder-implement` | E1 | `design/design-mode` | 11 | `open` |
+| `cobuilder-implement` | E2 | none | none | `planned` |
+
+`open` and not `merged`, because pull request 11 is open. That distinction is
+ADR-0018's rule that realisation is derived from a pull request state and never
+declared on a record.
+
+The derived `epic_status` join was honest the whole time. It reported
+`no-pull-request` for E5 and E6 while `goal.json` claimed they were open. The
+index caught a lie that no test caught, which is an argument for the index
+rather than a defect in it. Every one of the fourteen epics now resolves.
+
+### Three defects in the viewer, none of them found by a slice
+
+Two were layout, and all three were confirmed by measurement in a browser
+before and after, not by reading the code.
+
+1. **The narration caption showed in every view mode.** `renderCaption()` set
+   `caption.hidden = true` correctly. A `display:flex` rule 100 lines away beat
+   the browser's own `[hidden]` rule, so the attribute did nothing. Fixed with
+   `#narration-caption[hidden]{display:none}`. A sweep of the stylesheet found
+   nine other elements in the same shape, all already guarded. This was the
+   only unguarded one.
+2. **The caption sat beside the content instead of above it.** `#content-col`
+   was `flex-direction:row` while its children were authored as a vertical
+   stack. A `#content-main-col` wrapper restores the column, and `#content-col`
+   now holds exactly two children: that wrapper and the drawer.
+3. **A closed comments drawer reserved a 420px track.** `flex:0 0 420px` with
+   `transform:translateX(100%)` moves the paint and never the layout. The basis
+   now animates from 0 to 420px, so a closed drawer costs nothing and an open
+   one pushes rather than covers, which is what ADR-0019 asks for.
+
+Measured at 1440px: the content column rendered 444 pixels of a 1216 pixel
+track before, and 1215 after.
+
+### A regression that predates today
+
+`#adr-sheet` and `#assessment-sheet` lost their markup in commit `d694f95`,
+while their CSS and every JavaScript reference survived. `renderSheetVisibility`
+threw on every call, after the comments-drawer toggle and before the scrim and
+the other two sheets updated. So two of the four sheets were dead and the scrim
+never moved. The markup is restored verbatim from commit `4156641`.
+
+Nothing in the slice ladder would have caught any of these four. Every slice
+verified its own change, and no slice measured the rendered page.
+
+### A new program, deliberately not designed yet
+
+`ADR-0020 — Viewer parts and an author-time build` is `decided`.
+`viewer/index.html` is 4917 lines: 881 of CSS and 3872 of JavaScript in one
+IIFE holding 145 functions, with 50 mode-predicate calls scattered across five
+interleaved modes, 45 `innerHTML` string blocks, no template element at all,
+and one card fragment copy-pasted eighteen times. The record decides that the
+viewer is authored as parts under `viewer/src/` and compiled into the committed
+`index.html`, guarded by a test that rebuilds and compares.
+
+Build-free is narrowed rather than kept. No build at install, and none in the
+browser. Build-free authoring ends, because that is the half paying in defects.
+
+`docs/architecture/designs/maintainable-viewer/goal.json` carries four planned
+epics at `stage: backlog`. It has no `intent.json`, no `narrative.json`, no
+`assessment.json`, and no diagrams, because stages 2 through 7 of design mode
+did not run. It must not be implemented until they do.
+
+E2 of that design is ordered before the rewrites on purpose.
+`export_artifact.py` rewrites the viewer by verbatim string replacement and
+hard-errors when a literal moves, so the publish pipeline breaks silently under
+any refactor until somebody publishes.
