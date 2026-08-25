@@ -21,7 +21,7 @@ regex:
 
 - ``shared/build_index.py``
 - ``plugins/cobuilder-implement/scripts/verify_gate.py``
-- ``scripts/build_builds_view.py``
+- ``plugins/cobuilder-artifact/scripts/build_builds_view.py``
 
 Every row that looks like a slice row (a leading cell of digits) but does
 not parse cleanly against either shape lands in ``ParsedSliceTable.unparsed``

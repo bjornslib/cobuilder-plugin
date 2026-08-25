@@ -30,6 +30,16 @@ not executed**: no `viewer/src/` directory exists yet, and the viewer is
 still the one committed file described below. Treat that ADR as a plan,
 not as the current shape of the file.
 
+`cobuilder-architect` and `cobuilder-pr` both hand off to
+`cobuilder-artifact`'s View and Publish modes, so each manifest declares
+`cobuilder-artifact` as a `dependencies` entry. Installing either plugin
+also installs `cobuilder-artifact`. The handoff still crosses the plugin
+boundary by mode name only, and the state it carries still travels through
+the bundle, per ADR-0016. A `dependencies` entry guarantees co-installation.
+It does not grant one plugin's code a file path into another plugin's root.
+The install-surface rule is unchanged: no plugin in this family ships an
+agent, a hook, or an MCP server.
+
 The five Odyssey modes still take `--repo`. The six architecture modes are
 self-only. They analyze the session's own repo and refuse a foreign target.
 
@@ -108,6 +118,28 @@ other's context.
 
 If a future term collides with one of these across the two skill families, resolve the collision here before it ships — do not let two modes silently mean different things by the same word.
 
+### A superseded gazetteer
+
+`.cobuilder-architect/self/pages/cobuilder-vocabulary.html` is a session
+gazetteer dated 2026-08-20. It listed ten decisions as pending an ADR.
+Several of them shipped differently. Treat that page as a historical
+session record, not a specification. The Vocabulary table above is the
+current source of truth. Do not edit the HTML page to match this file.
+
+Measured differences between the gazetteer and what shipped:
+
+| Gazetteer proposed | What shipped |
+|---|---|
+| `cobuilder-pr:assess` as a third mode | Folded into `generate --stage post`. No `:assess` reference exists. |
+| `baseline` moves to `cobuilder-architect` | Still `plugins/cobuilder-pr/commands/baseline.md`. |
+| `skills/odyssey/` renames to `skills/pull-request/` | Still `skills/odyssey`. |
+| `mermaid` vendored into `cobuilder-pr` only | Vendored into every plugin that needs it. |
+| `shared/bundle-core/` plus `scripts/_shared` symlinks | Flat `shared/`, with a `plugins/<name>/shared` symlink in each plugin. |
+| `build_adrs.py` and `build_designs.py` | One `shared/build_index.py`. |
+
+The gazetteer predates the five-plugin split, which is why its proposed
+paths do not match the Layout section above.
+
 ## Layout
 
 ```
@@ -145,11 +177,13 @@ plugins/
     .claude-plugin/plugin.json
     commands/          view.md, publish.md → Skill("artifact", args=...)
     skills/artifact/
-    scripts/           export_artifact.py, export_index.py, record_publish.py
+    scripts/           export_artifact.py, export_index.py, record_publish.py,
+                       build_builds_view.py
     viewer/index.html  the bundle viewer (4747 lines, single file, see below)
     shared/            -> ../../shared (symlink)
   cobuilder-implement/   build a design's epics, one vertical slice at a time
     .claude-plugin/plugin.json
+    commands/          implement.md → Skill("implement", args="implement ...")
     skills/implement/
     scripts/           verify_gate.py
     shared/            -> ../../shared (symlink)
@@ -157,10 +191,15 @@ plugins/
     .claude-plugin/plugin.json
     skills/orientation/
     shared/            -> ../../shared (symlink)
-scripts/build_builds_view.py   NOT part of any plugin. A local tool for this
-                       repository's own build-status page. Leave it at the
-                       repository root. Do not move it into a plugin.
 ```
+
+`plugins/cobuilder-artifact/scripts/build_builds_view.py` used to sit at
+the repository root, outside every plugin. It generates
+`.cobuilder-architect/self/pages/builds-view.html`, a file inside the
+bundle. A bundle must be regenerable from installed plugins alone. A
+generator outside every plugin left no installer able to rebuild a page
+their own bundle contained, so the script moved into `cobuilder-artifact`,
+next to the other export scripts that write into the bundle.
 
 A shared skill (`mermaid`, `ste-writing`) resolves at `${CLAUDE_PLUGIN_ROOT}/shared/skills/<name>/`
 from inside any plugin, because the symlink dereferences into the plugin's own
@@ -187,8 +226,8 @@ Each plugin's `skills/` and `commands/` are auto-discovered — its
 `shared/slice_table.py` is the one parser for the slice table in
 `docs/plans/<slug>/04-slices.md`. It replaced three divergent regex sets in
 `shared/build_index.py`, `plugins/cobuilder-implement/scripts/verify_gate.py`,
-and `scripts/build_builds_view.py`. A future format change to that table
-needs one edit, not three.
+and `plugins/cobuilder-artifact/scripts/build_builds_view.py`. A future
+format change to that table needs one edit, not three.
 
 `plugins/cobuilder-implement/scripts/verify_gate.py` is that plugin's first
 script. It checks Gate 4a, 4b, and 4c for a plan directory and exits
@@ -206,6 +245,13 @@ which now stops the run instead of falling back silently when a design
 document is missing. Apply the same lesson before adding a new documented
 step anywhere else in this family: give it a mechanical consumer, or expect
 it to be skipped.
+
+**Open placement question: `watch_feedback.py`.** `docs/plans/cobuilder-family/epic-E6-design.md`
+records that `watch_feedback.py` shipped under
+`plugins/cobuilder-full-lifecycle/scripts/`, while `03-program-design.md`
+placed it under `cobuilder-artifact`, next to `serve_bundle.py`, which
+writes the same ledger. Nobody has resolved this. Do not move the file
+on the strength of this note alone.
 
 ## How generation actually runs
 
@@ -642,6 +688,6 @@ build) decided, not yet executed → the Designs sheet retired, its two
 sections folded into the Designs tab, and `shared/build_index.py` gained a
 `pr-draft.md` projection.
 No CI config, no package manager — this is prose + Python scripts + one
-HTML file, with a `tests/` suite of 255 tests that checks packaging
+HTML file, with a `tests/` suite of 268 tests that checks packaging
 invariants across the five plugins, plus the slice-table parser, the
 Gate 4 verifier, and the deny-git-stash hook.

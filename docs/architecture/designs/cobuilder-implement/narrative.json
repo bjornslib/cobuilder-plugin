@@ -1,0 +1,72 @@
+{
+  "landscape": {
+    "tagline": "A design becomes verified code, one slice at a time.",
+    "narration": "cobuilder-architect can now capture a design before any code exists, but nothing on the other side of that record turns it into working software under independent checks. This design adds the missing half: four approval gates before implementation starts, and a validator that never wrote the code deciding whether each slice is actually done."
+  },
+  "problem_solution": {
+    "problem": "Software Factory gates a design, then accepts a finished slice on the implementer's own word. CoBuilder Guardian scores independently, but it only runs on the pi SDK, DOT pipelines, beads, and Hindsight. Neither one takes an approved architecture design and turns it into verified code in an arbitrary coding harness, so the designs `cobuilder-architect` now produces have nothing that consumes them.",
+    "solution": "Three tiers and four gates. An initiative holds epics, a feature is an epic, and every epic must be testable. An epic holds vertical slices. Three separate agents build each slice: one writes failing tests, one writes the minimal code and never edits a test, and one validates. The validator executes the suite, then reads the code and judges whether the tests cover the declared outcomes. A slice needs a score of `0.90` or better. The epic gate is hard, and remediation returns to the implementing agent until it closes.",
+    "narration": "Design mode already writes down what a change is for and why, before the change exists. This design gives that record somewhere to go. It borrows the gate discipline of Software Factory, which settles every hard decision in prose while it is still cheap to change, and it borrows the independent scoring of CoBuilder Guardian, which never lets the agent that wrote the code grade its own test run. Joining the two means a design can walk all the way to working software, with a validator checking every step who was never shown the code while writing the checklist.",
+    "beats": [
+      {
+        "kind": "background",
+        "text": "`cobuilder-architect`'s design mode shipped first, so a design now carries intent, alternatives, and constraints that nobody has to reconstruct later (ADR-0011). ADR-0015 then made the architecture modes self-only, which means a build workflow cannot live inside `cobuilder-architect` itself. The design that mode produces has nothing downstream that reads it and turns it into code."
+      },
+      {
+        "kind": "background",
+        "text": "Software Factory's weakness sits at the end of a slice: the agent that built the slice proves it works by running it and showing the result, so the same agent decides what counts as proof. CoBuilder Guardian answers that weakness by writing acceptance rubrics before implementation starts, storing them where the implementer cannot read them, and scoring the result with an agent that did not write the code. Its weakness is the runtime: it needs the pi SDK, DOT pipelines, beads, and Hindsight, none of which runs in another harness."
+      },
+      {
+        "kind": "intuition",
+        "text": "Take a single epic with three slices. Slice one gets a rubric written before any code exists, hidden from the implementer. The GREEN agent writes the minimal code, the validator runs the test suite it never touched, reads the resulting code, and scores it against the rubric. A score of `0.85` sends the slice back to GREEN with the validator's stated reasons; a score of `0.90` or better closes it and starts the next slice. Nothing in that loop lets the agent that wrote the code also decide it is finished."
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "One agent does the rubric, the tests, the code, and the self-report in a single context, and a human skims the log at the end",
+        "rejected": "It abandons independent scoring, which the outcome requires. The agent that wrote the code judges its own test run, which is the most gameable pattern available."
+      },
+      {
+        "option": "Delete the validator. Get blindness from context amnesia: one agent writes the rubric, the harness clears context, and the same agent implements and self-scores twice, voiding on a mismatch above 0.15",
+        "rejected": "Erasure blindness cannot be verified from outside the model, and two runs of one policy give correlated error rather than independent verification. It assumes away the hard part."
+      },
+      {
+        "option": "Treat rubrics as a cross-repo append-only ledger, cluster criterion fingerprints into a shared genome, and prime the validator with a prior score distribution",
+        "rejected": "It needs a periodic clustering job across repos, which breaks the rule that this skill uses no external service and no pipeline runtime. It also solves a volume problem this work does not have yet."
+      },
+      {
+        "option": "Forbid the validator from reading the implementation at all, and score only from a test runner's exit codes",
+        "rejected": "It scores whether tests pass and never asks whether the tests are worth passing. The validator must also judge test adequacy against the specs, so it reads the code after it executes the suite."
+      },
+      {
+        "option": "Commit a hash of every test file at G3 and check it before scoring",
+        "rejected": "It changes the G3 gate contract for a hole that a validator judging test adequacy already covers. The void triggers widen in prose instead."
+      },
+      {
+        "option": "Score a criterion called 'no undeclared test dependencies' to catch a fixture added after G3",
+        "rejected": "Enumerating a test's transitive dependencies is not free in a dynamically imported language. The same reasoning as the hash check applies."
+      },
+      {
+        "option": "Strip the validator's retry feedback to pass or fail per criterion, so accumulated feedback cannot leak the rubric's shape",
+        "rejected": "Rich feedback is mandatory for GREEN to improve within its attempts. Starving it pushes slices into escalation, which costs more than the leak."
+      }
+    ]
+  },
+  "architecture": {
+    "narration": "No plugin here takes a code dependency on another. `cobuilder-implement` joins `cobuilder-architect` through one file, `docs/architecture/designs/<name>/intent.json`, and joins nothing else. The install surface stays fixed: no agents, no hooks, no MCP servers, so the plugin never touches another session's permission surface. Everything else — the gates, the rubric store, the validator's mandate — is prose plus two workflow scripts that any harness able to spawn a subagent can run.",
+    "beats": [
+      {
+        "kind": "forces",
+        "text": "The skill must run in any harness that can spawn a subagent, with no SDK, no pipeline runtime, and no external service. An implementing agent that reads the rubric writes to the rubric, not to the requirement. An agent that wrote code cannot score it, because it reads its own intent into the code. ADR-0015 makes the architecture modes self-only, so a build workflow cannot live inside `cobuilder-architect`."
+      },
+      {
+        "kind": "contract",
+        "text": "`docs/architecture/designs/<name>/intent.json` is the only coupling between the two plugins, in either direction. `cobuilder-implement` reads it as the hypothesis for the initiative it builds. No shared code, no shared runtime, and no arrow from either plugin to the other's files."
+      },
+      {
+        "kind": "boundary",
+        "text": "Blindness is honour-based inside one repository: rubrics live in `.cobuilder/rubrics/`, and nothing mechanically stops an implementing agent from reading them. Enforcement is three layers — the prompt forbids the read, the implementer never receives the rubric path, and a detected read voids the score at no attempt cost rather than lowering it. Opening a pull request or pushing a branch stays submit mode's job in `cobuilder-architect`, never this plugin's."
+      }
+    ]
+  }
+}
