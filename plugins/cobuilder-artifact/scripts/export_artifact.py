@@ -92,9 +92,9 @@ CDN_LINK_RES = [
 # instead, same graceful-degradation posture as the Motion no-op above), or replaced
 # in place with a vendored runtime when --inline-mermaid is passed.
 MERMAID_CDN_RE = re.compile(r'<script src="https://cdn\.jsdelivr\.net/npm/mermaid[^>]*></script>\n')
-HERO_SRC_OLD = ': `<img src="../assets/pr-${prNum}/level-${levelIdx}.png" alt="${escapeHtml(alt)}" loading="lazy">`;'
+HERO_SRC_OLD = ': `<img src="../assets/pr-${prNum}/level-${levelIdx}.webp" alt="${escapeHtml(alt)}" loading="lazy">`;'
 HERO_SRC_NEW = (
-    ": `<img src=\"${window.ODYSSEY_ASSETS['pr-' + prNum + '/level-' + levelIdx + '.png'] || ''}\" "
+    ": `<img src=\"${window.ODYSSEY_ASSETS['pr-' + prNum + '/level-' + levelIdx + '.webp'] || ''}\" "
     'alt="${escapeHtml(alt)}" loading="lazy">`;'
 )
 DIALOG_IMG_OLD = "img.src = `../assets/${rel}`;"
