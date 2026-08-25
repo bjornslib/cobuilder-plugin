@@ -5,14 +5,17 @@ Run with: uv run --with pytest pytest tests/test_ledger.py -v
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 import tempfile
+import types
 from pathlib import Path
 
 import pytest
 
-import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "shared"))
 
+import ledger  # noqa: E402
 from ledger import (  # noqa: E402
     LedgerPaths,
     append_comment,
@@ -211,6 +214,107 @@ def test_projection_is_disposable_full_rebuild(tmp_path: Path):
     for key in proj1:
         assert proj1[key]["current_state"] == proj2[key]["current_state"]
         assert proj1[key]["reply_count"] == proj2[key]["reply_count"]
+
+
+def test_ulid_factory_degrades_when_import_yields_wrong_object(monkeypatch):
+    """A wrong-object import must fall through to the uuid fallback.
+
+    This reproduces the shipped bug directly, with no network and no real
+    dependency. `from ulid import ulid` used to bind the `ulid.ulid`
+    submodule instead of a function, so the import succeeded and the
+    guard never engaged. The failure moved to call time, where it raised
+    "'module' object is not callable". Inject the same wrong-object shape
+    here and assert the factory degrades instead of raising.
+    """
+    fake_ulid_module = types.ModuleType("ulid")
+    # Same shape as the real bug: an attribute that is a module, not a
+    # callable that returns a ULID.
+    fake_ulid_module.new = types.ModuleType("ulid.new")
+    monkeypatch.setitem(sys.modules, "ulid", fake_ulid_module)
+
+    factory = ledger._load_ulid_factory()
+    value = factory()
+
+    assert isinstance(value, str)
+    assert len(value) == 26
+
+
+def test_ulid_factory_degrades_when_new_returns_wrong_shape(monkeypatch):
+    """A callable `ulid.new` that returns an object without `.str` must
+    also degrade to the fallback, not raise."""
+    fake_ulid_module = types.ModuleType("ulid")
+    fake_ulid_module.new = lambda: object()  # no .str attribute
+    monkeypatch.setitem(sys.modules, "ulid", fake_ulid_module)
+
+    factory = ledger._load_ulid_factory()
+    value = factory()
+
+    assert isinstance(value, str)
+    assert len(value) == 26
+
+
+def test_ulid_factory_uses_real_dependency_when_shape_is_correct(monkeypatch):
+    """A correctly shaped `ulid.new()` result is used as-is, via `.str`."""
+
+    class _FakeUlid:
+        str = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
+
+    fake_ulid_module = types.ModuleType("ulid")
+    fake_ulid_module.new = lambda: _FakeUlid()
+    monkeypatch.setitem(sys.modules, "ulid", fake_ulid_module)
+
+    factory = ledger._load_ulid_factory()
+    assert factory() == "01ARZ3NDEKTSV4RRFFQ69G5FAV"
+
+
+def test_uuid_fallback_is_not_time_sortable():
+    """The uuid4 fallback is a valid 26-char id, but NOT sortable by
+    creation order. This is why `ulid-py` stays a dependency: dropping it
+    would break the ledger's reliance on append-order sorting."""
+    import base64
+    import uuid
+
+    def _fallback() -> str:
+        return base64.b32encode(uuid.uuid4().bytes).decode().lower().rstrip("=")
+
+    values = [_fallback() for _ in range(20)]
+    assert values != sorted(values)
+
+
+@pytest.mark.skipif(
+    subprocess.run(["uv", "--version"], capture_output=True).returncode != 0,
+    reason="uv is not on PATH, cannot resolve ulid-py for a real-dependency check",
+)
+def test_ulid_factory_works_against_real_ulid_py_dependency():
+    """End-to-end proof against the real `ulid-py` package, not a stub.
+
+    Runs in a subprocess with `uv run --with 'ulid-py>=1.0'` so the actual
+    dependency is present, the same way `serve_bundle.py` resolves it.
+    Before the fix, this call raised "'module' object is not callable".
+    """
+    ledger_dir = str(Path(__file__).resolve().parent.parent / "shared")
+    script = (
+        "import sys; "
+        f"sys.path.insert(0, {ledger_dir!r}); "
+        "import ledger; "
+        "value = ledger._ulid(); "
+        "assert isinstance(value, str), value; "
+        "assert len(value) == 26, value; "
+        "print(value)"
+    )
+    result = subprocess.run(
+        ["uv", "run", "--with", "ulid-py>=1.0", "python3", "-c", script],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    if result.returncode != 0:
+        pytest.fail(
+            "Real ulid-py dependency check failed:\n"
+            f"stdout: {result.stdout}\nstderr: {result.stderr}"
+        )
+    produced = result.stdout.strip()
+    assert len(produced) == 26
 
 
 if __name__ == "__main__":

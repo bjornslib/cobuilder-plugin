@@ -13,6 +13,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPT_DIR = REPO_ROOT / "plugins" / "cobuilder-artifact" / "scripts"
 sys.path.insert(0, str(SCRIPT_DIR))
@@ -142,6 +144,7 @@ PAGE_TEMPLATE = """<!doctype html>
 <head><title>Builds</title></head>
 <body>
 <div id="hand-authored-marker">do not touch me</div>
+<!-- BEGIN GENERATED -->
 <script>window.BUILD=null;</script>
 <script>
 var GATEDOC={{}};
@@ -152,6 +155,7 @@ var ASKGATE="";
 var ASKNOTE="";
 buildRail(); go("1","01-product.md");
 </script>
+<!-- END GENERATED -->
 <footer>hand authored footer, never generated</footer>
 </body>
 </html>
@@ -237,3 +241,77 @@ def test_render_twice_produces_an_identical_file(tmp_path):
     bbv.render(page, plan_dir, designs_dir, rubrics_dir)
     second = page.read_text()
     assert first == second
+
+
+# --- the generated-region fence ---
+
+
+def test_render_leaves_a_lookalike_line_outside_the_markers_untouched(tmp_path):
+    """A hand-authored line outside the fence must survive, even if it
+    starts with a prefix render() otherwise treats as generated. This is
+    the regression test for the bug the fence exists to close."""
+    plan_dir, designs_dir, rubrics_dir, page = make_plan(tmp_path)
+    page.write_text(
+        page.read_text().replace(
+            "<footer>hand authored footer, never generated</footer>",
+            '<footer>hand authored footer, never generated</footer>\n'
+            '<pre>var cur={gate:"9",doc:"do-not-touch.md"};</pre>',
+        )
+    )
+    before_line = 'var cur={gate:"9",doc:"do-not-touch.md"};'
+
+    bbv.render(page, plan_dir, designs_dir, rubrics_dir)
+
+    assert before_line in page.read_text()
+
+
+def test_render_exits_nonzero_when_the_page_has_no_markers(tmp_path, capsys):
+    plan_dir, designs_dir, rubrics_dir, page = make_plan(tmp_path)
+    page.write_text(
+        page.read_text()
+        .replace("<!-- BEGIN GENERATED -->\n", "")
+        .replace("<!-- END GENERATED -->\n", "")
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        bbv.render(page, plan_dir, designs_dir, rubrics_dir)
+
+    assert exc_info.value.code != 0
+    err = capsys.readouterr().err
+    assert "BEGIN GENERATED" in err
+    assert "remediation" in err
+
+
+def test_render_exits_nonzero_when_a_marker_is_duplicated(tmp_path, capsys):
+    plan_dir, designs_dir, rubrics_dir, page = make_plan(tmp_path)
+    page.write_text(
+        page.read_text().replace(
+            "<!-- BEGIN GENERATED -->",
+            "<!-- BEGIN GENERATED -->\n<!-- BEGIN GENERATED -->",
+        )
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        bbv.render(page, plan_dir, designs_dir, rubrics_dir)
+
+    assert exc_info.value.code != 0
+    err = capsys.readouterr().err
+    assert "remediation" in err
+
+
+def test_render_exits_nonzero_when_end_appears_before_begin(tmp_path, capsys):
+    plan_dir, designs_dir, rubrics_dir, page = make_plan(tmp_path)
+    text = page.read_text()
+    text = text.replace("<!-- BEGIN GENERATED -->\n", "")
+    text = text.replace(
+        "<!-- END GENERATED -->\n",
+        "<!-- END GENERATED -->\n<!-- BEGIN GENERATED -->\n",
+    )
+    page.write_text(text)
+
+    with pytest.raises(SystemExit) as exc_info:
+        bbv.render(page, plan_dir, designs_dir, rubrics_dir)
+
+    assert exc_info.value.code != 0
+    err = capsys.readouterr().err
+    assert "remediation" in err
