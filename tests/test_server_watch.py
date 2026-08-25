@@ -5,6 +5,7 @@ Run with: uv run --with pytest pytest tests/test_server_watch.py -v
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -290,6 +291,87 @@ class TestEndToEndLoop:
 
         # 7. Verify quote is preserved in anchor
         assert lines[0]["anchor"]["selection"]["quotedText"] == "selected text"
+
+
+class TestServeSubprocess:
+    """Real-process test of serve_bundle.py, with the real ulid-py dependency.
+
+    The in-process TestServer fixture above imports `ledger` directly, so
+    it runs under pytest's environment, where `ulid-py` is absent and the
+    uuid fallback engages. That path never exercises the real dependency,
+    so it cannot catch a bug in how the real package is used. Start the
+    script the way a person runs it, with `uv run`, so the PEP 723 header
+    resolves the real `ulid-py` package.
+    """
+
+    def test_post_feedback_returns_201_with_real_ulid_py(self, tmp_path):
+        """The server must accept a real POST and append a ledger line,
+        using the actual `ulid-py` dependency declared in the script."""
+        bundle_dir = tmp_path
+        (bundle_dir / "feedback-ledger.jsonl").touch()
+        script = str(
+            Path(__file__).resolve().parent.parent
+            / "plugins"
+            / "cobuilder-artifact"
+            / "scripts"
+            / "serve_bundle.py"
+        )
+
+        import os
+
+        env = dict(os.environ, PYTHONUNBUFFERED="1")
+        proc = subprocess.Popen(
+            ["uv", "run", script, "--bundle-dir", str(bundle_dir), "--port", "0", "--allow-write"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=env,
+        )
+        try:
+            port = None
+            deadline = time.time() + 30
+            while time.time() < deadline:
+                line = proc.stdout.readline()
+                if not line:
+                    if proc.poll() is not None:
+                        break
+                    continue
+                match = re.search(r"127\.0\.0\.1:(\d+)", line)
+                if match:
+                    port = int(match.group(1))
+                    break
+            if port is None:
+                stderr = proc.stderr.read() if proc.poll() is not None else ""
+                pytest.fail(f"serve_bundle.py never printed its bound port. stderr: {stderr}")
+
+            base_url = f"http://127.0.0.1:{port}"
+            resp = None
+            for _ in range(50):
+                try:
+                    resp = requests.post(
+                        f"{base_url}/feedback",
+                        json={"anchor": {"selector": "#x"}, "text": "e2e comment"},
+                        timeout=1,
+                    )
+                    break
+                except requests.RequestException:
+                    time.sleep(0.1)
+
+            assert resp is not None, "server never accepted a connection"
+            assert resp.status_code == 201, resp.text
+            data = resp.json()
+            assert len(data["ulid"]) == 26
+
+            lines = read_ledger(bundle_dir / "feedback-ledger.jsonl")
+            assert len(lines) == 1
+            assert lines[0]["text"] == "e2e comment"
+            assert lines[0]["ulid"] == data["ulid"]
+        finally:
+            proc.terminate()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
 
 
 if __name__ == "__main__":

@@ -36,6 +36,12 @@ class FeedbackHandler(SimpleHTTPRequestHandler):
             return
 
         if not self.allow_write:
+            # Drain the request body before responding. An unread body can
+            # leave data in the socket buffer, and the client can see a
+            # connection reset when the server closes the connection next.
+            content_length = int(self.headers.get("Content-Length", 0))
+            if content_length:
+                self.rfile.read(content_length)
             self.send_response(403)
             self.send_header("Content-Type", "application/json")
             self.end_headers()
