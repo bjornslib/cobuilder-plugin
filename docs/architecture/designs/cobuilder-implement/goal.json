@@ -38,9 +38,9 @@
     },
     {
       "id": "E2",
-      "branch": null,
-      "pr": null,
-      "state": "planned",
+      "branch": "docs/post-pr11-cleanup",
+      "pr": 12,
+      "state": "open",
       "note": "Gate 4b is enforced instead of merely specified. The per-epic technical solution design already exists in SKILL.md section 4b, with a six-section template, and five downstream files reference the artifact. Nothing checks that it was written. Checked on 2026-08-24: zero epic-<id>-design.md files exist, and six epics shipped without one. Four failures allow that. Gate 4's only exit check counts rubrics, so a Gate 4 that skips 4b still passes. slice-loop.js builds the epic-design path and never checks the file exists, so the red and green agents are told to read a file that is absent and quietly fall back to 03-program-design.md. rubric-authoring.md tells the author to update the technical design first, and nobody checks that either. No test asserts the artifact. The root cause is that 4b is the only Gate 4 sub-step whose output nothing downstream mechanically requires: the loop cannot score without rubrics or iterate without a slice plan, but it can read an absent design. This epic adds the exit check, the existence guard in the workflow, a test, and sub-step tracking in 00-status.md so an approved Gate 4 cannot hide a missing 4b. Raised 2026-08-22, re-scoped 2026-08-24 from 'write the process' to 'enforce the process' after reading the skill."
     }
   ],

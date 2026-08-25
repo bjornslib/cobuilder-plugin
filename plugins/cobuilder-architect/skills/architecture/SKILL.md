@@ -248,14 +248,16 @@ that join here.
       the odyssey skill's `references/pr-description-template.md`.
 
    4. **Narrative.** Write `docs/architecture/designs/<name>/narrative.json`.
-      The viewer renders it as the design's four levels: `landscape`
+      The viewer renders it as the design's three levels: `landscape`
       (`tagline`, `narration`), `problem_solution` (`problem`, `solution`,
-      `narration`, `beats[]`, `alternatives[]`), `architecture`
-      (`narration`, `beats[]`), and `file_changes` (the envisioned
-      change, not a diff, since no file has changed yet). Each `beats[]`
-      entry carries a `kind` and a `text`. Ground every field in `intent`
-      and the ADR draft. Do not invent content the interview and
-      challenge stages did not produce.
+      `narration`, `beats[]`, `alternatives[]`), and `architecture`
+      (`narration`, `beats[]`). Each `beats[]` entry carries a `kind` and
+      a `text`. Ground every field in `intent` and the ADR draft. Do not
+      invent content the interview and challenge stages did not produce.
+      A design carries no `file_changes` level. That level exists only on
+      a pull request, which has a real diff to summarize. A design has no
+      diff yet, so the viewer's `DESIGN_N_LEVELS` caps a design at three
+      levels and never renders a fourth.
 
    5. **Intent, assessment, and goal.** Write `intent.json`,
       `assessment.json` (`stage: "design"`), and `goal.json` under

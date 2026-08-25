@@ -65,7 +65,7 @@ import slice_table  # noqa: E402
 # epic id in the "Epic" cell. A slice row has an integer "#" and the same
 # scoped id, un-bolded, in the "Epic" cell. shared/slice_table.py owns the
 # parser for this table, shared by this script, shared/build_index.py, and
-# scripts/build_builds_view.py.
+# plugins/cobuilder-artifact/scripts/build_builds_view.py.
 
 REQUIRED_DESIGN_SECTIONS = [
     "## Scope and Intent",

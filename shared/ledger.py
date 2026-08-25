@@ -19,15 +19,45 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-try:
-    from ulid import ulid as _ulid
-except Exception:
-    import uuid
-    import base64
+def _load_ulid_factory():
+    """Return a callable that makes a 26-character sortable ULID string.
 
-    def _ulid() -> str:
-        # ULID-compatible: 26 chars, Crockford base32, sortable
-        return base64.b32encode(uuid.uuid4().bytes).decode().lower().rstrip("=")
+    Import the real dependency and verify it works before trusting it.
+    `ulid-py` exposes `ulid.new()`, a function that returns an object with
+    a `.str` attribute. A prior bug imported `ulid.ulid` instead, which
+    binds a submodule, not a function. That import succeeds, so it never
+    fell through to the fallback. It failed only later, at call time, with
+    "'module' object is not callable". Probe the real call here so a wrong
+    binding degrades to the fallback instead of raising in production.
+    """
+    try:
+        import ulid as _ulid_module
+
+        candidate = _ulid_module.new
+        if not callable(candidate):
+            raise TypeError("ulid.new is not callable")
+        probe = candidate()
+        probe_str = getattr(probe, "str", None)
+        if not isinstance(probe_str, str) or len(probe_str) != 26:
+            raise TypeError("ulid.new() did not return a usable ULID")
+
+        def _factory() -> str:
+            return candidate().str
+
+        return _factory
+    except Exception:
+        import base64
+        import uuid
+
+        def _factory() -> str:
+            # ULID-compatible: 26 chars, Crockford base32, but NOT
+            # time-sortable. Only used when ulid-py is missing or broken.
+            return base64.b32encode(uuid.uuid4().bytes).decode().lower().rstrip("=")
+
+        return _factory
+
+
+_ulid = _load_ulid_factory()
 
 
 LEDGER_FILENAME = "feedback-ledger.jsonl"

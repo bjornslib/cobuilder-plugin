@@ -236,13 +236,14 @@ text: the constraint introduced, and the boundary rules.
 
 4. **Narrative.** Write `narrative.json` into
    `docs/architecture/designs/<name>/`. The viewer renders it as the
-   design's four levels: `landscape` (`tagline`, `narration`),
+   design's three levels: `landscape` (`tagline`, `narration`),
    `problem_solution` (`problem`, `solution`, `narration`, `beats[]`,
-   `alternatives[]`), `architecture` (`narration`, `beats[]`), and
-   `file_changes` (the envisioned change, not a diff, since no file has
-   changed yet). Each `beats[]` entry carries a `kind` and a `text`.
-   Ground every field in `intent` and the ADR draft. Do not invent
-   content the interview and challenge stages did not produce.
+   `alternatives[]`), and `architecture` (`narration`, `beats[]`). Each
+   `beats[]` entry carries a `kind` and a `text`. Ground every field in
+   `intent` and the ADR draft. Do not invent content the interview and
+   challenge stages did not produce. A design carries no `file_changes`
+   level. The viewer's `DESIGN_N_LEVELS` caps a design at three levels,
+   because a design has no diff yet — only a pull request does.
 
 5. **Intent and assessment.** Write `intent.json` and a
    `stage: "design"` assessment into `docs/architecture/designs/<name>/`.
