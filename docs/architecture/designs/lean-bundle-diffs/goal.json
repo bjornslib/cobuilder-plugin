@@ -1,0 +1,42 @@
+{
+  "name": "lean-bundle-diffs",
+  "title": "Stop committing per-PR diff dumps into the bundle",
+  "adr": null,
+  "adrs": [],
+  "created": "2026-08-26",
+  "outcome": "A fresh clone of this repo is not weighed down by every merged PR's full diff text, and the viewer still shows a diff for any PR a reader opens.",
+  "done_when": [],
+  "abort_if": [],
+  "min_work": {
+    "derived_from": "data/diffs-pr{N}.js under .cobuilder-architect/ is a per-PR export of extract_diffs.py's output, committed today the same way story.js and adrs.js are. Measured on 2026-08-26: the repo's clone size is ~40 MB, and the largest single files are diffs-pr11.js (6.4 MB) and several more in the hundreds of KB to low MB range, per-PR and permanent. Unlike the narrative and ADRs, a diff is fully reproducible at any time from git diff <merge-base>..<head> as long as history is not rewritten, so committing it buys nothing a live git command could not supply on demand.",
+    "challenge_stage_run": false,
+    "note": "Stage 0 and stage 1 grounding did not run. Stages 2 through 7 are deliberately deferred. This design is a backlog entry, not an approved design. It carries no intent.json, narrative.json, assessment.json, or diagrams, and it must not be implemented until design mode runs to completion."
+  },
+  "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
+  "epics": [
+    {
+      "id": "E1",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "Decide the replacement shape: the viewer reads a diff by running git diff against the PR's recorded commit SHAs at serve time (view mode already runs from inside the repo), versus keeping diffs-pr{N}.js exactly as it is today but gitignoring it, regenerating it from git on demand the way exports/branch-*/diff.json already works for generate mode. Either removes the committed weight; they differ in whether a served bundle still needs a live git checkout next to it."
+    },
+    {
+      "id": "E2",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "Whichever shape E1 picks, implement it in extract_diffs.py and, if the viewer starts requesting diffs at view time instead of reading a static file, in artifact's serve_bundle.py. Update verify_bundle.py's expectations accordingly."
+    },
+    {
+      "id": "E3",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "Migrate the existing committed bundles (self, and the two fixture bundles) so history stops growing: remove the checked-in diffs-pr{N}.js files, or move them under .gitignore, per E1's decision. This does not touch story.json's authored fields, so it is a bundle-file change, not a schema migration."
+    }
+  ],
+  "stage": "backlog",
+  "supersedes": null,
+  "rounds": []
+}

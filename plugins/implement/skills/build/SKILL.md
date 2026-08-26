@@ -443,12 +443,17 @@ score <  0.90 and attempt < 3 → return to GREEN with feedback
 score <  0.90 and attempt >= 3 → escalate: accept with reservations
 ```
 
-Two execution options:
+Two execution options. The choice is by scope, not by asking the user
+first — this instruction is itself the opt-in the Workflow tool requires,
+the same way an architecture review's adversarial-verify pass invokes it
+on scope alone:
 
 | Mode | When to use | Instructions |
 |---|---|---|
-| **Workflow script** | Multi-agent execution enabled in harness | Run `workflows/slice-loop.js`. Obtain user opt-in first. |
-| **Manual** | Single slices or standard harness | Spawn subagents from [references/slice-loop.md](references/slice-loop.md). |
+| **Workflow script** | The feature is a program: `04-slices.md` groups slices under more than one epic | Invoke the Workflow tool, running `workflows/slice-loop.js`. Do not ask the user whether to use it first — a program-scale build always runs this way in a harness where the Workflow tool exists. |
+| **Manual** | A single epic, a single slice, or a configuration-only change | Spawn subagents from [references/slice-loop.md](references/slice-loop.md), one role at a time. |
+
+A harness with no Workflow tool always uses Manual, regardless of scope.
 
 ### After each slice
 

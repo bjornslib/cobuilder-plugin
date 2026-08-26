@@ -1,12 +1,12 @@
 {
   "schema_version": "1.3",
   "sources": {
-    "git_head": "e117ad09f471c53a0bc2c176727785d2b385e215",
+    "git_head": "77895579b405223f15fcd40709b8351780e357b9",
     "trees": {
       "docs/architecture/adr": "sha256:fd9dd693addcaf68e2bcc92bf905004dfcf546721de125b51b7d5e9e758ba8a1",
-      "docs/architecture/designs": "sha256:646b346897526c51ad6a2a101f4049b798244e6ac770f3d69c6b60d3cc07beb6",
+      "docs/architecture/designs": "sha256:f8568d2614d8cc2035bf58f9bac37f56841b04d8291701e559af45d337ab225d",
       "docs/architecture/contexts": "sha256:4626a327bd28df972d97d40dc1325c28808eb48789649b87eadd218b3528c907",
-      "docs/plans": "sha256:c47e93f958e845961d985f9781f0d03eab292dbc89b1b6631d06e8e3fc3cc4dc"
+      "docs/plans": "sha256:c6ed98e3846b908d8cfd216b6ff873473172ec2559e6e6ac6a4141253205efd1"
     }
   },
   "entities": {
@@ -143,6 +143,12 @@
         "stage": "backlog"
       },
       {
+        "id": "lean-bundle-diffs",
+        "name": "lean-bundle-diffs",
+        "outcome": "A fresh clone of this repo is not weighed down by every merged PR's full diff text, and the viewer still shows a diff for any PR a reader opens.",
+        "stage": "backlog"
+      },
+      {
         "id": "maintainable-viewer",
         "name": "maintainable-viewer",
         "outcome": "An engineer changes one view mode of the bundle viewer by opening one file of a few hundred lines, and the file that ships is still one self-contained HTML page that publishes as an Artifact unchanged.",
@@ -233,6 +239,33 @@
         "pr": null,
         "state": "planned",
         "note": "The active-work view. The viewer renders in-flight work beside merged history, so a reader sees one timeline rather than two."
+      },
+      {
+        "id": "lean-bundle-diffs/E1",
+        "design": "lean-bundle-diffs",
+        "epic_id": "E1",
+        "branch": null,
+        "pr": null,
+        "state": "planned",
+        "note": "Decide the replacement shape: the viewer reads a diff by running git diff against the PR's recorded commit SHAs at serve time (view mode already runs from inside the repo), versus keeping diffs-pr{N}.js exactly as it is today but gitignoring it, regenerating it from git on demand the way exports/branch-*/diff.json already works for generate mode. Either removes the committed weight; they differ in whether a served bundle still needs a live git checkout next to it."
+      },
+      {
+        "id": "lean-bundle-diffs/E2",
+        "design": "lean-bundle-diffs",
+        "epic_id": "E2",
+        "branch": null,
+        "pr": null,
+        "state": "planned",
+        "note": "Whichever shape E1 picks, implement it in extract_diffs.py and, if the viewer starts requesting diffs at view time instead of reading a static file, in artifact's serve_bundle.py. Update verify_bundle.py's expectations accordingly."
+      },
+      {
+        "id": "lean-bundle-diffs/E3",
+        "design": "lean-bundle-diffs",
+        "epic_id": "E3",
+        "branch": null,
+        "pr": null,
+        "state": "planned",
+        "note": "Migrate the existing committed bundles (self, and the two fixture bundles) so history stops growing: remove the checked-in diffs-pr{N}.js files, or move them under .gitignore, per E1's decision. This does not touch story.json's authored fields, so it is a bundle-file change, not a schema migration."
       },
       {
         "id": "maintainable-viewer/E1",
@@ -1120,7 +1153,7 @@
       "plugin-split/E4": 11,
       "plugin-split/E5": 11,
       "plugin-split/E6": 11,
-      "plugin-split/E8": 17
+      "plugin-split/E8": 18
     },
     "epic_status": {
       "book-index-tiering/E1": "open",
@@ -1131,6 +1164,9 @@
       "inflight-record-store/E2": "unstarted",
       "inflight-record-store/E3": "unstarted",
       "inflight-record-store/E4": "unstarted",
+      "lean-bundle-diffs/E1": "unstarted",
+      "lean-bundle-diffs/E2": "unstarted",
+      "lean-bundle-diffs/E3": "unstarted",
       "maintainable-viewer/E1": "unstarted",
       "maintainable-viewer/E2": "unstarted",
       "maintainable-viewer/E3": "unstarted",
