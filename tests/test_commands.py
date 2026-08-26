@@ -52,16 +52,28 @@ def _skill_dir(plugin_dir: Path, skill_name: str) -> Path:
     direct = plugin_dir / "skills" / skill_name
     if direct.exists():
         return direct
-    matches = list(plugin_dir.glob(f"skills/*/{skill_name}"))
+    # A command may dispatch into another plugin's skill by name, letting
+    # that plugin's own skill resolve its own path (CLAUDE.md's documented
+    # cross-plugin pattern, e.g. implement's debug.md -> architect's
+    # architecture skill). Fall back to searching every other plugin.
+    for other_dir in plugin_dirs():
+        if other_dir == plugin_dir:
+            continue
+        candidate = other_dir / "skills" / skill_name
+        if candidate.exists():
+            return candidate
     return direct
 
 
 def declared_modes_for_command(command_path: Path, skill_name: str) -> set[str]:
-    """Return the mode names the command's own plugin's skill declares."""
+    """Return the mode names the dispatched skill declares, whether that
+    skill lives in the command's own plugin or, for a documented
+    cross-plugin handoff, another plugin."""
     plugin_dir = command_path.resolve().parent.parent
     skill_md = _skill_dir(plugin_dir, skill_name) / "SKILL.md"
     assert skill_md.exists(), (
-        f"No SKILL.md found for skill '{skill_name}' under {plugin_dir.name}"
+        f"No SKILL.md found for skill '{skill_name}' under {plugin_dir.name} "
+        "or any other plugin"
     )
     modes = set()
     for line in skill_md.read_text().splitlines():

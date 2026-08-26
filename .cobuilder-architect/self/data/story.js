@@ -3,7 +3,7 @@ window.STORY = {
     "repo": "prodyssey",
     "generated": "2026-07-22",
     "schema_version": "1.3",
-    "title": "prodyssey \u2014 Codebase Odyssey",
+    "title": "prodyssey — Codebase Odyssey",
     "description": "",
     "levels": [
       "PR Landscape",
@@ -28,7 +28,7 @@ window.STORY = {
         "id": "scripts",
         "label": "Scripts",
         "kind": "core",
-        "files": 0,
+        "files": 1,
         "blurb": "Eighteen PEP 723 uv scripts that move data mechanically. Each skill mode calls them; none of them author narrative, ADRs, or diagrams. build_adrs.py and build_designs.py compile authored markdown into JSON the viewer reads. render_review.py lays out an assessment without judging it.",
         "root_paths": [
           "scripts"
@@ -58,7 +58,7 @@ window.STORY = {
         "id": "docs",
         "label": "Docs",
         "kind": "authored-source",
-        "files": 89,
+        "files": 91,
         "blurb": "Authored source that no script regenerates: architecture decision records under architecture/adr and adr, design proposals under architecture/designs, two architecture review reports, a plan for cobuilder-factory, and staged pull-request content under pull-requests. Submit and design mode write here. Generate mode never does.",
         "root_paths": [
           "docs"
@@ -127,8 +127,8 @@ window.STORY = {
           "voice": "This PR has grown well past where it started. Twenty-nine files, over seventy-five hundred lines added. It still adds the orientation doc, but most of the change is a new pipeline for publishing PR stories as shareable pages."
         },
         "problem_solution": {
-          "problem": "prodyssey had no in-repo orientation document (the original gap this PR set out to close), and separately, no way to share a generated PR story outside a local checkout \u2014 the bundle viewer only works served from a real `.odyssey/` directory with its sibling `data/`/`assets/` folders present, so \"send someone the story\" meant \"send someone the repo.\"",
-          "solution": "`CLAUDE.md` covers layout, the generation flow, and the bundle shape. Alongside it, three new scripts (`export_artifact.py`, `export_index.py`, `record_publish.py`) and a new Publish mode in `SKILL.md` turn a generated PR into a self-contained HTML file \u2014 story, ADRs, diff, scene art, and narration all inlined \u2014 that Claude publishes directly as a Claude Artifact via `/prodyssey:publish`, plus an index artifact that stays current across every publish run.",
+          "problem": "prodyssey had no in-repo orientation document (the original gap this PR set out to close), and separately, no way to share a generated PR story outside a local checkout — the bundle viewer only works served from a real `.odyssey/` directory with its sibling `data/`/`assets/` folders present, so \"send someone the story\" meant \"send someone the repo.\"",
+          "solution": "`CLAUDE.md` covers layout, the generation flow, and the bundle shape. Alongside it, three new scripts (`export_artifact.py`, `export_index.py`, `record_publish.py`) and a new Publish mode in `SKILL.md` turn a generated PR into a self-contained HTML file — story, ADRs, diff, scene art, and narration all inlined — that Claude publishes directly as a Claude Artifact via `/prodyssey:publish`, plus an index artifact that stays current across every publish run.",
           "narration": "This PR still writes down how prodyssey fits together, so a session doesn't reconstruct that from scratch. It also solves a second, related problem: a generated PR story only worked if you had the repo checked out and a local server running. Now one command turns that story into a link anyone can open.",
           "beats": [
             {
@@ -137,11 +137,11 @@ window.STORY = {
             },
             {
               "kind": "background",
-              "text": "The bundle viewer (`viewer/index.html`) depends on sibling `<script src=\"../data/*.js\">` tags, relative asset/audio paths, and two external CDN requests \u2014 none of it obvious without having built and served a real bundle."
+              "text": "The bundle viewer (`viewer/index.html`) depends on sibling `<script src=\"../data/*.js\">` tags, relative asset/audio paths, and two external CDN requests — none of it obvious without having built and served a real bundle."
             },
             {
               "kind": "intuition",
-              "text": "Concretely: `export_artifact.py` takes the digital-curator bundle's PR #1 \u2014 three ~5MB scene-art PNGs, three narration WAVs \u2014 and produces one 8.83 MiB HTML file, under the 16 MiB Artifact cap, by recompressing the images to JPEG at 1400px/q78 (~150KB each) and embedding the audio unmodified. That file was actually published this session and renders correctly."
+              "text": "Concretely: `export_artifact.py` takes the digital-curator bundle's PR #1 — three ~5MB scene-art PNGs, three narration WAVs — and produces one 8.83 MiB HTML file, under the 16 MiB Artifact cap, by recompressing the images to JPEG at 1400px/q78 (~150KB each) and embedding the audio unmodified. That file was actually published this session and renders correctly."
             }
           ],
           "voice": "This proposes writing down how prodyssey fits together, so a session doesn't reconstruct that from scratch. It also solves a second problem: a generated PR story only worked if you had the repo checked out and a local server running. Now one command turns that story into a link anyone can open."
@@ -152,7 +152,7 @@ window.STORY = {
           "beats": [
             {
               "kind": "forces",
-              "text": "Claude Artifacts enforce a strict CSP \u2014 one self-contained file, no external requests, 16 MiB cap \u2014 while the viewer was built assuming a real multi-file bundle directory."
+              "text": "Claude Artifacts enforce a strict CSP — one self-contained file, no external requests, 16 MiB cap — while the viewer was built assuming a real multi-file bundle directory."
             },
             {
               "kind": "forces",
@@ -164,16 +164,16 @@ window.STORY = {
             },
             {
               "kind": "contract",
-              "text": "ADR-0002: persist each PR's commit SHA, combine it with a content hash of the narrative/ADRs/diff in `exports/publish-manifest.json`, and only call the Artifact tool again when one of those changed \u2014 reusing the recorded URL so a republish updates in place."
+              "text": "ADR-0002: persist each PR's commit SHA, combine it with a content hash of the narrative/ADRs/diff in `exports/publish-manifest.json`, and only call the Artifact tool again when one of those changed — reusing the recorded URL so a republish updates in place."
             },
             {
               "kind": "boundary",
-              "text": "One artifact per PR, not a combined multi-PR export \u2014 the 16 MiB budget is comfortable for one PR's images+audio but not several. `exports/publish-manifest.json` is tracked in git, not disposable output, the same footing as `data/`/`assets/`."
+              "text": "One artifact per PR, not a combined multi-PR export — the 16 MiB budget is comfortable for one PR's images+audio but not several. `exports/publish-manifest.json` is tracked in git, not disposable output, the same footing as `data/`/`assets/`."
             }
           ]
         },
         "file_changes": {
-          "narration": "29 files: the orientation doc, the three new export scripts and their skill/command wiring, a couple of pre-existing scripts touched for open-PR/commit support, and the regenerated bundle output \u2014 including this PR's own just-published artifacts \u2014 for both the self-analysis bundle and one other repo's centrally-stored bundle.",
+          "narration": "29 files: the orientation doc, the three new export scripts and their skill/command wiring, a couple of pre-existing scripts touched for open-PR/commit support, and the regenerated bundle output — including this PR's own just-published artifacts — for both the self-analysis bundle and one other repo's centrally-stored bundle.",
           "groups": [
             {
               "title": "Orientation docs",
@@ -205,7 +205,7 @@ window.STORY = {
             },
             {
               "title": "Self-analysis bundle refresh",
-              "note": "16 files under .odyssey/ \u2014 this PR's own regenerated story/diff data plus the pr-2.html and index.html artifacts actually published this session, and their publish-manifest.json record.",
+              "note": "16 files under .odyssey/ — this PR's own regenerated story/diff data plus the pr-2.html and index.html artifacts actually published this session, and their publish-manifest.json record.",
               "files": [
                 "data/story.json",
                 "data/story.js",
@@ -272,7 +272,7 @@ window.STORY = {
         "problem_solution": {
           "problem": "The plugin had grown two separate bundle-storage roots for the same kind of output: self-analysis lived at `<target>/.odyssey/`, while foreign-repo bundles were cached centrally at `<hub>/.prodyssey/<repo-slug>/`. Every script's `--bundle-dir` default, every skill reference, and the commands all carried two path conventions in parallel, and there was no single root to write one `.gitignore` rule against for the view-server's bookkeeping files.",
           "solution": "Self-analysis now defaults to `<target>/.prodyssey/self/`, with `self` reserved as a slug no repo-derived hash can collide with. `extract_story.py` and every other script's `--bundle-dir` default moves to match, `SKILL.md`'s Hub-resolution rule is rewritten around the single root, and a legacy-layout check stops any mode that finds an old `.odyssey/` bundle with the exact `git mv .odyssey .prodyssey/self` command to run by hand, rather than silently treating it as \"no baseline\" and re-generating at Gemini API cost. Separately, this PR also adds a `ste-writing` skill for the repo's own ASD-STE100 documentation standard, deliberately placed under `.claude/skills/` rather than `skills/` so the plugin's install surface doesn't grow by one unrelated skill.",
-          "narration": "Two storage locations for the same kind of bundle became one. Self-analysis bundles now sit right where the plugin already caches other repos' bundles, just under their own reserved subfolder. An old bundle isn't moved automatically \u2014 the plugin tells you the exact command to run yourself. A second, smaller change gives this repo's own docs a consistent writing style, without changing what anyone installing the plugin actually receives.",
+          "narration": "Two storage locations for the same kind of bundle became one. Self-analysis bundles now sit right where the plugin already caches other repos' bundles, just under their own reserved subfolder. An old bundle isn't moved automatically — the plugin tells you the exact command to run yourself. A second, smaller change gives this repo's own docs a consistent writing style, without changing what anyone installing the plugin actually receives.",
           "beats": [
             {
               "kind": "background",
@@ -280,14 +280,14 @@ window.STORY = {
             },
             {
               "kind": "background",
-              "text": "`<hub>/.prodyssey/` already held `active` (a symlink), `.view-server.pid`, and `.view-server.log` as hub-local bookkeeping \u2014 but with self-analysis bundles living outside that root at `.odyssey/`, there was no single directory whose contents could be gitignored with one rule."
+              "text": "`<hub>/.prodyssey/` already held `active` (a symlink), `.view-server.pid`, and `.view-server.log` as hub-local bookkeeping — but with self-analysis bundles living outside that root at `.odyssey/`, there was no single directory whose contents could be gitignored with one rule."
             },
             {
               "kind": "intuition",
-              "text": "Concretely: this repo's own bundle moves from `.odyssey/data/story.json` to `.prodyssey/self/data/story.json` \u2014 same file, same content, new address \u2014 while `.prodyssey/cobuilder-harness-a103a550/` and `.prodyssey/digital-curator-80f83abb/` (other repos' cached bundles) don't move at all, since they were already under the unified root."
+              "text": "Concretely: this repo's own bundle moves from `.odyssey/data/story.json` to `.prodyssey/self/data/story.json` — same file, same content, new address — while `.prodyssey/cobuilder-harness-a103a550/` and `.prodyssey/digital-curator-80f83abb/` (other repos' cached bundles) don't move at all, since they were already under the unified root."
             }
           ],
-          "voice": "Two storage locations for the same kind of bundle become one. Self-analysis bundles now sit right where the plugin already caches other repos' bundles, just under their own reserved subfolder. An old bundle isn't moved automatically \u2014 the plugin tells you the exact command to run yourself. A second, smaller change gives this repo's own documentation a consistent writing style, without changing what anyone installing the plugin actually receives."
+          "voice": "Two storage locations for the same kind of bundle become one. Self-analysis bundles now sit right where the plugin already caches other repos' bundles, just under their own reserved subfolder. An old bundle isn't moved automatically — the plugin tells you the exact command to run yourself. A second, smaller change gives this repo's own documentation a consistent writing style, without changing what anyone installing the plugin actually receives."
         },
         "architecture": {
           "narration": "Two decisions: where a bundle physically lives, and where a repo-local writing-style skill should live so it doesn't leak into every plugin install.",
@@ -299,7 +299,7 @@ window.STORY = {
             },
             {
               "kind": "forces",
-              "text": "A legacy `.odyssey/` bundle must never be silently reinterpreted as \"no baseline exists\" and regenerated \u2014 that would burn real Gemini API cost re-deriving content a maintainer already authored by hand."
+              "text": "A legacy `.odyssey/` bundle must never be silently reinterpreted as \"no baseline exists\" and regenerated — that would burn real Gemini API cost re-deriving content a maintainer already authored by hand."
             },
             {
               "kind": "forces",
@@ -365,7 +365,7 @@ window.STORY = {
             },
             {
               "title": "New ste-writing skill, dev-local",
-              "note": "The controlled-language writing skill and its linter land under .claude/skills/, not skills/, per ADR-0004 \u2014 kept out of the plugin's install surface.",
+              "note": "The controlled-language writing skill and its linter land under .claude/skills/, not skills/, per ADR-0004 — kept out of the plugin's install surface.",
               "files": [
                 ".claude/skills/ste-writing/SKILL.md",
                 ".claude/skills/ste-writing/ste-lint.py",
@@ -390,7 +390,7 @@ window.STORY = {
       "pr": 4,
       "date": "2026-08-02",
       "title": "Mermaid diagrams for levels 1-3, and self-upgrading bundles",
-      "tagline": "This PR proposes a second visual family alongside Gemini scene art \u2014 text-only Mermaid diagrams authored by a per-PR subagent \u2014 plus a mechanism that upgrades any older bundle in place before a session touches it.",
+      "tagline": "This PR proposes a second visual family alongside Gemini scene art — text-only Mermaid diagrams authored by a per-PR subagent — plus a mechanism that upgrades any older bundle in place before a session touches it.",
       "depth": "detailed",
       "status": "merged",
       "size": {
@@ -414,13 +414,13 @@ window.STORY = {
       ],
       "levels": {
         "landscape": {
-          "narration": "This PR is dominated by one new reference library: over fifty new files under a mermaid skill, teaching Claude how to author every kind of Mermaid diagram. Underneath that bulk sit two real mechanisms \u2014 diagrams as a second visual option next to scene art, and a bundle-upgrade system so an old bundle never quietly falls out of date.",
+          "narration": "This PR is dominated by one new reference library: over fifty new files under a mermaid skill, teaching Claude how to author every kind of Mermaid diagram. Underneath that bulk sit two real mechanisms — diagrams as a second visual option next to scene art, and a bundle-upgrade system so an old bundle never quietly falls out of date.",
           "voice": "This PR is dominated by one new reference library. Over fifty new files teach Claude how to author every kind of Mermaid diagram. Underneath that bulk sit two real mechanisms. Diagrams become a second visual option next to scene art, and a bundle-upgrade system means an old bundle never quietly falls out of date."
         },
         "problem_solution": {
-          "problem": "Scene art was the only visual family a PR could get, and it costs a Gemini call and API budget per image, plus base64-inflated bytes that squeeze the 16 MiB Claude Artifact publish cap hardest of anything in the bundle. Separately, as the bundle format kept gaining new pieces (this PR's own diagrams among them), older committed bundles had no way to catch up automatically \u2014 a real incident already showed the risk: a bundle's viewer copy went stale and silently lost diagram support, because nothing forced it to refresh after the shipped viewer changed.",
-          "solution": "A new `--art both|diagram|image` flag lets a sweep choose diagrams, scene art, or both. For diagrams, generate mode spawns one subagent per PR that invokes `Skill(\"prodyssey:mermaid\")`, reads this PR's timeline entry and diff, and writes three typed files \u2014 a `C4Container` for the landscape level, a `sequenceDiagram` for problem and solution, a `classDiagram` for architecture \u2014 which `build_diagrams.py` then compiles and validates mechanically. For staleness, a new `migrate_bundle.py` runs three phases before any of the four modes touches a bundle: it unconditionally refreshes the viewer copy, steps a `LAYOUT_MIGRATIONS` ladder keyed on a new `bundle_format` integer, then steps a `SCHEMA_MIGRATIONS` ladder keyed on `story.json`'s own `meta.schema_version` \u2014 guarding every schema step against touching any hand-authored field it didn't declare, so a migration either writes cleanly or doesn't write at all.",
-          "narration": "This PR proposes letting a PR carry diagrams instead of, or alongside, illustrated scene art \u2014 authored the same careful way narrative and decision records already are, by a subagent with the right reference material, not generated by a script. It also proposes to fix a real problem this session already hit once: an older bundle silently falling behind the plugin's current shape. From now on, every command would check and repair that automatically before doing anything else.",
+          "problem": "Scene art was the only visual family a PR could get, and it costs a Gemini call and API budget per image, plus base64-inflated bytes that squeeze the 16 MiB Claude Artifact publish cap hardest of anything in the bundle. Separately, as the bundle format kept gaining new pieces (this PR's own diagrams among them), older committed bundles had no way to catch up automatically — a real incident already showed the risk: a bundle's viewer copy went stale and silently lost diagram support, because nothing forced it to refresh after the shipped viewer changed.",
+          "solution": "A new `--art both|diagram|image` flag lets a sweep choose diagrams, scene art, or both. For diagrams, generate mode spawns one subagent per PR that invokes `Skill(\"prodyssey:mermaid\")`, reads this PR's timeline entry and diff, and writes three typed files — a `C4Container` for the landscape level, a `sequenceDiagram` for problem and solution, a `classDiagram` for architecture — which `build_diagrams.py` then compiles and validates mechanically. For staleness, a new `migrate_bundle.py` runs three phases before any of the four modes touches a bundle: it unconditionally refreshes the viewer copy, steps a `LAYOUT_MIGRATIONS` ladder keyed on a new `bundle_format` integer, then steps a `SCHEMA_MIGRATIONS` ladder keyed on `story.json`'s own `meta.schema_version` — guarding every schema step against touching any hand-authored field it didn't declare, so a migration either writes cleanly or doesn't write at all.",
+          "narration": "This PR proposes letting a PR carry diagrams instead of, or alongside, illustrated scene art — authored the same careful way narrative and decision records already are, by a subagent with the right reference material, not generated by a script. It also proposes to fix a real problem this session already hit once: an older bundle silently falling behind the plugin's current shape. From now on, every command would check and repair that automatically before doing anything else.",
           "beats": [
             {
               "kind": "background",
@@ -428,11 +428,11 @@ window.STORY = {
             },
             {
               "kind": "background",
-              "text": "The `mermaid` skill this PR adds is a large, general-purpose authoring reference (C4, sequence, class, flowchart, gitgraph, and dozens of other diagram types) \u2014 too large to keep loaded against every PR's authoring context whether or not that PR needs diagrams."
+              "text": "The `mermaid` skill this PR adds is a large, general-purpose authoring reference (C4, sequence, class, flowchart, gitgraph, and dozens of other diagram types) — too large to keep loaded against every PR's authoring context whether or not that PR needs diagrams."
             },
             {
               "kind": "intuition",
-              "text": "Concretely: a diagram-only PR sweep produces three plain-text `.mmd` files (`pr{N}-level1.mmd`, `level2.mmd`, `level3.mmd`) instead of three ~5 MB PNGs \u2014 for the 16 MiB Claude Artifact publish cap from ADR-0001, that's the difference between a handful of kilobytes and megabytes per PR."
+              "text": "Concretely: a diagram-only PR sweep produces three plain-text `.mmd` files (`pr{N}-level1.mmd`, `level2.mmd`, `level3.mmd`) instead of three ~5 MB PNGs — for the 16 MiB Claude Artifact publish cap from ADR-0001, that's the difference between a handful of kilobytes and megabytes per PR."
             }
           ],
           "voice": "This PR proposes letting a PR carry diagrams instead of, or alongside, illustrated scene art, authored the same careful way narrative and decision records already are, by a subagent with the right reference material, not generated by a script. It also proposes fixing a real problem this session already hit once: an older bundle silently falling behind the plugin's current shape. From now on, every command would check and repair that automatically before doing anything else."
@@ -443,11 +443,11 @@ window.STORY = {
           "beats": [
             {
               "kind": "forces",
-              "text": "The plugin's existing convention, already true for narrative and ADRs: a mechanical script only compiles and validates content a subagent already wrote \u2014 it never authors that content itself."
+              "text": "The plugin's existing convention, already true for narrative and ADRs: a mechanical script only compiles and validates content a subagent already wrote — it never authors that content itself."
             },
             {
               "kind": "forces",
-              "text": "`viewer/index.html` is a pure build artifact with nothing authored to preserve, while `story.json` mixes derived fields with hand-authored narrative and paid Gemini TTS/art content in the same file \u2014 one migration strategy can't safely treat both the same way."
+              "text": "`viewer/index.html` is a pure build artifact with nothing authored to preserve, while `story.json` mixes derived fields with hand-authored narrative and paid Gemini TTS/art content in the same file — one migration strategy can't safely treat both the same way."
             },
             {
               "kind": "forces",
@@ -463,7 +463,7 @@ window.STORY = {
             },
             {
               "kind": "boundary",
-              "text": "The orchestrating Claude must never write or hand-patch a `.mmd` file directly. A schema migration that would touch an authored field outside its declared `touches` set writes nothing at all, rather than partially applying \u2014 this repo's own bundle plus the cobuilder-harness and digital-curator fixture bundles are the first three bundles this mechanism runs against."
+              "text": "The orchestrating Claude must never write or hand-patch a `.mmd` file directly. A schema migration that would touch an authored field outside its declared `touches` set writes nothing at all, rather than partially applying — this repo's own bundle plus the cobuilder-harness and digital-curator fixture bundles are the first three bundles this mechanism runs against."
             }
           ]
         },
@@ -472,7 +472,7 @@ window.STORY = {
           "groups": [
             {
               "title": "New mermaid skill",
-              "note": "SKILL.md plus over forty reference docs, one per Mermaid diagram type (C4, sequence, class, flowchart, gitgraph, state, and many more) \u2014 the authoring reference the diagram-writing subagent is required to load via Skill(\"prodyssey:mermaid\").",
+              "note": "SKILL.md plus over forty reference docs, one per Mermaid diagram type (C4, sequence, class, flowchart, gitgraph, state, and many more) — the authoring reference the diagram-writing subagent is required to load via Skill(\"prodyssey:mermaid\").",
               "files": [
                 "skills/mermaid/SKILL.md",
                 "skills/mermaid/references/c4.md",
@@ -557,37 +557,37 @@ window.STORY = {
       },
       "levels": {
         "landscape": {
-          "narration": "This PR is a hardening pass, not a feature. Ten commits close a genuine credential leak, lock the three scripts that read the plugin's API key, and fix three smaller correctness bugs a stricter test surfaced along the way \u2014 a wrong diff range on merge commits, a data-loss guard with two blind spots, and a manifest field that quietly went stale every generate run."
+          "narration": "This PR is a hardening pass, not a feature. Ten commits close a genuine credential leak, lock the three scripts that read the plugin's API key, and fix three smaller correctness bugs a stricter test surfaced along the way — a wrong diff range on merge commits, a data-loss guard with two blind spots, and a manifest field that quietly went stale every generate run."
         },
         "problem_solution": {
-          "problem": "`generate_prompts.py` and `generate_audio.py` both called `load_dotenv(repo / \".env\")` against the arbitrary `--repo` target, not the hub. `--repo` is documented to accept any local checkout, so a target repo's `.env` could set `HTTPS_PROXY`, `SSL_CERT_FILE`, or any `GOOGLE_*`/`GEMINI_*` variable the `google-genai` SDK reads, and capture the session's own `GEMINI_API_KEY` on the next authenticated call. Once that was fixed, the fix itself needed a second correction: `load_dotenv()` with no argument does not search from the working directory by default \u2014 python-dotenv's `find_dotenv()` walks up from the *calling script's own file*, which only happens to be the hub in this dev checkout, not in an installed plugin whose scripts live under `~/.claude/plugins/cache/`.",
-          "solution": "Both scripts now call `load_dotenv(find_dotenv(usecwd=True))`, anchoring resolution to the process's current working directory \u2014 which `SKILL.md`'s procedure always leaves at the hub before invoking any script. `SKILL.md`'s Step 0 prereq gate states this constraint explicitly now, so a future change to how scripts are invoked cannot silently break the anchor again. The same review pass added upper version bounds (`pillow<13`, `google-genai<2`, `python-dotenv<2`) and, once `uv` 0.12.1 made `uv lock --script` available, a hash-pinned lockfile for each of the three scripts that declare third-party dependencies \u2014 the two that hold the live Gemini credential, plus `export_artifact.py`'s `pillow` dependency for image recompression.",
-          "narration": "Two related fixes anchor this PR. First, a real leak: an analyzed repo's own `.env` file could poison the environment the plugin's Gemini calls run in, including capturing the API key itself. The fix moves that lookup to the user's own hub directory and away from the repo being analyzed \u2014 and needed a second, subtler correction once the first attempt turned out to search from the wrong starting point for anyone running the installed plugin rather than a dev checkout. Second, the two scripts that hold that credential, plus one more that shares their dependency shape, now resolve to a locked, hash-verified set of package versions instead of whatever the latest release happens to be on a given day.",
+          "problem": "`generate_prompts.py` and `generate_audio.py` both called `load_dotenv(repo / \".env\")` against the arbitrary `--repo` target, not the hub. `--repo` is documented to accept any local checkout, so a target repo's `.env` could set `HTTPS_PROXY`, `SSL_CERT_FILE`, or any `GOOGLE_*`/`GEMINI_*` variable the `google-genai` SDK reads, and capture the session's own `GEMINI_API_KEY` on the next authenticated call. Once that was fixed, the fix itself needed a second correction: `load_dotenv()` with no argument does not search from the working directory by default — python-dotenv's `find_dotenv()` walks up from the *calling script's own file*, which only happens to be the hub in this dev checkout, not in an installed plugin whose scripts live under `~/.claude/plugins/cache/`.",
+          "solution": "Both scripts now call `load_dotenv(find_dotenv(usecwd=True))`, anchoring resolution to the process's current working directory — which `SKILL.md`'s procedure always leaves at the hub before invoking any script. `SKILL.md`'s Step 0 prereq gate states this constraint explicitly now, so a future change to how scripts are invoked cannot silently break the anchor again. The same review pass added upper version bounds (`pillow<13`, `google-genai<2`, `python-dotenv<2`) and, once `uv` 0.12.1 made `uv lock --script` available, a hash-pinned lockfile for each of the three scripts that declare third-party dependencies — the two that hold the live Gemini credential, plus `export_artifact.py`'s `pillow` dependency for image recompression.",
+          "narration": "Two related fixes anchor this PR. First, a real leak: an analyzed repo's own `.env` file could poison the environment the plugin's Gemini calls run in, including capturing the API key itself. The fix moves that lookup to the user's own hub directory and away from the repo being analyzed — and needed a second, subtler correction once the first attempt turned out to search from the wrong starting point for anyone running the installed plugin rather than a dev checkout. Second, the two scripts that hold that credential, plus one more that shares their dependency shape, now resolve to a locked, hash-verified set of package versions instead of whatever the latest release happens to be on a given day.",
           "beats": [
             {
               "kind": "background",
-              "text": "`--repo` is documented (Target resolution in `SKILL.md`) to accept any local checkout, which by construction includes repos the user does not control \u2014 the plugin's stated design already treats the target as untrusted for source writes, but `generate_prompts.py`/`generate_audio.py`'s `.env` lookup did not carry that same distrust."
+              "text": "`--repo` is documented (Target resolution in `SKILL.md`) to accept any local checkout, which by construction includes repos the user does not control — the plugin's stated design already treats the target as untrusted for source writes, but `generate_prompts.py`/`generate_audio.py`'s `.env` lookup did not carry that same distrust."
             },
             {
               "kind": "background",
-              "text": "`load_dotenv`'s merge behavior is not scoped to one variable: it writes every assignment in the loaded file into `os.environ` (protected only by `override=False` for a variable already set), so a hostile `.env` gets a free shot at anything normally unset \u2014 `HTTPS_PROXY`, `HTTP_PROXY`, `REQUESTS_CA_BUNDLE`, `SSL_CERT_FILE`, and the `GOOGLE_*`/`GEMINI_*` family `google-genai` reads."
+              "text": "`load_dotenv`'s merge behavior is not scoped to one variable: it writes every assignment in the loaded file into `os.environ` (protected only by `override=False` for a variable already set), so a hostile `.env` gets a free shot at anything normally unset — `HTTPS_PROXY`, `HTTP_PROXY`, `REQUESTS_CA_BUNDLE`, `SSL_CERT_FILE`, and the `GOOGLE_*`/`GEMINI_*` family `google-genai` reads."
             },
             {
               "kind": "intuition",
-              "text": "Concretely: a fixture repo whose `.env` set a decoy `GEMINI_API_KEY` plus `HTTPS_PROXY` and a marker variable was run through both scripts with `--repo` pointed at it. None of the three reached `os.environ` after the fix, regardless of which repo `--repo` named \u2014 the same probe against the hub's own `.env` resolved it correctly from cwd."
+              "text": "Concretely: a fixture repo whose `.env` set a decoy `GEMINI_API_KEY` plus `HTTPS_PROXY` and a marker variable was run through both scripts with `--repo` pointed at it. None of the three reached `os.environ` after the fix, regardless of which repo `--repo` named — the same probe against the hub's own `.env` resolved it correctly from cwd."
             }
           ]
         },
         "architecture": {
-          "narration": "Two decisions carry real structural weight here \u2014 where the API key's environment is allowed to come from, and how tightly the scripts that hold it pin their own dependencies. The rest of the PR is bug fixes against existing conventions, not new ones.",
+          "narration": "Two decisions carry real structural weight here — where the API key's environment is allowed to come from, and how tightly the scripts that hold it pin their own dependencies. The rest of the PR is bug fixes against existing conventions, not new ones.",
           "beats": [
             {
               "kind": "forces",
-              "text": "`--repo` is documented to accept any local checkout, including ones the user does not fully trust \u2014 the environment-lookup fix has to match the write-boundary distrust `SKILL.md` already states for source access."
+              "text": "`--repo` is documented to accept any local checkout, including ones the user does not fully trust — the environment-lookup fix has to match the write-boundary distrust `SKILL.md` already states for source access."
             },
             {
               "kind": "forces",
-              "text": "`python-dotenv`'s `find_dotenv()` has two default search origins that look interchangeable but are not: `usecwd=False` walks from the calling frame's own file, `usecwd=True` walks from the process's working directory \u2014 only the latter matches where `SKILL.md`'s procedure actually leaves `cwd` (the hub) before invoking a script."
+              "text": "`python-dotenv`'s `find_dotenv()` has two default search origins that look interchangeable but are not: `usecwd=False` walks from the calling frame's own file, `usecwd=True` walks from the process's working directory — only the latter matches where `SKILL.md`'s procedure actually leaves `cwd` (the hub) before invoking a script."
             },
             {
               "kind": "forces",
@@ -595,7 +595,7 @@ window.STORY = {
             },
             {
               "kind": "contract",
-              "text": "ADR-0007: `.env` resolution in the two Gemini-calling scripts anchors to `find_dotenv(usecwd=True)` \u2014 the process working directory, which is always the hub under `SKILL.md`'s invocation procedure \u2014 and never to the `--repo` target."
+              "text": "ADR-0007: `.env` resolution in the two Gemini-calling scripts anchors to `find_dotenv(usecwd=True)` — the process working directory, which is always the hub under `SKILL.md`'s invocation procedure — and never to the `--repo` target."
             },
             {
               "kind": "contract",
@@ -678,33 +678,33 @@ window.STORY = {
         },
         "problem_solution": {
           "problem": "Every other mode reconstructs a PR's `intent` from its merged `diff`, long after the person who made the choices has forgotten them. `decision-records-lite.md` already carried an escape hatch for a rejected alternative that leaves no trace in the diff, precisely because generate mode has no way to recover intent nobody wrote down. That reconstruction is expensive, and it is lossy in exactly the cases that matter most: the alternative someone tried and threw away.",
-          "solution": "Submit mode interviews the author before the PR opens, using only what the diff, the districts, the existing `adrs.json`, and the stack card cannot already answer (`interview-guide.md` \u00a72-\u00a73 caps this at six questions). It then assesses the change against the bundle's decision history, and ends the pre stage by running `gh pr create` for real, rather than staging a synthetic key. The interview's answers land as an `intent` block on the PR's own timeline entry once it exists, and a structured `assessment` block sits beside it. Both are new, optional `story.json` fields, protected by the same authored-field guard that already covers `tagline` and `depth` \u2014 `scripts/migrate_bundle.py:73` now lists `intent` and `assessment` in `AUTHORED_TIMELINE_FIELDS`, and a new `migrate_1_1_to_1_2` step stamps `schema_version: \"1.2\"` without backfilling either field on any older PR.",
-          "narration": "Four modes already turn a repo's merged history into a story. None of them capture why a change happened before that history is written, so generate mode is left guessing from the diff alone \u2014 and guessing badly whenever an author tried something, rejected it, and left no trace. Submit mode closes that gap at the one moment it can still be closed: before the pull request exists. It asks the author a short, evidence-first set of questions, judges the change against what the bundle already knows, and only then opens the real PR, so the interview answers and the actual PR number are tied together from the start.",
+          "solution": "Submit mode interviews the author before the PR opens, using only what the diff, the districts, the existing `adrs.json`, and the stack card cannot already answer (`interview-guide.md` §2-§3 caps this at six questions). It then assesses the change against the bundle's decision history, and ends the pre stage by running `gh pr create` for real, rather than staging a synthetic key. The interview's answers land as an `intent` block on the PR's own timeline entry once it exists, and a structured `assessment` block sits beside it. Both are new, optional `story.json` fields, protected by the same authored-field guard that already covers `tagline` and `depth` — `scripts/migrate_bundle.py:73` now lists `intent` and `assessment` in `AUTHORED_TIMELINE_FIELDS`, and a new `migrate_1_1_to_1_2` step stamps `schema_version: \"1.2\"` without backfilling either field on any older PR.",
+          "narration": "Four modes already turn a repo's merged history into a story. None of them capture why a change happened before that history is written, so generate mode is left guessing from the diff alone — and guessing badly whenever an author tried something, rejected it, and left no trace. Submit mode closes that gap at the one moment it can still be closed: before the pull request exists. It asks the author a short, evidence-first set of questions, judges the change against what the bundle already knows, and only then opens the real PR, so the interview answers and the actual PR number are tied together from the start.",
           "beats": [
             {
               "kind": "background",
-              "text": "Baseline, generate, view, and publish all narrate history that already happened \u2014 generate mode's job, in particular, is retro-extracting `problem`/`solution`/ADRs from a merged diff nobody annotated at the time."
+              "text": "Baseline, generate, view, and publish all narrate history that already happened — generate mode's job, in particular, is retro-extracting `problem`/`solution`/ADRs from a merged diff nobody annotated at the time."
             },
             {
               "kind": "background",
-              "text": "`decision-records-lite.md` \u00a73.4's escape hatch already existed for the case where a rejected alternative leaves no trace in the diff \u2014 evidence that generate mode was already hitting the limit of what a diff alone can recover."
+              "text": "`decision-records-lite.md` §3.4's escape hatch already existed for the case where a rejected alternative leaves no trace in the diff — evidence that generate mode was already hitting the limit of what a diff alone can recover."
             },
             {
               "kind": "intuition",
-              "text": "PR #6's own timeline entry demonstrates the fix: its `intent.alternatives` records one real rejected option \u2014 minting a synthetic PR key for `story.json` instead of ending the pre stage with `gh pr create` \u2014 stated directly by the author, not reconstructed from a diff that shows only the option that was kept."
+              "text": "PR #6's own timeline entry demonstrates the fix: its `intent.alternatives` records one real rejected option — minting a synthetic PR key for `story.json` instead of ending the pre stage with `gh pr create` — stated directly by the author, not reconstructed from a diff that shows only the option that was kept."
             }
           ]
         },
         "architecture": {
-          "narration": "Two decisions carry real structural weight. First, where the PR number a timeline entry keys on is allowed to come from \u2014 the real `gh pr create` result, never a synthetic placeholder. Second, what protection the two new authored fields get once they exist, so a future schema migration cannot silently erase them the way an unguarded migration could erase `tagline` or `depth` today.",
+          "narration": "Two decisions carry real structural weight. First, where the PR number a timeline entry keys on is allowed to come from — the real `gh pr create` result, never a synthetic placeholder. Second, what protection the two new authored fields get once they exist, so a future schema migration cannot silently erase them the way an unguarded migration could erase `tagline` or `depth` today.",
           "beats": [
             {
               "kind": "forces",
-              "text": "`story.json`'s timeline keys on an integer `pr`, and `verify_bundle.py`, `record_publish.py`, `manifest.js`, and the viewer all depend on that being the real PR number \u2014 a working branch has no such number until a PR actually opens."
+              "text": "`story.json`'s timeline keys on an integer `pr`, and `verify_bundle.py`, `record_publish.py`, `manifest.js`, and the viewer all depend on that being the real PR number — a working branch has no such number until a PR actually opens."
             },
             {
               "kind": "forces",
-              "text": "Once `intent` and `assessment` exist, they are exactly as irreplaceable as `tagline` and `depth` \u2014 nothing but an interview can reproduce an author's stated reasoning \u2014 so they need the same migration-proof guard, not a parallel or looser one."
+              "text": "Once `intent` and `assessment` exist, they are exactly as irreplaceable as `tagline` and `depth` — nothing but an interview can reproduce an author's stated reasoning — so they need the same migration-proof guard, not a parallel or looser one."
             },
             {
               "kind": "forces",
@@ -716,7 +716,7 @@ window.STORY = {
             },
             {
               "kind": "contract",
-              "text": "`AUTHORED_TIMELINE_FIELDS` in `scripts/migrate_bundle.py` grows from `(\"tagline\", \"depth\")` to `(\"tagline\", \"depth\", \"intent\", \"assessment\")`, and a new `migrate_1_1_to_1_2` step stamps `schema_version: \"1.2\"` as a pure version bump \u2014 it backfills neither field on any pre-existing PR."
+              "text": "`AUTHORED_TIMELINE_FIELDS` in `scripts/migrate_bundle.py` grows from `(\"tagline\", \"depth\")` to `(\"tagline\", \"depth\", \"intent\", \"assessment\")`, and a new `migrate_1_1_to_1_2` step stamps `schema_version: \"1.2\"` as a pure version bump — it backfills neither field on any pre-existing PR."
             },
             {
               "kind": "boundary",
@@ -729,7 +729,7 @@ window.STORY = {
           "groups": [
             {
               "title": "Submit mode itself",
-              "note": "The command entry point, the orchestration skill's new mode, and the reference docs that carry the interview and assessment rules \u2014 the judgment-shaped content this mode runs on.",
+              "note": "The command entry point, the orchestration skill's new mode, and the reference docs that carry the interview and assessment rules — the judgment-shaped content this mode runs on.",
               "files": [
                 "commands/submit.md",
                 "skills/odyssey/SKILL.md",
@@ -740,7 +740,7 @@ window.STORY = {
             },
             {
               "title": "Rendering and extraction scripts",
-              "note": "render_review.py is new \u2014 pure markdown layout for `intent`/`assessment`, no judgment and no `gh` calls. extract_diffs.py and extract_story.py gain the `--branch` pre-PR staging path.",
+              "note": "render_review.py is new — pure markdown layout for `intent`/`assessment`, no judgment and no `gh` calls. extract_diffs.py and extract_story.py gain the `--branch` pre-PR staging path.",
               "files": [
                 "scripts/render_review.py",
                 "scripts/extract_diffs.py",
@@ -779,8 +779,8 @@ window.STORY = {
         "captured": "2026-08-05",
         "source": "author",
         "authorship": "agent-assisted",
-        "problem": "The plugin reconstructs a PR's author intent from its merged diff, long after the author who made the choices has forgotten them. That reconstruction is expensive and lossy \u2014 decision-records-lite.md already carried an escape hatch for the case where a rejected alternative leaves no trace in the diff, precisely because generate mode has no way to recover intent nobody wrote down.",
-        "why_now": "The other four modes (baseline, generate, view, publish) all narrate history well, but none of them capture intent before it's forgotten. Submit mode closes that gap at the one point it can still be closed \u2014 before the history that later has to be narrated even exists.",
+        "problem": "The plugin reconstructs a PR's author intent from its merged diff, long after the author who made the choices has forgotten them. That reconstruction is expensive and lossy — decision-records-lite.md already carried an escape hatch for the case where a rejected alternative leaves no trace in the diff, precisely because generate mode has no way to recover intent nobody wrote down.",
+        "why_now": "The other four modes (baseline, generate, view, publish) all narrate history well, but none of them capture intent before it's forgotten. Submit mode closes that gap at the one point it can still be closed — before the history that later has to be narrated even exists.",
         "approach": "Interview the author before the PR opens, using only what the diff/districts/ADRs/stack card can't already answer; assess the change against the bundle's decision history; then end the pre stage by actually opening the PR (gh pr create) rather than staging it separately, so the flow's natural last step is the PR existing for real.",
         "alternatives": [
           {
@@ -801,7 +801,7 @@ window.STORY = {
           "The authored-field preservation guard in migrate_bundle.py"
         ],
         "unknowns": [
-          "The migration guard in migrate_bundle.py \u2014 the authored-field preservation logic that compares story.json before and after a schema migration. The author cannot fully explain or defend this part line-by-line."
+          "The migration guard in migrate_bundle.py — the authored-field preservation logic that compares story.json before and after a schema migration. The author cannot fully explain or defend this part line-by-line."
         ]
       },
       "assessment": {
@@ -809,9 +809,9 @@ window.STORY = {
         "generated": "2026-08-05",
         "verdict": "concerns",
         "risk_tier": "sensitive",
-        "summary": "A genuinely new capability \u2014 author interview plus bundle-grounded assessment \u2014 introduced cleanly, with no duplicate in adrs.json and no scattered env reads. The one real cost: the author cannot fully defend the authored-field preservation guard that now protects intent/assessment alongside every other hand-authored field, and that guard is the only thing standing between a future schema migration and silently destroyed narrative content.",
+        "summary": "A genuinely new capability — author interview plus bundle-grounded assessment — introduced cleanly, with no duplicate in adrs.json and no scattered env reads. The one real cost: the author cannot fully defend the authored-field preservation guard that now protects intent/assessment alongside every other hand-authored field, and that guard is the only thing standing between a future schema migration and silently destroyed narrative content.",
         "sensible": {
-          "answer": "Yes. intent.problem states the diff-based reconstruction is expensive and lossy, and decision-records-lite.md's own integrity rule 4 (the ADR \u00a73 'alternatives must be real' rule) already carried an escape hatch for exactly the case this PR fixes at the source \u2014 a rejected alternative with no trace in the diff. The problem is real, worth solving, and solved at the right layer (an interview before merge, not a smarter diff reader after).",
+          "answer": "Yes. intent.problem states the diff-based reconstruction is expensive and lossy, and decision-records-lite.md's own integrity rule 4 (the ADR §3 'alternatives must be real' rule) already carried an escape hatch for exactly the case this PR fixes at the source — a rejected alternative with no trace in the diff. The problem is real, worth solving, and solved at the right layer (an interview before merge, not a smarter diff reader after).",
           "evidence": [
             "skills/odyssey/references/decision-records-lite.md",
             "skills/odyssey/references/interview-guide.md"
@@ -819,7 +819,7 @@ window.STORY = {
         },
         "maintainability": {
           "answer": "Helps. The change establishes one invariant and enforces it in one place: intent and assessment are authored, guard-protected fields, declared once in AUTHORED_TIMELINE_FIELDS, and no migration may touch either without declaring it in `touches`. That closes off a whole class of future bug (a migration silently dropping review content) with a single tuple edit plus the existing run_guard comparison, rather than a rule that lives only in a docstring somewhere.",
-          "constraint_introduced": "intent and assessment, once written to a timeline entry, cannot be altered by any script \u2014 including a future schema migration \u2014 unless that migration explicitly declares the field in its `touches` set.",
+          "constraint_introduced": "intent and assessment, once written to a timeline entry, cannot be altered by any script — including a future schema migration — unless that migration explicitly declares the field in its `touches` set.",
           "evidence": [
             "scripts/migrate_bundle.py:73",
             "scripts/migrate_bundle.py:120-134"
@@ -827,7 +827,7 @@ window.STORY = {
         },
         "pattern": {
           "verdict": "new-valuable",
-          "answer": "No existing ADR or district covers author-interview or pre-merge assessment \u2014 the closest prior art is generate mode's post-hoc ADR retro-extraction, which this PR explicitly does not touch or duplicate (review-mode.md \u00a79 states submit mode writes no ADR). The pattern earns its place: it is the only mode that captures information that literally cannot be recovered later.",
+          "answer": "No existing ADR or district covers author-interview or pre-merge assessment — the closest prior art is generate mode's post-hoc ADR retro-extraction, which this PR explicitly does not touch or duplicate (review-mode.md §9 states submit mode writes no ADR). The pattern earns its place: it is the only mode that captures information that literally cannot be recovered later.",
           "duplicates": [],
           "evidence": [
             ".prodyssey/self/data/adrs.json",
@@ -837,17 +837,17 @@ window.STORY = {
         "findings": [
           {
             "severity": "concern",
-            "claim": "The author cannot fully explain or defend the authored-field preservation guard (harvest_authored/run_guard) that this PR extends to cover intent/assessment \u2014 per the author's own answer during this interview. That guard is now the sole mechanism protecting all hand-authored narrative, ADR, and review content across every future schema migration.",
+            "claim": "The author cannot fully explain or defend the authored-field preservation guard (harvest_authored/run_guard) that this PR extends to cover intent/assessment — per the author's own answer during this interview. That guard is now the sole mechanism protecting all hand-authored narrative, ADR, and review content across every future schema migration.",
             "evidence": "scripts/migrate_bundle.py:83-134",
             "district": "scripts",
             "suggestion": "Before the next schema migration is written, have the author (or a fresh review pass) trace run_guard() end-to-end against one deliberately-malformed migration, so the guard's failure mode is understood firsthand rather than trusted on the strength of passing tests."
           },
           {
             "severity": "note",
-            "claim": "verify_bundle.py's check_assessment validates assessment shape only \u2014 a known verdict plus a non-empty `answer` string per question \u2014 and its own docstring says so directly. --require-review can therefore pass an assessment whose `evidence` arrays are empty and whose `findings` is `[]`, with no mechanical distinction from a thorough one.",
+            "claim": "verify_bundle.py's check_assessment validates assessment shape only — a known verdict plus a non-empty `answer` string per question — and its own docstring says so directly. --require-review can therefore pass an assessment whose `evidence` arrays are empty and whose `findings` is `[]`, with no mechanical distinction from a thorough one.",
             "evidence": "scripts/verify_bundle.py:245-259",
             "district": "scripts",
-            "suggestion": "No action needed now \u2014 review-mode.md is explicit that mechanical scripts never judge content quality, so this is working as designed. Worth remembering if --require-review is ever treated as a substitute for actually reading the assessment."
+            "suggestion": "No action needed now — review-mode.md is explicit that mechanical scripts never judge content quality, so this is working as designed. Worth remembering if --require-review is ever treated as a substitute for actually reading the assessment."
           }
         ],
         "boundary_checks": [
@@ -855,13 +855,13 @@ window.STORY = {
             "rule": "The dependency rule: inner layers never import outer layers (generic.md stack card, Boundary Rules #1)",
             "source": "stacks/generic.md",
             "result": "not-applicable",
-            "evidence": "This codebase has no domain/adapter layering to grep \u2014 it's an orchestration skill plus stdlib-only utility scripts, not a layered service."
+            "evidence": "This codebase has no domain/adapter layering to grep — it's an orchestration skill plus stdlib-only utility scripts, not a layered service."
           },
           {
             "rule": "Configuration crosses into code in one place, not scattered env reads (generic.md stack card, Boundary Rules #2)",
             "source": "stacks/generic.md",
             "result": "pass",
-            "evidence": "grep -n \"os.environ|os.getenv|load_dotenv\" across all six scripts this PR touches (render_review.py, verify_bundle.py, migrate_bundle.py, extract_diffs.py, extract_story.py, _bundle_meta.py) returns zero matches \u2014 submit mode reads and writes only bundle files and git, consistent with SKILL.md's claim that it never calls Gemini."
+            "evidence": "grep -n \"os.environ|os.getenv|load_dotenv\" across all six scripts this PR touches (render_review.py, verify_bundle.py, migrate_bundle.py, extract_diffs.py, extract_story.py, _bundle_meta.py) returns zero matches — submit mode reads and writes only bundle files and git, consistent with SKILL.md's claim that it never calls Gemini."
           }
         ],
         "delta": {
@@ -886,7 +886,7 @@ window.STORY = {
           "edges_added": [],
           "edges_removed": []
         },
-        "regret_risk": "The safety property this PR leans on hardest \u2014 the authored-field guard that now also protects intent/assessment \u2014 is understood by its own author only at the level of \"the tests pass,\" not \"I can predict what happens when a future migration's shape disagrees with harvest_authored()'s assumptions.\" That's a tolerable regret today because the guard fails closed (no partial writes) rather than failing open, but it means the next schema bump that needs new authored-field coverage has no one who can defend the guard's behavior end-to-end without re-deriving it. The smaller regret: --require-review checks assessment shape, not substance, so a future submit-mode run under time pressure could satisfy the gate with empty-evidence answers and nothing mechanical would flag it.",
+        "regret_risk": "The safety property this PR leans on hardest — the authored-field guard that now also protects intent/assessment — is understood by its own author only at the level of \"the tests pass,\" not \"I can predict what happens when a future migration's shape disagrees with harvest_authored()'s assumptions.\" That's a tolerable regret today because the guard fails closed (no partial writes) rather than failing open, but it means the next schema bump that needs new authored-field coverage has no one who can defend the guard's behavior end-to-end without re-deriving it. The smaller regret: --require-review checks assessment shape, not substance, so a future submit-mode run under time pressure could satisfy the gate with empty-evidence answers and nothing mechanical would flag it.",
         "drift": []
       },
       "adrs": [
@@ -950,29 +950,29 @@ window.STORY = {
       },
       "levels": {
         "landscape": {
-          "narration": "This PR does three things at once. It collapses three near-identical copies of one function into a single shared module. It teaches submit mode's interview to check itself \u2014 the interviewing Claude now asks the author two questions blind, before showing its own reading of the diff, and compares the two against each other. And it runs an active-voice clarity pass over the plugin's own reference documentation. Thirty files move: four scripts, thirteen reference docs and skill files, and the self-bundle's own regenerated data for the two PRs before it."
+          "narration": "This PR does three things at once. It collapses three near-identical copies of one function into a single shared module. It teaches submit mode's interview to check itself — the interviewing Claude now asks the author two questions blind, before showing its own reading of the diff, and compares the two against each other. And it runs an active-voice clarity pass over the plugin's own reference documentation. Thirty files move: four scripts, thirteen reference docs and skill files, and the self-bundle's own regenerated data for the two PRs before it."
         },
         "problem_solution": {
-          "problem": "Three scripts \u2014 `extract_story.py`, `extract_diffs.py`, and `generate_prompts.py` \u2014 each carried an identical copy of `rewrite_manifest()`, the function that rebuilds `data/manifest.js` after any bundle change. Separately, submit mode's interview (added in PR #6) had no way to catch an author's own account of a change disagreeing with itself, or with what the diff actually showed \u2014 a gap the author found live, mid-interview, on this very PR.",
-          "solution": "`scripts/_manifest.py` now holds the one `rewrite_manifest()` implementation, imported by all three callers the way `scripts/_bundle_meta.py` already anchors `SCHEMA_VERSION` \u2014 no behavior change, verified by running each script's `--help` after the refactor. `interview-guide.md` gains \u00a73a: the interviewing Claude asks the problem and approach questions blind, before showing its own diff-derived hypothesis, then compares all three accounts by judgment, never by keyword matching. A material mismatch is raised to the author directly, with a choice to resolve it in the interview or log it to the existing `unknowns` field \u2014 never dropped there silently. `SKILL.md`'s step 5 and `story-mode.md`'s drift paragraph were updated to describe the new order.",
-          "narration": "This change does two unrelated-sounding things that share one motive: catching a problem once, in one place, instead of three times or not at all. One duplicate function became one shared function. And the interview that captures a PR author's intent gained a check on itself \u2014 it now asks two questions before showing its own guess at the answer, so it can notice when what the author says does not add up, instead of trusting it by default.",
+          "problem": "Three scripts — `extract_story.py`, `extract_diffs.py`, and `generate_prompts.py` — each carried an identical copy of `rewrite_manifest()`, the function that rebuilds `data/manifest.js` after any bundle change. Separately, submit mode's interview (added in PR #6) had no way to catch an author's own account of a change disagreeing with itself, or with what the diff actually showed — a gap the author found live, mid-interview, on this very PR.",
+          "solution": "`scripts/_manifest.py` now holds the one `rewrite_manifest()` implementation, imported by all three callers the way `scripts/_bundle_meta.py` already anchors `SCHEMA_VERSION` — no behavior change, verified by running each script's `--help` after the refactor. `interview-guide.md` gains §3a: the interviewing Claude asks the problem and approach questions blind, before showing its own diff-derived hypothesis, then compares all three accounts by judgment, never by keyword matching. A material mismatch is raised to the author directly, with a choice to resolve it in the interview or log it to the existing `unknowns` field — never dropped there silently. `SKILL.md`'s step 5 and `story-mode.md`'s drift paragraph were updated to describe the new order.",
+          "narration": "This change does two unrelated-sounding things that share one motive: catching a problem once, in one place, instead of three times or not at all. One duplicate function became one shared function. And the interview that captures a PR author's intent gained a check on itself — it now asks two questions before showing its own guess at the answer, so it can notice when what the author says does not add up, instead of trusting it by default.",
           "beats": [
             {
               "kind": "background",
-              "text": "`scripts/_bundle_meta.py` already holds this repo's one precedent for a shared, imported-never-executed module \u2014 `SCHEMA_VERSION` lives there once, read by five scripts that used to hardcode the literal. `_manifest.py` follows the same pattern for `rewrite_manifest()`."
+              "text": "`scripts/_bundle_meta.py` already holds this repo's one precedent for a shared, imported-never-executed module — `SCHEMA_VERSION` lives there once, read by five scripts that used to hardcode the literal. `_manifest.py` follows the same pattern for `rewrite_manifest()`."
             },
             {
               "kind": "background",
-              "text": "Submit mode's interview (PR #6) already drafts a private hypothesis from the diff before asking anything, and already caps the interview at six to eight questions (`interview-guide.md` \u00a72-\u00a73) \u2014 the self-consistency check had to fit inside that existing discipline, not add a new stage or a new schema field."
+              "text": "Submit mode's interview (PR #6) already drafts a private hypothesis from the diff before asking anything, and already caps the interview at six to eight questions (`interview-guide.md` §2-§3) — the self-consistency check had to fit inside that existing discipline, not add a new stage or a new schema field."
             },
             {
               "kind": "intuition",
-              "text": "On this very PR, the author's first blind answer to \"what problem does this solve\" described unrelated viewer-level work \u2014 assessment placement on Level 2 versus Level 3 of the bundle viewer \u2014 while the diff in front of Claude showed a `rewrite_manifest()` dedup and a documentation clarity pass. Neither account led to the other. A keyword match on either answer would have missed that they described two different changes entirely; only reading both against the diff caught it."
+              "text": "On this very PR, the author's first blind answer to \"what problem does this solve\" described unrelated viewer-level work — assessment placement on Level 2 versus Level 3 of the bundle viewer — while the diff in front of Claude showed a `rewrite_manifest()` dedup and a documentation clarity pass. Neither account led to the other. A keyword match on either answer would have missed that they described two different changes entirely; only reading both against the diff caught it."
             }
           ]
         },
         "architecture": {
-          "narration": "Two decisions carry structural weight here. First, the order the interview asks its own questions in: the blind pair comes before the hypothesis is ever shown, because showing it first would anchor the author's answers instead of testing them independently. Second, what happens once a comparison finds a real mismatch \u2014 the author gets a choice between resolving it now or logging it, not a script that silently picks for them.",
+          "narration": "Two decisions carry structural weight here. First, the order the interview asks its own questions in: the blind pair comes before the hypothesis is ever shown, because showing it first would anchor the author's answers instead of testing them independently. Second, what happens once a comparison finds a real mismatch — the author gets a choice between resolving it now or logging it, not a script that silently picks for them.",
           "beats": [
             {
               "kind": "forces",
@@ -980,15 +980,15 @@ window.STORY = {
             },
             {
               "kind": "forces",
-              "text": "The question budget in \u00a73 caps interviews at six to eight topics; a new interview stage would compete with that budget instead of living inside it."
+              "text": "The question budget in §3 caps interviews at six to eight topics; a new interview stage would compete with that budget instead of living inside it."
             },
             {
               "kind": "forces",
-              "text": "The interviewing Claude already drafts a hypothesis from the diff before asking anything (\u00a72) \u2014 showing it early would anchor the author's answers instead of testing them independently."
+              "text": "The interviewing Claude already drafts a hypothesis from the diff before asking anything (§2) — showing it early would anchor the author's answers instead of testing them independently."
             },
             {
               "kind": "contract",
-              "text": "Ask the problem and approach questions back to back, blind, before showing the hypothesis drafted from the diff (\u00a72/\u00a73a). Compare all three accounts by judgment. When a mismatch survives a re-check against the diff, offer the author a choice: work through it now, or log it."
+              "text": "Ask the problem and approach questions back to back, blind, before showing the hypothesis drafted from the diff (§2/§3a). Compare all three accounts by judgment. When a mismatch survives a re-check against the diff, offer the author a choice: work through it now, or log it."
             },
             {
               "kind": "boundary",
@@ -1001,7 +1001,7 @@ window.STORY = {
           "groups": [
             {
               "title": "Manifest dedup",
-              "note": "`_manifest.py` is new \u2014 the single `rewrite_manifest()` implementation, imported by all three callers via the pattern `_bundle_meta.py` already established.",
+              "note": "`_manifest.py` is new — the single `rewrite_manifest()` implementation, imported by all three callers via the pattern `_bundle_meta.py` already established.",
               "files": [
                 "scripts/_manifest.py",
                 "scripts/extract_diffs.py",
@@ -1011,7 +1011,7 @@ window.STORY = {
             },
             {
               "title": "Self-consistency design",
-              "note": "`interview-guide.md` gains \u00a73a plus two supporting additions to \u00a72 and \u00a73; `SKILL.md`'s step 5 and `story-mode.md`'s drift paragraph are updated to match the new question order.",
+              "note": "`interview-guide.md` gains §3a plus two supporting additions to §2 and §3; `SKILL.md`'s step 5 and `story-mode.md`'s drift paragraph are updated to match the new question order.",
               "files": [
                 "skills/odyssey/SKILL.md",
                 "skills/odyssey/references/interview-guide.md",
@@ -1019,7 +1019,7 @@ window.STORY = {
               ]
             },
             {
-              "title": "STE clarity pass \u2014 core references",
+              "title": "STE clarity pass — core references",
               "note": "Active-voice, shorter-sentence pass over the judgment-shaped reference docs. Meaning is unchanged; verified by re-linting and diffing field names and cross-references before and after.",
               "files": [
                 "skills/odyssey/references/adr-template.md",
@@ -1030,7 +1030,7 @@ window.STORY = {
               ]
             },
             {
-              "title": "STE clarity pass \u2014 stack cards",
+              "title": "STE clarity pass — stack cards",
               "note": "Same pass, applied to the five per-technology stack cards.",
               "files": [
                 "skills/odyssey/references/stacks/README.md",
@@ -1042,7 +1042,7 @@ window.STORY = {
             },
             {
               "title": "Self-bundle regeneration for PR #5 and PR #6",
-              "note": "This repo commits its own bundle alongside its code. These are the already-generated data files for PR #5 and PR #6, refreshed to reflect the branch's own history \u2014 not new content authored by this PR.",
+              "note": "This repo commits its own bundle alongside its code. These are the already-generated data files for PR #5 and PR #6, refreshed to reflect the branch's own history — not new content authored by this PR.",
               "files": [
                 ".prodyssey/self/data/adrs.js",
                 ".prodyssey/self/data/adrs.json",
@@ -1068,22 +1068,22 @@ window.STORY = {
         "captured": "2026-08-06",
         "source": "author",
         "authorship": "agent-generated",
-        "problem": "Three near-identical copies of rewrite_manifest() existed across extract_story.py, extract_diffs.py, and generate_prompts.py \u2014 plain code duplication. Separately, submit mode's interview had no way to catch when an author's own account of a change wasn't internally coherent, or didn't match what the diff actually showed \u2014 a gap the author noticed mid-interview on a real PR. The odyssey docs (SKILL.md + references/) also needed a clarity pass.",
-        "why_now": "The self-consistency gap surfaced live, during a real PR interview \u2014 worth fixing before it recurred on the next one, rather than filing it for later.",
-        "approach": "Consolidated rewrite_manifest() into scripts/_manifest.py, following the existing _bundle_meta.py shared-module pattern \u2014 no behavior change, verified via `--help` on all three callers. Added \u00a73a to interview-guide.md: ask the problem and approach questions blind, before showing Claude's diff-derived hypothesis, then compare all three accounts by LLM judgment (not regex/keyword matching) \u2014 a real mismatch gets raised to the author with a choice to resolve now or log it, never silently dropped into unknowns. Ran an STE-flavored active-voice pass across SKILL.md and every references/ file.",
+        "problem": "Three near-identical copies of rewrite_manifest() existed across extract_story.py, extract_diffs.py, and generate_prompts.py — plain code duplication. Separately, submit mode's interview had no way to catch when an author's own account of a change wasn't internally coherent, or didn't match what the diff actually showed — a gap the author noticed mid-interview on a real PR. The odyssey docs (SKILL.md + references/) also needed a clarity pass.",
+        "why_now": "The self-consistency gap surfaced live, during a real PR interview — worth fixing before it recurred on the next one, rather than filing it for later.",
+        "approach": "Consolidated rewrite_manifest() into scripts/_manifest.py, following the existing _bundle_meta.py shared-module pattern — no behavior change, verified via `--help` on all three callers. Added §3a to interview-guide.md: ask the problem and approach questions blind, before showing Claude's diff-derived hypothesis, then compare all three accounts by LLM judgment (not regex/keyword matching) — a real mismatch gets raised to the author with a choice to resolve now or log it, never silently dropped into unknowns. Ran an STE-flavored active-voice pass across SKILL.md and every references/ file.",
         "alternatives": [],
         "out_of_scope": [
-          "Viewer-level assessment placement (Level 2 vs Level 3 UI work) \u2014 unrelated work from a different branch, not part of this change.",
-          "No new intent schema field and no new interview stage \u2014 the self-consistency check reorders two questions \u00a73 already budgets."
+          "Viewer-level assessment placement (Level 2 vs Level 3 UI work) — unrelated work from a different branch, not part of this change.",
+          "No new intent schema field and no new interview stage — the self-consistency check reorders two questions §3 already budgets."
         ],
         "risks": [
-          "The mismatch-detection in \u00a73a leans on Claude's judgment call at interview time \u2014 a subtler mismatch than a clean example (like the one we just walked through) could be missed or over-flagged.",
+          "The mismatch-detection in §3a leans on Claude's judgment call at interview time — a subtler mismatch than a clean example (like the one we just walked through) could be missed or over-flagged.",
           "The STE prose pass touched 14 files; despite verification, a subtle meaning drift in reworded prose is the main risk of that kind of edit."
         ],
-        "testing": "Dedup verified via `uv run <script>.py --help` on all three refactored scripts post-change. STE pass verified via ste-lint.py before/after scores on all 14 touched files, plus manual diffing of field names, JSON keys, and \u00a7-cross-references before/after to catch accidental semantic drift from the prose edits. interview-guide.md reread end-to-end for internal coherence after both passes landed.",
+        "testing": "Dedup verified via `uv run <script>.py --help` on all three refactored scripts post-change. STE pass verified via ste-lint.py before/after scores on all 14 touched files, plus manual diffing of field names, JSON keys, and §-cross-references before/after to catch accidental semantic drift from the prose edits. interview-guide.md reread end-to-end for internal coherence after both passes landed.",
         "reviewer_focus": [
-          "\u00a73a in interview-guide.md \u2014 the core new design; read it end to end for coherence",
-          "SKILL.md step 5 \u2014 confirm it still matches interview-guide.md's actual flow",
+          "§3a in interview-guide.md — the core new design; read it end to end for coherence",
+          "SKILL.md step 5 — confirm it still matches interview-guide.md's actual flow",
           "The STE-pass diffs generally, for any accidental meaning drift introduced while rewording"
         ],
         "unknowns": []
@@ -1093,9 +1093,9 @@ window.STORY = {
         "generated": "2026-08-06",
         "verdict": "sound",
         "risk_tier": "architectural",
-        "summary": "Deduplicates three identical copies of rewrite_manifest() into scripts/_manifest.py, following the repo's existing _bundle_meta.py shared-module pattern, with no behavior change. Adds a self-consistency check (interview-guide.md \u00a73a) that asks the author the problem and approach blind before showing Claude's own diff-derived hypothesis, then compares all three accounts by judgment rather than keyword matching \u2014 a cross-cutting change to how every future submit-mode interview runs. Also runs an STE-flavored active-voice pass across SKILL.md and every references/ file.",
+        "summary": "Deduplicates three identical copies of rewrite_manifest() into scripts/_manifest.py, following the repo's existing _bundle_meta.py shared-module pattern, with no behavior change. Adds a self-consistency check (interview-guide.md §3a) that asks the author the problem and approach blind before showing Claude's own diff-derived hypothesis, then compares all three accounts by judgment rather than keyword matching — a cross-cutting change to how every future submit-mode interview runs. Also runs an STE-flavored active-voice pass across SKILL.md and every references/ file.",
         "sensible": {
-          "answer": "Yes, on both halves. The dedup solves a real, named duplication problem in the scripts district, at the layer it belongs (a shared module, matching the _bundle_meta.py precedent already in the codebase). The self-consistency check solves a gap the author found live, during a real PR interview \u2014 the interview had no mechanism to catch an author's own unsettled or incorrect account of their change, which is exactly the kind of judgment work this repo's references/ docs are meant to hold.",
+          "answer": "Yes, on both halves. The dedup solves a real, named duplication problem in the scripts district, at the layer it belongs (a shared module, matching the _bundle_meta.py precedent already in the codebase). The self-consistency check solves a gap the author found live, during a real PR interview — the interview had no mechanism to catch an author's own unsettled or incorrect account of their change, which is exactly the kind of judgment work this repo's references/ docs are meant to hold.",
           "evidence": [
             "scripts/_manifest.py",
             "skills/odyssey/references/interview-guide.md",
@@ -1103,7 +1103,7 @@ window.STORY = {
           ]
         },
         "maintainability": {
-          "answer": "Helps on both fronts. The dedup removes the second and third places a manifest-shape bug could hide, collapsing three call sites onto one function. The self-consistency check adds no new schema field and no new interview stage \u2014 it reorders two questions \u00a73 already budgets, so it costs no new surface for the intent block or verify_bundle.py to track.",
+          "answer": "Helps on both fronts. The dedup removes the second and third places a manifest-shape bug could hide, collapsing three call sites onto one function. The self-consistency check adds no new schema field and no new interview stage — it reorders two questions §3 already budgets, so it costs no new surface for the intent block or verify_bundle.py to track.",
           "constraint_introduced": "rewrite_manifest() has exactly one implementation (scripts/_manifest.py); the three callers may never re-inline their own copy. The interview must show the drafted hypothesis only after both the problem and approach questions are answered blind.",
           "evidence": [
             "scripts/_manifest.py:1-83",
@@ -1112,7 +1112,7 @@ window.STORY = {
         },
         "pattern": {
           "verdict": "conforms",
-          "answer": "The dedup conforms to the shared-module pattern scripts/_bundle_meta.py already established for exactly this problem (one script imported, never executed, by its callers). The STE pass conforms to the Writing standard section of this repo's own CLAUDE.md, which already mandates STE for these exact files. The self-consistency check is new \u2014 no ADR or district already covers author-side consistency checking inside the interview \u2014 but it extends interview-guide.md and review-mode.md's existing risk_tier/unknowns machinery rather than introducing a parallel one, so it reads as an extension of an established pattern, not a reinvention.",
+          "answer": "The dedup conforms to the shared-module pattern scripts/_bundle_meta.py already established for exactly this problem (one script imported, never executed, by its callers). The STE pass conforms to the Writing standard section of this repo's own CLAUDE.md, which already mandates STE for these exact files. The self-consistency check is new — no ADR or district already covers author-side consistency checking inside the interview — but it extends interview-guide.md and review-mode.md's existing risk_tier/unknowns machinery rather than introducing a parallel one, so it reads as an extension of an established pattern, not a reinvention.",
           "duplicates": [],
           "evidence": [
             "scripts/_bundle_meta.py",
@@ -1123,7 +1123,7 @@ window.STORY = {
         "findings": [
           {
             "severity": "note",
-            "claim": "The mismatch-detection in \u00a73a is a judgment call made at interview time, with no mechanical check \u2014 its accuracy depends entirely on how carefully the interviewing Claude compares the three accounts.",
+            "claim": "The mismatch-detection in §3a is a judgment call made at interview time, with no mechanical check — its accuracy depends entirely on how carefully the interviewing Claude compares the three accounts.",
             "evidence": "skills/odyssey/references/interview-guide.md:115-118",
             "district": "skills",
             "suggestion": "No action needed now; worth watching in practice for false negatives (a real mismatch missed) or false positives (a register difference wrongly raised as material)."
@@ -1134,7 +1134,7 @@ window.STORY = {
             "rule": "Configuration crosses into code in one place, not scattered env reads.",
             "source": "skills/odyssey/references/stacks/generic.md",
             "result": "pass",
-            "evidence": "No env var or config reads added or changed in this diff \u2014 grep for os.environ/getenv across the four changed scripts shows no new occurrences."
+            "evidence": "No env var or config reads added or changed in this diff — grep for os.environ/getenv across the four changed scripts shows no new occurrences."
           }
         ],
         "delta": {
@@ -1154,7 +1154,7 @@ window.STORY = {
           "edges_added": [],
           "edges_removed": []
         },
-        "regret_risk": "Low. The dedup is mechanically verified (all three callers still run) and reduces, not adds, the number of places to change. The bigger long-term cost is the self-consistency check's judgment-based nature: if Claude ever runs the \u00a73a comparison carelessly, it either misses a real mismatch (defeating the point) or over-flags a harmless register difference (training authors to expect friction and answer defensively, the exact failure mode \u00a73 already warns about). Neither failure leaves a trace in story.json today, since the check produces no artifact of its own besides what lands in unknowns. The team lives with a process step whose quality is only as good as the interviewing session that ran it, with no automated regression check to catch drift over time.",
+        "regret_risk": "Low. The dedup is mechanically verified (all three callers still run) and reduces, not adds, the number of places to change. The bigger long-term cost is the self-consistency check's judgment-based nature: if Claude ever runs the §3a comparison carelessly, it either misses a real mismatch (defeating the point) or over-flags a harmless register difference (training authors to expect friction and answer defensively, the exact failure mode §3 already warns about). Neither failure leaves a trace in story.json today, since the check produces no artifact of its own besides what lands in unknowns. The team lives with a process step whose quality is only as good as the interviewing session that ran it, with no automated regression check to catch drift over time.",
         "drift": []
       },
       "adrs": [
@@ -1223,8 +1223,8 @@ window.STORY = {
         },
         "problem_solution": {
           "problem": "The plugin had grown to cover four separate jobs inside one install: narrating merged history, generating and reviewing pull requests, serving and publishing the bundle, and auditing architecture. A user who wanted only one of those jobs installed the whole corpus anyway, including the paid Gemini art pipeline. Separately, every mode operated only after code existed. Nothing captured why a change was being made until a diff was already sitting there to read, so review mode spent its effort reconstructing intent nobody had written down. And `viewer/index.html` had grown to 4917 lines in one file, with 145 functions in a single JavaScript closure and one card fragment copy-pasted eighteen times, with no plan for how a future engineer could split it.",
-          "solution": "The plugin split into five sibling plugins under a new `plugins/` directory: `cobuilder-architect` for design, review, maintenance, decisions, describe, and debug; `cobuilder-pr` for the five Odyssey history modes plus the new generate mode; `cobuilder-artifact` for serving and publishing the bundle; `cobuilder-implement` for building a design's epics; and `cobuilder-full-lifecycle` as an umbrella that depends on the other four. Code every plugin needs moved into one marketplace-level `shared/` directory, vendored into each plugin's own root by a symlink, so a cached plugin never reaches across another plugin's file path. A new `/cobuilder-architect:design` mode now runs an interview before any code exists, producing an ADR plus an `intent.json` that later review work can read instead of re-deriving. Four architecture decisions from this same change now live in the bundle as ADR-0016 through ADR-0019, covering the five-plugin split, the vendored shared code, one lifecycle surface with a derived record index, and an anchored-comments ledger. A fifth, ADR-0020, records a plan to split the viewer into authored parts under `viewer/src/`, compiled by a build step that runs only when an engineer changes the viewer \u2014 decided, but deliberately not executed in this PR.",
-          "narration": "The plugin used to be one thing that did four jobs. Now it is five separate things, each doing one job, sharing their common code through one folder instead of copying it around. On top of that split, a brand new mode sits at the very start of the process: before anyone writes code, it interviews the person making the change and writes down what they intend, so nobody has to guess at it later by reading a diff. And the file that draws the viewer, which had grown past five thousand lines with no way to split it, now has a written plan for how it will be split \u2014 though that plan is not carried out yet.",
+          "solution": "The plugin split into five sibling plugins under a new `plugins/` directory: `cobuilder-architect` for design, review, maintenance, decisions, describe, and debug; `cobuilder-pr` for the five Odyssey history modes plus the new generate mode; `cobuilder-artifact` for serving and publishing the bundle; `cobuilder-implement` for building a design's epics; and `cobuilder-full-lifecycle` as an umbrella that depends on the other four. Code every plugin needs moved into one marketplace-level `shared/` directory, vendored into each plugin's own root by a symlink, so a cached plugin never reaches across another plugin's file path. A new `/cobuilder-architect:design` mode now runs an interview before any code exists, producing an ADR plus an `intent.json` that later review work can read instead of re-deriving. Four architecture decisions from this same change now live in the bundle as ADR-0016 through ADR-0019, covering the five-plugin split, the vendored shared code, one lifecycle surface with a derived record index, and an anchored-comments ledger. A fifth, ADR-0020, records a plan to split the viewer into authored parts under `viewer/src/`, compiled by a build step that runs only when an engineer changes the viewer — decided, but deliberately not executed in this PR.",
+          "narration": "The plugin used to be one thing that did four jobs. Now it is five separate things, each doing one job, sharing their common code through one folder instead of copying it around. On top of that split, a brand new mode sits at the very start of the process: before anyone writes code, it interviews the person making the change and writes down what they intend, so nobody has to guess at it later by reading a diff. And the file that draws the viewer, which had grown past five thousand lines with no way to split it, now has a written plan for how it will be split — though that plan is not carried out yet.",
           "beats": [
             {
               "kind": "background",
@@ -1236,7 +1236,7 @@ window.STORY = {
             },
             {
               "kind": "intuition",
-              "text": "The clearest number in this change is `viewer/index.html` itself: 4917 lines, 881 of them CSS, 3872 of them JavaScript packed into a single IIFE holding 145 functions, with one card fragment duplicated eighteen times across five interleaved view modes. ADR-0020 names that exact shape as the reason nobody had been able to split the file before now, and the fix it records \u2014 parts under `viewer/src/`, compiled by `build_viewer.py` only when an engineer touches the viewer \u2014 is deliberately a decision on paper, not a change to the file in this diff."
+              "text": "The clearest number in this change is `viewer/index.html` itself: 4917 lines, 881 of them CSS, 3872 of them JavaScript packed into a single IIFE holding 145 functions, with one card fragment duplicated eighteen times across five interleaved view modes. ADR-0020 names that exact shape as the reason nobody had been able to split the file before now, and the fix it records — parts under `viewer/src/`, compiled by `build_viewer.py` only when an engineer touches the viewer — is deliberately a decision on paper, not a change to the file in this diff."
             }
           ],
           "voice": "The problem this change set out to fix was that one plugin was doing the work of four. Anyone who wanted just one of those jobs, say narrating pull requests, ended up installing the design tooling and the paid image generation pipeline too, whether they wanted them or not. On top of that, every mode only ever ran after the code already existed, so review work spent real effort guessing at intent that nobody had written down. The fix splits the plugin into five separate plugins, one per job, sharing their common code through a single shared folder. It also adds a new design mode that interviews the person making a change before any code is written, so that intent is captured once, at the source, instead of reconstructed later from a diff."
@@ -1254,7 +1254,7 @@ window.STORY = {
             },
             {
               "kind": "forces",
-              "text": "The lifecycle now produces forty-one artifacts across seven reading surfaces, with the joins between them declared in authored source and resolved nowhere \u2014 a decision was reachable only when some other change happened to cite it (ADR-0018)."
+              "text": "The lifecycle now produces forty-one artifacts across seven reading surfaces, with the joins between them declared in authored source and resolved nowhere — a decision was reachable only when some other change happened to cite it (ADR-0018)."
             },
             {
               "kind": "forces",
@@ -1266,11 +1266,11 @@ window.STORY = {
             },
             {
               "kind": "contract",
-              "text": "The plugin split into five siblings under `plugins/`, integrating only through the bundle directory on disk. Shared code moved into one marketplace-level `shared/` directory, vendored into each plugin by symlink, with a compatibility gate that every writer calls before it writes rather than a promise kept only in skill prose. The viewer became one lifecycle surface backed by a derived `data/index.json` record index. Comments on that viewer get computed from the live DOM at annotation time and appended to a durable, append-only ledger. And the viewer's own future split was decided \u2014 authored parts under `viewer/src/`, compiled by `build_viewer.py`, run only when an engineer changes the viewer \u2014 without being executed in this PR."
+              "text": "The plugin split into five siblings under `plugins/`, integrating only through the bundle directory on disk. Shared code moved into one marketplace-level `shared/` directory, vendored into each plugin by symlink, with a compatibility gate that every writer calls before it writes rather than a promise kept only in skill prose. The viewer became one lifecycle surface backed by a derived `data/index.json` record index. Comments on that viewer get computed from the live DOM at annotation time and appended to a durable, append-only ledger. And the viewer's own future split was decided — authored parts under `viewer/src/`, compiled by `build_viewer.py`, run only when an engineer changes the viewer — without being executed in this PR."
             },
             {
               "kind": "boundary",
-              "text": "None of the five plugins ships an agent, a hook, or an MCP server, by design, so no plugin in the family can touch another session's permission surface. A known gap ships alongside the split: `refine_epic_status()` in `shared/build_index.py` reads only narrated, merged pull requests from `data/story.json`, so an open pull request is not yet a real entity in the record index. This repo's own PR 11 is the case in point \u2014 eight epics across the family point their `branch` at it, and the index falls back to a hardcoded `\"open\"` placeholder for every one of them, a recorded gap that `inflight-record-store`'s first epic exists to close, not a bug introduced here."
+              "text": "None of the five plugins ships an agent, a hook, or an MCP server, by design, so no plugin in the family can touch another session's permission surface. A known gap ships alongside the split: `refine_epic_status()` in `shared/build_index.py` reads only narrated, merged pull requests from `data/story.json`, so an open pull request is not yet a real entity in the record index. This repo's own PR 11 is the case in point — eight epics across the family point their `branch` at it, and the index falls back to a hardcoded `\"open\"` placeholder for every one of them, a recorded gap that `inflight-record-store`'s first epic exists to close, not a bug introduced here."
             }
           ],
           "voice": "Five decisions give this change its architectural shape. Splitting one plugin into five fixes who has to install what, at the price of needing a seam between them that is not just a shared file path. Vendoring the shared code by symlink keeps that seam from drifting out of step. Turning the viewer into one surface, backed by one derived index, keeps new kinds of records from each demanding a new page of their own. Giving that viewer a durable, appended ledger of comments means a reader finally has somewhere to leave a reaction. And the plan to split the viewer file itself into authored parts, compiled at build time, is written down and agreed, even though it is not built yet in this change."
@@ -1541,7 +1541,7 @@ window.STORY = {
         },
         "problem": "book-index.md's Tier 2 escalation jumps straight from a cheap corpus heuristic to one full vendored book (300-1000 lines), skipping the nano (~20-40 line) and mini (~80-150 line) tiers upstream ciembor/agent-rules-books now publishes. Review/Maintenance mode's mandatory 14-file security corpus load has the same shape: 2179 lines read unconditionally, in full, every run.",
         "why_now": "The escalation ladder was missing rungs upstream already provides for free, and the security corpus load had never been scrutinized on cost the way the book ladder now has been.",
-        "approach": "Vendor nano.md and mini.md alongside each book's existing full.md (26 new files, 13 books). Rewrite book-index.md's escalation rule: load a minimum of three nano excerpts, then escalate any one book to mini or full only when judged to matter \u2014 full-tier loading is never automatic, and the old 1-primary-plus-1-companion cap is explicitly superseded. For the security corpus, no vendoring was needed: each YAML already separates a metadata-plus-summary block (17-24 lines) from its worked examples, so the same shape applies as a same-file partial read \u2014 read the first ~30 lines of all 14 unconditionally, then read a file's remainder in full unless the summary clearly rules out applicability, defaulting to full on ambiguity (the opposite bias from book escalation, because a missed security finding costs more than a wasted read). Also added a behavioral-rubric case to cobuilder-implement's Gate 4c, since neither the 'skip the gates for small tasks' exemption nor the existing test-suite rubric model could verify whether prose that governs another mode's own procedure is actually followed \u2014 then applied that new gate to this change itself, twice, with two independent blind subagent runs.",
+        "approach": "Vendor nano.md and mini.md alongside each book's existing full.md (26 new files, 13 books). Rewrite book-index.md's escalation rule: load a minimum of three nano excerpts, then escalate any one book to mini or full only when judged to matter — full-tier loading is never automatic, and the old 1-primary-plus-1-companion cap is explicitly superseded. For the security corpus, no vendoring was needed: each YAML already separates a metadata-plus-summary block (17-24 lines) from its worked examples, so the same shape applies as a same-file partial read — read the first ~30 lines of all 14 unconditionally, then read a file's remainder in full unless the summary clearly rules out applicability, defaulting to full on ambiguity (the opposite bias from book escalation, because a missed security finding costs more than a wasted read). Also added a behavioral-rubric case to cobuilder-implement's Gate 4c, since neither the 'skip the gates for small tasks' exemption nor the existing test-suite rubric model could verify whether prose that governs another mode's own procedure is actually followed — then applied that new gate to this change itself, twice, with two independent blind subagent runs.",
         "alternatives": [
           {
             "option": "3 nanos, then always the full book, unconditionally (the original approach)",
@@ -1557,11 +1557,11 @@ window.STORY = {
           },
           {
             "option": "Live-fetch the nano tier from upstream URLs at task time",
-            "rejected_because": "Blocked by a security classifier during divergent exploration \u2014 an injection and supply-chain risk this plugin family's self-only design avoids."
+            "rejected_because": "Blocked by a security classifier during divergent exploration — an injection and supply-chain risk this plugin family's self-only design avoids."
           },
           {
             "option": "Pre-concatenated per-book ladder file with a stop-early marker",
-            "rejected_because": "Scored highest with the critic, but its stop-early discipline has no mechanical consumer \u2014 the same Gate 4b failure mode this repo's own history already lived through."
+            "rejected_because": "Scored highest with the critic, but its stop-early discipline has no mechanical consumer — the same Gate 4b failure mode this repo's own history already lived through."
           },
           {
             "option": "Ad hoc subagent fan-out, one Task-tool call per book, verdict-only return",
@@ -1569,7 +1569,7 @@ window.STORY = {
           },
           {
             "option": "Panic-grep pre-filter: one hand-written line per nano file, grepped before any tier loads",
-            "rejected_because": "The critic's starred non-obvious survivor, deferred rather than bundled in \u2014 orthogonal to the chosen mechanism."
+            "rejected_because": "The critic's starred non-obvious survivor, deferred rather than bundled in — orthogonal to the chosen mechanism."
           },
           {
             "option": "Judgment-gate the security corpus the same symmetric way as book escalation (skip-on-ambiguity)",
@@ -1600,7 +1600,7 @@ window.STORY = {
         "generated": "2026-08-26",
         "verdict": "concerns",
         "risk_tier": "architectural",
-        "summary": "Vendors 26 book files and rewrites two escalation rules that govern how Design/Review/Maintenance mode consult reference material. Both new rules verified behaviorally with a blind subagent pass each (5/5 criteria, both CRITICAL, on the first attempt). The stack card's boundary rules and review checks are not-checkable here \u2014 this diff touches no application source, only prose that governs agent behavior, which generic.md's checks were not written to evaluate.",
+        "summary": "Vendors 26 book files and rewrites two escalation rules that govern how Design/Review/Maintenance mode consult reference material. Both new rules verified behaviorally with a blind subagent pass each (5/5 criteria, both CRITICAL, on the first attempt). The stack card's boundary rules and review checks are not-checkable here — this diff touches no application source, only prose that governs agent behavior, which generic.md's checks were not written to evaluate.",
         "sensible": {
           "answer": "Yes. The diff solves the stated problem on both halves: book-index.md now uses the nano/mini tiers upstream publishes instead of jumping straight to full, and the security corpus load now discriminates instead of reading 2179 lines unconditionally every run. The problem belongs in the skills district, at the reference-file layer, consistent with ADR-0011 and ADR-0015, which already live there.",
           "evidence": [
@@ -1610,7 +1610,7 @@ window.STORY = {
           ]
         },
         "maintainability": {
-          "answer": "Helps: consolidates two previously-unstated or under-specified loading behaviors (full-book-only escalation, unconditional-full security load) into explicit, stated rules with an explicit ceiling, replacing a cap that the original approach would have silently violated. Hurts modestly: the vendored surface for books triples (14 to 42 files) with no working sync script to keep them current, and both new rules are judgment-gated with no mechanical enforcement at merge time \u2014 only a one-time behavioral verification.",
+          "answer": "Helps: consolidates two previously-unstated or under-specified loading behaviors (full-book-only escalation, unconditional-full security load) into explicit, stated rules with an explicit ceiling, replacing a cap that the original approach would have silently violated. Hurts modestly: the vendored surface for books triples (14 to 42 files) with no working sync script to keep them current, and both new rules are judgment-gated with no mechanical enforcement at merge time — only a one-time behavioral verification.",
           "constraint_introduced": "A design or review-mode session must load a minimum of three nano-tier book excerpts before escalating any one book to mini or full; full-tier loading is judgment-gated, never unconditional. A review or maintenance session must read the first ~30 lines of all 14 security corpus files unconditionally, and may read a file's remainder in full only when the summary shows applicability or ambiguity, never when judgment alone says to skip.",
           "evidence": [
             "plugins/cobuilder-architect/skills/architecture/references/book-index.md",
@@ -1653,7 +1653,7 @@ window.STORY = {
             "rule": "The dependency rule: inner layers never import outer layers.",
             "source": "stacks/generic.md",
             "result": "not-checkable",
-            "evidence": "This diff changes zero application source files (no .py, no import statements). generic.md's boundary rules target code dependency direction, which this diff has none of \u2014 only markdown reference files, JSON design/index documents, and one Python-skill's own SKILL.md prose."
+            "evidence": "This diff changes zero application source files (no .py, no import statements). generic.md's boundary rules target code dependency direction, which this diff has none of — only markdown reference files, JSON design/index documents, and one Python-skill's own SKILL.md prose."
           },
           {
             "rule": "Configuration crosses into code in one place, not scattered env reads.",
@@ -1674,7 +1674,149 @@ window.STORY = {
           "edges_added": [],
           "edges_removed": []
         },
-        "regret_risk": "If the judgment gates in both new rules erode under time pressure the way this repo's Gate 4b history shows unenforced steps tend to, the team is left with the worst of both worlds: the vendoring cost (42 book files instead of 14, still no sync script) and the unconditional-read cost this change was meant to remove, because sessions quietly revert to reading full every time. The one mitigation in place is that Gate 4c's new behavioral-rubric case gives a cheap, repeatable way to re-check this specific risk \u2014 but that check has to actually get re-run periodically for the mitigation to hold. Nothing currently schedules that re-run.",
+        "regret_risk": "If the judgment gates in both new rules erode under time pressure the way this repo's Gate 4b history shows unenforced steps tend to, the team is left with the worst of both worlds: the vendoring cost (42 book files instead of 14, still no sync script) and the unconditional-read cost this change was meant to remove, because sessions quietly revert to reading full every time. The one mitigation in place is that Gate 4c's new behavioral-rubric case gives a cheap, repeatable way to re-check this specific risk — but that check has to actually get re-run periodically for the mitigation to hold. Nothing currently schedules that re-run.",
+        "drift": []
+      }
+    },
+    {
+      "pr": 17,
+      "date": "2026-08-26",
+      "title": "Rename plugins to drop the cobuilder- prefix; fix Mermaid click/copy-paste in the feedback drawer",
+      "tagline": "",
+      "depth": "summary",
+      "size": {
+        "files": 345,
+        "adds": 578,
+        "dels": 358
+      },
+      "touched": {
+        ".claude-plugin": 1,
+        ".claude": 2,
+        ".cobuilder-architect": 2,
+        "(root)": 2,
+        "plugins": 324,
+        "scripts": 1,
+        "shared": 2,
+        "tests": 11
+      },
+      "levels": {},
+      "status": "open",
+      "commit": "1d0c5ceb27a7df8dfaf4e3d36e2ebf9993a27735",
+      "intent": {
+        "captured": "2026-08-26",
+        "source": "author",
+        "authorship": "agent-generated",
+        "problem": "The plugin family's slash commands repeated the repo's own cobuilder- prefix on every plugin name (/cobuilder-architect:design, /cobuilder-pr:generate, ...), making them harder to remember and type than they needed to be.",
+        "why_now": "Noticed through day-to-day use of the plugin. A second, unrelated friction surfaced the same way, through the author's own manual testing of the viewer: clicking a Mermaid diagram opened the feedback drawer instead of just panning/zooming it, and copy/paste inside that drawer was not explicitly guaranteed.",
+        "approach": "Renamed the four non-umbrella plugins (cobuilder-architect, cobuilder-pr, cobuilder-artifact, cobuilder-implement) to drop the cobuilder- prefix in their plugin.json name field and plugins/ directory, since the repo itself (cobuilder-plugin) already carries that prefix. cobuilder-full-lifecycle keeps its name, because it is the umbrella plugin the repo's own prefix already names. Fixed several commands and skill files that had documented themselves under the wrong plugin's prefix since before the five-way split (a leftover from when everything lived in one plugin). Wired implement mode to check for an existing /architect:design record before Gate 1 and ground the epic slugs in it when one exists, per ADR-0013, which nothing had done before. Separately, excluded the Mermaid diagram viewport from the click-to-open-feedback-drawer handler, and made the comments drawer explicitly declare copy/paste-friendly text selection.",
+        "alternatives": [
+          {
+            "option": "Keep the plugin command namespace as-is and accept the cobuilder- repetition",
+            "rejected_because": "Defeats the stated goal: the point was to make commands easier to remember and type."
+          },
+          {
+            "option": "Rename all five plugins, including the umbrella cobuilder-full-lifecycle",
+            "rejected_because": "The umbrella plugin's name is the family/repo identity itself, so it keeps the prefix the other four are shedding."
+          },
+          {
+            "option": "Consolidate each plugin's several mode-commands into one command per plugin (e.g. a single architect.md dispatching on its first argument) to get a literal bare short name",
+            "rejected_because": "Investigation confirmed Claude Code always namespaces a command as /<plugin-name>:<command-name>, with no override -- consolidating would not produce a truly bare command, so renaming the plugin identity itself was the simpler, sufficient fix."
+          }
+        ],
+        "out_of_scope": [
+          "Renaming the .cobuilder-architect/ bundle directory convention -- a separate, unrelated concept that happens to share a string with the old plugin name",
+          "Rewriting historical ADRs, designs, or pull-request records to use the new plugin names",
+          "Auditing every other pre-existing cross-plugin reference bug beyond the ones directly intersecting the renamed lines",
+          "Writing a new ADR to record this naming-convention change"
+        ],
+        "risks": [
+          "A stale installed plugin cache still resolves the old cobuilder-pr/cobuilder-architect names until the marketplace is refreshed or reinstalled",
+          "The generators map key in bundle.json intentionally still reads \"cobuilder-architect\" for historical bundles -- a future reader unfamiliar with that distinction could mistake it for a missed rename"
+        ],
+        "testing": "Ran the full pytest suite (309/313 passing; the 4 failures are a pre-existing local Pillow architecture mismatch unrelated to this change). Smoke-tested scripts/export-agent-skills.sh against the renamed architect plugin. Ran shared/migrate_bundle.py (dry-run, then for real) against the self-bundle to confirm the viewer-refresh path fix and that no unexpected bundle.json changes occurred.",
+        "reviewer_focus": [
+          "The disambiguation of which plugin actually owns each renamed slash command -- several were previously mis-attributed pre-split leftovers",
+          "The new design-mode-record step added to implement mode's SKILL.md"
+        ],
+        "unknowns": []
+      },
+      "assessment": {
+        "stage": "pre",
+        "generated": "2026-08-26",
+        "verdict": "concerns",
+        "risk_tier": "architectural",
+        "summary": "A straightforward, well-scoped rename that fixes real pre-existing cross-plugin doc bugs along the way, but it amends ADR-0016's naming decision with no new ADR, and the naming convention it establishes has no mechanical enforcement.",
+        "sensible": {
+          "answer": "Yes. The stated problem -- redundant, hard-to-remember plugin-prefixed commands -- is real, and this is the right layer to fix it: plugin.json's name field and the plugins/ directory, which is what determines the slash-command namespace. The keep-the-umbrella-name decision is consistent, since cobuilder-full-lifecycle is the family identity the repo's own cobuilder- prefix already names.",
+          "evidence": [
+            "plugins/architect/.claude-plugin/plugin.json:2",
+            ".claude-plugin/marketplace.json",
+            "ADR-0016-five-sibling-plugins-bundle-as-seam.md"
+          ]
+        },
+        "maintainability": {
+          "answer": "Helps overall. It removes a redundant prefix and fixes several commands and skill files that had documented the wrong owning plugin since before the five-way split (baseline.md/generate.md/review.md in pr, view.md/publish.md in artifact all previously said /cobuilder-architect:*). It also tightens two Skill() calls in pr's own skill files that had been reaching across into architect's vendored mermaid/ste-writing copies instead of pr's own -- a boundary ADR-0017 exists specifically to prevent.",
+          "constraint_introduced": "A plugin's own identity (its plugin.json name, which sets its command namespace) never repeats the marketplace repo's own cobuilder- prefix; only the umbrella plugin, which names the family, keeps it.",
+          "evidence": [
+            "plugins/pr/skills/odyssey/SKILL.md:436",
+            "plugins/pr/skills/odyssey/references/decision-records-lite.md:17",
+            "tests/test_plugin_manifests.py:38"
+          ]
+        },
+        "pattern": {
+          "verdict": "conforms",
+          "answer": "The underlying mechanism -- plugin identity equals plugin.json's name field equals the plugins/ directory name -- is unchanged; this PR only changes the chosen values, which test_plugin_manifests.py's test_manifest_parses_and_has_required_fields already enforced before and after. It does not introduce a new pattern or duplicate an existing one.",
+          "duplicates": [],
+          "evidence": [
+            "tests/test_plugin_manifests.py:38"
+          ]
+        },
+        "findings": [
+          {
+            "severity": "concern",
+            "claim": "This PR amends ADR-0016's chosen plugin names with no new ADR recording the rename, unlike how consistently this repo's own history documents naming and structural decisions (ADR-0016 itself, ADR-0017, ADR-0020).",
+            "evidence": "docs/architecture/adr/ADR-0016-five-sibling-plugins-bundle-as-seam.md",
+            "district": "docs",
+            "suggestion": "Consider a short follow-up ADR recording the rename and the umbrella-plugin exception, matching this repo's own convention."
+          },
+          {
+            "severity": "concern",
+            "claim": "The convention this PR establishes (a plugin's own name never repeats the repo's cobuilder- prefix) is stated in prose (CLAUDE.md) but not mechanically enforced -- nothing stops a future plugin from reintroducing the prefix.",
+            "evidence": "CLAUDE.md (Recent history entry for this rename)",
+            "district": "docs",
+            "suggestion": "A cheap follow-up: a test asserting no plugin.json name (other than cobuilder-full-lifecycle) contains \"cobuilder-\"."
+          },
+          {
+            "severity": "note",
+            "claim": "Correcting which plugin owns each renamed slash command across SKILL.md/README.md/CLAUDE.md prose was manual and repo-wide; test_commands.py verifies each command file's own Skill() dispatch, but nothing automatically checks that a prose mention of another plugin's command (e.g. inside artifact's SKILL.md referencing /pr:baseline) stays correct over time.",
+            "evidence": "tests/test_commands.py:81",
+            "district": "docs",
+            "suggestion": "No action required now; worth knowing this class of doc drift has no automated guard."
+          }
+        ],
+        "boundary_checks": [
+          {
+            "rule": "Inner layers never import outer layers (domain/business logic vs. HTTP/UI/DB/framework code)",
+            "source": "stacks/generic.md",
+            "result": "not-checkable",
+            "evidence": "This repo has no domain/I-O layering to check against -- it is plugin manifests, markdown skill instructions, and PEP 723 utility scripts, not a layered application."
+          },
+          {
+            "rule": "Configuration crosses into code in one place, not scattered env reads",
+            "source": "stacks/generic.md",
+            "result": "pass",
+            "evidence": "Each writer script declares its own plugin identity as exactly one named constant (PLUGIN_NAME = \"pr\" / \"artifact\"), grepped and confirmed consistent across plugins/pr/scripts/*.py and plugins/artifact/scripts/*.py."
+          }
+        ],
+        "delta": {
+          "districts_added": [],
+          "districts_changed": [],
+          "edges_added": [],
+          "edges_removed": [
+            "pr -> architect (removed: pr's own SKILL.md/references previously invoked Skill(\"cobuilder-architect:mermaid\") and Skill(\"cobuilder-architect:ste-writing\"), reaching into architect's vendored copies instead of pr's own; now Skill(\"pr:mermaid\")/Skill(\"pr:ste-writing\")"
+          ]
+        },
+        "regret_risk": "If this merges as written, the team lives with three things. First, a naming convention (no plugin repeats the repo's own cobuilder- prefix) that is documented but not mechanically enforced, so a future new plugin can silently violate it again. Second, prose across SKILL.md, README.md, and CLAUDE.md that names a specific owning plugin per slash command, verified by hand in this PR but not continuously -- a later doc edit could reintroduce the exact cross-plugin misattribution this PR just fixed, since no test greps prose for plugin-command consistency. Third, this PR changes a decision ADR-0016 made with no new ADR recording why, which breaks the pattern the rest of this repo's history otherwise follows closely, and makes the rename harder for a future reader to trace back to a rationale.",
         "drift": []
       }
     }

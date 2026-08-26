@@ -1,5 +1,5 @@
 ---
-name: artifact
+name: cobuilder-artifacts
 title: "Bundle Viewer and Publisher"
 status: active
 version: 0.1.0

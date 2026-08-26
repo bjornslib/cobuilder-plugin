@@ -40,6 +40,14 @@ It does not grant one plugin's code a file path into another plugin's root.
 The install-surface rule is unchanged: no plugin in this family ships an
 agent, a hook, or an MCP server.
 
+`implement` declares `architect` as a `dependencies` entry too, for a
+narrower reason: `/implement:debug` dispatches straight into `architect`'s
+self-only debug mode (`Skill("architecture", args="debug $ARGUMENTS")`), on
+the theory that an engineer stuck mid-build looks for a debugging command in
+the plugin they are already using. This is the same "name the other
+plugin's mode, let its own skill resolve its own path" pattern as the
+`artifact` handoff above, not a new exception to it.
+
 The five Odyssey modes still take `--repo`. The six architecture modes are
 self-only. They analyze the session's own repo and refuse a foreign target.
 
@@ -112,7 +120,7 @@ other's context.
 | **review-mode.md** (Odyssey reference) | The PR-assessment step of `/pr:generate`, governed by `plugins/pr/skills/odyssey/references/review-mode.md`: three questions with evidence, verdicts, drift detection | Odyssey's Review mode (above), which is a different mode with a different job, despite the shared word |
 | **Bundle** | The whole derived-output directory tree for one target repo: `.cobuilder-architect/self/` or `.cobuilder-architect/<repo-slug>/`, holding `data/`, `assets/`, `viewer/`, `exports/` | `docs/` (authored source, never derived) and `story.json` (one file inside the bundle, not the bundle itself) |
 | **Self** vs **foreign** (repo) | *Self* is the session's own checkout — the only target the six Architecture modes accept. *Foreign* is a `--repo`-targeted checkout, only reachable through Odyssey | `<hub>`, which is always the *session's* repo even when analyzing a foreign target — the foreign repo is never the hub |
-| **Gate 4a / 4b / 4c** | The three sub-steps of Gate 4 in `implement`, defined in `plugins/implement/skills/implement/SKILL.md`. 4a is the slice plan (`04-slices.md`). 4b is a technical solution design, required only for an epic that carries more than one slice, and marked `n/a` instead of pending for a single-slice epic. 4c is the blind rubrics. `verify_gate.py` checks all three | Gate 4 as a whole — `00-status.md` used to track Gate 4 as one line and now tracks 4a, 4b, and 4c as three, and the whole gate cannot read APPROVED while any sub-step still reads pending |
+| **Gate 4a / 4b / 4c** | The three sub-steps of Gate 4 in `implement`, defined in `plugins/implement/skills/build/SKILL.md`. 4a is the slice plan (`04-slices.md`). 4b is a technical solution design, required only for an epic that carries more than one slice, and marked `n/a` instead of pending for a single-slice epic. 4c is the blind rubrics. `verify_gate.py` checks all three | Gate 4 as a whole — `00-status.md` used to track Gate 4 as one line and now tracks 4a, 4b, and 4c as three, and the whole gate cannot read APPROVED while any sub-step still reads pending |
 | **Assessment stage** | The `stage` field on `assessment.json`: `"design"` for an assessment written before the code exists, carrying `prediction` findings, or `"retrospective"` for one written after the design shipped, carrying `observation` or `drift` findings. `plugin-split` and `cobuilder-implement` are `"design"`. `design-mode` is `"retrospective"` | a verdict (`proceed`/`concerns`/`rework`, a separate field) — and note that nothing enforces `stage` today: `ASSESSMENT_FIELDS` in `shared/build_index.py` projects only `verdict` and `findings`, and `shared/verify_bundle.py` never checks `stage` |
 | **Drift** (finding kind) | An `assessment.json` finding of `kind: "drift"`: a report that a shipped record no longer matches the tree. The correct response is sometimes to leave the record alone, as a true account of what was believed at the time | a bug — a drift finding is not a defect to fix, and also not `review-mode.md`'s per-PR `intent.drift` array, which Generate mode's `--stage post` populates by comparing a PR's stated intent against its merged diff. Same word, two different records: one on a design's assessment, one on a PR's intent block |
 
@@ -175,21 +183,22 @@ plugins/
     shared/            -> ../../shared (symlink)
   artifact/              serve the bundle locally, publish a level as an Artifact
     .claude-plugin/plugin.json
-    commands/          view.md, publish.md → Skill("artifact", args=...)
-    skills/artifact/
+    commands/          view.md, publish.md → Skill("cobuilder-artifacts", args=...)
+    skills/cobuilder-artifacts/
     scripts/           export_artifact.py, export_index.py, record_publish.py,
                        build_builds_view.py
     viewer/index.html  the bundle viewer (4747 lines, single file, see below)
     shared/            -> ../../shared (symlink)
   implement/             build a design's epics, one vertical slice at a time
     .claude-plugin/plugin.json
-    commands/          implement.md → Skill("implement", args="implement ...")
-    skills/implement/
+    commands/          start.md → Skill("build", args="implement ...")
+                       debug.md → Skill("architecture", args="debug ...")
+    skills/build/
     scripts/           verify_gate.py
     shared/            -> ../../shared (symlink)
   cobuilder-full-lifecycle/   umbrella plugin, depends on the other four
     .claude-plugin/plugin.json
-    skills/orientation/
+    skills/cobuilder-full/
     shared/            -> ../../shared (symlink)
 ```
 
@@ -240,7 +249,7 @@ is documented.** Gate 4b was the only Gate 4 sub-step nothing downstream
 required, and it ran for zero of five multi-slice epics before this branch.
 It is now enforced at three levels: sub-steps in
 `docs/plans/cobuilder-family/00-status.md`, `verify_gate.py` above, and
-`plugins/implement/skills/implement/workflows/slice-loop.js`,
+`plugins/implement/skills/build/workflows/slice-loop.js`,
 which now stops the run instead of falling back silently when a design
 document is missing. Apply the same lesson before adding a new documented
 step anywhere else in this family: give it a mechanical consumer, or expect

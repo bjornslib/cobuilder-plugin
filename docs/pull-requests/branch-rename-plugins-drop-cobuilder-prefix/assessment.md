@@ -1,0 +1,64 @@
+# Assessment — Branch rename-plugins-drop-cobuilder-prefix
+
+**Verdict:** Concerns  
+**Risk tier:** Architectural  
+**Stage:** pre-merge
+
+## Summary
+
+A straightforward, well-scoped rename that fixes real pre-existing cross-plugin doc bugs along the way, but it amends ADR-0016's naming decision with no new ADR, and the naming convention it establishes has no mechanical enforcement.
+
+## Question 1 — is this sensible?
+
+Yes. The stated problem -- redundant, hard-to-remember plugin-prefixed commands -- is real, and this is the right layer to fix it: plugin.json's name field and the plugins/ directory, which is what determines the slash-command namespace. The keep-the-umbrella-name decision is consistent, since cobuilder-full-lifecycle is the family identity the repo's own cobuilder- prefix already names.
+
+Evidence: `plugins/architect/.claude-plugin/plugin.json:2` `.claude-plugin/marketplace.json` `ADR-0016-five-sibling-plugins-bundle-as-seam.md`
+
+## Question 2 — maintainability and readability
+
+Helps overall. It removes a redundant prefix and fixes several commands and skill files that had documented the wrong owning plugin since before the five-way split (baseline.md/generate.md/review.md in pr, view.md/publish.md in artifact all previously said /cobuilder-architect:*). It also tightens two Skill() calls in pr's own skill files that had been reaching across into architect's vendored mermaid/ste-writing copies instead of pr's own -- a boundary ADR-0017 exists specifically to prevent.
+
+**Constraint introduced:** A plugin's own identity (its plugin.json name, which sets its command namespace) never repeats the marketplace repo's own cobuilder- prefix; only the umbrella plugin, which names the family, keeps it.
+
+Evidence: `plugins/pr/skills/odyssey/SKILL.md:436` `plugins/pr/skills/odyssey/references/decision-records-lite.md:17` `tests/test_plugin_manifests.py:38`
+
+## Question 3 — new pattern, duplicate, or reinvention?
+
+**Conforms to an existing pattern**
+
+The underlying mechanism -- plugin identity equals plugin.json's name field equals the plugins/ directory name -- is unchanged; this PR only changes the chosen values, which test_plugin_manifests.py's test_manifest_parses_and_has_required_fields already enforced before and after. It does not introduce a new pattern or duplicate an existing one.
+
+Evidence: `tests/test_plugin_manifests.py:38`
+
+## Will we regret this?
+
+If this merges as written, the team lives with three things. First, a naming convention (no plugin repeats the repo's own cobuilder- prefix) that is documented but not mechanically enforced, so a future new plugin can silently violate it again. Second, prose across SKILL.md, README.md, and CLAUDE.md that names a specific owning plugin per slash command, verified by hand in this PR but not continuously -- a later doc edit could reintroduce the exact cross-plugin misattribution this PR just fixed, since no test greps prose for plugin-command consistency. Third, this PR changes a decision ADR-0016 made with no new ADR recording why, which breaks the pattern the rest of this repo's history otherwise follows closely, and makes the rename harder for a future reader to trace back to a rationale.
+
+## Findings
+
+| Severity | Finding | Evidence |
+|---|---|---|
+| concern | This PR amends ADR-0016's chosen plugin names with no new ADR recording the rename, unlike how consistently this repo's own history documents naming and structural decisions (ADR-0016 itself, ADR-0017, ADR-0020). | `docs/architecture/adr/ADR-0016-five-sibling-plugins-bundle-as-seam.md` |
+| concern | The convention this PR establishes (a plugin's own name never repeats the repo's cobuilder- prefix) is stated in prose (CLAUDE.md) but not mechanically enforced -- nothing stops a future plugin from reintroducing the prefix. | `CLAUDE.md (Recent history entry for this rename)` |
+| note | Correcting which plugin owns each renamed slash command across SKILL.md/README.md/CLAUDE.md prose was manual and repo-wide; test_commands.py verifies each command file's own Skill() dispatch, but nothing automatically checks that a prose mention of another plugin's command (e.g. inside artifact's SKILL.md referencing /pr:baseline) stays correct over time. | `tests/test_commands.py:81` |
+
+**Suggestions**
+
+- **This PR amends ADR-0016's chosen plugin names with no new ADR recording the rename, unlike how consistently this repo's own history documents naming and structural decisions (ADR-0016 itself, ADR-0017, ADR-0020).** — Consider a short follow-up ADR recording the rename and the umbrella-plugin exception, matching this repo's own convention.
+- **The convention this PR establishes (a plugin's own name never repeats the repo's cobuilder- prefix) is stated in prose (CLAUDE.md) but not mechanically enforced -- nothing stops a future plugin from reintroducing the prefix.** — A cheap follow-up: a test asserting no plugin.json name (other than cobuilder-full-lifecycle) contains "cobuilder-".
+- **Correcting which plugin owns each renamed slash command across SKILL.md/README.md/CLAUDE.md prose was manual and repo-wide; test_commands.py verifies each command file's own Skill() dispatch, but nothing automatically checks that a prose mention of another plugin's command (e.g. inside artifact's SKILL.md referencing /pr:baseline) stays correct over time.** — No action required now; worth knowing this class of doc drift has no automated guard.
+
+## Boundary checks
+
+| Result | Rule | Source | Evidence |
+|---|---|---|---|
+| not-checkable | Inner layers never import outer layers (domain/business logic vs. HTTP/UI/DB/framework code) | `stacks/generic.md` | `This repo has no domain/I-O layering to check against -- it is plugin manifests, markdown skill instructions, and PEP 723 utility scripts, not a layered application.` |
+| pass | Configuration crosses into code in one place, not scattered env reads | `stacks/generic.md` | `Each writer script declares its own plugin identity as exactly one named constant (PLUGIN_NAME = "pr" / "artifact"), grepped and confirmed consistent across plugins/pr/scripts/*.py and plugins/artifact/scripts/*.py.` |
+
+## District delta
+
+**Edges removed:** `pr -> architect (removed: pr's own SKILL.md/references previously invoked Skill("cobuilder-architect:mermaid") and Skill("cobuilder-architect:ste-writing"), reaching into architect's vendored copies instead of pr's own; now Skill("pr:mermaid")/Skill("pr:ste-writing")`
+
+---
+
+_Generated by cobuilder-architect submit mode on 2026-08-26._

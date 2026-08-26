@@ -10,12 +10,12 @@ last_verified: 2026-07-20
 Serves the bundled viewer in the background and prints the URL to open — the
 session keeps going while the server runs.
 
-Invoke the `artifact` skill in view mode, forwarding any arguments the user
+Invoke the `cobuilder-artifacts` skill in view mode, forwarding any arguments the user
 supplied after `/artifact:view` (`--repo <path>`, `--store local|central`,
 `--port <N>`, `--stop`, `--list`):
 
 ```
-Skill("artifact", args="view $ARGUMENTS")
+Skill("cobuilder-artifacts", args="view $ARGUMENTS")
 ```
 
 View mode discovers ALL known bundles for this hub — every bundle under

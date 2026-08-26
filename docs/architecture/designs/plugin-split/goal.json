@@ -78,6 +78,13 @@
       "pr": null,
       "state": "planned",
       "note": "Threads read as conversations. The drawer renders a reply under the comment it answers. Deferred past E6 on purpose: E6 ships the record shape, so this epic adds no migration and carries no slice yet."
+    },
+    {
+      "id": "E8",
+      "branch": "rename-plugins-drop-cobuilder-prefix",
+      "pr": 17,
+      "state": "merged",
+      "note": "The cobuilder- prefix drops from the four non-umbrella plugins named in E1's table (cobuilder-architect, cobuilder-pr, cobuilder-artifact, cobuilder-implement become architect, pr, artifact, implement), since it duplicates the marketplace repo's own name. cobuilder-full-lifecycle keeps its prefix, being the umbrella the repo's own name already carries. Merged as PR #17, then a same-epic follow-up (uncommitted at the time this entry was written) fixes a second-order bug the rename introduced: two of the four renamed plugins (implement, artifact) already shipped a skill folder named after themselves, and once the plugin took that same name too, Skill() resolution inside Claude Code broke -- reproduced directly, not environment-specific. Fixed by renaming the colliding skill folders (implement's skill to build, its command to start; artifact's skill to cobuilder-artifacts) and, for consistency, cobuilder-full-lifecycle's orientation skill to cobuilder-full. See ADR-0016's addendum."
     }
   ],
   "stage": "implemented",

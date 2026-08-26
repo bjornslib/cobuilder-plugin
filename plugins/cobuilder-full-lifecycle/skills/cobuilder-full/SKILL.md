@@ -1,5 +1,5 @@
 ---
-name: orientation
+name: cobuilder-full
 title: "CoBuilder Orientation"
 status: active
 version: 1.0.0

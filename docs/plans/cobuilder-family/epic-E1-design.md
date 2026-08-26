@@ -42,7 +42,7 @@ full file move. The load-bearing paths today are:
 - `plugins/cobuilder-artifact/scripts/{serve_bundle.py,export_artifact.py,
   export_index.py,record_publish.py}` and
   `plugins/cobuilder-artifact/viewer/index.html`.
-- `plugins/cobuilder-full-lifecycle/skills/orientation/SKILL.md` and
+- `plugins/cobuilder-full-lifecycle/skills/cobuilder-full/SKILL.md` and
   `plugins/cobuilder-full-lifecycle/scripts/watch_feedback.py`.
 - Each plugin carries a `shared` symlink at its own root, verified by
   `test_shared_is_a_symlink_in_the_source_tree` in

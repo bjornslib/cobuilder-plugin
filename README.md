@@ -388,22 +388,24 @@ plugins/
                            generate_prompts.py, generate_audio.py, render_review.py
   artifact/               serve the bundle locally, publish a level as an Artifact
     commands/             view.md, publish.md
-    skills/artifact/
+    skills/cobuilder-artifacts/
     scripts/              export_artifact.py, export_index.py, record_publish.py, serve_bundle.py,
                            build_builds_view.py
     viewer/index.html     the portable bundle viewer, one file
   implement/              build a design's epics, one vertical slice at a time
-    commands/             implement.md
-    skills/implement/
+    commands/             start.md, debug.md
+    skills/build/
     scripts/              verify_gate.py
   cobuilder-full-lifecycle/   umbrella plugin, depends on the other four
-    skills/orientation/
+    skills/cobuilder-full/
 ```
 
 `architect` and `pr` each declare `artifact`
 as a `dependencies` entry in their manifest, because each hands off to
 `artifact`'s view or publish mode. Installing either plugin
-installs `artifact` with it.
+installs `artifact` with it. `implement` declares `architect` the same
+way, because `/implement:debug` dispatches straight into `architect`'s
+debug mode.
 
 Key manifest fields, one per plugin (`plugins/<name>/.claude-plugin/plugin.json`):
 

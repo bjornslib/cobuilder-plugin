@@ -206,3 +206,79 @@ record has no `boundary.yaml` to anchor against. Run
 `/cobuilder-architect:describe` for the `cobuilder-packaging` context and
 write the boundary record before this ADR moves to `approved`. The
 invariant above is the rule that record must carry.
+
+## Addendum (2026-08-26) — the cobuilder- prefix drops, except on the umbrella
+
+### Context
+
+The table above named every plugin with the `cobuilder-` prefix. That
+prefix duplicates the marketplace repository's own name,
+`cobuilder-plugin` — a plugin's slash-command namespace is its own
+`plugin.json` `name` field, so every command in this family repeated the
+family's own identity on top of the repo's: `/cobuilder-architect:design`,
+`/cobuilder-pr:generate`, and so on.
+
+PR #17 renamed the four non-umbrella plugins to drop that prefix:
+`cobuilder-architect` to `architect`, `cobuilder-pr` to `pr`,
+`cobuilder-artifact` to `artifact`, `cobuilder-implement` to `implement`.
+`cobuilder-full-lifecycle` keeps its name, because it is the umbrella
+plugin the repository's own `cobuilder-` prefix already names — renaming
+it too would leave nothing in the family carrying that identity at all.
+Commands now read `/architect:design`, `/pr:generate`,
+`/artifact:publish`, `/implement:start`.
+
+### A second collision the first rename did not anticipate
+
+Two of the four renamed plugins already had a skill folder named after
+what the plugin now also became: `implement` (plugin) shipped a skill
+folder `skills/implement/`, and `artifact` (plugin) shipped a skill folder
+`skills/artifact/`. Before PR #17, those strings were distinct
+(`cobuilder-implement` the plugin, `implement` the skill) and addressed
+unambiguously as `cobuilder-implement:implement`. After the rename, the
+plugin's own name and its skill's name became the identical string in
+both cases, and `Skill()` resolution inside Claude Code broke: a call
+meant for the skill returned the plugin's thin `commands/*.md` dispatcher
+file instead, or failed outright as `Unknown skill`. This was reproduced
+directly, independent of any one installer's environment, so it is a
+property of the name collision itself, not of a stale cache.
+
+**A plugin's own name must never equal one of its own skill folder names,
+or one of its own command file basenames.** This constraint did not exist
+before this addendum, because no plugin had shared a name with anything
+it shipped until this rename created two. Check it explicitly before any
+future plugin rename.
+
+### Fix
+
+- `implement`'s skill folder `skills/implement/` becomes `skills/build/`
+  (frontmatter `name: build`). Its command file `commands/implement.md`
+  becomes `commands/start.md`, so the slash command becomes
+  `/implement:start` instead of the collision-prone `/implement:implement`.
+- `artifact`'s skill folder `skills/artifact/` becomes
+  `skills/cobuilder-artifacts/` (frontmatter `name: cobuilder-artifacts`).
+  Unlike the plugin names above, this skill name keeps a `cobuilder-`
+  flavor deliberately: "artifacts" is an overloaded word on its own — this
+  skill publishes to Claude's own Artifacts feature — so the prefix
+  disambiguates the skill's internal identifier even though the plugin's
+  public, short name stays `artifact`. The plugin's own commands are
+  unaffected: `/artifact:view` and `/artifact:publish` are unchanged.
+- `cobuilder-full-lifecycle`'s skill folder `skills/orientation/` becomes
+  `skills/cobuilder-full/` (frontmatter `name: cobuilder-full`). This one
+  is a consistency rename, not a collision fix — `orientation` never
+  collided with the plugin's own name — done at the same time so every
+  plugin in the family follows the same naming discipline.
+
+### Consequences
+
+- **Positive:** The naming convention this addendum states is now
+  checkable by inspection: no plugin's own name may equal a skill folder
+  or command basename it ships.
+- **Negative / accepted:** This convention has no automated test yet. A
+  future plugin, or a future rename of an existing one, can reintroduce
+  the same collision silently. A cheap follow-up would assert this
+  invariant in `tests/test_plugin_manifests.py`.
+- **Negative / accepted:** Anyone who enabled a plugin under its old,
+  `cobuilder-`-prefixed name — in a different repository's own
+  `.claude/settings.json`, or in `~/.claude/settings.json` — keeps that
+  stale entry until they update it by hand. This repository's own rename
+  cannot reach a settings file it does not own.
