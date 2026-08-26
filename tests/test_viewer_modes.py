@@ -12,14 +12,14 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "plugins" / "cobuilder-artifact" / "scripts"))
+sys.path.insert(0, str(REPO_ROOT / "plugins" / "artifact" / "scripts"))
 sys.path.insert(0, str(REPO_ROOT / "shared"))
 
 import export_artifact as ea  # noqa: E402
 import migrate_bundle as mb  # noqa: E402
 
 
-VIEWER_PATH = REPO_ROOT / "plugins" / "cobuilder-artifact" / "viewer" / "index.html"
+VIEWER_PATH = REPO_ROOT / "plugins" / "artifact" / "viewer" / "index.html"
 
 
 def test_viewer_contains_all_five_mode_buttons():

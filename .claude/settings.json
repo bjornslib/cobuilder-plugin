@@ -11,5 +11,12 @@
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "cobuilder-full-lifecycle@cobuilder-plugin": true,
+    "architect@cobuilder-plugin": true,
+    "pr@cobuilder-plugin": true,
+    "artifact@cobuilder-plugin": true,
+    "implement@cobuilder-plugin": true
   }
 }

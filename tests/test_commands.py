@@ -4,7 +4,7 @@ identical skill and mode.
 
 Slice 6 split one `commands/` directory into one per plugin. The rename
 collision from slice 4 (`commands/odyssey-review.md`) is undone: each of
-`cobuilder-architect` and `cobuilder-pr` now ships its own `commands/review.md`
+`architect` and `pr` now ships its own `commands/review.md`
 in its own directory, so the two no longer collide on disk.
 
 Run with: uv run --with pytest pytest tests/ -v
@@ -122,33 +122,33 @@ def test_no_two_commands_in_the_same_plugin_dispatch_identically():
             seen[key] = command_path.name
 
 
-# --- Sanity: cobuilder-pr and cobuilder-architect each ship their own
+# --- Sanity: pr and architect each ship their own
 # review.md, both resolving as separate commands (rubric C6) ---
 
 
-def test_cobuilder_pr_ships_its_own_review_command():
-    path = PLUGINS_DIR / "cobuilder-pr" / "commands" / "review.md"
-    assert path.exists(), "cobuilder-pr must ship commands/review.md"
+def test_pr_ships_its_own_review_command():
+    path = PLUGINS_DIR / "pr" / "commands" / "review.md"
+    assert path.exists(), "pr must ship commands/review.md"
     skill_name, mode_token = extract_dispatch(path)
     assert (skill_name, mode_token) == ("odyssey", "review")
 
 
-def test_cobuilder_architect_ships_its_own_review_command():
-    path = PLUGINS_DIR / "cobuilder-architect" / "commands" / "review.md"
-    assert path.exists(), "cobuilder-architect must ship commands/review.md"
+def test_architect_ships_its_own_review_command():
+    path = PLUGINS_DIR / "architect" / "commands" / "review.md"
+    assert path.exists(), "architect must ship commands/review.md"
     skill_name, mode_token = extract_dispatch(path)
     assert (skill_name, mode_token) == ("architecture", "review")
 
 
 def test_generate_command_dispatches_odyssey_generate_mode():
-    path = PLUGINS_DIR / "cobuilder-pr" / "commands" / "generate.md"
+    path = PLUGINS_DIR / "pr" / "commands" / "generate.md"
     skill_name, mode_token = extract_dispatch(path)
     assert (skill_name, mode_token) == ("odyssey", "generate")
 
 
 def test_architecture_skill_declares_exactly_six_modes():
     modes = declared_modes_for_command(
-        PLUGINS_DIR / "cobuilder-architect" / "commands" / "review.md", "architecture"
+        PLUGINS_DIR / "architect" / "commands" / "review.md", "architecture"
     )
     assert modes == {
         "design",

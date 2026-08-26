@@ -1,4 +1,4 @@
-"""Tests for plugins/cobuilder-artifact/scripts/build_builds_view.py.
+"""Tests for plugins/artifact/scripts/build_builds_view.py.
 
 Covers read_epics grouping, current_doc's gate selection, read_rubrics'
 file-to-key mapping, render()'s hand-authored-line preservation contract,
@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SCRIPT_DIR = REPO_ROOT / "plugins" / "cobuilder-artifact" / "scripts"
+SCRIPT_DIR = REPO_ROOT / "plugins" / "artifact" / "scripts"
 sys.path.insert(0, str(SCRIPT_DIR))
 
 import build_builds_view as bbv  # noqa: E402

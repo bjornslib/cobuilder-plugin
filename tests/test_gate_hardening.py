@@ -32,21 +32,21 @@ def _find_script(filename: str) -> Path:
 def test_malformed_json_raises_bundle_incompatible(tmp_path):
     (tmp_path / "bundle.json").write_text("{not valid json")
     with pytest.raises(BundleIncompatible) as excinfo:
-        require_compatible(tmp_path, "cobuilder-pr")
+        require_compatible(tmp_path, "pr")
     assert "bundle.json" in str(excinfo.value)
 
 
 def test_non_string_min_reader_schema_raises_bundle_incompatible(tmp_path):
     (tmp_path / "bundle.json").write_text('{"min_reader_schema": 1.3}')
     with pytest.raises(BundleIncompatible) as excinfo:
-        require_compatible(tmp_path, "cobuilder-pr")
+        require_compatible(tmp_path, "pr")
     assert "min_reader_schema" in str(excinfo.value)
 
 
 def test_list_min_reader_schema_raises_bundle_incompatible(tmp_path):
     (tmp_path / "bundle.json").write_text('{"min_reader_schema": [1, 3]}')
     with pytest.raises(BundleIncompatible):
-        require_compatible(tmp_path, "cobuilder-pr")
+        require_compatible(tmp_path, "pr")
 
 
 # --- point 3: a malformed `generators` value is preserved, not discarded ---
@@ -57,10 +57,10 @@ def test_stamp_generator_preserves_malformed_list(tmp_path):
     import json
 
     (tmp_path / "bundle.json").write_text('{"generators": ["oops", "a list"]}')
-    stamp_generator(tmp_path, "cobuilder-pr", "0.6.0")
+    stamp_generator(tmp_path, "pr", "0.6.0")
 
     bundle_meta = json.loads((tmp_path / "bundle.json").read_text())
-    assert bundle_meta["generators"]["cobuilder-pr"] == "0.6.0"
+    assert bundle_meta["generators"]["pr"] == "0.6.0"
     assert bundle_meta["generators"]["_prior"] == ["oops", "a list"]
 
 
@@ -69,10 +69,10 @@ def test_stamp_generator_preserves_malformed_string(tmp_path):
     import json
 
     (tmp_path / "bundle.json").write_text('{"generators": "not-a-map"}')
-    stamp_generator(tmp_path, "cobuilder-pr", "0.6.0")
+    stamp_generator(tmp_path, "pr", "0.6.0")
 
     bundle_meta = json.loads((tmp_path / "bundle.json").read_text())
-    assert bundle_meta["generators"]["cobuilder-pr"] == "0.6.0"
+    assert bundle_meta["generators"]["pr"] == "0.6.0"
     assert bundle_meta["generators"]["_prior"] == "not-a-map"
 
 

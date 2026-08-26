@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "shared"))
 from ledger import LedgerPaths, append_comment, append_reply, append_state, read_ledger  # noqa: E402
 
 # Import serve_bundle module
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "plugins" / "cobuilder-artifact" / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "plugins" / "artifact" / "scripts"))
 import serve_bundle  # noqa: E402
 
 
@@ -312,7 +312,7 @@ class TestServeSubprocess:
         script = str(
             Path(__file__).resolve().parent.parent
             / "plugins"
-            / "cobuilder-artifact"
+            / "artifact"
             / "scripts"
             / "serve_bundle.py"
         )

@@ -1,6 +1,6 @@
-# cobuilder-architect
+# CoBuilder
 
-cobuilder-architect is a Claude Code plugin for design, generate, and review
+CoBuilder is a Claude Code plugin family for design, generate, and review
 (the architecture lifecycle except build), plus narrated history. Odyssey
 turns a merged pull request into a four-level narrated story: PR Landscape,
 Problem and Solution, Architecture, and File Changes. The story includes
@@ -16,36 +16,36 @@ before code exists.
 
 ## Install
 
-The plugin family lives in one repository, `bjornslib/cobuilder-architect`,
+The plugin family lives in one repository, `bjornslib/cobuilder-plugin`,
 as a marketplace of five sibling plugins. Add the marketplace once, then
 install the plugin or plugins you need:
 
 ```
-/plugin marketplace add bjornslib/cobuilder-architect
-/plugin install cobuilder-architect@cobuilder-architect
+/plugin marketplace add bjornslib/cobuilder-plugin
+/plugin install architect@cobuilder-plugin
 ```
 
-`cobuilder-architect` covers design, review, maintenance, decisions,
-describe, and debug. Install `cobuilder-pr` for narrated history and
-generate mode, `cobuilder-artifact` to view or publish a bundle, and
-`cobuilder-implement` to build a design's epics. Install
+`architect` covers design, review, maintenance, decisions,
+describe, and debug. Install `pr` for narrated history and
+generate mode, `artifact` to view or publish a bundle, and
+`implement` to build a design's epics. Install
 `cobuilder-full-lifecycle` instead to get all four in one step:
 
 ```
-/plugin install cobuilder-full-lifecycle@cobuilder-architect
+/plugin install cobuilder-full-lifecycle@cobuilder-plugin
 ```
 
-`cobuilder-architect` and `cobuilder-pr` both hand off to
-`cobuilder-artifact`'s view and publish modes, so each declares
-`cobuilder-artifact` as a dependency. Installing either one also installs
-`cobuilder-artifact`. Nothing here adds an agent, a hook, or an MCP server.
+`architect` and `pr` both hand off to
+`artifact`'s view and publish modes, so each declares
+`artifact` as a dependency. Installing either one also installs
+`artifact`. Nothing here adds an agent, a hook, or an MCP server.
 The install surface stays `/plugin install` alone.
 
 GitHub redirects a renamed repository, so an existing
 `/plugin marketplace add bjornslib/prodyssey` install should keep resolving.
 
 Restart the session, or enable the plugin from `/plugin`. After that, the
-`/cobuilder-architect:*` commands are available in every project.
+installed plugins' commands are available in every project.
 
 ### Prerequisites
 
@@ -65,7 +65,7 @@ the repo in Claude Code, you can generate its story.
 ### One command, full sweep
 
 ```
-/cobuilder-architect:review --prs 73,75
+/pr:review --prs 73,75
 ```
 
 For each PR, Odyssey runs these steps in order: it writes the story
@@ -76,8 +76,8 @@ runs `baseline` first, on its own (AC G3). You do not need to know that this
 is a separate step.
 
 ```
-/cobuilder-architect:review --latest        # the most recent merged PR
-/cobuilder-architect:review --prs 12..18   # a range
+/pr:review --latest        # the most recent merged PR
+/pr:review --prs 12..18   # a range
 ```
 
 ### Visual form: `--art`
@@ -95,13 +95,13 @@ is a separate step.
   existed.
 
 ```
-/cobuilder-architect:review --prs 79 --art diagram
+/pr:review --prs 79 --art diagram
 ```
 
 ### Baseline (explicit)
 
 ```
-/cobuilder-architect:baseline
+/pr:baseline
 ```
 
 This command derives the architecture baseline of the repo into
@@ -133,8 +133,8 @@ You do not need to open a session inside the target repo. The `--repo` flag
 points the whole sweep at any local checkout:
 
 ```
-/cobuilder-architect:review --repo ~/code/other-project --prs 42,43
-/cobuilder-architect:baseline --repo ~/code/other-project
+/pr:review --repo ~/code/other-project --prs 42,43
+/pr:baseline --repo ~/code/other-project
 ```
 
 Odyssey looks up `GEMINI_API_KEY` in your environment, or in your own
@@ -152,7 +152,7 @@ The four commands above narrate history. This one runs before the history
 exists.
 
 ```
-/cobuilder-architect:generate
+/pr:generate
 ```
 
 Run it on a branch that has no pull request. Odyssey reads the diff, the
@@ -199,11 +199,11 @@ Opening the pull request is the only thing Odyssey does outside
 else on GitHub. Use `--no-create` to stop before that and keep the files.
 
 ```
-/cobuilder-architect:generate --no-create          # write the files, open nothing
-/cobuilder-architect:generate --draft              # open it as a draft
-/cobuilder-architect:generate --base develop       # a base branch other than the default
-/cobuilder-architect:generate --prs 73             # assess an open PR instead of creating one
-/cobuilder-architect:generate --prs 73 --stage post
+/pr:generate --no-create          # write the files, open nothing
+/pr:generate --draft              # open it as a draft
+/pr:generate --base develop       # a base branch other than the default
+/pr:generate --prs 73             # assess an open PR instead of creating one
+/pr:generate --prs 73 --stage post
 ```
 
 `--stage post` runs after the merge. It compares what shipped against what
@@ -213,20 +213,20 @@ adopted. It never rewrites what you said earlier.
 
 ### It makes the story better
 
-The intent captured here stays in the bundle. When `/cobuilder-architect:review` runs
+The intent captured here stays in the bundle. When `/pr:review` runs
 on that PR later, it reads your stated problem and your rejected alternatives
 instead of inferring them from the diff. The ADR it extracts is marked
 `provenance: authored`, not `inferred`.
 
 ## Viewing the result
 
-- **Bundled viewer**: `/cobuilder-architect:view` starts one long-lived `python3 -m
+- **Bundled viewer**: `/artifact:view` starts one long-lived `python3 -m
   http.server` per hub in the background, and prints a URL. The session
   keeps running while the server runs. The command finds every bundle you
   generated (see [Multiple repos](#multiple-repos)) and points an internal
   `active` symlink at the one you view. Because of this, switching bundles
   never restarts the server or changes the port. Refresh the browser tab
-  instead. `/cobuilder-architect:view --stop` shuts down the server.
+  instead. `/artifact:view --stop` shuts down the server.
   (Manual equivalent for a single bundle: run `cd .cobuilder-architect/self &&
   python3 -m http.server`, then open `http://localhost:8000/viewer/`. Root
   the server at the bundle root, the parent of `viewer/`, not at `viewer/`
@@ -247,7 +247,7 @@ instead of inferring them from the diff. The ADR it extracts is marked
 ## Publishing the result
 
 ```
-/cobuilder-architect:publish --prs 73
+/artifact:publish --prs 73
 ```
 
 This command flattens PR #73 into one self-contained HTML file. The file
@@ -266,8 +266,8 @@ publish, a re-run reports "already up to date" instead of publishing again.
 The `--force` flag overrides this check.
 
 ```
-/cobuilder-architect:publish --prs 73,75
-/cobuilder-architect:publish --prs 73 --force
+/artifact:publish --prs 73,75
+/artifact:publish --prs 73 --force
 ```
 
 `--format artifact` is the default, and the only target Odyssey
@@ -278,7 +278,7 @@ Without it, Odyssey still writes the flattened files to
 
 An older bundle needs no manual fix. Every command upgrades the bundle it
 touches first. A bundle generated before diagram support gets a current
-viewer copy the first time any `/cobuilder-architect:*` command runs against it.
+viewer copy the first time any bundle-touching command runs against it.
 
 ## Multiple repos
 
@@ -294,13 +294,13 @@ writing the bundle into the foreign repo instead, at
 location even when the automatic choice would pick local.
 
 ```
-/cobuilder-architect:review --repo ~/code/other-project --prs 42,43
+/pr:review --repo ~/code/other-project --prs 42,43
 ```
 
-`/cobuilder-architect:view` finds every bundle a hub holds under its `.cobuilder-architect/`
+`/artifact:view` finds every bundle a hub holds under its `.cobuilder-architect/`
 directory: its own `self/` bundle, plus anything cached for a foreign repo.
 When more than one bundle exists, the command lists them and asks which to
-view. `/cobuilder-architect:view --list` shows what is stored. Switching between
+view. `/artifact:view --list` shows what is stored. Switching between
 bundles does not restart the server. It only repoints what the server
 serves.
 
@@ -323,7 +323,7 @@ repos](#multiple-repos) below.
   assets/pr-{N}/level-{1..3}.png
   inventory.yaml
   viewer/index.html
-  exports/{publish-manifest.json, pr-{N}.html…, index.html}   # written by /cobuilder-architect:publish
+  exports/{publish-manifest.json, pr-{N}.html…, index.html}   # written by /artifact:publish
   exports/branch-{slug}/diff.json                             # generate-mode diff cache, gitignored
 
 <repo>/
@@ -336,7 +336,7 @@ The `diagrams/` and `assets/` entries depend on the `--art` mode that
 generated the PR. `--art diagram` writes only `.mmd` files and no PNGs.
 `--art image` writes only PNGs. `--art both`, the default, writes both.
 
-`/cobuilder-architect:generate` also writes two blocks onto the PR's own timeline entry
+`/pr:generate` also writes two blocks onto the PR's own timeline entry
 in `story.json`: `intent`, which holds what the author said, and
 `assessment`, which holds the judgment written against it. They live there,
 and not in a file of their own, so the migration guard protects them the way
@@ -353,7 +353,7 @@ path. The `schema_version` field gates compatibility (AC G5). A bundle
 from an older plugin version is not a dead end, though. Every command
 upgrades the layout and the data shape of the bundle it touches, in place,
 before doing anything else. An older bundle catches up to the current
-format on its first use. It never needs a fresh `/cobuilder-architect:baseline` run
+format on its first use. It never needs a fresh `/pr:baseline` run
 just to modernize.
 
 ---
@@ -375,24 +375,24 @@ shared/                            vendored into every plugin as plugins/<name>/
                                     migrate_bundle.py, slice_table.py, validate_decision_state.py,
                                     verify_bundle.py, skills/{mermaid,ste-writing}/
 plugins/
-  cobuilder-architect/    design, review, maintenance, decisions, describe, debug. Self-only
+  architect/              design, review, maintenance, decisions, describe, debug. Self-only
     commands/             design.md, review.md, maintenance.md, decisions.md, describe.md, debug.md
     skills/architecture/  the six self-only modes, plus corpus and books
     scripts/              compute_scores.py, html_to_pdf.py
-  cobuilder-pr/           the five Odyssey history modes, and generate mode
+  pr/                     the five Odyssey history modes, and generate mode
     commands/             baseline.md, generate.md, review.md
     skills/odyssey/       SKILL.md, references/{story-mode, decision-records-lite,
                            baseline-derivation, review-mode, interview-guide,
                            adr-template, pr-description-template, stacks/*}
     scripts/              extract_story.py, extract_diffs.py, build_diagrams.py,
                            generate_prompts.py, generate_audio.py, render_review.py
-  cobuilder-artifact/     serve the bundle locally, publish a level as an Artifact
+  artifact/               serve the bundle locally, publish a level as an Artifact
     commands/             view.md, publish.md
     skills/artifact/
     scripts/              export_artifact.py, export_index.py, record_publish.py, serve_bundle.py,
                            build_builds_view.py
     viewer/index.html     the portable bundle viewer, one file
-  cobuilder-implement/    build a design's epics, one vertical slice at a time
+  implement/              build a design's epics, one vertical slice at a time
     commands/             implement.md
     skills/implement/
     scripts/              verify_gate.py
@@ -400,16 +400,16 @@ plugins/
     skills/orientation/
 ```
 
-`cobuilder-architect` and `cobuilder-pr` each declare `cobuilder-artifact`
+`architect` and `pr` each declare `artifact`
 as a `dependencies` entry in their manifest, because each hands off to
-`cobuilder-artifact`'s view or publish mode. Installing either plugin
-installs `cobuilder-artifact` with it.
+`artifact`'s view or publish mode. Installing either plugin
+installs `artifact` with it.
 
 Key manifest fields, one per plugin (`plugins/<name>/.claude-plugin/plugin.json`):
 
 ```json
 {
-  "name": "cobuilder-architect",
+  "name": "architect",
   "version": "0.5.0"
 }
 ```
@@ -424,6 +424,48 @@ through 3 diagrams that the `--art` flag can generate (see Visual form
 above). The per-PR diagram-authoring subagent invokes `mermaid` for
 itself. You never invoke it directly. `ste-writing` holds the writing
 rules and `ste-lint.py`.
+
+---
+
+## Using these skills outside Claude Code
+
+Every plugin's `commands/` directory is a slash-command shim: a thin file
+that calls `Skill("<name>", args="<mode> $ARGUMENTS")`. Other coding
+harnesses have no `Skill()` tool and no slash-command mechanism, so
+`commands/` carries nothing for them. The `skills/*/SKILL.md` files are the
+real content, and each one already documents its modes in plain prose.
+
+`scripts/export-agent-skills.sh` copies each plugin's `skills/` directory,
+as-is, to a target folder, and skips `commands/`. It stamps the source
+plugin, its version, and the current commit into each copy's frontmatter,
+so a later export makes a stale copy visible instead of leaving it to
+silently drift. It also flags, without rewriting, any leftover
+`CLAUDE_PLUGIN_ROOT` or `mcp__` reference, since those resolve only inside
+Claude Code.
+
+```
+scripts/export-agent-skills.sh --target <dir> [--plugin <name>]...
+```
+
+Run it against another repo's skill folder, for example a repo that
+follows the `.agents/skills/<name>/SKILL.md` convention:
+
+```
+scripts/export-agent-skills.sh --target /path/to/other-repo/.agents/skills
+```
+
+Pass `--plugin` one or more times to export a subset:
+
+```
+scripts/export-agent-skills.sh --target /path/to/other-repo/.agents/skills --plugin architect
+```
+
+The script refuses to overwrite a copy that lacks its `source:` stamp, so
+a hand-edited file in the target directory stops the export for that skill
+instead of getting silently replaced. Delete the file, or move it aside,
+then re-run. Re-run the script whenever a plugin's skill changes; the
+stamped version and commit are how a consuming repo tells a fresh copy
+from a stale one.
 
 ---
 
@@ -450,10 +492,10 @@ Contact the author for more information.
 
 | Not extracted into Odyssey | Where it lives now |
 |---|---|
-| **review** and **maintenance** modes, `saas-checklist.md`, `harness-security.md`, report templates, `compute_scores.py`, `html_to_pdf.py` | `/cobuilder-architect:review` and `/cobuilder-architect:maintenance`. Self-only. Generate mode already reversed part of this exclusion. The full audit (scores, checklists, dual HTML reports) ships as `/cobuilder-architect:review`. |
+| **review** and **maintenance** modes, `saas-checklist.md`, `harness-security.md`, report templates, `compute_scores.py`, `html_to_pdf.py` | `/architect:review` and `/architect:maintenance`. Self-only. Generate mode already reversed part of this exclusion. The full audit (scores, checklists, dual HTML reports) ships as `/architect:review`. |
 | **corpus/** (~170 principle YAMLs) + **books/** (14 vendored volumes) | `skills/architecture/references/{corpus,books}/` |
 | **decisions-mode governance** (state machine, viewpoints, ADR numbering) | The architecture skill. `decision-records-lite.md` is a short Odyssey path onto that schema. |
-| **describe-mode full canvas** | `/cobuilder-architect:describe`. Self-only. Odyssey still uses the flat inventory. |
+| **describe-mode full canvas** | `/architect:describe`. Self-only. Odyssey still uses the flat inventory. |
 | `sync-books.sh`, `sync-corpus.sh` | Still excluded. |
 
 ---
@@ -464,7 +506,7 @@ A bundle keeps its own copy of the viewer, and it records the layout and the
 data shape it was written with. A newer plugin can therefore find an older
 bundle on disk. You do not upgrade it by hand.
 
-`shared/migrate_bundle.py` does the work, and every `/cobuilder-architect:*` command
+`shared/migrate_bundle.py` does the work, and every bundle-touching command
 runs it against the bundle before it does anything else. An older bundle
 catches up on its first use. The script does three things, in this order:
 
@@ -484,7 +526,7 @@ disposable.
 Run the script directly to inspect an upgrade before it happens:
 
 ```
-uv run plugins/cobuilder-pr/shared/migrate_bundle.py --bundle-dir .cobuilder-architect/self --dry-run
+uv run plugins/pr/shared/migrate_bundle.py --bundle-dir .cobuilder-architect/self --dry-run
 ```
 
 `--dry-run` reports the three phases and prints a diff of `story.json`. It

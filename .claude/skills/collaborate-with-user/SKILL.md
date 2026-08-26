@@ -104,5 +104,5 @@ templates.
 
 ---
 
-Intended owner: this skill ships inside the `cobuilder-artifact` plugin
+Intended owner: this skill ships inside the `artifact` plugin
 once the plugin split lands. Until then it lives here.

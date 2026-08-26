@@ -6,10 +6,10 @@ Guidance for Claude Code instances working in this repo.
 
 This repository is a Claude Code marketplace (`.claude-plugin/marketplace.json`)
 that ships five sibling plugins under `plugins/`, not an app with a
-build/test/deploy cycle. `cobuilder-architect` covers design, review,
-maintenance, decisions, describe, and debug. `cobuilder-pr` covers generate
+build/test/deploy cycle. `architect` covers design, review,
+maintenance, decisions, describe, and debug. `pr` covers generate
 and review: the pull-request narration and assessment lifecycle.
-`cobuilder-artifact` serves and publishes the bundle. `cobuilder-implement`
+`artifact` serves and publishes the bundle. `implement`
 builds a design's epics. `cobuilder-full-lifecycle` is an umbrella plugin
 that depends on the other four. Together they narrate the merged PRs of a
 locally checked-out git repo. The result is a four-level story with scene
@@ -30,10 +30,10 @@ not executed**: no `viewer/src/` directory exists yet, and the viewer is
 still the one committed file described below. Treat that ADR as a plan,
 not as the current shape of the file.
 
-`cobuilder-architect` and `cobuilder-pr` both hand off to
-`cobuilder-artifact`'s View and Publish modes, so each manifest declares
-`cobuilder-artifact` as a `dependencies` entry. Installing either plugin
-also installs `cobuilder-artifact`. The handoff still crosses the plugin
+`architect` and `pr` both hand off to
+`artifact`'s View and Publish modes, so each manifest declares
+`artifact` as a `dependencies` entry. Installing either plugin
+also installs `artifact`. The handoff still crosses the plugin
 boundary by mode name only, and the state it carries still travels through
 the bundle, per ADR-0016. A `dependencies` entry guarantees co-installation.
 It does not grant one plugin's code a file path into another plugin's root.
@@ -43,7 +43,7 @@ agent, a hook, or an MCP server.
 The five Odyssey modes still take `--repo`. The six architecture modes are
 self-only. They analyze the session's own repo and refuse a foreign target.
 
-Generate mode, in `cobuilder-pr`, is the one Odyssey path that does not
+Generate mode, in `pr`, is the one Odyssey path that does not
 narrate history. It runs before the history exists. It interviews the
 author of a change, assesses that change against the bundle, and opens the
 pull request.
@@ -52,7 +52,7 @@ It exists because the rest of the plugin family spends real effort
 reconstructing intent that nobody wrote down. Capture the intent at
 generate time, and review mode stops guessing. This branch extends the
 family to capture intent before code exists. See Generate mode below, and
-`plugins/cobuilder-pr/skills/odyssey/references/{interview-guide,review-mode}.md`.
+`plugins/pr/skills/odyssey/references/{interview-guide,review-mode}.md`.
 
 Where the Odyssey bundle lands depends on the target. Analyzing your own
 repo writes to `<target>/.cobuilder-architect/self/`. That is the case with
@@ -60,12 +60,12 @@ no `--repo`, or with `--repo` that resolves to the session's own checkout.
 Analyzing a foreign repo writes instead to
 `<hub>/.cobuilder-architect/<repo-slug>/`, where `<hub>` is the session's
 own repo, never the foreign one. `--store local|central` overrides the
-automatic choice. See `plugins/cobuilder-pr/skills/odyssey/SKILL.md`'s Hub
+automatic choice. See `plugins/pr/skills/odyssey/SKILL.md`'s Hub
 resolution section for the exact rule and slug derivation.
 
-Install surface: `/plugin marketplace add bjornslib/cobuilder-architect` then
-`/plugin install <plugin-name>@cobuilder-architect` for any one of the five
-plugin names, or `/plugin install cobuilder-full-lifecycle@cobuilder-architect`
+Install surface: `/plugin marketplace add bjornslib/cobuilder-plugin` then
+`/plugin install <plugin-name>@cobuilder-plugin` for any one of the five
+plugin names, or `/plugin install cobuilder-full-lifecycle@cobuilder-plugin`
 for all five at once. No agents, no hooks, no MCP servers, in any of the
 five. That is deliberate, so no plugin ever touches another session's
 permission surface.
@@ -77,8 +77,8 @@ installs nowhere else, so it does not violate the rule above. It denies the
 command for subagents only, and never for the main agent.
 
 Each plugin ships its own skills under its own `plugins/<name>/skills/`.
-`cobuilder-pr` ships `odyssey`, which orchestrates the five history modes
-this file describes. `cobuilder-architect` ships `architecture`, which runs
+`pr` ships `odyssey`, which orchestrates the five history modes
+this file describes. `architect` ships `architecture`, which runs
 the six self-only modes. `mermaid` and `ste-writing` are shared skills,
 vendored by symlink into every plugin that needs them (ADR-0017). `mermaid`
 holds the authoring rules for the Mermaid diagrams below. The
@@ -88,7 +88,7 @@ itself. The orchestrating Claude never invokes it directly.
 See `README.md` for the user-facing install and usage doc, and for the
 extraction manifest. That manifest records what Odyssey took from
 `architecture-review-design-maintenance`. The architecture skill is now in
-`cobuilder-architect`. Do not duplicate that content here. This file is for
+`architect`. Do not duplicate that content here. This file is for
 orientation, and for the things a future coding session cannot get from
 reading the files.
 
@@ -101,18 +101,18 @@ other's context.
 
 | Term | Meaning | Not to confuse with |
 |---|---|---|
-| **Design** (capital, mode) | `/cobuilder-architect:design`, the pre-code interview-and-challenge mode that produces an ADR plus `intent.json` | a *design* (lowercase), the artifact directory it produces (see below) |
+| **Design** (capital, mode) | `/architect:design`, the pre-code interview-and-challenge mode that produces an ADR plus `intent.json` | a *design* (lowercase), the artifact directory it produces (see below) |
 | **a design** | One `docs/architecture/designs/<name>/` directory: `goal.json`, `intent.json`, `narrative.json`, `assessment.json`, `pr-draft.md` | an ADR, which a design also produces but which outlives it under `docs/architecture/adr/` |
 | **backlog design** | A design at `stage: "backlog"`: a `goal.json` with planned epics only, and no `intent.json`, `narrative.json`, `assessment.json`, or diagrams. This is a legitimate, deliberately sparse state, because Design mode's stages 2 through 7 have not run yet. `maintainable-viewer/` and `inflight-record-store/` are both backlog designs today | an incomplete or abandoned design — a sparse directory here is the expected shape, not a sign that generation stopped partway |
-| **Epic** | One unit inside a design's `goal.json.epics[]`. Maps to zero or one pull request through `epics[].branch`. Owned and decomposed by `cobuilder-implement`, not by design mode | an ADR, a design, or a PR — an epic is the join key between a design and a PR, not any of the three itself |
+| **Epic** | One unit inside a design's `goal.json.epics[]`. Maps to zero or one pull request through `epics[].branch`. Owned and decomposed by `implement`, not by design mode | an ADR, a design, or a PR — an epic is the join key between a design and a PR, not any of the three itself |
 | **District** | A `world.districts` entry in `story.json` / `inventory.yaml`, derived by Odyssey's *describe-lite* procedure (`baseline-derivation.md`) for any repo, including a foreign `--repo` target. Inferred, not verified against import edges | a bounded context (below) — a district is the lightweight version of the same underlying concept, usable when nobody maintains the target repo |
 | **Bounded context** | A `docs/architecture/contexts/<context-id>/` bundle: `canvas.md` + `boundary.yaml`, produced by the self-only Describe mode. Every claim is grep-verified against real import edges before it is written | a district — a bounded context is the heavyweight, verified version; it never covers a foreign repo |
-| **Review** (Architecture skill) | `/cobuilder-architect:review`, the self-only security/architecture/quality audit that produces the paired Technical/Founder HTML reports under `docs/architecture/review/` | Odyssey's Review mode (below), or the assessment reference described in the next row, or the general-purpose `/code-review` Claude Code skill, which is unrelated to this plugin |
-| **Review mode** (Odyssey) | The per-PR narration sweep, `/cobuilder-architect:review` (dispatches `Skill("odyssey", args="review ...")`), that narrates already-merged history into the bundle | the Architecture skill's Review mode (above) — different corpus, different output shape, no HTML report. Also not the PR-assessment step described in the next row |
-| **review-mode.md** (Odyssey reference) | The PR-assessment step of `/cobuilder-architect:generate`, governed by `plugins/cobuilder-pr/skills/odyssey/references/review-mode.md`: three questions with evidence, verdicts, drift detection | Odyssey's Review mode (above), which is a different mode with a different job, despite the shared word |
+| **Review** (Architecture skill) | `/architect:review`, the self-only security/architecture/quality audit that produces the paired Technical/Founder HTML reports under `docs/architecture/review/` | Odyssey's Review mode (below), or the assessment reference described in the next row, or the general-purpose `/code-review` Claude Code skill, which is unrelated to this plugin |
+| **Review mode** (Odyssey) | The per-PR narration sweep, `/pr:review` (dispatches `Skill("odyssey", args="review ...")`), that narrates already-merged history into the bundle | the Architecture skill's Review mode (above) — different corpus, different output shape, no HTML report. Also not the PR-assessment step described in the next row |
+| **review-mode.md** (Odyssey reference) | The PR-assessment step of `/pr:generate`, governed by `plugins/pr/skills/odyssey/references/review-mode.md`: three questions with evidence, verdicts, drift detection | Odyssey's Review mode (above), which is a different mode with a different job, despite the shared word |
 | **Bundle** | The whole derived-output directory tree for one target repo: `.cobuilder-architect/self/` or `.cobuilder-architect/<repo-slug>/`, holding `data/`, `assets/`, `viewer/`, `exports/` | `docs/` (authored source, never derived) and `story.json` (one file inside the bundle, not the bundle itself) |
 | **Self** vs **foreign** (repo) | *Self* is the session's own checkout — the only target the six Architecture modes accept. *Foreign* is a `--repo`-targeted checkout, only reachable through Odyssey | `<hub>`, which is always the *session's* repo even when analyzing a foreign target — the foreign repo is never the hub |
-| **Gate 4a / 4b / 4c** | The three sub-steps of Gate 4 in `cobuilder-implement`, defined in `plugins/cobuilder-implement/skills/implement/SKILL.md`. 4a is the slice plan (`04-slices.md`). 4b is a technical solution design, required only for an epic that carries more than one slice, and marked `n/a` instead of pending for a single-slice epic. 4c is the blind rubrics. `verify_gate.py` checks all three | Gate 4 as a whole — `00-status.md` used to track Gate 4 as one line and now tracks 4a, 4b, and 4c as three, and the whole gate cannot read APPROVED while any sub-step still reads pending |
+| **Gate 4a / 4b / 4c** | The three sub-steps of Gate 4 in `implement`, defined in `plugins/implement/skills/implement/SKILL.md`. 4a is the slice plan (`04-slices.md`). 4b is a technical solution design, required only for an epic that carries more than one slice, and marked `n/a` instead of pending for a single-slice epic. 4c is the blind rubrics. `verify_gate.py` checks all three | Gate 4 as a whole — `00-status.md` used to track Gate 4 as one line and now tracks 4a, 4b, and 4c as three, and the whole gate cannot read APPROVED while any sub-step still reads pending |
 | **Assessment stage** | The `stage` field on `assessment.json`: `"design"` for an assessment written before the code exists, carrying `prediction` findings, or `"retrospective"` for one written after the design shipped, carrying `observation` or `drift` findings. `plugin-split` and `cobuilder-implement` are `"design"`. `design-mode` is `"retrospective"` | a verdict (`proceed`/`concerns`/`rework`, a separate field) — and note that nothing enforces `stage` today: `ASSESSMENT_FIELDS` in `shared/build_index.py` projects only `verdict` and `findings`, and `shared/verify_bundle.py` never checks `stage` |
 | **Drift** (finding kind) | An `assessment.json` finding of `kind: "drift"`: a report that a shipped record no longer matches the tree. The correct response is sometimes to leave the record alone, as a true account of what was believed at the time | a bug — a drift finding is not a defect to fix, and also not `review-mode.md`'s per-PR `intent.drift` array, which Generate mode's `--stage post` populates by comparing a PR's stated intent against its merged diff. Same word, two different records: one on a design's assessment, one on a PR's intent block |
 
@@ -131,7 +131,7 @@ Measured differences between the gazetteer and what shipped:
 | Gazetteer proposed | What shipped |
 |---|---|
 | `cobuilder-pr:assess` as a third mode | Folded into `generate --stage post`. No `:assess` reference exists. |
-| `baseline` moves to `cobuilder-architect` | Still `plugins/cobuilder-pr/commands/baseline.md`. |
+| `baseline` moves to `cobuilder-architect` | Still `plugins/pr/commands/baseline.md`. |
 | `skills/odyssey/` renames to `skills/pull-request/` | Still `skills/odyssey`. |
 | `mermaid` vendored into `cobuilder-pr` only | Vendored into every plugin that needs it. |
 | `shared/bundle-core/` plus `scripts/_shared` symlinks | Flat `shared/`, with a `plugins/<name>/shared` symlink in each plugin. |
@@ -151,7 +151,7 @@ shared/                symlinked into every plugin's own root as plugins/<name>/
                        validate_decision_state.py, verify_bundle.py,
                        skills/{mermaid,ste-writing}/
 plugins/
-  cobuilder-architect/   design, review, maintenance, decisions, describe, debug. Self-only
+  architect/             design, review, maintenance, decisions, describe, debug. Self-only
     .claude-plugin/plugin.json
     commands/          design.md, review.md, maintenance.md, decisions.md,
                        describe.md, debug.md → Skill("architecture", args=...)
@@ -160,12 +160,12 @@ plugins/
       references/      includes design-mode, loaded on demand by Design mode
     scripts/           compute_scores.py, html_to_pdf.py
     shared/            -> ../../shared (symlink)
-  cobuilder-pr/          the five Odyssey history modes, and generate mode
+  pr/                    the five Odyssey history modes, and generate mode
     .claude-plugin/plugin.json
     commands/          baseline.md, generate.md, review.md → Skill("odyssey", args=...)
     skills/odyssey/
       SKILL.md         orchestration: prereq gate → baseline → per-PR sweep →
-                       generate → hand off to cobuilder-artifact's view/publish → verify
+                       generate → hand off to artifact's view/publish → verify
       references/      loaded on demand (story-mode, decision-records-lite,
                        baseline-derivation, review-mode,
                        interview-guide, adr-template,
@@ -173,7 +173,7 @@ plugins/
     scripts/           extract_story.py, extract_diffs.py, build_diagrams.py,
                        generate_prompts.py, generate_audio.py, render_review.py
     shared/            -> ../../shared (symlink)
-  cobuilder-artifact/    serve the bundle locally, publish a level as an Artifact
+  artifact/              serve the bundle locally, publish a level as an Artifact
     .claude-plugin/plugin.json
     commands/          view.md, publish.md → Skill("artifact", args=...)
     skills/artifact/
@@ -181,7 +181,7 @@ plugins/
                        build_builds_view.py
     viewer/index.html  the bundle viewer (4747 lines, single file, see below)
     shared/            -> ../../shared (symlink)
-  cobuilder-implement/   build a design's epics, one vertical slice at a time
+  implement/             build a design's epics, one vertical slice at a time
     .claude-plugin/plugin.json
     commands/          implement.md → Skill("implement", args="implement ...")
     skills/implement/
@@ -193,12 +193,12 @@ plugins/
     shared/            -> ../../shared (symlink)
 ```
 
-`plugins/cobuilder-artifact/scripts/build_builds_view.py` used to sit at
+`plugins/artifact/scripts/build_builds_view.py` used to sit at
 the repository root, outside every plugin. It generates
 `.cobuilder-architect/self/pages/builds-view.html`, a file inside the
 bundle. A bundle must be regenerable from installed plugins alone. A
 generator outside every plugin left no installer able to rebuild a page
-their own bundle contained, so the script moved into `cobuilder-artifact`,
+their own bundle contained, so the script moved into `artifact`,
 next to the other export scripts that write into the bundle.
 
 A shared skill (`mermaid`, `ste-writing`) resolves at `${CLAUDE_PLUGIN_ROOT}/shared/skills/<name>/`
@@ -225,11 +225,11 @@ Each plugin's `skills/` and `commands/` are auto-discovered — its
 
 `shared/slice_table.py` is the one parser for the slice table in
 `docs/plans/<slug>/04-slices.md`. It replaced three divergent regex sets in
-`shared/build_index.py`, `plugins/cobuilder-implement/scripts/verify_gate.py`,
-and `plugins/cobuilder-artifact/scripts/build_builds_view.py`. A future
+`shared/build_index.py`, `plugins/implement/scripts/verify_gate.py`,
+and `plugins/artifact/scripts/build_builds_view.py`. A future
 format change to that table needs one edit, not three.
 
-`plugins/cobuilder-implement/scripts/verify_gate.py` is that plugin's first
+`plugins/implement/scripts/verify_gate.py` is that plugin's first
 script. It checks Gate 4a, 4b, and 4c for a plan directory and exits
 non-zero on any failure. It exits 1 today, because Gate 4b (an approved
 technical solution design) is outstanding for five `plugin-split` epics.
@@ -240,7 +240,7 @@ is documented.** Gate 4b was the only Gate 4 sub-step nothing downstream
 required, and it ran for zero of five multi-slice epics before this branch.
 It is now enforced at three levels: sub-steps in
 `docs/plans/cobuilder-family/00-status.md`, `verify_gate.py` above, and
-`plugins/cobuilder-implement/skills/implement/workflows/slice-loop.js`,
+`plugins/implement/skills/implement/workflows/slice-loop.js`,
 which now stops the run instead of falling back silently when a design
 document is missing. Apply the same lesson before adding a new documented
 step anywhere else in this family: give it a mechanical consumer, or expect
@@ -249,7 +249,7 @@ it to be skipped.
 **Open placement question: `watch_feedback.py`.** `docs/plans/cobuilder-family/epic-E6-design.md`
 records that `watch_feedback.py` shipped under
 `plugins/cobuilder-full-lifecycle/scripts/`, while `03-program-design.md`
-placed it under `cobuilder-artifact`, next to `serve_bundle.py`, which
+placed it under `artifact`, next to `serve_bundle.py`, which
 writes the same ledger. Nobody has resolved this. Do not move the file
 on the strength of this note alone.
 
@@ -274,8 +274,8 @@ Scripts only move data: diffs, image prompts, audio, diagram compilation,
 ADR compilation, and verification. Diagram authoring is also Claude judgment
 work, but the orchestrating Claude never writes the `.mmd` files itself. It
 spawns a per-PR subagent to do that. See Review mode in
-`plugins/cobuilder-pr/skills/odyssey/SKILL.md`. It then runs
-`plugins/cobuilder-pr/scripts/build_diagrams.py`, which compiles the
+`plugins/pr/skills/odyssey/SKILL.md`. It then runs
+`plugins/pr/scripts/build_diagrams.py`, which compiles the
 subagent's `.mmd` files into `data/diagrams.js` and validates them.
 
 Scripts are PEP 723 (`uv run script.py` resolves `google-genai`, `pillow`,
@@ -283,10 +283,10 @@ Scripts are PEP 723 (`uv run script.py` resolves `google-genai`, `pillow`,
 
 ## Generate mode — what is load-bearing about it
 
-`/cobuilder-architect:generate` interviews a change's author, assesses the change, and
+`/pr:generate` interviews a change's author, assesses the change, and
 opens the pull request. Four things about it are easy to break by accident.
 
-**The interview is the product.** `plugins/cobuilder-pr/skills/odyssey/references/interview-guide.md` §2 says
+**The interview is the product.** `plugins/pr/skills/odyssey/references/interview-guide.md` §2 says
 never ask a question the evidence already answers, and §3 caps the count at
 six. A future session that turns this into a fixed questionnaire has removed
 the only thing that separates it from a generic diff-reading reviewer. The
@@ -315,7 +315,7 @@ is why the viewer reads them off `window.STORY` with no new global and no new
 debt described under Bundle versioning below.
 
 Assessment is Claude judgment work, like narrative and ADRs.
-`plugins/cobuilder-pr/scripts/render_review.py` lays the result out as markdown and judges none of
+`plugins/pr/scripts/render_review.py` lays the result out as markdown and judges none of
 it. `verify_bundle.py` gained `intent` and `assessment` keys that are
 **optional by default** — a bundle generated before this mode existed must
 keep passing — and `--require-review` promotes them.
@@ -385,20 +385,20 @@ if anybody revisits it:
   again as base64. An artifact-export mode must drop audio, transcode it to
   a compressed format, or cap it to one PR level at a time.
 
-That experiment is now a real, shipped mode: `/cobuilder-architect:publish`, which is
+That experiment is now a real, shipped mode: `/artifact:publish`, which is
 Publish mode in `SKILL.md`. Three scripts divide the work.
-`plugins/cobuilder-artifact/scripts/export_artifact.py` does the transform above, per PR. It also
+`plugins/artifact/scripts/export_artifact.py` does the transform above, per PR. It also
 retries at lower compression tiers when the result exceeds the budget, and
-drops audio as a last resort. `plugins/cobuilder-artifact/scripts/export_index.py` renders a small
+drops audio as a last resort. `plugins/artifact/scripts/export_index.py` renders a small
 standalone landing page. That page links to every PR artifact published so
 far for the bundle. It carries no images or audio, so the budget does not
-apply. `plugins/cobuilder-artifact/scripts/record_publish.py` writes the URL that the Artifact tool
+apply. `plugins/artifact/scripts/record_publish.py` writes the URL that the Artifact tool
 returned back into `<bundle-dir>/exports/publish-manifest.json`. That last
 script is the only part of the pipeline that must run after the publish
 call, because no script can know the URL in advance.
 `publish-manifest.json` is also the
 staleness record. It holds a content hash, plus the PR's commit SHA when
-that SHA is available. A second `/cobuilder-architect:publish` on an unchanged PR
+that SHA is available. A second `/artifact:publish` on an unchanged PR
 therefore reports "already up to date" instead of publishing again.
 
 `--format artifact` is the only implemented target. `--format notion` is a
@@ -431,7 +431,7 @@ and migration below.
   assets/pr-{N}/level-{1..3}.png
   inventory.yaml
   viewer/index.html
-  exports/{publish-manifest.json, pr-{N}.html…, index.html}   # written by /cobuilder-architect:publish
+  exports/{publish-manifest.json, pr-{N}.html…, index.html}   # written by /artifact:publish
   exports/branch-{slug}/diff.json                             # generate-mode diff cache, gitignored
   .migration-backup/  # pre-migration story.json snapshots, written by migrate_bundle.py
 
@@ -446,13 +446,13 @@ and migration below.
 
 `data/diagrams/pr{N}-level{L}.mmd` files are the source of truth for the
 Mermaid diagrams — level 1 (`C4Container`), level 2 (`sequenceDiagram`), and
-level 3 (`classDiagram`); level 4 has none. `plugins/cobuilder-pr/scripts/build_diagrams.py`
+level 3 (`classDiagram`); level 4 has none. `plugins/pr/scripts/build_diagrams.py`
 compiles them into `data/diagrams.js` (`window.DIAGRAMS`), the same
 sibling-script-tag pattern `story.js`/`manifest.js`/`adrs.js` already use.
 Whether a given PR has diagrams, scene art, or both depends on the `--art`
-flag it was generated with (see Review mode in `plugins/cobuilder-pr/skills/odyssey/SKILL.md`).
+flag it was generated with (see Review mode in `plugins/pr/skills/odyssey/SKILL.md`).
 
-`exports/` appears only after `/cobuilder-architect:publish` runs at least once. It is
+`exports/` appears only after `/artifact:publish` runs at least once. It is
 as committable as the rest of the bundle — see Publish mode notes below.
 
 `story.json`'s `meta.schema_version` is currently `"1.2"`, and it is the
@@ -492,7 +492,7 @@ exist deliberately, they are named by `<repo-slug>`, and they are otherwise
 indistinguishable from a real foreign-repo cache. (`self` is reserved for
 the self-bundle and is never a slug.) A hub that adopts the plugin may or
 may not commit its own foreign-repo slug directories. The skill takes no
-position on that. `plugins/cobuilder-pr/skills/odyssey/SKILL.md`'s
+position on that. `plugins/pr/skills/odyssey/SKILL.md`'s
 Hub resolution section suggests a `.gitignore` line for the four
 bookkeeping entries only, and is explicit that `.cobuilder-architect/` as a whole must
 never be suggested for ignoring.
@@ -525,8 +525,8 @@ ways, and each way needs its own fix, not one migration framework:
 `migrate_bundle.py` runs all three phases against `--bundle-dir`, in this
 order: the unconditional viewer refresh, then the layout ladder, then the
 data ladder. Every plugin that touches a bundle calls it at the start of its
-own modes — `cobuilder-pr`'s Baseline, Review, and Generate, and
-`cobuilder-artifact`'s View and Publish. A stale bundle therefore self-heals
+own modes — `pr`'s Baseline, Review, and Generate, and
+`artifact`'s View and Publish. A stale bundle therefore self-heals
 before any other step reads it.
 
 A data migration must never regenerate content. `story.json` holds
@@ -592,9 +592,9 @@ hand.
 
 Prose and documentation in this repo follows plain-English rules distilled from ASD-STE100
 Issue 9 Simplified Technical English (STE). It applies to every content
-type produced here: `README.md`, this file, `plugins/cobuilder-pr/skills/odyssey/references/*.md`,
+type produced here: `README.md`, this file, `plugins/pr/skills/odyssey/references/*.md`,
 commit and PR bodies, code comments, error messages, ADRs, and the story
-the plugin writes into `story.json`. `Skill("cobuilder-architect:ste-writing")`
+the plugin writes into `story.json`. `Skill("architect:ste-writing")`
 holds the full rule set and its two modes (`strict` for procedures and
 safety text, `flavored` for general prose). If that call gives `Unknown
 skill`, read `${CLAUDE_PLUGIN_ROOT}/shared/skills/ste-writing/SKILL.md` directly
@@ -624,7 +624,7 @@ One topic per paragraph, six sentences or fewer. State a condition before
 its command.
 
 **Marketing and copy — reduced strictness, not exempt.** The `kleppmann`
-narrative register, `story.json`'s default (`plugins/cobuilder-pr/skills/odyssey/references/story-mode.md`
+narrative register, `story.json`'s default (`plugins/pr/skills/odyssey/references/story-mode.md`
 §3), and README's own pitch language both need room for a voice that
 controlled language strips out. They follow a lighter pass of the rules
 above instead of the full set: active voice, plain verbs, no marketing
@@ -677,7 +677,7 @@ a marketplace-root `shared/` directory, symlinked into each (ADR-0016,
 ADR-0017) → design mode's stage 1 shipped for two backlog designs,
 `maintainable-viewer` (ADR-0020) and `inflight-record-store` (ADR-0018),
 each staged as a `goal.json`-only design → `shared/slice_table.py` replaced
-three divergent slice-table parsers, and `plugins/cobuilder-implement/scripts/verify_gate.py`
+three divergent slice-table parsers, and `plugins/implement/scripts/verify_gate.py`
 shipped as that plugin's first script, checking Gates 4a, 4b, and 4c →
 Gate 4b enforcement added at three levels after it ran for zero of five
 `plugin-split` epics → `hindsight-routine.md` replaced `hindsight-recall.md`,
@@ -686,7 +686,15 @@ moving retain from once per feature to once per accepted slice → ADR-0018
 ledger) decided and implemented → ADR-0020 (viewer parts and an author-time
 build) decided, not yet executed → the Designs sheet retired, its two
 sections folded into the Designs tab, and `shared/build_index.py` gained a
-`pr-draft.md` projection.
+`pr-draft.md` projection → the four non-umbrella plugins renamed their
+manifest `name` (and their `plugins/` directory) to drop the `cobuilder-`
+prefix — `cobuilder-architect` to `architect`, `cobuilder-pr` to `pr`,
+`cobuilder-artifact` to `artifact`, `cobuilder-implement` to `implement` —
+so a command reads `/architect:design` instead of
+`/cobuilder-architect:design`. `cobuilder-full-lifecycle` keeps its name,
+since the repo itself, `cobuilder-plugin`, is the thing the `cobuilder-`
+prefix now names. The bundle directory `.cobuilder-architect/` is unrelated
+to this rename and did not change.
 No CI config, no package manager — this is prose + Python scripts + one
 HTML file, with a `tests/` suite of 268 tests that checks packaging
 invariants across the five plugins, plus the slice-table parser, the
