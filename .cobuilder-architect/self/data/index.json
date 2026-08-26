@@ -1,7 +1,7 @@
 {
   "schema_version": "1.3",
   "sources": {
-    "git_head": "6bad882c30e7ea84a2e1d950e604859ffd211595",
+    "git_head": "1d0c5ceb27a7df8dfaf4e3d36e2ebf9993a27735",
     "trees": {
       "docs/architecture/adr": "sha256:828d982a7aa741b1e2b590ba6c392d3d9f530ea0210418e8ee0da276967419e7",
       "docs/architecture/designs": "sha256:f47c7e5b9c99744629e619713692cf6a067a78f6448a662d8e7d70b606d1b464",
@@ -799,6 +799,13 @@
         "title": "book-index.md gains a nano tier, and the security corpus stops reading unconditionally in full",
         "state": "open",
         "commit": "6bad882c30e7ea84a2e1d950e604859ffd211595",
+        "date": "2026-08-26"
+      },
+      {
+        "id": 17,
+        "title": "Rename plugins to drop the cobuilder- prefix; fix Mermaid click/copy-paste in the feedback drawer",
+        "state": "open",
+        "commit": "1d0c5ceb27a7df8dfaf4e3d36e2ebf9993a27735",
         "date": "2026-08-26"
       }
     ],
