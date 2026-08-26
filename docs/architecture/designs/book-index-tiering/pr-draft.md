@@ -25,6 +25,16 @@ book plus one optional companion" cap to state this new ceiling explicitly.
 Applies to Design mode's Stage 1 (Ground) and Stage 3 (Explore) grounding,
 and to Review/Maintenance mode's corpus-to-book escalation.
 
+**Addendum.** Review/Maintenance's mandatory 14-file security corpus load
+gets the same cheap-signal-before-expensive-read shape, with no vendoring:
+each YAML already separates its metadata-plus-summary block (~17-24 lines)
+from its worked examples. Read the first ~30 lines of all 14
+unconditionally, every run, never skipping a category's summary; read a
+file's remainder in full unless the summary clearly rules out
+applicability, defaulting to full on ambiguity — the opposite bias from
+book escalation, because a missed security finding costs more than a
+wasted read.
+
 ## Alternatives considered
 
 - **3 nanos, then always the full book, unconditionally (the engineer's
@@ -55,15 +65,22 @@ and to Review/Maintenance mode's corpus-to-book escalation.
 - **Panic-grep pre-filter** — rejected for this design's scope, though it
   is the critic's starred non-obvious survivor and the only option that
   stays inside the existing cap unmodified. Deferred, not disqualified.
+- **Judgment-gate the security corpus the same symmetric way as book
+  escalation (skip-on-ambiguity)** — rejected because a missed security
+  finding in a compliance-weighted report is a worse failure than a design
+  session under-reading one book. Security stays biased toward reading in
+  full.
 
 ## Out of scope
 
 - Fixing or creating `scripts/sync-books.sh`.
 - Re-vendoring the existing `full/` books against upstream's current
   commit.
-- Review/Maintenance mode's mandatory 14-file security corpus load.
 - The panic-grep pre-filter and the subagent fan-out pattern, both
   declined for this design.
+- Vendoring separate nano/mini files for the security corpus — it uses a
+  same-file partial read instead, since each YAML already separates
+  metadata/summary from examples.
 
 ## Risks
 
@@ -73,6 +90,9 @@ and to Review/Maintenance mode's corpus-to-book escalation.
 - Vendoring surface triples from 14 files to 42, while the sync pipeline
   that would check them against upstream (`scripts/sync-books.sh`) is
   already missing.
+- The security corpus applicability read also has no mechanical
+  enforcement. Its default-to-full bias on ambiguity is meant to make a
+  false "not applicable" verdict less likely, not impossible.
 
 ## How this was tested
 
@@ -88,6 +108,9 @@ stated at once.
   silently ignored.
 - Whether the rewritten cap conflicts with any other reference file that
   still assumes the old 1+1 cap.
+- Whether the security corpus's opposite default bias (full-on-ambiguity)
+  is stated clearly enough that a session doesn't quietly collapse it into
+  the same skip-on-ambiguity behavior as book escalation.
 
 The author flagged these parts as not fully understood:
 - Whether upstream's nano/mini files exist for all 14 currently-vendored

@@ -8,30 +8,39 @@ status: active
 
 These files are vendored verbatim from [ciembor/agent-rules-books](https://github.com/ciembor/agent-rules-books) — practical interpretations of canonical software-engineering books, converted into operational rules for AI coding agents.
 
-**Loading policy:** see `../../SKILL.md` *Book References* section. Read `../book-index.md` first to pick a book; load AT MOST one primary + one optional companion; never combine `unified-software-engineering.md` with another book.
+**Loading policy:** see `../book-index.md`. Per ADR-0021, load a minimum of
+three `nano`-tier excerpts once Tier 1 narrows the candidate books, then
+escalate any one of those books to `mini` or `full` only when its
+principles are judged to matter for the task. Never combine
+`unified-software-engineering.md` with another book — it has no nano/mini
+tier and stays load-alone.
 
 ## Manifest
 
-Vendored at upstream commit `2851b8535a86a6e6ea0210c013f95599b3b7c99f`.
+`full` tier vendored at upstream commit `2851b8535a86a6e6ea0210c013f95599b3b7c99f`.
+`nano`/`mini` tiers vendored at upstream commit `9c8763613514e4047d75c089533e09bc4b493c28`
+(ADR-0021 — upstream added these tiers after the `full` files were first vendored).
+`unified-software-engineering.md` has no `nano`/`mini` counterpart upstream; it
+is the synthesis book and stays load-alone regardless of tier.
 
-| File | Upstream | Lines |
-|---|---|---|
-| `a-philosophy-of-software-design.md` | `a-philosophy-of-software-design/claude/.claude/rules/a-philosophy-of-software-design.md` | 320 |
-| `clean-architecture.md` | `clean-architecture/claude/.claude/rules/clean-architecture.md` | 471 |
-| `clean-code.md` | `clean-code/claude/.claude/rules/clean-code.md` | 246 |
-| `code-complete.md` | `code-complete/claude/.claude/rules/code-complete.md` | 288 |
-| `designing-data-intensive-applications.md` | `designing-data-intensive-applications/claude/.claude/rules/designing-data-intensive-applications.md` | 307 |
-| `domain-driven-design.md` | `domain-driven-design/claude/.claude/rules/domain-driven-design.md` | 986 |
-| `domain-driven-design-distilled.md` | `domain-driven-design-distilled/claude/.claude/rules/domain-driven-design-distilled.md` | 283 |
-| `implementing-domain-driven-design.md` | `implementing-domain-driven-design/claude/.claude/rules/implementing-domain-driven-design.md` | 316 |
-| `patterns-of-enterprise-application-architecture.md` | `patterns-of-enterprise-application-architecture/claude/.claude/rules/patterns-of-enterprise-application-architecture.md` | 354 |
-| `refactoring.md` | `refactoring/claude/.claude/rules/refactoring.md` | 366 |
-| `release-it.md` | `release-it/claude/.claude/rules/release-it.md` | 343 |
-| `the-pragmatic-programmer.md` | `the-pragmatic-programmer/claude/.claude/rules/the-pragmatic-programmer.md` | 303 |
-| `unified-software-engineering.md` | `unified-software-engineering/claude/.claude/rules/unified-software-engineering.md` | 1023 |
-| `working-effectively-with-legacy-code.md` | `working-effectively-with-legacy-code/claude/.claude/rules/working-effectively-with-legacy-code.md` | 331 |
+| Book | `nano` | `mini` | `full` | Full lines |
+|---|---|---|---|---|
+| A Philosophy of Software Design | `a-philosophy-of-software-design.nano.md` | `a-philosophy-of-software-design.mini.md` | `a-philosophy-of-software-design.md` | 320 |
+| Clean Architecture | `clean-architecture.nano.md` | `clean-architecture.mini.md` | `clean-architecture.md` | 471 |
+| Clean Code | `clean-code.nano.md` | `clean-code.mini.md` | `clean-code.md` | 246 |
+| Code Complete | `code-complete.nano.md` | `code-complete.mini.md` | `code-complete.md` | 288 |
+| Designing Data-Intensive Applications | `designing-data-intensive-applications.nano.md` | `designing-data-intensive-applications.mini.md` | `designing-data-intensive-applications.md` | 307 |
+| Domain-Driven Design | `domain-driven-design.nano.md` | `domain-driven-design.mini.md` | `domain-driven-design.md` | 986 |
+| Domain-Driven Design Distilled | `domain-driven-design-distilled.nano.md` | `domain-driven-design-distilled.mini.md` | `domain-driven-design-distilled.md` | 283 |
+| Implementing Domain-Driven Design | `implementing-domain-driven-design.nano.md` | `implementing-domain-driven-design.mini.md` | `implementing-domain-driven-design.md` | 316 |
+| Patterns of Enterprise Application Architecture | `patterns-of-enterprise-application-architecture.nano.md` | `patterns-of-enterprise-application-architecture.mini.md` | `patterns-of-enterprise-application-architecture.md` | 354 |
+| Refactoring | `refactoring.nano.md` | `refactoring.mini.md` | `refactoring.md` | 366 |
+| Release It! | `release-it.nano.md` | `release-it.mini.md` | `release-it.md` | 343 |
+| The Pragmatic Programmer | `the-pragmatic-programmer.nano.md` | `the-pragmatic-programmer.mini.md` | `the-pragmatic-programmer.md` | 303 |
+| Unified Software Engineering | *(none)* | *(none)* | `unified-software-engineering.md` | 1023 |
+| Working Effectively with Legacy Code | `working-effectively-with-legacy-code.nano.md` | `working-effectively-with-legacy-code.mini.md` | `working-effectively-with-legacy-code.md` | 331 |
 
-To check for upstream drift or refresh: `bash ../../scripts/sync-books.sh` (diff-only by default; pass `--apply` to overwrite + bump SHA).
+To check for upstream drift or refresh: `bash ../../scripts/sync-books.sh` (diff-only by default; pass `--apply` to overwrite + bump SHA). This script does not exist yet in this repository — see ADR-0021's out-of-scope note.
 
 ## License
 

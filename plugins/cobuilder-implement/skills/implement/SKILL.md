@@ -51,6 +51,18 @@ Skip the gates for small tasks when any of these conditions hold:
 - The user explicitly requests the fast version without gates.
 - The code is throwaway prototyping.
 
+**Exception: a change to a file that governs another mode's own procedure**
+(a `SKILL.md`, a `references/*.md` a skill reads to decide what to do, a
+`CLAUDE.md`) is never a trivial tweak, regardless of diff size or whether it
+"looks like" a copy edit. In an agentic system this prose is the executable
+artifact — editing it changes runtime behavior across every future session
+that reads it, the same as editing a config file with system-wide blast
+radius. Route it through Gate 4c's behavioral-rubric case below instead of
+skipping gates. This exception does not apply to prose that merely
+*describes* the system for a human reader (a README, an ADR, a design
+narrative) — only to prose that an agent reads mid-task to decide what to
+do next.
+
 When in doubt, ask the user: "This change looks substantial. Should we run the
 gate workflow or the fast version?" Respect the choice.
 
@@ -325,6 +337,47 @@ of pending, and skip straight to 4c.
 Write one rubric per slice at `.cobuilder/rubrics/<slug>/slice-N.md`. Write
 `manifest.yaml`. Derive criteria from the approved epic technical design. See
 [references/rubric-authoring.md](references/rubric-authoring.md).
+
+**Special case: a slice edits a file that governs another mode's own
+procedure** (see the Gate-selection exception above). A test-suite rubric
+cannot verify this kind of slice — the existing repo test suite checks
+packaging invariants, never whether an agent actually follows a rule written
+in prose. The evidence has to be behavioral instead.
+
+Write the rubric criteria as observable agent behavior, not as a command to
+run — for example: "given only the changed file, a fresh agent doing the
+task this rule governs reads at least N excerpts of type X before it reads
+any excerpt of type Y" or "the agent does not perform action Z without first
+having read file W." A criterion whose evidence still says "read the prose
+and judge whether it's clear" is too weak — keep rewriting until the
+criterion names an observable action a validator can check against a real
+transcript.
+
+Score it with one blind pass, not an adversarial panel:
+
+1. **Stay the orchestrator.** Do not run the governed task yourself — you
+   already know the rubric and the intent behind the change, so you cannot
+   produce a blind attempt. Spawn one fresh subagent with no memory of this
+   session, and hand it only the changed file(s) plus a realistic instance
+   of the task the rule governs (not the rubric, not the word "test," not
+   which behavior you're checking for).
+2. **Capture its actual tool calls** — which files it read, in what order,
+   what it escalated to and what it didn't. This transcript is the
+   evidence.
+3. **Score the transcript against each criterion yourself**, the same way
+   an independent validator scores a code slice against a rubric it didn't
+   write the implementation for. You wrote the rubric before the blind
+   agent ran, so this stays a real check, not a rationalization of
+   whatever the agent happened to do.
+4. **A criterion that fails names a specific rewrite**, not a re-run. Prose
+   that a blind agent doesn't follow needs sharper wording (a concrete
+   number, an explicit "never," a worked example) — rerunning the same
+   prose against a new blind agent and hoping for a different result is
+   not a fix.
+
+One blind pass is enough for a prose-governs-agent-behavior slice. This is
+deliberately lighter than a multi-agent adversarial review — the goal is
+confirming the rule is followable, not stress-testing it from every angle.
 
 Check before implementation starts:
 

@@ -1,0 +1,11 @@
+feature: book-index-tiering
+test_command: "none — behavioral rubric, see slice-1.md"
+thresholds:
+  accept: 0.90
+  investigate: 0.70
+max_attempts: 3
+epics:
+  - { id: "E1", name: "book-index-tiering", slices: [1, 2] }
+slices:
+  - { id: 1, name: "book-index.md Tier 2 escalation (ADR-0021)", epic: "E1", weight: 0.5 }
+  - { id: 2, name: "security corpus applicability read (ADR-0021 addendum)", epic: "E1", weight: 0.5 }

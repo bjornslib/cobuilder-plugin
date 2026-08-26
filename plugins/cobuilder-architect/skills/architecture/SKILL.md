@@ -128,6 +128,11 @@ that join here.
       skeleton for component boundaries.
    4. Load `references/corpus/principles/resilience/*` if the system has
       external integrations. This step is optional.
+   5. If the corpus above leaves the topic under-covered, escalate to
+      `references/book-index.md`'s Tier 2: load a minimum of 3 nano-tier
+      excerpts for the candidate books, then escalate any one of them to
+      mini or full only when its principles are judged to matter for this
+      design (ADR-0021). Full-tier loading is never automatic.
 
    Draft a private hypothesis and a gap list from this grounding. Keep
    both hidden until stage 2 asks the problem and the approach. The
@@ -310,9 +315,12 @@ is the source of truth for each artifact's exact shape.
 2. Load design corpus (`references/corpus/principles/architecture/*`, `references/corpus/principles/ddd/*`, `references/corpus/principles/design_patterns/*`).
 3. Detect the stack through `references/stacks/` (precedence and fallback rules live in `references/stacks/README.md`), then load the Corpus Load list of the matched card. Apply its Boundary Rules and Review Checks. Report deviations from its Reference Structure as architecture findings.
 
-4. **Load security corpus:** `references/corpus/principles/security/*` -- ALL 14 files. This is mandatory for review mode.
+4. **Read security corpus (applicability read, ADR-0021 addendum):** For all 14 files under `references/corpus/principles/security/*`, this is mandatory for review mode and has two passes:
+   1. Read the first ~30 lines of every file (this covers `id`/`name`/`category`/`canonical_tags`/`sources`/`summary` for all 14, with margin — never fewer than 30 lines, never fewer than all 14 files). Never skip a category's summary.
+   2. For each file, read the remainder in full unless the summary clearly shows the category has no applicable surface area in the codebase under review. **When applicability is ambiguous, read the file in full** — this is the opposite default from book-index.md's Tier 2 escalation (§ below), because a missed security finding in this skill's compliance-weighted report is worse than a wasted read.
 5. Load `references/corpus/principles/testing/*`, `references/corpus/principles/resilience/*`, and `references/corpus/principles/data_systems/*` (as design choices).
 6. Load `references/corpus/refactorings/*` for diagnostic smells.
+6a. If the corpus above leaves a finding's topic under-covered, escalate to `references/book-index.md`'s Tier 2 rule (ADR-0021): load a minimum of 3 nano-tier excerpts for the candidate books, then escalate any one of them to mini or full only when its principles are judged to matter for the finding. Full-tier loading is never automatic. This step is separate from, and does not replace, the mandatory 14-file security corpus load in step 4.
 
 7. Load `references/corpus/reviews/*` for worked audit examples.
 8. **Load the SaaS checklist:** `references/saas-checklist.md` -- the detection method for SaaS-specific security, architecture, and quality issues.
@@ -540,7 +548,11 @@ Render the comparison in a table with color-coded status tags. Mark prior scan f
 
 ## Security in Review and Maintenance
 
-Review and Maintenance modes **must** load `references/corpus/principles/security/*`. This is not optional. The bundled corpus of the skill includes 14 dedicated security principle cards. They cover tenant isolation, input validation, secrets management, API security, supply chain, and cloud and platform concerns. They also cover layer boundaries, XSS/CSRF/CSP, SSRF and deserialization, cryptographic key management, RBAC/ABAC, audit logging, frontend security, and file upload and API hardening. Load all 14 files for any review or maintenance task.
+Review and Maintenance modes **must** read `references/corpus/principles/security/*`. This is not optional. The bundled corpus of the skill includes 14 dedicated security principle cards. They cover tenant isolation, input validation, secrets management, API security, supply chain, and cloud and platform concerns. They also cover layer boundaries, XSS/CSRF/CSP, SSRF and deserialization, cryptographic key management, RBAC/ABAC, audit logging, frontend security, and file upload and API hardening.
+
+**"Read" is not "read in full," per ADR-0021's addendum.** Read the first ~30 lines of all 14 files unconditionally, for any review or maintenance task — this is what "must" and "not optional" bind to, and it is never skipped. Each file's front matter (`id`, `name`, `category`, `canonical_tags`, `sources`, `summary`) sits inside that first ~30 lines, ahead of its worked before/after examples, across every one of the 14 files. That summary is the checkable signal for whether the category has applicable surface area in the codebase under review.
+
+Escalate a file to a full read when its summary shows the category applies, or when applicability is ambiguous. Skip a file's remainder only when the summary clearly rules the category out — for example, `file_upload_api_hardening.yaml` describes upload-endpoint risk, and the codebase under review has no upload endpoints. **Default to reading the full file on ambiguity, never to skipping it.** This is the opposite bias from `book-index.md`'s Tier 2 escalation, deliberately: a book's cost of being wrong is worse engineering advice; a security category's cost of being wrong is a missed finding in a report this skill's own scoring rubric weights at 25%, the highest of any category, and ties to compliance impact (GDPR, SOC2) in the Impact Taxonomy above.
 
 ## Quick Reference
 
@@ -562,4 +574,4 @@ Review and Maintenance modes **must** load `references/corpus/principles/securit
 | `references/harness-security.md` | LLM-harness security detection rules |
 | `references/agent-legible-principles.md` | 4 agent-legibility principles with before/after examples |
 | `references/mechanical-enforcement.md` | 5 grep-checkable CI rules |
-| `references/book-index.md` | Catalog of 14 vendored books. Load at most one per task (Tier 2 fallback). |
+| `references/book-index.md` | Catalog of 14 vendored books, each in nano/mini/full tiers. Tier 2 fallback: load a minimum of 3 nano excerpts, then escalate any one book to mini or full only when it's judged to matter (ADR-0021). |
