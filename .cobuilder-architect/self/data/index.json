@@ -1,10 +1,10 @@
 {
   "schema_version": "1.3",
   "sources": {
-    "git_head": "cefe62917c6b21f43d76cfe7f29caadf1f61fdfe",
+    "git_head": "6bad882c30e7ea84a2e1d950e604859ffd211595",
     "trees": {
       "docs/architecture/adr": "sha256:828d982a7aa741b1e2b590ba6c392d3d9f530ea0210418e8ee0da276967419e7",
-      "docs/architecture/designs": "sha256:d9c54ede4d0aa13ed7925e69e625f039ee5808cc5d1e1960a9b54e445c049800",
+      "docs/architecture/designs": "sha256:f47c7e5b9c99744629e619713692cf6a067a78f6448a662d8e7d70b606d1b464",
       "docs/architecture/contexts": "sha256:4626a327bd28df972d97d40dc1325c28808eb48789649b87eadd218b3528c907",
       "docs/plans": "sha256:c67537274e380932300bcc53c8943a33ad843a561d7539029a046268af79e32e"
     }
@@ -167,8 +167,8 @@
         "design": "book-index-tiering",
         "epic_id": "E1",
         "branch": "design/book-index-tiering",
-        "pr": null,
-        "state": "planned",
+        "pr": 16,
+        "state": "open",
         "note": null
       },
       {
@@ -793,6 +793,13 @@
         "state": "merged",
         "commit": "be93c04",
         "date": "2026-08-25"
+      },
+      {
+        "id": 16,
+        "title": "book-index.md gains a nano tier, and the security corpus stops reading unconditionally in full",
+        "state": "open",
+        "commit": "6bad882c30e7ea84a2e1d950e604859ffd211595",
+        "date": "2026-08-26"
       }
     ],
     "slice": [
@@ -1078,7 +1085,7 @@
         "path": []
       },
       "ADR-0021": {
-        "pr": null,
+        "pr": 16,
         "via": "epic",
         "path": [
           "book-index-tiering/E1"
@@ -1086,6 +1093,7 @@
       }
     },
     "epic_to_pull_request": {
+      "book-index-tiering/E1": 16,
       "cobuilder-implement/E1": 11,
       "cobuilder-implement/E2": 12,
       "design-mode/E1": 11,
@@ -1097,7 +1105,7 @@
       "plugin-split/E6": 11
     },
     "epic_status": {
-      "book-index-tiering/E1": "no-pull-request",
+      "book-index-tiering/E1": "open",
       "cobuilder-implement/E1": "merged",
       "cobuilder-implement/E2": "merged",
       "design-mode/E1": "merged",

@@ -25,8 +25,8 @@
       "slug": "book-index-tiering",
       "outcome": "book-index.md, books/README.md, design-mode.md, and SKILL.md's Review mode security corpus step all reflect ADR-0021's two escalation rules (book tiering, and the security corpus applicability read)",
       "branch": "design/book-index-tiering",
-      "pr": null,
-      "state": "planned"
+      "pr": 16,
+      "state": "open"
     }
   ],
   "stage": "review",
