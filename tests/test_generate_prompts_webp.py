@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SCRIPTS_DIR = REPO_ROOT / "plugins" / "cobuilder-pr" / "scripts"
+SCRIPTS_DIR = REPO_ROOT / "plugins" / "pr" / "scripts"
 SHARED_DIR = REPO_ROOT / "shared"
 
 

@@ -63,10 +63,10 @@ def test_marketplace_lists_all_five_plugins() -> None:
     marketplace = json.loads((REPO_ROOT / ".claude-plugin" / "marketplace.json").read_text())
     names = {p["name"] for p in marketplace["plugins"]}
     assert names == {
-        "cobuilder-architect",
-        "cobuilder-pr",
-        "cobuilder-artifact",
-        "cobuilder-implement",
+        "architect",
+        "pr",
+        "artifact",
+        "implement",
         "cobuilder-full-lifecycle",
     }
 
@@ -75,10 +75,10 @@ def test_umbrella_plugin_depends_on_the_other_four() -> None:
     data = json.loads(manifest_path(PLUGINS_DIR / "cobuilder-full-lifecycle").read_text())
     deps = {d.split("@")[0] for d in data.get("dependencies", [])}
     assert deps == {
-        "cobuilder-architect",
-        "cobuilder-pr",
-        "cobuilder-artifact",
-        "cobuilder-implement",
+        "architect",
+        "pr",
+        "artifact",
+        "implement",
     }
 
 

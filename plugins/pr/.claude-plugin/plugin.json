@@ -1,0 +1,10 @@
+{
+  "name": "pr",
+  "version": "0.5.0",
+  "description": "Narrated PR history, per-PR sweeps, and submit-mode review for a local git repo. Output is a portable .cobuilder-architect/ bundle.",
+  "author": { "name": "bjornslib" },
+  "repository": "https://github.com/bjornslib/cobuilder-architect",
+  "license": "MIT",
+  "keywords": ["claude-code", "storytelling", "pr-review", "codebase-odyssey"],
+  "dependencies": ["artifact@cobuilder-plugin"]
+}

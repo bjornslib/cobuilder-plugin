@@ -1,4 +1,4 @@
-"""Tests for plugins/cobuilder-implement/scripts/verify_gate.py.
+"""Tests for plugins/implement/scripts/verify_gate.py.
 
 Covers the Gate 4b hole: six epics shipped in the cobuilder-family feature
 with no epic-<epic-id>-design.md, and nothing mechanical caught it. These
@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SCRIPT_DIR = REPO_ROOT / "plugins" / "cobuilder-implement" / "scripts"
+SCRIPT_DIR = REPO_ROOT / "plugins" / "implement" / "scripts"
 sys.path.insert(0, str(SCRIPT_DIR))
 
 import verify_gate as vg  # noqa: E402

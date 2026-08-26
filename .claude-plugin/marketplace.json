@@ -6,27 +6,27 @@
   },
   "plugins": [
     {
-      "name": "cobuilder-architect",
+      "name": "architect",
       "description": "Design, review, maintenance, decisions, describe, and debug for a local git repo.",
-      "source": "./plugins/cobuilder-architect",
+      "source": "./plugins/architect",
       "version": "0.5.0"
     },
     {
-      "name": "cobuilder-pr",
+      "name": "pr",
       "description": "Narrated PR history and submit-mode review. Output is a portable .cobuilder-architect/ bundle.",
-      "source": "./plugins/cobuilder-pr",
+      "source": "./plugins/pr",
       "version": "0.5.0"
     },
     {
-      "name": "cobuilder-artifact",
+      "name": "artifact",
       "description": "Serve a bundle locally and publish a level as a self-contained Claude Artifact.",
-      "source": "./plugins/cobuilder-artifact",
+      "source": "./plugins/artifact",
       "version": "0.5.0"
     },
     {
-      "name": "cobuilder-implement",
+      "name": "implement",
       "description": "Build a feature one vertical slice at a time with four approval gates, blind rubrics, and independent validation.",
-      "source": "./plugins/cobuilder-implement",
+      "source": "./plugins/implement",
       "version": "0.1.0"
     },
     {

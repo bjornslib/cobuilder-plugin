@@ -170,11 +170,11 @@ def test_viewer_refreshes_even_at_current_version(tmp_path):
     (bundle_dir / "viewer").mkdir(parents=True)
     (bundle_dir / "viewer" / "index.html").write_text("this is stale content, not the real viewer")
 
-    # Only cobuilder-artifact ships viewer/index.html. In an installed
+    # Only artifact ships viewer/index.html. In an installed
     # cache, shared/migrate_bundle.py sits at <plugin>/shared/, so
-    # PLUGIN_ROOT resolves to <plugin>/. Point it at cobuilder-artifact
+    # PLUGIN_ROOT resolves to <plugin>/. Point it at artifact
     # here, the one plugin whose root actually holds a viewer/.
-    artifact_plugin_root = Path(__file__).resolve().parent.parent / "plugins" / "cobuilder-artifact"
+    artifact_plugin_root = Path(__file__).resolve().parent.parent / "plugins" / "artifact"
     original_plugin_root = mb.PLUGIN_ROOT
     mb.PLUGIN_ROOT = artifact_plugin_root
     try:

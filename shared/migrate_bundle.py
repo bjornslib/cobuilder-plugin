@@ -300,7 +300,7 @@ def find_viewer_source() -> Path | None:
     candidate = PLUGIN_ROOT / "viewer" / "index.html"
     if candidate.exists():
         return candidate
-    candidate = PLUGIN_ROOT / "plugins" / "cobuilder-artifact" / "viewer" / "index.html"
+    candidate = PLUGIN_ROOT / "plugins" / "artifact" / "viewer" / "index.html"
     if candidate.exists():
         return candidate
     return None
@@ -378,7 +378,7 @@ def main() -> None:
     if not bundle_dir.exists():
         print(
             f"error: bundle dir {bundle_dir} does not exist.\n"
-            "remediation: run /cobuilder-architect:baseline against this bundle first.",
+            "remediation: run /pr:baseline against this bundle first.",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -392,7 +392,7 @@ def main() -> None:
     if story is None:
         print(
             f"error: {bundle_dir}/data/story.json not found or not valid JSON.\n"
-            "remediation: run /cobuilder-architect:baseline (and /cobuilder-architect:generate) against this bundle first.",
+            "remediation: run /pr:baseline (and /pr:generate) against this bundle first.",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -416,7 +416,7 @@ def main() -> None:
         print(
             f"error: bundle_format {current_format} is newer than this plugin knows "
             f"(CURRENT_BUNDLE_FORMAT={CURRENT_BUNDLE_FORMAT}).\n"
-            "remediation: update the cobuilder-architect plugin (`/plugin update cobuilder-architect@cobuilder-architect` or "
+            "remediation: update this plugin (`/plugin update <plugin-name>@cobuilder-plugin` or "
             "re-add the marketplace) before migrating this bundle.",
             file=sys.stderr,
         )
@@ -429,7 +429,7 @@ def main() -> None:
         print(
             f"error: schema_version {current_schema!r} is not one this plugin's migrate_bundle.py "
             f"knows how to read (known: {sorted(known_schemas)}).\n"
-            "remediation: update the cobuilder-architect plugin (`/plugin update cobuilder-architect@cobuilder-architect` or "
+            "remediation: update this plugin (`/plugin update <plugin-name>@cobuilder-plugin` or "
             "re-add the marketplace) before migrating this bundle.",
             file=sys.stderr,
         )
