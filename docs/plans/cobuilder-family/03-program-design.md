@@ -57,7 +57,7 @@ chose and the one E2 exists to prove.
 | `scripts/build_index.py` | `cobuilder-artifact` | builds `data/index.json` and `index.js` |
 | `scripts/serve_bundle.py` | `cobuilder-artifact` | replaces `python3 -m http.server`, adds `POST /feedback` |
 | `scripts/watch_feedback.py` | `cobuilder-artifact` | the background wake command |
-| `skills/orientation/SKILL.md` | `cobuilder-full-lifecycle` | names the four modes and when to reach for each |
+| `skills/cobuilder-full/SKILL.md` | `cobuilder-full-lifecycle` | names the four modes and when to reach for each |
 
 **`build_index.py` lives in the artifact plugin and reads what the other
 pillars wrote.** Not only `cobuilder-architect`'s ADRs, designs, and

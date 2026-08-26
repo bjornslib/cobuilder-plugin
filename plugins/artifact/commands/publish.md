@@ -11,12 +11,12 @@ Flattens already-generated PRs into self-contained Claude Artifacts — one per
 PR, plus an auto-updating index artifact linking to every PR published so far
 for this bundle.
 
-Invoke the `artifact` skill in publish mode, forwarding any arguments the user
+Invoke the `cobuilder-artifacts` skill in publish mode, forwarding any arguments the user
 supplied after `/artifact:publish` (`--repo <path>`, `--store local|central`,
 `--prs`, `--format`, `--force`):
 
 ```
-Skill("artifact", args="publish $ARGUMENTS")
+Skill("cobuilder-artifacts", args="publish $ARGUMENTS")
 ```
 
 ## Requirements

@@ -35,7 +35,7 @@ PILLAR_NAMES = {"architecture", "odyssey"}
 # this set, so a new pillar cannot go unscanned by silently landing here.
 # Widen this set by hand only for a skill that is deliberately not a
 # pillar, never to silence a real finding.
-KNOWN_OTHER_SKILLS = {"collaborate-with-user", "artifact", "implement", "orientation"}
+KNOWN_OTHER_SKILLS = {"collaborate-with-user", "cobuilder-artifacts", "build", "cobuilder-full"}
 
 # Directories that hold generated or historical content, or tooling that is
 # not part of this plugin's own skill catalog, never scanned.

@@ -1,11 +1,11 @@
 ---
-title: "implement: Implement"
+title: "implement: Start"
 status: active
 type: command
 last_verified: 2026-08-22
 ---
 
-# implement: Implement
+# implement: Start
 
 Build a feature one vertical slice at a time. Run four approval gates before
 any implementation code exists. Require a technical solution design for each
@@ -13,11 +13,11 @@ epic before building its slices. Author blind acceptance rubrics before each
 slice. Evaluate slices with an independent validator that scores each slice
 against a threshold of 0.90.
 
-Invoke the `implement` skill in implement mode, forwarding any arguments the
-user supplied after `/implement:implement`:
+Invoke the `build` skill in implement mode, forwarding any arguments the
+user supplied after `/implement:start`:
 
 ```
-Skill("implement", args="implement $ARGUMENTS")
+Skill("build", args="implement $ARGUMENTS")
 ```
 
 ## What this writes

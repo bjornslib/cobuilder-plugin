@@ -1,12 +1,12 @@
 {
   "schema_version": "1.3",
   "sources": {
-    "git_head": "1d0c5ceb27a7df8dfaf4e3d36e2ebf9993a27735",
+    "git_head": "e117ad09f471c53a0bc2c176727785d2b385e215",
     "trees": {
-      "docs/architecture/adr": "sha256:828d982a7aa741b1e2b590ba6c392d3d9f530ea0210418e8ee0da276967419e7",
-      "docs/architecture/designs": "sha256:f47c7e5b9c99744629e619713692cf6a067a78f6448a662d8e7d70b606d1b464",
+      "docs/architecture/adr": "sha256:fd9dd693addcaf68e2bcc92bf905004dfcf546721de125b51b7d5e9e758ba8a1",
+      "docs/architecture/designs": "sha256:646b346897526c51ad6a2a101f4049b798244e6ac770f3d69c6b60d3cc07beb6",
       "docs/architecture/contexts": "sha256:4626a327bd28df972d97d40dc1325c28808eb48789649b87eadd218b3528c907",
-      "docs/plans": "sha256:c67537274e380932300bcc53c8943a33ad843a561d7539029a046268af79e32e"
+      "docs/plans": "sha256:c47e93f958e845961d985f9781f0d03eab292dbc89b1b6631d06e8e3fc3cc4dc"
     }
   },
   "entities": {
@@ -332,6 +332,15 @@
         "pr": null,
         "state": "planned",
         "note": "Threads read as conversations. The drawer renders a reply under the comment it answers. Deferred past E6 on purpose: E6 ships the record shape, so this epic adds no migration and carries no slice yet."
+      },
+      {
+        "id": "plugin-split/E8",
+        "design": "plugin-split",
+        "epic_id": "E8",
+        "branch": "rename-plugins-drop-cobuilder-prefix",
+        "pr": 17,
+        "state": "merged",
+        "note": "The cobuilder- prefix drops from the four non-umbrella plugins named in E1's table (cobuilder-architect, cobuilder-pr, cobuilder-artifact, cobuilder-implement become architect, pr, artifact, implement), since it duplicates the marketplace repo's own name. cobuilder-full-lifecycle keeps its prefix, being the umbrella the repo's own name already carries. Merged as PR #17, then a same-epic follow-up (uncommitted at the time this entry was written) fixes a second-order bug the rename introduced: two of the four renamed plugins (implement, artifact) already shipped a skill folder named after themselves, and once the plugin took that same name too, Skill() resolution inside Claude Code broke -- reproduced directly, not environment-specific. Fixed by renaming the colliding skill folders (implement's skill to build, its command to start; artifact's skill to cobuilder-artifacts) and, for consistency, cobuilder-full-lifecycle's orientation skill to cobuilder-full. See ADR-0016's addendum."
       },
       {
         "id": "ubiquitous-language/E1",
@@ -1063,7 +1072,8 @@
           "plugin-split/E4",
           "plugin-split/E5",
           "plugin-split/E6",
-          "plugin-split/E7"
+          "plugin-split/E7",
+          "plugin-split/E8"
         ]
       },
       "ADR-0016": {
@@ -1109,7 +1119,8 @@
       "plugin-split/E3": 11,
       "plugin-split/E4": 11,
       "plugin-split/E5": 11,
-      "plugin-split/E6": 11
+      "plugin-split/E6": 11,
+      "plugin-split/E8": 17
     },
     "epic_status": {
       "book-index-tiering/E1": "open",
@@ -1131,6 +1142,7 @@
       "plugin-split/E5": "merged",
       "plugin-split/E6": "merged",
       "plugin-split/E7": "unstarted",
+      "plugin-split/E8": "open",
       "ubiquitous-language/E1": "unstarted",
       "ubiquitous-language/E2": "unstarted",
       "ubiquitous-language/E3": "unstarted",
@@ -1212,6 +1224,18 @@
           "n": 4,
           "name": "Slice plan, epic designs, and rubrics",
           "state": "APPROVED 2026-08-25"
+        }
+      ],
+      "skill-collision-fix": [
+        {
+          "n": 1,
+          "name": "3",
+          "state": "n/a, superseded by direct conversation record"
+        },
+        {
+          "n": 4,
+          "name": "Slice plan, epic designs, and rubrics",
+          "state": "in progress"
         }
       ]
     }
