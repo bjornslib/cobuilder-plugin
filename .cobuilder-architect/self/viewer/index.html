@@ -821,6 +821,15 @@
     display:flex;align-items:flex-start;gap:10px;background:oklch(0.985 0.01 250);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:6px;padding:10px 12px;font-size:12px;line-height:1.5;color:var(--ink-dim);
   }
   .backlog-info-banner .info-icon{font-size:14px;color:var(--accent-text);flex:none;margin-top:1px;}
+  .backlog-program-group{
+    display:flex;flex-direction:column;gap:10px;
+  }
+  .backlog-program-group + .backlog-program-group{
+    margin-top:18px;padding-top:18px;border-top:1px solid var(--line);
+  }
+  .backlog-program-header{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+  .backlog-program-name{font:700 13px 'JetBrains Mono',monospace;color:oklch(0.22 0.02 250);}
+  .backlog-program-stage{font:600 10px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-dim);}
   .backlog-grid{
     display:grid;grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));gap:14px;
   }
@@ -3255,8 +3264,22 @@ window.INDEX = window.INDEX || {};
         </div>
       </div>`;
 
-    // Section 2: Backlog Lane (C1 & C2)
-    const backlogCardsHtml = plannedEpics.map(epic => {
+    // Section 2: Backlog Lane (C1 & C2), grouped by parent design ("program")
+    // — a design with more than one epic is a program per build/SKILL.md's
+    // own definition, and a bare epic id (e.g. "E1") repeats across designs,
+    // so a flat grid mixed epics from unrelated programs with no visual seam.
+    const designsById = {};
+    (entities.design || []).forEach(d => { designsById[d.id] = d; });
+
+    const epicsByDesign = {};
+    const designOrder = [];
+    plannedEpics.forEach(epic => {
+      const designId = epic.design || 'unknown';
+      if (!epicsByDesign[designId]) { epicsByDesign[designId] = []; designOrder.push(designId); }
+      epicsByDesign[designId].push(epic);
+    });
+
+    function renderEpicCard(epic){
       const advSlices = slicesByEpic[epic.id] || [];
       const isDeferred = advSlices.length === 0;
       const statusLabel = isDeferred ? 'Deferred' : 'Planned';
@@ -3285,13 +3308,33 @@ window.INDEX = window.INDEX || {};
         <div class="backlog-card ${isDeferred ? 'is-deferred' : ''}">
           <div class="backlog-card-header">
             <div class="backlog-card-id mono">
-              <code>${escapeHtml(epic.id)}</code>
+              <code>${escapeHtml(epic.epic_id || epic.id)}</code>
             </div>
             <span class="backlog-badge ${statusClass}">${statusLabel}</span>
           </div>
           <div class="backlog-card-body">
             <p class="backlog-epic-note">${escapeHtml(epic.note || 'No description recorded in goal.json.')}</p>
             ${sliceItemsHtml}
+          </div>
+        </div>`;
+    }
+
+    const backlogCardsHtml = designOrder.map(designId => {
+      const design = designsById[designId];
+      const groupEpics = epicsByDesign[designId].slice().sort((a, b) => {
+        const aSlices = (slicesByEpic[a.id] || []).length;
+        const bSlices = (slicesByEpic[b.id] || []).length;
+        if (bSlices !== aSlices) return bSlices - aSlices;
+        return a.id.localeCompare(b.id);
+      });
+      return `
+        <div class="backlog-program-group">
+          <div class="backlog-program-header">
+            <span class="backlog-program-name">${escapeHtml((design && design.name) || designId)}</span>
+            ${design && design.stage ? `<span class="backlog-program-stage">${escapeHtml(design.stage)}</span>` : ''}
+          </div>
+          <div class="backlog-grid">
+            ${groupEpics.map(renderEpicCard).join('')}
           </div>
         </div>`;
     }).join('');
@@ -3309,7 +3352,7 @@ window.INDEX = window.INDEX || {};
           <span class="info-icon">&#8505;</span>
           <span>The Backlog lane is a dynamic query over <code>window.INDEX.entities.epic</code> and <code>window.INDEX.joins</code>. No authored backlog file feeds it. Holds every epic with no branch and every un-scored slice.</span>
         </div>
-        <div class="backlog-grid">
+        <div class="backlog-programs">
           ${backlogCardsHtml || '<div class="empty-card"><div class="empty-detail">No planned backlog epics found.</div></div>'}
         </div>
       </div>`;
