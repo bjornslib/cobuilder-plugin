@@ -32,6 +32,13 @@ Each criterion needs three parts:
 A criterion whose evidence says "read the code and judge" is weak. Rewrite the
 criterion until the evidence names something a validator can execute.
 
+**Frontend criteria name a browser check, not only a test command.** When a
+slice touches a frontend app, write the evidence for any UI or user-visible
+criterion as a browser action the validator performs with the ChromeDevTools
+MCP tools — open the app, take a snapshot or screenshot, read console
+messages — not only "the component test passes." A passing unit or component
+test does not prove the page renders or the interaction works end to end.
+
 ---
 
 ## 2. Template

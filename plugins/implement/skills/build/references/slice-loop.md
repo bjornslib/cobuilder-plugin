@@ -159,6 +159,13 @@ Read:
 
 Steps:
 1. Run the test suite yourself: <test_command>. Capture the real output.
+1a. If this slice touches a frontend app, also open it in a real browser
+    through the ChromeDevTools MCP tools and exercise the behavior each
+    criterion claims. A criterion about UI or user-visible behavior scores no
+    higher than 0.5 on test output alone — cite the browser check too, for
+    example a screenshot, a DOM snapshot, or a console-message read that
+    shows no error. Skip this step only when the slice touches no frontend
+    code, and say so in your findings.
 2. Check for a false pass. Any of these items voids the run — report it and
    score the affected criterion 0.0:
    - a test file changed in this slice diff

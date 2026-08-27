@@ -461,7 +461,12 @@ A harness with no Workflow tool always uses Manual, regardless of scope.
 
 ### After each slice
 
-1. **Demonstrate functionality.** Execute tests or run a demo.
+1. **Demonstrate functionality.** Execute tests or run a demo. If the slice
+   touches a frontend app, the demo must open the running app in a browser
+   through the ChromeDevTools MCP tools and exercise the changed behavior
+   there. A passing test suite does not stand in for this. See
+   [references/slice-loop.md](references/slice-loop.md)'s VALIDATE role for
+   the same rule applied to scoring.
 2. **Commit the slice.** Once VALIDATE scores the slice at or above 0.90, or
    it is accepted with reservations after three attempts (see
    [references/validation-scoring.md](references/validation-scoring.md)),
