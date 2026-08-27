@@ -1,0 +1,49 @@
+{
+  "name": "build-workflow-polish",
+  "title": "Fix four friction points found using the plugin family on a real project",
+  "adr": null,
+  "adrs": [],
+  "created": "2026-08-27",
+  "outcome": "An engineer running architect:design into implement:start never loses the handoff, 04-slices.md is always written in the shape verify_gate.py actually parses, a validated slice is committed without an extra prompt, and the bundle viewer borrows the tab-based Diagram / Data flow / Data types layout a colleague prototyped.",
+  "done_when": [],
+  "abort_if": [],
+  "min_work": {
+    "derived_from": "Direct feedback from using cobuilder-plugin end to end on a separate real project on 2026-08-26/27. Four independent gaps surfaced, none touching the same file: architect:design's Stage 7 (references/design-mode.md) ends the mode without naming /implement:start as the next step; a session drafted 04-slices.md in a table shape slice_table.py's _ROW_RE_6COL/_ROW_RE_4COL do not match, so verify_gate.py and build_index.py silently failed to read it; build/SKILL.md's 'After each slice' step asks the user whether to commit instead of committing once VALIDATE clears the 0.90 threshold; and a colleague's diagram-viewer.html (scratchpad artifact, not in this repo) demonstrated a tabbed Diagram/Data-flow/Data-types layout with a collapsible left rail worth adopting for viewer/index.html.",
+    "challenge_stage_run": false,
+    "note": "Stage 0 and stage 1 grounding did not run. Stages 2 through 7 are deliberately deferred. This design is a backlog entry, not an approved design. It carries no intent.json, narrative.json, assessment.json, or diagrams, and it must not be implemented until design mode runs to completion for each epic that needs it."
+  },
+  "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
+  "epics": [
+    {
+      "id": "E1",
+      "branch": null,
+      "pr": null,
+      "state": "completed",
+      "note": "Stage 7 in architect's references/design-mode.md ends design mode after creating the first branch, with no pointer to what runs next. Add one line after the branch is created: 'Design mode's work ends here. To build this design's epics, run /implement:start.' Do not have design mode invoke implement:start itself — architecture modes are self-only in scope, and implement already owns Gate 1's design-record lookup (build/SKILL.md's 'Optional: design mode record' section). This is a one-line prose addition to a mode-governing reference file, so it still needs the Gate-selection exception's behavioral rubric, not a skip."
+    },
+    {
+      "id": "E2",
+      "branch": null,
+      "pr": null,
+      "state": "completed",
+      "note": "04-slices.md's Gate 4a instructions in build/SKILL.md describe the table only through the worked example, and never say the table must match shared/slice_table.py's exact column shape (six columns: #, Epic, Slice, Ends with, Score, State, with the epic-header row's precise empty-cell pattern) or point to that module as the source of truth. Add an explicit sentence and a link, so an authoring session does not freehand a table shape verify_gate.py silently fails to parse. Consider also having verify_gate.py surface parse_table()'s `unparsed` list by name when it is non-empty, instead of only reporting downstream symptoms like a missing epic."
+    },
+    {
+      "id": "E3",
+      "branch": null,
+      "pr": null,
+      "state": "completed",
+      "note": "build/SKILL.md's 'After each slice' section (the four numbered steps following the red-green-validate loop) records the score and asks 'Proceed to the next slice, or adjust direction?' but never commits. In practice this produces a spurious 'want to commit this checkpoint first?' prompt after every slice instead of an automatic commit. Change step 2 (or add a step) so that once VALIDATE scores a slice at or above 0.90, the orchestrator commits the slice's changes to git immediately, before asking whether to proceed — no confirmation question for the commit itself, only for what comes after. A score below threshold still routes through the existing gap decision tree in references/validation-scoring.md, and does not commit. Below-threshold slices accepted with reservations after three attempts should also commit, since that path already represents a final accepted state, not a pending one."
+    },
+    {
+      "id": "E4",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "A colleague's scratch artifact (/private/tmp/.../diagram-viewer.html, session-local, not part of this repo) uses a top-of-panel tab switcher across three views — Diagram, Data flow, Data types — instead of stacking them, plus a right-hand info rail. Evaluate adopting the same top-tab pattern for viewer/index.html's per-PR diagram levels (currently level 1/2/3 switching, per ADR-0020's viewer/src/ plan), and separately evaluate narrowing the left-hand navigation rail so it takes less width once tabs handle top-level switching. This touches only the viewer, so it can run through architect:design on its own without waiting on E1-E3."
+    }
+  ],
+  "stage": "backlog",
+  "supersedes": null,
+  "rounds": []
+}

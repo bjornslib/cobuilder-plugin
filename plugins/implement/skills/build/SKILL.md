@@ -331,6 +331,10 @@ Save `docs/plans/<slug>/04-slices.md`. Group slices by epic in a table:
 - **Slice 2:** happy path with real logic.
 - **Slice 3+:** edge cases, business rules, and error handling.
 - Do not build horizontally across layers. Build vertical end-to-end slices.
+- The table must match `shared/slice_table.py`'s exact six-column shape
+  (`#`, Epic, Slice, Ends with, Score, State), including its epic-header row
+  convention. `verify_gate.py` and `build_index.py` both parse this file
+  with that module and silently skip a row that does not match it.
 
 ### 4b. Per-epic technical solution design
 
@@ -458,10 +462,17 @@ A harness with no Workflow tool always uses Manual, regardless of scope.
 ### After each slice
 
 1. **Demonstrate functionality.** Execute tests or run a demo.
-2. **Record the score** in `00-status.md` and mark the slice complete.
-3. **Route gaps** below 1.0 using the gap decision tree in
+2. **Commit the slice.** Once VALIDATE scores the slice at or above 0.90, or
+   it is accepted with reservations after three attempts (see
+   [references/validation-scoring.md](references/validation-scoring.md)),
+   commit the slice's changes to git immediately. Do not ask the user
+   whether to commit — the only question after a slice completes is step 5
+   below, about what happens next. A slice that is still below threshold and
+   not yet escalated to three attempts does not commit.
+3. **Record the score** in `00-status.md` and mark the slice complete.
+4. **Route gaps** below 1.0 using the gap decision tree in
    [references/validation-scoring.md](references/validation-scoring.md).
-4. **Ask the user:** "Proceed to the next slice, or adjust direction?"
+5. **Ask the user:** "Proceed to the next slice, or adjust direction?"
 
 ---
 

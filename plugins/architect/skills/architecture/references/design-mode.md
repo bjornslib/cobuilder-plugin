@@ -292,6 +292,9 @@ Record it in `goal.json.epics[].branch`. No push. No `gh pr create`.
 No other remote action. This stage is unreachable under
 `--non-interactive`. There is nobody there to confirm.
 
+Design mode's own workflow ends here. To build this design's epics, run
+`/implement:start`.
+
 Generate mode strips `design/`, takes the first segment
 as the design name, and takes the rest as the epic slug. If that parse
 fails, it scans every `goal.json` for a matching `epics[].branch`.

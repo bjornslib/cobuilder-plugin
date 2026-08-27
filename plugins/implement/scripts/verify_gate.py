@@ -84,8 +84,8 @@ STATUS_4B_RE = re.compile(
 )
 
 
-def parse_slices(text: str) -> tuple[list[dict], list[str]]:
-    """Return (slice rows, epic ids seen as headers) from 04-slices.md.
+def parse_slices(text: str) -> tuple[list[dict], list[str], list[str]]:
+    """Return (slice rows, epic ids seen as headers, unparsed lines) from 04-slices.md.
 
     A slice row that does not match either pattern is silently skipped, the
     same way shared/build_index.py skips prose and separator rows. Never
@@ -97,7 +97,7 @@ def parse_slices(text: str) -> tuple[list[dict], list[str]]:
         {"n": row.n, "epic_id": row.epic_id, "name": row.name}
         for row in parsed.rows
     ]
-    return slices, parsed.header_epic_ids
+    return slices, parsed.header_epic_ids, parsed.unparsed
 
 
 def check_4a(plan_dir: Path) -> tuple[dict[str, str], list[dict]]:
@@ -109,7 +109,18 @@ def check_4a(plan_dir: Path) -> tuple[dict[str, str], list[dict]]:
         return results, []
 
     results["slices.file"] = "ok"
-    slices, _ = parse_slices(slices_path.read_text())
+    slices, _, unparsed = parse_slices(slices_path.read_text())
+
+    if unparsed:
+        print(
+            f"error: {slices_path} contains rows that do not match "
+            "slice_table.py's expected six-column shape "
+            "(#, Epic, Slice, Ends with, Score, State):\n"
+            + "\n".join(f"  {line}" for line in unparsed),
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     results["slices.count"] = str(len(slices)) if slices else "zero"
     return results, slices
 

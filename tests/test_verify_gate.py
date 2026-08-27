@@ -82,15 +82,31 @@ def make_rubrics(tmp_path: Path, numbers: list[int]) -> Path:
 
 
 def test_parse_slices_finds_epic_header_and_rows():
-    slices, _ = vg.parse_slices(SLICES_TWO_EPICS)
+    slices, _, unparsed = vg.parse_slices(SLICES_TWO_EPICS)
     assert [s["n"] for s in slices] == [1, 2, 3]
     assert slices[0]["epic_id"] == "demo/E1"
     assert slices[2]["epic_id"] == "demo/E2"
+    assert unparsed == []
 
 
 def test_epics_with_multiple_slices_excludes_single_slice_epic():
-    slices, _ = vg.parse_slices(SLICES_TWO_EPICS)
+    slices, _, _ = vg.parse_slices(SLICES_TWO_EPICS)
     assert vg.epics_with_multiple_slices(slices) == ["demo/E1"]
+
+
+SLICES_WITH_UNPARSED_ROW = SLICES_TWO_EPICS + "| 4 | `demo/E2` | missing columns |\n"
+
+
+def test_check_4a_exits_nonzero_and_names_unparsed_rows(tmp_path, capsys):
+    plan_dir = make_plan(tmp_path, SLICES_WITH_UNPARSED_ROW)
+    try:
+        vg.check_4a(plan_dir)
+    except SystemExit as exc:
+        assert exc.code != 0
+    else:
+        raise AssertionError("check_4a should exit non-zero on an unparsed row")
+    err = capsys.readouterr().err
+    assert "missing columns" in err
 
 
 # --- 4b: missing design ---

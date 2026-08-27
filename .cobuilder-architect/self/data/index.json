@@ -1,10 +1,10 @@
 {
   "schema_version": "1.3",
   "sources": {
-    "git_head": "77895579b405223f15fcd40709b8351780e357b9",
+    "git_head": "55395917fd9a0dd54b272e76799d319f0a5e174d",
     "trees": {
       "docs/architecture/adr": "sha256:fd9dd693addcaf68e2bcc92bf905004dfcf546721de125b51b7d5e9e758ba8a1",
-      "docs/architecture/designs": "sha256:f8568d2614d8cc2035bf58f9bac37f56841b04d8291701e559af45d337ab225d",
+      "docs/architecture/designs": "sha256:83935e6bf2bb91a878f8883ea5198777c99bf2252273ac7fcba639bd723d366f",
       "docs/architecture/contexts": "sha256:4626a327bd28df972d97d40dc1325c28808eb48789649b87eadd218b3528c907",
       "docs/plans": "sha256:c6ed98e3846b908d8cfd216b6ff873473172ec2559e6e6ac6a4141253205efd1"
     }
@@ -125,6 +125,12 @@
         "stage": "review"
       },
       {
+        "id": "build-workflow-polish",
+        "name": "build-workflow-polish",
+        "outcome": "An engineer running architect:design into implement:start never loses the handoff, 04-slices.md is always written in the shape verify_gate.py actually parses, a validated slice is committed without an extra prompt, and the bundle viewer borrows the tab-based Diagram / Data flow / Data types layout a colleague prototyped.",
+        "stage": "backlog"
+      },
+      {
         "id": "cobuilder-implement",
         "name": "cobuilder-implement",
         "outcome": "The architecture design produced by cobuilder-architect carries directly into implementation: its intent is decomposed into testable epics, and each epic ships as vertical slices that an independent validator scores at 0.90 or better before the next one starts.",
@@ -176,6 +182,42 @@
         "pr": 16,
         "state": "open",
         "note": null
+      },
+      {
+        "id": "build-workflow-polish/E1",
+        "design": "build-workflow-polish",
+        "epic_id": "E1",
+        "branch": null,
+        "pr": null,
+        "state": "completed",
+        "note": "Stage 7 in architect's references/design-mode.md ends design mode after creating the first branch, with no pointer to what runs next. Add one line after the branch is created: 'Design mode's work ends here. To build this design's epics, run /implement:start.' Do not have design mode invoke implement:start itself — architecture modes are self-only in scope, and implement already owns Gate 1's design-record lookup (build/SKILL.md's 'Optional: design mode record' section). This is a one-line prose addition to a mode-governing reference file, so it still needs the Gate-selection exception's behavioral rubric, not a skip."
+      },
+      {
+        "id": "build-workflow-polish/E2",
+        "design": "build-workflow-polish",
+        "epic_id": "E2",
+        "branch": null,
+        "pr": null,
+        "state": "completed",
+        "note": "04-slices.md's Gate 4a instructions in build/SKILL.md describe the table only through the worked example, and never say the table must match shared/slice_table.py's exact column shape (six columns: #, Epic, Slice, Ends with, Score, State, with the epic-header row's precise empty-cell pattern) or point to that module as the source of truth. Add an explicit sentence and a link, so an authoring session does not freehand a table shape verify_gate.py silently fails to parse. Consider also having verify_gate.py surface parse_table()'s `unparsed` list by name when it is non-empty, instead of only reporting downstream symptoms like a missing epic."
+      },
+      {
+        "id": "build-workflow-polish/E3",
+        "design": "build-workflow-polish",
+        "epic_id": "E3",
+        "branch": null,
+        "pr": null,
+        "state": "completed",
+        "note": "build/SKILL.md's 'After each slice' section (the four numbered steps following the red-green-validate loop) records the score and asks 'Proceed to the next slice, or adjust direction?' but never commits. In practice this produces a spurious 'want to commit this checkpoint first?' prompt after every slice instead of an automatic commit. Change step 2 (or add a step) so that once VALIDATE scores a slice at or above 0.90, the orchestrator commits the slice's changes to git immediately, before asking whether to proceed — no confirmation question for the commit itself, only for what comes after. A score below threshold still routes through the existing gap decision tree in references/validation-scoring.md, and does not commit. Below-threshold slices accepted with reservations after three attempts should also commit, since that path already represents a final accepted state, not a pending one."
+      },
+      {
+        "id": "build-workflow-polish/E4",
+        "design": "build-workflow-polish",
+        "epic_id": "E4",
+        "branch": null,
+        "pr": null,
+        "state": "planned",
+        "note": "A colleague's scratch artifact (/private/tmp/.../diagram-viewer.html, session-local, not part of this repo) uses a top-of-panel tab switcher across three views — Diagram, Data flow, Data types — instead of stacking them, plus a right-hand info rail. Evaluate adopting the same top-tab pattern for viewer/index.html's per-PR diagram levels (currently level 1/2/3 switching, per ADR-0020's viewer/src/ plan), and separately evaluate narrowing the left-hand navigation rail so it takes less width once tabs handle top-level switching. This touches only the viewer, so it can run through architect:design on its own without waiting on E1-E3."
       },
       {
         "id": "cobuilder-implement/E1",
@@ -1157,6 +1199,10 @@
     },
     "epic_status": {
       "book-index-tiering/E1": "open",
+      "build-workflow-polish/E1": "unstarted",
+      "build-workflow-polish/E2": "unstarted",
+      "build-workflow-polish/E3": "unstarted",
+      "build-workflow-polish/E4": "unstarted",
       "cobuilder-implement/E1": "merged",
       "cobuilder-implement/E2": "merged",
       "design-mode/E1": "merged",
