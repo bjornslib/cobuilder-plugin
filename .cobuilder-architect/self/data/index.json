@@ -1,12 +1,12 @@
 {
   "schema_version": "1.3",
   "sources": {
-    "git_head": "4df0a1d7395bbf5c3e244ebb9bf977bc62695b03",
+    "git_head": "d7400138f0283f4fa0119d477d5acc0846f69c4d",
     "trees": {
       "docs/architecture/adr": "sha256:ff9214a45fa93be6d1db6859475dceb268c9816a137ae97da4580533b18f55cf",
       "docs/architecture/designs": "sha256:ebc6522564c5ec8ad04ec3f206fe0a202432e34c44572122686af1ab20078d43",
       "docs/architecture/contexts": "sha256:4626a327bd28df972d97d40dc1325c28808eb48789649b87eadd218b3528c907",
-      "docs/plans": "sha256:42d9588939bb494d7e343ec7f2ba2c118cdba6bdfebe776480a415b6f84edcec"
+      "docs/plans": "sha256:c74faf0d87d977f583e8fbd67d00138b8ee695a145112fae6f391b4107aca33e"
     }
   },
   "entities": {
@@ -1071,9 +1071,9 @@
         "n": 1,
         "title": "Tracer bullet: constants and empty entity lists",
         "ends_with": "`data/index.json` carries `program_design` and `epic_design` keys (empty lists when no gate docs exist yet)",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "gate-doc-surfacing/2",
@@ -1081,9 +1081,9 @@
         "n": 2,
         "title": "Real parsing: project Gate 3 and Gate 4b docs",
         "ends_with": "A repo with a `03-program-design.md` and an `epic-*-design.md` produces populated `program_design`/`epic_design` entities, and `joins.feature_gates[slug][3].doc` points at the projected id",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "gate-doc-surfacing/3",
@@ -1091,9 +1091,9 @@
         "n": 3,
         "title": "Edge cases: missing files, malformed epic id, no plans dir",
         "ends_with": "A plan directory with no gate docs, and a repo with no `docs/plans/` at all, both still produce a clean index build with empty (not missing) entity keys",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "gate-doc-surfacing/4",
@@ -1101,9 +1101,9 @@
         "n": 4,
         "title": "Tracer bullet: clickable Gate Rail card opens an empty sheet",
         "ends_with": "Clicking a Gate Rail card with a `doc` opens a sheet showing the gate's title and an empty body; a card with no `doc` stays non-interactive",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "gate-doc-surfacing/5",
@@ -1111,9 +1111,9 @@
         "n": 5,
         "title": "Real content: render the gate doc body, add the epic chip",
         "ends_with": "The sheet renders `body_md` through the existing `renderMarkdown()`; an epic card with a `design_doc` shows a chip that opens the same sheet scoped to that epic",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "gate-doc-surfacing/6",
@@ -1121,9 +1121,9 @@
         "n": 6,
         "title": "Edge cases: no entity, mutual exclusivity with other sheets",
         "ends_with": "A Gate Rail card whose gate has no matching doc opens nothing; opening the gate-doc sheet closes any open ADR/assessment/comments sheet, and vice versa",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       }
     ],
     "publication": [

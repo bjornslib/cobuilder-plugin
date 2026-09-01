@@ -15,12 +15,26 @@ Hindsight: unavailable
 - [x] Slice 1 — E1 tracer bullet: constants and empty entity lists   score: 1.00
 - [x] Slice 2 — E1 real parsing: project Gate 3/4b docs              score: 1.00
 - [x] Slice 3 — E1 edge cases                                        score: 1.00
-- [ ] Slice 4 — E2 tracer bullet: clickable Gate Rail → empty sheet  score: —
-- [ ] Slice 5 — E2 real content: render body, add epic chip          score: —
-- [ ] Slice 6 — E2 edge cases: no-doc cards, mutual exclusivity      score: —
+- [x] Slice 4 — E2 tracer bullet: clickable Gate Rail → empty sheet  score: 1.00
+- [x] Slice 5 — E2 real content: render body, add epic chip          score: 1.00
+- [x] Slice 6 — E2 edge cases: no-doc cards, mutual exclusivity      score: 1.00
 
 ## Escalated
 none yet
+
+## Dogfood note
+Verified live via claude-in-chrome against a locally served
+`.cobuilder-architect/self/` bundle: this feature's own Gate 3 card
+(gate-doc-surfacing) opens its real `03-program-design.md`; E1/E2 chips
+open their own distinct `epic-*-design.md` docs; a no-doc gate card
+(e.g. Gate 1) stays inert; sheet close button works. One environment gap
+found and worked around: `migrate_bundle.py`'s vendored copy under the
+plugin cache can't locate this repo's own `viewer/index.html` source (it
+looks under its own `PLUGIN_ROOT`, which resolves inside the cache, not
+this checkout) — `.cobuilder-architect/self/viewer/index.html` was
+refreshed with a direct `cp` instead. Worth a follow-up for anyone
+developing this plugin family from a local checkout rather than an
+installed marketplace copy.
 
 ## Notes for a fresh session
 Design record: `docs/architecture/designs/gate-doc-surfacing/` (ADR-0022).
