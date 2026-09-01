@@ -1,0 +1,815 @@
+<title>Braid Build Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<style>
+:root{
+  --ground:#eef1f1;
+  --surface:#ffffff;
+  --surface-2:#f6f9f9;
+  --ink:#131e1d;
+  --ink-mid:#3d4c4b;
+  --ink-dim:#6b7a79;
+  --line:#d7dedd;
+  --line-soft:#e7ecec;
+  --accent:#2f8f9d;
+  --accent-deep:#175c66;
+  --accent-wash:#e0eff1;
+  --warn:#a8631a;
+  --warn-wash:#f7ecdc;
+  --danger:#a03636;
+  --danger-wash:#f8e5e5;
+  --good:#37744a;
+  --good-wash:#e2efe6;
+  --silent:#98a4a3;
+  /* validated categorical pair — see the note under the chart */
+  --s1:#008fa6;
+  --s2:#a85c0e;
+  --grid:#e3e8e8;
+  --shadow:0 1px 2px rgba(19,30,29,.05), 0 8px 24px -12px rgba(19,30,29,.14);
+  --mono:'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --serif:'Source Serif 4', Georgia, 'Times New Roman', serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0d1514; --surface:#141e1d; --surface-2:#1a2524;
+    --ink:#e3eae9; --ink-mid:#aebab9; --ink-dim:#7f8d8c;
+    --line:#273433; --line-soft:#1e2a29;
+    --accent:#57b8c6; --accent-deep:#8ad3de; --accent-wash:#0f2c31;
+    --warn:#d69a52; --warn-wash:#2c2317;
+    --danger:#df7373; --danger-wash:#2d1a1a;
+    --good:#68b17c; --good-wash:#15271b;
+    --silent:#6a7776;
+    --s1:#26a0b4; --s2:#c87d2a;
+    --grid:#222e2d;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0d1514; --surface:#141e1d; --surface-2:#1a2524;
+  --ink:#e3eae9; --ink-mid:#aebab9; --ink-dim:#7f8d8c;
+  --line:#273433; --line-soft:#1e2a29;
+  --accent:#57b8c6; --accent-deep:#8ad3de; --accent-wash:#0f2c31;
+  --warn:#d69a52; --warn-wash:#2c2317;
+  --danger:#df7373; --danger-wash:#2d1a1a;
+  --good:#68b17c; --good-wash:#15271b;
+  --silent:#6a7776;
+  --s1:#26a0b4; --s2:#c87d2a;
+  --grid:#222e2d;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+  color-scheme: dark;
+}
+*{box-sizing:border-box;}
+body{background:var(--ground);color:var(--ink);font-family:var(--serif);
+  font-size:17px;line-height:1.62;-webkit-font-smoothing:antialiased;}
+::selection{background:var(--accent-wash);color:var(--ink);}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px;}
+
+.spine{max-width:1140px;margin:0 auto;padding:0 28px;}
+.prose{max-width:66ch;}
+.prose p{margin:0 0 1em;} .prose p:last-child{margin-bottom:0;}
+h1,h2,h3,h4{font-family:var(--mono);font-weight:700;text-wrap:balance;margin:0;line-height:1.16;}
+h2{font-size:26px;letter-spacing:-.02em;}
+h3{font-size:17px;letter-spacing:-.01em;}
+h4{font-size:13px;letter-spacing:.02em;}
+.eyebrow{font-family:var(--mono);font-size:10.5px;font-weight:500;
+  letter-spacing:.17em;text-transform:uppercase;color:var(--ink-dim);}
+code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);
+  padding:1px 5px;border-radius:3px;border:1px solid var(--line-soft);}
+
+header.masthead{background:var(--surface);border-bottom:1px solid var(--line);padding:52px 0 0;}
+.mast-cols{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:48px;align-items:end;}
+@media (max-width:860px){.mast-cols{grid-template-columns:1fr;gap:26px;align-items:start;}}
+.mast-title{font-family:var(--mono);font-weight:700;font-size:clamp(36px,6vw,62px);
+  letter-spacing:-.045em;line-height:.98;margin:0;text-wrap:balance;}
+.mast-title .tail{color:var(--accent);}
+.mast-thesis{font-size:clamp(18px,2vw,22px);line-height:1.45;max-width:42ch;color:var(--ink-mid);margin:0;}
+.mast-thesis strong{color:var(--ink);font-weight:600;}
+.meta-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  border-top:1px solid var(--line);margin-top:42px;}
+.meta-cell{padding:14px 16px 18px 0;border-right:1px solid var(--line-soft);}
+.meta-cell:last-child{border-right:0;}
+.meta-cell .k{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--ink-dim);margin-bottom:5px;}
+.meta-cell .v{font-family:var(--mono);font-size:13px;font-weight:500;}
+@media (max-width:680px){.meta-strip{grid-template-columns:repeat(2,1fr);}}
+
+section{padding:60px 0;border-bottom:1px solid var(--line);}
+section:last-of-type{border-bottom:0;}
+.sec-head{display:flex;flex-direction:column;gap:12px;margin-bottom:32px;max-width:70ch;}
+.sec-head p{margin:0;color:var(--ink-mid);}
+
+.correction{border-left:3px solid var(--warn);background:var(--warn-wash);
+  padding:20px 24px;border-radius:0 6px 6px 0;max-width:76ch;}
+.correction .eyebrow{color:var(--warn);display:block;margin-bottom:8px;}
+.correction p{margin:0 0 .7em;font-size:16.5px;line-height:1.5;}
+.correction p:last-child{margin-bottom:0;}
+
+/* ---------- chart ---------- */
+.chart-wrap{background:var(--surface);border:1px solid var(--line);border-radius:9px;
+  padding:22px 24px 18px;box-shadow:var(--shadow);}
+.chart-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:16px;margin-bottom:4px;}
+.chart-title{font-family:var(--mono);font-size:14px;font-weight:700;}
+.chart-sub{font-size:14px;color:var(--ink-dim);}
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin:10px 0 16px;}
+.leg{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);
+  font-size:11px;color:var(--ink-mid);}
+.leg i{width:10px;height:10px;border-radius:50%;display:block;
+  box-shadow:0 0 0 2px var(--surface);}
+.chart-scroll{overflow-x:auto;}
+#dumbbell{display:block;min-width:560px;width:100%;height:auto;}
+.tick-lbl{font-family:var(--mono);font-size:9.5px;fill:var(--ink-dim);}
+.row-lbl{font-family:var(--mono);font-size:10px;fill:var(--ink-mid);}
+.row-lbl.hi{fill:var(--ink);font-weight:700;}
+.ref-lbl{font-family:var(--mono);font-size:9.5px;fill:var(--warn);}
+.dot{cursor:pointer;}
+.tip{position:fixed;pointer-events:none;z-index:40;background:var(--surface);
+  border:1px solid var(--line);border-radius:6px;padding:8px 11px;font-family:var(--mono);
+  font-size:11px;line-height:1.5;color:var(--ink);box-shadow:var(--shadow);max-width:250px;}
+.tip b{color:var(--accent-deep);}
+.tip[hidden]{display:none;}
+
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface);}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12.5px;}
+thead th{text-align:left;padding:11px 14px;font-weight:500;font-size:9.5px;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);
+  border-bottom:1px solid var(--line);background:var(--surface-2);white-space:nowrap;}
+tbody td{padding:11px 14px;border-bottom:1px solid var(--line-soft);vertical-align:top;}
+tbody tr:last-child td{border-bottom:0;}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap;}
+td.note{font-family:var(--serif);font-size:14.5px;line-height:1.45;color:var(--ink-mid);min-width:24ch;}
+td.note b{color:var(--ink);font-weight:600;}
+.pill{display:inline-block;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;
+  padding:2px 8px;border-radius:10px;white-space:nowrap;}
+.pill.done{background:var(--good-wash);color:var(--good);}
+.pill.open{background:var(--warn-wash);color:var(--warn);}
+.pill.blocked{background:var(--danger-wash);color:var(--danger);}
+.pill.plain{background:var(--surface-2);color:var(--ink-dim);border:1px solid var(--line);}
+
+/* ---------- terminal ---------- */
+.term{background:#0c1413;color:#cfe0de;border-radius:9px;padding:18px 20px;
+  font-family:var(--mono);font-size:12px;line-height:1.62;overflow-x:auto;
+  border:1px solid #1d2b29;box-shadow:var(--shadow);white-space:pre;}
+.term .p{color:#4fb3c2;} .term .dim{color:#6f827f;} .term .hl{color:#e8b667;}
+.term .bad{color:#e07070;} .term .ok{color:#7cc48e;} .term .b{color:#fff;font-weight:700;}
+.term .del{color:#e08a8a;} .term .add{color:#8fce9f;}
+.term-bar{display:flex;gap:6px;margin-bottom:12px;}
+.term-bar i{width:9px;height:9px;border-radius:50%;background:#2a3937;display:block;}
+
+.step{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(250px,.8fr);gap:28px;
+  align-items:start;padding-top:44px;}
+.step:first-of-type{padding-top:0;}
+@media (max-width:980px){.step{grid-template-columns:1fr;}}
+.step-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:12px;margin-bottom:6px;}
+.step-n{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent);
+  letter-spacing:.1em;}
+.step-name{font-family:var(--mono);font-size:19px;font-weight:700;letter-spacing:-.02em;}
+.step-lede{max-width:68ch;color:var(--ink-mid);margin:0 0 20px;}
+.spec{border-top:1px solid var(--line);}
+.spec-row{padding:12px 0;border-bottom:1px solid var(--line-soft);}
+.spec-row:last-child{border-bottom:0;}
+.spec-row .k{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-dim);margin-bottom:5px;}
+.spec-row .v{font-size:14.5px;line-height:1.45;}
+
+.ledger{background:var(--surface-2);border:1px solid var(--line);border-left:3px solid var(--accent);
+  border-radius:0 5px 5px 0;padding:11px 14px;font-family:var(--mono);font-size:11px;
+  line-height:1.65;overflow-x:auto;white-space:pre;color:var(--ink-mid);}
+.ledger .k{color:var(--accent-deep);} .ledger .s{color:var(--good);}
+.ledger.warnline{border-left-color:var(--warn);}
+
+.open-q{display:grid;grid-template-columns:30px minmax(0,1fr);gap:16px;
+  padding:22px 0;border-bottom:1px solid var(--line-soft);}
+.open-q:last-child{border-bottom:0;}
+.open-q .qn{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--warn);line-height:1;}
+.open-q h3{margin-bottom:7px;}
+.open-q p{margin:0 0 9px;color:var(--ink-mid);max-width:70ch;}
+.open-q p:last-child{margin-bottom:0;}
+.open-q .ask{font-family:var(--mono);font-size:12px;color:var(--accent-deep);
+  background:var(--accent-wash);border-radius:4px;padding:8px 11px;display:inline-block;}
+
+footer{background:var(--surface);border-top:1px solid var(--line);padding:40px 0 56px;}
+.prov{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:26px;margin-top:18px;}
+.prov p{margin:6px 0 0;font-size:14px;color:var(--ink-mid);line-height:1.45;}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important;}}
+</style>
+
+<header class="masthead">
+  <div class="spine">
+    <div class="mast-cols">
+      <div>
+        <span class="eyebrow">review-flight-deck &middot; detail before build</span>
+        <h1 class="mast-title">Braid<br>Build&nbsp;<span class="tail">Plan</span></h1>
+      </div>
+      <p class="mast-thesis">
+        What <code>/pr:braid</code> actually prints, what each keypress writes, and
+        the <strong>four things still undecided</strong>. The abort test has been run.
+        It passes, and it corrected the criterion I wrote for it.
+      </p>
+    </div>
+    <div class="meta-strip">
+      <div class="meta-cell"><span class="k">Decision</span><span class="v">ADR-0022</span></div>
+      <div class="meta-cell"><span class="k">Epics</span><span class="v">6, none built</span></div>
+      <div class="meta-cell"><span class="k">Abort test</span><span class="v">Run &middot; passes</span></div>
+      <div class="meta-cell"><span class="k">Open questions</span><span class="v">4</span></div>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="spine">
+    <div class="sec-head">
+      <span class="eyebrow">The measurement</span>
+      <h2>Region cutting works, and my abort test was wrong</h2>
+      <p>
+        The design rests on one claim: cutting a set by contested region gives a
+        reviewer less to read than the diffs do. I ran that arithmetic over the eight
+        cached diff files in this bundle, across every pair of merged pull requests
+        that shares an authored file. 27 pairs.
+      </p>
+    </div>
+
+    <div class="correction">
+      <span class="eyebrow">Correction to my own record</span>
+      <p>
+        I wrote the abort criterion as <em>stops must be fewer than shared files</em>.
+        On that test the design fails: only 9 of 27 pairs reduce, and pull requests 11
+        and 12 give <strong>37 stops against 22 shared files</strong>, which is worse,
+        not better.
+      </p>
+      <p>
+        The criterion was measuring against the wrong baseline. A reviewer's actual
+        alternative is not reading the shared subset. It is reading both diffs in
+        full. Against that baseline, 11 and 12 give 37 stops against
+        <strong>476 changed files</strong>, and every one of the 27 pairs reduces.
+        <code>goal.json</code> now carries the corrected criterion and keeps the wrong
+        one on the record.
+      </p>
+    </div>
+
+    <div class="chart-wrap" style="margin-top:28px;">
+      <div class="chart-head">
+        <span class="chart-title">Stops per pair, against two baselines</span>
+        <span class="chart-sub">27 pairs of merged pull requests &middot; derived output excluded &middot; lower is less to read</span>
+      </div>
+      <div class="legend">
+        <span class="leg"><i style="background:var(--s1)"></i> stops &divide; total files changed &mdash; the reviewer's real alternative</span>
+        <span class="leg"><i style="background:var(--s2)"></i> stops &divide; shared files &mdash; the baseline I wrongly used</span>
+      </div>
+      <div class="chart-scroll">
+        <svg id="dumbbell" role="img" aria-label="Dumbbell chart. For each of 27 pull request pairs, the ratio of contested regions to total changed files stays between 0.00 and 0.41, while the ratio of regions to shared files ranges from 0.00 to 3.00."></svg>
+      </div>
+      <p style="font-size:13.5px;color:var(--ink-dim);margin:12px 0 0;max-width:74ch;">
+        Series colours were checked with the palette validator in both themes, not
+        chosen by eye: worst adjacent separation &Delta;E 17.6 for protanopia and 22.7
+        for normal vision, both above the floor.
+      </p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:0;
+                border-top:1px solid var(--line);margin-top:30px;">
+      <div class="meta-cell"><span class="k">Pairs that reduce</span><span class="v" style="font-size:19px;">27 of 27</span></div>
+      <div class="meta-cell"><span class="k">Best case</span><span class="v" style="font-size:19px;">0.00&times; &middot; PRs 9, 11</span></div>
+      <div class="meta-cell"><span class="k">Worst case</span><span class="v" style="font-size:19px;">0.41&times; &middot; PRs 6, 9</span></div>
+      <div class="meta-cell"><span class="k">PRs 11 and 12</span><span class="v" style="font-size:19px;">37 stops, 476 files</span></div>
+    </div>
+
+    <p class="prose" style="margin-top:26px;color:var(--ink-mid);">
+      What this does <em>not</em> prove: that a reviewer finds 37 stops easier than two
+      diffs, that <code>git merge-tree</code> behaves on branches nobody has fetched,
+      or that a proposed partition helps rather than anchors. Those are still
+      predictions. This retires the arithmetic risk only.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="spine">
+    <div class="sec-head">
+      <span class="eyebrow">The run</span>
+      <h2>What a reviewer sees, end to end</h2>
+      <p>
+        Four screens, using pull requests 11 and 12 and the real numbers above. Every
+        path, count, and file name below comes from this bundle.
+      </p>
+    </div>
+
+    <!-- STEP 1 -->
+    <div class="step">
+      <div>
+        <div class="step-head"><span class="step-n">SCREEN 1</span><span class="step-name">The proposal</span></div>
+        <p class="step-lede">
+          One command. It fetches, computes, and stops. It prints what it could not
+          assess in the same list as what it could, so a blind spot is on the record
+          rather than absent from it.
+        </p>
+        <div class="term"><div class="term-bar"><i></i><i></i><i></i></div><span class="dim">$</span> <span class="b">/pr:braid 11 12</span>
+
+  <span class="dim">fetching  origin/design/cobuilder-implement          </span><span class="ok">ok</span>
+  <span class="dim">fetching  origin/design/adr-maintenance-rules        </span><span class="ok">ok</span>
+
+  <span class="dim">PR 11  558 files changed  (476 authored, 82 derived — excluded)</span>
+  <span class="dim">PR 12   46 files changed  ( 39 authored,  7 derived — excluded)</span>
+  <span class="dim">shared  22 authored files  →  </span><span class="hl">37 contested regions</span>
+
+  <span class="b">PROPOSED PARTITION</span>  <span class="dim">1 unit</span>
+
+  <span class="p">unit A</span>  <span class="b">PR 11 + PR 12</span>
+          <span class="dim">because</span>  both carry epics of design <span class="hl">cobuilder-implement</span>
+          <span class="dim">because</span>  37 regions contested, 12 of them in docs/architecture/
+          <span class="dim">precedent</span> <span class="dim">none — the ledger has no prior cut</span>
+
+  <span class="b">NOT ASSESSED</span>
+    <span class="bad">·</span> textual conflict between 11 and 12 — both branches merged,
+      <span class="dim">so merge-tree has no unmerged head to compare</span>
+    <span class="bad">·</span> stated intent overlap — <span class="dim">neither pull request carries an intent block</span>
+
+  <span class="dim">walk the regions?</span>  <span class="b">[y]</span> <span class="dim">yes  [p] partition only  [q] quit</span></div>
+      </div>
+      <div class="spec">
+        <div class="spec-row"><span class="k">Reads</span><span class="v"><code>data/story.json</code>, <code>data/diffs-pr*.js</code>, <code>data/index.json</code>, and git.</span></div>
+        <div class="spec-row"><span class="k">Writes</span><span class="v">Nothing yet. The proposal is held until the reviewer acts on it.</span></div>
+        <div class="spec-row"><span class="k">Epics</span><span class="v">E1 gives the region table. E2 gives the fetch, the merge-tree call, and the NOT ASSESSED block. E5 gives the partition.</span></div>
+        <div class="spec-row"><span class="k">Detail that matters</span><span class="v">The derived-file exclusion is not cosmetic. Without it, 11 and 12 give 53 regions instead of 37, and 16 of them are in the committed bundle nobody reviews.</span></div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step">
+      <div>
+        <div class="step-head"><span class="step-n">SCREEN 2</span><span class="step-name">One stop</span></div>
+        <p class="step-lede">
+          The shared <code>before</code> is printed once, then each pull request's
+          version under its own number. Three keys. This screen repeats 37 times for
+          this set, and it is the whole reviewing interaction.
+        </p>
+        <div class="term"><div class="term-bar"><i></i><i></i><i></i></div>  <span class="p">stop 14/37</span>   <span class="b">docs/architecture/adr/ADR-0011-design-mode.md</span> <span class="dim">:22-31</span>
+              <span class="dim">both pull requests write this span</span>
+
+  <span class="dim">── before ──────────────────────────────────────────</span>
+    state: decided
+    approved_by: ""
+
+  <span class="dim">── PR 11 ───────────────────────────────────────────</span>
+    <span class="del">- state: decided</span>
+    <span class="add">+ state: approved</span>
+    <span class="add">+ approved_by: "merge of PR #11"</span>
+
+  <span class="dim">── PR 12 ───────────────────────────────────────────</span>
+    <span class="del">- state: decided</span>
+    <span class="add">+ state: adr-draft-retired</span>
+
+  <span class="bad">  these two edits do not compose</span>
+
+  <span class="dim">[a]</span> belongs together    <span class="dim">[s]</span> split 12 out here
+  <span class="dim">[x]</span> independent         <span class="dim">[?]</span> open both diffs
+  <span class="dim">&gt;</span> <span class="b">a</span>
+
+  <span class="dim">appended · stop 15/37 →</span></div>
+      </div>
+      <div class="spec">
+        <div class="spec-row"><span class="k">Reviewer does</span><span class="v">One keypress. 37 of them for this set, against 476 files of diff.</span></div>
+        <div class="spec-row"><span class="k">Writes, per key</span><span class="v">One <code>region_verdict</code> line, through <code>shared/ledger.py</code>. Direct file access, no request, so no serving mode can break it.</span></div>
+        <div class="spec-row"><span class="k">Epic</span><span class="v">E3.</span></div>
+        <div class="spec-row"><span class="k">Resumable</span><span class="v">The ledger is append-only, so quitting at stop 14 and returning replays 13 verdicts and resumes. Nothing is lost and nothing is rewritten.</span></div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step">
+      <div>
+        <div class="step-head">
+          <span class="step-n">SCREEN 3</span><span class="step-name">Correcting the partition</span>
+          <span class="pill open">open question 1</span>
+        </div>
+        <p class="step-lede">
+          The Cut's three gestures. ADR-0022 says the reviewer "corrects the partition
+          with three gestures", which reads as dragging in the viewer. But the viewer
+          is render-only and has no reliable write path. So the correction is drawn
+          here as terminal work, and that contradicts the word <em>gestures</em>. This
+          is unresolved, and it is question 1 below.
+        </p>
+        <div class="term"><div class="term-bar"><i></i><i></i><i></i></div>  <span class="b">PARTITION</span>  <span class="dim">as proposed</span>
+
+    <span class="p">unit A</span>  PR 11 + PR 12   <span class="dim">both carry epics of cobuilder-implement</span>
+
+  <span class="dim">[f]</span> fuse two units   <span class="dim">[c]</span> cleave a unit   <span class="dim">[i]</span> isolate one pull request
+  <span class="dim">[enter]</span> accept as proposed
+  <span class="dim">&gt;</span> <span class="b">c</span>
+
+    cleave <span class="p">unit A</span> along which paths?
+    <span class="dim">1)</span> docs/architecture/       <span class="dim">12 regions</span>
+    <span class="dim">2)</span> plugins/                 <span class="dim">18 regions</span>
+    <span class="dim">3)</span> shared/                  <span class="dim"> 7 regions</span>
+  <span class="dim">&gt;</span> <span class="b">1</span>
+
+    why? <span class="dim">(one line, or [enter] for none)</span>
+  <span class="dim">&gt;</span> <span class="b">the ADR state edits are a separate review from the plugin split</span>
+
+    <span class="p">unit A</span>  PR 11 + PR 12   <span class="dim">plugins/, shared/  · 25 regions</span>
+    <span class="p">unit B</span>  PR 11 + PR 12   <span class="dim">docs/architecture/ · 12 regions</span>
+    <span class="hl">  ↑ same pull requests in two units — see question 2</span></div>
+      </div>
+      <div class="spec">
+        <div class="spec-row"><span class="k">Reviewer does</span><span class="v">Accepts, or corrects with one of three gestures and a reason.</span></div>
+        <div class="spec-row"><span class="k">Silence is a decision</span><span class="v">Pressing enter records acceptance, stamped with the proposal id. That is the mechanic's value and its danger together.</span></div>
+        <div class="spec-row"><span class="k">Epic</span><span class="v">E5, cold-start. No precedent line, because the ledger has no rows.</span></div>
+        <div class="spec-row"><span class="k">Unresolved</span><span class="v">Whether this is a terminal prompt or a viewer drag. ADR-0022 implies the viewer and the architecture implies the terminal.</span></div>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step">
+      <div>
+        <div class="step-head"><span class="step-n">SCREEN 4</span><span class="step-name">The viewer, read-only</span></div>
+        <p class="step-lede">
+          Last epic, deliberately. The viewer reads <code>data/braid.js</code> and
+          draws the units, the stops, and the calls that were recorded. It computes
+          nothing. A copy served without a write path says so on screen instead of
+          offering a button that silently fails.
+        </p>
+        <div style="border:1px solid var(--line);border-radius:9px;overflow:hidden;
+                    background:var(--surface);box-shadow:var(--shadow);font-family:var(--mono);font-size:12px;">
+          <div style="display:flex;align-items:center;gap:12px;padding:9px 13px;border-bottom:1px solid var(--line);flex-wrap:wrap;">
+            <span style="font-weight:700;font-size:11.5px;">cobuilder-plugin</span>
+            <span style="display:flex;gap:2px;flex-wrap:wrap;">
+              <span style="font-size:9.5px;padding:3px 7px;color:var(--ink-dim);">Designs</span>
+              <span style="font-size:9.5px;padding:3px 7px;color:var(--ink-dim);">Pull requests</span>
+              <span style="font-size:9.5px;padding:3px 7px;border-radius:3px;background:var(--accent-wash);color:var(--accent-deep);font-weight:700;">Braid</span>
+              <span style="font-size:9.5px;padding:3px 7px;color:var(--ink-dim);">Decisions</span>
+              <span style="font-size:9.5px;padding:3px 7px;color:var(--ink-dim);">Builds</span>
+            </span>
+            <span style="margin-left:auto;font-size:9.5px;color:var(--warn);">read-only &middot; no write path</span>
+          </div>
+          <div style="padding:15px 17px;display:flex;flex-direction:column;gap:11px;">
+            <div style="border:1px solid var(--line-soft);border-radius:6px;padding:11px 13px;background:var(--surface-2);">
+              <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:7px;">
+                <span style="font-weight:700;">unit A</span>
+                <span style="font-size:10px;color:var(--ink-dim);">PR 11 + PR 12 &middot; 25 regions</span>
+                <span class="pill done" style="margin-left:auto;">accepted</span>
+              </div>
+              <div style="font-family:var(--serif);font-size:13.5px;color:var(--ink-mid);line-height:1.45;">
+                Both carry epics of design <b>cobuilder-implement</b>. 25 contested
+                regions across <code>plugins/</code> and <code>shared/</code>.
+              </div>
+            </div>
+            <div style="border:1px solid var(--line-soft);border-radius:6px;padding:11px 13px;background:var(--surface-2);">
+              <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:7px;">
+                <span style="font-weight:700;">unit B</span>
+                <span style="font-size:10px;color:var(--ink-dim);">PR 11 + PR 12 &middot; 12 regions</span>
+                <span class="pill plain" style="margin-left:auto;">cleaved by hand</span>
+              </div>
+              <div style="font-family:var(--serif);font-size:13.5px;color:var(--ink-mid);line-height:1.45;">
+                &ldquo;The ADR state edits are a separate review from the plugin
+                split.&rdquo;
+                <span style="display:block;font-family:var(--mono);font-size:9px;letter-spacing:.1em;
+                             text-transform:uppercase;color:var(--ink-dim);margin-top:5px;">reviewer, at stop 14</span>
+              </div>
+            </div>
+            <div style="border:1px dashed var(--line);border-radius:6px;padding:9px 12px;
+                        font-size:10.5px;color:var(--warn);">
+              2 relationships not assessed &mdash; no unmerged head for merge-tree, and
+              neither pull request carries an intent block.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="spec">
+        <div class="spec-row"><span class="k">Reads</span><span class="v">One new sibling script tag, <code>data/braid.js</code>, assigning <code>window.BRAID</code>.</span></div>
+        <div class="spec-row"><span class="k">Computes</span><span class="v">Nothing. That is the constraint ADR-0022 introduces.</span></div>
+        <div class="spec-row"><span class="k">Epic</span><span class="v">E6, and it should follow ADR-0020's viewer split rather than enlarge the file first.</span></div>
+        <div class="spec-row"><span class="k">Cost if built now</span><span class="v">A sixth view mode inside a 4797-line file that ADR-0020 already calls the repository's largest maintenance problem.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="spine">
+    <div class="sec-head">
+      <span class="eyebrow">The records</span>
+      <h2>What lands on disk, and the one fold that can lie</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;">
+      <div>
+        <h4 style="margin-bottom:9px;">One keypress at a stop</h4>
+        <div class="ledger">{<span class="k">"type"</span>:<span class="s">"region_verdict"</span>,
+ <span class="k">"region"</span>:<span class="s">"docs/.../ADR-0011-design-mode.md:22-31"</span>,
+ <span class="k">"prs"</span>:[11,12], <span class="k">"verdict"</span>:<span class="s">"together"</span>,
+ <span class="k">"proposal"</span>:<span class="s">"p-4c1f"</span>, <span class="k">"by"</span>:<span class="s">"human"</span>,
+ <span class="k">"ts"</span>:<span class="s">"2026-09-01T..."</span>}</div>
+      </div>
+      <div>
+        <h4 style="margin-bottom:9px;">The call it folds into</h4>
+        <div class="ledger">{<span class="k">"type"</span>:<span class="s">"disposition"</span>,
+ <span class="k">"pr"</span>:12, <span class="k">"verb"</span>:<span class="s">"split"</span>,
+ <span class="k">"along"</span>:[<span class="s">"docs/architecture/"</span>],
+ <span class="k">"judged_against"</span>:[11],
+ <span class="k">"derived_from"</span>:[<span class="s">"docs/...:22-31"</span>, <span class="s">"..."</span>],
+ <span class="k">"because"</span>:<span class="s">"the ADR state edits are a separate review"</span>}</div>
+      </div>
+    </div>
+
+    <div style="margin-top:30px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:28px;align-items:start;">
+      <div class="prose" style="max-width:none;">
+        <h3 style="margin-bottom:11px;">The transitive edge</h3>
+        <p style="font-size:16px;">
+          Folding region verdicts with union-find is the natural implementation and it
+          asserts things nobody said. Group 11 with 12 at one region, group 12 with 16
+          at another, and the fold reports that 11 and 16 belong together. Neither
+          keypress said that.
+        </p>
+        <p style="font-size:16px;">
+          Two ways out. Stop the fold at pairwise edges and lose the review unit, or
+          keep the unit and mark the derived edge as derived. ADR-0022 leaves this
+          open and epic E4 decides it. It is the most likely source of a wrong record
+          in the whole design.
+        </p>
+      </div>
+      <div class="ledger warnline">{<span class="k">"type"</span>:<span class="s">"pr_edge"</span>, <span class="k">"pair"</span>:[11,12], <span class="k">"basis"</span>:<span class="s">"stated"</span>,
+ <span class="k">"from"</span>:<span class="s">"region_verdict"</span>}
+
+{<span class="k">"type"</span>:<span class="s">"pr_edge"</span>, <span class="k">"pair"</span>:[12,16], <span class="k">"basis"</span>:<span class="s">"stated"</span>,
+ <span class="k">"from"</span>:<span class="s">"region_verdict"</span>}
+
+{<span class="k">"type"</span>:<span class="s">"pr_edge"</span>, <span class="k">"pair"</span>:[11,16], <span class="k">"basis"</span>:<span class="s">"derived"</span>,
+ <span class="k">"from"</span>:<span class="s">"union-find closure"</span>,
+ <span class="k">"warning"</span>:<span class="s">"no reviewer stated this"</span>}</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="spine">
+    <div class="sec-head">
+      <span class="eyebrow">Six epics</span>
+      <h2>What each one touches, and what it decides</h2>
+      <p>
+        One pull request, six units of work inside it, on branch
+        <code>design/review-flight-deck</code>.
+      </p>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Epic</th><th>Touches</th><th>Acceptance</th><th>State</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>E1<br><span style="color:var(--ink-dim);">region-table</span></td>
+            <td class="note">One new script in <code>plugins/pr/scripts/</code>. Reads cached diffs only.</td>
+            <td class="note">Prints 37 regions for PRs 11 and 12, against 476 authored files, excluding derived output.</td>
+            <td><span class="pill done">arithmetic proven</span></td>
+          </tr>
+          <tr>
+            <td>E2<br><span style="color:var(--ink-dim);">braid-mode</span></td>
+            <td class="note">A mode and command in <code>plugins/pr/</code>. Adds a <b>git fetch</b> to a plugin that has only read local git.</td>
+            <td class="note">Prints the stop list for an open pair, and a NOT ASSESSED line naming why, wherever a branch cannot be fetched.</td>
+            <td><span class="pill plain">planned</span></td>
+          </tr>
+          <tr>
+            <td>E3<br><span style="color:var(--ink-dim);">region-walk</span></td>
+            <td class="note"><code>shared/ledger.py</code> gains one append function. <code>fold_threads</code> must keep ignoring the new kind.</td>
+            <td class="note">37 keypresses produce 37 lines. Quitting and resuming loses nothing.</td>
+            <td><span class="pill plain">planned</span></td>
+          </tr>
+          <tr>
+            <td>E4<br><span style="color:var(--ink-dim);">braid-projection</span></td>
+            <td class="note"><code>shared/build_index.py</code> gains the pull-request-to-pull-request join.</td>
+            <td class="note">A transitive edge is labelled <code>derived</code>, or the fold stops at pairwise. This epic decides which.</td>
+            <td><span class="pill open">decides open Q2</span></td>
+          </tr>
+          <tr>
+            <td>E5<br><span style="color:var(--ink-dim);">partition-proposal</span></td>
+            <td class="note">The proposer, in <code>plugins/pr/</code>. Cold-start, no precedent table.</td>
+            <td class="note">Proposes units with the reason each exists, and records an untouched unit as accepted.</td>
+            <td><span class="pill open">blocked on Q1</span></td>
+          </tr>
+          <tr>
+            <td>E6<br><span style="color:var(--ink-dim);">viewer-renders</span></td>
+            <td class="note"><code>viewer/index.html</code>, plus a <code>data/braid.js</code> tag and the <code>export_artifact.py</code> inline.</td>
+            <td class="note">Renders units, stops, and calls. Computes nothing. Says read-only when it is.</td>
+            <td><span class="pill blocked">wait for ADR-0020</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="spine">
+    <div class="sec-head">
+      <span class="eyebrow">Before /implement:start</span>
+      <h2>Four things I cannot decide for you</h2>
+    </div>
+    <div>
+      <div class="open-q">
+        <span class="qn">1</span>
+        <div>
+          <h3>Where does the reviewer correct the partition?</h3>
+          <p>
+            ADR-0022 says "three gestures", which describes dragging in the viewer. The
+            same ADR says the viewer computes nothing and renders only, and the write
+            path it depends on returns 403 without <code>--allow-write</code> and is
+            blocked in a published Artifact. Screen 3 above draws it as a terminal
+            prompt, which contradicts the word gestures.
+          </p>
+          <p class="ask">Terminal prompt, viewer drag under a local server, or both with the terminal as the durable one?</p>
+        </div>
+      </div>
+      <div class="open-q">
+        <span class="qn">2</span>
+        <div>
+          <h3>Does the fold keep review units, or stop at pairwise edges?</h3>
+          <p>
+            A unit is the more useful record and it manufactures edges nobody stated.
+            Pairwise is honest and loses the grouping that makes the Cut work. E4
+            decides it, and deciding it late means E5's partition is built against an
+            unknown record shape.
+          </p>
+          <p class="ask">My view: keep units, mark the derived edge, and never let a derived edge justify a call.</p>
+        </div>
+      </div>
+      <div class="open-q">
+        <span class="qn">3</span>
+        <div>
+          <h3>Does E6 wait for ADR-0020?</h3>
+          <p>
+            ADR-0020 decided that the viewer is authored as parts and compiled. It is
+            not executed. Building a sixth view mode first adds to the problem that ADR
+            is meant to solve, and waiting means the whole design has no visible surface
+            until someone does that work.
+          </p>
+          <p class="ask">Wait, build anyway and accept the debt, or drop E6 and leave the deck terminal-only?</p>
+        </div>
+      </div>
+      <div class="open-q">
+        <span class="qn">4</span>
+        <div>
+          <h3>Is the anchoring risk worth testing before building?</h3>
+          <p>
+            The design's load-bearing claim is that correcting a wrong grouping is
+            cheaper than building a right one. Nothing measures it, and the assessment's
+            <code>regret_risk</code> says so plainly: if the proposal is wrong more often
+            than right, the surface manufactures agreement faster than the old one
+            manufactured backlog.
+          </p>
+          <p class="ask">Build and find out, or run one manual trial against a real pair first?</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="spine">
+    <span class="eyebrow">Provenance</span>
+    <div class="prov">
+      <div>
+        <h4>Measured</h4>
+        <p>
+          Every number on this page was computed from the eight cached diff files in
+          this bundle by a scratchpad script. Nothing was estimated.
+        </p>
+      </div>
+      <div>
+        <h4>Predicted</h4>
+        <p>
+          Every screen. Nobody has run <code>/pr:braid</code>, because it does not
+          exist.
+        </p>
+      </div>
+      <div>
+        <h4>Corrected</h4>
+        <p>
+          The abort criterion in <code>goal.json</code>. The wrong version is kept on
+          the record beside the right one.
+        </p>
+      </div>
+      <div>
+        <h4>Not built</h4>
+        <p>
+          Six epics, zero code. Branch <code>design/review-flight-deck</code> exists
+          locally and carries no commits of its own.
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<div class="tip" id="tip" hidden></div>
+
+<script>
+(function(){
+  "use strict";
+  var DATA = [
+    {pair:"9-11",total:454,shared:3,stops:0,ps:0.0,pt:0.0},
+    {pair:"5-11",total:451,shared:4,stops:4,ps:1.0,pt:0.0089},
+    {pair:"2-11",total:463,shared:3,stops:5,ps:1.667,pt:0.0108},
+    {pair:"3-11",total:459,shared:8,stops:7,ps:0.875,pt:0.0153},
+    {pair:"2-12",total:65,shared:2,stops:1,ps:0.5,pt:0.0154},
+    {pair:"5-12",total:53,shared:2,stops:1,ps:0.5,pt:0.0189},
+    {pair:"4-11",total:492,shared:6,stops:12,ps:2.0,pt:0.0244},
+    {pair:"6-11",total:457,shared:8,stops:13,ps:1.625,pt:0.0284},
+    {pair:"4-12",total:94,shared:2,stops:5,ps:2.5,pt:0.0532},
+    {pair:"5-9",total:31,shared:5,stops:2,ps:0.4,pt:0.0645},
+    {pair:"3-12",total:61,shared:2,stops:4,ps:2.0,pt:0.0656},
+    {pair:"4-5",total:69,shared:8,stops:5,ps:0.625,pt:0.0725},
+    {pair:"2-4",total:81,shared:6,stops:6,ps:1.0,pt:0.0741},
+    {pair:"11-12",total:476,shared:22,stops:37,ps:1.682,pt:0.0777},
+    {pair:"5-6",total:34,shared:7,stops:3,ps:0.429,pt:0.0882},
+    {pair:"2-5",total:40,shared:7,stops:4,ps:0.571,pt:0.1},
+    {pair:"6-12",total:59,shared:2,stops:6,ps:3.0,pt:0.1017},
+    {pair:"2-9",total:43,shared:4,stops:5,ps:1.25,pt:0.1163},
+    {pair:"2-6",total:46,shared:6,stops:6,ps:1.0,pt:0.1304},
+    {pair:"3-5",total:36,shared:10,stops:5,ps:0.5,pt:0.1389},
+    {pair:"4-9",total:72,shared:5,stops:13,ps:2.6,pt:0.1806},
+    {pair:"2-3",total:48,shared:8,stops:9,ps:1.125,pt:0.1875},
+    {pair:"3-4",total:77,shared:11,stops:20,ps:1.818,pt:0.2597},
+    {pair:"4-6",total:75,shared:11,stops:23,ps:2.091,pt:0.3067},
+    {pair:"3-6",total:42,shared:11,stops:13,ps:1.182,pt:0.3095},
+    {pair:"3-9",total:39,shared:8,stops:15,ps:1.875,pt:0.3846},
+    {pair:"6-9",total:37,shared:8,stops:15,ps:1.875,pt:0.4054}
+  ];
+
+  var NS = "http://www.w3.org/2000/svg";
+  var ROW = 15, PAD_T = 26, PAD_B = 34, PAD_L = 62, PAD_R = 22;
+  var W = 760, H = PAD_T + DATA.length * ROW + PAD_B;
+  var XMAX = 3.15;
+  var svg = document.getElementById("dumbbell");
+  svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+
+  function el(name, attrs){
+    var n = document.createElementNS(NS, name);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    return n;
+  }
+  var x = function(v){ return PAD_L + (v / XMAX) * (W - PAD_L - PAD_R); };
+
+  // gridlines + ticks
+  [0, 0.5, 1, 1.5, 2, 2.5, 3].forEach(function(t){
+    svg.appendChild(el("line", {x1:x(t), x2:x(t), y1:PAD_T - 8, y2:H - PAD_B + 4,
+      stroke:"var(--grid)", "stroke-width":1}));
+    var lb = el("text", {x:x(t), y:H - PAD_B + 18, "text-anchor":"middle"});
+    lb.setAttribute("class", "tick-lbl");
+    lb.textContent = t.toFixed(1) + "×";
+    svg.appendChild(lb);
+  });
+
+  // reference line at 1.0
+  svg.appendChild(el("line", {x1:x(1), x2:x(1), y1:PAD_T - 8, y2:H - PAD_B + 4,
+    stroke:"var(--s2)", "stroke-width":1.5, "stroke-dasharray":"3 3", opacity:.65}));
+  var rl = el("text", {x:x(1) + 6, y:PAD_T - 12});
+  rl.setAttribute("class", "ref-lbl");
+  rl.textContent = "stops = shared files";
+  svg.appendChild(rl);
+
+  var tip = document.getElementById("tip");
+  function show(e, d){
+    tip.innerHTML = "<b>PRs " + d.pair.replace("-", " and ") + "</b><br>" +
+      d.stops + " regions<br>" +
+      d.total + " files changed &rarr; " + d.pt.toFixed(3) + "×<br>" +
+      d.shared + " shared files &rarr; " + d.ps.toFixed(2) + "×";
+    tip.hidden = false;
+    var r = tip.getBoundingClientRect();
+    var left = Math.min(e.clientX + 14, window.innerWidth - r.width - 10);
+    var top = Math.max(10, e.clientY - r.height - 12);
+    tip.style.left = left + "px";
+    tip.style.top = top + "px";
+  }
+  function hide(){ tip.hidden = true; }
+
+  DATA.forEach(function(d, i){
+    var y = PAD_T + i * ROW + ROW / 2;
+    var lb = el("text", {x:PAD_L - 10, y:y + 3.5, "text-anchor":"end"});
+    lb.setAttribute("class", "row-lbl" + (d.pair === "11-12" ? " hi" : ""));
+    lb.textContent = d.pair;
+    svg.appendChild(lb);
+
+    svg.appendChild(el("line", {x1:x(Math.min(d.pt, d.ps)), x2:x(Math.max(d.pt, d.ps)),
+      y1:y, y2:y, stroke:"var(--line)", "stroke-width":2, "stroke-linecap":"round"}));
+
+    [["ps", "var(--s2)"], ["pt", "var(--s1)"]].forEach(function(pairspec){
+      var c = el("circle", {cx:x(d[pairspec[0]]), cy:y, r:4.5, fill:pairspec[1],
+        stroke:"var(--surface)", "stroke-width":2});
+      c.setAttribute("class", "dot");
+      c.addEventListener("mouseenter", function(e){ show(e, d); });
+      c.addEventListener("mousemove", function(e){ show(e, d); });
+      c.addEventListener("mouseleave", hide);
+      svg.appendChild(c);
+    });
+  });
+
+  // direct label on the named pair
+  var hero = DATA.filter(function(d){ return d.pair === "11-12"; })[0];
+  var hy = PAD_T + DATA.indexOf(hero) * ROW + ROW / 2;
+  var hl = el("text", {x:x(hero.pt) + 10, y:hy - 6});
+  hl.setAttribute("class", "tick-lbl");
+  hl.setAttribute("fill", "var(--s1)");
+  hl.textContent = "37 regions / 476 files";
+  svg.appendChild(hl);
+})();
+</script>

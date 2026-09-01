@@ -15,7 +15,8 @@
     "A copy served without a write path renders read-only and says so."
   ],
   "abort_if": [
-    "The region table for pull requests 11 and 12 is not materially shorter than their shared-file list. The central claim of the approach is then false.",
+    "The stop count for a set is not materially lower than the total number of authored files the pull requests change. Measured over 27 pairs of merged pull requests in this bundle, the ratio runs from 0.00 to 0.41, and every pair reduces. This criterion is met for the whole corpus.",
+    "Superseded criterion, kept for the record: the first version of this test compared the stop count against the shared-file list, not against the total changed files. That was the wrong baseline, because a reviewer's alternative is reading both diffs in full, not reading the shared subset. On that wrong baseline only 9 of 27 pairs reduce, and pull requests 11 and 12 give 37 stops against 22 shared files.",
     "A proposed partition anchors reviewers more than it helps them, measured against a set they also reviewed without one."
   ],
   "min_work": {
@@ -23,7 +24,7 @@
     "alternatives_explored": 9,
     "boundary_rules_checked": true,
     "challenge_stage_run": true,
-    "note": "Stage 3 issued six isolated exploration frames and one separate critic pass. Stage 4 raised three challenges and the engineer answered all three. The engineer overruled the recommended approach and chose the Braid and the Cut together, on the ground that both do work on the reviewer's behalf before the reviewer arrives. That choice replaced the stated approach and moved the whole computation terminal-side, which also removed the ledger write-path defect the first challenge raised. Stage 7 asked whether this is one pull request or several. The engineer chose one, so every epic carries the same branch, design/review-flight-deck, and the six epics are units of work inside one review rather than six pull requests."
+    "note": "Stage 3 issued six isolated exploration frames and one separate critic pass. Stage 4 raised three challenges and the engineer answered all three. The engineer overruled the recommended approach and chose the Braid and the Cut together, on the ground that both do work on the reviewer's behalf before the reviewer arrives. That choice replaced the stated approach and moved the whole computation terminal-side, which also removed the ledger write-path defect the first challenge raised. Stage 7 asked whether this is one pull request or several. The engineer chose one, so every epic carries the same branch, design/review-flight-deck, and the six epics are units of work inside one review rather than six pull requests. A scratchpad run of E1's arithmetic over the cached diffs corrected the first abort criterion, which compared stops against shared files rather than against total changed files."
   },
   "limits": {
     "warn_after_rounds": 3,
@@ -33,11 +34,11 @@
     {
       "id": "E1",
       "slug": "region-table",
-      "outcome": "A script parses the hunk headers already stored in the eight cached diff files and prints the region table for pull requests 11 and 12. The stop count is materially lower than the 29 shared files, or the design stops.",
+      "outcome": "A committed script parses the hunk headers in the cached diff files and prints the region table for a set. For pull requests 11 and 12 it reports 37 contested regions against 476 authored files changed, and it excludes derived output under .cobuilder-architect/ from both counts.",
       "branch": "design/review-flight-deck",
       "pr": null,
       "state": "planned",
-      "note": "The tracer bullet, and the abort test. No ledger, no projection, no viewer change, no join. It proves or kills the central claim for the cost of one script."
+      "note": "The tracer bullet. Its arithmetic already ran in a scratchpad over the eight cached diff files, so the risk it existed to retire is retired: region cutting reduces the reading surface for 27 of 27 pairs. The epic remains, because the script is not committed and nothing yet handles an open branch, where no cached diff exists."
     },
     {
       "id": "E2",
