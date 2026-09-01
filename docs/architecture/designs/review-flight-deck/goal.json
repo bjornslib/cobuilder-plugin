@@ -1,0 +1,27 @@
+{
+  "name": "review-flight-deck",
+  "title": "A reviewer surface above several pull requests",
+  "adr": null,
+  "adrs": [],
+  "created": "2026-09-01",
+  "outcome": "A reviewer selects several pull requests, opens one surface that shows where they overlap, conflict, and reinforce each other, and leaves with a decision recorded against each pull request: review alone, merge together, or split.",
+  "done_when": [
+    "A reviewer selects more than one pull request in the viewer and sees them on one surface.",
+    "The surface names the evidence behind every relationship it claims, and says so when it cannot assess one.",
+    "Each selected pull request carries one recorded call in the append-only ledger, and that call names the set it was judged against.",
+    "A terminal-side mode reads those calls, shows the git plan, and asks before it acts."
+  ],
+  "abort_if": [],
+  "min_work": {
+    "derived_from": "3 districts touched (viewer, scripts, .cobuilder-architect). 4 colliding ADRs: ADR-0001 (one self-contained file under a blocking content policy), ADR-0018 (one lifecycle surface and a derived record index), ADR-0019 (the append-only ledger), ADR-0020 (viewer parts and an author-time build, decided and not executed).",
+    "alternatives_explored": 6,
+    "boundary_rules_checked": true,
+    "challenge_stage_run": false,
+    "note": "Stages 0 to 4 ran. Stage 3 issued six isolated exploration frames and one separate critic pass. Stage 4 raised three challenges that the engineer has not yet answered, so challenge_stage_run stays false and no ADR is written. docs/architecture/designs/review-flight-deck/layout-variations.html holds the five layouts and the measured evidence the gate rests on."
+  },
+  "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
+  "epics": [],
+  "stage": "design",
+  "supersedes": null,
+  "rounds": []
+}
