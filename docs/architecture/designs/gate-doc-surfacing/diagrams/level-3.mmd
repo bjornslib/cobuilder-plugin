@@ -1,0 +1,81 @@
+classDiagram
+    class project_fields {
+        +project_fields(source, fields) dict
+    }
+
+    class ProgramDesignEntity {
+        <<index entity>>
+        +feature_slug string
+        +path string
+        +fields dict
+    }
+
+    class EpicDesignEntity {
+        <<index entity>>
+        +epic_id string
+        +path string
+        +fields dict
+        +approved bool
+    }
+
+    class resolve_feature_gates {
+        +resolve_feature_gates(slug) list~GateEntry~
+    }
+
+    class GateEntry {
+        +n int
+        +name string
+        +state string
+        +doc_ref string
+    }
+
+    class BuildIndexScript {
+        <<shared/build_index.py>>
+        +collect_program_designs() dict
+        +collect_epic_designs() dict
+        +build_index() void
+    }
+
+    class IndexJson {
+        <<data/index.json>>
+        +program_design dict
+        +epic_design dict
+        +joins.feature_gates list~GateEntry~
+    }
+
+    class renderBuildsMainContent {
+        <<viewer function>>
+        +renderBuildsMainContent(main) void
+    }
+
+    class renderEpicCard {
+        <<viewer function>>
+        +renderEpicCard(epic) string
+    }
+
+    class openAdrSheet {
+        <<existing viewer function>>
+        +openAdrSheet(id) void
+    }
+
+    class openGateDesignSheet {
+        <<new viewer function>>
+        +openGateDesignSheet(key, scope) void
+    }
+
+    BuildIndexScript --> project_fields : uses for both entities
+    BuildIndexScript --> resolve_feature_gates : calls, then attaches doc_ref
+    resolve_feature_gates --> GateEntry : produces list of
+    project_fields --> ProgramDesignEntity : produces
+    project_fields --> EpicDesignEntity : produces
+    BuildIndexScript --> IndexJson : writes program_design, epic_design, joins.feature_gates
+    GateEntry --> IndexJson : embedded in joins.feature_gates
+
+    renderBuildsMainContent --> IndexJson : reads window.INDEX
+    renderBuildsMainContent --> renderEpicCard : calls per epic
+    renderEpicCard --> EpicDesignEntity : reads approved flag for chip
+    renderBuildsMainContent --> openGateDesignSheet : gate-card click handler
+    renderEpicCard --> openGateDesignSheet : design-doc chip click handler
+    openGateDesignSheet ..> openAdrSheet : modeled on
+
+    note for openGateDesignSheet "Read-only sheet, scoped by feature_slug\nfor a gate doc or epic id for an epic design doc"

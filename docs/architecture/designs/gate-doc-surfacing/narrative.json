@@ -1,0 +1,56 @@
+{
+  "landscape": {
+    "narration": "This design closes a visibility gap in the odyssey viewer: a build's Gate 3 program design and Gate 4b epic designs stay invisible to the one surface built to show build progress, so someone reviewing a build has to leave the viewer to read them.",
+    "tagline": "Show the gate document, not just the gate's approval state."
+  },
+  "problem_solution": {
+    "narration": "The Builds view already shows a Gate Rail of approval state, keyed off 00-status.md. It never carries the document behind each gate. A reviewer who wants to read Gate 3 has no path from the viewer to the doc, and the one-off fix — publishing the doc as a Claude Artifact — drifts from the source and is not discoverable from the viewer itself.",
+    "problem": "Gate 3 and Gate 4b documents exist under docs/plans/<slug>/ but have no entity in the viewer's index, so they never appear in the Builds view no matter how often the bundle rebuilds.",
+    "solution": "Project the two document types into two new index entities, program_design and epic_design, then make the Gate Rail cards and epic cards that already exist in the Builds view open a sheet showing that content.",
+    "beats": [
+      {
+        "kind": "background",
+        "text": "A colleague session tried to open the viewer mid-Gate-3 and found nothing there. The Gate Rail's approval-state chrome was current; the document behind it was not indexed at all."
+      },
+      {
+        "kind": "intuition",
+        "text": "The Builds view already has the join key a gate doc needs — feature_slug for a program design, epic id for an epic design. Attach the doc to the card that already represents that build, instead of building a new surface to hold it."
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "A new top-level Plans tab",
+        "rejected": "ADR-0018 decided one lifecycle surface. A gate doc is scoped to a build already shown in Builds."
+      },
+      {
+        "option": "Parse gate docs client-side, skipping the index",
+        "rejected": "The viewer is one committed HTML file with no filesystem access beyond its bundled data/ scripts."
+      },
+      {
+        "option": "Execute ADR-0020's viewer-parts split as part of this design",
+        "rejected": "ADR-0020 is decided but not executed. Starting that execution here is scope this design does not own."
+      },
+      {
+        "option": "Keep publishing gate docs as one-off Artifacts",
+        "rejected": "No rebuild hook, drifts from docs/plans/, undiscoverable from the viewer — the problem this design fixes."
+      }
+    ]
+  },
+  "architecture": {
+    "narration": "shared/build_index.py gains two field-projection constants and two loader functions, following the same project_fields(source, fields) shape every other entity already uses. The viewer gains a sheet, reusing openAdrSheet's pattern, wired to the Gate Rail and epic cards that renderBuildsMainContent already renders.",
+    "beats": [
+      {
+        "kind": "forces",
+        "text": "The viewer stays one self-contained file today, so this attaches to plugins/artifact/viewer/index.html directly, not to a future viewer/src/ split."
+      },
+      {
+        "kind": "contract",
+        "text": "program_design keys on feature_slug, matching joins.feature_gates. epic_design keys on epic id, matching entities.epic. No new join table."
+      },
+      {
+        "kind": "boundary",
+        "text": "Read-only. No editing a gate doc from the viewer, no change to how 00-status.md's approval state itself is parsed or displayed."
+      }
+    ]
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "name": "gate-doc-surfacing",
+  "title": "Surface Gate 3 and Gate 4b docs in the Builds view",
+  "adr": "ADR-0022",
+  "adrs": ["ADR-0022", "ADR-0018", "ADR-0020"],
+  "created": "2026-09-01",
+  "outcome": "Gate documents (03-program-design.md, epic-<id>-design.md) are readable from the viewer's Builds view, not just from docs/plans/ or a one-off Artifact publish.",
+  "done_when": [
+    "Gate Rail cards in the Builds view open a sheet showing the gate's doc content",
+    "Epic cards with an approved 4b design show a design-doc chip that opens the same sheet type",
+    "data/index.json carries program_design and epic_design entities projected from docs/plans/<slug>/03-program-design.md and epic-<id>-design.md"
+  ],
+  "abort_if": [
+    "a gate's doc content duplicates what 00-status.md's approval-state line already shows well enough that a sheet adds no reading value"
+  ],
+  "min_work": {
+    "derived_from": "conversation: colleague session couldn't view Gate 3 progress in the viewer; agreed the Builds Gate Rail is the right home over a new tab or continued artifact publishing",
+    "challenge_stage_run": true,
+    "note": "Design mode ran to completion on 2026-09-01: grounded against ADR-0018/ADR-0020 and the viewer/build_index.py source, interviewed, challenged (four alternatives rejected, recorded in intent.json and ADR-0022), drafted ADR-0022, intent.json, assessment.json, narrative.json, pr-draft.md, and diagrams/level-{1,2,3}.mmd. Reviewed and approved in one round, no material feedback."
+  },
+  "limits": {
+    "warn_after_rounds": 6,
+    "cutoff_rounds": 10
+  },
+  "epics": [
+    {
+      "id": "E1",
+      "branch": "design/gate-doc-surfacing",
+      "pr": null,
+      "state": "planned",
+      "note": "shared/build_index.py: add PROGRAM_DESIGN_FIELDS and EPIC_DESIGN_FIELDS projection tuples plus project_program_design/project_epic_design, following the project_fields(source, fields) pattern used by project_goal/project_intent/project_assessment. Parse docs/plans/<slug>/03-program-design.md and epic-<id>-design.md; emit program_design and epic_design entities into data/index.json. Extend feature_gates join entries with a doc reference where one exists."
+    },
+    {
+      "id": "E2",
+      "branch": "design/gate-doc-surfacing",
+      "pr": null,
+      "state": "planned",
+      "note": "plugins/artifact/viewer/index.html: make gate-rail-grid cards (renderBuildsMainContent, ~line 3249) clickable, opening a gate-doc sheet modeled on openAdrSheet. Add a design-doc chip to renderEpicCard (~line 3282) for epics with an epic_design entity."
+    }
+  ],
+  "stage": "decided",
+  "supersedes": null,
+  "rounds": [
+    { "n": 1, "date": "2026-09-01", "result": "approved", "material_change": false }
+  ]
+}

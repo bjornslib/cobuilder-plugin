@@ -1,10 +1,10 @@
 {
   "schema_version": "1.3",
   "sources": {
-    "git_head": "55395917fd9a0dd54b272e76799d319f0a5e174d",
+    "git_head": "7ec7184f08cb76300829d093af8c2abec1090351",
     "trees": {
-      "docs/architecture/adr": "sha256:fd9dd693addcaf68e2bcc92bf905004dfcf546721de125b51b7d5e9e758ba8a1",
-      "docs/architecture/designs": "sha256:83935e6bf2bb91a878f8883ea5198777c99bf2252273ac7fcba639bd723d366f",
+      "docs/architecture/adr": "sha256:ff9214a45fa93be6d1db6859475dceb268c9816a137ae97da4580533b18f55cf",
+      "docs/architecture/designs": "sha256:ebc6522564c5ec8ad04ec3f206fe0a202432e34c44572122686af1ab20078d43",
       "docs/architecture/contexts": "sha256:4626a327bd28df972d97d40dc1325c28808eb48789649b87eadd218b3528c907",
       "docs/plans": "sha256:c6ed98e3846b908d8cfd216b6ff873473172ec2559e6e6ac6a4141253205efd1"
     }
@@ -115,6 +115,11 @@
         "id": "ADR-0021",
         "title": "book-index.md gains a nano tier, and full-book loading stops being unconditional",
         "state": "decided"
+      },
+      {
+        "id": "ADR-0022",
+        "title": "Gate documents projected into the record index",
+        "state": "decided"
       }
     ],
     "design": [
@@ -141,6 +146,12 @@
         "name": "design-mode",
         "outcome": "An engineer can design a change with the plugin before writing it, and the resulting intent, ADR, and diagrams carry through to the pull request that implements it.",
         "stage": "implemented"
+      },
+      {
+        "id": "gate-doc-surfacing",
+        "name": "gate-doc-surfacing",
+        "outcome": "Gate documents (03-program-design.md, epic-<id>-design.md) are readable from the viewer's Builds view, not just from docs/plans/ or a one-off Artifact publish.",
+        "stage": "decided"
       },
       {
         "id": "inflight-record-store",
@@ -245,6 +256,24 @@
         "pr": 11,
         "state": "open",
         "note": "Design mode as a pre-code interview and challenge gate. Shares a branch and a pull request with the cobuilder-implement design. See ADR-0013: a branch may carry more than one design."
+      },
+      {
+        "id": "gate-doc-surfacing/E1",
+        "design": "gate-doc-surfacing",
+        "epic_id": "E1",
+        "branch": "design/gate-doc-surfacing",
+        "pr": null,
+        "state": "planned",
+        "note": "shared/build_index.py: add PROGRAM_DESIGN_FIELDS and EPIC_DESIGN_FIELDS projection tuples plus project_program_design/project_epic_design, following the project_fields(source, fields) pattern used by project_goal/project_intent/project_assessment. Parse docs/plans/<slug>/03-program-design.md and epic-<id>-design.md; emit program_design and epic_design entities into data/index.json. Extend feature_gates join entries with a doc reference where one exists."
+      },
+      {
+        "id": "gate-doc-surfacing/E2",
+        "design": "gate-doc-surfacing",
+        "epic_id": "E2",
+        "branch": "design/gate-doc-surfacing",
+        "pr": null,
+        "state": "planned",
+        "note": "plugins/artifact/viewer/index.html: make gate-rail-grid cards (renderBuildsMainContent, ~line 3249) clickable, opening a gate-doc sheet modeled on openAdrSheet. Add a design-doc chip to renderEpicCard (~line 3282) for epics with an epic_design entity."
       },
       {
         "id": "inflight-record-store/E1",
@@ -1182,6 +1211,14 @@
         "path": [
           "book-index-tiering/E1"
         ]
+      },
+      "ADR-0022": {
+        "pr": null,
+        "via": "epic",
+        "path": [
+          "gate-doc-surfacing/E1",
+          "gate-doc-surfacing/E2"
+        ]
       }
     },
     "epic_to_pull_request": {
@@ -1206,6 +1243,8 @@
       "cobuilder-implement/E1": "merged",
       "cobuilder-implement/E2": "merged",
       "design-mode/E1": "merged",
+      "gate-doc-surfacing/E1": "no-pull-request",
+      "gate-doc-surfacing/E2": "no-pull-request",
       "inflight-record-store/E1": "unstarted",
       "inflight-record-store/E2": "unstarted",
       "inflight-record-store/E3": "unstarted",
@@ -1265,7 +1304,8 @@
       "ADR-0017": "cobuilder-packaging",
       "ADR-0018": "cobuilder-packaging",
       "ADR-0019": "cobuilder-packaging",
-      "ADR-0020": "cobuilder-packaging"
+      "ADR-0020": "cobuilder-packaging",
+      "ADR-0022": "viewer"
     },
     "adr_to_district": {
       "ADR-0001": "scripts",

@@ -1,0 +1,37 @@
+sequenceDiagram
+    participant Author as Engineer (authoring)
+    participant Status as 00-status.md
+    participant ProgDoc as 03-program-design.md
+    participant EpicDoc as epic-<id>-design.md
+    participant BuildIndex as build_index.py
+    participant IndexJson as data/index.json
+    participant Viewer as viewer/index.html
+    participant Sheet as design-doc sheet (openAdrSheet pattern)
+    participant Reader as Engineer (reading)
+
+    Author->>Status: Marks Gate 3 / Gate 4b approved
+    Author->>ProgDoc: Writes program-design doc
+    Author->>EpicDoc: Writes epic technical-design doc
+
+    Note over BuildIndex: Index rebuild (odyssey / implement modes call this)
+    BuildIndex->>Status: resolve_feature_gates() parses gate approval state
+    BuildIndex->>ProgDoc: project_fields(source, fields) reads doc if present
+    BuildIndex->>EpicDoc: project_fields(source, fields) reads doc if present
+    BuildIndex->>IndexJson: Writes program_design entity keyed by feature_slug
+    BuildIndex->>IndexJson: Writes epic_design entity keyed by epic id
+    BuildIndex->>IndexJson: Writes joins.feature_gates with doc-reference field per gate
+
+    Reader->>Viewer: Opens Builds view
+    Viewer->>IndexJson: Reads window.INDEX
+    Viewer->>Viewer: renderBuildsMainContent() renders gate-rail-grid
+    Viewer->>Viewer: renderEpicCard() adds design-doc chip when epic_design is approved
+
+    Reader->>Viewer: Clicks a gate card in gate-rail-grid
+    Viewer->>Sheet: openGateDesignSheet(feature_slug, gate_n)
+    Sheet->>IndexJson: Looks up joins.feature_gates doc reference
+    Sheet-->>Reader: Renders program-design doc content, read-only
+
+    Reader->>Viewer: Clicks a design-doc chip on an epic card
+    Viewer->>Sheet: openGateDesignSheet(epic_id, scope="epic")
+    Sheet->>IndexJson: Looks up epic_design entity by epic id
+    Sheet-->>Reader: Renders epic technical-design doc content, read-only

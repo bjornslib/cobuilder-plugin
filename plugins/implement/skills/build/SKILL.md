@@ -224,7 +224,16 @@ Run this protocol at every gate and before implementing an epic:
 3. Ask the user: **"Approve Gate N, or what should change?"**
 4. The user must clearly approve before you proceed.
 5. Record approval in `00-status.md`.
-6. If later work invalidates a decision, update the document, set status to "in
+6. **Refresh the bundle and start the viewer.** `00-status.md` just changed
+   what the Builds Backlog Lane shows. Rebuild the self-bundle projection,
+   then start the viewer so the user can watch the gate land, the same way
+   step 5 after each slice does:
+   ```bash
+   uv run "${CLAUDE_PLUGIN_ROOT}/shared/build_index.py"
+   ```
+   Then `Skill("cobuilder-artifacts", args="view")`. Reuses an
+   already-running server for this hub; never starts a second one.
+7. If later work invalidates a decision, update the document, set status to "in
    progress", and request approval again.
 
 ---
@@ -477,9 +486,8 @@ A harness with no Workflow tool always uses Manual, regardless of scope.
 3. **Record the score** in `00-status.md` and mark the slice complete.
 4. **Route gaps** below 1.0 using the gap decision tree in
    [references/validation-scoring.md](references/validation-scoring.md).
-5. **Refresh the bundle and start the viewer.** `00-status.md` just
-   changed what the Builds Backlog Lane shows. Rebuild the self-bundle
-   projection, then start the viewer so the user can watch progress land:
+5. **Refresh the bundle and start the viewer**, same as step 6 of the
+   approval protocol above:
    ```bash
    uv run "${CLAUDE_PLUGIN_ROOT}/shared/build_index.py"
    ```
