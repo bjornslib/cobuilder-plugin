@@ -1,10 +1,10 @@
 {
   "schema_version": "1.3",
   "sources": {
-    "git_head": "d7400138f0283f4fa0119d477d5acc0846f69c4d",
+    "git_head": "651b07af45d87e17e7d855ed04d271d5f12f618d",
     "trees": {
       "docs/architecture/adr": "sha256:ff9214a45fa93be6d1db6859475dceb268c9816a137ae97da4580533b18f55cf",
-      "docs/architecture/designs": "sha256:ebc6522564c5ec8ad04ec3f206fe0a202432e34c44572122686af1ab20078d43",
+      "docs/architecture/designs": "sha256:babc2ac67e7550b96634728f816cef8ac238900fceb023b7acc5e4b7d1f369c9",
       "docs/architecture/contexts": "sha256:4626a327bd28df972d97d40dc1325c28808eb48789649b87eadd218b3528c907",
       "docs/plans": "sha256:c74faf0d87d977f583e8fbd67d00138b8ee695a145112fae6f391b4107aca33e"
     }
@@ -263,7 +263,7 @@
         "epic_id": "E1",
         "branch": "design/gate-doc-surfacing",
         "pr": null,
-        "state": "planned",
+        "state": "completed",
         "note": "shared/build_index.py: add PROGRAM_DESIGN_FIELDS and EPIC_DESIGN_FIELDS projection tuples plus project_program_design/project_epic_design, following the project_fields(source, fields) pattern used by project_goal/project_intent/project_assessment. Parse docs/plans/<slug>/03-program-design.md and epic-<id>-design.md; emit program_design and epic_design entities into data/index.json. Extend feature_gates join entries with a doc reference where one exists.",
         "design_doc": "gate-doc-surfacing/E1"
       },
@@ -273,7 +273,7 @@
         "epic_id": "E2",
         "branch": "design/gate-doc-surfacing",
         "pr": null,
-        "state": "planned",
+        "state": "completed",
         "note": "plugins/artifact/viewer/index.html: make gate-rail-grid cards (renderBuildsMainContent, ~line 3249) clickable, opening a gate-doc sheet modeled on openAdrSheet. Add a design-doc chip to renderEpicCard (~line 3282) for epics with an epic_design entity.",
         "design_doc": "gate-doc-surfacing/E2"
       },
