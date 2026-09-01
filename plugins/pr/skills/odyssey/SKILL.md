@@ -10,13 +10,10 @@ description: >
   a change's author before the PR opens, assesses the change against the bundle, and
   serves the bundle locally for viewing.
   Use when the user asks to "narrate codebase
-  odyssey", "narrate story for PR", "odyssey baseline", "prodyssey", "narrated PR
-  story", "tell the story of this PR as scene art", "explain this PR as a story",
-  "build the odyssey bundle", "refresh odyssey baseline", "view the odyssey bundle",
-  "serve the bundle", "open the viewer", "start the odyssey server", "stop the
-  odyssey server", "publish the odyssey", "submit this PR", "generate this PR",
-  "review my PR", "review this branch before I open a PR", "narrate the PR
-  history", "should we merge this", "will we regret this change", or invokes
+  odyssey", "odyssey baseline", "prodyssey", "tell the story of this PR as scene
+  art", "build the odyssey bundle", "view the odyssey bundle", "start the odyssey
+  server", "publish the odyssey", "generate this PR", "review this branch before I
+  open a PR", "should we merge this", "will we regret this change", or invokes
   `/pr:baseline`, `/pr:review`, `/artifact:view`,
   `/artifact:publish`, or `/pr:generate`.
 ---

@@ -271,6 +271,13 @@ that join here.
       uv run "${CLAUDE_PLUGIN_ROOT}/shared/build_index.py"
       ```
 
+   6. **Start the viewer.** The design just changed what the bundle shows.
+      Invoke `Skill("cobuilder-artifacts", args="view")` so the engineer
+      can see the draft rendered before stage 6's review round, rather than
+      starting the server only when asked. If a server is already running
+      for this hub, view mode reuses it (see its Step 8) — this never
+      starts a second one.
+
 9. **Stage 6 — Review routing.** Follow `references/design-mode.md` §10.
    The engineer reads the draft and answers in the session. Material
    feedback returns to stage 3. Cosmetic feedback returns to stage 5.
@@ -371,6 +378,13 @@ If no prior report exists, state: "This is the first scan. Future audits will co
 5. Every record MUST carry a `delivers` block (capability, benefit, and beneficiary) and a `## Value delivered` body section. A record without value framing fails the standard.
 6. Anchor `maps_to` to a context or module that exists in a `boundary.yaml` under `{doc_root}/contexts/`. If nothing documents the context, flag it, or switch to `describe` mode first.
 7. After you add or change records, refresh the three viewpoint files in `{doc_root}/decisions/` (relationship, chronology, capabilities), so they stay consistent with the record set.
+8. Rebuild the self-bundle projection and start the viewer, so the ADR
+   just written actually shows up:
+   ```bash
+   uv run "${CLAUDE_PLUGIN_ROOT}/shared/build_index.py"
+   ```
+   Then `Skill("cobuilder-artifacts", args="view")`. Reuses an
+   already-running server for this hub; never starts a second one.
 
 **Output:** ADR file(s) plus updated viewpoint indexes, under `{doc_root}`. Canonical standard: `references/standard.md` §5.4.
 
@@ -386,6 +400,13 @@ If no prior report exists, state: "This is the first scan. Future audits will co
 
 4. Record any boundary violation found during verification, such as inverted imports, schema leakage, or term overloading. Add it to the canvas as a `forbidden_dependencies` entry with a `why`, and flag it as an ADR candidate. Surfacing smells is a primary output, not a side effect.
 5. Update `{doc_root}/INVENTORY.md` (doc status, findings).
+6. Rebuild the self-bundle projection and start the viewer, so the new
+   context shows up:
+   ```bash
+   uv run "${CLAUDE_PLUGIN_ROOT}/shared/build_index.py"
+   ```
+   Then `Skill("cobuilder-artifacts", args="view")`. Reuses an
+   already-running server for this hub; never starts a second one.
 
 **Output:** `canvas.md` plus `boundary.yaml` for the context, an updated INVENTORY, and a list of surfaced ADR candidates, under `{doc_root}`. Minimum bar: `references/standard.md` §8.
 

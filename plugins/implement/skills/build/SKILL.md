@@ -477,7 +477,15 @@ A harness with no Workflow tool always uses Manual, regardless of scope.
 3. **Record the score** in `00-status.md` and mark the slice complete.
 4. **Route gaps** below 1.0 using the gap decision tree in
    [references/validation-scoring.md](references/validation-scoring.md).
-5. **Ask the user:** "Proceed to the next slice, or adjust direction?"
+5. **Refresh the bundle and start the viewer.** `00-status.md` just
+   changed what the Builds Backlog Lane shows. Rebuild the self-bundle
+   projection, then start the viewer so the user can watch progress land:
+   ```bash
+   uv run "${CLAUDE_PLUGIN_ROOT}/shared/build_index.py"
+   ```
+   Then `Skill("cobuilder-artifacts", args="view")`. Reuses an
+   already-running server for this hub; never starts a second one.
+6. **Ask the user:** "Proceed to the next slice, or adjust direction?"
 
 ---
 
