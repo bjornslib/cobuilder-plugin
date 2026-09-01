@@ -246,6 +246,8 @@ GOAL_FIELDS = (
 EPIC_FIELDS = ("id", "slug", "branch", "pr", "state", "outcome")
 INTENT_FIELDS = ("problem", "approach", "alternatives")
 ASSESSMENT_FIELDS = ("verdict", "findings")
+PROGRAM_DESIGN_FIELDS = ("id", "feature_slug", "gate", "title", "body_md", "approved_date", "source_path")
+EPIC_DESIGN_FIELDS = ("id", "epic_id", "feature_slug", "title", "body_md", "approved_date", "source_path")
 
 
 def discover_goal_files(designs_dir: Path) -> list[Path]:
@@ -634,6 +636,108 @@ def collect_plans(repo: Path) -> tuple[list[dict], list[str]]:
 
 
 # --------------------------------------------------------------------------
+# Gate documents — feeds "program_design" + "epic_design" entities, from
+# docs/plans/<slug>/03-program-design.md and epic-<id>-design.md (ADR-0022)
+# --------------------------------------------------------------------------
+
+EPIC_DESIGN_FILENAME_RE = re.compile(r"^epic-(.+)-design\.md$")
+
+
+def _extract_title(text: str, fallback: str) -> str:
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("# "):
+            return stripped[2:].strip()
+    return fallback
+
+
+def discover_plan_gate_docs(repo: Path) -> list[dict]:
+    plans_dir = repo / PLANS_SOURCE_SUBDIR
+    if not plans_dir.is_dir():
+        return []
+    found: list[dict] = []
+    for slug_dir in sorted(p for p in plans_dir.iterdir() if p.is_dir()):
+        feature_slug = slug_dir.name
+        program_path = slug_dir / "03-program-design.md"
+        if program_path.is_file():
+            try:
+                text = program_path.read_text()
+            except OSError:
+                pass
+            else:
+                found.append(
+                    {
+                        "kind": "program",
+                        "feature_slug": feature_slug,
+                        "epic_id": None,
+                        "path": program_path,
+                        "text": text,
+                    }
+                )
+        for epic_path in sorted(slug_dir.glob("epic-*-design.md")):
+            match = EPIC_DESIGN_FILENAME_RE.match(epic_path.name)
+            if not match:
+                continue
+            epic_id = match.group(1)
+            try:
+                text = epic_path.read_text()
+            except OSError:
+                continue
+            found.append(
+                {
+                    "kind": "epic",
+                    "feature_slug": feature_slug,
+                    "epic_id": epic_id,
+                    "path": epic_path,
+                    "text": text,
+                }
+            )
+    return found
+
+
+def project_program_design(feature_slug: str, path: Path, text: str) -> dict:
+    source = {
+        "id": feature_slug,
+        "feature_slug": feature_slug,
+        "gate": 3,
+        "title": _extract_title(text, feature_slug),
+        "body_md": text,
+        "approved_date": None,
+        "source_path": str(path),
+    }
+    return project_fields(source, PROGRAM_DESIGN_FIELDS)
+
+
+def project_epic_design(epic_id: str, feature_slug: str, path: Path, text: str) -> dict:
+    source = {
+        "id": f"{feature_slug}/{epic_id}",
+        "epic_id": epic_id,
+        "feature_slug": feature_slug,
+        "title": _extract_title(text, epic_id),
+        "body_md": text,
+        "approved_date": None,
+        "source_path": str(path),
+    }
+    return project_fields(source, EPIC_DESIGN_FIELDS)
+
+
+def collect_gate_docs(repo: Path) -> tuple[list[dict], list[dict], list[str]]:
+    failures: list[str] = []
+    program_entities: list[dict] = []
+    epic_entities: list[dict] = []
+    for doc in discover_plan_gate_docs(repo):
+        if doc["kind"] == "program":
+            program_entities.append(
+                project_program_design(doc["feature_slug"], doc["path"], doc["text"])
+            )
+        else:
+            epic_entities.append(
+                project_epic_design(doc["epic_id"], doc["feature_slug"], doc["path"], doc["text"])
+            )
+    return program_entities, epic_entities, failures
+
+
+# --------------------------------------------------------------------------
 # Pull requests — feeds "pull_request" entities, from the bundle's story.json
 # --------------------------------------------------------------------------
 
@@ -969,6 +1073,9 @@ def resolve_feature_gates(repo: Path) -> dict[str, list[dict]]:
     gates_by_feature: dict[str, list[dict]] = {}
     if not plans_dir.is_dir():
         return gates_by_feature
+    program_design_features = {
+        doc["feature_slug"] for doc in discover_plan_gate_docs(repo) if doc["kind"] == "program"
+    }
     for status_path in sorted(plans_dir.glob("*/00-status.md")):
         feature = status_path.parent.name
         gates = []
@@ -976,13 +1083,14 @@ def resolve_feature_gates(repo: Path) -> dict[str, list[dict]]:
             for line in status_path.read_text().splitlines():
                 gm = STATUS_GATE_RE.search(line.strip())
                 if gm:
-                    gates.append(
-                        {
-                            "n": int(gm.group(1)),
-                            "name": gm.group(2).strip(),
-                            "state": gm.group(3).strip(),
-                        }
-                    )
+                    gate = {
+                        "n": int(gm.group(1)),
+                        "name": gm.group(2).strip(),
+                        "state": gm.group(3).strip(),
+                    }
+                    if gate["n"] == 3 and feature in program_design_features:
+                        gate["doc"] = feature
+                    gates.append(gate)
         except OSError:
             continue
         if gates:
@@ -1126,6 +1234,14 @@ def build_index(repo: Path, bundle_dir: Path) -> tuple[dict, dict, dict, list[st
     publication_entities, publication_failures = collect_publications(bundle_dir)
     failures.extend(publication_failures)
 
+    program_design_entities, epic_design_entities, gate_doc_failures = collect_gate_docs(repo)
+    failures.extend(gate_doc_failures)
+
+    epic_design_ids = {r["id"] for r in epic_design_entities}
+    for epic in epic_entities:
+        if epic["id"] in epic_design_ids:
+            epic["design_doc"] = epic["id"]
+
     entities = {
         "adr": adr_entities,
         "design": design_entities,
@@ -1136,6 +1252,8 @@ def build_index(repo: Path, bundle_dir: Path) -> tuple[dict, dict, dict, list[st
         "pull_request": pull_request_entities,
         "slice": slice_entities,
         "publication": publication_entities,
+        "program_design": program_design_entities,
+        "epic_design": epic_design_entities,
     }
 
     joins, join_warnings = resolve_joins(repo, adrs_viewer, designs_viewer, entities)

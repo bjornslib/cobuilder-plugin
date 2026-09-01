@@ -12,9 +12,9 @@ Design mode: gate-doc-surfacing | none | declined
 Hindsight: unavailable
 
 ## Slices
-- [ ] Slice 1 — E1 tracer bullet: constants and empty entity lists   score: —
-- [ ] Slice 2 — E1 real parsing: project Gate 3/4b docs              score: —
-- [ ] Slice 3 — E1 edge cases                                        score: —
+- [x] Slice 1 — E1 tracer bullet: constants and empty entity lists   score: 1.00
+- [x] Slice 2 — E1 real parsing: project Gate 3/4b docs              score: 1.00
+- [x] Slice 3 — E1 edge cases                                        score: 1.00
 - [ ] Slice 4 — E2 tracer bullet: clickable Gate Rail → empty sheet  score: —
 - [ ] Slice 5 — E2 real content: render body, add epic chip          score: —
 - [ ] Slice 6 — E2 edge cases: no-doc cards, mutual exclusivity      score: —
