@@ -2,26 +2,87 @@
   "name": "review-flight-deck",
   "title": "A reviewer surface above several pull requests",
   "adr": null,
-  "adrs": [],
+  "adrs": ["ADR-0022"],
   "created": "2026-09-01",
   "outcome": "A reviewer selects several pull requests, opens one surface that shows where they overlap, conflict, and reinforce each other, and leaves with a decision recorded against each pull request: review alone, merge together, or split.",
   "done_when": [
-    "A reviewer selects more than one pull request in the viewer and sees them on one surface.",
-    "The surface names the evidence behind every relationship it claims, and says so when it cannot assess one.",
-    "Each selected pull request carries one recorded call in the append-only ledger, and that call names the set it was judged against.",
-    "A terminal-side mode reads those calls, shows the git plan, and asks before it acts."
+    "A reviewer names a set of pull requests and receives an ordered list of contested regions, plus a proposed partition of the set into review units.",
+    "The proposal names the evidence behind every relationship it claims, and prints the reason instead of the assertion where it could not assess one.",
+    "Each pull request in the set carries one recorded call in the ledger, and that call names the set it was judged against.",
+    "The viewer renders the proposal and the recorded calls, and computes no relationship of its own.",
+    "A copy served without a write path renders read-only and says so."
   ],
-  "abort_if": [],
+  "abort_if": [
+    "The region table for pull requests 11 and 12 is not materially shorter than their shared-file list. The central claim of the approach is then false.",
+    "A proposed partition anchors reviewers more than it helps them, measured against a set they also reviewed without one."
+  ],
   "min_work": {
-    "derived_from": "3 districts touched (viewer, scripts, .cobuilder-architect). 4 colliding ADRs: ADR-0001 (one self-contained file under a blocking content policy), ADR-0018 (one lifecycle surface and a derived record index), ADR-0019 (the append-only ledger), ADR-0020 (viewer parts and an author-time build, decided and not executed).",
-    "alternatives_explored": 6,
+    "derived_from": "3 districts touched (viewer, scripts, .cobuilder-architect). 4 colliding ADRs: ADR-0001 (one self-contained file under a blocking content policy), ADR-0018 (one lifecycle surface and a derived record index), ADR-0019 (the append-only ledger, with its vocabulary fixed at comment, reply, and state), ADR-0020 (viewer parts and an author-time build, decided and not executed). 1 boundary rule crossed: no plugin names another plugin's path, so the viewer reaches the proposal through the bundle.",
+    "alternatives_explored": 9,
     "boundary_rules_checked": true,
-    "challenge_stage_run": false,
-    "note": "Stages 0 to 4 ran. Stage 3 issued six isolated exploration frames and one separate critic pass. Stage 4 raised three challenges that the engineer has not yet answered, so challenge_stage_run stays false and no ADR is written. docs/architecture/designs/review-flight-deck/layout-variations.html holds the five layouts and the measured evidence the gate rests on."
+    "challenge_stage_run": true,
+    "note": "Stage 3 issued six isolated exploration frames and one separate critic pass. Stage 4 raised three challenges and the engineer answered all three. The engineer overruled the recommended approach and chose the Braid and the Cut together, on the ground that both do work on the reviewer's behalf before the reviewer arrives. That choice replaced the stated approach and moved the whole computation terminal-side, which also removed the ledger write-path defect the first challenge raised."
   },
   "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
-  "epics": [],
-  "stage": "design",
+  "epics": [
+    {
+      "id": "E1",
+      "slug": "region-table",
+      "outcome": "A script parses the hunk headers already stored in the eight cached diff files and prints the region table for pull requests 11 and 12. The stop count is materially lower than the 29 shared files, or the design stops.",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "The tracer bullet, and the abort test. No ledger, no projection, no viewer change, no join. It proves or kills the central claim for the cost of one script."
+    },
+    {
+      "id": "E2",
+      "slug": "braid-mode",
+      "outcome": "A mode in the pr plugin takes a set of pull request numbers, fetches the branches, runs git merge-tree, and prints an ordered stop list with an unassessable reason wherever a branch could not be fetched.",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "The proposer. Terminal-side by construction, because the browser can neither run git nor fetch."
+    },
+    {
+      "id": "E3",
+      "slug": "region-walk-and-ledger",
+      "outcome": "The reviewer answers one keypress per stop, and each keypress appends one region_verdict line through shared/ledger.py with direct file access.",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "The two new line kinds sit outside the vocabulary ADR-0019 fixed, so each needs its own projection. fold_threads must keep ignoring them."
+    },
+    {
+      "id": "E4",
+      "slug": "braid-projection",
+      "outcome": "A projection folds region verdicts into one disposition per pull request and into the pull-request-to-pull-request join the record index does not hold. A transitive edge is labelled derived, or the fold stops at pairwise.",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "The open question in ADR-0022's consequences is decided here, not before."
+    },
+    {
+      "id": "E5",
+      "slug": "partition-proposal",
+      "outcome": "The mode proposes a partition of the set into review units, each carrying the reason it exists. An untouched unit records as accepted, stamped with the proposal id.",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "The Cut, cold-start. No precedent table, because the ledger is 0 bytes. History improves the reason ranking later and does not produce the partition."
+    },
+    {
+      "id": "E6",
+      "slug": "viewer-renders-braid",
+      "outcome": "The viewer reads data/braid.js and renders the proposal and the recorded calls. It computes no relationship, and a copy served without a write path renders read-only and says so.",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "Last, and deliberately so. ADR-0020's viewer split is decided and not executed, so this epic should follow it rather than enlarge the file first."
+    }
+  ],
+  "stage": "review",
   "supersedes": null,
-  "rounds": []
+  "rounds": [
+    { "n": 1, "changed": true, "feedback_class": "material" }
+  ]
 }

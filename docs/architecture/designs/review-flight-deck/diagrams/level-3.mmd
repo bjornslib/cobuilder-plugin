@@ -1,0 +1,55 @@
+%% review-flight-deck level 3 — the record shapes
+classDiagram
+    class Region {
+        +str path
+        +int start
+        +int end
+        +list~int~ prs
+        +str evidence
+        +bool assessable
+        +str reason
+    }
+    class Proposal {
+        +str proposal_id
+        +list~ReviewUnit~ units
+        +str computed_at
+        +list~str~ unassessable
+    }
+    class ReviewUnit {
+        +str unit_id
+        +list~int~ prs
+        +str because
+        +list~str~ cited_regions
+    }
+    class RegionVerdict {
+        +str type
+        +str region
+        +list~int~ prs
+        +str verdict
+        +str ts
+        +str by
+    }
+    class Disposition {
+        +str type
+        +int pr
+        +str verb
+        +list~int~ with_prs
+        +list~str~ derived_from
+        +str proposal_id
+        +str ts
+    }
+    class BraidProjection {
+        +fold_verdicts(lines) dict
+        +to_pr_to_pr_join() dict
+        +mark_derived_edges() None
+    }
+
+    Proposal "1" *-- "1..*" ReviewUnit : partitions the set into
+    ReviewUnit "1" o-- "0..*" Region : cites
+    Region "1" <-- "0..*" RegionVerdict : judges
+    RegionVerdict "0..*" --> "1" BraidProjection : folded by
+    BraidProjection "1" --> "0..*" Disposition : emits
+    Disposition "0..*" --> "1" Proposal : records agreement or correction with
+
+    note for BraidProjection "Union-find over region verdicts is transitive.\nA with B and B with C asserts A with C.\nLabel that edge derived, or stop at pairwise."
+    note for Region "assessable is false when a branch cannot be fetched.\nThe reason is printed instead of the assertion."

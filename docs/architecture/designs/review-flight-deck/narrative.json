@@ -1,0 +1,75 @@
+{
+  "design_name": "review-flight-deck",
+  "levels": {
+    "landscape": {
+      "tagline": "The machine proposes. The reviewer corrects.",
+      "narration": "The viewer knows how to read one pull request well. Previous, next, four levels, a dock at the bottom that records a call. Everything in it assumes the reviewer is looking at one thing. A reviewer with five pull requests open is not looking at one thing, and the surface gives them nothing for the question they are actually holding: do any of these fight each other. The bundle already carries the raw material. It carries a touched map for every pull request, an authored intent for a few, a record index that resolves five kinds of join. It does not carry a single relationship between two pull requests, and no surface in the family has ever drawn one."
+    },
+    "problem_solution": {
+      "problem": "A reviewer assembles a set after the fact, out of work several people opened without coordinating. GitHub's stacked pull requests answer the easier version of this, where the author declared the chain in advance. Nothing answers the harder one. So the reviewer reads each diff in full, twice, and holds the overlap in their head.",
+      "solution": "Move the work to before the reviewer arrives. A terminal-side mode fetches the branches, finds the regions more than one pull request writes, and proposes a partition of the set into review units. The reviewer walks the regions one keypress at a time and corrects the partition with three gestures. The viewer renders what came back and computes nothing.",
+      "narration": "Six exploration frames produced six surfaces, and a separate critic measured every one against the committed bundle rather than against the brief. The measurements decided it. The browser cannot run git and cannot fetch, so it cannot see a conflict at all. Two of the three chosen evidence levels yield no pair, because both joins hold one pull request per key. And 86 of 91 pairs share a path prefix, so overlap is the base rate rather than a finding. Every option that put the computation on screen was solving a problem the screen is not allowed to solve. The two options that did work before the reviewer arrived were the two that never needed the screen.",
+      "beats": [
+        {
+          "kind": "background",
+          "text": "The viewer has five view modes and one queue. The queue is linear by construction, and four other modes share its prev and next nav."
+        },
+        {
+          "kind": "forces",
+          "text": "Field coverage across fourteen pull requests is uneven: touched 14, narrated levels 8, cached diffs 8, intent 4, assessment 4, ledger lines 0. Any surface built on the authored fields draws empty panes for most of the corpus."
+        },
+        {
+          "kind": "intuition",
+          "text": "A region only one pull request writes never needs a joint decision. Cutting the set by region rather than by pull request removes work instead of rearranging it."
+        },
+        {
+          "kind": "contract",
+          "text": "Correcting a wrong grouping is a cheaper judgement than building a right one. That is the whole bet, and nothing here measures it."
+        },
+        {
+          "kind": "boundary",
+          "text": "The proposer writes the ledger through shared/ledger.py with direct file access. The POST endpoint the comments drawer uses returns 404 under plain http.server and is blocked outright in a published Artifact."
+        }
+      ],
+      "alternatives": [
+        {
+          "option": "The Gang Rail",
+          "rejected_because": "Cheapest, and it rearranges reading rather than removing it. Its panes are empty for both open pull requests."
+        },
+        {
+          "option": "Contested Subjects",
+          "rejected_because": "The most honest rendering of uneven evidence, and it still waits for the reviewer to assemble the set."
+        },
+        {
+          "option": "The Claims Docket",
+          "rejected_because": "Four subsystems, most of them inside the file ADR-0020 already names as the largest maintenance problem, over a corpus where ten of fourteen pull requests carry no claims."
+        },
+        {
+          "option": "Shared-path overlap as an evidence level",
+          "rejected_because": "86 of 91 pairs share a prefix. Presence carries no information."
+        }
+      ]
+    },
+    "architecture": {
+      "narration": "One boundary carries the design. Computation lives terminal-side in the pr plugin, next to the modes that already read git. Rendering lives in the viewer, which is handed a projection and draws it. The ledger sits between them as the only durable channel, and it is append-only, so a region verdict and a disposition are two new line kinds with two new projections rather than an edit to an existing record. The pull-request-to-pull-request join that the record index has never held is derived from those lines, through a review unit rather than through a pairwise edge, which is the same shape the index already uses to reach a pull request through a design.",
+      "beats": [
+        {
+          "kind": "contract",
+          "text": "A pull-request relationship is computed terminal-side and written as a projection. The viewer renders it and never computes one."
+        },
+        {
+          "kind": "boundary",
+          "text": "The mode fetches a branch before it can report a textual conflict. That is a network step in a plugin that has so far only read local git."
+        },
+        {
+          "kind": "forces",
+          "text": "ADR-0019 fixed the ledger vocabulary at comment, reply, and state. fold_threads skips an unrecognised line, so each new kind needs its own projection."
+        },
+        {
+          "kind": "intuition",
+          "text": "Folding region verdicts with union-find is transitive. A with B and B with C asserts A with C, which no reviewer said. Either label the derived edge or stop at pairwise."
+        }
+      ]
+    }
+  }
+}

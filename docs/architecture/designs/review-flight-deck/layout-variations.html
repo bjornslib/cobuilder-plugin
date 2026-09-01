@@ -426,9 +426,9 @@ footer{background:var(--surface);border-top:1px solid var(--line);padding:44px 0
       </div>
       <div class="meta-strip">
         <div class="meta-cell"><span class="k">Design</span><span class="v">review-flight-deck</span></div>
-        <div class="meta-cell"><span class="k">Reserved ADR</span><span class="v">ADR-0022</span></div>
+        <div class="meta-cell"><span class="k">Decision</span><span class="v">ADR-0022, decided</span></div>
         <div class="meta-cell"><span class="k">Frames explored</span><span class="v">6 + 1 critic</span></div>
-        <div class="meta-cell"><span class="k">Status</span><span class="v">Not decided</span></div>
+        <div class="meta-cell"><span class="k">Chosen</span><span class="v">Braid + Cut</span></div>
       </div>
     </div>
   </div>
@@ -598,7 +598,7 @@ footer{background:var(--surface);border-top:1px solid var(--line);padding:44px 0
     <div class="variation">
       <div class="var-head">
         <span class="var-name">The Gang Rail</span>
-        <span class="var-tag ship">Cheapest to ship</span>
+        <span class="var-tag">Rejected &middot; multi-select kept</span>
         <span class="var-tag">Frame: $0 budget, one hour</span>
       </div>
       <p class="var-lede">
@@ -671,7 +671,7 @@ footer{background:var(--surface);border-top:1px solid var(--line);padding:44px 0
     <div class="variation">
       <div class="var-head">
         <span class="var-name">Contested Subjects</span>
-        <span class="var-tag ship">Survives the honesty test</span>
+        <span class="var-tag">Rejected &middot; SILENT row kept</span>
         <span class="var-tag">Frame: inversion</span>
       </div>
       <p class="var-lede">
@@ -775,7 +775,7 @@ footer{background:var(--surface);border-top:1px solid var(--line);padding:44px 0
     <div class="variation">
       <div class="var-head">
         <span class="var-name">The Claims Docket</span>
-        <span class="var-tag trap">Trap: coverage</span>
+        <span class="var-tag trap">Rejected &middot; coverage trap</span>
         <span class="var-tag">Frames: 3am on-call, regulator</span>
       </div>
       <p class="var-lede">
@@ -859,7 +859,7 @@ footer{background:var(--surface);border-top:1px solid var(--line);padding:44px 0
     <div class="variation">
       <div class="var-head">
         <span class="var-name">The Braid</span>
-        <span class="var-tag">No surface at all</span>
+        <span class="var-tag ship">Chosen &middot; epics E1 to E4</span>
         <span class="var-tag">Frame: remove the load-bearing assumption</span>
       </div>
       <p class="var-lede">
@@ -908,7 +908,7 @@ footer{background:var(--surface);border-top:1px solid var(--line);padding:44px 0
     <div class="variation">
       <div class="var-head">
         <span class="var-name">The Cut</span>
-        <span class="var-tag later">Blocked: no history</span>
+        <span class="var-tag ship">Chosen &middot; epic E5, cold-start</span>
         <span class="var-tag">Frame: 100x, ten years</span>
       </div>
       <p class="var-lede">
@@ -916,8 +916,10 @@ footer{background:var(--surface);border-top:1px solid var(--line);padding:44px 0
         review units, each bracket labelled with the reason it exists and the
         precedent behind it. Correcting a wrong grouping is a cheaper judgement than
         building a right one, and an untouched bracket is itself a recorded decision.
-        This is what the deck becomes at forty open pull requests, and it cannot be
-        built yet, because it reads a decision history that does not exist.
+        The precedent line under each bracket needs a decision history that does not
+        exist yet. The partition itself does not. A cold-start proposer groups on
+        conflict evidence with no precedent line, and the ranking arrives once the
+        ledger has rows.
       </p>
       <div class="var-body">
         <div class="screen">
@@ -975,9 +977,9 @@ footer{background:var(--surface);border-top:1px solid var(--line);padding:44px 0
           <div class="spec-row"><span class="k">Reviewer sees</span><span class="v">Brackets, not dots. Each one states why it exists and how often that reason held before.</span></div>
           <div class="spec-row"><span class="k">Reviewer does</span><span class="v">Three gestures: drag a dot out, drop one bracket onto another, click a seam. Silence accepts.</span></div>
           <div class="spec-row"><span class="k">Recorded as</span><span class="v">Only the diff against the proposal, stamped with the proposal id it accepted.</span></div>
-          <div class="spec-row"><span class="k">Blocked by</span><span class="v">The ledger is 0 bytes. The precedent table, the ranked reasons, and the counterfactual all read an empty file.</span></div>
-          <div class="spec-row"><span class="k">Build cost</span><span class="v"><span class="cost"><span class="pips"><i class="pip on"></i><i class="pip on"></i><i class="pip on"></i><i class="pip on"></i><i class="pip"></i></span> plus a year of use</span></span></div>
-          <div class="spec-row"><span class="k">What to keep now</span><span class="v">One idea, and it applies to every layout above: the proposer lives terminal-side, and the viewer only renders and edits. The browser cannot run git.</span></div>
+          <div class="spec-row"><span class="k">Deferred</span><span class="v">The precedent table, the ranked reasons, and the counterfactual. All three read a ledger that is 0 bytes today.</span></div>
+          <div class="spec-row"><span class="k">Build cost</span><span class="v"><span class="cost"><span class="pips"><i class="pip on"></i><i class="pip on"></i><i class="pip on"></i><i class="pip"></i><i class="pip"></i></span> cold-start only</span></span></div>
+          <div class="spec-row"><span class="k">Why it decided the design</span><span class="v">The proposer lives terminal-side and the viewer only renders. That boundary applies to every layout above, and it is the one ADR-0022 records.</span></div>
         </div>
       </div>
     </div>
@@ -1050,11 +1052,12 @@ footer{background:var(--surface);border-top:1px solid var(--line);padding:44px 0
 <section>
   <div class="spine">
     <div class="sec-head">
-      <span class="eyebrow">Challenge gate</span>
-      <h2>Three things to settle before anything is built</h2>
+      <span class="eyebrow">Challenge gate &middot; settled</span>
+      <h2>Three findings, and what was decided</h2>
       <p>
-        Exploration surfaced these, and none of them were on the risk list. Each one
-        changes what gets built, not just how it looks.
+        Exploration surfaced these, and none of them were on the risk list. The
+        chosen approach answered the first one by moving the computation rather than
+        by restricting the surface.
       </p>
     </div>
     <div class="decisions">
@@ -1072,7 +1075,7 @@ footer{background:var(--surface);border-top:1px solid var(--line);padding:44px 0
             a message promising a sync that nothing implements, so a call made in a
             published deck never reaches the mode meant to act on it.
           </p>
-          <p class="dec-rec">Recommend: close this first, or scope the deck to a locally served bundle and say so.</p>
+          <p class="dec-rec">Settled: the finding dissolves. A terminal-side proposer writes through <code style="font-family:var(--mono);font-size:.9em;">shared/ledger.py</code> with direct file access, so no request is made and neither failure can happen. A published copy renders read-only and says so.</p>
         </div>
       </div>
       <div class="dec">
@@ -1086,7 +1089,7 @@ footer{background:var(--surface);border-top:1px solid var(--line);padding:44px 0
             this checkout has none of the open ones, so it needs a fetch step the design
             did not budget for.
           </p>
-          <p class="dec-rec">Recommend: fix the design-level join first. It is one grouping change and it makes a chosen signal work.</p>
+          <p class="dec-rec">Settled: deferred to the <code style="font-family:var(--mono);font-size:.9em;">inflight-record-store</code> design, which owns the pull-request entity gap. The cost is that textual conflict becomes the only strong signal, and it needs a branch fetch.</p>
         </div>
       </div>
       <div class="dec">
@@ -1102,9 +1105,56 @@ footer{background:var(--surface);border-top:1px solid var(--line);padding:44px 0
             do. Twenty shared files under one design directory is a finding. One shared
             file is not.
           </p>
-          <p class="dec-rec">Recommend: if a floor signal is wanted, count shared full paths from cached diffs and name them. Never show a prefix.</p>
+          <p class="dec-rec">Settled: the rejection stands. Regions come from real hunk headers, not from prefixes, so the chosen approach never needed the weak signal.</p>
         </div>
       </div>
+    </div>
+
+    <div style="margin-top:44px;">
+      <span class="eyebrow">Build order</span>
+      <h3 style="margin:10px 0 18px;">Six epics, and the first one can kill the design</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Epic</th><th>Outcome</th><th>Depends on</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>E1 region-table</td>
+              <td class="note">Parse the hunk headers already stored in the eight cached diff files and print the region table for PRs 11 and 12, which share 29 files. Nothing else.</td>
+              <td class="num"><span class="yield real">nothing</span></td>
+            </tr>
+            <tr>
+              <td>E2 braid-mode</td>
+              <td class="note">Fetch the branches, run <code style="font-family:var(--mono);font-size:11px;">git merge-tree</code>, print an ordered stop list, and print a reason wherever a branch could not be fetched.</td>
+              <td class="num">E1</td>
+            </tr>
+            <tr>
+              <td>E3 region-walk</td>
+              <td class="note">One keypress per stop, one <code style="font-family:var(--mono);font-size:11px;">region_verdict</code> line per keypress, written with direct file access.</td>
+              <td class="num">E2</td>
+            </tr>
+            <tr>
+              <td>E4 braid-projection</td>
+              <td class="note">Fold the verdicts into one call per pull request and into the missing join. Decide the transitivity rule here, not before.</td>
+              <td class="num">E3</td>
+            </tr>
+            <tr>
+              <td>E5 partition-proposal</td>
+              <td class="note">Propose review units with the reason each one exists. Cold-start, no precedent table.</td>
+              <td class="num">E2</td>
+            </tr>
+            <tr>
+              <td>E6 viewer-renders</td>
+              <td class="note">The viewer reads the projection and draws it. Deliberately last, so it follows ADR-0020's viewer split rather than enlarging the file first.</td>
+              <td class="num">E4, ADR-0020</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:14.5px;color:var(--ink-mid);margin:14px 0 0;max-width:66ch;">
+        E1 is the abort test, not a warm-up. If the stop list is not materially
+        shorter than the shared-file list, the central claim of the approach is false
+        and the design stops there for the cost of one script.
+      </p>
     </div>
   </div>
 </section>
@@ -1139,8 +1189,8 @@ footer{background:var(--surface);border-top:1px solid var(--line);padding:44px 0
       <div>
         <h4>Status</h4>
         <p>
-          Design mode, stages 3 and 4. No approach is chosen, no ADR is written, and
-          no branch exists.
+          Design mode, stages 0 to 6 complete. ADR-0022 is decided and not approved.
+          Six epics are planned and none is built.
         </p>
       </div>
     </div>

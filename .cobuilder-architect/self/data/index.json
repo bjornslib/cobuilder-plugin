@@ -1,10 +1,10 @@
 {
   "schema_version": "1.3",
   "sources": {
-    "git_head": "55395917fd9a0dd54b272e76799d319f0a5e174d",
+    "git_head": "f1a999f6bcbf1bb932e4b8f372a719e3e7831cdd",
     "trees": {
-      "docs/architecture/adr": "sha256:fd9dd693addcaf68e2bcc92bf905004dfcf546721de125b51b7d5e9e758ba8a1",
-      "docs/architecture/designs": "sha256:83935e6bf2bb91a878f8883ea5198777c99bf2252273ac7fcba639bd723d366f",
+      "docs/architecture/adr": "sha256:5f62318865ede2aa3298b29b6b6979554183b00580cf989036e749172441bc20",
+      "docs/architecture/designs": "sha256:537c5ee6045f26716fb2bff110730fbcce93d33a82cf04e76d6548053043c368",
       "docs/architecture/contexts": "sha256:4626a327bd28df972d97d40dc1325c28808eb48789649b87eadd218b3528c907",
       "docs/plans": "sha256:c6ed98e3846b908d8cfd216b6ff873473172ec2559e6e6ac6a4141253205efd1"
     }
@@ -115,6 +115,11 @@
         "id": "ADR-0021",
         "title": "book-index.md gains a nano tier, and full-book loading stops being unconditional",
         "state": "decided"
+      },
+      {
+        "id": "ADR-0022",
+        "title": "A terminal-side proposer for a multi-pull-request review, and a viewer that only renders it",
+        "state": "decided"
       }
     ],
     "design": [
@@ -165,6 +170,12 @@
         "name": "plugin-split",
         "outcome": "A user installs one stage of the architecture lifecycle without the other three, and four independently-installed plugins write into one bundle without a stale copy destroying authored or paid content.",
         "stage": "implemented"
+      },
+      {
+        "id": "review-flight-deck",
+        "name": "review-flight-deck",
+        "outcome": "A reviewer selects several pull requests, opens one surface that shows where they overlap, conflict, and reinforce each other, and leaves with a decision recorded against each pull request: review alone, merge together, or split.",
+        "stage": "review"
       },
       {
         "id": "ubiquitous-language",
@@ -416,6 +427,60 @@
         "pr": 17,
         "state": "merged",
         "note": "The cobuilder- prefix drops from the four non-umbrella plugins named in E1's table (cobuilder-architect, cobuilder-pr, cobuilder-artifact, cobuilder-implement become architect, pr, artifact, implement), since it duplicates the marketplace repo's own name. cobuilder-full-lifecycle keeps its prefix, being the umbrella the repo's own name already carries. Merged as PR #17, then a same-epic follow-up (uncommitted at the time this entry was written) fixes a second-order bug the rename introduced: two of the four renamed plugins (implement, artifact) already shipped a skill folder named after themselves, and once the plugin took that same name too, Skill() resolution inside Claude Code broke -- reproduced directly, not environment-specific. Fixed by renaming the colliding skill folders (implement's skill to build, its command to start; artifact's skill to cobuilder-artifacts) and, for consistency, cobuilder-full-lifecycle's orientation skill to cobuilder-full. See ADR-0016's addendum."
+      },
+      {
+        "id": "review-flight-deck/E1",
+        "design": "review-flight-deck",
+        "epic_id": "E1",
+        "branch": null,
+        "pr": null,
+        "state": "planned",
+        "note": "The tracer bullet, and the abort test. No ledger, no projection, no viewer change, no join. It proves or kills the central claim for the cost of one script."
+      },
+      {
+        "id": "review-flight-deck/E2",
+        "design": "review-flight-deck",
+        "epic_id": "E2",
+        "branch": null,
+        "pr": null,
+        "state": "planned",
+        "note": "The proposer. Terminal-side by construction, because the browser can neither run git nor fetch."
+      },
+      {
+        "id": "review-flight-deck/E3",
+        "design": "review-flight-deck",
+        "epic_id": "E3",
+        "branch": null,
+        "pr": null,
+        "state": "planned",
+        "note": "The two new line kinds sit outside the vocabulary ADR-0019 fixed, so each needs its own projection. fold_threads must keep ignoring them."
+      },
+      {
+        "id": "review-flight-deck/E4",
+        "design": "review-flight-deck",
+        "epic_id": "E4",
+        "branch": null,
+        "pr": null,
+        "state": "planned",
+        "note": "The open question in ADR-0022's consequences is decided here, not before."
+      },
+      {
+        "id": "review-flight-deck/E5",
+        "design": "review-flight-deck",
+        "epic_id": "E5",
+        "branch": null,
+        "pr": null,
+        "state": "planned",
+        "note": "The Cut, cold-start. No precedent table, because the ledger is 0 bytes. History improves the reason ranking later and does not produce the partition."
+      },
+      {
+        "id": "review-flight-deck/E6",
+        "design": "review-flight-deck",
+        "epic_id": "E6",
+        "branch": null,
+        "pr": null,
+        "state": "planned",
+        "note": "Last, and deliberately so. ADR-0020's viewer split is decided and not executed, so this epic should follow it rather than enlarge the file first."
       },
       {
         "id": "ubiquitous-language/E1",
@@ -1103,7 +1168,7 @@
         "path": []
       },
       "ADR-0011": {
-        "pr": 11,
+        "pr": null,
         "via": "epic",
         "path": [
           "cobuilder-implement/E1",
@@ -1112,7 +1177,7 @@
         ]
       },
       "ADR-0012": {
-        "pr": 11,
+        "pr": null,
         "via": "epic",
         "path": [
           "cobuilder-implement/E1",
@@ -1120,7 +1185,7 @@
         ]
       },
       "ADR-0013": {
-        "pr": 11,
+        "pr": null,
         "via": "epic",
         "path": [
           "cobuilder-implement/E1",
@@ -1128,14 +1193,14 @@
         ]
       },
       "ADR-0014": {
-        "pr": 11,
+        "pr": null,
         "via": "epic",
         "path": [
           "design-mode/E1"
         ]
       },
       "ADR-0015": {
-        "pr": 11,
+        "pr": null,
         "via": "epic",
         "path": [
           "cobuilder-implement/E1",
@@ -1177,35 +1242,35 @@
         "path": []
       },
       "ADR-0021": {
-        "pr": 16,
+        "pr": null,
         "via": "epic",
         "path": [
           "book-index-tiering/E1"
         ]
+      },
+      "ADR-0022": {
+        "pr": null,
+        "via": "epic",
+        "path": [
+          "review-flight-deck/E1",
+          "review-flight-deck/E2",
+          "review-flight-deck/E3",
+          "review-flight-deck/E4",
+          "review-flight-deck/E5",
+          "review-flight-deck/E6"
+        ]
       }
     },
-    "epic_to_pull_request": {
-      "book-index-tiering/E1": 16,
-      "cobuilder-implement/E1": 11,
-      "cobuilder-implement/E2": 12,
-      "design-mode/E1": 11,
-      "plugin-split/E1": 11,
-      "plugin-split/E2": 11,
-      "plugin-split/E3": 11,
-      "plugin-split/E4": 11,
-      "plugin-split/E5": 11,
-      "plugin-split/E6": 11,
-      "plugin-split/E8": 18
-    },
+    "epic_to_pull_request": {},
     "epic_status": {
-      "book-index-tiering/E1": "open",
+      "book-index-tiering/E1": "unknown",
       "build-workflow-polish/E1": "unstarted",
       "build-workflow-polish/E2": "unstarted",
       "build-workflow-polish/E3": "unstarted",
       "build-workflow-polish/E4": "unstarted",
-      "cobuilder-implement/E1": "merged",
-      "cobuilder-implement/E2": "merged",
-      "design-mode/E1": "merged",
+      "cobuilder-implement/E1": "unknown",
+      "cobuilder-implement/E2": "unknown",
+      "design-mode/E1": "unknown",
       "inflight-record-store/E1": "unstarted",
       "inflight-record-store/E2": "unstarted",
       "inflight-record-store/E3": "unstarted",
@@ -1217,14 +1282,20 @@
       "maintainable-viewer/E2": "unstarted",
       "maintainable-viewer/E3": "unstarted",
       "maintainable-viewer/E4": "unstarted",
-      "plugin-split/E1": "merged",
-      "plugin-split/E2": "merged",
-      "plugin-split/E3": "merged",
-      "plugin-split/E4": "merged",
-      "plugin-split/E5": "merged",
-      "plugin-split/E6": "merged",
+      "plugin-split/E1": "unknown",
+      "plugin-split/E2": "unknown",
+      "plugin-split/E3": "unknown",
+      "plugin-split/E4": "unknown",
+      "plugin-split/E5": "unknown",
+      "plugin-split/E6": "unknown",
       "plugin-split/E7": "unstarted",
-      "plugin-split/E8": "open",
+      "plugin-split/E8": "unknown",
+      "review-flight-deck/E1": "unstarted",
+      "review-flight-deck/E2": "unstarted",
+      "review-flight-deck/E3": "unstarted",
+      "review-flight-deck/E4": "unstarted",
+      "review-flight-deck/E5": "unstarted",
+      "review-flight-deck/E6": "unstarted",
       "ubiquitous-language/E1": "unstarted",
       "ubiquitous-language/E2": "unstarted",
       "ubiquitous-language/E3": "unstarted",
@@ -1265,7 +1336,8 @@
       "ADR-0017": "cobuilder-packaging",
       "ADR-0018": "cobuilder-packaging",
       "ADR-0019": "cobuilder-packaging",
-      "ADR-0020": "cobuilder-packaging"
+      "ADR-0020": "cobuilder-packaging",
+      "ADR-0022": "cobuilder-packaging"
     },
     "adr_to_district": {
       "ADR-0001": "scripts",

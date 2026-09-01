@@ -1,0 +1,36 @@
+%% review-flight-deck level 1 — where the work runs
+C4Container
+    title Review Flight Deck — the proposer runs terminal-side, the viewer renders
+
+    Person(reviewer, "Reviewer", "Holds several open pull requests and one question about the set")
+    System_Ext(git, "Local git", "Branch heads, diffs, git merge-tree")
+
+    Container_Boundary(pr, "plugins/pr") {
+        Container(braid, "braid mode", "Claude skill + PEP 723 script", "Fetches the branches, derives contested regions and a proposed partition")
+        Container(walk, "region walk", "Terminal loop", "One keypress per stop\nOne ledger append per keypress")
+    }
+
+    Container_Boundary(sharedb, "shared/") {
+        Container(ledger, "ledger.py", "Python", "Append-only writer with direct file access\nNo HTTP request")
+        Container(index, "build_index.py", "Python", "Full rebuild of the record index\nAdds the pull-request-to-pull-request join")
+    }
+
+    Container_Boundary(bundle, "bundle") {
+        ContainerDb(jsonl, "feedback-ledger.jsonl", "Line-delimited JSON", "region_verdict and disposition lines")
+        ContainerDb(braidjs, "data/braid.js", "window.BRAID", "The proposal and the recorded calls")
+    }
+
+    Container_Boundary(art, "plugins/artifact") {
+        Container(viewer, "viewer/index.html", "One self-contained file", "Renders the proposal\nComputes no relationship")
+    }
+
+    Rel(reviewer, braid, "Names a set of pull requests")
+    Rel(braid, git, "Fetches heads, reads diffs, runs merge-tree")
+    Rel(braid, walk, "Hands over an ordered stop list")
+    Rel(reviewer, walk, "One keypress per stop")
+    Rel(walk, ledger, "Appends a region verdict")
+    Rel(ledger, jsonl, "Writes one line")
+    Rel(index, jsonl, "Folds the lines")
+    Rel(index, braidjs, "Writes the projection")
+    Rel(viewer, braidjs, "Reads a sibling script tag")
+    Rel(reviewer, viewer, "Reads the proposal and the recorded calls")
