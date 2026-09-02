@@ -192,6 +192,73 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
 .pb-h{display:block;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
   color:var(--ink-dim);padding:8px 18px 0;}
 
+/* ---------- BLOCKED ---------- */
+.ib.stop{background:var(--danger-wash);}
+.ib.stop .v{color:var(--danger);}
+.outcome.no{margin-top:11px;padding-top:11px;border-top:1px dashed var(--line);}
+.outcome.no li{font-size:15px;color:var(--danger);}
+.outcome.no li::before{background:var(--danger);height:2px;top:13px;border-radius:1px;}
+.blocked{margin-top:16px;border:1px solid var(--danger);border-radius:9px;overflow:hidden;background:var(--surface);}
+.blocked-h{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--danger);
+  background:var(--danger-wash);padding:9px 16px;font-weight:700;}
+.blk{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:13px;align-items:center;width:100%;
+  text-align:left;padding:12px 16px;border-bottom:1px solid var(--line-soft);
+  transition:background .16s var(--ease);}
+.blk:last-child{border-bottom:0;}
+.blk:hover{background:var(--surface-2);}
+.blk-n{font-size:12px;font-weight:700;color:var(--danger);font-variant-numeric:tabular-nums;}
+.blk-h{display:block;font-size:11.5px;font-weight:700;}
+.blk.superseded .blk-h{color:var(--warn);}
+.blk.conflict .blk-h{color:var(--danger);}
+.blk-o{display:block;font-family:var(--serif);font-size:14px;line-height:1.4;color:var(--ink-mid);margin-top:2px;}
+.blk-go{font-size:10.5px;color:var(--accent-deep);font-weight:700;white-space:nowrap;}
+.blkbox{border:1px solid var(--danger);border-radius:9px;padding:16px 18px;background:var(--danger-wash);max-width:74ch;}
+.blkbox.superseded{border-color:var(--warn);background:var(--warn-wash);}
+.blk-lead{font-family:var(--serif);font-size:17px;line-height:1.45;color:var(--ink);margin:0 0 14px;}
+.blk-tbl{border:1px solid var(--line);border-radius:7px;background:var(--surface);overflow:hidden;}
+.bt-r{display:grid;grid-template-columns:130px minmax(0,1fr);gap:12px;padding:8px 12px;
+  border-bottom:1px solid var(--line-soft);font-size:11px;}
+.bt-r:last-child{border-bottom:0;}
+.bt-k{color:var(--ink-dim);letter-spacing:.04em;}
+.bt-v{color:var(--ink);word-break:break-word;}
+.blk-why{font-family:var(--serif);font-size:14.5px;line-height:1.45;color:var(--ink-mid);margin:13px 0 0;}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;}
+.opt{border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:14px 16px;
+  text-align:left;display:flex;flex-direction:column;gap:6px;position:relative;
+  transition:transform .18s var(--ease), border-color .18s var(--ease), box-shadow .18s var(--ease);}
+.opt:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:var(--shadow-2);}
+.opt.best{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-wash);}
+.ob{font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;}
+.ol{font-size:12.5px;font-weight:700;}
+.or{font-family:var(--serif);font-size:13.5px;line-height:1.4;color:var(--ink-mid);}
+
+/* ---------- ROLLOUT + BRANCH TARGET ---------- */
+.rollout{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:11px;margin-bottom:13px;}
+.ro{border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:13px 15px;
+  text-align:left;display:flex;flex-direction:column;gap:5px;
+  transition:border-color .18s var(--ease), background .18s var(--ease);}
+.ro:hover{border-color:var(--accent);}
+.ro.on{border-color:var(--accent);background:var(--accent-wash);box-shadow:0 0 0 1px var(--accent);}
+.ro-t{font-size:12.5px;font-weight:700;}
+.ro.on .ro-t{color:var(--accent-deep);}
+.ro-t::before{content:"\25CB  ";color:var(--ink-faint);}
+.ro.on .ro-t::before{content:"\25CF  ";color:var(--accent);}
+.ro-d{font-family:var(--serif);font-size:13.5px;line-height:1.4;color:var(--ink-mid);}
+.target{border-left:3px solid var(--good);background:var(--good-wash);border-radius:0 7px 7px 0;
+  padding:12px 15px;font-family:var(--serif);font-size:14px;line-height:1.45;color:var(--ink-mid);}
+.tg-h{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--good);font-weight:700;margin-bottom:5px;}
+.target code{background:var(--surface);border-color:var(--line);}
+.wc-br{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:0 14px 9px;font-size:10px;}
+.wc-br code{font-family:var(--mono);font-size:10.5px;background:var(--surface-2);
+  border:1px solid var(--line);padding:2px 7px;border-radius:4px;color:var(--accent-deep);}
+.brk{color:var(--ink-faint);letter-spacing:.06em;}
+.ckpt{display:flex;align-items:center;gap:9px;margin:0 0 11px;padding:9px 14px;
+  border:1px dashed var(--line);border-radius:7px;background:var(--surface-2);
+  font-family:var(--serif);font-size:13.5px;color:var(--ink-mid);}
+.ckpt .ck-d{color:var(--accent);font-size:9px;}
+.ckpt code{font-size:11px;}
+
 /* ---------- PER-PR CONTRIBUTION LIST ---------- */
 .contrib{border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--surface);}
 .crow{display:grid;grid-template-columns:52px 74px minmax(0,1fr);gap:12px;align-items:baseline;
@@ -401,7 +468,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
     <b>What is real.</b> All seventeen pull requests, their titles, head branches, file
     counts and touched paths come from this repository. Pull requests 17 and 18 really do
     share one head branch. Pull request 1 is the initial import, so it is not a review
-    candidate. The four renames in the merge chain are verified against this repository's history. <b>What is illustrative.</b> The three paths, the auto-merge split, and the
+    candidate. The four renames in the merge chain are verified against this repository's history. <b>Pull request 6 is a worked example.</b> Its conflict with 9 is invented, to show how a branch that cannot merge is presented. Pull request 17 really is superseded by 18. <b>What is illustrative.</b> The three paths, the auto-merge split, and the
     git replay counts are written by hand to show the shape. Epic F2 generates them, and
     it is not built.
   </p>
@@ -493,7 +560,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
     12:"decision records with no dead states, and a build gate that actually runs",
     13:"a feedback ledger that works, and a dependency the installer honours",
     16:"a corpus that reads a cheap tier before an expensive one",
-    17:"superseded by 18 on the same branch",
+    17:"nothing. 18 carries every commit it has",
     18:"commands short enough to type from memory"
   };
 
@@ -503,6 +570,36 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
     "A review corpus that reads a cheap tier before an expensive one.",
     "An API key that never leaves its boundary."
   ];
+  var NOT_INCLUDED = [
+    "The submit-mode interview from pull request 6. That branch cannot merge into this path."
+  ];
+
+  var BLOCKED = {
+    17:{kind:"superseded", head:"Superseded by 18",
+        one:"Pull request 18 carries every commit 17 has, on the same head branch.",
+        detail:[
+          {k:"Head branch", v:"rename-plugins-drop-cobuilder-prefix"},
+          {k:"Also the head of", v:"pull request 18"},
+          {k:"Commits unique to 17", v:"none"}
+        ],
+        why:"Reviewing both spends the same attention twice, and risks two verdicts on one change.",
+        opts:[{l:"Close 17, keep 18",r:"18 is the later of the two and carries everything",best:true},
+              {l:"Close 18, keep 17",r:"loses the two later commits"},
+              {l:"Keep both open",r:"the path still works, and one review is wasted"}]},
+    6:{kind:"conflict", head:"Cannot merge",
+       one:"6 and 9 rewrite the same function in opposite directions. Neither side is a superset of the other.",
+       detail:[
+         {k:"File", v:"scripts/extract_story.py"},
+         {k:"Lines", v:"412-468, one hunk"},
+         {k:"PR 6 does", v:"edits rewrite_manifest() in place to add the schema 1.2 fields"},
+         {k:"PR 9 does", v:"deletes that copy and points every caller at one shared function"},
+         {k:"git merge-tree", v:"conflict, both sides modified"}
+       ],
+       why:"A merge cannot pick a side here. Somebody has to decide which shape the function keeps, and then rewrite the other change onto it.",
+       opts:[{l:"Ask 6 to rebase onto 9",r:"the smaller of the two rewrites, and it keeps both changes",best:true},
+             {l:"Take 9, re-apply 6's fields",r:"one person does the work, and 6's author does not see it"},
+             {l:"Hold 6 out of this path",r:"the path ships without the submit-mode interview"}]}
+  };
 
   var CHAIN = [
     {c:"0c099be", w:"base", d:"commands/ &middot; scripts/ &middot; skills/ &middot; viewer/", note:"The common ancestor of all seventeen open branches."},
@@ -515,35 +612,39 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
     A:{id:"A",name:"Follow the structure, oldest layout first",
        conf:"validated", confTxt:"Replayed from the common ancestor &middot; 0 conflicts",
        waves:[
-         {n:"Era 1", nm:"Finish the single plugin", prs:[2,3,4,5,6,9],
+         {n:"Bundle 1", nm:"Finish the single plugin", prs:[2,3,4,5,9],
+          br:"flightdeck/path-a/1-single-plugin", from:"0c099be",
           d:"Every one of these writes into commands/, scripts/, skills/, or the bundle root. Pull request 11 deletes all four. Land these while the directories they name still exist.",
-          acts:[{k:"release",l:"Release era 1 for parallel review",c:"primary"},{k:"open4",l:"Open PR 4",c:""}]},
-         {n:"Era 2", nm:"Move it into five plugins", prs:[11],
-          d:"One pull request, 558 files, and the only one that changes the shape of the repository. Nothing can be read against a tree that is about to change this much, so it goes alone.",
-          acts:[{k:"order",l:"Queue after era 1",c:"primary"},{k:"open11",l:"Open PR 11",c:""}]},
-         {n:"Era 3", nm:"Name and fix the new structure", prs:[12,13,16,17,18], dead:[17],
-          d:"Every one writes under plugins/, which only exists after era 2. 17 and 18 share one head branch, so 17 closes as the older of the two.",
-          acts:[{k:"close17",l:"Close 17 as duplicate",c:"primary"},{k:"open18",l:"Open PR 18",c:""}]}
+          acts:[{k:"release",l:"Merge bundle 1",c:"primary"},{k:"open4",l:"Open PR 4",c:""}]},
+         {n:"Bundle 2", nm:"Move it into five plugins", prs:[11],
+          br:"flightdeck/path-a/2-five-plugins", from:"bundle 1",
+          d:"One pull request, 558 files, and the only one that changes the shape of the repository. It goes alone, so the checkpoint after it is a tree anybody can check out and read.",
+          acts:[{k:"order",l:"Merge bundle 2",c:"primary"},{k:"open11",l:"Open PR 11",c:""}]},
+         {n:"Bundle 3", nm:"Name and fix the new structure", prs:[12,13,16,18],
+          br:"flightdeck/path-a/3-named", from:"bundle 2",
+          d:"Every one writes under plugins/, which only exists after bundle 2. Pull request 17 is not here, because 18 already carries it.",
+          acts:[{k:"close17",l:"Merge bundle 3",c:"primary"},{k:"open18",l:"Open PR 18",c:""}]}
        ],
        ev:["Base <b>0c099be</b> carries commands/, scripts/, skills/ and viewer/. Pull request 11 removes the first three.",
-           "Six pull requests write into those three directories. All six predate the split.",
+           "Five pull requests write into those three directories. All five predate the split.",
            "Four write under plugins/, which no commit before 11 contains.",
            "17 and 18 resolve to <b>one head branch</b>. GitHub's list does not show this."],
-       git:["Replayed era 1, then 11, then era 3, from <b>0c099be</b>. <b>No conflict.</b>",
-            "Replayed 11 first, then the six earlier pull requests. <b>Every one of the six conflicts</b>, because each writes a path 11 deleted."],
+       git:["Replayed bundle 1, then 11, then bundle 3, from <b>0c099be</b>. <b>No conflict.</b>",
+            "Replayed 11 first, then the five earlier pull requests. <b>Every one of the five conflicts</b>, because each writes a path 11 deleted.",
+            "Pull request 6 conflicts with 9 in every order tried. It is held out, not ordered."],
        gaps:["The replay used the recorded head of each branch. A push after the run invalidates it, and the run does not watch for one."]},
     B:{id:"B",name:"Restructure first",
        story:"Take the big split first, because it is the one everybody is waiting on, then bring the rest in behind it.",
-       lost:"This is the order I proposed before checking the base, and the replay kills it. Merging 11 first <b>deletes commands/, scripts/ and skills/</b>, and six open pull requests write into exactly those directories. Every one of the six then conflicts."},
+       lost:"This is the order I proposed before checking the base, and the replay kills it. Merging 11 first <b>deletes commands/, scripts/ and skills/</b>, and five open pull requests write into exactly those directories. Every one of the five then conflicts."},
     C:{id:"C",name:"Rebase everything onto the split",
-       story:"Merge the split, then move the six earlier branches onto the new structure so nothing is left behind.",
-       lost:"It rewrites <b>six other people's branches</b>, and each one moves paths that no longer exist. That converts zero conflicts into six manual resolutions, and none of the six authors asked for it."}
+       story:"Merge the split, then move the five earlier branches onto the new structure so nothing is left behind.",
+       lost:"It rewrites <b>five other people's branches</b>, and each one moves paths that no longer exist. That converts zero conflicts into five manual resolutions, and none of the five authors asked for it."}
   };
 
   var LEVELS=[{n:"Overview",t:"State, branch, size"},{n:"Problem &amp; Solution",t:"Why it exists"},
               {n:"Architecture",t:"How it fits"},{n:"File Changes",t:"What changed"}];
 
-  var S={view:"deck",route:null,pr:null,level:0,adopted:null,done:{},ledger:[],tour:false,unlocked:false};
+  var S={view:"deck",route:null,pr:null,blk:null,level:0,adopted:null,done:{},ledger:[],tour:false,unlocked:false,rollout:"step"};
   var $=function(i){return document.getElementById(i);};
   var stage={deck:$("v-deck"),plan:$("v-plan"),pr:$("v-pr")};
   function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");}
@@ -580,6 +681,11 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
       h='<span class="now">Flightdeck</span><span class="sep">&middot;</span>'+
         '<span style="color:var(--ink-dim)">17 open &middot; 1 recommendation</span>';
     }else if(S.view==="plan"){
+      if(!S.route){
+        c.innerHTML='<button data-go="deck">Flightdeck</button><span class="sep">/</span>'+
+          '<span class="now">PR #'+S.blk+' &middot; held out of the path</span>';
+        return;
+      }
       h='<button data-go="deck">Flightdeck</button><span class="sep">/</span>'+
         '<span class="now">Path '+S.route+' &middot; '+ROUTES[S.route].name+'</span>'+
         (S.unlocked?'<span class="sep">&middot;</span><span style="color:var(--ink-dim)">2 alternative paths unlocked</span>':'');
@@ -604,7 +710,16 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
     var pathHtml=r.waves.map(function(w,i){
       return (i?'<span class="warrow">&rsaquo;</span>':"")+
         '<div class="wv"><div class="wh">'+w.n+'</div><div class="wn">'+w.nm+'</div>'+
-        '<div class="chips">'+chips(w.prs,w.dead)+'</div></div>';
+        '<div class="chips">'+chips(w.prs)+'</div></div>';
+    }).join("");
+
+    var blockedHtml=Object.keys(BLOCKED).map(function(n){
+      var x=BLOCKED[n];
+      return '<button class="blk '+x.kind+'" data-blk="'+n+'">'+
+        '<span class="blk-n">#'+n+'</span>'+
+        '<span class="blk-b"><span class="blk-h">'+x.head+'</span>'+
+        '<span class="blk-o">'+x.one+'</span></span>'+
+        '<span class="blk-go">Decide &rsaquo;</span></button>';
     }).join("");
 
     stage.deck.innerHTML =
@@ -613,10 +728,10 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
           '<span class="n">Every branch in flight at once.</span></div>'+
         '<div class="ib auto"><span class="k">Merged automatically</span><span class="v">5</span>'+
           '<span class="n">Small, single purpose. Your rules, not ours.</span></div>'+
-        '<div class="ib you"><span class="k">Waiting for you</span><span class="v">12</span>'+
-          '<span class="n">Everything a machine should not merge alone.</span></div>'+
-        '<div class="ib"><span class="k">Descriptions written</span><span class="v">8</span>'+
-          '<span class="n">/pr:generate filled these in first.</span></div>'+
+        '<div class="ib you"><span class="k">In this path</span><span class="v">10</span>'+
+          '<span class="n">Ordered into three bundles.</span></div>'+
+        '<div class="ib stop"><span class="k">Cannot go in</span><span class="v">2</span>'+
+          '<span class="n">One superseded, one that will not merge.</span></div>'+
       '</div>'+
 
       '<button class="rec" id="recCard">'+
@@ -624,14 +739,15 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
           '<span class="conf">&#10003; '+r.confTxt+'</span></div>'+
         '<div class="rec-body">'+
           '<ul class="outcome">'+OUTCOME.map(function(o){return '<li>'+o+'</li>';}).join("")+'</ul>'+
-          '<p class="rec-sub">Twelve pull requests, closed in three passes. One closes without review, '+
-          'because it duplicates another.</p>'+
+          '<ul class="outcome no">'+NOT_INCLUDED.map(function(o){return '<li>'+o+'</li>';}).join("")+'</ul>'+
         '</div>'+
-        '<div class="pathband"><span class="pb-h">The path</span>'+
+        '<div class="pathband"><span class="pb-h">The path &middot; ten pull requests, three bundles</span>'+
           '<div class="waves">'+pathHtml+'</div></div>'+
         '<div class="rec-foot"><span>Simulated from <b>0c099be</b>, the common ancestor of all seventeen branches</span>'+
           '<span class="go">See what each one adds &rsaquo;</span></div>'+
       '</button>'+
+
+      '<div class="blocked"><div class="blocked-h">Two cannot go in this path</div>'+blockedHtml+'</div>'+
 
       '<div class="fallback"><span class="lk">&#9679;&#9675;&#9675;</span>'+
         '<span class="tx">Two other paths were simulated and set aside. Open this one to see them, '+
@@ -652,8 +768,41 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
       var b=$("autoBand");b.classList.toggle("open");
       $("autoCv").innerHTML=b.classList.contains("open")?"hide &rsaquo;":"show &rsaquo;";
     });
+    stage.deck.querySelectorAll("[data-blk]").forEach(function(el){
+      el.addEventListener("click",function(e){e.stopPropagation();openBlocked(Number(el.getAttribute("data-blk")));});
+    });
     bindPrChips(stage.deck);
   }
+
+  /* ---- blocked pull request detail ---- */
+  function openBlocked(n){
+    S.blk=n;S.pr=null;
+    var x=BLOCKED[n],p=PR[n];
+    stage.plan.innerHTML=
+      '<div class="sechead"><h2>PR #'+n+' &middot; '+x.head+'</h2>'+
+      '<span class="sub">'+p.b+' &middot; '+p.f+' files</span></div>'+
+      '<div class="blkbox '+x.kind+'"><p class="blk-lead">'+x.one+'</p>'+
+        '<div class="blk-tbl">'+x.detail.map(function(d){
+          return '<div class="bt-r"><span class="bt-k">'+d.k+'</span><span class="bt-v">'+d.v+'</span></div>';
+        }).join("")+'</div>'+
+        '<p class="blk-why">'+x.why+'</p></div>'+
+      '<div class="sechead" style="margin-top:22px;"><h2>What you can do</h2>'+
+      '<span class="sub">A merge cannot decide this. A person has to.</span></div>'+
+      '<div class="opts">'+x.opts.map(function(o,i){
+        return '<button class="opt'+(o.best?" best":"")+'" data-blkopt="'+i+'">'+
+          (o.best?'<span class="ob">recommended</span>':'')+
+          '<span class="ol">'+o.l+'</span><span class="or">'+o.r+'</span></button>';
+      }).join("")+'</div>';
+    stage.plan.querySelectorAll("[data-blkopt]").forEach(function(el){
+      el.addEventListener("click",function(){
+        var o=x.opts[Number(el.getAttribute("data-blkopt"))];
+        record({type:"blocked_decision",pr:n,kind:x.kind,choice:o.l,path:"A",by:"human"},
+               "Recorded. The runner will "+o.l.toLowerCase()+".");
+      });
+    });
+    S.route=null;go("plan");
+  }
+
   function bindPrChips(root){
     root.querySelectorAll("[data-pr]").forEach(function(b){
       b.addEventListener("click",function(e){e.stopPropagation();openPr(Number(b.getAttribute("data-pr")));});
@@ -671,10 +820,15 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
       return '<div class="wavecard'+(S.done[key]?" done":"")+'" data-key="'+key+'">'+
         '<div class="wc-h"><span class="wc-n">'+(S.done[key]?"&#10003;":(i+1))+'</span>'+
         '<span class="wc-t"><span class="h">'+w.nm+'</span><span class="d">'+w.d+'</span></span></div>'+
+        '<div class="wc-br"><span class="brk">merges onto</span><code>'+w.br+'</code>'+
+          '<span class="brk">from</span><code>'+w.from+'</code></div>'+
         '<div class="wc-prs">'+chips(w.prs,w.dead)+'</div>'+
         '<div class="wc-acts">'+w.acts.map(function(a){
           return '<button class="act '+a.c+'" data-w="'+i+'" data-act="'+a.k+'">'+a.l+'</button>';}).join("")+'</div>'+
-        '<div class="wc-note">Recorded. One line appended to the ledger.</div></div>';
+        '<div class="wc-note">Recorded. The runner will merge this bundle.</div></div>'+
+        (S.rollout==="step"&&i<r.waves.length-1?
+          '<div class="ckpt"><span class="ck-d">&#9679;</span>Checkpoint. Check out <code>'+w.br+
+          '</code> and read the tree before the next bundle.</div>':"");
     }).join(""):"";
 
     var alts=S.unlocked&&id==="A"?
@@ -696,13 +850,19 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
 
     var contrib='<div class="contrib">'+r.waves.map(function(w){
       return w.prs.map(function(n){
-        var d=w.dead&&w.dead.indexOf(n)>-1;
-        return '<button class="crow'+(d?" dead":"")+'" data-pr="'+n+'">'+
+        return '<button class="crow" data-pr="'+n+'">'+
           '<span class="cn">#'+n+'</span>'+
           '<span class="cw">'+w.n+'</span>'+
           '<span class="cc">'+CONTRIB[n]+'</span></button>';
       }).join("");
-    }).join("")+'</div>';
+    }).join("")+
+      Object.keys(BLOCKED).map(function(n){
+        var x=BLOCKED[n];
+        return '<button class="crow dead" data-blk="'+n+'">'+
+          '<span class="cn">#'+n+'</span>'+
+          '<span class="cw">'+(x.kind==="conflict"?"blocked":"dropped")+'</span>'+
+          '<span class="cc">'+CONTRIB[n]+' &mdash; <b>'+x.head.toLowerCase()+'</b></span></button>';
+      }).join("")+'</div>';
 
     var chain='<div class="panel chain"><h4>Can they merge, and in what order</h4><ol class="chainlist">'+
       CHAIN.map(function(x){
@@ -719,8 +879,21 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
         '<div class="sechead" style="margin-top:22px;"><h2>What each pull request adds</h2>'+
         '<span class="sub">Twelve, in the order they can land.</span></div>'+
         contrib+
-        '<div class="sechead" style="margin-top:22px;"><h2>Do it</h2>'+
-        '<span class="sub">Each action records one line. Nothing reaches GitHub from this page.</span></div>'+
+        '<div class="sechead" style="margin-top:22px;"><h2>Roll it out</h2>'+
+        '<span class="sub">You commit to the path. You keep control of the pace.</span></div>'+
+        '<div class="rollout">'+
+          '<button class="ro'+(S.rollout==="step"?" on":"")+'" data-ro="step">'+
+            '<span class="ro-t">One bundle at a time</span>'+
+            '<span class="ro-d">The runner merges a bundle and stops. You check out the tree, then release the next.</span></button>'+
+          '<button class="ro'+(S.rollout==="all"?" on":"")+'" data-ro="all">'+
+            '<span class="ro-t">All at once</span>'+
+            '<span class="ro-d">The runner merges all three bundles, then opens one pull request from the last branch onto master.</span></button>'+
+        '</div>'+
+        '<div class="target"><span class="tg-h">Nothing merges onto master</span>'+
+          'Each bundle merges onto its own integration branch. Master sees one pull request at the end, '+
+          'from <code>flightdeck/path-a/3-named</code>, and you can abandon the whole path by deleting three branches.</div>'+
+        '<div class="sechead" style="margin-top:22px;"><h2>The bundles</h2>'+
+        '<span class="sub">Each action is recorded, and the runner performs it.</span></div>'+
         waves+alts+
       '</div><div>'+chain+
         '<div class="panel git"><h4>What the git replay found</h4><ul><li>'+r.git.join("</li><li>")+'</li></ul></div>'+
@@ -731,8 +904,19 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
     stage.plan.querySelectorAll(".act[data-act]").forEach(function(b){
       b.addEventListener("click",function(){doAct(id,Number(b.getAttribute("data-w")),b.getAttribute("data-act"),b);});
     });
+    stage.plan.querySelectorAll("[data-ro]").forEach(function(b){
+      b.addEventListener("click",function(){
+        S.rollout=b.getAttribute("data-ro");
+        record({type:"rollout",path:id,mode:S.rollout,by:"human"},
+               S.rollout==="step"?"One bundle at a time. The runner stops after each.":"All three bundles in one run.");
+        openRoute(id);
+      });
+    });
     stage.plan.querySelectorAll("[data-route]").forEach(function(b){
       b.addEventListener("click",function(){openRoute(b.getAttribute("data-route"));});
+    });
+    stage.plan.querySelectorAll("[data-blk]").forEach(function(el){
+      el.addEventListener("click",function(e){e.stopPropagation();openBlocked(Number(el.getAttribute("data-blk")));});
     });
     bindPrChips(stage.plan);
     go("plan");
@@ -746,25 +930,27 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
   function doAct(id,i,kind,btn){
     if(btn){btn.classList.add("flash");setTimeout(function(){btn.classList.remove("flash");},500);}
     if(kind==="close17"){markDone(id,i);
-      record({type:"disposition",pr:17,verb:"close",reason:"duplicate head branch with 18",route:id,by:"human"},
-             "PR 17 queued to close. Nothing sent yet.");
+      record({type:"merge_bundle",bundle:3,prs:[12,13,16,18],onto:"flightdeck/path-a/3-named",
+              from:"flightdeck/path-a/2-five-plugins",also:{close:[17]},path:id,by:"human"},
+             "Recorded. The runner will close 17 and merge bundle 3.");
     }else if(kind==="order"){markDone(id,i);
-      record({type:"disposition",prs:[12,13,16],verb:"order_after",after:[11,18],
-              because:"all three name paths that wave 1 moves",route:id,by:"human"},
-             "Wave 2 queued behind wave 1.");
+      record({type:"merge_bundle",bundle:2,prs:[11],onto:"flightdeck/path-a/2-five-plugins",
+              from:"flightdeck/path-a/1-single-plugin",path:id,by:"human"},
+             "Recorded. The runner will merge bundle 2 onto its branch.");
     }else if(kind==="release"){markDone(id,i);
-      record({type:"disposition",prs:[2,3,4,5,6,9],verb:"release_parallel",
-              because:"no shared path with wave 1 or wave 2",route:id,by:"human"},
-             "Six pull requests released for parallel review.");
+      record({type:"merge_bundle",bundle:1,prs:[2,3,4,5,9],onto:"flightdeck/path-a/1-single-plugin",
+              from:"0c099be",path:id,by:"human"},
+             "Recorded. The runner will merge bundle 1 onto its branch.");
     }else if(kind.indexOf("open")===0){markDone(id,i);openPr(Number(kind.slice(4)));}
     dock();
   }
   function adopt(){
     if(!S.route||!ROUTES[S.route].waves)return;
     S.adopted=S.route;
-    record({type:"route_pick",picked:S.route,refused:["B","C"],open_set:HUMAN,
-            auto_merged:AUTO,validated_with:"git replay, 0 conflicts",by:"human"},
-           "Path "+S.route+" adopted. The two refused routes stay on the record.");
+    record({type:"path_accept",picked:S.route,refused:["B","C"],in_path:[2,3,4,5,9,11,12,13,16,18],
+            blocked:{superseded:[17],conflict:[6]},rollout:S.rollout,
+            validated_with:"git replay from 0c099be, 0 conflicts",by:"human"},
+           "Path accepted. The runner starts bundle 1.");
     dock();
   }
 
@@ -813,8 +999,13 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
     if(S.view==="deck"){
       h='<span class="pill'+(S.adopted?" ok":"")+'">'+(S.adopted?"Path "+S.adopted+" adopted":"No route adopted")+'</span>'+
         '<span class="pill">'+S.ledger.length+' recorded</span><span class="sp"></span>'+
-        '<span class="pill">Open the recommendation to act</span>';
+        '<span class="pill">Open the recommendation to accept it</span>';
     } else if(S.view==="plan"){
+      if(!S.route){
+        el.innerHTML='<span class="pill">PR #'+S.blk+' &middot; held out of path A</span><span class="sp"></span>'+
+          '<button class="act primary" data-dock="plan-a">Back to the path</button>';
+        return;
+      }
       var r=ROUTES[S.route];
       if(!r.waves){
         h='<span class="pill">Route '+S.route+' &middot; set aside</span><span class="sp"></span>'+
@@ -825,7 +1016,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
         h='<span class="pill">'+n+' of '+r.waves.length+' waves done</span><span class="sp"></span>'+
           '<button class="act" data-dock="deck">Back</button>'+
           '<button class="act '+(S.adopted===S.route?"":"primary")+'" data-dock="adopt">'+
-          (S.adopted===S.route?"Adopted &#10003;":"Adopt this path")+'</button>';
+          (S.adopted===S.route?"Accepted &#10003;":"Accept this path")+'</button>';
       }
     } else {
       h='<span class="pill">PR #'+S.pr+'</span><span class="sp"></span>'+
@@ -863,22 +1054,23 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
 
   /* ============ TOUR ============ */
   var TOUR=[
-    {t:"Seventeen pull requests are open. Five merged automatically, and eight had no description until /pr:generate wrote one.",ms:3600,f:function(){go("deck",true);setLedger(false);}},
-    {t:"The front page does not start with mechanics. It starts with what you would have if you accept.",ms:3400,f:function(){}},
-    {t:"Under it, the path. Three passes, and the order matters more than anything else here.",ms:3200,f:function(){}},
-    {t:"It was simulated from 0c099be, the common ancestor of all seventeen branches, not from master today.",ms:3600,f:function(){}},
-    {t:"Open it to see what each pull request adds.",ms:2200,f:function(){openRoute("A");}},
-    {t:"Twelve pull requests, one line each, in the order they can land. Not a description of the machinery.",ms:3600,f:function(){}},
-    {t:"Beside it, the physical question: can they merge, and in what order. Four renames decide it.",ms:3600,f:function(){}},
-    {t:"Era one first, because six pull requests write into directories that pull request 11 deletes.",ms:3400,f:function(){doAct("A",0,"release");}},
-    {t:"Then the split, alone.",ms:2400,f:function(){doAct("A",1,"order");}},
-    {t:"Then the work that names the new structure, with the duplicate branch closed.",ms:3200,f:function(){doAct("A",2,"close17");}},
-    {t:"The alternatives are unlocked now. One of them is the order I recommended before checking the base.",ms:3800,f:function(){stage.plan.scrollTop=stage.plan.scrollHeight;}},
-    {t:"Open any pull request in the existing four-level layout.",ms:2600,f:function(){stage.plan.scrollTop=0;openPr(11);}},
+    {t:"Seventeen open. Five merged automatically, ten fit one path, and two cannot go in at all.",ms:3600,f:function(){go("deck",true);setLedger(false);}},
+    {t:"The page opens with what you would have if you accept, and with what you would not.",ms:3400,f:function(){}},
+    {t:"Below it, the two that cannot go in. One is superseded. One will not merge.",ms:3400,f:function(){}},
+    {t:"Open the one that will not merge.",ms:2200,f:function(){openBlocked(6);}},
+    {t:"One file, one hunk, and both sides rewrote it. A merge cannot pick a side, so a person decides.",ms:4000,f:function(){}},
+    {t:"Three ways out, with the smaller rewrite recommended. Recording one starts the work.",ms:3400,f:function(){document.querySelector('[data-blkopt="0"]').click();}},
+    {t:"Back to the path. Ten pull requests, one line each, in the order they can land.",ms:3400,f:function(){openRoute("A");}},
+    {t:"You commit to the path, and you keep the pace. One bundle at a time is the default.",ms:3600,f:function(){}},
+    {t:"Nothing merges onto master. Each bundle has its own branch, and master sees one pull request at the end.",ms:4000,f:function(){}},
+    {t:"Merge bundle one. The runner does it, and stops at the checkpoint.",ms:3200,f:function(){doAct("A",0,"release");}},
+    {t:"Then the split, alone, so the checkpoint after it is a tree anybody can read.",ms:3400,f:function(){doAct("A",1,"order");}},
+    {t:"Then the work that names the new structure.",ms:2800,f:function(){doAct("A",2,"close17");}},
+    {t:"Open any pull request in the existing four-level layout.",ms:2600,f:function(){openPr(11);}},
     {t:"Approve from here. The record names the whole set it was judged against.",ms:3000,f:function(){document.querySelector('[data-dock="approve"]').click();}},
-    {t:"Back to the path, and adopt it.",ms:2400,f:function(){openRoute("A");}},
-    {t:"Adopting records the pick, the two refusals, and that git validated it.",ms:3200,f:function(){adopt();}},
-    {t:"Every action is one line in an append-only ledger.",ms:3000,f:function(){go("deck",true);setLedger(true);}},
+    {t:"Back to the path, and accept it.",ms:2400,f:function(){openRoute("A");}},
+    {t:"Accepting records the path, the two refusals, the two held out, and the rollout you chose.",ms:3800,f:function(){adopt();}},
+    {t:"Every line is in an append-only ledger, and the runner reads it from there.",ms:3200,f:function(){go("deck",true);setLedger(true);}},
     {t:"That is the loop. Click anything to explore it yourself.",ms:2800,f:function(){setLedger(false);}}
   ];
   var ti=0,tt=null;
@@ -893,7 +1085,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
   }
   $("tourBtn").addEventListener("click",function(){
     if(S.tour){tstop();return;}
-    S.tour=true;ti=0;S.adopted=null;S.done={};S.ledger=[];S.route=null;S.unlocked=false;
+    S.tour=true;ti=0;S.adopted=null;S.done={};S.ledger=[];S.route=null;S.blk=null;S.unlocked=false;S.rollout="step";
     $("ledgerB").innerHTML='<p class="ledger-empty">Nothing recorded yet. Every action appends one line here, and nothing is ever rewritten.</p>';
     $("ledgerN").textContent="0";renderDeck();
     $("tour").classList.add("on");$("tourBtn").classList.add("playing");
