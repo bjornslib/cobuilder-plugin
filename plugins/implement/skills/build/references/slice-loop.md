@@ -231,7 +231,13 @@ mode.
 
 **Scripted (multi-agent workflows).** `workflows/slice-loop.js` in this skill
 runs the loop with deterministic control flow. The user must explicitly opt in
-to multi-agent orchestration before running the script.
+to multi-agent orchestration before running the script. Invoke it with
+`Workflow({scriptPath: "${CLAUDE_PLUGIN_ROOT}/skills/build/workflows/slice-loop.js", args: {...}})`
+— `name: "slice-loop"` will not resolve, since the Workflow tool's `name`
+input only looks up built-in or `.claude/workflows/`-registered workflows,
+not plugin-shipped scripts. The script also has no filesystem access, so
+each slice's `epicDesignExists` must be computed and passed in by the
+orchestrating session (see the script's own args comment).
 
 ---
 

@@ -1,12 +1,12 @@
 {
   "schema_version": "1.3",
   "sources": {
-    "git_head": "55395917fd9a0dd54b272e76799d319f0a5e174d",
+    "git_head": "9ee7ce2330f2f7e6fc20c4e72e4a777416350dc7",
     "trees": {
-      "docs/architecture/adr": "sha256:fd9dd693addcaf68e2bcc92bf905004dfcf546721de125b51b7d5e9e758ba8a1",
-      "docs/architecture/designs": "sha256:83935e6bf2bb91a878f8883ea5198777c99bf2252273ac7fcba639bd723d366f",
+      "docs/architecture/adr": "sha256:ff9214a45fa93be6d1db6859475dceb268c9816a137ae97da4580533b18f55cf",
+      "docs/architecture/designs": "sha256:a2a2fd0d8c43cc5b186f0fe37dc36f69112237d5491446e7a5e97df4fbf90873",
       "docs/architecture/contexts": "sha256:4626a327bd28df972d97d40dc1325c28808eb48789649b87eadd218b3528c907",
-      "docs/plans": "sha256:c6ed98e3846b908d8cfd216b6ff873473172ec2559e6e6ac6a4141253205efd1"
+      "docs/plans": "sha256:c74faf0d87d977f583e8fbd67d00138b8ee695a145112fae6f391b4107aca33e"
     }
   },
   "entities": {
@@ -115,6 +115,11 @@
         "id": "ADR-0021",
         "title": "book-index.md gains a nano tier, and full-book loading stops being unconditional",
         "state": "decided"
+      },
+      {
+        "id": "ADR-0022",
+        "title": "Gate documents projected into the record index",
+        "state": "decided"
       }
     ],
     "design": [
@@ -141,6 +146,12 @@
         "name": "design-mode",
         "outcome": "An engineer can design a change with the plugin before writing it, and the resulting intent, ADR, and diagrams carry through to the pull request that implements it.",
         "stage": "implemented"
+      },
+      {
+        "id": "gate-doc-surfacing",
+        "name": "gate-doc-surfacing",
+        "outcome": "Gate documents (03-program-design.md, epic-<id>-design.md) are readable from the viewer's Builds view, not just from docs/plans/ or a one-off Artifact publish.",
+        "stage": "decided"
       },
       {
         "id": "inflight-record-store",
@@ -245,6 +256,24 @@
         "pr": 11,
         "state": "open",
         "note": "Design mode as a pre-code interview and challenge gate. Shares a branch and a pull request with the cobuilder-implement design. See ADR-0013: a branch may carry more than one design."
+      },
+      {
+        "id": "gate-doc-surfacing/E1",
+        "design": "gate-doc-surfacing",
+        "epic_id": "E1",
+        "branch": "design/gate-doc-surfacing",
+        "pr": 19,
+        "state": "open",
+        "note": "shared/build_index.py: add PROGRAM_DESIGN_FIELDS and EPIC_DESIGN_FIELDS projection tuples plus project_program_design/project_epic_design, following the project_fields(source, fields) pattern used by project_goal/project_intent/project_assessment. Parse docs/plans/<slug>/03-program-design.md and epic-<id>-design.md; emit program_design and epic_design entities into data/index.json. Extend feature_gates join entries with a doc reference where one exists."
+      },
+      {
+        "id": "gate-doc-surfacing/E2",
+        "design": "gate-doc-surfacing",
+        "epic_id": "E2",
+        "branch": "design/gate-doc-surfacing",
+        "pr": 19,
+        "state": "open",
+        "note": "plugins/artifact/viewer/index.html: make gate-rail-grid cards (renderBuildsMainContent, ~line 3249) clickable, opening a gate-doc sheet modeled on openAdrSheet. Add a design-doc chip to renderEpicCard (~line 3282) for epics with an epic_design entity."
       },
       {
         "id": "inflight-record-store/E1",
@@ -891,6 +920,13 @@
         "state": "open",
         "commit": "1d0c5ceb27a7df8dfaf4e3d36e2ebf9993a27735",
         "date": "2026-08-26"
+      },
+      {
+        "id": 19,
+        "title": "Gate-doc surfacing in the viewer, plus a slice-loop workflow-invocation fix",
+        "state": "open",
+        "commit": "9ee7ce2330f2f7e6fc20c4e72e4a777416350dc7",
+        "date": "2026-09-02"
       }
     ],
     "slice": [
@@ -1030,6 +1066,66 @@
         "n": 14,
         "title": "The wake command and the whole loop",
         "ends_with": "The background command blocks and returns new threads, and the loop runs once end to end",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "gate-doc-surfacing/1",
+        "feature": "gate-doc-surfacing",
+        "n": 1,
+        "title": "Tracer bullet: constants and empty entity lists",
+        "ends_with": "`data/index.json` carries `program_design` and `epic_design` keys (empty lists when no gate docs exist yet)",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "gate-doc-surfacing/2",
+        "feature": "gate-doc-surfacing",
+        "n": 2,
+        "title": "Real parsing: project Gate 3 and Gate 4b docs",
+        "ends_with": "A repo with a `03-program-design.md` and an `epic-*-design.md` produces populated `program_design`/`epic_design` entities, and `joins.feature_gates[slug][3].doc` points at the projected id",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "gate-doc-surfacing/3",
+        "feature": "gate-doc-surfacing",
+        "n": 3,
+        "title": "Edge cases: missing files, malformed epic id, no plans dir",
+        "ends_with": "A plan directory with no gate docs, and a repo with no `docs/plans/` at all, both still produce a clean index build with empty (not missing) entity keys",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "gate-doc-surfacing/4",
+        "feature": "gate-doc-surfacing",
+        "n": 4,
+        "title": "Tracer bullet: clickable Gate Rail card opens an empty sheet",
+        "ends_with": "Clicking a Gate Rail card with a `doc` opens a sheet showing the gate's title and an empty body; a card with no `doc` stays non-interactive",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "gate-doc-surfacing/5",
+        "feature": "gate-doc-surfacing",
+        "n": 5,
+        "title": "Real content: render the gate doc body, add the epic chip",
+        "ends_with": "The sheet renders `body_md` through the existing `renderMarkdown()`; an epic card with a `design_doc` shows a chip that opens the same sheet scoped to that epic",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "gate-doc-surfacing/6",
+        "feature": "gate-doc-surfacing",
+        "n": 6,
+        "title": "Edge cases: no entity, mutual exclusivity with other sheets",
+        "ends_with": "A Gate Rail card whose gate has no matching doc opens nothing; opening the gate-doc sheet closes any open ADR/assessment/comments sheet, and vice versa",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -1182,6 +1278,14 @@
         "path": [
           "book-index-tiering/E1"
         ]
+      },
+      "ADR-0022": {
+        "pr": 19,
+        "via": "epic",
+        "path": [
+          "gate-doc-surfacing/E1",
+          "gate-doc-surfacing/E2"
+        ]
       }
     },
     "epic_to_pull_request": {
@@ -1189,6 +1293,8 @@
       "cobuilder-implement/E1": 11,
       "cobuilder-implement/E2": 12,
       "design-mode/E1": 11,
+      "gate-doc-surfacing/E1": 19,
+      "gate-doc-surfacing/E2": 19,
       "plugin-split/E1": 11,
       "plugin-split/E2": 11,
       "plugin-split/E3": 11,
@@ -1206,6 +1312,8 @@
       "cobuilder-implement/E1": "merged",
       "cobuilder-implement/E2": "merged",
       "design-mode/E1": "merged",
+      "gate-doc-surfacing/E1": "open",
+      "gate-doc-surfacing/E2": "open",
       "inflight-record-store/E1": "unstarted",
       "inflight-record-store/E2": "unstarted",
       "inflight-record-store/E3": "unstarted",
@@ -1245,7 +1353,13 @@
       "cobuilder-family/11": "plugin-split/E5",
       "cobuilder-family/12": "plugin-split/E6",
       "cobuilder-family/13": "plugin-split/E6",
-      "cobuilder-family/14": "plugin-split/E6"
+      "cobuilder-family/14": "plugin-split/E6",
+      "gate-doc-surfacing/1": "gate-doc-surfacing/E1",
+      "gate-doc-surfacing/2": "gate-doc-surfacing/E1",
+      "gate-doc-surfacing/3": "gate-doc-surfacing/E1",
+      "gate-doc-surfacing/4": "gate-doc-surfacing/E2",
+      "gate-doc-surfacing/5": "gate-doc-surfacing/E2",
+      "gate-doc-surfacing/6": "gate-doc-surfacing/E2"
     },
     "slice_to_epic_unresolved": {},
     "context_verifies_district": {
@@ -1265,7 +1379,8 @@
       "ADR-0017": "cobuilder-packaging",
       "ADR-0018": "cobuilder-packaging",
       "ADR-0019": "cobuilder-packaging",
-      "ADR-0020": "cobuilder-packaging"
+      "ADR-0020": "cobuilder-packaging",
+      "ADR-0022": "viewer"
     },
     "adr_to_district": {
       "ADR-0001": "scripts",
@@ -1306,6 +1421,28 @@
           "n": 4,
           "name": "Slice plan, epic designs, and rubrics",
           "state": "APPROVED 2026-08-25"
+        }
+      ],
+      "gate-doc-surfacing": [
+        {
+          "n": 1,
+          "name": "Product",
+          "state": "APPROVED 2026-09-01"
+        },
+        {
+          "n": 2,
+          "name": "Architecture",
+          "state": "APPROVED 2026-09-01"
+        },
+        {
+          "n": 3,
+          "name": "Program Design",
+          "state": "APPROVED 2026-09-01"
+        },
+        {
+          "n": 4,
+          "name": "Slice plan, epic designs, and rubrics",
+          "state": "APPROVED 2026-09-01"
         }
       ],
       "skill-collision-fix": [

@@ -1,0 +1,49 @@
+{
+  "captured": "2026-09-01",
+  "source": "design",
+  "design_name": "gate-doc-surfacing",
+  "authorship": "agent-assisted",
+  "problem": "Gate 3 program-design docs and Gate 4b epic technical-design docs live at docs/plans/<slug>/*.md, but the viewer's index tracks only adr, design, epic, slice, and pull_request entities. A reviewer who wants to watch a build's Gate 3 progress in the viewer sees nothing — the Gate Rail already shows approval state (00-status.md), but never the document content behind it. The workaround was publishing the doc as a one-off Claude Artifact: readable, but disconnected from docs/plans/, no rebuild hook, and undiscoverable from the viewer itself.",
+  "why_now": "The prior session's Gate 3 approval loop surfaced this live: the engineer asked to see the design in the viewer, the agent found no entity for it, and improvised an Artifact instead. That workaround is now a repeatable gap, not a one-time surprise, and the viewer's Builds view (renderBuildsMainContent) already renders a Gate Rail and epic cards that are the natural attachment point.",
+  "approach": "Extend shared/build_index.py to project docs/plans/<slug>/03-program-design.md and epic-<id>-design.md into two new index entities, program_design and epic_design, following the existing GOAL_FIELDS/project_fields(source, fields) pattern. Extend joins.feature_gates entries with a doc reference where one exists. In the viewer, make Gate Rail cards clickable, opening a sheet modeled on openAdrSheet, and add a design-doc chip to epic cards that have an approved 4b design.",
+  "alternatives": [
+    {
+      "option": "Add a new top-level 'Plans' or 'Gate Docs' tab in the viewer",
+      "rejected_because": "ADR-0018 decided one lifecycle surface with a derived record index precisely to stop the reading surface count from growing per artifact type. A gate doc is scoped to a build already living in the viewer's Builds view (district: viewer) — a sibling tab duplicates that context instead of joining it."
+    },
+    {
+      "option": "Parse gate docs ad hoc in the viewer's client-side JS at render time, skipping the index",
+      "rejected_because": "ADR-0018's whole point is that joins get resolved once, in build_index.py, not scattered across client fetches. The viewer is also a single committed HTML file with no direct filesystem access model beyond its bundled data/ scripts (district: viewer) — it cannot read docs/plans/ at render time at all."
+    },
+    {
+      "option": "Split viewer/index.html into parts now, and add gate docs to the new module structure",
+      "rejected_because": "ADR-0020 decided the viewer-parts split but is explicitly not executed yet (CLAUDE.md: 'treat that ADR as a plan, not as the current shape of the file'). Starting that execution as a side effect of this design is scope creep this design does not own."
+    },
+    {
+      "option": "Keep publishing gate docs as one-off Claude Artifacts",
+      "rejected_because": "This is the workaround that exposed the gap: no rebuild hook ties it to docs/plans/, so it drifts, and it is not discoverable from the viewer itself — the problem this design exists to fix."
+    }
+  ],
+  "out_of_scope": [
+    "a new top-level viewer tab for plans or gate docs",
+    "editing a gate doc from the viewer — read-only sheet only",
+    "changing how 00-status.md's approval state is parsed or displayed",
+    "PDF or standalone-artifact export of a gate doc",
+    "executing ADR-0020's viewer-parts split — this design writes into the current monolithic viewer/index.html, the file that ships today"
+  ],
+  "risks": [
+    "a gate doc grows long enough that the sheet reading UX (built for ADR text, a few hundred lines) degrades",
+    "program_design/epic_design entity ids collide with, or get confused with, the existing epic entity's <design>/<epic-id> scoping",
+    "the sheet becomes stale between build_index.py runs the same way the pre-fix Artifact was, if a future gate step forgets to rebuild — mitigated by the just-added viewer-rebuild-per-gate step in implement/skills/build/SKILL.md's approval protocol"
+  ],
+  "testing": "Not yet built. shared/build_index.py already has field-projection tests for GOAL_FIELDS/EPIC_FIELDS/etc — the new PROGRAM_DESIGN_FIELDS/EPIC_DESIGN_FIELDS constants and their project_* functions should get the same coverage shape.",
+  "reviewer_focus": [
+    "whether program_design/epic_design entity ids collide with the epic entity's own id scheme",
+    "whether the sheet UX holds up for a long program-design doc",
+    "whether the Gate Rail card / epic chip is discoverable without extra instruction"
+  ],
+  "unknowns": [
+    "how large a typical 03-program-design.md or epic-<id>-design.md gets across real features, and whether the sheet needs pagination or truncation",
+    "whether a design with no docs/plans/<slug>/ directory at all (a design never taken to implement mode) should render an empty Gate Rail or hide it entirely"
+  ]
+}

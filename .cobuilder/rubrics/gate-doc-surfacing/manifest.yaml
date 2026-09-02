@@ -1,0 +1,25 @@
+feature: gate-doc-surfacing
+test_command: "python3 -m pytest tests/test_build_index_gate_docs.py -v"
+thresholds:
+  accept: 0.90
+  investigate: 0.70
+max_attempts: 3
+slices:
+  - id: 1
+    name: "E1 tracer bullet: constants and empty entity lists"
+    weight: 0.10
+  - id: 2
+    name: "E1 real parsing: project Gate 3/4b docs"
+    weight: 0.25
+  - id: 3
+    name: "E1 edge cases"
+    weight: 0.10
+  - id: 4
+    name: "E2 tracer bullet: clickable Gate Rail card opens empty sheet"
+    weight: 0.15
+  - id: 5
+    name: "E2 real content: render body, add epic chip"
+    weight: 0.25
+  - id: 6
+    name: "E2 edge cases: no-doc cards, mutual exclusivity"
+    weight: 0.15

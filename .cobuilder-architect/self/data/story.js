@@ -58,7 +58,7 @@ window.STORY = {
         "id": "docs",
         "label": "Docs",
         "kind": "authored-source",
-        "files": 91,
+        "files": 120,
         "blurb": "Authored source that no script regenerates: architecture decision records under architecture/adr and adr, design proposals under architecture/designs, two architecture review reports, a plan for cobuilder-factory, and staged pull-request content under pull-requests. Submit and design mode write here. Generate mode never does.",
         "root_paths": [
           "docs"
@@ -1817,6 +1817,185 @@ window.STORY = {
           ]
         },
         "regret_risk": "If this merges as written, the team lives with three things. First, a naming convention (no plugin repeats the repo's own cobuilder- prefix) that is documented but not mechanically enforced, so a future new plugin can silently violate it again. Second, prose across SKILL.md, README.md, and CLAUDE.md that names a specific owning plugin per slash command, verified by hand in this PR but not continuously -- a later doc edit could reintroduce the exact cross-plugin misattribution this PR just fixed, since no test greps prose for plugin-command consistency. Third, this PR changes a decision ADR-0016 made with no new ADR recording why, which breaks the pattern the rest of this repo's history otherwise follows closely, and makes the rename harder for a future reader to trace back to a rationale.",
+        "drift": []
+      }
+    },
+    {
+      "pr": 19,
+      "date": "2026-09-02",
+      "title": "Gate-doc surfacing in the viewer, plus a slice-loop workflow-invocation fix",
+      "tagline": "",
+      "depth": "summary",
+      "size": {
+        "files": 40,
+        "adds": 2467,
+        "dels": 90
+      },
+      "touched": {
+        ".cobuilder-architect": 7,
+        ".cobuilder": 7,
+        "docs": 20,
+        "plugins": 4,
+        "shared": 1,
+        "tests": 1
+      },
+      "levels": {},
+      "status": "open",
+      "commit": "9ee7ce2330f2f7e6fc20c4e72e4a777416350dc7",
+      "intent": {
+        "captured": "2026-09-03",
+        "source": "inferred",
+        "authorship": "agent-assisted",
+        "design": {
+          "name": "gate-doc-surfacing",
+          "epic": null
+        },
+        "problem": "Gate 3 program-design docs and Gate 4b epic technical-design docs live at docs/plans/<slug>/*.md, but the viewer's index tracks only adr, design, epic, slice, and pull_request entities. A reviewer who wants to watch a build's Gate 3 progress in the viewer sees nothing: the Gate Rail already shows approval state from 00-status.md, but never the document content behind it. A prior session's workaround was publishing the doc as a one-off Claude Artifact, disconnected from docs/plans/ with no rebuild hook and undiscoverable from the viewer.",
+        "why_now": "The gap surfaced live when an engineer asked to see a Gate 3 design in the viewer and the agent found no entity for it. The Builds view (renderBuildsMainContent) already renders a Gate Rail and epic cards, which are the natural attachment point for a doc link, so the fix slots into an existing surface rather than adding a new one.",
+        "approach": "Extend shared/build_index.py with discover_plan_gate_docs()/project_program_design()/project_epic_design(), following the existing GOAL_FIELDS/project_fields(source, fields) pattern, to project docs/plans/<slug>/03-program-design.md and epic-<id>-design.md into two new index entities, program_design and epic_design (ADR-0022). resolve_feature_gates() now attaches a doc reference to a feature's Gate 3 entry when a program-design doc exists. In the viewer, Gate Rail cards became clickable, opening a sheet modeled on the existing ADR sheet, and epic cards with an approved Gate 4b design gained a design-doc chip. Both entities and the viewer change are covered by tests/test_build_index_gate_docs.py (10 cases). Separately, while using this plugin's implement workflow in an unrelated sister repo, two defects surfaced in plugins/implement/skills/build/workflows/slice-loop.js: it invoked the Workflow tool with `name: \"slice-loop\"`, which only resolves built-in or .claude/workflows/-registered workflows and never finds a plugin-shipped script, and it imported node:fs and called existsSync() for a Gate 4b check, which workflow scripts cannot do because they run with no filesystem access at all (and the import also violated the requirement that `export const meta` be the script's first statement). Both are fixed here: the SKILL.md and reference doc now say to invoke with `scriptPath`, and the existence check moves to the orchestrating session (e.g. via verify_gate.py), which passes the result in as each slice's new `epicDesignExists` field.",
+        "alternatives": [
+          {
+            "option": "Add a new top-level 'Plans' or 'Gate Docs' tab in the viewer",
+            "rejected_because": "ADR-0018 decided one lifecycle surface with a derived record index precisely to stop the reading surface count from growing per artifact type. A gate doc is scoped to a build already living in the viewer's Builds view (district: viewer), a sibling tab duplicates that context instead of joining it."
+          },
+          {
+            "option": "Parse gate docs ad hoc in the viewer's client-side JS at render time, skipping the index",
+            "rejected_because": "ADR-0018's whole point is that joins get resolved once, in build_index.py, not scattered across client fetches. The viewer is also a single committed HTML file with no direct filesystem access model beyond its bundled data/ scripts (district: viewer): it cannot read docs/plans/ at render time at all."
+          },
+          {
+            "option": "Split viewer/index.html into parts now, and add gate docs to the new module structure",
+            "rejected_because": "ADR-0020 decided the viewer-parts split but is explicitly not executed yet. Starting that execution as a side effect of this design is scope creep this design does not own."
+          },
+          {
+            "option": "Keep publishing gate docs as one-off Claude Artifacts",
+            "rejected_because": "This is the workaround that exposed the gap: no rebuild hook ties it to docs/plans/, so it drifts, and it is not discoverable from the viewer itself."
+          },
+          {
+            "option": "For the slice-loop fix, have the orchestrating session poll or retry existsSync inside the workflow script",
+            "rejected_because": "Workflow scripts have no filesystem or Node.js API access at all (confirmed against the tool's own authoring reference), so no retry inside the script can make the check work. The only place the check can run is the orchestrating session, before it invokes the workflow."
+          }
+        ],
+        "out_of_scope": [
+          "a new top-level viewer tab for plans or gate docs",
+          "editing a gate doc from the viewer, read-only sheet only",
+          "changing how 00-status.md's approval state is parsed or displayed",
+          "PDF or standalone-artifact export of a gate doc",
+          "executing ADR-0020's viewer-parts split, this design writes into the current monolithic viewer/index.html",
+          "re-scoring or re-running any slice that already ran under the old, broken slice-loop.js invocation"
+        ],
+        "risks": [
+          "a gate doc grows long enough that the sheet reading UX (built for ADR text, a few hundred lines) degrades",
+          "program_design/epic_design entity ids collide with, or get confused with, the existing epic entity's <design>/<epic-id> scoping",
+          "the sheet becomes stale between build_index.py runs the same way the pre-fix Artifact was, if a future gate step forgets to rebuild",
+          "a future edit to slice-loop.js reintroduces a Node.js API call (fs, path, etc.) above the meta literal, which fails the same two ways this fix corrects"
+        ],
+        "testing": "tests/test_build_index_gate_docs.py (10 cases) covers discover_plan_gate_docs, project_program_design, project_epic_design, and the Gate 3 doc-reference attachment in resolve_feature_gates. E2 was verified live in-browser against the running viewer (see commit 651b07a). The slice-loop.js fix was verified by reading the workflow-authoring reference's constraints (no filesystem access, meta must be the first statement) and by running the full pytest suite (322 passed, 4 pre-existing unrelated Pillow/webp failures from an arch-mismatched local Pillow install) after the change; no automated test exercises the Workflow tool invocation itself, since that requires the tool's runtime.",
+        "reviewer_focus": [
+          "whether program_design/epic_design entity ids collide with the epic entity's own id scheme",
+          "whether the sheet UX holds up for a long program-design doc",
+          "whether the Gate Rail card / epic chip is discoverable without extra instruction",
+          "whether bundling the unrelated slice-loop.js fix into this design's PR, rather than a separate PR, is acceptable given it was found while dogfooding this same plugin"
+        ],
+        "unknowns": [
+          "how large a typical 03-program-design.md or epic-<id>-design.md gets across real features, and whether the sheet needs pagination or truncation",
+          "whether a design with no docs/plans/<slug>/ directory at all (a design never taken to implement mode) should render an empty Gate Rail or hide it entirely"
+        ]
+      },
+      "assessment": {
+        "stage": "pre",
+        "generated": "2026-09-03",
+        "verdict": "concerns",
+        "risk_tier": "architectural",
+        "summary": "Two changes ship in one PR: the gate-doc-surfacing design (program_design/epic_design entities per ADR-0022, plus the viewer's clickable Gate Rail and design-doc chip) and an unrelated fix to plugins/implement/skills/build/workflows/slice-loop.js, found while dogfooding the implement workflow in a sister repo. Both are sound on their own; the summary finding below is that they are bundled.",
+        "sensible": {
+          "answer": "Yes, against the stated problem for the design half: the Builds view already renders a Gate Rail and epic cards from an approval-state parse, but never the document content behind it, and this change attaches that content through the same index-projection pattern ADR-0018 already established. The slice-loop.js half is also sensible: a workflow script that can never be found (wrong Workflow-tool invocation) and can never run past its Gate 4b check (imports a Node API the runtime does not provide) is not a partially-working feature, it is dead code with tests never exercising it.",
+          "evidence": [
+            "ADR-0018",
+            "ADR-0022",
+            "shared/build_index.py:discover_plan_gate_docs",
+            "plugins/implement/skills/build/workflows/slice-loop.js"
+          ]
+        },
+        "maintainability": {
+          "answer": "Helps: program_design/epic_design follow the same GOAL_FIELDS/project_fields(source, fields) shape every other entity in build_index.py already uses, so a future entity kind has one more precedent to copy rather than a special case to learn. The slice-loop.js fix removes a call the runtime silently could never satisfy and replaces it with an explicit caller-supplied field (epicDesignExists), which is more maintainable than a check that looked correct in isolation but failed to import at all. Hurts slightly: the PR mixes a feature and a bugfix, so `git blame` on workflows/slice-loop.js now attributes an unrelated design's commit range to a fix that has nothing to do with gate-doc surfacing.",
+          "constraint_introduced": "A gate document's content is now reachable only through the record index (program_design/epic_design), never parsed ad hoc by the viewer. Workflow scripts in this plugin family must never import a Node.js/filesystem API; any existence check a script needs must be computed by the orchestrating session and passed in through `args`.",
+          "evidence": [
+            "shared/build_index.py:249-250 (PROGRAM_DESIGN_FIELDS/EPIC_DESIGN_FIELDS)",
+            "plugins/implement/skills/build/workflows/slice-loop.js (epicDesignExists)",
+            "tests/test_build_index_gate_docs.py"
+          ]
+        },
+        "pattern": {
+          "verdict": "conforms",
+          "answer": "program_design/epic_design entities are a new kind, but they use the same project_fields(source, fields) projection every existing entity (GOAL_FIELDS, EPIC_FIELDS, INTENT_FIELDS, ASSESSMENT_FIELDS) already uses, and resolve_feature_gates() attaches the doc reference to the existing Gate 3 status parse rather than adding a parallel one. The slice-loop.js fix conforms to the Workflow tool's own documented contract (scriptPath for a plugin-shipped script, no filesystem access in the script body) rather than inventing a workaround.",
+          "duplicates": [],
+          "evidence": [
+            "shared/build_index.py:246-250",
+            "shared/build_index.py:1073-1090 (resolve_feature_gates)"
+          ]
+        },
+        "findings": [
+          {
+            "severity": "concern",
+            "claim": "This PR bundles two unrelated changes: the gate-doc-surfacing design (six commits) and a fix to plugins/implement/skills/build/workflows/slice-loop.js's Workflow-tool invocation and filesystem-access bug (one commit), found incidentally while using the plugin in a different repo. A reviewer who reviews only the design will miss the workflow fix, and vice versa.",
+            "evidence": "git log master..design/gate-doc-surfacing --oneline (7 commits: 6b89c69 through 210676c)",
+            "district": "docs",
+            "suggestion": "Accept as one PR since the fix is already committed on this branch and splitting it now means branch surgery, but call out the workflow fix explicitly in the PR description so a reviewer does not read it as part of the gate-doc-surfacing design."
+          },
+          {
+            "severity": "note",
+            "claim": ".cobuilder-architect/self/inventory.yaml still lists the pre-plugin-split districts (skills, scripts, commands, viewer, docs, .cobuilder-architect) rather than the current plugins/{architect,pr,artifact,implement,cobuilder-full-lifecycle}/ layout, so the district delta and boundary checks below are approximated by path rather than derived from a current baseline.",
+            "evidence": ".cobuilder-architect/self/inventory.yaml:4-27 (dated 2026-08-19, predates the plugin-prefix-drop rename)",
+            "district": "docs",
+            "suggestion": "Re-run baseline mode against the current tree so future assessments do not have to approximate district names."
+          },
+          {
+            "severity": "note",
+            "claim": "No automated test exercises the corrected Workflow-tool invocation (scriptPath vs name) or the new epicDesignExists caller contract, because doing so requires the Workflow tool's own runtime, which the repo's pytest suite does not have access to.",
+            "evidence": "plugins/implement/skills/build/workflows/slice-loop.js (no matching tests/ file)",
+            "district": "scripts",
+            "suggestion": "Treat the next real program-scale build (multiple epics per 04-slices.md) as the practical verification of this fix, since that is the first scenario that will actually invoke the workflow."
+          }
+        ],
+        "boundary_checks": [
+          {
+            "rule": "Inner layers (domain, business logic) never import outer layers (HTTP, UI, DB drivers, framework code).",
+            "source": "stacks/generic.md",
+            "result": "not-checkable",
+            "evidence": "This plugin family has no domain/adapter split to grep for; shared/build_index.py and the workflow script both read the filesystem and the plans directory by design."
+          },
+          {
+            "rule": "Configuration crosses into code in one place, not scattered env reads.",
+            "source": "stacks/generic.md",
+            "result": "pass",
+            "evidence": "Neither half of this diff adds a new environment-variable read; grep for os.environ / os.getenv in the diff hunks returns nothing."
+          },
+          {
+            "rule": "No plugin's script or skill file names another plugin's plugins/<other-name>/... path directly.",
+            "source": "ADR-0016",
+            "result": "pass",
+            "evidence": "grep of the diff for plugins/(architect|pr|artifact|implement|cobuilder-full-lifecycle)/ hits only each file's own plugin path (plugins/artifact/viewer/index.html, plugins/implement/skills/build/...), never a cross-plugin reference."
+          }
+        ],
+        "delta": {
+          "districts_added": [
+            "shared/build_index.py:program_design,epic_design entities"
+          ],
+          "districts_changed": [
+            "plugins/artifact/viewer (Gate Rail click, epic design-doc chip)",
+            "shared (build_index.py projection)",
+            "plugins/implement/skills/build (slice-loop.js, SKILL.md, slice-loop.md)",
+            "docs/plans/gate-doc-surfacing",
+            "docs/architecture/adr (ADR-0022)",
+            "docs/architecture/designs/gate-doc-surfacing"
+          ],
+          "edges_added": [
+            "shared/build_index.py -> docs/plans/<slug>/03-program-design.md,epic-<id>-design.md",
+            "plugins/artifact/viewer/index.html -> window.INDEX.entities.program_design,epic_design"
+          ],
+          "edges_removed": []
+        },
+        "regret_risk": "If this merges as written, the team gains a real gate-doc reading surface in the viewer and a workflow-invocation fix that unblocks the next multi-epic program-scale build, at the cost of a PR whose git history reviewers must read as two stories, not one. The likelier six-month regret is narrower: the inventory.yaml staleness noted above means the next assessment on this branch's district (or any branch touching plugins/) keeps approximating districts by path instead of reading a derived baseline, and that approximation compounds each time nobody re-runs baseline mode. A second, smaller regret is that the slice-loop.js fix has no automated coverage of its own; if a future edit reintroduces a Node API import above the meta literal, only the next real program-scale build will catch it, at the cost of a wasted Workflow invocation rather than a fast test failure.",
         "drift": []
       }
     }
