@@ -1,33 +1,38 @@
-%% review-flight-deck level 2 — one review, start to recorded call
+%% review-flight-deck level 2 — one run, event to merged bundle
 sequenceDiagram
     autonumber
-    actor R as Reviewer
-    participant M as braid mode
+    participant T as Workflow
+    participant F as flightdeck mode
+    participant H as GitHub
     participant G as local git
+    actor R as Reviewer
     participant L as ledger.py
-    participant B as build_index.py
-    participant V as viewer/index.html
+    participant N as path runner
 
-    R->>M: /pr:braid 16 17
-    M->>G: git fetch origin pr-16 pr-17
-    G-->>M: two branch heads
-    M->>G: git diff merge-base..head, per branch
-    G-->>M: unified diffs with hunk headers
-    M->>M: bucket hunks by file and line span
-    M->>G: git merge-tree, per candidate pair
-    G-->>M: conflicting hunks, or clean
-    M-->>R: 9 shared regions, and a proposed partition
+    T->>F: pull_request event
+    F->>H: list open pull requests
+    H-->>F: 17 open, 5 already auto-merged
+    F->>F: 8 have no description
+    F->>F: run generate mode for those 8
+    F->>G: merge-base of every open head
+    G-->>F: 0c099be, the common ancestor
 
-    loop one stop per contested region
-        M-->>R: shared before once, each after under its number
-        R->>M: a, s, or x
-        M->>L: append region_verdict
-        L->>L: write one line, rebuild the projection
+    F->>F: simulate 3 paths from that base
+    loop best 1 or 2 paths only
+        F->>G: replay the bundles on a scratch worktree
+        G-->>F: conflicts, or clean
     end
+    F->>F: classify what no path can carry
+    F-->>R: one validated path, 10 in, 2 held out
 
-    R->>M: accept or correct the partition
-    M->>L: append disposition, one per pull request
-    M->>B: run the full rebuild
-    B->>B: fold the ledger into a pull-request-to-pull-request join
-    B-->>V: data/braid.js and data/index.json
-    V-->>R: renders the proposal and the recorded calls, read-only
+    R->>R: read the outcome, then the contributions
+    R->>L: append path_accept, with the rollout choice
+    L->>L: write one line, rebuild the projection
+
+    loop one bundle at a time
+        N->>L: read the next unmerged bundle
+        N->>H: merge the bundle onto flightdeck/path-a/N
+        N-->>R: checkpoint, a tree to check out
+        R->>L: append merge_bundle for the next one
+    end
+    N->>H: open one pull request onto the default branch

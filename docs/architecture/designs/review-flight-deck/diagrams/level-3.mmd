@@ -1,55 +1,69 @@
 %% review-flight-deck level 3 — the record shapes
 classDiagram
-    class Region {
-        +str path
-        +int start
-        +int end
+    class OpenSet {
+        +str base_sha
+        +list~int~ open
+        +list~int~ auto_merged
+        +list~int~ described_by_generate
+        +str read_at
+    }
+    class Path {
+        +str path_id
+        +str name
+        +list~Bundle~ bundles
+        +list~Blocked~ blocked
+        +list~str~ outcome
+        +list~str~ not_included
+        +str status
+    }
+    class Bundle {
+        +int n
+        +str slug
         +list~int~ prs
-        +str evidence
-        +bool assessable
-        +str reason
+        +str branch
+        +str from_ref
+        +str why
     }
-    class Proposal {
-        +str proposal_id
-        +list~ReviewUnit~ units
-        +str computed_at
-        +list~str~ unassessable
-    }
-    class ReviewUnit {
-        +str unit_id
-        +list~int~ prs
-        +str because
-        +list~str~ cited_regions
-    }
-    class RegionVerdict {
-        +str type
-        +str region
-        +list~int~ prs
-        +str verdict
-        +str ts
-        +str by
-    }
-    class Disposition {
-        +str type
+    class Blocked {
         +int pr
-        +str verb
-        +list~int~ with_prs
-        +list~str~ derived_from
-        +str proposal_id
+        +str kind
+        +str file
+        +str span
+        +list~Option~ options
+    }
+    class Replay {
+        +str path_id
+        +str base_sha
+        +int conflicts
+        +list~str~ unassessed
+        +run_on_scratch_worktree() Replay
+    }
+    class PathAccept {
+        +str type
+        +str picked
+        +list~str~ refused
+        +str rollout
+        +str validated_with
         +str ts
     }
-    class BraidProjection {
-        +fold_verdicts(lines) dict
-        +to_pr_to_pr_join() dict
-        +mark_derived_edges() None
+    class MergeBundle {
+        +str type
+        +int bundle
+        +list~int~ prs
+        +str onto
+        +str from_ref
+        +str ts
     }
 
-    Proposal "1" *-- "1..*" ReviewUnit : partitions the set into
-    ReviewUnit "1" o-- "0..*" Region : cites
-    Region "1" <-- "0..*" RegionVerdict : judges
-    RegionVerdict "0..*" --> "1" BraidProjection : folded by
-    BraidProjection "1" --> "0..*" Disposition : emits
-    Disposition "0..*" --> "1" Proposal : records agreement or correction with
+    OpenSet "1" --> "1..*" Path : simulated into
+    Path "1" *-- "1..*" Bundle : ordered as
+    Path "1" o-- "0..*" Blocked : cannot carry
+    Path "1" <-- "0..1" Replay : validated by
+    Path "1" <-- "0..1" PathAccept : accepted by
+    PathAccept "1" --> "1..*" MergeBundle : authorises
+    Bundle "1" <-- "0..1" MergeBundle : performed by
 
-    note for BraidProjection "Union-find over region verdicts is transitive.\nA with B and B with C asserts A with C.\nLabel that edge derived, or stop at pairwise."
-    note for Region "assessable is false when a branch cannot be fetched.\nThe reason is printed instead of the assertion."
+    note for OpenSet "base_sha is the merge-base of every open head.\nNever the default branch."
+    note for Bundle "branch is flightdeck/<path>/<n>-<slug>.\nfrom_ref is the previous bundle's branch."
+    note for Blocked "kind is superseded or conflict.\nA conflict needs a person, not a retry."
+    note for Replay "A snapshot against recorded heads.\nA push after the run invalidates it."

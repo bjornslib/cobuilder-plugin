@@ -1,86 +1,98 @@
 ## Problem
 
-A reviewer with several pull requests open holds the relationship between them
-in their head. The viewer reviews one pull request at a time, so nothing on
-screen answers the question the reviewer actually carries: do any of these fight
-each other, and should any of them be one review instead of two. GitHub's
-stacked pull requests answer a narrower version, because a stack is a
-parent-child chain the author declares in advance. The set a reviewer needs is
-assembled after the fact, out of work several people opened without
-coordinating.
+A team carries tens of open pull requests at once. Every surface they have
+reviews one change at a time, so nobody can answer the question they actually
+hold: in what order can this whole set close. GitHub's stacked pull requests
+answer a narrower version, because a stack is a parent-child chain the author
+declares in advance. The set a reviewer faces is whatever several people opened
+without coordinating, and the relationships between those branches exist nowhere.
 
 The team wants to get through pull request reviews with more ease. The bundle
-already holds the material a relationship could be computed from, and the record
-index already resolves five other kinds of join. A pull-request-to-pull-request
-relationship is the one join nobody has built.
+already holds the goal files, epics, boundary rules and districts a first pass
+could reason over, and the record index already resolves five kinds of join. A
+relationship between two pull requests is the one join nobody has built.
 
 ## Why this approach
 
-The machine proposes, and the reviewer corrects.
+Simulate paths to close the whole open set, validate the best with git, and show
+one.
 
-A terminal-side mode reads the selected pull requests, fetches their branches,
-and computes two things: an ordered list of contested regions, where a region is
-a file and a line span more than one pull request writes, and a proposed
-partition of the set into review units. The reviewer walks the regions with one
-keypress each, and corrects the partition with three gestures. Every keypress
-appends one line to the ledger through `shared/ledger.py`, with direct file
-access and no HTTP request. A projection folds those lines into one recorded
-call per pull request, and into the missing pull-request-to-pull-request join.
-The viewer renders the proposal and the recorded calls, and never computes them.
+On a pull request event the mode reads the open set, drops whatever the team's
+auto-merge rules already handled, and gives any pull request with no description
+one from `/pr:generate`. It simulates at least three paths **against the common
+ancestor of the open branches**, replays the best one or two on a scratch
+worktree, counts the real conflicts, and promotes the survivor.
 
-Three measurements decided the placement. The browser cannot run git and cannot
-fetch, under the content policy ADR-0001 records, so it cannot see a textual
-conflict at all. Two of the three chosen evidence levels yield no pair, because
-`adr_to_pull_request` and `epic_to_pull_request` each hold one pull request per
-key. And 86 of the 91 possible pairs share a path prefix, so overlap is the base
-rate rather than a finding. Every surface that put the computation on screen was
-solving a problem the screen is not allowed to solve.
+The viewer leads with the state the reviewer would have if they accept, then one
+line per pull request saying what it contributes, then the merge chain as its own
+evidence. Pull requests the path cannot carry appear on the front page with the
+kind of block named and a way out. The reviewer accepts a path once and chooses
+the pace, and a runner merges each bundle onto its own integration branch.
+
+The baseline is the load-bearing part. Simulating against the default branch
+inverts the order whenever an open pull request restructures the tree, and it
+does so with no visible failure. It did exactly that on the first run here: with
+all seventeen pull requests open the base is `0c099be`, where `commands/`,
+`scripts/` and `skills/` still exist, and five open pull requests write into the
+three directories that pull request 11 deletes.
 
 ## Alternatives considered
 
-- **The Gang Rail: shift-click the queue dots and stack one narration pane per selected pull request down the existing four levels** — rejected because it is the cheapest option and it only rearranges what the reviewer must read. It does no work on the reviewer's behalf, and its stacked panes are empty for both open pull requests, which carry no narration. Its multi-select is kept as the mechanic for correcting a proposal.
-- **Contested Subjects: swap the level rail for cards of shared repo nouns, quoting each pull request verbatim, with a SILENT row where a pull request said nothing** — rejected because it renders evidence more honestly than any other option and it still waits for the reviewer to assemble the set first. Its SILENT-row rule is kept as a rendering rule, because absence must never render as agreement.
-- **The Claims Docket: one row per machine claim with its rule, its inputs, and a computed or unassessable basis** — rejected because ten of fourteen pull requests carry no authored intent, so most rows are empty, and the build is four new subsystems, most of them inside `viewer/index.html`. Its unassessable row is kept, because a blind spot must appear on the record rather than be absent from it.
-- **Shared-path overlap from the touched map as an evidence level** — rejected because 86 of the 91 possible pairs share a path prefix, and `(root)` alone is shared by 12 of 14 pull requests. Presence of overlap is the base rate in this repository, not a finding.
-- **Compute the relationship in the browser and render it live** — rejected because the browser cannot run git, so it cannot see a textual conflict, and ADR-0001's content policy blocks it from fetching the evidence.
-- **Let the deck write to GitHub directly** — rejected because it needs a credential inside a page that also publishes as a Claude Artifact, and it breaks the rule that the viewer is a static page.
-- **Record the call through the existing `POST /feedback` endpoint** — rejected because that path works only under `serve_bundle.py --allow-write`. Plain `http.server` returns 404 and a published Artifact blocks the request, and both fall back to browser storage with a promised sync that nothing implements.
-- **Rank the correction reasons by the reviewer's own precedent from day one** — rejected because the ledger is 0 bytes. History improves the reason ranking and does not produce the partition, so the proposer works without it.
-- **Take the input set from a live `gh pr list`** — rejected because it depends on the first epic of the `inflight-record-store` design, which is backlog and unbuilt.
+- **Simulate against the default branch as it stands today** — rejected because it inverts the order whenever an open pull request restructures the tree, and it returns a well-formed confident answer rather than an error.
+- **A region walk: one keypress per contested hunk, over a set the reviewer names** — rejected because it made the reviewer do the machine's work one hunk at a time, over a set they had to assemble themselves. The region arithmetic survives inside the simulation as evidence.
+- **Show every simulated path side by side and let the reviewer compare** — rejected because it hands the comparison work back to the reviewer, which is the work the mode exists to remove.
+- **Describe each path by its mechanics** — rejected because a reviewer decides on the outcome, not the machinery.
+- **Simulate from the records and stop, with no git step** — rejected because a simulation cannot see a textual conflict, so it cannot tell an order that works from one that only reads well.
+- **Hold a pull request that cannot merge out of the surface entirely** — rejected because a path never carries every open pull request, and the ones it drops are the ones a reviewer most needs to see.
+- **Merge each bundle onto the default branch** — rejected because the first merge is irreversible, so a path that turns out wrong at bundle two has already changed the branch everybody works from.
+- **Rebase every branch onto the growing integration branch** — rejected because it rewrites other people's branches, and none of those authors asked for it.
+- **Ask the reviewer to approve each bundle as it comes** — rejected because it reopens a decision they already made.
+- **Compute the paths in the browser and render them live** — rejected because the browser cannot run git, and ADR-0001's content policy blocks it from fetching the evidence.
+- **Build the mergeable-slice computation from scratch as the product** — rejected because systems that precompute mergeable slices already exist. The narrative and the choice between paths are what they do not offer.
+- **Ship a hook so the mode starts itself** — rejected because the install surface is `/plugin install` and nothing else.
 
 ## Out of scope
 
-- Every GitHub write. No merge, no close, no comment, no label, no reviewer, no base retarget.
-- The precedent engine, the reason ranking, and the counterfactual on a bracket boundary.
+- Defining the team's auto-merge rules. The mode reads which pull requests those rules handled and takes no position on them.
+- Merging the final pull request onto the default branch. That stays a human action under whatever rules the repository already has.
+- Deleting the integration branches after a path completes.
 - Any conflict computation inside the browser.
-- Renaming or restructuring the five existing view modes.
-- Fixing the design-level join in `shared/build_index.py`. Deferred to the `inflight-record-store` design, which owns the pull-request entity gap.
+- The trigger. A workflow or a scheduled run in the adopting repository supplies it.
+- Fixing the design-level join in `shared/build_index.py`. Deferred to the `inflight-record-store` design.
 
 ## Risks
 
-- The proposer must fetch the open branches before `git merge-tree` can say anything. This checkout holds `master` and one working branch, so a mode that has so far only read local git gains a network step.
-- Folding region verdicts with union-find is transitive. A reviewer who groups A with B at one region and B with C at another has not said that A and C belong together, and the projection would assert it.
-- Deferring the design-level join leaves the cold-start proposer with textual conflict as its only strong signal, and textual conflict needs a fetch. A cohort with no fetchable branch gets an empty proposal.
-- A proposed partition accepted in silence records a decision the reviewer never examined. That is the mechanic's value and its danger in the same line.
-- A region list is computed against the current head of each branch. A push invalidates it, and a stale stop list is worse than none, because it looks current.
-- The approach does work before the reviewer arrives, which is the point, and it also means a wrong proposal is the first thing they read. An anchoring effect is likely and unmeasured.
+- The replay is a snapshot taken against recorded branch heads. A push after the run invalidates it, and the run does not watch for one.
+- A wrong recommendation is the first thing the reviewer reads. Nothing in this design measures whether a proposed order anchors them.
+- Integration branches drift from the default branch while a path runs. A long pause between bundles reintroduces the conflicts the order was chosen to avoid.
+- A path of N bundles leaves N branches behind, and nothing here deletes them.
+- The runner is the first thing in this plugin family that writes to a remote. Its credentials and permissions sit outside this design.
+- The mode cannot start itself. A repository that never wires the trigger gets a surface that runs only when somebody remembers to run it.
 
 ## How this was tested
 
-Nothing is built. The first check is the throwaway script named in the first
-epic: parse the hunk headers already stored in the eight cached diff files and
-print the region table for pull requests 11 and 12, which share 29 files. If the
-stop list is not materially shorter than the shared-file list, the central claim
-of the approach is false and the design stops.
+Nothing is built. Two things were measured rather than assumed.
+
+The region arithmetic ran in a scratchpad over the eight cached diff files, across
+every pair of merged pull requests that shares an authored file. Cutting a set by
+contested region reduces the reading surface for 27 of 27 pairs, from 0.00 to
+0.41 of the total changed files.
+
+The four structural renames the ordering rests on are verified against this
+repository's history with `git ls-tree`: `0c099be` carries `commands/`,
+`scripts/`, `skills/` and `viewer/`; commit `6e784e5` moves the first three into
+`plugins/cobuilder-*/`.
 
 ## Where to focus
 
-- Whether a proposed partition helps a reviewer or anchors them.
-- The union-find transitivity rule, and whether the projection should stop at pairwise edges.
-- Whether the viewer stays a pure renderer, with no relationship computed in the browser.
+- Whether the common-ancestor baseline is stated strongly enough to survive an implementer who reaches for `HEAD`, because `HEAD` is what every other script in this repository reads.
+- Whether one recommendation with the alternatives locked helps a reviewer or anchors them.
+- Whether the integration-branch scheme is worth N branches per path.
+- Whether the treatment of a pull request that cannot merge gives a reviewer enough to act, or only enough to worry.
 
 The author flagged these parts as not fully understood:
 
-- Whether a stop list is materially shorter than a file list on a real cohort. Untested against anything.
-- Whether a reviewer corrects a wrong grouping more readily than they build a right one. This is the load-bearing claim of the approach and it rests on judgement, not measurement.
-- How a region list should behave when one branch of the set is pushed mid-review.
+- Whether a reviewer trusts a proposed order more than their own reading of the queue. This is the load-bearing claim and it rests on judgement.
+- How a path should behave when a branch in it is pushed mid-rollout.
+- Whether three simulated paths is the right number, or whether two is enough and four is noise.
+- What a team's auto-merge rules look like in practice. The split shown in the prototype is invented.

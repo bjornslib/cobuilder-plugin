@@ -1,52 +1,66 @@
 {
   "stage": "design",
   "verdict": "concerns",
-  "assessed": "2026-09-01",
+  "assessed": "2026-09-02",
   "design_name": "review-flight-deck",
-  "constraint_introduced": "The proposer runs terminal-side and writes the ledger through shared/ledger.py with direct file access. The viewer renders a proposal and the recorded calls, and computes no relationship of its own.",
+  "constraint_introduced": "A path is simulated against the common ancestor of the open branches, never against the default branch. The viewer renders the result and computes no part of it. A runner merges each bundle onto its own integration branch and never onto the default branch.",
   "findings": [
     {
       "id": "F1",
       "kind": "prediction",
       "question": "sensible",
       "cites": "ADR-0001",
-      "text": "The approach belongs in this repository and at this layer. ADR-0001 holds the viewer to one self-contained file under a content policy that blocks every external request, and the browser cannot run git. A relationship computed from a textual conflict is therefore terminal work by construction, not by preference. Placing the proposer in the pr plugin, next to the modes that already read git, follows the boundary the family already keeps."
+      "text": "The approach belongs in this repository and at this layer. ADR-0001 holds the viewer to one self-contained file under a content policy that blocks every external request, and the browser cannot run git. A path validated by a replay is therefore terminal work by construction, not by preference. Placing it in the pr plugin, next to the modes that already read git, follows the boundary the family already keeps."
     },
     {
       "id": "F2",
       "kind": "prediction",
       "question": "maintainability",
       "cites": "ADR-0020",
-      "text": "The approach helps. ADR-0020 records that viewer/index.html is the repository's largest maintenance problem, and it is decided and not executed. Every rejected option in intent.alternatives put its cost inside that file. This one puts the computation in a new terminal-side mode and leaves the viewer with a render-only job, so the deck does not enlarge the file before its own split has run."
+      "text": "The approach helps. ADR-0020 records that viewer/index.html is the repository's largest maintenance problem, and it is decided and not executed. Every rejected option in intent.alternatives put its cost inside that file. This one leaves the viewer a render-only job, so the flightdeck does not enlarge the file before its own split has run. F5 is ordered last for the same reason."
     },
     {
       "id": "F3",
       "kind": "prediction",
       "question": "pattern",
       "cites": "ADR-0018",
-      "text": "New pattern, not a duplicate. ADR-0018 decided one derived record index that resolves every join between records, and it lists no pull-request-to-pull-request join. The braid projection adds that join through a review unit rather than through a pairwise edge, which is consistent with how the index already joins an epic to a pull request through its design."
+      "text": "New pattern, not a duplicate. ADR-0018 decided one derived record index that resolves every join between records, and it lists no pull-request-to-pull-request join. A path adds that relationship through a bundle rather than through a pairwise edge, which is consistent with how the index already reaches a pull request through its design."
     },
     {
       "id": "F4",
       "kind": "prediction",
-      "question": "maintainability",
-      "cites": "ADR-0019",
-      "text": "A risk the approach carries. ADR-0019 fixed the ledger vocabulary at comment, reply, and state, and fold_threads skips a line it does not recognise. A region verdict and a disposition are neither, so each needs its own projection. Two projections over one append-only file is the shape ADR-0019 intended, and nothing enforces that a future reader of the ledger handles both."
+      "question": "sensible",
+      "cites": "ADR-0022",
+      "text": "The strongest finding, and it is about the baseline. Simulating against the default branch fails silently: it returns a well-formed, confident, inverted order. It did exactly that on the first run here. The constraint is now stated in ADR-0022's maps_to rule and carries an abort condition on this design, and it still rests on an implementer not reaching for HEAD because HEAD is what every other script in this repository reads."
     },
     {
       "id": "F5",
       "kind": "prediction",
       "question": "maintainability",
-      "cites": "district: scripts",
-      "text": "The transitivity of a union-find fold is the most likely source of a wrong record. A reviewer who groups A with B at one region and B with C at another has made two statements, and the fold makes a third they did not. Either label the transitive edge as derived, or stop the projection at pairwise edges."
+      "cites": "ADR-0019",
+      "text": "A risk the approach carries. ADR-0019 fixed the ledger vocabulary at comment, reply and state, and fold_threads skips a line it does not recognise. A path acceptance, a bundle merge and a blocked-pull-request decision are none of those three, so each needs its own projection. Three projections over one append-only file is the shape ADR-0019 intended, and nothing enforces that a future reader of the ledger handles all of them."
     },
     {
       "id": "F6",
       "kind": "prediction",
       "question": "sensible",
+      "cites": "ADR-0023",
+      "text": "The integration-branch scheme is what makes accepting a path safe, and it is also the first remote write in this plugin family. Everything before it wrote into the bundle or the ledger. The runner is supplied by the adopting repository, so its credentials and its permissions sit outside this design, and no epic here can test them."
+    },
+    {
+      "id": "F7",
+      "kind": "prediction",
+      "question": "maintainability",
+      "cites": "district: .cobuilder-architect",
+      "text": "The replay is a snapshot against recorded branch heads, and the projection it writes has no staleness marker. A reviewer opening the surface a day later sees a validated path with no indication that four of its branches moved. The publish manifest already solved a version of this with a content hash, and nothing in this design reuses that."
+    },
+    {
+      "id": "F8",
+      "kind": "prediction",
+      "question": "sensible",
       "cites": "design: inflight-record-store",
-      "text": "Deferring the design-level join to inflight-record-store is coherent, because that design already owns the pull-request entity gap. It leaves this design with textual conflict as its only strong relationship signal, and textual conflict needs a branch fetch. A cohort whose branches cannot be fetched gets an empty proposal, and the deck must say so on screen rather than render a confident empty state."
+      "text": "F1 duplicates the first epic of the inflight-record-store design, which already owns the open-pull-request entity gap. Building it twice is the likely failure. It belongs in shared code, and whichever design ships first should own it."
     }
   ],
-  "regret_risk": "The approach does work on the reviewer's behalf before they arrive, which is what makes it worth building and what makes it dangerous. A proposed partition is the first thing the reviewer reads, so a wrong proposal anchors them, and the mechanic that makes the Cut cheap, treating an untouched bracket as an accepted decision, converts that anchoring into a recorded call nobody examined. If this design ships and the proposal turns out to be wrong more often than it is right, the team lives with a review surface that manufactures agreement faster than the old one manufactured backlog. The first epic exists to test the cheaper half of that claim before any of it is built, and nothing in this design tests the anchoring half."
+  "regret_risk": "The design does work on the reviewer's behalf before they arrive, which is what makes it worth building and what makes it dangerous. A validated path is the first thing they read, and validation covers the merges, not the judgement. If the ordering is right more often than not, the team stops reading queues and starts reading one page, which is the whole point. If it is wrong even occasionally in a way the replay cannot catch, the surface will have taught them to accept an order they did not check, and the integration branches will make each wrong path cheap enough that nobody notices the pattern. Nothing in this design measures how often a proposed order is the one a reviewer would have chosen unaided, and the six done_when entries about presentation cannot substitute for that measurement."
 }

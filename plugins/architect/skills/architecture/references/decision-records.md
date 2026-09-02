@@ -95,6 +95,11 @@ change with it (see `.github/pull_request_template.md`).
    Considered Options, and Consequences sections are a record of what was believed and chosen on a
    date. Never edit them to match the current tree. A changed decision gets a new record that
    supersedes this one, through the `replaces` edge and `rejected` state that §3 defines.
+   **This applies from `approved` onward.** A record still at `idea`, `tentative` or `decided`,
+   with an empty `approved_by` and nothing shipped against it, is a design-time draft. Revise it in
+   place and record the revision as a history entry that says what changed and why. Superseding a
+   draft nobody approved puts a decision nobody ever made into the register, and leaves the reader
+   two records where one is true.
    The frontmatter index fields — `maps_to`, `state`, `last_verified`, `source_pr` — point into the
    current tree instead, and keeping them accurate is expected maintenance, not history. For
    example, ADR-0011's `maps_to.modules` named `skills/odyssey` and `commands`, and the five-plugin

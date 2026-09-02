@@ -1,10 +1,10 @@
 {
   "schema_version": "1.3",
   "sources": {
-    "git_head": "5906ac9001ef081cd61a1cd665c12a4998f6f9a1",
+    "git_head": "1187ea63d7785753c0826057f84a0b48f75f6751",
     "trees": {
-      "docs/architecture/adr": "sha256:5f62318865ede2aa3298b29b6b6979554183b00580cf989036e749172441bc20",
-      "docs/architecture/designs": "sha256:306ef7d9c480717a534be8c8c38aa8c8cf61d4ae70441b0360efb371a5eff28a",
+      "docs/architecture/adr": "sha256:301daab417c73da72766e7aa9d4d345561a60b2c83199e0529b6ab5d0298d28e",
+      "docs/architecture/designs": "sha256:6598b428eae7ae474cac6e9e4138b6021a3d164fe0186db815b880d690460526",
       "docs/architecture/contexts": "sha256:4626a327bd28df972d97d40dc1325c28808eb48789649b87eadd218b3528c907",
       "docs/plans": "sha256:c6ed98e3846b908d8cfd216b6ff873473172ec2559e6e6ac6a4141253205efd1"
     }
@@ -118,7 +118,12 @@
       },
       {
         "id": "ADR-0022",
-        "title": "A terminal-side proposer for a multi-pull-request review, and a viewer that only renders it",
+        "title": "Simulate paths to close the open set, from the common ancestor, and show one validated path",
+        "state": "decided"
+      },
+      {
+        "id": "ADR-0023",
+        "title": "Execute an accepted path onto integration branches, never onto the default branch",
         "state": "decided"
       }
     ],
@@ -489,7 +494,7 @@
         "branch": "design/review-flight-deck",
         "pr": null,
         "state": "planned",
-        "note": "New in round 6, and the first epic in this design that writes to a remote. The integration branch per bundle is what makes a path abandonable: delete three branches and the default branch never saw any of it. The default branch receives one pull request, from the last bundle's branch."
+        "note": "New in round 6, and the first epic in this design that writes to a remote. ADR-0023 records the decision. The integration branch per bundle is what makes a path abandonable: delete N branches and the default branch never saw any of it. The default branch receives one pull request, from the last bundle's branch."
       },
       {
         "id": "ubiquitous-language/E1",
@@ -1269,6 +1274,19 @@
           "review-flight-deck/F5",
           "review-flight-deck/F6"
         ]
+      },
+      "ADR-0023": {
+        "pr": null,
+        "via": "epic",
+        "path": [
+          "review-flight-deck/F0",
+          "review-flight-deck/F1",
+          "review-flight-deck/F2",
+          "review-flight-deck/F3",
+          "review-flight-deck/F4",
+          "review-flight-deck/F5",
+          "review-flight-deck/F6"
+        ]
       }
     },
     "epic_to_pull_request": {},
@@ -1348,7 +1366,8 @@
       "ADR-0018": "cobuilder-packaging",
       "ADR-0019": "cobuilder-packaging",
       "ADR-0020": "cobuilder-packaging",
-      "ADR-0022": "cobuilder-packaging"
+      "ADR-0022": "cobuilder-packaging",
+      "ADR-0023": "cobuilder-packaging"
     },
     "adr_to_district": {
       "ADR-0001": "scripts",

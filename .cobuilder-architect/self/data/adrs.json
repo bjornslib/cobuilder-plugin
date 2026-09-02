@@ -1330,59 +1330,69 @@
   },
   "ADR-0022": {
     "id": "ADR-0022",
-    "title": "A terminal-side proposer for a multi-pull-request review, and a viewer that only renders it",
+    "title": "Simulate paths to close the open set, from the common ancestor, and show one validated path",
     "state": "decided",
     "source_pr": null,
-    "problem": "A reviewer with several pull requests open holds the relationship between them in their head. The viewer reviews one pull request at a time, and the record index resolves five kinds of join but none between two pull requests. Every surface that could show the relationship has to compute it first, and the browser can neither run git nor fetch anything, because ADR-0001 holds the viewer to one self-contained file under a content policy that blocks every external request.",
-    "decision": "Compute the relationship terminal-side. A mode in the pr plugin fetches the selected branches, derives an ordered list of contested regions and a proposed partition of the set, and writes both as a derived projection. The reviewer walks the regions and corrects the partition, and every act appends one line to the ledger through shared/ledger.py with direct file access. The viewer renders the proposal and the recorded calls, and computes no relationship of its own.",
+    "problem": "A team carries tens of open pull requests. No surface answers the question a reviewer actually holds, which is not how to review one change but in what order the whole set can close. The record index resolves five kinds of join and none between two pull requests. Simulating that order against the default branch gives a confident wrong answer whenever an open pull request restructures the tree, because the default branch already carries whatever merged before.",
+    "decision": "A mode in the pr plugin simulates several paths to close the whole open set, always against the common ancestor of the open branches. It replays the best one or two with git on a scratch worktree, counts the real conflicts, and promotes the survivor. The viewer shows one validated path, leading with the state the reviewer would have and the pull requests the path cannot carry, and it computes nothing.",
     "alternatives": [
       {
-        "option": "The Gang Rail: shift-click the queue dots and stack one narration pane per selected pull request down the existing four levels",
-        "rejected_because": "It is the cheapest option and it only rearranges what the reviewer must read. It does no work on the reviewer's behalf, and its stacked panes are empty for both open pull requests, which carry no narration. Its multi-select is kept as the mechanic for correcting a proposal."
+        "option": "Simulate against the default branch as it stands today",
+        "rejected_because": "It inverts the order whenever an open pull request restructures the tree. Measured on this repository: with all seventeen pull requests open the base is 0c099be, where commands/, scripts/ and skills/ still exist, and five open pull requests write into exactly the three directories that pull request 11 deletes. A run against master put the restructure first and produced a confident wrong answer rather than no answer."
       },
       {
-        "option": "Contested Subjects: swap the level rail for cards of shared repo nouns, quoting each pull request verbatim, with a SILENT row where a pull request said nothing",
-        "rejected_because": "It renders evidence more honestly than any other option and it still waits for the reviewer to assemble the set first. Its SILENT-row rule is kept as a rendering rule, because absence must never render as agreement."
+        "option": "A region walk: one keypress per contested hunk, over a set the reviewer names",
+        "rejected_because": "The first draft of this record. It made the reviewer do the machine's work one hunk at a time, over a set they had to assemble themselves. The region computation survives inside the simulation as evidence and stopped being a reviewer-facing step."
       },
       {
-        "option": "The Claims Docket: one row per machine claim with its rule, its inputs, and a computed or unassessable basis",
-        "rejected_because": "Ten of fourteen pull requests carry no authored intent, so most rows are empty, and the build is four new subsystems, most of them inside viewer/index.html. Its unassessable row is kept, because a blind spot must appear on the record rather than be absent from it."
+        "option": "Show every simulated path side by side, and let the reviewer compare",
+        "rejected_because": "It returns the reviewer to the work the mode exists to remove. One validated path is shown, the alternatives are visible and unreachable, and opening the recommendation unlocks them with the reason each lost."
       },
       {
-        "option": "Use shared-path overlap from the touched map as an evidence level",
-        "rejected_because": "86 of the 91 possible pairs share a path prefix, and (root) alone is shared by 12 of 14 pull requests. Presence of overlap is the base rate in this repository, not a finding."
+        "option": "Describe each path by its mechanics: which pull requests, in which order, on which paths",
+        "rejected_because": "A reviewer decides on the outcome, not on the machinery. The surface states what they would have when the path is done, then one line per pull request saying what it contributes, and the order sits underneath."
       },
       {
-        "option": "Compute the relationship in the browser and render it live",
-        "rejected_because": "The browser cannot run git, so it cannot see a textual conflict, and ADR-0001's content policy blocks it from fetching the evidence."
+        "option": "Rank paths by simulation alone, with no git step",
+        "rejected_because": "A simulation from records cannot see a textual conflict, so it cannot tell an ordering that works from one that only looks like it does. Replaying the top candidates is what makes the recommendation something to stand behind."
       },
       {
-        "option": "Record the call through the existing POST /feedback endpoint, as the comments drawer does",
-        "rejected_because": "That path works only under serve_bundle.py --allow-write. Plain http.server returns 404 and a published Artifact blocks the request, and both fall back to browser storage with a promised sync that nothing implements."
+        "option": "Hold a pull request that cannot merge out of the surface entirely",
+        "rejected_because": "A path never carries every open pull request, and the ones it drops are the ones a reviewer most needs to see. A superseded branch and an unresolvable conflict are different findings, and each is shown on the front page with two or three ways out."
       },
       {
-        "option": "Rank the correction reasons by the reviewer's own precedent from day one",
-        "rejected_because": "The ledger is 0 bytes. History improves the reason ranking and does not produce the partition, so the proposer works without it and the precedent layer waits for rows."
+        "option": "Compute the paths in the browser and render them live",
+        "rejected_because": "The browser cannot run git, so it cannot replay anything, and ADR-0001's content policy blocks it from fetching the evidence."
+      },
+      {
+        "option": "Build the mergeable-slice computation from scratch as the product",
+        "rejected_because": "Systems that precompute mergeable slices already exist. The narrative and the choice between paths are the parts they do not offer, so the git step keeps a narrow interface and one of those systems can replace it."
+      },
+      {
+        "option": "Ship a hook so the mode starts itself on a pull request event",
+        "rejected_because": "The install surface is /plugin install and nothing else, with no agents, no hooks and no MCP servers. The adopting repository supplies the trigger with a workflow or a scheduled run."
       }
     ],
     "forces": [
+      "The default branch already carries whatever merged before, so it is the wrong baseline for a set of branches that all predate it.",
       "ADR-0001 holds the viewer to one self-contained file under a content policy that blocks every external request. The browser cannot fetch, and it cannot run git.",
-      "Two of the three chosen evidence levels yield no pair today. adr_to_pull_request and epic_to_pull_request each hold one pull request per key, so neither produces an edge. Grouping epics by their design produces two.",
-      "Field coverage across the 14 timeline entries is uneven: touched 14, narrated levels 8, cached diffs 8, intent 4, assessment 4, ledger lines 0.",
-      "Neither open pull request has a local branch in this checkout, so git merge-tree needs a fetch before it can report anything.",
+      "Field coverage across this repository's timeline is uneven: touched 14 of 14, narrated levels 8, cached diffs 8, intent 4, assessment 4, ledger lines 0.",
+      "8 of 12 pull requests reaching a reviewer here carry no description, so a surface built on authored intent alone draws empty panes.",
+      "A team's own auto-merge rules already handle the simple pull requests, and this design does not define those rules.",
       "ADR-0020 names viewer/index.html the repository's largest maintenance problem, and it is decided and not executed.",
       "ADR-0019 fixed the ledger vocabulary at comment, reply, and state, and fold_threads skips an unrecognised line.",
-      "The install surface is /plugin install and nothing else, with no agents, no hooks, and no MCP servers."
+      "The install surface ships no hooks, so the mode cannot start itself."
     ],
     "delivers": {
-      "capability": "A reviewer receives an ordered plan for a set of pull requests before they open any of them, and records one call per pull request that names the set it was judged against.",
-      "benefit": "Review work drops from reading every diff in full to answering one question per contested region, and the reason for a grouping survives as a record rather than as a memory.",
+      "capability": "A reviewer opens one page and sees the state they would have if the whole open set closed, the order that gets there, the pull requests that cannot come along, and the evidence that a git replay actually held.",
+      "benefit": "Review stops being a queue of unrelated diffs and becomes one decision about an order. The reason for that order survives as a record rather than as somebody's memory.",
       "beneficiary": [
         "developer",
-        "operator"
+        "operator",
+        "the-business"
       ]
     },
-    "body": "# ADR-0022 — A terminal-side proposer for a multi-pull-request review, and a viewer that only renders it\n\n## Context\n\nThe viewer reviews one pull request at a time. Previous, next, a strip of queue\ndots, four levels down the left rail. That shape reads one change well. It\nanswers nothing about a set.\n\nA reviewer holding five open pull requests carries a different question: do any\nof these fight each other, and should any of them be one review instead of two.\nGitHub answers a narrower version through stacked pull requests, where the\nauthor declares a parent-child chain in advance. A reviewer's set is assembled\nafter the fact, out of work several people opened without coordinating.\n\nSix isolated exploration frames produced six surfaces for that question. A\nseparate critic pass measured each one against the committed bundle. Three\nmeasurements decided this record.\n\n**The browser cannot see a conflict.** ADR-0001 holds the viewer to one\nself-contained file under a content policy that blocks every external request.\nThe browser cannot run git and it cannot fetch the evidence. Any surface that\ndraws a relationship must be handed one.\n\n**Two of the three chosen evidence levels are empty.** `adr_to_pull_request`\nholds one pull request per ADR and `epic_to_pull_request` holds one per epic, so\nneither yields a single pair. Grouping epics by their design yields two.\n`git merge-tree` needs both branch heads, and this checkout holds `master` and\none working branch.\n\n**Overlap is the base rate.** 86 of the 91 possible pairs share a path prefix.\n`(root)` alone is shared by 12 of 14 pull requests. Presence of overlap carries\nno information here. Only magnitude and specificity do.\n\n## Options considered\n\n1. **The Gang Rail.** Shift-click the queue dots, stack one narration pane per\n   selected pull request down the four existing levels. Roughly thirty lines to\n   start, no new file, no server change. It rearranges what the reviewer must\n   read and does no work for them, and its panes are empty for both open pull\n   requests, which carry no narration.\n\n2. **Contested Subjects.** Swap the level rail for cards of shared repo nouns,\n   quoting each pull request verbatim with the field stamped on it, and a SILENT\n   row of equal weight where a pull request said nothing. It is the most honest\n   rendering of uneven evidence in the set, and it still waits for the reviewer\n   to assemble the set before anything happens.\n\n3. **The Claims Docket.** One row per machine claim, carrying the rule that\n   produced it and whether it could be computed at all. Its uncomputable row is\n   a genuinely good idea. Ten of fourteen pull requests carry no authored\n   intent, so most rows are empty, and the build is four subsystems, most of\n   them inside the file ADR-0020 already names as the largest maintenance\n   problem.\n\n4. **The Braid and The Cut, taken together (chosen).** Both do work before the\n   reviewer arrives. The Braid re-cuts the set by region, so a region only one\n   pull request writes never becomes a stop. The Cut proposes a partition of the\n   set into review units and asks the reviewer to correct it, on the ground that\n   correcting a wrong grouping is a cheaper judgement than building a right one.\n   Neither needs the viewer, and the work they do is exactly the work the\n   browser cannot perform.\n\n## Decision\n\nCompute the relationship terminal-side and render it in the viewer.\n\nA mode in the `pr` plugin takes a set of pull request numbers, fetches their\nbranches, and derives two things: an ordered list of contested regions, where a\nregion is a file and a line span more than one pull request writes, and a\nproposed partition of the set into review units. It writes both as a derived\nprojection in the bundle.\n\nThe reviewer walks the regions with one keypress each, and corrects the\npartition with three gestures. Every act appends one line to the ledger through\n`shared/ledger.py`, with direct file access and no HTTP request. A projection\nfolds those lines into one recorded call per pull request, and into the\npull-request-to-pull-request join the record index does not have.\n\nThe viewer renders the proposal and the recorded calls. It computes no\nrelationship. A copy served without a write path renders read-only and says so,\nrather than accepting a call it cannot keep.\n\nOut of scope: every GitHub write, the precedent engine and its ranked reasons,\nany conflict computation inside the browser, and the design-level join fix,\nwhich belongs to the `inflight-record-store` design.\n\n## Consequences\n\n- **Positive:** the work the browser cannot do moves to where it can be done,\n  and the deck stops depending on a write path that fails on two of three\n  serving modes. A reviewer answers one question per contested region instead of\n  reading every diff in full.\n- **Positive:** the viewer gains a renderer and no computation, so this design\n  does not enlarge `viewer/index.html` before ADR-0020's split has run.\n- **Constraint introduced:** a pull-request relationship is computed\n  terminal-side and written as a projection. The viewer renders it and never\n  computes one.\n- **Negative:** a wrong proposal is the first thing the reviewer reads, and an\n  untouched bracket is recorded as an accepted decision. The mechanic that makes\n  the correction cheap is the same one that can manufacture agreement.\n- **Negative:** the proposer gains a network step. It must fetch a branch before\n  it can report a textual conflict, and a cohort whose branches cannot be\n  fetched gets an empty proposal.\n- **Negative:** two new ledger line kinds sit outside the vocabulary ADR-0019\n  fixed, so each needs its own projection, and `fold_threads` ignores both.\n- **Open:** folding region verdicts with union-find is transitive. Grouping A\n  with B and B with C asserts that A and C belong together, which no reviewer\n  said. Either label the transitive edge as derived, or stop at pairwise edges.\n",
+    "body": "# ADR-0022 — Simulate paths to close the open set, from the common ancestor, and show one validated path\n\n## Context\n\nThe viewer reviews one pull request at a time. Previous, next, a strip of queue\ndots, four levels down the left rail. That shape reads one change well, and it\nanswers nothing about a set.\n\nA team carrying tens of open branches asks a different question. Not how to\nreview one change, but in what order the whole set can close. The relationships\nthat would answer it exist nowhere: the record index resolves five kinds of join,\nand none of them is between two pull requests.\n\nSix isolated exploration frames and a separate critic pass produced the first\ndraft of this record: a terminal-side proposer that computed contested regions,\nand a reviewer who walked them one keypress at a time over a set they named\nthemselves. Six rounds of review against a working prototype replaced everything\nabove the boundary. Three measurements decided what replaced it.\n\n**The baseline decides the order, and the obvious baseline is wrong.** The first\nrecommendation simulated against `master`. Master already carried the five-plugin\nsplit, so the restructure looked like a prerequisite and the earlier work looked\nlike follow-up. With all seventeen pull requests open the base is `0c099be`,\nwhere `commands/`, `scripts/` and `skills/` still exist. Five open pull requests\nwrite into exactly those three directories, and pull request 11 deletes all\nthree. The correct order is the reverse. Four renames in this repository's\nhistory make the chain checkable: `0c099be` carries the three root directories;\npull request 3 moves `.odyssey/` to `.prodyssey/`; commit `6e784e5` moves the\nthree directories into `plugins/cobuilder-*/`; pull requests 17 and 18 drop the\nprefix.\n\n**A path never carries the whole set.** In the worked scenario, ten of twelve\npull requests fit one path. Pull request 17 is superseded by 18 on the same head\nbranch, which no pull-request list shows. A second is held out by a conflict a\nmerge cannot resolve, where both sides rewrote the same hunk in opposite\ndirections.\n\n**Simulation alone cannot tell a working order from a plausible one.** A path\nderived from goal files, epics, boundary rules and districts is a hypothesis. The\ngit replay is what turns it into a recommendation.\n\nThe product is therefore not a review aid for a set somebody names. It is a set\nof possible paths to close every open pull request, and that separates into three\nquestions a reviewer asks in order. What would I have when this is done. What\ndoes each pull request contribute. Do the merges physically hold, and in what\norder.\n\n## Options considered\n\n1. **A region walk over a named set.** The first draft of this record. It moved\n   the computation off the browser, which was right, and it left the reviewer\n   doing the machine's work one hunk at a time. The region arithmetic survives as\n   evidence inside a simulated path.\n2. **Simulate against the default branch.** The obvious choice, and it produced a\n   confidently inverted order on the first run. Rejected, and recorded as an abort\n   condition on the design, because it fails in no visible way at all.\n3. **Show every path side by side.** Returns the comparison work to the reviewer.\n4. **Describe paths by their mechanics.** A reviewer decides on the outcome. The\n   mechanics move underneath it.\n5. **Simulate and stop, with no git step.** Cheaper, and it cannot distinguish an\n   order that works from one that reads well.\n6. **Simulate from the common ancestor, replay the top candidates with git, and\n   render one validated path (chosen).**\n\n## Decision\n\nA mode in the `pr` plugin runs on a pull request event.\n\nIt reads the open set, less whatever the team's own auto-merge rules already\nhandled, and calls `/pr:generate` for any pull request with no description. It\nsimulates at least three paths to close the set, always against the common\nancestor of the open branches. It replays the best one or two with git on a\nscratch worktree, counts the real conflicts, and promotes the survivor.\n\nIt writes the result as a derived projection in the bundle. The viewer renders\nit: the state the reviewer would have first, then what each pull request\ncontributes, then the merge chain as its own evidence, then what the replay could\nnot check. Pull requests the path cannot carry appear on the front page, each\nwith the kind of block named and two or three ways out.\n\nThe reviewer accepts a path. That records a decision, and a runner performs it.\nWhere the runner sends its merges is ADR-0023.\n\nThe boundary from this record's first draft is unchanged. The relationship is\ncomputed terminal-side and written as a projection, and the viewer renders it and\ncomputes nothing.\n\nOut of scope: defining the team's auto-merge rules, supplying the trigger, and\nany computation inside the browser.\n\n## Consequences\n\n- **Positive:** the reviewer answers one question about an order rather than\n  reading every diff in full, and the answer carries the evidence that a replay\n  held.\n- **Positive:** the surface names what it cannot do. A blocked pull request, an\n  unreplayed bundle, and a missing description are all visible rather than\n  absent.\n- **Positive:** the viewer gains a renderer and no computation, so this design\n  does not enlarge `viewer/index.html` before ADR-0020's split has run.\n- **Constraint introduced:** a path is simulated against the common ancestor of\n  the open branches, never against the default branch, and the viewer renders the\n  result without computing any part of it.\n- **Negative:** the replay is a snapshot. A push after the run invalidates it, and\n  the run does not watch for one.\n- **Negative:** the mode cannot start itself, because the install surface ships no\n  hooks. A workflow or a scheduled run in the adopting repository supplies the\n  trigger.\n- **Negative:** a wrong recommendation is the first thing the reviewer reads, and\n  nothing here measures whether a proposed order anchors them.\n",
     "maps_to": {
       "context": "cobuilder-packaging",
       "modules": [
@@ -1391,7 +1401,7 @@
         "shared/ledger.py",
         "plugins/artifact/viewer/index.html"
       ],
-      "rule": "A pull-request relationship is computed terminal-side and written as a projection. The viewer renders it and never computes one."
+      "rule": "A path is simulated against the common ancestor of the open branches, never against the default branch, and the viewer renders the result without computing any part of it."
     },
     "history": [
       {
@@ -1400,7 +1410,83 @@
       },
       {
         "state": "decided",
-        "date": "2026-09-01"
+        "date": "2026-09-01",
+        "note": "First draft: a terminal-side proposer, a region walk of contested hunks, and a partition the reviewer corrects."
+      },
+      {
+        "state": "decided",
+        "date": "2026-09-02",
+        "by": "bjornslib",
+        "note": "Revised in place before approval, after six rounds of design review against a working prototype. The terminal-computes-viewer-renders boundary is unchanged. The region walk, the reviewer-named set, and the union-find partition are gone, and the common-ancestor baseline is new. Revised rather than superseded because this record was never approved, never shipped, and nothing depends on it."
+      }
+    ],
+    "related": [
+      "docs/architecture/designs/review-flight-deck/goal.json",
+      "docs/architecture/designs/review-flight-deck/flightdeck-prototype.html"
+    ]
+  },
+  "ADR-0023": {
+    "id": "ADR-0023",
+    "title": "Execute an accepted path onto integration branches, never onto the default branch",
+    "state": "decided",
+    "source_pr": null,
+    "problem": "Accepting a path commits a team to merging ten pull requests in a stated order. Executing that onto the default branch makes the first merge irreversible and the whole path unabandonable, and it gives the reviewer no tree to inspect between one bundle and the next. It also makes the runner the first thing in this plugin family that writes to a shared branch.",
+    "decision": "A runner reads an accepted path from the ledger and merges each bundle onto its own integration branch, built from the previous bundle's branch and rooted at the common ancestor. The default branch receives one pull request at the end, from the last bundle's branch. The reviewer commits to the path once, and separately chooses the pace: all bundles in one run, or one bundle with a checkpoint after each.",
+    "alternatives": [
+      {
+        "option": "Merge each bundle straight onto the default branch",
+        "rejected_because": "The first merge is irreversible, so a path that turns out wrong at bundle two has already changed the branch everybody works from. Abandoning it becomes a revert exercise instead of a branch deletion."
+      },
+      {
+        "option": "One integration branch for the whole path, with every bundle merged into it",
+        "rejected_because": "It is abandonable, and it gives the reviewer nothing to check out between bundles. A branch per bundle is the checkpoint, and it costs one branch each."
+      },
+      {
+        "option": "Open a pull request per bundle onto the default branch",
+        "rejected_because": "It multiplies the reviews the path exists to collapse, and it puts a partially applied path in front of everyone before the reviewer has seen the tree."
+      },
+      {
+        "option": "Let the reviewer choose the pace on every bundle, one at a time",
+        "rejected_because": "It reopens the decision the reviewer already made. They commit to the path once, and the pace is one setting for the run, not a prompt per bundle."
+      },
+      {
+        "option": "Apply the path with a rebase of each branch onto the growing integration branch",
+        "rejected_because": "It rewrites other people's branches. A merge leaves every author's checkout valid, and this design never touches a branch it does not own."
+      }
+    ],
+    "forces": [
+      "The default branch is what everybody works from, so a partially applied path there is a shared cost.",
+      "A path is a hypothesis validated by a replay, and a replay is a snapshot. The tree the runner produces can differ from the tree the replay produced.",
+      "A checkpoint is only useful if it is a real tree somebody can check out and read.",
+      "Rewriting a contributor's branch invalidates their checkout, and no author asked for it.",
+      "This runner is the first thing in the plugin family that writes to a remote. Everything before it wrote into the bundle or the ledger.",
+      "The install surface ships no hooks, so the runner is supplied by the adopting repository, not by the plugin."
+    ],
+    "delivers": {
+      "capability": "A team accepts a whole merge path in one decision, and still stops after any bundle to check out the resulting tree before releasing the next.",
+      "benefit": "Committing to an order stops being a risk. A path that turns out wrong costs three branch deletions, and the branch everybody works from never carried it.",
+      "beneficiary": [
+        "developer",
+        "operator"
+      ]
+    },
+    "body": "# ADR-0023 — Execute an accepted path onto integration branches, never onto the default branch\n\n## Context\n\nADR-0022 decided how a path is simulated, validated and shown. Accepting one\ncommits a team to merging ten pull requests in a stated order. Something has to\ncarry that out, and where it sends its merges decides whether the decision is\nreversible.\n\nTwo facts make the default branch the wrong target.\n\n**A path is a hypothesis with a replay behind it, not a proof.** The replay runs\non a scratch worktree against recorded branch heads. A push after the run\ninvalidates it, and the tree the runner produces can differ from the tree the\nreplay produced. The first merge is where that shows up.\n\n**A checkpoint has to be a real tree.** The reviewer's stated preference is to\ncommit to a path once and then control the pace, merging one bundle and reading\nthe result before releasing the next. That is only meaningful if the intermediate\nstate is somewhere they can check out.\n\nThe worked scenario gives the shape. Ten pull requests fall into three bundles:\nfive that finish the single plugin, one that splits the repository into five\nplugins, and four that name and fix the new structure.\n\n## Options considered\n\n1. **Merge each bundle onto the default branch.** Simplest to implement, and it\n   makes bundle one irreversible before bundle two is attempted.\n2. **One integration branch for the whole path.** Abandonable, and it offers no\n   checkpoint between bundles.\n3. **A pull request per bundle onto the default branch.** Multiplies the reviews\n   the path exists to collapse.\n4. **Rebase each branch onto the growing integration branch.** Rewrites branches\n   this design does not own.\n5. **One integration branch per bundle, chained (chosen).**\n\n## Decision\n\nA runner reads an accepted path from the ledger and merges each bundle onto its\nown integration branch. Each branch is built from the previous one, and the first\nis built from the common ancestor:\n\n```\n0c099be  ──▶  flightdeck/<path>/1-<slug>      bundle 1\n              flightdeck/<path>/2-<slug>      bundle 2, from bundle 1\n              flightdeck/<path>/3-<slug>      bundle 3, from bundle 2\n                       │\n                  default branch              one pull request, at the end\n```\n\nThe reviewer commits to the path once, and separately chooses the pace. One\nbundle at a time is the default: the runner merges a bundle, stops, and the\nreviewer checks out that branch before releasing the next. All at once runs the\nthree merges and opens the pull request.\n\nThe runner never rebases, amends, or force-pushes a branch it does not own.\n\nOut of scope: merging the final pull request, which stays a human action on the\ndefault branch under whatever rules that repository already has.\n\n## Consequences\n\n- **Positive:** abandoning an accepted path is three branch deletions. The branch\n  everybody works from never carried any of it.\n- **Positive:** every checkpoint is a real tree with a name, so reading the\n  intermediate state needs no special tooling.\n- **Constraint introduced:** a runner merges a bundle onto its own integration\n  branch and never onto the default branch. Abandoning an accepted path is a\n  branch deletion, not a revert.\n- **Negative:** a path of N bundles leaves N branches to clean up, and nothing\n  here deletes them.\n- **Negative:** the integration branches drift from the default branch while the\n  path runs. A long pause between bundles reintroduces the conflicts the path was\n  ordered to avoid.\n- **Negative:** this is the first remote write in the plugin family, and the\n  runner is supplied by the adopting repository rather than by the plugin, so its\n  credentials and its permissions are outside this design.\n",
+    "maps_to": {
+      "context": "cobuilder-packaging",
+      "modules": [
+        "plugins/pr",
+        "shared/ledger.py"
+      ],
+      "rule": "A runner merges a bundle onto its own integration branch and never onto the default branch. Abandoning an accepted path is a branch deletion, not a revert."
+    },
+    "history": [
+      {
+        "state": "tentative",
+        "date": "2026-09-02"
+      },
+      {
+        "state": "decided",
+        "date": "2026-09-02"
       }
     ],
     "related": [
