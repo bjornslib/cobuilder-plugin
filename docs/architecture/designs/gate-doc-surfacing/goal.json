@@ -30,15 +30,15 @@
     {
       "id": "E1",
       "branch": "design/gate-doc-surfacing",
-      "pr": null,
-      "state": "completed",
+      "pr": 19,
+      "state": "open",
       "note": "shared/build_index.py: add PROGRAM_DESIGN_FIELDS and EPIC_DESIGN_FIELDS projection tuples plus project_program_design/project_epic_design, following the project_fields(source, fields) pattern used by project_goal/project_intent/project_assessment. Parse docs/plans/<slug>/03-program-design.md and epic-<id>-design.md; emit program_design and epic_design entities into data/index.json. Extend feature_gates join entries with a doc reference where one exists."
     },
     {
       "id": "E2",
       "branch": "design/gate-doc-surfacing",
-      "pr": null,
-      "state": "completed",
+      "pr": 19,
+      "state": "open",
       "note": "plugins/artifact/viewer/index.html: make gate-rail-grid cards (renderBuildsMainContent, ~line 3249) clickable, opening a gate-doc sheet modeled on openAdrSheet. Add a design-doc chip to renderEpicCard (~line 3282) for epics with an epic_design entity."
     }
   ],
