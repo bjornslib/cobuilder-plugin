@@ -463,7 +463,7 @@ on scope alone:
 
 | Mode | When to use | Instructions |
 |---|---|---|
-| **Workflow script** | The feature is a program: `04-slices.md` groups slices under more than one epic | Invoke the Workflow tool, running `workflows/slice-loop.js`. Do not ask the user whether to use it first — a program-scale build always runs this way in a harness where the Workflow tool exists. |
+| **Workflow script** | The feature is a program: `04-slices.md` groups slices under more than one epic | Invoke the Workflow tool with `scriptPath: "${CLAUDE_PLUGIN_ROOT}/skills/build/workflows/slice-loop.js"` — not `name: "slice-loop"`, which only resolves built-in or `.claude/workflows/`-registered workflows and will not find a plugin-shipped script. Before invoking it, confirm any required Gate 4b epic design files exist (e.g. with `verify_gate.py`) and pass the result in as each slice's `epicDesignExists`; the script itself has no filesystem access. Do not ask the user whether to use it first — a program-scale build always runs this way in a harness where the Workflow tool exists. |
 | **Manual** | A single epic, a single slice, or a configuration-only change | Spawn subagents from [references/slice-loop.md](references/slice-loop.md), one role at a time. |
 
 A harness with no Workflow tool always uses Manual, regardless of scope.

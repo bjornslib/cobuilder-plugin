@@ -1,5 +1,3 @@
-import { existsSync } from 'node:fs'
-
 export const meta = {
   name: 'slice-loop',
   description: 'Build approved vertical slices via red-green-validate, gated on an independent blind score',
@@ -16,7 +14,13 @@ export const meta = {
 // args: {
 //   slug:         feature slug, e.g. "webhook-retry"
 //   testCommand:  exact suite command, e.g. "pytest tests/ -v"
-//   slices:       [{ id, name, goal, epicId }]   in build order
+//   slices:       [{ id, name, goal, epicId, epicDesignExists }]   in build order
+//                 epicDesignExists is required for any slice whose epic carries
+//                 more than one slice (Gate 4b). Workflow scripts have no
+//                 filesystem access, so the orchestrating session must check
+//                 `docs/plans/<slug>/epic-<epicId>-design.md` itself — e.g. with
+//                 verify_gate.py — before invoking this workflow, and pass the
+//                 result in.
 //   accept:       optional, default 0.90
 //   maxAttempts:  optional, default 3
 // }
@@ -125,16 +129,19 @@ for (const s of slices) {
   // epics ship with zero epic-*-design.md files while 00-status.md still
   // read Gate 4 as approved. Stop here instead, the same way a missing
   // rubric already stops scoring — an absent artifact must halt the loop,
-  // not be routed around.
-  if (needsEpicDesign && !existsSync(epicDesignPath)) {
+  // not be routed around. Workflow scripts have no filesystem access, so
+  // the existence check itself ran in the orchestrating session (e.g. via
+  // verify_gate.py) before this workflow was invoked, and its result
+  // travels in on `s.epicDesignExists`.
+  if (needsEpicDesign && s.epicDesignExists !== true) {
     log(
       `Slice ${s.id} stopped: epic ${s.epicId} carries ${slicesPerEpic[s.epicId]} slices, `
-      + `so Gate 4b requires ${epicDesignPath}, which does not exist.`,
+      + `so Gate 4b requires ${epicDesignPath}, which the caller did not confirm exists.`,
     )
     results.push({
       slice: s,
       verdict: 'ERROR',
-      reason: `Gate 4b missing: ${epicDesignPath} does not exist for epic ${s.epicId}`,
+      reason: `Gate 4b missing: ${epicDesignPath} not confirmed to exist for epic ${s.epicId}`,
     })
     break
   }
