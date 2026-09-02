@@ -1,10 +1,10 @@
 {
   "schema_version": "1.3",
   "sources": {
-    "git_head": "e6c8ebfafd7d41cfd772f297560996968bb85cfd",
+    "git_head": "4f0dec09f45d0b3cee6222c86215725d64c8215d",
     "trees": {
       "docs/architecture/adr": "sha256:5f62318865ede2aa3298b29b6b6979554183b00580cf989036e749172441bc20",
-      "docs/architecture/designs": "sha256:f7b327486b07b668c1ab773dbb3e8678849464ffd92584a85f93ed9181d81811",
+      "docs/architecture/designs": "sha256:f1dd06713184265f1a32a4e09dc4705428ae2465286ec01cd0802f8ba246b336",
       "docs/architecture/contexts": "sha256:4626a327bd28df972d97d40dc1325c28808eb48789649b87eadd218b3528c907",
       "docs/plans": "sha256:c6ed98e3846b908d8cfd216b6ff873473172ec2559e6e6ac6a4141253205efd1"
     }
@@ -174,7 +174,7 @@
       {
         "id": "review-flight-deck",
         "name": "review-flight-deck",
-        "outcome": "A reviewer selects several pull requests, opens one surface that shows where they overlap, conflict, and reinforce each other, and leaves with a decision recorded against each pull request: review alone, merge together, or split.",
+        "outcome": "On every pull request change, the flightdeck offers several ways to review the currently open set. Each way carries a narrative and a diagram. The reviewer picks one, and the pick is recorded.",
         "stage": "review"
       },
       {
@@ -429,58 +429,40 @@
         "note": "The cobuilder- prefix drops from the four non-umbrella plugins named in E1's table (cobuilder-architect, cobuilder-pr, cobuilder-artifact, cobuilder-implement become architect, pr, artifact, implement), since it duplicates the marketplace repo's own name. cobuilder-full-lifecycle keeps its prefix, being the umbrella the repo's own name already carries. Merged as PR #17, then a same-epic follow-up (uncommitted at the time this entry was written) fixes a second-order bug the rename introduced: two of the four renamed plugins (implement, artifact) already shipped a skill folder named after themselves, and once the plugin took that same name too, Skill() resolution inside Claude Code broke -- reproduced directly, not environment-specific. Fixed by renaming the colliding skill folders (implement's skill to build, its command to start; artifact's skill to cobuilder-artifacts) and, for consistency, cobuilder-full-lifecycle's orientation skill to cobuilder-full. See ADR-0016's addendum."
       },
       {
-        "id": "review-flight-deck/E1",
+        "id": "review-flight-deck/F1",
         "design": "review-flight-deck",
-        "epic_id": "E1",
+        "epic_id": "F1",
         "branch": "design/review-flight-deck",
         "pr": null,
         "state": "planned",
-        "note": "The tracer bullet, and the abort test. No ledger, no projection, no viewer change, no join. It proves or kills the central claim for the cost of one script."
+        "note": "The same work as the first epic of the inflight-record-store design. Build it once, in shared code."
       },
       {
-        "id": "review-flight-deck/E2",
+        "id": "review-flight-deck/F2",
         "design": "review-flight-deck",
-        "epic_id": "E2",
+        "epic_id": "F2",
         "branch": "design/review-flight-deck",
         "pr": null,
         "state": "planned",
-        "note": "The proposer. Terminal-side by construction, because the browser can neither run git nor fetch."
+        "note": "The only new work. divergent-exploration.md already generates competing options and criticises them in a separate pass. The region walk moves inside this epic as evidence, and stops being a reviewer-facing step."
       },
       {
-        "id": "review-flight-deck/E3",
+        "id": "review-flight-deck/F3",
         "design": "review-flight-deck",
-        "epic_id": "E3",
+        "epic_id": "F3",
         "branch": "design/review-flight-deck",
         "pr": null,
         "state": "planned",
-        "note": "The two new line kinds sit outside the vocabulary ADR-0019 fixed, so each needs its own projection. fold_threads must keep ignoring them."
+        "note": "story-mode and mermaid already cover this. build_diagrams.py keys on a pull request number, so it needs a proposal key."
       },
       {
-        "id": "review-flight-deck/E4",
+        "id": "review-flight-deck/F4",
         "design": "review-flight-deck",
-        "epic_id": "E4",
+        "epic_id": "F4",
         "branch": "design/review-flight-deck",
         "pr": null,
         "state": "planned",
-        "note": "The open question in ADR-0022's consequences is decided here, not before."
-      },
-      {
-        "id": "review-flight-deck/E5",
-        "design": "review-flight-deck",
-        "epic_id": "E5",
-        "branch": "design/review-flight-deck",
-        "pr": null,
-        "state": "planned",
-        "note": "The Cut, cold-start. No precedent table, because the ledger is 0 bytes. History improves the reason ranking later and does not produce the partition."
-      },
-      {
-        "id": "review-flight-deck/E6",
-        "design": "review-flight-deck",
-        "epic_id": "E6",
-        "branch": "design/review-flight-deck",
-        "pr": null,
-        "state": "planned",
-        "note": "Last, and deliberately so. ADR-0020's viewer split is decided and not executed, so this epic should follow it rather than enlarge the file first."
+        "note": "Reuses the existing view modes and the ledger from ADR-0019."
       },
       {
         "id": "ubiquitous-language/E1",
@@ -1252,12 +1234,10 @@
         "pr": null,
         "via": "epic",
         "path": [
-          "review-flight-deck/E1",
-          "review-flight-deck/E2",
-          "review-flight-deck/E3",
-          "review-flight-deck/E4",
-          "review-flight-deck/E5",
-          "review-flight-deck/E6"
+          "review-flight-deck/F1",
+          "review-flight-deck/F2",
+          "review-flight-deck/F3",
+          "review-flight-deck/F4"
         ]
       }
     },
@@ -1290,12 +1270,10 @@
       "plugin-split/E6": "unknown",
       "plugin-split/E7": "unstarted",
       "plugin-split/E8": "unknown",
-      "review-flight-deck/E1": "unknown",
-      "review-flight-deck/E2": "unknown",
-      "review-flight-deck/E3": "unknown",
-      "review-flight-deck/E4": "unknown",
-      "review-flight-deck/E5": "unknown",
-      "review-flight-deck/E6": "unknown",
+      "review-flight-deck/F1": "unknown",
+      "review-flight-deck/F2": "unknown",
+      "review-flight-deck/F3": "unknown",
+      "review-flight-deck/F4": "unknown",
       "ubiquitous-language/E1": "unstarted",
       "ubiquitous-language/E2": "unstarted",
       "ubiquitous-language/E3": "unstarted",
