@@ -1,10 +1,10 @@
 {
   "schema_version": "1.3",
   "sources": {
-    "git_head": "654c34906779ffe486b5d01e32280bd77bfab9a1",
+    "git_head": "b2a25b815a740a95c39589768a1d4307129671e7",
     "trees": {
       "docs/architecture/adr": "sha256:5f62318865ede2aa3298b29b6b6979554183b00580cf989036e749172441bc20",
-      "docs/architecture/designs": "sha256:0aa3547bd94019ab83575aa998888a1ac8e5a3f5a0dfdbf65239a5cb09181ef2",
+      "docs/architecture/designs": "sha256:971804abbf10d1618c8d6275e4c85b93729cc616501efe75284120f343cc62cb",
       "docs/architecture/contexts": "sha256:4626a327bd28df972d97d40dc1325c28808eb48789649b87eadd218b3528c907",
       "docs/plans": "sha256:c6ed98e3846b908d8cfd216b6ff873473172ec2559e6e6ac6a4141253205efd1"
     }
@@ -174,7 +174,7 @@
       {
         "id": "review-flight-deck",
         "name": "review-flight-deck",
-        "outcome": "On every pull request change, the flightdeck simulates several ways to merge the open set, replays the best one or two with real git, and shows the reviewer one validated recommendation told as a story. The alternatives and the reason each lost are one level down.",
+        "outcome": "On every pull request change, the flightdeck simulates possible paths to close the whole open set, replays the best one or two with real git, and shows the reviewer one validated path. The reviewer reads what they would have when it is done, then what each pull request adds, then whether the merges hold.",
         "stage": "review"
       },
       {
@@ -453,7 +453,7 @@
         "branch": "design/review-flight-deck",
         "pr": null,
         "state": "planned",
-        "note": "divergent-exploration.md already generates competing options in isolation and criticises them in a separate pass. This is that pattern applied to merge orders."
+        "note": "divergent-exploration.md already generates competing options in isolation and criticises them in a separate pass. The baseline is load-bearing: simulating against the default branch inverts the order whenever an open pull request restructures the tree."
       },
       {
         "id": "review-flight-deck/F3",
@@ -471,7 +471,7 @@
         "branch": "design/review-flight-deck",
         "pr": null,
         "state": "planned",
-        "note": "story-mode covers the register. The worked example the engineer gave: perform the renames and restructuring across the repository, which merges without conflict, then incorporate the new viewer into the resulting structure and naming conventions."
+        "note": "Round 5 fixed the register. State the outcome first, then the contributions, and never lead with the mechanics. The engineer's worked example: perform the renames and restructuring across the repository, which merges without conflict, then incorporate the new viewer into the resulting structure and naming conventions."
       },
       {
         "id": "review-flight-deck/F5",
