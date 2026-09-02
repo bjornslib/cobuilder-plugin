@@ -12,6 +12,8 @@
     "The mode writes at least two competing proposals for the open set, and states the evidence under each.",
     "Each proposal carries one short narrative and one diagram.",
     "A proposal names what it could not assess, instead of leaving the gap silent.",
+    "The reviewer acts on a proposal step without leaving the page, and each action appends one ledger line.",
+    "The reviewer opens any pull request of the set in the existing four-level layout, and returns to the proposal.",
     "The reviewer picks one proposal, and the ledger records the pick and the proposals that were refused.",
     "The viewer renders the proposals and computes none of them."
   ],
@@ -25,7 +27,7 @@
     "alternatives_explored": 9,
     "boundary_rules_checked": true,
     "challenge_stage_run": true,
-    "note": "Stage 3 issued six isolated exploration frames and one separate critic pass. Stage 4 raised three challenges and the engineer answered all three. The engineer overruled the recommended approach and chose the Braid and the Cut together, on the ground that both do work on the reviewer's behalf before the reviewer arrives. That choice replaced the stated approach and moved the whole computation terminal-side, which also removed the ledger write-path defect the first challenge raised. Stage 7 asked whether this is one pull request or several. The engineer chose one, so every epic carries the same branch, design/review-flight-deck, and the six epics are units of work inside one review rather than six pull requests. A scratchpad run of E1's arithmetic over the cached diffs corrected the first abort criterion, which compared stops against shared files rather than against total changed files. Round 2: the engineer revised the intent. The mode is named flightdeck. It runs on a pull request event, not on a named set, and it offers several proposals rather than one partition. Each proposal carries a narrative and a diagram. The six epics collapse into four. ADR-0022's boundary holds unchanged. Automatic triggering collides with the no-hooks install rule and is the one open decision."
+    "note": "Stage 3 issued six isolated exploration frames and one separate critic pass. Stage 4 raised three challenges and the engineer answered all three. The engineer overruled the recommended approach and chose the Braid and the Cut together, on the ground that both do work on the reviewer's behalf before the reviewer arrives. That choice replaced the stated approach and moved the whole computation terminal-side, which also removed the ledger write-path defect the first challenge raised. Stage 7 asked whether this is one pull request or several. The engineer chose one, so every epic carries the same branch, design/review-flight-deck, and the six epics are units of work inside one review rather than six pull requests. A scratchpad run of E1's arithmetic over the cached diffs corrected the first abort criterion, which compared stops against shared files rather than against total changed files. Round 2: the engineer revised the intent. The mode is named flightdeck. It runs on a pull request event, not on a named set, and it offers several proposals rather than one partition. Each proposal carries a narrative and a diagram. The six epics collapse into four. ADR-0022's boundary holds unchanged. Automatic triggering collides with the no-hooks install rule and is the one open decision. Round 3: the engineer resolved the trigger themselves, with a scheduled skill run or a workflow, and it stops being an open question. The remaining work is the layout and the proposal quality. flightdeck-prototype.html is the layout, close to working: three views, the actions a reviewer takes from the page, a drill-in to the existing four-level layout, and an append-only ledger."
   },
   "limits": {
     "warn_after_rounds": 3,
@@ -65,8 +67,8 @@
       "branch": "design/review-flight-deck",
       "pr": null,
       "state": "planned",
-      "outcome": "The viewer renders the proposals read-only. Picking one appends a line naming the pick and the refused proposals.",
-      "note": "Reuses the existing view modes and the ledger from ADR-0019."
+      "outcome": "The viewer renders the proposals, the reviewer acts on a step from the page, and each action appends one ledger line. A step can open a pull request in the existing four-level layout and return.",
+      "note": "Reuses the existing view modes, the level rail, and the ledger from ADR-0019. flightdeck-prototype.html is the reference layout for this epic."
     }
   ],
   "stage": "review",
@@ -79,6 +81,11 @@
     },
     {
       "n": 2,
+      "changed": true,
+      "feedback_class": "material"
+    },
+    {
+      "n": 3,
       "changed": true,
       "feedback_class": "material"
     }

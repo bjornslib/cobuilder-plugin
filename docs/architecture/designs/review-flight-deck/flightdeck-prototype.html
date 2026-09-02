@@ -1,0 +1,859 @@
+<title>Flightdeck Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+:root{
+  --ground:#e9eded; --surface:#ffffff; --surface-2:#f5f8f8; --surface-3:#eef3f3;
+  --ink:#121d1c; --ink-mid:#3c4b4a; --ink-dim:#6a7978;
+  --line:#d5dddc; --line-soft:#e6ebeb;
+  --accent:#1d7f8e; --accent-deep:#125460; --accent-wash:#dcedf0;
+  --warn:#9e5c17; --warn-wash:#f6ead9;
+  --danger:#9c3333; --danger-wash:#f7e3e3;
+  --good:#2f6b42; --good-wash:#dfeee4;
+  --shadow-1:0 1px 2px rgba(18,29,28,.06);
+  --shadow-2:0 2px 6px rgba(18,29,28,.07), 0 12px 28px -14px rgba(18,29,28,.22);
+  --shadow-3:0 4px 12px rgba(18,29,28,.10), 0 24px 48px -20px rgba(18,29,28,.30);
+  --mono:'JetBrains Mono', ui-monospace, Menlo, monospace;
+  --serif:'Source Serif 4', Georgia, serif;
+  --ease:cubic-bezier(.22,.75,.3,1);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0b1312; --surface:#131d1c; --surface-2:#182322; --surface-3:#1e2a29;
+    --ink:#e2e9e8; --ink-mid:#adbab9; --ink-dim:#7d8b8a;
+    --line:#26332f; --line-soft:#1d2827;
+    --accent:#4fb2c1; --accent-deep:#86d0da; --accent-wash:#0e2a2f;
+    --warn:#d2954f; --warn-wash:#2a2116;
+    --danger:#dd7070; --danger-wash:#2b1919;
+    --good:#63ac77; --good-wash:#14251a;
+    --shadow-1:0 1px 2px rgba(0,0,0,.5);
+    --shadow-2:0 2px 6px rgba(0,0,0,.5), 0 12px 28px -14px rgba(0,0,0,.8);
+    --shadow-3:0 4px 12px rgba(0,0,0,.55), 0 24px 48px -20px rgba(0,0,0,.9);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0b1312; --surface:#131d1c; --surface-2:#182322; --surface-3:#1e2a29;
+  --ink:#e2e9e8; --ink-mid:#adbab9; --ink-dim:#7d8b8a;
+  --line:#26332f; --line-soft:#1d2827;
+  --accent:#4fb2c1; --accent-deep:#86d0da; --accent-wash:#0e2a2f;
+  --warn:#d2954f; --warn-wash:#2a2116;
+  --danger:#dd7070; --danger-wash:#2b1919;
+  --good:#63ac77; --good-wash:#14251a;
+  --shadow-1:0 1px 2px rgba(0,0,0,.5);
+  --shadow-2:0 2px 6px rgba(0,0,0,.5), 0 12px 28px -14px rgba(0,0,0,.8);
+  --shadow-3:0 4px 12px rgba(0,0,0,.55), 0 24px 48px -20px rgba(0,0,0,.9);
+  color-scheme: dark;
+}
+*{box-sizing:border-box;}
+body{background:var(--ground);color:var(--ink);font-family:var(--mono);font-size:13px;
+  line-height:1.5;-webkit-font-smoothing:antialiased;}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px;}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);}
+
+/* ============ FRAME ============ */
+.wrap{max-width:1220px;margin:0 auto;padding:22px 20px 40px;}
+.intro{margin-bottom:16px;display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px;}
+.intro h1{font-family:var(--mono);font-size:22px;font-weight:700;letter-spacing:-.03em;margin:0;}
+.intro p{font-family:var(--serif);font-size:15.5px;line-height:1.45;color:var(--ink-mid);
+  margin:5px 0 0;max-width:56ch;}
+.intro .spacer{flex:1;}
+.btn-tour{border:1px solid var(--accent);background:var(--accent);color:#fff;font-weight:700;
+  font-size:12px;padding:9px 16px;border-radius:6px;letter-spacing:.02em;white-space:nowrap;
+  box-shadow:var(--shadow-1);transition:transform .15s var(--ease), filter .15s var(--ease);}
+.btn-tour:hover{transform:translateY(-1px);filter:brightness(1.08);}
+.btn-tour.playing{background:var(--surface);color:var(--accent-deep);}
+
+.app{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:var(--surface);
+  box-shadow:var(--shadow-3);display:flex;flex-direction:column;min-height:660px;}
+
+/* ============ TOPBAR ============ */
+.topbar{display:flex;align-items:center;gap:14px;padding:10px 14px;flex-wrap:wrap;
+  border-bottom:1px solid var(--line);background:var(--surface);}
+.brand{font-size:12px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;}
+.modes{display:flex;gap:2px;flex-wrap:wrap;}
+.mode{font-size:10.5px;padding:5px 10px;border-radius:5px;color:var(--ink-dim);white-space:nowrap;
+  transition:background .18s var(--ease), color .18s var(--ease);}
+.mode:hover{background:var(--surface-2);color:var(--ink);}
+.mode.on{background:var(--accent-wash);color:var(--accent-deep);font-weight:700;}
+.mode.new::after{content:'new';font-size:8px;margin-left:5px;letter-spacing:.08em;
+  color:var(--accent);vertical-align:2px;}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:9px;}
+.evt{display:inline-flex;align-items:center;gap:6px;font-size:9.5px;color:var(--ink-dim);
+  background:var(--surface-2);border:1px solid var(--line-soft);padding:4px 9px;border-radius:20px;
+  white-space:nowrap;}
+.evt .dot{width:6px;height:6px;border-radius:50%;background:var(--good);display:block;
+  animation:pulse 2.4s var(--ease) infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+.btn-ledger{font-size:10.5px;border:1px solid var(--line);padding:5px 11px;border-radius:5px;
+  color:var(--ink-mid);transition:border-color .18s var(--ease), color .18s var(--ease);}
+.btn-ledger:hover{border-color:var(--accent);color:var(--accent-deep);}
+.btn-ledger b{color:var(--accent-deep);}
+
+/* ============ CRUMB ============ */
+.crumb{display:flex;align-items:center;gap:8px;padding:8px 15px;font-size:10.5px;
+  border-bottom:1px solid var(--line-soft);background:var(--surface-2);min-height:34px;}
+.crumb button{color:var(--accent-deep);text-decoration:underline;text-underline-offset:2px;}
+.crumb .sep{color:var(--ink-dim);}
+.crumb .now{color:var(--ink);font-weight:700;}
+
+/* ============ STAGE ============ */
+.stage{position:relative;flex:1;overflow:hidden;}
+.view{position:absolute;inset:0;overflow-y:auto;padding:18px 18px 22px;
+  opacity:0;visibility:hidden;transform:translateX(26px);
+  transition:opacity .3s var(--ease), transform .34s var(--ease), visibility .34s;}
+.view.on{opacity:1;visibility:visible;transform:none;}
+.view.back{transform:translateX(-26px);}
+
+/* ============ DECK ============ */
+.setbar{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:16px;}
+.prchip{display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:7px;
+  padding:8px 12px;background:var(--surface-2);transition:border-color .18s var(--ease),
+  transform .18s var(--ease), box-shadow .18s var(--ease);text-align:left;}
+.prchip:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:var(--shadow-1);}
+.prchip .num{font-weight:700;font-size:13px;}
+.prchip .ttl{font-family:var(--serif);font-size:13px;color:var(--ink-mid);max-width:30ch;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.prchip .br{font-size:9.5px;color:var(--ink-dim);}
+.prchip.dupe{border-style:dashed;border-color:var(--warn);}
+.tagv{font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:9px;}
+.tagv.concerns{background:var(--warn-wash);color:var(--warn);}
+.tagv.dupe{background:var(--danger-wash);color:var(--danger);}
+
+.sechead{display:flex;align-items:baseline;gap:12px;margin:0 0 12px;flex-wrap:wrap;}
+.sechead h2{font-size:14px;font-weight:700;letter-spacing:-.01em;margin:0;}
+.sechead .sub{font-family:var(--serif);font-size:14px;color:var(--ink-dim);}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;}
+.card{border:1px solid var(--line);border-radius:9px;background:var(--surface);overflow:hidden;
+  display:flex;flex-direction:column;text-align:left;box-shadow:var(--shadow-1);
+  transition:transform .22s var(--ease), box-shadow .22s var(--ease),
+             border-color .22s var(--ease), opacity .22s var(--ease);}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadow-2);border-color:var(--accent);}
+.card.dim{opacity:.42;}
+.card.adopted{border-color:var(--good);box-shadow:0 0 0 1px var(--good), var(--shadow-2);}
+.card-top{display:flex;align-items:center;gap:9px;padding:11px 13px;background:var(--surface-2);
+  border-bottom:1px solid var(--line-soft);}
+.card-id{font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--accent-deep);}
+.card-badge{margin-left:auto;font-size:8.5px;letter-spacing:.09em;text-transform:uppercase;
+  padding:2px 8px;border-radius:9px;background:var(--accent-wash);color:var(--accent-deep);}
+.card-badge.good{background:var(--good-wash);color:var(--good);}
+.card h3{font-size:14.5px;font-weight:700;letter-spacing:-.01em;margin:0;padding:12px 13px 0;}
+.card .pitch{font-family:var(--serif);font-size:14px;line-height:1.45;color:var(--ink-mid);
+  padding:7px 13px 0;flex:1;}
+.card .dia{padding:10px 13px 4px;}
+.card .dia svg{width:100%;height:auto;display:block;}
+.card-foot{display:flex;align-items:center;gap:10px;padding:10px 13px;border-top:1px solid var(--line-soft);
+  font-size:10px;color:var(--ink-dim);}
+.card-foot .go{margin-left:auto;color:var(--accent-deep);font-weight:700;}
+
+/* diagram primitives */
+.n-box{fill:var(--surface-2);stroke:var(--line);stroke-width:1.4;}
+.n-box.hot{fill:var(--accent-wash);stroke:var(--accent);}
+.n-box.dead{fill:var(--danger-wash);stroke:var(--danger);stroke-dasharray:3 3;}
+.n-lbl{font-family:var(--mono);font-size:9px;fill:var(--ink);font-weight:700;}
+.n-sub{font-family:var(--mono);font-size:7.5px;fill:var(--ink-dim);}
+.n-arrow{stroke:var(--ink-dim);stroke-width:1.4;fill:none;}
+.n-unit{fill:none;stroke:var(--accent);stroke-width:1.2;stroke-dasharray:4 3;opacity:.75;}
+.n-cap{font-family:var(--mono);font-size:7.5px;fill:var(--accent-deep);letter-spacing:.08em;}
+
+/* ============ PLAN ============ */
+.plan-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(270px,340px);gap:20px;}
+@media (max-width:900px){.plan-grid{grid-template-columns:1fr;}}
+.narr{font-family:var(--serif);font-size:16px;line-height:1.55;color:var(--ink-mid);
+  border-left:3px solid var(--accent);padding-left:15px;margin:0 0 18px;max-width:64ch;}
+.narr b{color:var(--ink);font-weight:600;}
+
+.steps{display:flex;flex-direction:column;gap:9px;}
+.step{border:1px solid var(--line);border-radius:8px;background:var(--surface);overflow:hidden;
+  transition:border-color .22s var(--ease), background .22s var(--ease), opacity .22s var(--ease);}
+.step.done{border-color:var(--good);background:var(--good-wash);}
+.step-main{display:flex;align-items:center;gap:11px;padding:11px 13px;flex-wrap:wrap;}
+.step-n{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line);flex:0 0 auto;
+  display:grid;place-items:center;font-size:10px;font-weight:700;color:var(--ink-dim);
+  transition:all .25s var(--ease);}
+.step.done .step-n{background:var(--good);border-color:var(--good);color:#fff;}
+.step-txt{flex:1;min-width:180px;}
+.step-txt .h{font-size:12.5px;font-weight:700;}
+.step-txt .d{font-family:var(--serif);font-size:13.5px;color:var(--ink-mid);margin-top:2px;}
+.step-acts{display:flex;gap:6px;flex-wrap:wrap;}
+.act{font-size:10.5px;padding:6px 11px;border-radius:5px;border:1px solid var(--line);
+  background:var(--surface);white-space:nowrap;
+  transition:transform .16s var(--ease), border-color .16s var(--ease), background .16s var(--ease);}
+.act:hover{transform:translateY(-1px);border-color:var(--accent);background:var(--accent-wash);}
+.act.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700;}
+.act.primary:hover{filter:brightness(1.08);background:var(--accent);}
+.act.danger{color:var(--danger);border-color:var(--danger-wash);}
+.act.danger:hover{background:var(--danger-wash);border-color:var(--danger);}
+.act.flash{animation:flash .5s var(--ease);}
+@keyframes flash{0%{box-shadow:0 0 0 0 var(--accent);}60%{box-shadow:0 0 0 7px transparent;}100%{box-shadow:0 0 0 0 transparent;}}
+.step.done .step-acts{display:none;}
+.step-done-note{display:none;font-size:10.5px;color:var(--good);padding:0 13px 11px;}
+.step.done .step-done-note{display:block;}
+
+.side{display:flex;flex-direction:column;gap:14px;}
+.panel{border:1px solid var(--line);border-radius:8px;background:var(--surface-2);overflow:hidden;}
+.panel h4{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);
+  margin:0;padding:10px 13px 7px;font-weight:500;}
+.panel ul{margin:0;padding:0 13px 12px 28px;}
+.panel li{font-family:var(--serif);font-size:13.5px;line-height:1.42;color:var(--ink-mid);margin-bottom:6px;}
+.panel li:last-child{margin-bottom:0;}
+.panel li b{color:var(--ink);font-weight:600;}
+.panel.gap{background:var(--warn-wash);border-color:var(--warn);}
+.panel.gap h4{color:var(--warn);}
+.panel.gap li{color:var(--warn);}
+.bigdia{border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--surface-2);}
+.bigdia svg{width:100%;height:auto;display:block;}
+
+/* ============ PR VIEW (existing four-level layout) ============ */
+.prview{display:grid;grid-template-columns:150px minmax(0,1fr);gap:0;border:1px solid var(--line);
+  border-radius:9px;overflow:hidden;background:var(--surface);min-height:430px;}
+@media (max-width:700px){.prview{grid-template-columns:1fr;}}
+.rail{border-right:1px solid var(--line-soft);background:var(--surface-2);padding:12px 0;}
+.rail-h{font-size:8.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-dim);padding:0 13px 8px;}
+.rail-i{display:block;width:100%;text-align:left;padding:9px 13px;border-left:2px solid transparent;
+  color:var(--ink-dim);font-size:11px;transition:all .2s var(--ease);}
+.rail-i:hover{background:var(--surface-3);color:var(--ink);}
+.rail-i.on{border-left-color:var(--accent);background:var(--accent-wash);color:var(--accent-deep);font-weight:700;}
+.rail-i small{display:block;font-size:8.5px;color:var(--ink-dim);font-weight:400;margin-top:2px;}
+.prmain{padding:16px 18px;}
+.prcap{border-bottom:1px solid var(--line-soft);padding-bottom:12px;margin-bottom:14px;}
+.prcap .t{font-size:14px;font-weight:700;letter-spacing:-.01em;}
+.prcap .m{font-size:10px;color:var(--ink-dim);margin-top:4px;}
+.lvl{font-family:var(--serif);font-size:15px;line-height:1.55;color:var(--ink-mid);}
+.lvl p{margin:0 0 .8em;} .lvl p:last-child{margin-bottom:0;}
+.lvl b{color:var(--ink);font-weight:600;}
+.lvl .src{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--ink-dim);margin-top:12px;}
+.nonarr{border:1px dashed var(--warn);background:var(--warn-wash);color:var(--warn);
+  border-radius:6px;padding:9px 12px;font-size:11px;font-family:var(--mono);margin-bottom:14px;}
+.bars{display:flex;flex-direction:column;gap:6px;margin-top:6px;}
+.bar{display:grid;grid-template-columns:150px 1fr 44px;gap:10px;align-items:center;font-size:10.5px;}
+.bar .p{color:var(--ink-mid);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.bar .t{height:8px;border-radius:4px;background:var(--surface-3);overflow:hidden;}
+.bar .f{height:100%;border-radius:4px;background:var(--accent);transform-origin:left;
+  animation:grow .5s var(--ease) both;}
+@keyframes grow{from{transform:scaleX(0);}to{transform:scaleX(1);}}
+.bar .c{text-align:right;color:var(--ink-dim);font-variant-numeric:tabular-nums;}
+
+/* ============ DOCK ============ */
+.dock{display:flex;align-items:center;gap:9px;padding:11px 15px;border-top:1px solid var(--line);
+  background:var(--surface-2);flex-wrap:wrap;}
+.pill{font-size:10px;letter-spacing:.04em;padding:4px 10px;border-radius:20px;background:var(--surface);
+  border:1px solid var(--line);color:var(--ink-dim);}
+.pill.ok{background:var(--good-wash);border-color:transparent;color:var(--good);}
+.dock .sp{flex:1;}
+
+/* ============ LEDGER ============ */
+.ledger{position:fixed;top:0;right:0;bottom:0;width:min(390px,92vw);background:var(--surface);
+  border-left:1px solid var(--line);box-shadow:var(--shadow-3);z-index:30;display:flex;
+  flex-direction:column;transform:translateX(100%);transition:transform .34s var(--ease);}
+.ledger.open{transform:none;}
+.ledger-h{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);}
+.ledger-h h3{font-size:12px;font-weight:700;margin:0;}
+.ledger-h .x{margin-left:auto;font-size:16px;color:var(--ink-dim);line-height:1;}
+.ledger-b{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:9px;}
+.lline{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;
+  padding:9px 11px;background:var(--surface-2);font-size:10.5px;line-height:1.6;color:var(--ink-mid);
+  white-space:pre-wrap;word-break:break-word;animation:slidein .3s var(--ease) both;}
+@keyframes slidein{from{opacity:0;transform:translateY(-7px);}to{opacity:1;transform:none;}}
+.lline .k{color:var(--accent-deep);} .lline .s{color:var(--good);}
+.ledger-empty{font-family:var(--serif);font-size:14px;color:var(--ink-dim);}
+.scrim{position:fixed;inset:0;background:rgba(10,20,19,.36);z-index:29;opacity:0;visibility:hidden;
+  transition:opacity .3s var(--ease), visibility .3s;}
+.scrim.on{opacity:1;visibility:visible;}
+
+/* ============ TOAST + TOUR ============ */
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,18px);z-index:40;
+  background:var(--ink);color:var(--ground);border-radius:7px;padding:10px 16px;font-size:11.5px;
+  box-shadow:var(--shadow-3);opacity:0;visibility:hidden;
+  transition:opacity .26s var(--ease), transform .26s var(--ease), visibility .26s;max-width:88vw;}
+.toast.on{opacity:1;visibility:visible;transform:translate(-50%,0);}
+.tour{position:fixed;left:50%;bottom:26px;transform:translate(-50%,18px);z-index:41;
+  background:var(--accent-deep);color:#fff;border-radius:8px;padding:12px 18px;font-size:12px;
+  box-shadow:var(--shadow-3);opacity:0;visibility:hidden;display:flex;align-items:center;gap:14px;
+  transition:opacity .26s var(--ease), transform .26s var(--ease), visibility .26s;max-width:90vw;}
+.tour.on{opacity:1;visibility:visible;transform:translate(-50%,0);}
+.tour .step-of{font-size:9.5px;opacity:.75;letter-spacing:.1em;white-space:nowrap;}
+.tour .stop{border:1px solid rgba(255,255,255,.4);border-radius:5px;padding:5px 11px;font-size:10.5px;}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.01ms!important;transition-duration:.01ms!important;}
+}
+.foot{margin-top:16px;font-family:var(--serif);font-size:13.5px;color:var(--ink-dim);max-width:78ch;}
+.foot code{font-family:var(--mono);font-size:11.5px;}
+</style>
+
+<div class="wrap">
+  <div class="intro">
+    <div>
+      <h1>Flightdeck prototype</h1>
+      <p>
+        A working layout. Click anything, or press <b>Play the tour</b> to watch the
+        navigation and every action a reviewer can take.
+      </p>
+    </div>
+    <span class="spacer"></span>
+    <button class="btn-tour" id="tourBtn">Play the tour</button>
+  </div>
+
+  <div class="app">
+    <div class="topbar">
+      <span class="brand">cobuilder-plugin</span>
+      <div class="modes" role="tablist" aria-label="View mode">
+        <button class="mode" role="tab">Designs</button>
+        <button class="mode" role="tab" id="modePrs">Pull requests</button>
+        <button class="mode on new" role="tab" id="modeDeck" aria-selected="true">Flightdeck</button>
+        <button class="mode" role="tab">Decisions</button>
+        <button class="mode" role="tab">Contexts</button>
+        <button class="mode" role="tab">Builds</button>
+      </div>
+      <div class="tb-right">
+        <span class="evt"><span class="dot"></span>ran 4 min ago &middot; PR #18 updated</span>
+        <button class="btn-ledger" id="ledgerBtn">Ledger <b id="ledgerN">0</b></button>
+      </div>
+    </div>
+
+    <div class="crumb" id="crumb"></div>
+
+    <div class="stage">
+      <!-- ============ DECK ============ -->
+      <section class="view on" id="v-deck" aria-label="Flightdeck">
+        <div class="sechead">
+          <h2>3 pull requests open</h2>
+          <span class="sub">The set the flightdeck read.</span>
+        </div>
+        <div class="setbar" id="setbar"></div>
+
+        <div class="sechead" style="margin-top:20px;">
+          <h2>3 ways to review them</h2>
+          <span class="sub">Generated on the last update. Pick one, or open one to read it.</span>
+        </div>
+        <div class="cards" id="cards"></div>
+      </section>
+
+      <!-- ============ PLAN ============ -->
+      <section class="view" id="v-plan" aria-label="Review plan"></section>
+
+      <!-- ============ PR ============ -->
+      <section class="view" id="v-pr" aria-label="Pull request"></section>
+    </div>
+
+    <div class="dock" id="dock"></div>
+  </div>
+
+  <p class="foot">
+    Pull request numbers, titles, head branches, file counts, and the quoted intent and
+    assessment text all come from this repository. Pull requests 16, 17, and 18 were open
+    together on 26 August 2026. 17 and 18 share one head branch,
+    <code>rename-plugins-drop-cobuilder-prefix</code>. The three proposals are written by
+    hand to show the shape, because no mode generates them yet.
+  </p>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="ledger" id="ledger" aria-label="Recorded actions">
+  <div class="ledger-h">
+    <h3>feedback-ledger.jsonl</h3>
+    <button class="x" id="ledgerX" aria-label="Close ledger">&times;</button>
+  </div>
+  <div class="ledger-b" id="ledgerB">
+    <p class="ledger-empty">Nothing recorded yet. Every action a reviewer takes appends one
+      line here, and nothing is ever rewritten.</p>
+  </div>
+</aside>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="tour" id="tour">
+  <span class="step-of" id="tourN"></span>
+  <span id="tourTxt"></span>
+  <button class="stop" id="tourStop">Stop</button>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- DATA (real, from this repository) ---------------- */
+  var PRS = {
+    16: {n:16, title:"book-index.md gains a nano tier, and the security corpus stops reading unconditionally in full",
+         branch:"design/book-index-tiering", files:49, verdict:"concerns",
+         problem:"book-index.md's Tier 2 escalation jumps straight from a cheap corpus heuristic to one full vendored book of 300 to 1000 lines, skipping the nano and mini tiers upstream already publishes.",
+         approach:"Vendor nano.md and mini.md beside each book's existing full.md, 26 new files across 13 books. Rewrite the escalation rule to load three nano excerpts first, and escalate one book only when it is judged to matter.",
+         finding:"Both new escalation rules are enforced by prose alone, with no mechanical consumer. This repository's own Gate 4b history shows an unenforced step erodes under time pressure.",
+         touched:{"plugins":31,"docs":9,".cobuilder-architect":5,".cobuilder":3,"(root)":1}},
+    17: {n:17, title:"Rename plugins to drop the cobuilder- prefix; fix Mermaid click and copy-paste in the feedback drawer",
+         branch:"rename-plugins-drop-cobuilder-prefix", files:342, verdict:"concerns",
+         problem:"The plugin family's slash commands repeated the repository's own cobuilder- prefix on every plugin name, which made them harder to remember and type than they needed to be.",
+         approach:"Rename the four non-umbrella plugins to drop the prefix in plugin.json and in the plugins/ directory. cobuilder-full-lifecycle keeps its name, because the umbrella plugin carries the family identity.",
+         finding:"This pull request amends ADR-0016's chosen plugin names with no new ADR recording the rename, unlike how consistently this repository documents naming decisions.",
+         touched:{"plugins":324,"tests":11,".claude":2,"shared":2,"(root)":2}},
+    18: {n:18, title:"Correcting name conflicts between plugin and skill names",
+         branch:"rename-plugins-drop-cobuilder-prefix", files:348, verdict:"dupe",
+         problem:"Not narrated, and no author intent recorded. This pull request shares its head branch with pull request 17, so it carries the same commits plus later ones.",
+         approach:"Not stated.",
+         finding:"No assessment exists. The flightdeck flags the shared head branch instead, because that is a fact it can check.",
+         touched:{"plugins":324,"tests":11,"shared":6,"docs":4,"(root)":3}}
+  };
+
+  function svgA(){return '<svg viewBox="0 0 260 92" role="img" aria-label="Proposal A: close 17, then review 18 and 16 separately">'+
+    '<rect class="n-box dead" x="4" y="10" width="72" height="26" rx="5"/>'+
+    '<text class="n-lbl" x="14" y="24">PR 17</text><text class="n-sub" x="14" y="33">closed</text>'+
+    '<line class="n-arrow" x1="76" y1="23" x2="106" y2="23" stroke-dasharray="3 3"/>'+
+    '<rect class="n-box hot" x="108" y="10" width="72" height="26" rx="5"/>'+
+    '<text class="n-lbl" x="118" y="24">PR 18</text><text class="n-sub" x="118" y="33">review 1</text>'+
+    '<rect class="n-box hot" x="108" y="52" width="72" height="26" rx="5"/>'+
+    '<text class="n-lbl" x="118" y="66">PR 16</text><text class="n-sub" x="118" y="75">review 2</text>'+
+    '<line class="n-arrow" x1="180" y1="23" x2="212" y2="40"/>'+
+    '<line class="n-arrow" x1="180" y1="65" x2="212" y2="48"/>'+
+    '<rect class="n-box" x="214" y="30" width="42" height="26" rx="5"/>'+
+    '<text class="n-lbl" x="224" y="47">main</text></svg>';}
+
+  function svgB(){return '<svg viewBox="0 0 260 92" role="img" aria-label="Proposal B: one ordered unit, 18 then 16">'+
+    '<rect class="n-unit" x="30" y="6" width="150" height="74" rx="8"/>'+
+    '<text class="n-cap" x="36" y="18">ONE UNIT</text>'+
+    '<rect class="n-box hot" x="40" y="24" width="60" height="24" rx="5"/>'+
+    '<text class="n-lbl" x="49" y="39">PR 18</text>'+
+    '<line class="n-arrow" x1="100" y1="36" x2="126" y2="36"/>'+
+    '<text class="n-sub" x="100" y="30">then</text>'+
+    '<rect class="n-box hot" x="128" y="24" width="44" height="24" rx="5"/>'+
+    '<text class="n-lbl" x="135" y="39">PR 16</text>'+
+    '<rect class="n-box dead" x="40" y="56" width="60" height="18" rx="4"/>'+
+    '<text class="n-sub" x="47" y="68">17 closed</text>'+
+    '<line class="n-arrow" x1="180" y1="40" x2="212" y2="40"/>'+
+    '<rect class="n-box" x="214" y="28" width="42" height="24" rx="5"/>'+
+    '<text class="n-lbl" x="224" y="44">main</text></svg>';}
+
+  function svgC(){return '<svg viewBox="0 0 260 92" role="img" aria-label="Proposal C: split 18 into a rename and a fix">'+
+    '<rect class="n-box" x="4" y="32" width="60" height="26" rx="5"/>'+
+    '<text class="n-lbl" x="12" y="46">PR 18</text><text class="n-sub" x="12" y="55">348 files</text>'+
+    '<line class="n-arrow" x1="64" y1="42" x2="94" y2="20"/>'+
+    '<line class="n-arrow" x1="64" y1="48" x2="94" y2="70"/>'+
+    '<rect class="n-box" x="96" y="7" width="82" height="26" rx="5"/>'+
+    '<text class="n-lbl" x="104" y="21">rename</text><text class="n-sub" x="104" y="30">skim, 5 min</text>'+
+    '<rect class="n-box hot" x="96" y="57" width="82" height="26" rx="5"/>'+
+    '<text class="n-lbl" x="104" y="71">Mermaid fix</text><text class="n-sub" x="104" y="80">read closely</text>'+
+    '<line class="n-arrow" x1="178" y1="20" x2="212" y2="38"/>'+
+    '<line class="n-arrow" x1="178" y1="70" x2="212" y2="52"/>'+
+    '<rect class="n-box" x="214" y="32" width="42" height="26" rx="5"/>'+
+    '<text class="n-lbl" x="224" y="49">main</text></svg>';}
+
+  var PLANS = {
+    A: {id:"A", name:"Retire the duplicate first", badge:"recommended", badgeKind:"good",
+        cost:"2 reviews &middot; 1 close", dia:svgA,
+        pitch:"Two pull requests point at one branch. Close the older one, then review the other two on their own.",
+        narrative:"Pull requests 17 and 18 share the head branch <b>rename-plugins-drop-cobuilder-prefix</b>. Whatever a reviewer approves on 17, pull request 18 already carries, because both read the same commits. Reviewing both spends the same attention twice, and it risks two different verdicts on one change. Close 17, review 18 on its own, and review 16 on its own. Nothing here needs to be read together.",
+        evidence:["17 and 18 resolve to <b>one head branch</b>. The pull request list does not show this.",
+                  "16 shares no branch and no design with either of them.",
+                  "16 and 18 both write under <b>plugins/</b>, and 16 adds 31 files where 18 renames 324."],
+        gaps:["Textual conflict between 16 and 18 was not assessed. Neither branch is present in this checkout, so merge-tree had nothing to compare."],
+        steps:[
+          {h:"Close pull request 17", d:"Superseded by 18 on the same branch.", acts:[{k:"close", l:"Close as duplicate", cls:"danger"},{k:"skip", l:"Keep it open", cls:""}]},
+          {h:"Review pull request 18", d:"342 files, and the only one carrying the rename.", acts:[{k:"open18", l:"Open pull request 18", cls:"primary"},{k:"later", l:"Later", cls:""}]},
+          {h:"Review pull request 16", d:"49 files, unrelated to the rename.", acts:[{k:"open16", l:"Open pull request 16", cls:"primary"},{k:"later", l:"Later", cls:""}]}
+        ]},
+    B: {id:"B", name:"One rename train", badge:"fewest reviews", badgeKind:"",
+        cost:"1 review &middot; ordered", dia:svgB,
+        pitch:"18 renames the paths that 16 adds files to. Order them, and the conflict never happens.",
+        narrative:"Pull request 18 rewrites plugin paths across the tree. Pull request 16 adds 31 files under those same paths. Merging 16 first guarantees a conflict for whoever owns 18. Merging it second makes it trivial. Read them as one ordered unit, and the conflict never occurs. Pull request 17 still closes first, because it is the same branch as 18.",
+        evidence:["Both write under <b>plugins/</b>: 324 files against 31.",
+                  "18 is a path rename. 16 adds new files at paths that 18 moves.",
+                  "Ordering costs nothing, because neither pull request is blocked on review today."],
+        gaps:["No design links 16 and 18, so this relationship rests on the shared path only.",
+              "Textual conflict was not assessed. The branches are not present in this checkout."],
+        steps:[
+          {h:"Close pull request 17", d:"Same head branch as 18.", acts:[{k:"close", l:"Close as duplicate", cls:"danger"},{k:"skip", l:"Keep it open", cls:""}]},
+          {h:"Merge 18 first", d:"The rename lands before anything is added under the new paths.", acts:[{k:"order", l:"Set merge order", cls:"primary"},{k:"skip", l:"Do not order", cls:""}]},
+          {h:"Review 16 and 18 as one unit", d:"One reading, two pull requests, in order.", acts:[{k:"open18", l:"Start with 18", cls:"primary"},{k:"open16", l:"Start with 16", cls:""}]}
+        ]},
+    C: {id:"C", name:"Split the rename from the fix", badge:"least risk", badgeKind:"",
+        cost:"3 reviews &middot; 1 trivial", dia:svgC,
+        pitch:"18 carries a mechanical rename and a real fix. Together they hide each other.",
+        narrative:"Pull request 18 carries two unrelated changes. One is a mechanical rename of 324 files, which needs no close reading. The other is a fix to Mermaid click and copy-paste in the feedback drawer, which does. A reviewer facing 348 files will skim, and the fix is what they will skim past. Split it, and the rename becomes a five-minute skim while the fix gets a real review.",
+        evidence:["The pull request title names two changes, joined by a semicolon.",
+                  "The Mermaid fix touches <b>viewer/index.html</b> only.",
+                  "The rename touches 324 files under <b>plugins/</b> and changes no behaviour."],
+        gaps:["The split is proposed from the title and the touched paths. No one has confirmed the two changes are separable in the commit history."],
+        steps:[
+          {h:"Split pull request 18", d:"Cut along viewer/index.html, and leave the rename behind.", acts:[{k:"split", l:"Split along viewer/", cls:"primary"},{k:"skip", l:"Do not split", cls:""}]},
+          {h:"Skim the rename", d:"324 files, no behaviour change.", acts:[{k:"open18", l:"Open the rename", cls:""},{k:"later", l:"Later", cls:""}]},
+          {h:"Read the Mermaid fix closely", d:"One file, and the only real logic in the set.", acts:[{k:"open18", l:"Open the fix", cls:"primary"},{k:"later", l:"Later", cls:""}]}
+        ]}
+  };
+
+  var LEVELS = [
+    {n:"Overview", t:"State, branch, size"},
+    {n:"Problem &amp; Solution", t:"Why it exists"},
+    {n:"Architecture", t:"How it fits"},
+    {n:"File Changes", t:"What changed"}
+  ];
+
+  /* ---------------- STATE ---------------- */
+  var S = {view:"deck", plan:null, pr:null, level:0, adopted:null,
+           done:{}, ledger:[], closed:{}, tour:false};
+
+  var $ = function(id){ return document.getElementById(id); };
+  var stage = {deck:$("v-deck"), plan:$("v-plan"), pr:$("v-pr")};
+
+  /* ---------------- LEDGER ---------------- */
+  function record(obj, note){
+    S.ledger.push(obj);
+    var b = $("ledgerB");
+    if (S.ledger.length === 1) b.innerHTML = "";
+    var d = document.createElement("div");
+    d.className = "lline";
+    d.innerHTML = fmt(obj);
+    b.appendChild(d);
+    b.scrollTop = b.scrollHeight;
+    $("ledgerN").textContent = S.ledger.length;
+    if (note) toast(note);
+  }
+  function fmt(o){
+    var parts = [];
+    for (var k in o){
+      var v = o[k];
+      var sv = typeof v === "string" ? '"' + esc(v) + '"' : JSON.stringify(v);
+      parts.push('<span class="k">"' + k + '"</span>: <span class="s">' + sv + '</span>');
+    }
+    return "{" + parts.join(",\n ") + "}";
+  }
+  function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+
+  var toastT = null;
+  function toast(msg){
+    var t = $("toast");
+    t.textContent = msg;
+    t.classList.add("on");
+    clearTimeout(toastT);
+    toastT = setTimeout(function(){ t.classList.remove("on"); }, 2400);
+  }
+
+  /* ---------------- NAV ---------------- */
+  function go(view, back){
+    S.view = view;
+    ["deck","plan","pr"].forEach(function(k){
+      var el = stage[k];
+      el.classList.toggle("on", k === view);
+      el.classList.toggle("back", k !== view && back);
+    });
+    stage[view].scrollTop = 0;
+    renderCrumb();
+    renderDock();
+  }
+
+  function renderCrumb(){
+    var c = $("crumb"), h = "";
+    if (S.view === "deck"){
+      h = '<span class="now">Flightdeck</span><span class="sep">&middot;</span>' +
+          '<span style="color:var(--ink-dim)">3 open pull requests, 3 proposals</span>';
+    } else if (S.view === "plan"){
+      h = '<button data-go="deck">Flightdeck</button><span class="sep">/</span>' +
+          '<span class="now">Proposal ' + S.plan + ' &middot; ' + PLANS[S.plan].name + '</span>';
+    } else {
+      h = '<button data-go="deck">Flightdeck</button><span class="sep">/</span>' +
+          (S.plan ? '<button data-go="plan">Proposal ' + S.plan + '</button><span class="sep">/</span>' : "") +
+          '<span class="now">PR #' + S.pr + '</span><span class="sep">&middot;</span>' +
+          '<span style="color:var(--ink-dim)">the existing four-level layout</span>';
+    }
+    c.innerHTML = h;
+  }
+
+  /* ---------------- DECK ---------------- */
+  function renderDeck(){
+    var sb = $("setbar");
+    sb.innerHTML = "";
+    [16,17,18].forEach(function(n){
+      var p = PRS[n];
+      var b = document.createElement("button");
+      b.className = "prchip" + (p.verdict === "dupe" ? " dupe" : "");
+      b.innerHTML = '<span class="num">#' + n + '</span>' +
+        '<span><span class="ttl">' + esc(p.title) + '</span>' +
+        '<span class="br" style="display:block">' + p.branch + ' &middot; ' + p.files + ' files</span></span>' +
+        '<span class="tagv ' + (p.verdict === "dupe" ? "dupe" : "concerns") + '">' +
+        (p.verdict === "dupe" ? "shared branch" : "concerns") + '</span>';
+      b.addEventListener("click", function(){ openPr(n); });
+      sb.appendChild(b);
+    });
+
+    var cw = $("cards");
+    cw.innerHTML = "";
+    ["A","B","C"].forEach(function(id){
+      var pl = PLANS[id];
+      var c = document.createElement("button");
+      c.className = "card";
+      c.setAttribute("data-plan", id);
+      c.innerHTML =
+        '<div class="card-top"><span class="card-id">PROPOSAL ' + id + '</span>' +
+        (pl.badge ? '<span class="card-badge ' + pl.badgeKind + '">' + pl.badge + '</span>' : '') + '</div>' +
+        '<h3>' + pl.name + '</h3>' +
+        '<div class="pitch">' + pl.pitch + '</div>' +
+        '<div class="dia">' + pl.dia() + '</div>' +
+        '<div class="card-foot"><span>' + pl.cost + '</span><span class="go">Open &rsaquo;</span></div>';
+      c.addEventListener("click", function(){ openPlan(id); });
+      cw.appendChild(c);
+    });
+    syncCards();
+  }
+  function syncCards(){
+    Array.prototype.forEach.call($("cards").children, function(c){
+      var id = c.getAttribute("data-plan");
+      c.classList.toggle("adopted", S.adopted === id);
+      c.classList.toggle("dim", !!S.adopted && S.adopted !== id);
+    });
+  }
+
+  /* ---------------- PLAN ---------------- */
+  function openPlan(id){
+    S.plan = id;
+    var pl = PLANS[id];
+    var stepsHtml = pl.steps.map(function(st, i){
+      var key = id + ":" + i;
+      var acts = st.acts.map(function(a){
+        return '<button class="act ' + a.cls + '" data-step="' + i + '" data-act="' + a.k + '">' + a.l + '</button>';
+      }).join("");
+      return '<div class="step' + (S.done[key] ? " done" : "") + '" data-key="' + key + '">' +
+        '<div class="step-main"><span class="step-n">' + (S.done[key] ? "&#10003;" : (i + 1)) + '</span>' +
+        '<span class="step-txt"><span class="h">' + st.h + '</span><span class="d">' + st.d + '</span></span>' +
+        '<span class="step-acts">' + acts + '</span></div>' +
+        '<div class="step-done-note">Recorded. One line appended to the ledger.</div></div>';
+    }).join("");
+
+    stage.plan.innerHTML =
+      '<div class="plan-grid"><div>' +
+        '<div class="sechead"><h2>Proposal ' + id + ' &middot; ' + pl.name + '</h2>' +
+        '<span class="sub">' + pl.cost + '</span></div>' +
+        '<p class="narr">' + pl.narrative + '</p>' +
+        '<div class="sechead" style="margin-top:4px;"><h2>Do it</h2>' +
+        '<span class="sub">Each action records one line. Nothing reaches GitHub from this page.</span></div>' +
+        '<div class="steps">' + stepsHtml + '</div>' +
+      '</div><div class="side">' +
+        '<div class="bigdia">' + pl.dia() + '</div>' +
+        '<div class="panel"><h4>Evidence</h4><ul><li>' + pl.evidence.join("</li><li>") + '</li></ul></div>' +
+        '<div class="panel gap"><h4>Not assessed</h4><ul><li>' + pl.gaps.join("</li><li>") + '</li></ul></div>' +
+      '</div></div>';
+
+    stage.plan.querySelectorAll(".act").forEach(function(b){
+      b.addEventListener("click", function(){
+        doAct(id, Number(b.getAttribute("data-step")), b.getAttribute("data-act"), b);
+      });
+    });
+    go("plan");
+  }
+
+  function markDone(id, i){
+    var key = id + ":" + i;
+    S.done[key] = true;
+    var el = stage.plan.querySelector('[data-key="' + key + '"]');
+    if (el){ el.classList.add("done"); el.querySelector(".step-n").innerHTML = "&#10003;"; }
+  }
+
+  function doAct(id, i, kind, btn){
+    if (btn){ btn.classList.add("flash"); setTimeout(function(){ btn.classList.remove("flash"); }, 500); }
+    var st = PLANS[id].steps[i];
+    if (kind === "close"){
+      S.closed[17] = true;
+      markDone(id, i);
+      record({type:"disposition", pr:17, verb:"close", reason:"duplicate head branch with 18",
+              proposal:id, by:"human"}, "PR 17 queued to close. Nothing sent yet.");
+    } else if (kind === "order"){
+      markDone(id, i);
+      record({type:"disposition", prs:[18,16], verb:"order", sequence:[18,16],
+              because:"18 renames the paths 16 adds files to", proposal:id, by:"human"},
+             "Merge order recorded: 18, then 16.");
+    } else if (kind === "split"){
+      markDone(id, i);
+      record({type:"disposition", pr:18, verb:"split", along:["viewer/index.html"],
+              because:"a mechanical rename hides a real fix", proposal:id, by:"human"},
+             "Split recorded along viewer/index.html.");
+    } else if (kind === "open18" || kind === "open16"){
+      markDone(id, i);
+      openPr(kind === "open18" ? 18 : 16);
+    } else if (kind === "later"){
+      markDone(id, i);
+      record({type:"disposition", verb:"defer", step:st.h, proposal:id, by:"human"}, "Deferred.");
+    } else {
+      markDone(id, i);
+      record({type:"disposition", verb:"decline", step:st.h, proposal:id, by:"human"}, "Declined.");
+    }
+  }
+
+  function adopt(){
+    if (!S.plan) return;
+    S.adopted = S.plan;
+    var refused = ["A","B","C"].filter(function(x){ return x !== S.plan; });
+    record({type:"plan_pick", picked:S.plan, refused:refused, open_set:[16,17,18],
+            generated_for:"pull_request.synchronize on 18", by:"human"},
+           "Proposal " + S.plan + " adopted. The other two stay on the record as refused.");
+    syncCards();
+    renderDock();
+  }
+
+  /* ---------------- PR VIEW ---------------- */
+  function openPr(n){
+    S.pr = n; S.level = 0;
+    renderPr();
+    go("pr");
+  }
+  function renderPr(){
+    var p = PRS[S.pr];
+    var rail = LEVELS.map(function(l, i){
+      return '<button class="rail-i' + (i === S.level ? " on" : "") + '" data-lvl="' + i + '">' +
+        l.n + '<small>' + l.t + '</small></button>';
+    }).join("");
+
+    var body = "";
+    if (S.level === 0){
+      body = '<p><b>Head branch</b> ' + p.branch + '</p>' +
+        '<p><b>Size</b> ' + p.files + ' files changed.</p>' +
+        '<p><b>Author assessment</b> ' + (p.verdict === "dupe" ? "none recorded" : p.verdict) + '.</p>' +
+        (S.pr === 18 ? '<p>This pull request shares its head branch with pull request 17. The flightdeck raised that, and GitHub does not.</p>' : "") +
+        '<div class="src">index.json &middot; entities.pull_request</div>';
+    } else if (S.level === 1){
+      body = '<p><b>Problem.</b> ' + p.problem + '</p><p><b>Approach.</b> ' + p.approach + '</p>' +
+        '<div class="src">story.json &middot; intent.problem, intent.approach</div>';
+    } else if (S.level === 2){
+      body = '<p><b>Assessment finding.</b> ' + p.finding + '</p>' +
+        '<div class="src">story.json &middot; assessment.findings</div>';
+    } else {
+      var max = 0, keys = Object.keys(p.touched);
+      keys.forEach(function(k){ if (p.touched[k] > max) max = p.touched[k]; });
+      body = '<p>Changed files by path prefix.</p><div class="bars">' + keys.map(function(k, i){
+        return '<div class="bar"><span class="p">' + k + '</span>' +
+          '<span class="t"><span class="f" style="width:' + (p.touched[k] / max * 100) + '%;' +
+          'animation-delay:' + (i * 60) + 'ms"></span></span>' +
+          '<span class="c">' + p.touched[k] + '</span></div>';
+      }).join("") + '</div><div class="src">story.json &middot; touched</div>';
+    }
+
+    var noNarr = '<div class="nonarr">Not narrated yet. This pull request has no story levels, ' +
+      'so the layout shows the authored intent and assessment instead of inventing narration.</div>';
+
+    stage.pr.innerHTML =
+      '<div class="prview"><nav class="rail"><div class="rail-h">Levels</div>' + rail + '</nav>' +
+      '<div class="prmain"><div class="prcap"><div class="t">PR #' + p.n + ' &middot; ' + esc(p.title) + '</div>' +
+      '<div class="m">' + p.branch + ' &middot; ' + p.files + ' files</div></div>' +
+      noNarr + '<div class="lvl">' + body + '</div></div></div>';
+
+    stage.pr.querySelectorAll(".rail-i").forEach(function(b){
+      b.addEventListener("click", function(){ S.level = Number(b.getAttribute("data-lvl")); renderPr(); });
+    });
+  }
+
+  /* ---------------- DOCK ---------------- */
+  function renderDock(){
+    var d = $("dock"), h = "";
+    if (S.view === "deck"){
+      h = '<span class="pill' + (S.adopted ? " ok" : "") + '">' +
+          (S.adopted ? "Proposal " + S.adopted + " adopted" : "No proposal adopted") + '</span>' +
+          '<span class="pill">' + S.ledger.length + ' recorded</span><span class="sp"></span>' +
+          '<span class="pill">Open a proposal to act on it</span>';
+    } else if (S.view === "plan"){
+      var done = PLANS[S.plan].steps.filter(function(_, i){ return S.done[S.plan + ":" + i]; }).length;
+      h = '<span class="pill">' + done + ' of ' + PLANS[S.plan].steps.length + ' steps done</span>' +
+          '<span class="sp"></span>' +
+          '<button class="act" data-dock="deck">Back to proposals</button>' +
+          '<button class="act ' + (S.adopted === S.plan ? "" : "primary") + '" data-dock="adopt">' +
+          (S.adopted === S.plan ? "Adopted &#10003;" : "Adopt this plan") + '</button>';
+    } else {
+      h = '<span class="pill">PR #' + S.pr + ' &middot; ' + LEVELS[S.level].n.replace("&amp;", "and") + '</span>' +
+          '<span class="sp"></span>' +
+          '<button class="act" data-dock="' + (S.plan ? "plan" : "deck") + '">' +
+          (S.plan ? "Back to proposal " + S.plan : "Back to flightdeck") + '</button>' +
+          '<button class="act" data-dock="changes">Request changes</button>' +
+          '<button class="act primary" data-dock="approve">Approve</button>';
+    }
+    d.innerHTML = h;
+  }
+
+  /* ---------------- EVENTS ---------------- */
+  document.addEventListener("click", function(e){
+    var t = e.target.closest("[data-go],[data-dock]");
+    if (!t) return;
+    var g = t.getAttribute("data-go");
+    if (g === "deck") return go("deck", true);
+    if (g === "plan") return openPlan(S.plan);
+    var k = t.getAttribute("data-dock");
+    if (k === "deck") return go("deck", true);
+    if (k === "plan") return openPlan(S.plan);
+    if (k === "adopt") return adopt();
+    if (k === "approve"){
+      record({type:"review", pr:S.pr, verdict:"approve", judged_against:[16,17,18],
+              proposal:S.plan, by:"human"}, "PR #" + S.pr + " approved, judged against the whole set.");
+      renderDock();
+    }
+    if (k === "changes"){
+      record({type:"review", pr:S.pr, verdict:"request_changes", judged_against:[16,17,18],
+              proposal:S.plan, by:"human"}, "Changes requested on PR #" + S.pr + ".");
+      renderDock();
+    }
+  });
+
+  $("modeDeck").addEventListener("click", function(){ go("deck", true); });
+  $("modePrs").addEventListener("click", function(){ openPr(16); });
+
+  function setLedger(open){
+    $("ledger").classList.toggle("open", open);
+    $("scrim").classList.toggle("on", open);
+  }
+  $("ledgerBtn").addEventListener("click", function(){ setLedger(!$("ledger").classList.contains("open")); });
+  $("ledgerX").addEventListener("click", function(){ setLedger(false); });
+  $("scrim").addEventListener("click", function(){ setLedger(false); });
+  document.addEventListener("keydown", function(e){ if (e.key === "Escape") setLedger(false); });
+
+  /* ---------------- TOUR ---------------- */
+  var TOUR = [
+    {t:"The flightdeck ran when pull request 18 was updated. It read three open pull requests.", ms:2600, f:function(){ go("deck", true); setLedger(false); }},
+    {t:"Two of them share one head branch. The pull request list never shows that.", ms:2600, f:function(){}},
+    {t:"It offers three ways to review the set. Each one carries a narrative and a diagram.", ms:2800, f:function(){}},
+    {t:"Open the recommended one.", ms:2200, f:function(){ openPlan("A"); }},
+    {t:"The narrative says why. The evidence is listed, and so is what could not be assessed.", ms:3000, f:function(){}},
+    {t:"Act on step one. Closing the duplicate records a line and sends nothing.", ms:2600, f:function(){ doAct("A", 0, "close"); }},
+    {t:"Step two opens the pull request in the existing four-level layout.", ms:2400, f:function(){ doAct("A", 1, "open18"); }},
+    {t:"Same rail, same levels. Nothing about the single-pull-request view changed.", ms:2800, f:function(){}},
+    {t:"Read the problem and the approach the author wrote.", ms:2600, f:function(){ S.level = 1; renderPr(); renderDock(); }},
+    {t:"And what actually changed, by path.", ms:2600, f:function(){ S.level = 3; renderPr(); renderDock(); }},
+    {t:"Approve from here. The record names the whole set it was judged against.", ms:2800, f:function(){ document.querySelector('[data-dock="approve"]').click(); }},
+    {t:"Back to the proposal, and adopt the plan.", ms:2400, f:function(){ openPlan("A"); }},
+    {t:"Adopting records the pick and the two proposals that were refused.", ms:2800, f:function(){ adopt(); }},
+    {t:"Every action landed in the append-only ledger. Nothing was rewritten.", ms:3400, f:function(){ go("deck", true); setLedger(true); }},
+    {t:"That is the whole loop. Click anything to explore it yourself.", ms:2800, f:function(){ setLedger(false); }}
+  ];
+  var tourI = 0, tourT = null;
+  function tourStop(){
+    S.tour = false; clearTimeout(tourT);
+    $("tour").classList.remove("on");
+    $("tourBtn").classList.remove("playing");
+    $("tourBtn").textContent = "Play the tour";
+  }
+  function tourStep(){
+    if (!S.tour) return;
+    if (tourI >= TOUR.length){ tourStop(); return; }
+    var s = TOUR[tourI];
+    s.f();
+    $("tourN").textContent = (tourI + 1) + " / " + TOUR.length;
+    $("tourTxt").textContent = s.t;
+    tourI++;
+    tourT = setTimeout(tourStep, s.ms);
+  }
+  $("tourBtn").addEventListener("click", function(){
+    if (S.tour){ tourStop(); return; }
+    S.tour = true; tourI = 0;
+    S.adopted = null; S.done = {}; S.ledger = []; S.plan = null;
+    $("ledgerB").innerHTML = '<p class="ledger-empty">Nothing recorded yet. Every action a reviewer takes appends one line here, and nothing is ever rewritten.</p>';
+    $("ledgerN").textContent = "0";
+    syncCards();
+    $("tour").classList.add("on");
+    $("tourBtn").classList.add("playing");
+    $("tourBtn").textContent = "Stop the tour";
+    tourStep();
+  });
+  $("tourStop").addEventListener("click", tourStop);
+
+  /* ---------------- BOOT ---------------- */
+  renderDeck();
+  renderCrumb();
+  renderDock();
+})();
+</script>
