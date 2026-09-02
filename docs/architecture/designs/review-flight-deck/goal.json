@@ -6,16 +6,19 @@
     "ADR-0022"
   ],
   "created": "2026-09-01",
-  "outcome": "On every pull request change, the flightdeck offers several ways to review the currently open set. Each way carries a narrative and a diagram. The reviewer picks one, and the pick is recorded.",
+  "outcome": "On every pull request change, the flightdeck simulates several ways to merge the open set, replays the best one or two with real git, and shows the reviewer one validated recommendation told as a story. The alternatives and the reason each lost are one level down.",
   "done_when": [
     "A pull request event starts the mode without a person naming a set.",
-    "The mode writes at least two competing proposals for the open set, and states the evidence under each.",
-    "Each proposal carries one short narrative and one diagram.",
-    "A proposal names what it could not assess, instead of leaving the gap silent.",
-    "The reviewer acts on a proposal step without leaving the page, and each action appends one ledger line.",
-    "The reviewer opens any pull request of the set in the existing four-level layout, and returns to the proposal.",
-    "The reviewer picks one proposal, and the ledger records the pick and the proposals that were refused.",
-    "The viewer renders the proposals and computes none of them."
+    "A pull request with no description gets one from /pr:generate before the flightdeck reads it.",
+    "The set the reviewer sees excludes whatever the team's own auto-merge rules already handled.",
+    "The mode simulates at least three routes from the records, then replays the best one or two with real git and counts the conflicts.",
+    "The front page shows one recommendation, written as what would happen rather than as a structure.",
+    "The alternatives are visible on the front page and reachable only from inside the recommendation.",
+    "Each alternative states the reason it lost, and a git-replayed reason where one exists.",
+    "The recommendation names what the replay could not check.",
+    "The reviewer acts on a wave from the page, and each action appends one ledger line.",
+    "The reviewer opens any pull request in the existing four-level layout, and returns.",
+    "The viewer renders the routes and computes none of them."
   ],
   "abort_if": [
     "The stop count for a set is not materially lower than the total number of authored files the pull requests change. Measured over 27 pairs of merged pull requests in this bundle, the ratio runs from 0.00 to 0.41, and every pair reduces. This criterion is met for the whole corpus.",
@@ -27,7 +30,7 @@
     "alternatives_explored": 9,
     "boundary_rules_checked": true,
     "challenge_stage_run": true,
-    "note": "Stage 3 issued six isolated exploration frames and one separate critic pass. Stage 4 raised three challenges and the engineer answered all three. The engineer overruled the recommended approach and chose the Braid and the Cut together, on the ground that both do work on the reviewer's behalf before the reviewer arrives. That choice replaced the stated approach and moved the whole computation terminal-side, which also removed the ledger write-path defect the first challenge raised. Stage 7 asked whether this is one pull request or several. The engineer chose one, so every epic carries the same branch, design/review-flight-deck, and the six epics are units of work inside one review rather than six pull requests. A scratchpad run of E1's arithmetic over the cached diffs corrected the first abort criterion, which compared stops against shared files rather than against total changed files. Round 2: the engineer revised the intent. The mode is named flightdeck. It runs on a pull request event, not on a named set, and it offers several proposals rather than one partition. Each proposal carries a narrative and a diagram. The six epics collapse into four. ADR-0022's boundary holds unchanged. Automatic triggering collides with the no-hooks install rule and is the one open decision. Round 3: the engineer resolved the trigger themselves, with a scheduled skill run or a workflow, and it stops being an open question. The remaining work is the layout and the proposal quality. flightdeck-prototype.html is the layout, close to working: three views, the actions a reviewer takes from the page, a drill-in to the existing four-level layout, and an append-only ledger."
+    "note": "Stage 3 issued six isolated exploration frames and one separate critic pass. Stage 4 raised three challenges and the engineer answered all three. The engineer overruled the recommended approach and chose the Braid and the Cut together, on the ground that both do work on the reviewer's behalf before the reviewer arrives. That choice replaced the stated approach and moved the whole computation terminal-side, which also removed the ledger write-path defect the first challenge raised. Stage 7 asked whether this is one pull request or several. The engineer chose one, so every epic carries the same branch, design/review-flight-deck, and the six epics are units of work inside one review rather than six pull requests. A scratchpad run of E1's arithmetic over the cached diffs corrected the first abort criterion, which compared stops against shared files rather than against total changed files. Round 2: the engineer revised the intent. The mode is named flightdeck. It runs on a pull request event, not on a named set, and it offers several proposals rather than one partition. Each proposal carries a narrative and a diagram. The six epics collapse into four. ADR-0022's boundary holds unchanged. Automatic triggering collides with the no-hooks install rule and is the one open decision. Round 3: the engineer resolved the trigger themselves, with a scheduled skill run or a workflow, and it stops being an open question. The remaining work is the layout and the proposal quality. flightdeck-prototype.html is the layout, close to working: three views, the actions a reviewer takes from the page, a drill-in to the existing four-level layout, and an append-only ledger. Round 4: the engineer set the presentation rules. Show one recommendation, not three. Keep the alternatives visible and unreachable until the reviewer opens the recommendation. Write the story of what would happen, not the structure of the options. Work at the scale of every open pull request, and drop whatever the team's auto-merge already handled. The pipeline becomes simulate from records, then a git what-if on the top one or two, then a validated recommendation. Precomputing mergeable git slices may exist elsewhere, and the narrative plus the options is the part that does not."
   },
   "limits": {
     "warn_after_rounds": 3,
@@ -35,40 +38,58 @@
   },
   "epics": [
     {
+      "id": "F0",
+      "slug": "describe-on-arrival",
+      "branch": "design/review-flight-deck",
+      "pr": null,
+      "state": "planned",
+      "outcome": "A pull request with no description gets one from /pr:generate before the flightdeck reads it. A pull request that already has one is left alone.",
+      "note": "New in round 4. It closes the gap the prototype had to show as a warning: 8 of 12 pull requests in this repository carry no intent block. Reuses generate mode whole, and adds only the check for an existing description."
+    },
+    {
       "id": "F1",
       "slug": "read-the-open-set",
       "branch": "design/review-flight-deck",
       "pr": null,
       "state": "planned",
-      "outcome": "The mode lists every open pull request with its head branch, its changed files, and its design.",
-      "note": "The same work as the first epic of the inflight-record-store design. Build it once, in shared code."
+      "outcome": "The mode lists every open pull request with its head branch, changed files, and design, and marks the ones the team's auto-merge rules already handled.",
+      "note": "The same work as the first epic of the inflight-record-store design. Build it once, in shared code. The auto-merge split is read from the team's own rules, and this design does not define them."
     },
     {
       "id": "F2",
-      "slug": "propose-review-plans",
+      "slug": "simulate-routes",
       "branch": "design/review-flight-deck",
       "pr": null,
       "state": "planned",
-      "outcome": "The mode writes at least two competing proposals for the open set, each naming a review order, a reason, and its evidence.",
-      "note": "The only new work. divergent-exploration.md already generates competing options and criticises them in a separate pass. The region walk moves inside this epic as evidence, and stops being a reviewer-facing step."
+      "outcome": "The mode simulates at least three merge routes for the open set from goal.json, epics, boundary rules, districts, and authored intent. Each route names an order and the evidence for it.",
+      "note": "divergent-exploration.md already generates competing options in isolation and criticises them in a separate pass. This is that pattern applied to merge orders."
     },
     {
       "id": "F3",
-      "slug": "narrate-and-draw",
+      "slug": "git-what-if",
       "branch": "design/review-flight-deck",
       "pr": null,
       "state": "planned",
-      "outcome": "Each proposal carries one narrative and one Mermaid diagram of how the pull requests read together.",
-      "note": "story-mode and mermaid already cover this. build_diagrams.py keys on a pull request number, so it needs a proposal key."
+      "outcome": "The mode replays the best one or two simulated routes on a scratch worktree, counts the real conflicts, and promotes the survivor to a validated recommendation.",
+      "note": "New in round 4, and the step that makes the recommendation something to stand behind. Read-only against a scratch worktree. A route that fails the replay is kept, with the failure as its reason for losing. Systems that precompute mergeable slices may already do this part, so keep the interface narrow enough to swap one in."
     },
     {
       "id": "F4",
+      "slug": "narrate-the-route",
+      "branch": "design/review-flight-deck",
+      "pr": null,
+      "state": "planned",
+      "outcome": "Each route carries a story of what would happen if it were chosen, not a description of its structure. A losing route carries the reason it lost.",
+      "note": "story-mode covers the register. The worked example the engineer gave: perform the renames and restructuring across the repository, which merges without conflict, then incorporate the new viewer into the resulting structure and naming conventions."
+    },
+    {
+      "id": "F5",
       "slug": "render-and-record",
       "branch": "design/review-flight-deck",
       "pr": null,
       "state": "planned",
-      "outcome": "The viewer renders the proposals, the reviewer acts on a step from the page, and each action appends one ledger line. A step can open a pull request in the existing four-level layout and return.",
-      "note": "Reuses the existing view modes, the level rail, and the ledger from ADR-0019. flightdeck-prototype.html is the reference layout for this epic."
+      "outcome": "The front page shows one recommendation and an unreachable marker for the alternatives. Opening the recommendation unlocks them. The reviewer acts on a wave from the page, and each action appends one ledger line.",
+      "note": "Reuses the existing view modes, the level rail, and the ledger from ADR-0019. flightdeck-prototype.html is the reference layout."
     }
   ],
   "stage": "review",
@@ -86,6 +107,11 @@
     },
     {
       "n": 3,
+      "changed": true,
+      "feedback_class": "material"
+    },
+    {
+      "n": 4,
       "changed": true,
       "feedback_class": "material"
     }
