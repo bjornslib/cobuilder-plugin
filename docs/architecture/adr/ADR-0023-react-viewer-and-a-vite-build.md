@@ -171,12 +171,16 @@ where review now happens.
 E9 owns the fix. It must also settle the anchoring question this ADR raised:
 React owns the DOM that ADR-0019's anchor walk reads.
 
-The **transport** for a comment left on a published Artifact stays open. Three
-options exist, and the choice changes what a reviewer sees, so it belongs to
-the engineer:
+The **transport** is decided. Two surfaces, one ledger:
 
-1. The published page states plainly that comments are read-only there.
-2. The published page exports a review the reviewer pastes back, through the
-   copy-as-markdown button that already exists.
-3. The published page uses the Artifact platform's own storage, which makes it
-   behave differently from the served page.
+| Surface | Path |
+|---|---|
+| Served viewer | `POST /feedback` under `--allow-write`, straight to `feedback-ledger.jsonl` |
+| Published Artifact | Comments are read-only there. The page collects them in the browser and hands the reviewer one block to paste back |
+
+The Artifact platform's own storage is rejected. It would keep a comment on the
+published page and nowhere else, so the published page and the served page
+would hold different truths. That split is what ADR-0001 exists to prevent.
+
+No message may promise a sync that does not happen. A comment either reaches
+the ledger, or the page says it did not.

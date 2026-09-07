@@ -21,7 +21,8 @@
     "export_artifact.py matches named markers the build emits on purpose, instead of incidental literals, and publishing a pull request still succeeds",
     "the five record-type tabs are gone, and every record they showed is reachable from one of the three surfaces",
     "the three items build-workflow-polish carried outside the viewer are delivered here: the design-to-implement handoff line, the slice-table column shape, and the missing commit step after an accepted slice",
-    "a review comment either reaches feedback-ledger.jsonl or tells the reviewer plainly that it did not, and the viewer never claims a comment will sync when nothing syncs"
+    "a review comment reaches feedback-ledger.jsonl when the viewer is served with --allow-write, and the viewer never claims a comment will sync when nothing syncs",
+    "a published Artifact marks comments read-only, collects them in the browser, and hands the reviewer one block to paste back into the ledger"
   ],
   "abort_if": [
     "a byte-equal rebuild cannot be made reliable across machines, because a lockfile and a pinned Node version do not produce identical output, which would make the guard test flaky and the committed file untrustworthy",
@@ -114,11 +115,11 @@
     {
       "id": "E9",
       "slug": "feedback-path",
-      "outcome": "the comment path works in the served viewer, and states its real state in a published Artifact, with anchors that survive a React re-render",
+      "outcome": "the served viewer files a comment to the ledger or says plainly that it did not, and a published Artifact collects comments and hands them back as one pasteable block, with anchors that survive a React re-render",
       "branch": null,
       "pr": null,
       "state": "planned",
-      "note": "The comment mechanism does not work today, and the engineer confirmed it on 2026-09-07. Three causes, all verified in the tree. First, LEDGER_AVAILABLE at viewer/index.html line 1399 tests only whether fetch exists in the browser, which is always true, so it never tells a reviewer that no ledger server is listening. Second, a failed POST falls back to localStorage and shows 'Will sync when server is reachable', although nothing syncs: no code reads that key back. Third, a published Artifact cannot reach any server, because the Artifact CSP blocks fetch, so every comment left where review actually happens is written to one browser's localStorage and lost. This epic also settles ADR-0019's anchoring under React, which owns the DOM the anchor walk uses."
+      "note": "The comment mechanism does not work today, and the engineer confirmed it on 2026-09-07. Three causes, all verified in the tree. First, LEDGER_AVAILABLE at viewer/index.html line 1399 tests only whether fetch exists in the browser, which is always true, so it never tells a reviewer that no ledger server is listening. Second, a failed POST falls back to localStorage and shows 'Will sync when server is reachable', although nothing syncs: no code reads that key back. Third, a published Artifact cannot reach any server, because the Artifact CSP blocks fetch, so every comment left where review actually happens is written to one browser's localStorage and lost. This epic also settles ADR-0019's anchoring under React, which owns the DOM the anchor walk uses. The transport is decided: the served viewer keeps POST /feedback under --allow-write, and the published Artifact marks comments read-only and exports them for paste-back through the copy-as-markdown path that already exists. The Artifact platform's own storage is rejected, because it would make the published page behave differently from the served one, which is the split ADR-0001 exists to prevent."
     }
   ],
   "stage": "review",
@@ -139,6 +140,11 @@
     },
     {
       "n": 3,
+      "changed": true,
+      "feedback_class": "material"
+    },
+    {
+      "n": 4,
       "changed": true,
       "feedback_class": "material"
     }

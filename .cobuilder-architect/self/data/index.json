@@ -1,10 +1,10 @@
 {
   "schema_version": "1.3",
   "sources": {
-    "git_head": "6d32e4448f81b62ab908ee01eec0843c8c6b350e",
+    "git_head": "8996b0cb6c9803638e9dca8c744c267b4c5c2108",
     "trees": {
-      "docs/architecture/adr": "sha256:bb413cd5b967ec3e339fedccafff4120483c973ad6e168f7decaca69d08581ed",
-      "docs/architecture/designs": "sha256:e8249a7e47d0e19530bccd7ce13a17d39978a5d06e907ff2a48d61bfd3b72d99",
+      "docs/architecture/adr": "sha256:0f2a4f28c555a82e87fc9ccf6abd821f87516a65d2ef177bbdca9254b592ba98",
+      "docs/architecture/designs": "sha256:9fb17a56ae755b8cd5d478da232bf99792d1faf68f319cd05da8716bce057339",
       "docs/architecture/contexts": "sha256:4626a327bd28df972d97d40dc1325c28808eb48789649b87eadd218b3528c907",
       "docs/plans": "sha256:c74faf0d87d977f583e8fbd67d00138b8ee695a145112fae6f391b4107aca33e"
     }
@@ -538,7 +538,7 @@
         "branch": null,
         "pr": null,
         "state": "planned",
-        "note": "The comment mechanism does not work today, and the engineer confirmed it on 2026-09-07. Three causes, all verified in the tree. First, LEDGER_AVAILABLE at viewer/index.html line 1399 tests only whether fetch exists in the browser, which is always true, so it never tells a reviewer that no ledger server is listening. Second, a failed POST falls back to localStorage and shows 'Will sync when server is reachable', although nothing syncs: no code reads that key back. Third, a published Artifact cannot reach any server, because the Artifact CSP blocks fetch, so every comment left where review actually happens is written to one browser's localStorage and lost. This epic also settles ADR-0019's anchoring under React, which owns the DOM the anchor walk uses."
+        "note": "The comment mechanism does not work today, and the engineer confirmed it on 2026-09-07. Three causes, all verified in the tree. First, LEDGER_AVAILABLE at viewer/index.html line 1399 tests only whether fetch exists in the browser, which is always true, so it never tells a reviewer that no ledger server is listening. Second, a failed POST falls back to localStorage and shows 'Will sync when server is reachable', although nothing syncs: no code reads that key back. Third, a published Artifact cannot reach any server, because the Artifact CSP blocks fetch, so every comment left where review actually happens is written to one browser's localStorage and lost. This epic also settles ADR-0019's anchoring under React, which owns the DOM the anchor walk uses. The transport is decided: the served viewer keeps POST /feedback under --allow-write, and the published Artifact marks comments read-only and exports them for paste-back through the copy-as-markdown path that already exists. The Artifact platform's own storage is rejected, because it would make the published page behave differently from the served one, which is the split ADR-0001 exists to prevent."
       },
       {
         "id": "ubiquitous-language/E1",

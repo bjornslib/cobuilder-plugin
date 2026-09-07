@@ -65,9 +65,9 @@
     {
       "kind": "prediction",
       "id": "F8",
-      "severity": "medium",
-      "title": "The transport for comments left on a published Artifact is undecided",
-      "detail": "serve_bundle.py accepts POST /feedback only under --allow-write, so the served viewer has a working path once the client stops lying about it. The published Artifact has none, because ADR-0001's CSP blocks every outbound request. Three options exist and none is chosen: state the published page as read-only for comments, export a review the reviewer pastes back through the existing copy-as-markdown button, or use the Artifact platform's own storage, which would make the published page behave differently from the served one. The choice changes user-visible behaviour, so it belongs to the engineer, not to this design.",
+      "severity": "low",
+      "title": "Resolved in round 4: read-only plus paste-back for a published Artifact",
+      "detail": "The engineer chose two of the three options on 2026-09-07. The served viewer keeps POST /feedback under --allow-write. The published Artifact marks comments read-only, collects them in the browser, and hands the reviewer one block to paste back. The platform-storage option is rejected, because the published page would then behave differently from the served page. Both surfaces now write to the same ledger, one directly and one through a paste.",
       "cites": "ADR-0001, ADR-0019, plugins/artifact/scripts/serve_bundle.py"
     }
   ],
