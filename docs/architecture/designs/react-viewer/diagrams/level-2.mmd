@@ -1,0 +1,29 @@
+sequenceDiagram
+    autonumber
+    actor E as Viewer engineer
+    participant SRC as viewer/src/*.tsx
+    participant VITE as npm run build
+    participant OUT as viewer/index.html
+    participant TEST as tests/test_viewer_build.py
+    participant MIG as migrate_bundle.py
+    participant EXP as export_artifact.py
+
+    E->>SRC: change one surface component
+    E->>VITE: npm run build
+    VITE->>OUT: write one self-contained file
+    E->>TEST: run the suite
+    TEST->>VITE: rebuild into a temporary directory
+    TEST-->>E: fail when the committed file differs
+    Note over TEST,OUT: The guard that stops anyone editing the output
+
+    E->>MIG: run any mode against a bundle
+    MIG->>OUT: read the plugin's built viewer
+    MIG->>MIG: overwrite the bundle copy, unconditionally
+
+    E->>EXP: /artifact:publish --pr 11
+    EXP->>OUT: read verbatim
+    EXP->>EXP: match named markers, inline STORY/DIFFS/ADRS/DIAGRAMS
+    alt result over 16 MiB
+        EXP->>EXP: retry at a lower tier, then drop audio
+    end
+    EXP-->>E: one publishable file

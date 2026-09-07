@@ -1,0 +1,92 @@
+{
+  "stage": "design",
+  "verdict": "proceed",
+  "risk_tier": "sensitive",
+  "regret_risk": "If this design ships as written, the team lives with a Node toolchain in a repository that had none, and with a committed build artifact that only stays true while every engineer remembers to run the build. The guard test makes forgetting loud, so the durable regret is not staleness. It is reach: a contributor who could previously fix a viewer bug with a text editor now needs npm install first. That cost is paid on every future viewer change, and it is the one cost no epic in this design removes.",
+  "summary": "The three-surface shape is grounded, and a working prototype against the real bundle is stronger evidence than most designs carry at this stage. Round 2 closed both reasons the first assessment held back a clean verdict. The engineer directed that ADR-0023 supersedes ADR-0020 outright, so the store carries one live answer rather than two. The engineer also directed a spike inside E2, which moves the three unmeasured platform questions in front of the work that depends on them. One risk is now created rather than removed: closing build-workflow-polish would drop three fixes that are not viewer work, and E8 exists to carry them.",
+  "constraint_introduced": "plugins/artifact/viewer/index.html is a build output compiled from TypeScript and React sources under plugins/artifact/viewer/src/. An engineer edits a source file, never the output. A test rebuilds from source and fails when the committed output differs. The build never runs at install time and never in the browser.",
+  "findings": [
+    {
+      "kind": "prediction",
+      "id": "F1",
+      "severity": "low",
+      "title": "Resolved in round 2: ADR-0023 supersedes ADR-0020 outright",
+      "detail": "ADR-0020 rejected a bundler because it 'adds a Node toolchain to a repository of prose, Python scripts, and one HTML file'. That statement stays true, and the engineer accepted the cost on 2026-09-07 and required React and TypeScript. ADR-0023 therefore supersedes ADR-0020, and maintainable-viewer moves to stage superseded. The store carries one live answer.",
+      "cites": "ADR-0020, docs/architecture/designs/maintainable-viewer/goal.json"
+    },
+    {
+      "kind": "prediction",
+      "id": "F2",
+      "severity": "high",
+      "title": "The exporter seam breaks on the first bundled build unless E1 lands first",
+      "detail": "export_artifact.py rewrites the viewer by verbatim string replacement, and it hard-errors when a literal is not found. A bundled and minified build moves or renames every literal it matches. Any ordering that lands the build before the seam leaves publishing broken until somebody publishes, which is the exact silent failure ADR-0020's forces already recorded. E1 is correctly first, and it must not be reordered.",
+      "cites": "ADR-0020 forces, plugins/artifact/scripts/export_artifact.py"
+    },
+    {
+      "kind": "prediction",
+      "id": "F3",
+      "severity": "high",
+      "title": "The comment path is broken today, and a React rewrite must fix it rather than port it",
+      "detail": "ADR-0019 computes a comment anchor from the live DOM at annotation time. React replaces nodes on state change, so the anchor strategy needs a decision. That was the original finding. Round 3 makes it larger: the path does not work today either. viewer/index.html line 1399 sets LEDGER_AVAILABLE by testing whether fetch exists, which is always true, so a failed POST is indistinguishable from no server. The fallback writes to localStorage and shows 'Will sync when server is reachable', and nothing reads that key back. A published Artifact cannot POST at all under its CSP. E9 owns the fix.",
+      "cites": "ADR-0019, plugins/artifact/viewer/index.html:1399, plugins/artifact/scripts/serve_bundle.py, ADR-0001"
+    },
+    {
+      "kind": "prediction",
+      "id": "F4",
+      "severity": "low",
+      "title": "Resolved in round 2: a spike inside E2 moves the veto to the front",
+      "detail": "Three of the four unknowns are publishing questions, and two of the three abort conditions depend on them. E2 now starts with a spike that publishes one throwaway bundled page and measures the byte-equal rebuild, the size with React inlined, and post-load Mermaid rendering. The evidence arrives before five epics depend on it.",
+      "cites": "ADR-0001, docs/architecture/designs/react-viewer/goal.json abort_if"
+    },
+    {
+      "kind": "prediction",
+      "id": "F5",
+      "severity": "low",
+      "title": "The install-surface rule is not violated by this design",
+      "detail": "The packaging context's public interface names commands, skills, and script constants. It does not name a build step, and /plugin install runs no build in either the current or the proposed shape. A Node toolchain that runs only on a maintainer's machine, and only when the viewer changes, sits outside the install surface. The rule of no agents, no hooks, and no MCP servers is also untouched.",
+      "cites": "docs/architecture/contexts/cobuilder-packaging/boundary.yaml, ADR-0016"
+    },
+    {
+      "kind": "prediction",
+      "id": "F6",
+      "severity": "low",
+      "title": "Not a duplicate of any existing decision, and it absorbs one backlog design",
+      "detail": "No ADR in the store of 22 decides a viewer framework. ADR-0018 decides the record index this design reads, ADR-0019 decides the ledger it must preserve, and ADR-0022 covers gate documents it renders. The only collision is ADR-0020 and its maintainable-viewer design, which F1 covers. build-workflow-polish also names a viewer tab layout in its outcome, and that item should be re-read once this design settles, because the layout it borrows may no longer exist.",
+      "cites": "ADR-0018, ADR-0019, ADR-0022, docs/architecture/designs/build-workflow-polish/goal.json"
+    },
+    {
+      "kind": "prediction",
+      "id": "F7",
+      "severity": "medium",
+      "title": "Closing build-workflow-polish loses three non-viewer fixes unless E8 carries them",
+      "detail": "build-workflow-polish carries four epics, and only E4 is viewer work. E1 adds the missing pointer from design mode stage 7 to /implement:start, E2 states the six-column slice-table shape that shared/slice_table.py parses, and E3 commits an accepted slice without a second prompt. None of the three belongs to a viewer design. The engineer directed that the design be closed, so E8 carries the three items into this design. Without E8, the supersede is a silent deletion.",
+      "cites": "docs/architecture/designs/build-workflow-polish/goal.json, shared/slice_table.py"
+    },
+    {
+      "kind": "prediction",
+      "id": "F8",
+      "severity": "low",
+      "title": "Resolved in round 4: read-only plus paste-back for a published Artifact",
+      "detail": "The engineer chose two of the three options on 2026-09-07. The served viewer keeps POST /feedback under --allow-write. The published Artifact marks comments read-only, collects them in the browser, and hands the reviewer one block to paste back. The platform-storage option is rejected, because the published page would then behave differently from the served page. Both surfaces now write to the same ledger, one directly and one through a paste.",
+      "cites": "ADR-0001, ADR-0019, plugins/artifact/scripts/serve_bundle.py"
+    }
+  ],
+  "boundary_checks": [
+    {
+      "rule": "no plugin reads another plugin's files",
+      "result": "pass",
+      "detail": "Every path this design touches sits inside plugins/artifact/ or shared/."
+    },
+    {
+      "rule": "no agents, hooks, or MCP servers in the install surface",
+      "result": "pass",
+      "detail": "The build is a maintainer step. Nothing new installs."
+    },
+    {
+      "rule": "ADR-0001: the published viewer is one self-contained file",
+      "result": "pass",
+      "detail": "vite-plugin-singlefile inlines every asset. The output stays one file."
+    }
+  ],
+  "drift": []
+}
