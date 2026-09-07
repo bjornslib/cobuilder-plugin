@@ -34,8 +34,9 @@ forces:
   - "ADR-0018 already computes every join in data/index.json. The viewer re-derives them by hand in each render path."
   - "ADR-0019 computes a comment anchor from the live DOM, and React owns the DOM."
   - "A generated file that is also committed goes stale the moment somebody edits the output instead of the source."
+replaces: ADR-0020
 related_decisions:
-  - { type: supersedes, target: ADR-0020 }
+  - { type: replaces, target: ADR-0020 }
   - { type: depends-on, target: ADR-0001 }
   - { type: is-related-to, target: ADR-0018 }
   - { type: is-related-to, target: ADR-0019 }
@@ -52,6 +53,7 @@ delivers:
   beneficiary: [developer, reviewer, validator-agent]
 related:
   - "docs/architecture/designs/react-viewer/goal.json"
+  - "docs/architecture/designs/build-workflow-polish/goal.json"
   - "docs/architecture/adr/ADR-0020-viewer-parts-and-an-author-time-build.md"
 ---
 
@@ -117,7 +119,14 @@ still build HTML from strings, and it cannot type the joins that ADR-0018
 already computes.
 
 This ADR therefore **supersedes ADR-0020**. Two decided records that answer the
-same question differently is drift by construction.
+same question differently is drift by construction. The engineer accepted the
+Node cost on 2026-09-07 and required TypeScript and React, so the reversal is
+recorded here rather than left as a coexistence.
+
+Two designs close with it. `maintainable-viewer` is superseded outright: it was
+never executed. `build-workflow-polish` is also closed, and only one of its four
+epics is viewer work. The other three fixes move into `react-viewer`'s E8, so
+the closure is not a silent deletion.
 
 ## Consequences
 
@@ -132,11 +141,18 @@ the viewer and hard-errors when one moves. A bundled build moves every one of
 them. The exporter seam becomes named markers **before** any bundled output
 lands, or publishing breaks silently until somebody publishes.
 
-**Open, and measured late.** Three questions stay unanswered until the build
-exists: whether two machines with the same lockfile and Node version produce a
+**Open, and measured by a spike.** Three questions stay unanswered until a
+build exists: whether two machines with the same lockfile and Node version produce a
 byte-identical file, how much of the 16 MiB Artifact budget the inlined runtime
 spends, and whether a Claude Artifact renders a Mermaid block that React injects
-after page load. Two of the design's three abort conditions depend on them.
+after page load. Two of the design's three abort conditions depend on them, so E2 starts with a
+spike that publishes one throwaway bundled page and measures all three, before
+the rest of the work depends on the answer.
+
+**The lens named "assessment" is renamed.** A reader who is not the author of
+the design could not say what the word meant. The lens reads **Risks and
+verdict** in the viewer, and the record on disk keeps the field name
+`assessment.json`.
 
 **ADR-0019's anchors need a decision of their own.** The comments ledger walks
 the live DOM to build an anchor. React replaces nodes on state change. Either

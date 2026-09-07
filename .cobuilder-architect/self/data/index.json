@@ -1,10 +1,10 @@
 {
   "schema_version": "1.3",
   "sources": {
-    "git_head": "9bb7375135bb363934294611794ca85362110697",
+    "git_head": "909d773e7ac9b95f15e304539d5d1fb574fdd83d",
     "trees": {
-      "docs/architecture/adr": "sha256:27308702b5b3147e270c59905d9d3ebb984189c8e1ffa2840f22b8277259c580",
-      "docs/architecture/designs": "sha256:523a0eba4929ff138b40489a2f8cdc87cbe7f16f661ef496847b77b8b2ae5335",
+      "docs/architecture/adr": "sha256:54f8c9a1f2ff94aa6cc3e713cba19cf317039dbca02985c19cb6fe8b74d759f4",
+      "docs/architecture/designs": "sha256:eee4f3c029783d8e6568fffe3016543cf71d5eafd07508322dfe0d1394437d26",
       "docs/architecture/contexts": "sha256:4626a327bd28df972d97d40dc1325c28808eb48789649b87eadd218b3528c907",
       "docs/plans": "sha256:c74faf0d87d977f583e8fbd67d00138b8ee695a145112fae6f391b4107aca33e"
     }
@@ -109,7 +109,7 @@
       {
         "id": "ADR-0020",
         "title": "Viewer parts and an author-time build",
-        "state": "decided"
+        "state": "rejected"
       },
       {
         "id": "ADR-0021",
@@ -138,7 +138,7 @@
         "id": "build-workflow-polish",
         "name": "build-workflow-polish",
         "outcome": "An engineer running architect:design into implement:start never loses the handoff, 04-slices.md is always written in the shape verify_gate.py actually parses, a validated slice is committed without an extra prompt, and the bundle viewer borrows the tab-based Diagram / Data flow / Data types layout a colleague prototyped.",
-        "stage": "backlog"
+        "stage": "superseded"
       },
       {
         "id": "cobuilder-implement",
@@ -174,7 +174,7 @@
         "id": "maintainable-viewer",
         "name": "maintainable-viewer",
         "outcome": "An engineer changes one view mode of the bundle viewer by opening one file of a few hundred lines, and the file that ships is still one self-contained HTML page that publishes as an Artifact unchanged.",
-        "stage": "backlog"
+        "stage": "superseded"
       },
       {
         "id": "plugin-split",
@@ -475,7 +475,7 @@
         "branch": null,
         "pr": null,
         "state": "planned",
-        "note": "Vite plus vite-plugin-singlefile, a lockfile, and a pinned Node version. The tracer bullet: it proves or disproves the byte-equal rebuild that the first abort condition rests on."
+        "note": "Vite plus vite-plugin-singlefile, a lockfile, and a pinned Node version. This epic starts with a spike, at the engineer's direction: publish one throwaway bundled page and measure the byte-equal rebuild across two machines, the size with React inlined, and whether a Claude Artifact renders a Mermaid block that React injects after page load. Two of the three abort conditions are settled by that spike, before five epics of work depend on the answer."
       },
       {
         "id": "react-viewer/E3",
@@ -521,6 +521,15 @@
         "pr": null,
         "state": "planned",
         "note": "Closes the loop on E1. Measures the real budget with React inlined, and settles the Mermaid question the third abort condition names."
+      },
+      {
+        "id": "react-viewer/E8",
+        "design": "react-viewer",
+        "epic_id": "E8",
+        "branch": null,
+        "pr": null,
+        "state": "planned",
+        "note": "build-workflow-polish is superseded by this design at the engineer's direction. Its E4, the tab-based viewer layout, is absorbed by E4 and E5 here. Its other three epics are not viewer work and would be lost silently: E1 adds the pointer from design mode stage 7 to /implement:start, E2 states the six-column slice-table shape that shared/slice_table.py parses, and E3 commits an accepted slice without a second prompt. They are carried here so the supersede is safe."
       },
       {
         "id": "ubiquitous-language/E1",
@@ -1452,13 +1461,18 @@
         "pr": null,
         "via": "epic",
         "path": [
+          "build-workflow-polish/E1",
+          "build-workflow-polish/E2",
+          "build-workflow-polish/E3",
+          "build-workflow-polish/E4",
           "react-viewer/E1",
           "react-viewer/E2",
           "react-viewer/E3",
           "react-viewer/E4",
           "react-viewer/E5",
           "react-viewer/E6",
-          "react-viewer/E7"
+          "react-viewer/E7",
+          "react-viewer/E8"
         ]
       }
     },
@@ -1500,6 +1514,7 @@
       "react-viewer/E5": "unstarted",
       "react-viewer/E6": "unstarted",
       "react-viewer/E7": "unstarted",
+      "react-viewer/E8": "unstarted",
       "ubiquitous-language/E1": "unstarted",
       "ubiquitous-language/E2": "unstarted",
       "ubiquitous-language/E3": "unstarted",
