@@ -154,7 +154,29 @@ the design could not say what the word meant. The lens reads **Risks and
 verdict** in the viewer, and the record on disk keeps the field name
 `assessment.json`.
 
-**ADR-0019's anchors need a decision of their own.** The comments ledger walks
-the live DOM to build an anchor. React replaces nodes on state change. Either
-anchors become surface-scoped, or the ledger gets a React-aware anchor
-strategy. This ADR does not settle it.
+**The comment path is rebuilt, not ported.** ADR-0019 decided an anchored
+comments ledger. The mechanism does not work today, and three causes are
+verified in the tree:
+
+| Cause | Where |
+|---|---|
+| `LEDGER_AVAILABLE` tests only that `fetch` exists, which is always true, so no server is indistinguishable from a failed write | `viewer/index.html:1399` |
+| The fallback writes to `localStorage` and says "Will sync when server is reachable". Nothing reads that key back | `viewer/index.html:1530` |
+| A published Artifact cannot POST at all, because ADR-0001's CSP blocks every outbound request | `export_artifact.py`, ADR-0001 |
+
+The served viewer has a real path: `serve_bundle.py` accepts `POST /feedback`
+under `--allow-write`. The published file has none, and the published file is
+where review now happens.
+
+E9 owns the fix. It must also settle the anchoring question this ADR raised:
+React owns the DOM that ADR-0019's anchor walk reads.
+
+The **transport** for a comment left on a published Artifact stays open. Three
+options exist, and the choice changes what a reviewer sees, so it belongs to
+the engineer:
+
+1. The published page states plainly that comments are read-only there.
+2. The published page exports a review the reviewer pastes back, through the
+   copy-as-markdown button that already exists.
+3. The published page uses the Artifact platform's own storage, which makes it
+   behave differently from the served page.

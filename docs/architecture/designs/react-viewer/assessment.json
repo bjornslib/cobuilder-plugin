@@ -25,10 +25,10 @@
     {
       "kind": "prediction",
       "id": "F3",
-      "severity": "medium",
-      "title": "The anchored-comments ledger may not survive a React re-render",
-      "detail": "ADR-0019 computes a comment anchor from the live DOM at annotation time, by walking up to five ancestors to find a stable selector. React owns the DOM and replaces nodes on state change, so an anchor captured under one render may not resolve under the next. The design lists this as an unknown, and it deserves an epic of its own or an explicit acceptance that anchors become surface-scoped rather than element-scoped.",
-      "cites": "ADR-0019, plugins/artifact/viewer/index.html anchor walk"
+      "severity": "high",
+      "title": "The comment path is broken today, and a React rewrite must fix it rather than port it",
+      "detail": "ADR-0019 computes a comment anchor from the live DOM at annotation time. React replaces nodes on state change, so the anchor strategy needs a decision. That was the original finding. Round 3 makes it larger: the path does not work today either. viewer/index.html line 1399 sets LEDGER_AVAILABLE by testing whether fetch exists, which is always true, so a failed POST is indistinguishable from no server. The fallback writes to localStorage and shows 'Will sync when server is reachable', and nothing reads that key back. A published Artifact cannot POST at all under its CSP. E9 owns the fix.",
+      "cites": "ADR-0019, plugins/artifact/viewer/index.html:1399, plugins/artifact/scripts/serve_bundle.py, ADR-0001"
     },
     {
       "kind": "prediction",
@@ -61,6 +61,14 @@
       "title": "Closing build-workflow-polish loses three non-viewer fixes unless E8 carries them",
       "detail": "build-workflow-polish carries four epics, and only E4 is viewer work. E1 adds the missing pointer from design mode stage 7 to /implement:start, E2 states the six-column slice-table shape that shared/slice_table.py parses, and E3 commits an accepted slice without a second prompt. None of the three belongs to a viewer design. The engineer directed that the design be closed, so E8 carries the three items into this design. Without E8, the supersede is a silent deletion.",
       "cites": "docs/architecture/designs/build-workflow-polish/goal.json, shared/slice_table.py"
+    },
+    {
+      "kind": "prediction",
+      "id": "F8",
+      "severity": "medium",
+      "title": "The transport for comments left on a published Artifact is undecided",
+      "detail": "serve_bundle.py accepts POST /feedback only under --allow-write, so the served viewer has a working path once the client stops lying about it. The published Artifact has none, because ADR-0001's CSP blocks every outbound request. Three options exist and none is chosen: state the published page as read-only for comments, export a review the reviewer pastes back through the existing copy-as-markdown button, or use the Artifact platform's own storage, which would make the published page behave differently from the served one. The choice changes user-visible behaviour, so it belongs to the engineer, not to this design.",
+      "cites": "ADR-0001, ADR-0019, plugins/artifact/scripts/serve_bundle.py"
     }
   ],
   "boundary_checks": [
