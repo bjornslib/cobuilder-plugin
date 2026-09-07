@@ -1,0 +1,63 @@
+{
+  "name": "react-viewer",
+  "title": "The bundle viewer becomes a TypeScript and React application, built at author time into one file",
+  "adr": "ADR-0023",
+  "adrs": ["ADR-0023", "ADR-0001", "ADR-0018", "ADR-0019", "ADR-0020"],
+  "created": "2026-09-07",
+  "outcome": "A reader opens the bundle on three goal-shaped surfaces instead of five record-type tabs, an engineer changes one surface by opening one typed React component, and the file that ships is still one self-contained HTML page that publishes as an Artifact unchanged.",
+  "done_when": [
+    "the viewer opens on a Work board that lists every design with its stage, epic progress, and which records exist, and a lane filter narrows it to the work that needs a decision, a build, or a review",
+    "a design opens through seven lenses (goal, intent, problem and solution, architecture, assessment, build, pull requests), and a lens with no record is disabled rather than empty",
+    "a backlog design that carries only goal.json renders correctly, with its greyed lenses stated as the honest record state",
+    "the Flight deck is its own surface, and it shows a pull request's four narration levels, its Mermaid diagrams, its scene art, its intent and assessment, and the joins that reach it",
+    "plugins/artifact/viewer/index.html is produced by a Vite build from typed sources under viewer/src/, and a test fails when the committed output does not equal a fresh build",
+    "npm install and npm run build run only when an engineer changes the viewer, never at /plugin install and never in the browser",
+    "export_artifact.py matches named markers the build emits on purpose, instead of incidental literals, and publishing a pull request still succeeds",
+    "the five record-type tabs are gone, and every record they showed is reachable from one of the three surfaces"
+  ],
+  "abort_if": [
+    "a byte-equal rebuild cannot be made reliable across machines, because a lockfile and a pinned Node version do not produce identical output, which would make the guard test flaky and the committed file untrustworthy",
+    "the built single file plus its inlined data exceeds the 16 MiB Artifact budget for a normal pull request, and dropping audio does not recover it",
+    "Claude Artifacts will not render a Mermaid block that React injects after page load, and a vendored Mermaid runtime pushes the published file over the same budget"
+  ],
+  "min_work": {
+    "derived_from": "6 districts, 5 colliding ADRs (0001, 0018, 0019, 0020, 0022), 1 bounded context (cobuilder-packaging), 1 boundary rule on the install surface, 4899 measured viewer lines, 1 working prototype built in this session",
+    "alternatives_explored": 5,
+    "boundary_rules_checked": true,
+    "challenge_stage_run": true
+  },
+  "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
+  "epics": [
+    {"id": "E1", "slug": "exporter-seam",
+     "outcome": "export_artifact.py matches named markers, and a test proves a publish still works after the markers move",
+     "branch": null, "pr": null, "state": "planned",
+     "note": "The exporter rewrites the viewer by verbatim string replacement today and hard-errors when a literal moves. A bundled build moves every literal, so this seam must become explicit before any build lands."},
+    {"id": "E2", "slug": "build-pipeline",
+     "outcome": "npm run build produces the committed index.html, and a test rebuilds it and fails on any difference",
+     "branch": null, "pr": null, "state": "planned",
+     "note": "Vite plus vite-plugin-singlefile, a lockfile, and a pinned Node version. The tracer bullet: it proves or disproves the byte-equal rebuild that the first abort condition rests on."},
+    {"id": "E3", "slug": "typed-data-layer",
+     "outcome": "one typed model reads window.STORY, window.ODYSSEY, window.DIFFS, window.ADRS, window.DESIGNS, window.DIAGRAMS and index.json, and the joins are resolved in one place",
+     "branch": null, "pr": null, "state": "planned",
+     "note": "The viewer resolves joins by hand in each render path today. index.json already computed them. This epic makes the index the source and the types the contract."},
+    {"id": "E4", "slug": "work-surface",
+     "outcome": "the Work board and the seven design lenses render every design, including a backlog design with goal.json only",
+     "branch": null, "pr": null, "state": "planned",
+     "note": "The prototype of 2026-09-07 is the reference for this surface."},
+    {"id": "E5", "slug": "flight-deck",
+     "outcome": "the Flight deck renders a pull request at parity with today's viewer, plus the joins rail",
+     "branch": null, "pr": null, "state": "planned",
+     "note": "Parity covers the four levels, diagrams, scene art, narration audio, the diff, and the intent and assessment sheet."},
+    {"id": "E6", "slug": "reference-surface",
+     "outcome": "decisions and map coverage move to a Reference surface, and the five record-type tabs are removed",
+     "branch": null, "pr": null, "state": "planned",
+     "note": "tests/test_viewer_modes.py asserts the five data-mode buttons. That test changes with this epic, and the change is the point, not a regression."},
+    {"id": "E7", "slug": "publish-parity",
+     "outcome": "a published Artifact of one pull request renders every surface, under the 16 MiB budget",
+     "branch": null, "pr": null, "state": "planned",
+     "note": "Closes the loop on E1. Measures the real budget with React inlined, and settles the Mermaid question the third abort condition names."}
+  ],
+  "stage": "review",
+  "supersedes": null,
+  "rounds": [{"n": 1, "changed": true, "feedback_class": "material"}]
+}

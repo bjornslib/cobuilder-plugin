@@ -1,0 +1,32 @@
+C4Container
+    title react-viewer - the viewer becomes a built application, and the bundle contract does not change
+
+    Person(reader, "Reader", "Reviews designs, builds, and pull requests")
+    Person(engineer, "Viewer engineer", "Changes one surface")
+
+    Container_Boundary(plugin, "plugins/artifact/") {
+        Container(src, "viewer/src/", "TypeScript + React", "Typed data layer, three surfaces, one component tree")
+        Container(vite, "vite.config.ts + package-lock.json", "Vite + vite-plugin-singlefile", "Author-time build, pinned Node")
+        Container(out, "viewer/index.html", "committed build output", "One self-contained file. Nobody edits it by hand")
+        Container(export, "scripts/export_artifact.py", "PEP 723 script", "Inlines data, rewrites named markers, publishes one PR")
+    }
+
+    Container_Boundary(shared, "shared/") {
+        Container(migrate, "migrate_bundle.py", "PEP 723 script", "Copies the built viewer into every bundle, unconditionally")
+        Container(index, "build_index.py", "PEP 723 script", "Writes data/index.json with every join resolved")
+    }
+
+    Container_Boundary(bundle, ".cobuilder-architect/self/") {
+        ContainerDb(data, "data/", "JS globals + index.json", "STORY, ODYSSEY, DIFFS, ADRS, DESIGNS, DIAGRAMS")
+        Container(copy, "viewer/index.html", "bundle copy", "Refreshed on every mode run")
+    }
+
+    Rel(engineer, src, "edits a surface or the data layer")
+    Rel(src, vite, "compiled by")
+    Rel(vite, out, "writes")
+    Rel(migrate, out, "reads")
+    Rel(migrate, copy, "overwrites")
+    Rel(export, out, "reads verbatim, rewrites markers")
+    Rel(index, data, "writes index.json")
+    Rel(copy, data, "reads at page load")
+    Rel(reader, copy, "opens three surfaces")

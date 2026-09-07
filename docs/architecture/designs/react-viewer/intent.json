@@ -1,0 +1,48 @@
+{
+  "captured": "2026-09-07",
+  "source": "design",
+  "design_name": "react-viewer",
+  "authorship": "agent-assisted",
+  "problem": "The viewer slices the bundle by record type. Its five tabs mirror the five entity lists in index.json, so every real task crosses them. A reader who reviews pull request 11 reads its story, then ADR-0016 in a second tab, then the six plugin-split epics in a third, then their slice scores in a fourth, and holds the joins in their head although index.json already computed them. The reader does not arrive with a record type in mind. They arrive with one of three questions: is this decided, where has it got to, and was the change what we intended. Rebuilding the surfaces around those three questions means state-dependent rendering that the current file cannot carry. It is 4899 lines, one IIFE, with 45 innerHTML string blocks and no template layer.",
+  "why_now": "Two forces meet. ADR-0020 already decided that the viewer must stop being one hand-edited file, and it is decided and not executed, so no work is thrown away by choosing the target shape now. A prototype built on 2026-09-07 proved the three-surface shape against the real bundle, and it also proved the cost: about 700 lines of hand-written render functions and manual innerHTML for a reduced version of the same idea. The next surface is cheaper to build in a typed component model than to retrofit later.",
+  "approach": "Author the viewer as TypeScript and React under plugins/artifact/viewer/src/, and compile it with Vite and vite-plugin-singlefile into the committed plugins/artifact/viewer/index.html. The build runs when an engineer changes the viewer, never at /plugin install and never in the browser. A test rebuilds from source and fails when the committed output differs. The application renders three surfaces: Work, Flight deck, and Reference. One typed data layer reads the bundle globals and index.json, and resolves every join in one place.",
+  "alternatives": [
+    {"option": "Keep ADR-0020 as decided: ordered parts under viewer/src/, concatenated by build_viewer.py, plain JavaScript",
+     "rejected_because": "It fixes file size and fixes nothing about state. The three surfaces need a design record, a lens, a level, a filter, and a selection to compose, and concatenation of ordered parts still leaves 45 innerHTML blocks re-rendering by hand. It also cannot type the joins, which is where the current viewer's real defects sit. The engineer chose the React target after this option was argued."},
+    {"option": "TypeScript with no framework, bundled by esbuild, using template literals and a small render loop",
+     "rejected_because": "It answers the typing objection and keeps the toolchain small, and it still leaves every list re-render hand-written. The prototype is the evidence: the lens and level switching is where the manual innerHTML cost concentrates, and that is exactly the part a component model removes."},
+    {"option": "Preact and preact-compat instead of React, same Vite pipeline",
+     "rejected_because": "It wins on bundle size, about 4 KB against about 45 KB compressed, and the 16 MiB Artifact budget is dominated by base64 audio and images, not by the runtime. The engineer asked for React. Preact stays available as a drop-in lever if E7 measures the budget as tight."},
+    {"option": "Two artefacts: a React application served locally by /artifact:view, and a reduced single file for publishing",
+     "rejected_because": "It splits the truth. Two renderers drift, and a reader who publishes an Artifact would review a different page from the one they served. ADR-0001 exists because the published file and the served file are the same file."},
+    {"option": "Serve the viewer from a small local web application, and drop the single-file constraint",
+     "rejected_because": "ADR-0001 forbids it. A published Artifact is one file under a CSP that blocks every external request, and /artifact:publish is a shipped mode with two recorded publications."}
+  ],
+  "out_of_scope": [
+    "any change to what the generation scripts write into the bundle",
+    "a new record type, a new join, or a schema version bump",
+    "the open pull request gap that inflight-record-store owns",
+    "the diff view's own rendering, which is ported as it stands",
+    "publishing a Notion target, which stays a reserved flag value"
+  ],
+  "risks": [
+    "a contributor now needs Node and npm to change the viewer, which the repository has never required",
+    "a committed build artifact goes stale the moment somebody edits the output instead of the source",
+    "a byte-equal rebuild depends on a pinned toolchain, and a version drift makes the guard test fail for the wrong reason",
+    "the React runtime is inlined into every published Artifact, which spends part of the 16 MiB budget",
+    "the rewrite is large enough to stall between the old viewer and the new one"
+  ],
+  "testing": "Not built yet. The prototype of 2026-09-07 exercised the three surfaces against the real self-bundle, and it is the acceptance reference for E4 and E5. E2 carries the byte-equal rebuild test. E7 measures a real published Artifact against the budget.",
+  "reviewer_focus": [
+    "the Node toolchain decision, which reverses one of ADR-0020's four rejected options",
+    "E1 ordering: the exporter seam must land before any bundled output, or publishing breaks silently",
+    "whether seven lenses is one too many, and whether goal and intent should be one lens",
+    "the collision with maintainable-viewer, which this design would supersede rather than sit beside"
+  ],
+  "unknowns": [
+    "whether Claude Artifacts renders a Mermaid block that React injects after page load, or whether a vendored runtime is needed",
+    "whether Vite plus vite-plugin-singlefile produces a byte-identical file across two machines with the same lockfile and Node version",
+    "how large the inlined React runtime makes a published pull request that also carries scene art",
+    "whether the viewer's anchored-comments ledger (ADR-0019) survives a React re-render, since it computes anchors from the live DOM"
+  ]
+}
