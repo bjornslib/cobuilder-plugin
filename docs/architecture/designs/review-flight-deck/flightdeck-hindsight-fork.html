@@ -1,0 +1,956 @@
+<title>Flightdeck — hindsight_fork</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+:root{
+  --ground:#e9eded; --surface:#ffffff; --surface-2:#f5f8f8; --surface-3:#eef3f3;
+  --ink:#121d1c; --ink-mid:#3c4b4a; --ink-dim:#6a7978; --ink-faint:#93a1a0;
+  --line:#d5dddc; --line-soft:#e6ebeb;
+  --accent:#1d7f8e; --accent-deep:#125460; --accent-wash:#dcedf0;
+  --warn:#9e5c17; --warn-wash:#f6ead9;
+  --danger:#9c3333; --danger-wash:#f7e3e3;
+  --good:#2f6b42; --good-wash:#dfeee4;
+  --shadow-1:0 1px 2px rgba(18,29,28,.06);
+  --shadow-2:0 2px 6px rgba(18,29,28,.07), 0 12px 28px -14px rgba(18,29,28,.22);
+  --shadow-3:0 4px 12px rgba(18,29,28,.10), 0 24px 48px -20px rgba(18,29,28,.30);
+  --mono:'JetBrains Mono', ui-monospace, Menlo, monospace;
+  --serif:'Source Serif 4', Georgia, serif;
+  --ease:cubic-bezier(.22,.75,.3,1);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0b1312; --surface:#131d1c; --surface-2:#182322; --surface-3:#1e2a29;
+    --ink:#e2e9e8; --ink-mid:#adbab9; --ink-dim:#7d8b8a; --ink-faint:#5d6b6a;
+    --line:#26332f; --line-soft:#1d2827;
+    --accent:#4fb2c1; --accent-deep:#86d0da; --accent-wash:#0e2a2f;
+    --warn:#d2954f; --warn-wash:#2a2116;
+    --danger:#dd7070; --danger-wash:#2b1919;
+    --good:#63ac77; --good-wash:#14251a;
+    --shadow-1:0 1px 2px rgba(0,0,0,.5);
+    --shadow-2:0 2px 6px rgba(0,0,0,.5), 0 12px 28px -14px rgba(0,0,0,.8);
+    --shadow-3:0 4px 12px rgba(0,0,0,.55), 0 24px 48px -20px rgba(0,0,0,.9);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0b1312; --surface:#131d1c; --surface-2:#182322; --surface-3:#1e2a29;
+  --ink:#e2e9e8; --ink-mid:#adbab9; --ink-dim:#7d8b8a; --ink-faint:#5d6b6a;
+  --line:#26332f; --line-soft:#1d2827;
+  --accent:#4fb2c1; --accent-deep:#86d0da; --accent-wash:#0e2a2f;
+  --warn:#d2954f; --warn-wash:#2a2116;
+  --danger:#dd7070; --danger-wash:#2b1919;
+  --good:#63ac77; --good-wash:#14251a;
+  --shadow-1:0 1px 2px rgba(0,0,0,.5);
+  --shadow-2:0 2px 6px rgba(0,0,0,.5), 0 12px 28px -14px rgba(0,0,0,.8);
+  --shadow-3:0 4px 12px rgba(0,0,0,.55), 0 24px 48px -20px rgba(0,0,0,.9);
+  color-scheme: dark;
+}
+*{box-sizing:border-box;}
+body{background:var(--ground);color:var(--ink);font-family:var(--mono);font-size:13px;
+  line-height:1.5;-webkit-font-smoothing:antialiased;}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px;}
+
+.wrap{max-width:1180px;margin:0 auto;padding:22px 20px 40px;}
+.intro{margin-bottom:16px;display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px;}
+.intro h1{font-family:var(--mono);font-size:22px;font-weight:700;letter-spacing:-.03em;margin:0;}
+.intro p{font-family:var(--serif);font-size:15.5px;line-height:1.45;color:var(--ink-mid);
+  margin:5px 0 0;max-width:60ch;}
+.intro .spacer{flex:1;}
+.btn-tour{border:1px solid var(--accent);background:var(--accent);color:#fff;font-weight:700;
+  font-size:12px;padding:9px 16px;border-radius:6px;white-space:nowrap;box-shadow:var(--shadow-1);
+  transition:transform .15s var(--ease), filter .15s var(--ease);}
+.btn-tour:hover{transform:translateY(-1px);filter:brightness(1.08);}
+.btn-tour.playing{background:var(--surface);color:var(--accent-deep);}
+
+.app{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:var(--surface);
+  box-shadow:var(--shadow-3);display:flex;flex-direction:column;min-height:680px;}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;gap:14px;padding:10px 14px;flex-wrap:wrap;
+  border-bottom:1px solid var(--line);background:var(--surface);}
+.brand{font-size:12px;font-weight:700;white-space:nowrap;}
+.modes{display:flex;gap:2px;flex-wrap:wrap;}
+.mode{font-size:10.5px;padding:5px 10px;border-radius:5px;color:var(--ink-dim);white-space:nowrap;
+  transition:background .18s var(--ease), color .18s var(--ease);}
+.mode:hover{background:var(--surface-2);color:var(--ink);}
+.mode.on{background:var(--accent-wash);color:var(--accent-deep);font-weight:700;}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:9px;}
+.evt{display:inline-flex;align-items:center;gap:6px;font-size:9.5px;color:var(--ink-dim);
+  background:var(--surface-2);border:1px solid var(--line-soft);padding:4px 9px;border-radius:20px;white-space:nowrap;}
+.evt .dot{width:6px;height:6px;border-radius:50%;background:var(--good);display:block;animation:pulse 2.4s var(--ease) infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.btn-ledger{font-size:10.5px;border:1px solid var(--line);padding:5px 11px;border-radius:5px;color:var(--ink-mid);}
+.btn-ledger:hover{border-color:var(--accent);color:var(--accent-deep);}
+.btn-ledger b{color:var(--accent-deep);}
+
+.crumb{display:flex;align-items:center;gap:8px;padding:8px 15px;font-size:10.5px;
+  border-bottom:1px solid var(--line-soft);background:var(--surface-2);min-height:34px;flex-wrap:wrap;}
+.crumb button{color:var(--accent-deep);text-decoration:underline;text-underline-offset:2px;}
+.crumb .sep{color:var(--ink-faint);}
+.crumb .now{color:var(--ink);font-weight:700;}
+
+.stage{position:relative;flex:1;overflow:hidden;}
+.view{position:absolute;inset:0;overflow-y:auto;padding:20px 20px 24px;
+  opacity:0;visibility:hidden;transform:translateX(26px);
+  transition:opacity .3s var(--ease), transform .34s var(--ease), visibility .34s;}
+.view.on{opacity:1;visibility:visible;transform:none;}
+.view.back{transform:translateX(-26px);}
+
+/* ---------- INTAKE STRIP ---------- */
+.intake{display:flex;flex-wrap:wrap;gap:0;border:1px solid var(--line);border-radius:9px;
+  overflow:hidden;margin-bottom:20px;background:var(--surface-2);}
+.ib{flex:1;min-width:150px;padding:12px 15px;border-right:1px solid var(--line-soft);}
+.ib:last-child{border-right:0;}
+.ib .k{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);}
+.ib .v{font-size:22px;font-weight:700;letter-spacing:-.02em;margin-top:3px;font-variant-numeric:tabular-nums;}
+.ib .n{font-family:var(--serif);font-size:13px;color:var(--ink-mid);margin-top:2px;line-height:1.35;}
+.ib.auto{background:var(--good-wash);}
+.ib.auto .v{color:var(--good);}
+.ib.you{background:var(--accent-wash);}
+.ib.you .v{color:var(--accent-deep);}
+
+/* ---------- PIPELINE TRAIL ---------- */
+.trail{display:flex;align-items:stretch;gap:0;margin-bottom:20px;flex-wrap:wrap;}
+.tstep{flex:1;min-width:170px;padding:10px 14px 11px;border-left:2px solid var(--line);
+  position:relative;transition:border-color .3s var(--ease);}
+.tstep.done{border-left-color:var(--accent);}
+.tstep.final{border-left-color:var(--good);}
+.tstep .s{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-dim);}
+.tstep .h{font-size:12px;font-weight:700;margin-top:4px;}
+.tstep .d{font-family:var(--serif);font-size:13px;color:var(--ink-mid);margin-top:2px;line-height:1.38;}
+.tstep.done .h{color:var(--accent-deep);}
+.tstep.final .h{color:var(--good);}
+
+/* ---------- RECOMMENDATION ---------- */
+.rec{border:1px solid var(--accent);border-radius:11px;background:var(--surface);
+  box-shadow:0 0 0 1px var(--accent-wash), var(--shadow-2);overflow:hidden;
+  transition:transform .22s var(--ease), box-shadow .22s var(--ease);text-align:left;width:100%;display:block;}
+.rec:hover{transform:translateY(-2px);box-shadow:0 0 0 1px var(--accent-wash), var(--shadow-3);}
+.rec-top{display:flex;align-items:center;gap:10px;padding:12px 18px;background:var(--accent-wash);
+  border-bottom:1px solid var(--line-soft);flex-wrap:wrap;}
+.rec-eyebrow{font-size:10px;font-weight:700;letter-spacing:.14em;color:var(--accent-deep);}
+.conf{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:9.5px;
+  letter-spacing:.07em;text-transform:uppercase;background:var(--good-wash);color:var(--good);
+  padding:3px 10px;border-radius:11px;font-weight:700;}
+.rec-body{padding:18px 18px 4px;}
+.rec-story{font-family:var(--serif);font-size:19px;line-height:1.48;color:var(--ink);
+  max-width:58ch;margin:0;}
+.rec-story b{color:var(--accent-deep);font-weight:600;}
+.rec-sub{font-family:var(--serif);font-size:15px;line-height:1.45;color:var(--ink-mid);
+  max-width:60ch;margin:10px 0 0;}
+.waves{display:flex;align-items:center;gap:0;padding:16px 18px 4px;overflow-x:auto;}
+.wv{border:1px solid var(--line);border-radius:8px;background:var(--surface-2);padding:9px 11px;
+  min-width:0;flex:0 0 auto;transition:border-color .2s var(--ease);}
+.wv .wh{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:6px;}
+.wv .wn{font-size:11.5px;font-weight:700;margin-bottom:7px;}
+.wv .chips{display:flex;gap:4px;flex-wrap:wrap;max-width:210px;}
+.chip{font-size:10px;padding:2px 7px;border-radius:4px;background:var(--surface);
+  border:1px solid var(--line);color:var(--ink-mid);font-variant-numeric:tabular-nums;}
+.chip.big{border-color:var(--accent);color:var(--accent-deep);font-weight:700;}
+.chip.dead{border-style:dashed;color:var(--danger);border-color:var(--danger-wash);}
+.warrow{flex:0 0 auto;padding:0 9px;color:var(--ink-faint);font-size:15px;}
+.rec-foot{display:flex;align-items:center;gap:12px;padding:12px 18px;border-top:1px solid var(--line-soft);
+  margin-top:12px;flex-wrap:wrap;font-size:10.5px;color:var(--ink-dim);}
+.rec-foot .go{margin-left:auto;color:#fff;background:var(--accent);font-weight:700;
+  padding:8px 16px;border-radius:6px;font-size:11.5px;}
+
+/* fallback hint — visible, not reachable */
+.fallback{margin-top:14px;border:1px dashed var(--line);border-radius:9px;padding:13px 17px;
+  background:var(--surface-2);display:flex;align-items:center;gap:13px;flex-wrap:wrap;opacity:.72;}
+.fallback .lk{font-size:14px;color:var(--ink-faint);}
+.fallback .tx{font-family:var(--serif);font-size:14px;color:var(--ink-dim);flex:1;min-width:220px;}
+.fallback .gh{display:flex;gap:6px;}
+.fallback .ghost{border:1px solid var(--line);border-radius:5px;padding:4px 11px;font-size:10px;
+  color:var(--ink-faint);background:var(--surface);}
+
+/* auto-merge band */
+.auto-band{margin-top:18px;border:1px solid var(--line-soft);border-radius:8px;background:var(--good-wash);
+  overflow:hidden;}
+.ab-h{display:flex;align-items:center;gap:10px;padding:10px 15px;width:100%;text-align:left;flex-wrap:wrap;}
+.ab-h .t{font-size:11.5px;font-weight:700;color:var(--good);}
+.ab-h .d{font-family:var(--serif);font-size:13.5px;color:var(--ink-mid);}
+.ab-h .cv{margin-left:auto;font-size:11px;color:var(--good);}
+.ab-b{display:none;padding:0 15px 13px;flex-wrap:wrap;gap:6px;}
+.auto-band.open .ab-b{display:flex;}
+
+/* ---------- OUTCOME FIRST ---------- */
+.outcome{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px;max-width:60ch;}
+.outcome li{font-family:var(--serif);font-size:17px;line-height:1.42;color:var(--ink);
+  padding-left:24px;position:relative;}
+.outcome li::before{content:"";position:absolute;left:0;top:9px;width:9px;height:9px;
+  border-radius:2px;background:var(--accent);}
+.outcome.big li{font-size:18px;}
+.outbox{border:1px solid var(--accent);border-radius:9px;background:var(--accent-wash);padding:16px 18px;}
+.ob-h{display:block;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent-deep);margin-bottom:11px;font-weight:700;}
+.outbox .outcome li{color:var(--ink);}
+.outbox .outcome li::before{background:var(--accent-deep);}
+.pathband{border-top:1px solid var(--line-soft);margin-top:16px;padding-top:4px;}
+.pb-h{display:block;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-dim);padding:8px 18px 0;}
+
+/* ---------- BLOCKED ---------- */
+.ib.stop{background:var(--danger-wash);}
+.ib.stop .v{color:var(--danger);}
+.outcome.no{margin-top:11px;padding-top:11px;border-top:1px dashed var(--line);}
+.outcome.no li{font-size:15px;color:var(--danger);}
+.outcome.no li::before{background:var(--danger);height:2px;top:13px;border-radius:1px;}
+.blocked{margin-top:16px;border:1px solid var(--danger);border-radius:9px;overflow:hidden;background:var(--surface);}
+.blocked-h{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--danger);
+  background:var(--danger-wash);padding:9px 16px;font-weight:700;}
+.blk{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:13px;align-items:center;width:100%;
+  text-align:left;padding:12px 16px;border-bottom:1px solid var(--line-soft);
+  transition:background .16s var(--ease);}
+.blk:last-child{border-bottom:0;}
+.blk:hover{background:var(--surface-2);}
+.blk-n{font-size:12px;font-weight:700;color:var(--danger);font-variant-numeric:tabular-nums;}
+.blk-h{display:block;font-size:11.5px;font-weight:700;}
+.blk.superseded .blk-h{color:var(--warn);}
+.blk.conflict .blk-h{color:var(--danger);}
+.blk-o{display:block;font-family:var(--serif);font-size:14px;line-height:1.4;color:var(--ink-mid);margin-top:2px;}
+.blk-go{font-size:10.5px;color:var(--accent-deep);font-weight:700;white-space:nowrap;}
+.blkbox{border:1px solid var(--danger);border-radius:9px;padding:16px 18px;background:var(--danger-wash);max-width:74ch;}
+.blkbox.superseded{border-color:var(--warn);background:var(--warn-wash);}
+.blk-lead{font-family:var(--serif);font-size:17px;line-height:1.45;color:var(--ink);margin:0 0 14px;}
+.blk-tbl{border:1px solid var(--line);border-radius:7px;background:var(--surface);overflow:hidden;}
+.bt-r{display:grid;grid-template-columns:130px minmax(0,1fr);gap:12px;padding:8px 12px;
+  border-bottom:1px solid var(--line-soft);font-size:11px;}
+.bt-r:last-child{border-bottom:0;}
+.bt-k{color:var(--ink-dim);letter-spacing:.04em;}
+.bt-v{color:var(--ink);word-break:break-word;}
+.blk-why{font-family:var(--serif);font-size:14.5px;line-height:1.45;color:var(--ink-mid);margin:13px 0 0;}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;}
+.opt{border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:14px 16px;
+  text-align:left;display:flex;flex-direction:column;gap:6px;position:relative;
+  transition:transform .18s var(--ease), border-color .18s var(--ease), box-shadow .18s var(--ease);}
+.opt:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:var(--shadow-2);}
+.opt.best{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-wash);}
+.ob{font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;}
+.ol{font-size:12.5px;font-weight:700;}
+.or{font-family:var(--serif);font-size:13.5px;line-height:1.4;color:var(--ink-mid);}
+
+/* ---------- ROLLOUT + BRANCH TARGET ---------- */
+.rollout{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:11px;margin-bottom:13px;}
+.ro{border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:13px 15px;
+  text-align:left;display:flex;flex-direction:column;gap:5px;
+  transition:border-color .18s var(--ease), background .18s var(--ease);}
+.ro:hover{border-color:var(--accent);}
+.ro.on{border-color:var(--accent);background:var(--accent-wash);box-shadow:0 0 0 1px var(--accent);}
+.ro-t{font-size:12.5px;font-weight:700;}
+.ro.on .ro-t{color:var(--accent-deep);}
+.ro-t::before{content:"\25CB  ";color:var(--ink-faint);}
+.ro.on .ro-t::before{content:"\25CF  ";color:var(--accent);}
+.ro-d{font-family:var(--serif);font-size:13.5px;line-height:1.4;color:var(--ink-mid);}
+.target{border-left:3px solid var(--good);background:var(--good-wash);border-radius:0 7px 7px 0;
+  padding:12px 15px;font-family:var(--serif);font-size:14px;line-height:1.45;color:var(--ink-mid);}
+.tg-h{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--good);font-weight:700;margin-bottom:5px;}
+.target code{background:var(--surface);border-color:var(--line);}
+.wc-br{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:0 14px 9px;font-size:10px;}
+.wc-br code{font-family:var(--mono);font-size:10.5px;background:var(--surface-2);
+  border:1px solid var(--line);padding:2px 7px;border-radius:4px;color:var(--accent-deep);}
+.brk{color:var(--ink-faint);letter-spacing:.06em;}
+.ckpt{display:flex;align-items:center;gap:9px;margin:0 0 11px;padding:9px 14px;
+  border:1px dashed var(--line);border-radius:7px;background:var(--surface-2);
+  font-family:var(--serif);font-size:13.5px;color:var(--ink-mid);}
+.ckpt .ck-d{color:var(--accent);font-size:9px;}
+.ckpt code{font-size:11px;}
+
+/* ---------- PER-PR CONTRIBUTION LIST ---------- */
+.contrib{border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--surface);}
+.crow{display:grid;grid-template-columns:52px 74px minmax(0,1fr);gap:12px;align-items:baseline;
+  width:100%;text-align:left;padding:10px 14px;border-bottom:1px solid var(--line-soft);
+  transition:background .16s var(--ease);}
+.crow:last-child{border-bottom:0;}
+.crow:hover{background:var(--surface-2);}
+.crow .cn{font-size:11.5px;font-weight:700;color:var(--accent-deep);font-variant-numeric:tabular-nums;}
+.crow .cw{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);}
+.crow .cc{font-family:var(--serif);font-size:14.5px;line-height:1.4;color:var(--ink-mid);}
+.crow.dead .cn{color:var(--danger);text-decoration:line-through;}
+.crow.dead .cc{color:var(--danger);}
+@media (max-width:620px){.crow{grid-template-columns:48px 1fr;}.crow .cw{display:none;}}
+
+/* ---------- MERGE CHAIN ---------- */
+.panel.chain{background:var(--surface);border-color:var(--line);}
+.chainlist{list-style:none;margin:0;padding:0 14px 13px;counter-reset:ch;}
+.chainlist li{position:relative;padding:0 0 13px 20px;border-left:2px solid var(--line);
+  margin-left:5px;}
+.chainlist li:last-child{padding-bottom:0;border-left-color:transparent;}
+.chainlist li::before{content:"";position:absolute;left:-6px;top:4px;width:9px;height:9px;
+  border-radius:50%;background:var(--accent);border:2px solid var(--surface);}
+.cc-c{display:inline-block;font-size:10px;font-weight:700;color:var(--accent-deep);
+  background:var(--accent-wash);padding:1px 7px;border-radius:4px;}
+.cc-d{display:block;font-size:11px;color:var(--ink);margin-top:4px;word-break:break-word;}
+.cc-n{display:block;font-family:var(--serif);font-size:13px;color:var(--ink-dim);
+  margin-top:3px;line-height:1.38;}
+
+/* ---------- PLAN ---------- */
+.plan-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,320px);gap:22px;}
+@media (max-width:920px){.plan-grid{grid-template-columns:1fr;}}
+.narr{font-family:var(--serif);font-size:17px;line-height:1.55;color:var(--ink);
+  border-left:3px solid var(--accent);padding-left:16px;margin:0 0 20px;max-width:62ch;}
+.narr b{color:var(--accent-deep);font-weight:600;}
+.narr .plus{display:block;margin-top:10px;font-size:15px;color:var(--ink-mid);}
+
+.sechead{display:flex;align-items:baseline;gap:12px;margin:0 0 12px;flex-wrap:wrap;}
+.sechead h2{font-size:14px;font-weight:700;margin:0;}
+.sechead .sub{font-family:var(--serif);font-size:14px;color:var(--ink-dim);}
+
+.wavecard{border:1px solid var(--line);border-radius:9px;background:var(--surface);margin-bottom:11px;
+  overflow:hidden;transition:border-color .22s var(--ease), background .22s var(--ease);}
+.wavecard.done{border-color:var(--good);background:var(--good-wash);}
+.wc-h{display:flex;align-items:center;gap:11px;padding:12px 14px;flex-wrap:wrap;}
+.wc-n{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);flex:0 0 auto;
+  display:grid;place-items:center;font-size:10.5px;font-weight:700;color:var(--ink-dim);transition:all .25s var(--ease);}
+.wavecard.done .wc-n{background:var(--good);border-color:var(--good);color:#fff;}
+.wc-t{flex:1;min-width:200px;}
+.wc-t .h{font-size:12.5px;font-weight:700;}
+.wc-t .d{font-family:var(--serif);font-size:14px;color:var(--ink-mid);margin-top:3px;line-height:1.42;}
+.wc-prs{display:flex;gap:5px;flex-wrap:wrap;padding:0 14px 10px;}
+.wc-acts{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 12px;}
+.wavecard.done .wc-acts{display:none;}
+.act{font-size:10.5px;padding:6px 12px;border-radius:5px;border:1px solid var(--line);
+  background:var(--surface);white-space:nowrap;
+  transition:transform .16s var(--ease), border-color .16s var(--ease), background .16s var(--ease);}
+.act:hover{transform:translateY(-1px);border-color:var(--accent);background:var(--accent-wash);}
+.act.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700;}
+.act.primary:hover{filter:brightness(1.08);background:var(--accent);}
+.act.flash{animation:flash .5s var(--ease);}
+@keyframes flash{0%{box-shadow:0 0 0 0 var(--accent);}60%{box-shadow:0 0 0 7px transparent;}100%{box-shadow:0 0 0 0 transparent;}}
+.wc-note{display:none;font-size:10.5px;color:var(--good);padding:0 14px 12px;}
+.wavecard.done .wc-note{display:block;}
+
+.panel{border:1px solid var(--line);border-radius:8px;background:var(--surface-2);overflow:hidden;margin-bottom:14px;}
+.panel h4{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);
+  margin:0;padding:11px 14px 7px;font-weight:500;}
+.panel ul{margin:0;padding:0 14px 12px 29px;}
+.panel li{font-family:var(--serif);font-size:13.5px;line-height:1.42;color:var(--ink-mid);margin-bottom:6px;}
+.panel li:last-child{margin-bottom:0;}
+.panel li b{color:var(--ink);font-weight:600;}
+.panel.gap{background:var(--warn-wash);border-color:var(--warn);}
+.panel.gap h4,.panel.gap li{color:var(--warn);}
+.panel.git{background:var(--good-wash);border-color:var(--good);}
+.panel.git h4,.panel.git li{color:var(--good);}
+
+/* alternates, unlocked one level down */
+.alts{margin-top:26px;padding-top:20px;border-top:1px solid var(--line);}
+.altrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:13px;}
+.alt{border:1px solid var(--line);border-radius:9px;background:var(--surface);padding:14px 16px;
+  text-align:left;display:flex;flex-direction:column;gap:8px;
+  transition:transform .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease);}
+.alt:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:var(--shadow-2);}
+.alt .id{font-size:9.5px;letter-spacing:.13em;color:var(--ink-dim);}
+.alt .nm{font-size:13px;font-weight:700;}
+.alt .st{font-family:var(--serif);font-size:14px;line-height:1.45;color:var(--ink-mid);}
+.alt .lost{font-family:var(--serif);font-size:13px;line-height:1.4;color:var(--danger);
+  border-top:1px solid var(--line-soft);padding-top:8px;margin-top:auto;}
+.alt .lost b{color:var(--danger);font-weight:600;}
+
+/* ---------- PR VIEW ---------- */
+.prview{display:grid;grid-template-columns:150px minmax(0,1fr);border:1px solid var(--line);
+  border-radius:9px;overflow:hidden;background:var(--surface);min-height:420px;}
+@media (max-width:700px){.prview{grid-template-columns:1fr;}}
+.rail{border-right:1px solid var(--line-soft);background:var(--surface-2);padding:12px 0;}
+.rail-h{font-size:8.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-dim);padding:0 13px 8px;}
+.rail-i{display:block;width:100%;text-align:left;padding:9px 13px;border-left:2px solid transparent;
+  color:var(--ink-dim);font-size:11px;transition:all .2s var(--ease);}
+.rail-i:hover{background:var(--surface-3);color:var(--ink);}
+.rail-i.on{border-left-color:var(--accent);background:var(--accent-wash);color:var(--accent-deep);font-weight:700;}
+.rail-i small{display:block;font-size:8.5px;color:var(--ink-dim);font-weight:400;margin-top:2px;}
+.prmain{padding:16px 18px;}
+.prcap{border-bottom:1px solid var(--line-soft);padding-bottom:12px;margin-bottom:14px;}
+.prcap .t{font-size:14px;font-weight:700;}
+.prcap .m{font-size:10px;color:var(--ink-dim);margin-top:4px;}
+.lvl{font-family:var(--serif);font-size:15px;line-height:1.55;color:var(--ink-mid);}
+.lvl p{margin:0 0 .8em;} .lvl p:last-child{margin-bottom:0;}
+.lvl b{color:var(--ink);font-weight:600;}
+.lvl .src{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--ink-dim);margin-top:12px;}
+.gen{border:1px solid var(--accent);background:var(--accent-wash);color:var(--accent-deep);
+  border-radius:6px;padding:9px 12px;font-size:11px;font-family:var(--mono);margin-bottom:14px;}
+.bars{display:flex;flex-direction:column;gap:6px;margin-top:6px;}
+.bar{display:grid;grid-template-columns:140px 1fr 44px;gap:10px;align-items:center;font-size:10.5px;}
+.bar .p{color:var(--ink-mid);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.bar .t{height:8px;border-radius:4px;background:var(--surface-3);overflow:hidden;}
+.bar .f{height:100%;border-radius:4px;background:var(--accent);transform-origin:left;animation:grow .5s var(--ease) both;}
+@keyframes grow{from{transform:scaleX(0);}to{transform:scaleX(1);}}
+.bar .c{text-align:right;color:var(--ink-dim);font-variant-numeric:tabular-nums;}
+
+/* DOCK */
+.dock{display:flex;align-items:center;gap:9px;padding:11px 15px;border-top:1px solid var(--line);
+  background:var(--surface-2);flex-wrap:wrap;}
+.pill{font-size:10px;padding:4px 10px;border-radius:20px;background:var(--surface);
+  border:1px solid var(--line);color:var(--ink-dim);}
+.pill.ok{background:var(--good-wash);border-color:transparent;color:var(--good);}
+.dock .sp{flex:1;}
+
+/* LEDGER */
+.ledger{position:fixed;top:0;right:0;bottom:0;width:min(400px,92vw);background:var(--surface);
+  border-left:1px solid var(--line);box-shadow:var(--shadow-3);z-index:30;display:flex;
+  flex-direction:column;transform:translateX(100%);transition:transform .34s var(--ease);}
+.ledger.open{transform:none;}
+.ledger-h{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);}
+.ledger-h h3{font-size:12px;font-weight:700;margin:0;}
+.ledger-h .x{margin-left:auto;font-size:16px;color:var(--ink-dim);line-height:1;}
+.ledger-b{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:9px;}
+.lline{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;
+  padding:9px 11px;background:var(--surface-2);font-size:10.5px;line-height:1.6;color:var(--ink-mid);
+  white-space:pre-wrap;word-break:break-word;animation:slidein .3s var(--ease) both;}
+@keyframes slidein{from{opacity:0;transform:translateY(-7px);}to{opacity:1;transform:none;}}
+.lline .k{color:var(--accent-deep);} .lline .s{color:var(--good);}
+.ledger-empty{font-family:var(--serif);font-size:14px;color:var(--ink-dim);}
+.scrim{position:fixed;inset:0;background:rgba(10,20,19,.36);z-index:29;opacity:0;visibility:hidden;
+  transition:opacity .3s var(--ease), visibility .3s;}
+.scrim.on{opacity:1;visibility:visible;}
+
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,18px);z-index:40;
+  background:var(--ink);color:var(--ground);border-radius:7px;padding:10px 16px;font-size:11.5px;
+  box-shadow:var(--shadow-3);opacity:0;visibility:hidden;max-width:88vw;
+  transition:opacity .26s var(--ease), transform .26s var(--ease), visibility .26s;}
+.toast.on{opacity:1;visibility:visible;transform:translate(-50%,0);}
+.tour{position:fixed;left:50%;bottom:26px;transform:translate(-50%,18px);z-index:41;
+  background:var(--accent-deep);color:#fff;border-radius:8px;padding:12px 18px;font-size:12px;
+  box-shadow:var(--shadow-3);opacity:0;visibility:hidden;display:flex;align-items:center;gap:14px;max-width:92vw;
+  transition:opacity .26s var(--ease), transform .26s var(--ease), visibility .26s;}
+.tour.on{opacity:1;visibility:visible;transform:translate(-50%,0);}
+.tour .step-of{font-size:9.5px;opacity:.75;letter-spacing:.1em;white-space:nowrap;}
+.tour .stop{border:1px solid rgba(255,255,255,.4);border-radius:5px;padding:5px 11px;font-size:10.5px;}
+@media (prefers-reduced-motion: reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important;}}
+.foot{margin-top:16px;font-family:var(--serif);font-size:13.5px;color:var(--ink-dim);max-width:80ch;}
+.foot code{font-family:var(--mono);font-size:11.5px;}
+.foot b{color:var(--ink-mid);}
+</style>
+
+<div class="wrap">
+  <div class="intro">
+    <div>
+      <h1>Flightdeck &middot; hindsight_fork</h1>
+      <p>
+        Thirty branches merged between 2026-07-20 and 2026-08-08, replayed as if all
+        thirty were still open at once. A greedy minimum-conflict order against arrival
+        order, from the real octopus base of the set. Press any pull request or bundle.
+      </p>
+    </div>
+    <span class="spacer"></span>
+    <button class="btn-tour" id="tourBtn">Play the tour</button>
+  </div>
+
+  <div class="app">
+    <div class="topbar">
+      <span class="brand">hindsight_fork</span>
+      <div class="modes" role="tablist" aria-label="View mode">
+        <button class="mode" role="tab">Designs</button>
+        <button class="mode" role="tab" id="modePrs">Pull requests</button>
+        <button class="mode on" role="tab" id="modeDeck" aria-selected="true">Flightdeck</button>
+        <button class="mode" role="tab">Decisions</button>
+        <button class="mode" role="tab">Builds</button>
+      </div>
+      <div class="tb-right">
+        <span class="evt"><span class="dot"></span>review-flight-deck spike &middot; 30-branch corpus</span>
+        <button class="btn-ledger" id="ledgerBtn">Ledger <b id="ledgerN">0</b></button>
+      </div>
+    </div>
+
+    <div class="crumb" id="crumb"></div>
+
+    <div class="stage">
+      <section class="view on" id="v-deck" aria-label="Flightdeck"></section>
+      <section class="view" id="v-plan" aria-label="Route"></section>
+      <section class="view" id="v-pr" aria-label="Pull request"></section>
+    </div>
+
+    <div class="dock" id="dock"></div>
+  </div>
+
+  <p class="foot"><b>What is real.</b> All 30 branches, their commit subjects, branch names, authors and file counts vs. the base come from git history in hindsight_fork. Base <code>c77e2368d</code> is the true git octopus merge-base of all 30 heads. The stage-3 table (arrival, reverse, random, H1, H3) comes from a real chained <code>git merge-tree</code> replay, read-only, no working-tree writes. The two blocked pull requests are real conflicts found by that replay, with real file paths and real diff content. <b>What is approximated.</b> Per-branch file counts are inflated by roughly three weeks and 150 commits of inherited upstream/main history each branch picked up on its own merge schedule &mdash; not the size of each change's own diff. Bundle grouping in the recommended path packs the H3 order into fixed-size chunks of six for the layout; the order itself is real, the chunk boundaries are not independently optimised. The auto-merge split, and problem/approach prose for branches outside the two blocked cases, are written from the commit subject and diff stat, not a full read of every diff.</p>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="ledger" id="ledger" aria-label="Recorded actions">
+  <div class="ledger-h"><h3>feedback-ledger.jsonl</h3>
+    <button class="x" id="ledgerX" aria-label="Close ledger">&times;</button></div>
+  <div class="ledger-b" id="ledgerB">
+    <p class="ledger-empty">Nothing recorded yet. Every action appends one line here, and
+      nothing is ever rewritten.</p>
+  </div>
+</aside>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="tour" id="tour">
+  <span class="step-of" id="tourN"></span><span id="tourTxt"></span>
+  <button class="stop" id="tourStop">Stop</button>
+</div>
+
+
+<script>
+var DATA = {"meta": {"repo": "hindsight_fork (tracking upstream Hindsight, github.com/hindsight-mem or similar \u2014 local fork)", "ancestor_sha": "c77e2368debe451e40692f46951c4fe63c157cdc", "ancestor_date": "2026-07-03T11:46:21+02:00", "branch_count": 30, "open_count_label": "30 branches, 2026-07-20 to 2026-08-08, treated as if all still open"}, "PR": {"1": {"t": "refactor(api): move server LLM config persistence into MemoryEngine + backup coverage", "b": "feat/server-llm-config", "f": 604, "auto": false}, "2": {"t": "fix(lint): ruff-format test_query_analyzer.py to unblock verify-generated-files", "b": "fix/format-test-query-analyzer", "f": 560, "auto": false}, "3": {"t": "feat(pg0): carry optional user/password in pg0:// URLs", "b": "feat/pg0-url-credentials", "f": 563, "auto": false}, "4": {"t": "perf(reflect): detach ephemeral cache teardown from the response path", "b": "feat/reflect-step-cache", "f": 11, "auto": true, "why": "11 files, a single focused change with nothing else open nearby"}, "5": {"t": "simplify: drop the recorder drain, keep the readiness check", "b": "fix/llm-trace-lifecycle-not-string-matching", "f": 508, "auto": false}, "6": {"t": "Merge remote-tracking branch 'origin/main' into merge-2772", "b": "fix/query-analyzer-strongest-date", "f": 556, "auto": false}, "7": {"t": "fix(migrations): install the maintenance routines once, in the configured schema", "b": "fix/routines-single-schema-2638", "f": 504, "auto": false}, "8": {"t": "fix(cline): support the Cline CLI's hook directory layout (#2711)", "b": "fix/cline-cli-hooks", "f": 574, "auto": false}, "9": {"t": "chore(deps): pin adm-zip >=0.6.0 in zapier via override (security)", "b": "chore/bump-adm-zip-high", "f": 646, "auto": false}, "10": {"t": "chore(deps): pin adm-zip >=0.6.0 in zapier via override (security) (#2880)", "b": "chore/bump-nltk-highs", "f": 656, "auto": false}, "11": {"t": "chore(db): remove the dead advisory_lock dialect helper", "b": "chore/remove-dead-advisory-lock-helper", "f": 572, "auto": false}, "12": {"t": "fix(audit): resolve gating config internally, bypassing permission filter", "b": "feat/audit-log-enabled-per-bank", "f": 591, "auto": false}, "13": {"t": "fix(llm): per-operation strict schema + honour explicit per-call opt-out", "b": "fix/consolidation-strict-schema", "f": 598, "auto": false}, "14": {"t": "fix(agentos): format test with repo-pinned prettier 3.7.4", "b": "integration/agentos", "f": 674, "auto": false}, "15": {"t": "chore(deps): bump pillow, gitpython, pyasn1 (security)", "b": "chore/python-highs-pillow-gitpython-pyasn1", "f": 974, "auto": false}, "16": {"t": "chore(deps): bump next, postcss, pypdf (security)", "b": "chore/next-pypdf-postcss-highs", "f": 982, "auto": false}, "17": {"t": "chore(deps): bump npm transitive highs (brace-expansion, js-yaml, sharp, fast-uri, svgo, shell-quote)", "b": "chore/npm-highs", "f": 980, "auto": false}, "18": {"t": "chore: regen skills/hindsight-docs openapi.json to fix verify-generated-files", "b": "fix/regen-openapi-skill", "f": 971, "auto": false}, "19": {"t": "feat(engine): filter list_memory_units by ingest age (created_before)", "b": "feat/list-memory-units-filters", "f": 978, "auto": false}, "20": {"t": "fix(engine): make mental-model refresh cutoff stubbable (fix mock unit tests)", "b": "fix/mental-model-refresh-initialized-guard", "f": 978, "auto": false}, "21": {"t": "docs(openclaw): note memory-wiki bridge mode is unsupported (#963)", "b": "docs-openclaw-wiki-bridge-note", "f": 1033, "auto": false}, "22": {"t": "chore(deps): bump the npm_and_yarn group across 3 directories with 5 updates", "b": "dependabot/npm_and_yarn/npm_and_yarn-6c5e933458", "f": 994, "auto": true, "why": "dependabot-authored dependency bump, package-lock only"}, "23": {"t": "chore: ruff format after rebase (cli.py, memory_engine.py)", "b": "feat/extension-bank-scoped-tables", "f": 1004, "auto": false}, "24": {"t": "test: bump configurable-field count 41->42 for store_document_text", "b": "feat/store-document-text-per-bank", "f": 988, "auto": false}, "25": {"t": "feat(engine): add MemoryEngine.delete_memory_units bulk primitive", "b": "feature/last-recalled-at-and-bulk-delete", "f": 1009, "auto": false}, "26": {"t": "fix(mental-model): anchor delta refresh watermark to newest processed memory", "b": "fix/delta-refresh-safety-margin-watermark", "f": 1000, "auto": false}, "27": {"t": "fix(deps): require litellm>=1.93.0 for Python 3.14 support", "b": "fix/litellm-193-python314", "f": 1014, "auto": false}, "28": {"t": "test(repair): retry the concurrent index drop on deadlock", "b": "fix/oracle-ci-disk-space", "f": 1010, "auto": false}, "29": {"t": "chore(zapier): prettier-format triggers.test.js", "b": "docs-zapier-remove-memdefense-trigger", "f": 1055, "auto": false}, "30": {"t": "docs(config): clarify per-type WORKER_*_MAX_SLOTS is a reservation floor, not a cap", "b": "docs-worker-slot-reservation-clarify", "f": 1048, "auto": false}}, "DETAIL": {"1": {"problem": "move server LLM config persistence into MemoryEngine + backup coverage.", "approach": "Branch feat/server-llm-config (refactor(api)), 150 commits ahead of the shared base.", "finding": "604 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-docs": 150, "hindsight-api-slim": 148, "hindsight-integrations": 140, "skills": 96, "hindsight-clients": 22}, "gen": false}, "2": {"problem": "ruff-format test_query_analyzer.py to unblock verify-generated-files.", "approach": "Branch fix/format-test-query-analyzer (fix(lint)), 139 commits ahead of the shared base.", "finding": "560 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-docs": 150, "hindsight-integrations": 140, "hindsight-api-slim": 134, "skills": 96, "hindsight-clients": 7}, "gen": false}, "3": {"problem": "carry optional user/password in pg0:// URLs.", "approach": "Branch feat/pg0-url-credentials (feat(pg0)), 140 commits ahead of the shared base.", "finding": "563 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-docs": 150, "hindsight-integrations": 140, "hindsight-api-slim": 137, "skills": 96, "hindsight-clients": 7}, "gen": false}, "4": {"problem": "detach ephemeral cache teardown from the response path.", "approach": "Branch feat/reflect-step-cache (perf(reflect)), 2 commits ahead of the shared base.", "finding": "11 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-api-slim": 9, "hindsight-docs": 1, "skills": 1}, "gen": false}, "5": {"problem": "drop the recorder drain, keep the readiness check.", "approach": "Branch fix/llm-trace-lifecycle-not-string-matching (simplify), 109 commits ahead of the shared base.", "finding": "508 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-docs": 144, "skills": 120, "hindsight-integrations": 109, "hindsight-api-slim": 103, "hindsight-clients": 7}, "gen": false}, "6": {"problem": "Merge remote-tracking branch 'origin/main' into merge-2772.", "approach": "Branch fix/query-analyzer-strongest-date (change), 137 commits ahead of the shared base.", "finding": "556 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-docs": 149, "hindsight-integrations": 140, "hindsight-api-slim": 134, "skills": 93, "hindsight-clients": 7}, "gen": false}, "7": {"problem": "install the maintenance routines once, in the configured schema.", "approach": "Branch fix/routines-single-schema-2638 (fix(migrations)), 124 commits ahead of the shared base.", "finding": "504 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-docs": 146, "hindsight-api-slim": 118, "hindsight-integrations": 109, "skills": 93, "hindsight-clients": 7}, "gen": false}, "8": {"problem": "support the Cline CLI's hook directory layout (#2711).", "approach": "Branch fix/cline-cli-hooks (fix(cline)), 146 commits ahead of the shared base.", "finding": "574 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-docs": 150, "hindsight-api-slim": 144, "hindsight-integrations": 144, "skills": 96, "hindsight-clients": 7}, "gen": false}, "9": {"problem": "pin adm-zip >=0.6.0 in zapier via override (security).", "approach": "Branch chore/bump-adm-zip-high (chore(deps)), 175 commits ahead of the shared base.", "finding": "646 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-api-slim": 166, "hindsight-docs": 158, "hindsight-integrations": 154, "skills": 97, "hindsight-control-plane": 22}, "gen": false}, "10": {"problem": "pin adm-zip >=0.6.0 in zapier via override (security) (#2880).", "approach": "Branch chore/bump-nltk-highs (chore(deps)), 178 commits ahead of the shared base.", "finding": "656 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-api-slim": 174, "hindsight-docs": 159, "hindsight-integrations": 154, "skills": 98, "hindsight-control-plane": 22}, "gen": false}, "11": {"problem": "remove the dead advisory_lock dialect helper.", "approach": "Branch chore/remove-dead-advisory-lock-helper (chore(db)), 147 commits ahead of the shared base.", "finding": "572 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-docs": 152, "hindsight-api-slim": 144, "hindsight-integrations": 140, "skills": 96, "hindsight-clients": 7}, "gen": false}, "12": {"problem": "resolve gating config internally, bypassing permission filter.", "approach": "Branch feat/audit-log-enabled-per-bank (fix(audit)), 152 commits ahead of the shared base.", "finding": "591 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-docs": 152, "hindsight-api-slim": 149, "hindsight-integrations": 140, "skills": 96, "hindsight-control-plane": 17}, "gen": false}, "13": {"problem": "per-operation strict schema + honour explicit per-call opt-out.", "approach": "Branch fix/consolidation-strict-schema (fix(llm)), 154 commits ahead of the shared base.", "finding": "598 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-api-slim": 154, "hindsight-docs": 152, "hindsight-integrations": 140, "skills": 96, "hindsight-control-plane": 17}, "gen": false}, "14": {"problem": "format test with repo-pinned prettier 3.7.4.", "approach": "Branch integration/agentos (fix(agentos)), 183 commits ahead of the shared base.", "finding": "674 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-api-slim": 174, "hindsight-integrations": 167, "hindsight-docs": 163, "skills": 99, "hindsight-control-plane": 22}, "gen": false}, "15": {"problem": "bump pillow, gitpython, pyasn1 (security).", "approach": "Branch chore/python-highs-pillow-gitpython-pyasn1 (chore(deps)), 182 commits ahead of the shared base.", "finding": "974 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-clients": 311, "hindsight-api-slim": 175, "hindsight-docs": 169, "hindsight-integrations": 157, "skills": 99}, "gen": false}, "16": {"problem": "bump next, postcss, pypdf (security).", "approach": "Branch chore/next-pypdf-postcss-highs (chore(deps)), 189 commits ahead of the shared base.", "finding": "982 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-clients": 312, "hindsight-api-slim": 177, "hindsight-docs": 171, "hindsight-integrations": 160, "skills": 99}, "gen": false}, "17": {"problem": "bump npm transitive highs (brace-expansion, js-yaml, sharp, fast-uri, svgo, shell-quote).", "approach": "Branch chore/npm-highs (chore(deps)), 187 commits ahead of the shared base.", "finding": "980 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-clients": 311, "hindsight-api-slim": 177, "hindsight-docs": 171, "hindsight-integrations": 159, "skills": 99}, "gen": false}, "18": {"problem": "regen skills/hindsight-docs openapi.json to fix verify-generated-files.", "approach": "Branch fix/regen-openapi-skill (chore), 182 commits ahead of the shared base.", "finding": "971 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-clients": 311, "hindsight-api-slim": 175, "hindsight-docs": 169, "hindsight-integrations": 154, "skills": 99}, "gen": false}, "19": {"problem": "filter list_memory_units by ingest age (created_before).", "approach": "Branch feat/list-memory-units-filters (feat(engine)), 185 commits ahead of the shared base.", "finding": "978 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-clients": 311, "hindsight-api-slim": 177, "hindsight-docs": 171, "hindsight-integrations": 157, "skills": 99}, "gen": false}, "20": {"problem": "make mental-model refresh cutoff stubbable (fix mock unit tests).", "approach": "Branch fix/mental-model-refresh-initialized-guard (fix(engine)), 186 commits ahead of the shared base.", "finding": "978 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-clients": 311, "hindsight-api-slim": 177, "hindsight-docs": 171, "hindsight-integrations": 157, "skills": 99}, "gen": false}, "21": {"problem": "note memory-wiki bridge mode is unsupported (#963).", "approach": "Branch docs-openclaw-wiki-bridge-note (docs(openclaw)), 221 commits ahead of the shared base.", "finding": "1033 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-clients": 313, "hindsight-api-slim": 206, "hindsight-docs": 179, "hindsight-integrations": 166, "skills": 100}, "gen": false}, "22": {"problem": "bump the npm_and_yarn group across 3 directories with 5 updates.", "approach": "Branch dependabot/npm_and_yarn/npm_and_yarn-6c5e933458 (chore(deps)), 198 commits ahead of the shared base.", "finding": "994 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-clients": 312, "hindsight-api-slim": 187, "hindsight-docs": 173, "hindsight-integrations": 160, "skills": 99}, "gen": false}, "23": {"problem": "ruff format after rebase (cli.py, memory_engine.py).", "approach": "Branch feat/extension-bank-scoped-tables (chore), 203 commits ahead of the shared base.", "finding": "1004 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-clients": 312, "hindsight-api-slim": 195, "hindsight-docs": 173, "hindsight-integrations": 160, "skills": 99}, "gen": false}, "24": {"problem": "bump configurable-field count 41->42 for store_document_text.", "approach": "Branch feat/store-document-text-per-bank (test), 198 commits ahead of the shared base.", "finding": "988 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-clients": 312, "hindsight-api-slim": 181, "hindsight-docs": 173, "hindsight-integrations": 159, "skills": 99}, "gen": false}, "25": {"problem": "add MemoryEngine.delete_memory_units bulk primitive.", "approach": "Branch feature/last-recalled-at-and-bulk-delete (feat(engine)), 203 commits ahead of the shared base.", "finding": "1009 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-clients": 313, "hindsight-api-slim": 197, "hindsight-docs": 174, "hindsight-integrations": 160, "skills": 99}, "gen": false}, "26": {"problem": "anchor delta refresh watermark to newest processed memory.", "approach": "Branch fix/delta-refresh-safety-margin-watermark (fix(mental-model)), 201 commits ahead of the shared base.", "finding": "1000 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-clients": 312, "hindsight-api-slim": 191, "hindsight-docs": 173, "hindsight-integrations": 160, "skills": 99}, "gen": false}, "27": {"problem": "require litellm>=1.93.0 for Python 3.14 support.", "approach": "Branch fix/litellm-193-python314 (fix(deps)), 210 commits ahead of the shared base.", "finding": "1014 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-clients": 313, "hindsight-api-slim": 198, "hindsight-docs": 174, "hindsight-integrations": 161, "skills": 99}, "gen": false}, "28": {"problem": "retry the concurrent index drop on deadlock.", "approach": "Branch fix/oracle-ci-disk-space (test(repair)), 207 commits ahead of the shared base.", "finding": "1010 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-clients": 313, "hindsight-api-slim": 198, "hindsight-docs": 174, "hindsight-integrations": 160, "skills": 99}, "gen": false}, "29": {"problem": "prettier-format triggers.test.js.", "approach": "Branch docs-zapier-remove-memdefense-trigger (chore(zapier)), 237 commits ahead of the shared base.", "finding": "1055 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-clients": 315, "hindsight-api-slim": 215, "hindsight-docs": 182, "hindsight-integrations": 170, "skills": 100}, "gen": false}, "30": {"problem": "clarify per-type WORKER_*_MAX_SLOTS is a reservation floor, not a cap.", "approach": "Branch docs-worker-slot-reservation-clarify (docs(config)), 234 commits ahead of the shared base.", "finding": "1048 files differ from the shared base, most of it inherited main history carried in by this branch's own merges rather than this change's own diff.", "touched": {"hindsight-clients": 315, "hindsight-api-slim": 215, "hindsight-docs": 179, "hindsight-integrations": 166, "skills": 100}, "gen": false}}, "AUTO": [4, 22], "HUMAN": [1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 23, 24, 25, 26, 27, 28, 29, 30], "CONTRIB": {"1": "move server LLM config persistence into MemoryEngine + backup coverage", "2": "ruff-format test_query_analyzer.py to unblock verify-generated-files", "3": "carry optional user/password in pg0:// URLs", "4": "detach ephemeral cache teardown from the response path", "5": "drop the recorder drain, keep the readiness check", "6": "Merge remote-tracking branch 'origin/main' into merge-2772", "7": "install the maintenance routines once, in the configured schema", "8": "support the Cline CLI's hook directory layout (#2711)", "9": "pin adm-zip >=0.6.0 in zapier via override (security)", "10": "pin adm-zip >=0.6.0 in zapier via override (security) (#2880)", "11": "remove the dead advisory_lock dialect helper", "12": "resolve gating config internally, bypassing permission filter", "13": "per-operation strict schema + honour explicit per-call opt-out", "14": "format test with repo-pinned prettier 3.7.4", "15": "bump pillow, gitpython, pyasn1 (security)", "16": "bump next, postcss, pypdf (security)", "17": "bump npm transitive highs (brace-expansion, js-yaml, sharp, fast-uri, svgo, shell-quote)", "18": "regen skills/hindsight-docs openapi.json to fix verify-generated-files", "19": "filter list_memory_units by ingest age (created_before)", "20": "make mental-model refresh cutoff stubbable (fix mock unit tests)", "21": "note memory-wiki bridge mode is unsupported (#963)", "22": "bump the npm_and_yarn group across 3 directories with 5 updates", "23": "ruff format after rebase (cli.py, memory_engine.py)", "24": "bump configurable-field count 41->42 for store_document_text", "25": "add MemoryEngine.delete_memory_units bulk primitive", "26": "anchor delta refresh watermark to newest processed memory", "27": "require litellm>=1.93.0 for Python 3.14 support", "28": "retry the concurrent index drop on deadlock", "29": "prettier-format triggers.test.js", "30": "clarify per-type WORKER_*_MAX_SLOTS is a reservation floor, not a cap"}, "OUTCOME": ["30 branches merged onto one tree, in 6 conflicted steps instead of 10.", "#5's readiness-race test lands once, at the front, instead of colliding with 12 branches individually.", "#1's and #6's duplicate Chinese-date tests resolve as a no-op merge instead of a manual pick.", "Every dependency and lint-hygiene branch (bundle 2) merges clean \u2014 none of them touch source files."], "NOT_INCLUDED": ["Nothing is dropped from this set \u2014 all 30 branches carry through the recommended path. The two flagged cases are order fixes, not exclusions."], "BLOCKED": {"1": {"kind": "conflict", "head": "Duplicate content, not a real disagreement", "one": "#1 and #6 both add the same five Chinese-date-underflow test cases to test_query_analyzer.py, at the same insertion point, because both branches separately merged main after upstream PR #2772 landed.", "detail": [{"k": "File", "v": "hindsight-api-slim/tests/test_query_analyzer.py"}, {"k": "Insertion point", "v": "line 649, after test_query_analyzer_chinese_rolling_windows"}, {"k": "PR #1 does", "v": "adds the underflow test block via its own merge of main"}, {"k": "PR #6 does", "v": "adds the identical block, because it IS the branch upstream PR #2772 shipped from"}, {"k": "git merge-tree", "v": "conflict \u2014 textually adjacent identical insertions, not a real authorship disagreement"}], "why": "A merge cannot tell 'independently re-applied the same fix' from 'two people wrote different things at the same line' without reading both sides. This is not the derived-file case from open-questions.md's Q3 \u2014 it's a duplicate-merge case, and it shows up only because both branches merge main on their own schedule instead of rebasing onto one shared point.", "opts": [{"l": "Land #6 first, then re-merge #1 onto it", "r": "the duplicate block disappears on its own once #6 is in the tree", "best": true}, {"l": "Take either side's copy, drop the other's", "r": "works today, but the discarded branch's next main-merge reintroduces the same conflict"}, {"l": "Hold both out until a rebase", "r": "correct, but throws away everything else these two branches carry"}]}, "5": {"kind": "conflict", "head": "One branch conflicts with almost everything", "one": "#5 touches hindsight-api-slim/tests/test_db_abstraction.py at a point 12 of the other 29 branches also touch, so it is the single largest source of stops in the whole set.", "detail": [{"k": "File", "v": "hindsight-api-slim/tests/test_db_abstraction.py"}, {"k": "Change", "v": "adds test_is_ready_false_before_initialize and a slow-shutdown race test, plus an asyncio import"}, {"k": "Conflicts with", "v": "12 other branches in this set, all at the same import/insertion region"}, {"k": "git merge-tree", "v": "conflict on every one of the 12 pairings tested"}], "why": "This is the branch a reviewer should land early. Every step after it that also touches the file inherits the same stop otherwise.", "opts": [{"l": "Merge this branch first, in bundle 1", "r": "every later branch then merges against a tree that already has its change", "best": true}, {"l": "Leave it for last", "r": "the same conflict repeats at up to 12 later steps instead of one"}]}}, "CHAIN": [{"c": "c77e2368d", "w": "base", "d": "hindsight-api-slim/ &middot; hindsight-dev/ &middot; hindsight-integrations/", "note": "The octopus base of all 30 branches \u2014 2026-07-03, before the eve auto-memory release."}, {"c": "#5", "w": "land first", "d": "test_db_abstraction.py gains a readiness-race test", "note": "Conflicts with 12 other branches at the same file. Landing it first removes 12 later stops."}, {"c": "#6", "w": "land before its duplicate", "d": "test_query_analyzer.py gains the Chinese-date-underflow tests", "note": "#1 re-adds the identical block through its own main-merge; landing this one first makes that block a no-op merge instead of a conflict."}, {"c": "end", "w": "state", "d": "30 branches merged, 6 stops total", "note": "Down from 10 stops under arrival order."}], "ROUTES": {"A": {"id": "A", "name": "Greedy minimum-conflict order", "conf": "validated", "confTxt": "Replayed from c77e2368d &middot; 6 of 30 steps conflict, 16 files total", "waves": [{"n": "Bundle 1", "nm": "Land the file everyone else touches", "prs": [1, 2, 3, 8, 9, 10], "br": "flightdeck/hindsight-fork/1-land-the-file-everyone-else-touches", "from": "c77e2368d", "d": "Merged in H3 greedy-minimum-conflict order. Leads with the branch that conflicts with 12 others.", "acts": [{"k": "merge1", "l": "Merge bundle 1", "c": "primary"}]}, {"n": "Bundle 2", "nm": "Dependency and lint hygiene", "prs": [11, 12, 14, 15, 16, 18], "br": "flightdeck/hindsight-fork/2-dependency-and-lint-hygiene", "from": "bundle 1", "d": "Merged in H3 greedy-minimum-conflict order. ", "acts": [{"k": "merge2", "l": "Merge bundle 2", "c": "primary"}]}, {"n": "Bundle 3", "nm": "Engine and mental-model fixes", "prs": [19, 20, 22, 21, 23, 24], "br": "flightdeck/hindsight-fork/3-engine-and-mental-model-fixes", "from": "bundle 2", "d": "Merged in H3 greedy-minimum-conflict order. ", "acts": [{"k": "merge3", "l": "Merge bundle 3", "c": "primary"}]}, {"n": "Bundle 4", "nm": "Docs, config, and CI", "prs": [25, 26, 27, 28, 29, 30], "br": "flightdeck/hindsight-fork/4-docs-config-and-ci", "from": "bundle 3", "d": "Merged in H3 greedy-minimum-conflict order. ", "acts": [{"k": "merge4", "l": "Merge bundle 4", "c": "primary"}]}, {"n": "Bundle 5", "nm": "Late fixes and the duplicate cleanup", "prs": [6, 17, 5, 7, 4, 13], "br": "flightdeck/hindsight-fork/5-late-fixes-and-the-duplicate-cleanup", "from": "bundle 4", "d": "Merged in H3 greedy-minimum-conflict order. ", "acts": [{"k": "merge5", "l": "Merge bundle 5", "c": "primary"}]}], "ev": ["Base c77e2368d is the true octopus base of all 30 branches, dated 2026-07-03 \u2014 three weeks before the earliest branch in this window.", "#5 conflicts with 12 of the other 29 branches at one file. Landing it first removes 12 downstream stops.", "#1 and #6 add identical content through independent merges of main. Order, not resolution, fixes it.", "Arrival order stops 10 times across the 30 branches; this order stops 6 times."], "git": ["Chained git merge-tree from c77e2368d, greedy minimum-conflict selection at each of 30 steps. 6 conflicts, 16 files.", "Same chain in arrival order: 10 conflicts, 20 files."], "gaps": ["The shared base is three weeks and roughly 150 commits behind the newest branch in the set, because these branches merge main into themselves on their own schedule instead of rebasing onto one point. The per-branch file counts above are inflated by that inherited churn, not by the size of each change's own diff."]}, "B": {"id": "B", "name": "Arrival order", "story": "Merge each branch in the order it was created, the way a merge queue already does.", "lost": "Stops 10 times across 30 branches, 20 conflicting files total, because #5's test_db_abstraction.py change lands in the middle of the set instead of first, so 12 later branches each re-collide with it separately."}, "C": {"id": "C", "name": "Reverse arrival", "story": "Merge newest branches first.", "lost": "Worst of the tested orders: 15 stops, 42 files. It puts the duplicate-content pair (#1/#6) on opposite ends of the chain, so the conflict shows up at the very last step instead of resolving itself in the middle."}}, "stage3": {"table": [{"order": "Arrival (branch creation date)", "stops": 10, "cost": 20}, {"order": "Reverse arrival", "stops": 15, "cost": 42}, {"order": "Random mean (20 shuffles)", "stops": 14.2, "cost": 47.5}, {"order": "H1 fewest-files-first", "stops": 8, "cost": 13}, {"order": "H3 greedy min-conflict", "stops": 6, "cost": 16}], "winner": "H3 greedy min-conflict", "improvement_vs_arrival": "40% fewer stops, 20% lower cost", "note": "H1 fewest-files-first actually posts the lowest total cost (13 files) despite more stops (8) than H3 (6 stops, 16 files) \u2014 the two metrics disagree here. H3 was used for the recommended route because a reviewer feels stop count more than file count, per spike-plan.md's own framing (\"A reviewer feels a stop, not a file\"), but this is the honest result, not a clean sweep for one heuristic."}};
+
+</script>
+<script>
+(function(){
+  "use strict";
+
+  var PR=DATA.PR, DETAIL=DATA.DETAIL, AUTO=DATA.AUTO, HUMAN=DATA.HUMAN,
+      CONTRIB=DATA.CONTRIB, OUTCOME=DATA.OUTCOME, NOT_INCLUDED=DATA.NOT_INCLUDED,
+      BLOCKED=DATA.BLOCKED, CHAIN=DATA.CHAIN, ROUTES=DATA.ROUTES, STAGE3=DATA.stage3,
+      META=DATA.meta;
+  var BLOCKED_KEYS=Object.keys(BLOCKED);
+  var TOTAL=META.branch_count;
+
+  var LEVELS=[{n:"Overview",t:"State, branch, size"},{n:"Problem &amp; Solution",t:"Why it exists"},
+              {n:"Architecture",t:"How it fits"},{n:"File Changes",t:"What changed"}];
+
+  var S={view:"deck",route:null,pr:null,blk:null,level:0,adopted:null,done:{},ledger:[],tour:false,unlocked:false,rollout:"step"};
+  var $=function(i){return document.getElementById(i);};
+  var stage={deck:$("v-deck"),plan:$("v-plan"),pr:$("v-pr")};
+  function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");}
+
+  /* ============ LEDGER ============ */
+  function record(o,note){
+    S.ledger.push(o);
+    var b=$("ledgerB");
+    if(S.ledger.length===1)b.innerHTML="";
+    var d=document.createElement("div");d.className="lline";
+    var parts=[];for(var k in o){var v=o[k];
+      parts.push('<span class="k">"'+k+'"</span>: <span class="s">'+(typeof v==="string"?'"'+esc(v)+'"':JSON.stringify(v))+'</span>');}
+    d.innerHTML="{"+parts.join(",\n ")+"}";
+    b.appendChild(d);b.scrollTop=b.scrollHeight;
+    $("ledgerN").textContent=S.ledger.length;
+    if(note)toast(note);
+  }
+  var tT=null;
+  function toast(m){var t=$("toast");t.textContent=m;t.classList.add("on");
+    clearTimeout(tT);tT=setTimeout(function(){t.classList.remove("on");},2400);}
+
+  /* ============ NAV ============ */
+  function go(v,back){
+    S.view=v;
+    ["deck","plan","pr"].forEach(function(k){
+      stage[k].classList.toggle("on",k===v);
+      stage[k].classList.toggle("back",k!==v&&back);
+    });
+    stage[v].scrollTop=0;crumb();dock();
+  }
+  function crumb(){
+    var c=$("crumb"),h="";
+    if(S.view==="deck"){
+      h='<span class="now">Flightdeck</span><span class="sep">&middot;</span>'+
+        '<span style="color:var(--ink-dim)">'+TOTAL+' branches &middot; 1 recommendation</span>';
+    }else if(S.view==="plan"){
+      if(!S.route){
+        c.innerHTML='<button data-go="deck">Flightdeck</button><span class="sep">/</span>'+
+          '<span class="now">PR #'+S.blk+' &middot; flagged in the path</span>';
+        return;
+      }
+      h='<button data-go="deck">Flightdeck</button><span class="sep">/</span>'+
+        '<span class="now">Path '+S.route+' &middot; '+ROUTES[S.route].name+'</span>'+
+        (S.unlocked?'<span class="sep">&middot;</span><span style="color:var(--ink-dim)">2 alternative paths unlocked</span>':'');
+    }else{
+      h='<button data-go="deck">Flightdeck</button><span class="sep">/</span>'+
+        (S.route?'<button data-go="plan">Path '+S.route+'</button><span class="sep">/</span>':"")+
+        '<span class="now">PR #'+S.pr+'</span>';
+    }
+    c.innerHTML=h;
+  }
+
+  /* ============ DECK ============ */
+  function chips(list,dead){
+    return list.map(function(n){
+      var big=PR[n].f>500, d=dead&&dead.indexOf(n)>-1;
+      return '<button class="chip'+(big?" big":"")+(d?" dead":"")+'" data-pr="'+n+'" title="'+esc(PR[n].t)+'">#'+n+
+        (d?" &times;":"")+'</button>';
+    }).join("");
+  }
+  function renderDeck(){
+    var r=ROUTES.A;
+    var inPath=HUMAN.length;
+    var pathHtml=r.waves.map(function(w,i){
+      return (i?'<span class="warrow">&rsaquo;</span>':"")+
+        '<div class="wv"><div class="wh">'+w.n+'</div><div class="wn">'+w.nm+'</div>'+
+        '<div class="chips">'+chips(w.prs)+'</div></div>';
+    }).join("");
+
+    var blockedHtml=BLOCKED_KEYS.map(function(n){
+      var x=BLOCKED[n];
+      return '<button class="blk '+x.kind+'" data-blk="'+n+'">'+
+        '<span class="blk-n">#'+n+'</span>'+
+        '<span class="blk-b"><span class="blk-h">'+x.head+'</span>'+
+        '<span class="blk-o">'+x.one+'</span></span>'+
+        '<span class="blk-go">Decide &rsaquo;</span></button>';
+    }).join("");
+
+    var stage3Rows=STAGE3.table.map(function(t){
+      var isWinner=t.order===STAGE3.winner;
+      return '<div class="bar"><span class="p"'+(isWinner?' style="font-weight:700;color:var(--accent-deep)"':'')+'>'+t.order+'</span>'+
+        '<span class="t"><span class="f" style="width:'+Math.min(100,t.stops*100/15)+'%"></span></span>'+
+        '<span class="c">'+t.stops+' stops &middot; '+t.cost+' files</span></div>';
+    }).join("");
+
+    stage.deck.innerHTML =
+      '<div class="intake">'+
+        '<div class="ib"><span class="k">Branches, treated as open</span><span class="v">'+TOTAL+'</span>'+
+          '<span class="n">All merged 2026-07-20 to 2026-08-08, replayed as if none had landed yet.</span></div>'+
+        '<div class="ib auto"><span class="k">Merged automatically</span><span class="v">'+AUTO.length+'</span>'+
+          '<span class="n">Small, single purpose, nothing else open nearby.</span></div>'+
+        '<div class="ib you"><span class="k">In this path</span><span class="v">'+inPath+'</span>'+
+          '<span class="n">Ordered into '+r.waves.length+' bundles.</span></div>'+
+        '<div class="ib stop"><span class="k">Need a decision</span><span class="v">'+BLOCKED_KEYS.length+'</span>'+
+          '<span class="n">Order-sensitive, not dropped from the path.</span></div>'+
+      '</div>'+
+
+      '<button class="rec" id="recCard">'+
+        '<div class="rec-top"><span class="rec-eyebrow">IF YOU ACCEPT, YOU GET</span>'+
+          '<span class="conf">&#10003; '+r.confTxt+'</span></div>'+
+        '<div class="rec-body">'+
+          '<ul class="outcome">'+OUTCOME.map(function(o){return '<li>'+o+'</li>';}).join("")+'</ul>'+
+          '<ul class="outcome no">'+NOT_INCLUDED.map(function(o){return '<li>'+o+'</li>';}).join("")+'</ul>'+
+        '</div>'+
+        '<div class="pathband"><span class="pb-h">The path &middot; '+inPath+' pull requests, '+r.waves.length+' bundles</span>'+
+          '<div class="waves">'+pathHtml+'</div></div>'+
+        '<div class="rec-foot"><span>Simulated from <b>'+META.ancestor_sha.slice(0,9)+'</b>, the true octopus base of all '+TOTAL+' branches</span>'+
+          '<span class="go">See what each one adds &rsaquo;</span></div>'+
+      '</button>'+
+
+      '<div class="panel" style="margin-top:16px;"><h4>Stage 3 &middot; does a computed order beat arrival order</h4>'+
+        '<div class="bars" style="padding:2px 14px 12px;">'+stage3Rows+'</div>'+
+        '<p style="font-family:var(--serif);font-size:12.5px;color:var(--ink-dim);padding:0 14px 12px;margin:0;">'+
+        (STAGE3.note||'')+'</p></div>'+
+
+      '<div class="blocked"><div class="blocked-h">'+BLOCKED_KEYS.length+' need a reviewer decision, not a random resolution</div>'+blockedHtml+'</div>'+
+
+      '<div class="fallback"><span class="lk">&#9679;&#9675;&#9675;</span>'+
+        '<span class="tx">Two other orders were simulated and set aside. Open this one to see them, '+
+        'and the reason each lost.</span>'+
+        '<span class="gh"><span class="ghost">Path B</span><span class="ghost">Path C</span></span></div>'+
+
+      '<div class="auto-band" id="autoBand">'+
+        '<button class="ab-h" id="autoH"><span class="t">'+AUTO.length+' merged automatically</span>'+
+          '<span class="d">Nothing here needed a person.</span>'+
+          '<span class="cv" id="autoCv">show &rsaquo;</span></button>'+
+        '<div class="ab-b">'+AUTO.map(function(n){
+            return '<button class="chip" data-pr="'+n+'" title="'+esc(PR[n].why||"")+'">#'+n+' &middot; '+PR[n].f+' files</button>';
+          }).join("")+'</div>'+
+      '</div>';
+
+    $("recCard").addEventListener("click",function(){openRoute("A");});
+    $("autoH").addEventListener("click",function(){
+      var b=$("autoBand");b.classList.toggle("open");
+      $("autoCv").innerHTML=b.classList.contains("open")?"hide &rsaquo;":"show &rsaquo;";
+    });
+    stage.deck.querySelectorAll("[data-blk]").forEach(function(el){
+      el.addEventListener("click",function(e){e.stopPropagation();openBlocked(el.getAttribute("data-blk"));});
+    });
+    bindPrChips(stage.deck);
+  }
+
+  /* ---- blocked pull request detail ---- */
+  function openBlocked(n){
+    S.blk=n;S.pr=null;
+    var x=BLOCKED[n],p=PR[n];
+    stage.plan.innerHTML=
+      '<div class="sechead"><h2>PR #'+n+' &middot; '+x.head+'</h2>'+
+      '<span class="sub">'+p.b+' &middot; '+p.f+' files</span></div>'+
+      '<div class="blkbox '+x.kind+'"><p class="blk-lead">'+x.one+'</p>'+
+        '<div class="blk-tbl">'+x.detail.map(function(d){
+          return '<div class="bt-r"><span class="bt-k">'+d.k+'</span><span class="bt-v">'+d.v+'</span></div>';
+        }).join("")+'</div>'+
+        '<p class="blk-why">'+x.why+'</p></div>'+
+      '<div class="sechead" style="margin-top:22px;"><h2>What you can do</h2>'+
+      '<span class="sub">A merge cannot decide this. A person has to.</span></div>'+
+      '<div class="opts">'+x.opts.map(function(o,i){
+        return '<button class="opt'+(o.best?" best":"")+'" data-blkopt="'+i+'">'+
+          (o.best?'<span class="ob">recommended</span>':'')+
+          '<span class="ol">'+o.l+'</span><span class="or">'+o.r+'</span></button>';
+      }).join("")+'</div>';
+    stage.plan.querySelectorAll("[data-blkopt]").forEach(function(el){
+      el.addEventListener("click",function(){
+        var o=x.opts[Number(el.getAttribute("data-blkopt"))];
+        record({type:"blocked_decision",pr:n,kind:x.kind,choice:o.l,path:"A",by:"human"},
+               "Recorded. The runner will "+o.l.toLowerCase()+".");
+      });
+    });
+    S.route=null;go("plan");
+  }
+
+  function bindPrChips(root){
+    root.querySelectorAll("[data-pr]").forEach(function(b){
+      b.addEventListener("click",function(e){e.stopPropagation();openPr(b.getAttribute("data-pr"));});
+    });
+  }
+
+  /* ============ ROUTE ============ */
+  function openRoute(id){
+    S.route=id;
+    var r=ROUTES[id];
+    if(id==="A"&&!S.unlocked){S.unlocked=true;}
+
+    var waves=r.waves?r.waves.map(function(w,i){
+      var key=id+":"+i;
+      return '<div class="wavecard'+(S.done[key]?" done":"")+'" data-key="'+key+'">'+
+        '<div class="wc-h"><span class="wc-n">'+(S.done[key]?"&#10003;":(i+1))+'</span>'+
+        '<span class="wc-t"><span class="h">'+w.nm+'</span><span class="d">'+w.d+'</span></span></div>'+
+        '<div class="wc-br"><span class="brk">merges onto</span><code>'+w.br+'</code>'+
+          '<span class="brk">from</span><code>'+w.from+'</code></div>'+
+        '<div class="wc-prs">'+chips(w.prs,w.dead)+'</div>'+
+        '<div class="wc-acts">'+w.acts.map(function(a){
+          return '<button class="act '+a.c+'" data-w="'+i+'" data-act="'+a.k+'">'+a.l+'</button>';}).join("")+'</div>'+
+        '<div class="wc-note">Recorded. The runner will merge this bundle.</div></div>'+
+        (S.rollout==="step"&&i<r.waves.length-1?
+          '<div class="ckpt"><span class="ck-d">&#9679;</span>Checkpoint. Check out <code>'+w.br+
+          '</code> and read the tree before the next bundle.</div>':"");
+    }).join(""):"";
+
+    var alts=S.unlocked&&id==="A"?
+      '<div class="alts"><div class="sechead"><h2>The paths we set aside</h2>'+
+      '<span class="sub">Both were simulated from the same base with the same chained replay.</span></div>'+
+      '<div class="altrow">'+["B","C"].map(function(x){
+        var a=ROUTES[x];
+        return '<button class="alt" data-route="'+x+'"><span class="id">ROUTE '+x+'</span>'+
+          '<span class="nm">'+a.name+'</span><span class="st">'+a.story+'</span>'+
+          '<span class="lost">Why it lost. '+a.lost+'</span></button>';
+      }).join("")+'</div></div>':"";
+
+    if(!r.waves){
+      stage.plan.innerHTML='<div class="sechead"><h2>Path '+id+' &middot; '+r.name+'</h2></div>'+
+        '<p class="narr">'+r.story+'<span class="plus">Why it lost. '+r.lost+'</span></p>'+
+        '<button class="act primary" data-dock="plan-a">Back to the recommended path</button>';
+      go("plan");return;
+    }
+
+    var allPrs=[];r.waves.forEach(function(w){allPrs=allPrs.concat(w.prs);});
+
+    var contrib='<div class="contrib">'+r.waves.map(function(w){
+      return w.prs.map(function(n){
+        return '<button class="crow'+(BLOCKED[n]?" dead":"")+'" data-pr="'+n+'">'+
+          '<span class="cn">#'+n+'</span>'+
+          '<span class="cw">'+w.n+'</span>'+
+          '<span class="cc">'+CONTRIB[n]+(BLOCKED[n]?' &mdash; <b>needs a decision, see below</b>':'')+'</span></button>';
+      }).join("");
+    }).join("")+'</div>';
+
+    var chain='<div class="panel chain"><h4>Can they merge, and in what order</h4><ol class="chainlist">'+
+      CHAIN.map(function(x){
+        return '<li><span class="cc-c">'+x.c+'</span><span class="cc-d">'+x.d+'</span>'+
+               '<span class="cc-n">'+x.note+'</span></li>';
+      }).join("")+'</ol></div>';
+
+    stage.plan.innerHTML=
+      '<div class="plan-grid"><div>'+
+        '<div class="sechead"><h2>Path '+id+' &middot; '+r.name+'</h2>'+
+        '<span class="sub">simulated from '+META.ancestor_sha.slice(0,9)+'</span></div>'+
+        '<div class="outbox"><span class="ob-h">What you would have when this is done</span>'+
+          '<ul class="outcome big">'+OUTCOME.map(function(o){return '<li>'+o+'</li>';}).join("")+'</ul></div>'+
+        '<div class="sechead" style="margin-top:22px;"><h2>What each pull request adds</h2>'+
+        '<span class="sub">'+allPrs.length+', in the order they can land.</span></div>'+
+        contrib+
+        '<div class="sechead" style="margin-top:22px;"><h2>Roll it out</h2>'+
+        '<span class="sub">You commit to the path. You keep control of the pace.</span></div>'+
+        '<div class="rollout">'+
+          '<button class="ro'+(S.rollout==="step"?" on":"")+'" data-ro="step">'+
+            '<span class="ro-t">One bundle at a time</span>'+
+            '<span class="ro-d">The runner merges a bundle and stops. You check out the tree, then release the next.</span></button>'+
+          '<button class="ro'+(S.rollout==="all"?" on":"")+'" data-ro="all">'+
+            '<span class="ro-t">All at once</span>'+
+            '<span class="ro-d">The runner merges all '+r.waves.length+' bundles, then opens one pull request from the last branch onto main.</span></button>'+
+        '</div>'+
+        '<div class="target"><span class="tg-h">Nothing merges onto main</span>'+
+          'Each bundle merges onto its own integration branch. Main sees one pull request at the end, '+
+          'from <code>'+r.waves[r.waves.length-1].br+'</code>, and you can abandon the whole path by deleting '+r.waves.length+' branches.</div>'+
+        '<div class="sechead" style="margin-top:22px;"><h2>The bundles</h2>'+
+        '<span class="sub">Each action is recorded, and the runner performs it.</span></div>'+
+        waves+alts+
+      '</div><div>'+chain+
+        '<div class="panel git"><h4>What the git replay found</h4><ul><li>'+r.git.join("</li><li>")+'</li></ul></div>'+
+        '<div class="panel"><h4>Evidence from the records</h4><ul><li>'+r.ev.join("</li><li>")+'</li></ul></div>'+
+        '<div class="panel gap"><h4>Not assessed</h4><ul><li>'+r.gaps.join("</li><li>")+'</li></ul></div>'+
+      '</div></div>';
+
+    stage.plan.querySelectorAll(".act[data-act]").forEach(function(b){
+      b.addEventListener("click",function(){doAct(id,Number(b.getAttribute("data-w")),b.getAttribute("data-act"),b);});
+    });
+    stage.plan.querySelectorAll("[data-ro]").forEach(function(b){
+      b.addEventListener("click",function(){
+        S.rollout=b.getAttribute("data-ro");
+        record({type:"rollout",path:id,mode:S.rollout,by:"human"},
+               S.rollout==="step"?"One bundle at a time. The runner stops after each.":"All bundles in one run.");
+        openRoute(id);
+      });
+    });
+    stage.plan.querySelectorAll("[data-route]").forEach(function(b){
+      b.addEventListener("click",function(){openRoute(b.getAttribute("data-route"));});
+    });
+    stage.plan.querySelectorAll("[data-blk]").forEach(function(el){
+      el.addEventListener("click",function(e){e.stopPropagation();openBlocked(el.getAttribute("data-blk"));});
+    });
+    bindPrChips(stage.plan);
+    go("plan");
+  }
+
+  function markDone(id,i){
+    S.done[id+":"+i]=true;
+    var el=stage.plan.querySelector('[data-key="'+id+':'+i+'"]');
+    if(el){el.classList.add("done");el.querySelector(".wc-n").innerHTML="&#10003;";}
+  }
+  function doAct(id,i,kind,btn){
+    if(btn){btn.classList.add("flash");setTimeout(function(){btn.classList.remove("flash");},500);}
+    var w=ROUTES[id].waves[i];
+    if(kind.indexOf("open")===0){markDone(id,i);openPr(kind.slice(4));return;}
+    markDone(id,i);
+    record({type:"merge_bundle",bundle:i+1,prs:w.prs,onto:w.br,from:w.from,path:id,by:"human"},
+           "Recorded. The runner will merge bundle "+(i+1)+" onto its branch.");
+    dock();
+  }
+  function adopt(){
+    if(!S.route||!ROUTES[S.route].waves)return;
+    S.adopted=S.route;
+    var r=ROUTES[S.route];
+    var allPrs=[];r.waves.forEach(function(w){allPrs=allPrs.concat(w.prs);});
+    record({type:"path_accept",picked:S.route,refused:["B","C"],in_path:allPrs,
+            blocked:BLOCKED_KEYS,rollout:S.rollout,
+            validated_with:"git replay from "+META.ancestor_sha.slice(0,9)+", "+STAGE3.table.filter(function(t){return t.order===STAGE3.winner;})[0].stops+" of "+TOTAL+" steps conflict",by:"human"},
+           "Path accepted. The runner starts bundle 1.");
+    dock();
+  }
+
+  /* ============ PR VIEW ============ */
+  function openPr(n){S.pr=n;S.level=0;renderPr();go("pr");}
+  function renderPr(){
+    var p=PR[S.pr],d=DETAIL[S.pr];
+    var rail=LEVELS.map(function(l,i){
+      return '<button class="rail-i'+(i===S.level?" on":"")+'" data-lvl="'+i+'">'+l.n+'<small>'+l.t+'</small></button>';
+    }).join("");
+    var body="";
+    if(!d){
+      body='<p><b>Head branch</b> '+p.b+'</p><p><b>Size</b> '+p.f+' files changed vs. the shared base.</p>'+
+        '<p>'+(p.auto?"Merged automatically. "+p.why+".":"No detail loaded for this branch.")+'</p>';
+    } else if(S.level===0){
+      body='<p><b>Head branch</b> '+p.b+'</p><p><b>Size</b> '+p.f+' files changed vs. the shared base.</p>'+
+        (BLOCKED[S.pr]?'<p>Flagged in the recommended path: <b>'+BLOCKED[S.pr].head+'</b>.</p>':"")+
+        '<div class="src">index.json &middot; entities.pull_request</div>';
+    } else if(S.level===1){
+      body='<p><b>Problem.</b> '+d.problem+'</p><p><b>Approach.</b> '+d.approach+'</p>'+
+        '<div class="src">story.json &middot; intent.problem, intent.approach</div>';
+    } else if(S.level===2){
+      body='<p>'+d.finding+'</p><div class="src">story.json &middot; assessment.findings</div>';
+    } else {
+      var keys=Object.keys(d.touched),max=0;
+      keys.forEach(function(k){if(d.touched[k]>max)max=d.touched[k];});
+      body='<p>Changed files by top-level path, vs. the shared base.</p><div class="bars">'+keys.map(function(k,i){
+        return '<div class="bar"><span class="p">'+k+'</span><span class="t"><span class="f" style="width:'+
+          (d.touched[k]/max*100)+'%;animation-delay:'+(i*60)+'ms"></span></span><span class="c">'+d.touched[k]+'</span></div>';
+      }).join("")+'</div><div class="src">story.json &middot; touched</div>';
+    }
+
+    stage.pr.innerHTML='<div class="prview"><nav class="rail"><div class="rail-h">Levels</div>'+rail+'</nav>'+
+      '<div class="prmain"><div class="prcap"><div class="t">PR #'+S.pr+' &middot; '+esc(p.t)+'</div>'+
+      '<div class="m">'+p.b+' &middot; '+p.f+' files</div></div><div class="lvl">'+body+'</div></div></div>';
+    stage.pr.querySelectorAll(".rail-i").forEach(function(b){
+      b.addEventListener("click",function(){S.level=Number(b.getAttribute("data-lvl"));renderPr();});
+    });
+  }
+
+  /* ============ DOCK ============ */
+  function dock(){
+    var el=$("dock"),h="";
+    if(S.view==="deck"){
+      h='<span class="pill'+(S.adopted?" ok":"")+'">'+(S.adopted?"Path "+S.adopted+" adopted":"No route adopted")+'</span>'+
+        '<span class="pill">'+S.ledger.length+' recorded</span><span class="sp"></span>'+
+        '<span class="pill">Open the recommendation to accept it</span>';
+    } else if(S.view==="plan"){
+      if(!S.route){
+        el.innerHTML='<span class="pill">PR #'+S.blk+' &middot; flagged in path A</span><span class="sp"></span>'+
+          '<button class="act primary" data-dock="plan-a">Back to the path</button>';
+        return;
+      }
+      var r=ROUTES[S.route];
+      if(!r.waves){
+        h='<span class="pill">Route '+S.route+' &middot; set aside</span><span class="sp"></span>'+
+          '<button class="act" data-dock="plan-a">Back to the recommended path</button>'+
+          '<button class="act primary" data-dock="switch">Switch to this path</button>';
+      } else {
+        var n=r.waves.filter(function(_,i){return S.done[S.route+":"+i];}).length;
+        h='<span class="pill">'+n+' of '+r.waves.length+' waves done</span><span class="sp"></span>'+
+          '<button class="act" data-dock="deck">Back</button>'+
+          '<button class="act '+(S.adopted===S.route?"":"primary")+'" data-dock="adopt">'+
+          (S.adopted===S.route?"Accepted &#10003;":"Accept this path")+'</button>';
+      }
+    } else {
+      h='<span class="pill">PR #'+S.pr+'</span><span class="sp"></span>'+
+        '<button class="act" data-dock="'+(S.route?"plan":"deck")+'">'+
+        (S.route?"Back to path "+S.route:"Back to flightdeck")+'</button>'+
+        '<button class="act" data-dock="changes">Request changes</button>'+
+        '<button class="act primary" data-dock="approve">Approve</button>';
+    }
+    el.innerHTML=h;
+  }
+
+  document.addEventListener("click",function(e){
+    var t=e.target.closest("[data-go],[data-dock]");if(!t)return;
+    var g=t.getAttribute("data-go"),k=t.getAttribute("data-dock");
+    if(g==="deck"||k==="deck")return go("deck",true);
+    if(g==="plan"||k==="plan")return openRoute(S.route);
+    if(k==="plan-a")return openRoute("A");
+    if(k==="switch"){record({type:"route_pick",picked:S.route,refused:["A"],
+      note:"reviewer overruled the validated route",by:"human"},"Switched to path "+S.route+". The overrule is on the record.");
+      S.adopted=S.route;dock();return;}
+    if(k==="adopt")return adopt();
+    if(k==="approve"){record({type:"review",pr:S.pr,verdict:"approve",judged_against:HUMAN,route:S.route,by:"human"},
+      "PR #"+S.pr+" approved, judged against the whole open set.");dock();}
+    if(k==="changes"){record({type:"review",pr:S.pr,verdict:"request_changes",judged_against:HUMAN,route:S.route,by:"human"},
+      "Changes requested on PR #"+S.pr+".");dock();}
+  });
+  $("modeDeck").addEventListener("click",function(){go("deck",true);});
+  $("modePrs").addEventListener("click",function(){openPr(ROUTES.A.waves[0].prs[0]);});
+
+  function setLedger(o){$("ledger").classList.toggle("open",o);$("scrim").classList.toggle("on",o);}
+  $("ledgerBtn").addEventListener("click",function(){setLedger(!$("ledger").classList.contains("open"));});
+  $("ledgerX").addEventListener("click",function(){setLedger(false);});
+  $("scrim").addEventListener("click",function(){setLedger(false);});
+  document.addEventListener("keydown",function(e){if(e.key==="Escape")setLedger(false);});
+
+  /* ============ TOUR (generic, driven by real data) ============ */
+  var firstBlk=BLOCKED_KEYS[0], firstPr=ROUTES.A.waves[0].prs[0];
+  var TOUR=[
+    {t:TOTAL+" branches open at once. "+AUTO.length+" merged automatically, "+HUMAN.length+" fit one path, "+BLOCKED_KEYS.length+" need a decision on order.",ms:3800,f:function(){go("deck",true);setLedger(false);}},
+    {t:"The page opens with what you would have if you accept, simulated from the real octopus base of the set.",ms:3600,f:function(){}},
+    {t:"Below it, the stage-3 result: a computed order against arrival order, on a real chained git replay.",ms:3800,f:function(){}},
+    {t:"Open the pull request that needs a decision.",ms:2200,f:function(){openBlocked(firstBlk);}},
+    {t:BLOCKED[firstBlk].one,ms:4600,f:function(){}},
+    {t:"Ways out, with one recommended. Recording it starts the work.",ms:3400,f:function(){var b=document.querySelector('[data-blkopt="0"]');if(b)b.click();}},
+    {t:"Back to the path. Every branch it carries, one line each, in the order it can land.",ms:3600,f:function(){openRoute("A");}},
+    {t:"You commit to the path, and you keep the pace. One bundle at a time is the default.",ms:3600,f:function(){}},
+    {t:"Nothing merges onto main. Each bundle has its own branch.",ms:3200,f:function(){}},
+    {t:"Merge bundle one. The runner does it, and stops at the checkpoint.",ms:3000,f:function(){doAct("A",0,"release");}},
+    {t:"Open any pull request in the existing four-level layout.",ms:2600,f:function(){openPr(firstPr);}},
+    {t:"Approve from here. The record names the whole set it was judged against.",ms:3000,f:function(){var b=document.querySelector('[data-dock="approve"]');if(b)b.click();}},
+    {t:"Back to the path, and accept it.",ms:2400,f:function(){openRoute("A");}},
+    {t:"Accepting records the path, the flagged pull requests, and the rollout you chose.",ms:3800,f:function(){adopt();}},
+    {t:"Every line is in an append-only ledger, and the runner reads it from there.",ms:3200,f:function(){go("deck",true);setLedger(true);}},
+    {t:"That is the loop, on real branches instead of a worked example. Click anything to explore it.",ms:3200,f:function(){setLedger(false);}}
+  ];
+  var ti=0,tt=null;
+  function tstop(){S.tour=false;clearTimeout(tt);$("tour").classList.remove("on");
+    $("tourBtn").classList.remove("playing");$("tourBtn").textContent="Play the tour";}
+  function tstep(){
+    if(!S.tour)return;
+    if(ti>=TOUR.length){tstop();return;}
+    var s=TOUR[ti];s.f();
+    $("tourN").textContent=(ti+1)+" / "+TOUR.length;$("tourTxt").textContent=s.t;
+    ti++;tt=setTimeout(tstep,s.ms);
+  }
+  $("tourBtn").addEventListener("click",function(){
+    if(S.tour){tstop();return;}
+    S.tour=true;ti=0;S.adopted=null;S.done={};S.ledger=[];S.route=null;S.blk=null;S.unlocked=false;S.rollout="step";
+    $("ledgerB").innerHTML='<p class="ledger-empty">Nothing recorded yet. Every action appends one line here, and nothing is ever rewritten.</p>';
+    $("ledgerN").textContent="0";renderDeck();
+    $("tour").classList.add("on");$("tourBtn").classList.add("playing");
+    $("tourBtn").textContent="Stop the tour";tstep();
+  });
+  $("tourStop").addEventListener("click",tstop);
+
+  renderDeck();crumb();dock();
+})();
+</script>
