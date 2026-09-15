@@ -818,12 +818,14 @@
   .gate-card.is-approved{border-left:4px solid oklch(0.5 0.14 145);background:oklch(0.995 0.005 145);}
   .gate-card.is-current{border-left:4px solid var(--accent);background:color-mix(in oklch, var(--accent) 5%, white);box-shadow:0 1px 4px rgba(0,0,0,0.06);}
   .gate-card.is-planned{border-left:4px solid var(--line2);background:#fff;}
+  .gate-card.is-na{border-left:4px solid oklch(0.75 0.01 250);background:oklch(0.975 0.003 250);}
   .gate-header{display:flex;align-items:center;justify-content:space-between;gap:6px;}
   .gate-num-badge{font:700 11px 'JetBrains Mono',monospace;color:var(--ink-dim);}
   .gate-status-pill{font:700 9px 'JetBrains Mono',monospace;letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;border-radius:4px;}
   .gate-status-pill.ok{background:oklch(0.92 0.08 145);color:oklch(0.35 0.14 145);border:1px solid oklch(0.7 0.12 145);}
   .gate-status-pill.now{background:color-mix(in oklch, var(--accent) 15%, white);color:var(--accent-text);border:1px solid var(--accent);}
   .gate-status-pill.wait{background:oklch(0.96 0.005 250);color:var(--ink-dim);border:1px solid var(--line);}
+  .gate-status-pill.na{background:oklch(0.9 0.006 250);color:var(--ink-dim);border:1px solid oklch(0.8 0.008 250);}
   .gate-name{font-weight:700;font-size:13.5px;color:oklch(0.22 0.02 250);}
   .gate-desc{font-size:12px;line-height:1.45;color:var(--ink-dim);}
 
@@ -1195,7 +1197,7 @@ window.INDEX = window.INDEX || {};
     assessmentOpen: false,
     // Gate document sheet (ADR-0022): mutually exclusive with every sheet above.
     gateDocOpen: false,
-    activeGateDocKind: null, // 'program' | 'epic'
+    activeGateDocKind: null, // 'program' | 'epic' | 'interaction'
     activeGateDocId: null,
     // First-class view mode. 'prs' is the current pull-request viewer.
     // 'designs' mirrors it with a three-level design view. Persisted.
@@ -3251,6 +3253,10 @@ window.INDEX = window.INDEX || {};
           { n: 4, name: 'Slice plan + rubrics', state: 'APPROVED 2026-08-21' }
         ] }];
     const totalGates = gateRails.reduce((sum, r) => sum + r.gates.length, 0);
+    // Was: the header read `${totalGates} Gates Approved`, and the count included
+    // every card. The count below reads only the gates whose state starts APPROVED.
+    const approvedGates = gateRails.reduce((sum, r) =>
+      sum + r.gates.filter(g => (g.state || '').trim().toUpperCase().startsWith('APPROVED')).length, 0);
 
     const slicesByEpic = {};
     slices.forEach(s => {
@@ -3278,7 +3284,7 @@ window.INDEX = window.INDEX || {};
       <div class="builds-section" id="builds-gates-section">
         <div class="section-title-bar">
           <h3 class="section-title">Active Feature Gate Rail & Approval State</h3>
-          <span class="section-count mono">${totalGates} Gates Approved</span>
+          <span class="section-count mono">${approvedGates} of ${totalGates} Gates Approved</span>
         </div>
         <p class="section-intro">Gate status chrome derived from status records. Click a gate card with a document icon to read it.</p>
         ${gateRails.map(rail => `
@@ -3287,17 +3293,25 @@ window.INDEX = window.INDEX || {};
             <div class="gate-rail-grid">
               ${rail.gates.map(g => {
                 const isApproved = (g.state || '').toUpperCase().startsWith('APPROVED');
-                const isCurrent = g.n === 4;
-                const statusClass = isApproved ? 'is-approved' : (isCurrent ? 'is-current' : 'is-planned');
-                const clickAttrs = g.doc ? ` data-gate-doc-id="${escapeHtml(g.doc)}" tabindex="0" role="button"` : '';
+                const isNa = /^n\/a/i.test((g.state || '').trim());
+                // Was: const isCurrent = g.n === 4; The literal assumed the last
+                // gate is number 4, and it breaks on a letter suffix such as "2b".
+                const isCurrent = g === rail.gates[rail.gates.length - 1] && g.n !== '2b';
+                // Was: const statusClass = isApproved ? 'is-approved' : (isCurrent ? 'is-current' : 'is-planned');
+                // An "n/a" gate fell to 'is-planned' and read as not started. The
+                // isNa test sits before isCurrent, because a closed gate is not current.
+                const statusClass = isApproved ? 'is-approved' : isNa ? 'is-na' : (isCurrent ? 'is-current' : 'is-planned');
+                const pillClass = isApproved ? 'ok' : isNa ? 'na' : (isCurrent ? 'now' : 'wait');
+                const gateDesc = isApproved ? `Approved on ${escapeHtml(g.state.replace(/^APPROVED\s*/i, ''))}` : isNa ? 'Not applicable' : 'In progress';
+                const clickAttrs = g.doc ? ` data-gate-doc-id="${escapeHtml(g.doc)}" data-gate-doc-kind="${escapeHtml(g.doc_kind || 'program')}" tabindex="0" role="button"` : '';
                 return `
                   <div class="gate-card ${statusClass}${g.doc ? ' gate-rail-clickable' : ''}"${clickAttrs}>
                     <div class="gate-header">
                       <div class="gate-num-badge mono">Gate ${g.n}</div>
-                      <div class="gate-status-pill ${isApproved ? 'ok' : (isCurrent ? 'now' : 'wait')}">${escapeHtml(g.state)}</div>
+                      <div class="gate-status-pill ${pillClass}">${escapeHtml(g.state)}</div>
                     </div>
                     <div class="gate-name">${escapeHtml(g.name)}${g.doc ? ' &#128196;' : ''}</div>
-                    <div class="gate-desc">${isApproved ? `Approved on ${escapeHtml(g.state.replace(/^APPROVED\s*/i, ''))}` : 'In progress'}</div>
+                    <div class="gate-desc">${gateDesc}</div>
                   </div>`;
               }).join('')}
             </div>
@@ -3497,7 +3511,7 @@ window.INDEX = window.INDEX || {};
       </div>`);
 
     main.querySelectorAll('[data-gate-doc-id]').forEach(el => {
-      el.addEventListener('click', () => openGateDocSheet('program', el.dataset.gateDocId));
+      el.addEventListener('click', () => openGateDocSheet(el.dataset.gateDocKind || 'program', el.dataset.gateDocId));
     });
     main.querySelectorAll('[data-epic-design-id]').forEach(el => {
       el.addEventListener('click', () => openGateDocSheet('epic', el.dataset.epicDesignId));
@@ -4346,8 +4360,10 @@ window.INDEX = window.INDEX || {};
     const kind = state.activeGateDocKind;
     const id = state.activeGateDocId;
     const entities = (window.INDEX && window.INDEX.entities) || {};
-    const table = kind === 'epic' ? (entities.epic_design || []) : (entities.program_design || []);
-    const record = id ? table.find(r => r.id === id) : null;
+    const table = kind === 'epic' ? (entities.epic_design || [])
+      : kind === 'interaction' ? (entities.interaction_design || [])
+      : (entities.program_design || []);
+    const record = id ? table.find(r => r.id === id || r.feature_slug === id) : null;
     const titleEl = document.getElementById('gate-doc-sheet-title');
     const metaEl = document.getElementById('gate-doc-sheet-meta');
     const body = document.getElementById('gate-doc-sheet-body');
@@ -4364,7 +4380,7 @@ window.INDEX = window.INDEX || {};
 
     titleEl.textContent = record.title || record.id;
     const sourceLine = record.source_path ? `source: ${record.source_path}` : '';
-    const gateLine = kind === 'epic' ? 'Gate 4b' : 'Gate 3';
+    const gateLine = kind === 'epic' ? 'Gate 4b' : (kind === 'interaction' ? 'Gate 2b' : 'Gate 3');
     metaEl.innerHTML = `<span class="adr-sheet-sourceline">${escapeHtml(gateLine)}${sourceLine ? ' · ' + escapeHtml(sourceLine) : ''}</span>`;
     body.innerHTML = renderMarkdown(record.body_md || '');
   }

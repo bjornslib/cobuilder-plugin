@@ -1,0 +1,13 @@
+feature: gate-state-resolution
+test_command: "uv run --with pytest pytest tests/ -v"
+thresholds:
+  accept: 0.90
+  investigate: 0.70
+max_attempts: 3
+slices:
+  - id: 1
+    name: "E1 tracer bullet: the static page resolves the state and the document"
+    weight: 0.50
+  - id: 2
+    name: "E1 real content and edge cases: the viewer rail resolves the state and the count"
+    weight: 0.50

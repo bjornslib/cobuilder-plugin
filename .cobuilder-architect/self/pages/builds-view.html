@@ -36,6 +36,8 @@ code{font-family:var(--mono);font-size:.85em;background:var(--sunk);padding:.1em
 .gate.todo .nm{color:var(--ink3);font-weight:500}
 .gate .stt{font-family:var(--mono);font-size:9.5px;margin-top:2px;color:var(--ink3)}
 .gate.done .stt{color:var(--ok)} .gate.now .stt{color:var(--now)}
+.gate.na .dot{background:var(--sunk);border-color:var(--line);color:var(--ink3)}
+.gate.na .stt{color:var(--ink3)}
 .subdoc{display:block;width:100%;text-align:left;background:none;border:0;font-family:var(--mono);font-size:11px;color:var(--ink3);padding:5px 11px 5px 38px;cursor:pointer;border-radius:6px}
 .subdoc:hover{background:var(--sunk);color:var(--ink2)}
 .subdoc[aria-current="true"]{color:var(--acc);font-weight:500}
@@ -52,6 +54,7 @@ main{padding:34px 30px 90px;min-width:0}
 .crumb{font-family:var(--mono);font-size:10.5px;color:var(--ink3);letter-spacing:.06em;margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .pill{font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:20px}
 .pill.ok{background:var(--ok-bg);color:var(--ok)}.pill.now{background:var(--now-bg);color:var(--now)}.pill.wait{background:var(--wait-bg);color:var(--wait)}
+.pill.na{background:var(--sunk);color:var(--ink3)}
 .md{max-width:74ch}
 .md h1{font-family:var(--ser);font-size:36px;font-weight:600;letter-spacing:-.02em;line-height:1.08;margin:0 0 18px}
 .md h2{font-family:var(--ser);font-size:25px;font-weight:600;margin:38px 0 12px;padding-bottom:7px;border-bottom:1px solid var(--line)}
@@ -167,7 +170,12 @@ var ASKDOC="";
 var ASKGATE="4";
 var ASKNOTE="";
 var cur={gate:"4",doc:"04-slices.md"};
-function cls(g){var s=g.state.toLowerCase();return s.indexOf('approved')===0?'done':s.indexOf('in progress')===0?'now':'todo';}
+/* Was: the 'approved' test fell through to 'todo' for an "n/a" gate,
+   which drew it as not started. */
+function cls(g){var s=g.state.toLowerCase();
+  return s.indexOf('approved')===0?'done'
+       :s.indexOf('n/a')===0?'na'
+       :s.indexOf('in progress')===0?'now':'todo';}
 function buildRail(){
   var h='<div class="mark">cobuilder<span>.</span></div><div class="sub">builds &middot; cobuilder-family</div><div class="glabel">Gates</div>';
   G.forEach(function(g){
@@ -214,7 +222,7 @@ function go(gate,doc){
   rail.querySelectorAll('.gate').forEach(function(b){b.setAttribute('aria-current',String(b.dataset.gate===gate));});
   rail.querySelectorAll('.subdoc').forEach(function(b){b.setAttribute('aria-current',String(b.dataset.doc===doc));});
   var g=G.filter(function(x){return x.n===gate;})[0];
-  var pill = g ? '<span class="pill '+(cls(g)==='done'?'ok':cls(g)==='now'?'now':'wait')+'">'+g.state+'</span>' : '';
+  var pill = g ? '<span class="pill '+(cls(g)==='done'?'ok':cls(g)==='na'?'na':cls(g)==='now'?'now':'wait')+'">'+g.state+'</span>' : '';
   var note='';
   if(doc===ASKDOC) note='<div class="note"><h4>Rendered from the markdown, not a second copy</h4><p>This page holds <code>'+((PATHS&&PATHS[doc])||doc)+'</code> as text and renders it in the browser. There is one file on disk. Change the markdown, rebuild, and the view follows &mdash; no hand-authored HTML to keep in step.</p></div>';
   if(doc==='__backlog'){
@@ -223,9 +231,13 @@ function go(gate,doc){
     main.scrollTop=0; window.scrollTo(0,0); return;
   }
   if(/^rubric-/.test(doc)) note='<div class="note"><h4>A blind rubric</h4><p>A rubric is the blind acceptance sheet. It is written at Gate 4, before any implementation exists. A validator scores the slice against it.</p></div>';
-  var path=(PATHS&&PATHS[doc])||doc;
-  main.innerHTML='<div class="crumb"><span>'+path+'</span>'+pill+'</div>'+note+'<div class="md">'+render(D[doc]||'')+'</div>'+
-   (doc===ASKDOC?'<div class="ask"><h3>Approve Gate '+ASKGATE+', or what should change?</h3><p>'+ASKNOTE+'</p></div>':'');
+  /* Was: var path=(PATHS&&PATHS[doc])||doc; A missing document printed an
+     empty crumb, and the prompt answered a document that did not exist. */
+  var have=!!(doc&&D[doc]);
+  if(!have) note+='<div class="note"><h4>No document for Gate '+gate+'</h4><p>The plan holds no document for this gate.'+(ASKGATE&&gate===ASKGATE?' It waits for an answer, and there is nothing to approve yet.':' Nothing waits for this gate.')+'</p></div>';
+  var path=doc?((PATHS&&PATHS[doc])||doc):('Gate '+gate);
+  main.innerHTML='<div class="crumb"><span>'+path+'</span>'+pill+'</div>'+note+(have?'<div class="md">'+render(D[doc]||'')+'</div>':'')+
+   (ASKGATE&&gate===ASKGATE&&have?'<div class="ask"><h3>Approve Gate '+ASKGATE+', or what should change?</h3><p>'+ASKNOTE+'</p></div>':'');
   main.scrollTop=0; window.scrollTo(0,0);
 }
 buildRail(); go("4","04-slices.md");
