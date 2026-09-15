@@ -7,7 +7,7 @@ Tracks the documentation status of each bounded context under
 
 | Context | Status | canvas.md | boundary.yaml | Governing ADRs | Last verified |
 |---|---|---|---|---|---|
-| `cobuilder-packaging` | documented | yes | yes | ADR-0016 (tentative), ADR-0017 (tentative) | 2026-08-21 |
+| `cobuilder-packaging` | documented | yes | yes | ADR-0016 (approved), ADR-0017 (approved), ADR-0024 (approved) | 2026-08-21 |
 
 ## `cobuilder-packaging` — findings
 
@@ -21,6 +21,15 @@ ADR-0016 proposes -- that split has not happened yet.
 `boundary.yaml` existed for `cobuilder-packaging`. This context bundle exists now, so both
 ADRs can move toward `approved` as a separate, human decision. Neither ADR was edited by
 this pass.
+
+**Update on 2026-09-14, which was not a re-verification.** Two things changed since the
+pass above. First, ADR-0016 and ADR-0017 both reached `state: approved`, and ADR-0024
+reached `state: approved` and added itself to `boundary.yaml`'s `governed_by` list. The
+table above now names all three. Second, the plugin split happened. The findings below
+describe `cobuilder-architect` v0.4.0 as one plugin, and the repo now holds five:
+`architect`, `implement`, `pr`, `artifact`, and `cobuilder-full-lifecycle`. Describe mode
+did not run on 2026-09-14, so every finding below stays unchecked against the new shape.
+Treat the four smells as leads, not as current facts.
 
 **Smells found (ADR candidates), all verified by grep, none fixed here:**
 

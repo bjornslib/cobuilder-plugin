@@ -1,0 +1,68 @@
+{
+  "name": "interaction-design-gate",
+  "title": "Vendor design-to-code and add a conditional interaction design gate",
+  "adr": "ADR-0024",
+  "adrs": [
+    "ADR-0024",
+    "ADR-0017",
+    "ADR-0013"
+  ],
+  "created": "2026-09-14",
+  "outcome": "A session that builds a user interface writes an interaction design specification before implementation starts, and a browser check inside the slice loop catches the defects that specification exists to prevent.",
+  "done_when": [
+    "A session that reaches Gate 2 records a `- Gate 2b — Interaction design:` line in `00-status.md`, as its own line between Gate 2 and Gate 3",
+    "`uv run plugins/implement/scripts/verify_gate.py --plan docs/plans/<slug>` exits non-zero while the `2b` line reads pending",
+    "A feature with a front end holds `interaction-design.md` and `ui-spec.jsonc` beside its plan, and its `2b` line reads APPROVED",
+    "A feature with no front end records one `2b` line that quotes its `01-product.md` `## Screens` entry",
+    "`plugins/implement/skills/design-to-code/SKILL.md` holds three steps, not the five it was forked from"
+  ],
+  "abort_if": [
+    "Gate 2b repeats a Gate 4b design section closely enough that a second document adds no reading value",
+    "The vendored fork drifts from its upstream copy far enough that two divergent skill bodies must be maintained by hand"
+  ],
+  "min_work": {
+    "derived_from": "1 plugin, 2 districts, 3 ADRs, 1 boundary rule, and nine diagnosed failure classes in a 40 MB session transcript",
+    "alternatives_explored": 8,
+    "boundary_rules_checked": true,
+    "challenge_stage_run": true,
+    "note": "Design mode did not run for this feature, and this record was written by hand on 2026-09-14. `build_index.py` reads epic identity only from this file, so without it the slices in `docs/plans/interaction-design-gate/04-slices.md` stayed unresolved and `uv run shared/build_index.py` printed three warnings. This file therefore holds the minimum that the index and the Builds view read: the outcome, the epic registry, and the stage. The four companion files design mode writes, `intent.json`, `assessment.json`, `narrative.json`, `pr-draft.md`, and `diagrams/`, are absent on purpose. ADR-0024 holds the reasoning and the eight rejected alternatives. The challenge stage ran as the ADR's alternatives analysis and the reviewer's two corrections, not as design mode's stage 4."
+  },
+  "limits": {
+    "warn_after_rounds": 3,
+    "cutoff_rounds": 6
+  },
+  "epics": [
+    {
+      "id": "E1",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "Vendor the skill into `plugins/implement/skills/design-to-code/` and trim it from five steps to three. Step 1 goes because Gate 1 `01-product.md` already holds the product intent, and Step 4 goes because the slice loop owns code. The four concepts the gate depends on, initial state plus timer arming, transitions on state change, visibility gating, and declared defaults, reach the specification through the rewritten template, the JSONC schema, and the implementation rules. Slices 1 and 2."
+    },
+    {
+      "id": "E2",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "Add Gate 2b to the build workflow. A tracked line in `00-status.md` between Gate 2 and Gate 3, a `## Gate 2b` section in `build/SKILL.md`, the `2b` line in the status template, the resume rule that keeps Gate 3 from starting early, and the two consumption rules that let `rubric-authoring.md` and `slice-loop.md` read the artifacts. Slices 3 and 4."
+    },
+    {
+      "id": "E3",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "Make the gate mechanical rather than remembered. A `2b` group in `verify_gate.py`, a `2b` label in both gate-line regexes, `GATE_DOCS[\"2b\"]`, an `interaction_design` entity in the index, and the Builds view rail. Three call sites assume the last gate is number 4, so this epic is larger than it looks. It is the epic to cut. Slices 5 to 7."
+    }
+  ],
+  "stage": "decided",
+  "supersedes": null,
+  "rounds": [
+    {
+      "n": 1,
+      "date": "2026-09-14",
+      "result": "approved",
+      "material_change": true,
+      "note": "Not a design-mode round. ADR-0024 and the plan documents were reviewed together. The reviewer moved the gate from 1b to 2b, because Gate 1 forbids technical detail, and moved the skill from `shared/skills/` to the implement plugin. Both corrections changed the design."
+    }
+  ]
+}

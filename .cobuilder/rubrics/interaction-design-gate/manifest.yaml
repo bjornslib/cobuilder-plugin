@@ -1,0 +1,28 @@
+feature: interaction-design-gate
+test_command: "uv run --with pytest pytest tests/ -v"
+thresholds:
+  accept: 0.90
+  investigate: 0.70
+max_attempts: 3
+slices:
+  - id: 1
+    name: "E1 tracer bullet: the skill skeleton and its file set"
+    weight: 0.10
+  - id: 2
+    name: "E1 real content and edge cases: the four concepts reach the spec"
+    weight: 0.25
+  - id: 3
+    name: "E2 tracer bullet: the gate line and its section"
+    weight: 0.10
+  - id: 4
+    name: "E2 real content and edge cases: the three paths, the two consumers, and the returned session"
+    weight: 0.25
+  - id: 5
+    name: "E3 tracer bullet: the 2b group in verify_gate.py"
+    weight: 0.10
+  - id: 6
+    name: "E3 real content: the index and the Builds view rail"
+    weight: 0.10
+  - id: 7
+    name: "E3 edge cases: the three integer-only assumptions"
+    weight: 0.10
