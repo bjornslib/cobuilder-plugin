@@ -14,15 +14,29 @@ export const meta = {
 // args: {
 //   slug:         feature slug, e.g. "webhook-retry"
 //   testCommand:  exact suite command, e.g. "pytest tests/ -v"
-//   slices:       [{ id, name, goal, epicId, epicDesignExists }]   in build order
-//                 epicDesignExists is required for any slice whose epic carries
-//                 more than one slice (Gate 4b). Workflow scripts have no
-//                 filesystem access, so the orchestrating session must check
-//                 `docs/plans/<slug>/epic-<epicId>-design.md` itself — e.g. with
-//                 verify_gate.py — before invoking this workflow, and pass the
-//                 result in.
+//   slices:       [{ id, name, goal, epicId, epicDesignExists, guidance, browserEvidence }]
+//                 in build order. epicDesignExists is required for any slice
+//                 whose epic carries more than one slice (Gate 4b). Workflow
+//                 scripts have no filesystem access, so the orchestrating
+//                 session must check `docs/plans/<slug>/epic-<epicId>-design.md`
+//                 itself — e.g. with verify_gate.py — before invoking this
+//                 workflow, and pass the result in.
+//                 guidance: optional free text specific to this slice (a
+//                 pattern to follow, a pitfall to avoid). Injected into the
+//                 GREEN prompt only — RED writes the contract from the
+//                 program design alone, so guidance cannot leak the answer
+//                 into the tests.
+//                 browserEvidence: optional. When true, GREEN must produce a
+//                 browser-evidence file for this slice, and VALIDATE scores
+//                 every browser-related criterion 0.0 if that file is
+//                 missing or records a console error. Opt in per slice —
+//                 most slices have no UI surface to evidence.
 //   accept:       optional, default 0.90
 //   maxAttempts:  optional, default 3
+//   model:        optional model override applied to every RED and GREEN
+//                 agent (e.g. 'claude-sonnet-5'). VALIDATE always inherits
+//                 the session model — an independent auditor should not
+//                 share the builder's model override by accident.
 // }
 // ---------------------------------------------------------------------------
 
@@ -31,6 +45,7 @@ const testCommand = args?.testCommand
 const slices = args?.slices ?? []
 const ACCEPT = args?.accept ?? 0.90
 const MAX_ATTEMPTS = args?.maxAttempts ?? 3
+const BUILD_MODEL = args?.model
 
 if (!slug || !testCommand || slices.length === 0) {
   throw new Error('slice-loop needs args: { slug, testCommand, slices: [{id, name, goal}] }')
@@ -73,6 +88,7 @@ const GREEN_SCHEMA = {
     testsFailed: { type: 'integer' },
     touchedATestFile: { type: 'boolean', description: 'true if any test file appears in the diff — this voids the run' },
     feedbackAddressed: { type: 'string', description: 'on a retry, how each prior gap was addressed' },
+    browserEvidencePath: { type: 'string', description: 'path to the browser-evidence file written for this slice, only when browserEvidence was required' },
   },
 }
 
@@ -182,7 +198,7 @@ Then:
 
 Report the test files created, how many new tests fail, whether every failure is
 an assertion failure, and the pass count for pre-existing tests.`,
-    { label: `red:slice-${s.id}`, phase: 'Red', schema: RED_SCHEMA },
+    { label: `red:slice-${s.id}`, phase: 'Red', schema: RED_SCHEMA, model: BUILD_MODEL },
   )
 
   if (!red) {
@@ -222,7 +238,7 @@ ${attempt > 1
 "Actionable guidance" section MUST be addressed in this attempt. Do not repeat a
 mistake the feedback already named.`
   : `This is attempt 1. The feedback file will not exist yet.`}
-
+${s.guidance ? `\nSlice-specific guidance:\n${s.guidance}\n` : ''}
 Then:
 1. Write the MINIMAL code that makes the failing tests pass. No gold-plating.
 2. Run the full suite: ${testCommand}. All new tests pass, nothing previously
@@ -231,10 +247,16 @@ Then:
    - git diff --name-only shows only files in this slice's scope
    - no TODO, FIXME, HACK, or XXX markers in the files you touched
    - no test file appears in your diff
+${s.browserEvidence ? `4. Exercise the slice in a real browser and capture evidence:
+   write ${evidence}/slice-${s.id}-browser.md recording the page(s) you loaded,
+   the actions you took, a screenshot or DOM excerpt proving the behavior, and
+   the full console log for that session. A run with a console error in it is
+   not evidence of a working slice — fix the error before reporting. Report
+   the file's path as browserEvidencePath.` : ''}
 
 Report files changed, real pass/fail counts, whether any test file appears in
 your diff, and how you addressed the prior feedback if this was a retry.`,
-      { label: `green:slice-${s.id}:a${attempt}`, phase: 'Green', schema: GREEN_SCHEMA },
+      { label: `green:slice-${s.id}:a${attempt}`, phase: 'Green', schema: GREEN_SCHEMA, model: BUILD_MODEL },
     )
 
     if (!green) {
@@ -261,7 +283,15 @@ This is attempt ${attempt} of ${MAX_ATTEMPTS}.
 
 Steps:
 1. Run the suite YOURSELF: ${testCommand}. Do not rely on any claimed result.
-2. Check for a rigged pass. Any of these VOIDS the run — set voided=true and say
+${s.browserEvidence ? `1b. Read ${green.browserEvidencePath || `${evidence}/slice-${s.id}-browser.md`}.
+    Score EVERY browser-related criterion 0.0, with that fact as the cited
+    evidence, if any of these holds:
+      - the file is missing
+      - it records no console log, or a console error
+      - the screenshot or DOM excerpt does not match what the criterion claims
+    Do not take the GREEN report's word for a passing browser check — the file
+    is the evidence, not the summary of it.
+` : ''}2. Check for a rigged pass. Any of these VOIDS the run — set voided=true and say
    why:
    - a test file changed in this slice's diff
    - a test skipped, xfailed, commented out, or its assertion weakened
