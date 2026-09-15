@@ -182,7 +182,8 @@ Commit rubrics to the repository. Add `.cobuilder/rubrics/*/evidence/` to
 
 **Resume rule.** When starting a session, check for
 `docs/plans/<feature-slug>/00-status.md`. Read all documents in that directory.
-Continue from the first unapproved gate or unbuilt slice. Do not repeat
+Continue from the first unapproved gate or unbuilt slice. Treat the `2b` line
+as a gate in this check, so a returned session reads its answer. Do not repeat
 approved gates unless requirements changed.
 
 Template for `00-status.md`:
@@ -192,6 +193,7 @@ Template for `00-status.md`:
 
 - Gate 1 — Product: pending | in progress | APPROVED <date>
 - Gate 2 — Architecture: pending | in progress | APPROVED <date>
+- Gate 2b — Interaction design: pending | in progress | APPROVED <date> | n/a (no UI) — Screens: "<the ## Screens entry>"
 - Gate 3 — Program Design: pending | in progress | APPROVED <date>
 - Gate 4 — Slice plan, epic designs, and rubrics: pending | in progress | APPROVED <date>
   - 4a Slice plan: pending | APPROVED <date>
@@ -293,6 +295,54 @@ Read existing code before authoring `02-architecture.md`:
 ```
 
 Request user approval.
+
+---
+
+## Gate 2b — Interaction design
+
+**When it runs.** After Gate 2 is APPROVED and before Gate 3 begins. Gate 3
+must not start until the 2b line reads APPROVED or n/a.
+
+**It is its own line.** The `2b` line is a peer of the other gate lines, not a
+sub-bullet under Gate 2. One line per approval keeps the count readable.
+
+**Why it sits there.** Three reasons fix that position:
+
+1. Gate 1 is headed "no tech talk". Its rules forbid database details,
+   schemas, and endpoints. A specification that names state classes, timing
+   tokens, pointer events, and scroll ownership cannot live there.
+2. Gate 2's `## Fit` section names the layers in engineering terms. The
+   interaction design needs that answer.
+3. Gate 2b is the last point before Gate 3 names types and signatures. A
+   change after that point costs a rewrite of the program design.
+
+**The three paths.**
+
+### Path 1 — No front end
+Write:
+  - Gate 2b — Interaction design: n/a (no UI) — Screens: "<the entry>"
+Then continue to Gate 3.
+
+### Path 2 — A front end
+1. Ask the person to supply the design: an image, a set of screenshots, or a
+   link to a rendered page. Do not invent a design.
+2. Invoke implement:design-to-code and run its three steps.
+3. Request approval, then record APPROVED <date> on the 2b line.
+If the person declines, write n/a (declined) with the reason.
+
+### Path 3 — An earlier approval
+Read 00-status.md. When the 2b line already reads APPROVED or n/a, do not
+repeat the gate unless the requirements changed.
+
+**Why the `n/a` form must quote the `## Screens` entry.** A tool cannot tell
+whether a front end exists. The quoting requirement is therefore the only
+check on that answer. A reviewer compares two documents in seconds and sees
+the reason.
+
+**The two artifacts Gate 2b writes**, both in `docs/plans/<feature-slug>/`:
+
+- `interaction-design.md` — twelve sections, of which eight are required.
+- `ui-spec.jsonc` — the component and interaction specification.
 
 ---
 

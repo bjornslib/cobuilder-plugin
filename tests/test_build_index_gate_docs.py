@@ -55,12 +55,63 @@ def write_status(repo: Path, slug: str, gate3_state: str = "APPROVED 2026-09-01"
 # ---------------------------------------------------------------------
 
 
+def write_interaction_design(repo: Path, slug: str, title: str = "Interaction Design: Widget") -> Path:
+    plan_dir = repo / "docs" / "plans" / slug
+    plan_dir.mkdir(parents=True, exist_ok=True)
+    path = plan_dir / "interaction-design.md"
+    path.write_text(f"# {title}\n\n## 3.2 Component States\nsome states\n")
+    return path
+
+
 def test_build_index_has_program_design_and_epic_design_keys_with_no_plans_dir(tmp_path):
     init_repo(tmp_path)
     index, _, _, failures = build_index.build_index(tmp_path, tmp_path / ".cobuilder-architect" / "self")
     assert failures == []
     assert index["entities"]["program_design"] == []
     assert index["entities"]["epic_design"] == []
+
+
+# ---------------------------------------------------------------------
+# Slice 6 — the interaction_design entity
+# ---------------------------------------------------------------------
+
+
+def test_build_index_has_interaction_design_key_with_no_plans_dir(tmp_path):
+    init_repo(tmp_path)
+    index, _, _, failures = build_index.build_index(tmp_path, tmp_path / ".cobuilder-architect" / "self")
+    assert failures == []
+    assert index["entities"]["interaction_design"] == []
+
+
+def test_discover_interaction_design_docs_returns_empty_list_without_a_file(tmp_path):
+    init_repo(tmp_path)
+    write_program_design(tmp_path, "widget-feature")
+    assert build_index.discover_interaction_design_docs(tmp_path) == []
+
+
+def test_discover_interaction_design_docs_projects_one_entity_per_file(tmp_path):
+    init_repo(tmp_path)
+    write_interaction_design(tmp_path, "widget-feature", title="Interaction Design: Widget Feature")
+    write_program_design(tmp_path, "other-feature")
+    write_status(tmp_path, "widget-feature")
+    found = build_index.discover_interaction_design_docs(tmp_path)
+    assert len(found) == 1
+    record = found[0]
+    assert record["feature_slug"] == "widget-feature"
+    assert record["gate"] == "2b"
+    assert record["title"] == "Interaction Design: Widget Feature"
+    assert "## 3.2 Component States" in record["body_md"]
+    assert record["source_path"] == "docs/plans/widget-feature/interaction-design.md"
+    assert record["state"] == "n/a"
+
+
+def test_build_index_end_to_end_projects_the_interaction_design(tmp_path):
+    init_repo(tmp_path)
+    write_interaction_design(tmp_path, "widget-feature")
+    write_status(tmp_path, "widget-feature")
+    index, _, _, failures = build_index.build_index(tmp_path, tmp_path / ".cobuilder-architect" / "self")
+    assert failures == []
+    assert [r["feature_slug"] for r in index["entities"]["interaction_design"]] == ["widget-feature"]
 
 
 # ---------------------------------------------------------------------
@@ -72,19 +123,20 @@ def test_project_program_design_reads_title_and_body(tmp_path):
     init_repo(tmp_path)
     path = write_program_design(tmp_path, "widget-feature", title="Program Design: Widget Feature")
     text = path.read_text()
-    record = build_index.project_program_design("widget-feature", path, text)
+    record = build_index.project_program_design("widget-feature", path, text, tmp_path)
     assert record["id"] == "widget-feature"
     assert record["feature_slug"] == "widget-feature"
     assert record["gate"] == 3
     assert record["title"] == "Program Design: Widget Feature"
     assert "## Files" in record["body_md"]
+    assert record["source_path"] == "docs/plans/widget-feature/03-program-design.md"
 
 
 def test_project_epic_design_id_is_scoped_feature_slug_and_epic_id(tmp_path):
     init_repo(tmp_path)
     path = write_epic_design(tmp_path, "widget-feature", "E1")
     text = path.read_text()
-    record = build_index.project_epic_design("E1", "widget-feature", path, text)
+    record = build_index.project_epic_design("E1", "widget-feature", path, text, tmp_path)
     assert record["id"] == "widget-feature/E1"
     assert record["epic_id"] == "E1"
     assert record["feature_slug"] == "widget-feature"
@@ -118,7 +170,7 @@ def test_resolve_feature_gates_attaches_doc_when_program_design_exists(tmp_path)
     write_program_design(tmp_path, "widget-feature")
     write_status(tmp_path, "widget-feature")
     gates = build_index.resolve_feature_gates(tmp_path)
-    gate3 = next(g for g in gates["widget-feature"] if g["n"] == 3)
+    gate3 = next(g for g in gates["widget-feature"] if g["n"] == "3")
     assert gate3.get("doc") == "widget-feature"
 
 
@@ -126,7 +178,7 @@ def test_resolve_feature_gates_gate3_doc_key_absent_when_no_md_file(tmp_path):
     init_repo(tmp_path)
     write_status(tmp_path, "widget-feature")  # status exists, but no 03-program-design.md
     gates = build_index.resolve_feature_gates(tmp_path)
-    gate3 = next(g for g in gates["widget-feature"] if g["n"] == 3)
+    gate3 = next(g for g in gates["widget-feature"] if g["n"] == "3")
     assert "doc" not in gate3
 
 

@@ -129,13 +129,19 @@ The rubric is the answer key. Follow three practices to keep it effective:
 - **Do not invent files outside the approved designs.** If the rubric invents a
   file path, it overrides the design documents.
 - **Derive criteria from approved documents.** Author criteria from
-  `01-product.md`, `03-program-design.md`, and the approved Epic Technical
-  Solution Design (`docs/plans/<slug>/epic-<epic-id>-design.md`). If you cannot
-  write a criterion without guessing, the design documents are incomplete.
-  Update the technical design first. For an epic carrying more than one
-  slice, `plugins/implement/scripts/verify_gate.py --plan
-  docs/plans/<slug>` names the missing or incomplete design under `4b`. Run
-  it and fix what it names before writing rubrics for that epic.
+  `01-product.md`, `03-program-design.md`, the approved Epic Technical
+  Solution Design (`docs/plans/<slug>/epic-<epic-id>-design.md`), and the
+  approved interaction design (`docs/plans/<slug>/interaction-design.md`)
+  with its UI specification (`docs/plans/<slug>/ui-spec.jsonc`). A criterion
+  about behaviour cites the interaction design. A criterion about a state, a
+  transition, a visibility rule, or a default cites
+  `docs/plans/<slug>/interaction-design.md`. A criterion about a class name or
+  a token cites `docs/plans/<slug>/ui-spec.jsonc`. If you cannot write a
+  criterion without guessing, the design documents are incomplete. Update the
+  technical design first. For an epic carrying more than one slice,
+  `plugins/implement/scripts/verify_gate.py --plan docs/plans/<slug>` names
+  the missing or incomplete design under `4b`. Run it and fix what it names
+  before writing rubrics for that epic.
 
 ---
 

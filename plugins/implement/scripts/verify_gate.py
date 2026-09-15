@@ -3,12 +3,29 @@
 # requires-python = ">=3.10"
 # dependencies = []
 # ///
-"""Verify Gate 4 of a implement plan. Read-only, no side effects.
+"""Verify Gate 2b and Gate 4 of an implement plan. Read-only, no side effects.
+
+Gate 2b is the conditional interaction-design gate. It is its own tracked
+line in 00-status.md, ahead of Gate 3. This script checks it so a session
+cannot reach a slice while the interaction design is missing.
 
 Gate 4 has three sub-steps, and this script checks all three so a status
 file cannot claim the whole gate while one sub-step never ran:
 
 Artifact key names (stable, used in --json output):
+  2b:
+    interaction.file    - <plan>/interaction-design.md exists. "missing"
+                         when the file is absent. The whole group is "n/a"
+                         when the 2b line is absent or reads n/a, because
+                         the gate never applied.
+    interaction.sections - "ok" when the file carries all eight required
+                         section headers. "incomplete:<missing,...>" when
+                         some are absent, naming every absent heading.
+    ui_spec.file        - <plan>/ui-spec.jsonc exists. "incomplete" when
+                         the file is absent.
+    interaction.approved - "ok" when 00-status.md records 2b as APPROVED.
+                         "n/a" when the line is absent or reads n/a.
+                         "pending" otherwise.
   4a:
     slices.file       - <plan>/04-slices.md exists
     slices.count      - number of slice rows parsed from the table.
@@ -33,8 +50,8 @@ Artifact key names (stable, used in --json output):
                          a matching rubric file. "missing:<n,...>" names the
                          slice numbers with no rubric.
 
-Exit 0 iff every key above is "ok" (slices.count and rubrics.count pass when
-they are a positive integer, not literally the word "ok").
+Exit 0 iff every key above is "ok" or "n/a" (slices.count and rubrics.count
+pass when they are a positive integer, not literally the word "ok").
 
 Usage:
     uv run verify_gate.py --plan docs/plans/<slug>
@@ -76,10 +93,33 @@ REQUIRED_DESIGN_SECTIONS = [
     "## Risks & Open Questions",
 ]
 
+# The eight headings a filled interaction-design.md must carry. This list
+# matches plugins/implement/skills/design-to-code/templates/
+# interaction-design.md, which holds twelve sections of which eight are
+# required. Keep the two lists in step by hand.
+REQUIRED_INTERACTION_SECTIONS = [
+    "## 2. Information Architecture",
+    "### 2.3 Declared Defaults",
+    "### 3.2 Component States",
+    "### 3.3 Visibility Gating",
+    "### 4.1 Transition Table",
+    "### 4.2 Timing Tokens",
+    "### 11.2 Hit Targets",
+    "### 11.3 Scroll Ownership",
+]
+
 # 00-status.md's Gate 4 sub-step line, e.g.:
 #   - 4b Epic technical solution designs: pending | APPROVED 2026-08-24 | n/a
 STATUS_4B_RE = re.compile(
     r"^\s*-\s*4b\b.*?:\s*(APPROVED\b.*|pending|in progress|n/a.*)\s*$",
+    re.IGNORECASE,
+)
+
+# 00-status.md's Gate 2b line, e.g.:
+#   - Gate 2b — Interaction design: APPROVED 2026-09-14
+#   - Gate 2b — Interaction design: n/a (no UI) — Screens: "none"
+STATUS_2B_RE = re.compile(
+    r"^\s*-\s*Gate\s*2b\b.*?:\s*(APPROVED\b.*|pending|in progress|n/a.*)\s*$",
     re.IGNORECASE,
 )
 
@@ -98,6 +138,62 @@ def parse_slices(text: str) -> tuple[list[dict], list[str], list[str]]:
         for row in parsed.rows
     ]
     return slices, parsed.header_epic_ids, parsed.unparsed
+
+
+def check_interaction_sections(text: str) -> str:
+    missing = [s for s in REQUIRED_INTERACTION_SECTIONS if s not in text]
+    return "ok" if not missing else "incomplete:" + ",".join(missing)
+
+
+def check_2b_status(status_text: str | None) -> str:
+    """Return "ok", "n/a", or "pending" for the 2b line.
+
+    No 2b line at all returns "n/a". The gate is newer than those status
+    files, so silence means the gate did not exist. This choice keeps
+    docs/plans/cobuilder-family and docs/plans/gate-doc-surfacing passing.
+    A 2b line that is present and unapproved returns "pending".
+    """
+    if status_text is None:
+        return "n/a"
+    for line in status_text.splitlines():
+        match = STATUS_2B_RE.match(line)
+        if match:
+            value = match.group(1).strip()
+            if value.upper().startswith("APPROVED"):
+                return "ok"
+            if value.lower().startswith("n/a"):
+                return "n/a"
+            return "pending"
+    return "n/a"
+
+
+def check_2b(plan_dir: Path, status_text: str | None) -> dict[str, str]:
+    """Return the four Gate 2b keys.
+
+    When the 2b line is absent or reads n/a, the gate never applied, so
+    every key is "n/a" and no artifact is required. Otherwise the three
+    artifacts are checked and the approval state is reported.
+    """
+    approved = check_2b_status(status_text)
+    if approved == "n/a":
+        return {
+            "interaction.file": "n/a",
+            "interaction.sections": "n/a",
+            "ui_spec.file": "n/a",
+            "interaction.approved": "n/a",
+        }
+
+    results: dict[str, str] = {}
+    interaction_path = plan_dir / "interaction-design.md"
+    if interaction_path.exists():
+        results["interaction.file"] = "ok"
+        results["interaction.sections"] = check_interaction_sections(interaction_path.read_text())
+    else:
+        results["interaction.file"] = "missing"
+        results["interaction.sections"] = "n/a"
+    results["ui_spec.file"] = "ok" if (plan_dir / "ui-spec.jsonc").exists() else "incomplete"
+    results["interaction.approved"] = approved
+    return results
 
 
 def check_4a(plan_dir: Path) -> tuple[dict[str, str], list[dict]]:
@@ -265,12 +361,14 @@ def main() -> None:
     a_results, slices = check_4a(plan_dir)
     b_results = check_4b(plan_dir, slices, status_text)
     c_results = check_4c(rubrics_dir, slices)
+    b2_results = check_2b(plan_dir, status_text)
 
     flat = {}
     flat.update(flatten("4a.", a_results))
     for epic_id, entry in b_results.items():
         flat.update(flatten(f"4b.{epic_id}.", entry))
     flat.update(flatten("4c.", c_results))
+    flat.update(flatten("2b.", b2_results))
 
     ok = all_ok(flat)
 
@@ -281,13 +379,19 @@ def main() -> None:
             "4a": a_results,
             "4b": b_results,
             "4c": c_results,
+            "2b": b2_results,
             "ok": ok,
         }
         print(json.dumps(payload, indent=2, ensure_ascii=False))
     else:
-        print(f"Gate 4 — {slug}")
+        print(f"Gate 2b and Gate 4 — {slug}")
         print("--------")
-        print("4a. Slice plan")
+        print("2b. Interaction design")
+        for key, value in b2_results.items():
+            marker = "(ok)" if is_ok(value) else "(FAIL)"
+            print(f"  {key:<20} {value:<30} {marker}")
+
+        print("\n4a. Slice plan")
         for key, value in a_results.items():
             marker = "(ok)" if is_ok(value) else "(FAIL)"
             print(f"  {key:<20} {value:<30} {marker}")
@@ -317,6 +421,13 @@ def main() -> None:
                 print(
                     "\nGate 4b is missing or incomplete for: " + ", ".join(missing_designs) + ".\n"
                     "remediation: write docs/plans/<slug>/epic-<epic-id>-design.md for each, "
+                    "get user approval, and record it in 00-status.md."
+                )
+            if not all_ok(flatten("2b.", b2_results)):
+                print(
+                    "\nGate 2b is missing or incomplete.\n"
+                    "remediation: run the design-to-code skill, write "
+                    "docs/plans/<slug>/interaction-design.md and ui-spec.jsonc, "
                     "get user approval, and record it in 00-status.md."
                 )
 

@@ -567,7 +567,7 @@ def collect_districts(bundle_dir: Path) -> tuple[list[dict], list[str]]:
 # --------------------------------------------------------------------------
 
 
-STATUS_GATE_RE = re.compile(r"^-\s*Gate\s*(\d+)\s*[—–-]\s*([^:]+):\s*(.+)$")
+STATUS_GATE_RE = re.compile(r"^-\s*Gate\s*(\d+\w?)\s*[—–-]\s*([^:]+):\s*(.+)$")
 STATUS_SLICE_RE = re.compile(
     r"^-\s*\[(x| )\]\s*Slice\s*(\d+)\s*[—–-]\s*(.*?)(?:\s+score:\s*([^\s]+)(?:\s+on\s+attempt\s+(\d+))?)?$",
     re.IGNORECASE,
@@ -695,7 +695,8 @@ def discover_plan_gate_docs(repo: Path) -> list[dict]:
     return found
 
 
-def project_program_design(feature_slug: str, path: Path, text: str) -> dict:
+def project_program_design(feature_slug: str, path: Path, text: str, repo: Path) -> dict:
+    rel = path.relative_to(repo) if path.is_relative_to(repo) else path
     source = {
         "id": feature_slug,
         "feature_slug": feature_slug,
@@ -703,12 +704,13 @@ def project_program_design(feature_slug: str, path: Path, text: str) -> dict:
         "title": _extract_title(text, feature_slug),
         "body_md": text,
         "approved_date": None,
-        "source_path": str(path),
+        "source_path": str(rel),
     }
     return project_fields(source, PROGRAM_DESIGN_FIELDS)
 
 
-def project_epic_design(epic_id: str, feature_slug: str, path: Path, text: str) -> dict:
+def project_epic_design(epic_id: str, feature_slug: str, path: Path, text: str, repo: Path) -> dict:
+    rel = path.relative_to(repo) if path.is_relative_to(repo) else path
     source = {
         "id": f"{feature_slug}/{epic_id}",
         "epic_id": epic_id,
@@ -716,7 +718,7 @@ def project_epic_design(epic_id: str, feature_slug: str, path: Path, text: str) 
         "title": _extract_title(text, epic_id),
         "body_md": text,
         "approved_date": None,
-        "source_path": str(path),
+        "source_path": str(rel),
     }
     return project_fields(source, EPIC_DESIGN_FIELDS)
 
@@ -728,13 +730,69 @@ def collect_gate_docs(repo: Path) -> tuple[list[dict], list[dict], list[str]]:
     for doc in discover_plan_gate_docs(repo):
         if doc["kind"] == "program":
             program_entities.append(
-                project_program_design(doc["feature_slug"], doc["path"], doc["text"])
+                project_program_design(doc["feature_slug"], doc["path"], doc["text"], repo)
             )
         else:
             epic_entities.append(
-                project_epic_design(doc["epic_id"], doc["feature_slug"], doc["path"], doc["text"])
+                project_epic_design(doc["epic_id"], doc["feature_slug"], doc["path"], doc["text"], repo)
             )
     return program_entities, epic_entities, failures
+
+
+def _gate_2b_state(plan_dir: Path) -> str:
+    """Read the Gate 2b state text from a plan's 00-status.md.
+
+    Returns "n/a" when the file is absent, unreadable, or carries no Gate 2b
+    line. Uses the same STATUS_GATE_RE as resolve_feature_gates().
+    """
+    status_path = plan_dir / "00-status.md"
+    if not status_path.is_file():
+        return "n/a"
+    try:
+        lines = status_path.read_text().splitlines()
+    except OSError:
+        return "n/a"
+    for line in lines:
+        gm = STATUS_GATE_RE.search(line.strip())
+        if gm and gm.group(1) == "2b":
+            return gm.group(3).strip()
+    return "n/a"
+
+
+def discover_interaction_design_docs(repo: Path) -> list[dict]:
+    """Project docs/plans/<slug>/interaction-design.md into entities.
+
+    Mirrors discover_plan_gate_docs() under ADR-0022. Returns one entity per
+    plan that carries the file, and an empty list when no plan carries it.
+    The entity carries feature_slug, gate, title, state, source_path, and
+    body_md. ``state`` is the Gate 2b state text from 00-status.md, and
+    "n/a" when the plan carries no Gate 2b line.
+    """
+    plans_dir = repo / PLANS_SOURCE_SUBDIR
+    if not plans_dir.is_dir():
+        return []
+    found: list[dict] = []
+    for slug_dir in sorted(p for p in plans_dir.iterdir() if p.is_dir()):
+        doc_path = slug_dir / "interaction-design.md"
+        if not doc_path.is_file():
+            continue
+        try:
+            text = doc_path.read_text()
+        except OSError:
+            continue
+        feature_slug = slug_dir.name
+        rel = doc_path.relative_to(repo) if doc_path.is_relative_to(repo) else doc_path
+        found.append(
+            {
+                "feature_slug": feature_slug,
+                "gate": "2b",
+                "title": _extract_title(text, feature_slug),
+                "state": _gate_2b_state(slug_dir),
+                "source_path": str(rel),
+                "body_md": text,
+            }
+        )
+    return found
 
 
 # --------------------------------------------------------------------------
@@ -1076,6 +1134,9 @@ def resolve_feature_gates(repo: Path) -> dict[str, list[dict]]:
     program_design_features = {
         doc["feature_slug"] for doc in discover_plan_gate_docs(repo) if doc["kind"] == "program"
     }
+    interaction_design_features = {
+        path.parent.name for path in plans_dir.glob("*/interaction-design.md") if path.is_file()
+    }
     for status_path in sorted(plans_dir.glob("*/00-status.md")):
         feature = status_path.parent.name
         gates = []
@@ -1084,12 +1145,16 @@ def resolve_feature_gates(repo: Path) -> dict[str, list[dict]]:
                 gm = STATUS_GATE_RE.search(line.strip())
                 if gm:
                     gate = {
-                        "n": int(gm.group(1)),
+                        "n": gm.group(1),
                         "name": gm.group(2).strip(),
                         "state": gm.group(3).strip(),
                     }
-                    if gate["n"] == 3 and feature in program_design_features:
+                    if gate["n"] == "3" and feature in program_design_features:
                         gate["doc"] = feature
+                        gate["doc_kind"] = "program"
+                    elif gate["n"] == "2b" and feature in interaction_design_features:
+                        gate["doc"] = feature
+                        gate["doc_kind"] = "interaction"
                     gates.append(gate)
         except OSError:
             continue
@@ -1237,6 +1302,8 @@ def build_index(repo: Path, bundle_dir: Path) -> tuple[dict, dict, dict, list[st
     program_design_entities, epic_design_entities, gate_doc_failures = collect_gate_docs(repo)
     failures.extend(gate_doc_failures)
 
+    interaction_design_entities = discover_interaction_design_docs(repo)
+
     epic_design_ids = {r["id"] for r in epic_design_entities}
     for epic in epic_entities:
         if epic["id"] in epic_design_ids:
@@ -1254,6 +1321,7 @@ def build_index(repo: Path, bundle_dir: Path) -> tuple[dict, dict, dict, list[st
         "publication": publication_entities,
         "program_design": program_design_entities,
         "epic_design": epic_design_entities,
+        "interaction_design": interaction_design_entities,
     }
 
     joins, join_warnings = resolve_joins(repo, adrs_viewer, designs_viewer, entities)
