@@ -213,6 +213,25 @@ gives `Unknown skill`, read `${CLAUDE_PLUGIN_ROOT}/skills/ste-writing/SKILL.md`
 directly and obey that file instead. Use strict mode for ADR procedural
 text: the constraint introduced, and the boundary rules.
 
+This applies in full to `intent.json`'s prose fields: `problem`,
+`approach`, `alternatives[].rejected_because`, and `stop_condition`. A
+prior design in a sibling repo wrote `problem` as one 180-word sentence,
+strung together with dashes and parenthetical citations instead of
+periods. That is the failure mode this rule exists to stop. Draft each
+field as ordinary flavored-mode prose: a 25-word sentence cap, one topic
+per paragraph, no semicolons, no dash-joined clause chains standing in
+for periods. A file-and-line citation belongs in a short clause of its
+own sentence, not stacked three deep inside one. Before you show
+`intent.json` to the engineer, run:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/shared/skills/ste-writing/ste-lint.py" --mode flavored <file>
+```
+
+against each prose field (write it to a temp file first if the linter
+needs a file argument). Revise any field the linter flags, then show the
+result to the engineer per step 5 below.
+
 1. **ADR.** Write `docs/architecture/adr/ADR-NNNN-<slug>.md` from
    `skills/architecture/references/templates/adr-template.md`. Set
    `state: decided` and `source_pr: null`. Copy `alternatives` from
