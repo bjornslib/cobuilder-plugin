@@ -308,8 +308,21 @@ def lint(text, mode="flavored"):
     }
 
 
+USAGE = """usage: ste-lint.py [--mode strict|flavored] [file ...]
+
+Score one or more files for STE rule violations. Glob patterns expand.
+With no file arguments, reads text from stdin and prints one JSON report.
+With file arguments, prints one summary line per file.
+
+  --mode strict|flavored   sentence-length cap and rule set (default: flavored)
+  -h, --help               show this message and exit
+"""
+
 if __name__ == "__main__":
     argv = sys.argv[1:]
+    if "-h" in argv or "--help" in argv:
+        print(USAGE, end="")
+        sys.exit(0)
     mode = "flavored"
     if "--mode" in argv:
         i = argv.index("--mode")
