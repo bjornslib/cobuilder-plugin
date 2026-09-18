@@ -3,13 +3,13 @@
 title: "ADR-0025 — Simulate paths to close the open set, from the common ancestor, and show one validated path"
 status: active
 type: architecture
-last_verified: 2026-09-02
+last_verified: 2026-09-18
 owner: bjornslib
 # --- 42010 decision-record index (schema: references/decision-records.md §2) ---
 id: ADR-0025
 source_pr: null
 name: "Simulate paths to close the open set, from the common ancestor, and show one validated path"
-state: decided
+state: rejected
 groups: [viewer, review, data-model]
 approved_by: ""
 problem: "A team carries tens of open pull requests. No surface answers the question a reviewer actually holds, which is not how to review one change but in what order the whole set can close. The record index resolves five kinds of join and none between two pull requests. Simulating that order against the default branch gives a confident wrong answer whenever an open pull request restructures the tree, because the default branch already carries whatever merged before."
@@ -52,6 +52,8 @@ history:
   - { state: tentative, date: 2026-09-01 }
   - { state: decided, date: 2026-09-01, note: "First draft: a terminal-side proposer, a region walk of contested hunks, and a partition the reviewer corrects." }
   - { state: decided, date: 2026-09-02, by: bjornslib, note: "Revised in place before approval, after six rounds of design review against a working prototype. The terminal-computes-viewer-renders boundary is unchanged. The region walk, the reviewer-named set, and the union-find partition are gone, and the common-ancestor baseline is new. Revised rather than superseded because this record was never approved, never shipped, and nothing depends on it." }
+  - { state: challenged, date: 2026-09-18, note: "react-viewer independently claimed the same Flight deck surface name for its single-pull-request view, and neither design had read the other. The engineer directed the two designs to merge, which made this record's scope a surface inside a larger program rather than a design of its own." }
+  - { state: rejected, date: 2026-09-18, by: bjornslib, note: "Superseded by ADR-0027, which merges this record with ADR-0026 into one decision for the cobuilder-viewer design. The common-ancestor rule and every rejected option here carry forward unchanged." }
 maps_to:
   context: cobuilder-packaging
   modules: [plugins/pr, shared/build_index.py, shared/ledger.py, plugins/artifact/viewer/index.html]

@@ -1462,9 +1462,11 @@
       }
     ],
     "related": [
+      "docs/architecture/designs/cobuilder-viewer/goal.json",
       "docs/architecture/designs/react-viewer/goal.json",
       "docs/architecture/designs/build-workflow-polish/goal.json",
-      "docs/architecture/adr/ADR-0020-viewer-parts-and-an-author-time-build.md"
+      "docs/architecture/adr/ADR-0020-viewer-parts-and-an-author-time-build.md",
+      "docs/architecture/adr/ADR-0027-flightdeck-one-surface-two-modes.md"
     ]
   },
   "ADR-0024": {
@@ -1566,7 +1568,7 @@
   "ADR-0025": {
     "id": "ADR-0025",
     "title": "Simulate paths to close the open set, from the common ancestor, and show one validated path",
-    "state": "decided",
+    "state": "rejected",
     "source_pr": null,
     "problem": "A team carries tens of open pull requests. No surface answers the question a reviewer actually holds, which is not how to review one change but in what order the whole set can close. The record index resolves five kinds of join and none between two pull requests. Simulating that order against the default branch gives a confident wrong answer whenever an open pull request restructures the tree, because the default branch already carries whatever merged before.",
     "decision": "A mode in the pr plugin simulates several paths to close the whole open set, always against the common ancestor of the open branches. It replays the best one or two with git on a scratch worktree, counts the real conflicts, and promotes the survivor. The viewer shows one validated path, leading with the state the reviewer would have and the pull requests the path cannot carry, and it computes nothing.",
@@ -1653,6 +1655,17 @@
         "date": "2026-09-02",
         "by": "bjornslib",
         "note": "Revised in place before approval, after six rounds of design review against a working prototype. The terminal-computes-viewer-renders boundary is unchanged. The region walk, the reviewer-named set, and the union-find partition are gone, and the common-ancestor baseline is new. Revised rather than superseded because this record was never approved, never shipped, and nothing depends on it."
+      },
+      {
+        "state": "challenged",
+        "date": "2026-09-18",
+        "note": "react-viewer independently claimed the same Flight deck surface name for its single-pull-request view, and neither design had read the other. The engineer directed the two designs to merge, which made this record's scope a surface inside a larger program rather than a design of its own."
+      },
+      {
+        "state": "rejected",
+        "date": "2026-09-18",
+        "by": "bjornslib",
+        "note": "Superseded by ADR-0027, which merges this record with ADR-0026 into one decision for the cobuilder-viewer design. The common-ancestor rule and every rejected option here carry forward unchanged."
       }
     ],
     "related": [
@@ -1663,7 +1676,7 @@
   "ADR-0026": {
     "id": "ADR-0026",
     "title": "Execute an accepted path onto integration branches, never onto the default branch",
-    "state": "decided",
+    "state": "rejected",
     "source_pr": null,
     "problem": "Accepting a path commits a team to merging ten pull requests in a stated order. Executing that onto the default branch makes the first merge irreversible and the whole path unabandonable, and it gives the reviewer no tree to inspect between one bundle and the next. It also makes the runner the first thing in this plugin family that writes to a shared branch.",
     "decision": "A runner reads an accepted path from the ledger and merges each bundle onto its own integration branch, built from the previous bundle's branch and rooted at the common ancestor. The default branch receives one pull request at the end, from the last bundle's branch. The reviewer commits to the path once, and separately chooses the pace: all bundles in one run, or one bundle with a checkpoint after each.",
@@ -1722,10 +1735,104 @@
       {
         "state": "decided",
         "date": "2026-09-02"
+      },
+      {
+        "state": "challenged",
+        "date": "2026-09-18",
+        "note": "The same merge that challenged ADR-0025 also challenged this record. Its scope moved from a design of its own to one epic inside cobuilder-viewer."
+      },
+      {
+        "state": "rejected",
+        "date": "2026-09-18",
+        "by": "bjornslib",
+        "note": "Superseded by ADR-0027, which merges this record with ADR-0025 into one decision for the cobuilder-viewer design. The integration-branch execution model carries forward unchanged."
       }
     ],
     "related": [
       "docs/architecture/designs/review-flight-deck/goal.json"
+    ]
+  },
+  "ADR-0027": {
+    "id": "ADR-0027",
+    "title": "FlightDeck: one surface, two modes, a ledger-recorded merge-order recommendation",
+    "state": "decided",
+    "source_pr": null,
+    "problem": "Two designs each claimed part of the same surface. react-viewer's E5 rebuilds the single-pull-request narration view in React and names it Flight deck. review-flight-deck computes a merge order for the whole open pull-request set and gives its surface the same name. Shipping them apart means building the pull-request surface twice. The two designs also left three questions open between them, because neither had read the other. Where can a merge-order simulation run, when a browser cannot invoke git. How does the ledger carry a proposal, an acceptance, and a real outcome without breaking ADR-0019's vocabulary. Who owns the open pull request as a record-index entity.",
+    "decision": "FlightDeck is one surface in cobuilder-viewer, and it replaces the Pull requests tab. It carries two modes. Single-pull-request mode ships first, at parity with today's four-level narration, diagrams, scene art, audio, and intent and assessment sheet. Multi-pull-request mode ships later in the same design. A reviewer selects open pull requests. A skill run or scheduled workflow then simulates candidate merge orders against the common ancestor with git merge-tree. It replays the best one or two on a scratch worktree and commits the result as data. The viewer only renders that data. The ledger records a merge-order proposal, its acceptance, and the post-merge tree hash as three subtypes of the existing state line kind. OpenPullRequest extends the single-pull-request type, and the shared types module defines it once.",
+    "alternatives": [
+      {
+        "option": "Ship react-viewer and review-flight-deck as two designs, sequenced",
+        "rejected_because": "That order would build the ordering UI against the viewer E5 is about to replace, then rebuild it in React. Someone would also resolve the name collision twice, once informally and once for real."
+      },
+      {
+        "option": "Recompute the merge order live in the browser, on demand",
+        "rejected_because": "A browser cannot run git. ADR-0001's content policy also blocks it from fetching the evidence. That constraint is hard, not a preference, and it carries forward unchanged from ADR-0025."
+      },
+      {
+        "option": "A scheduled GitHub Action recomputes the plan and commits it",
+        "rejected_because": "review-flight-deck's own record already resolved automatic triggering. A scheduled skill run or a workflow supplies it, matching every other Odyssey mode. A GitHub Action would add CI infrastructure this family has never needed."
+      },
+      {
+        "option": "A persistent, org-owned service computes the join index and the merge plan across every adopting repository",
+        "rejected_because": "This option discards the install-surface rule outright. No plugin in this family ships an agent, a hook, or an MCP server, and every bundle is a per-repo, git-committed artifact by design. The pressure behind the option is real, and a committed data file answers it."
+      },
+      {
+        "option": "Three new top-level ledger line kinds: path-acceptance, bundle-merge, blocked-pr-decision",
+        "rejected_because": "ADR-0019 fixed the ledger vocabulary at comment, reply, and state, deliberately. A proposal, an acceptance referencing it, and a post-merge actual result are three subtypes of state. A future reader then never meets an unrecognised top-level kind."
+      },
+      {
+        "option": "OpenPullRequest as its own hand-copied type in the multi-pull-request epic",
+        "rejected_because": "A field renamed on one type and not the other compiles clean on both sides and drifts silently. One branded extension, defined once, makes the type checker refuse the drift instead."
+      },
+      {
+        "option": "Build both modes as one epic",
+        "rejected_because": "Multi-pull-request mode needs the typed data layer and the open-pull-request entity that single-pull-request mode does not. One epic means neither reaches parity before the other's risk lands on top of it."
+      }
+    ],
+    "forces": [
+      "ADR-0001 holds the viewer to one self-contained file under a content policy that blocks every external request. The browser cannot fetch, and it cannot run git.",
+      "ADR-0018 already computes joins in data/index.json. Both FlightDeck modes read that index rather than re-deriving joins by hand.",
+      "ADR-0019 fixed the ledger vocabulary at comment, reply, and state, and fold_threads skips a line it does not recognise.",
+      "ADR-0023 fixes the build: TypeScript, React, Vite, one committed file, and a test that fails when the build and the committed output differ.",
+      "The install surface ships no hooks, so nothing in this design starts itself. The adopting repository supplies the trigger.",
+      "A spike measured the ordering problem on real history. Thirty open branches shared one true common ancestor, and 42.5 percent of pairwise merges conflicted. A greedy minimum-conflict order beat arrival order by roughly 40 percent on stop count.",
+      "A replay is a snapshot against recorded branch heads, and a push after the run invalidates it. The ledger therefore records the exact ancestor SHA and the per-step inputs a later replay needs."
+    ],
+    "delivers": {
+      "capability": "A reviewer opens one surface for a pull request, whether it is one change or the whole open set. It shows a validated recommendation with the evidence that a git replay held, never a live simulation to wait on or trust blind.",
+      "benefit": "The team builds the pull-request surface once. The ledger stays inside its fixed vocabulary. An open pull request's type cannot drift silently from a merged one.",
+      "beneficiary": [
+        "developer",
+        "reviewer",
+        "validator-agent"
+      ]
+    },
+    "body": "# ADR-0027 — FlightDeck: one surface, two modes, a ledger-recorded merge-order recommendation\n\n## Context\n\n`react-viewer` (ADR-0023) rebuilds the bundle viewer as three surfaces: Work,\nFlight deck, and Reference. Its E5 epic names Flight deck the\nsingle-pull-request narration view. `review-flight-deck` (ADR-0025, ADR-0026)\nindependently gave its multi-pull-request merge-ordering surface the same name,\nfor something unrelated. Both designs reached `stage: \"review\"` before this\ncollision surfaced.\n\nShipping them as two designs means building the pull-request surface twice.\nE5 replaces the viewer, so an ordering UI built first would then need a rebuild\nin React. The name would also mean two things in one application, which\n`CLAUDE.md`'s Vocabulary table exists to prevent.\n\nThree questions stayed open across both source records. Where can a merge-order\nsimulation run, given that a browser cannot invoke git? How does the ledger\ncarry a proposal, an acceptance, and a real outcome without breaking\nADR-0019's fixed three-kind vocabulary? Who owns the open pull request as a\nrecord-index entity, given that a later design (`inflight-record-store`) needed\nthe same thing?\n\nA divergent-exploration pass across six frames, and a separate critic pass,\nsurfaced two more findings. First, the pressure toward precomputing the merge\nplan rather than simulating it live is real. The frame that answered with a\nscheduled GitHub Action missed that this family already solved automatic\ntriggering with a skill run or workflow. Second, a frame proposed a cross-repo\nshared computation service. That option was a trap. It reads as sound scaling\narchitecture, and it silently discards the install-surface rule that holds this\nfamily together.\n\n## Decision\n\nFlightDeck is one surface in `cobuilder-viewer`, replacing the Pull requests\ntab. It carries two modes.\n\n**Single-pull-request mode** ships first, as an epic in `cobuilder-viewer`. It\nreaches parity with today's viewer: four narration levels, Mermaid diagrams,\nscene art, narration audio, the diff, and the intent and assessment sheet.\n\n**Multi-pull-request mode** ships as a later epic in the same design. A reviewer\nselects open pull requests. A skill run or scheduled workflow, never the\nbrowser, simulates candidate merge orders with chained `git merge-tree` against\nthe common ancestor. It replays the best one or two on a scratch worktree, then\ncommits the result as `data/merge-plan.json`, alongside `data/index.json`. The\nviewer renders that file and computes nothing.\n\nThree non-authored conflict shapes get their own labels, distinct from a real\nauthorship disagreement. A shared generated file re-diverges from different\ninputs. A hot file needs to land before many others touch it. Two branches add\nidentical content independently through a shared upstream merge. A reviewer\nshould not adjudicate any of the three.\n\nThe ledger records three moments as subtypes of the existing `state` line kind.\nThe first is a merge-order proposal, carrying the base commit, the ranked\ncandidates, per-file shape labels, and a content hash of the simulation output.\nThe second is an acceptance, referencing the proposal's hash and naming the\nchosen candidate. The third is a post-merge actual result, carrying the real\nresulting tree hash. An auditor diffs the accepted candidate's predicted hash\nagainst the actual one, without asking the merger anything. A mismatch is a\nrefusable, renderable state, never silently reconciled.\n\nThe shared types module defines `OpenPullRequest` once, as\n`PullRequest & { status: \"open\" }`, in the epic that ships single-pull-request\nmode. Multi-pull-request mode may not declare a PR-shaped type of its own. A\nfield renamed on one and not reflected in the other fails the build.\n\nExecution carries ADR-0026's decision forward unchanged. A runner reads an\naccepted path from the ledger. It merges each bundle onto its own integration\nbranch, built from the previous bundle and rooted at the common ancestor. The\ndefault branch receives one pull request, from the last bundle's branch. The\nreviewer commits to the path once, then chooses the pace.\n\n## Consequences\n\n- **Positive:** the team builds the pull-request surface once. Multi-pull-request\n  mode extends single-pull-request mode's types and data layer instead of\n  duplicating them.\n- **Positive:** the ledger keeps exactly the vocabulary ADR-0019 fixed. A future\n  reader of `fold_threads` never meets an unrecognised top-level kind.\n- **Positive:** an auditor reconstructs what a reviewer saw and what actually\n  merged, from the ledger alone, without asking anyone.\n- **Constraint introduced:** multi-pull-request mode never simulates in the\n  browser. Only a skill run or scheduled workflow runs `git merge-tree`, and it\n  commits the output as data before the viewer renders it.\n- **Negative:** the ledger's proposal line must record the exact ancestor SHA\n  and the per-step simulation inputs. ADR-0025 did not carry that schema work.\n- **Negative:** referenced SHAs can fall to garbage collection between\n  acceptance and audit. Nothing here keeps them reachable, and this record does\n  not settle that.\n- **Open, deferred to the design's epics:** two measurement questions stay open.\n  The epics settle the byte-equality test that tells a generated-file conflict\n  from a real one, and the heuristic that ranks candidate orders.\n",
+    "maps_to": {
+      "context": "cobuilder-packaging",
+      "modules": [
+        "plugins/artifact/viewer/src",
+        "plugins/pr",
+        "shared/build_index.py",
+        "shared/ledger.py"
+      ],
+      "rule": "FlightDeck is one React surface with two modes. Multi-pull-request mode never simulates in the browser. A skill run or scheduled workflow computes candidate merge orders, and commits the result as data/merge-plan.json for the viewer to render. A merge-order proposal, its acceptance, and its post-merge actual result are subtypes of the ledger's existing state line kind. OpenPullRequest extends PullRequest, defined once in the shared types module."
+    },
+    "history": [
+      {
+        "state": "tentative",
+        "date": "2026-09-18"
+      },
+      {
+        "state": "decided",
+        "date": "2026-09-18",
+        "by": "bjornslib",
+        "note": "Merges ADR-0025 and ADR-0026 into one record for the cobuilder-viewer design, which itself merges react-viewer and review-flight-deck. Both source records were never approved and never shipped, and nothing outside this design depends on them separately."
+      }
+    ],
+    "related": [
+      "docs/architecture/designs/cobuilder-viewer/goal.json",
+      "docs/architecture/adr/ADR-0023-react-viewer-and-a-vite-build.md"
     ]
   }
 }

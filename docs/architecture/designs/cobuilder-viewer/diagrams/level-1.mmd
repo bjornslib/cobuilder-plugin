@@ -1,0 +1,65 @@
+C4Container
+    title cobuilder-viewer — three surfaces, the typed data layer, the build seam, and the git-merge-tree boundary
+
+    Person(reviewer, "Reviewer", "Opens the bundle, reads a design or a pull request, selects open pull requests, accepts a merge path")
+    Person(engineer, "Engineer", "Changes a viewer source file under viewer/src/")
+
+    Container_Boundary(app, "React viewer app (viewer/src/) — compiled to one file by Vite, ADR-0023") {
+        Container(work, "Work surface", "TS + React", "Every design, its stage and epic progress, six lenses per design: intent, problem/solution, architecture, risks and verdict, build, pull requests")
+        Container(flightdeck, "FlightDeck surface", "TS + React", "Single-PR narration at parity with today's viewer, and multi-PR select-and-recommend")
+        Container(reference, "Reference surface", "TS + React", "Decisions and map coverage, replacing the five record-type tabs")
+        Container(data, "Typed data layer (viewer/src/data)", "TS", "Joins STORY, ODYSSEY, DIFFS, ADRS, DESIGNS, DIAGRAMS, index.json once. Declares PullRequest and OpenPullRequest")
+    }
+
+    Container_Boundary(build, "Vite build (viewer/src/ -> plugins/artifact/viewer/index.html) — engineer-run only, never at install, never in browser") {
+        Container(vite, "vite.config.ts", "Vite + vite-plugin-singlefile", "Compiles TS/React sources, inlines every asset into one file")
+        Container(guard, "Byte-equal rebuild test", "Test", "Rebuilds from source and fails when it differs from the committed file")
+    }
+
+    Container(indexhtml, "plugins/artifact/viewer/index.html", "Committed single file", "The build's only output. Read by both consumers below")
+
+    Container_Boundary(bundledata, "Committed bundle data (.cobuilder-architect/self/data/) — git-committed, never written by the browser") {
+        ContainerDb(recindex, "index.json / story.json / adrs.json / diagrams.js", "JSON/JS", "Derived record index and narration, ADR-0018")
+        ContainerDb(plan, "merge-plan.json", "JSON", "Ranked candidate merge paths, conflict shapes, ancestor SHA")
+        ContainerDb(ledger, "feedback-ledger.jsonl", "Append-only JSONL", "state lines: merge-order proposal, acceptance, post-merge actual (ADR-0019, ADR-0027)")
+    }
+
+    Container_Boundary(offbrowser, "Skill run or scheduled workflow — outside the browser, per ADR-0027") {
+        Container(simulator, "Merge-order simulator", "Python + git merge-tree", "Simulates candidate orders against the common ancestor, replays top candidates on a scratch worktree")
+    }
+
+    Container(exporter, "export_artifact.py", "Python", "Matches named markers the build emits on purpose, publishes one committed index.html per PR")
+    Container(migrator, "migrate_bundle.py", "Python", "Copies the committed index.html into every bundle, unconditionally")
+
+    Container_Boundary(runnerb, "Runner (supplied by the adopting repo) — outside this design's install surface") {
+        Container(runner, "Path-execution runner", "External", "Merges accepted bundles onto their own integration branches, never the default branch")
+    }
+
+    System_Ext(git, "git repository", "Branch heads, common ancestor, integration branches, default branch")
+
+    Rel(engineer, vite, "Runs npm run build")
+    Rel(vite, indexhtml, "Writes committed output")
+    Rel(guard, vite, "Rebuilds from source")
+    Rel(guard, indexhtml, "Compares against committed file")
+    Rel(indexhtml, work, "Serves")
+    Rel(indexhtml, flightdeck, "Serves")
+    Rel(indexhtml, reference, "Serves")
+    Rel(exporter, indexhtml, "Reads, rewrites named markers, publishes")
+    Rel(migrator, indexhtml, "Copies into every bundle")
+
+    Rel(reviewer, work, "Opens a design, picks a lens")
+    Rel(reviewer, flightdeck, "Reads a pull request, selects open pull requests, accepts a path")
+    Rel(reviewer, reference, "Reads a decision or the map")
+    Rel(work, data, "Reads typed model from")
+    Rel(flightdeck, data, "Reads typed model from")
+    Rel(reference, data, "Reads typed model from")
+    Rel(data, recindex, "Reads (never writes)")
+    Rel(data, plan, "Reads merge-plan.json (never simulates)")
+    Rel(flightdeck, ledger, "Reads proposal/acceptance/actual state lines")
+    Rel(simulator, git, "Runs git merge-tree against common ancestor")
+    Rel(simulator, plan, "Writes merge-plan.json")
+    Rel(simulator, ledger, "Appends merge-order proposal state line")
+    Rel(reviewer, ledger, "Acceptance recorded (via served viewer, --allow-write)")
+    Rel(runner, ledger, "Reads accepted path")
+    Rel(runner, git, "Merges bundles onto integration branches")
+    Rel(runner, ledger, "Appends post-merge actual tree hash")

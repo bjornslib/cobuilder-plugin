@@ -28,6 +28,8 @@ says which.
 | Q13 | Who owns the open-pull-request entity | F1 | Decision | Open |
 | Q14 | What credentials the runner uses | F6 | Decision | Deferred |
 | Q15 | Who deletes the integration branches | F6 | Decision | Deferred |
+| Q16 | A hot file that conflicts with most of the set | F3, F4 | Decision | Open |
+| Q17 | Identical content added on both sides | F3, F4 | Decision | Open |
 
 ## 2. Questions this session opened
 
@@ -203,6 +205,81 @@ Epic F1 duplicates the first epic of the `inflight-record-store` design.
 Both need open pull requests as entities in the record index. Building it
 twice is the likely failure. Whichever design ships first should own it,
 and the code belongs in `shared/`.
+
+## 4a. Questions the hindsight_fork corpus run opened
+
+cobuilder-plugin and agencheck both failed as corpora for the reason Q5
+gives. Every branch was cut from the tip of the last merge, so zero
+genuine three-way pairs conflicted. `hindsight_fork`, a fork of an active
+multi-author project, does not have that problem. Thirty branches from a
+three-week window share one true octopus base. Of those, 409 pairs are
+genuine three-way, and 42.5 percent of them conflict. A chained `git
+merge-tree` replay of the full set shows a computed order beating arrival
+order by 40 percent on stop count. That is the first evidence for the
+design's central claim.
+
+The same run also surfaced two conflict shapes that Q3 did not name. Q3's
+derived-file case is a shared generator overwriting its own output. These
+two are different, and both came from real history rather than from this
+repository's own bundle.
+
+### Q16. A hot file
+
+One branch's changed test file conflicts with twelve of the other
+twenty-nine. The twelve do not disagree with each other. Each one
+conflicts with the single branch that touched the file first, in the
+merge order tried. This is not a content dispute. It is a sequencing
+problem. The branch needs to land before the twelve, and nobody needs to
+adjudicate it against each of them.
+
+Q4's ordering algorithm already solves this by accident. H3, greedy
+minimum-conflict, puts a branch like this early, because early is where it
+conflicts least. Two answers are open:
+
+- **(a) Leave it implicit.** The ordering algorithm already routes around
+  it. A named block kind for something the path resolves on its own adds
+  a surface with nothing for the reviewer to decide.
+- **(b) Name it anyway, as evidence.** A reviewer who sees waves without
+  knowing why the order is what it is has to trust the algorithm blind.
+  Naming the hot file gives the recommendation a reason that a person can
+  check against their own knowledge of the codebase.
+
+### Q17. Identical content on both sides
+
+Two branches each merge upstream `main` into themselves on their own
+schedule, and both pick up the same new text on a later `main` sync.
+Git sees a conflict, because the merge-base predates the text on either
+side. Neither author wrote a conflicting line. Both sides now hold the
+same content by different paths.
+
+This is Q3's shape with a different cause. Q3's five files come from
+different inputs, and they disagree in substance until the generator runs
+again. These two are not derived at all, and they do not disagree. A byte
+comparison of the two conflicting hunks tells the two cases apart.
+Identical content resolves by taking either side. Q3's case resolves by
+re-running the generator.
+
+Two answers are open, the same shape as Q3. The mode can detect this with
+a byte-equality test on the conflicting hunks, which needs no
+configuration but costs one more diff per conflict. Or it can leave the
+human to notice that a "conflict" carries no actual disagreement.
+
+### A revision to Q2, sharper on this corpus
+
+Q2 already named the cost of simulating from a distant true ancestor
+instead of the nearest useful one. `hindsight_fork` shows the same
+problem from a different angle. The shared base sits roughly three weeks
+and 150 commits behind the newest branch. Branches here merge `main` back
+into themselves on their own schedule, rather than rebasing off one
+shared point. That inherited churn inflates the per-branch file-changed
+counts this run reports. The number reflects the churn, not the size of
+each branch's own diff. A reviewer reading "580 files changed" on a
+branch whose work touches twelve files reads a wrong number.
+
+Q2's open decision now has to answer one more question. Does the mode
+report a branch's diff against the shared base, or against the nearest
+point where that branch's own commits begin? Those are two different
+useful answers, and a repository can want both.
 
 ## 5. Deferred, and deliberately so
 

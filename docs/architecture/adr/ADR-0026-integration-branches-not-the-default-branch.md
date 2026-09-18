@@ -3,13 +3,13 @@
 title: "ADR-0026 — Execute an accepted path onto integration branches, never onto the default branch"
 status: active
 type: architecture
-last_verified: 2026-09-02
+last_verified: 2026-09-18
 owner: bjornslib
 # --- 42010 decision-record index (schema: references/decision-records.md §2) ---
 id: ADR-0026
 source_pr: null
 name: "Execute an accepted path onto integration branches, never onto the default branch"
-state: decided
+state: rejected
 groups: [review, execution]
 approved_by: ""
 problem: "Accepting a path commits a team to merging ten pull requests in a stated order. Executing that onto the default branch makes the first merge irreversible and the whole path unabandonable, and it gives the reviewer no tree to inspect between one bundle and the next. It also makes the runner the first thing in this plugin family that writes to a shared branch."
@@ -39,6 +39,8 @@ related_concerns: [C3, C6]
 history:
   - { state: tentative, date: 2026-09-02 }
   - { state: decided, date: 2026-09-02 }
+  - { state: challenged, date: 2026-09-18, note: "The same merge that challenged ADR-0025 also challenged this record. Its scope moved from a design of its own to one epic inside cobuilder-viewer." }
+  - { state: rejected, date: 2026-09-18, by: bjornslib, note: "Superseded by ADR-0027, which merges this record with ADR-0025 into one decision for the cobuilder-viewer design. The integration-branch execution model carries forward unchanged." }
 maps_to:
   context: cobuilder-packaging
   modules: [plugins/pr, shared/ledger.py]

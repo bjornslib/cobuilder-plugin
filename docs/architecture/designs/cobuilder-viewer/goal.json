@@ -1,0 +1,234 @@
+{
+  "name": "cobuilder-viewer",
+  "title": "One viewer, three surfaces, and a FlightDeck that reviews one pull request or the whole open set",
+  "adr": "ADR-0023",
+  "adrs": [
+    "ADR-0023",
+    "ADR-0027",
+    "ADR-0001",
+    "ADR-0018",
+    "ADR-0019"
+  ],
+  "created": "2026-09-18",
+  "outcome": "A reader opens the bundle on three goal-shaped surfaces, built as TypeScript and React and compiled to one file. FlightDeck, the surface that replaces the Pull requests tab, shows a single pull request at today's parity, or lets the reviewer select several open pull requests to get a validated merge-path recommendation and a narrative for that set.",
+  "done_when": [
+    "each of the three surfaces has a detailed static HTML prototype, built against this repository's own real bundle data, reviewed and approved before that surface's build epic starts",
+    "the viewer opens on a Work board that lists every design with its stage, epic progress, and which records exist, and a lane filter narrows it to the work that needs a decision, a build, or a review",
+    "a design opens through six lenses (intent, problem and solution, architecture, risks and verdict, build, pull requests), and a lens with no record is disabled rather than empty",
+    "FlightDeck in single-pull-request mode shows a pull request's four narration levels, its Mermaid diagrams, its scene art, its intent and assessment, and the joins that reach it, at parity with today's viewer",
+    "FlightDeck in multi-pull-request mode lets a reviewer select open pull requests, and shows one recommended merge path plus unreachable alternatives, unlocked only by opening the recommendation",
+    "every multi-pull-request simulation runs against the common ancestor of the selected branches, computed by a skill run or scheduled workflow, never against the default branch and never in the browser",
+    "the mergeability chain is shown as its own evidence, separate from the outcome and separate from the path",
+    "a pull request the path cannot carry is shown on the front page, not buried, with the block kind named: superseded, a conflict a merge cannot resolve, a generated-file re-divergence, a hot file, or identical content added on both sides",
+    "the outcome states what the reviewer would not have, alongside what they would",
+    "plugins/artifact/viewer/index.html is produced by a Vite build from typed React sources under viewer/src/, and a test fails when the committed output does not equal a fresh build",
+    "npm install and npm run build run only when an engineer changes the viewer, never at /plugin install and never in the browser",
+    "export_artifact.py matches named markers the build emits on purpose, instead of incidental literals, and publishing a pull request still succeeds",
+    "the five record-type tabs are gone, and every record they showed is reachable from one of the three surfaces",
+    "OpenPullRequest is a branded extension of PullRequest, defined once, in the epic that ships single-pull-request mode",
+    "a merge-order proposal, its acceptance, and its post-merge actual tree hash are three subtypes of the ledger's existing state line kind, and fold_threads recognises all three",
+    "the reviewer commits to a path once, and then chooses the pace: all bundles in one run, or one bundle with a checkpoint after each",
+    "no bundle merges onto the default branch. Each merges onto its own integration branch, and the default branch sees one pull request at the end",
+    "a review comment reaches feedback-ledger.jsonl when the viewer is served with --allow-write, and the viewer never claims a comment will sync when nothing syncs",
+    "a published Artifact marks comments read-only, collects them in the browser, and hands the reviewer one block to paste back into the ledger"
+  ],
+  "abort_if": [
+    "a byte-equal rebuild cannot be made reliable across machines, because a lockfile and a pinned Node version do not produce identical output, which would make the guard test flaky and the committed file untrustworthy",
+    "the built single file plus its inlined data exceeds the 16 MiB Artifact budget for a normal pull request, and dropping audio does not recover it",
+    "Claude Artifacts will not render a Mermaid block that React injects after page load, and a vendored Mermaid runtime pushes the published file over the same budget",
+    "a simulation run against the default branch instead of the common ancestor, which inverts the order whenever an open pull request restructures the tree and produces a confident wrong answer rather than no answer",
+    "the stop count for a set is not materially lower than the total number of authored files the pull requests change, per the corpus measured in review-flight-deck: the ratio ran from 0.00 to 0.41 across 27 merged pairs in this bundle, and every pair reduced"
+  ],
+  "min_work": {
+    "derived_from": "Merges two source designs. react-viewer contributed 6 districts, 5 colliding ADRs, 4899 measured viewer lines, and one working prototype. review-flight-deck contributed 3 districts and a spike against hindsight_fork. That spike ran on 30 open branches with one true common ancestor, found 42.5 percent conflict density, and saw a greedy minimum-conflict order beat arrival order by roughly 40 percent on stop count. Divergent exploration then ran across all six design frames, followed by a separate critic pass. Two clusters converged independently: ledger accountability, and precompute rather than live simulation. One starred survivor came through: a branded shared type that answers who owns the open-pull-request entity. One trap was caught and rejected: a persistent cross-repo compute service. That option reads as sound scaling architecture, and it silently discards the install-surface rule of no agents, no hooks, and no MCP servers.",
+    "alternatives_explored": 9,
+    "boundary_rules_checked": true,
+    "challenge_stage_run": true,
+    "note": "Round 1. The engineer directed the merge on 2026-09-18. Fold react-viewer and review-flight-deck into one new design, then supersede both, rather than resuming one and superseding only the other. FlightDeck replaces the Pull requests tab and supports both viewing a single pull request and assessing how best to merge the open set, with a narrative for the set. Single-pull-request mode ships first. Multi-pull-request mode ships later in the same design, because it needs the typed data layer and the open-pull-request entity that single-pull-request mode does not. Stage 4's challenge gate corrected one candidate, a scheduled GitHub Action, to the mechanism review-flight-deck's own record already settled: a skill run or scheduled workflow, not new CI infrastructure. It rejected one trap outright, a cross-repo shared service. It resolved Q11 by making a merge-order proposal, an acceptance, and a post-merge actual result three subtypes of the ledger's existing state line kind, rather than new top-level kinds. It resolved Q13 by making OpenPullRequest a branded extension of PullRequest, defined once, so the type checker catches drift instead of a process promise. ADR-0025 and ADR-0026 merge into ADR-0027, which supersedes both. ADR-0023 stays as the build decision, unchanged. Round 2. The engineer directed a detailed static-HTML prototype for each of the three surfaces, reviewed and approved before that surface's own build epic starts. This is not a new practice. review-flight-deck built two such prototypes for FlightDeck's multi-pull-request mode: flightdeck-prototype.html, then flightdeck-hindsight-fork.html against real multi-author data. react-viewer's 2026-09-07 prototype proved the Work board's shape the same way, and it was never committed. Three epics were inserted. E4 work-prototype precedes E5 work-surface. E6 flightdeck-prototype precedes E7 flightdeck-single-pr, and it composes the two existing multi-pull-request prototypes with single-pull-request mode behind one mode switch, because neither existing prototype showed FlightDeck as one merged surface. E8 reference-prototype precedes E9 reference-surface, because Reference has no prior prototype at all. Every epic from the old E4 onward renumbered up by three."
+  },
+  "limits": {
+    "warn_after_rounds": 3,
+    "cutoff_rounds": 6
+  },
+  "epics": [
+    {
+      "id": "E1",
+      "slug": "exporter-seam",
+      "outcome": "export_artifact.py matches named markers, and a test proves a publish still works after the markers move",
+      "branch": "design/cobuilder-viewer/work-prototype",
+      "pr": null,
+      "state": "planned",
+      "note": "Carried from react-viewer E1 unchanged. Must land before any bundled build, or publishing breaks silently."
+    },
+    {
+      "id": "E2",
+      "slug": "build-pipeline",
+      "outcome": "a publish spike answers the three platform unknowns, then npm run build produces the committed index.html and a test rebuilds it and fails on any difference",
+      "branch": "design/cobuilder-viewer/work-prototype",
+      "pr": null,
+      "state": "planned",
+      "note": "Carried from react-viewer E2 unchanged. Vite plus vite-plugin-singlefile, a lockfile, and a pinned Node version. Starts with a spike: byte-equal rebuild across two machines, size with React inlined, and whether a Claude Artifact renders a Mermaid block React injects after page load."
+    },
+    {
+      "id": "E3",
+      "slug": "typed-data-layer",
+      "outcome": "one typed model reads window.STORY, window.ODYSSEY, window.DIFFS, window.ADRS, window.DESIGNS, window.DIAGRAMS and index.json, and it resolves the joins in one place. This module defines PullRequest, and it declares OpenPullRequest as a branded extension of it, even before multi-pull-request mode consumes it",
+      "branch": "design/cobuilder-viewer/work-prototype",
+      "pr": null,
+      "state": "planned",
+      "note": "Carried from react-viewer E3, extended per ADR-0027's answer to Q13. Define the placeholder type and a trivial compile-time exhaustiveness check now, in this epic, not retrofitted when E7 starts."
+    },
+    {
+      "id": "E4",
+      "slug": "work-prototype",
+      "outcome": "a detailed static HTML prototype of the Work board, against this repository's real design records, reviewed and approved before E5 starts",
+      "branch": "design/cobuilder-viewer/work-prototype",
+      "pr": null,
+      "state": "planned",
+      "note": "New in round 2, at the engineer's direction. Prototype each surface in detail before committing to the build. review-flight-deck already used that discipline twice for FlightDeck: flightdeck-prototype.html, then flightdeck-hindsight-fork.html against real multi-author data. react-viewer's own 2026-09-07 prototype proved the Work board's shape, and it was never committed. This epic repeats that work and keeps the artifact, at docs/architecture/designs/cobuilder-viewer/prototypes/work-prototype.html. The engineer chose one pull request for the design, so all eighteen epics share one branch, design/cobuilder-viewer/work-prototype. Work starts here, because the three prototypes come before any React build."
+    },
+    {
+      "id": "E5",
+      "slug": "work-surface",
+      "outcome": "the Work board and the six design lenses render every design, including a backlog design with goal.json only",
+      "branch": "design/cobuilder-viewer/work-prototype",
+      "pr": null,
+      "state": "planned",
+      "note": "Carried from react-viewer E4, with one correction. react-viewer contradicted itself: every place that named the lenses listed six (intent, problem and solution, architecture, risks and verdict, build, pull requests), while three places said seven, including this epic's outcome. No seventh lens was ever named. This design states six consistently. E4's prototype is the reference and the approval gate for this epic, not the uncommitted 2026-09-07 prototype."
+    },
+    {
+      "id": "E6",
+      "slug": "flightdeck-prototype",
+      "outcome": "a detailed static HTML prototype of FlightDeck as one surface, composing single-pull-request narration and multi-pull-request select-and-recommend behind one mode switch, reviewed and approved before E7 starts",
+      "branch": "design/cobuilder-viewer/work-prototype",
+      "pr": null,
+      "state": "planned",
+      "note": "New in round 2, at the engineer's direction. review-flight-deck's own flightdeck-prototype.html and flightdeck-hindsight-fork.html already prototyped multi-pull-request mode in detail against real data. Neither showed it composed with single-pull-request mode as one surface with a switch, and that composition is what this epic adds. It reuses both existing prototypes rather than rebuilding either half. Commits to docs/architecture/designs/cobuilder-viewer/prototypes/flightdeck-prototype.html."
+    },
+    {
+      "id": "E7",
+      "slug": "flightdeck-single-pr",
+      "outcome": "FlightDeck renders a single pull request at parity with today's viewer, plus the joins rail",
+      "branch": "design/cobuilder-viewer/work-prototype",
+      "pr": null,
+      "state": "planned",
+      "note": "Carried from react-viewer E5, renamed from 'Flight deck' to FlightDeck's single-pull-request mode. Parity covers the four levels, diagrams, scene art, narration audio, the diff, and the intent and assessment sheet. Ships before E10, because E10 depends on the typed PullRequest shape this epic exercises first."
+    },
+    {
+      "id": "E8",
+      "slug": "reference-prototype",
+      "outcome": "a detailed static HTML prototype of the Reference surface, against this repository's real decisions and map coverage, reviewed and approved before E9 starts",
+      "branch": "design/cobuilder-viewer/work-prototype",
+      "pr": null,
+      "state": "planned",
+      "note": "New in round 2, at the engineer's direction. Unlike Work and FlightDeck, this surface has no prior prototype. Commits to docs/architecture/designs/cobuilder-viewer/prototypes/reference-prototype.html."
+    },
+    {
+      "id": "E9",
+      "slug": "reference-surface",
+      "outcome": "decisions and map coverage move to a Reference surface, and the team removes the five record-type tabs",
+      "branch": "design/cobuilder-viewer/work-prototype",
+      "pr": null,
+      "state": "planned",
+      "note": "Carried from react-viewer E6 unchanged. tests/test_viewer_modes.py asserts the five data-mode buttons. That test changes with this epic, and the change is the point, not a regression."
+    },
+    {
+      "id": "E10",
+      "slug": "describe-on-arrival",
+      "outcome": "a pull request with no description gets one from /pr:generate before FlightDeck's multi-pull-request mode reads it. A pull request that already has one is left alone",
+      "branch": "design/cobuilder-viewer/work-prototype",
+      "pr": null,
+      "state": "planned",
+      "note": "Carried from review-flight-deck F0 unchanged. When this design measured it, 8 of 12 pull requests in this repository carried no intent block."
+    },
+    {
+      "id": "E11",
+      "slug": "read-the-open-set",
+      "outcome": "FlightDeck's multi-pull-request mode lists every open pull request with its head branch, changed files, and design, and marks the ones the team's auto-merge rules already handled. This epic consumes OpenPullRequest as the branded extension E3 declared, and it never redeclares it",
+      "branch": "design/cobuilder-viewer/work-prototype",
+      "pr": null,
+      "state": "planned",
+      "note": "Carried from review-flight-deck F1. This epic also settles the open-pull-request entity question (Q13) for the record index, so no separate inflight-record-store epic duplicates it. The mode reads the auto-merge split from the team's own rules, and this design does not define them."
+    },
+    {
+      "id": "E12",
+      "slug": "simulate-and-replay-routes",
+      "outcome": "a skill run or scheduled workflow simulates candidate paths to close the whole selected set. It works against the common ancestor of the selected branches, replays the best one or two on a scratch worktree, counts the real conflicts, and commits the result as data/merge-plan.json. The viewer renders that file and computes nothing",
+      "branch": "design/cobuilder-viewer/work-prototype",
+      "pr": null,
+      "state": "planned",
+      "note": "Merges review-flight-deck F2 and F3 into one epic, per ADR-0027's rejection of a live-in-browser or GitHub-Action mechanism. It must classify the three non-authored conflict shapes: a shared generated file, a hot file, and identical content added on both sides. A route that fails the replay stays, and the failure becomes its reason for losing."
+    },
+    {
+      "id": "E13",
+      "slug": "narrate-and-render-the-route",
+      "outcome": "each path carries the state the reviewer would have when it is done, one line per pull request saying what it contributes, and a losing path carries the reason it lost. The front page shows one recommendation and an unreachable marker for the alternatives",
+      "branch": "design/cobuilder-viewer/work-prototype",
+      "pr": null,
+      "state": "planned",
+      "note": "Merges review-flight-deck F4 and F5. flightdeck-hindsight-fork.html, and E6's composed prototype, are the reference layout."
+    },
+    {
+      "id": "E14",
+      "slug": "ledger-and-audit",
+      "outcome": "a merge-order proposal, its acceptance, and its post-merge actual result append as three subtypes of the ledger's existing state line kind. An auditor diffs the accepted candidate's predicted tree hash against the actual one with no need to ask the merger anything",
+      "branch": "design/cobuilder-viewer/work-prototype",
+      "pr": null,
+      "state": "planned",
+      "note": "New in this merge, from the challenge gate's adoption of the auditor and 3am-on-call diverge candidates. The proposal line must record the exact ancestor SHA and per-step simulation inputs a later replay needs, which is new schema work neither source design carried."
+    },
+    {
+      "id": "E15",
+      "slug": "execute-the-path",
+      "outcome": "a runner reads an accepted path from the ledger and merges each bundle onto its own integration branch, never onto the default branch. It stops at a checkpoint between bundles when the reviewer chose one bundle at a time",
+      "branch": "design/cobuilder-viewer/work-prototype",
+      "pr": null,
+      "state": "planned",
+      "note": "Carried from review-flight-deck F6 unchanged. ADR-0027 records the decision, folding ADR-0026 forward. The first epic in this design that writes to a remote."
+    },
+    {
+      "id": "E16",
+      "slug": "publish-parity",
+      "outcome": "a published Artifact of one pull request renders every surface, under the 16 MiB budget",
+      "branch": "design/cobuilder-viewer/work-prototype",
+      "pr": null,
+      "state": "planned",
+      "note": "Carried from react-viewer E7 unchanged. Closes the loop on E1. Measures the real budget with React inlined, and settles the Mermaid question the abort condition names."
+    },
+    {
+      "id": "E17",
+      "slug": "workflow-polish-carryover",
+      "outcome": "the three non-viewer items from build-workflow-polish ship, so closing that design loses nothing",
+      "branch": "design/cobuilder-viewer/work-prototype",
+      "pr": null,
+      "state": "planned",
+      "note": "Carried from react-viewer E8 unchanged. build-workflow-polish stays superseded through this design now, not directly through react-viewer."
+    },
+    {
+      "id": "E18",
+      "slug": "feedback-path",
+      "outcome": "the served viewer files a comment to the ledger or says plainly that it did not, and a published Artifact collects comments and hands them back as one pasteable block, with anchors that survive a React re-render",
+      "branch": "design/cobuilder-viewer/work-prototype",
+      "pr": null,
+      "state": "planned",
+      "note": "Carried from react-viewer E9 unchanged. Settles ADR-0019's anchoring under React, which owns the DOM the anchor walk uses."
+    }
+  ],
+  "stage": "review",
+  "supersedes": [
+    "react-viewer",
+    "review-flight-deck"
+  ],
+  "rounds": [
+    {
+      "n": 1,
+      "changed": true,
+      "feedback_class": "material"
+    },
+    {
+      "n": 2,
+      "changed": true,
+      "feedback_class": "material"
+    }
+  ]
+}

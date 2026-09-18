@@ -112,7 +112,8 @@
       "note": "New in round 6, and the first epic in this design that writes to a remote. ADR-0026 records the decision. The integration branch per bundle is what makes a path abandonable: delete N branches and the default branch never saw any of it. The default branch receives one pull request, from the last bundle's branch."
     }
   ],
-  "stage": "review",
+  "stage": "superseded",
+  "superseded_by": "cobuilder-viewer",
   "supersedes": null,
   "rounds": [
     {
