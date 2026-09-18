@@ -100,6 +100,56 @@ ID_RE = re.compile(r"^ADR-\d{4}$")
 ZERO_SHA = "0" * 40
 EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"  # git's canonical empty tree
 
+# STE gate for newly added records. The written standard is not advisory:
+# a documented step with no mechanical consumer gets skipped, which is the
+# same lesson Gate 4b taught this repository. Only records this range ADDS
+# are checked, so the existing corpus is grandfathered and no unrelated
+# edit to an old record can fail the push. See
+# shared/skills/ste-writing/SKILL.md for the target and the rewrite loop.
+STE_LINT_PATH = Path(__file__).resolve().parent / "skills" / "ste-writing" / "ste-lint.py"
+STE_TARGET_FLAVORED = 1.0
+
+
+def _load_ste_linter():
+    """Import ste-lint.py by path. None when the linter is absent.
+
+    Fail-open, like the PyYAML path above: a missing linter must not block
+    a push. A present linter that fails is a real failure.
+    """
+    if not STE_LINT_PATH.is_file():
+        return None
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("ste_lint", STE_LINT_PATH)
+    if spec is None or spec.loader is None:
+        return None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def ste_violations(text: str, path: str) -> list[str]:
+    """Score newly added prose against the STE target."""
+    try:
+        linter = _load_ste_linter()
+    except Exception:
+        return []
+    if linter is None:
+        return []
+    try:
+        score = linter.lint(text, mode="flavored")["total_per100w"]
+    except Exception:
+        return []
+    if score <= STE_TARGET_FLAVORED:
+        return []
+    return [
+        f"{path}: new record scores {score:.2f} violations per 100 words, above the "
+        f"{STE_TARGET_FLAVORED} target for flavored mode. Rewrite the prose and re-run. "
+        "Run `uv run shared/skills/ste-writing/ste-lint.py --mode flavored "
+        f"--fail-above {STE_TARGET_FLAVORED} {path}` to see the detail. See "
+        "shared/skills/ste-writing/SKILL.md."
+    ]
+
 
 # ---------------------------------------------------------------------------
 # Git plumbing
@@ -293,6 +343,13 @@ def validate_range(base: str, head: str) -> tuple[list[str], int]:
         violations.extend(validate_record(record, path))
 
         old_text = git_show(base, path) if base != EMPTY_TREE else None
+        if old_text is None and base != EMPTY_TREE:
+            # A record this range adds. An edit to an existing record is not
+            # gated, so old prose never blocks an unrelated change. A run with
+            # no resolvable base (EMPTY_TREE) treats every record as new, so it
+            # is skipped here: otherwise a whole-history run would fail on 24
+            # grandfathered records and teach nobody anything.
+            violations.extend(ste_violations(new_text, path))
         old_state = None
         if old_text:
             old = parse_frontmatter(old_text)
