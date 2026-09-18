@@ -41,14 +41,14 @@
     },
     {
       "option": "Compute the paths in the browser and render them live",
-      "rejected_because": "The browser cannot run git, so it cannot replay anything, and ADR-0001's content policy blocks it from fetching the evidence. This is the boundary ADR-0022 introduced and ADR-0023 keeps."
+      "rejected_because": "The browser cannot run git, so it cannot replay anything, and ADR-0001's content policy blocks it from fetching the evidence. This is the boundary ADR-0025 introduced and ADR-0026 keeps."
     },
     {
       "option": "Build the mergeable-slice computation from scratch as the product",
       "rejected_because": "Systems that precompute mergeable slices already exist. The narrative and the choice between paths are what they do not offer, so the git step keeps a narrow interface and one of those systems can replace it."
     },
     {
-      "option": "The region walk from ADR-0022: one keypress per contested hunk",
+      "option": "The region walk from ADR-0025: one keypress per contested hunk",
       "rejected_because": "It made the reviewer do the machine's work, one hunk at a time, over a set they had to name themselves. The region computation survives inside the simulation as evidence, and stopped being a reviewer-facing step."
     },
     {

@@ -1,12 +1,12 @@
 ---
 # --- doc-gardener required frontmatter ---
-title: "ADR-0023 — Execute an accepted path onto integration branches, never onto the default branch"
+title: "ADR-0026 — Execute an accepted path onto integration branches, never onto the default branch"
 status: active
 type: architecture
 last_verified: 2026-09-02
 owner: bjornslib
 # --- 42010 decision-record index (schema: references/decision-records.md §2) ---
-id: ADR-0023
+id: ADR-0026
 source_pr: null
 name: "Execute an accepted path onto integration branches, never onto the default branch"
 state: decided
@@ -33,7 +33,7 @@ forces:
   - "This runner is the first thing in the plugin family that writes to a remote. Everything before it wrote into the bundle or the ledger."
   - "The install surface ships no hooks, so the runner is supplied by the adopting repository, not by the plugin."
 related_decisions:
-  - { type: depends-on, target: ADR-0022 }
+  - { type: depends-on, target: ADR-0025 }
   - { type: depends-on, target: ADR-0019 }
 related_concerns: [C3, C6]
 history:
@@ -51,11 +51,11 @@ related:
   - "docs/architecture/designs/review-flight-deck/goal.json"
 ---
 
-# ADR-0023 — Execute an accepted path onto integration branches, never onto the default branch
+# ADR-0026 — Execute an accepted path onto integration branches, never onto the default branch
 
 ## Context
 
-ADR-0022 decided how a path is simulated, validated and shown. Accepting one
+ADR-0025 decided how a path is simulated, validated and shown. Accepting one
 commits a team to merging ten pull requests in a stated order. Something has to
 carry that out, and where it sends its merges decides whether the decision is
 reversible.

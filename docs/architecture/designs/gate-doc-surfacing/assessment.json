@@ -1,0 +1,42 @@
+{
+  "stage": "design",
+  "verdict": "proceed",
+  "risk_tier": "low",
+  "regret_risk": "low",
+  "summary": "The projection follows an established pattern exactly (project_fields, GOAL_FIELDS-style tuples) and the viewer attachment point (Gate Rail, epic cards) already exists and already has a sheet precedent (openAdrSheet). The main open risk is UX scale — gate docs are prose, unlike the short structured records the sheet pattern was built for — not architectural fit.",
+  "findings": [
+    {
+      "kind": "prediction",
+      "id": "F1",
+      "severity": "low",
+      "title": "New entities follow the existing projection pattern with no new join mechanism",
+      "detail": "program_design and epic_design key on feature_slug and epic_id respectively, both of which the index already carries (joins.feature_gates is keyed by feature_slug; entities.epic already has an id). No new join table is needed — the viewer looks the doc up by a key it already has when rendering the Gate Rail or an epic card.",
+      "cites": "ADR-0018 (record index resolves joins, not per-artifact ad hoc lookups); shared/build_index.py's project_fields pattern",
+      "mitigation": "None needed if the field-projection constants for the two new entities follow GOAL_FIELDS/EPIC_FIELDS exactly, as intent.json's approach specifies."
+    },
+    {
+      "kind": "prediction",
+      "id": "F2",
+      "severity": "medium",
+      "title": "The sheet UX was built for short structured text, not multi-hundred-line prose",
+      "detail": "openAdrSheet renders ADR frontmatter plus a body that is typically well under a couple hundred lines. A 03-program-design.md or epic-<id>-design.md can run considerably longer once Files/Types/Call stack/Test plan sections are all filled in. Untested at this stage whether the same sheet component reads well at that length.",
+      "cites": "district: viewer; intent.json unknowns",
+      "mitigation": "Confirm during implementation against a real gate doc from this repo's own docs/plans/ tree (e.g. cobuilder-family's 03-program-design.md) before considering the epic done. If unreadable, scroll the sheet body rather than truncate — dropping content silently would misrepresent the record."
+    },
+    {
+      "kind": "prediction",
+      "id": "F3",
+      "severity": "low",
+      "title": "A design with no docs/plans/<slug>/ directory renders an empty or absent Gate Rail — undecided which",
+      "detail": "Every existing backlog design (maintainable-viewer, inflight-record-store, and now gate-doc-surfacing itself) has no docs/plans/ directory yet, because implement mode hasn't started on them. The Gate Rail today falls back to a hardcoded four-gate placeholder (renderBuildsMainContent's featureGatesMap fallback) when no real gates exist for 'cobuilder-family'. This design does not resolve whether that fallback is still appropriate once real per-design gate data exists for other designs.",
+      "cites": "plugins/artifact/viewer/index.html:3212-3219 (gate fallback literal)",
+      "mitigation": "Scope this to E2's implementation: render nothing for a design with no docs/plans/ directory, rather than the current single hardcoded fallback, which only ever matched one feature."
+    }
+  ],
+  "boundary_checks": [
+    { "rule": "No agents, no hooks, no MCP servers in the install surface", "result": "holds", "note": "This adds index-projection code and viewer markup only, both already part of the artifact plugin's existing surface." },
+    { "rule": "The viewer stays one self-contained committed file (current, pre-ADR-0020-execution shape)", "result": "holds", "note": "E2 edits plugins/artifact/viewer/index.html directly. No viewer/src/ split is introduced by this design." },
+    { "rule": "docs/ stays authored source; .cobuilder-architect/ stays derived", "result": "holds", "note": "The new entities are derived projections of docs/plans/*.md into data/index.json, the same relationship every other entity in the index already has to its docs/ source." }
+  ],
+  "drift": []
+}

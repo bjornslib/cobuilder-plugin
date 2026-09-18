@@ -1,12 +1,12 @@
 ---
 # --- doc-gardener required frontmatter ---
-title: "ADR-0022 — Simulate paths to close the open set, from the common ancestor, and show one validated path"
+title: "ADR-0025 — Simulate paths to close the open set, from the common ancestor, and show one validated path"
 status: active
 type: architecture
 last_verified: 2026-09-02
 owner: bjornslib
 # --- 42010 decision-record index (schema: references/decision-records.md §2) ---
-id: ADR-0022
+id: ADR-0025
 source_pr: null
 name: "Simulate paths to close the open set, from the common ancestor, and show one validated path"
 state: decided
@@ -65,7 +65,7 @@ related:
   - "docs/architecture/designs/review-flight-deck/flightdeck-prototype.html"
 ---
 
-# ADR-0022 — Simulate paths to close the open set, from the common ancestor, and show one validated path
+# ADR-0025 — Simulate paths to close the open set, from the common ancestor, and show one validated path
 
 ## Context
 
@@ -146,7 +146,7 @@ not check. Pull requests the path cannot carry appear on the front page, each
 with the kind of block named and two or three ways out.
 
 The reviewer accepts a path. That records a decision, and a runner performs it.
-Where the runner sends its merges is ADR-0023.
+Where the runner sends its merges is ADR-0026.
 
 The boundary from this record's first draft is unchanged. The relationship is
 computed terminal-side and written as a projection, and the viewer renders it and

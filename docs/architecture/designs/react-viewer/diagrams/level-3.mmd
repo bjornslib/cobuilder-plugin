@@ -1,0 +1,57 @@
+classDiagram
+    class BundleModel {
+        +designs: Design[]
+        +pullRequests: PullRequest[]
+        +adrs: Adr[]
+        +districts: District[]
+        +load(globals, index) BundleModel
+        +designById(id) Design
+        +prByNumber(n) PullRequest
+    }
+    class Design {
+        +id: string
+        +stage: Stage
+        +outcome: string
+        +goal: Goal
+        +intent: Intent | null
+        +narrative: Narrative | null
+        +assessment: Assessment | null
+        +epics: Epic[]
+        +adrs: AdrRef[]
+        +lane() Lane
+        +hasLens(lens) boolean
+    }
+    class Epic {
+        +id: string
+        +state: EpicState
+        +pr: number | null
+        +slices: Slice[]
+    }
+    class PullRequest {
+        +pr: number
+        +levels: Record~LevelKey, Level~
+        +diagrams: Record~string, string~
+        +intent: Intent | null
+        +assessment: Assessment | null
+        +joins: PrJoins
+    }
+    class WorkSurface {
+        +filter: Lane | null
+        +selected: string | null
+        +lens: LensKey
+    }
+    class FlightDeckSurface {
+        +selected: number
+        +level: LevelKey
+    }
+    class ReferenceSurface {
+        +sort: string
+    }
+    BundleModel "1" *-- "many" Design
+    BundleModel "1" *-- "many" PullRequest
+    Design "1" *-- "many" Epic
+    Epic "1" *-- "many" Slice
+    WorkSurface ..> BundleModel : reads
+    FlightDeckSurface ..> BundleModel : reads
+    ReferenceSurface ..> BundleModel : reads
+    Epic --> PullRequest : epic_to_pull_request

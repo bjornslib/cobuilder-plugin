@@ -182,7 +182,8 @@ Commit rubrics to the repository. Add `.cobuilder/rubrics/*/evidence/` to
 
 **Resume rule.** When starting a session, check for
 `docs/plans/<feature-slug>/00-status.md`. Read all documents in that directory.
-Continue from the first unapproved gate or unbuilt slice. Do not repeat
+Continue from the first unapproved gate or unbuilt slice. Treat the `2b` line
+as a gate in this check, so a returned session reads its answer. Do not repeat
 approved gates unless requirements changed.
 
 Template for `00-status.md`:
@@ -192,6 +193,7 @@ Template for `00-status.md`:
 
 - Gate 1 — Product: pending | in progress | APPROVED <date>
 - Gate 2 — Architecture: pending | in progress | APPROVED <date>
+- Gate 2b — Interaction design: pending | in progress | APPROVED <date> | n/a (no UI) — Screens: "<the ## Screens entry>"
 - Gate 3 — Program Design: pending | in progress | APPROVED <date>
 - Gate 4 — Slice plan, epic designs, and rubrics: pending | in progress | APPROVED <date>
   - 4a Slice plan: pending | APPROVED <date>
@@ -224,7 +226,16 @@ Run this protocol at every gate and before implementing an epic:
 3. Ask the user: **"Approve Gate N, or what should change?"**
 4. The user must clearly approve before you proceed.
 5. Record approval in `00-status.md`.
-6. If later work invalidates a decision, update the document, set status to "in
+6. **Refresh the bundle and start the viewer.** `00-status.md` just changed
+   what the Builds Backlog Lane shows. Rebuild the self-bundle projection,
+   then start the viewer so the user can watch the gate land, the same way
+   step 5 after each slice does:
+   ```bash
+   uv run "${CLAUDE_PLUGIN_ROOT}/shared/build_index.py"
+   ```
+   Then `Skill("cobuilder-artifacts", args="view")`. Reuses an
+   already-running server for this hub; never starts a second one.
+7. If later work invalidates a decision, update the document, set status to "in
    progress", and request approval again.
 
 ---
@@ -284,6 +295,54 @@ Read existing code before authoring `02-architecture.md`:
 ```
 
 Request user approval.
+
+---
+
+## Gate 2b — Interaction design
+
+**When it runs.** After Gate 2 is APPROVED and before Gate 3 begins. Gate 3
+must not start until the 2b line reads APPROVED or n/a.
+
+**It is its own line.** The `2b` line is a peer of the other gate lines, not a
+sub-bullet under Gate 2. One line per approval keeps the count readable.
+
+**Why it sits there.** Three reasons fix that position:
+
+1. Gate 1 is headed "no tech talk". Its rules forbid database details,
+   schemas, and endpoints. A specification that names state classes, timing
+   tokens, pointer events, and scroll ownership cannot live there.
+2. Gate 2's `## Fit` section names the layers in engineering terms. The
+   interaction design needs that answer.
+3. Gate 2b is the last point before Gate 3 names types and signatures. A
+   change after that point costs a rewrite of the program design.
+
+**The three paths.**
+
+### Path 1 — No front end
+Write:
+  - Gate 2b — Interaction design: n/a (no UI) — Screens: "<the entry>"
+Then continue to Gate 3.
+
+### Path 2 — A front end
+1. Ask the person to supply the design: an image, a set of screenshots, or a
+   link to a rendered page. Do not invent a design.
+2. Invoke implement:design-to-code and run its three steps.
+3. Request approval, then record APPROVED <date> on the 2b line.
+If the person declines, write n/a (declined) with the reason.
+
+### Path 3 — An earlier approval
+Read 00-status.md. When the 2b line already reads APPROVED or n/a, do not
+repeat the gate unless the requirements changed.
+
+**Why the `n/a` form must quote the `## Screens` entry.** A tool cannot tell
+whether a front end exists. The quoting requirement is therefore the only
+check on that answer. A reviewer compares two documents in seconds and sees
+the reason.
+
+**The two artifacts Gate 2b writes**, both in `docs/plans/<feature-slug>/`:
+
+- `interaction-design.md` — twelve sections, of which eight are required.
+- `ui-spec.jsonc` — the component and interaction specification.
 
 ---
 
@@ -454,7 +513,7 @@ on scope alone:
 
 | Mode | When to use | Instructions |
 |---|---|---|
-| **Workflow script** | The feature is a program: `04-slices.md` groups slices under more than one epic | Invoke the Workflow tool, running `workflows/slice-loop.js`. Do not ask the user whether to use it first — a program-scale build always runs this way in a harness where the Workflow tool exists. |
+| **Workflow script** | The feature is a program: `04-slices.md` groups slices under more than one epic | Invoke the Workflow tool with `scriptPath: "${CLAUDE_PLUGIN_ROOT}/skills/build/workflows/slice-loop.js"` — not `name: "slice-loop"`, which only resolves built-in or `.claude/workflows/`-registered workflows and will not find a plugin-shipped script. Before invoking it, confirm any required Gate 4b epic design files exist (e.g. with `verify_gate.py`) and pass the result in as each slice's `epicDesignExists`; the script itself has no filesystem access. Do not ask the user whether to use it first — a program-scale build always runs this way in a harness where the Workflow tool exists. |
 | **Manual** | A single epic, a single slice, or a configuration-only change | Spawn subagents from [references/slice-loop.md](references/slice-loop.md), one role at a time. |
 
 A harness with no Workflow tool always uses Manual, regardless of scope.
@@ -477,9 +536,8 @@ A harness with no Workflow tool always uses Manual, regardless of scope.
 3. **Record the score** in `00-status.md` and mark the slice complete.
 4. **Route gaps** below 1.0 using the gap decision tree in
    [references/validation-scoring.md](references/validation-scoring.md).
-5. **Refresh the bundle and start the viewer.** `00-status.md` just
-   changed what the Builds Backlog Lane shows. Rebuild the self-bundle
-   projection, then start the viewer so the user can watch progress land:
+5. **Refresh the bundle and start the viewer**, same as step 6 of the
+   approval protocol above:
    ```bash
    uv run "${CLAUDE_PLUGIN_ROOT}/shared/build_index.py"
    ```

@@ -210,7 +210,7 @@ footer{background:var(--surface);border-top:1px solid var(--line);padding:40px 0
       </p>
     </div>
     <div class="meta-strip">
-      <div class="meta-cell"><span class="k">Decision</span><span class="v">ADR-0022</span></div>
+      <div class="meta-cell"><span class="k">Decision</span><span class="v">ADR-0025</span></div>
       <div class="meta-cell"><span class="k">Epics</span><span class="v">6, none built</span></div>
       <div class="meta-cell"><span class="k">Abort test</span><span class="v">Run &middot; passes</span></div>
       <div class="meta-cell"><span class="k">Open questions</span><span class="v">4</span></div>
@@ -385,7 +385,7 @@ footer{background:var(--surface);border-top:1px solid var(--line);padding:40px 0
           <span class="pill open">open question 1</span>
         </div>
         <p class="step-lede">
-          The Cut's three gestures. ADR-0022 says the reviewer "corrects the partition
+          The Cut's three gestures. ADR-0025 says the reviewer "corrects the partition
           with three gestures", which reads as dragging in the viewer. But the viewer
           is render-only and has no reliable write path. So the correction is drawn
           here as terminal work, and that contradicts the word <em>gestures</em>. This
@@ -416,7 +416,7 @@ footer{background:var(--surface);border-top:1px solid var(--line);padding:40px 0
         <div class="spec-row"><span class="k">Reviewer does</span><span class="v">Accepts, or corrects with one of three gestures and a reason.</span></div>
         <div class="spec-row"><span class="k">Silence is a decision</span><span class="v">Pressing enter records acceptance, stamped with the proposal id. That is the mechanic's value and its danger together.</span></div>
         <div class="spec-row"><span class="k">Epic</span><span class="v">E5, cold-start. No precedent line, because the ledger has no rows.</span></div>
-        <div class="spec-row"><span class="k">Unresolved</span><span class="v">Whether this is a terminal prompt or a viewer drag. ADR-0022 implies the viewer and the architecture implies the terminal.</span></div>
+        <div class="spec-row"><span class="k">Unresolved</span><span class="v">Whether this is a terminal prompt or a viewer drag. ADR-0025 implies the viewer and the architecture implies the terminal.</span></div>
       </div>
     </div>
 
@@ -478,7 +478,7 @@ footer{background:var(--surface);border-top:1px solid var(--line);padding:40px 0
       </div>
       <div class="spec">
         <div class="spec-row"><span class="k">Reads</span><span class="v">One new sibling script tag, <code>data/braid.js</code>, assigning <code>window.BRAID</code>.</span></div>
-        <div class="spec-row"><span class="k">Computes</span><span class="v">Nothing. That is the constraint ADR-0022 introduces.</span></div>
+        <div class="spec-row"><span class="k">Computes</span><span class="v">Nothing. That is the constraint ADR-0025 introduces.</span></div>
         <div class="spec-row"><span class="k">Epic</span><span class="v">E6, and it should follow ADR-0020's viewer split rather than enlarge the file first.</span></div>
         <div class="spec-row"><span class="k">Cost if built now</span><span class="v">A sixth view mode inside a 4797-line file that ADR-0020 already calls the repository's largest maintenance problem.</span></div>
       </div>
@@ -523,7 +523,7 @@ footer{background:var(--surface);border-top:1px solid var(--line);padding:40px 0
         </p>
         <p style="font-size:16px;">
           Two ways out. Stop the fold at pairwise edges and lose the review unit, or
-          keep the unit and mark the derived edge as derived. ADR-0022 leaves this
+          keep the unit and mark the derived edge as derived. ADR-0025 leaves this
           open and epic E4 decides it. It is the most likely source of a wrong record
           in the whole design.
         </p>
@@ -611,7 +611,7 @@ footer{background:var(--surface);border-top:1px solid var(--line);padding:40px 0
         <div>
           <h3>Where does the reviewer correct the partition?</h3>
           <p>
-            ADR-0022 says "three gestures", which describes dragging in the viewer. The
+            ADR-0025 says "three gestures", which describes dragging in the viewer. The
             same ADR says the viewer computes nothing and renders only, and the write
             path it depends on returns 403 without <code>--allow-write</code> and is
             blocked in a published Artifact. Screen 3 above draws it as a terminal

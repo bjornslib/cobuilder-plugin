@@ -3,7 +3,7 @@
 For the `review-flight-deck` design. Written 2026-09-02.
 
 This file lists what the design does not yet decide. It does not repeat
-what `intent.json`, `assessment.json` and ADR-0022 already settle.
+what `intent.json`, `assessment.json` and ADR-0025 already settle.
 
 A question here is open for one of two reasons. Either nobody has made
 the call, or the call rests on a measurement nobody has taken. Each row
@@ -41,7 +41,7 @@ returns nothing. Pull request 11 descends from a second root, `a7fc1d5`.
 The scaffold commit `0c099be` is the other root. The two join at the pull
 request 11 merge.
 
-ADR-0022's `maps_to.rule` says a path is simulated against the common
+ADR-0025's `maps_to.rule` says a path is simulated against the common
 ancestor of the open branches. For a set like this one, that value does
 not exist.
 
@@ -85,7 +85,7 @@ ancestor. The octopus base of the set without pull request 11 is
 Simulating from `0c099be` is correct but wasteful. It replays 18 commits
 and 65 changed files of work that already merged.
 
-ADR-0022, `intent.json`, `narrative.json`, `pr-draft.md` and the
+ADR-0025, `intent.json`, `narrative.json`, `pr-draft.md` and the
 prototype all name `0c099be` as the base. That description is wrong, and
 the records need a correction once Q1 and Q2 are settled together.
 

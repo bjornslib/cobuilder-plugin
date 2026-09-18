@@ -12,7 +12,10 @@
     "challenge_stage_run": false,
     "note": "Stage 0 and stage 1 grounding did not run. Stages 2 through 7 are deliberately deferred. This design is a backlog entry, not an approved design. It carries no intent.json, narrative.json, assessment.json, or diagrams, and it must not be implemented until design mode runs to completion for each epic that needs it."
   },
-  "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
+  "limits": {
+    "warn_after_rounds": 3,
+    "cutoff_rounds": 6
+  },
   "epics": [
     {
       "id": "E1",
@@ -43,7 +46,9 @@
       "note": "A colleague's scratch artifact (/private/tmp/.../diagram-viewer.html, session-local, not part of this repo) uses a top-of-panel tab switcher across three views — Diagram, Data flow, Data types — instead of stacking them, plus a right-hand info rail. Evaluate adopting the same top-tab pattern for viewer/index.html's per-PR diagram levels (currently level 1/2/3 switching, per ADR-0020's viewer/src/ plan), and separately evaluate narrowing the left-hand navigation rail so it takes less width once tabs handle top-level switching. This touches only the viewer, so it can run through architect:design on its own without waiting on E1-E3."
     }
   ],
-  "stage": "backlog",
+  "stage": "superseded",
   "supersedes": null,
-  "rounds": []
+  "rounds": [],
+  "superseded_by": "react-viewer",
+  "superseded_note": "Superseded by react-viewer (ADR-0023) on 2026-09-07 at the engineer's direction. E4, the tab-based viewer layout, is absorbed by react-viewer's Work and Flight deck surfaces. E1, E2, and E3 are not viewer work, and react-viewer's E8 carries all three, so closing this design loses nothing."
 }

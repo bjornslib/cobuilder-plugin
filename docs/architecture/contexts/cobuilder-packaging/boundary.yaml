@@ -151,3 +151,4 @@ verifies:
 governed_by:
   - ADR-0016
   - ADR-0017
+  - ADR-0024

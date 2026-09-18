@@ -75,36 +75,88 @@ def test_read_epics_yields_an_empty_slices_list_for_an_epic_with_no_row(tmp_path
     assert by_key["demo/E2"]["slices"] == []
 
 
+# --- is_resolved ---
+
+
+def test_is_resolved_accepts_an_approved_state():
+    assert bbv.is_resolved("APPROVED 2026-08-01") is True
+
+
+def test_is_resolved_accepts_an_na_state():
+    assert bbv.is_resolved('n/a (no UI) — Screens: "none"') is True
+
+
+def test_is_resolved_rejects_a_pending_state():
+    assert bbv.is_resolved("pending") is False
+
+
 # --- current_doc ---
 
 
-def test_current_doc_returns_the_first_gate_not_starting_with_approved():
+def test_current_doc_shape_one_opens_an_open_gate_that_holds_its_document():
+    """Shape 1: an open gate whose document is present."""
     gates = [
         {"n": "1", "name": "Product", "state": "APPROVED 2026-08-01"},
         {"n": "2", "name": "Architecture", "state": "in progress"},
-        {"n": "3", "name": "Program design", "state": "pending"},
     ]
-    gate, doc, pending = bbv.current_doc(gates)
+    present = {"1": ["01-product.md"], "2": ["02-architecture.md"]}
+    gate, doc, pending = bbv.current_doc(gates, present)
     assert gate == "2"
-    assert doc == "02-architecture.md"
+    assert doc in present["2"]
     assert pending is True
 
 
-def test_current_doc_returns_the_last_gate_with_pending_false_when_all_approved():
+def test_current_doc_shape_two_returns_none_for_an_open_gate_with_no_document():
+    """Shape 2: an open gate whose document is absent."""
+    gates = [{"n": "2", "name": "Architecture", "state": "pending"}]
+    gate, doc, pending = bbv.current_doc(gates, {"2": []})
+    assert gate == "2"
+    assert doc is None
+    assert pending is True
+
+
+def test_current_doc_shape_three_opens_the_last_resolved_gate_that_holds_a_document():
+    """Shape 3: every gate resolved, the last gate holding a document."""
+    gates = [
+        {"n": "1", "name": "Product", "state": "APPROVED 2026-08-01"},
+        {"n": "2", "name": "Architecture", "state": "APPROVED 2026-08-02"},
+        {"n": "2b", "name": "Interaction design", "state": "n/a"},
+    ]
+    present = {"1": ["01-product.md"], "2": ["02-architecture.md"], "2b": []}
+    gate, doc, pending = bbv.current_doc(gates, present)
+    assert gate == "2"
+    assert doc in present[gate]
+    assert pending is False
+
+
+def test_current_doc_shape_four_returns_none_when_no_resolved_gate_holds_a_document():
+    """Shape 4: every gate resolved, the last gate holding none."""
+    gates = [
+        {"n": "1", "name": "Product", "state": "APPROVED 2026-08-01"},
+        {"n": "2b", "name": "Interaction design", "state": "n/a"},
+    ]
+    gate, doc, pending = bbv.current_doc(gates, {"1": [], "2b": []})
+    assert gate == "2b"
+    assert doc is None
+    assert pending is False
+
+
+def test_current_doc_returns_the_last_gate_with_pending_false_when_all_resolved():
     gates = [
         {"n": "1", "name": "Product", "state": "APPROVED 2026-08-01"},
         {"n": "2", "name": "Architecture", "state": "APPROVED 2026-08-02"},
     ]
-    gate, doc, pending = bbv.current_doc(gates)
+    present = {"1": ["01-product.md"], "2": ["02-architecture.md"]}
+    gate, doc, pending = bbv.current_doc(gates, present)
     assert gate == "2"
     assert doc == "02-architecture.md"
     assert pending is False
 
 
 def test_current_doc_handles_an_empty_gate_list_without_raising():
-    gate, doc, pending = bbv.current_doc([])
+    gate, doc, pending = bbv.current_doc([], {})
     assert gate == "1"
-    assert doc == "01-product.md"
+    assert doc is None
     assert pending is False
 
 
@@ -211,6 +263,69 @@ def test_render_preserves_hand_authored_marker_and_footer_byte_for_byte(tmp_path
     text = page.read_text()
     assert '<div id="hand-authored-marker">do not touch me</div>' in text
     assert "<footer>hand authored footer, never generated</footer>" in text
+
+
+# --- render(): the projected gate state ---
+
+
+def test_render_writes_null_for_a_missing_document_and_never_the_text_none(tmp_path):
+    """An open gate with no document must emit null, not the text None."""
+    plan_dir, designs_dir, rubrics_dir, page = make_plan(tmp_path)
+    (plan_dir / "00-status.md").write_text(
+        "# Status: demo\n\n"
+        "- Gate 1 — Product: APPROVED 2026-08-01\n"
+        "- Gate 2 — Architecture: pending\n"
+    )
+
+    bbv.render(page, plan_dir, designs_dir, rubrics_dir)
+
+    text = page.read_text()
+    cur_line = next(l for l in text.split("\n") if l.startswith("var cur="))
+    assert cur_line == 'var cur={gate:"2",doc:null};'
+    go_line = next(l for l in text.split("\n") if l.startswith("buildRail(); go("))
+    assert go_line == 'buildRail(); go("2", null);'
+    assert "None" not in text
+
+
+def test_render_titles_the_gate_2b_document_and_falls_back_to_a_file_name(tmp_path):
+    """Every held document carries a title, listed or not."""
+    plan_dir, designs_dir, rubrics_dir, page = make_plan(tmp_path)
+    (plan_dir / "interaction-design.md").write_text("Interaction notes.\n")
+    (plan_dir / "notes.md").write_text("Loose notes.\n")
+
+    bbv.render(page, plan_dir, designs_dir, rubrics_dir)
+
+    line = next(l for l in page.read_text().split("\n") if l.startswith("var TITLE="))
+    titles = json.loads(line[len("var TITLE="):-1])
+    assert titles["interaction-design.md"] == "Interaction design"
+    assert titles["notes.md"] == "notes.md"
+
+
+def test_render_summary_reads_no_gate_awaiting_an_answer_when_every_gate_is_resolved(
+    tmp_path, capsys
+):
+    plan_dir, designs_dir, rubrics_dir, page = make_plan(tmp_path)
+
+    bbv.render(page, plan_dir, designs_dir, rubrics_dir)
+
+    out = capsys.readouterr().out
+    assert "no gate awaiting an answer" in out
+    assert "all gates approved" not in out
+
+
+def test_render_summary_reads_awaiting_approval_when_a_gate_waits(tmp_path, capsys):
+    plan_dir, designs_dir, rubrics_dir, page = make_plan(tmp_path)
+    (plan_dir / "00-status.md").write_text(
+        "# Status: demo\n\n"
+        "- Gate 1 — Product: APPROVED 2026-08-01\n"
+        "- Gate 2 — Architecture: pending\n"
+    )
+
+    bbv.render(page, plan_dir, designs_dir, rubrics_dir)
+
+    out = capsys.readouterr().out
+    assert "awaiting approval" in out
+    assert "all gates approved" not in out
 
 
 # --- </script> escaping ---

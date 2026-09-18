@@ -48,8 +48,12 @@ accepted. The header count in this file determines the attempt number.
 
 ## Role 1 — RED
 
-Spawn a subagent. Give it the slice description, the program design, and the
-epic technical solution design. **Do not give it the rubric.**
+Spawn a subagent. Give it the slice description, the program design, the
+epic technical solution design, and the interaction design with its UI
+specification. **Do not give it the rubric.**
+
+RED reads `03-program-design.md`, the epic design, the interaction design, and
+`ui-spec.jsonc`. A front-end slice derives its failing contract from all four.
 
 **Before spawning, check the epic design document exists.** An epic that
 carries more than one slice needed an approved Gate 4b design
@@ -75,6 +79,8 @@ Do not read anything under .cobuilder/ — it holds material you must not see.
 Read first:
   docs/plans/<slug>/03-program-design.md   (the test plan section)
   docs/plans/<slug>/epic-<epic-id>-design.md (the epic technical design)
+  docs/plans/<slug>/interaction-design.md  (the interaction specification)
+  docs/plans/<slug>/ui-spec.jsonc          (the UI specification)
   docs/plans/<slug>/04-slices.md           (this slice and following slices)
 
 Then:
@@ -165,7 +171,9 @@ Steps:
     higher than 0.5 on test output alone — cite the browser check too, for
     example a screenshot, a DOM snapshot, or a console-message read that
     shows no error. Skip this step only when the slice touches no frontend
-    code, and say so in your findings.
+    code, and say so in your findings. A front-end criterion in VALIDATE names
+    a check a browser can make with real pointer input. A component test that
+    calls `.click()` is not that check.
 2. Check for a false pass. Any of these items voids the run — report it and
    score the affected criterion 0.0:
    - a test file changed in this slice diff
@@ -231,7 +239,13 @@ mode.
 
 **Scripted (multi-agent workflows).** `workflows/slice-loop.js` in this skill
 runs the loop with deterministic control flow. The user must explicitly opt in
-to multi-agent orchestration before running the script.
+to multi-agent orchestration before running the script. Invoke it with
+`Workflow({scriptPath: "${CLAUDE_PLUGIN_ROOT}/skills/build/workflows/slice-loop.js", args: {...}})`
+— `name: "slice-loop"` will not resolve, since the Workflow tool's `name`
+input only looks up built-in or `.claude/workflows/`-registered workflows,
+not plugin-shipped scripts. The script also has no filesystem access, so
+each slice's `epicDesignExists` must be computed and passed in by the
+orchestrating session (see the script's own args comment).
 
 ---
 

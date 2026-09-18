@@ -6,7 +6,8 @@
     "cobuilder-architect": "0.4.0",
     "cobuilder-pr": "0.5.0",
     "cobuilder-artifact": "0.4.0",
-    "unknown-plugin": "0.0.0"
+    "unknown-plugin": "0.0.0",
+    "pr": "0.5.0"
   },
-  "migrated_at": "2026-08-27"
+  "migrated_at": "2026-09-01"
 }

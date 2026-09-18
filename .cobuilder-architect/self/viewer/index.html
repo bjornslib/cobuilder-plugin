@@ -512,21 +512,31 @@
      just wider — reuses .drawer-header/.drawer-close/.drawer-body). Shares
      #drawer-scrim with the comments drawer; JS enforces only one open at a time. ================= */
   #adr-sheet,
-  #assessment-sheet{
+  #assessment-sheet,
+  #gate-doc-sheet{
     position:fixed;top:0;right:0;bottom:0;width:clamp(480px, 40vw, 720px);max-width:92vw;background:#fff;
     border-left:1px solid var(--line);border-radius:14px 0 0 14px;box-shadow:-12px 0 34px rgba(20,25,35,0.2);
     transform:translateX(100%);transition:transform .25s ease;z-index:41;
     display:flex;flex-direction:column;min-height:0;
   }
   #adr-sheet.open,
-  #assessment-sheet.open{transform:translateX(0);}
+  #assessment-sheet.open,
+  #gate-doc-sheet.open{transform:translateX(0);}
   #adr-sheet .drawer-header,
-  #assessment-sheet .drawer-header{align-items:flex-start;}
+  #assessment-sheet .drawer-header,
+  #gate-doc-sheet .drawer-header{align-items:flex-start;}
   .adr-sheet-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px;}
   .adr-state-badge{font:10px 'JetBrains Mono',monospace;letter-spacing:.04em;padding:3px 9px;border-radius:10px;border:1px solid;text-transform:uppercase;white-space:nowrap;}
   .adr-sheet-sourceline{font:11px 'JetBrains Mono',monospace;color:var(--ink-dim);}
   #adr-sheet .drawer-body,
-  #assessment-sheet .drawer-body{overflow-y:auto;gap:16px;}
+  #assessment-sheet .drawer-body,
+  #gate-doc-sheet .drawer-body{overflow-y:auto;gap:16px;}
+  .gate-rail-feature{margin-bottom:14px;}
+  .gate-rail-feature-label{font-size:11px;color:var(--ink-dim);letter-spacing:.03em;margin-bottom:6px;}
+  .gate-rail-clickable{cursor:pointer;}
+  .gate-rail-clickable:hover{box-shadow:0 0 0 2px var(--accent, oklch(0.55 0.15 250)) inset;}
+  .epic-design-doc-chip{display:inline-flex;align-items:center;gap:4px;font:10px 'JetBrains Mono',monospace;letter-spacing:.02em;padding:2px 8px;border-radius:9px;border:1px solid var(--line);color:var(--ink-dim);cursor:pointer;background:oklch(0.97 0.01 250);}
+  .epic-design-doc-chip:hover{color:var(--ink);border-color:oklch(0.55 0.15 250);}
 
   /* Design epic row — the Designs tab's level-3 epic blocks (renderDesignMainContent). */
   .design-epic-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font:11.5px 'JetBrains Mono',monospace;color:oklch(0.3 0.02 250);}
@@ -1046,6 +1056,21 @@
     <div class="drawer-body" id="assessment-sheet-body"></div>
   </div>
 
+  <!-- Gate document sheet (same Sheet family as ADR/assessment above), read-only.
+       Reads window.INDEX.entities.program_design / .epic_design for the clicked
+       Gate Rail card or epic design-doc chip (ADR-0022). Shares #drawer-scrim;
+       only one sheet is ever open. -->
+  <div id="gate-doc-sheet" role="dialog" aria-label="Gate document">
+    <div class="drawer-header">
+      <div>
+        <h2 id="gate-doc-sheet-title">Gate document</h2>
+        <div class="adr-sheet-meta" id="gate-doc-sheet-meta"></div>
+      </div>
+      <button class="drawer-close" id="gate-doc-sheet-close-btn" title="Close (Esc)">&times;</button>
+    </div>
+    <div class="drawer-body" id="gate-doc-sheet-body"></div>
+  </div>
+
   <!-- Narration audio dialog (shadcn Dialog look, centered). Shares #drawer-scrim above;
        mutually exclusive with the comments drawer / ADR sheet — see openAudioDialog. -->
   <div id="audio-dialog-layer">
@@ -1168,6 +1193,10 @@ window.INDEX = window.INDEX || {};
     activeAdrId: null,
     // Generate-mode assessment sheet: mutually exclusive with both panels above.
     assessmentOpen: false,
+    // Gate document sheet (ADR-0022): mutually exclusive with every sheet above.
+    gateDocOpen: false,
+    activeGateDocKind: null, // 'program' | 'epic'
+    activeGateDocId: null,
     // First-class view mode. 'prs' is the current pull-request viewer.
     // 'designs' mirrors it with a three-level design view. Persisted.
     viewMode: 'prs',
@@ -3209,14 +3238,19 @@ window.INDEX = window.INDEX || {};
     const sliceToEpic = joins.slice_to_epic || {};
     const featureGatesMap = joins.feature_gates || {};
 
-    const gates = (featureGatesMap['cobuilder-family'] && featureGatesMap['cobuilder-family'].length > 0)
-      ? featureGatesMap['cobuilder-family']
-      : [
+    // Every feature with a real docs/plans/<slug>/00-status.md gets its own rail.
+    // A bundle with none yet (nothing built through implement mode) falls back to
+    // one demo rail so the section never renders empty.
+    const featureSlugsWithGates = Object.keys(featureGatesMap).filter(k => (featureGatesMap[k] || []).length > 0).sort();
+    const gateRails = featureSlugsWithGates.length
+      ? featureSlugsWithGates.map(slug => ({ feature: slug, gates: featureGatesMap[slug] }))
+      : [{ feature: null, gates: [
           { n: 1, name: 'Product', state: 'APPROVED 2026-08-20' },
           { n: 2, name: 'Architecture', state: 'APPROVED 2026-08-21' },
           { n: 3, name: 'Program Design', state: 'APPROVED 2026-08-21' },
           { n: 4, name: 'Slice plan + rubrics', state: 'APPROVED 2026-08-21' }
-        ];
+        ] }];
+    const totalGates = gateRails.reduce((sum, r) => sum + r.gates.length, 0);
 
     const slicesByEpic = {};
     slices.forEach(s => {
@@ -3238,30 +3272,36 @@ window.INDEX = window.INDEX || {};
       return a.id.localeCompare(b.id);
     });
 
-    // Section 1: Active Feature Gate Rail & Approval State (C3)
+    // Section 1: Active Feature Gate Rail & Approval State (C3). One rail per
+    // feature; a card with a `doc` (ADR-0022) opens the gate-doc sheet on click.
     const gatesHtml = `
       <div class="builds-section" id="builds-gates-section">
         <div class="section-title-bar">
           <h3 class="section-title">Active Feature Gate Rail & Approval State</h3>
-          <span class="section-count mono">${gates.length} Gates Approved</span>
+          <span class="section-count mono">${totalGates} Gates Approved</span>
         </div>
-        <p class="section-intro">Gate status chrome derived from status records. Active build runs on Gate 4.</p>
-        <div class="gate-rail-grid">
-          ${gates.map(g => {
-            const isApproved = (g.state || '').toUpperCase().startsWith('APPROVED');
-            const isCurrent = g.n === 4;
-            const statusClass = isApproved ? 'is-approved' : (isCurrent ? 'is-current' : 'is-planned');
-            return `
-              <div class="gate-card ${statusClass}">
-                <div class="gate-header">
-                  <div class="gate-num-badge mono">Gate ${g.n}</div>
-                  <div class="gate-status-pill ${isApproved ? 'ok' : (isCurrent ? 'now' : 'wait')}">${escapeHtml(g.state)}</div>
-                </div>
-                <div class="gate-name">${escapeHtml(g.name)}</div>
-                <div class="gate-desc">${isApproved ? `Approved on ${escapeHtml(g.state.replace(/^APPROVED\s*/i, ''))}` : 'In progress'}</div>
-              </div>`;
-          }).join('')}
-        </div>
+        <p class="section-intro">Gate status chrome derived from status records. Click a gate card with a document icon to read it.</p>
+        ${gateRails.map(rail => `
+          <div class="gate-rail-feature">
+            ${rail.feature ? `<div class="gate-rail-feature-label mono">${escapeHtml(rail.feature)}</div>` : ''}
+            <div class="gate-rail-grid">
+              ${rail.gates.map(g => {
+                const isApproved = (g.state || '').toUpperCase().startsWith('APPROVED');
+                const isCurrent = g.n === 4;
+                const statusClass = isApproved ? 'is-approved' : (isCurrent ? 'is-current' : 'is-planned');
+                const clickAttrs = g.doc ? ` data-gate-doc-id="${escapeHtml(g.doc)}" tabindex="0" role="button"` : '';
+                return `
+                  <div class="gate-card ${statusClass}${g.doc ? ' gate-rail-clickable' : ''}"${clickAttrs}>
+                    <div class="gate-header">
+                      <div class="gate-num-badge mono">Gate ${g.n}</div>
+                      <div class="gate-status-pill ${isApproved ? 'ok' : (isCurrent ? 'now' : 'wait')}">${escapeHtml(g.state)}</div>
+                    </div>
+                    <div class="gate-name">${escapeHtml(g.name)}${g.doc ? ' &#128196;' : ''}</div>
+                    <div class="gate-desc">${isApproved ? `Approved on ${escapeHtml(g.state.replace(/^APPROVED\s*/i, ''))}` : 'In progress'}</div>
+                  </div>`;
+              }).join('')}
+            </div>
+          </div>`).join('')}
       </div>`;
 
     // Section 2: Backlog Lane (C1 & C2), grouped by parent design ("program")
@@ -3304,6 +3344,10 @@ window.INDEX = window.INDEX || {};
           <span class="deferred-text">No slice yet &mdash; this epic is deferred past active scope.</span>
         </div>`;
 
+      const designDocChip = epic.design_doc
+        ? `<span class="epic-design-doc-chip" data-epic-design-id="${escapeHtml(epic.design_doc)}" tabindex="0" role="button">&#128196; Design</span>`
+        : '';
+
       return `
         <div class="backlog-card ${isDeferred ? 'is-deferred' : ''}">
           <div class="backlog-card-header">
@@ -3311,6 +3355,7 @@ window.INDEX = window.INDEX || {};
               <code>${escapeHtml(epic.epic_id || epic.id)}</code>
             </div>
             <span class="backlog-badge ${statusClass}">${statusLabel}</span>
+            ${designDocChip}
           </div>
           <div class="backlog-card-body">
             <p class="backlog-epic-note">${escapeHtml(epic.note || 'No description recorded in goal.json.')}</p>
@@ -3450,6 +3495,13 @@ window.INDEX = window.INDEX || {};
       <div class="builds-view">
         ${sectionsHtml}
       </div>`);
+
+    main.querySelectorAll('[data-gate-doc-id]').forEach(el => {
+      el.addEventListener('click', () => openGateDocSheet('program', el.dataset.gateDocId));
+    });
+    main.querySelectorAll('[data-epic-design-id]').forEach(el => {
+      el.addEventListener('click', () => openGateDocSheet('epic', el.dataset.epicDesignId));
+    });
 
     main.scrollTop = 0;
     hideCue();
@@ -3627,6 +3679,7 @@ window.INDEX = window.INDEX || {};
     if (state.commentsOpen) state.commentsOpen = false;
     if (state.adrOpen) state.adrOpen = false;
     if (state.assessmentOpen) state.assessmentOpen = false;
+    if (state.gateDocOpen) state.gateDocOpen = false;
     state.audioDialogOpen = true;
     renderAudioDialogContent();
     const dialog = document.getElementById('audio-dialog');
@@ -3959,13 +4012,15 @@ window.INDEX = window.INDEX || {};
     document.getElementById('content-col').classList.toggle('drawer-open', state.commentsOpen);
     document.getElementById('adr-sheet').classList.toggle('open', state.adrOpen);
     document.getElementById('assessment-sheet').classList.toggle('open', state.assessmentOpen);
+    document.getElementById('gate-doc-sheet').classList.toggle('open', state.gateDocOpen);
     const scrim = document.getElementById('drawer-scrim');
-    scrim.classList.toggle('open', state.adrOpen || state.assessmentOpen || state.audioDialogOpen);
+    scrim.classList.toggle('open', state.adrOpen || state.assessmentOpen || state.gateDocOpen || state.audioDialogOpen);
     scrim.classList.toggle('audio-dim', state.audioDialogOpen);
   }
   function openCommentsDrawer(){
     if (state.adrOpen){ state.adrOpen = false; }
     if (state.assessmentOpen){ state.assessmentOpen = false; }
+    if (state.gateDocOpen){ state.gateDocOpen = false; }
     if (state.audioDialogOpen) stopAudio(); // mutual exclusivity: closes + stops the audio dialog
     state.commentsOpen = true;
     renderSheetVisibility();
@@ -3978,6 +4033,7 @@ window.INDEX = window.INDEX || {};
   function openAdrSheet(id){
     if (state.commentsOpen){ state.commentsOpen = false; }
     if (state.assessmentOpen){ state.assessmentOpen = false; }
+    if (state.gateDocOpen){ state.gateDocOpen = false; }
     if (state.audioDialogOpen) stopAudio(); // mutual exclusivity: closes + stops the audio dialog
     state.adrOpen = true;
     state.activeAdrId = id;
@@ -3991,6 +4047,7 @@ window.INDEX = window.INDEX || {};
   function openAssessmentSheet(){
     if (state.commentsOpen){ state.commentsOpen = false; }
     if (state.adrOpen){ state.adrOpen = false; }
+    if (state.gateDocOpen){ state.gateDocOpen = false; }
     if (state.audioDialogOpen) stopAudio(); // mutual exclusivity: closes + stops the audio dialog
     state.assessmentOpen = true;
     renderAssessmentSheet();
@@ -4000,10 +4057,26 @@ window.INDEX = window.INDEX || {};
     state.assessmentOpen = false;
     renderSheetVisibility();
   }
+  function openGateDocSheet(kind, id){
+    if (state.commentsOpen){ state.commentsOpen = false; }
+    if (state.adrOpen){ state.adrOpen = false; }
+    if (state.assessmentOpen){ state.assessmentOpen = false; }
+    if (state.audioDialogOpen) stopAudio(); // mutual exclusivity: closes + stops the audio dialog
+    state.gateDocOpen = true;
+    state.activeGateDocKind = kind;
+    state.activeGateDocId = id;
+    renderGateDocSheet();
+    renderSheetVisibility();
+  }
+  function closeGateDocSheet(){
+    state.gateDocOpen = false;
+    renderSheetVisibility();
+  }
   function closeAnyOpenSheet(){
     if (state.commentsOpen) closeCommentsDrawer();
     else if (state.adrOpen) closeAdrSheet();
     else if (state.assessmentOpen) closeAssessmentSheet();
+    else if (state.gateDocOpen) closeGateDocSheet();
     else if (state.audioDialogOpen) stopAudio();
   }
 
@@ -4267,6 +4340,33 @@ window.INDEX = window.INDEX || {};
         ${ev.length ? `<div class="chip-row" style="margin-top:10px;">${ev.map(e => `<span class="force-chip">${escapeHtml(e)}</span>`).join('')}</div>` : ''}
         ${tailHtml || ''}
       </div>`;
+  }
+
+  function renderGateDocSheet(){
+    const kind = state.activeGateDocKind;
+    const id = state.activeGateDocId;
+    const entities = (window.INDEX && window.INDEX.entities) || {};
+    const table = kind === 'epic' ? (entities.epic_design || []) : (entities.program_design || []);
+    const record = id ? table.find(r => r.id === id) : null;
+    const titleEl = document.getElementById('gate-doc-sheet-title');
+    const metaEl = document.getElementById('gate-doc-sheet-meta');
+    const body = document.getElementById('gate-doc-sheet-body');
+
+    if (!record){
+      titleEl.textContent = id || 'Gate document';
+      metaEl.innerHTML = '';
+      body.innerHTML = `
+        <div class="empty-card">
+          <div class="empty-detail">Gate document not found in this bundle's index.</div>
+        </div>`;
+      return;
+    }
+
+    titleEl.textContent = record.title || record.id;
+    const sourceLine = record.source_path ? `source: ${record.source_path}` : '';
+    const gateLine = kind === 'epic' ? 'Gate 4b' : 'Gate 3';
+    metaEl.innerHTML = `<span class="adr-sheet-sourceline">${escapeHtml(gateLine)}${sourceLine ? ' · ' + escapeHtml(sourceLine) : ''}</span>`;
+    body.innerHTML = renderMarkdown(record.body_md || '');
   }
 
   function renderAssessmentSheet(){
@@ -4719,6 +4819,8 @@ window.INDEX = window.INDEX || {};
   if (adrSheetCloseBtn) adrSheetCloseBtn.addEventListener('click', closeAdrSheet);
   const assessmentSheetCloseBtn = document.getElementById('assessment-sheet-close-btn');
   if (assessmentSheetCloseBtn) assessmentSheetCloseBtn.addEventListener('click', closeAssessmentSheet);
+  const gateDocSheetCloseBtn = document.getElementById('gate-doc-sheet-close-btn');
+  if (gateDocSheetCloseBtn) gateDocSheetCloseBtn.addEventListener('click', closeGateDocSheet);
   const drawerScrim = document.getElementById('drawer-scrim');
   if (drawerScrim) drawerScrim.addEventListener('click', closeAnyOpenSheet);
   const btnAddComment = document.getElementById('btn-add-comment');
@@ -4745,7 +4847,7 @@ window.INDEX = window.INDEX || {};
   window.addEventListener('keydown', (e) => {
     // Escape must close whichever sheet is open, even while the comment input is
     // focused — checked before the input/textarea early-return below so it always works.
-    if (e.key === 'Escape' && (state.commentsOpen || state.adrOpen || state.assessmentOpen || state.audioDialogOpen)){ closeAnyOpenSheet(); return; }
+    if (e.key === 'Escape' && (state.commentsOpen || state.adrOpen || state.assessmentOpen || state.gateDocOpen || state.audioDialogOpen)){ closeAnyOpenSheet(); return; }
 
     const tag = document.activeElement && document.activeElement.tagName;
     if (tag === 'TEXTAREA' || tag === 'INPUT') return;

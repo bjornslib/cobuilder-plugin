@@ -39,6 +39,9 @@ TITLES = {
     "02a-artifact-map.md": "Artifact map",
     "02b-view-designs.md": "View designs",
     "02c-record-model.md": "Record model",
+    # Was: no entry. GATE_DOCS named "interaction-design.md" for gate 2b
+    # without a title, so the rail printed the text "undefined".
+    "interaction-design.md": "Interaction design",
     "03-program-design.md": "Program design",
     "04-slices.md": "Slices",
     "rubric-manifest": "Manifest",
@@ -49,6 +52,7 @@ GATE_DOCS = {
     "1": ["01-product.md"],
     "2": ["02-architecture.md", "02a-artifact-map.md",
           "02b-view-designs.md", "02c-record-model.md"],
+    "2b": ["interaction-design.md"],
     "3": ["03-program-design.md"],
     "4": ["04-slices.md", "rubric-manifest"]
          + [f"rubric-{n}" for n in range(1, RUBRIC_COUNT + 1)],
@@ -60,12 +64,19 @@ ASK_NOTES = {
     "2": "Approval moves to Gate 3 — program design — where the files, the "
          "type signatures, and the test plan are written before any "
          "implementation exists.",
+    # Was: no entry. A page that opened on a pending Gate 2b printed an
+    # empty approval prompt.
+    "2b": "Approval moves to Gate 3 — program design — where the files, "
+          "the type signatures, and the test plan are written before any "
+          "implementation exists.",
     "3": "Approval moves to Gate 4, which writes the slice ladder and the "
          "blind rubrics. No implementation code is written before that.",
     "4": "Approval starts the build. Slice 1 is the tracer bullet.",
 }
 
-GATE_LINE = re.compile(r"- Gate (\d) — ([^:]+): (.+)")
+# Was: re.compile(r"- Gate (\d) — ([^:]+): (.+)"). The label group now
+# accepts a letter suffix, so "Gate 2b" parses.
+GATE_LINE = re.compile(r"- Gate (\d\w?) — ([^:]+): (.+)")
 
 BEGIN_MARKER = "<!-- BEGIN GENERATED -->"
 END_MARKER = "<!-- END GENERATED -->"
@@ -170,28 +181,49 @@ def read_plan(plan_dir: Path, designs_dir: Path, rubrics_dir: Path) -> dict:
     return {"docs": docs, "gates": gates, "epics": epics, "paths": paths}
 
 
-def current_doc(gates: list[dict]) -> tuple[str, str, bool]:
-    """The gate the page opens on: the first one not yet approved.
+def is_resolved(state: str) -> bool:
+    """A resolved gate needs no answer: it reads APPROVED or n/a.
 
-    Returns the gate, its first document, and whether that gate is still
-    waiting for an answer. Every gate approved means the build is running,
-    so the page opens on the last gate and asks nothing.
+    The state line holds free text after the colon, so the test reads the
+    prefix and not the whole value.
+    """
+    return state.startswith("APPROVED") or state.startswith("n/a")
+
+
+def current_doc(
+    gates: list[dict], present: dict[str, list[str]]
+) -> tuple[str, str | None, bool]:
+    """The gate the page opens on, and the document to show with it.
+
+    An open gate is the first gate that still needs an answer. The page
+    shows that gate's first document when the plan holds it, and no
+    document when it does not.
+
+    Every gate resolved means nothing waits. The page then shows the last
+    gate that holds a document.
+
+    `present` is the document map filtered to the files the plan holds, so
+    a returned document always exists on disk.
+
+    Returns the gate, its document or None, and whether the gate waits for
+    an answer.
     """
     for g in gates:
-        if not g["state"].startswith("APPROVED"):
-            present = [d for d in GATE_DOCS.get(g["n"], []) if d]
-            if present:
-                return g["n"], present[0], True
-    last = gates[-1]["n"] if gates else "1"
-    present = [d for d in GATE_DOCS.get(last, []) if d]
-    return last, (present[0] if present else "01-product.md"), False
+        if not is_resolved(g["state"]):
+            docs = present.get(g["n"], [])
+            return g["n"], (docs[0] if docs else None), True
+    for g in reversed(gates):
+        docs = present.get(g["n"], [])
+        if docs:
+            return g["n"], docs[0], False
+    return (gates[-1]["n"] if gates else "1"), None, False
 
 
 def render(page: Path, plan_dir: Path, designs_dir: Path, rubrics_dir: Path) -> None:
     payload = read_plan(plan_dir, designs_dir, rubrics_dir)
     present = {k: [d for d in v if d in payload["docs"]]
                for k, v in GATE_DOCS.items()}
-    gate, doc, pending = current_doc(payload["gates"])
+    gate, doc, pending = current_doc(payload["gates"], present)
     blob = json.dumps(payload).replace("</", r"<\/")
 
     lines = page.read_text().split("\n")
@@ -203,24 +235,34 @@ def render(page: Path, plan_dir: Path, designs_dir: Path, rubrics_dir: Path) -> 
         elif line.startswith("var GATEDOC="):
             lines[i] = f"var GATEDOC={json.dumps(present)};"
         elif line.startswith("var TITLE="):
-            titles = {k: v for k, v in TITLES.items() if k in payload["docs"]}
+            # Was: titles = {k: v for k, v in TITLES.items() if k in payload["docs"]}
+            # An unlisted document vanished from the map, so the rail printed
+            # the text "undefined" for it. Every held document now carries a
+            # title, and an unlisted one falls back to its file name.
+            titles = {k: TITLES.get(k, k) for k in payload["docs"]}
             lines[i] = f"var TITLE={json.dumps(titles)};"
         elif line.startswith("var cur="):
-            lines[i] = f'var cur={{gate:"{gate}",doc:"{doc}"}};'
+            # Was: f'var cur={{gate:"{gate}",doc:"{doc}"}};'
+            # A missing document must be null, not the text "None".
+            lines[i] = f"var cur={{gate:{json.dumps(gate)},doc:{json.dumps(doc)}}};"
         elif line.startswith("var ASKDOC="):
-            lines[i] = f'var ASKDOC={json.dumps(doc if pending else "")};'
+            # Was: doc if pending else "". A missing document must not fire
+            # the "rendered from the markdown" note, which names a path.
+            lines[i] = f"var ASKDOC={json.dumps(doc if (pending and doc) else '')};"
         elif line.startswith("var ASKGATE="):
-            lines[i] = f'var ASKGATE={json.dumps(gate)};'
+            # Was: json.dumps(gate). The ask block keys on the gate, so an
+            # empty ask gate is what tells the page that nothing waits.
+            lines[i] = f"var ASKGATE={json.dumps(gate if pending else '')};"
         elif line.startswith("var ASKNOTE="):
             lines[i] = f'var ASKNOTE={json.dumps(ASK_NOTES.get(gate, "") if pending else "")};'
         elif line.startswith("buildRail(); go("):
-            lines[i] = f'buildRail(); go("{gate}","{doc}");'
+            lines[i] = f"buildRail(); go({json.dumps(gate)}, {json.dumps(doc)});"
     page.write_text("\n".join(lines))
     planned = [e for e in payload["epics"] if not e["branch"]]
     print(f"{page}: {len(payload['docs'])} documents, "
           f"{len(payload['gates'])} gates, {len(payload['epics'])} epics "
           f"({len(planned)} in the backlog), opens on gate {gate}, "
-          f"{'awaiting approval' if pending else 'all gates approved'}")
+          f"{'awaiting approval' if pending else 'no gate awaiting an answer'}")
 
 
 def main() -> None:

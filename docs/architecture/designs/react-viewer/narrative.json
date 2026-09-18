@@ -1,0 +1,36 @@
+{
+  "landscape": {
+    "tagline": "The viewer shows five tables. A reader asks three questions. This design rebuilds it around the questions, and changes what the file is made of to make that affordable.",
+    "narration": "The bundle viewer grew one tab per entity list. Designs, pull requests, decisions, contexts, and builds each got a place, and the shape was honest, because it matched what build_index.py emits. It is also why every real task crosses four tabs. A reader reviewing a pull request wants its story, the decisions it cites, the epics it carries, and the slice scores behind them. The index already joins all four. The viewer makes the reader do the join again by hand. Meanwhile the file that would have to change is 4899 lines in one function scope, with 45 places that build HTML from strings and no template anywhere. ADR-0020 saw that in August and decided to break the file into parts. That decision is recorded and unexecuted, so nothing is lost by asking a harder question now: not how to split this file, but what the file should be."
+  },
+  "problem_solution": {
+    "problem": "The viewer slices by record type, so a reader holds joins in their head that index.json already computed. Rebuilding it around three goal-shaped surfaces needs state-dependent rendering that a single hand-edited file cannot carry.",
+    "solution": "Author the viewer as TypeScript and React, compile it with Vite into the same committed single file, and render three surfaces: Work, Flight deck, and Reference.",
+    "narration": "The three surfaces come from three questions. Is this decided, and does the tree still match the decision. Where has this design got to, and what blocks the next slice. What does this pull request change, and was it what we intended. The Work board answers the first two: every design in one list, with its stage, its epic progress, and which records exist, and four lanes that filter it to what needs a decision, what is ready to build, what is in review, and what shipped. Opening a design gives seven lenses over the same record, and a lens with no data is disabled rather than empty, so a backlog design that carries only goal.json reads as a deliberate state rather than a loading failure. The Flight deck answers the third, as its own surface, because reviewing a pull request is a different posture from planning work. Reference holds what hangs off no single design: the decisions and the map coverage.",
+    "beats": [
+      {"kind": "problem", "text": "Five tabs mirror five entity lists, so a four-tab journey is the normal case for one review."},
+      {"kind": "constraint", "text": "ADR-0001 fixes the output: one self-contained file, under a CSP that blocks every external request."},
+      {"kind": "constraint", "text": "/plugin install runs no build, so whatever the plugin ships is what runs."},
+      {"kind": "decision", "text": "Keep the output. Change the source. TypeScript and React under viewer/src/, compiled by Vite into the committed index.html."},
+      {"kind": "decision", "text": "Three surfaces replace five tabs, and the record types become filters and lenses underneath them."},
+      {"kind": "risk", "text": "A contributor now needs Node to change the viewer. That cost is real and no epic removes it."}
+    ],
+    "alternatives": [
+      {"option": "Ordered parts concatenated by a Python script, as ADR-0020 decided", "rejected_because": "It fixes file size and leaves every list re-render hand-written and untyped."},
+      {"option": "TypeScript with no framework, bundled by esbuild", "rejected_because": "It types the joins and still leaves the lens and level switching as manual innerHTML, which is where the cost concentrates."},
+      {"option": "Preact instead of React", "rejected_because": "It wins on bundle size, and the budget is dominated by audio and images. It stays available as a lever if the measurement in E7 comes back tight."},
+      {"option": "A served application plus a reduced published file", "rejected_because": "Two renderers drift, and a reader would review a different page from the one they served."}
+    ]
+  },
+  "architecture": {
+    "narration": "One typed data layer sits between the bundle and the surfaces. It reads the globals the bundle already sets, and index.json, and it resolves every join once. The surfaces read that model and nothing else, which is the property the current viewer lacks: today a join is re-derived inside each render path. The build is the other half. Vite compiles the sources and vite-plugin-singlefile inlines every asset into one file, which is committed to the plugin, because install runs no build. A test rebuilds from source and fails when the committed file differs, so an edit to the output cannot survive review. Two existing consumers read that file and both keep working: migrate_bundle.py copies it into every bundle unconditionally, and export_artifact.py rewrites it for publishing. The exporter is the fragile one, because it matches literal strings that a bundler moves, so it is the first epic and not the last.",
+    "beats": [
+      {"kind": "component", "text": "viewer/src/data: typed readers over STORY, ODYSSEY, DIFFS, ADRS, DESIGNS, DIAGRAMS, and index.json, with the joins resolved once."},
+      {"kind": "component", "text": "viewer/src/surfaces: Work, Flight deck, and Reference, each reading the model and owning its own routing state."},
+      {"kind": "component", "text": "vite.config.ts with vite-plugin-singlefile, a lockfile, and a pinned Node version."},
+      {"kind": "seam", "text": "export_artifact.py matches named markers the build emits on purpose, instead of incidental literals."},
+      {"kind": "seam", "text": "migrate_bundle.py is unchanged: it still copies the plugin's built viewer into every bundle, unconditionally."},
+      {"kind": "guard", "text": "A test rebuilds from source and compares against the committed output."}
+    ]
+  }
+}

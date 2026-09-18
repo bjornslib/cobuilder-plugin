@@ -27,6 +27,8 @@ This command writes plan documents and blind rubrics to disk:
 - `docs/plans/<feature-slug>/00-status.md`
 - `docs/plans/<feature-slug>/01-product.md`
 - `docs/plans/<feature-slug>/02-architecture.md`
+- `docs/plans/<feature-slug>/interaction-design.md`
+- `docs/plans/<feature-slug>/ui-spec.jsonc`
 - `docs/plans/<feature-slug>/03-program-design.md`
 - `docs/plans/<feature-slug>/04-slices.md`
 - `docs/plans/<feature-slug>/epic-<epic-id>-design.md`

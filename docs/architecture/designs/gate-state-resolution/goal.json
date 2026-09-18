@@ -1,0 +1,51 @@
+{
+  "name": "gate-state-resolution",
+  "title": "Resolve a gate state to its three meanings in both Builds views",
+  "adr": "ADR-0024",
+  "adrs": [
+    "ADR-0024"
+  ],
+  "created": "2026-09-14",
+  "outcome": "A gate line reads as approved, as not applicable, or as open in both Builds views, and a view opens only a document that the plan holds.",
+  "done_when": [
+    "The static page for `skill-collision-fix` opens no document that plan does not hold",
+    "A plan that holds `interaction-design.md` draws a rail button labelled with a real title, and the text `undefined` appears nowhere in a rendered page",
+    "An `n/a` gate carries a closed treatment in the static page and in the viewer rail, and neither view describes it as in progress",
+    "The viewer rail header states the number of approved gates out of the total"
+  ],
+  "abort_if": [
+    "The two renderers need two different meanings for one gate state",
+    "Closing the missing-document path needs a new stored field on the gate record"
+  ],
+  "min_work": {
+    "derived_from": "2 plugin files, 1 generated page, 2 test files, and five faults reproduced by running the generator against this repository",
+    "alternatives_explored": 3,
+    "boundary_rules_checked": true,
+    "challenge_stage_run": true,
+    "note": "Design mode did not run for this feature, and this record was written by hand on 2026-09-14. `shared/build_index.py` reads epic identity only from this file, so without it the slices in `docs/plans/gate-state-resolution/04-slices.md` stayed unresolved and `uv run shared/build_index.py` printed warnings. This file therefore holds the minimum that the index and the Builds view read: the outcome, the epic registry, and the stage. The companion files design mode writes, `intent.json`, `assessment.json`, `narrative.json`, `pr-draft.md`, and `diagrams/`, are absent on purpose. The appended section of ADR-0024 holds the reasoning and the three rejected alternatives."
+  },
+  "limits": {
+    "warn_after_rounds": 3,
+    "cutoff_rounds": 6
+  },
+  "epics": [
+    {
+      "id": "E1",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "Teach both Builds views the three meanings of a gate state. `is_resolved(state)` in `plugins/artifact/scripts/build_builds_view.py` holds the test, and `current_doc()` receives the document map filtered to the files the plan holds, so a returned document always exists. The static page gains the `na` treatment and stops printing the text `undefined` for a Gate 2b document. The viewer rail gains the `is-na` card class, the `na` pill class, the words \"Not applicable\", and a header count of approved gates. Slices 1 and 2."
+    }
+  ],
+  "stage": "approved",
+  "supersedes": null,
+  "rounds": [
+    {
+      "n": 1,
+      "date": "2026-09-14",
+      "result": "approved",
+      "material_change": true,
+      "note": "Not a design-mode round. The user chose one plan with the two slices, chose subagent implementation, and chose an addendum to ADR-0024 over a new ADR-0025. The slice split moved from fault ownership to file ownership, because two agents must not edit one file."
+    }
+  ]
+}

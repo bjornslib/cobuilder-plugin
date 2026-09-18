@@ -9,7 +9,7 @@ owner: bjornslib
 id: ADR-0020
 source_pr: 11
 name: "Viewer parts and an author-time build"
-state: decided
+state: rejected
 groups: [viewer, packaging]
 approved_by: ""
 problem: "viewer/index.html is 4917 lines in one file: 881 lines of CSS and 3872 lines of JavaScript in a single IIFE holding 145 functions. Five view modes interleave through 50 scattered mode-predicate calls, 45 innerHTML string blocks carry no shared template, and one card fragment is copy-pasted 18 times. The file must ship as one self-contained file, so nobody has been able to split it."
@@ -30,6 +30,7 @@ forces:
   - "migrate_bundle.py copies the plugin's viewer/index.html into every bundle unconditionally, so the built file must exist in the plugin."
   - "A generated file that is also committed goes stale the moment somebody edits the output instead of the parts."
 related_decisions:
+  - { type: replaced-by, target: ADR-0023 }
   - { type: depends-on, target: ADR-0001 }
   - { type: is-related-to, target: ADR-0018 }
   - { type: is-related-to, target: ADR-0019 }
@@ -38,6 +39,8 @@ related_concerns: [C3, C6]
 history:
   - { state: tentative, date: 2026-08-24 }
   - { state: decided, date: 2026-08-24 }
+  - { state: challenged, date: 2026-09-07 }
+  - { state: rejected, date: 2026-09-07 }
 maps_to:
   context: cobuilder-packaging
   modules: [plugins/cobuilder-artifact/viewer/index.html, plugins/cobuilder-artifact/scripts/export_artifact.py, shared/migrate_bundle.py]
@@ -52,6 +55,12 @@ related:
 ---
 
 # ADR-0020 — Viewer parts and an author-time build
+
+> **Superseded by ADR-0023 on 2026-09-07.** ADR-0023 answers the same question
+> with TypeScript and React compiled by Vite, and accepts the Node toolchain
+> this record rejected. ADR-0020 was decided and never executed: no
+> `viewer/src/` was ever created under the shape below. The measurements in
+> this record remain true and are cited by ADR-0023.
 
 ## Context
 

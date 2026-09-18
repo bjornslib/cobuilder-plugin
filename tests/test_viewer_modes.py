@@ -71,6 +71,22 @@ def test_contexts_mode_renders_boundary_record_as_readable_rules():
     assert "Context Map Integrations" in content or "context-map" in content
 
 
+def test_builds_mode_resolves_n_a_gate_and_counts_approved_gates():
+    """C1 & C2: The gate rail closes an n/a gate and counts approved gates only."""
+    content = VIEWER_PATH.read_text()
+    # C1: the n/a gate draws its own card class and its own pill class
+    assert "is-na" in content
+    assert ".gate-card.is-na{" in content
+    assert ".gate-status-pill.na{" in content
+    assert "const isNa = /^n\\/a/i.test((g.state || '').trim());" in content
+    # C1: its description text reads as closed
+    assert "'Not applicable'" in content
+    # C2: the header count reads approved gates out of the total
+    assert "const approvedGates = gateRails.reduce" in content
+    assert "startsWith('APPROVED')" in content
+    assert "${approvedGates} of ${totalGates} Gates Approved" in content
+
+
 def test_export_artifact_parses_updated_viewer(tmp_path):
     """Regression: export_artifact.py parses the updated viewer and inlines index without error."""
     viewer_html = VIEWER_PATH.read_text()

@@ -1,0 +1,30 @@
+C4Container
+    title Gate doc surfacing — program and epic design docs reach the Builds view
+
+    Person(engineer, "Engineer", "Reads a build's gate rail and backlog lane in the viewer")
+
+    Container_Boundary(docsdir, "docs/plans/<slug>/ — authored") {
+        Container(status, "00-status.md", "Markdown", "Gate approval state, parsed by resolve_feature_gates()")
+        Container(progdesign, "03-program-design.md", "Markdown", "Gate 3 program-design doc, one per feature slug")
+        Container(epicdesign, "epic-<id>-design.md", "Markdown", "Gate 4b epic technical-design doc, one per multi-slice epic")
+    }
+
+    Container_Boundary(shared, "shared/ — index build") {
+        Container(buildindex, "build_index.py", "Python", "project_fields() projects program_design and epic_design entities")
+    }
+
+    ContainerDb(indexjson, "data/index.json", "JSON", "joins.feature_gates carries a doc-reference field per gate; program_design and epic_design entities keyed by feature_slug and epic id")
+
+    Container_Boundary(viewerdir, "plugins/artifact/viewer/") {
+        Container(viewer, "index.html", "Single-file HTML/JS", "renderBuildsMainContent(), gate-rail-grid, renderEpicCard()")
+        Container(sheet, "Gate/epic design sheet", "JS modal", "Read-only, modeled on openAdrSheet()")
+    }
+
+    Rel(engineer, viewer, "Opens the Builds view")
+    Rel(status, buildindex, "Gate approval state parsed by resolve_feature_gates()")
+    Rel(progdesign, buildindex, "Projected as program_design entity")
+    Rel(epicdesign, buildindex, "Projected as epic_design entity")
+    Rel(buildindex, indexjson, "Rebuilds joins.feature_gates plus the two new entities")
+    Rel(indexjson, viewer, "Loaded as window.INDEX")
+    Rel(viewer, sheet, "Gate card or design-doc chip click opens")
+    Rel(sheet, engineer, "Shows gate doc or epic design content, read-only")
