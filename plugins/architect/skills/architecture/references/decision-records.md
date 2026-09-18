@@ -55,14 +55,18 @@ Legal transitions (reject anything else):
 |------|----|
 | idea | tentative, discarded |
 | tentative | decided, discarded |
-| decided | approved, challenged, discarded |
-| approved | challenged |
+| decided | approved, challenged, rejected, discarded |
+| approved | challenged, rejected |
 | challenged | decided, approved, rejected |
 | rejected / discarded | (terminal) |
 
 Rules: `approved` is **human-granted** — requires non-empty `approved_by`. Never jump states (no
 `idea → approved`). A superseded decision is not deleted: mark it `rejected` and add a `replaces`
-edge on its successor.
+edge on its successor. That is one step from a live record, so `decided` and `approved` both reach
+`rejected` directly. `challenged` is for a record somebody contests before either outcome, not a
+required waypoint on the way to `rejected`. The table above and the check in
+`shared/validate_decision_state.py` must agree; a supersession that the prose allows and the table
+forbids is a defect in the table.
 
 ## 4. The value facet (`delivers`) — mandatory
 

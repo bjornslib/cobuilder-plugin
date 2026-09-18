@@ -85,8 +85,20 @@ STATES = {"idea", "tentative", "decided", "approved", "challenged", "rejected", 
 TRANSITIONS: dict[str, set[str]] = {
     "idea": {"tentative", "discarded"},
     "tentative": {"decided", "discarded"},
-    "decided": {"approved", "challenged", "discarded"},
-    "approved": {"challenged"},
+    # `rejected` is reachable from `decided` and `approved` in one step.
+    # This table is the only place in this file that omitted it, and the
+    # omission contradicted the rest of the same file: the docstring above
+    # says "records are superseded (`rejected` + `replaces`), never
+    # deleted", decision-records.md §3 says "a superseded decision is not
+    # deleted: mark it `rejected` and add a `replaces` edge on its
+    # successor", and §5 rule 5 repeats it. It also contradicted practice:
+    # commit 6d32e44, an ancestor of master, moved ADR-0020 from `decided`
+    # to `rejected` in one commit, and this validator flags that commit.
+    # Superseding a live record is one step by the documented rule, so the
+    # two active states carry the edge. `challenged` stays available for a
+    # record that somebody contests before either outcome.
+    "decided": {"approved", "challenged", "rejected", "discarded"},
+    "approved": {"challenged", "rejected"},
     "challenged": {"decided", "approved", "rejected"},
     "rejected": set(),
     "discarded": set(),
