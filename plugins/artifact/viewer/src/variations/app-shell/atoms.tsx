@@ -1,7 +1,7 @@
 /**
  * The small pieces every panel of this shell is built from.
  *
- * Three rules hold across all of them, and they come from the engineer's earlier
+ * Four rules hold across all of them, and they come from the engineer's earlier
  * feedback on the prototype.
  *
  *   1. A clickable thing looks clickable. It carries `cursor-pointer`, a hover fill,
@@ -11,24 +11,34 @@
  *      nothing anywhere is smaller than 12px.
  *   3. No state relies on colour alone. Every badge carries a word and a shape marker,
  *      so the rail and the badges survive greyscale.
+ *   4. The shell states absence, and it never states presence. A reader does not need
+ *      to be told that a record is there. A reader does need to be told when it is not.
+ *      So one readiness state survives: absent. It reads "not present", and it is the
+ *      only state that paints a pill. The present and partial pills are gone.
  *
- * The card, box, and readiness vocabulary below is the record-mosaic's, copied here
+ * The card, box, and absence vocabulary below is the record-mosaic's, copied here
  * rather than imported. The engineer named that variation as the one that "does a
  * better job at displaying content in cards and boxes", so this shell now draws with
- * the same three tones: a present record is a solid card, a partial one is a dashed
- * accent card, an absent one is a dashed muted card. The copy is deliberate. Every
- * directory under `variations/` stays independently removable while the arrangement
- * is still under review, and a cross-variation import would break that.
+ * the same tones: a record that exists is a solid card, and a record that is absent is
+ * a dashed muted card that names nothing. The copy is deliberate. Every directory under
+ * `variations/` stays independently removable while the arrangement is still under
+ * review, and a cross-variation import would break that.
+ *
+ * No component here quotes where a value came from. A panel never prints a field path,
+ * a file name, or a join name. The rule is the engineer's, and the reason is simple: a
+ * reader who wants an outcome does not need to know that the field is called
+ * `goal.outcome`.
  */
 
+import { useId, useState } from "react";
 import type { ReactNode } from "react";
 
 import type { LucideIcon } from "lucide-react";
 import {
   AlertTriangle,
   Check,
+  ChevronDown,
   CircleAlert,
-  CircleDashed,
   CircleDot,
   CircleSlash,
   Info,
@@ -37,6 +47,7 @@ import {
 } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 export type Tone = "neutral" | "accent" | "good" | "warn" | "danger";
@@ -106,73 +117,28 @@ export function toneForVerdict(verdict: string): Tone {
   return "neutral";
 }
 
-/* --------------------------------------------------------------- readiness */
+/* ----------------------------------------------------------------- absence */
 
 /**
- * How much of a record the bundle holds.
+ * The one readiness state that survives: a record the bundle does not hold.
  *
- * The three tones are distinct at a glance, and the pill beside them carries a word
- * and a shape marker, so the three survive greyscale, per section 8.3.
+ * A record that exists needs no marker. The shell paints nothing for it. A record that
+ * is absent paints a dashed muted card and this pill, and the pill says so in two words
+ * with a strikethrough circle beside them, so it survives greyscale, per section 8.3.
  */
-export type Readiness = "present" | "partial" | "absent";
+export const ABSENT_CARD = "border-dashed border-line bg-surface-2/80";
 
-/** The card frame per readiness. A present record is solid, an absent one is dashed. */
-export const CARD_TONE: Record<Readiness, string> = {
-  present: "border-line bg-card shadow-card",
-  partial: "border-dashed border-primary/70 bg-card shadow-card",
-  absent: "border-dashed border-line bg-surface-2/80",
-};
-
-const READINESS_PILL: Record<Readiness, string> = {
-  present: "border-good bg-good-wash text-good",
-  partial: "border-primary bg-accent-wash text-accent-deep",
-  absent: "border-line bg-surface-2 text-ink-faint",
-};
-
-const READINESS_ICON: Record<Readiness, LucideIcon> = {
-  present: Check,
-  partial: CircleDashed,
-  absent: CircleSlash,
-};
-
-/** The parts of a record the bundle did not find, named rather than implied. */
-export function MissingParts({ parts }: { parts: string[] }) {
-  if (parts.length === 0) return null;
-  return (
-    <span className="flex flex-wrap items-center gap-1.5">
-      <span className="font-mono text-[12px] text-ink-dim">missing:</span>
-      {parts.map((part) => (
-        <span
-          key={part}
-          className="rounded border border-dashed border-primary/60 bg-accent-wash/60 px-1.5 py-0.5 font-mono text-[12px] text-accent-deep"
-        >
-          {part}
-        </span>
-      ))}
-    </span>
-  );
-}
-
-export function ReadinessPill({
-  state,
-  word,
-  className,
-}: {
-  state: Readiness;
-  word?: string;
-  className?: string;
-}) {
-  const Icon = READINESS_ICON[state];
+/** The absent pill, and its one shape marker. */
+export function NotPresentPill({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[12px] font-bold tracking-[0.04em] uppercase",
-        READINESS_PILL[state],
+        "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-0.5 font-mono text-[12px] font-bold tracking-[0.04em] text-ink-faint uppercase",
         className,
       )}
     >
-      <Icon className="size-3.5 shrink-0" aria-hidden="true" />
-      {word ?? state}
+      <CircleSlash className="size-3.5 shrink-0" aria-hidden="true" />
+      not present
     </span>
   );
 }
@@ -250,14 +216,19 @@ export function StateBadge({
 /**
  * A panel: one heading, one optional one-line lead, then its body.
  *
- * The frame follows the record mosaic's tile: a solid card when the record is
- * present, a dashed accent card when it is partial, and a dashed muted card when it
- * is absent. A panel that states an absence still occupies its place, and the pill in
- * its header says which of the three it is.
+ * The frame follows the record mosaic's tile: a solid card when the record is there,
+ * a dashed muted card when it is absent. A panel that states an absence still occupies
+ * its place, and the pill in its header is the only thing that says so.
  *
  * A panel inside a `Bento` names its `span` and becomes one tile of that grid. The
  * panel then fills the tile, so a row of tiles reads as one band rather than as cards
  * of three different heights.
+ *
+ * A panel may start closed. `collapsible` with `defaultOpen={false}` renders the body
+ * inside a height-animated container, and the header becomes a toggle. The heading and
+ * the `count` stay on the closed row, so a reader sees what the section holds without
+ * opening it. An absent panel ignores `collapsible`, because an absence that is hidden
+ * is an absence the reader cannot see.
  *
  * Every panel in this shell is short on purpose. The mockup exists to judge the
  * information hierarchy, so a panel states what belongs there and shows one real
@@ -270,8 +241,10 @@ export function Panel({
   icon: Icon,
   tone = "neutral",
   action,
-  readiness,
-  missing,
+  absent = false,
+  count,
+  collapsible = false,
+  defaultOpen = true,
   span,
   children,
   className,
@@ -281,64 +254,123 @@ export function Panel({
   icon?: LucideIcon;
   tone?: Tone;
   action?: ReactNode;
-  /** The record's readiness. Absent leaves the frame in the plain card tone. */
-  readiness?: Readiness;
-  /** The parts the record is missing, named under the header. */
-  missing?: string[];
+  /** True when the record is absent. Paints the dashed frame and the pill. */
+  absent?: boolean;
+  /** A count shown beside the heading, so a closed panel still says what it holds. */
+  count?: number;
+  /** True when the reader may open and close the body. */
+  collapsible?: boolean;
+  /** The state the body starts in. Only read when `collapsible` is true. */
+  defaultOpen?: boolean;
   /** The bento span. Omitted, the panel is not a tile and no grid is required. */
   span?: TileSpan;
   children: ReactNode;
   className?: string;
 }) {
+  const reduce = useReducedMotion();
+  const [open, setOpen] = useState(defaultOpen);
+  const bodyId = useId();
+  /* An absent record is always shown, so the reader never has to open a panel to learn
+     that something is missing. */
+  const shown = absent || !collapsible || open;
+  const closable = collapsible && !absent;
+
+  const heading = (
+    <span className="flex min-w-0 flex-1 items-center gap-x-3">
+      {Icon ? (
+        <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-card text-accent-deep">
+          <Icon className="size-4" aria-hidden="true" />
+        </span>
+      ) : null}
+      <h2 className="m-0 min-w-0 font-mono text-[15px] font-bold tracking-[-0.01em]">
+        {title}
+      </h2>
+      {typeof count === "number" ? (
+        <span className="shrink-0 font-mono text-[13px] text-ink-faint tabular-nums">
+          {count}
+        </span>
+      ) : null}
+      {closable ? (
+        <motion.span
+          className="shrink-0 text-ink-faint"
+          animate={{ rotate: shown ? 180 : 0 }}
+          transition={{ duration: reduce ? 0 : 0.2 }}
+        >
+          <ChevronDown className="size-4" aria-hidden="true" />
+        </motion.span>
+      ) : null}
+    </span>
+  );
+
   const card = (
     <section
       className={cn(
         "rounded-xl border",
-        readiness ? CARD_TONE[readiness] : "border-line bg-card shadow-card",
+        absent ? ABSENT_CARD : "border-line bg-card shadow-card",
         span && "min-w-0 flex-1",
         className,
       )}
       aria-label={title}
     >
       <header className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-line-soft bg-surface-2 px-4 py-2.5">
-        {Icon ? (
-          <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-card text-accent-deep">
-            <Icon className="size-4" aria-hidden="true" />
-          </span>
-        ) : null}
-        <h2 className="m-0 min-w-0 font-mono text-[15px] font-bold tracking-[-0.01em]">
-          {title}
-        </h2>
-        {readiness ? (
-          <ReadinessPill state={readiness} className="ml-auto" />
+        {closable ? (
+          <button
+            type="button"
+            onClick={() => setOpen((current) => !current)}
+            aria-expanded={shown}
+            aria-controls={bodyId}
+            className={cn(
+              "flex min-h-9 min-w-0 flex-1 cursor-pointer items-center rounded-md",
+              "transition-colors duration-150 ease-house hover:text-accent-deep",
+              "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+            )}
+          >
+            {heading}
+          </button>
         ) : (
-          <span className="ml-auto" />
+          heading
         )}
+        {absent ? <NotPresentPill className="ml-auto" /> : <span className="ml-auto" />}
         {action ? <div className="flex min-w-0 flex-wrap items-center gap-2">{action}</div> : null}
       </header>
-      <div
-        className={cn(
-          "min-w-0 px-4 py-3.5",
-          tone !== "neutral" && TONE_RULE[tone],
-          tone !== "neutral" && "border-l-4",
-        )}
+      <motion.div
+        id={bodyId}
+        inert={!shown}
+        initial={false}
+        animate={{ height: shown ? "auto" : 0, opacity: shown ? 1 : 0 }}
+        transition={reduce ? { duration: 0 } : { height: { duration: 0.22 }, opacity: { duration: 0.22 } }}
+        className="min-w-0 overflow-hidden"
       >
-        {missing && missing.length > 0 ? (
-          <div className="mb-3">
-            <MissingParts parts={missing} />
-          </div>
-        ) : null}
-        {lead ? (
-          <p className="m-0 mb-3 max-w-[86ch] font-serif text-[15px] leading-[1.5] text-ink-dim italic">
-            {lead}
-          </p>
-        ) : null}
-        {children}
-      </div>
+        <div
+          className={cn(
+            "min-w-0 px-4 py-3.5",
+            tone !== "neutral" && TONE_RULE[tone],
+            tone !== "neutral" && "border-l-4",
+          )}
+        >
+          {lead ? (
+            <p className="m-0 mb-3 max-w-[86ch] font-serif text-[15px] leading-[1.5] text-ink-dim italic">
+              {lead}
+            </p>
+          ) : null}
+          {children}
+        </div>
+      </motion.div>
     </section>
   );
 
-  return span ? <Tile span={span}>{card}</Tile> : card;
+  /*
+   * A closed panel does not stretch to the row's height. A bento row is as tall as its
+   * tallest tile, and a closed tile that filled the row would paint a large empty card.
+   * `self-start` lets the closed tile hug its own heading instead.
+   */
+  return span ? (
+    <Tile span={span} className={cn(closable && !shown && "self-start")}>
+      {card}
+    </Tile>
+  ) : (
+    card
+  );
 }
 
 /**
@@ -534,18 +566,12 @@ export function Field({
 /**
  * A record the panel could not read.
  *
- * This is the shell's empty state, and it is the point of the mockup. A missing
- * record is named in place, never hidden and never rendered as a blank box.
+ * This is the shell's empty state, and it is the point of the mockup. A missing record
+ * is stated in place, never hidden and never rendered as a blank box. It names the
+ * record kind and stops there: the panel does not enumerate the files it looked in,
+ * because a reader cannot act on a file name and does not need one.
  */
-export function Missing({
-  children,
-  detail,
-  className,
-}: {
-  children: ReactNode;
-  detail?: string;
-  className?: string;
-}) {
+export function Missing({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <div
       className={cn(
@@ -557,11 +583,6 @@ export function Missing({
         <Minus className="mt-1 size-4 shrink-0 text-ink-faint" aria-hidden="true" />
         <span>{children}</span>
       </p>
-      {detail ? (
-        <p className="m-0 pl-6 font-mono text-[12px] leading-[1.6] text-ink-faint">
-          {detail}
-        </p>
-      ) : null}
     </div>
   );
 }
@@ -576,10 +597,98 @@ export function AbsentLine({ children }: { children: ReactNode }) {
   );
 }
 
-/** A quiet mono line that names a source field. Every panel states what it read. */
-export function SourceLine({ children }: { children: ReactNode }) {
+/** A quiet mono line that states an absence of a whole record, with no source named. */
+export function AbsentRecordLine({ children }: { children: ReactNode }) {
   return (
-    <p className="m-0 mt-2 font-mono text-[12px] leading-[1.6] text-ink-faint">{children}</p>
+    <p className="m-0 font-mono text-[12px] leading-[1.6] text-ink-faint">{children}</p>
+  );
+}
+
+/* -------------------------------------------------------------------- points */
+
+/**
+ * One point: a bullet, the point itself, and the kind it carries.
+ *
+ * A row is a row, not a box. The engineer asked twice for this shape. A point in its
+ * own outlined box competes with the card that holds it, and a column of five boxes
+ * reads as five things rather than one list.
+ */
+export interface Point {
+  text: string;
+  /** The beat's own kind, or the column's kind when the list is uniform. */
+  kind?: string;
+}
+
+/**
+ * One column of points: a shadcn `Card`, one unboxed lead, then striped rows.
+ *
+ * The lead is the record's own words, so it stays. It is set as prose rather than as a
+ * box, above the rows, because the rows are the list and the lead is what the list is
+ * about. `intent.problem` and `intent.approach` are the two leads this shell passes.
+ *
+ * THE STRIPE IS AN EXPLICIT INDEX, not `odd:` or `even:`. The rows sit in an `ol`
+ * beside a header and a lead paragraph, and an index cannot be thrown off by a sibling
+ * that joins the list later. Row 0 paints `bg-card`, which is `--surface` and the card's
+ * own colour, and row 1 paints `bg-surface-2`. Both tokens are redefined for dark mode
+ * in `index.css`, so the stripe holds in either theme.
+ */
+export function PointCard({
+  title,
+  lead,
+  points,
+  empty,
+  className,
+}: {
+  title: string;
+  lead?: string;
+  points: Point[];
+  /** What the card says when it holds no point. */
+  empty: string;
+  className?: string;
+}) {
+  return (
+    <Card className={cn("min-w-0 gap-0 rounded-xl py-0", className)}>
+      <CardHeader className="border-b border-line-soft bg-surface-2 px-4 py-2.5">
+        <CardTitle className="font-mono text-[12.5px] font-bold tracking-[0.08em] uppercase">
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="min-w-0 px-0 pb-0">
+        {lead ? (
+          <p className="m-0 max-w-[86ch] border-b border-line-soft px-4 py-3 font-serif text-[16px] leading-[1.6] text-foreground">
+            {lead}
+          </p>
+        ) : null}
+        {points.length > 0 ? (
+          <ol className="m-0 flex min-w-0 list-none flex-col p-0">
+            {points.map((point, index) => (
+              <li
+                key={`${index}-${point.text.slice(0, 24)}`}
+                className={cn(
+                  "flex min-w-0 items-start gap-2.5 px-4 py-2.5",
+                  index % 2 === 0 ? "bg-card" : "bg-surface-2",
+                )}
+              >
+                <span className="mt-2 size-1.5 shrink-0 rounded-full bg-ink-faint" aria-hidden="true" />
+                <span className="min-w-0 flex-1 font-serif text-[16px] leading-[1.55] break-words text-ink-mid">
+                  {point.text}
+                </span>
+                {point.kind ? (
+                  <span className="mt-0.5 shrink-0 font-mono text-[12px] text-ink-faint">
+                    {point.kind}
+                  </span>
+                ) : null}
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="m-0 flex min-w-0 items-start gap-2 px-4 py-3 font-mono text-[12.5px] leading-[1.6] text-ink-faint">
+            <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-warn" aria-hidden="true" />
+            <span>{empty}</span>
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

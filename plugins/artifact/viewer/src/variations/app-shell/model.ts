@@ -128,6 +128,15 @@ export interface WorkItem {
   /** The planning slug this work's gates are keyed by. */
   planSlug: string;
   planSlugVia: "slice" | "design";
+  /**
+   * True when a plan directory exists for this work.
+   *
+   * The index carries no design-to-plan field, so the shell reads the three record kinds
+   * that only a plan can carry, and it treats a slug as a real plan only when one of them
+   * names it. An epic's design panel reads this to tell a work with no plan from a work
+   * whose plan is simply missing one epic's document. The two need different sentences.
+   */
+  hasPlan: boolean;
   gateSteps: GateStep[] | null;
   /** Every feature slug the gate join holds. The Rubrics panel names what it did not read. */
   gateSlugs: Record<string, GateStep[]>;
@@ -167,12 +176,29 @@ export function buildWorkItems(index: RecordIndex, records: Record<string, Desig
   const entities = entitiesOf(index);
   const joins = joinsOf(index);
 
-  /* A plan slug is accepted only when the index holds a plan record under it. */
+  /*
+   * A plan slug is a real plan only when the index holds a plan record under it. Three
+   * record kinds are written only for a plan directory: a gate record, an epic's technical
+   * solution design, a program design, and a plan's interaction design. A slug that none
+   * of them names is a design with no plan directory.
+   */
   const knownSlugs = new Set<string>([
     ...Object.keys(joins.feature_gates),
     ...entities.epic_design.map((doc) => doc.feature_slug),
     ...entities.program_design.map((doc) => doc.feature_slug),
+    ...(entities.interaction_design ?? []).map((doc) => doc.feature_slug),
   ]);
+
+  /*
+   * The technical solution design per epic, keyed by the document's own id.
+   *
+   * The epic entity carries `design_doc`, and the index resolves it. Two id spaces meet
+   * there: the epic's own id is design-scoped, and the document's id is plan-scoped, so
+   * `plugin-split/E1` and `cobuilder-family/E1` name one document between them. The join
+   * is done upstream, in the index, and the shell reads its answer rather than rebuilding
+   * a key of its own.
+   */
+  const designById = new Map(entities.epic_design.map((doc) => [doc.id, doc]));
 
   const byDesign = new Map<string, EpicEntity[]>();
   for (const epic of entities.epic) {
@@ -280,24 +306,19 @@ export function buildWorkItems(index: RecordIndex, records: Record<string, Desig
     const plan = planSlugFor(design.id, slices, knownSlugs);
 
     /*
-     * The Gate 4b technical solution design for each epic of this work. The index
-     * keys the entity by planning slug, and a design id is not always that slug, so
-     * the epic's own id is tried first and the planning slug second. Which one
-     * resolved is kept, because the panel that shows a document states its source.
+     * The Gate 4b technical solution design for each epic of this work. The index resolves
+     * the document id onto the epic, and this reads the answer. Which id space matched is
+     * kept, because the panel that shows a document states its source.
      */
     let epicDesignVia: WorkItem["epicDesignVia"] = "none";
     const epicDesigns = new Map<string, EpicDesignEntity>();
     for (const epic of epics) {
-      const byId = entities.epic_design.find((doc) => doc.id === epic.id);
-      const bySlug = byId
-        ? undefined
-        : entities.epic_design.find(
-            (doc) => doc.epic_id === epic.epic_id && doc.feature_slug === plan.slug,
-          );
-      const doc = byId ?? bySlug;
+      const key = epic.design_doc;
+      if (!key) continue;
+      const doc = designById.get(key);
       if (!doc) continue;
       epicDesigns.set(epic.id, doc);
-      epicDesignVia = byId ? "id" : "plan slug";
+      epicDesignVia = key === epic.id ? "id" : "plan slug";
     }
 
     /* Publications for this work's own pull requests, and never for another work's. */
@@ -326,6 +347,7 @@ export function buildWorkItems(index: RecordIndex, records: Record<string, Desig
       publications,
       planSlug: plan.slug,
       planSlugVia: plan.via,
+      hasPlan: knownSlugs.has(plan.slug),
       gateSteps: joins.feature_gates[plan.slug] ?? null,
       gateSlugs: joins.feature_gates,
       epicDesigns,

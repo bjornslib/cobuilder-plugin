@@ -1,6 +1,6 @@
 # Work board: Interaction Design Specification
 
-**Version:** 2.0
+**Version:** 2.1
 **Date:** 2026-09-19
 **Author:** design session with bjornslib
 **Product document:** `01-product.md` (not yet written. The product intent currently lives in `docs/architecture/designs/cobuilder-viewer/goal.json`.)
@@ -10,6 +10,13 @@ three-level content hierarchy. The three layout variations built on
 2026-09-18 are inputs to this document, not candidates against it. Their tile
 arrangements remain useful inside the scroll pane. Their page-scrolling frame
 is superseded by section 2.1.
+
+Version 2.1 records five cleanups the engineer asked for after reading the
+first build of the shell. The shell stops quoting where a value came from. It
+stops announcing that a record is present. The points of Problem and solution
+become striped rows inside one card per column. An absent panel states the
+absence in two words. Assessment, Risks, and Unknowns start closed. Sections
+1.1, 2.2, 2.3, 3.2, 3.3, 4.1, 6.4, 6.5, 7.2, 10, and 11.2 carry the changes.
 
 ---
 
@@ -41,10 +48,18 @@ answer questions that arrive while building.
 4. **A section appears when the work reaches it.** A section the work cannot fill
    is absent, not empty. Build appears when the work has epics. Pull requests
    appear when a branch or a pull request exists.
-5. **Absence is a first-class state.** A record that does not exist is named, not
-   hidden and not rendered as a blank box.
+5. **Absence is a first-class state.** A record that does not exist is stated in
+   place, not hidden and not rendered as a blank box. The panel names no file and
+   no field, because a reader cannot act on either.
 6. **The shell renders. It never computes.** Every count, state, and join comes
    from `data/index.json`.
+7. **The reading surface quotes no source.** A panel prints no field path, no
+   file name, and no join name. A reader who wants an outcome does not need to
+   know that the field is called `goal.outcome`. The rail is the one exception,
+   and section 3.3 states why.
+8. **Presence is never announced. Absence is.** A record that exists renders its
+   own content and no marker. A reader needs to hear only what is not there, so
+   one readiness state survives: absent. It reads `not present`.
 
 ---
 
@@ -163,7 +178,12 @@ them.
 | `feature_gates` is empty | the Rubrics section states that no gate record exists, and must not read as a pass |
 | Epics carry four states | the intended six render as a marked prototype ladder beside the real value |
 | All 29 slices are `completed` | the intended seven render the same way |
-| An epic has no `outcome` in the index | the outcome comes from `goal.epics[]` in `designs.js`, and the Why line states which source it read |
+| An epic has no `outcome` in the index | the outcome comes from `goal.epics[]`, and the panel states the outcome and no source |
+
+**What the shell never prints.** A panel names the record it read, never the file
+or the field it read it from. `goal.outcome` is `Why`. `goal.done_when` is `Done
+when`. The heading carries the meaning, and the path carries none. Seventeen
+sites printed a path in version 2.0, and version 2.1 removed every one.
 
 ### 2.3 Declared Defaults
 
@@ -178,12 +198,37 @@ them.
 | Diagram rendering | source as code | rendered | component state, per diagram |
 | State ladder display | real value only | real plus intended | component state |
 | Motion | follows `prefers-reduced-motion` | forced off | media query |
+| Assessment panel | **closed** | open | component state |
+| Risks panel | **closed** | open | component state |
+| Unknowns panel | **closed** | open | component state |
+
+The last three defaults are version 2.1's. The pane is 558 px tall at 1280x633,
+and a section of four open panels runs to several thousand pixels. A closed panel
+keeps its heading and its count on the row, so a reader sees what is there and
+opens only what they want. An absent panel ignores the default and renders open,
+because an absence that is hidden is an absence the reader cannot see.
 
 Two defaults deserve a plain statement. **Theme is light.** It does not follow
 the operating-system preference, because the engineer declared light on
 2026-09-18. **Diagram rendering is off.** A Mermaid runtime is a large
 dependency, and a reader who wants one diagram should not pay for it on first
 paint.
+
+### 2.4 Presence and Absence
+
+Two statements about the same record used to render together: the record's own
+content, and a pill saying the record was present. The second statement carried
+nothing. Version 2.1 removed the present pill and the partial pill, so one
+readiness state survives.
+
+| State | Frame | Marker | Word |
+|---|---|---|---|
+| present | a solid card | none | none |
+| absent | a dashed card in the muted surface | a strikethrough circle | not present |
+
+The partial state is gone rather than renamed. A record that holds some of its
+fields is a record, and the panel renders the fields it holds. A record that
+holds none of them is absent.
 
 ---
 
@@ -282,13 +327,13 @@ paint.
 | State | Visual treatment | Initial | Timer arming |
 |---|---|---|---|
 | Default | four labelled columns on one band, Done when and Abort if side by side | Yes | Not applicable |
-| Hover | a list row tints, and its source field is named on hover | No | Not applicable |
+| Hover | a list row tints | No | Not applicable |
 | Focus-visible | ring on the row | No | Not applicable |
 | Pressed | not applicable | No | Not applicable |
 | Selected | not applicable | No | Not applicable |
 | Disabled | not applicable | No | Not applicable |
-| Loading | a skeleton band at the block's real height | Yes, while `designs.js` resolves | Starts on mount, ends when the record settles |
-| Error | the block states which record it could not read | No | Not applicable |
+| Loading | a skeleton band at the block's real height | Yes, while the record resolves | Starts on mount, ends when the record settles |
+| Error | the block states that it could not read the record | No | Not applicable |
 | Empty | `Abort if` is often absent in the corpus. The column states that no abort condition is recorded, rather than rendering blank | No | Not applicable |
 | Transient | not applicable | No | Not applicable |
 
@@ -301,11 +346,29 @@ paint.
 | Focus-visible | not applicable. Its controls carry the rings | No | Not applicable |
 | Pressed | not applicable | No | Not applicable |
 | Selected | the section is current, marked in the rail | Yes, for the routed section | Not applicable |
-| Disabled | the section's nav item is disabled and names the absent record | No | Not applicable |
+| Disabled | the section's nav item is disabled and names the absent record. The panel itself states the absence in two words | No | Not applicable |
 | Loading | panels render skeletons at their real size | No | Not applicable |
 | Error | the panel that failed states its reason, and the other panels still render | No | Not applicable |
 | Empty | the section's nav item is gated when the work cannot fill it at all | No | Not applicable |
 | Transient | a crossfade on section change | No | Ends when the section settles |
+
+#### Panel disclosure
+
+A panel that starts closed carries a disclosure on its heading row. The heading
+and the count stay visible, so the closed row says what the panel holds.
+
+| State | Visual treatment | Initial | Timer arming |
+|---|---|---|---|
+| Default | the heading row, with the count and a chevron pointing down | Yes, for Assessment, Risks, and Unknowns | Not applicable |
+| Hover | the heading text darkens toward the accent ink | No | Not applicable |
+| Focus-visible | 2 px ring at a 2 px offset | No | Not applicable |
+| Pressed | the heading text darkens further | No | Held while the pointer is down |
+| Selected | not applicable. A disclosure is not a destination | No | Not applicable |
+| Disabled | not applicable. An absent panel renders open and carries no disclosure | No | Not applicable |
+| Loading | not applicable. The panel renders from the record | No | Not applicable |
+| Error | not applicable | No | Not applicable |
+| Empty | an absent panel renders open, so the reader never has to open a panel to learn that a record is missing | No | Not applicable |
+| Transient | height and opacity animate together | No | Ends when the panel settles |
 
 #### Epic row
 
@@ -365,12 +428,18 @@ to see in place.**
 | Pull requests group | `epic_to_pull_request` names a pull request for one of this work's own epics | no epic carries a pull request |
 | Shipped group | `stage` is `implemented`, or a `publication` exists for a pull request this work's own epics carry | neither holds |
 | Rubrics item | `feature_gates` holds a gate record for this feature | the join is empty. The item then states that no gate record exists, because a missing record must not read as a pass |
-| Slice list under an epic | the epic is expanded | the epic is collapsed |
+| Slice list under an epic | the epic owns at least one slice | the epic owns no slice. The epic row states the count of zero instead |
 | Render control | the diagram has not been rendered | the reader renders it |
 | Empty-state note | the panel's record is absent | the record exists |
+| Panel disclosure | the panel holds a record and declares a closed default | the record is absent, because an absent panel renders open |
 | Unresolved-slices panel | `slice_to_epic_unresolved` holds a slice | the join is empty |
 | Retry | the index request failed | a retry starts |
 | Level nav item | always present. It is disabled when its record is absent, so the gap stays visible | never |
+
+**The rail names the absent records, and no other surface does.** A greyed nav
+item with no reason is the one place a reader is genuinely stuck, so the rail
+keeps its tooltip and its inline line, and both name the records. Every panel
+stops at the fact. This is an explicit engineer decision, taken on 2026-09-19.
 
 **A pull request reached through a decision is not the work's pull request.**
 An earlier version of this table accepted `adr_to_pull_request` as well. That was
@@ -401,6 +470,7 @@ somebody else's pull request is not evidence that this work shipped.
 | Reader selects a gated section | current section | redirect to the nearest available section | immediate | — |
 | Reader selects another work item | work A | work B, same section where B fills it | `--dur-slow` crossfade | — |
 | Reader expands a nav group | collapsed | expanded | `--dur-expand` | the reader collapses it |
+| Reader opens a closed panel | collapsed | expanded | `--dur-expand` | the reader closes it |
 | Reader opens an epic | collapsed | selected, detail open | `--dur-expand` | the selection clears |
 | Reader selects a slice | none or another | that slice selected | `--dur-base` slide | the selection clears |
 | Reader presses Render | source shown | rendering | immediate | the render settles or fails |
@@ -512,12 +582,30 @@ icons under 1200 px and becomes a drawer under 768 px.
 ### 6.4 Contract block
 
 A four-column band. Done when and Abort if sit side by side, because a reader
-weighs them against each other. Each row names the field it read.
+weighs them against each other. A column carries its heading word and nothing
+else.
 
 ### 6.5 Level panels
 
-A `Card` per record. Problem and solution splits the narrative beats by kind
-into its two columns, so a constraint sits beside the problem it constrains.
+A `Card` per record. Problem and solution splits the narrative beats by kind into
+its two columns, so a constraint sits beside the problem it constrains.
+
+Each of those two columns is one shadcn `Card`. Its heading is the column word,
+`PROBLEM` or `SOLUTION`. The authored problem or approach prose is the card's
+lead, set as prose above the rows and not boxed. The beats are the rows under it,
+each one a bullet and its text. **The rows alternate in tint.** The first row
+paints `--surface`, which is the card's own colour, and the next paints
+`--surface-2`. The pattern repeats down the list. Both tokens are redefined under
+`data-theme="dark"`, so the stripe holds in either theme. The tint follows the
+row's index rather than `odd:`, so a row added above the list cannot shift the
+pattern.
+
+The earlier shape gave every beat its own outlined box and then painted two more
+boxes amber and green below. That was two treatments for one thing, and version
+2.1 removed the second one.
+
+Alternatives considered is not here. A rejected option is architectural, and each
+decision carries its own alternatives, so the panel sits in Architecture.
 
 ### 6.6 Status badge and state ladders
 
@@ -546,17 +634,18 @@ stated failure.
 | Case | Required behaviour |
 |---|---|
 | A `stage` outside the vocabulary | the badge reads `unknown`, and the raw word stays in the tooltip |
-| An epic with no slices | the row states it, and no chevron renders |
-| A slice with no epic | it appears in the unresolved-slices panel, which names the join |
+| An epic with no slices | the epic row states the count of zero, and no slices block renders |
+| A slice with no epic | it appears in the unresolved-slices panel |
 | `feature_gates` is empty | the Rubrics item states that no gate record exists. It must not read as a pass |
-| An epic has no design document | the Architecture level for that epic names the absent document |
+| An epic has no design document | the epic's own panel tells the two cases apart. A work with no plan directory states that none of its epics can have one. A work with a plan states that this epic has none |
 | A design carries only `goal.json` | every level renders its own absence, and the work reads as deliberately sparse |
-| A superseded design | the top bar names what superseded it, read from the `supersedes` field |
+| A superseded design | the top bar names what superseded it |
 | A dangling ADR reference | the Architecture panel names the reference that does not resolve |
-| An epic outcome missing from the index | the Why line reads the outcome from `goal.epics[]` and says which source it used |
+| An epic outcome missing from the index | the panel reads the outcome from `goal.epics[]` and states no source |
 | A pull request with no branch | the group renders and names the branch |
 | Two designs share a name | the id disambiguates, and both render |
 | No deploy record exists | the Shipped group says so, and reports `stage` and any publication instead |
+| An absent record in a closed panel | the panel renders open, because an absence behind a disclosure is an absence the reader cannot see |
 
 ---
 
@@ -620,6 +709,7 @@ layout narrows.
 | Section change | a crossfade of the scroll pane, no slide | `--dur-base` |
 | Work-item change | a crossfade, and the top bar's name updates without moving | `--dur-slow` |
 | Nav group expand | height and opacity together | `--dur-expand` |
+| Panel disclosure | height and opacity together | `--dur-expand` |
 | Epic disclosure | the same, and the slice list reveals | `--dur-expand` |
 | Slice panel | a 12 px slide with a fade | `--dur-base` |
 | Theme change | the icon crossfades, then the tokens fade | `--dur-fast`, then `--dur-base` |
@@ -656,6 +746,7 @@ One scale, named once.
 | Theme switcher | the icon button | 44 px square |
 | Epic row | the whole row, not the chevron | full pane width, at least 48 px tall |
 | Slice row | the whole row | full pane width, at least 44 px tall |
+| Panel disclosure | the panel's heading row | full panel width, at least 36 px tall |
 | Render control | the button | at least 44 px tall |
 | Contract row | the row, when it links to its source | the row's full height |
 | Mobile nav drawer trigger | the button | 44 px square |

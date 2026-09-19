@@ -149,7 +149,7 @@ export function TopBar({
                 tabIndex={-1}
                 className="max-w-[38ch] truncate font-mono text-[15px] font-bold outline-none"
               >
-                {workName ?? (ready ? "No work item" : "reading index.json…")}
+                {workName ?? (ready ? "No work item" : "reading the index…")}
               </span>
             </span>
             <ChevronDown

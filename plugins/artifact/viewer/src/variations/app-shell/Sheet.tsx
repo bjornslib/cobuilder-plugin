@@ -17,6 +17,11 @@
  *
  * This file is presentational. It decides no verdict, computes no join, and reads no
  * file. Its caller holds the subject.
+ *
+ * The Sheet names no source. It used to close every body with a line saying which file
+ * the record came from, and the engineer removed every one of those lines from the
+ * shell. A reader who opens a decision record wants the record, not the path it was
+ * read from.
  */
 
 import type { ReactNode } from "react";
@@ -37,19 +42,19 @@ import type { ContextEntity, EpicDesignEntity, EpicEntity } from "@/data/types";
 
 import type { DecisionCarrier } from "./model";
 import type { AdrRecord } from "./records";
-import { Box, Chip, KeyValue, Missing, SourceLine, StateBadge, SubHead, TextList, toneForStage } from "./atoms";
+import { Box, Chip, KeyValue, Missing, StateBadge, SubHead, TextList, toneForStage } from "./atoms";
 import { MarkdownBlock } from "./markdown";
 
 /** Everything a Sheet can show. One member per record kind. */
 export type SheetSubject =
   | {
       kind: "adr";
-      /** The decision's own record from `adrs.js`, or undefined when the file lacked it. */
+      /** The decision's own record, or undefined when the bundle lacked it. */
       record: AdrRecord | undefined;
-      /** The row `entities.adr` holds, which is the only source for the title fallback. */
+      /** The row the index holds, which is the only source for the title fallback. */
       title: string;
       state: string;
-      /** The pull request this decision reached, from `joins.adr_to_pull_request`. */
+      /** The pull request this decision reached. */
       carrier: DecisionCarrier | undefined;
     }
   | {
@@ -65,10 +70,6 @@ export type SheetSubject =
       kind: "epic-design";
       doc: EpicDesignEntity;
       epic: EpicEntity;
-      /** How the epic design resolved: by the epic's id, or by the planning slug. */
-      via: "id" | "plan slug";
-      /** The ADR that introduced this record, when one names it. */
-      adrRef: string | null;
     };
 
 export interface RecordSheetProps {
@@ -169,12 +170,12 @@ function titleOf(subject: SheetSubject): string {
 
 function descriptionOf(subject: SheetSubject): string {
   if (subject.kind === "adr") {
-    return "The whole decision record, as adrs.js writes it. The index carries three of these fields.";
+    return "The whole decision record, with every field the bundle keeps for it.";
   }
   if (subject.kind === "boundary") {
     return `A boundary rule the context ${subject.context} declares, with every field the record carries.`;
   }
-  return `The Gate 4b technical solution design for epic ${subject.epic.epic_id}, resolved by ${subject.via}.`;
+  return `The Gate 4b technical solution design for epic ${subject.epic.epic_id}.`;
 }
 
 function badgesOf(subject: SheetSubject): ReactNode {
@@ -211,7 +212,6 @@ function badgesOf(subject: SheetSubject): ReactNode {
     <>
       <Chip>{subject.doc.feature_slug}</Chip>
       <Chip>{subject.epic.epic_id}</Chip>
-      {subject.adrRef ? <Chip tone="accent">{subject.adrRef}</Chip> : null}
     </>
   );
 }
@@ -232,8 +232,9 @@ function AdrBody({
   const record = subject.record;
   if (!record) {
     return (
-      <Missing detail="adrs.js carries no entry for this id. The panel above read the title and the state from entities.adr in data/index.json.">
-        The whole record is absent, so only the index's three fields are available.
+      <Missing>
+        The whole record is absent, so only the decision&apos;s title and its state are
+        available.
       </Missing>
     );
   }
@@ -258,9 +259,6 @@ function AdrBody({
                 <GitPullRequest className="size-3.5" aria-hidden="true" />
                 PR {subject.carrier.pr}
               </Chip>
-              <Chip title="The join that reached it, and the epics it walked.">
-                via {subject.carrier.via}
-              </Chip>
               {subject.carrier.onThisWork ? (
                 <Chip tone="good">one of this work's own epics carries it</Chip>
               ) : (
@@ -274,28 +272,28 @@ function AdrBody({
                 {subject.carrier.entity.title}
               </p>
             ) : (
-              <Missing detail="entities.pull_request holds no row for this id.">
-                The index carries no pull request row for {subject.carrier.pr}.
+              <Missing>
+                The bundle carries no pull request row for {subject.carrier.pr}.
               </Missing>
             )}
             {subject.carrier.path.length > 0 ? (
-              <SourceLine>
-                joins.adr_to_pull_request walked {subject.carrier.path.length} epics:{" "}
+              <p className="m-0 font-mono text-[12px] leading-[1.6] text-ink-faint">
+                reached across {subject.carrier.path.length} epics:{" "}
                 {subject.carrier.path.slice(0, 8).join(", ")}
                 {subject.carrier.path.length > 8
                   ? `, and ${subject.carrier.path.length - 8} more`
                   : ""}
                 .
-              </SourceLine>
+              </p>
             ) : (
-              <SourceLine>
-                The join reached this pull request directly, with no epic on the path.
-              </SourceLine>
+              <p className="m-0 font-mono text-[12px] leading-[1.6] text-ink-faint">
+                Reached directly, with no epic on the path.
+              </p>
             )}
           </div>
         ) : (
-          <Missing detail="joins.adr_to_pull_request holds no entry for this decision, so no pull request carried it.">
-            This decision reaches no pull request in this bundle.
+          <Missing>
+            No pull request reached this decision, so no pull request carried it.
           </Missing>
         )}
       </SheetPanel>
@@ -326,8 +324,8 @@ function AdrBody({
           </span>
         </Box>
       ) : (
-        <Missing detail="adrs.js carries no maps_to.rule for this decision, so only the title is available.">
-          This decision states no enforceable rule.
+        <Missing>
+          This decision states no enforceable rule, so only the title is available.
         </Missing>
       )}
 
@@ -364,9 +362,7 @@ function AdrBody({
           </div>
         </div>
       ) : (
-        <Missing detail="adrs.js carries no body for this decision.">
-          This decision carries no authored body.
-        </Missing>
+        <Missing>This decision carries no authored body.</Missing>
       )}
 
       <div className="flex min-w-0 flex-col gap-2">
@@ -385,7 +381,7 @@ function AdrBody({
                 ) : null}
                 {entry.source ? (
                   <span className="min-w-0 font-mono text-[12.5px] break-words text-ink-faint">
-                    read from {entry.source}
+                    {entry.source}
                   </span>
                 ) : null}
                 {entry.note ? (
@@ -397,24 +393,17 @@ function AdrBody({
             ))}
           </ul>
         ) : (
-          <Missing detail="No history array in this decision's record.">
-            This decision records no state change.
-          </Missing>
+          <Missing>This decision records no state change.</Missing>
         )}
       </div>
 
       <div className="flex min-w-0 flex-wrap items-baseline gap-x-5 gap-y-2 border-t border-line-soft pt-3">
         {record.source_pr !== undefined && record.source_pr !== null ? (
-          <KeyValue label="source_pr" value={record.source_pr} />
+          <KeyValue label="source PR" value={record.source_pr} />
         ) : null}
-        {record.approved_by ? <KeyValue label="approved_by" value={record.approved_by} /> : null}
+        {record.approved_by ? <KeyValue label="approved by" value={record.approved_by} /> : null}
         <KeyValue label="id" value={subject.record?.id ?? subject.title} />
       </div>
-
-      <SourceLine>
-        read from <code>data/adrs.js</code>, one entry per decision. The carrying pull
-        request comes from <code>joins.adr_to_pull_request</code>.
-      </SourceLine>
     </div>
   );
 }
@@ -496,16 +485,12 @@ function BoundaryBody({
             })}
           </div>
         ) : (
-          <Missing detail="This rule carries only a target and a why, and both are shown above.">
-            No further field is recorded on this rule.
+          <Missing>
+            No further field is recorded on this rule, beyond the target and the reason
+            above.
           </Missing>
         )}
       </div>
-
-      <SourceLine>
-        read from <code>entities.boundary_rule[].detail</code> in{" "}
-        <code>data/index.json</code>, filtered to the contexts a linked decision names.
-      </SourceLine>
     </div>
   );
 }
@@ -521,25 +506,13 @@ function EpicDesignBody({
     <div className="flex min-w-0 flex-col gap-4">
       <div className="flex min-w-0 flex-wrap items-baseline gap-x-5 gap-y-2">
         <KeyValue label="epic" value={subject.doc.epic_id} />
-        <KeyValue label="feature_slug" value={subject.doc.feature_slug} />
-        <KeyValue label="resolved by" value={subject.via} />
+        <KeyValue label="plan" value={subject.doc.feature_slug} />
         <KeyValue label="characters" value={subject.doc.body_md.length.toLocaleString()} />
       </div>
-
-      {subject.adrRef ? (
-        <Box label="The decision this design answers" tone="note">
-          {subject.adrRef}
-        </Box>
-      ) : null}
 
       <div className="min-w-0 rounded-lg border border-line bg-surface-2/40 p-3.5">
         <MarkdownBlock markdown={subject.doc.body_md} />
       </div>
-
-      <SourceLine>
-        read from <code>entities.epic_design</code> in <code>data/index.json</code>. The
-        document is the Gate 4b technical solution design the build loop wrote.
-      </SourceLine>
     </div>
   );
 }

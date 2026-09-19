@@ -1,9 +1,10 @@
 /**
  * The three levels: Intent, Problem & Solution, Architecture.
  *
- * Each panel is a heading, a short real excerpt, and a stated source field. Where a
- * record is absent the panel names the record in place, because an absent record is a
- * fact the reader needs to see.
+ * Each panel is a heading, a short real excerpt, and the records that back it. Where a
+ * record is absent the panel states the absence in place, because an absent record is a
+ * fact the reader needs to see. It does not name the file it looked in, and it does not
+ * announce that a record it did find is there. See `atoms.tsx` rule 4.
  *
  * EACH PANEL IS A TILE OF A BENTO GRID. The level used to be one column of full-width
  * panels, so every panel claimed the same width whether it held one line or a table.
@@ -16,17 +17,21 @@
  * one-third tile would fire on a wide viewport and crush the tile's own columns, so
  * every inner grid in this file uses a container query instead.
  *
- * TWO SHAPES CARRY THE CONTENT, AND THEY ARE THE RECORD MOSAIC'S. A `Box` turns one
- * named field into a card, and an accordion holds a list whose entries repeat. The
- * engineer named the record mosaic as the variation that "does a better job at
- * displaying content in cards and boxes", so the problem column, the solution column,
- * the assessment summary, and every decision now render as boxes rather than as
- * paragraphs with labels. The nested-repeat case gets the accordion: decisions, and
- * assessment findings. A decision's full record opens in a Sheet, because the record
- * carries fourteen fields and the panel needs to show one line.
+ * PROBLEM AND SOLUTION IS TWO CARDS, AND THE POINTS ARE THEIR ROWS. The engineer asked
+ * twice for this shape, so it is worth stating what it replaced. Each point used to sit
+ * in its own outlined box, and the authored problem and approach prose sat in two more
+ * boxes below, painted amber and green. That is two treatments for one thing, and the
+ * colour was doing work the words already did. Now each column is one shadcn `Card`.
+ * The authored prose is the card's unboxed lead, and the points are striped rows under
+ * it. `PointCard` in `atoms.tsx` is that shape.
  *
- * Every value here comes from `data/index.json` or from `data/designs.js`. Nothing is
- * invented, and no panel guesses a value to fill a gap.
+ * THREE PANELS START CLOSED. Assessment, Risks, and Unknowns render collapsed, with
+ * their headings and counts on the closed row. The pane is 558 px tall at 1280x633 and
+ * a full Problem and solution section runs several thousand pixels. A reader who wants
+ * one of the three opens it. A reader who does not is not made to scroll past it.
+ *
+ * Every value here comes from the bundle's record index and its record files. Nothing
+ * is invented, and no panel guesses a value to fill a gap.
  */
 
 import { AlertOctagon, Ban, BookMarked, Boxes, CircleHelp, Compass, FileText, GitBranch, GitPullRequest, ListChecks, Network, Scale, ScrollText, ShieldAlert, Target } from "lucide-react";
@@ -51,7 +56,7 @@ import {
   Field,
   Missing,
   Panel,
-  SourceLine,
+  PointCard,
   StateBadge,
   SubHead,
   TextList,
@@ -61,33 +66,6 @@ import {
 } from "./atoms";
 import { Diagram, type Theme } from "./Diagram";
 import { VERDICT_GLOSS } from "./gloss";
-
-const RECORD_SLOTS = ["goal", "intent", "narrative", "assessment", "diagrams", "pr-draft"] as const;
-
-function recordSlots(work: WorkItem) {
-  const record = work.record;
-  return RECORD_SLOTS.map((slot) => {
-    const present =
-      slot === "goal"
-        ? record !== undefined
-        : slot === "intent"
-          ? record?.intent !== undefined
-          : slot === "narrative"
-            ? record?.narrative !== undefined
-            : slot === "assessment"
-              ? record?.assessment !== undefined
-              : slot === "diagrams"
-                ? work.diagramLevels.length > 0
-                : (record?.pr_draft ?? "").trim().length > 0;
-    return { slot, present };
-  });
-}
-
-/** The readiness of one panel, from the level state the rail already computed. */
-function readinessOf(level: LevelState | undefined, fallback: "present" | "absent") {
-  if (!level) return fallback;
-  return level.available ? ("present" as const) : ("absent" as const);
-}
 
 /* -------------------------------------------------------------------- Intent */
 
@@ -101,8 +79,6 @@ export function IntentPanel({ work, levelState }: { work: WorkItem; levelState: 
     const state = work.epicState(epic);
     return state === "completed" || state === "merged";
   }).length;
-  const slots = recordSlots(work);
-  const present = slots.filter((slot) => slot.present).length;
 
   return (
     <Bento>
@@ -112,8 +88,7 @@ export function IntentPanel({ work, levelState }: { work: WorkItem; levelState: 
         title="Identity"
         icon={FileText}
         lead="Who this work is, where it sits, and how far it has run."
-        readiness={readinessOf(levelState, record ? "present" : "absent")}
-        missing={levelState.available ? undefined : levelState.missing}
+        absent={!levelState.available}
       >
         <div className="grid min-w-0 grid-cols-1 gap-x-5 gap-y-3.5 @md:grid-cols-2 @2xl:grid-cols-3">
           <Field label="Work id">
@@ -146,25 +121,6 @@ export function IntentPanel({ work, levelState }: { work: WorkItem; levelState: 
               <span className="text-ink-faint"> · {done} done</span>
             </span>
           </Field>
-          {/* The span names the tile's own breakpoint, so it never forces a track the tile does not have. */}
-          <Field label="Records" className="@md:col-span-2">
-            <span className="flex min-w-0 flex-wrap items-center gap-1.5">
-              <span className="mr-1 font-mono text-[14px] font-bold tabular-nums">
-                {present} of {slots.length}
-              </span>
-              {slots.map((slot) => (
-                <Chip
-                  key={slot.slot}
-                  tone={slot.present ? "good" : "neutral"}
-                  dashed={!slot.present}
-                  title={slot.present ? "This record exists." : "This record is absent."}
-                  className={slot.present ? undefined : "text-ink-faint"}
-                >
-                  {slot.slot}
-                </Chip>
-              ))}
-            </span>
-          </Field>
           <Field label="Supersedes">
             {goal?.supersedes && goal.supersedes.length > 0 ? (
               <span className="flex flex-wrap gap-1.5">
@@ -184,11 +140,6 @@ export function IntentPanel({ work, levelState }: { work: WorkItem; levelState: 
             </Field>
           ) : null}
         </div>
-        <SourceLine>
-          read from <code>entities.design</code>, <code>entities.epic</code>, and{" "}
-          <code>joins.epic_status</code> in <code>data/index.json</code>, plus the record
-          files under <code>designs.js</code>.
-        </SourceLine>
       </Panel>
 
       {/* ---------------------------------------------------- contract band */}
@@ -197,70 +148,64 @@ export function IntentPanel({ work, levelState }: { work: WorkItem; levelState: 
         title="The contract"
         icon={Target}
         lead="Why the work exists, what would make it done, what would stop it, and what it leaves out."
-        readiness={goal ? "present" : "absent"}
+        absent={!goal}
       >
         <div className="grid min-w-0 grid-cols-1 gap-x-5 gap-y-4 @md:grid-cols-2 @3xl:grid-cols-4">
           <div className="flex min-w-0 flex-col gap-2">
-            <ColumnHead label="Why" field="goal.outcome" />
+            <ColumnHead label="Why" />
             {goal ? (
               <Box label="Outcome">{excerpt(goal.outcome, 260)}</Box>
             ) : (
-              <Missing detail="The record file carries no goal for this design.">
-                No goal record, so the work states no outcome.
-              </Missing>
+              <Missing>No goal record, so the work states no outcome.</Missing>
             )}
           </div>
 
           <div className="flex min-w-0 flex-col gap-2">
-            <ColumnHead label="Done when" field="goal.done_when" />
+            <ColumnHead label="Done when" />
             {goal && (goal.done_when?.length ?? 0) > 0 ? (
               <TextList items={goal.done_when ?? []} ordered />
             ) : (
-              <Missing detail="goal.done_when holds no entry for this work.">
-                No done-when condition is recorded.
-              </Missing>
+              <Missing>No done-when condition is recorded.</Missing>
             )}
           </div>
 
           {/* Abort if — beside Done when, because a reader weighs the two together. */}
           <div className="flex min-w-0 flex-col gap-2">
-            <ColumnHead label="Abort if" field="goal.abort_if" />
+            <ColumnHead label="Abort if" />
             {goal && (goal.abort_if?.length ?? 0) > 0 ? (
               <TextList items={goal.abort_if ?? []} />
             ) : (
-              <Missing detail="goal.abort_if holds no entry for this work. The column says so rather than rendering blank.">
-                No abort condition is recorded.
-              </Missing>
+              <Missing>No abort condition is recorded.</Missing>
             )}
           </div>
 
           <div className="flex min-w-0 flex-col gap-2">
-            <ColumnHead label="Out of scope" field="intent.out_of_scope" />
+            <ColumnHead label="Out of scope" />
             {intent && (intent.out_of_scope?.length ?? 0) > 0 ? (
               <TextList items={intent.out_of_scope ?? []} />
             ) : (
-              <Missing detail="No intent.json in this design's directory.">
-                No scope boundary is recorded.
-              </Missing>
+              <Missing>No scope boundary is recorded.</Missing>
             )}
           </div>
         </div>
-        <SourceLine>
-          read from <code>goal.json</code> and <code>intent.json</code> through{" "}
-          <code>data/designs.js</code>.
-        </SourceLine>
       </Panel>
     </Bento>
   );
 }
 
-function ColumnHead({ label, field }: { label: string; field: string }) {
+/**
+ * A column's own heading.
+ *
+ * It carries the visible word and nothing else. It used to print the field path under
+ * the word, so a reader saw `goal.outcome` where they needed to see `WHY`. The engineer
+ * removed that, and the whole shell now follows the rule.
+ */
+function ColumnHead({ label }: { label: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-0.5 border-b border-line-soft pb-1.5">
       <span className="font-mono text-[12.5px] font-bold tracking-[0.08em] uppercase">
         {label}
       </span>
-      <span className="min-w-0 font-mono text-[12px] break-words text-ink-faint">{field}</span>
     </div>
   );
 }
@@ -280,7 +225,8 @@ export function ProblemSolutionPanel({
   const assessment = record?.assessment;
   const beats = splitBeats(ps?.beats);
 
-  const alternatives = intent?.alternatives ?? [];
+  const risks = intent?.risks ?? [];
+  const unknowns = intent?.unknowns ?? [];
   const findings = assessment?.findings ?? [];
 
   return (
@@ -290,55 +236,22 @@ export function ProblemSolutionPanel({
         title="Problem and solution"
         icon={Scale}
         lead="The narrative beats, split by kind: problem and constraint on the left, decision and risk on the right."
-        readiness={readinessOf(levelState, "absent")}
-        missing={levelState.available ? undefined : levelState.missing}
+        absent={!levelState.available}
       >
+        {/* One card per column. The lead is the record's own prose; the rows are the beats. */}
         <div className="grid min-w-0 grid-cols-1 gap-x-6 gap-y-5 @xl:grid-cols-2">
-          {/* Problem column */}
-          <div className="flex min-w-0 flex-col gap-3">
-            <ColumnHead
-              label="Problem"
-              field="narrative.problem_solution.beats[kind=problem|constraint]"
-            />
-            {beats.problem.length > 0 ? (
-              <TextList
-                items={beats.problem.map((beat) => `${beat.text} — ${beat.kind}`)}
-              />
-            ) : (
-              <AbsentLine>No beat of kind problem or constraint is recorded.</AbsentLine>
-            )}
-            {intent?.problem ? (
-              <Box label="Problem" tone="problem">
-                {excerpt(intent.problem, 320)}
-              </Box>
-            ) : (
-              <Missing detail="No intent.json in this design's directory.">
-                No authored problem statement.
-              </Missing>
-            )}
-          </div>
-
-          {/* Solution column */}
-          <div className="flex min-w-0 flex-col gap-3">
-            <ColumnHead
-              label="Solution"
-              field="narrative.problem_solution.beats[kind=decision|risk]"
-            />
-            {beats.solution.length > 0 ? (
-              <TextList items={beats.solution.map((beat) => `${beat.text} — ${beat.kind}`)} />
-            ) : (
-              <AbsentLine>No beat of kind decision or risk is recorded.</AbsentLine>
-            )}
-            {intent?.approach ? (
-              <Box label="Approach" tone="solution">
-                {excerpt(intent.approach, 320)}
-              </Box>
-            ) : (
-              <Missing detail="No intent.json in this design's directory.">
-                No authored approach statement.
-              </Missing>
-            )}
-          </div>
+          <PointCard
+            title="Problem"
+            lead={intent?.problem ? excerpt(intent.problem, 320) : undefined}
+            points={beats.problem.map((beat) => ({ text: beat.text, kind: beat.kind }))}
+            empty="No beat of kind problem or constraint is recorded, and no authored problem statement."
+          />
+          <PointCard
+            title="Solution"
+            lead={intent?.approach ? excerpt(intent.approach, 320) : undefined}
+            points={beats.solution.map((beat) => ({ text: beat.text, kind: beat.kind }))}
+            empty="No beat of kind decision or risk is recorded, and no authored approach statement."
+          />
         </div>
 
         {beats.other.length > 0 ? (
@@ -348,11 +261,6 @@ export function ProblemSolutionPanel({
             names: {[...new Set(beats.other.map((beat) => beat.kind))].join(", ")}.
           </p>
         ) : null}
-        <SourceLine>
-          beats read from <code>narrative.problem_solution.beats[]</code>, split by{" "}
-          <code>kind</code>. Prose read from <code>intent.problem</code> and{" "}
-          <code>intent.approach</code>.
-        </SourceLine>
       </Panel>
 
       <Panel
@@ -360,14 +268,15 @@ export function ProblemSolutionPanel({
         title="Risks"
         icon={ShieldAlert}
         lead="What the work costs if it ships as written."
-        readiness={intent && (intent.risks?.length ?? 0) > 0 ? "present" : "absent"}
+        absent={risks.length === 0}
+        count={risks.length}
+        collapsible
+        defaultOpen={false}
       >
-        {intent && (intent.risks?.length ?? 0) > 0 ? (
-          <TextList items={intent.risks ?? []} />
+        {risks.length > 0 ? (
+          <TextList items={risks} />
         ) : (
-          <Missing detail="intent.risks holds no entry, or no intent.json exists.">
-            No risk is recorded.
-          </Missing>
+          <Missing>No risk is recorded.</Missing>
         )}
       </Panel>
 
@@ -377,7 +286,10 @@ export function ProblemSolutionPanel({
         title="Assessment"
         icon={BookMarked}
         lead="The verdict leads, because it is the answer a reader came for."
-        readiness={assessment ? "present" : "absent"}
+        absent={!assessment}
+        count={findings.length}
+        collapsible
+        defaultOpen={false}
         action={
           assessment ? (
             <StateBadge
@@ -402,15 +314,11 @@ export function ProblemSolutionPanel({
             </div>
 
             {findings.length > 0 ? <FindingList findings={findings} /> : null}
-
-            <SourceLine>
-              assessment.verdict, assessment.findings, and assessment.risk_tier. Each finding
-              opens in place.
-            </SourceLine>
           </div>
         ) : (
-          <Missing detail="No assessment.json in this design's directory, so the panel shows no verdict. An absent verdict is not a pass.">
-            This work carries no assessment record.
+          <Missing>
+            This work carries no assessment record, so the panel shows no verdict. An
+            absent verdict is not a pass.
           </Missing>
         )}
       </Panel>
@@ -420,44 +328,15 @@ export function ProblemSolutionPanel({
         title="Unknowns"
         icon={CircleHelp}
         lead="What nobody has settled yet."
-        readiness={intent && (intent.unknowns?.length ?? 0) > 0 ? "present" : "absent"}
+        absent={unknowns.length === 0}
+        count={unknowns.length}
+        collapsible
+        defaultOpen={false}
       >
-        {intent && (intent.unknowns?.length ?? 0) > 0 ? (
-          <TextList items={intent.unknowns ?? []} />
+        {unknowns.length > 0 ? (
+          <TextList items={unknowns} />
         ) : (
-          <Missing detail="intent.unknowns holds no entry, or no intent.json exists.">
-            No open question is recorded.
-          </Missing>
-        )}
-      </Panel>
-
-      <Panel
-        span="band"
-        title="Alternatives considered"
-        icon={Ban}
-        lead="What the design rejected, and the reason it recorded."
-        readiness={alternatives.length > 0 ? "present" : "absent"}
-      >
-        {alternatives.length > 0 ? (
-          <div className="flex min-w-0 flex-col gap-2.5">
-            {alternatives.map((alt, index) => (
-              <div
-                key={`${index}-${alt.option.slice(0, 20)}`}
-                className="min-w-0 rounded-lg border border-dashed border-line bg-surface-2/50 px-3.5 py-3"
-              >
-                <div className="min-w-0 font-serif text-[16.5px] leading-[1.55] font-semibold text-foreground">
-                  {alt.option}
-                </div>
-                <p className="mt-1 mb-0 min-w-0 font-serif text-[15.5px] leading-[1.55] text-ink-dim">
-                  rejected because {alt.rejected_because}
-                </p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <Missing detail="intent.alternatives holds no entry, or no intent.json exists.">
-            No alternative is recorded.
-          </Missing>
+          <Missing>No open question is recorded.</Missing>
         )}
       </Panel>
     </Bento>
@@ -488,16 +367,9 @@ function FindingList({ findings }: { findings: AssessmentFinding[] }) {
           </>
         ),
         content: (
-          <div className="flex min-w-0 flex-col gap-2">
-            <p className="m-0 min-w-0 font-serif text-[16px] leading-[1.6] text-ink-mid">
-              {finding.detail}
-            </p>
-            <SourceLine>
-              kind <code>{finding.kind}</code>, severity{" "}
-              <code>{finding.severity ?? "unrecorded"}</code>, from{" "}
-              <code>assessment.findings</code>.
-            </SourceLine>
-          </div>
+          <p className="m-0 min-w-0 font-serif text-[16px] leading-[1.6] text-ink-mid">
+            {finding.detail}
+          </p>
         ),
       }))}
     />
@@ -521,6 +393,7 @@ export function ArchitecturePanel({
 }) {
   const linked = work.linkedAdrs;
   const missingAdr = linked.filter((adr) => adrs[adr.id] === undefined);
+  const alternatives = work.record?.intent?.alternatives ?? [];
 
   return (
     <Bento>
@@ -529,29 +402,54 @@ export function ArchitecturePanel({
         title="Linked decisions"
         icon={ScrollText}
         lead="Each decision with the rule it enforces, the pull request that carried it, and its whole record one press away."
-        readiness={readinessOf(levelState, linked.length > 0 ? "present" : "absent")}
-        missing={levelState.available ? undefined : levelState.missing}
+        absent={!levelState.available}
       >
         {linked.length > 0 ? (
           <DecisionList work={work} adrs={adrs} openSheet={openSheet} />
         ) : (
-          <Missing detail="goal.adrs[] holds no entry, and goal.adr is null.">
-            This work names no decision.
-          </Missing>
+          <Missing>This work names no decision.</Missing>
         )}
         {missingAdr.length > 0 ? (
           <AbsentLine>
             {missingAdr.length} named decision
-            {missingAdr.length === 1 ? "" : "s"} did not resolve to an <code>entities.adr</code>{" "}
-            row: {missingAdr.map((adr) => adr.id).join(", ")}.
+            {missingAdr.length === 1 ? "" : "s"} did not resolve to a decision record:{" "}
+            {missingAdr.map((adr) => adr.id).join(", ")}.
           </AbsentLine>
         ) : null}
-        <SourceLine>
-          read from <code>goal.adrs[]</code> in <code>designs.js</code>, resolved against{" "}
-          <code>entities.adr</code>, with each rule from <code>adrs.js</code>. The carrying
-          pull request comes from <code>joins.adr_to_pull_request</code>, and it is shown
-          here rather than in the Pull requests group, per section 3.3.
-        </SourceLine>
+      </Panel>
+
+      {/*
+        Alternatives considered sits here, not in Problem and solution. A rejected option
+        is an architectural one, and every decision above carries its own rejected
+        options beside it, so this groups with like.
+      */}
+      <Panel
+        span="band"
+        title="Alternatives considered"
+        icon={Ban}
+        lead="What the design rejected, and the reason it recorded."
+        absent={alternatives.length === 0}
+        count={alternatives.length}
+      >
+        {alternatives.length > 0 ? (
+          <div className="flex min-w-0 flex-col gap-2.5">
+            {alternatives.map((alt, index) => (
+              <div
+                key={`${index}-${alt.option.slice(0, 20)}`}
+                className="min-w-0 rounded-lg border border-dashed border-line bg-surface-2/50 px-3.5 py-3"
+              >
+                <div className="min-w-0 font-serif text-[16.5px] leading-[1.55] font-semibold text-foreground">
+                  {alt.option}
+                </div>
+                <p className="mt-1 mb-0 min-w-0 font-serif text-[15.5px] leading-[1.55] text-ink-dim">
+                  rejected because {alt.rejected_because}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <Missing>No alternative is recorded.</Missing>
+        )}
       </Panel>
 
       <Panel
@@ -559,7 +457,7 @@ export function ArchitecturePanel({
         title="Boundary rules"
         icon={AlertOctagon}
         lead="The rules the touched contexts declare, and the reason each one carries."
-        readiness={work.boundaryRules.length > 0 ? "present" : "absent"}
+        absent={work.boundaryRules.length === 0}
       >
           {work.boundaryRules.length > 0 ? (
             <div className="flex min-w-0 flex-col gap-2.5">
@@ -600,9 +498,7 @@ export function ArchitecturePanel({
               ))}
             </div>
           ) : (
-            <Missing detail="No linked decision names a context, so the join resolves no boundary rule.">
-              No boundary rule applies to this work.
-            </Missing>
+            <Missing>No boundary rule applies to this work.</Missing>
           )}
         </Panel>
 
@@ -610,8 +506,8 @@ export function ArchitecturePanel({
         span="narrow"
         title="Districts and contexts touched"
         icon={Boxes}
-        lead="Where the linked decisions land, read from the two joins."
-        readiness={work.contexts.length > 0 || work.districts.length > 0 ? "present" : "absent"}
+        lead="Where the linked decisions land."
+        absent={work.contexts.length === 0 && work.districts.length === 0}
       >
           <div className="flex min-w-0 flex-col gap-3">
             <div className="flex min-w-0 flex-col gap-1.5">
@@ -643,7 +539,7 @@ export function ArchitecturePanel({
             {work.districtsUncovered.length > 0 ? (
               <AbsentLine>
                 {work.districtsUncovered.map((district) => district.label).join(", ")} carries
-                no verifying context, per <code>joins.district_uncovered</code>.
+                no verifying context.
               </AbsentLine>
             ) : null}
           </div>
@@ -654,7 +550,7 @@ export function ArchitecturePanel({
         title="Diagrams"
         icon={Network}
         lead="The source is shown as code. The runtime loads from a CDN when the reader presses Render, and at no other moment."
-        readiness={work.diagramLevels.length > 0 ? "present" : "absent"}
+        absent={work.diagramLevels.length === 0}
       >
         {work.diagramLevels.length > 0 && work.record?.diagrams ? (
           <div className="flex min-w-0 flex-col gap-4">
@@ -673,9 +569,7 @@ export function ArchitecturePanel({
             })}
           </div>
         ) : (
-          <Missing detail="No diagrams/ directory, or it holds no level-N.mmd file. Level 4 carries no diagram by design.">
-            No diagram level exists for this work.
-          </Missing>
+          <Missing>No diagram level exists for this work.</Missing>
         )}
       </Panel>
 
@@ -685,12 +579,8 @@ export function ArchitecturePanel({
           title="Envisioned pull request"
           icon={Compass}
           lead="The pull-request draft the design wrote before any code existed."
-          readiness="present"
         >
           <Box label="Draft">{excerpt(work.record.pr_draft, 260)}</Box>
-          <SourceLine>
-            pr-draft.md, {work.record.pr_draft.trim().split("\n").length} lines.
-          </SourceLine>
         </Panel>
       ) : null}
 
@@ -698,8 +588,7 @@ export function ArchitecturePanel({
         span="narrow"
         title="Where an epic's own architecture lives"
         icon={ListChecks}
-        lead="Section 2.2 lists the Gate 4b technical solution design under Architecture, for an epic."
-        readiness="partial"
+        lead="An epic's own technical solution design is part of this work's architecture."
       >
         <EmptyNote>
           A Gate 4b design belongs to one epic, so it is disclosed inside that epic in the
@@ -707,10 +596,6 @@ export function ArchitecturePanel({
           not repeat them. {work.epicDesigns.size} of this work&apos;s {work.epics.length}{" "}
           epics resolve one.
         </EmptyNote>
-        <SourceLine>
-          resolved from <code>entities.epic_design</code>, by epic id and by{" "}
-          <code>feature_slug</code>. Section 12.5 records the keys that do not resolve.
-        </SourceLine>
       </Panel>
     </Bento>
   );
@@ -754,7 +639,7 @@ function DecisionList({
           meta: (
             <>
               {!full ? (
-                <Chip tone="warn" dashed title="adrs.js carries no entry for this id.">
+                <Chip tone="warn" dashed title="No record body was read for this decision.">
                   no body
                 </Chip>
               ) : null}
@@ -763,15 +648,15 @@ function DecisionList({
                   tone={carrier.onThisWork ? "accent" : "neutral"}
                   title={
                     carrier.onThisWork
-                      ? `joins.adr_to_pull_request reaches pull request ${carrier.pr}, and one of this work's own epics carries it.`
-                      : `joins.adr_to_pull_request reaches pull request ${carrier.pr}, which no epic of this work carries.`
+                      ? `Pull request ${carrier.pr} carried this decision, and one of this work's own epics carries it.`
+                      : `Pull request ${carrier.pr} carried this decision, and no epic of this work carries it.`
                   }
                 >
                   <GitPullRequest className="size-3.5" aria-hidden="true" />
                   carried by PR {carrier.pr}
                 </Chip>
               ) : (
-                <Chip dashed className="text-ink-faint" title="The join reaches no pull request.">
+                <Chip dashed className="text-ink-faint" title="No pull request carried this decision.">
                   no PR
                 </Chip>
               )}
@@ -784,8 +669,8 @@ function DecisionList({
                 <Box label="The rule this decision enforces">{full.maps_to.rule}</Box>
               ) : (
                 <AbsentLine>
-                  adrs.js carries no <code>maps_to.rule</code> for this decision, so only the
-                  title is available here. The whole record names the rest.
+                  This decision states no enforceable rule here, so only the title is
+                  available. The whole record names the rest.
                 </AbsentLine>
               )}
 
@@ -850,8 +735,10 @@ function CarrierNote({ carrier }: { carrier: DecisionCarrier | undefined }) {
         </span>
       ) : null}
       <span className="min-w-0 font-mono text-[12px] break-words text-ink-faint">
-        reached via {carrier.via}
-        {carrier.path.length > 0 ? `, across ${carrier.path.length} epics` : ", directly"}
+        reached{" "}
+        {carrier.path.length > 0
+          ? `across ${carrier.path.length} epics`
+          : "directly"}
         {carrier.onThisWork
           ? ". One of this work's own epics carries it."
           : ". No epic of this work carries it, so it is not in this work's own set."}

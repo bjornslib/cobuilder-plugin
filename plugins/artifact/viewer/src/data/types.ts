@@ -113,6 +113,23 @@ export interface EpicDesignEntity {
   body_md: string;
 }
 
+/**
+ * One plan's Gate 2b interaction design.
+ *
+ * The index projects `docs/plans/<slug>/interaction-design.md` into this entity. The
+ * shell reads one field from it, and it is not the body: `feature_slug` is the only
+ * evidence the index carries that a plan directory exists at all for a work whose plan
+ * holds no gate record and no epic design.
+ */
+export interface InteractionDesignEntity {
+  feature_slug: string;
+  gate: string;
+  title: string;
+  state: string;
+  source_path: string;
+  body_md: string;
+}
+
 export interface Entities {
   adr: AdrEntity[];
   design: DesignEntity[];
@@ -125,7 +142,7 @@ export interface Entities {
   publication: PublicationEntity[];
   program_design: ProgramDesignEntity[];
   epic_design: EpicDesignEntity[];
-  interaction_design: unknown[];
+  interaction_design: InteractionDesignEntity[];
 }
 
 export interface AdrToPullRequest {

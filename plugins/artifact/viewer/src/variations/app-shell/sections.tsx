@@ -49,7 +49,6 @@ import {
   KeyValue,
   Missing,
   Panel,
-  SourceLine,
   StateBadge,
   SubHead,
   toneForEpicState,
@@ -61,22 +60,14 @@ import { EPIC_GLOSS } from "./gloss";
 /* --------------------------------------------------------------------- Build */
 
 function SliceDisclosure({
-  epic,
   slices,
   idPrefix,
 }: {
-  epic: string;
   slices: SliceEntity[];
   idPrefix: string;
 }) {
-  if (slices.length === 0) {
-    return (
-      <AbsentLine>
-        This epic carries no slices. <code>joins.slice_to_epic</code> names no slice for{" "}
-        {epic}.
-      </AbsentLine>
-    );
-  }
+  /* The caller gates on an empty list, so this is a guard rather than a state. */
+  if (slices.length === 0) return null;
 
   const items = slices.map((slice) => ({
     id: slice.id,
@@ -125,10 +116,6 @@ function SliceDisclosure({
           <KeyValue label="score" value={slice.score ?? "unrecorded"} />
           <KeyValue label="attempts" value={slice.attempts} />
         </div>
-        <SourceLine>
-          read from <code>entities.slice</code>, joined to this epic through{" "}
-          <code>joins.slice_to_epic</code>.
-        </SourceLine>
       </div>
     ),
   }));
@@ -170,11 +157,6 @@ function EpicDisclosure({
       <p className="m-0 min-w-0 font-serif text-[16.5px] leading-[1.6] text-foreground">
         {outcome ?? "No outcome is recorded for this epic."}
       </p>
-      <Box label="Why" tone="note">
-        {outcome
-          ? "The outcome above is read from goal.epics[] in designs.js. The index holds no epic outcome."
-          : "Neither goal.epics[] nor the epic entity's note field carries an outcome for this epic."}
-      </Box>
 
       <div className="flex min-w-0 flex-wrap items-center gap-2">
         <StateBadge
@@ -182,7 +164,7 @@ function EpicDisclosure({
           tone={toneForEpicState(state)}
           gloss={EPIC_GLOSS[state] ?? "A state outside the recorded vocabulary."}
         />
-        <Chip dashed title="The refined join reads this epic's state. The entity field does not.">
+        <Chip dashed title="This is the refined state. The epic's raw recorded state can differ.">
           entity state {epic.state}
         </Chip>
         {epic.branch ? (
@@ -199,23 +181,29 @@ function EpicDisclosure({
           <Chip
             dashed
             className="text-ink-faint"
-            title="joins.epic_to_pull_request holds no entry for this epic, and the entity carries no pull request."
+            title="No pull request is recorded for this epic."
           >
             no PR
           </Chip>
         ) : (
-          <Chip tone="accent" title={`joins.epic_to_pull_request names pull request ${pr}.`}>
+          <Chip tone="accent" title={`Pull request ${pr} carries this epic.`}>
             <GitPullRequest className="size-3.5" aria-hidden="true" />
             PR {pr}
           </Chip>
         )}
       </div>
 
-      {/* ---------------------------------------------------------- slices */}
-      <div className="flex min-w-0 flex-col gap-2">
-        <SubHead count={own.length}>Slices</SubHead>
-        <SliceDisclosure epic={epic.id} slices={own} idPrefix={`slice-${epic.epic_id}`} />
-      </div>
+      {/*
+        The slices block is absent when the epic owns no slice, on the same rule sections
+        follow. An epic with no slices states the count on its own row, so a block that
+        held nothing but a sentence about holding nothing is gone.
+      */}
+      {own.length > 0 ? (
+        <div className="flex min-w-0 flex-col gap-2">
+          <SubHead count={own.length}>Slices</SubHead>
+          <SliceDisclosure slices={own} idPrefix={`slice-${epic.epic_id}`} />
+        </div>
+      ) : null}
 
       {/* ------------------------------------------------------- Gate 4b */}
       <div className="flex min-w-0 flex-col gap-2">
@@ -227,7 +215,7 @@ function EpicDisclosure({
                 <ListChecks className="size-3.5" aria-hidden="true" />
                 {design.body_md.length.toLocaleString()} characters
               </Chip>
-              <Chip title={`Resolved by the epic's own id, and by feature_slug ${design.feature_slug}.`}>
+              <Chip title={`This design belongs to the plan ${design.feature_slug}.`}>
                 {design.feature_slug}
               </Chip>
             </div>
@@ -238,8 +226,6 @@ function EpicDisclosure({
                   kind: "epic-design",
                   doc: design,
                   epic,
-                  via: work.epicDesignVia === "plan slug" ? "plan slug" : "id",
-                  adrRef: null,
                 })
               }
               ariaLabel={`Open the Gate 4b design for epic ${epic.epic_id}`}
@@ -248,8 +234,17 @@ function EpicDisclosure({
             </ActionButton>
           </div>
         ) : (
-          <Missing detail="entities.epic_design keys on a planning slug, and this work's plan slug resolves to neither an epic id nor an epic design. section 12.5 records the gap.">
-            No Gate 4b design document resolves for this epic.
+          /*
+            Two situations reach here, and the panel tells them apart rather than
+            guessing. An epic of a work whose plan directory does not exist cannot have a
+            design document, and no amount of looking will find one. An epic of a work
+            that does have a plan directory is genuinely missing its own document. The
+            first is a fact about the work, and the second is a gap in this epic.
+          */
+          <Missing>
+            {work.hasPlan
+              ? "This epic has no design document."
+              : "This work has no plan directory yet, so no epic design documents exist for it."}
           </Missing>
         )}
       </div>
@@ -262,12 +257,6 @@ function EpicDisclosure({
           {epic.id}
         </span>
       </div>
-
-      <SourceLine>
-        state read from <code>joins.epic_status</code>, the pull request from{" "}
-        <code>joins.epic_to_pull_request</code>, and the slices from{" "}
-        <code>joins.slice_to_epic</code>.
-      </SourceLine>
     </div>
   );
 }
@@ -345,7 +334,7 @@ export function EpicsSection({
         title={`Epics · ${work.epics.length}`}
         icon={ListTree}
         lead="One row per epic, with its refined state. An epic discloses its own slices, and a slice discloses its own ends-with, score, and attempts."
-        readiness={work.epics.length > 0 ? "present" : "absent"}
+        absent={work.epics.length === 0}
       >
         {work.epics.length > 0 ? (
           <BasicAccordion
@@ -356,15 +345,8 @@ export function EpicsSection({
             defaultExpandedIds={focusEpic ? [`${work.id}/${focusEpic}`] : []}
           />
         ) : (
-          <Missing detail="No entities.epic row carries this design id.">
-            This work carries no epics, so the rail gates Build.
-          </Missing>
+          <Missing>This work carries no epics, so the rail gates Build.</Missing>
         )}
-        <SourceLine>
-          read from <code>entities.epic</code>, <code>joins.epic_status</code>, and{" "}
-          <code>joins.epic_to_pull_request</code>. Slices read from{" "}
-          <code>entities.slice</code> through <code>joins.slice_to_epic</code>.
-        </SourceLine>
       </Panel>
 
       {unresolvedSlices > 0 ? (
@@ -372,15 +354,11 @@ export function EpicsSection({
           span="narrow"
           title="Unresolved slices"
           icon={ShieldQuestion}
-          lead="Slices the join places in no epic. Section 3.3 renders this panel only while the join holds one."
-          readiness="partial"
+          lead="Slices that belong to no epic. This panel renders only while the bundle holds one."
         >
           <p className="m-0 min-w-0 font-serif text-[16px]">
             {unresolvedSlices} slices belong to no epic.
           </p>
-          <SourceLine>
-            read from <code>joins.slice_to_epic_unresolved</code>.
-          </SourceLine>
         </Panel>
       ) : null}
     </Bento>
@@ -396,7 +374,7 @@ export function RubricsSection({ work, gated }: { work: WorkItem; gated: boolean
         title="Rubrics"
         icon={ClipboardCheck}
         lead="The blind acceptance rubric each slice is scored against."
-        readiness={gated && steps.length > 0 ? "present" : "absent"}
+        absent={!(gated && steps.length > 0)}
       >
         {gated && steps.length > 0 ? (
           <ul className="m-0 flex min-w-0 list-none flex-col gap-2 p-0">
@@ -422,19 +400,13 @@ export function RubricsSection({ work, gated }: { work: WorkItem; gated: boolean
                 No gate record exists
               </p>
               <p className="m-0 min-w-0 font-serif text-[16px] leading-[1.55] text-ink-mid">
-                <code>joins.feature_gates</code> holds no entry for the plan slug{" "}
-                <code>{work.planSlug}</code>, so this section has nothing to read. That is an
-                absent record, not a passed gate. It must not read as a pass.
+                This work has no gate record, so this section has nothing to read. That is
+                an absent record, not a passed gate. It must not read as a pass.
               </p>
             </div>
             <AbsentLine>
-              The join holds {Object.keys(work.gateSlugs).length} other features, and none of
-              them is <code>{work.planSlug}</code>.
+              No gate record carries this work. An absent record is not a passed gate.
             </AbsentLine>
-            <SourceLine>
-              plan slug resolved via <code>{work.planSlugVia}</code>. Read from{" "}
-              <code>joins.feature_gates</code>.
-            </SourceLine>
           </div>
         )}
       </Panel>
@@ -475,7 +447,7 @@ export function PullRequestsSection({
         title={`This work's pull requests · ${work.pullRequests.length}`}
         icon={GitPullRequest}
         lead="Only a pull request one of this work's own epics carries. A decision's pull request is not the work's, so it stays beside that decision in the Architecture level."
-        readiness={work.pullRequests.length > 0 ? "present" : "absent"}
+        absent={work.pullRequests.length === 0}
       >
         {work.pullRequests.length > 0 ? (
           <ul className="m-0 flex min-w-0 list-none flex-col gap-2 p-0">
@@ -516,8 +488,7 @@ export function PullRequestsSection({
           <div className="flex min-w-0 flex-col gap-3">
             <EmptyNote>
               No epic of this work carries a pull request, so the rail gates this group.
-              Section 3.3 states the rule, and the corpus shows why: a pull request reached
-              through a decision is not the work's pull request.
+              A pull request reached through a decision belongs to that decision instead.
             </EmptyNote>
             {work.decisionCarriers.size > 0 ? (
               <AbsentLine>
@@ -528,12 +499,6 @@ export function PullRequestsSection({
             ) : null}
           </div>
         )}
-        <SourceLine>
-          read from <code>joins.epic_to_pull_request</code> for this work&apos;s own epics,
-          resolved against <code>entities.pull_request</code>.{" "}
-          <code>joins.adr_to_pull_request</code> is read too, and it is shown in the
-          Architecture level rather than here.
-        </SourceLine>
       </Panel>
 
       <FlightDeckPanel flightDeck={flightDeck} onOpenPr={onOpenPr} span="band" />
@@ -557,7 +522,7 @@ export function FlightDeckPanel({
       title="FlightDeck"
       icon={Plane}
       lead="The whole open set, one click away from this work. FlightDeck reads every open pull request, not only this work's."
-      readiness={flightDeck.length > 0 ? "present" : "absent"}
+      absent={flightDeck.length === 0}
     >
       {flightDeck.length > 0 ? (
         <ul className="m-0 flex min-w-0 list-none flex-col gap-2 p-0">
@@ -583,14 +548,8 @@ export function FlightDeckPanel({
           ))}
         </ul>
       ) : (
-        <Missing detail="No entities.pull_request row carries state open.">
-          The bundle holds no open pull request.
-        </Missing>
+        <Missing>The bundle holds no open pull request.</Missing>
       )}
-      <SourceLine>
-        read from <code>entities.pull_request</code> where <code>state</code> is{" "}
-        <code>open</code>.
-      </SourceLine>
     </Panel>
   );
 }
@@ -599,9 +558,8 @@ export function FlightDeckPanel({
  * One pull request, with its own three levels.
  *
  * Section 5.3 puts this in the scroll pane rather than in a Sheet, so it stays here. The
- * bundle holds a pull request's intent and assessment on the story timeline entry, and
- * this mockup does not load `story.json`. So each level states what it reads and what is
- * not wired here.
+ * bundle holds a pull request's intent and assessment on the story timeline entry, which
+ * this surface does not read. So each level states what it will hold and stops.
  */
 function PullRequestDetail({
   work,
@@ -617,27 +575,24 @@ function PullRequestDetail({
   const pr = allPullRequests.find((candidate) => candidate.id === prNumber);
   const flightDeck = allPullRequests.filter((candidate) => candidate.state === "open");
   const own = work.pullRequests.some((candidate) => candidate.id === prNumber);
-  const levels: Array<{ key: string; title: string; icon: LucideIcon; line: string; source: string }> = [
+  const levels: Array<{ key: string; title: string; icon: LucideIcon; line: string }> = [
     {
       key: "intent",
       title: "Pull request intent",
       icon: Target,
       line: "The author's own statement of what this pull request is for, captured by Generate mode before the code existed.",
-      source: "story.json → the timeline entry's intent block. Not wired into this mockup.",
     },
     {
       key: "problem-and-solution",
       title: "Pull request problem and solution",
       icon: FileText,
       line: "The assessed problem, the approach the diff takes, and the findings the assessment recorded against it.",
-      source: "story.json → intent.drift and the assessment block. Not wired into this mockup.",
     },
     {
       key: "architecture",
       title: "Pull request architecture",
       icon: GitPullRequest,
       line: "The decisions the diff lands, the diagram levels for this pull request, and the scene art beside them.",
-      source: "data/diagrams.js and data/adrs.js. Not wired into this mockup.",
     },
   ];
 
@@ -647,8 +602,8 @@ function PullRequestDetail({
         span="band"
         title={`PR ${prNumber}`}
         icon={GitPullRequest}
-        lead={pr?.title ?? "This pull request is not an entity in the index."}
-        readiness={pr ? "present" : "absent"}
+        lead={pr?.title ?? "This pull request is not in the bundle."}
+        absent={!pr}
       >
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           {pr ? <StateBadge word={pr.state} tone={pr.state === "merged" ? "good" : "accent"} /> : null}
@@ -665,7 +620,6 @@ function PullRequestDetail({
             </Chip>
           )}
         </div>
-        <SourceLine>read from entities.pull_request in data/index.json.</SourceLine>
       </Panel>
 
       {levels.map((level) => (
@@ -675,10 +629,13 @@ function PullRequestDetail({
           title={level.title}
           icon={level.icon}
           lead={level.line}
-          readiness="absent"
-          missing={["story.json is not loaded by this surface"]}
+          absent
         >
-          <EmptyNote>{level.source}</EmptyNote>
+          <EmptyNote>
+            This surface does not read a pull request&apos;s own story records yet, so this
+            level renders nothing. The pull request above is real, and its three levels are
+            not.
+          </EmptyNote>
         </Panel>
       ))}
 
@@ -691,6 +648,7 @@ function PullRequestDetail({
 
 export function ShippedSection({ work }: { work: WorkItem }) {
   const implemented = work.design.stage === "implemented";
+  const shipped = implemented || work.publications.length > 0;
   return (
     <Bento>
       <Panel
@@ -698,7 +656,7 @@ export function ShippedSection({ work }: { work: WorkItem }) {
         title="Release status"
         icon={PackageCheck}
         lead="The stage the record carries, the publications the bundle holds, and the deploy record that does not exist."
-        readiness={implemented || work.publications.length > 0 ? "present" : "partial"}
+        absent={!shipped}
       >
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <StateBadge word={work.design.stage} tone={toneForStage(work.design.stage)} />
@@ -738,14 +696,10 @@ export function ShippedSection({ work }: { work: WorkItem }) {
             </Box>
           ) : (
             <AbsentLine>
-              No publication entity names one of this work&apos;s own pull requests.
+              No publication names one of this work&apos;s own pull requests.
             </AbsentLine>
           )}
         </div>
-        <SourceLine>
-          read from <code>entities.design.stage</code> and <code>entities.publication</code>,
-          filtered to the pull requests this work&apos;s own epics carry.
-        </SourceLine>
       </Panel>
     </Bento>
   );
