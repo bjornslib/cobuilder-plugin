@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:," />
+    <title>Epic-first mosaic — development harness</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap"
+      rel="stylesheet"
+    />
+    <!--
+      The development harness for variation B of the Work board.
+
+      It loads the same house stylesheet the application loads and renders the same
+      default component. This page exists so the variation can be opened on its own.
+      It is not a build target and it ships nowhere.
+    -->
+  </head>
+  <body>
+    <div id="root" style="height: 100dvh"></div>
+    <script type="module" src="./preview.tsx"></script>
+  </body>
+</html>
