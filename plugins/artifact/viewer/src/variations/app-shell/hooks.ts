@@ -14,6 +14,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RefObject } from "react";
 
+import { useReducedMotion } from "motion/react";
+
 import { loadIndex } from "@/data/bundle";
 import type { RecordIndex } from "@/data/types";
 
@@ -160,9 +162,15 @@ export function useDocumentNoScroll(): void {
 
 /* ------------------------------------------------------------------ viewport */
 
-/** True while the query matches. One listener, one boolean. */
+/**
+ * True while the query matches. One listener, one boolean.
+ *
+ * The first read is synchronous, so the first paint already carries the right answer.
+ * A `false` start would paint the rail expanded on a tablet and collapse it one frame
+ * later, which is a visible jump in the layout.
+ */
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(false);
+  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
 
   useEffect(() => {
     const list = window.matchMedia(query);
@@ -198,6 +206,39 @@ export function useFocusOnChange(elementId: string, keys: readonly unknown[]): v
     });
     return () => cancelAnimationFrame(frame);
   }, [elementId, signature]);
+}
+
+/* ------------------------------------------------------ scroll-pane ownership */
+
+/**
+ * Jump the content pane back to its top on every route change.
+ *
+ * The document never scrolls, so `window` is never the target. The scroll pane owns
+ * the shell's only offset, per section 11.3, and this hook resets that one element.
+ *
+ * A route change covers every move a reader makes: another section, another work
+ * item, an epic that opens, and a pull request that opens. The signature is the
+ * caller's, so one dependency list covers all four, in the same shape
+ * `useFocusOnChange` already uses.
+ *
+ * The jump is instant. `useReducedMotion` is read so the reset can never become a
+ * smooth scroll for a reader who did not ask for one, and both branches resolve to
+ * an instant jump today.
+ */
+export function useScrollResetOnRoute(elementId: string, keys: readonly unknown[]): void {
+  const reduce = useReducedMotion() ?? false;
+  const signature = keys.join("|");
+
+  useEffect(() => {
+    const pane = document.getElementById(elementId);
+    if (!pane) return;
+    pane.scrollTo({
+      top: 0,
+      /* The horizontal offset is the reader's, so the reset leaves it alone. */
+      left: pane.scrollLeft,
+      behavior: reduce ? "instant" : "auto",
+    });
+  }, [elementId, signature, reduce]);
 }
 
 /* ------------------------------------------------------------- section gating */

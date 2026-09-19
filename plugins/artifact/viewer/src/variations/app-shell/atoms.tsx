@@ -255,6 +255,10 @@ export function StateBadge({
  * is absent. A panel that states an absence still occupies its place, and the pill in
  * its header says which of the three it is.
  *
+ * A panel inside a `Bento` names its `span` and becomes one tile of that grid. The
+ * panel then fills the tile, so a row of tiles reads as one band rather than as cards
+ * of three different heights.
+ *
  * Every panel in this shell is short on purpose. The mockup exists to judge the
  * information hierarchy, so a panel states what belongs there and shows one real
  * excerpt rather than the whole record. Where the whole record matters, the panel
@@ -268,6 +272,7 @@ export function Panel({
   action,
   readiness,
   missing,
+  span,
   children,
   className,
 }: {
@@ -280,14 +285,17 @@ export function Panel({
   readiness?: Readiness;
   /** The parts the record is missing, named under the header. */
   missing?: string[];
+  /** The bento span. Omitted, the panel is not a tile and no grid is required. */
+  span?: TileSpan;
   children: ReactNode;
   className?: string;
 }) {
-  return (
+  const card = (
     <section
       className={cn(
         "rounded-xl border",
         readiness ? CARD_TONE[readiness] : "border-line bg-card shadow-card",
+        span && "min-w-0 flex-1",
         className,
       )}
       aria-label={title}
@@ -329,6 +337,8 @@ export function Panel({
       </div>
     </section>
   );
+
+  return span ? <Tile span={span}>{card}</Tile> : card;
 }
 
 /**
@@ -570,6 +580,67 @@ export function AbsentLine({ children }: { children: ReactNode }) {
 export function SourceLine({ children }: { children: ReactNode }) {
   return (
     <p className="m-0 mt-2 font-mono text-[12px] leading-[1.6] text-ink-faint">{children}</p>
+  );
+}
+
+/* -------------------------------------------------------------------- bento */
+
+/**
+ * The bento grid a content section lays its tiles in.
+ *
+ * An explicit twelve-column grid, not a row of flex children. Each tile names its own
+ * span, so the widths are written down rather than left to the content. The grid is
+ * the container the spans measure against, so a tile's span follows the pane rather
+ * than the viewport.
+ *
+ * Section 11.3's rule 4 is the reason every tile carries `min-w-0`. A grid child
+ * defaults to its content width, so one wide row would stretch the pane and push its
+ * siblings off the edge. Rule 3 is the tile's own job: a table, a code fence, or a
+ * diagram inside a tile keeps its own `overflow-x: auto` wrapper.
+ */
+export function Bento({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div className={cn("@container grid min-w-0 grid-cols-12 gap-4", className)}>{children}</div>
+  );
+}
+
+/**
+ * The named spans. One tile names its content weight, and the weight decides the span.
+ *
+ * `band` runs the full width, for a tile that carries a long list or a wide band.
+ * `wide` takes two thirds beside a `narrow` tile of one third, and `half` splits a row
+ * with one other tile. Below a 48 rem pane every span falls back to the full width, so
+ * a narrow pane stacks rather than squeezing.
+ */
+export const TILE_SPAN = {
+  band: "col-span-12",
+  wide: "col-span-12 @3xl:col-span-8",
+  half: "col-span-12 @3xl:col-span-6",
+  narrow: "col-span-12 @3xl:col-span-4",
+} as const;
+
+export type TileSpan = keyof typeof TILE_SPAN;
+
+/**
+ * One tile of the bento, and the container its own inner grids measure against.
+ *
+ * The tile is a container, so an inner grid inside it reads the tile's width and not
+ * the viewport's. A `sm:` breakpoint inside a one-third tile would otherwise fire on a
+ * wide viewport and crush the tile's own columns.
+ */
+export function Tile({
+  span,
+  children,
+  className,
+}: {
+  span: TileSpan;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("@container flex min-w-0 flex-col", TILE_SPAN[span], className)}>
+      {children}
+    </div>
   );
 }
 

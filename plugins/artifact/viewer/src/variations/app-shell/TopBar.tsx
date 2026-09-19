@@ -17,6 +17,7 @@ import { Check, ChevronDown, Layers, Moon, Search, Sun } from "lucide-react";
 import { Popover as PopoverPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 import { STATE_GLOSS } from "./gloss";
 import type { SwitcherDesign, SwitcherEpic } from "./model";
@@ -117,6 +118,14 @@ export function TopBar({
       >
         Skip to the scroll pane
       </a>
+
+      {/*
+        The mobile drawer's trigger. Below 768 px the rail is a drawer, so this is the
+        one control that reaches it, per section 9.3. At 768 px and above the rail is
+        already on screen, and the sidebar's own edge handle and `Cmd` or `Ctrl` plus
+        `B` collapse it from there.
+      */}
+      <SidebarTrigger className="size-11 shrink-0 cursor-pointer md:hidden" />
 
       <PopoverPrimitive.Root open={open} onOpenChange={setOpen}>
         <PopoverPrimitive.Trigger asChild>

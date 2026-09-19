@@ -42,6 +42,7 @@ import type { SheetSubject } from "./Sheet";
 import {
   AbsentLine,
   ActionButton,
+  Bento,
   Box,
   Chip,
   EmptyNote,
@@ -54,6 +55,7 @@ import {
   toneForEpicState,
   toneForStage,
 } from "./atoms";
+import type { TileSpan } from "./atoms";
 import { EPIC_GLOSS } from "./gloss";
 
 /* --------------------------------------------------------------------- Build */
@@ -337,8 +339,9 @@ export function EpicsSection({
   );
 
   return (
-    <div className="flex min-w-0 flex-col gap-4">
+    <Bento>
       <Panel
+        span="band"
         title={`Epics · ${work.epics.length}`}
         icon={ListTree}
         lead="One row per epic, with its refined state. An epic discloses its own slices, and a slice discloses its own ends-with, score, and attempts."
@@ -366,6 +369,7 @@ export function EpicsSection({
 
       {unresolvedSlices > 0 ? (
         <Panel
+          span="narrow"
           title="Unresolved slices"
           icon={ShieldQuestion}
           lead="Slices the join places in no epic. Section 3.3 renders this panel only while the join holds one."
@@ -379,15 +383,16 @@ export function EpicsSection({
           </SourceLine>
         </Panel>
       ) : null}
-    </div>
+    </Bento>
   );
 }
 
 export function RubricsSection({ work, gated }: { work: WorkItem; gated: boolean }) {
   const steps = work.gateSteps ?? [];
   return (
-    <div className="flex min-w-0 flex-col gap-4">
+    <Bento>
       <Panel
+        span="band"
         title="Rubrics"
         icon={ClipboardCheck}
         lead="The blind acceptance rubric each slice is scored against."
@@ -433,7 +438,7 @@ export function RubricsSection({ work, gated }: { work: WorkItem; gated: boolean
           </div>
         )}
       </Panel>
-    </div>
+    </Bento>
   );
 }
 
@@ -464,8 +469,9 @@ export function PullRequestsSection({
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-4">
+    <Bento>
       <Panel
+        span="band"
         title={`This work's pull requests · ${work.pullRequests.length}`}
         icon={GitPullRequest}
         lead="Only a pull request one of this work's own epics carries. A decision's pull request is not the work's, so it stays beside that decision in the Architecture level."
@@ -530,20 +536,24 @@ export function PullRequestsSection({
         </SourceLine>
       </Panel>
 
-      <FlightDeckPanel flightDeck={flightDeck} onOpenPr={onOpenPr} />
-    </div>
+      <FlightDeckPanel flightDeck={flightDeck} onOpenPr={onOpenPr} span="band" />
+    </Bento>
   );
 }
 
 export function FlightDeckPanel({
   flightDeck,
   onOpenPr,
+  span,
 }: {
   flightDeck: PullRequestEntity[];
   onOpenPr: (n: number) => void;
+  /** The bento span the caller gives this panel, when the caller lays out a grid. */
+  span: TileSpan;
 }) {
   return (
     <Panel
+      span={span}
       title="FlightDeck"
       icon={Plane}
       lead="The whole open set, one click away from this work. FlightDeck reads every open pull request, not only this work's."
@@ -632,8 +642,9 @@ function PullRequestDetail({
   ];
 
   return (
-    <div className="flex min-w-0 flex-col gap-4">
+    <Bento>
       <Panel
+        span="band"
         title={`PR ${prNumber}`}
         icon={GitPullRequest}
         lead={pr?.title ?? "This pull request is not an entity in the index."}
@@ -660,6 +671,7 @@ function PullRequestDetail({
       {levels.map((level) => (
         <Panel
           key={level.key}
+          span="narrow"
           title={level.title}
           icon={level.icon}
           lead={level.line}
@@ -670,8 +682,8 @@ function PullRequestDetail({
         </Panel>
       ))}
 
-      <FlightDeckPanel flightDeck={flightDeck} onOpenPr={onOpenPr} />
-    </div>
+      <FlightDeckPanel flightDeck={flightDeck} onOpenPr={onOpenPr} span="band" />
+    </Bento>
   );
 }
 
@@ -680,8 +692,9 @@ function PullRequestDetail({
 export function ShippedSection({ work }: { work: WorkItem }) {
   const implemented = work.design.stage === "implemented";
   return (
-    <div className="flex min-w-0 flex-col gap-4">
+    <Bento>
       <Panel
+        span="band"
         title="Release status"
         icon={PackageCheck}
         lead="The stage the record carries, the publications the bundle holds, and the deploy record that does not exist."
@@ -734,6 +747,6 @@ export function ShippedSection({ work }: { work: WorkItem }) {
           filtered to the pull requests this work&apos;s own epics carry.
         </SourceLine>
       </Panel>
-    </div>
+    </Bento>
   );
 }

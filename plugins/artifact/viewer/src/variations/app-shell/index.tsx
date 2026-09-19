@@ -30,6 +30,12 @@
  *      content width, so one wide row would stretch the pane and push its siblings off
  *      the edge.
  *
+ * THE RAIL IS A SHADCN SIDEBAR. `SidebarProvider` is the shell's own frame, and the
+ * rail renders inside a `Sidebar`, so the shell gains the sidebar's drawer below
+ * 768 px, its icon collapse, and its toggle shortcut. The body row inside the frame
+ * is the sidebar's positioned ancestor, so the top bar keeps the full width section
+ * 2.1 gives it and the rail starts below the bar rather than beside it.
+ *
  * The shell renders. It never computes. Every count, state, and join comes from
  * `data/index.json`, and every record body comes from `data/designs.js` and
  * `data/adrs.js`.
@@ -44,6 +50,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { Database, RotateCcw } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BUNDLE_DATA_URL, entitiesOf, joinsOf } from "@/data/bundle";
 import { cn } from "@/lib/utils";
@@ -65,12 +72,25 @@ import {
   useFocusOnChange,
   useHashRoute,
   useIndexLoad,
+  useScrollResetOnRoute,
   useSectionAvailability,
   useTheme,
 } from "./hooks";
 
 const PANE_ID = "work-scroll-pane";
 const HEADING_ID = "work-section-heading";
+
+/**
+ * The rail's two widths, in the tokens section 9.1 and 9.2 give them.
+ *
+ * The sidebar ships 16 rem and 3 rem. The spec fixes 248 px expanded and 56 px
+ * collapsed, so the shell sets the two variables rather than editing the added
+ * component.
+ */
+const RAIL_WIDTHS = {
+  "--sidebar-width": "15.5rem",
+  "--sidebar-width-icon": "3.5rem",
+} as CSSProperties;
 
 /* ------------------------------------------------------------------- tokens */
 
@@ -107,7 +127,18 @@ export default function AppShell() {
   const { load, reload } = useIndexLoad();
   const { route, redirectedFrom, setRedirectedFrom, go } = useHashRoute();
   const { theme, toggleTheme } = useTheme();
-  const collapsed = useCollapsedRail();
+
+  /*
+   * The rail's own open state, with the viewport as its default. Section 9.2 puts
+   * the rail in icon mode between 768 px and 1200 px, so crossing that boundary
+   * re-applies the default and the reader may still toggle while inside it.
+   */
+  const narrowRail = useCollapsedRail();
+  const [railOpen, setRailOpen] = useState(!narrowRail);
+  useEffect(() => {
+    setRailOpen(!narrowRail);
+  }, [narrowRail]);
+
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     "the-work": true,
     build: true,
@@ -188,12 +219,20 @@ export default function AppShell() {
   /* A section change moves focus to the section heading, per section 8.4. */
   useFocusOnChange(HEADING_ID, [section, load.state, work?.id ?? ""]);
 
+  /*
+   * A route change starts the reader at the top of the pane. The four fields are the
+   * whole route. They are the work item, the section, the sub-view, and the record
+   * the sub-view opens, so one list covers a section change, a work-item change, an
+   * epic that opens, and a pull request that opens.
+   */
+  useScrollResetOnRoute(PANE_ID, [route.workId, route.section, route.sub, route.subId]);
+
   /* ---------------------------------------------------------------- states */
 
   if (load.state === "failed") {
     return (
       <TooltipProvider delayDuration={150}>
-        <div className="flex h-full min-h-0 min-w-0 flex-col" style={shellTokens(reduce)}>
+        <Frame reduce={reduce}>
           <TopBar
             workId={route.workId}
             workName={route.workId}
@@ -234,7 +273,7 @@ export default function AppShell() {
               </button>
             </div>
           </Pane>
-        </div>
+        </Frame>
       </TooltipProvider>
     );
   }
@@ -242,7 +281,7 @@ export default function AppShell() {
   if (load.state === "ready" && works.size === 0) {
     return (
       <TooltipProvider delayDuration={150}>
-        <div className="flex h-full min-h-0 min-w-0 flex-col" style={shellTokens(reduce)}>
+        <Frame reduce={reduce}>
           <Pane>
             <div className="max-w-[80ch] rounded-xl border border-dashed border-line bg-surface-2 px-4 py-3.5">
               <p className="m-0 flex items-center gap-2 font-mono text-[12.5px] font-bold tracking-[0.06em] text-ink-dim uppercase">
@@ -258,7 +297,7 @@ export default function AppShell() {
               </p>
             </div>
           </Pane>
-        </div>
+        </Frame>
       </TooltipProvider>
     );
   }
@@ -272,10 +311,7 @@ export default function AppShell() {
 
   return (
     <TooltipProvider delayDuration={150}>
-      <div
-        className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-ground text-ink"
-        style={shellTokens(reduce)}
-      >
+      <Frame reduce={reduce} open={railOpen} onOpenChange={setRailOpen}>
         <TopBar
           workId={work?.id ?? route.workId}
           workName={work?.design.name ?? route.workId}
@@ -292,13 +328,16 @@ export default function AppShell() {
           nameId="work-item-name"
         />
 
-        <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
+        {/*
+          The body row. It is the sidebar's positioned ancestor, so the rail starts
+          under the top bar and the pane sits beside it.
+        */}
+        <div className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden">
           <Rail
             work={work}
             gates={gates}
             levels={levels}
             section={section}
-            collapsed={collapsed}
             open={openGroups}
             onToggleGroup={(key) =>
               setOpenGroups((current) => ({ ...current, [key]: !(current[key] ?? true) }))
@@ -306,7 +345,7 @@ export default function AppShell() {
           />
 
           {/* The only scrolling region. Both axes belong to this pane. */}
-          <div
+          <SidebarInset
             id={PANE_ID}
             tabIndex={-1}
             aria-label={`${work?.design.name ?? "No work item"}, ${section}`}
@@ -388,12 +427,48 @@ export default function AppShell() {
                 </motion.div>
               </AnimatePresence>
             )}
-          </div>
+          </SidebarInset>
         </div>
 
         <RecordSheet subject={sheet} onOpenChange={closeSheet} />
-      </div>
+      </Frame>
     </TooltipProvider>
+  );
+}
+
+/**
+ * The shell's frame, and the sidebar's provider.
+ *
+ * The provider is the frame rather than a wrapper inside it, because the top bar
+ * holds the mobile drawer's trigger and `useSidebar` reads the provider's context.
+ * Three states render through here, so the frame is written once.
+ *
+ * Rule 1 of section 11.3 holds: the frame carries `h-full` and never `h-dvh`. The
+ * sidebar ships `min-h-svh` on its wrapper, so the shell sets `min-h-0` over it.
+ *
+ * The two rail widths are section 9.1's and 9.2's, set here rather than in the
+ * sidebar, because the spec fixes them and the added component does not.
+ */
+function Frame({
+  reduce,
+  open,
+  onOpenChange,
+  children,
+}: {
+  reduce: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  children: ReactNode;
+}) {
+  return (
+    <SidebarProvider
+      open={open}
+      onOpenChange={onOpenChange}
+      className="relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-ground text-ink"
+      style={{ ...shellTokens(reduce), ...RAIL_WIDTHS }}
+    >
+      {children}
+    </SidebarProvider>
   );
 }
 

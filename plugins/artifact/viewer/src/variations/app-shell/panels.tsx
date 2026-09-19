@@ -5,6 +5,17 @@
  * record is absent the panel names the record in place, because an absent record is a
  * fact the reader needs to see.
  *
+ * EACH PANEL IS A TILE OF A BENTO GRID. The level used to be one column of full-width
+ * panels, so every panel claimed the same width whether it held one line or a table.
+ * Each panel now names a span, and the span follows its content weight. The contract
+ * band and the problem/solution pair take two thirds, risks and unknowns take one
+ * third, and a long list takes the full width. `atoms.tsx` holds the grid and the
+ * named spans.
+ *
+ * An inner grid reads the tile, not the viewport. A `sm:` breakpoint inside a
+ * one-third tile would fire on a wide viewport and crush the tile's own columns, so
+ * every inner grid in this file uses a container query instead.
+ *
  * TWO SHAPES CARRY THE CONTENT, AND THEY ARE THE RECORD MOSAIC'S. A `Box` turns one
  * named field into a card, and an accordion holds a list whose entries repeat. The
  * engineer named the record mosaic as the variation that "does a better job at
@@ -33,6 +44,7 @@ import type { SheetSubject } from "./Sheet";
 import {
   AbsentLine,
   ActionButton,
+  Bento,
   Box,
   Chip,
   EmptyNote,
@@ -93,16 +105,17 @@ export function IntentPanel({ work, levelState }: { work: WorkItem; levelState: 
   const present = slots.filter((slot) => slot.present).length;
 
   return (
-    <div className="flex min-w-0 flex-col gap-4">
+    <Bento>
       {/* ---------------------------------------------------------- identity */}
       <Panel
+        span="narrow"
         title="Identity"
         icon={FileText}
         lead="Who this work is, where it sits, and how far it has run."
         readiness={readinessOf(levelState, record ? "present" : "absent")}
         missing={levelState.available ? undefined : levelState.missing}
       >
-        <div className="grid min-w-0 grid-cols-1 gap-x-5 gap-y-3.5 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid min-w-0 grid-cols-1 gap-x-5 gap-y-3.5 @md:grid-cols-2 @2xl:grid-cols-3">
           <Field label="Work id">
             <span className="font-mono text-[15px]">{work.id}</span>
           </Field>
@@ -133,7 +146,8 @@ export function IntentPanel({ work, levelState }: { work: WorkItem; levelState: 
               <span className="text-ink-faint"> · {done} done</span>
             </span>
           </Field>
-          <Field label="Records" className="sm:col-span-2">
+          {/* The span names the tile's own breakpoint, so it never forces a track the tile does not have. */}
+          <Field label="Records" className="@md:col-span-2">
             <span className="flex min-w-0 flex-wrap items-center gap-1.5">
               <span className="mr-1 font-mono text-[14px] font-bold tabular-nums">
                 {present} of {slots.length}
@@ -179,12 +193,13 @@ export function IntentPanel({ work, levelState }: { work: WorkItem; levelState: 
 
       {/* ---------------------------------------------------- contract band */}
       <Panel
+        span="wide"
         title="The contract"
         icon={Target}
         lead="Why the work exists, what would make it done, what would stop it, and what it leaves out."
         readiness={goal ? "present" : "absent"}
       >
-        <div className="grid min-w-0 grid-cols-1 gap-x-5 gap-y-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid min-w-0 grid-cols-1 gap-x-5 gap-y-4 @md:grid-cols-2 @3xl:grid-cols-4">
           <div className="flex min-w-0 flex-col gap-2">
             <ColumnHead label="Why" field="goal.outcome" />
             {goal ? (
@@ -235,7 +250,7 @@ export function IntentPanel({ work, levelState }: { work: WorkItem; levelState: 
           <code>data/designs.js</code>.
         </SourceLine>
       </Panel>
-    </div>
+    </Bento>
   );
 }
 
@@ -269,15 +284,16 @@ export function ProblemSolutionPanel({
   const findings = assessment?.findings ?? [];
 
   return (
-    <div className="flex min-w-0 flex-col gap-4">
+    <Bento>
       <Panel
+        span="wide"
         title="Problem and solution"
         icon={Scale}
         lead="The narrative beats, split by kind: problem and constraint on the left, decision and risk on the right."
         readiness={readinessOf(levelState, "absent")}
         missing={levelState.available ? undefined : levelState.missing}
       >
-        <div className="grid min-w-0 grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
+        <div className="grid min-w-0 grid-cols-1 gap-x-6 gap-y-5 @xl:grid-cols-2">
           {/* Problem column */}
           <div className="flex min-w-0 flex-col gap-3">
             <ColumnHead
@@ -339,40 +355,25 @@ export function ProblemSolutionPanel({
         </SourceLine>
       </Panel>
 
-      <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
-        <Panel
-          title="Risks"
-          icon={ShieldAlert}
-          lead="What the work costs if it ships as written."
-          readiness={intent && (intent.risks?.length ?? 0) > 0 ? "present" : "absent"}
-        >
-          {intent && (intent.risks?.length ?? 0) > 0 ? (
-            <TextList items={intent.risks ?? []} />
-          ) : (
-            <Missing detail="intent.risks holds no entry, or no intent.json exists.">
-              No risk is recorded.
-            </Missing>
-          )}
-        </Panel>
-
-        <Panel
-          title="Unknowns"
-          icon={CircleHelp}
-          lead="What nobody has settled yet."
-          readiness={intent && (intent.unknowns?.length ?? 0) > 0 ? "present" : "absent"}
-        >
-          {intent && (intent.unknowns?.length ?? 0) > 0 ? (
-            <TextList items={intent.unknowns ?? []} />
-          ) : (
-            <Missing detail="intent.unknowns holds no entry, or no intent.json exists.">
-              No open question is recorded.
-            </Missing>
-          )}
-        </Panel>
-      </div>
+      <Panel
+        span="narrow"
+        title="Risks"
+        icon={ShieldAlert}
+        lead="What the work costs if it ships as written."
+        readiness={intent && (intent.risks?.length ?? 0) > 0 ? "present" : "absent"}
+      >
+        {intent && (intent.risks?.length ?? 0) > 0 ? (
+          <TextList items={intent.risks ?? []} />
+        ) : (
+          <Missing detail="intent.risks holds no entry, or no intent.json exists.">
+            No risk is recorded.
+          </Missing>
+        )}
+      </Panel>
 
       {/* Assessment. The verdict leads, because it is the answer a reader came for. */}
       <Panel
+        span="wide"
         title="Assessment"
         icon={BookMarked}
         lead="The verdict leads, because it is the answer a reader came for."
@@ -415,6 +416,23 @@ export function ProblemSolutionPanel({
       </Panel>
 
       <Panel
+        span="narrow"
+        title="Unknowns"
+        icon={CircleHelp}
+        lead="What nobody has settled yet."
+        readiness={intent && (intent.unknowns?.length ?? 0) > 0 ? "present" : "absent"}
+      >
+        {intent && (intent.unknowns?.length ?? 0) > 0 ? (
+          <TextList items={intent.unknowns ?? []} />
+        ) : (
+          <Missing detail="intent.unknowns holds no entry, or no intent.json exists.">
+            No open question is recorded.
+          </Missing>
+        )}
+      </Panel>
+
+      <Panel
+        span="band"
         title="Alternatives considered"
         icon={Ban}
         lead="What the design rejected, and the reason it recorded."
@@ -442,7 +460,7 @@ export function ProblemSolutionPanel({
           </Missing>
         )}
       </Panel>
-    </div>
+    </Bento>
   );
 }
 
@@ -505,8 +523,9 @@ export function ArchitecturePanel({
   const missingAdr = linked.filter((adr) => adrs[adr.id] === undefined);
 
   return (
-    <div className="flex min-w-0 flex-col gap-4">
+    <Bento>
       <Panel
+        span="wide"
         title="Linked decisions"
         icon={ScrollText}
         lead="Each decision with the rule it enforces, the pull request that carried it, and its whole record one press away."
@@ -535,13 +554,13 @@ export function ArchitecturePanel({
         </SourceLine>
       </Panel>
 
-      <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
-        <Panel
-          title="Boundary rules"
-          icon={AlertOctagon}
-          lead="The rules the touched contexts declare, and the reason each one carries."
-          readiness={work.boundaryRules.length > 0 ? "present" : "absent"}
-        >
+      <Panel
+        span="narrow"
+        title="Boundary rules"
+        icon={AlertOctagon}
+        lead="The rules the touched contexts declare, and the reason each one carries."
+        readiness={work.boundaryRules.length > 0 ? "present" : "absent"}
+      >
           {work.boundaryRules.length > 0 ? (
             <div className="flex min-w-0 flex-col gap-2.5">
               {work.boundaryRules.map((rule) => (
@@ -587,14 +606,13 @@ export function ArchitecturePanel({
           )}
         </Panel>
 
-        <Panel
-          title="Districts and contexts touched"
-          icon={Boxes}
-          lead="Where the linked decisions land, read from the two joins."
-          readiness={
-            work.contexts.length > 0 || work.districts.length > 0 ? "present" : "absent"
-          }
-        >
+      <Panel
+        span="narrow"
+        title="Districts and contexts touched"
+        icon={Boxes}
+        lead="Where the linked decisions land, read from the two joins."
+        readiness={work.contexts.length > 0 || work.districts.length > 0 ? "present" : "absent"}
+      >
           <div className="flex min-w-0 flex-col gap-3">
             <div className="flex min-w-0 flex-col gap-1.5">
               <SubHead count={work.contexts.length}>Contexts</SubHead>
@@ -629,10 +647,10 @@ export function ArchitecturePanel({
               </AbsentLine>
             ) : null}
           </div>
-        </Panel>
-      </div>
+      </Panel>
 
       <Panel
+        span="wide"
         title="Diagrams"
         icon={Network}
         lead="The source is shown as code. The runtime loads from a CDN when the reader presses Render, and at no other moment."
@@ -663,6 +681,7 @@ export function ArchitecturePanel({
 
       {work.record?.pr_draft ? (
         <Panel
+          span="wide"
           title="Envisioned pull request"
           icon={Compass}
           lead="The pull-request draft the design wrote before any code existed."
@@ -676,6 +695,7 @@ export function ArchitecturePanel({
       ) : null}
 
       <Panel
+        span="narrow"
         title="Where an epic's own architecture lives"
         icon={ListChecks}
         lead="Section 2.2 lists the Gate 4b technical solution design under Architecture, for an epic."
@@ -692,7 +712,7 @@ export function ArchitecturePanel({
           <code>feature_slug</code>. Section 12.5 records the keys that do not resolve.
         </SourceLine>
       </Panel>
-    </div>
+    </Bento>
   );
 }
 
