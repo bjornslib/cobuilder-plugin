@@ -32,7 +32,7 @@ type Option = {
 const OPTIONS: Option[] = [
   {
     id: "shell",
-    label: "D — App shell",
+    label: "Shell (D)",
     blurb:
       "A fixed top bar, a fixed rail of sections, and one scroll pane holding the three levels. Sections gate; levels disable. Route: #/shell/<workId>/<section>.",
     fillsViewport: true,
@@ -40,27 +40,27 @@ const OPTIONS: Option[] = [
   },
   {
     id: "board",
-    label: "Base board",
+    label: "Base",
     blurb: "The first working board: a flat list with lane tabs.",
     render: () => <App />,
   },
   {
     id: "lens-mosaic",
-    label: "A — Lens mosaic",
+    label: "Lens (A)",
     blurb:
       "The six lenses are the tiles. Build is largest and holds the epic tree.",
     render: () => <LensMosaic />,
   },
   {
     id: "epic-first-mosaic",
-    label: "B — Epic-first mosaic",
+    label: "Epic-first (B)",
     blurb:
       "The epic and slice tree anchors the page. The lens tiles follow the selection.",
     render: () => <EpicFirstMosaic />,
   },
   {
     id: "record-mosaic",
-    label: "C — Record mosaic",
+    label: "Record (C)",
     blurb:
       "One tile per record kind. Absence is a visible state, so the mosaic reads as a completeness map.",
     render: () => <RecordMosaic />,
@@ -97,50 +97,67 @@ export default function Variations() {
     window.scrollTo({ top: 0 });
   }
 
+  // The shell owns the whole viewport, because its own rule is that the
+  // document never scrolls and only the pane does. A header band above it
+  // would spend viewport height on harness furniture: measured at 1280x633,
+  // the old band cost 125 px, a fifth of the window.
   const frame = current.fillsViewport
-    ? "flex h-dvh flex-col overflow-hidden bg-ground text-ink"
-    : "min-h-screen bg-ground text-ink";
+    ? "relative flex h-dvh flex-col overflow-hidden bg-ground text-ink"
+    : "relative min-h-screen bg-ground text-ink";
   const header = current.fillsViewport
-    ? "shrink-0 border-b border-line bg-surface"
+    ? ""
     : "sticky top-0 z-[var(--layer-sticky)] border-b border-line bg-surface/95 backdrop-blur";
   const body = current.fillsViewport ? "min-h-0 flex-1 overflow-hidden" : "";
 
+  const switcher = (
+    <nav
+      aria-label="Variation"
+      className={
+        "flex flex-nowrap gap-1 " +
+        (current.fillsViewport
+          ? // Sits in the empty middle of the shell's own top bar. The bar
+            // carries the work-item switcher on the left and the theme toggle
+            // on the right, and nothing between them, so the harness costs no
+            // layout height and covers no content.
+            "absolute top-4 left-1/2 z-[var(--layer-panel)] -translate-x-1/2 rounded-full border border-line bg-surface/95 p-1 shadow-card backdrop-blur"
+          : "mx-auto flex max-w-[1400px] items-center gap-1.5 px-5 py-3")
+      }
+    >
+      {OPTIONS.map((o) => {
+        const on = o.id === current.id;
+        return (
+          <button
+            key={o.id}
+            type="button"
+            onClick={() => choose(o.id)}
+            aria-current={on ? "page" : undefined}
+            title={o.blurb}
+            className={
+              "cursor-pointer rounded-full border px-3 py-1.5 font-mono text-[12.5px] transition-colors " +
+              (on
+                ? "border-primary bg-primary/10 font-bold text-primary"
+                : "border-line text-ink-mid hover:border-primary/40 hover:text-ink")
+            }
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </nav>
+  );
+
+  if (current.fillsViewport) {
+    return (
+      <div className={frame}>
+        <div className={body}>{current.render()}</div>
+        {switcher}
+      </div>
+    );
+  }
+
   return (
     <div className={frame}>
-      <header className={header}>
-        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-3 px-5 py-3">
-          <span className="font-mono text-[12px] font-bold tracking-wide text-ink-dim uppercase">
-            Work board · variations
-          </span>
-
-          <nav className="flex flex-wrap gap-1.5" aria-label="Variation">
-            {OPTIONS.map((o) => {
-              const on = o.id === current.id;
-              return (
-                <button
-                  key={o.id}
-                  type="button"
-                  onClick={() => choose(o.id)}
-                  aria-current={on ? "page" : undefined}
-                  className={
-                    "cursor-pointer rounded-full border px-3 py-1.5 font-mono text-[12.5px] transition-colors " +
-                    (on
-                      ? "border-primary bg-primary/10 font-bold text-primary"
-                      : "border-line text-ink-mid hover:border-primary/40 hover:text-ink")
-                  }
-                >
-                  {o.label}
-                </button>
-              );
-            })}
-          </nav>
-
-          <p className="ml-auto max-w-[52ch] font-serif text-[13.5px] leading-snug text-ink-dim">
-            {current.blurb}
-          </p>
-        </div>
-      </header>
-
+      <header className={header}>{switcher}</header>
       <main className={body}>{current.render()}</main>
     </div>
   );
