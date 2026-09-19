@@ -500,8 +500,66 @@ def test_all_fourteen_real_slices_resolve_from_the_scoped_id(repo, bundle_dir):
     assert slice_to_epic == expected
 
 
-# --- C5: staleness is detected on both signals ---
+# --- C4c: an epic design document joins across the two id spaces ---
 
+
+def write_epic_design(repo: Path, plan_slug: str, epic_id: str) -> None:
+    """An epic design document lives under its plan slug, not under its
+    design directory. The plan and the design carry different names here."""
+    plan_dir = repo / "docs" / "plans" / plan_slug
+    plan_dir.mkdir(parents=True, exist_ok=True)
+    (plan_dir / f"epic-{epic_id}-design.md").write_text(
+        f"# Epic Technical Solution Design: {epic_id}\n\n## Scope\nprose\n"
+    )
+
+
+def test_epic_design_doc_joins_when_the_plan_slug_differs_from_the_design_name(repo, bundle_dir):
+    """An epic id is scoped by its design name (``plugin-split/E1``). An
+    epic design document id is scoped by its plan slug
+    (``cobuilder-family/E1``). The two differ for the ``cobuilder-family``
+    plan. The epic must still resolve to its document."""
+    write_design(repo, "plugin-split", ["E1", "E2"], notes={"E1": "One plugin becomes five renames"})
+    write_slices_md(
+        repo,
+        "cobuilder-family",
+        [
+            "| | **`plugin-split/E1` — One plugin becomes five renames.** More prose here. | | |",
+            "| 4 | | Renames inside today's single plugin | A working state |",
+        ],
+    )
+    write_epic_design(repo, "cobuilder-family", "E1")
+
+    index, _, _, failures = build_index.build_index(repo, bundle_dir)
+    assert failures == []
+
+    designs = {e["id"]: e for e in index["entities"]["epic"]}
+    assert designs["plugin-split/E1"]["design_doc"] == "cobuilder-family/E1"
+    # E2 has no document of its own. The key must be absent, not empty.
+    assert "design_doc" not in designs["plugin-split/E2"]
+
+
+def test_epic_design_doc_keeps_the_direct_match_when_the_names_agree(repo, bundle_dir):
+    """A design whose name equals its plan slug matched before this join
+    learned to cross the two id spaces. It must keep the same value."""
+    write_design(repo, "gate-doc-surfacing", ["E1"])
+    write_slices_md(
+        repo,
+        "gate-doc-surfacing",
+        [
+            "| | **`gate-doc-surfacing/E1` — A doc surfaces at the gate.** Prose. | | |",
+            "| 1 | | Read the document | A working state |",
+        ],
+    )
+    write_epic_design(repo, "gate-doc-surfacing", "E1")
+
+    index, _, _, failures = build_index.build_index(repo, bundle_dir)
+    assert failures == []
+
+    designs = {e["id"]: e for e in index["entities"]["epic"]}
+    assert designs["gate-doc-surfacing/E1"]["design_doc"] == "gate-doc-surfacing/E1"
+
+
+# --- C5: staleness is detected on both signals ---
 
 def test_changing_an_authored_document_marks_the_index_stale(repo, bundle_dir):
     write_adr(repo, "ADR-0001", "First Decision")

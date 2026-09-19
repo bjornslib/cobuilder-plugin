@@ -88,11 +88,24 @@ viewer
 The route carries the work item and the section. The nav renders from the route,
 so a deep link lands on the same screen a reader reached by clicking.
 
-**A slice is not a destination.** A slice belongs to one epic and carries no
-meaning outside it, so the rail never lists slices. The Build section lists the
-epics, and each epic discloses its own slices in the scroll pane. The same rule
-that keeps slices out of the rail applies to any record that only exists inside
-another one.
+**The rail lists sections, never records.** This is the rule that decides every
+future argument about what belongs in the rail, and it has two reasons.
+
+The first is meaning. A slice belongs to one epic and carries no meaning outside
+it, so the rail never lists slices. The same holds for anything that exists only
+as a row inside something else. A design document is different, and it is worth
+stating where the line falls: a document is opened, read, and closed, so it has
+meaning on its own. It still does not go in the rail, for the second reason.
+
+The second is size, and it is the stronger one. A program's epic and slice count
+is unbounded. `cobuilder-viewer` carries eighteen epics today, and the corpus
+carries twenty-nine slices. A rail that lists records grows with the corpus,
+overflows the viewport, and turns a fixed navigation into a scrolling one. The
+rail's job is to say where a reader can go, not to enumerate what is there.
+
+So the rail carries the three levels and the gated groups, and nothing else. An
+epic's design document, its slices, its rubrics and its pull requests are reached
+from the epic's own detail view.
 
 **Section gating.** A section appears when the work can fill it. Sections are
 gated, not disabled, because an empty section teaches nothing and costs a click.
