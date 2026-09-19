@@ -1,8 +1,7 @@
 /**
  * The rail. It never scrolls the pane, and it never moves.
  *
- * The rail applies both halves of the gating rule of section 3.3, and the difference
- * between them is the point of this mockup.
+ * Four rules decide what appears here.
  *
  *   Sections are gated. Build, Pull requests, and Shipped appear only when the work
  *   fills them, because an empty section teaches nothing and costs a click.
@@ -12,8 +11,13 @@
  *   and names the record it could not find, because an absent record is a fact the
  *   reader needs in place.
  *
- * The Rubrics item is a third case. It always renders, and it states that no gate
- * record exists when the join is empty. A missing gate record must not read as a pass.
+ *   The Rubrics item is a third case. It always renders, and it states that no gate
+ *   record exists when the join is empty. A missing gate record must not read as a pass.
+ *
+ *   A record that only exists inside another one gets no item. Section 2.1 states the
+ *   rule, and a slice is its case: a slice belongs to one epic and carries no meaning
+ *   outside it, so the rail lists epics and each epic discloses its own slices in the
+ *   scroll pane. There is no Slices item, and `build/slices` is not a route.
  */
 
 import type { ReactNode } from "react";
@@ -27,13 +31,13 @@ import {
   Network,
   PackageCheck,
   Plane,
-  Rows3,
   Target,
   TriangleAlert,
 } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import type { Gates, LevelState, SectionKey, WorkItem } from "./model";
 import { SECTION_LABEL, routeHref } from "./model";
@@ -112,7 +116,6 @@ export function Rail({
   ];
 
   if (gates?.build) {
-    const sliceCount = work?.slices.length ?? 0;
     groups.push({
       key: "build",
       label: "Build",
@@ -124,16 +127,8 @@ export function Rail({
           tail: "epics",
           icon: ListTree,
           available: true,
+          /* The epics each disclose their own slices, so the count sits on the item. */
           meta: `${work?.epics.length ?? 0}`,
-        },
-        {
-          key: "slices",
-          label: "Slices",
-          section: "build",
-          tail: "slices",
-          icon: Rows3,
-          available: true,
-          meta: `${sliceCount}`,
         },
         {
           key: "rubrics",
@@ -194,15 +189,23 @@ export function Rail({
   const gatedOff: string[] = [];
   if (work && gates) {
     if (!gates.build) gatedOff.push("Build, because the work carries no epics");
-    if (!gates.pullRequests) gatedOff.push("Pull requests, because no join names one for this work");
-    if (!gates.shipped) gatedOff.push("Shipped, because the stage is not implemented and no publication exists");
+    if (!gates.pullRequests) {
+      gatedOff.push(
+        "Pull requests, because no epic of this work carries one. A pull request a decision reaches is not this work's pull request",
+      );
+    }
+    if (!gates.shipped) {
+      gatedOff.push(
+        "Shipped, because the stage is not implemented and no publication exists for a pull request this work's own epics carry",
+      );
+    }
   }
 
   return (
     <nav
       aria-label="Work sections"
       className={cn(
-        "flex shrink-0 flex-col overflow-y-auto border-r border-line bg-surface",
+        "flex min-w-0 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface",
         collapsed ? "w-[56px] items-center py-3" : "w-[248px] py-3",
       )}
       style={{ zIndex: "var(--layer-fixed)" }}
@@ -210,7 +213,7 @@ export function Rail({
       {groups.map((group) => {
         const isOpen = open[group.key] ?? true;
         return (
-          <div key={group.key} className={cn("mb-2", collapsed && "w-full")}>
+          <div key={group.key} className={cn("mb-2 min-w-0", collapsed && "w-full")}>
             <button
               type="button"
               onClick={() => onToggleGroup(group.key)}
@@ -250,7 +253,7 @@ export function Rail({
                 }
                 className="overflow-hidden"
               >
-                <ul className="m-0 flex list-none flex-col gap-0.5 p-0 pr-2 pl-2">
+                <ul className="m-0 flex min-w-0 list-none flex-col gap-0.5 p-0 pr-2 pl-2">
                   {group.items.map((item) => (
                     <li key={item.key}>
                       <RailItem item={item} work={work} section={section} />
@@ -299,28 +302,42 @@ function RailItem({
 
   if (!item.available) {
     const reason = `Absent: ${absentLine(item.absent ?? [])}`;
+    /*
+     * The reason is in a tooltip, per section 3.2's Nav item Disabled row, so the
+     * reader sees the gap in place rather than discovering it on click.
+     */
     return (
-      <a
-        role="link"
-        aria-disabled="true"
-        tabIndex={0}
-        href="#"
-        onClick={(event) => event.preventDefault()}
-        title={`${item.label} is disabled. ${reason}`}
-        className={cn(
-          "flex min-h-9 cursor-not-allowed flex-col justify-center gap-0.5 rounded-md px-2.5 py-1.5",
-          "opacity-45 outline-none",
-          "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-        )}
-      >
-        <span className="flex items-center gap-2">
-          <item.icon className="size-4 shrink-0 text-ink-faint" aria-hidden="true" />
-          <span className="font-mono text-[13.5px] text-ink-mid">{item.label}</span>
-        </span>
-        <span className="pl-6 font-mono text-[12px] leading-[1.35] text-ink-faint">
-          {absentLine(item.absent ?? [])}
-        </span>
-      </a>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <a
+            role="link"
+            aria-disabled="true"
+            tabIndex={0}
+            href="#"
+            onClick={(event) => event.preventDefault()}
+            className={cn(
+              "flex min-h-9 min-w-0 cursor-not-allowed flex-col justify-center gap-0.5 rounded-md px-2.5 py-1.5",
+              "opacity-45 outline-none",
+              "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+            )}
+          >
+            <span className="flex items-center gap-2">
+              <item.icon className="size-4 shrink-0 text-ink-faint" aria-hidden="true" />
+              <span className="font-mono text-[13.5px] text-ink-mid">{item.label}</span>
+            </span>
+            <span className="pl-6 font-mono text-[12px] leading-[1.35] text-ink-faint">
+              {absentLine(item.absent ?? [])}
+            </span>
+          </a>
+        </TooltipTrigger>
+        <TooltipContent
+          side="right"
+          style={{ zIndex: "var(--layer-panel)" }}
+          className="max-w-[42ch] font-serif text-[14px] leading-[1.5]"
+        >
+          {item.label} is disabled. {reason}
+        </TooltipContent>
+      </Tooltip>
     );
   }
 
@@ -330,7 +347,7 @@ function RailItem({
       aria-current={current ? "page" : undefined}
       title={item.label}
       className={cn(
-        "flex min-h-9 cursor-pointer items-start gap-2 rounded-md px-2.5 py-1.5",
+        "flex min-h-9 min-w-0 cursor-pointer items-start gap-2 rounded-md px-2.5 py-1.5",
         "transition-colors duration-150 ease-house hover:bg-surface-2 hover:text-foreground",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
         current

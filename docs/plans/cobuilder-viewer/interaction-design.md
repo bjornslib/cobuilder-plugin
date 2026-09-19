@@ -66,7 +66,6 @@ The shell has three fixed regions and one scrolling region.
 │   Architecture     │                                              │
 │ BUILD              │                                              │
 │   Epics            │                                              │
-│   Slices           │                                              │
 │   Rubrics          │                                              │
 │ PULL REQUESTS      │                                              │
 │   This work's      │                                              │
@@ -81,15 +80,19 @@ viewer
     ├── :section                     intent | problem-and-solution | architecture
     │                                | build | pull-requests | shipped
     ├── build/epics
-    ├── build/epics/:epicId          opens one epic
-    ├── build/slices
-    ├── build/slices/:sliceId
+    ├── build/epics/:epicId          opens one epic, and its slices with it
     ├── build/rubrics
     └── pull-requests/:prNumber      one pull request
 ```
 
 The route carries the work item and the section. The nav renders from the route,
 so a deep link lands on the same screen a reader reached by clicking.
+
+**A slice is not a destination.** A slice belongs to one epic and carries no
+meaning outside it, so the rail never lists slices. The Build section lists the
+epics, and each epic discloses its own slices in the scroll pane. The same rule
+that keeps slices out of the rail applies to any record that only exists inside
+another one.
 
 **Section gating.** A section appears when the work can fill it. Sections are
 gated, not disabled, because an empty section teaches nothing and costs a click.
@@ -126,13 +129,17 @@ The shell reads `data/index.json`. It reads `data/designs.js` for record bodies.
 | `feature_gates` | gate state per feature |
 | `context_verifies_district`, `district_uncovered` | map coverage |
 
-**What each level reads.**
+**What each level reads, and which records back it.** A level is available when
+at least one of its records exists. It is disabled only when every one of them is
+absent. This rule matters because a sparse design still fills a level: `goal.json`
+alone is enough for Intent and for Architecture, so `inflight-record-store` has
+one disabled level, not three.
 
-| Level | Fields |
-|---|---|
-| Intent | `goal.outcome`, `goal.done_when`, `goal.abort_if`, `intent.out_of_scope`, plus identity: id, stage, branch, epic count |
-| Problem and solution | `narrative.problem_solution` beats by kind, `intent.problem`, `intent.approach`, `intent.risks`, `intent.unknowns`, `assessment.verdict` and `assessment.findings`, `intent.alternatives` |
-| Architecture | the linked ADRs with their `maps_to.rule`, `boundary_rule` entities, districts and contexts touched, diagrams by level, and for an epic the Gate 4b design's `Types & Signatures` |
+| Level | Records that back it | Fields |
+|---|---|---|
+| Intent | `goal.json` alone is enough. `intent.json` adds depth | `goal.outcome`, `goal.done_when`, `goal.abort_if`, `intent.out_of_scope`, plus identity: id, stage, branch, epic count |
+| Problem and solution | `intent.json`, `narrative.json`, or `assessment.json` | `narrative.problem_solution` beats by kind, `intent.problem`, `intent.approach`, `intent.risks`, `intent.unknowns`, `assessment.verdict` and `assessment.findings`, `intent.alternatives` |
+| Architecture | `goal.json`'s `adrs[]`, or the design's `diagrams/` | the linked ADRs with their `maps_to.rule`, `boundary_rule` entities, districts and contexts touched, diagrams by level, and for an epic the Gate 4b design's `Types & Signatures` |
 
 **What the corpus cannot supply.** The shell names these rather than implying
 them.
@@ -342,8 +349,8 @@ to see in place.**
 | Control | Renders when | Removed when |
 |---|---|---|
 | Build group | the work has at least one epic | the work carries no epics |
-| Pull requests group | `epic_to_pull_request` or `adr_to_pull_request` names a pull request for this work | no join names one |
-| Shipped group | `stage` is `implemented`, or a `publication` entity exists | neither holds |
+| Pull requests group | `epic_to_pull_request` names a pull request for one of this work's own epics | no epic carries a pull request |
+| Shipped group | `stage` is `implemented`, or a `publication` exists for a pull request this work's own epics carry | neither holds |
 | Rubrics item | `feature_gates` holds a gate record for this feature | the join is empty. The item then states that no gate record exists, because a missing record must not read as a pass |
 | Slice list under an epic | the epic is expanded | the epic is collapsed |
 | Render control | the diagram has not been rendered | the reader renders it |
@@ -351,6 +358,19 @@ to see in place.**
 | Unresolved-slices panel | `slice_to_epic_unresolved` holds a slice | the join is empty |
 | Retry | the index request failed | a retry starts |
 | Level nav item | always present. It is disabled when its record is absent, so the gap stays visible | never |
+
+**A pull request reached through a decision is not the work's pull request.**
+An earlier version of this table accepted `adr_to_pull_request` as well. That was
+wrong, and the corpus shows why. `cobuilder-viewer` has eighteen epics and none
+of them carries a pull request. Its `goal.adrs[]` names ADR-0001, and ADR-0001
+reaches PR 2, which is a documentation pull request from July. The group then
+rendered, and the rail told a reader that this work had two pull requests when
+its own work had none.
+
+A decision's pull request belongs beside that decision, in the Architecture
+level, labelled as the pull request that carried the decision. It never becomes
+the work's own set. The same reasoning fixes the Shipped gate: a publication for
+somebody else's pull request is not evidence that this work shipped.
 
 ---
 
@@ -646,6 +666,31 @@ The document never scrolls, so `html` and `body` carry no overflow. Every wheel
 event not consumed by a nested region scrolls the scroll pane. Where two regions
 could claim a gesture, the innermost owner wins, and the outer region does not
 move.
+
+**Four rules make "no scroll" safe rather than a way to hide content.** A layout
+that fills the viewport and hides its overflow will clip whatever does not fit,
+and the reader has no way to reach it. These rules prevent that.
+
+1. **The shell fills its parent, never the viewport.** It uses `h-full`, not
+   `h-dvh`. The viewport height belongs to whoever owns the page. When a host
+   renders the shell beneath its own chrome, `h-dvh` makes the shell taller than
+   the space it was given, and the surplus is clipped at one edge.
+2. **The scroll pane scrolls on both axes.** `overflow: auto`, never
+   `overflow-y: auto` with `overflow-x: hidden`. A pane that hides its horizontal
+   overflow clips a wide table with no scrollbar and no way to reach it.
+3. **A wide block scrolls itself.** Every table, code block, and diagram wraps in
+   its own `overflow-x: auto` container, so the pane keeps its own scroll and the
+   wide block keeps its integrity.
+4. **Every flex and grid child carries `min-w-0`.** A flex child defaults to its
+   content width, so one wide row stretches the pane and pushes its siblings off
+   the edge.
+
+Measured on the mockup at 1600x1000 on 2026-09-19. The pane reported
+`overflow-x: hidden`, which is rule 2's defect: any block wider than the pane
+clipped with no scrollbar and no way to reach it. Rule 1 is a guard rather than a
+repair. The shell did fit its parent, at 919 px against 919 px. The rule stays
+because the host, not the shell, owns the viewport height, and a host that does
+not give the shell a definite height will break it.
 
 ---
 

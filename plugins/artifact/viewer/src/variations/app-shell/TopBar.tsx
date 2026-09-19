@@ -105,7 +105,7 @@ export function TopBar({
 
   return (
     <header
-      className="flex shrink-0 items-center gap-3 border-b border-line bg-surface px-4 py-2"
+      className="flex min-w-0 shrink-0 items-center gap-3 border-b border-line bg-surface px-4 py-2"
       style={{ zIndex: "var(--layer-fixed)" }}
     >
       <a
@@ -131,7 +131,7 @@ export function TopBar({
           >
             <Layers className="size-4 shrink-0 text-ink-faint" aria-hidden="true" />
             <span className="flex min-w-0 flex-col">
-              <span className="font-mono text-[11.5px] tracking-[0.08em] text-ink-faint uppercase">
+              <span className="font-mono text-[12px] tracking-[0.08em] text-ink-faint uppercase">
                 Work item
               </span>
               <span
@@ -192,7 +192,7 @@ export function TopBar({
                       setOpen(false);
                     }}
                     className={cn(
-                      "flex min-h-11 w-full cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-left",
+                      "flex min-h-11 w-full min-w-0 cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-left",
                       "transition-colors duration-150 ease-house hover:bg-surface-2",
                       "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                       current && "bg-accent-wash",
@@ -235,7 +235,7 @@ export function TopBar({
                     setOpen(false);
                   }}
                   className={cn(
-                    "flex min-h-11 w-full cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-left",
+                    "flex min-h-11 w-full min-w-0 cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-left",
                     "transition-colors duration-150 ease-house hover:bg-surface-2",
                     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                   )}

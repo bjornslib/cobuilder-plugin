@@ -1,46 +1,48 @@
 /**
  * The three levels: Intent, Problem & Solution, Architecture.
  *
- * Each panel is a heading, a short real excerpt, and a stated source field. The
- * mockup exists to let the engineer judge the information hierarchy, so a panel
- * never dumps a whole record. Where a record is absent the panel names the record
- * in place, because an absent record is a fact the reader needs to see.
+ * Each panel is a heading, a short real excerpt, and a stated source field. Where a
+ * record is absent the panel names the record in place, because an absent record is a
+ * fact the reader needs to see.
  *
- * Every value here comes from `data/index.json` or from `data/designs.js`. Nothing
- * is invented, and no panel guesses a value to fill a gap.
+ * TWO SHAPES CARRY THE CONTENT, AND THEY ARE THE RECORD MOSAIC'S. A `Box` turns one
+ * named field into a card, and an accordion holds a list whose entries repeat. The
+ * engineer named the record mosaic as the variation that "does a better job at
+ * displaying content in cards and boxes", so the problem column, the solution column,
+ * the assessment summary, and every decision now render as boxes rather than as
+ * paragraphs with labels. The nested-repeat case gets the accordion: decisions, and
+ * assessment findings. A decision's full record opens in a Sheet, because the record
+ * carries fourteen fields and the panel needs to show one line.
+ *
+ * Every value here comes from `data/index.json` or from `data/designs.js`. Nothing is
+ * invented, and no panel guesses a value to fill a gap.
  */
 
-import {
-  AlertOctagon,
-  Ban,
-  BookMarked,
-  Boxes,
-  CircleHelp,
-  Compass,
-  FileText,
-  GitBranch,
-  ListChecks,
-  Network,
-  Scale,
-  ScrollText,
-  ShieldAlert,
-  Target,
-  XCircle,
-} from "lucide-react";
+import { AlertOctagon, Ban, BookMarked, Boxes, CircleHelp, Compass, FileText, GitBranch, GitPullRequest, ListChecks, Network, Scale, ScrollText, ShieldAlert, Target } from "lucide-react";
+
+import BasicAccordion from "@/components/smoothui/basic-accordion";
+
+import type { AdrEntity } from "@/data/types";
 
 import type { AdrRecord } from "./records";
 import { excerpt } from "./records";
-import type { WorkItem } from "./model";
+import type { AssessmentFinding } from "./records";
+import type { DecisionCarrier, LevelState, WorkItem } from "./model";
 import { splitBeats } from "./model";
+import type { SheetSubject } from "./Sheet";
 import {
   AbsentLine,
-  Bullets,
+  ActionButton,
+  Box,
   Chip,
+  EmptyNote,
   Field,
   Missing,
   Panel,
   SourceLine,
   StateBadge,
+  SubHead,
+  TextList,
   toneForSeverity,
   toneForStage,
   toneForVerdict,
@@ -69,9 +71,15 @@ function recordSlots(work: WorkItem) {
   });
 }
 
+/** The readiness of one panel, from the level state the rail already computed. */
+function readinessOf(level: LevelState | undefined, fallback: "present" | "absent") {
+  if (!level) return fallback;
+  return level.available ? ("present" as const) : ("absent" as const);
+}
+
 /* -------------------------------------------------------------------- Intent */
 
-export function IntentPanel({ work }: { work: WorkItem }) {
+export function IntentPanel({ work, levelState }: { work: WorkItem; levelState: LevelState }) {
   const record = work.record;
   const goal = record?.goal;
   const intent = record?.intent;
@@ -85,14 +93,16 @@ export function IntentPanel({ work }: { work: WorkItem }) {
   const present = slots.filter((slot) => slot.present).length;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-w-0 flex-col gap-4">
       {/* ---------------------------------------------------------- identity */}
       <Panel
         title="Identity"
         icon={FileText}
         lead="Who this work is, where it sits, and how far it has run."
+        readiness={readinessOf(levelState, record ? "present" : "absent")}
+        missing={levelState.available ? undefined : levelState.missing}
       >
-        <div className="grid grid-cols-2 gap-x-5 gap-y-3.5 md:grid-cols-3 xl:grid-cols-4">
+        <div className="grid min-w-0 grid-cols-1 gap-x-5 gap-y-3.5 sm:grid-cols-2 xl:grid-cols-3">
           <Field label="Work id">
             <span className="font-mono text-[15px]">{work.id}</span>
           </Field>
@@ -107,11 +117,11 @@ export function IntentPanel({ work }: { work: WorkItem }) {
             {branches.length === 0 ? (
               <span className="text-ink-dim">no branch recorded</span>
             ) : (
-              <span className="flex flex-col gap-1">
+              <span className="flex min-w-0 flex-col gap-1">
                 {branches.map((branch) => (
-                  <span key={branch} className="flex items-center gap-2 font-mono text-[13.5px]">
+                  <span key={branch} className="flex min-w-0 items-center gap-2 font-mono text-[13.5px]">
                     <GitBranch className="size-3.5 shrink-0 text-ink-faint" aria-hidden="true" />
-                    {branch}
+                    <span className="min-w-0 break-words">{branch}</span>
                   </span>
                 ))}
               </span>
@@ -123,8 +133,8 @@ export function IntentPanel({ work }: { work: WorkItem }) {
               <span className="text-ink-faint"> · {done} done</span>
             </span>
           </Field>
-          <Field label="Records" className="md:col-span-2">
-            <span className="flex flex-wrap items-center gap-1.5">
+          <Field label="Records" className="sm:col-span-2">
+            <span className="flex min-w-0 flex-wrap items-center gap-1.5">
               <span className="mr-1 font-mono text-[14px] font-bold tabular-nums">
                 {present} of {slots.length}
               </span>
@@ -172,15 +182,13 @@ export function IntentPanel({ work }: { work: WorkItem }) {
         title="The contract"
         icon={Target}
         lead="Why the work exists, what would make it done, what would stop it, and what it leaves out."
+        readiness={goal ? "present" : "absent"}
       >
-        <div className="grid grid-cols-1 gap-x-5 gap-y-4 md:grid-cols-2 xl:grid-cols-4">
-          {/* Why */}
-          <div className="flex min-w-0 flex-col gap-1.5">
+        <div className="grid min-w-0 grid-cols-1 gap-x-5 gap-y-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="flex min-w-0 flex-col gap-2">
             <ColumnHead label="Why" field="goal.outcome" />
             {goal ? (
-              <p className="m-0 font-serif text-[16px] leading-[1.55] text-foreground">
-                {excerpt(goal.outcome, 260)}
-              </p>
+              <Box label="Outcome">{excerpt(goal.outcome, 260)}</Box>
             ) : (
               <Missing detail="The record file carries no goal for this design.">
                 No goal record, so the work states no outcome.
@@ -188,16 +196,10 @@ export function IntentPanel({ work }: { work: WorkItem }) {
             )}
           </div>
 
-          {/* Done when */}
-          <div className="flex min-w-0 flex-col gap-1.5">
+          <div className="flex min-w-0 flex-col gap-2">
             <ColumnHead label="Done when" field="goal.done_when" />
             {goal && (goal.done_when?.length ?? 0) > 0 ? (
-              <Bullets
-                items={goal.done_when ?? []}
-                limit={2}
-                tone="good"
-                onOverflow={(hidden) => `and ${hidden} more, in the goal record.`}
-              />
+              <TextList items={goal.done_when ?? []} ordered />
             ) : (
               <Missing detail="goal.done_when holds no entry for this work.">
                 No done-when condition is recorded.
@@ -206,15 +208,10 @@ export function IntentPanel({ work }: { work: WorkItem }) {
           </div>
 
           {/* Abort if — beside Done when, because a reader weighs the two together. */}
-          <div className="flex min-w-0 flex-col gap-1.5">
+          <div className="flex min-w-0 flex-col gap-2">
             <ColumnHead label="Abort if" field="goal.abort_if" />
             {goal && (goal.abort_if?.length ?? 0) > 0 ? (
-              <Bullets
-                items={goal.abort_if ?? []}
-                limit={2}
-                tone="danger"
-                onOverflow={(hidden) => `and ${hidden} more, in the goal record.`}
-              />
+              <TextList items={goal.abort_if ?? []} />
             ) : (
               <Missing detail="goal.abort_if holds no entry for this work. The column says so rather than rendering blank.">
                 No abort condition is recorded.
@@ -222,15 +219,10 @@ export function IntentPanel({ work }: { work: WorkItem }) {
             )}
           </div>
 
-          {/* Out of scope */}
-          <div className="flex min-w-0 flex-col gap-1.5">
+          <div className="flex min-w-0 flex-col gap-2">
             <ColumnHead label="Out of scope" field="intent.out_of_scope" />
             {intent && (intent.out_of_scope?.length ?? 0) > 0 ? (
-              <Bullets
-                items={intent.out_of_scope ?? []}
-                limit={2}
-                onOverflow={(hidden) => `and ${hidden} more, in the intent record.`}
-              />
+              <TextList items={intent.out_of_scope ?? []} />
             ) : (
               <Missing detail="No intent.json in this design's directory.">
                 No scope boundary is recorded.
@@ -238,6 +230,10 @@ export function IntentPanel({ work }: { work: WorkItem }) {
             )}
           </div>
         </div>
+        <SourceLine>
+          read from <code>goal.json</code> and <code>intent.json</code> through{" "}
+          <code>data/designs.js</code>.
+        </SourceLine>
       </Panel>
     </div>
   );
@@ -245,18 +241,24 @@ export function IntentPanel({ work }: { work: WorkItem }) {
 
 function ColumnHead({ label, field }: { label: string; field: string }) {
   return (
-    <div className="flex flex-col gap-0.5 border-b border-line-soft pb-1.5">
+    <div className="flex min-w-0 flex-col gap-0.5 border-b border-line-soft pb-1.5">
       <span className="font-mono text-[12.5px] font-bold tracking-[0.08em] uppercase">
         {label}
       </span>
-      <span className="font-mono text-[12px] text-ink-faint">{field}</span>
+      <span className="min-w-0 font-mono text-[12px] break-words text-ink-faint">{field}</span>
     </div>
   );
 }
 
 /* ------------------------------------------------------- Problem & Solution */
 
-export function ProblemSolutionPanel({ work }: { work: WorkItem }) {
+export function ProblemSolutionPanel({
+  work,
+  levelState,
+}: {
+  work: WorkItem;
+  levelState: LevelState;
+}) {
   const record = work.record;
   const intent = record?.intent;
   const ps = record?.narrative?.problem_solution;
@@ -267,32 +269,32 @@ export function ProblemSolutionPanel({ work }: { work: WorkItem }) {
   const findings = assessment?.findings ?? [];
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-w-0 flex-col gap-4">
       <Panel
         title="Problem and solution"
         icon={Scale}
         lead="The narrative beats, split by kind: problem and constraint on the left, decision and risk on the right."
+        readiness={readinessOf(levelState, "absent")}
+        missing={levelState.available ? undefined : levelState.missing}
       >
-        <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
+        <div className="grid min-w-0 grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
           {/* Problem column */}
           <div className="flex min-w-0 flex-col gap-3">
-            <ColumnHead label="Problem" field="narrative.problem_solution.beats[kind=problem|constraint]" />
+            <ColumnHead
+              label="Problem"
+              field="narrative.problem_solution.beats[kind=problem|constraint]"
+            />
             {beats.problem.length > 0 ? (
-              <Bullets
+              <TextList
                 items={beats.problem.map((beat) => `${beat.text} — ${beat.kind}`)}
-                limit={4}
-                tone="danger"
               />
             ) : (
               <AbsentLine>No beat of kind problem or constraint is recorded.</AbsentLine>
             )}
             {intent?.problem ? (
-              <>
-                <p className="m-0 font-serif text-[16px] leading-[1.55] text-foreground">
-                  {excerpt(intent.problem, 320)}
-                </p>
-                <SourceLine>intent.problem, excerpted.</SourceLine>
-              </>
+              <Box label="Problem" tone="problem">
+                {excerpt(intent.problem, 320)}
+              </Box>
             ) : (
               <Missing detail="No intent.json in this design's directory.">
                 No authored problem statement.
@@ -302,23 +304,19 @@ export function ProblemSolutionPanel({ work }: { work: WorkItem }) {
 
           {/* Solution column */}
           <div className="flex min-w-0 flex-col gap-3">
-            <ColumnHead label="Solution" field="narrative.problem_solution.beats[kind=decision|risk]" />
+            <ColumnHead
+              label="Solution"
+              field="narrative.problem_solution.beats[kind=decision|risk]"
+            />
             {beats.solution.length > 0 ? (
-              <Bullets
-                items={beats.solution.map((beat) => `${beat.text} — ${beat.kind}`)}
-                limit={4}
-                tone="accent"
-              />
+              <TextList items={beats.solution.map((beat) => `${beat.text} — ${beat.kind}`)} />
             ) : (
               <AbsentLine>No beat of kind decision or risk is recorded.</AbsentLine>
             )}
             {intent?.approach ? (
-              <>
-                <p className="m-0 font-serif text-[16px] leading-[1.55] text-foreground">
-                  {excerpt(intent.approach, 320)}
-                </p>
-                <SourceLine>intent.approach, excerpted.</SourceLine>
-              </>
+              <Box label="Approach" tone="solution">
+                {excerpt(intent.approach, 320)}
+              </Box>
             ) : (
               <Missing detail="No intent.json in this design's directory.">
                 No authored approach statement.
@@ -328,18 +326,28 @@ export function ProblemSolutionPanel({ work }: { work: WorkItem }) {
         </div>
 
         {beats.other.length > 0 ? (
-          <p className="m-0 mt-3 font-mono text-[12px] text-ink-faint">
+          <p className="m-0 mt-3 min-w-0 font-mono text-[12px] text-ink-faint">
             {beats.other.length} beat
             {beats.other.length === 1 ? "" : "s"} carry a kind outside the four the split
             names: {[...new Set(beats.other.map((beat) => beat.kind))].join(", ")}.
           </p>
         ) : null}
+        <SourceLine>
+          beats read from <code>narrative.problem_solution.beats[]</code>, split by{" "}
+          <code>kind</code>. Prose read from <code>intent.problem</code> and{" "}
+          <code>intent.approach</code>.
+        </SourceLine>
       </Panel>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Panel title="Risks" icon={ShieldAlert} lead="What the work costs if it ships as written.">
+      <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
+        <Panel
+          title="Risks"
+          icon={ShieldAlert}
+          lead="What the work costs if it ships as written."
+          readiness={intent && (intent.risks?.length ?? 0) > 0 ? "present" : "absent"}
+        >
           {intent && (intent.risks?.length ?? 0) > 0 ? (
-            <Bullets items={intent.risks ?? []} limit={3} tone="warn" />
+            <TextList items={intent.risks ?? []} />
           ) : (
             <Missing detail="intent.risks holds no entry, or no intent.json exists.">
               No risk is recorded.
@@ -347,9 +355,14 @@ export function ProblemSolutionPanel({ work }: { work: WorkItem }) {
           )}
         </Panel>
 
-        <Panel title="Unknowns" icon={CircleHelp} lead="What nobody has settled yet.">
+        <Panel
+          title="Unknowns"
+          icon={CircleHelp}
+          lead="What nobody has settled yet."
+          readiness={intent && (intent.unknowns?.length ?? 0) > 0 ? "present" : "absent"}
+        >
           {intent && (intent.unknowns?.length ?? 0) > 0 ? (
-            <Bullets items={intent.unknowns ?? []} limit={3} />
+            <TextList items={intent.unknowns ?? []} />
           ) : (
             <Missing detail="intent.unknowns holds no entry, or no intent.json exists.">
               No open question is recorded.
@@ -358,10 +371,12 @@ export function ProblemSolutionPanel({ work }: { work: WorkItem }) {
         </Panel>
       </div>
 
+      {/* Assessment. The verdict leads, because it is the answer a reader came for. */}
       <Panel
         title="Assessment"
         icon={BookMarked}
         lead="The verdict leads, because it is the answer a reader came for."
+        readiness={assessment ? "present" : "absent"}
         action={
           assessment ? (
             <StateBadge
@@ -374,12 +389,10 @@ export function ProblemSolutionPanel({ work }: { work: WorkItem }) {
         }
       >
         {assessment ? (
-          <div className="flex flex-col gap-3.5">
-            <p className="m-0 font-serif text-[16px] leading-[1.55] text-foreground">
-              {excerpt(assessment.summary ?? "", 300)}
-            </p>
+          <div className="flex min-w-0 flex-col gap-3.5">
+            <Box label="Summary">{excerpt(assessment.summary ?? "", 300)}</Box>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
               <Chip tone={toneForSeverity(assessment.risk_tier)}>
                 risk tier {assessment.risk_tier ?? "unrecorded"}
               </Chip>
@@ -387,41 +400,11 @@ export function ProblemSolutionPanel({ work }: { work: WorkItem }) {
               <Chip>{assessment.stage ?? "stage unrecorded"}</Chip>
             </div>
 
-            {findings.length > 0 ? (
-              <ol className="m-0 flex list-none flex-col gap-2.5 p-0">
-                {findings.slice(0, 3).map((finding) => (
-                  <li
-                    key={finding.id ?? finding.title}
-                    className="flex flex-col gap-1 rounded-lg border border-line-soft bg-surface-2 px-3 py-2"
-                  >
-                    <span className="flex flex-wrap items-center gap-2">
-                      <Chip tone={toneForSeverity(finding.severity)}>
-                        {finding.severity ?? finding.kind}
-                      </Chip>
-                      {finding.id ? (
-                        <span className="font-mono text-[12px] text-ink-faint">{finding.id}</span>
-                      ) : null}
-                    </span>
-                    <span className="font-serif text-[16px] leading-[1.5] text-foreground">
-                      {finding.title}
-                    </span>
-                    <span className="font-serif text-[15px] leading-[1.5] text-ink-dim">
-                      {excerpt(finding.detail, 220)}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            ) : null}
-
-            {findings.length > 3 ? (
-              <p className="m-0 font-mono text-[12px] text-ink-faint">
-                and {findings.length - 3} more findings in assessment.json.
-              </p>
-            ) : null}
+            {findings.length > 0 ? <FindingList findings={findings} /> : null}
 
             <SourceLine>
-              assessment.verdict, assessment.findings, and assessment.risk_tier. Findings are
-              excerpted at three.
+              assessment.verdict, assessment.findings, and assessment.risk_tier. Each finding
+              opens in place.
             </SourceLine>
           </div>
         ) : (
@@ -435,41 +418,71 @@ export function ProblemSolutionPanel({ work }: { work: WorkItem }) {
         title="Alternatives considered"
         icon={Ban}
         lead="What the design rejected, and the reason it recorded."
+        readiness={alternatives.length > 0 ? "present" : "absent"}
       >
         {alternatives.length > 0 ? (
-          <ol className="m-0 flex list-none flex-col gap-2.5 p-0">
-            {alternatives.slice(0, 3).map((alt, index) => (
-              <li
+          <div className="flex min-w-0 flex-col gap-2.5">
+            {alternatives.map((alt, index) => (
+              <div
                 key={`${index}-${alt.option.slice(0, 20)}`}
-                className="flex flex-col gap-1 rounded-lg border border-line-soft border-l-4 border-l-line bg-surface-2 px-3 py-2"
+                className="min-w-0 rounded-lg border border-dashed border-line bg-surface-2/50 px-3.5 py-3"
               >
-                <span className="flex items-start gap-2">
-                  <XCircle
-                    className="mt-1 size-4 shrink-0 text-destructive"
-                    aria-hidden="true"
-                  />
-                  <span className="font-serif text-[16px] leading-[1.5] text-foreground">
-                    {alt.option}
-                  </span>
-                </span>
-                <span className="pl-6 font-serif text-[15px] leading-[1.5] text-ink-dim">
+                <div className="min-w-0 font-serif text-[16.5px] leading-[1.55] font-semibold text-foreground">
+                  {alt.option}
+                </div>
+                <p className="mt-1 mb-0 min-w-0 font-serif text-[15.5px] leading-[1.55] text-ink-dim">
                   rejected because {alt.rejected_because}
-                </span>
-              </li>
+                </p>
+              </div>
             ))}
-          </ol>
+          </div>
         ) : (
           <Missing detail="intent.alternatives holds no entry, or no intent.json exists.">
             No alternative is recorded.
           </Missing>
         )}
-        {alternatives.length > 3 ? (
-          <p className="m-0 mt-2.5 font-mono text-[12px] text-ink-faint">
-            and {alternatives.length - 3} more alternatives in intent.json.
-          </p>
-        ) : null}
       </Panel>
     </div>
+  );
+}
+
+/** Findings repeat, so they are an accordion. The detail opens on the reader's press. */
+function FindingList({ findings }: { findings: AssessmentFinding[] }) {
+  return (
+    <BasicAccordion
+      allowMultiple
+      idPrefix="finding"
+      items={findings.map((finding, index) => ({
+        id: finding.id ?? index,
+        title: (
+          <span className="min-w-0 font-serif text-[16px] leading-[1.45] font-semibold">
+            {finding.title}
+          </span>
+        ),
+        meta: (
+          <>
+            <Chip tone={toneForSeverity(finding.severity)}>
+              {finding.severity ?? finding.kind}
+            </Chip>
+            {finding.id ? (
+              <span className="font-mono text-[12px] text-ink-faint">{finding.id}</span>
+            ) : null}
+          </>
+        ),
+        content: (
+          <div className="flex min-w-0 flex-col gap-2">
+            <p className="m-0 min-w-0 font-serif text-[16px] leading-[1.6] text-ink-mid">
+              {finding.detail}
+            </p>
+            <SourceLine>
+              kind <code>{finding.kind}</code>, severity{" "}
+              <code>{finding.severity ?? "unrecorded"}</code>, from{" "}
+              <code>assessment.findings</code>.
+            </SourceLine>
+          </div>
+        ),
+      }))}
+    />
   );
 }
 
@@ -479,74 +492,29 @@ export function ArchitecturePanel({
   work,
   adrs,
   theme,
+  levelState,
+  openSheet,
 }: {
   work: WorkItem;
   adrs: Record<string, AdrRecord>;
   theme: Theme;
+  levelState: LevelState;
+  openSheet: (subject: SheetSubject) => void;
 }) {
   const linked = work.linkedAdrs;
   const missingAdr = linked.filter((adr) => adrs[adr.id] === undefined);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-w-0 flex-col gap-4">
       <Panel
         title="Linked decisions"
         icon={ScrollText}
-        lead="Each decision with the rule it enforces, not only its title."
+        lead="Each decision with the rule it enforces, the pull request that carried it, and its whole record one press away."
+        readiness={readinessOf(levelState, linked.length > 0 ? "present" : "absent")}
+        missing={levelState.available ? undefined : levelState.missing}
       >
         {linked.length > 0 ? (
-          <ol className="m-0 flex list-none flex-col gap-2.5 p-0">
-            {linked.map((adr) => {
-              const full = adrs[adr.id];
-              return (
-                <li
-                  key={adr.id}
-                  className="flex flex-col gap-1.5 rounded-lg border border-line-soft bg-surface-2 px-3.5 py-2.5"
-                >
-                  <span className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-[12.5px] font-bold text-accent-deep">
-                      {adr.id}
-                    </span>
-                    <Chip>{adr.state}</Chip>
-                    {!full ? (
-                      <Chip tone="warn" dashed>
-                        no body in adrs.js
-                      </Chip>
-                    ) : null}
-                  </span>
-                  <span className="font-serif text-[16px] leading-[1.5] text-foreground">
-                    {adr.title}
-                  </span>
-                  {full?.maps_to?.rule ? (
-                    <span className="flex items-start gap-2 rounded-md border border-line-soft border-l-4 border-l-primary bg-surface px-2.5 py-2">
-                      <span className="font-serif text-[15.5px] leading-[1.5] text-ink-mid">
-                        {full.maps_to.rule}
-                      </span>
-                    </span>
-                  ) : (
-                    <AbsentLine>
-                      adrs.js carries no maps_to.rule for this decision, so only the title
-                      is available.
-                    </AbsentLine>
-                  )}
-                  {full?.maps_to?.modules && full.maps_to.modules.length > 0 ? (
-                    <span className="flex flex-wrap gap-1.5">
-                      {full.maps_to.modules.slice(0, 4).map((module) => (
-                        <Chip key={module} className="text-ink-faint">
-                          {module}
-                        </Chip>
-                      ))}
-                      {full.maps_to.modules.length > 4 ? (
-                        <Chip dashed className="text-ink-faint">
-                          +{full.maps_to.modules.length - 4}
-                        </Chip>
-                      ) : null}
-                    </span>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ol>
+          <DecisionList work={work} adrs={adrs} openSheet={openSheet} />
         ) : (
           <Missing detail="goal.adrs[] holds no entry, and goal.adr is null.">
             This work names no decision.
@@ -561,57 +529,77 @@ export function ArchitecturePanel({
         ) : null}
         <SourceLine>
           read from <code>goal.adrs[]</code> in <code>designs.js</code>, resolved against{" "}
-          <code>entities.adr</code>, with each rule from <code>adrs.js</code>. The index
-          carries no design-to-decision join.
+          <code>entities.adr</code>, with each rule from <code>adrs.js</code>. The carrying
+          pull request comes from <code>joins.adr_to_pull_request</code>, and it is shown
+          here rather than in the Pull requests group, per section 3.3.
         </SourceLine>
       </Panel>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
         <Panel
           title="Boundary rules"
           icon={AlertOctagon}
           lead="The rules the touched contexts declare, and the reason each one carries."
+          readiness={work.boundaryRules.length > 0 ? "present" : "absent"}
         >
           {work.boundaryRules.length > 0 ? (
-            <ol className="m-0 flex list-none flex-col gap-2.5 p-0">
-              {work.boundaryRules.slice(0, 4).map((rule) => (
-                <li key={rule.id} className="flex flex-col gap-1">
-                  <span className="flex flex-wrap items-center gap-2">
+            <div className="flex min-w-0 flex-col gap-2.5">
+              {work.boundaryRules.map((rule) => (
+                <div
+                  key={rule.id}
+                  className="flex min-w-0 flex-col gap-2 rounded-lg border border-line-soft bg-surface-2/50 px-3.5 py-2.5"
+                >
+                  <span className="flex min-w-0 flex-wrap items-center gap-2">
                     <Chip tone="warn">{rule.kind}</Chip>
-                    <span className="font-mono text-[13.5px]">{rule.target}</span>
+                    <span className="min-w-0 font-mono text-[13.5px] break-words">
+                      {rule.target}
+                    </span>
                   </span>
                   {rule.why ? (
-                    <span className="font-serif text-[15.5px] leading-[1.5] text-ink-dim">
+                    <p className="m-0 min-w-0 font-serif text-[15.5px] leading-[1.5] text-ink-dim">
                       {excerpt(rule.why, 180)}
-                    </span>
+                    </p>
                   ) : null}
-                </li>
+                  <ActionButton
+                    icon={AlertOctagon}
+                    onClick={() =>
+                      openSheet({
+                        kind: "boundary",
+                        id: rule.id,
+                        kindLabel: rule.kind,
+                        target: rule.target,
+                        context: rule.context,
+                        contextEntity: work.contexts.find((c) => c.id === rule.context),
+                        detail: rule.detail,
+                      })
+                    }
+                    ariaLabel={`Open the whole boundary rule ${rule.id}`}
+                  >
+                    Open the whole rule
+                  </ActionButton>
+                </div>
               ))}
-            </ol>
+            </div>
           ) : (
             <Missing detail="No linked decision names a context, so the join resolves no boundary rule.">
               No boundary rule applies to this work.
             </Missing>
           )}
-          {work.boundaryRules.length > 4 ? (
-            <p className="m-0 mt-2.5 font-mono text-[12px] text-ink-faint">
-              and {work.boundaryRules.length - 4} more rules across the touched contexts.
-            </p>
-          ) : null}
         </Panel>
 
         <Panel
           title="Districts and contexts touched"
           icon={Boxes}
           lead="Where the linked decisions land, read from the two joins."
+          readiness={
+            work.contexts.length > 0 || work.districts.length > 0 ? "present" : "absent"
+          }
         >
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-1.5">
-              <span className="font-mono text-[12px] tracking-[0.06em] text-ink-faint uppercase">
-                Contexts
-              </span>
+          <div className="flex min-w-0 flex-col gap-3">
+            <div className="flex min-w-0 flex-col gap-1.5">
+              <SubHead count={work.contexts.length}>Contexts</SubHead>
               {work.contexts.length > 0 ? (
-                <span className="flex flex-wrap gap-1.5">
+                <span className="flex min-w-0 flex-wrap gap-1.5">
                   {work.contexts.map((context) => (
                     <Chip key={context.id} tone="accent" title={context.path}>
                       {context.id}
@@ -622,12 +610,10 @@ export function ArchitecturePanel({
                 <AbsentLine>No linked decision names a context.</AbsentLine>
               )}
             </div>
-            <div className="flex flex-col gap-1.5">
-              <span className="font-mono text-[12px] tracking-[0.06em] text-ink-faint uppercase">
-                Districts
-              </span>
+            <div className="flex min-w-0 flex-col gap-1.5">
+              <SubHead count={work.districts.length}>Districts</SubHead>
               {work.districts.length > 0 ? (
-                <span className="flex flex-wrap gap-1.5">
+                <span className="flex min-w-0 flex-wrap gap-1.5">
                   {work.districts.map((district) => (
                     <Chip key={district.id}>{district.label}</Chip>
                   ))}
@@ -650,9 +636,10 @@ export function ArchitecturePanel({
         title="Diagrams"
         icon={Network}
         lead="The source is shown as code. The runtime loads from a CDN when the reader presses Render, and at no other moment."
+        readiness={work.diagramLevels.length > 0 ? "present" : "absent"}
       >
         {work.diagramLevels.length > 0 && work.record?.diagrams ? (
-          <div className="flex flex-col gap-4">
+          <div className="flex min-w-0 flex-col gap-4">
             {work.diagramLevels.map((level) => {
               const source = work.record?.diagrams?.[level];
               if (!source) return null;
@@ -679,21 +666,176 @@ export function ArchitecturePanel({
           title="Envisioned pull request"
           icon={Compass}
           lead="The pull-request draft the design wrote before any code existed."
+          readiness="present"
         >
-          <p className="m-0 font-serif text-[16px] leading-[1.55] text-foreground">
-            {excerpt(work.record.pr_draft, 260)}
-          </p>
+          <Box label="Draft">{excerpt(work.record.pr_draft, 260)}</Box>
           <SourceLine>
             pr-draft.md, {work.record.pr_draft.trim().split("\n").length} lines.
           </SourceLine>
         </Panel>
       ) : null}
 
-      <Panel title="Gate 4b design" icon={ListChecks} lead="A per-epic technical solution design, when one exists.">
-        <Missing detail="The index's epic_design entities cover five other features. None of them is this work's plan slug.">
-          No epic design document resolves for this work.
-        </Missing>
+      <Panel
+        title="Where an epic's own architecture lives"
+        icon={ListChecks}
+        lead="Section 2.2 lists the Gate 4b technical solution design under Architecture, for an epic."
+        readiness="partial"
+      >
+        <EmptyNote>
+          A Gate 4b design belongs to one epic, so it is disclosed inside that epic in the
+          Build section, and it opens in a Sheet there. This panel reads no epic, so it does
+          not repeat them. {work.epicDesigns.size} of this work&apos;s {work.epics.length}{" "}
+          epics resolve one.
+        </EmptyNote>
+        <SourceLine>
+          resolved from <code>entities.epic_design</code>, by epic id and by{" "}
+          <code>feature_slug</code>. Section 12.5 records the keys that do not resolve.
+        </SourceLine>
       </Panel>
+    </div>
+  );
+}
+
+/**
+ * The linked decisions, as an accordion, with the carrying pull request beside each one.
+ *
+ * Section 3.3 puts the carrying pull request here rather than in the Pull requests
+ * group, and labels it as the pull request that carried the decision. The label says
+ * whether one of this work's own epics is on the join's path, so a reader can tell the
+ * two cases apart at a glance.
+ */
+function DecisionList({
+  work,
+  adrs,
+  openSheet,
+}: {
+  work: WorkItem;
+  adrs: Record<string, AdrRecord>;
+  openSheet: (subject: SheetSubject) => void;
+}) {
+  return (
+    <BasicAccordion
+      allowMultiple
+      idPrefix="adr"
+      defaultExpandedIds={work.linkedAdrs.length === 1 ? [work.linkedAdrs[0].id] : []}
+      items={work.linkedAdrs.map((adr: AdrEntity) => {
+        const full = adrs[adr.id];
+        const carrier = work.decisionCarriers.get(adr.id);
+        return {
+          id: adr.id,
+          title: (
+            <span className="flex min-w-0 flex-1 items-baseline gap-2.5">
+              <span className="shrink-0 font-mono text-[14px] font-bold text-accent-deep">
+                {adr.id}
+              </span>
+              <span className="min-w-0 font-serif text-[16px] leading-[1.45]">{adr.title}</span>
+            </span>
+          ),
+          meta: (
+            <>
+              {!full ? (
+                <Chip tone="warn" dashed title="adrs.js carries no entry for this id.">
+                  no body
+                </Chip>
+              ) : null}
+              {carrier ? (
+                <Chip
+                  tone={carrier.onThisWork ? "accent" : "neutral"}
+                  title={
+                    carrier.onThisWork
+                      ? `joins.adr_to_pull_request reaches pull request ${carrier.pr}, and one of this work's own epics carries it.`
+                      : `joins.adr_to_pull_request reaches pull request ${carrier.pr}, which no epic of this work carries.`
+                  }
+                >
+                  <GitPullRequest className="size-3.5" aria-hidden="true" />
+                  carried by PR {carrier.pr}
+                </Chip>
+              ) : (
+                <Chip dashed className="text-ink-faint" title="The join reaches no pull request.">
+                  no PR
+                </Chip>
+              )}
+              <StateBadge word={adr.state} tone={toneForStage(adr.state)} />
+            </>
+          ),
+          content: (
+            <div className="flex min-w-0 flex-col gap-3">
+              {full?.maps_to?.rule ? (
+                <Box label="The rule this decision enforces">{full.maps_to.rule}</Box>
+              ) : (
+                <AbsentLine>
+                  adrs.js carries no <code>maps_to.rule</code> for this decision, so only the
+                  title is available here. The whole record names the rest.
+                </AbsentLine>
+              )}
+
+              <CarrierNote carrier={carrier} />
+
+              {full?.maps_to?.modules && full.maps_to.modules.length > 0 ? (
+                <span className="flex min-w-0 flex-wrap gap-1.5">
+                  {full.maps_to.modules.map((module) => (
+                    <Chip key={module} className="text-ink-faint">
+                      {module}
+                    </Chip>
+                  ))}
+                </span>
+              ) : null}
+
+              <ActionButton
+                icon={ScrollText}
+                onClick={() =>
+                  openSheet({
+                    kind: "adr",
+                    record: full,
+                    title: adr.title,
+                    state: adr.state,
+                    carrier,
+                  })
+                }
+                ariaLabel={`Open the whole record for ${adr.id}`}
+              >
+                Open the whole record
+              </ActionButton>
+            </div>
+          ),
+        };
+      })}
+    />
+  );
+}
+
+/** The pull request that carried one decision. Absent is stated, never implied. */
+function CarrierNote({ carrier }: { carrier: DecisionCarrier | undefined }) {
+  if (!carrier) {
+    return (
+      <AbsentLine>
+        The bundle reaches no pull request for this decision, so no pull request carried it.
+      </AbsentLine>
+    );
+  }
+  return (
+    <div className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-line-soft border-l-4 border-l-primary bg-surface px-3 py-2.5">
+      <span className="flex min-w-0 flex-wrap items-center gap-2">
+        <Chip tone="accent">
+          <GitPullRequest className="size-3.5" aria-hidden="true" />
+          PR {carrier.pr}
+        </Chip>
+        <span className="font-mono text-[12.5px] text-ink-dim">
+          the pull request that carried this decision
+        </span>
+      </span>
+      {carrier.entity ? (
+        <span className="min-w-0 font-serif text-[15.5px] leading-[1.5] text-ink-mid">
+          {carrier.entity.title}
+        </span>
+      ) : null}
+      <span className="min-w-0 font-mono text-[12px] break-words text-ink-faint">
+        reached via {carrier.via}
+        {carrier.path.length > 0 ? `, across ${carrier.path.length} epics` : ", directly"}
+        {carrier.onThisWork
+          ? ". One of this work's own epics carries it."
+          : ". No epic of this work carries it, so it is not in this work's own set."}
+      </span>
     </div>
   );
 }

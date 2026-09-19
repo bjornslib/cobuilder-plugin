@@ -132,11 +132,55 @@ export interface AdrMapsTo {
   unanchored?: boolean;
 }
 
+/** One rejected option, with the reason the record gives. */
+export interface AdrAlternative {
+  option: string;
+  rejected_because: string;
+}
+
+export interface AdrDelivers {
+  capability: string;
+  benefit: string;
+  beneficiary: string[];
+}
+
+/** One state change in the decision's own history. */
+export interface AdrHistoryEntry {
+  state: string;
+  date: string;
+  /** Present on a retro-extracted entry, and it names the file it read. */
+  source?: string;
+  note?: string;
+  by?: string;
+}
+
+/**
+ * One decision record, as `adrs.js` writes it.
+ *
+ * The index's `entities.adr` row carries three fields. The record file carries
+ * fourteen, and the Sheet in this shell shows all of them. `maps_to` is the one
+ * field the index does not carry at all, so a panel that shows the rule reads it
+ * here.
+ */
 export interface AdrRecord {
   id: string;
   title: string;
   state: string;
+  /** The pull request the record itself names. `joins.adr_to_pull_request` is the join. */
+  source_pr?: number | null;
+  problem?: string;
+  decision?: string;
+  alternatives?: AdrAlternative[];
+  /** Why the decision was forced, one line each. */
+  forces?: string[];
+  delivers?: AdrDelivers | null;
+  /** The full authored record, as markdown. */
+  body?: string;
   maps_to?: AdrMapsTo;
+  approved_by?: string | null;
+  history?: AdrHistoryEntry[];
+  /** `authored`, `inferred`, or null. */
+  provenance?: string | null;
 }
 
 export type AdrRecords = Record<string, AdrRecord>;

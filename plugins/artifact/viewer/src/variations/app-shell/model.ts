@@ -22,6 +22,7 @@ import type {
   ContextEntity,
   DesignEntity,
   DistrictEntity,
+  EpicDesignEntity,
   EpicEntity,
   GateStep,
   PublicationEntity,
@@ -68,6 +69,31 @@ export interface BoundaryRule {
   kind: string;
   target: string;
   why: string;
+  /** Every other field the boundary record carries, so a Sheet can show them all. */
+  detail: Record<string, unknown>;
+  /** The context this rule belongs to. */
+  context: string;
+}
+
+/**
+ * The pull request a decision reaches, and the join that reached it.
+ *
+ * This is not the work's own pull-request set. Section 3.3 states the rule: a pull
+ * request reached through a decision belongs beside that decision, in the
+ * Architecture level, labelled as the pull request that carried it. It never becomes
+ * an entry in the work's own set, because the work did not open it.
+ */
+export interface DecisionCarrier {
+  adrId: string;
+  pr: number;
+  /** How the join reached the pull request: `direct`, or `epic`. */
+  via: string;
+  /** The epics the join walked. Empty when it reached the pull request directly. */
+  path: string[];
+  /** The pull request entity, or undefined when the index holds no row for it. */
+  entity: PullRequestEntity | undefined;
+  /** True when one of this work's own epics sits on the join's path. */
+  onThisWork: boolean;
 }
 
 export interface WorkItem {
@@ -88,9 +114,16 @@ export interface WorkItem {
   linkedAdrs: AdrEntity[];
   /** Where the linked-decision list came from. */
   adrSource: "record" | "index" | "none";
+  /**
+   * The pull requests this work's own epics carry. This is the work's own set, and
+   * `joins.epic_to_pull_request` is its only source. Section 3.3.
+   */
   pullRequests: PullRequestEntity[];
-  /** Which join named each pull request. */
+  /** Which epic named each pull request. */
   pullRequestVia: Map<number, string[]>;
+  /** The pull request a decision reaches, keyed by decision id. Section 3.3. */
+  decisionCarriers: Map<string, DecisionCarrier>;
+  /** Publications for a pull request this work's own epics carry. Never another work's. */
   publications: PublicationEntity[];
   /** The planning slug this work's gates are keyed by. */
   planSlug: string;
@@ -98,6 +131,10 @@ export interface WorkItem {
   gateSteps: GateStep[] | null;
   /** Every feature slug the gate join holds. The Rubrics panel names what it did not read. */
   gateSlugs: Record<string, GateStep[]>;
+  /** The Gate 4b technical solution design per epic, keyed by the epic's own id. */
+  epicDesigns: Map<string, EpicDesignEntity>;
+  /** How an epic design resolved. The panel that shows one names this. */
+  epicDesignVia: "id" | "plan slug" | "none";
   contexts: ContextEntity[];
   districts: DistrictEntity[];
   boundaryRules: BoundaryRule[];
@@ -177,25 +214,43 @@ export function buildWorkItems(index: RecordIndex, records: Record<string, Desig
     const adrSource: WorkItem["adrSource"] =
       named.length > 0 ? "record" : linkedIds.length > 0 ? "record" : "none";
 
-    /* The pull-request set. Two joins can name one, and both are recorded. */
+    /*
+     * The work's own pull-request set. Section 3.3 states the rule: this reads
+     * `epic_to_pull_request` for this work's own epics, and nothing else. A pull
+     * request a decision reaches is not the work's pull request, so it lands in
+     * `decisionCarriers` below and it never enters this set.
+     */
     const via = new Map<number, string[]>();
-    const addVia = (n: number, how: string) => {
-      const list = via.get(n);
-      if (list) list.push(how);
-      else via.set(n, [how]);
-    };
     for (const epic of epics) {
       const pr = joins.epic_to_pull_request[epic.id];
-      if (typeof pr === "number") addVia(pr, `epic ${epic.epic_id}`);
-    }
-    for (const adr of linkedAdrs) {
-      const link = joins.adr_to_pull_request[adr.id];
-      if (link && typeof link.pr === "number") addVia(link.pr, `${adr.id} (${link.via})`);
+      if (typeof pr !== "number") continue;
+      const list = via.get(pr);
+      if (list) list.push(epic.epic_id);
+      else via.set(pr, [epic.epic_id]);
     }
     const pullRequests = [...via.keys()]
       .sort((a, b) => a - b)
       .map((n) => prById.get(n))
       .filter((pr): pr is PullRequestEntity => pr !== undefined);
+
+    /*
+     * Each decision's carrier, held beside that decision. `onThisWork` is false for
+     * every decision whose pull request no epic of this work carries, which is the
+     * common case in this corpus.
+     */
+    const decisionCarriers = new Map<string, DecisionCarrier>();
+    for (const adr of linkedAdrs) {
+      const link = joins.adr_to_pull_request[adr.id];
+      if (!link || typeof link.pr !== "number") continue;
+      decisionCarriers.set(adr.id, {
+        adrId: adr.id,
+        pr: link.pr,
+        via: link.via,
+        path: link.path ?? [],
+        entity: prById.get(link.pr),
+        onThisWork: via.has(link.pr),
+      });
+    }
 
     /* The contexts and districts the linked decisions land in. */
     const contextIds = new Set<string>();
@@ -219,10 +274,33 @@ export function buildWorkItems(index: RecordIndex, records: Record<string, Desig
         const detail = rule.detail as Record<string, unknown>;
         const target = typeof detail.target === "string" ? detail.target : rule.id;
         const why = typeof detail.why === "string" ? detail.why : "";
-        return { id: rule.id, kind: rule.kind, target, why };
+        return { id: rule.id, kind: rule.kind, target, why, detail, context: rule.context };
       });
 
     const plan = planSlugFor(design.id, slices, knownSlugs);
+
+    /*
+     * The Gate 4b technical solution design for each epic of this work. The index
+     * keys the entity by planning slug, and a design id is not always that slug, so
+     * the epic's own id is tried first and the planning slug second. Which one
+     * resolved is kept, because the panel that shows a document states its source.
+     */
+    let epicDesignVia: WorkItem["epicDesignVia"] = "none";
+    const epicDesigns = new Map<string, EpicDesignEntity>();
+    for (const epic of epics) {
+      const byId = entities.epic_design.find((doc) => doc.id === epic.id);
+      const bySlug = byId
+        ? undefined
+        : entities.epic_design.find(
+            (doc) => doc.epic_id === epic.epic_id && doc.feature_slug === plan.slug,
+          );
+      const doc = byId ?? bySlug;
+      if (!doc) continue;
+      epicDesigns.set(epic.id, doc);
+      epicDesignVia = byId ? "id" : "plan slug";
+    }
+
+    /* Publications for this work's own pull requests, and never for another work's. */
     const publications = entities.publication.filter(
       (p) => typeof p.pull_request === "number" && via.has(p.pull_request),
     );
@@ -244,11 +322,14 @@ export function buildWorkItems(index: RecordIndex, records: Record<string, Desig
       adrSource,
       pullRequests,
       pullRequestVia: via,
+      decisionCarriers,
       publications,
       planSlug: plan.slug,
       planSlugVia: plan.via,
       gateSteps: joins.feature_gates[plan.slug] ?? null,
       gateSlugs: joins.feature_gates,
+      epicDesigns,
+      epicDesignVia,
       contexts,
       districts,
       boundaryRules,
@@ -280,12 +361,19 @@ export interface Gates {
  *
  * A section that fails its rule is absent from the rail. It is never disabled,
  * because an empty section wastes a click.
+ *
+ * Two of the three rules are narrow on purpose, and the corpus is why. A work item
+ * whose decisions reach pull requests has not thereby opened them:
+ * `joins.adr_to_pull_request` never feeds the Pull requests group, and a publication
+ * for somebody else's pull request is not evidence that this work shipped.
  */
 export function gatesOf(work: WorkItem): Gates {
   const implemented = work.design.stage === "implemented";
   return {
     build: work.epics.length >= 1,
+    /* One of this work's own epics carries a pull request. */
     pullRequests: work.pullRequests.length >= 1,
+    /* The stage is implemented, or a publication exists for one of this work's own. */
     shipped: implemented || work.publications.length >= 1,
     /*
      * The Rubrics item always renders, and it states that no gate record exists when
@@ -429,7 +517,15 @@ export function switcherList(works: Map<string, WorkItem>) {
 export interface Route {
   workId: string | null;
   section: SectionKey;
-  /** `build/epics/:epicId`, `build/slices/:sliceId`, or `pull-requests/:n`. */
+  /**
+   * The sub-view inside a section: `epics` with an optional epic id, `rubrics`,
+   * `flightdeck`, or a pull request number.
+   *
+   * There is no `slices` sub-view, and `build/slices` is not a route. A slice belongs
+   * to one epic and carries no meaning outside it, so it never becomes a destination.
+   * Section 2.1 states the general rule this follows: a record that only exists
+   * inside another one never gets a rail item.
+   */
   sub: string | null;
   subId: string | null;
 }
