@@ -697,6 +697,14 @@ and the reader has no way to reach it. These rules prevent that.
 4. **Every flex and grid child carries `min-w-0`.** A flex child defaults to its
    content width, so one wide row stretches the pane and pushes its siblings off
    the edge.
+5. **The shell fills the visible screen, never the whole window.** It caps itself
+   to the narrower of the window and the screen. This rule is the price of rule 2,
+   and it exists because of a real failure. A reader ran a 1600 px window on a
+   1512 px screen. The surplus 88 px sat outside the display. A normal page would
+   let them scroll sideways to reach it. This shell cannot, on purpose, so 88 px
+   of content was unreachable and no scrollbar could appear to say so. The reader
+   reported it as clipping, which is exactly what it looked like. A window is not
+   a screen, and a shell with no document scroll must never assume it is.
 
 Measured on the mockup at 1600x1000 on 2026-09-19. The pane reported
 `overflow-x: hidden`, which is rule 2's defect: any block wider than the pane

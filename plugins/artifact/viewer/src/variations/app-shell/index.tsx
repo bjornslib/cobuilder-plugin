@@ -69,6 +69,7 @@ import {
   sectionHref,
   useCollapsedRail,
   useDocumentNoScroll,
+  useVisibleWidthCap,
   useFocusOnChange,
   useHashRoute,
   useIndexLoad,
@@ -460,12 +461,15 @@ function Frame({
   onOpenChange?: (open: boolean) => void;
   children: ReactNode;
 }) {
+  // The frame owns the cap, because the frame is what spans the window.
+  const widthCap = useVisibleWidthCap();
+
   return (
     <SidebarProvider
       open={open}
       onOpenChange={onOpenChange}
       className="relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-ground text-ink"
-      style={{ ...shellTokens(reduce), ...RAIL_WIDTHS }}
+      style={{ ...shellTokens(reduce), ...RAIL_WIDTHS, ...widthCap }}
     >
       {children}
     </SidebarProvider>

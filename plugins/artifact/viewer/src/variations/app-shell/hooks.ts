@@ -12,7 +12,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { RefObject } from "react";
+import type { CSSProperties, RefObject } from "react";
 
 import { useReducedMotion } from "motion/react";
 
@@ -159,6 +159,47 @@ export function useDocumentNoScroll(): void {
     };
   }, []);
 }
+
+/* ------------------------------------------------- visible-width cap */
+
+/**
+ * Cap the shell to the visible screen, never to the window.
+ *
+ * The shell's rule is that the document never scrolls and only the pane does.
+ * That rule has a consequence worth guarding. When the browser window is wider
+ * than the screen, the surplus of the window sits outside the display. A normal
+ * page lets a reader scroll sideways to reach it. This shell cannot, on purpose,
+ * so everything drawn in that surplus is unreachable and no scrollbar can
+ * appear to say so.
+ *
+ * Measured on a 1512 px screen inside a 1600 px window: 88 px of the shell was
+ * off-screen and unreachable, and it looked exactly like a layout that clipped
+ * its content.
+ *
+ * A multi-monitor setup can report the primary screen rather than the one in
+ * use, so the cap can fire when it need not. The cost is then a shell that is
+ * narrower than the window, which a reader can see and work around. The cost of
+ * the opposite mistake is content nobody can reach.
+ */
+export function useVisibleWidthCap(): CSSProperties {
+  const measure = (): number | null => {
+    if (typeof window === "undefined") return null;
+    const screenWidth = window.screen?.width ?? 0;
+    if (!screenWidth) return null;
+    return window.innerWidth > screenWidth ? screenWidth : null;
+  };
+
+  const [cap, setCap] = useState<number | null>(measure);
+
+  useEffect(() => {
+    const onResize = () => setCap(measure());
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  return cap ? { maxWidth: `${cap}px` } : {};
+}
+
 
 /* ------------------------------------------------------------------ viewport */
 
