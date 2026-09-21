@@ -19,7 +19,7 @@
           "on-tertiary-fixed-variant": "#3c4565",
           "on-error": "#ffffff",
           "on-background": "#191c1d",
-          "surface-container-highest": "#e1e3e4",
+          "surface-container-highest": "#c7dce0",
           "on-error-container": "#93000a",
           "inverse-surface": "#2e3132",
           "on-secondary": "#ffffff",
@@ -27,21 +27,21 @@
           "code-on-surface": "#e2e8f0",
           "on-tertiary": "#ffffff",
           "callout-note": "#0284c7",
-          "surface-container-low": "#f2f4f5",
+          "surface-container-low": "#f4fafb",
           "on-primary-fixed-variant": "#004e59",
-          "surface-container-high": "#e6e8e9",
+          "surface-container-high": "#d3e4e7",
           "on-primary-fixed": "#001f24",
           "callout-tip": "#059669",
           "surface-bright": "#f8fafa",
           "inverse-on-surface": "#eff1f2",
           "tertiary-container": "#6a7395",
-          "outline-variant": "#bec8cb",
+          "outline-variant": "#b6c9cc",
           "surface-container-lowest": "#ffffff",
           "secondary-fixed-dim": "#b1cbd1",
           "on-surface": "#191c1d",
           "secondary-container": "#cde7ed",
           "on-primary-container": "#f5fdff",
-          "surface-container": "#eceeef",
+          "surface-container": "#dfecee",
           "inverse-primary": "#7fd3e3",
           "surface-variant": "#e1e3e4",
           "on-tertiary-fixed": "#101a37",
@@ -59,9 +59,9 @@
           "callout-warning": "#d97706",
           "error-container": "#ffdad6",
           "on-secondary-container": "#50686d",
-          "surface": "#f8fafa",
+          "surface": "#e9f2f3",
           "surface-tint": "#006876",
-          "background": "#f8fafa",
+          "background": "#e9f2f3",
           "error": "#ba1a1a",
           "on-secondary-fixed": "#051f23",
           "on-primary": "#ffffff",
@@ -530,4 +530,63 @@
 </div>
 </main>
 </div>
+
+
+<style>
+/*
+ * House overrides, applied last.
+ *
+ * Two changes. The ground was a cool grey (#f8fafa); it is now a pale teal
+ * (#e9f2f3), so the page reads as a colour rather than as the absence of one,
+ * and a white card sits clearly on top of it.
+ *
+ * Every heading carries a background. The page title and the six panel titles
+ * take a solid deep-teal band with white text. Sub-headings take a lighter
+ * tinted bar. The three levels stay distinguishable rather than becoming one
+ * wall of teal.
+ *
+ * The selectors name the utility class they are overriding. A bare
+ * `header > h1` loses to Tailwind's `.text-on-surface`, because a single class
+ * outranks element selectors. Naming the class puts these rules back on top.
+ */
+header.space-y-1 {
+  background-color: #006572;
+  border-radius: 16px;
+  padding: 22px 26px;
+  margin-bottom: 4px;
+}
+header.space-y-1 > h1.text-on-surface {
+  color: #ffffff;
+}
+header.space-y-1 > p.text-on-surface-variant {
+  color: #ffffff;
+  opacity: 0.86;
+}
+
+section > div:first-child {
+  background-color: #006572;
+  border-bottom: 0;
+  border-radius: 10px;
+  padding: 10px 16px;
+  margin-bottom: 18px;
+}
+section > div:first-child h2.text-on-surface {
+  color: #ffffff;
+}
+section > div:first-child > div > span.material-symbols-outlined.text-primary {
+  color: #ffffff;
+}
+section > div:first-child > div > span.bg-surface-container {
+  background-color: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+section h3.text-on-surface {
+  display: inline-block;
+  background-color: #cde7ed;
+  color: #10353b;
+  border-radius: 6px;
+  padding: 3px 10px;
+}
+</style>
 </body></html>
