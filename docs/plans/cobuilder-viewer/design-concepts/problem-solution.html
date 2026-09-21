@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CoBuilder - Problem &amp; Solution</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400..700;1,400..700&amp;family=Hanken+Grotesk:ital,wght@0,400..800;1,400..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "tertiary-container": "#6a7395",
+            "outline": "#6e797b",
+            "primary-fixed": "#9fefff",
+            "secondary": "#4a6267",
+            "tertiary": "#515a7b",
+            "primary-container": "#1d7f8e",
+            "on-tertiary-fixed-variant": "#3c4565",
+            "callout-warning": "#d97706",
+            "on-surface-variant": "#3e484b",
+            "surface-container-low": "#f2f4f5",
+            "inverse-on-surface": "#eff1f2",
+            "on-secondary-fixed": "#051f23",
+            "surface-container": "#eceeef",
+            "code-surface": "#1e2326",
+            "surface-container-lowest": "#ffffff",
+            "primary": "#006572",
+            "error": "#ba1a1a",
+            "surface-dim": "#d8dadb",
+            "on-tertiary-container": "#fefbff",
+            "on-primary-fixed": "#001f24",
+            "surface-variant": "#e1e3e4",
+            "background": "#f8fafa",
+            "callout-note": "#0284c7",
+            "secondary-fixed-dim": "#b1cbd1",
+            "secondary-fixed": "#cde7ed",
+            "on-surface": "#191c1d",
+            "surface-container-highest": "#e1e3e4",
+            "outline-variant": "#bec8cb",
+            "inverse-primary": "#7fd3e3",
+            "callout-tip": "#059669",
+            "on-secondary": "#ffffff",
+            "on-tertiary": "#ffffff",
+            "code-on-surface": "#e2e8f0",
+            "surface-container-high": "#e6e8e9",
+            "on-tertiary-fixed": "#101a37",
+            "on-primary-fixed-variant": "#004e59",
+            "tertiary-fixed": "#dce1ff",
+            "on-secondary-container": "#50686d",
+            "on-error-container": "#93000a",
+            "on-error": "#ffffff",
+            "surface": "#f8fafa",
+            "on-background": "#191c1d",
+            "on-secondary-fixed-variant": "#334b4f",
+            "surface-bright": "#f8fafa",
+            "primary-fixed-dim": "#7fd3e3",
+            "surface-tint": "#006876",
+            "inverse-surface": "#2e3132",
+            "on-primary-container": "#f5fdff",
+            "tertiary-fixed-dim": "#bcc5eb",
+            "error-container": "#ffdad6",
+            "on-primary": "#ffffff",
+            "secondary-container": "#cde7ed"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-md": "1rem",
+            "space-lg": "1.5rem",
+            "space-xl": "2rem",
+            "gutter-sm": "0.5rem",
+            "space-sm": "0.5rem",
+            "space-xs": "0.25rem",
+            "gutter": "1rem",
+            "margin": "1.5rem",
+            "margin-mobile": "0.75rem"
+          },
+          "fontFamily": {
+            "title-lg": ["Hanken Grotesk"],
+            "headline-lg": ["Hanken Grotesk"],
+            "label-lg": ["Hanken Grotesk"],
+            "headline-lg-mobile": ["Hanken Grotesk"],
+            "headline-sm": ["Hanken Grotesk"],
+            "title-md": ["Hanken Grotesk"],
+            "label-md": ["Hanken Grotesk"],
+            "body-sm": ["Arimo"],
+            "headline-md": ["Hanken Grotesk"],
+            "display-lg": ["Hanken Grotesk"],
+            "label-sm": ["Hanken Grotesk"],
+            "body-lg": ["Arimo"],
+            "body-md": ["Arimo"]
+          },
+          "fontSize": {
+            "title-lg": ["18px", { "lineHeight": "26px", "letterSpacing": "0.15px", "fontWeight": "600" }],
+            "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "0px", "fontWeight": "600" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.1px", "fontWeight": "500" }],
+            "headline-lg-mobile": ["26px", { "lineHeight": "32px", "letterSpacing": "0px", "fontWeight": "600" }],
+            "headline-sm": ["20px", { "lineHeight": "28px", "letterSpacing": "0px", "fontWeight": "500" }],
+            "title-md": ["16px", { "lineHeight": "24px", "letterSpacing": "0.15px", "fontWeight": "600" }],
+            "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.25px", "fontWeight": "400" }],
+            "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "0px", "fontWeight": "500" }],
+            "display-lg": ["57px", { "lineHeight": "64px", "letterSpacing": "-0.25px", "fontWeight": "600" }],
+            "label-sm": ["11px", { "lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0.15px", "fontWeight": "400" }],
+            "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.25px", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-surface text-on-surface antialiased font-body-md text-body-md select-none overflow-x-hidden min-w-[1440px]">
+<!-- TopNavBar (Fixed Layout Shell) -->
+<header class="fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-space-md z-50 bg-surface-container border-b border-outline-variant/40">
+<div class="flex items-center gap-3">
+<div class="flex flex-col justify-center">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-semibold leading-none mb-0.5">WORK ITEM</span>
+<button class="flex items-center gap-1 font-title-md text-title-md font-semibold text-on-surface hover:text-primary transition-colors focus:outline-none">
+<span>cobuilder-viewer</span>
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant" data-icon="expand_more">expand_more</span>
+</button>
+</div>
+<span class="bg-secondary-container text-on-secondary-container px-2.5 py-0.5 rounded-full font-label-sm text-label-sm font-medium">review</span>
+</div>
+<div class="flex items-center gap-2">
+<button aria-label="Toggle theme" class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors focus:outline-none">
+<span class="material-symbols-outlined text-[20px]" data-icon="dark_mode">dark_mode</span>
+</button>
+</div>
+</header>
+<!-- SideNavBar (Fixed Left Rail) -->
+<aside class="fixed left-0 top-16 bottom-0 w-[248px] z-40 bg-surface-container-low border-r border-outline-variant/30 flex flex-col py-4 px-3 overflow-y-auto">
+<div class="flex flex-col space-y-6 flex-1">
+<!-- Group 1: THE WORK -->
+<div class="flex flex-col space-y-1">
+<div class="px-3 pt-1 pb-1 font-label-sm text-label-sm uppercase tracking-wider font-semibold text-on-surface-variant/80">
+          THE WORK
+        </div>
+<a class="flex items-center gap-3 px-3 py-2 rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="lightbulb">lightbulb</span>
+<span>Intent</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-full font-label-md text-label-md bg-primary-container text-on-primary-container font-semibold transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="task_alt" data-weight="fill" style="font-variation-settings: 'FILL' 1;">task_alt</span>
+<span>Problem &amp; Solution</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="account_tree">account_tree</span>
+<span>Architecture</span>
+</a>
+</div>
+<!-- Group 2: BUILD -->
+<div class="flex flex-col space-y-1">
+<div class="px-3 pt-1 pb-1 font-label-sm text-label-sm uppercase tracking-wider font-semibold text-on-surface-variant/80">
+          BUILD
+        </div>
+<a class="flex items-center justify-between px-3 py-2 rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px]" data-icon="dataset">dataset</span>
+<span>Epics</span>
+</div>
+<span class="font-label-sm text-label-sm bg-surface-container-high text-on-surface-variant px-2 py-0.5 rounded-full font-medium">18</span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px]" data-icon="checklist">checklist</span>
+<span>Rubrics</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant/70 italic">none</span>
+</a>
+</div>
+<!-- Group 3: PULL REQUESTS -->
+<div class="flex flex-col space-y-1">
+<div class="px-3 pt-1 pb-1 font-label-sm text-label-sm uppercase tracking-wider font-semibold text-on-surface-variant/80">
+          PULL REQUESTS
+        </div>
+<a class="flex items-center gap-3 px-3 py-2 rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="merge">merge</span>
+<span class="truncate">This work's pull requests</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="rocket_launch">rocket_launch</span>
+<span>FlightDeck</span>
+</a>
+</div>
+</div>
+<!-- Bottom Settings Entry -->
+<div class="pt-4 border-t border-outline-variant/30">
+<a class="flex items-center gap-3 px-3 py-2 rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+</div>
+</aside>
+<!-- Content Pane (Scrollable Area) -->
+<main class="ml-[248px] pt-16 min-h-screen bg-surface">
+<div class="max-w-[1040px] mx-auto px-8 py-10 space-y-8">
+<!-- Page Header -->
+<div class="space-y-2">
+<h1 class="font-headline-md text-headline-md font-bold text-on-surface tracking-tight">Problem and solution</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">
+          Architectural tension between compile-time zero-overhead serialization and dynamic micro-frontend state binding.
+        </p>
+</div>
+<!-- Two M3 Filled Cards: Problem vs Solution -->
+<div class="grid grid-cols-2 gap-6">
+<!-- Problem Card -->
+<section class="rounded-xl bg-surface-container-low border border-outline-variant/40 flex flex-col overflow-hidden">
+<div class="flex items-center gap-2.5 px-6 py-4 border-b border-outline-variant/30">
+<span class="material-symbols-outlined text-[20px] text-primary" data-icon="warning">warning</span>
+<h2 class="font-title-md text-title-md font-bold tracking-wide text-primary uppercase">PROBLEM</h2>
+</div>
+<div class="flex-1 flex flex-col">
+<p class="font-body-lg text-body-lg text-on-surface px-6 pt-5 pb-4 leading-relaxed">
+              Current state distribution relies on monolithic hydration steps, inducing up to 420ms Main-Thread Lock in multi-team workspace views and preventing isolated sub-tree invalidation.
+            </p>
+<div class="border-b border-outline-variant/40 mx-6 mb-2"></div>
+<!-- Rows with alternating backgrounds -->
+<div class="flex flex-col divide-y divide-outline-variant/10">
+<div class="px-6 py-3.5 flex items-center justify-between gap-3 bg-surface-container-low">
+<div class="flex items-center gap-3">
+<span class="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0"></span>
+<span class="font-body-md text-body-md text-on-surface">Monolithic hydration blocks interaction during sub-tree bundle loads.</span>
+</div>
+<span class="bg-secondary-container text-on-secondary-container px-2.5 py-0.5 rounded-md font-label-sm text-label-sm font-medium flex-shrink-0">problem</span>
+</div>
+<div class="px-6 py-3.5 flex items-center justify-between gap-3 bg-surface-container-lowest">
+<div class="flex items-center gap-3">
+<span class="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0"></span>
+<span class="font-body-md text-body-md text-on-surface">Legacy API bindings cannot guarantee ABI stability across remote chunks.</span>
+</div>
+<span class="bg-secondary-container text-on-secondary-container px-2.5 py-0.5 rounded-md font-label-sm text-label-sm font-medium flex-shrink-0">constraint</span>
+</div>
+<div class="px-6 py-3.5 flex items-center justify-between gap-3 bg-surface-container-low">
+<div class="flex items-center gap-3">
+<span class="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0"></span>
+<span class="font-body-md text-body-md text-on-surface">Synchronous memory allocation spikes exceed budget on 4GB memory environments.</span>
+</div>
+<span class="bg-secondary-container text-on-secondary-container px-2.5 py-0.5 rounded-md font-label-sm text-label-sm font-medium flex-shrink-0">risk</span>
+</div>
+<div class="px-6 py-3.5 flex items-center justify-between gap-3 bg-surface-container-lowest">
+<div class="flex items-center gap-3">
+<span class="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0"></span>
+<span class="font-body-md text-body-md text-on-surface">Telemetry proves 68% of view re-renders discard over 80% of parsed state.</span>
+</div>
+<span class="bg-secondary-container text-on-secondary-container px-2.5 py-0.5 rounded-md font-label-sm text-label-sm font-medium flex-shrink-0">problem</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Solution Card -->
+<section class="rounded-xl bg-surface-container-low border border-outline-variant/40 flex flex-col overflow-hidden">
+<div class="flex items-center gap-2.5 px-6 py-4 border-b border-outline-variant/30">
+<span class="material-symbols-outlined text-[20px] text-primary" data-icon="check_circle">check_circle</span>
+<h2 class="font-title-md text-title-md font-bold tracking-wide text-primary uppercase">SOLUTION</h2>
+</div>
+<div class="flex-1 flex flex-col">
+<p class="font-body-lg text-body-lg text-on-surface px-6 pt-5 pb-4 leading-relaxed">
+              Introduce an AST-driven incremental protocol that decomposes state serialization into immutable tonal chunks with per-island hydration boundaries.
+            </p>
+<div class="border-b border-outline-variant/40 mx-6 mb-2"></div>
+<!-- Rows with alternating backgrounds -->
+<div class="flex flex-col divide-y divide-outline-variant/10">
+<div class="px-6 py-3.5 flex items-center justify-between gap-3 bg-surface-container-low">
+<div class="flex items-center gap-3">
+<span class="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0"></span>
+<span class="font-body-md text-body-md text-on-surface">Compile-time chunk splitting decouples runtime micro-frontends.</span>
+</div>
+<span class="bg-secondary-container text-on-secondary-container px-2.5 py-0.5 rounded-md font-label-sm text-label-sm font-medium flex-shrink-0">decision</span>
+</div>
+<div class="px-6 py-3.5 flex items-center justify-between gap-3 bg-surface-container-lowest">
+<div class="flex items-center gap-3">
+<span class="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0"></span>
+<span class="font-body-md text-body-md text-on-surface">Zero-copy byte buffers for message passing between sandboxed panels.</span>
+</div>
+<span class="bg-secondary-container text-on-secondary-container px-2.5 py-0.5 rounded-md font-label-sm text-label-sm font-medium flex-shrink-0">decision</span>
+</div>
+<div class="px-6 py-3.5 flex items-center justify-between gap-3 bg-surface-container-low">
+<div class="flex items-center gap-3">
+<span class="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0"></span>
+<span class="font-body-md text-body-md text-on-surface">Backwards compatibility adapter maintained for v1 remote modules until Q3.</span>
+</div>
+<span class="bg-secondary-container text-on-secondary-container px-2.5 py-0.5 rounded-md font-label-sm text-label-sm font-medium flex-shrink-0">constraint</span>
+</div>
+<div class="px-6 py-3.5 flex items-center justify-between gap-3 bg-surface-container-lowest">
+<div class="flex items-center gap-3">
+<span class="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0"></span>
+<span class="font-body-md text-body-md text-on-surface">Graceful degradation into batched DOM patches when Worker threads are constrained.</span>
+</div>
+<span class="bg-secondary-container text-on-secondary-container px-2.5 py-0.5 rounded-md font-label-sm text-label-sm font-medium flex-shrink-0">decision</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Disclosures Section -->
+<section class="space-y-3">
+<!-- Disclosure 1: Risks -->
+<button class="w-full bg-surface-container-low hover:bg-surface-container rounded-xl p-4 border border-outline-variant/40 flex items-center justify-between text-left transition-colors focus:outline-none">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px] text-on-surface-variant" data-icon="chevron_right">chevron_right</span>
+<span class="font-title-md text-title-md font-semibold text-on-surface">Risks</span>
+</div>
+<span class="font-label-sm text-label-sm bg-surface-container-high text-on-surface-variant px-2.5 py-0.5 rounded-full font-medium">8</span>
+</button>
+<!-- Disclosure 2: Assessment -->
+<button class="w-full bg-surface-container-low hover:bg-surface-container rounded-xl p-4 border border-outline-variant/40 flex items-center justify-between text-left transition-colors focus:outline-none">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px] text-on-surface-variant" data-icon="chevron_right">chevron_right</span>
+<span class="font-title-md text-title-md font-semibold text-on-surface">Assessment</span>
+</div>
+<span class="font-label-sm text-label-sm bg-surface-container-high text-on-surface-variant px-2.5 py-0.5 rounded-full font-medium">6</span>
+</button>
+<!-- Disclosure 3: Unknowns -->
+<button class="w-full bg-surface-container-low hover:bg-surface-container rounded-xl p-4 border border-outline-variant/40 flex items-center justify-between text-left transition-colors focus:outline-none">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px] text-on-surface-variant" data-icon="chevron_right">chevron_right</span>
+<span class="font-title-md text-title-md font-semibold text-on-surface">Unknowns</span>
+</div>
+<span class="font-label-sm text-label-sm bg-surface-container-high text-on-surface-variant px-2.5 py-0.5 rounded-full font-medium">8</span>
+</button>
+</section>
+<!-- Alternatives considered Section -->
+<section class="space-y-4 pt-2">
+<h2 class="font-title-md text-title-md font-bold text-on-surface">Alternatives considered</h2>
+<div class="bg-surface-container-low rounded-xl border border-outline-variant/30 divide-y divide-outline-variant/20 overflow-hidden">
+<!-- Option 1 -->
+<div class="p-5 flex flex-col gap-1">
+<div class="font-body-md text-body-md font-semibold text-on-surface">
+              Shared WebWorker State Bus
+            </div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">
+              Rejected due to 14ms structured-clone overhead per transaction across iframe isolation realms.
+            </div>
+</div>
+<!-- Option 2 -->
+<div class="p-5 flex flex-col gap-1">
+<div class="font-body-md text-body-md font-semibold text-on-surface">
+              GraphQL Client-Side Normalized Cache
+            </div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">
+              Introduced 180KB baseline bundle tax and violated strict cold-start latency constraints.
+            </div>
+</div>
+<!-- Option 3 -->
+<div class="p-5 flex flex-col gap-1">
+<div class="font-body-md text-body-md font-semibold text-on-surface">
+              Direct DOM diffing via Virtual DOM layer
+            </div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">
+              Excessive GC pressure during sustained high-frequency telemetry streaming updates.
+            </div>
+</div>
+</div>
+</section>
+</div>
+</main>
+</body></html>

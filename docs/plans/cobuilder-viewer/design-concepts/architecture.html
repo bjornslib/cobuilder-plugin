@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CoBuilder - Architecture</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400..700;1,400..700&amp;family=Hanken+Grotesk:ital,wght@0,400..800;1,400..800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "on-tertiary-fixed-variant": "#3c4565",
+          "on-error": "#ffffff",
+          "on-background": "#191c1d",
+          "surface-container-highest": "#e1e3e4",
+          "on-error-container": "#93000a",
+          "inverse-surface": "#2e3132",
+          "on-secondary": "#ffffff",
+          "on-surface-variant": "#3e484b",
+          "code-on-surface": "#e2e8f0",
+          "on-tertiary": "#ffffff",
+          "callout-note": "#0284c7",
+          "surface-container-low": "#f2f4f5",
+          "on-primary-fixed-variant": "#004e59",
+          "surface-container-high": "#e6e8e9",
+          "on-primary-fixed": "#001f24",
+          "callout-tip": "#059669",
+          "surface-bright": "#f8fafa",
+          "inverse-on-surface": "#eff1f2",
+          "tertiary-container": "#6a7395",
+          "outline-variant": "#bec8cb",
+          "surface-container-lowest": "#ffffff",
+          "secondary-fixed-dim": "#b1cbd1",
+          "on-surface": "#191c1d",
+          "secondary-container": "#cde7ed",
+          "on-primary-container": "#f5fdff",
+          "surface-container": "#eceeef",
+          "inverse-primary": "#7fd3e3",
+          "surface-variant": "#e1e3e4",
+          "on-tertiary-fixed": "#101a37",
+          "on-tertiary-container": "#fefbff",
+          "tertiary-fixed-dim": "#bcc5eb",
+          "code-surface": "#1e2326",
+          "primary-fixed-dim": "#7fd3e3",
+          "secondary": "#4a6267",
+          "surface-dim": "#d8dadb",
+          "secondary-fixed": "#cde7ed",
+          "primary": "#006572",
+          "tertiary-fixed": "#dce1ff",
+          "tertiary": "#515a7b",
+          "primary-container": "#1d7f8e",
+          "callout-warning": "#d97706",
+          "error-container": "#ffdad6",
+          "on-secondary-container": "#50686d",
+          "surface": "#f8fafa",
+          "surface-tint": "#006876",
+          "background": "#f8fafa",
+          "error": "#ba1a1a",
+          "on-secondary-fixed": "#051f23",
+          "on-primary": "#ffffff",
+          "outline": "#6e797b",
+          "primary-fixed": "#9fefff",
+          "on-secondary-fixed-variant": "#334b4f"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "full": "9999px"
+        },
+        "spacing": {
+          "space-xl": "2rem",
+          "margin-mobile": "0.75rem",
+          "space-sm": "0.5rem",
+          "space-lg": "1.5rem",
+          "margin": "1.5rem",
+          "space-md": "1rem",
+          "gutter": "1rem",
+          "space-xs": "0.25rem",
+          "gutter-sm": "0.5rem"
+        },
+        "fontFamily": {
+          "title-md": ["Hanken Grotesk"],
+          "body-lg": ["Arimo"],
+          "headline-md": ["Hanken Grotesk"],
+          "headline-sm": ["Hanken Grotesk"],
+          "label-md": ["Hanken Grotesk"],
+          "body-sm": ["Arimo"],
+          "label-lg": ["Hanken Grotesk"],
+          "display-lg": ["Hanken Grotesk"],
+          "title-lg": ["Hanken Grotesk"],
+          "headline-lg": ["Hanken Grotesk"],
+          "label-sm": ["Hanken Grotesk"],
+          "headline-lg-mobile": ["Hanken Grotesk"],
+          "body-md": ["Arimo"],
+          "mono": ["JetBrains Mono", "monospace"]
+        },
+        "fontSize": {
+          "title-md": ["16px", { "lineHeight": "24px", "letterSpacing": "0.15px", "fontWeight": "600" }],
+          "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0.15px", "fontWeight": "400" }],
+          "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "0px", "fontWeight": "500" }],
+          "headline-sm": ["20px", { "lineHeight": "28px", "letterSpacing": "0px", "fontWeight": "500" }],
+          "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500" }],
+          "body-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.25px", "fontWeight": "400" }],
+          "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.1px", "fontWeight": "500" }],
+          "display-lg": ["57px", { "lineHeight": "64px", "letterSpacing": "-0.25px", "fontWeight": "600" }],
+          "title-lg": ["18px", { "lineHeight": "26px", "letterSpacing": "0.15px", "fontWeight": "600" }],
+          "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "0px", "fontWeight": "600" }],
+          "label-sm": ["11px", { "lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500" }],
+          "headline-lg-mobile": ["26px", { "lineHeight": "32px", "letterSpacing": "0px", "fontWeight": "600" }],
+          "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.25px", "fontWeight": "400" }]
+        }
+      }
+    }
+  }
+</script>
+<style>
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+    font-size: 18px;
+    line-height: 1;
+    display: inline-block;
+  }
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #f2f4f5;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #bec8cb;
+    border-radius: 9999px;
+  }
+</style>
+</head>
+<body class="bg-surface text-on-surface antialiased overflow-hidden select-none font-body-md text-body-md h-screen w-screen flex flex-col">
+<!-- TOP BAR (Fixed Shell) -->
+<header class="fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-space-md z-40 bg-surface-container border-b border-outline-variant">
+<div class="flex items-center gap-space-md">
+<div class="flex items-center gap-space-sm pr-space-md border-r border-outline-variant">
+<span class="material-symbols-outlined text-primary text-[22px]">developer_board</span>
+<span class="font-title-md text-title-md font-semibold text-on-surface tracking-tight">CoBuilder</span>
+</div>
+<div class="flex items-center gap-space-sm">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium tracking-wider">WORK ITEM</span>
+<div class="flex items-center gap-1 cursor-pointer group">
+<span class="font-label-lg text-label-lg font-semibold text-on-surface group-hover:text-primary transition-colors duration-150">cobuilder-viewer</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[16px] group-hover:text-primary transition-colors">expand_more</span>
+</div>
+</div>
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-medium">review</span>
+</div>
+</div>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-space-xs">
+<button aria-label="Toggle theme" class="p-2 rounded-full text-on-surface-variant hover:bg-surface-container-high transition-colors duration-150 flex items-center justify-center" type="button">
+<span class="material-symbols-outlined">dark_mode</span>
+</button>
+</div>
+</header>
+<div class="flex w-full h-full pt-16">
+<!-- LEFT NAVIGATION RAIL (Fixed Shell) -->
+<aside class="fixed left-0 top-16 bottom-0 w-[248px] flex flex-col justify-between py-space-md px-space-sm z-30 overflow-y-auto bg-surface-container-low border-r border-outline-variant">
+<div class="flex flex-col gap-space-md">
+<!-- Group 1: THE WORK -->
+<div>
+<div class="px-space-sm pb-1.5 font-label-sm text-label-sm text-on-surface-variant font-semibold tracking-wider">THE WORK</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-space-xs text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors duration-150 px-space-sm py-1.5 rounded-lg" href="#intent">
+<span class="material-symbols-outlined">lightbulb</span>
+<span class="font-label-md text-label-md">Intent</span>
+</a>
+<a class="flex items-center gap-space-xs text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors duration-150 px-space-sm py-1.5 rounded-lg" href="#problem-solution">
+<span class="material-symbols-outlined">task_alt</span>
+<span class="font-label-md text-label-md">Problem &amp; Solution</span>
+</a>
+<a class="flex items-center gap-space-xs bg-primary-container text-on-primary-container rounded-lg px-space-sm py-1.5 font-medium" href="#architecture">
+<span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: 'FILL' 1;">account_tree</span>
+<span class="font-label-md text-label-md">Architecture</span>
+</a>
+</nav>
+</div>
+<!-- Group 2: BUILD -->
+<div>
+<div class="px-space-sm pb-1.5 font-label-sm text-label-sm text-on-surface-variant font-semibold tracking-wider">BUILD</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center justify-between text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors duration-150 px-space-sm py-1.5 rounded-lg" href="#epics">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined">dataset</span>
+<span class="font-label-md text-label-md">Epics</span>
+</div>
+<span class="inline-flex items-center justify-center px-1.5 py-0.2 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-[10px] font-semibold">18</span>
+</a>
+<a class="flex items-center justify-between text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors duration-150 px-space-sm py-1.5 rounded-lg" href="#rubrics">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined">checklist</span>
+<span class="font-label-md text-label-md">Rubrics</span>
+</div>
+<span class="font-label-sm text-[10px] text-outline font-medium">none</span>
+</a>
+</nav>
+</div>
+<!-- Group 3: PULL REQUESTS -->
+<div>
+<div class="px-space-sm pb-1.5 font-label-sm text-label-sm text-on-surface-variant font-semibold tracking-wider">PULL REQUESTS</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-space-xs text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors duration-150 px-space-sm py-1.5 rounded-lg" href="#pull-requests">
+<span class="material-symbols-outlined">merge</span>
+<span class="font-label-md text-label-md truncate">This work's pull requests</span>
+</a>
+<a class="flex items-center gap-space-xs text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors duration-150 px-space-sm py-1.5 rounded-lg" href="#flightdeck">
+<span class="material-symbols-outlined">rocket_launch</span>
+<span class="font-label-md text-label-md">FlightDeck</span>
+</a>
+</nav>
+</div>
+</div>
+<!-- Rail Footer: Settings -->
+<div class="pt-space-sm border-t border-outline-variant">
+<a class="flex items-center gap-space-xs text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors duration-150 px-space-sm py-1.5 rounded-lg" href="#settings">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</div>
+</aside>
+<!-- CONTENT PANE (Scrollable Canvas) -->
+<main class="ml-[248px] flex-1 h-[calc(100vh-64px)] overflow-y-auto bg-surface">
+<!-- STICKY JUMP BAR -->
+<nav aria-label="Page subnavigation" class="sticky top-0 z-20 w-full bg-surface border-b border-outline-variant px-8 py-2.5 flex items-center overflow-x-auto whitespace-nowrap scrollbar-none gap-2">
+<a class="px-3 py-1 rounded-full border border-outline-variant text-on-surface-variant font-label-sm text-label-sm hover:bg-surface-container-high transition-colors" href="#diagrams">Diagrams</a>
+<a class="px-3 py-1 rounded-full border border-outline-variant text-on-surface-variant font-label-sm text-label-sm hover:bg-surface-container-high transition-colors" href="#adrs">Linked Architecture Decisions</a>
+<a class="px-3 py-1 rounded-full border border-outline-variant text-on-surface-variant font-label-sm text-label-sm hover:bg-surface-container-high transition-colors" href="#districts">Districts and contexts touched</a>
+<a class="px-3 py-1 rounded-full border border-outline-variant text-on-surface-variant font-label-sm text-label-sm hover:bg-surface-container-high transition-colors" href="#boundary-rules">Boundary rules</a>
+<a class="px-3 py-1 rounded-full border border-outline-variant text-on-surface-variant font-label-sm text-label-sm hover:bg-surface-container-high transition-colors" href="#alternatives">Alternatives considered</a>
+<a class="px-3 py-1 rounded-full border border-outline-variant text-on-surface-variant font-label-sm text-label-sm hover:bg-surface-container-high transition-colors" href="#envisioned-pr">Envisioned pull request</a>
+</nav>
+<!-- Centered Document Wrapper (1040px) -->
+<div class="max-w-[1040px] mx-auto px-8 py-6 space-y-6">
+<!-- Header Section -->
+<header class="space-y-1">
+<h1 class="font-headline-md text-headline-md font-semibold text-on-surface">Architecture</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Structural decomposition, reactive boundaries, and cross-district contract protocols.</p>
+</header>
+<!-- PANEL 1: DIAGRAMS (Full Width) -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant p-space-md" id="diagrams">
+<div class="flex items-center justify-between pb-3 mb-3 border-b border-outline-variant">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">account_tree</span>
+<h2 class="font-title-md text-title-md text-on-surface">Diagrams</h2>
+<span class="font-label-sm text-label-sm text-on-surface-variant px-2 py-0.5 rounded-full bg-surface-container">Mermaid Viewport</span>
+</div>
+<button class="inline-flex items-center gap-1.5 px-4 h-8 bg-primary-container text-on-primary-container rounded-full font-label-md text-label-md font-medium hover:bg-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">play_arrow</span>
+              Render
+            </button>
+</div>
+<div class="bg-surface-container-highest rounded-lg p-4 font-mono text-body-sm leading-relaxed border border-outline-variant overflow-x-auto text-on-surface">
+<pre class="select-text"><span class="text-primary font-semibold">graph TD</span>
+    <span class="text-secondary">ClientApp[Client UI Shell]</span> --&gt;|1. Dispatch Action| Bridge[runtime-bridge]
+    Bridge --&gt;|2. Stream AST State| Worker[ast-worker Thread]
+    Worker --&gt;|3. Diff Tokens| Cache[(Context Boundary DB)]
+    Cache --&gt;|4. Structural Delta| Canvas[workspace-canvas]
+    Canvas --&gt;|5. Signal Completion| Telemetry[telemetry/audit-emitter]
+
+    <span class="text-outline font-semibold">subgraph Core District</span>
+        Bridge
+        Worker
+    <span class="text-outline font-semibold">end</span>
+
+    <span class="text-outline font-semibold">subgraph Workspace District</span>
+        Canvas
+        Cache
+    <span class="text-outline font-semibold">end</span></pre>
+</div>
+</section>
+<!-- ROW: PANEL 2 (Wide) & PANEL 3 (Narrow) -->
+<div class="grid grid-cols-12 gap-6 items-start">
+<!-- PANEL 2: LINKED ARCHITECTURE DECISIONS (Wide - 8 cols) -->
+<section class="col-span-8 bg-surface-container-lowest rounded-xl border border-outline-variant p-space-md" id="adrs">
+<div class="flex items-center justify-between pb-3 border-b border-outline-variant mb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">verified</span>
+<h2 class="font-title-md text-title-md text-on-surface">Linked Architecture Decisions</h2>
+</div>
+<span class="font-label-sm text-label-sm text-outline">5 decisions tracked</span>
+</div>
+<div class="divide-y divide-outline-variant">
+<!-- ADR 014 -->
+<div class="py-2.5 px-3 flex items-center justify-between bg-surface-container-lowest rounded-lg hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-3">
+<span class="font-mono font-label-md text-label-md text-primary font-semibold">ADR-014</span>
+<span class="font-body-lg text-body-lg text-on-surface">Actor-model state separation across districts</span>
+</div>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-medium">decided</span>
+</div>
+<!-- ADR 019 -->
+<div class="py-2.5 px-3 flex items-center justify-between bg-surface-container-low rounded-lg hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-3">
+<span class="font-mono font-label-md text-label-md text-primary font-semibold">ADR-019</span>
+<span class="font-body-lg text-body-lg text-on-surface">WebWorker offloading for AST node traversals</span>
+</div>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-primary-container text-on-primary-container font-label-sm text-label-sm font-medium">approved</span>
+</div>
+<!-- ADR 022 -->
+<div class="py-2.5 px-3 flex items-center justify-between bg-surface-container-lowest rounded-lg hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-3">
+<span class="font-mono font-label-md text-label-md text-primary font-semibold">ADR-022</span>
+<span class="font-body-lg text-body-lg text-on-surface">Strict 1px outline-variant delimiter scheme</span>
+</div>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-medium">decided</span>
+</div>
+<!-- ADR 027 -->
+<div class="py-2.5 px-3 flex items-center justify-between bg-surface-container-low rounded-lg hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-3">
+<span class="font-mono font-label-md text-label-md text-primary font-semibold">ADR-027</span>
+<span class="font-body-lg text-body-lg text-on-surface">Zero external telemetry ingestion in viewer loop</span>
+</div>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-primary-container text-on-primary-container font-label-sm text-label-sm font-medium">approved</span>
+</div>
+<!-- ADR 031 -->
+<div class="py-2.5 px-3 flex items-center justify-between bg-surface-container-lowest rounded-lg hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-3">
+<span class="font-mono font-label-md text-label-md text-primary font-semibold">ADR-031</span>
+<span class="font-body-lg text-body-lg text-on-surface">Deterministic UUID propagation for PR commits</span>
+</div>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-primary-container text-on-primary-container font-label-sm text-label-sm font-medium">approved</span>
+</div>
+</div>
+</section>
+<!-- PANEL 3: DISTRICTS & CONTEXTS TOUCHED (Narrow - 4 cols) -->
+<section class="col-span-4 bg-surface-container-lowest rounded-xl border border-outline-variant p-space-md" id="districts">
+<div class="flex items-center gap-2 pb-3 border-b border-outline-variant mb-3">
+<span class="material-symbols-outlined text-primary">domain</span>
+<h2 class="font-title-md text-title-md text-on-surface">Districts and contexts</h2>
+</div>
+<div class="space-y-3">
+<!-- Context 1 -->
+<div class="p-2.5 rounded-lg bg-surface-container-low border border-outline-variant">
+<div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container text-primary font-mono text-label-sm font-medium mb-1.5">
+<span class="material-symbols-outlined text-[14px]">terminal</span>
+                  core/runtime-bridge
+                </div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Injects state streaming sockets directly into the primary thread event loop.</p>
+</div>
+<!-- Context 2 -->
+<div class="p-2.5 rounded-lg bg-surface-container-low border border-outline-variant">
+<div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container text-primary font-mono text-label-sm font-medium mb-1.5">
+<span class="material-symbols-outlined text-[14px]">psychology</span>
+                  telemetry/ast-worker
+                </div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Manages background structural analysis without thread blocking overhead.</p>
+</div>
+<!-- Context 3 -->
+<div class="p-2.5 rounded-lg bg-surface-container-low border border-outline-variant">
+<div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container text-primary font-mono text-label-sm font-medium mb-1.5">
+<span class="material-symbols-outlined text-[14px]">brush</span>
+                  ui/workspace-canvas
+                </div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Receives frame-rate synched spatial transforms and redraw directives.</p>
+</div>
+</div>
+</section>
+</div>
+<!-- PANEL 4: BOUNDARY RULES (Full Width - 16 cards grid) -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant p-space-md" id="boundary-rules">
+<div class="flex items-center justify-between pb-3 border-b border-outline-variant mb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">security</span>
+<h2 class="font-title-md text-title-md text-on-surface">Boundary rules</h2>
+<span class="font-label-sm text-label-sm text-on-surface-variant px-2 py-0.5 rounded-full bg-surface-container">16 Enforced Invariants</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Strict Context Boundaries</span>
+</div>
+<div class="grid grid-cols-3 gap-3">
+<!-- BR-01 -->
+<div class="p-3 rounded-lg border border-outline-variant bg-surface-container-low">
+<span class="font-mono font-label-sm text-label-sm text-primary font-semibold">BR-01</span>
+<h3 class="font-title-sm text-[13px] font-semibold text-on-surface mt-0.5">Isolated State Store</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-snug">Zero mutations allowed across external district namespaces.</p>
+</div>
+<!-- BR-02 -->
+<div class="p-3 rounded-lg border border-outline-variant bg-surface-container-low">
+<span class="font-mono font-label-sm text-label-sm text-primary font-semibold">BR-02</span>
+<h3 class="font-title-sm text-[13px] font-semibold text-on-surface mt-0.5">Immutable Ingress Payloads</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-snug">All bridge actions require structural freeze prior to dispatch.</p>
+</div>
+<!-- BR-03 -->
+<div class="p-3 rounded-lg border border-outline-variant bg-surface-container-low">
+<span class="font-mono font-label-sm text-label-sm text-primary font-semibold">BR-03</span>
+<h3 class="font-title-sm text-[13px] font-semibold text-on-surface mt-0.5">Worker Isolation</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-snug">AST workers may not hold direct references to the main window.</p>
+</div>
+<!-- BR-04 -->
+<div class="p-3 rounded-lg border border-outline-variant bg-surface-container-low">
+<span class="font-mono font-label-sm text-label-sm text-primary font-semibold">BR-04</span>
+<h3 class="font-title-sm text-[13px] font-semibold text-on-surface mt-0.5">Zero Shadow Policy</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-snug">Elevation expressed purely through Material 3 tonal shifts.</p>
+</div>
+<!-- BR-05 -->
+<div class="p-3 rounded-lg border border-outline-variant bg-surface-container-low">
+<span class="font-mono font-label-sm text-label-sm text-primary font-semibold">BR-05</span>
+<h3 class="font-title-sm text-[13px] font-semibold text-on-surface mt-0.5">Atomic PR Rollbacks</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-snug">Failed integration checks must restore head branch to stable tag.</p>
+</div>
+<!-- BR-06 -->
+<div class="p-3 rounded-lg border border-outline-variant bg-surface-container-low">
+<span class="font-mono font-label-sm text-label-sm text-primary font-semibold">BR-06</span>
+<h3 class="font-title-sm text-[13px] font-semibold text-on-surface mt-0.5">Synchronous Frame Guard</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-snug">Canvas rendering loops must not trigger DOM reflow interrupts.</p>
+</div>
+<!-- BR-07 -->
+<div class="p-3 rounded-lg border border-outline-variant bg-surface-container-low">
+<span class="font-mono font-label-sm text-label-sm text-primary font-semibold">BR-07</span>
+<h3 class="font-title-sm text-[13px] font-semibold text-on-surface mt-0.5">Schema Registry Gate</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-snug">Cross-district contract updates demand valid protobuf types.</p>
+</div>
+<!-- BR-08 -->
+<div class="p-3 rounded-lg border border-outline-variant bg-surface-container-low">
+<span class="font-mono font-label-sm text-label-sm text-primary font-semibold">BR-08</span>
+<h3 class="font-title-sm text-[13px] font-semibold text-on-surface mt-0.5">No Generic Color Classes</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-snug">Design tokens must be mapped via M3 theme declarations.</p>
+</div>
+<!-- BR-09 (Unenforced Rule with error-container tint) -->
+<div class="p-3 rounded-lg border border-error bg-error-container text-on-error-container">
+<div class="flex items-center justify-between">
+<span class="font-mono font-label-sm text-label-sm text-error font-semibold">BR-09</span>
+<span class="inline-flex items-center px-1.5 py-0.2 rounded-full bg-error text-on-error font-label-sm text-[10px] font-bold tracking-tight">NOT ENFORCED</span>
+</div>
+<h3 class="font-title-sm text-[13px] font-semibold text-on-error-container mt-0.5">Hot Re-binding AST</h3>
+<p class="font-body-sm text-body-sm text-on-error-container mt-1 leading-snug">Runtime code patch injection without full reload cycle.</p>
+</div>
+<!-- BR-10 -->
+<div class="p-3 rounded-lg border border-outline-variant bg-surface-container-low">
+<span class="font-mono font-label-sm text-label-sm text-primary font-semibold">BR-10</span>
+<h3 class="font-title-sm text-[13px] font-semibold text-on-surface mt-0.5">Fixed Spatial Rhythm</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-snug">Standard 8dp bounding grid with 4dp precision sub-steps.</p>
+</div>
+<!-- BR-11 -->
+<div class="p-3 rounded-lg border border-outline-variant bg-surface-container-low">
+<span class="font-mono font-label-sm text-label-sm text-primary font-semibold">BR-11</span>
+<h3 class="font-title-sm text-[13px] font-semibold text-on-surface mt-0.5">Deterministic Viewport Culling</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-snug">Offscreen graph nodes pruned prior to layout engine recalculation.</p>
+</div>
+<!-- BR-12 -->
+<div class="p-3 rounded-lg border border-outline-variant bg-surface-container-low">
+<span class="font-mono font-label-sm text-label-sm text-primary font-semibold">BR-12</span>
+<h3 class="font-title-sm text-[13px] font-semibold text-on-surface mt-0.5">Bounded Event Bubbling</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-snug">Component events terminate within regional boundaries.</p>
+</div>
+<!-- BR-13 -->
+<div class="p-3 rounded-lg border border-outline-variant bg-surface-container-low">
+<span class="font-mono font-label-sm text-label-sm text-primary font-semibold">BR-13</span>
+<h3 class="font-title-sm text-[13px] font-semibold text-on-surface mt-0.5">Audit Trail Retention</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-snug">Graph actions logged with nanosecond telemetry timestamps.</p>
+</div>
+<!-- BR-14 -->
+<div class="p-3 rounded-lg border border-outline-variant bg-surface-container-low">
+<span class="font-mono font-label-sm text-label-sm text-primary font-semibold">BR-14</span>
+<h3 class="font-title-sm text-[13px] font-semibold text-on-surface mt-0.5">Token Casing Integrity</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-snug">Identifiers preserve raw casing from JSON declarations.</p>
+</div>
+<!-- BR-15 -->
+<div class="p-3 rounded-lg border border-outline-variant bg-surface-container-low">
+<span class="font-mono font-label-sm text-label-sm text-primary font-semibold">BR-15</span>
+<h3 class="font-title-sm text-[13px] font-semibold text-on-surface mt-0.5">Font Pairing Restriction</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-snug">Headings locked to Hanken Grotesk; Body locked to Arimo.</p>
+</div>
+<!-- BR-16 -->
+<div class="p-3 rounded-lg border border-outline-variant bg-surface-container-low">
+<span class="font-mono font-label-sm text-label-sm text-primary font-semibold">BR-16</span>
+<h3 class="font-title-sm text-[13px] font-semibold text-on-surface mt-0.5">Telemetry Ingress Cap</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-snug">Audit worker buffered strictly to 256 events per batch flush.</p>
+</div>
+</div>
+</section>
+<!-- PANEL 5: ALTERNATIVES CONSIDERED -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant p-space-md" id="alternatives">
+<div class="flex items-center gap-2 pb-3 border-b border-outline-variant mb-3">
+<span class="material-symbols-outlined text-primary">swap_horiz</span>
+<h2 class="font-title-md text-title-md text-on-surface">Alternatives considered</h2>
+</div>
+<div class="space-y-2.5">
+<!-- Option 1 -->
+<div class="p-3 rounded-lg bg-surface-container border border-outline-variant">
+<div class="flex items-center justify-between">
+<span class="font-title-sm text-[13px] font-semibold text-on-surface">1. Monolithic In-Memory Event Bus</span>
+<span class="font-label-sm text-label-sm text-error font-medium">Rejected: Memory Leaks</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Cross-district leakage occurred during complex multi-tab canvas navigation, violating GC isolation requirements.</p>
+</div>
+<!-- Option 2 -->
+<div class="p-3 rounded-lg bg-surface-container border border-outline-variant">
+<div class="flex items-center justify-between">
+<span class="font-title-sm text-[13px] font-semibold text-on-surface">2. Direct Canvas WebGL Rendering</span>
+<span class="font-label-sm text-label-sm text-error font-medium">Rejected: Accessibility Loss</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Direct GPU rasterization stripped screen reader compatibility from individual structural diagram nodes.</p>
+</div>
+<!-- Option 3 -->
+<div class="p-3 rounded-lg bg-surface-container border border-outline-variant">
+<div class="flex items-center justify-between">
+<span class="font-title-sm text-[13px] font-semibold text-on-surface">3. Client-Side Polling for AST Updates</span>
+<span class="font-label-sm text-label-sm text-error font-medium">Rejected: Thread Starvation</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">High frequency REST polling introduced frame jitter during synchronous inspector scrolling passes.</p>
+</div>
+</div>
+</section>
+<!-- PANEL 6: ENVISIONED PULL REQUEST -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant p-space-md mb-8" id="envisioned-pr">
+<div class="flex items-center gap-2 pb-3 border-b border-outline-variant mb-3">
+<span class="material-symbols-outlined text-primary">commit</span>
+<h2 class="font-title-md text-title-md text-on-surface">Envisioned pull request</h2>
+</div>
+<div class="bg-surface-container-low p-4 rounded-lg border border-outline-variant">
+<p class="font-body-md text-body-md text-on-surface leading-relaxed">
+              Target pull request will land under branch <code class="font-mono text-primary font-medium bg-surface-container px-1.5 py-0.5 rounded">feat/runtime-district-isolation</code>. Deconstructs existing state dispatch into two atomic PR phases: phase one establishes strict RPC contracts across worker boundaries with zero canvas changes; phase two deploys the updated reactive telemetry emitter with zero-regression test rubrics verified on FlightDeck.
+            </p>
+</div>
+</section>
+</div>
+</main>
+</div>
+</body></html>
