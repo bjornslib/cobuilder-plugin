@@ -119,7 +119,14 @@ export default function Variations() {
             // carries the work-item switcher on the left and the theme toggle
             // on the right, and nothing between them, so the harness costs no
             // layout height and covers no content.
-            "absolute top-4 left-1/2 z-[var(--layer-panel)] -translate-x-1/2 rounded-full border border-line bg-surface/95 p-1 shadow-card backdrop-blur"
+            // NO `backdrop-blur` here, and that is deliberate. This element and
+            // the record Sheet's overlay both carried `backdrop-filter`, and
+            // Chrome composites two of them into one backdrop root. That root
+            // swallowed the Sheet's own text and rendered it soft. Clearing one
+            // of the two was not enough, so both are clear now. The bar beneath
+            // this switcher is already opaque, so the blur bought nothing that
+            // a solid fill does not.
+            "absolute top-4 left-1/2 z-[var(--layer-panel)] -translate-x-1/2 rounded-full border border-line bg-surface/95 p-1 shadow-card"
           : "mx-auto flex max-w-[1400px] items-center gap-1.5 px-5 py-3")
       }
     >

@@ -47,7 +47,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
-import { Database, RotateCcw } from "lucide-react";
+import { Database, GitBranch, RotateCcw } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
@@ -55,7 +55,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { BUNDLE_DATA_URL, entitiesOf, joinsOf } from "@/data/bundle";
 import { cn } from "@/lib/utils";
 
-import { SectionHeading } from "./atoms";
+import { Chip, SectionHeading } from "./atoms";
+import { JumpBar, useJumpTargets } from "./jump";
 import { Rail } from "./Rail";
 import { RecordSheet } from "./Sheet";
 import type { SheetSubject } from "./Sheet";
@@ -149,6 +150,13 @@ export default function AppShell() {
   const [sheet, setSheet] = useState<SheetSubject | null>(null);
 
   useDocumentNoScroll();
+
+  /*
+   * The section links, read from the panels the pane rendered. The keys cover the
+   * two moments the pane itself appears and disappears, which is what the observer
+   * has to re-attach on.
+   */
+  const jumpTargets = useJumpTargets(PANE_ID, [load.state, route.workId, route.section]);
 
   const works = useMemo(() => {
     if (load.state !== "ready") return new Map<string, WorkItem>();
@@ -367,66 +375,75 @@ export default function AppShell() {
                 </div>
               </div>
             ) : (
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.div
-                  key={`${work.id}/${section}/${route.subId ?? ""}`}
-                  initial={reduce ? false : { opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={reduce ? undefined : { opacity: 0 }}
-                  transition={{ duration: 0.2, ease: [0.22, 0.75, 0.3, 1] }}
-                  className="min-w-0 px-6 py-6 pb-12"
-                >
-                  {redirectedFrom !== null ? (
-                    <p className="mb-4 min-w-0 rounded-lg border border-dashed border-line bg-surface-2 px-3.5 py-2 font-mono text-[12.5px] text-ink-dim">
-                      The route named {redirectedFrom}, and this work cannot fill it. The shell
-                      redirected to {section}.
-                    </p>
-                  ) : null}
+              <>
+                {/*
+                  The section-link bar. It is not a fourth fixed region: it is the
+                  first child of the pane and it is `sticky`, so the pane keeps the
+                  only scroll, per section 11.3.
+                */}
+                <JumpBar paneId={PANE_ID} targets={jumpTargets} />
 
-                  <SectionHeading
-                    id={HEADING_ID}
-                    title={SECTION_TITLE[section]}
-                    lead={SECTION_LEAD[section](work, gates)}
-                  />
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div
+                    key={`${work.id}/${section}/${route.subId ?? ""}`}
+                    initial={reduce ? false : { opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={reduce ? undefined : { opacity: 0 }}
+                    transition={{ duration: 0.2, ease: [0.22, 0.75, 0.3, 1] }}
+                    className="min-w-0 px-6 py-6 pb-12"
+                  >
+                    <TopLinePanel work={work} />
 
-                  {section === "intent" && levels ? (
-                    <IntentPanel work={work} levelState={levels.intent} />
-                  ) : null}
-                  {section === "problem-and-solution" && levels ? (
-                    <ProblemSolutionPanel work={work} levelState={levels["problem-and-solution"]} />
-                  ) : null}
-                  {section === "architecture" && levels ? (
-                    <ArchitecturePanel
-                      work={work}
-                      adrs={adrs}
-                      theme={theme}
-                      levelState={levels.architecture}
-                      openSheet={openSheet}
+                    {redirectedFrom !== null ? (
+                      <p className="mb-4 min-w-0 rounded-lg border border-dashed border-line bg-surface-2 px-3.5 py-2 font-mono text-[12.5px] text-ink-dim">
+                        The route named {redirectedFrom}, and this work cannot fill it. The shell
+                        redirected to {section}.
+                      </p>
+                    ) : null}
+
+                    <SectionHeading
+                      id={HEADING_ID}
+                      title={SECTION_TITLE[section]}
+                      lead={SECTION_LEAD[section](work, gates)}
                     />
-                  ) : null}
-                  {section === "build" ? (
-                    route.sub === "rubrics" ? (
-                      <RubricsSection work={work} gated={gates?.rubrics ?? false} />
-                    ) : (
-                      <EpicsSection
+
+                    {section === "intent" && levels ? <IntentPanel work={work} /> : null}
+                    {section === "problem-and-solution" && levels ? (
+                      <ProblemSolutionPanel work={work} levelState={levels["problem-and-solution"]} />
+                    ) : null}
+                    {section === "architecture" && levels ? (
+                      <ArchitecturePanel
                         work={work}
-                        focusEpic={route.sub === "epics" ? route.subId : null}
+                        adrs={adrs}
+                        theme={theme}
+                        levelState={levels.architecture}
                         openSheet={openSheet}
-                        unresolvedSlices={unresolvedSlices}
                       />
-                    )
-                  ) : null}
-                  {section === "pull-requests" ? (
-                    <PullRequestsSection
-                      work={work}
-                      focusPr={route.sub && route.sub !== "flightdeck" ? Number(route.sub) : null}
-                      allPullRequests={allPullRequests}
-                      onOpenPr={openPr}
-                    />
-                  ) : null}
-                  {section === "shipped" ? <ShippedSection work={work} /> : null}
-                </motion.div>
-              </AnimatePresence>
+                    ) : null}
+                    {section === "build" ? (
+                      route.sub === "rubrics" ? (
+                        <RubricsSection work={work} gated={gates?.rubrics ?? false} />
+                      ) : (
+                        <EpicsSection
+                          work={work}
+                          focusEpic={route.sub === "epics" ? route.subId : null}
+                          openSheet={openSheet}
+                          unresolvedSlices={unresolvedSlices}
+                        />
+                      )
+                    ) : null}
+                    {section === "pull-requests" ? (
+                      <PullRequestsSection
+                        work={work}
+                        focusPr={route.sub && route.sub !== "flightdeck" ? Number(route.sub) : null}
+                        allPullRequests={allPullRequests}
+                        onOpenPr={openPr}
+                      />
+                    ) : null}
+                    {section === "shipped" ? <ShippedSection work={work} /> : null}
+                  </motion.div>
+                </AnimatePresence>
+              </>
             )}
           </SidebarInset>
         </div>
@@ -434,6 +451,82 @@ export default function AppShell() {
         <RecordSheet subject={sheet} onOpenChange={closeSheet} />
       </Frame>
     </TooltipProvider>
+  );
+}
+
+/**
+ * The work item's own facts, on the top line of the content.
+ *
+ * The Intent level used to open with an Identity box holding the work id, the stage,
+ * the branch, the epic count, and what the work supersedes. The engineer dissolved
+ * that box. The work item's own name and stage already live in the top bar, so only
+ * three facts needed a home: the branch, the epic count, and what this work
+ * supersedes. They read on one line, at the top of the content and above every
+ * section, so a reader never has to open Intent to learn what branch they are on.
+ *
+ * The panel states three values and marks no absence as a readiness state. A branch
+ * the bundle does not carry reads `no branch recorded`, and a work that supersedes
+ * nothing reads `nothing`, which is a value and not a missing record.
+ */
+function TopLinePanel({ work }: { work: WorkItem }) {
+  const branches = [...new Set(work.epics.map((epic) => epic.branch).filter(Boolean))];
+  const done = work.epics.filter((epic) => {
+    const state = work.epicState(epic);
+    return state === "completed" || state === "merged";
+  }).length;
+  const supersedes = work.record?.goal.supersedes ?? [];
+
+  return (
+    <section
+      aria-label="This work item"
+      className="mb-5 flex min-w-0 flex-wrap items-center gap-x-6 gap-y-2 rounded-xl border border-line bg-card px-4 py-2.5"
+    >
+      <Fact label="branch">
+        {branches.length === 0 ? (
+          <span className="min-w-0 font-mono text-[13px] text-ink-dim">no branch recorded</span>
+        ) : (
+          branches.map((branch) => (
+            <span key={branch} className="flex min-w-0 items-center gap-1.5">
+              <GitBranch className="size-3.5 shrink-0 text-ink-faint" aria-hidden="true" />
+              <span className="min-w-0 font-mono text-[13px] break-words text-ink-mid">
+                {branch}
+              </span>
+            </span>
+          ))
+        )}
+      </Fact>
+
+      <Fact label="epics">
+        <span className="font-mono text-[13px] text-ink-mid tabular-nums">
+          {work.epics.length}
+          <span className="text-ink-faint"> · {done} done</span>
+        </span>
+      </Fact>
+
+      <Fact label="supersedes">
+        {supersedes.length === 0 ? (
+          <span className="min-w-0 font-mono text-[13px] text-ink-dim">nothing</span>
+        ) : (
+          supersedes.map((id) => (
+            <Chip key={id} tone="warn">
+              {id}
+            </Chip>
+          ))
+        )}
+      </Fact>
+    </section>
+  );
+}
+
+/** One labelled fact of the top line. The label names the value and nothing else. */
+function Fact({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <span className="flex min-w-0 items-center gap-2">
+      <span className="shrink-0 font-mono text-[12px] tracking-[0.05em] text-ink-faint uppercase">
+        {label}
+      </span>
+      {children}
+    </span>
   );
 }
 

@@ -1,7 +1,7 @@
 # Work board: Interaction Design Specification
 
-**Version:** 2.1
-**Date:** 2026-09-19
+**Version:** 2.2
+**Date:** 2026-09-21
 **Author:** design session with bjornslib
 **Product document:** `01-product.md` (not yet written. The product intent currently lives in `docs/architecture/designs/cobuilder-viewer/goal.json`.)
 
@@ -17,6 +17,17 @@ stops announcing that a record is present. The points of Problem and solution
 become striped rows inside one card per column. An absent panel states the
 absence in two words. Assessment, Risks, and Unknowns start closed. Sections
 1.1, 2.2, 2.3, 3.2, 3.3, 4.1, 6.4, 6.5, 7.2, 10, and 11.2 carry the changes.
+
+Version 2.2 records what the engineer asked for after reading the second
+build. The contract moves to the left of Intent, and the Identity box goes.
+Branch, epic count, and supersedes move to a top-line panel, and the contract
+reads on two lines. Every pull request element comes off a decision row and off
+the ADR sheet, and every control that navigates becomes a SmoothUI
+`smooth-button`.
+
+The Architecture level reorders itself around what a reader arrives for. The
+section-link bar sits at the top of the pane. Sections 2.1, 2.2, 3.2, 3.3, 4.1,
+5.1, 6.1, 6.4, 6.5, 6.8, 8.1, 9.3, 10, 11.1, 11.2, and 11.3 carry the changes.
 
 ---
 
@@ -48,7 +59,7 @@ answer questions that arrive while building.
 4. **A section appears when the work reaches it.** A section the work cannot fill
    is absent, not empty. Build appears when the work has epics. Pull requests
    appear when a branch or a pull request exists.
-5. **Absence is a first-class state.** A record that does not exist is stated in
+5. **Absence is a state of its own.** A record that does not exist is stated in
    place, not hidden and not rendered as a blank box. The panel names no file and
    no field, because a reader cannot act on either.
 6. **The shell renders. It never computes.** Every count, state, and join comes
@@ -73,9 +84,9 @@ The shell has three fixed regions and one scrolling region.
 ┌──────────────────────────────────────────────────────────────────┐
 │ TOP BAR (fixed)   [ work item ] [ status ] [ search ] [ theme ]  │
 ├────────────────────┬─────────────────────────────────────────────┤
-│ LEFT NAV (fixed)   │  SCROLL PANE (the only scrolling region)     │
-│                    │                                              │
-│ THE WORK           │                                              │
+│ LEFT NAV (fixed)   │  SECTION LINKS (sticky, pane's top edge)     │
+│                    │  [ top line: branch · epics · supersedes ]   │
+│ THE WORK           │  SCROLL PANE (the only scrolling region)     │
 │   Intent           │                                              │
 │   Problem & Sol.   │                                              │
 │   Architecture     │                                              │
@@ -88,6 +99,11 @@ The shell has three fixed regions and one scrolling region.
 │ SHIPPED            │                                              │
 └────────────────────┴─────────────────────────────────────────────┘
 ```
+
+**The section links are not a fourth fixed region.** They are the first child
+of the scroll pane and they are `sticky`, so the pane keeps the only scroll.
+A link moves the pane to a panel on the page, and it never moves the window.
+Section 11.3 states why the window cannot move.
 
 ```
 viewer
@@ -165,9 +181,17 @@ one disabled level, not three.
 
 | Level | Records that back it | Fields |
 |---|---|---|
-| Intent | `goal.json` alone is enough. `intent.json` adds depth | `goal.outcome`, `goal.done_when`, `goal.abort_if`, `intent.out_of_scope`, plus identity: id, stage, branch, epic count |
+| Intent | `goal.json` alone is enough. `intent.json` adds depth | `goal.outcome`, `goal.done_when`, `goal.abort_if`, `intent.out_of_scope` |
 | Problem and solution | `intent.json`, `narrative.json`, or `assessment.json` | `narrative.problem_solution` beats by kind, `intent.problem`, `intent.approach`, `intent.risks`, `intent.unknowns`, `assessment.verdict` and `assessment.findings`, `intent.alternatives` |
 | Architecture | `goal.json`'s `adrs[]`, or the design's `diagrams/` | the linked ADRs with their `maps_to.rule`, `boundary_rule` entities, districts and contexts touched, diagrams by level, and for an epic the Gate 4b design's `Types & Signatures` |
+
+**The work item's own facts sit above every section, not inside Intent.** The
+shell draws one top line holding the branch, the epic count, and what the work
+supersedes. Version 2.1 kept those in an Identity panel inside Intent, and
+version 2.2 dissolved that panel. The work item's name and stage already live
+in the top bar, so the top line does not repeat them. It renders for every
+section, because a reader in Build asks which branch they are on just as often
+as a reader in Intent.
 
 **What the corpus cannot supply.** The shell names these rather than implying
 them.
@@ -326,7 +350,7 @@ holds none of them is absent.
 
 | State | Visual treatment | Initial | Timer arming |
 |---|---|---|---|
-| Default | four labelled columns on one band, Done when and Abort if side by side | Yes | Not applicable |
+| Default | two lines on one band. `Why` owns the first line at full width, and `Done when`, `Abort if` and `Out of scope` share the second | Yes | Not applicable |
 | Hover | a list row tints | No | Not applicable |
 | Focus-visible | ring on the row | No | Not applicable |
 | Pressed | not applicable | No | Not applicable |
@@ -336,6 +360,25 @@ holds none of them is absent.
 | Error | the block states that it could not read the record | No | Not applicable |
 | Empty | `Abort if` is often absent in the corpus. The column states that no abort condition is recorded, rather than rendering blank | No | Not applicable |
 | Transient | not applicable | No | Not applicable |
+
+#### Section-link bar
+
+A bar of one link per panel the page rendered. A link moves the scroll pane to
+that panel's heading. The bar holds the links and nothing else, so a page whose
+panels are gated away renders no bar at all.
+
+| State | Visual treatment | Initial | Timer arming |
+|---|---|---|---|
+| Default | a row of links in muted ink, pinned to the pane's top edge | Yes, when the page holds at least one panel | Not applicable |
+| Hover | the link gains a border and a surface tint, and its label darkens | No | Not applicable |
+| Focus-visible | 2 px ring at a 2 px offset | No | Not applicable |
+| Pressed | the pane animates to the target | No | Ends when the pane settles at the target |
+| Selected | not applicable. The bar does not track the reader's offset, because that would cost a scroll listener for no answer | No | Not applicable |
+| Disabled | not applicable. A link is present only while its panel is | No | Not applicable |
+| Loading | not applicable. The bar renders from the panels the page already holds | No | Not applicable |
+| Error | not applicable. A panel that failed still carries a heading, so its link still works | No | Not applicable |
+| Empty | the page holds no panel, so the bar renders nothing | Yes, for a page with no panel | Not applicable |
+| Transient | the bar stays at the pane's top edge while the pane moves under it | No | Not applicable |
 
 #### Level section (Intent, Problem and solution, Architecture)
 
@@ -435,24 +478,26 @@ to see in place.**
 | Unresolved-slices panel | `slice_to_epic_unresolved` holds a slice | the join is empty |
 | Retry | the index request failed | a retry starts |
 | Level nav item | always present. It is disabled when its record is absent, so the gap stays visible | never |
+| Section-link bar | the page holds at least one panel | the page holds none. An empty bar would spend a strip of the pane on nothing |
+| Section link | its panel is on the page | its panel is gated away, or its section did not render it |
 
 **The rail names the absent records, and no other surface does.** A greyed nav
 item with no reason is the one place a reader is genuinely stuck, so the rail
 keeps its tooltip and its inline line, and both name the records. Every panel
 stops at the fact. This is an explicit engineer decision, taken on 2026-09-19.
 
-**A pull request reached through a decision is not the work's pull request.**
-An earlier version of this table accepted `adr_to_pull_request` as well. That was
-wrong, and the corpus shows why. `cobuilder-viewer` has eighteen epics and none
-of them carries a pull request. Its `goal.adrs[]` names ADR-0001, and ADR-0001
-reaches PR 2, which is a documentation pull request from July. The group then
-rendered, and the rail told a reader that this work had two pull requests when
-its own work had none.
+**A decision carries no pull request element at all.** Version 2.1 put the
+pull request that carried a decision beside that decision, in the Architecture
+level. The engineer removed it in version 2.2. The reason is that the work
+item's own state already says whether the work reached a pull request. So the
+`carried by PR N` chip is gone. The `no PR` chip is gone, and so is the block
+inside the ADR sheet. No epic row carries a pull request chip either. The
+decision row keeps the decision's own state badge, and the whole record stays
+one press away.
 
-A decision's pull request belongs beside that decision, in the Architecture
-level, labelled as the pull request that carried the decision. It never becomes
-the work's own set. The same reasoning fixes the Shipped gate: a publication for
-somebody else's pull request is not evidence that this work shipped.
+That removal does not touch the Pull requests group. The group still gates on
+`epic_to_pull_request` for this work's own epics. A pull request the work did
+not open still does not enter it, and the Shipped gate still holds its rule.
 
 ---
 
@@ -480,11 +525,16 @@ somebody else's pull request is not evidence that this work shipped.
 | Reader arrives from a deep link | Loading | Populated, target selected | `--dur-slow`, then a highlight | the highlight elapses |
 | Deep link names work the bundle lacks | Loading | Error naming the id | `--dur-instant` | the reader returns to the rail |
 | A record body fails | Populated | Partial | `--dur-instant` | the body loads |
+| Reader selects a section link | the pane's current offset | the pane's offset at the target's heading | `--dur-base`, through the pane's own smooth scroll | the reader scrolls, or selects another link |
 
 No transition here is armed by a timer. Every timing is a duration, not a
 countdown. The one delayed state, the deep-link highlight, starts on arrival and
 resets when it elapses. The diagram render is the only deferred load, and it
 starts on the reader's press.
+
+The section-link jump is the one transition that moves a region rather than
+crossfading one. It still names a token, and under `prefers-reduced-motion:
+reduce` it resolves to `--dur-instant`, so the pane arrives in one frame.
 
 ### 4.2 Timing Tokens
 
@@ -517,8 +567,9 @@ Entry condition: the reader opens the viewer on a work item.
 2. The index resolves. The rail fills in, and the gated sections appear or stay
    absent.
 3. The reader lands on Intent, unless the route names another section.
-4. Intent shows the identity block, then the contract: Why, Done when, Abort if,
-   Out of scope.
+4. Intent shows the contract: `Why` on its own line, then `Done when`, `Abort
+   if`, and `Out of scope` on the second. The work item's branch, epic count,
+   and supersedes already sit on the top line above the heading.
 
 Edge cases:
 - The work has no abort condition: the column says so.
@@ -567,6 +618,17 @@ item states that a branch exists with no pull request recorded against it.
 Three fixed regions and one scroll pane. The top bar and the rail hold their
 position at every scroll offset. Only the scroll pane scrolls.
 
+Two strips sit at the top of the pane, and neither is a fourth fixed region.
+
+The **section-link bar** is the pane's first child and it is `sticky`. It holds
+one anchor per panel the page rendered, in document order. The bar reads the
+panels rather than a list of its own. A panel a section gated away therefore
+gains no link. A panel that only renders when its record exists gains one.
+
+The **top line** sits under the bar. It holds the work item's branch, its epic
+count, and what it supersedes, on one line. Section 2.2 states why it exists
+and why it names no work item and no stage.
+
 ### 6.2 Work-item switcher
 
 A shadcn `Popover` over Radix, listing every design and epic the index holds.
@@ -581,9 +643,14 @@ icons under 1200 px and becomes a drawer under 768 px.
 
 ### 6.4 Contract block
 
-A four-column band. Done when and Abort if sit side by side, because a reader
-weighs them against each other. A column carries its heading word and nothing
-else.
+The contract leads Intent and it starts at the pane's left edge. Version 2.1
+kept it to the right of an Identity panel, and version 2.2 dissolved that panel,
+so nothing holds the contract off the left edge any more.
+
+A two-line band. `Why` takes the first line at full width, because the outcome
+is the sentence the whole work answers to. `Done when`, `Abort if`, and `Out of
+scope` share the second line, because a reader weighs those three against each
+other. A column carries its heading word and nothing else.
 
 ### 6.5 Level panels
 
@@ -607,6 +674,14 @@ boxes amber and green below. That was two treatments for one thing, and version
 Alternatives considered is not here. A rejected option is architectural, and each
 decision carries its own alternatives, so the panel sits in Architecture.
 
+The Architecture level orders its tiles by what a reader arrives for. Diagrams
+lead, because the picture answers the shape question fastest. Linked
+Architecture Decisions follows, with Districts and contexts touched on the
+right, because a reader who wants one usually wants the other. Boundary rules
+spans the pane's full width. This corpus carries sixteen rules, and a one-third
+tile turned them into a long column of narrow cards. The full width therefore
+carries a multi-column grid.
+
 ### 6.6 Status badge and state ladders
 
 A shadcn `Badge` per state family. Where the corpus carries fewer states than the
@@ -617,6 +692,30 @@ prototype target.
 
 A `ScrollArea` holding the Mermaid source, with a `Button` that renders it. The
 runtime loads on that press and not before.
+
+### 6.8 Controls that navigate
+
+Every control that moves the reader somewhere is a SmoothUI `smooth-button`,
+taken from the live registry at `https://smoothui.dev/r/smooth-button.json`.
+This shell carries three: `Open the whole record`, on a decision row, `Open the
+whole rule`, on a boundary rule, and `Open the design`, on an epic's Gate 4b
+document.
+
+The variant is `outline`, not a filled brand button. A reading surface is not a
+marketing page. A filled button on a page whose subject is a record shouts
+louder than the record does. Each control carries a trailing arrow, because the
+arrow says the control moves the reader forward rather than toggling something
+in place. The size is the registry's `lg`, which is 44 px, so section 11.2's hit
+target holds.
+
+The registry item's `tokens.json` dependency adds no file and no `css` block. It
+does carry CSS variables, so the token block it wrote into `index.css` is
+expected rather than a failure.
+
+The item imports `Slot` from `@radix-ui/react-slot`. This application depends on
+the unified `radix-ui` package instead, and that package already exports `Slot`.
+The import therefore points at `radix-ui`, and no second copy of the package is
+installed.
 
 ---
 
@@ -646,6 +745,8 @@ stated failure.
 | Two designs share a name | the id disambiguates, and both render |
 | No deploy record exists | the Shipped group says so, and reports `stage` and any publication instead |
 | An absent record in a closed panel | the panel renders open, because an absence behind a disclosure is an absence the reader cannot see |
+| A panel a section gated away | the section-link bar holds no link for it, because the bar reads the panels the page rendered |
+| A page with no panel at all | the section-link bar renders nothing, rather than an empty strip |
 
 ---
 
@@ -657,6 +758,11 @@ The rail is a `nav` of anchors, reachable in order after the top bar. A skip lin
 leads from the top bar to the scroll pane. Groups expand on `Enter` or `Space`.
 `Escape` closes the work-item switcher and returns focus to its trigger. Every
 row is a button, so it is focusable without added `tabindex`.
+
+The section-link bar is a second `nav` of anchors, and it sits at the start of
+the scroll pane, so a keyboard reader meets it before the section's own content.
+A press moves the pane and leaves focus on the target panel, so the reader lands
+where the pointer would have.
 
 ### 8.2 Screen Reader Support
 
@@ -700,6 +806,10 @@ the work item and that control. The scroll pane is the whole screen. The three
 levels become a horizontal tab strip above the content. Font sizes hold. Only the
 layout narrows.
 
+The section-link bar wraps to more than one row when the pane is narrow, so it
+keeps every link rather than dropping the ones that do not fit. The top line
+wraps the same way.
+
 ---
 
 ## 10. Animation Specifications
@@ -715,8 +825,11 @@ layout narrows.
 | Theme change | the icon crossfades, then the tokens fade | `--dur-fast`, then `--dur-base` |
 | Arrival highlight | a background pulse on the target | `--dur-highlight` |
 | Diagram render | a fade at the diagram's own aspect ratio | `--dur-base` |
+| Section-link jump | the pane's offset moves to the target's heading | `--dur-base`, or `--dur-instant` under reduced motion |
 
 Nothing animates on scroll. Nothing parallaxes. The fixed regions never move.
+The section-link bar is the one element that holds its position while the pane
+moves. It is sticky inside the pane, not fixed to the window.
 
 ---
 
@@ -729,10 +842,10 @@ One scale, named once.
 | Layer | Token | Holds |
 |---|---|---|
 | 0 | `--layer-base` | the shell and every panel |
-| 1 | `--layer-raised` | a hovered or selected row |
+| 1 | `--layer-raised` | a hovered or selected row, and the section-link bar |
 | 2 | `--layer-fixed` | the top bar and the rail |
 | 3 | `--layer-panel` | the work-item switcher, and tooltips |
-| 4 | `--layer-modal` | the mobile nav drawer |
+| 4 | `--layer-modal` | the mobile nav drawer, and the record sheet |
 
 ### 11.2 Hit Targets
 
@@ -748,6 +861,8 @@ One scale, named once.
 | Slice row | the whole row | full pane width, at least 44 px tall |
 | Panel disclosure | the panel's heading row | full panel width, at least 36 px tall |
 | Render control | the button | at least 44 px tall |
+| Navigating control | the button | at least 44 px tall |
+| Section link | the anchor | at least 32 px tall |
 | Contract row | the row, when it links to its source | the row's full height |
 | Mobile nav drawer trigger | the button | 44 px square |
 
@@ -765,11 +880,18 @@ An icon is never the sole hit target. Every icon sits inside a target at least
 | The work-item switcher list | itself | its list can exceed the viewport |
 | A diagram panel | itself, both axes | a rendered diagram is often wider than the pane |
 | A tooltip | none | it is transient and never scrolls |
+| The section-link bar | none. It is `sticky` inside the pane, so it rides the pane's own scroll and adds no region | it holds one row of links, and it never scrolls anything |
 
 The document never scrolls, so `html` and `body` carry no overflow. Every wheel
 event not consumed by a nested region scrolls the scroll pane. Where two regions
 could claim a gesture, the innermost owner wins, and the outer region does not
 move.
+
+**A section link moves the pane element, never the window.** The document cannot
+scroll at all, so a hash write or a `window.scrollTo` would land nowhere. The
+link intercepts the press, measures the target against the pane, and sets the
+pane's own offset. Under `prefers-reduced-motion: reduce` the pane arrives in
+one frame instead of animating.
 
 **Four rules make "no scroll" safe rather than a way to hide content.** A layout
 that fills the viewport and hides its overflow will clip whatever does not fit,

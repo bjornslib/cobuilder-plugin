@@ -147,7 +147,6 @@ function EpicDisclosure({
 
   const planRow = work.record?.goal.epics?.find((row) => row.id === epic.epic_id);
   const state = work.epicState(epic);
-  const pr = work.epicPr(epic);
   const own = work.slicesByEpic.get(epic.id) ?? [];
   const design = work.epicDesigns.get(epic.id);
   const outcome = planRow?.outcome ?? epic.note ?? null;
@@ -175,20 +174,6 @@ function EpicDisclosure({
         ) : (
           <Chip dashed className="text-ink-faint">
             no branch
-          </Chip>
-        )}
-        {pr === null ? (
-          <Chip
-            dashed
-            className="text-ink-faint"
-            title="No pull request is recorded for this epic."
-          >
-            no PR
-          </Chip>
-        ) : (
-          <Chip tone="accent" title={`Pull request ${pr} carries this epic.`}>
-            <GitPullRequest className="size-3.5" aria-hidden="true" />
-            PR {pr}
           </Chip>
         )}
       </div>
@@ -281,7 +266,6 @@ export function EpicsSection({
       work.epics.map((epic) => {
         const planRow = work.record?.goal.epics?.find((row) => row.id === epic.epic_id);
         const state = work.epicState(epic);
-        const pr = work.epicPr(epic);
         const own = work.slicesByEpic.get(epic.id) ?? [];
         return {
           id: epic.id,
@@ -297,13 +281,6 @@ export function EpicsSection({
           ),
           meta: (
             <>
-              {pr === null ? (
-                <Chip dashed className="text-ink-faint">
-                  no PR
-                </Chip>
-              ) : (
-                <Chip tone="accent">PR {pr}</Chip>
-              )}
               <Chip title="How many slices this epic owns.">
                 {own.length} {own.length === 1 ? "slice" : "slices"}
               </Chip>
@@ -485,19 +462,9 @@ export function PullRequestsSection({
             ))}
           </ul>
         ) : (
-          <div className="flex min-w-0 flex-col gap-3">
-            <EmptyNote>
-              No epic of this work carries a pull request, so the rail gates this group.
-              A pull request reached through a decision belongs to that decision instead.
-            </EmptyNote>
-            {work.decisionCarriers.size > 0 ? (
-              <AbsentLine>
-                {work.decisionCarriers.size} of this work&apos;s decisions reach a pull
-                request. Each one is shown beside its decision in the Architecture level,
-                labelled as the pull request that carried it.
-              </AbsentLine>
-            ) : null}
-          </div>
+          <EmptyNote>
+            No epic of this work carries a pull request, so the rail gates this group.
+          </EmptyNote>
         )}
       </Panel>
 

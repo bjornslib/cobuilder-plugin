@@ -34,7 +34,7 @@
  * is invented, and no panel guesses a value to fill a gap.
  */
 
-import { AlertOctagon, Ban, BookMarked, Boxes, CircleHelp, Compass, FileText, GitBranch, GitPullRequest, ListChecks, Network, Scale, ScrollText, ShieldAlert, Target } from "lucide-react";
+import { AlertOctagon, Ban, BookMarked, Boxes, CircleHelp, Compass, Network, Scale, ScrollText, ShieldAlert, Target } from "lucide-react";
 
 import BasicAccordion from "@/components/smoothui/basic-accordion";
 
@@ -43,7 +43,7 @@ import type { AdrEntity } from "@/data/types";
 import type { AdrRecord } from "./records";
 import { excerpt } from "./records";
 import type { AssessmentFinding } from "./records";
-import type { DecisionCarrier, LevelState, WorkItem } from "./model";
+import type { LevelState, WorkItem } from "./model";
 import { splitBeats } from "./model";
 import type { SheetSubject } from "./Sheet";
 import {
@@ -52,8 +52,6 @@ import {
   Bento,
   Box,
   Chip,
-  EmptyNote,
-  Field,
   Missing,
   Panel,
   PointCard,
@@ -69,88 +67,30 @@ import { VERDICT_GLOSS } from "./gloss";
 
 /* -------------------------------------------------------------------- Intent */
 
-export function IntentPanel({ work, levelState }: { work: WorkItem; levelState: LevelState }) {
+export function IntentPanel({ work }: { work: WorkItem }) {
   const record = work.record;
   const goal = record?.goal;
   const intent = record?.intent;
 
-  const branches = [...new Set(work.epics.map((epic) => epic.branch).filter(Boolean))];
-  const done = work.epics.filter((epic) => {
-    const state = work.epicState(epic);
-    return state === "completed" || state === "merged";
-  }).length;
-
   return (
     <Bento>
-      {/* ---------------------------------------------------------- identity */}
+      {/*
+        The contract leads, and it starts at the pane's left edge. It used to sit to
+        the right of an Identity box, and that box is gone. Branch, epic count, and
+        supersedes are work-item facts rather than Intent content, so they moved to
+        the top-line panel the shell draws above every section. The work item's own
+        name and stage stay in the top bar, and neither is repeated here.
+      */}
       <Panel
-        span="narrow"
-        title="Identity"
-        icon={FileText}
-        lead="Who this work is, where it sits, and how far it has run."
-        absent={!levelState.available}
-      >
-        <div className="grid min-w-0 grid-cols-1 gap-x-5 gap-y-3.5 @md:grid-cols-2 @2xl:grid-cols-3">
-          <Field label="Work id">
-            <span className="font-mono text-[15px]">{work.id}</span>
-          </Field>
-          <Field label="Stage">
-            <StateBadge
-              word={work.design.stage}
-              tone={toneForStage(work.design.stage)}
-              gloss={VERDICT_GLOSS[work.design.stage] ?? undefined}
-            />
-          </Field>
-          <Field label="Branch">
-            {branches.length === 0 ? (
-              <span className="text-ink-dim">no branch recorded</span>
-            ) : (
-              <span className="flex min-w-0 flex-col gap-1">
-                {branches.map((branch) => (
-                  <span key={branch} className="flex min-w-0 items-center gap-2 font-mono text-[13.5px]">
-                    <GitBranch className="size-3.5 shrink-0 text-ink-faint" aria-hidden="true" />
-                    <span className="min-w-0 break-words">{branch}</span>
-                  </span>
-                ))}
-              </span>
-            )}
-          </Field>
-          <Field label="Epics">
-            <span className="font-mono text-[15px] tabular-nums">
-              {work.epics.length}
-              <span className="text-ink-faint"> · {done} done</span>
-            </span>
-          </Field>
-          <Field label="Supersedes">
-            {goal?.supersedes && goal.supersedes.length > 0 ? (
-              <span className="flex flex-wrap gap-1.5">
-                {goal.supersedes.map((id) => (
-                  <Chip key={id} tone="warn">
-                    {id}
-                  </Chip>
-                ))}
-              </span>
-            ) : (
-              <span className="text-ink-dim">nothing</span>
-            )}
-          </Field>
-          {goal?.superseded_by ? (
-            <Field label="Superseded by">
-              <Chip tone="warn">{goal.superseded_by}</Chip>
-            </Field>
-          ) : null}
-        </div>
-      </Panel>
-
-      {/* ---------------------------------------------------- contract band */}
-      <Panel
-        span="wide"
+        span="band"
         title="The contract"
         icon={Target}
         lead="Why the work exists, what would make it done, what would stop it, and what it leaves out."
         absent={!goal}
       >
-        <div className="grid min-w-0 grid-cols-1 gap-x-5 gap-y-4 @md:grid-cols-2 @3xl:grid-cols-4">
+        {/* Two lines. `Why` owns the first one at full width; the other three share
+            the second, because a reader weighs them against each other. */}
+        <div className="flex min-w-0 flex-col gap-4">
           <div className="flex min-w-0 flex-col gap-2">
             <ColumnHead label="Why" />
             {goal ? (
@@ -160,32 +100,34 @@ export function IntentPanel({ work, levelState }: { work: WorkItem; levelState: 
             )}
           </div>
 
-          <div className="flex min-w-0 flex-col gap-2">
-            <ColumnHead label="Done when" />
-            {goal && (goal.done_when?.length ?? 0) > 0 ? (
-              <TextList items={goal.done_when ?? []} ordered />
-            ) : (
-              <Missing>No done-when condition is recorded.</Missing>
-            )}
-          </div>
+          <div className="grid min-w-0 grid-cols-1 gap-x-5 gap-y-4 @xl:grid-cols-3">
+            <div className="flex min-w-0 flex-col gap-2">
+              <ColumnHead label="Done when" />
+              {goal && (goal.done_when?.length ?? 0) > 0 ? (
+                <TextList items={goal.done_when ?? []} ordered />
+              ) : (
+                <Missing>No done-when condition is recorded.</Missing>
+              )}
+            </div>
 
-          {/* Abort if — beside Done when, because a reader weighs the two together. */}
-          <div className="flex min-w-0 flex-col gap-2">
-            <ColumnHead label="Abort if" />
-            {goal && (goal.abort_if?.length ?? 0) > 0 ? (
-              <TextList items={goal.abort_if ?? []} />
-            ) : (
-              <Missing>No abort condition is recorded.</Missing>
-            )}
-          </div>
+            {/* Abort if — beside Done when, because a reader weighs the two together. */}
+            <div className="flex min-w-0 flex-col gap-2">
+              <ColumnHead label="Abort if" />
+              {goal && (goal.abort_if?.length ?? 0) > 0 ? (
+                <TextList items={goal.abort_if ?? []} />
+              ) : (
+                <Missing>No abort condition is recorded.</Missing>
+              )}
+            </div>
 
-          <div className="flex min-w-0 flex-col gap-2">
-            <ColumnHead label="Out of scope" />
-            {intent && (intent.out_of_scope?.length ?? 0) > 0 ? (
-              <TextList items={intent.out_of_scope ?? []} />
-            ) : (
-              <Missing>No scope boundary is recorded.</Missing>
-            )}
+            <div className="flex min-w-0 flex-col gap-2">
+              <ColumnHead label="Out of scope" />
+              {intent && (intent.out_of_scope?.length ?? 0) > 0 ? (
+                <TextList items={intent.out_of_scope ?? []} />
+              ) : (
+                <Missing>No scope boundary is recorded.</Missing>
+              )}
+            </div>
           </div>
         </div>
       </Panel>
@@ -397,11 +339,50 @@ export function ArchitecturePanel({
 
   return (
     <Bento>
+      {/*
+        Diagrams lead the section. A reader arrives at Architecture to see the shape,
+        and the picture answers that faster than any list below it. The panel runs the
+        full width, because a diagram is as wide as its own source and no other tile
+        pairs with it on this row.
+      */}
+      <Panel
+        span="band"
+        title="Diagrams"
+        icon={Network}
+        lead="The source is shown as code. The runtime loads from a CDN when the reader presses Render, and at no other moment."
+        absent={work.diagramLevels.length === 0}
+      >
+        {work.diagramLevels.length > 0 && work.record?.diagrams ? (
+          <div className="flex min-w-0 flex-col gap-4">
+            {work.diagramLevels.map((level) => {
+              const source = work.record?.diagrams?.[level];
+              if (!source) return null;
+              return (
+                <Diagram
+                  key={level}
+                  level={level}
+                  kind={source.trim().split("\n")[0]?.trim() ?? "mermaid"}
+                  source={source}
+                  theme={theme}
+                />
+              );
+            })}
+          </div>
+        ) : (
+          <Missing>No diagram level exists for this work.</Missing>
+        )}
+      </Panel>
+
+      {/*
+        The decisions, and where they land. The districts and contexts sit on this
+        row's right, because they answer where the decisions on the left reach, and a
+        reader who wants one of the two almost always wants the other.
+      */}
       <Panel
         span="wide"
-        title="Linked decisions"
+        title="Linked Architecture Decisions"
         icon={ScrollText}
-        lead="Each decision with the rule it enforces, the pull request that carried it, and its whole record one press away."
+        lead="Each decision with the rule it enforces, and its whole record one press away."
         absent={!levelState.available}
       >
         {linked.length > 0 ? (
@@ -416,6 +397,107 @@ export function ArchitecturePanel({
             {missingAdr.map((adr) => adr.id).join(", ")}.
           </AbsentLine>
         ) : null}
+      </Panel>
+
+      <Panel
+        span="narrow"
+        title="Districts and contexts touched"
+        icon={Boxes}
+        lead="Where the linked decisions land."
+        absent={work.contexts.length === 0 && work.districts.length === 0}
+      >
+        <div className="flex min-w-0 flex-col gap-3">
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <SubHead count={work.contexts.length}>Contexts</SubHead>
+            {work.contexts.length > 0 ? (
+              <span className="flex min-w-0 flex-wrap gap-1.5">
+                {work.contexts.map((context) => (
+                  <Chip key={context.id} tone="accent" title={context.path}>
+                    {context.id}
+                  </Chip>
+                ))}
+              </span>
+            ) : (
+              <AbsentLine>No linked decision names a context.</AbsentLine>
+            )}
+          </div>
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <SubHead count={work.districts.length}>Districts</SubHead>
+            {work.districts.length > 0 ? (
+              <span className="flex min-w-0 flex-wrap gap-1.5">
+                {work.districts.map((district) => (
+                  <Chip key={district.id}>{district.label}</Chip>
+                ))}
+              </span>
+            ) : (
+              <AbsentLine>No linked decision names a district.</AbsentLine>
+            )}
+          </div>
+          {work.districtsUncovered.length > 0 ? (
+            <AbsentLine>
+              {work.districtsUncovered.map((district) => district.label).join(", ")} carries no
+              verifying context.
+            </AbsentLine>
+          ) : null}
+        </div>
+      </Panel>
+
+      {/*
+        The rules run the full page width. This corpus carries sixteen of them, and a
+        one-third tile turned them into a very tall column of very narrow cards. The
+        width is spent on a multi-column grid, so the rules read as a set rather than
+        as a queue.
+      */}
+      <Panel
+        span="band"
+        title="Boundary rules"
+        icon={AlertOctagon}
+        lead="The rules the touched contexts declare, and the reason each one carries."
+        absent={work.boundaryRules.length === 0}
+        count={work.boundaryRules.length}
+      >
+        {work.boundaryRules.length > 0 ? (
+          <div className="grid min-w-0 grid-cols-1 gap-2.5 @2xl:grid-cols-2 @5xl:grid-cols-3">
+            {work.boundaryRules.map((rule) => (
+              <div
+                key={rule.id}
+                className="flex min-w-0 flex-col gap-2 rounded-lg border border-line-soft bg-surface-2/50 px-3.5 py-2.5"
+              >
+                <span className="flex min-w-0 flex-wrap items-center gap-2">
+                  <Chip tone="warn">{rule.kind}</Chip>
+                  <span className="min-w-0 font-mono text-[13.5px] break-words">
+                    {rule.target}
+                  </span>
+                </span>
+                {rule.why ? (
+                  <p className="m-0 min-w-0 font-serif text-[15.5px] leading-[1.5] text-ink-dim">
+                    {excerpt(rule.why, 180)}
+                  </p>
+                ) : null}
+                <ActionButton
+                  icon={AlertOctagon}
+                  onClick={() =>
+                    openSheet({
+                      kind: "boundary",
+                      id: rule.id,
+                      kindLabel: rule.kind,
+                      target: rule.target,
+                      context: rule.context,
+                      contextEntity: work.contexts.find((c) => c.id === rule.context),
+                      detail: rule.detail,
+                    })
+                  }
+                  ariaLabel={`Open the whole boundary rule ${rule.id}`}
+                  className="mt-auto"
+                >
+                  Open the whole rule
+                </ActionButton>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <Missing>No boundary rule applies to this work.</Missing>
+        )}
       </Panel>
 
       {/*
@@ -452,127 +534,6 @@ export function ArchitecturePanel({
         )}
       </Panel>
 
-      <Panel
-        span="narrow"
-        title="Boundary rules"
-        icon={AlertOctagon}
-        lead="The rules the touched contexts declare, and the reason each one carries."
-        absent={work.boundaryRules.length === 0}
-      >
-          {work.boundaryRules.length > 0 ? (
-            <div className="flex min-w-0 flex-col gap-2.5">
-              {work.boundaryRules.map((rule) => (
-                <div
-                  key={rule.id}
-                  className="flex min-w-0 flex-col gap-2 rounded-lg border border-line-soft bg-surface-2/50 px-3.5 py-2.5"
-                >
-                  <span className="flex min-w-0 flex-wrap items-center gap-2">
-                    <Chip tone="warn">{rule.kind}</Chip>
-                    <span className="min-w-0 font-mono text-[13.5px] break-words">
-                      {rule.target}
-                    </span>
-                  </span>
-                  {rule.why ? (
-                    <p className="m-0 min-w-0 font-serif text-[15.5px] leading-[1.5] text-ink-dim">
-                      {excerpt(rule.why, 180)}
-                    </p>
-                  ) : null}
-                  <ActionButton
-                    icon={AlertOctagon}
-                    onClick={() =>
-                      openSheet({
-                        kind: "boundary",
-                        id: rule.id,
-                        kindLabel: rule.kind,
-                        target: rule.target,
-                        context: rule.context,
-                        contextEntity: work.contexts.find((c) => c.id === rule.context),
-                        detail: rule.detail,
-                      })
-                    }
-                    ariaLabel={`Open the whole boundary rule ${rule.id}`}
-                  >
-                    Open the whole rule
-                  </ActionButton>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <Missing>No boundary rule applies to this work.</Missing>
-          )}
-        </Panel>
-
-      <Panel
-        span="narrow"
-        title="Districts and contexts touched"
-        icon={Boxes}
-        lead="Where the linked decisions land."
-        absent={work.contexts.length === 0 && work.districts.length === 0}
-      >
-          <div className="flex min-w-0 flex-col gap-3">
-            <div className="flex min-w-0 flex-col gap-1.5">
-              <SubHead count={work.contexts.length}>Contexts</SubHead>
-              {work.contexts.length > 0 ? (
-                <span className="flex min-w-0 flex-wrap gap-1.5">
-                  {work.contexts.map((context) => (
-                    <Chip key={context.id} tone="accent" title={context.path}>
-                      {context.id}
-                    </Chip>
-                  ))}
-                </span>
-              ) : (
-                <AbsentLine>No linked decision names a context.</AbsentLine>
-              )}
-            </div>
-            <div className="flex min-w-0 flex-col gap-1.5">
-              <SubHead count={work.districts.length}>Districts</SubHead>
-              {work.districts.length > 0 ? (
-                <span className="flex min-w-0 flex-wrap gap-1.5">
-                  {work.districts.map((district) => (
-                    <Chip key={district.id}>{district.label}</Chip>
-                  ))}
-                </span>
-              ) : (
-                <AbsentLine>No linked decision names a district.</AbsentLine>
-              )}
-            </div>
-            {work.districtsUncovered.length > 0 ? (
-              <AbsentLine>
-                {work.districtsUncovered.map((district) => district.label).join(", ")} carries
-                no verifying context.
-              </AbsentLine>
-            ) : null}
-          </div>
-      </Panel>
-
-      <Panel
-        span="wide"
-        title="Diagrams"
-        icon={Network}
-        lead="The source is shown as code. The runtime loads from a CDN when the reader presses Render, and at no other moment."
-        absent={work.diagramLevels.length === 0}
-      >
-        {work.diagramLevels.length > 0 && work.record?.diagrams ? (
-          <div className="flex min-w-0 flex-col gap-4">
-            {work.diagramLevels.map((level) => {
-              const source = work.record?.diagrams?.[level];
-              if (!source) return null;
-              return (
-                <Diagram
-                  key={level}
-                  level={level}
-                  kind={source.trim().split("\n")[0]?.trim() ?? "mermaid"}
-                  source={source}
-                  theme={theme}
-                />
-              );
-            })}
-          </div>
-        ) : (
-          <Missing>No diagram level exists for this work.</Missing>
-        )}
-      </Panel>
-
       {work.record?.pr_draft ? (
         <Panel
           span="wide"
@@ -583,31 +544,18 @@ export function ArchitecturePanel({
           <Box label="Draft">{excerpt(work.record.pr_draft, 260)}</Box>
         </Panel>
       ) : null}
-
-      <Panel
-        span="narrow"
-        title="Where an epic's own architecture lives"
-        icon={ListChecks}
-        lead="An epic's own technical solution design is part of this work's architecture."
-      >
-        <EmptyNote>
-          A Gate 4b design belongs to one epic, so it is disclosed inside that epic in the
-          Build section, and it opens in a Sheet there. This panel reads no epic, so it does
-          not repeat them. {work.epicDesigns.size} of this work&apos;s {work.epics.length}{" "}
-          epics resolve one.
-        </EmptyNote>
-      </Panel>
     </Bento>
   );
 }
 
 /**
- * The linked decisions, as an accordion, with the carrying pull request beside each one.
+ * The linked decisions, as an accordion.
  *
- * Section 3.3 puts the carrying pull request here rather than in the Pull requests
- * group, and labels it as the pull request that carried the decision. The label says
- * whether one of this work's own epics is on the join's path, so a reader can tell the
- * two cases apart at a glance.
+ * The pull request a decision reached used to sit here, as a chip on the row and as a
+ * block in the body. The engineer removed it: the work item's own state already says
+ * whether the work reached a pull request, so a decision did not need to say it a
+ * second time. The whole record is still one press away, and it carries the fields
+ * the bundle keeps for it.
  */
 function DecisionList({
   work,
@@ -625,7 +573,6 @@ function DecisionList({
       defaultExpandedIds={work.linkedAdrs.length === 1 ? [work.linkedAdrs[0].id] : []}
       items={work.linkedAdrs.map((adr: AdrEntity) => {
         const full = adrs[adr.id];
-        const carrier = work.decisionCarriers.get(adr.id);
         return {
           id: adr.id,
           title: (
@@ -643,23 +590,6 @@ function DecisionList({
                   no body
                 </Chip>
               ) : null}
-              {carrier ? (
-                <Chip
-                  tone={carrier.onThisWork ? "accent" : "neutral"}
-                  title={
-                    carrier.onThisWork
-                      ? `Pull request ${carrier.pr} carried this decision, and one of this work's own epics carries it.`
-                      : `Pull request ${carrier.pr} carried this decision, and no epic of this work carries it.`
-                  }
-                >
-                  <GitPullRequest className="size-3.5" aria-hidden="true" />
-                  carried by PR {carrier.pr}
-                </Chip>
-              ) : (
-                <Chip dashed className="text-ink-faint" title="No pull request carried this decision.">
-                  no PR
-                </Chip>
-              )}
               <StateBadge word={adr.state} tone={toneForStage(adr.state)} />
             </>
           ),
@@ -673,8 +603,6 @@ function DecisionList({
                   available. The whole record names the rest.
                 </AbsentLine>
               )}
-
-              <CarrierNote carrier={carrier} />
 
               {full?.maps_to?.modules && full.maps_to.modules.length > 0 ? (
                 <span className="flex min-w-0 flex-wrap gap-1.5">
@@ -694,7 +622,6 @@ function DecisionList({
                     record: full,
                     title: adr.title,
                     state: adr.state,
-                    carrier,
                   })
                 }
                 ariaLabel={`Open the whole record for ${adr.id}`}
@@ -706,43 +633,5 @@ function DecisionList({
         };
       })}
     />
-  );
-}
-
-/** The pull request that carried one decision. Absent is stated, never implied. */
-function CarrierNote({ carrier }: { carrier: DecisionCarrier | undefined }) {
-  if (!carrier) {
-    return (
-      <AbsentLine>
-        The bundle reaches no pull request for this decision, so no pull request carried it.
-      </AbsentLine>
-    );
-  }
-  return (
-    <div className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-line-soft border-l-4 border-l-primary bg-surface px-3 py-2.5">
-      <span className="flex min-w-0 flex-wrap items-center gap-2">
-        <Chip tone="accent">
-          <GitPullRequest className="size-3.5" aria-hidden="true" />
-          PR {carrier.pr}
-        </Chip>
-        <span className="font-mono text-[12.5px] text-ink-dim">
-          the pull request that carried this decision
-        </span>
-      </span>
-      {carrier.entity ? (
-        <span className="min-w-0 font-serif text-[15.5px] leading-[1.5] text-ink-mid">
-          {carrier.entity.title}
-        </span>
-      ) : null}
-      <span className="min-w-0 font-mono text-[12px] break-words text-ink-faint">
-        reached{" "}
-        {carrier.path.length > 0
-          ? `across ${carrier.path.length} epics`
-          : "directly"}
-        {carrier.onThisWork
-          ? ". One of this work's own epics carries it."
-          : ". No epic of this work carries it, so it is not in this work's own set."}
-      </span>
-    </div>
   );
 }

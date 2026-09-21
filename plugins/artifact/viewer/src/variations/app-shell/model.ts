@@ -76,26 +76,12 @@ export interface BoundaryRule {
 }
 
 /**
- * The pull request a decision reaches, and the join that reached it.
+ * One work item, and everything the shell derives about it.
  *
- * This is not the work's own pull-request set. Section 3.3 states the rule: a pull
- * request reached through a decision belongs beside that decision, in the
- * Architecture level, labelled as the pull request that carried it. It never becomes
- * an entry in the work's own set, because the work did not open it.
+ * `adr_to_pull_request` is deliberately absent from the joins read below. The shell
+ * shows no pull request beside a decision, so a decision's carrier has nothing to
+ * feed. Do not add it back without a surface that shows one.
  */
-export interface DecisionCarrier {
-  adrId: string;
-  pr: number;
-  /** How the join reached the pull request: `direct`, or `epic`. */
-  via: string;
-  /** The epics the join walked. Empty when it reached the pull request directly. */
-  path: string[];
-  /** The pull request entity, or undefined when the index holds no row for it. */
-  entity: PullRequestEntity | undefined;
-  /** True when one of this work's own epics sits on the join's path. */
-  onThisWork: boolean;
-}
-
 export interface WorkItem {
   /** The design id. It is the route's `:workId`. */
   id: string;
@@ -108,8 +94,6 @@ export interface WorkItem {
   slicesByEpic: Map<string, SliceEntity[]>;
   /** Refined epic state, read from the join and never from the entity. */
   epicState: (epic: EpicEntity) => string;
-  /** The resolved pull request for an epic, read from the join. */
-  epicPr: (epic: EpicEntity) => number | null;
   /** The decisions this work names. `goal.adrs[]` is the source, and the shell says so. */
   linkedAdrs: AdrEntity[];
   /** Where the linked-decision list came from. */
@@ -121,8 +105,6 @@ export interface WorkItem {
   pullRequests: PullRequestEntity[];
   /** Which epic named each pull request. */
   pullRequestVia: Map<number, string[]>;
-  /** The pull request a decision reaches, keyed by decision id. Section 3.3. */
-  decisionCarriers: Map<string, DecisionCarrier>;
   /** Publications for a pull request this work's own epics carry. Never another work's. */
   publications: PublicationEntity[];
   /** The planning slug this work's gates are keyed by. */
@@ -243,8 +225,8 @@ export function buildWorkItems(index: RecordIndex, records: Record<string, Desig
     /*
      * The work's own pull-request set. Section 3.3 states the rule: this reads
      * `epic_to_pull_request` for this work's own epics, and nothing else. A pull
-     * request a decision reaches is not the work's pull request, so it lands in
-     * `decisionCarriers` below and it never enters this set.
+     * request a decision reached is not the work's pull request, so
+     * `adr_to_pull_request` never feeds this map.
      */
     const via = new Map<number, string[]>();
     for (const epic of epics) {
@@ -258,25 +240,6 @@ export function buildWorkItems(index: RecordIndex, records: Record<string, Desig
       .sort((a, b) => a - b)
       .map((n) => prById.get(n))
       .filter((pr): pr is PullRequestEntity => pr !== undefined);
-
-    /*
-     * Each decision's carrier, held beside that decision. `onThisWork` is false for
-     * every decision whose pull request no epic of this work carries, which is the
-     * common case in this corpus.
-     */
-    const decisionCarriers = new Map<string, DecisionCarrier>();
-    for (const adr of linkedAdrs) {
-      const link = joins.adr_to_pull_request[adr.id];
-      if (!link || typeof link.pr !== "number") continue;
-      decisionCarriers.set(adr.id, {
-        adrId: adr.id,
-        pr: link.pr,
-        via: link.via,
-        path: link.path ?? [],
-        entity: prById.get(link.pr),
-        onThisWork: via.has(link.pr),
-      });
-    }
 
     /* The contexts and districts the linked decisions land in. */
     const contextIds = new Set<string>();
@@ -334,16 +297,10 @@ export function buildWorkItems(index: RecordIndex, records: Record<string, Desig
       slices,
       slicesByEpic,
       epicState: (epic) => joins.epic_status[epic.id] ?? epic.state,
-      epicPr: (epic) => {
-        const joined = joins.epic_to_pull_request[epic.id];
-        if (typeof joined === "number") return joined;
-        return typeof epic.pr === "number" ? epic.pr : null;
-      },
       linkedAdrs,
       adrSource,
       pullRequests,
       pullRequestVia: via,
-      decisionCarriers,
       publications,
       planSlug: plan.slug,
       planSlugVia: plan.via,

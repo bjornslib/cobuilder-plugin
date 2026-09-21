@@ -15,21 +15,25 @@
  *   - The Sheet owns its own scroll on both axes, so a wide table in an ADR body keeps
  *     its integrity without the pane growing a second scrollbar.
  *
- * This file is presentational. It decides no verdict, computes no join, and reads no
- * file. Its caller holds the subject.
- *
  * The Sheet names no source. It used to close every body with a line saying which file
  * the record came from, and the engineer removed every one of those lines from the
  * shell. A reader who opens a decision record wants the record, not the path it was
  * read from.
+ *
+ * The Sheet carries no pull request block either. It used to open with one, saying
+ * which pull request reached the decision, naming its title, and counting the epics on
+ * the join's path. The engineer removed it: the work item's own state already says
+ * whether the work reached a pull request, so the decision did not need to say it a
+ * second time.
+ *
+ * This file is presentational. It decides no verdict, computes no join, and reads no
+ * file. Its caller holds the subject.
  */
 
 import type { ReactNode } from "react";
 
 import type { LucideIcon } from "lucide-react";
-import { AlertOctagon, ExternalLink, GitPullRequest, ListChecks, ScrollText } from "lucide-react";
-
-import { cn } from "@/lib/utils";
+import { AlertOctagon, ListChecks, ScrollText } from "lucide-react";
 
 import {
   Sheet,
@@ -40,7 +44,6 @@ import {
 } from "@/components/ui/sheet";
 import type { ContextEntity, EpicDesignEntity, EpicEntity } from "@/data/types";
 
-import type { DecisionCarrier } from "./model";
 import type { AdrRecord } from "./records";
 import { Box, Chip, KeyValue, Missing, StateBadge, SubHead, TextList, toneForStage } from "./atoms";
 import { MarkdownBlock } from "./markdown";
@@ -54,8 +57,6 @@ export type SheetSubject =
       /** The row the index holds, which is the only source for the title fallback. */
       title: string;
       state: string;
-      /** The pull request this decision reached. */
-      carrier: DecisionCarrier | undefined;
     }
   | {
       kind: "boundary";
@@ -246,58 +247,6 @@ function AdrBody({
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      {/* The carrying pull request, beside the decision. Section 3.3. */}
-      <SheetPanel
-        title="The pull request that carried this decision"
-        icon={GitPullRequest}
-        tone={subject.carrier ? "accent" : "neutral"}
-      >
-        {subject.carrier ? (
-          <div className="flex min-w-0 flex-col gap-2">
-            <span className="flex flex-wrap items-center gap-2">
-              <Chip tone="accent">
-                <GitPullRequest className="size-3.5" aria-hidden="true" />
-                PR {subject.carrier.pr}
-              </Chip>
-              {subject.carrier.onThisWork ? (
-                <Chip tone="good">one of this work's own epics carries it</Chip>
-              ) : (
-                <Chip dashed className="text-ink-faint">
-                  no epic of this work carries it
-                </Chip>
-              )}
-            </span>
-            {subject.carrier.entity ? (
-              <p className="m-0 min-w-0 font-serif text-[16px] leading-[1.5] text-foreground">
-                {subject.carrier.entity.title}
-              </p>
-            ) : (
-              <Missing>
-                The bundle carries no pull request row for {subject.carrier.pr}.
-              </Missing>
-            )}
-            {subject.carrier.path.length > 0 ? (
-              <p className="m-0 font-mono text-[12px] leading-[1.6] text-ink-faint">
-                reached across {subject.carrier.path.length} epics:{" "}
-                {subject.carrier.path.slice(0, 8).join(", ")}
-                {subject.carrier.path.length > 8
-                  ? `, and ${subject.carrier.path.length - 8} more`
-                  : ""}
-                .
-              </p>
-            ) : (
-              <p className="m-0 font-mono text-[12px] leading-[1.6] text-ink-faint">
-                Reached directly, with no epic on the path.
-              </p>
-            )}
-          </div>
-        ) : (
-          <Missing>
-            No pull request reached this decision, so no pull request carried it.
-          </Missing>
-        )}
-      </SheetPanel>
-
       {record.problem ? (
         <Box label="Problem" tone="problem">
           {record.problem}
@@ -514,37 +463,5 @@ function EpicDesignBody({
         <MarkdownBlock markdown={subject.doc.body_md} />
       </div>
     </div>
-  );
-}
-
-/** A titled block inside the Sheet. The Sheet's body is not a pane panel. */
-function SheetPanel({
-  title,
-  icon: Icon,
-  tone = "neutral",
-  children,
-}: {
-  title: string;
-  icon?: LucideIcon;
-  tone?: "neutral" | "accent";
-  children: ReactNode;
-}) {
-  return (
-    <section
-      className={cn(
-        "min-w-0 rounded-xl border bg-card",
-        tone === "accent" ? "border-primary/60" : "border-line",
-      )}
-      aria-label={title}
-    >
-      <header className="flex min-w-0 items-center gap-2.5 border-b border-line-soft bg-surface-2 px-3.5 py-2">
-        {Icon ? <Icon className="size-4 shrink-0 text-ink-faint" aria-hidden="true" /> : null}
-        <h3 className="m-0 min-w-0 font-mono text-[13px] font-bold tracking-[0.04em] uppercase">
-          {title}
-        </h3>
-        <ExternalLink className="ml-auto size-3.5 shrink-0 text-ink-faint" aria-hidden="true" />
-      </header>
-      <div className="min-w-0 px-3.5 py-3">{children}</div>
-    </section>
   );
 }

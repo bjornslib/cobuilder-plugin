@@ -36,6 +36,7 @@ import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   AlertTriangle,
+  ArrowRight,
   Check,
   ChevronDown,
   CircleAlert,
@@ -48,9 +49,24 @@ import {
 import { motion, useReducedMotion } from "motion/react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import SmoothButton from "@/components/smoothui/smooth-button";
 import { cn } from "@/lib/utils";
 
+import { JUMP_ATTR, panelId } from "./jump";
+
 export type Tone = "neutral" | "accent" | "good" | "warn" | "danger";
+
+/**
+ * The two attributes that make a panel a jump target.
+ *
+ * The id addresses it, and `JUMP_ATTR` carries its heading, so the section-link bar
+ * reads one link per panel without holding a list of its own. The return type names
+ * the literal key, so the spread below type-checks.
+ */
+export function jumpTarget(title: string): { id: string; "data-shell-panel": string } {
+  return { id: panelId(title), [JUMP_ATTR]: title };
+}
+
 
 /** A pill fill, keyed by tone. Reads the house tokens and never a literal colour. */
 export const TONE_PILL: Record<Tone, string> = {
@@ -304,6 +320,7 @@ export function Panel({
 
   const card = (
     <section
+      {...jumpTarget(title)}
       className={cn(
         "rounded-xl border",
         absent ? ABSENT_CARD : "border-line bg-card shadow-card",
@@ -483,10 +500,20 @@ export function KeyValue({ label, value }: { label: string; value: ReactNode }) 
 }
 
 /**
- * A control that reads as a link and behaves as a button.
+ * A control that navigates somewhere, drawn with SmoothUI's `smooth-button`.
  *
- * Motion adds a two-pixel lift on hover, and `useReducedMotion` removes it. The
- * control is at least 44 px tall, per section 11.2.
+ * The engineer asked for every navigating control to become a proper button, and
+ * `smooth-button` is the one the design system names. `variant="outline"` suits a
+ * document: a reading surface is not a marketing page, and a filled brand button
+ * would shout on a page whose subject is a record. The trailing arrow is the
+ * `suffix` icon, and it says the control moves the reader forward rather than
+ * toggling something in place.
+ *
+ * `size="lg"` is `h-11`, which is 44 px, so section 11.2's hit target holds. The
+ * horizontal padding is pulled back from the registry's `px-8`, because a document
+ * control does not need the width of a call to action. `self-start` is in the base
+ * class, because every call site is a flex column and a stretched button would span
+ * the panel it sits in.
  */
 export function ActionButton({
   children,
@@ -503,26 +530,19 @@ export function ActionButton({
   ariaLabel?: string;
   title?: string;
 }) {
-  const reduce = useReducedMotion();
   return (
-    <motion.button
-      type="button"
+    <SmoothButton
+      variant="outline"
+      size="lg"
       onClick={onClick}
       aria-label={ariaLabel}
       title={title}
-      whileHover={reduce ? undefined : { y: -1 }}
-      whileTap={reduce ? undefined : { y: 0 }}
-      transition={{ duration: 0.15, ease: [0.22, 0.75, 0.3, 1] }}
-      className={cn(
-        "inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg border border-line bg-surface-2/70 px-3 font-mono text-[13px] font-bold text-accent-deep",
-        "transition-colors duration-150 ease-house hover:border-primary hover:bg-accent-wash hover:underline underline-offset-2",
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-        className,
-      )}
+      prefix={Icon ? <Icon aria-hidden="true" /> : undefined}
+      suffix={<ArrowRight aria-hidden="true" />}
+      className={cn("self-start px-3.5 font-mono text-[13px] font-bold", className)}
     >
-      {Icon ? <Icon className="size-4 shrink-0" aria-hidden="true" /> : null}
       {children}
-    </motion.button>
+    </SmoothButton>
   );
 }
 
