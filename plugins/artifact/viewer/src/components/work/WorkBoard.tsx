@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from "motion/react";
 
+import TiltCard from "@/components/smoothui/tilt-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { DesignRow } from "@/data/types";
@@ -70,6 +71,17 @@ function Board({ rows }: { rows: DesignRow[] }) {
       </p>
     );
   }
+  /*
+   * THE DESIGN CARD CARRIES A TILT. It is an object rather than a page: a reader
+   * picks it up with the pointer, and a press opens the design behind it, so the
+   * tilt says what the card does. `glare={false}` is the tilt-without-glare
+   * variant. The component renders its radial glare overlay only when `glare` is
+   * true, so that one prop is the whole difference between the two variants.
+   *
+   * `h-full` on the tilt wrapper keeps the row's equal-height cards. The tilt
+   * element sits between the grid item and the card, and a card that asked for
+   * `h-full` against an auto-height wrapper would fall back to its own height.
+   */
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {rows.map((row, index) => (
@@ -83,7 +95,9 @@ function Board({ rows }: { rows: DesignRow[] }) {
             ease: ENTER_EASE,
           }}
         >
-          <DesignCard row={row} />
+          <TiltCard className="h-full" glare={false}>
+            <DesignCard row={row} />
+          </TiltCard>
         </motion.div>
       ))}
     </div>

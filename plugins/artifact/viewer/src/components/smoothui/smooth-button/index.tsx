@@ -74,8 +74,13 @@ const smoothButtonVariants = cva(
         ghost:
           "text-[var(--btn,var(--color-foreground))] hover:bg-[color-mix(in_oklab,var(--btn,var(--color-foreground))_10%,transparent)]",
         link: "text-[var(--btn,var(--color-foreground))] underline-offset-4 hover:underline",
+        // Repointed from the registry's `hover:bg-primary`. `--primary` is a deep
+        // teal, and this shell's `outline` button sits inside the Architecture
+        // panels and inside the heading bands. A hover that resolves to a colour
+        // close to the heading band would make a control read as a heading, so the
+        // hover takes the house `--surface-3` tint instead. See `index.css`.
         outline:
-          "border border-transparent bg-background text-[var(--btn,var(--color-foreground))] shadow-black/15 shadow-sm ring-1 ring-foreground/10 hover:bg-primary dark:ring-foreground/15",
+          "border border-transparent bg-background text-[var(--btn,var(--color-foreground))] shadow-black/15 shadow-sm ring-1 ring-foreground/10 hover:bg-surface-3 dark:ring-foreground/15",
         secondary:
           "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
         soft: "bg-[color-mix(in_oklab,var(--btn,var(--color-foreground))_12%,transparent)] text-[var(--btn,var(--color-foreground))] hover:bg-[color-mix(in_oklab,var(--btn,var(--color-foreground))_18%,transparent)]",

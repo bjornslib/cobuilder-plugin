@@ -30,6 +30,7 @@ import {
   Split,
 } from "lucide-react";
 
+import TiltCard from "@/components/smoothui/tilt-card";
 import { cn } from "@/lib/utils";
 import type { SliceEntity } from "@/data/types";
 
@@ -165,188 +166,199 @@ function EpicCard({
       ? "designs.js did not load, so this epic's outcome line is not available. The index carries no outcome field for an epic."
       : "The goal record carries no outcome line for this epic.";
 
+  /*
+   * THE EPIC CARD CARRIES A TILT, on the same reasoning as the design card. It is
+   * an object in a list, and the tilt hints that it opens, which it does: the
+   * chevron beside it discloses the epic's slices.
+   *
+   * `glare={false}` is the tilt-without-glare variant. The component renders its
+   * glare overlay only when `glare` is true, so that one prop is the whole
+   * difference between the two variants.
+   */
   return (
-    <article
-      className={cn(
-        "overflow-hidden rounded-xl border bg-card shadow-card transition-shadow duration-150 ease-house hover:shadow-raise",
-        selected ? "border-primary ring-1 ring-primary/40" : "border-line",
-        superseded && "border-dashed opacity-80",
-      )}
-    >
-      <div className="flex items-stretch">
-        <button
-          type="button"
-          onClick={onSelectEpic}
-          title={`Select epic ${epic.epic_id} and scope the lens tiles to it`}
-          className={cn(
-            "flex min-w-0 flex-1 cursor-pointer flex-col gap-2 px-4 py-3.5 text-left transition-colors duration-150 ease-house",
-            "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
-            selected ? "bg-accent-wash" : "hover:bg-surface-2",
-          )}
-        >
-          <span className="flex flex-wrap items-center gap-2.5">
-            <span className="font-mono text-[15px] font-bold tracking-[-0.01em]">
-              {epic.epic_id}
-            </span>
-            <StatePill
-              value={status}
-              intended={move?.intended ?? null}
-              intendedWhy={move?.because}
-            />
-            {pr !== null ? (
-              <Chip icon={GitMerge} title={`Pull request ${pr} carries this epic.`}>
-                PR {pr}
-              </Chip>
-            ) : (
-              <Chip dashed icon={GitBranch} title="No pull request reaches this epic in the index.">
-                no PR
-              </Chip>
-            )}
-            {slices.length > 0 ? (
-              <Chip icon={Layers} title={`${slices.length} slices resolve to this epic.`}>
-                {slices.length} {slices.length === 1 ? "slice" : "slices"}
-              </Chip>
-            ) : (
-              <Chip dashed icon={Layers} title="No slice in the index resolves to this epic.">
-                no slices
-              </Chip>
-            )}
-            {doc ? (
-              <Chip icon={FileText} title={doc.title}>
-                design doc
-              </Chip>
-            ) : (
-              <Chip
-                dashed
-                icon={FileText}
-                className="text-warn"
-                title={`No Gate 4b document for this epic. docs/plans/${data.plan.slug}/epic-${epic.epic_id}-design.md is not in the index.`}
-              >
-                no design doc
-              </Chip>
-            )}
-          </span>
-          <span className="font-serif text-[16.5px] leading-[1.5] text-foreground">
-            {outcome ?? outcomeGap}
-          </span>
-          <span className="font-mono text-[12px] text-ink-faint">
-            {epic.id}
-            {epic.branch ? ` · ${epic.branch}` : " · no branch"}
-            {indexPath && indexPath !== epic.id ? ` · index says design_doc ${indexPath}` : ""}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-expanded={open}
-          title={open ? "Collapse this epic" : "Expand this epic's slices and records"}
-          className={cn(
-            "flex w-12 shrink-0 cursor-pointer items-center justify-center border-l border-line-soft text-ink-dim transition-colors duration-150 ease-house",
-            "hover:bg-surface-2 hover:text-foreground",
-            "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
-          )}
-        >
-          <ChevronDown
+    <TiltCard glare={false}>
+      <article
+        className={cn(
+          "overflow-hidden rounded-xl border bg-card shadow-card transition-shadow duration-150 ease-house hover:shadow-raise",
+          selected ? "border-primary ring-1 ring-primary/40" : "border-line",
+          superseded && "border-dashed opacity-80",
+        )}
+      >
+        <div className="flex items-stretch">
+          <button
+            type="button"
+            onClick={onSelectEpic}
+            title={`Select epic ${epic.epic_id} and scope the lens tiles to it`}
             className={cn(
-              "size-5 transition-transform duration-200 ease-house",
-              open && "rotate-180",
+              "flex min-w-0 flex-1 cursor-pointer flex-col gap-2 px-4 py-3.5 text-left transition-colors duration-150 ease-house",
+              "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+              selected ? "bg-accent-wash" : "hover:bg-surface-2",
             )}
-          />
-        </button>
-      </div>
-
-      <AnimatePresence initial={false}>
-        {open ? (
-          <motion.div
-            key="body"
-            initial={reduce ? false : { height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={reduce ? { opacity: 0 } : { height: 0, opacity: 0 }}
-            transition={{ duration: reduce ? 0 : 0.24, ease: ENTER_EASE }}
-            className="overflow-hidden border-t border-line-soft"
           >
-            <div className="flex flex-col gap-3.5 bg-surface-2/60 px-4 py-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Panel title="What this epic ends with" tone="accent" icon={ScrollText}>
-                  <p className="m-0">{outcome ?? outcomeGap}</p>
-                  {planRow?.slug ? (
-                    <p className="mt-2 mb-0 font-mono text-[12px] text-ink-faint">
-                      goal.epics[].slug = {planRow.slug}
+            <span className="flex flex-wrap items-center gap-2.5">
+              <span className="font-mono text-[15px] font-bold tracking-[-0.01em]">
+                {epic.epic_id}
+              </span>
+              <StatePill
+                value={status}
+                intended={move?.intended ?? null}
+                intendedWhy={move?.because}
+              />
+              {pr !== null ? (
+                <Chip icon={GitMerge} title={`Pull request ${pr} carries this epic.`}>
+                  PR {pr}
+                </Chip>
+              ) : (
+                <Chip dashed icon={GitBranch} title="No pull request reaches this epic in the index.">
+                  no PR
+                </Chip>
+              )}
+              {slices.length > 0 ? (
+                <Chip icon={Layers} title={`${slices.length} slices resolve to this epic.`}>
+                  {slices.length} {slices.length === 1 ? "slice" : "slices"}
+                </Chip>
+              ) : (
+                <Chip dashed icon={Layers} title="No slice in the index resolves to this epic.">
+                  no slices
+                </Chip>
+              )}
+              {doc ? (
+                <Chip icon={FileText} title={doc.title}>
+                  design doc
+                </Chip>
+              ) : (
+                <Chip
+                  dashed
+                  icon={FileText}
+                  className="text-warn"
+                  title={`No Gate 4b document for this epic. docs/plans/${data.plan.slug}/epic-${epic.epic_id}-design.md is not in the index.`}
+                >
+                  no design doc
+                </Chip>
+              )}
+            </span>
+            <span className="font-serif text-[16.5px] leading-[1.5] text-foreground">
+              {outcome ?? outcomeGap}
+            </span>
+            <span className="font-mono text-[12px] text-ink-faint">
+              {epic.id}
+              {epic.branch ? ` · ${epic.branch}` : " · no branch"}
+              {indexPath && indexPath !== epic.id ? ` · index says design_doc ${indexPath}` : ""}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-expanded={open}
+            title={open ? "Collapse this epic" : "Expand this epic's slices and records"}
+            className={cn(
+              "flex w-12 shrink-0 cursor-pointer items-center justify-center border-l border-line-soft text-ink-dim transition-colors duration-150 ease-house",
+              "hover:bg-surface-2 hover:text-foreground",
+              "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+            )}
+          >
+            <ChevronDown
+              className={cn(
+                "size-5 transition-transform duration-200 ease-house",
+                open && "rotate-180",
+              )}
+            />
+          </button>
+        </div>
+
+        <AnimatePresence initial={false}>
+          {open ? (
+            <motion.div
+              key="body"
+              initial={reduce ? false : { height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={reduce ? { opacity: 0 } : { height: 0, opacity: 0 }}
+              transition={{ duration: reduce ? 0 : 0.24, ease: ENTER_EASE }}
+              className="overflow-hidden border-t border-line-soft"
+            >
+              <div className="flex flex-col gap-3.5 bg-surface-2/60 px-4 py-4">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Panel title="What this epic ends with" tone="accent" icon={ScrollText}>
+                    <p className="m-0">{outcome ?? outcomeGap}</p>
+                    {planRow?.slug ? (
+                      <p className="mt-2 mb-0 font-mono text-[12px] text-ink-faint">
+                        goal.epics[].slug = {planRow.slug}
+                      </p>
+                    ) : null}
+                  </Panel>
+                  <Panel title="The author's note" icon={Notebook}>
+                    <p className="m-0 text-[15.5px] leading-[1.6] text-ink-mid">
+                      {epic.note ?? "The goal record carries no note for this epic."}
                     </p>
+                  </Panel>
+                </div>
+
+                <div className="rounded-lg border border-line-soft bg-surface px-3.5 py-3">
+                  <EpicSlots detail={detail} plan={data.plan} />
+                  {indexPath && indexPath !== epic.id ? (
+                    <PrototypeNote className="mt-2.5">
+                      The index&apos;s own <span className="font-bold">design_doc</span> field reads{" "}
+                      {indexPath}, and this board resolved {epic.id} instead. The field compares
+                      the design id against the plan slug, and this design&apos;s slug is{" "}
+                      {data.plan.slug}. The document on disk is the one this board shows.
+                    </PrototypeNote>
                   ) : null}
-                </Panel>
-                <Panel title="The author's note" icon={Notebook}>
-                  <p className="m-0 text-[15.5px] leading-[1.6] text-ink-mid">
-                    {epic.note ?? "The goal record carries no note for this epic."}
-                  </p>
-                </Panel>
-              </div>
+                </div>
 
-              <div className="rounded-lg border border-line-soft bg-surface px-3.5 py-3">
-                <EpicSlots detail={detail} plan={data.plan} />
-                {indexPath && indexPath !== epic.id ? (
-                  <PrototypeNote className="mt-2.5">
-                    The index&apos;s own <span className="font-bold">design_doc</span> field reads{" "}
-                    {indexPath}, and this board resolved {epic.id} instead. The field compares
-                    the design id against the plan slug, and this design&apos;s slug is{" "}
-                    {data.plan.slug}. The document on disk is the one this board shows.
-                  </PrototypeNote>
-                ) : null}
-              </div>
+                <div>
+                  <SectionLabel icon={Layers}>
+                    Slices under {epic.epic_id}
+                    <span className="ml-1 text-ink-faint normal-case">
+                      {slices.length === 0
+                        ? "none resolve here"
+                        : `${slices.length} selectable`}
+                    </span>
+                  </SectionLabel>
+                  {slices.length === 0 ? (
+                    <Unavailable
+                      reason="No slice in the index resolves to this epic."
+                      detail={`joins.slice_to_epic holds ${Object.keys(data.joins.slice_to_epic).length} entries across the whole index, and none of them names ${epic.id}.`}
+                    />
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      {slices.map((slice) => (
+                        <SliceButton
+                          key={slice.id}
+                          slice={slice}
+                          epicId={epic.epic_id}
+                          selected={selectedSliceId === slice.id}
+                          onSelect={() => onSelectSlice(slice.id)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-              <div>
-                <SectionLabel icon={Layers}>
-                  Slices under {epic.epic_id}
-                  <span className="ml-1 text-ink-faint normal-case">
-                    {slices.length === 0
-                      ? "none resolve here"
-                      : `${slices.length} selectable`}
-                  </span>
-                </SectionLabel>
-                {slices.length === 0 ? (
-                  <Unavailable
-                    reason="No slice in the index resolves to this epic."
-                    detail={`joins.slice_to_epic holds ${Object.keys(data.joins.slice_to_epic).length} entries across the whole index, and none of them names ${epic.id}.`}
-                  />
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    {slices.map((slice) => (
-                      <SliceButton
-                        key={slice.id}
-                        slice={slice}
-                        epicId={epic.epic_id}
-                        selected={selectedSliceId === slice.id}
-                        onSelect={() => onSelectSlice(slice.id)}
-                      />
-                    ))}
-                  </div>
-                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  {doc ? (
+                    <TextButton
+                      icon={FileText}
+                      onClick={onSelectEpic}
+                      title="Select this epic and read its design document in the Intent tile."
+                    >
+                      Read the design document in the Intent tile
+                    </TextButton>
+                  ) : null}
+                  {pullRequest ? (
+                    <Chip icon={GitMerge}>
+                      PR {pullRequest.id} · {pullRequest.state}
+                      {pullRequest.commit ? ` · ${pullRequest.commit}` : ""}
+                      {pullRequest.date ? ` · ${pullRequest.date}` : ""}
+                    </Chip>
+                  ) : null}
+                </div>
               </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                {doc ? (
-                  <TextButton
-                    icon={FileText}
-                    onClick={onSelectEpic}
-                    title="Select this epic and read its design document in the Intent tile."
-                  >
-                    Read the design document in the Intent tile
-                  </TextButton>
-                ) : null}
-                {pullRequest ? (
-                  <Chip icon={GitMerge}>
-                    PR {pullRequest.id} · {pullRequest.state}
-                    {pullRequest.commit ? ` · ${pullRequest.commit}` : ""}
-                    {pullRequest.date ? ` · ${pullRequest.date}` : ""}
-                  </Chip>
-                ) : null}
-              </div>
-            </div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
-    </article>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </article>
+    </TiltCard>
   );
 }
 

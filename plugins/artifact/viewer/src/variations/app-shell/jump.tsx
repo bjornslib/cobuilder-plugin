@@ -19,7 +19,8 @@
  * chose is left exactly where it was.
  *
  * The offset subtracts the bar's own height, so a target heading lands under the
- * bar rather than behind it.
+ * bar rather than behind it. `topOffset` adds any sticky chrome that sits above the
+ * bar in the same band, which today is the reading-progress strip.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -97,6 +98,14 @@ export function useJumpTargets(paneId: string, keys: readonly unknown[]): JumpTa
 export interface JumpBarProps {
   paneId: string;
   targets: JumpTarget[];
+  /**
+   * Pixels of sticky chrome above this bar inside the same band.
+   *
+   * The bar measures itself and cannot see a sibling, so the caller states it. The
+   * reading-progress strip is the one case today, and without this number a
+   * jumped-to heading would land under the strip's own height.
+   */
+  topOffset?: number;
 }
 
 /**
@@ -106,7 +115,7 @@ export interface JumpBarProps {
  * openable in a new tab. The press is intercepted, because a hash write would move
  * the document and the document must not move.
  */
-export function JumpBar({ paneId, targets }: JumpBarProps) {
+export function JumpBar({ paneId, targets, topOffset = 0 }: JumpBarProps) {
   const reduce = useReducedMotion() ?? false;
   const barRef = useRef<HTMLElement>(null);
 
@@ -116,7 +125,7 @@ export function JumpBar({ paneId, targets }: JumpBarProps) {
       const pane = document.getElementById(paneId);
       const target = document.getElementById(id);
       if (!pane || !target) return;
-      const offset = barRef.current?.offsetHeight ?? 0;
+      const offset = (barRef.current?.offsetHeight ?? 0) + topOffset;
       const delta = target.getBoundingClientRect().top - pane.getBoundingClientRect().top - offset;
       pane.scrollTo({
         /* `top` alone. The reader's horizontal offset is theirs and it stays. */
@@ -127,7 +136,7 @@ export function JumpBar({ paneId, targets }: JumpBarProps) {
       target.setAttribute("tabindex", "-1");
       target.focus({ preventScroll: true });
     },
-    [paneId, reduce],
+    [paneId, reduce, topOffset],
   );
 
   /*

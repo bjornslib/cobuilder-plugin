@@ -1,6 +1,6 @@
 # Work board: Interaction Design Specification
 
-**Version:** 2.2
+**Version:** 2.3
 **Date:** 2026-09-21
 **Author:** design session with bjornslib
 **Product document:** `01-product.md` (not yet written. The product intent currently lives in `docs/architecture/designs/cobuilder-viewer/goal.json`.)
@@ -28,6 +28,13 @@ the ADR sheet, and every control that navigates becomes a SmoothUI
 The Architecture level reorders itself around what a reader arrives for. The
 section-link bar sits at the top of the pane. Sections 2.1, 2.2, 3.2, 3.3, 4.1,
 5.1, 6.1, 6.4, 6.5, 6.8, 8.1, 9.3, 10, 11.1, 11.2, and 11.3 carry the changes.
+
+Version 2.3 applies the approved Material 3 design scheme to the shell. The
+ground moves from a cool grey to a pale teal, and every heading takes a band.
+The three heading levels stay apart. No hover state may fill with the heading
+colour, and the engineer set that rule in one sentence. Three surfaces take a
+tilt, and no reading surface does. A reading-progress strip joins the pane's
+top edge. Sections 3.2, 4.2, 6.1, 8.3, and 11.3 carry the changes.
 
 ---
 
@@ -84,7 +91,8 @@ The shell has three fixed regions and one scrolling region.
 ┌──────────────────────────────────────────────────────────────────┐
 │ TOP BAR (fixed)   [ work item ] [ status ] [ search ] [ theme ]  │
 ├────────────────────┬─────────────────────────────────────────────┤
-│ LEFT NAV (fixed)   │  SECTION LINKS (sticky, pane's top edge)     │
+│ LEFT NAV (fixed)   │  READING PROGRESS (sticky, pane's top edge)  │
+│                    │  SECTION LINKS (sticky, under the progress)  │
 │                    │  [ top line: branch · epics · supersedes ]   │
 │ THE WORK           │  SCROLL PANE (the only scrolling region)     │
 │   Intent           │                                              │
@@ -100,10 +108,10 @@ The shell has three fixed regions and one scrolling region.
 └────────────────────┴─────────────────────────────────────────────┘
 ```
 
-**The section links are not a fourth fixed region.** They are the first child
-of the scroll pane and they are `sticky`, so the pane keeps the only scroll.
-A link moves the pane to a panel on the page, and it never moves the window.
-Section 11.3 states why the window cannot move.
+**The section links are not a fourth fixed region.** They are `sticky` children
+of the scroll pane, so the pane keeps the only scroll. A link moves the pane to a
+panel on the page, and it never moves the window. Section 11.3 states why the
+window cannot move.
 
 ```
 viewer
@@ -271,6 +279,96 @@ holds none of them is absent.
 
 ### 3.2 Component States
 
+#### Surface palette
+
+The ground moved from a cool grey to a pale teal on 2026-09-21, and the approved
+architecture concept made the change. The engineer's reason is that the page then
+reads as a colour rather than as the absence of one.
+
+| Token | Value | Holds |
+|---|---|---|
+| `--ground` | `#e9f2f3` | the page behind the cards |
+| `--surface` | `#ffffff` | a card. It stays white and is never tinted with the ground |
+| `--surface-2` | `#f4fafb` | the first container step, for a panel's inner block |
+| `--surface-3` | `#dfecee` | the second container step, for a hover on a container |
+| `--line` | `#cfe0e2` | a card's border |
+| `--line-soft` | `#e4eff1` | a rule inside a card |
+
+The two container steps and the two hairlines carry the same teal as the ground,
+so the hierarchy a reader reads from them survives the move. The dark theme picks
+its own steps rather than reusing these, and its ground keeps the same teal.
+
+#### Heading bands
+
+Every heading in the shell carries a background, so a heading is a solid object
+rather than a line of larger type. Three levels exist, and each level takes its
+own treatment. The three stay apart on purpose. One treatment for all of them
+would turn the page into a wall of teal.
+
+| Level | Component | Treatment |
+|---|---|---|
+| 1 | the section heading, the page's own `h1` | a solid `--band` fill, `--band-ink` text, a 16 px radius, and padding of 22 px by 26 px. It runs the pane's full width, above the panels |
+| 2 | every panel heading, the `Panel` component's title row | a solid `--band` fill, `--band-ink` text and icon, a 10 px radius. It sits inset inside its card, so the card's own border and padding show around it |
+| 3 | a sub-heading: the `SubHead` component's `h3`, and the target name on a boundary rule card | a `--tint` bar, `--tint-ink` text, a 6 px radius, and `inline-block`, so the bar hugs the text |
+
+| Token | Value | Holds |
+|---|---|---|
+| `--band` | `#006572` | the fill of levels 1 and 2 |
+| `--band-ink` | `#ffffff` | the text and the icons on that fill. It is 6.8 to 1 against `--band`, which clears WCAG AA |
+| `--tint` | `#cde7ed` | the fill of level 3 |
+| `--tint-ink` | `#10353b` | the text on that fill. It is 10.2 to 1 against `--tint` |
+
+An absent panel takes the same band as a present one. The heading level belongs
+to the panel, so a panel that states an absence still sits at that level.
+
+The count beside a panel heading reads `--band-ink` at 75 percent. The chevron
+reads `--band-ink` at 80 percent.
+
+**No hover, focus, selected, or active state fills with `--band`.** The engineer
+set this rule on 2026-09-21, and the sentence is theirs: "Only the hover-over
+colour must not be the same as the heading colour." A control that turns the
+heading colour on hover reads as a heading, and the reader then cannot tell a
+heading from a thing they can press. Every hover in the shell stays in the light
+tint family instead: `--surface-2`, `--surface-3`, `--accent-wash`, and `--tint`.
+
+A control that already sits on a band cannot take a fill at all. A white wash
+over `--band` mixes back to a colour close to `--band` itself. Such a control
+takes a 1 px `--band-ink` ring at 35 percent instead, and it brightens its own
+ink. The panel disclosure is the one case today.
+
+#### Tilt card
+
+Three surfaces carry a tilt: a boundary rule card, a design card on the Work
+board, and an epic card in Build. A tilt belongs to an object a reader picks up
+with the pointer.
+
+**A tilt never belongs to a reading surface.** The striped Problem and Solution
+cards, the decision rows, the diagrams panel, the record sheet, and every block
+of prose a reader reads in place take no tilt. A plane that moves under the
+pointer makes text harder to read, and that is the opposite of what the surface
+is for.
+
+| State | Visual treatment | Initial | Timer arming |
+|---|---|---|---|
+| Default | the card at rest, at its own scale | Yes | Not applicable |
+| Hover | the card follows the pointer, up to a 12 degree rotation on each axis, and rises to 1.03 of its scale | No | Not applicable |
+| Focus-visible | the card takes the same tilt at 35 percent of its range, so a keyboard reader sees the object move | No | Not applicable |
+| Pressed | the card keeps its pointer tilt. The press belongs to the control inside it | No | Held while the pointer is down |
+| Selected | not applicable. A tilt marks an object, not a selection | No | Not applicable |
+| Disabled | not applicable | No | Not applicable |
+| Loading | not applicable | No | Not applicable |
+| Error | not applicable | No | Not applicable |
+| Empty | not applicable | No | Not applicable |
+| Transient | the card returns to rest when the pointer leaves, over the component's own 0.25 s spring | No | Ends when the card settles |
+
+The tilt is the tilt-without-glare variant. The component holds a `glare`
+property, and it renders its radial glare overlay only when that property is
+true. The shell passes `false` at every call site, so the overlay never exists.
+A pale overlay would wash out the card's own text on a light ground.
+
+The tilt respects `prefers-reduced-motion: reduce`. The component attaches no
+pointer handler under that setting, so the card never moves.
+
 #### Top bar
 
 | State | Visual treatment | Initial | Timer arming |
@@ -402,10 +500,10 @@ and the count stay visible, so the closed row says what the panel holds.
 
 | State | Visual treatment | Initial | Timer arming |
 |---|---|---|---|
-| Default | the heading row, with the count and a chevron pointing down | Yes, for Assessment, Risks, and Unknowns | Not applicable |
-| Hover | the heading text darkens toward the accent ink | No | Not applicable |
-| Focus-visible | 2 px ring at a 2 px offset | No | Not applicable |
-| Pressed | the heading text darkens further | No | Held while the pointer is down |
+| Default | the band heading row, with the count and a chevron pointing down | Yes, for Assessment, Risks, and Unknowns | Not applicable |
+| Hover | a 1 px `--band-ink` ring at 35 percent, and the chevron brightens to full `--band-ink`. No fill, because the row already carries the band | No | Not applicable |
+| Focus-visible | a 2 px `--band-ink` ring at a 2 px offset. The teal ring is 1.4 to 1 on the band, so it would not read there | No | Not applicable |
+| Pressed | the ring holds | No | Held while the pointer is down |
 | Selected | not applicable. A disclosure is not a destination | No | Not applicable |
 | Disabled | not applicable. An absent panel renders open and carries no disclosure | No | Not applicable |
 | Loading | not applicable. The panel renders from the record | No | Not applicable |
@@ -554,6 +652,12 @@ Every duration in section 4.1 names a token from this table. Under
 `--dur-highlight`, which keeps its 1200 ms because it marks a location rather
 than moving anything.
 
+The tilt card's return to rest is the one duration outside this table. The
+component ships its own 0.25 s spring with a bounce of 0.1, and the shell does
+not restate it. Section 3.2's tilt card table states it, and section 4.1 holds
+no row for it, because a pointer-tracked transform is an animation rather than a
+state change. The hover tints are absent from section 4.1 for the same reason.
+
 ---
 
 ## 5. Interaction Flows
@@ -618,12 +722,19 @@ item states that a branch exists with no pull request recorded against it.
 Three fixed regions and one scroll pane. The top bar and the rail hold their
 position at every scroll offset. Only the scroll pane scrolls.
 
-Two strips sit at the top of the pane, and neither is a fourth fixed region.
+Three strips sit at the top of the pane, and none is a fourth fixed region. The
+reading-progress strip and the section-link bar share one sticky band, and the
+bar's own band sits directly under it.
 
-The **section-link bar** is the pane's first child and it is `sticky`. It holds
-one anchor per panel the page rendered, in document order. The bar reads the
-panels rather than a list of its own. A panel a section gated away therefore
-gains no link. A panel that only renders when its record exists gains one.
+The **reading-progress strip** reports the pane's own offset as one 4 px bar. It
+spans the pane's full width. It measures the pane element and never the window,
+because the document cannot scroll. Section 11.3 states why.
+
+The **section-link bar** sits under the strip in the same band, and it is
+`sticky`. It holds one anchor per panel the page rendered, in document order.
+The bar reads the panels rather than a list of its own. A panel a section gated
+away therefore gains no link. A panel that only renders when its record exists
+gains one.
 
 The **top line** sits under the bar. It holds the work item's branch, its epic
 count, and what it supersedes, on one line. Section 2.2 states why it exists
@@ -777,6 +888,11 @@ Every state carries a word. No state relies on colour alone. The status badge an
 the state ladders pair a colour with a shape marker, so the rail and the badges
 survive greyscale.
 
+A heading band carries text, so its two values hold a contrast ratio rather than
+a look. White on `--band` is 6.8 to 1, and `--tint-ink` on `--tint` is 10.2 to 1.
+Both clear WCAG AA for body text. The focus ring is `--band-ink` on a band,
+because the teal ring is 1.4 to 1 there.
+
 ### 8.4 Focus Management
 
 Choosing a section moves focus to the section heading. Opening an epic leaves
@@ -881,6 +997,7 @@ An icon is never the sole hit target. Every icon sits inside a target at least
 | A diagram panel | itself, both axes | a rendered diagram is often wider than the pane |
 | A tooltip | none | it is transient and never scrolls |
 | The section-link bar | none. It is `sticky` inside the pane, so it rides the pane's own scroll and adds no region | it holds one row of links, and it never scrolls anything |
+| The reading-progress strip | none. It is the first child of the same sticky band, so it rides the pane's own scroll and adds no region | it reports the pane's own offset and holds one 4 px strip |
 
 The document never scrolls, so `html` and `body` carry no overflow. Every wheel
 event not consumed by a nested region scrolls the scroll pane. Where two regions
@@ -892,6 +1009,13 @@ scroll at all, so a hash write or a `window.scrollTo` would land nowhere. The
 link intercepts the press, measures the target against the pane, and sets the
 pane's own offset. Under `prefers-reduced-motion: reduce` the pane arrives in
 one frame instead of animating.
+
+**The reading-progress strip measures the pane, not the window.** The document
+cannot scroll, so a window-scoped progress bar would read zero at every position.
+The strip takes the pane's own element, and it reports that element's offset. It
+spans the pane's full width, and it sits above the section-link bar in the same
+sticky band. A jump adds the strip's 4 px to the bar's own height, so a
+jumped-to heading lands below both.
 
 **Four rules make "no scroll" safe rather than a way to hide content.** A layout
 that fills the viewport and hides its overflow will clip whatever does not fit,

@@ -37,6 +37,8 @@
 import { AlertOctagon, Ban, BookMarked, Boxes, CircleHelp, Compass, Network, Scale, ScrollText, ShieldAlert, Target } from "lucide-react";
 
 import BasicAccordion from "@/components/smoothui/basic-accordion";
+import TiltCard from "@/components/smoothui/tilt-card";
+import { cn } from "@/lib/utils";
 
 import type { AdrEntity } from "@/data/types";
 
@@ -58,6 +60,7 @@ import {
   StateBadge,
   SubHead,
   TextList,
+  TINT_BAR,
   toneForSeverity,
   toneForStage,
   toneForVerdict,
@@ -458,41 +461,50 @@ export function ArchitecturePanel({
       >
         {work.boundaryRules.length > 0 ? (
           <div className="grid min-w-0 grid-cols-1 gap-2.5 @2xl:grid-cols-2 @5xl:grid-cols-3">
+            {/*
+              SIXTEEN SMALL TILES, AND THEY ARE THE ONE BEST FIT FOR A TILT. A reader
+              picks one up with the pointer, and the two lines it holds do not need to
+              be read in a fixed plane. `glare={false}` is the tilt-without-glare
+              variant: the component renders its glare overlay only when `glare` is
+              true, so the prop is the whole difference.
+            */}
             {work.boundaryRules.map((rule) => (
-              <div
-                key={rule.id}
-                className="flex min-w-0 flex-col gap-2 rounded-lg border border-line-soft bg-surface-2/50 px-3.5 py-2.5"
-              >
-                <span className="flex min-w-0 flex-wrap items-center gap-2">
-                  <Chip tone="warn">{rule.kind}</Chip>
-                  <span className="min-w-0 font-mono text-[13.5px] break-words">
-                    {rule.target}
+              <TiltCard key={rule.id} className="h-full" glare={false}>
+                <div className="flex h-full min-w-0 flex-col gap-2 rounded-lg border border-line-soft bg-surface-2/50 px-3.5 py-2.5 transition-colors duration-150 ease-house hover:bg-surface-3">
+                  <span className="flex min-w-0 flex-wrap items-center gap-2">
+                    <Chip tone="warn">{rule.kind}</Chip>
+                    {/* The card's own sub-heading, so it takes the level-three bar. */}
+                    <span
+                      className={cn("min-w-0 font-mono text-[13.5px] break-words", TINT_BAR)}
+                    >
+                      {rule.target}
+                    </span>
                   </span>
-                </span>
-                {rule.why ? (
-                  <p className="m-0 min-w-0 font-serif text-[15.5px] leading-[1.5] text-ink-dim">
-                    {excerpt(rule.why, 180)}
-                  </p>
-                ) : null}
-                <ActionButton
-                  icon={AlertOctagon}
-                  onClick={() =>
-                    openSheet({
-                      kind: "boundary",
-                      id: rule.id,
-                      kindLabel: rule.kind,
-                      target: rule.target,
-                      context: rule.context,
-                      contextEntity: work.contexts.find((c) => c.id === rule.context),
-                      detail: rule.detail,
-                    })
-                  }
-                  ariaLabel={`Open the whole boundary rule ${rule.id}`}
-                  className="mt-auto"
-                >
-                  Open the whole rule
-                </ActionButton>
-              </div>
+                  {rule.why ? (
+                    <p className="m-0 min-w-0 font-serif text-[15.5px] leading-[1.5] text-ink-dim">
+                      {excerpt(rule.why, 180)}
+                    </p>
+                  ) : null}
+                  <ActionButton
+                    icon={AlertOctagon}
+                    onClick={() =>
+                      openSheet({
+                        kind: "boundary",
+                        id: rule.id,
+                        kindLabel: rule.kind,
+                        target: rule.target,
+                        context: rule.context,
+                        contextEntity: work.contexts.find((c) => c.id === rule.context),
+                        detail: rule.detail,
+                      })
+                    }
+                    ariaLabel={`Open the whole boundary rule ${rule.id}`}
+                    className="mt-auto"
+                  >
+                    Open the whole rule
+                  </ActionButton>
+                </div>
+              </TiltCard>
             ))}
           </div>
         ) : (

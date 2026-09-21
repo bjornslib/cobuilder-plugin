@@ -125,7 +125,18 @@ export function TopBar({
         already on screen, and the sidebar's own edge handle and `Cmd` or `Ctrl` plus
         `B` collapse it from there.
       */}
-      <SidebarTrigger className="size-11 shrink-0 cursor-pointer md:hidden" />
+      {/*
+        `variant="ghost"` is not decoration. Without it the trigger takes the
+        Button default, whose hover is `hover:bg-primary/80` — a deep teal. That
+        breaks the rule that no hover may fill with the heading colour, and this
+        trigger is reachable below 768 px. Ghost hovers to `--muted`, a light
+        tint. It is also the right M3 variant: an icon button is standard, not
+        filled.
+      */}
+      <SidebarTrigger
+        variant="ghost"
+        className="size-11 shrink-0 cursor-pointer md:hidden"
+      />
 
       <PopoverPrimitive.Root open={open} onOpenChange={setOpen}>
         <PopoverPrimitive.Trigger asChild>

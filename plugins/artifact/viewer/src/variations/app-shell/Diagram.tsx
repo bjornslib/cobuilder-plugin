@@ -116,8 +116,13 @@ export function Diagram({
             onClick={draw}
             disabled={render.state === "rendering"}
             className={cn(
+              /*
+               * The hover stays in the light tint family. It used to fill with
+               * `--primary`, which is a deep teal and reads as the heading colour.
+               * See the heading rule in `index.css`.
+               */
               "inline-flex h-11 cursor-pointer items-center gap-2 rounded-lg border border-primary bg-accent-wash px-3.5 font-mono text-[12.5px] font-bold text-accent-deep",
-              "transition-colors duration-150 ease-house hover:bg-primary hover:text-primary-foreground",
+              "transition-colors duration-150 ease-house hover:border-accent-deep hover:bg-tint",
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
               "disabled:cursor-not-allowed disabled:opacity-60",
             )}

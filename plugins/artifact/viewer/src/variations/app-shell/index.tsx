@@ -44,12 +44,13 @@
  * is. When the arrangement is chosen, the shell becomes the Work surface.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
 import { Database, GitBranch, RotateCcw } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
+import ScrollProgress from "@/components/smoothui/scroll-progress";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BUNDLE_DATA_URL, entitiesOf, joinsOf } from "@/data/bundle";
@@ -81,6 +82,9 @@ import {
 
 const PANE_ID = "work-scroll-pane";
 const HEADING_ID = "work-section-heading";
+
+/** The reading-progress strip's height, in pixels. 4 px, the strip's own default. */
+const PROGRESS_PX = 4;
 
 /**
  * The rail's two widths, in the tokens section 9.1 and 9.2 give them.
@@ -146,6 +150,13 @@ export default function AppShell() {
     shipped: true,
   });
   const [sheet, setSheet] = useState<SheetSubject | null>(null);
+
+  /*
+   * The scroll pane, as an element. The reading-progress strip measures this ref and
+   * never the window, because the document cannot scroll at all. A window-scoped
+   * progress bar on this page would sit at zero forever.
+   */
+  const paneRef = useRef<HTMLElement | null>(null);
 
   useDocumentNoScroll();
 
@@ -354,6 +365,7 @@ export default function AppShell() {
           {/* The only scrolling region. Both axes belong to this pane. */}
           <SidebarInset
             id={PANE_ID}
+            ref={paneRef}
             tabIndex={-1}
             aria-label={`${work?.design.name ?? "No work item"}, ${section}`}
             className="min-h-0 min-w-0 flex-1 overflow-auto overscroll-contain bg-ground outline-none"
@@ -375,11 +387,33 @@ export default function AppShell() {
             ) : (
               <>
                 {/*
-                  The section-link bar. It is not a fourth fixed region: it is the
-                  first child of the pane and it is `sticky`, so the pane keeps the
-                  only scroll, per section 11.3.
+                  The reading-progress strip, then the section-link bar, as one
+                  sticky band at the pane's top edge. Neither is a fourth fixed
+                  region: they are the pane's first children and they are `sticky`,
+                  so the pane keeps the only scroll, per section 11.3.
+
+                  THE STRIP MEASURES THE PANE, NOT THE WINDOW. `useDocumentNoScroll`
+                  guarantees the document cannot scroll, so a window-scoped progress
+                  bar would read zero at every position. The component takes the
+                  container as a ref, and this ref is the pane.
+
+                  The band carries the ground fill, so content passing under the
+                  strip does not show through it, and the bar adds `PROGRESS_PX` to
+                  the jump offset so a jumped-to heading lands below both.
                 */}
-                <JumpBar paneId={PANE_ID} targets={jumpTargets} />
+                <div
+                  className="sticky top-0 min-w-0 bg-ground"
+                  style={{ zIndex: "var(--layer-raised)" }}
+                >
+                  <ScrollProgress
+                    container={paneRef}
+                    variant="bar"
+                    position="inline"
+                    thickness={PROGRESS_PX}
+                    color="var(--band)"
+                  />
+                  <JumpBar paneId={PANE_ID} targets={jumpTargets} topOffset={PROGRESS_PX} />
+                </div>
 
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div

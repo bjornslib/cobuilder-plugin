@@ -56,6 +56,46 @@ import { JUMP_ATTR, panelId } from "./jump";
 
 export type Tone = "neutral" | "accent" | "good" | "warn" | "danger";
 
+/* ----------------------------------------------------------------- headings */
+
+/**
+ * The three heading levels, taken from the approved architecture concept.
+ *
+ * `docs/plans/cobuilder-viewer/design-concepts/architecture.html` ends with a style
+ * block that gives every heading a background, and it says why: the page title and
+ * the panel titles take a solid deep-teal band with white text, and a sub-heading
+ * takes a lighter tinted bar. The three levels then stay apart instead of becoming
+ * one wall of teal.
+ *
+ * Two rules come with the levels, and both are the engineer's.
+ *
+ *   A panel heading is inset inside its own card. A band that ran to the card's
+ *   edge would read as the card's lid rather than as a heading, and the card's own
+ *   padding is what keeps the two apart. So the band carries a margin, and the
+ *   card keeps its border and its radius around it.
+ *
+ *   NO HOVER, FOCUS, SELECTED, OR ACTIVE STATE FILLS WITH `--band`. A control that
+ *   turns the heading colour on hover reads as a heading. Hover stays in the light
+ *   tint family, which is `--surface-2`, `--surface-3`, `--accent-wash`, and
+ *   `--tint`. A control that already sits on a band takes a `--band-ink` ring and
+ *   brightens rather than taking a fill, because a white wash over the band mixes
+ *   straight back to a colour close to the band itself.
+ *
+ * The radii are the concept's own numbers, written as literals on purpose: 16 px
+ * for the section banner, 10 px for a panel heading, 6 px for a sub-heading bar.
+ * They do not follow `--radius`, because the three have to stay apart at every
+ * radius setting.
+ */
+export const BAND_SECTION = "rounded-[16px] bg-band text-band-ink";
+
+export const BAND_PANEL = "rounded-[10px] bg-band text-band-ink";
+
+/** The level-three bar. `inline-block`, so the bar hugs the text and not the row. */
+export const TINT_BAR = "inline-block rounded-[6px] bg-tint px-2.5 py-0.5 text-tint-ink";
+
+/** The focus ring for a control that sits on a band. The teal ring is 1.4 to 1 there. */
+export const BAND_FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-band-ink";
+
 /**
  * The two attributes that make a panel a jump target.
  *
@@ -294,21 +334,21 @@ export function Panel({
   const heading = (
     <span className="flex min-w-0 flex-1 items-center gap-x-3">
       {Icon ? (
-        <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-card text-accent-deep">
+        <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-band-ink/20 text-band-ink">
           <Icon className="size-4" aria-hidden="true" />
         </span>
       ) : null}
-      <h2 className="m-0 min-w-0 font-mono text-[15px] font-bold tracking-[-0.01em]">
+      <h2 className="m-0 min-w-0 font-mono text-[15px] font-bold tracking-[-0.01em] text-band-ink">
         {title}
       </h2>
       {typeof count === "number" ? (
-        <span className="shrink-0 font-mono text-[13px] text-ink-faint tabular-nums">
+        <span className="shrink-0 font-mono text-[13px] text-band-ink/75 tabular-nums">
           {count}
         </span>
       ) : null}
       {closable ? (
         <motion.span
-          className="shrink-0 text-ink-faint"
+          className="shrink-0 text-band-ink/80 group-hover/disclose:text-band-ink"
           animate={{ rotate: shown ? 180 : 0 }}
           transition={{ duration: reduce ? 0 : 0.2 }}
         >
@@ -329,7 +369,19 @@ export function Panel({
       )}
       aria-label={title}
     >
-      <header className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-line-soft bg-surface-2 px-4 py-2.5">
+      {/*
+        The heading row is a band, inset inside the card on all four sides so the
+        card's own padding and border stay visible around it. The disclosure takes a
+        ring and brightens its chevron on hover rather than taking a fill: a white
+        wash over the band mixes back to a colour close to the band itself, so it
+        would break the rule that no hover state fills with the heading colour.
+      */}
+      <header
+        className={cn(
+          "mx-3.5 mt-3.5 mb-4 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5",
+          BAND_PANEL,
+        )}
+      >
         {closable ? (
           <button
             type="button"
@@ -337,9 +389,9 @@ export function Panel({
             aria-expanded={shown}
             aria-controls={bodyId}
             className={cn(
-              "flex min-h-9 min-w-0 flex-1 cursor-pointer items-center rounded-md",
-              "transition-colors duration-150 ease-house hover:text-accent-deep",
-              "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+              "group/disclose flex min-h-9 min-w-0 flex-1 cursor-pointer items-center rounded-md",
+              "transition-shadow duration-150 ease-house hover:ring-1 hover:ring-band-ink/35",
+              BAND_FOCUS,
             )}
           >
             {heading}
@@ -462,7 +514,13 @@ export function TextList({
   );
 }
 
-/** A heading inside a panel, with its count beside it. */
+/**
+ * The level-three heading: a bar inside a panel, with its count beside it.
+ *
+ * `self-start` is load-bearing. Every call site is a flex column, and a flex child
+ * stretches across the column unless it says otherwise, so the bar would run the full
+ * width of the panel and stop hugging its own text.
+ */
 export function SubHead({
   children,
   count,
@@ -475,13 +533,14 @@ export function SubHead({
   return (
     <h3
       className={cn(
-        "m-0 flex min-w-0 items-baseline gap-2 font-mono text-[14px] font-bold tracking-[0.02em] text-ink-mid",
+        "m-0 inline-flex min-w-0 items-baseline gap-2 self-start font-mono text-[14px] font-bold tracking-[0.02em]",
+        TINT_BAR,
         className,
       )}
     >
       <span className="min-w-0">{children}</span>
       {typeof count === "number" ? (
-        <span className="font-mono text-[13px] text-ink-faint tabular-nums">{count}</span>
+        <span className="font-mono text-[13px] text-tint-ink/70 tabular-nums">{count}</span>
       ) : null}
     </h3>
   );
@@ -773,7 +832,13 @@ export function Tile({
   );
 }
 
-/** The heading of a scroll-pane section. Focus moves here when the section changes. */
+/**
+ * The heading of a scroll-pane section. Focus moves here when the section changes.
+ *
+ * This is the top of the three levels. It is a full-width banner above the panels,
+ * with the concept's own generous padding, so the page announces itself before any
+ * panel does.
+ */
 export function SectionHeading({
   title,
   lead,
@@ -784,15 +849,15 @@ export function SectionHeading({
   id: string;
 }) {
   return (
-    <header className="mb-5">
+    <header className={cn("mb-5 px-[26px] py-[22px]", BAND_SECTION)}>
       <h1
         id={id}
         tabIndex={-1}
-        className="m-0 font-mono text-[24px] leading-tight font-bold tracking-[-0.02em] outline-none"
+        className="m-0 font-mono text-[24px] leading-tight font-bold tracking-[-0.02em] text-band-ink outline-none"
       >
         {title}
       </h1>
-      <p className="mt-1.5 mb-0 max-w-[92ch] font-serif text-[16px] leading-[1.55] text-ink-mid">
+      <p className="mt-1.5 mb-0 max-w-[92ch] font-serif text-[16px] leading-[1.55] text-band-ink/85">
         {lead}
       </p>
     </header>
