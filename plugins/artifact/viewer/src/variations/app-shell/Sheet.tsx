@@ -112,7 +112,6 @@ export function RecordSheet({ subject, onOpenChange }: RecordSheetProps) {
       {subject === null ? null : (
         <SheetContent
           side="right"
-          style={{ zIndex: "var(--layer-modal)" }}
           /*
            * The width override carries the same `data-[side=right]` variant the registry
            * item uses. Without the matching variant the registry's `w-3/4` wins on
@@ -128,7 +127,7 @@ export function RecordSheet({ subject, onOpenChange }: RecordSheetProps) {
           */}
           <SheetHeader
             className="shrink-0 gap-1.5 border-b border-line bg-surface-2 p-4 pr-14"
-            style={{ position: "relative", zIndex: "var(--layer-modal)" }}
+            style={{ position: "relative" }}
           >
             <span className="flex flex-wrap items-center gap-2">
               <RecordIcon kind={subject.kind} />

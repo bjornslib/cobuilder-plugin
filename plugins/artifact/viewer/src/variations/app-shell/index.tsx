@@ -114,11 +114,9 @@ function shellTokens(reduce: boolean): CSSProperties {
     "--dur-highlight": "1200ms",
     "--ease-out": "cubic-bezier(0.22, 0.75, 0.3, 1)",
     "--ease-in-out": "cubic-bezier(0.4, 0, 0.2, 1)",
-    "--layer-base": "0",
-    "--layer-raised": "1",
-    "--layer-fixed": "2",
-    "--layer-panel": "3",
-    "--layer-modal": "4",
+    // The layering scale lives in src/index.css, on the root. Portalled
+    // content such as the Sheet and the tooltip reads it from outside the
+    // shell, where a token scoped to this element would be undefined.
   } as CSSProperties;
 }
 

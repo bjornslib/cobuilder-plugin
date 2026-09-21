@@ -56,6 +56,18 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
+  /*
+   * The three base tokens. These were missing, and the omission was silent:
+   * `bg-ground`, `bg-surface` and `text-ink` generate no CSS unless the token is
+   * registered here, and the browser applies nothing rather than reporting an
+   * error. Twenty-eight call sites were affected, including the shell's own
+   * frame, its scroll pane, the comparison frame, and the jump bar. The jump bar
+   * is what made it visible: it asked for `bg-ground` and rendered transparent.
+   */
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+
   /* House extras. A bento variation reads these by name. */
   --color-ink-dim: var(--ink-dim);
   --color-ink-faint: var(--ink-faint);
@@ -167,6 +179,23 @@
   --sidebar-accent-foreground: var(--accent-deep);
   --sidebar-border: var(--line);
   --sidebar-ring: var(--teal);
+
+  /*
+   * The layering scale. It lives here, on the root, rather than on the shell's
+   * own element, because two things read it from outside the shell: the Sheet
+   * and the tooltip. Both portal to `document.body`. A token scoped to the shell
+   * is undefined out there, and an undefined value in an inline `z-index` beats
+   * the class that would otherwise order the element.
+   *
+   * The values are wide enough to order portalled content against itself and
+   * against anything the shell draws. The Sheet uses the top two: 40 for its
+   * overlay, 50 for its panel.
+   */
+  --layer-base: 0;
+  --layer-raised: 10;
+  --layer-fixed: 20;
+  --layer-panel: 30;
+  --layer-modal: 50;
 
   color-scheme: light;
 
