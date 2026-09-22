@@ -23,7 +23,6 @@ import {
   ClipboardCheck,
   Compass,
   FileText,
-  GitBranch,
   GitPullRequest,
   ListChecks,
   ListTree,
@@ -53,11 +52,9 @@ import {
   Panel,
   StateBadge,
   SubHead,
-  toneForEpicState,
   toneForStage,
 } from "./atoms";
 import type { TileSpan } from "./atoms";
-import { EPIC_GLOSS } from "./gloss";
 
 /* --------------------------------------------------------------------- Build */
 
@@ -148,7 +145,6 @@ function EpicDisclosure({
   if (!epic) return null;
 
   const planRow = work.record?.goal.epics?.find((row) => row.id === epic.epic_id);
-  const state = work.epicState(epic);
   const own = work.slicesByEpic.get(epic.id) ?? [];
   const design = work.epicDesigns.get(epic.id);
   const outcome = planRow?.outcome ?? epic.note ?? null;
@@ -159,26 +155,13 @@ function EpicDisclosure({
         {outcome ?? "No outcome is recorded for this epic."}
       </p>
 
-      <div className="flex min-w-0 flex-wrap items-center gap-2">
-        <StateBadge
-          word={state}
-          tone={toneForEpicState(state)}
-          gloss={EPIC_GLOSS[state] ?? "A state outside the recorded vocabulary."}
-        />
-        <Chip dashed title="This is the refined state. The epic's raw recorded state can differ.">
-          entity state {epic.state}
-        </Chip>
-        {epic.branch ? (
-          <Chip title={epic.branch}>
-            <GitBranch className="size-3.5" aria-hidden="true" />
-            {excerpt(epic.branch, 34)}
-          </Chip>
-        ) : (
-          <Chip dashed className="text-ink-faint">
-            no branch
-          </Chip>
-        )}
-      </div>
+      {/*
+        THE CARD CARRIES NO BOOKKEEPING ROW. It used to open with the refined state as a
+        pill, the epic's raw state, and its branch. The engineer removed all three: a
+        state of `no-pull-request` and a raw state of `planned` are the bundle talking to
+        itself, and the branch is one line the top bar already states for the work. What
+        is left is what the epic is: its outcome here, its slices below.
+      */}
 
       {/*
         The slices block is absent when the epic owns no slice, on the same rule sections
@@ -192,49 +175,37 @@ function EpicDisclosure({
         </div>
       ) : null}
 
-      {/* ------------------------------------------------------- Gate 4b */}
-      <div className="flex min-w-0 flex-col gap-2">
-        <SubHead>Gate 4b technical solution design</SubHead>
-        {design ? (
-          <div className="flex min-w-0 flex-col gap-2">
-            <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <Chip tone="accent">
-                <ListChecks className="size-3.5" aria-hidden="true" />
-                {design.body_md.length.toLocaleString()} characters
-              </Chip>
-              <Chip title={`This design belongs to the plan ${design.feature_slug}.`}>
-                {design.feature_slug}
-              </Chip>
-            </div>
-            <ActionButton
-              icon={ListChecks}
-              onClick={() =>
-                openSheet({
-                  kind: "epic-design",
-                  doc: design,
-                  epic,
-                })
-              }
-              ariaLabel={`Open the Gate 4b design for epic ${epic.epic_id}`}
-            >
-              Open the design
-            </ActionButton>
-          </div>
-        ) : (
-          /*
-            Two situations reach here, and the panel tells them apart rather than
-            guessing. An epic of a work whose plan directory does not exist cannot have a
-            design document, and no amount of looking will find one. An epic of a work
-            that does have a plan directory is genuinely missing its own document. The
-            first is a fact about the work, and the second is a gap in this epic.
-          */
-          <Missing>
-            {work.hasPlan
-              ? "This epic has no design document."
-              : "This work has no plan directory yet, so no epic design documents exist for it."}
-          </Missing>
-        )}
-      </div>
+      {/*
+        THE DESIGN BLOCK RENDERS ONLY WHEN A DESIGN EXISTS. It used to hold a sub-head
+        and a sentence for the case with no document, told apart by whether the work has
+        a plan directory at all. The engineer removed both sentences: a card states what
+        the epic has, and an epic with no document states nothing.
+
+        The sub-head names the document and not the gate. `Gate 4b` is a process step,
+        and the document is a technical solution design.
+
+        The two chips went as well. A character count and a plan slug are bookkeeping
+        about where the document lives, and this shell names no field path and no file it
+        read. The action is the whole of what a reader needs.
+      */}
+      {design ? (
+        <div className="flex min-w-0 flex-col gap-2">
+          <SubHead>Technical solution design</SubHead>
+          <ActionButton
+            icon={ListChecks}
+            onClick={() =>
+              openSheet({
+                kind: "epic-design",
+                doc: design,
+                epic,
+              })
+            }
+            ariaLabel={`Open the technical solution design for epic ${epic.epic_id}`}
+          >
+            Open the design
+          </ActionButton>
+        </div>
+      ) : null}
 
       <div className="flex min-w-0 items-baseline gap-3 border-t border-line-soft pt-2.5">
         <span className="font-mono text-[12px] text-ink-faint tabular-nums">
@@ -287,7 +258,6 @@ function epicRows(
 ): AccordionItem[] {
   return epics.map((epic) => {
     const planRow = work.record?.goal.epics?.find((row) => row.id === epic.epic_id);
-    const state = work.epicState(epic);
     const own = work.slicesByEpic.get(epic.id) ?? [];
     return {
       id: epic.id,
@@ -301,17 +271,16 @@ function epicRows(
           </span>
         </span>
       ),
+      /*
+        THE ROW CARRIES NO STATE PILL EITHER. It used to show the refined state beside the
+        slice count, and the refined state of every epic in this work is
+        `no-pull-request`, which is the join talking about the absence of a pull request
+        rather than about the epic. The count is the epic's own content, so it stays.
+      */
       meta: (
-        <>
-          <Chip title="How many slices this epic owns.">
-            {own.length} {own.length === 1 ? "slice" : "slices"}
-          </Chip>
-          <StateBadge
-            word={state}
-            tone={toneForEpicState(state)}
-            gloss={EPIC_GLOSS[state] ?? "A state outside the recorded vocabulary."}
-          />
-        </>
+        <Chip title="How many slices this epic owns.">
+          {own.length} {own.length === 1 ? "slice" : "slices"}
+        </Chip>
       ),
       content: (
         <EpicDisclosure

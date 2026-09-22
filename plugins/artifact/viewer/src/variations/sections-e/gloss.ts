@@ -26,16 +26,3 @@ export const VERDICT_GLOSS: Record<string, string> = {
   concerns: "The assessment found risks the design does not resolve. It is not a pass.",
   rework: "The assessment found a problem the design must answer first.",
 };
-
-/** What each refined epic state means, in one line. */
-export const EPIC_GLOSS: Record<string, string> = {
-  unstarted: "No branch and no pull request carries this epic.",
-  "no-pull-request": "A branch carries this epic, and no pull request is recorded.",
-  planned: "The epic sits in the plan. No branch has started.",
-  open: "A pull request carries this epic, and that pull request is open.",
-  completed: "The joined state reads completed.",
-  merged: "A merged pull request carries this epic.",
-  blocked: "The work stopped on a decision, a dependency, or a failed check.",
-  "in-progress": "A branch or a pull request carries the epic.",
-  "in-review": "The work is built and waits on a reviewer.",
-};

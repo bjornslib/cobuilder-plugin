@@ -383,13 +383,26 @@ function FindingList({ findings }: { findings: AssessmentFinding[] }) {
  * Decisions, Boundaries, Districts and alternatives considered.
  */
 
-/** Diagrams. Three tiles, and a press opens the drawing whole. */
+/**
+ * Diagrams. The tiles for the levels the caller names, and a press opens one whole.
+ *
+ * THE CALLER CHOOSES THE LEVELS, and the two levels of this shell choose different ones.
+ * A bundle's first diagram level is its container drawing: it names the surfaces and the
+ * people who use them, which is the question the Intent level answers. The levels after
+ * it are mechanism, and they stay in Architecture. `sections-e/index.tsx` cuts the list.
+ *
+ * The grid follows the count. A row of three columns leaves a hole when two tiles are in
+ * it, and a single tile in a three-column row is a third of the page wide.
+ */
 export function DiagramsSection({
   work,
   theme,
+  levels,
 }: {
   work: WorkItem;
   theme: Theme;
+  /** The level numbers to draw, in the order to draw them. */
+  levels: string[];
 }) {
   const sources = work.record?.diagrams ?? null;
 
@@ -398,10 +411,10 @@ export function DiagramsSection({
       title="Diagrams"
       icon={Network}
       lead="One tile per level. A press opens the drawing whole."
-      absent={work.diagramLevels.length === 0 || sources === null}
+      absent={levels.length === 0 || sources === null}
     >
-      {work.diagramLevels.length > 0 && sources ? (
-        <DiagramTiles levels={work.diagramLevels} sources={sources} theme={theme} />
+      {levels.length > 0 && sources ? (
+        <DiagramTiles levels={levels} sources={sources} theme={theme} />
       ) : (
         <Missing>No diagram level exists for this work.</Missing>
       )}

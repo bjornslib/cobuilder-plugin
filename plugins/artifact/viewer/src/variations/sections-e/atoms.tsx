@@ -149,15 +149,6 @@ export function toneForStage(stage: string): Tone {
   return "neutral";
 }
 
-/** The tone for an epic state the refined join carries. */
-export function toneForEpicState(state: string): Tone {
-  if (state === "merged" || state === "completed") return "good";
-  if (state === "open" || state === "planned") return "accent";
-  if (state === "no-pull-request" || state === "unstarted") return "neutral";
-  if (state === "blocked") return "warn";
-  return "neutral";
-}
-
 export function toneForSeverity(severity: string | undefined): Tone {
   if (severity === "high") return "danger";
   if (severity === "medium") return "warn";

@@ -174,6 +174,18 @@ function pagedSections({
 }): ReactNode[] {
   if (section === "intent") {
     return [
+      /*
+        The overview drawing leads this level. A bundle's first diagram level is its
+        container drawing: it names the surfaces and the people who use them, and that
+        answers what this work is and who it is for. The levels after it are mechanism
+        and belong to Architecture.
+      */
+      <DiagramsSection
+        key="diagrams"
+        work={work}
+        theme={theme}
+        levels={work.diagramLevels.slice(0, 1)}
+      />,
       <WhySection key="why" work={work} />,
       <DoneWhenSection key="done-when" work={work} />,
       <AbortIfSection key="abort-if" work={work} />,
@@ -192,7 +204,16 @@ function pagedSections({
 
   if (section === "architecture") {
     return [
-      <DiagramsSection key="diagrams" work={work} theme={theme} />,
+      /*
+        The mechanism drawings. The container drawing is the Intent level's, so this level
+        takes every level after the first: the build sequence and the data model.
+      */
+      <DiagramsSection
+        key="diagrams"
+        work={work}
+        theme={theme}
+        levels={work.diagramLevels.slice(1)}
+      />,
       <DecisionsSection
         key="decisions"
         work={work}

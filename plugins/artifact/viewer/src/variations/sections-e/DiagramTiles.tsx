@@ -159,6 +159,13 @@ export function DiagramTiles({
 
   return (
     <>
+      {/*
+        THE ROW KEEPS THREE COLUMNS WHATEVER THE COUNT. A tile is a fixed 200 px tall
+        window onto a drawing laid out at its own size, so a wider tile shows LESS of the
+        drawing, not more: a lone tile at the full pane width scaled this drawing to 94 %
+        and left only its title strip in view. A tile therefore keeps the width it has in
+        a row of three, and a shorter row is simply short.
+      */}
       <div className="grid min-w-0 grid-cols-1 gap-3.5 @3xl:grid-cols-3">
         {levels.map((level) => {
           const source = sources[level] ?? "";
