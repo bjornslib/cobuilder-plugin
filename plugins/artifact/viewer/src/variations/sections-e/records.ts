@@ -37,6 +37,20 @@ export interface PlanEpicRow {
   note?: string | null;
 }
 
+/**
+ * Design mode's stage-0 and stage-1 grounding, as `goal.json` records it.
+ *
+ * `challenge_stage_run` is the one field the board reads. A goal that records it false
+ * is a backlog entry: design mode stopped after stage 1, and the record says so.
+ */
+export interface MinWork {
+  derived_from?: string;
+  alternatives_explored?: number;
+  boundary_rules_checked?: boolean;
+  challenge_stage_run?: boolean;
+  note?: string;
+}
+
 export interface DesignGoal {
   name: string;
   title: string;
@@ -44,6 +58,7 @@ export interface DesignGoal {
   outcome: string;
   done_when?: string[];
   abort_if?: string[];
+  min_work?: MinWork | null;
   epics?: PlanEpicRow[];
   stage: string;
   supersedes: string[] | null;

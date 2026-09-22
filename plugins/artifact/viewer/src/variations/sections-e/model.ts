@@ -534,3 +534,14 @@ export function readRoute(): Route {
 export function routeHref(workId: string, section: SectionKey, tail?: string): string {
   return `${ROUTE_PREFIX}/${workId}/${section}${tail ? `/${tail}` : ""}`;
 }
+
+/**
+ * The board: the route that names no work item.
+ *
+ * `readRoute()` already answers this address with a null `workId`, so the board needs no
+ * field of its own in `Route`. It is the one destination in the shell that states no
+ * section, because a reader who has chosen no work item has chosen no level either.
+ */
+export function boardHref(): string {
+  return ROUTE_PREFIX;
+}

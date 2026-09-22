@@ -30,6 +30,13 @@ export interface TopBarProps {
   stage: string | null;
   supersededBy: string | null;
   ready: boolean;
+  /**
+   * True while the route names no work item, which is the board.
+   *
+   * A stage belongs to a work item, so the board carries no stage badge. The loading and
+   * failed states keep theirs, because "the index has not resolved" is true in both.
+   */
+  board: boolean;
   designs: SwitcherDesign[];
   epics: SwitcherEpic[];
   onChooseWork: (id: string) => void;
@@ -76,6 +83,7 @@ export function TopBar({
   stage,
   supersededBy,
   ready,
+  board,
   designs,
   epics,
   onChooseWork,
@@ -93,6 +101,15 @@ export function TopBar({
   useEffect(() => {
     if (workId) nameRef.current?.focus();
   }, [workId]);
+
+  /*
+   * What the control says when it holds no work item.
+   *
+   * A reader on the board has picked nothing yet, and the control is how they pick. The
+   * words state that selection rather than a missing record, so the control reads as the
+   * way in and not as a fault. Both phrases are the shell's own.
+   */
+  const emptyName = board ? "No work item selected" : "No work item";
 
   const needle = query.trim().toLowerCase();
   const shownDesigns = needle
@@ -147,7 +164,7 @@ export function TopBar({
               "transition-colors duration-150 ease-house hover:bg-surface-2",
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
             )}
-            aria-label="Change work item"
+            aria-label={board ? "Pick a work item" : "Change work item"}
           >
             <Layers className="size-4 shrink-0 text-ink-faint" aria-hidden="true" />
             <span className="flex min-w-0 flex-col">
@@ -160,7 +177,7 @@ export function TopBar({
                 tabIndex={-1}
                 className="max-w-[38ch] truncate font-mono text-[15px] font-bold outline-none"
               >
-                {workName ?? (ready ? "No work item" : "reading the index…")}
+                {workName ?? (ready ? emptyName : "reading the index…")}
               </span>
             </span>
             <ChevronDown
@@ -273,13 +290,19 @@ export function TopBar({
       </PopoverPrimitive.Root>
 
       <div className="flex min-w-0 items-center gap-2">
+        {/*
+          THE BOARD CARRIES NO STAGE, and the badge is dropped rather than reworded. A
+          stage belongs to a work item, so a board badge could only state a value that
+          does not exist. The unknown badge stays for the states where nothing has
+          resolved, which is what its gloss says.
+        */}
         {stage ? (
           <StateBadge
             word={stage}
             tone={toneForStage(stage)}
             gloss={STATE_GLOSS[stage] ?? "A stage outside the recorded vocabulary."}
           />
-        ) : (
+        ) : board ? null : (
           <StateBadge word="unknown" tone="neutral" gloss="The index has not resolved." />
         )}
         {supersededBy ? (

@@ -12,8 +12,10 @@ import SectionsE from "./variations/sections-e";
  * side by side against the same real corpus.
  *
  * This file is scaffolding for a design decision. It is not part of the shipped
- * viewer. When one arrangement is chosen, this shell goes, and the chosen
- * variation becomes the Work surface.
+ * viewer. `src/main.tsx` now mounts `src/shell/App.tsx`, which is the chosen
+ * arrangement, and the shell hands this harness its own addresses back: `#/variations`
+ * and one address per variation id below. When the prototype goes, this file goes
+ * with it.
  *
  * The app shell is the current candidate, so it leads the list and it is the
  * default. It also needs a frame that does not scroll, because its own rule is that
@@ -75,6 +77,15 @@ const OPTIONS: Option[] = [
     render: () => <RecordMosaic />,
   },
 ];
+
+/**
+ * The variation ids, and the addresses this harness owns.
+ *
+ * `src/shell/App.tsx` reads this list, so the shell's route and the harness's own route
+ * cannot drift: a first segment that names one of these ids is handed to this file
+ * whole, and every existing variation link keeps working.
+ */
+export const VARIATION_IDS: string[] = OPTIONS.map((option) => option.id);
 
 /**
  * The variation selected by the current hash.

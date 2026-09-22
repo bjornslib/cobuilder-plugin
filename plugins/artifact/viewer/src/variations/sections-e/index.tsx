@@ -27,6 +27,12 @@
  *   the same words a band would. It keeps the heading as `sr-only`, so the focus
  *   contract and the document's one `h1` survive.
  *
+ * THE BOARD IS THE LANDING SURFACE, and it is not a level. The bare route `#/sections-e`
+ * names no work item, and it renders every work item as one row rather than the error it
+ * used to render. The route that names an id the bundle lacks keeps that error. The board
+ * draws no strip, no pager, and no level progress bar, and `Board.tsx` states why it also
+ * draws no reading-progress strip. The rail's top entry opens it from any level.
+ *
  * SECTION 11.3'S FOUR RULES ARE THE LAYOUT CONTRACT, and each one is applied here.
  *
  *   1. The shell fills its parent, never the viewport. The root carries `h-full` and
@@ -72,6 +78,7 @@ import { BUNDLE_DATA_URL, entitiesOf, joinsOf } from "@/data/bundle";
 import { cn } from "@/lib/utils";
 
 import { Chip, SectionHeading } from "./atoms";
+import { Board } from "./Board";
 import type { AdrRecord } from "./records";
 import { JumpBar, useJumpTargets } from "./jump";
 import type { JumpTarget } from "./jump";
@@ -348,6 +355,12 @@ export default function AppShell() {
   const gates: Gates | null = work ? gatesOf(work) : null;
   const levels = work ? levelsOf(work) : null;
 
+  /*
+   * The bare route is the board. A route that names an id the bundle lacks is not the
+   * board: it is an address that resolved to nothing, and it keeps its own error.
+   */
+  const board = route.workId === null;
+
   /* Which sections this work fills. A section that fails its rule is absent. */
   const filled = useMemo(() => {
     const set = new Set<SectionKey>();
@@ -424,6 +437,11 @@ export default function AppShell() {
             stage={null}
             supersededBy={null}
             ready={false}
+            /*
+              The badge stays here. This state is the index failing to resolve, which is
+              exactly what the badge's own gloss says, so it is true and it belongs.
+            */
+            board={false}
             designs={[]}
             epics={[]}
             onChooseWork={chooseWork}
@@ -519,6 +537,7 @@ export default function AppShell() {
           stage={work?.design.stage ?? null}
           supersededBy={work?.record?.goal.superseded_by ?? null}
           ready={load.state === "ready"}
+          board={board}
           designs={workList.designs}
           epics={workList.epics}
           onChooseWork={chooseWork}
@@ -539,6 +558,8 @@ export default function AppShell() {
             gates={gates}
             levels={levels}
             section={section}
+            board={board}
+            workCount={load.state === "ready" ? works.size : null}
             open={openGroups}
             onToggleGroup={(key) =>
               setOpenGroups((current) => ({ ...current, [key]: !(current[key] ?? true) }))
@@ -550,10 +571,16 @@ export default function AppShell() {
             id={PANE_ID}
             ref={paneRef}
             tabIndex={-1}
-            aria-label={`${work?.design.name ?? "No work item"}, ${section}`}
+            aria-label={board ? "Work board" : `${work?.design.name ?? "No work item"}, ${section}`}
             className="min-h-0 min-w-0 flex-1 overflow-auto overscroll-contain bg-ground outline-none"
           >
-            {work === null ? (
+            {board ? (
+              <Board
+                works={works}
+                ready={load.state === "ready"}
+                headingId={HEADING_ID}
+              />
+            ) : work === null ? (
               <div className="min-w-0 px-6 py-6">
                 <div className="max-w-[80ch] rounded-xl border border-dashed border-warn bg-warn-wash px-4 py-3.5">
                   <p className="m-0 font-mono text-[12.5px] font-bold tracking-[0.06em] text-warn uppercase">

@@ -7,7 +7,13 @@
  * icons, and the reader may also collapse it at any width. `Cmd` or `Ctrl` plus `B`
  * toggles it. The rail keeps its own scroll, per section 11.3.
  *
- * Four rules decide what appears here.
+ * The rail's first entry is the Work board, and it is not a section. It opens the bare
+ * route, it is current when the route names no work item, and it always renders, because
+ * it is the way back from every level.
+ *
+ * ON THE BOARD THE RAIL HOLDS THAT ONE ENTRY. Every other row needs a work item, so the
+ * board drops the groups whole rather than disable three levels that have nothing to
+ * name. Four rules decide what appears below the board entry, once a work item is chosen.
  *
  *   Sections are gated. Build, Pull requests, and Shipped appear only when the work
  *   fills them, because an empty section teaches nothing and costs a click.
@@ -33,7 +39,7 @@
  * records from ever opening, so the disabled row owns its own frame.
  */
 
-import { ChevronDown, ClipboardCheck, GitPullRequest, ListTree, Network, PackageCheck, Plane, Target, TriangleAlert } from "lucide-react";
+import { ChevronDown, ClipboardCheck, GitPullRequest, LayoutGrid, ListTree, Network, PackageCheck, Plane, Target, TriangleAlert } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 
@@ -54,12 +60,15 @@ import {
 } from "@/components/ui/sidebar";
 
 import type { Gates, LevelState, SectionKey, WorkItem } from "./model";
-import { SECTION_LABEL, routeHref } from "./model";
+import { SECTION_LABEL, boardHref, routeHref } from "./model";
 
 interface Item {
   key: string;
   label: string;
-  section: SectionKey;
+  /** The section this item opens. Absent on the board entry, which opens no section. */
+  section?: SectionKey;
+  /** True on the board entry. It is current when the route names no work item. */
+  board?: boolean;
   tail?: string;
   icon: LucideIcon;
   /** False turns the item disabled and fills `absent`. */
@@ -81,6 +90,10 @@ export interface RailProps {
   gates: Gates | null;
   levels: Record<string, LevelState> | null;
   section: SectionKey;
+  /** True while the route names no work item, which is the board. */
+  board: boolean;
+  /** How many work items the board lists, or null while the index is in flight. */
+  workCount: number | null;
   open: Record<string, boolean>;
   onToggleGroup: (key: string) => void;
 }
@@ -111,7 +124,7 @@ const ROW_FRAME = cn(
   "group-data-[collapsible=icon]:size-11! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0!",
 );
 
-export function Rail({ work, gates, levels, section, open, onToggleGroup }: RailProps) {
+export function Rail({ work, gates, levels, section, board, workCount, open, onToggleGroup }: RailProps) {
   const reduce = useReducedMotion();
   const { state, isMobile } = useSidebar();
   /* Icon mode is the sidebar's own collapse, and never applies to the mobile drawer. */
@@ -126,8 +139,30 @@ export function Rail({ work, gates, levels, section, open, onToggleGroup }: Rail
       section: key,
       icon,
       available,
-      absent: available ? undefined : (level?.missing ?? ["the index has not resolved"]),
+      /*
+       * A route whose id the bundle lacks resolves no work item, so no level can fill. That
+       * is not a missing record, and the row says so rather than naming a file nobody
+       * asked for.
+       */
+      absent: available ? undefined : (level?.missing ?? ["no work item is selected"]),
     };
+  };
+
+  /*
+   * The board, above every group and above the work item's own levels.
+   *
+   * It is the top entry because it is the way back: a reader who is three levels deep
+   * needs one press to reach the list again, and it must not sit at the bottom of a
+   * section they have to scroll to find. It carries no group and no collapse handle of
+   * its own, so it can never be folded away.
+   */
+  const boardItem: Item = {
+    key: "work",
+    label: "Work",
+    board: true,
+    icon: LayoutGrid,
+    available: true,
+    meta: workCount === null ? undefined : `${workCount}`,
   };
 
   const groups: Group[] = [
@@ -213,6 +248,14 @@ export function Rail({ work, gates, levels, section, open, onToggleGroup }: Rail
     });
   }
 
+  /*
+   * THE BOARD SHOWS THE WORK ENTRY ALONE. A level needs a work item, so on the board the
+   * three level rows would read as absent records when the true state is that nothing is
+   * selected. Three inert rows above a board that lists every item are noise, so they go
+   * whole. They return with the first work item, and the groups below keep their gates.
+   */
+  const shownGroups = board ? [] : groups;
+
   const gatedOff: string[] = [];
   if (work && gates) {
     if (!gates.build) gatedOff.push("Build, because the work carries no epics");
@@ -236,7 +279,21 @@ export function Rail({ work, gates, levels, section, open, onToggleGroup }: Rail
     >
       <SidebarContent>
         <nav aria-label="Work sections" className="min-w-0">
-          {groups.map((group) => {
+          <SidebarGroup className="min-w-0 pb-0">
+            <SidebarGroupContent>
+              <SidebarMenu className="min-w-0 gap-0.5">
+                <RailItem
+                  item={boardItem}
+                  board={board}
+                  work={work}
+                  section={section}
+                  icons={icons}
+                />
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          {shownGroups.map((group) => {
             const isOpen = open[group.key] ?? true;
             const shown = icons || isOpen;
             return (
@@ -279,7 +336,14 @@ export function Rail({ work, gates, levels, section, open, onToggleGroup }: Rail
                   >
                     <SidebarMenu className="min-w-0 gap-0.5">
                       {group.items.map((item) => (
-                        <RailItem key={item.key} item={item} work={work} section={section} icons={icons} />
+                        <RailItem
+                          key={item.key}
+                          item={item}
+                          board={board}
+                          work={work}
+                          section={section}
+                          icons={icons}
+                        />
                       ))}
                     </SidebarMenu>
                   </motion.div>
@@ -312,17 +376,23 @@ export function Rail({ work, gates, levels, section, open, onToggleGroup }: Rail
 
 function RailItem({
   item,
+  board,
   work,
   section,
   icons,
 }: {
   item: Item;
+  board: boolean;
   work: WorkItem | null;
   section: SectionKey;
   icons: boolean;
 }) {
-  const current = work !== null && item.section === section;
-  const href = work ? routeHref(work.id, item.section, item.tail) : "#";
+  const current = item.board ? board : work !== null && item.section === section;
+  const href = item.board
+    ? boardHref()
+    : work && item.section
+      ? routeHref(work.id, item.section, item.tail)
+      : "#";
 
   if (!item.available) {
     const absent = absentLine(item.absent ?? []);

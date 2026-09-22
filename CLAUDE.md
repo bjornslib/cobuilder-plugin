@@ -337,13 +337,20 @@ design's record. Before this branch it did not, so the viewer's
 **A known gap in the record index, left for `inflight-record-store` to
 fix.** `collect_pull_requests()` in `shared/build_index.py` reads only
 `data/story.json`, which holds narrated merged pull requests. An open pull
-request is not an entity in the index at all. This repo's own pull request
-11 is one such case: eight epics across the family point their `branch` at
-it, and `refine_epic_status()` has nothing to refine against, so it leaves
-a hardcoded `"open"` placeholder for every one of them instead of a real
-state. `docs/architecture/designs/inflight-record-store/goal.json`'s first
-epic is the planned fix. Do not read the placeholder as a bug to patch in
-passing. It is a recorded, scoped gap.
+request is not an entity in the index at all. Pull request 11 is no longer
+such a case, because the index now holds its row with `"state": "merged"`.
+The refined status of the eight epics that point their `branch` at it
+therefore reads `merged` instead of the placeholder. Exactly one epic keeps
+the unrefined `"open"` placeholder: `plugin-split/E8`, whose join resolved
+to pull request 18. Pull request 18 is absent from the index, so
+`refine_epic_status()` never rewrites that placeholder. The authored record
+disagrees with the join about the same epic, because
+`docs/architecture/designs/plugin-split/goal.json` reads `"pr": 17` and
+`"state": "merged"`. The record and the join therefore name two different
+pull requests.
+`docs/architecture/designs/inflight-record-store/goal.json`'s first epic is
+the planned fix. Do not read the placeholder as a bug to patch in passing.
+It is a recorded, scoped gap.
 
 ## The viewer is not self-contained — this matters for anything artifact-related
 
@@ -644,6 +651,32 @@ list. A passive sentence with a known actor, or a claim the diff does not
 support, is still a defect there. The `--style ste` register
 (`story-mode.md` §3) already opts a PR's narrative into the full,
 unrelaxed rules, and this section changes nothing about that choice.
+
+### Response structure
+
+Label every part of a response to the reader, so the reader knows at a glance
+which parts need them and which do not. Use these four labels, in this order, and
+use only the ones that hold content. An empty label is worse than no label,
+because it teaches the reader to skip it.
+
+**FYI** — a fact the reader needs and does not need to act on. A finding, a
+constraint, or a thing the code does that surprised you. FYI holds no question. A
+fact that needs an answer belongs under Decisions and questions.
+
+**Summary** — what happened. State what changed, what was verified, and the
+evidence for each. Name the count, the reading, or the command. State a failure, a
+skipped step, and a gap. No claim of success stands without its evidence.
+
+**Next steps** — what you will do next without the reader. Name the work and the
+actor. A step that waits on the reader is not a next step. It is a decision.
+
+**Decisions and questions** — what needs the reader. Put each one on its own line.
+Give the options and your recommendation, so a one-word answer settles it. State
+what happens when the reader answers nothing.
+
+A short response may carry one label or two. The rule is the label, not the length.
+Do not pad a response to reach four labels. The reader must be able to stop after
+FYI when nothing needs them.
 
 **Structured responses
 - Group your responses logically, do not mix topics when responding to the user.

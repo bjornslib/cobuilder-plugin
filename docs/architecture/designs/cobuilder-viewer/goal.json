@@ -58,7 +58,7 @@
       "branch": "design/cobuilder-viewer/work-prototype",
       "pr": null,
       "state": "planned",
-      "note": "Carried from react-viewer E1 unchanged. Must land before any bundled build, or publishing breaks silently."
+      "note": "Carried from react-viewer E1 unchanged. Must land before any bundled build, or publishing breaks silently. It stays in the narrowed scope because the markers live inside the committed index.html, and E2 changes how that file is produced. This epic is the regression guard on a shipped mode: publishing must keep working while the build underneath it changes."
     },
     {
       "id": "E2",
@@ -120,8 +120,8 @@
       "outcome": "a detailed static HTML prototype of the Reference surface, against this repository's real decisions and map coverage, reviewed and approved before E9 starts",
       "branch": "design/cobuilder-viewer/work-prototype",
       "pr": null,
-      "state": "planned",
-      "note": "New in round 2, at the engineer's direction. Unlike Work and FlightDeck, this surface has no prior prototype. Commits to docs/architecture/designs/cobuilder-viewer/prototypes/reference-prototype.html."
+      "state": "deferred",
+      "note": "New in round 2, at the engineer's direction. Unlike Work and FlightDeck, this surface has no prior prototype. Commits to docs/architecture/designs/cobuilder-viewer/prototypes/reference-prototype.html. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
     },
     {
       "id": "E9",
@@ -129,8 +129,8 @@
       "outcome": "decisions and map coverage move to a Reference surface, and the team removes the five record-type tabs",
       "branch": "design/cobuilder-viewer/work-prototype",
       "pr": null,
-      "state": "planned",
-      "note": "Carried from react-viewer E6 unchanged. tests/test_viewer_modes.py asserts the five data-mode buttons. That test changes with this epic, and the change is the point, not a regression."
+      "state": "deferred",
+      "note": "Carried from react-viewer E6 unchanged. tests/test_viewer_modes.py asserts the five data-mode buttons. That test changes with this epic, and the change is the point, not a regression. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
     },
     {
       "id": "E10",
@@ -138,8 +138,8 @@
       "outcome": "a pull request with no description gets one from /pr:generate before FlightDeck's multi-pull-request mode reads it. A pull request that already has one is left alone",
       "branch": "design/cobuilder-viewer/work-prototype",
       "pr": null,
-      "state": "planned",
-      "note": "Carried from review-flight-deck F0 unchanged. When this design measured it, 8 of 12 pull requests in this repository carried no intent block."
+      "state": "deferred",
+      "note": "Carried from review-flight-deck F0 unchanged. When this design measured it, 8 of 12 pull requests in this repository carried no intent block. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
     },
     {
       "id": "E11",
@@ -147,8 +147,8 @@
       "outcome": "FlightDeck's multi-pull-request mode lists every open pull request with its head branch, changed files, and design, and marks the ones the team's auto-merge rules already handled. This epic consumes OpenPullRequest as the branded extension E3 declared, and it never redeclares it",
       "branch": "design/cobuilder-viewer/work-prototype",
       "pr": null,
-      "state": "planned",
-      "note": "Carried from review-flight-deck F1. This epic also settles the open-pull-request entity question (Q13) for the record index, so no separate inflight-record-store epic duplicates it. The mode reads the auto-merge split from the team's own rules, and this design does not define them."
+      "state": "deferred",
+      "note": "Carried from review-flight-deck F1. This epic also settles the open-pull-request entity question (Q13) for the record index, so no separate inflight-record-store epic duplicates it. The mode reads the auto-merge split from the team's own rules, and this design does not define them. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
     },
     {
       "id": "E12",
@@ -156,8 +156,8 @@
       "outcome": "a skill run or scheduled workflow simulates candidate paths to close the whole selected set. It works against the common ancestor of the selected branches, replays the best one or two on a scratch worktree, counts the real conflicts, and commits the result as data/merge-plan.json. The viewer renders that file and computes nothing",
       "branch": "design/cobuilder-viewer/work-prototype",
       "pr": null,
-      "state": "planned",
-      "note": "Merges review-flight-deck F2 and F3 into one epic, per ADR-0027's rejection of a live-in-browser or GitHub-Action mechanism. It must classify the three non-authored conflict shapes: a shared generated file, a hot file, and identical content added on both sides. A route that fails the replay stays, and the failure becomes its reason for losing."
+      "state": "deferred",
+      "note": "Merges review-flight-deck F2 and F3 into one epic, per ADR-0027's rejection of a live-in-browser or GitHub-Action mechanism. It must classify the three non-authored conflict shapes: a shared generated file, a hot file, and identical content added on both sides. A route that fails the replay stays, and the failure becomes its reason for losing. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
     },
     {
       "id": "E13",
@@ -165,8 +165,8 @@
       "outcome": "each path carries the state the reviewer would have when it is done, one line per pull request saying what it contributes, and a losing path carries the reason it lost. The front page shows one recommendation and an unreachable marker for the alternatives",
       "branch": "design/cobuilder-viewer/work-prototype",
       "pr": null,
-      "state": "planned",
-      "note": "Merges review-flight-deck F4 and F5. flightdeck-hindsight-fork.html, and E6's composed prototype, are the reference layout."
+      "state": "deferred",
+      "note": "Merges review-flight-deck F4 and F5. flightdeck-hindsight-fork.html, and E6's composed prototype, are the reference layout. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
     },
     {
       "id": "E14",
@@ -174,8 +174,8 @@
       "outcome": "a merge-order proposal, its acceptance, and its post-merge actual result append as three subtypes of the ledger's existing state line kind. An auditor diffs the accepted candidate's predicted tree hash against the actual one with no need to ask the merger anything",
       "branch": "design/cobuilder-viewer/work-prototype",
       "pr": null,
-      "state": "planned",
-      "note": "New in this merge, from the challenge gate's adoption of the auditor and 3am-on-call diverge candidates. The proposal line must record the exact ancestor SHA and per-step simulation inputs a later replay needs, which is new schema work neither source design carried."
+      "state": "deferred",
+      "note": "New in this merge, from the challenge gate's adoption of the auditor and 3am-on-call diverge candidates. The proposal line must record the exact ancestor SHA and per-step simulation inputs a later replay needs, which is new schema work neither source design carried. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
     },
     {
       "id": "E15",
@@ -183,8 +183,8 @@
       "outcome": "a runner reads an accepted path from the ledger and merges each bundle onto its own integration branch, never onto the default branch. It stops at a checkpoint between bundles when the reviewer chose one bundle at a time",
       "branch": "design/cobuilder-viewer/work-prototype",
       "pr": null,
-      "state": "planned",
-      "note": "Carried from review-flight-deck F6 unchanged. ADR-0027 records the decision, folding ADR-0026 forward. The first epic in this design that writes to a remote."
+      "state": "deferred",
+      "note": "Carried from review-flight-deck F6 unchanged. ADR-0027 records the decision, folding ADR-0026 forward. The first epic in this design that writes to a remote. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
     },
     {
       "id": "E16",
@@ -192,8 +192,8 @@
       "outcome": "a published Artifact of one pull request renders every surface, under the 16 MiB budget",
       "branch": "design/cobuilder-viewer/work-prototype",
       "pr": null,
-      "state": "planned",
-      "note": "Carried from react-viewer E7 unchanged. Closes the loop on E1. Measures the real budget with React inlined, and settles the Mermaid question the abort condition names."
+      "state": "deferred",
+      "note": "Carried from react-viewer E7 unchanged. Closes the loop on E1. Measures the real budget with React inlined, and settles the Mermaid question the abort condition names. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
     },
     {
       "id": "E17",
@@ -201,8 +201,8 @@
       "outcome": "the three non-viewer items from build-workflow-polish ship, so closing that design loses nothing",
       "branch": "design/cobuilder-viewer/work-prototype",
       "pr": null,
-      "state": "planned",
-      "note": "Carried from react-viewer E8 unchanged. build-workflow-polish stays superseded through this design now, not directly through react-viewer."
+      "state": "deferred",
+      "note": "Carried from react-viewer E8 unchanged. build-workflow-polish stays superseded through this design now, not directly through react-viewer. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
     },
     {
       "id": "E18",
@@ -210,8 +210,17 @@
       "outcome": "the served viewer files a comment to the ledger or says plainly that it did not, and a published Artifact collects comments and hands them back as one pasteable block, with anchors that survive a React re-render",
       "branch": "design/cobuilder-viewer/work-prototype",
       "pr": null,
+      "state": "deferred",
+      "note": "Carried from react-viewer E9 unchanged. Settles ADR-0019's anchoring under React, which owns the DOM the anchor walk uses. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
+    },
+    {
+      "id": "E19",
+      "slug": "work-board",
+      "outcome": "the shell lands on a board of every design in the bundle, each row stating the item's stage and which records it holds, and a row opens that item's Work surface",
+      "branch": "design/cobuilder-viewer/work-prototype",
+      "pr": null,
       "state": "planned",
-      "note": "Carried from react-viewer E9 unchanged. Settles ADR-0019's anchoring under React, which owns the DOM the anchor walk uses."
+      "note": "New in round 3, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. The shell had no landing surface before it: a reader arrived on a route that named a work item, and nothing listed the bundle's designs. The board lists them, says what each one holds, and opens one."
     }
   ],
   "stage": "review",
