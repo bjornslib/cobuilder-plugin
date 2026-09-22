@@ -4,13 +4,14 @@ import { cn } from "@/lib/utils";
 import {
   type MotionValue,
   motion,
+  useMotionValue,
   useMotionValueEvent,
   useReducedMotion,
   useScroll,
   useSpring,
   useTransform,
 } from "motion/react";
-import { type CSSProperties, type RefObject, useState } from "react";
+import { type CSSProperties, type RefObject, useEffect, useState } from "react";
 
 const SPRING_CONFIG = { damping: 30, mass: 0.4, stiffness: 220 } as const;
 const SEGMENT_SPRING = { bounce: 0.1, duration: 0.25 } as const;
@@ -46,6 +47,16 @@ export interface ScrollProgressProps {
   color?: string;
   /** Ref to a scrollable ancestor whose own scroll is measured instead of the window. */
   container?: RefObject<HTMLElement | null>;
+  /**
+   * Overrides the container-derived progress. A NUMBER and not a motion value: the
+   * caller computes it during render, so React drives it and no derived motion value
+   * has to be kept in sync with the container the hook resolved. Absent, every line
+   * below behaves exactly as it did before this prop existed.
+   *
+   * THIS FILE IS VENDORED from the SmoothUI registry. `npx smoothui-cli add
+   * scroll-progress` overwrites it, and this prop has to be added again afterwards.
+   */
+  value?: number;
   /**
    * Uses `position: sticky` (not `fixed`) so the indicator stays contained
    * within its scrollable ancestor instead of escaping to the viewport.
@@ -159,6 +170,7 @@ export default function ScrollProgress({
   variant = "bar",
   position = "top",
   container,
+  value,
   thickness = DEFAULT_THICKNESS,
   color = "var(--color-brand)",
   showLabel = false,
@@ -170,10 +182,25 @@ export default function ScrollProgress({
   const shouldReduceMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({ container });
   const springValue = useSpring(scrollYProgress, SPRING_CONFIG);
-  const value = shouldReduceMotion || !smooth ? scrollYProgress : springValue;
+  /*
+   * A caller's own number lives in its own motion value, so one downstream expression
+   * still covers the fill, the readings, and `aria-valuenow`. Both hooks run on every
+   * render, so nothing here is conditional.
+   */
+  const external = useMotionValue(value ?? 0);
+  useEffect(() => {
+    if (value !== undefined) external.set(value);
+  }, [value, external]);
+
+  const progress =
+    value !== undefined
+      ? external
+      : shouldReduceMotion || !smooth
+        ? scrollYProgress
+        : springValue;
 
   const [percent, setPercent] = useState(0);
-  useMotionValueEvent(value, "change", (latest) => {
+  useMotionValueEvent(progress, "change", (latest) => {
     setPercent(Math.round(clampPercent(latest * PERCENT_MULTIPLIER)));
   });
 
@@ -182,7 +209,7 @@ export default function ScrollProgress({
   // so the leading edge is literally the end of the bar and can never drift
   // away from it the way a separately positioned glow could.
   const fillX = useTransform(
-    value,
+    progress,
     (latest) => `${-PERCENT_MULTIPLIER * (1 - clampUnit(latest))}%`
   );
 
@@ -256,7 +283,7 @@ export default function ScrollProgress({
             stroke={color}
             strokeLinecap="round"
             strokeWidth={thickness}
-            style={{ pathLength: value }}
+            style={{ pathLength: progress }}
           />
         </svg>
         {showLabel ? (
@@ -320,7 +347,7 @@ export default function ScrollProgress({
           key={`scroll-progress-segment-${index}`}
           segments={segments}
           thickness={thickness}
-          value={value}
+          value={progress}
         />
       ))}
       {showLabel ? (

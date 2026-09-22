@@ -5,6 +5,7 @@ import AppShell from "./variations/app-shell";
 import EpicFirstMosaic from "./variations/epic-first-mosaic";
 import LensMosaic from "./variations/lens-mosaic";
 import RecordMosaic from "./variations/record-mosaic";
+import SectionsE from "./variations/sections-e";
 
 /**
  * A comparison shell for the Work board, so the structural variations can be read
@@ -37,6 +38,14 @@ const OPTIONS: Option[] = [
       "A fixed top bar, a fixed rail of sections, and one scroll pane holding the three levels. Sections gate; levels disable. Route: #/shell/<workId>/<section>.",
     fillsViewport: true,
     render: () => <AppShell />,
+  },
+  {
+    id: "sections-e",
+    label: "Sections (E)",
+    blurb:
+      "The shell, with Problem & Solution paged sideways instead of stacked: one section on screen, a strip of headings, and Previous and Next under it. Each section scrolls its own overflow. Route: #/sections-e/<workId>/<section>.",
+    fillsViewport: true,
+    render: () => <SectionsE />,
   },
   {
     id: "board",
