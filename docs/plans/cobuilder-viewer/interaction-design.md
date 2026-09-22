@@ -1,7 +1,7 @@
 # Work board: Interaction Design Specification
 
-**Version:** 2.3
-**Date:** 2026-09-21
+**Version:** 2.4
+**Date:** 2026-09-22
 **Author:** design session with bjornslib
 **Product document:** `01-product.md` (not yet written. The product intent currently lives in `docs/architecture/designs/cobuilder-viewer/goal.json`.)
 
@@ -35,6 +35,21 @@ The three heading levels stay apart. No hover state may fill with the heading
 colour, and the engineer set that rule in one sentence. Three surfaces take a
 tilt, and no reading surface does. A reading-progress strip joins the pane's
 top edge. Sections 3.2, 4.2, 6.1, 8.3, and 11.3 carry the changes.
+
+Version 2.4 records the section model. A level is a sequence of sections, one
+section on screen at a time on a horizontal track. **The box owns the scroll,
+never the pane.** So a paged level's pane does not move at all, and the frame a
+reader sees never shifts. The section strip, the pager bar, and the two arrow
+keys move one shared index. The strip and the pager derive their labels from the
+panels themselves, so a label cannot disagree with the heading it names. The
+progress strip measures the level rather than one box, as `(index + within) /
+count`. Intent, Problem & Solution, Architecture, and Build page; Rubrics does
+not. A paged level drops its visible heading band and keeps an `sr-only` `h1`,
+so the focus move still lands. The diagram runtime now loads when the Diagrams
+section mounts, because a tile cannot wait for a press. The envisioned pull
+request moves to the Pull requests level, which fills when a work has a drafted
+pull request and no longer redirects. Sections 2, 2.3, 11, 11.2, and 11.3 carry
+the changes, and ADR-0028 records the decision.
 
 ---
 
@@ -85,32 +100,91 @@ answer questions that arrive while building.
 
 ### 2.1 Navigation Structure
 
-The shell has three fixed regions and one scrolling region.
+The shell has three fixed regions and one content column.
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│ TOP BAR (fixed)   [ work item ] [ status ] [ search ] [ theme ]  │
+│ TOP BAR (fixed)   [ work item ] [ stage ] [ search ] [ theme ]   │
 ├────────────────────┬─────────────────────────────────────────────┤
-│ LEFT NAV (fixed)   │  READING PROGRESS (sticky, pane's top edge)  │
-│                    │  SECTION LINKS (sticky, under the progress)  │
-│                    │  [ top line: branch · epics · supersedes ]   │
-│ THE WORK           │  SCROLL PANE (the only scrolling region)     │
-│   Intent           │                                              │
-│   Problem & Sol.   │                                              │
-│   Architecture     │                                              │
-│ BUILD              │                                              │
-│   Epics            │                                              │
-│   Rubrics          │                                              │
-│ PULL REQUESTS      │                                              │
-│   This work's      │                                              │
-│   FlightDeck       │                                              │
-│ SHIPPED            │                                              │
+│ LEFT NAV (fixed)   │  [ top line: branch · epics · supersedes ]   │
+│                    │                                             │
+│ THE WORK           │  CONTENT COLUMN                              │
+│   Intent           │   a paged level, or a section that stacks    │
+│   Problem & Sol.   │                                             │
+│   Architecture     │                                             │
+│ BUILD              │                                             │
+│   Epics            │                                             │
+│   Rubrics          │                                             │
+│ PULL REQUESTS      │                                             │
+│   This work's      │                                             │
+│   FlightDeck       │                                             │
+│ SHIPPED            │                                             │
 └────────────────────┴─────────────────────────────────────────────┘
 ```
 
-**The section links are not a fourth fixed region.** They are `sticky` children
-of the scroll pane, so the pane keeps the only scroll. A link moves the pane to a
-panel on the page, and it never moves the window. Section 11.3 states why the
+**A level renders in one of two modes, and the mode decides what owns the
+scroll.**
+
+**A paged level** lays its sections on a horizontal track. One section is on
+screen at a time, and the pane does not scroll at all. The frame a reader sees
+therefore never moves.
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│ [ top line: branch · epics · supersedes ]                        │
+│ ──────── level progress ──────────────────────────────────────── │
+│ [ Diagrams ] [ Why ] [ Done when ] [ Abort if ] [ Out of scope ] │
+│ ┌──────────────────────────────────────────────────────────────┐ │
+│ │ ONE SECTION AT THE FULL WIDTH OF THE STAGE                   │ │
+│ │ the box owns the scroll, on both axes                        │ │
+│ └──────────────────────────────────────────────────────────────┘ │
+│ [ ‹ Previous ]        Section 1 of 5        [ Next › ]           │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**A section that stacks** keeps the pane's own scroll. The shell's older shape
+stands. A sticky band holds the progress strip and the section links, and the pane
+below it holds every panel of that section.
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│ [ top line: branch · epics · supersedes ]                        │
+│ ──────── progress over the pane ──────────────────────────────── │
+│ [ section links, sticky, one per panel on the page ]             │
+│ ┌──────────────────────────────────────────────────────────────┐ │
+│ │ THE PANE, the only scrolling region below this band          │ │
+│ └──────────────────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**Four levels page, and three sections stack.**
+
+| Section | Mode | Sections on the track |
+|---|---|---|
+| Intent | paged | Diagrams, Why, Done when, Abort if, Out of scope |
+| Problem & Solution | paged | Problem and solution, Risks, Assessment, Unknowns |
+| Architecture | paged | Diagrams, Architecture Decisions, Boundaries, Districts and alternatives considered |
+| Build | paged | three runs of six epics, in delivery order |
+| Build / Rubrics | stacks | — |
+| Pull requests | stacks | — |
+| Shipped | stacks | — |
+
+**A section is view state, never a route.** The strip, the pager bar, and the two
+arrow keys move one shared index, and a step writes no hash. So a reader pages
+through Architecture without the route changing under them. A route that names
+one of a section's records still lands on the right section. A deep link to an
+epic lands on the run that holds it, with that epic open.
+
+**The strip and the pager bar hold no list of their own.** Both read the sections
+the level actually rendered. The pager reads its count from the same array of
+sections the boxes come from. A section that renames itself renames its own link.
+So no label can disagree with the heading it names.
+
+**The section links are not a fixed region.** On a section that stacks they are
+`sticky` children of the scroll pane, so the pane keeps the only scroll. A link
+moves the pane to a panel on the page. It never moves the window. A paged level
+has no section links at all. The strip names the sections there, and nothing
+moves the pane, because the pane does not scroll. Section 11.3 states why the
 window cannot move.
 
 ```
@@ -189,9 +263,21 @@ one disabled level, not three.
 
 | Level | Records that back it | Fields |
 |---|---|---|
-| Intent | `goal.json` alone is enough. `intent.json` adds depth | `goal.outcome`, `goal.done_when`, `goal.abort_if`, `intent.out_of_scope` |
+| Intent | `goal.json` alone is enough. `intent.json` adds depth, and the first diagram level adds the container drawing | `goal.outcome`, `goal.done_when`, `goal.abort_if`, `intent.out_of_scope`, the first entry of `diagrams/` |
 | Problem and solution | `intent.json`, `narrative.json`, or `assessment.json` | `narrative.problem_solution` beats by kind, `intent.problem`, `intent.approach`, `intent.risks`, `intent.unknowns`, `assessment.verdict` and `assessment.findings`, `intent.alternatives` |
-| Architecture | `goal.json`'s `adrs[]`, or the design's `diagrams/` | the linked ADRs with their `maps_to.rule`, `boundary_rule` entities, districts and contexts touched, diagrams by level, and for an epic the Gate 4b design's `Types & Signatures` |
+| Architecture | `goal.json`'s `adrs[]`, or the design's `diagrams/` | the linked ADRs with their `maps_to.rule`, `boundary_rule` entities, districts and contexts touched, the diagram levels after the first, and for an epic the technical solution design's `Types & Signatures` |
+
+**The Work surface pages four levels, and the sections come from the records.**
+The Build level is the one level whose sections are computed rather than listed:
+its epics are cut into runs of six, in the delivery order the epic ids carry, so
+a section is one screen and the level's spine stays short. ADR-0028 records the
+choice and why the epic state could not decide it.
+
+**The first diagram level is the overview, and it belongs to Intent.** That level
+is the container drawing. It names the surfaces and the people who use them, and
+that answers what this work is and who it is for. The levels after it are
+mechanism, and they belong to Architecture. The cut is positional, so it holds for
+a bundle with two levels as well as three.
 
 **The work item's own facts sit above every section, not inside Intent.** The
 shell draws one top line holding the branch, the epic count, and what the work
@@ -225,26 +311,44 @@ sites printed a path in version 2.0, and version 2.1 removed every one.
 | Theme persistence | none | per reader | not implemented. A published file cannot persist |
 | Section | `intent` | the other sections | route |
 | Work item | none | a design or an epic id | route |
+| Section index on a paged level | **the first section** | any later section | component state, reset by a route change |
+| Section index for an epic deep link | **the run that holds that epic** | the first section | route |
 | Left nav state | expanded | a group collapsed | component state |
 | Rail collapse | expanded above 1200 px | collapsed | viewport |
-| Diagram rendering | source as code | rendered | component state, per diagram |
+| Panel body on a paged level | **open. No fold exists** | — | not configurable |
+| Panel body on a stacking section | open | closed, for a panel that declares it | component state |
+| Diagram runtime | **loads when the Diagrams section mounts** | — | section mount |
+| Diagram tile zoom | **100 %, the drawing fitted to the dialog** | 50 % to 400 %, in steps | component state, per dialog |
+| Record sheet jumplink row | one link per part the record marked | no row, for a record that marks none | the record |
 | State ladder display | real value only | real plus intended | component state |
 | Motion | follows `prefers-reduced-motion` | forced off | media query |
-| Assessment panel | **closed** | open | component state |
-| Risks panel | **closed** | open | component state |
-| Unknowns panel | **closed** | open | component state |
 
-The last three defaults are version 2.1's. The pane is 558 px tall at 1280x633,
-and a section of four open panels runs to several thousand pixels. A closed panel
-keeps its heading and its count on the row, so a reader sees what is there and
-opens only what they want. An absent panel ignores the default and renders open,
-because an absence that is hidden is an absence the reader cannot see.
+**A paged level has no fold.** Version 2.1 made Assessment, Risks, and Unknowns
+start closed, and the reason was the stacked page. The pane is 558 px tall at
+1280x633, and a section of four open panels ran to several thousand pixels. On a
+paged level each panel is its own section, so a fold inside it is a fold inside a
+fold. A reader who arrives at a section sees the whole of it. The panels keep
+nothing hidden: an absent panel is still `absent`, which is a stated state rather
+than a fold.
 
-Two defaults deserve a plain statement. **Theme is light.** It does not follow
-the operating-system preference, because the engineer declared light on
-2026-09-18. **Diagram rendering is off.** A Mermaid runtime is a large
-dependency, and a reader who wants one diagram should not pay for it on first
-paint.
+**Theme is light.** It does not follow the operating-system preference, because
+the engineer declared light on 2026-09-18.
+
+**The diagram runtime loads when the Diagrams section mounts.** It used to load
+on the reader's press and at no other moment, because the Mermaid runtime is
+large. A tile cannot wait for a press: the tile is the drawing. So the rule
+becomes: the runtime loads when the Diagrams section mounts, and at no other
+moment. Nothing on any other level pays for it. A tile whose render fails states
+the failure in one line. Its dialog then shows the authored source as text. That
+is the only place the source survives, and no source toggle exists for the
+working case.
+
+**The progress strip measures the level, not one box.** On a paged level its
+value is `(index + within) / count`. `within` is the active box's own scroll
+progress. A box with no scroll range counts as fully read, so a section that fits
+one screen contributes its whole share with no special case. The value never
+resets on a section change, and it never decreases on a forward walk. On a section
+that stacks, the strip measures the pane's own offset, as it always has.
 
 ### 2.4 Presence and Absence
 
@@ -495,12 +599,15 @@ panels are gated away renders no bar at all.
 
 #### Panel disclosure
 
-A panel that starts closed carries a disclosure on its heading row. The heading
-and the count stay visible, so the closed row says what the panel holds.
+No panel starts closed, so no panel carries a disclosure on arrival. The shell
+used to start Assessment, Risks, and Unknowns closed. That is gone: on a paged
+level each panel is its own section, so a fold inside a page is a fold inside a
+fold. A reader may still fold a panel, and the folded row keeps its heading and
+its count, so it says what it holds.
 
 | State | Visual treatment | Initial | Timer arming |
 |---|---|---|---|
-| Default | the band heading row, with the count and a chevron pointing down | Yes, for Assessment, Risks, and Unknowns | Not applicable |
+| Default | the band heading row, with the count and no chevron, because every panel arrives open | **Yes, on every panel** | Not applicable |
 | Hover | a 1 px `--band-ink` ring at 35 percent, and the chevron brightens to full `--band-ink`. No fill, because the row already carries the band | No | Not applicable |
 | Focus-visible | a 2 px `--band-ink` ring at a 2 px offset. The teal ring is 1.4 to 1 on the band, so it would not read there | No | Not applicable |
 | Pressed | the ring holds | No | Held while the pointer is down |
@@ -541,20 +648,25 @@ and the count stay visible, so the closed row says what the panel holds.
 | Empty | not applicable. A slice always carries its row fields | No | Not applicable |
 | Transient | not applicable | No | Not applicable |
 
-#### Diagram panel
+#### Diagram tile and dialog
+
+A tile is one drawing at miniature scale, one for each level the section was
+given. A press opens the drawing whole in a modal dialog. The dialog carries zoom
+out, zoom in, reset to fit, and close. The tile holds no source block and no
+control of its own.
 
 | State | Visual treatment | Initial | Timer arming |
 |---|---|---|---|
-| Default | the Mermaid source in a code block, with a control that says Render | **Yes** | Not applicable |
-| Hover | the render control lifts | No | Not applicable |
-| Focus-visible | ring on the render control | No | Not applicable |
-| Pressed | the control tints | No | Held while the pointer is down |
-| Selected | not applicable | No | Not applicable |
+| Default | the drawing at miniature scale inside a fixed-height window, with one word naming its kind | **Yes** | Not applicable |
+| Hover | the tile border takes `--line`, and the pointer is a pointer | No | Not applicable |
+| Focus-visible | a 2 px `--ring` ring | No | Not applicable |
+| Pressed | the ring holds | No | Held while the pointer is down |
+| Selected | not applicable. A tile is not a destination | No | Not applicable |
 | Disabled | not applicable | No | Not applicable |
-| Loading | announced as rendering, with a skeleton at the diagram's aspect ratio | No | **Starts when the reader presses Render, never on mount.** The runtime loads on that press |
-| Error | the source stays visible, and the panel states that the render failed and why | No | Not applicable |
-| Empty | the panel names the absent level | Yes, when a level has no diagram | Not applicable |
-| Transient | the rendered diagram fades in | No | Ends when the render settles |
+| Loading | announced as rendering, with a skeleton at the tile's own height | No | **Starts when the Diagrams section mounts, never on a press.** The runtime loads on that mount |
+| Error | the tile states the failure in one line and names where the source is | No | Not applicable |
+| Empty | the section names the absent level | Yes, when a level has no diagram | Not applicable |
+| Transient | the drawing fades in | No | Ends when the render settles |
 
 ### 3.3 Visibility Gating
 
@@ -609,30 +721,31 @@ not open still does not enter it, and the Shipped gate still holds its rule.
 | Index resolves | Loading | Populated | `--dur-base` crossfade | — |
 | Index resolves with no work | Loading | Empty | `--dur-base` crossfade | a bundle is written |
 | Index request fails | Loading | Error | `--dur-instant` | the reader presses retry |
-| Reader selects a section | current section | that section | `--dur-base` crossfade | another section is selected |
+| Reader selects a section | current section | that section, and the track slides one box | `--dur-base` slide | another section is selected |
 | Reader selects a gated section | current section | redirect to the nearest available section | immediate | — |
 | Reader selects another work item | work A | work B, same section where B fills it | `--dur-slow` crossfade | — |
 | Reader expands a nav group | collapsed | expanded | `--dur-expand` | the reader collapses it |
-| Reader opens a closed panel | collapsed | expanded | `--dur-expand` | the reader closes it |
+| Reader folds a panel | open | folded | `--dur-expand` | the reader unfolds it |
 | Reader opens an epic | collapsed | selected, detail open | `--dur-expand` | the selection clears |
 | Reader selects a slice | none or another | that slice selected | `--dur-base` slide | the selection clears |
-| Reader presses Render | source shown | rendering | immediate | the render settles or fails |
+| The Diagrams section mounts | none | rendering | immediate | the render settles or fails |
 | Render settles | rendering | rendered | `--dur-base` fade | — |
-| Render fails | rendering | error | `--dur-instant` | the reader presses Render again |
+| Render fails | rendering | error | `--dur-instant` | the reader leaves the section and returns |
 | Reader toggles the theme | light or dark | the other | `--dur-fast` icon, then `--dur-base` tokens | the reader toggles back |
 | Reader arrives from a deep link | Loading | Populated, target selected | `--dur-slow`, then a highlight | the highlight elapses |
 | Deep link names work the bundle lacks | Loading | Error naming the id | `--dur-instant` | the reader returns to the rail |
 | A record body fails | Populated | Partial | `--dur-instant` | the body loads |
-| Reader selects a section link | the pane's current offset | the pane's offset at the target's heading | `--dur-base`, through the pane's own smooth scroll | the reader scrolls, or selects another link |
+| Reader selects a jump-bar link on a stacked level | the pane's current offset | the pane's offset at the target's heading | `--dur-base`, through the pane's own smooth scroll | the reader scrolls, or selects another link |
 
 No transition here is armed by a timer. Every timing is a duration, not a
 countdown. The one delayed state, the deep-link highlight, starts on arrival and
 resets when it elapses. The diagram render is the only deferred load, and it
-starts on the reader's press.
+starts when its section mounts rather than on a press.
 
-The section-link jump is the one transition that moves a region rather than
-crossfading one. It still names a token, and under `prefers-reduced-motion:
-reduce` it resolves to `--dur-instant`, so the pane arrives in one frame.
+Two transitions move a region rather than crossfading one, and both name a token.
+A section change slides the track one box. A jump-bar press on a stacked level
+moves the pane. Under `prefers-reduced-motion: reduce` each resolves to
+`--dur-instant`, so the reader arrives in one frame.
 
 ### 4.2 Timing Tokens
 
@@ -640,7 +753,7 @@ reduce` it resolves to `--dur-instant`, so the pane arrives in one frame.
 |---|---|---|
 | `--dur-instant` | 0 ms | every error state, so a failure is never animated away from the reader |
 | `--dur-fast` | 150 ms | hover tints, the theme icon, the chevron rotation |
-| `--dur-base` | 200 ms | section crossfades, the render fade, theme tokens |
+| `--dur-base` | 200 ms | section slides, the render fade, theme tokens |
 | `--dur-slow` | 250 ms | work-item changes, deep-link arrival |
 | `--dur-expand` | 220 ms | nav groups and epic disclosure |
 | `--dur-highlight` | 1200 ms | the deep-link arrival highlight |
@@ -958,10 +1071,10 @@ One scale, named once.
 | Layer | Token | Holds |
 |---|---|---|
 | 0 | `--layer-base` | the shell and every panel |
-| 1 | `--layer-raised` | a hovered or selected row, and the section-link bar |
+| 1 | `--layer-raised` | a hovered or selected row, and the sticky band of a section that stacks |
 | 2 | `--layer-fixed` | the top bar and the rail |
-| 3 | `--layer-panel` | the work-item switcher, and tooltips |
-| 4 | `--layer-modal` | the mobile nav drawer, and the record sheet |
+| 3 | `--layer-panel` | the work-item switcher, the tooltips, and the diagram dialog's backdrop |
+| 4 | `--layer-modal` | the mobile nav drawer, the record sheet, and the diagram dialog |
 
 ### 11.2 Hit Targets
 
@@ -975,7 +1088,13 @@ One scale, named once.
 | Theme switcher | the icon button | 44 px square |
 | Epic row | the whole row, not the chevron | full pane width, at least 48 px tall |
 | Slice row | the whole row | full pane width, at least 44 px tall |
-| Panel disclosure | the panel's heading row | full panel width, at least 36 px tall |
+| Panel disclosure | the panel's heading row, on a panel that declares one | full panel width, at least 36 px tall |
+| Section heading in the strip | the anchor | at least 32 px tall, and the anchor stays focusable |
+| Pager control | the button | at least 44 px tall |
+| Diagram tile | the whole tile | the tile's full width, 200 px tall. The drawing inside carries `pointer-events: none`, so the tile is one target |
+| Zoom control | the button | 44 px square |
+| Dialog close | the button | 44 px square |
+| Sheet jumplink | the anchor | at least 32 px tall |
 | Render control | the button | at least 44 px tall |
 | Navigating control | the button | at least 44 px tall |
 | Section link | the anchor | at least 32 px tall |
@@ -983,26 +1102,37 @@ One scale, named once.
 | Mobile nav drawer trigger | the button | 44 px square |
 
 An icon is never the sole hit target. Every icon sits inside a target at least
-44 px in each direction.
+44 px in each direction, and the two exceptions above are anchors, which meet the
+same rule at 32 px because a heading is a word rather than an icon.
+
+**The two arrow keys are a hit target too.** `ArrowLeft` and `ArrowRight` step the
+section index on a paged level, and they act wherever focus sits. The binding
+ignores an event whose target is an `input`, a `textarea`, or a `select`. It also
+ignores one with a modifier key held.
 
 ### 11.3 Scroll Ownership
 
 | Region | Owns the scroll | Why |
 |---|---|---|
 | The document | **nothing** | the page does not scroll. The shell fills the viewport exactly |
-| The scroll pane | both axes | it is the only scrolling region, and it holds every piece of content |
+| The pane | both axes, on a section that stacks | it is the only scrolling region for that mode, and it holds every panel of the section |
+| The pane | **nothing, on a paged level** | the level lays its sections on a track and one box is on screen, so the pane has no overflow to own. The frame a reader sees never moves |
+| A section box | both axes, when its section is taller than the box | the box is the only region that scrolls on a paged level. The stage clips the track, never a box's content |
+| The section strip | itself, sideways, when the headings exceed the width | a record with many sections keeps every heading reachable |
+| The pager bar | none | it holds one row of two controls and a count |
 | The rail | itself, when its items exceed the viewport | a long rail must stay usable, and the rail never scrolls the pane |
 | The top bar | none | it holds one line at every width |
 | The work-item switcher list | itself | its list can exceed the viewport |
-| A diagram panel | itself, both axes | a rendered diagram is often wider than the pane |
+| The diagram dialog's body | both axes | a drawing at 400 % is far wider and taller than the dialog |
+| The record sheet's container | both axes | an ADR body holds tables and long prose |
 | A tooltip | none | it is transient and never scrolls |
 | The section-link bar | none. It is `sticky` inside the pane, so it rides the pane's own scroll and adds no region | it holds one row of links, and it never scrolls anything |
-| The reading-progress strip | none. It is the first child of the same sticky band, so it rides the pane's own scroll and adds no region | it reports the pane's own offset and holds one 4 px strip |
+| The progress strip | none. It holds one 4 px bar | on a paged level it reports the level's own position, and on a section that stacks it reports the pane's offset |
 
 The document never scrolls, so `html` and `body` carry no overflow. Every wheel
-event not consumed by a nested region scrolls the scroll pane. Where two regions
-could claim a gesture, the innermost owner wins, and the outer region does not
-move.
+event not consumed by a nested region scrolls the innermost region that can take
+it. Where two regions could claim a gesture, the innermost owner wins, and the
+outer region does not move.
 
 **A section link moves the pane element, never the window.** The document cannot
 scroll at all, so a hash write or a `window.scrollTo` would land nowhere. The
@@ -1010,14 +1140,22 @@ link intercepts the press, measures the target against the pane, and sets the
 pane's own offset. Under `prefers-reduced-motion: reduce` the pane arrives in
 one frame instead of animating.
 
-**The reading-progress strip measures the pane, not the window.** The document
-cannot scroll, so a window-scoped progress bar would read zero at every position.
-The strip takes the pane's own element, and it reports that element's offset. It
-spans the pane's full width, and it sits above the section-link bar in the same
-sticky band. A jump adds the strip's 4 px to the bar's own height, so a
-jumped-to heading lands below both.
+**A section heading in the strip moves nothing at all except the index.** On a
+paged level the pane cannot scroll, so there is no offset to set. The press sets
+the shared index, and the track slides one box. The box then owns its own scroll.
+The heading stays focusable, and the press is prevented so the route never moves.
 
-**Four rules make "no scroll" safe rather than a way to hide content.** A layout
+**The progress strip measures the level on a paged level and the pane on a
+section that stacks.** The document cannot scroll, so a window-scoped progress
+bar would read zero at every position. On a section that stacks the strip takes
+the pane's own element and reports that element's offset, as it always has. On a
+paged level the strip instead reports `(index + within) / count`. `within` is the
+active box's own scroll progress, and a box with no scroll range counts as fully
+read. That value answers how far through the level a reader is. A pane-scoped bar
+cannot answer that question once the pane stops scrolling. The strip spans the
+level's full width and sits above the section strip.
+
+**Five rules make "no scroll" safe rather than a way to hide content.** A layout
 that fills the viewport and hides its overflow will clip whatever does not fit,
 and the reader has no way to reach it. These rules prevent that.
 
@@ -1025,14 +1163,16 @@ and the reader has no way to reach it. These rules prevent that.
    `h-dvh`. The viewport height belongs to whoever owns the page. When a host
    renders the shell beneath its own chrome, `h-dvh` makes the shell taller than
    the space it was given, and the surplus is clipped at one edge.
-2. **The scroll pane scrolls on both axes.** `overflow: auto`, never
-   `overflow-y: auto` with `overflow-x: hidden`. A pane that hides its horizontal
-   overflow clips a wide table with no scrollbar and no way to reach it.
+2. **The scrolling region scrolls on both axes.** `overflow: auto`, never
+   `overflow-y: auto` with `overflow-x: hidden`. A region that hides its
+   horizontal overflow clips a wide table with no scrollbar and no way to reach
+   it. The region is the pane on a section that stacks. It is the section box on a
+   paged level, where the pane itself has nothing to scroll.
 3. **A wide block scrolls itself.** Every table, code block, and diagram wraps in
-   its own `overflow-x: auto` container, so the pane keeps its own scroll and the
+   its own `overflow-x: auto` container, so the region keeps its own scroll and the
    wide block keeps its integrity.
 4. **Every flex and grid child carries `min-w-0`.** A flex child defaults to its
-   content width, so one wide row stretches the pane and pushes its siblings off
+   content width, so one wide row stretches the region and pushes its siblings off
    the edge.
 5. **The shell fills the visible screen, never the whole window.** It caps itself
    to the narrower of the window and the screen. This rule is the price of rule 2,
@@ -1042,6 +1182,13 @@ and the reader has no way to reach it. These rules prevent that.
    of content was unreachable and no scrollbar could appear to say so. The reader
    reported it as clipping, which is exactly what it looked like. A window is not
    a screen, and a shell with no document scroll must never assume it is.
+
+**On a paged level, the stage clips only the track.** The stage's outer element
+is `overflow: hidden`, and what it hides is the boxes either side of the one on
+screen. It never hides a box's content. Each box is its own two-axis scroll
+region, and the boxes off screen carry `inert`. So nothing focusable sits where a
+reader cannot see it. This is the one clip box in the shell, and it is the reason
+rule 3 holds rather than bends on a paged level.
 
 Measured on the mockup at 1600x1000 on 2026-09-19. The pane reported
 `overflow-x: hidden`, which is rule 2's defect: any block wider than the pane
@@ -1077,7 +1224,7 @@ not give the shell a definite height will break it.
 - [x] Every interactive component has a state table in section 3.2.
 - [x] Every component marks exactly one initial state.
 - [x] Every timer names its arming event and its reset event. The only deferred
-      load is the diagram render, and it starts on the reader's press.
+      load is the diagram render, and it starts when its section mounts.
 - [x] Every control with a conditional existence appears in section 3.3.
 - [x] Every multi-valued setting appears in section 2.3 with a default.
 - [x] Every state change appears in section 4.1 with a source and target state.

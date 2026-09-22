@@ -5,7 +5,7 @@ C4Container
     Person(engineer, "Engineer", "Changes a viewer source file under viewer/src/")
 
     Container_Boundary(app, "React viewer app (viewer/src/) — compiled to one file by Vite, ADR-0023") {
-        Container(work, "Work surface", "TS + React", "Every design, its stage and epic progress, six lenses per design: intent, problem/solution, architecture, risks and verdict, build, pull requests")
+        Container(work, "Work surface", "TS + React", "Every design, its stage and epic progress, one section at a time on a paged level: Intent, Problem and solution, Architecture, Build, then Rubrics, Pull requests, and Shipped")
         Container(flightdeck, "FlightDeck surface", "TS + React", "Single-PR narration at parity with today's viewer, and multi-PR select-and-recommend")
         Container(reference, "Reference surface", "TS + React", "Decisions and map coverage, replacing the five record-type tabs")
         Container(data, "Typed data layer (viewer/src/data)", "TS", "Joins STORY, ODYSSEY, DIFFS, ADRS, DESIGNS, DIAGRAMS, index.json once. Declares PullRequest and OpenPullRequest")
@@ -47,7 +47,7 @@ C4Container
     Rel(exporter, indexhtml, "Reads, rewrites named markers, publishes")
     Rel(migrator, indexhtml, "Copies into every bundle")
 
-    Rel(reviewer, work, "Opens a design, picks a lens")
+    Rel(reviewer, work, "Opens a design, moves through its sections")
     Rel(reviewer, flightdeck, "Reads a pull request, selects open pull requests, accepts a path")
     Rel(reviewer, reference, "Reads a decision or the map")
     Rel(work, data, "Reads typed model from")

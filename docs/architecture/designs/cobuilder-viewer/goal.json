@@ -90,11 +90,11 @@
     {
       "id": "E5",
       "slug": "work-surface",
-      "outcome": "the Work board and the six design lenses render every design, including a backlog design with goal.json only",
+      "outcome": "the Work surface renders every level and the sections each level pages, including a design whose records are goal.json only",
       "branch": "design/cobuilder-viewer/work-prototype",
       "pr": null,
       "state": "planned",
-      "note": "Carried from react-viewer E4, with one correction. react-viewer contradicted itself: every place that named the lenses listed six (intent, problem and solution, architecture, risks and verdict, build, pull requests), while three places said seven, including this epic's outcome. No seventh lens was ever named. This design states six consistently. E4's prototype is the reference and the approval gate for this epic, not the uncommitted 2026-09-07 prototype."
+      "note": "Carried from react-viewer E4, with one vocabulary change. The level-and-section model replaced the lens model, per ADR-0028: a level is a sequence of sections, one section on screen at a time on a horizontal track, and the box owns the scroll rather than the pane. react-viewer's lens list described navigation rather than content, and it contradicted itself: every place that named the lenses listed six (intent, problem and solution, architecture, risks and verdict, build, pull requests), while three places said seven, including this epic's outcome. No seventh lens was ever named, and nothing renders a lens now. This design's paged levels are Intent, Problem & Solution, Architecture, and Build, and each one states its own sections. The criterion that survives from that outcome is the sparse record: a design whose records are goal.json only must render. Seven designs in this repository carry one, and they are the fixture for it. E4's prototype is the reference and the approval gate for this epic, not the uncommitted 2026-09-07 prototype. E4 shipped as a React application under plugins/artifact/viewer/src/variations/sections-e/, not as the static HTML file round 2's note asked for."
     },
     {
       "id": "E6",
