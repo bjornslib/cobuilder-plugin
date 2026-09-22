@@ -21,6 +21,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   ChevronRight,
   ClipboardCheck,
+  Compass,
   FileText,
   GitBranch,
   GitPullRequest,
@@ -33,7 +34,8 @@ import {
 } from "lucide-react";
 
 import BasicAccordion from "@/components/smoothui/basic-accordion";
-import type { PullRequestEntity, SliceEntity } from "@/data/types";
+import type { AccordionItem } from "@/components/smoothui/basic-accordion";
+import type { EpicEntity, PullRequestEntity, SliceEntity } from "@/data/types";
 import { cn } from "@/lib/utils";
 
 import type { WorkItem } from "./model";
@@ -246,99 +248,137 @@ function EpicDisclosure({
   );
 }
 
-export function EpicsSection({
+/**
+ * How many epics one section of the paged Build level holds.
+ *
+ * ONE SECTION IS ONE SCREEN. The box is about 530 px and a collapsed epic row about
+ * 50 px, so six rows fill a box and the seventh would make the reader scroll before
+ * they had read anything. The same number keeps the level's spine short: thirty-six
+ * epics would give exactly six sections, and no plausible work gives more than six.
+ */
+const EPICS_PER_SECTION = 6;
+
+/**
+ * The epics, cut into the sections the Build level pages.
+ *
+ * THE CUT FOLLOWS THE DELIVERY ORDER, and that is a deliberate second choice. The seam
+ * a reader would want is the epic's state, and this corpus does not carry one: all
+ * eighteen of this work's epics read `no-pull-request` in the join and `planned` in the
+ * entity, all eighteen name the same branch, none names a pull request, and the design
+ * records no slices and no epic solution designs. One state over eighteen epics is not
+ * a spine. The epic order is the delivery order, so a cut of it keeps the sequence a
+ * reader follows and invents no grouping the bundle does not hold.
+ *
+ * `EpicGroupSection` states the same thing to the reader, in the panel's own lead.
+ */
+export function epicGroups(work: WorkItem): EpicEntity[][] {
+  const groups: EpicEntity[][] = [];
+  for (let start = 0; start < work.epics.length; start += EPICS_PER_SECTION) {
+    groups.push(work.epics.slice(start, start + EPICS_PER_SECTION));
+  }
+  return groups;
+}
+
+/** The accordion rows for a set of epics, in the order the caller gives them. */
+function epicRows(
+  work: WorkItem,
+  epics: EpicEntity[],
+  openSheet: (subject: SheetSubject) => void,
+): AccordionItem[] {
+  return epics.map((epic) => {
+    const planRow = work.record?.goal.epics?.find((row) => row.id === epic.epic_id);
+    const state = work.epicState(epic);
+    const own = work.slicesByEpic.get(epic.id) ?? [];
+    return {
+      id: epic.id,
+      title: (
+        <span className="flex min-w-0 flex-1 items-baseline gap-2.5">
+          <span className="shrink-0 font-mono text-[14px] font-bold text-accent-deep">
+            {epic.epic_id}
+          </span>
+          <span className="min-w-0 font-serif text-[16px] leading-[1.45]">
+            {excerpt(planRow?.outcome ?? epic.note ?? "No outcome recorded.", 120)}
+          </span>
+        </span>
+      ),
+      meta: (
+        <>
+          <Chip title="How many slices this epic owns.">
+            {own.length} {own.length === 1 ? "slice" : "slices"}
+          </Chip>
+          <StateBadge
+            word={state}
+            tone={toneForEpicState(state)}
+            gloss={EPIC_GLOSS[state] ?? "A state outside the recorded vocabulary."}
+          />
+        </>
+      ),
+      content: (
+        <EpicDisclosure
+          work={work}
+          epicId={epic.epic_id}
+          index={work.epics.indexOf(epic)}
+          openSheet={openSheet}
+        />
+      ),
+    };
+  });
+}
+
+/**
+ * One section of the paged Build level: a run of epics in delivery order.
+ *
+ * The title names the range the section holds, so the strip says which epics are in the
+ * box a reader is looking at. The route's epic opens here when it falls in this run, and
+ * the section the reader lands on is the one that holds it.
+ */
+export function EpicGroupSection({
   work,
+  group,
   focusEpic,
   openSheet,
-  unresolvedSlices,
 }: {
   work: WorkItem;
+  group: EpicEntity[];
   focusEpic: string | null;
   openSheet: (subject: SheetSubject) => void;
-  unresolvedSlices: number;
 }) {
-  /*
-   * A route that names an epic opens that epic. The key remounts the accordion when
-   * the route's epic changes, because `defaultExpandedIds` is read once at mount.
-   */
-  const items = useMemo(
-    () =>
-      work.epics.map((epic) => {
-        const planRow = work.record?.goal.epics?.find((row) => row.id === epic.epic_id);
-        const state = work.epicState(epic);
-        const own = work.slicesByEpic.get(epic.id) ?? [];
-        return {
-          id: epic.id,
-          title: (
-            <span className="flex min-w-0 flex-1 items-baseline gap-2.5">
-              <span className="shrink-0 font-mono text-[14px] font-bold text-accent-deep">
-                {epic.epic_id}
-              </span>
-              <span className="min-w-0 font-serif text-[16px] leading-[1.45]">
-                {excerpt(planRow?.outcome ?? epic.note ?? "No outcome recorded.", 120)}
-              </span>
-            </span>
-          ),
-          meta: (
-            <>
-              <Chip title="How many slices this epic owns.">
-                {own.length} {own.length === 1 ? "slice" : "slices"}
-              </Chip>
-              <StateBadge
-                word={state}
-                tone={toneForEpicState(state)}
-                gloss={EPIC_GLOSS[state] ?? "A state outside the recorded vocabulary."}
-              />
-            </>
-          ),
-          content: (
-            <EpicDisclosure
-              work={work}
-              epicId={epic.epic_id}
-              index={work.epics.indexOf(epic)}
-              openSheet={openSheet}
-            />
-          ),
-        };
-      }),
-    [work, openSheet],
-  );
+  const items = useMemo(() => epicRows(work, group, openSheet), [work, group, openSheet]);
+  const holds = focusEpic !== null && group.some((epic) => epic.epic_id === focusEpic);
+  const first = group[0]?.epic_id ?? "";
+  const last = group[group.length - 1]?.epic_id ?? "";
 
   return (
-    <Bento>
-      <Panel
-        span="band"
-        title={`Epics · ${work.epics.length}`}
-        icon={ListTree}
-        lead="One row per epic, with its refined state. An epic discloses its own slices, and a slice discloses its own ends-with, score, and attempts."
-        absent={work.epics.length === 0}
-      >
-        {work.epics.length > 0 ? (
-          <BasicAccordion
-            key={`${work.id}:${focusEpic ?? ""}`}
-            items={items}
-            allowMultiple
-            idPrefix="epic"
-            defaultExpandedIds={focusEpic ? [`${work.id}/${focusEpic}`] : []}
-          />
-        ) : (
-          <Missing>This work carries no epics, so the rail gates Build.</Missing>
-        )}
-      </Panel>
+    <Panel
+      title={`Epics ${first}–${last}`}
+      icon={ListTree}
+      lead={`${group.length} epics in delivery order. An epic discloses its own slices, and a slice discloses its own ends-with, score, and attempts.`}
+      absent={group.length === 0}
+      count={group.length}
+    >
+      <BasicAccordion
+        /* The key remounts the accordion when the route's epic changes, because
+           `defaultExpandedIds` is read once at mount. */
+        key={`${work.id}:${holds ? focusEpic : ""}`}
+        items={items}
+        allowMultiple
+        idPrefix="epic"
+        defaultExpandedIds={holds && focusEpic !== null ? [`${work.id}/${focusEpic}`] : []}
+      />
+    </Panel>
+  );
+}
 
-      {unresolvedSlices > 0 ? (
-        <Panel
-          span="narrow"
-          title="Unresolved slices"
-          icon={ShieldQuestion}
-          lead="Slices that belong to no epic. This panel renders only while the bundle holds one."
-        >
-          <p className="m-0 min-w-0 font-serif text-[16px]">
-            {unresolvedSlices} slices belong to no epic.
-          </p>
-        </Panel>
-      ) : null}
-    </Bento>
+/** Slices that belong to no epic. It renders only while the bundle holds one. */
+export function UnresolvedSlicesSection({ count }: { count: number }) {
+  return (
+    <Panel
+      title="Unresolved slices"
+      icon={ShieldQuestion}
+      lead="Slices that belong to no epic. This section renders only while the bundle holds one."
+    >
+      <p className="m-0 min-w-0 font-serif text-[16px]">{count} slices belong to no epic.</p>
+    </Panel>
   );
 }
 
@@ -419,6 +459,24 @@ export function PullRequestsSection({
 
   return (
     <Bento>
+      {/*
+        THE PULL REQUEST THIS WORK WILL OPEN LEADS THE SECTION. It used to sit on the
+        Architecture level as "Envisioned pull request", beside the decisions that shaped
+        it. A reader who comes to this level wants the work's pull requests, and the draft
+        is the one this work will open, so it belongs above them. The title says what it
+        is, because a draft is not a pull request that exists.
+      */}
+      {work.record?.pr_draft ? (
+        <Panel
+          span="band"
+          title="The pull request this work will open"
+          icon={Compass}
+          lead="The draft the design wrote before any code existed. It is not a pull request that exists yet."
+        >
+          <Box label="Draft">{excerpt(work.record.pr_draft, 260)}</Box>
+        </Panel>
+      ) : null}
+
       <Panel
         span="band"
         title={`This work's pull requests · ${work.pullRequests.length}`}
@@ -463,7 +521,8 @@ export function PullRequestsSection({
           </ul>
         ) : (
           <EmptyNote>
-            No epic of this work carries a pull request, so the rail gates this group.
+            No epic of this work carries a pull request yet. The draft above is the one
+            this work will open.
           </EmptyNote>
         )}
       </Panel>

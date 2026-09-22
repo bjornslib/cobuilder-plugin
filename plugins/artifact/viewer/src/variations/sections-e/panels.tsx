@@ -39,7 +39,7 @@
  * is invented, and no panel guesses a value to fill a gap.
  */
 
-import { AlertOctagon, Ban, BookMarked, Boxes, CircleHelp, Compass, Network, Scale, ScrollText, ShieldAlert, Target } from "lucide-react";
+import { AlertOctagon, Ban, BookMarked, Boxes, CircleHelp, ListChecks, Network, Scale, ScrollText, ShieldAlert, Target, TriangleAlert } from "lucide-react";
 
 import BasicAccordion from "@/components/smoothui/basic-accordion";
 import TiltCard from "@/components/smoothui/tilt-card";
@@ -56,90 +56,115 @@ import type { SheetSubject } from "./Sheet";
 import {
   AbsentLine,
   ActionButton,
-  Bento,
   Box,
   Chip,
   Missing,
   Panel,
   PointCard,
   StateBadge,
-  SubHead,
   TextList,
   TINT_BAR,
   toneForSeverity,
   toneForStage,
   toneForVerdict,
 } from "./atoms";
-import { Diagram, type Theme } from "./Diagram";
+import { DiagramTiles } from "./DiagramTiles";
+import type { Theme } from "./Diagram";
 import { VERDICT_GLOSS } from "./gloss";
 
 /* -------------------------------------------------------------------- Intent */
 
-export function IntentPanel({ work }: { work: WorkItem }) {
-  const record = work.record;
-  const goal = record?.goal;
-  const intent = record?.intent;
+/*
+ * INTENT IS FOUR SECTIONS, ONE PER PART OF THE CONTRACT. The level was one panel with
+ * four parts and ran to 4.2 pages, so a reader met the plan a screen at a time only if
+ * they scrolled. Each part is now its own box on the pager track and each carries the
+ * whole width of the box, which is the room the contract's lists deserve.
+ *
+ * THE BODY OF EVERY PART IS UNCHANGED. Its `ColumnHead`, its `Box`, its `TextList`, and
+ * its absence line are the ones the single panel rendered; only the container around
+ * them changed.
+ *
+ * Each part also carries its own absence gate now. The single panel gated all four on
+ * the goal record alone, so a work with a goal and no abort condition showed an "Abort
+ * if" part with nothing under it and no pill to say why. A part that fails its own rule
+ * is absent, which is the rule every other panel in this shell already follows.
+ *
+ * The four sections carry no lead. The single panel's lead named all four parts, so
+ * repeating it four times would state the other three, and writing four new sentences
+ * would invent prose the record does not hold. The panel's own title and its ColumnHead
+ * name the part between them.
+ */
+
+/** Why. The goal record's outcome. */
+export function WhySection({ work }: { work: WorkItem }) {
+  const goal = work.record?.goal;
 
   return (
-    <Bento>
-      {/*
-        The contract leads, and it starts at the pane's left edge. It used to sit to
-        the right of an Identity box, and that box is gone. Branch, epic count, and
-        supersedes are work-item facts rather than Intent content, so they moved to
-        the top-line panel the shell draws above every section. The work item's own
-        name and stage stay in the top bar, and neither is repeated here.
-      */}
-      <Panel
-        span="band"
-        title="The contract"
-        icon={Target}
-        lead="Why the work exists, what would make it done, what would stop it, and what it leaves out."
-        absent={!goal}
-      >
-        {/* Two lines. `Why` owns the first one at full width; the other three share
-            the second, because a reader weighs them against each other. */}
-        <div className="flex min-w-0 flex-col gap-4">
-          <div className="flex min-w-0 flex-col gap-2">
-            <ColumnHead label="Why" />
-            {goal ? (
-              <Box label="Outcome">{excerpt(goal.outcome, 260)}</Box>
-            ) : (
-              <Missing>No goal record, so the work states no outcome.</Missing>
-            )}
-          </div>
+    <Panel title="Why" icon={Target} absent={!goal}>
+      <div className="flex min-w-0 flex-col gap-2">
+        <ColumnHead label="Why" />
+        {goal ? (
+          <Box label="Outcome">{excerpt(goal.outcome, 260)}</Box>
+        ) : (
+          <Missing>No goal record, so the work states no outcome.</Missing>
+        )}
+      </div>
+    </Panel>
+  );
+}
 
-          <div className="grid min-w-0 grid-cols-1 gap-x-5 gap-y-4 @xl:grid-cols-3">
-            <div className="flex min-w-0 flex-col gap-2">
-              <ColumnHead label="Done when" />
-              {goal && (goal.done_when?.length ?? 0) > 0 ? (
-                <TextList items={goal.done_when ?? []} ordered />
-              ) : (
-                <Missing>No done-when condition is recorded.</Missing>
-              )}
-            </div>
+/** Done when. The conditions that make the work done. */
+export function DoneWhenSection({ work }: { work: WorkItem }) {
+  const goal = work.record?.goal;
+  const done = goal?.done_when ?? [];
 
-            {/* Abort if — beside Done when, because a reader weighs the two together. */}
-            <div className="flex min-w-0 flex-col gap-2">
-              <ColumnHead label="Abort if" />
-              {goal && (goal.abort_if?.length ?? 0) > 0 ? (
-                <TextList items={goal.abort_if ?? []} />
-              ) : (
-                <Missing>No abort condition is recorded.</Missing>
-              )}
-            </div>
+  return (
+    <Panel title="Done when" icon={ListChecks} absent={done.length === 0}>
+      <div className="flex min-w-0 flex-col gap-2">
+        <ColumnHead label="Done when" />
+        {done.length > 0 ? (
+          <TextList items={done} ordered />
+        ) : (
+          <Missing>No done-when condition is recorded.</Missing>
+        )}
+      </div>
+    </Panel>
+  );
+}
 
-            <div className="flex min-w-0 flex-col gap-2">
-              <ColumnHead label="Out of scope" />
-              {intent && (intent.out_of_scope?.length ?? 0) > 0 ? (
-                <TextList items={intent.out_of_scope ?? []} />
-              ) : (
-                <Missing>No scope boundary is recorded.</Missing>
-              )}
-            </div>
-          </div>
-        </div>
-      </Panel>
-    </Bento>
+/** Abort if. The conditions that would stop the work. */
+export function AbortIfSection({ work }: { work: WorkItem }) {
+  const abort = work.record?.goal?.abort_if ?? [];
+
+  return (
+    <Panel title="Abort if" icon={TriangleAlert} absent={abort.length === 0}>
+      <div className="flex min-w-0 flex-col gap-2">
+        <ColumnHead label="Abort if" />
+        {abort.length > 0 ? (
+          <TextList items={abort} />
+        ) : (
+          <Missing>No abort condition is recorded.</Missing>
+        )}
+      </div>
+    </Panel>
+  );
+}
+
+/** Out of scope. The boundary the intent states. */
+export function OutOfScopeSection({ work }: { work: WorkItem }) {
+  const scope = work.record?.intent?.out_of_scope ?? [];
+
+  return (
+    <Panel title="Out of scope" icon={Ban} absent={scope.length === 0}>
+      <div className="flex min-w-0 flex-col gap-2">
+        <ColumnHead label="Out of scope" />
+        {scope.length > 0 ? (
+          <TextList items={scope} />
+        ) : (
+          <Missing>No scope boundary is recorded.</Missing>
+        )}
+      </div>
+    </Panel>
   );
 }
 
@@ -344,240 +369,244 @@ function FindingList({ findings }: { findings: AssessmentFinding[] }) {
 
 /* -------------------------------------------------------------- Architecture */
 
-export function ArchitecturePanel({
+/*
+ * ARCHITECTURE IS FOUR SECTIONS, AND THE LEVEL PAGES THEM. It used to be one `Bento` of
+ * six panels: diagrams, the decisions, the reach, the rules, the alternatives, and the
+ * envisioned pull request. The engineer regrouped it, and each section is now its own
+ * box on the pager track, so no panel names a span.
+ *
+ * The envisioned pull request left this level for the Pull requests level, where it is
+ * the first block. It is the pull request this work will open, so it belongs beside the
+ * pull requests rather than beside the decisions that shaped it.
+ *
+ * The four sections keep the order the engineer asked for: Diagrams, Architecture
+ * Decisions, Boundaries, Districts and alternatives considered.
+ */
+
+/** Diagrams. Three tiles, and a press opens the drawing whole. */
+export function DiagramsSection({
+  work,
+  theme,
+}: {
+  work: WorkItem;
+  theme: Theme;
+}) {
+  const sources = work.record?.diagrams ?? null;
+
+  return (
+    <Panel
+      title="Diagrams"
+      icon={Network}
+      lead="One tile per level. A press opens the drawing whole."
+      absent={work.diagramLevels.length === 0 || sources === null}
+    >
+      {work.diagramLevels.length > 0 && sources ? (
+        <DiagramTiles levels={work.diagramLevels} sources={sources} theme={theme} />
+      ) : (
+        <Missing>No diagram level exists for this work.</Missing>
+      )}
+    </Panel>
+  );
+}
+
+/** Architecture Decisions. */
+export function DecisionsSection({
   work,
   adrs,
-  theme,
   levelState,
   openSheet,
 }: {
   work: WorkItem;
   adrs: Record<string, AdrRecord>;
-  theme: Theme;
   levelState: LevelState;
   openSheet: (subject: SheetSubject) => void;
 }) {
   const linked = work.linkedAdrs;
   const missingAdr = linked.filter((adr) => adrs[adr.id] === undefined);
-  const alternatives = work.record?.intent?.alternatives ?? [];
 
   return (
-    <Bento>
-      {/*
-        Diagrams lead the section. A reader arrives at Architecture to see the shape,
-        and the picture answers that faster than any list below it. The panel runs the
-        full width, because a diagram is as wide as its own source and no other tile
-        pairs with it on this row.
-      */}
-      <Panel
-        span="band"
-        title="Diagrams"
-        icon={Network}
-        lead="The source is shown as code. The runtime loads from a CDN when the reader presses Render, and at no other moment."
-        absent={work.diagramLevels.length === 0}
-      >
-        {work.diagramLevels.length > 0 && work.record?.diagrams ? (
-          <div className="flex min-w-0 flex-col gap-4">
-            {work.diagramLevels.map((level) => {
-              const source = work.record?.diagrams?.[level];
-              if (!source) return null;
-              return (
-                <Diagram
-                  key={level}
-                  level={level}
-                  kind={source.trim().split("\n")[0]?.trim() ?? "mermaid"}
-                  source={source}
-                  theme={theme}
-                />
-              );
-            })}
-          </div>
-        ) : (
-          <Missing>No diagram level exists for this work.</Missing>
-        )}
-      </Panel>
-
-      {/*
-        The decisions, and where they land. The districts and contexts sit on this
-        row's right, because they answer where the decisions on the left reach, and a
-        reader who wants one of the two almost always wants the other.
-      */}
-      <Panel
-        span="wide"
-        title="Linked Architecture Decisions"
-        icon={ScrollText}
-        lead="Each decision with the rule it enforces, and its whole record one press away."
-        absent={!levelState.available}
-      >
-        {linked.length > 0 ? (
-          <DecisionList work={work} adrs={adrs} openSheet={openSheet} />
-        ) : (
-          <Missing>This work names no decision.</Missing>
-        )}
-        {missingAdr.length > 0 ? (
-          <AbsentLine>
-            {missingAdr.length} named decision
-            {missingAdr.length === 1 ? "" : "s"} did not resolve to a decision record:{" "}
-            {missingAdr.map((adr) => adr.id).join(", ")}.
-          </AbsentLine>
-        ) : null}
-      </Panel>
-
-      <Panel
-        span="narrow"
-        title="Districts and contexts touched"
-        icon={Boxes}
-        lead="Where the linked decisions land."
-        absent={work.contexts.length === 0 && work.districts.length === 0}
-      >
-        <div className="flex min-w-0 flex-col gap-3">
-          <div className="flex min-w-0 flex-col gap-1.5">
-            <SubHead count={work.contexts.length}>Contexts</SubHead>
-            {work.contexts.length > 0 ? (
-              <span className="flex min-w-0 flex-wrap gap-1.5">
-                {work.contexts.map((context) => (
-                  <Chip key={context.id} tone="accent" title={context.path}>
-                    {context.id}
-                  </Chip>
-                ))}
-              </span>
-            ) : (
-              <AbsentLine>No linked decision names a context.</AbsentLine>
-            )}
-          </div>
-          <div className="flex min-w-0 flex-col gap-1.5">
-            <SubHead count={work.districts.length}>Districts</SubHead>
-            {work.districts.length > 0 ? (
-              <span className="flex min-w-0 flex-wrap gap-1.5">
-                {work.districts.map((district) => (
-                  <Chip key={district.id}>{district.label}</Chip>
-                ))}
-              </span>
-            ) : (
-              <AbsentLine>No linked decision names a district.</AbsentLine>
-            )}
-          </div>
-          {work.districtsUncovered.length > 0 ? (
-            <AbsentLine>
-              {work.districtsUncovered.map((district) => district.label).join(", ")} carries no
-              verifying context.
-            </AbsentLine>
-          ) : null}
-        </div>
-      </Panel>
-
-      {/*
-        The rules run the full page width. This corpus carries sixteen of them, and a
-        one-third tile turned them into a very tall column of very narrow cards. The
-        width is spent on a multi-column grid, so the rules read as a set rather than
-        as a queue.
-      */}
-      <Panel
-        span="band"
-        title="Boundary rules"
-        icon={AlertOctagon}
-        lead="The rules the touched contexts declare, and the reason each one carries."
-        absent={work.boundaryRules.length === 0}
-        count={work.boundaryRules.length}
-      >
-        {work.boundaryRules.length > 0 ? (
-          <div className="grid min-w-0 grid-cols-1 gap-2.5 @2xl:grid-cols-2 @5xl:grid-cols-3">
-            {/*
-              SIXTEEN SMALL TILES, AND THEY ARE THE ONE BEST FIT FOR A TILT. A reader
-              picks one up with the pointer, and the two lines it holds do not need to
-              be read in a fixed plane. `glare={false}` is the tilt-without-glare
-              variant: the component renders its glare overlay only when `glare` is
-              true, so the prop is the whole difference.
-            */}
-            {work.boundaryRules.map((rule) => (
-              <TiltCard key={rule.id} className="h-full" glare={false}>
-                <div className="flex h-full min-w-0 flex-col gap-2 rounded-lg border border-line-soft bg-surface-2/50 px-3.5 py-2.5 transition-colors duration-150 ease-house hover:bg-surface-3">
-                  <span className="flex min-w-0 flex-wrap items-center gap-2">
-                    <Chip tone="warn">{rule.kind}</Chip>
-                    {/* The card's own sub-heading, so it takes the level-three bar. */}
-                    <span
-                      className={cn("min-w-0 font-mono text-[13.5px] break-words", TINT_BAR)}
-                    >
-                      {rule.target}
-                    </span>
-                  </span>
-                  {rule.why ? (
-                    <p className="m-0 min-w-0 font-serif text-[15.5px] leading-[1.5] text-ink-dim">
-                      {excerpt(rule.why, 180)}
-                    </p>
-                  ) : null}
-                  <ActionButton
-                    icon={AlertOctagon}
-                    onClick={() =>
-                      openSheet({
-                        kind: "boundary",
-                        id: rule.id,
-                        kindLabel: rule.kind,
-                        target: rule.target,
-                        context: rule.context,
-                        contextEntity: work.contexts.find((c) => c.id === rule.context),
-                        detail: rule.detail,
-                      })
-                    }
-                    ariaLabel={`Open the whole boundary rule ${rule.id}`}
-                    className="mt-auto"
-                  >
-                    Open the whole rule
-                  </ActionButton>
-                </div>
-              </TiltCard>
-            ))}
-          </div>
-        ) : (
-          <Missing>No boundary rule applies to this work.</Missing>
-        )}
-      </Panel>
-
-      {/*
-        Alternatives considered sits here, not in Problem and solution. A rejected option
-        is an architectural one, and every decision above carries its own rejected
-        options beside it, so this groups with like.
-      */}
-      <Panel
-        span="band"
-        title="Alternatives considered"
-        icon={Ban}
-        lead="What the design rejected, and the reason it recorded."
-        absent={alternatives.length === 0}
-        count={alternatives.length}
-      >
-        {alternatives.length > 0 ? (
-          <div className="flex min-w-0 flex-col gap-2.5">
-            {alternatives.map((alt, index) => (
-              <div
-                key={`${index}-${alt.option.slice(0, 20)}`}
-                className="min-w-0 rounded-lg border border-dashed border-line bg-surface-2/50 px-3.5 py-3"
-              >
-                <div className="min-w-0 font-serif text-[16.5px] leading-[1.55] font-semibold text-foreground">
-                  {alt.option}
-                </div>
-                <p className="mt-1 mb-0 min-w-0 font-serif text-[15.5px] leading-[1.55] text-ink-dim">
-                  rejected because {alt.rejected_because}
-                </p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <Missing>No alternative is recorded.</Missing>
-        )}
-      </Panel>
-
-      {work.record?.pr_draft ? (
-        <Panel
-          span="wide"
-          title="Envisioned pull request"
-          icon={Compass}
-          lead="The pull-request draft the design wrote before any code existed."
-        >
-          <Box label="Draft">{excerpt(work.record.pr_draft, 260)}</Box>
-        </Panel>
+    <Panel
+      title="Architecture Decisions"
+      icon={ScrollText}
+      lead="Each decision with the rule it enforces, and its whole record one press away."
+      absent={!levelState.available}
+    >
+      {linked.length > 0 ? (
+        <DecisionList work={work} adrs={adrs} openSheet={openSheet} />
+      ) : (
+        <Missing>This work names no decision.</Missing>
+      )}
+      {missingAdr.length > 0 ? (
+        <AbsentLine>
+          {missingAdr.length} named decision
+          {missingAdr.length === 1 ? "" : "s"} did not resolve to a decision record:{" "}
+          {missingAdr.map((adr) => adr.id).join(", ")}.
+        </AbsentLine>
       ) : null}
-    </Bento>
+    </Panel>
+  );
+}
+
+/** Boundaries. The rules the touched contexts declare, unchanged. */
+export function BoundariesSection({
+  work,
+  openSheet,
+}: {
+  work: WorkItem;
+  openSheet: (subject: SheetSubject) => void;
+}) {
+  return (
+    <Panel
+      title="Boundaries"
+      icon={AlertOctagon}
+      lead="The rules the touched contexts declare, and the reason each one carries."
+      absent={work.boundaryRules.length === 0}
+      count={work.boundaryRules.length}
+    >
+      {work.boundaryRules.length > 0 ? (
+        <div className="grid min-w-0 grid-cols-1 gap-2.5 @2xl:grid-cols-2 @5xl:grid-cols-3">
+          {/*
+            SIXTEEN SMALL TILES, AND THEY ARE THE ONE BEST FIT FOR A TILT. A reader
+            picks one up with the pointer, and the two lines it holds do not need to
+            be read in a fixed plane. `glare={false}` is the tilt-without-glare
+            variant: the component renders its glare overlay only when `glare` is
+            true, so the prop is the whole difference.
+          */}
+          {work.boundaryRules.map((rule) => (
+            <TiltCard key={rule.id} className="h-full" glare={false}>
+              <div className="flex h-full min-w-0 flex-col gap-2 rounded-lg border border-line-soft bg-surface-2/50 px-3.5 py-2.5 transition-colors duration-150 ease-house hover:bg-surface-3">
+                <span className="flex min-w-0 flex-wrap items-center gap-2">
+                  <Chip tone="warn">{rule.kind}</Chip>
+                  {/* The card's own sub-heading, so it takes the level-three bar. */}
+                  <span className={cn("min-w-0 font-mono text-[13.5px] break-words", TINT_BAR)}>
+                    {rule.target}
+                  </span>
+                </span>
+                {rule.why ? (
+                  <p className="m-0 min-w-0 font-serif text-[15.5px] leading-[1.5] text-ink-dim">
+                    {excerpt(rule.why, 180)}
+                  </p>
+                ) : null}
+                <ActionButton
+                  icon={AlertOctagon}
+                  onClick={() =>
+                    openSheet({
+                      kind: "boundary",
+                      id: rule.id,
+                      kindLabel: rule.kind,
+                      target: rule.target,
+                      context: rule.context,
+                      contextEntity: work.contexts.find((c) => c.id === rule.context),
+                      detail: rule.detail,
+                    })
+                  }
+                  ariaLabel={`Open the whole boundary rule ${rule.id}`}
+                  className="mt-auto"
+                >
+                  Open the whole rule
+                </ActionButton>
+              </div>
+            </TiltCard>
+          ))}
+        </div>
+      ) : (
+        <Missing>No boundary rule applies to this work.</Missing>
+      )}
+    </Panel>
+  );
+}
+
+/**
+ * Districts and alternatives considered, merged.
+ *
+ * The engineer asked to see how the two could merge, and the merge only works at a
+ * tighter density. Measured before this change: the reach panel was 440 px and the nine
+ * alternatives were 1183 px, so a merge that kept both shapes would have been 1623 px,
+ * or three pages of this stage, which is worse than two sections. So the reach loses its
+ * two sub-heading rules and its gaps and becomes one strip of chips, and each
+ * alternative loses its card padding and sets its two parts on one flowing line.
+ *
+ * THE REACH STRIP CARRIES PLAIN LABELS, NOT SUB-HEADINGS. `SubHead` draws a tinted bar
+ * with a rule under it, which is what made the old panel tall. The two labels here are
+ * the shell's 12 px mono label, the same one the top line uses for `branch` and `epics`.
+ * Their counts are gone with the sub-headings: the chips are the count.
+ *
+ * THE ALTERNATIVE ROWS FLOW. The option keeps its semibold weight and the reason keeps
+ * the dim ink, and the two share one line that wraps, so a row costs a line or two
+ * instead of a padded card.
+ */
+export function DistrictsAndAlternativesSection({ work }: { work: WorkItem }) {
+  const alternatives = work.record?.intent?.alternatives ?? [];
+  const reachEmpty = work.contexts.length === 0 && work.districts.length === 0;
+
+  return (
+    <Panel
+      title="Districts and alternatives considered"
+      icon={Boxes}
+      lead="Where the linked decisions land, and what the design rejected."
+      absent={reachEmpty && alternatives.length === 0}
+      count={alternatives.length}
+    >
+      {/* The reach: one strip, two labels, their chips, and the uncovered line. */}
+      <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1.5">
+        <span className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <span className="shrink-0 font-mono text-[12px] tracking-[0.05em] text-ink-faint uppercase">
+            contexts
+          </span>
+          {work.contexts.length > 0 ? (
+            work.contexts.map((context) => (
+              <Chip key={context.id} tone="accent" title={context.path}>
+                {context.id}
+              </Chip>
+            ))
+          ) : (
+            <span className="font-mono text-[12px] text-ink-faint">
+              No linked decision names a context.
+            </span>
+          )}
+        </span>
+
+        <span className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <span className="shrink-0 font-mono text-[12px] tracking-[0.05em] text-ink-faint uppercase">
+            districts
+          </span>
+          {work.districts.length > 0 ? (
+            work.districts.map((district) => (
+              <Chip key={district.id}>{district.label}</Chip>
+            ))
+          ) : (
+            <span className="font-mono text-[12px] text-ink-faint">
+              No linked decision names a district.
+            </span>
+          )}
+        </span>
+
+        {work.districtsUncovered.length > 0 ? (
+          <span className="min-w-0 font-mono text-[12px] text-ink-faint">
+            {work.districtsUncovered.map((district) => district.label).join(", ")} carries no
+            verifying context.
+          </span>
+        ) : null}
+      </div>
+
+      {alternatives.length > 0 ? (
+        <div className="mt-3 flex min-w-0 flex-col gap-1.5">
+          {alternatives.map((alt, index) => (
+            <div
+              key={`${index}-${alt.option.slice(0, 20)}`}
+              className="min-w-0 rounded-lg border border-dashed border-line bg-surface-2/40 px-3 py-2"
+            >
+              <p className="m-0 min-w-0 font-serif text-[15.5px] leading-[1.45] text-ink-dim">
+                <span className="font-semibold text-foreground">{alt.option}</span>{" "}
+                rejected because {alt.rejected_because}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <Missing>No alternative is recorded.</Missing>
+      )}
+    </Panel>
   );
 }
 

@@ -449,16 +449,30 @@ export function Panel({
  * card. The tone names what the box holds rather than how important it is: a problem
  * reads amber, a solution reads green, a note reads dashed and quiet.
  */
+/**
+ * The attribute a record part carries to become a link in the Sheet's jumplink row.
+ *
+ * `Box` and `SubHead` are its only writers, and both write it from the label they
+ * already render, so the row cannot name a heading the record does not have. The
+ * constant lives here rather than beside its reader in `Sheet.tsx`, because `Sheet.tsx`
+ * imports this file and the reverse would be a cycle. `jump.tsx` holds `JUMP_ATTR` for
+ * the pane's own links, and that one is read by its own module.
+ */
+export const SHEET_HEADING_ATTR = "data-sheet-heading";
+
 export function Box({
   label,
   children,
   tone = "plain",
   className,
+  anchor = false,
 }: {
   label: string;
   children: ReactNode;
   tone?: "plain" | "problem" | "solution" | "note";
   className?: string;
+  /** True when the Sheet's jumplink row should link to this part. */
+  anchor?: boolean;
 }) {
   const toneClass =
     tone === "problem"
@@ -469,7 +483,10 @@ export function Box({
           ? "border-dashed border-line bg-surface-2/70"
           : "border-line bg-surface-2/60";
   return (
-    <div className={cn("min-w-0 rounded-lg border px-3.5 py-3", toneClass, className)}>
+    <div
+      {...(anchor ? { [SHEET_HEADING_ATTR]: "" } : {})}
+      className={cn("min-w-0 rounded-lg border px-3.5 py-3", toneClass, className)}
+    >
       <div className="font-mono text-[12px] font-bold tracking-[0.08em] text-ink-dim uppercase">
         {label}
       </div>
@@ -525,13 +542,17 @@ export function SubHead({
   children,
   count,
   className,
+  anchor = false,
 }: {
   children: ReactNode;
   count?: number;
   className?: string;
+  /** True when the Sheet's jumplink row should link to this part. */
+  anchor?: boolean;
 }) {
   return (
     <h3
+      {...(anchor ? { [SHEET_HEADING_ATTR]: "" } : {})}
       className={cn(
         "m-0 inline-flex min-w-0 items-baseline gap-2 self-start font-mono text-[14px] font-bold tracking-[0.02em]",
         TINT_BAR,

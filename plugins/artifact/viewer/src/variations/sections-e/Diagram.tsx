@@ -30,7 +30,7 @@ import { Chip } from "./atoms";
 
 const MERMAID_URL = "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
 
-interface MermaidApi {
+export interface MermaidApi {
   initialize: (config: Record<string, unknown>) => void;
   render: (id: string, text: string) => Promise<{ svg: string }>;
 }
@@ -38,7 +38,15 @@ interface MermaidApi {
 let apiPromise: Promise<MermaidApi> | null = null;
 let apiTheme: string | null = null;
 
-async function loadMermaid(theme: Theme): Promise<MermaidApi> {
+/**
+ * The runtime, loaded once and shared by every caller.
+ *
+ * Exported for `DiagramTiles.tsx`, which needs the runtime at mount rather than at a
+ * press, and which needs one instance for all three levels. The configuration below is
+ * the shell's own and is unchanged: in particular `securityLevel: "strict"` is set
+ * before the first render call.
+ */
+export async function loadMermaid(theme: Theme): Promise<MermaidApi> {
   if (!apiPromise) {
     apiPromise = import(/* @vite-ignore */ MERMAID_URL)
       .then((mod: { default?: MermaidApi }) => {

@@ -350,8 +350,15 @@ export function gatesOf(work: WorkItem): Gates {
   const implemented = work.design.stage === "implemented";
   return {
     build: work.epics.length >= 1,
-    /* One of this work's own epics carries a pull request. */
-    pullRequests: work.pullRequests.length >= 1,
+    /*
+     * One of this work's own epics carries a pull request, or the work states the pull
+     * request it will open. A design's `pr-draft.md` is authored before the code exists,
+     * and it is the only pull-request record a work in the design stage has. Excluding
+     * it left the level absent and the route silently redirected to Intent, which is the
+     * shell stating that a level holds nothing while its first block was waiting to be
+     * read.
+     */
+    pullRequests: work.pullRequests.length >= 1 || Boolean(work.record?.pr_draft),
     /* The stage is implemented, or a publication exists for one of this work's own. */
     shipped: implemented || work.publications.length >= 1,
     /*

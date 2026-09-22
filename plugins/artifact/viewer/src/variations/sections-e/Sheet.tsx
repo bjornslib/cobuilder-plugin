@@ -30,10 +30,12 @@
  * file. Its caller holds the subject.
  */
 
+import { useCallback, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
 import type { LucideIcon } from "lucide-react";
 import { AlertOctagon, ListChecks, ScrollText } from "lucide-react";
+import { useReducedMotion } from "motion/react";
 
 import {
   Sheet,
@@ -43,9 +45,20 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import type { ContextEntity, EpicDesignEntity, EpicEntity } from "@/data/types";
+import { cn } from "@/lib/utils";
 
 import type { AdrRecord } from "./records";
-import { Box, Chip, KeyValue, Missing, StateBadge, SubHead, TextList, toneForStage } from "./atoms";
+import {
+  Box,
+  Chip,
+  KeyValue,
+  Missing,
+  SHEET_HEADING_ATTR,
+  StateBadge,
+  SubHead,
+  TextList,
+  toneForStage,
+} from "./atoms";
 import { MarkdownBlock } from "./markdown";
 
 /** Everything a Sheet can show. One member per record kind. */
@@ -106,7 +119,155 @@ function detailEntries(detail: Record<string, unknown>): Array<{ key: string; va
     .map(([key, value]) => ({ key, value }));
 }
 
+/* --------------------------------------------------------------- jumplinks */
+
+/**
+ * The Sheet's own scroll container, held as the element the reader works on.
+ *
+ * IT ARRIVES AFTER THE FIRST RENDER, which is why this is a callback ref and not a
+ * lookup by id. The Sheet is a portal that Radix mounts when a subject opens, so an
+ * effect that ran on the open would find nothing and never look again. A ref callback
+ * puts the element into state the moment it exists, and the reader below re-runs on it.
+ *
+ * The row lives above the container rather than inside it, so it stays put while the
+ * record scrolls under it, and no sticky offset is needed when a link lands a heading.
+ */
+
+/** One link in the row. */
+interface SheetHeading {
+  id: string;
+  label: string;
+}
+
+/** The id a heading's own words become, so the link and the heading cannot drift. */
+function headingId(label: string): string {
+  return `sheet-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+}
+
+/**
+ * The headings the record rendered, in document order.
+ *
+ * THE RECORD DECIDES THE LIST. `Box` and `SubHead` mark the parts they render, and this
+ * reads the marks the way the pane's link bar reads panels, so a record with different
+ * parts gets its own row with no code change and no list to keep in step.
+ *
+ * A heading's label is its first element child's text, which is where both atoms put
+ * the words they render. Reading the whole element would swallow `SubHead`'s count.
+ *
+ * The id is assigned here when the heading lacks one, because the reader is the only
+ * place that knows the label and the DOM is its own to address. Setting an attribute
+ * fires no child-list mutation, so the observer below cannot loop on itself.
+ */
+function useSheetHeadings(scroll: HTMLElement | null, keys: readonly unknown[]): SheetHeading[] {
+  const [headings, setHeadings] = useState<SheetHeading[]>([]);
+  const signature = keys.join("|");
+
+  useEffect(() => {
+    if (scroll === null) {
+      setHeadings((current) => (current.length === 0 ? current : []));
+      return;
+    }
+
+    const read = () => {
+      const found = Array.from(scroll.querySelectorAll<HTMLElement>(`[${SHEET_HEADING_ATTR}]`)).map(
+        (element) => {
+          const label = (element.firstElementChild?.textContent ?? "").trim();
+          if (element.id === "") element.id = headingId(label);
+          return { id: element.id, label };
+        },
+      );
+      setHeadings((current) =>
+        current.length === found.length &&
+        current.every((entry, index) => entry.id === found[index].id && entry.label === found[index].label)
+          ? current
+          : found,
+      );
+    };
+
+    read();
+    const observer = new MutationObserver(read);
+    observer.observe(scroll, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [scroll, signature]);
+
+  return headings;
+}
+
+/**
+ * The row itself.
+ *
+ * A `nav` of anchors, like the pane's link bar, so a link is focusable and
+ * right-clickable. The press is intercepted, because the record scrolls inside its own
+ * container and a hash write would move the document instead.
+ *
+ * The row scrolls sideways when it overflows, so a record with many parts keeps every
+ * link reachable rather than clipping the last one.
+ */
+function SheetJumpLinks({
+  headings,
+  scroll,
+}: {
+  headings: SheetHeading[];
+  scroll: HTMLElement | null;
+}) {
+  const reduce = useReducedMotion() ?? false;
+
+  const jump = useCallback(
+    (event: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+      event.preventDefault();
+      const target = document.getElementById(id);
+      if (!scroll || !target) return;
+      const delta = target.getBoundingClientRect().top - scroll.getBoundingClientRect().top;
+      scroll.scrollTo({
+        top: scroll.scrollTop + delta,
+        /* The reader's horizontal offset is theirs and it stays. */
+        left: scroll.scrollLeft,
+        behavior: reduce ? "instant" : "smooth",
+      });
+      /* The heading keeps focus, so a keyboard reader lands where the pointer did. */
+      target.setAttribute("tabindex", "-1");
+      target.focus({ preventScroll: true });
+    },
+    [reduce, scroll],
+  );
+
+  if (headings.length === 0) return null;
+
+  return (
+    <nav
+      aria-label="Parts of this record"
+      className="flex min-w-0 shrink-0 items-center gap-1 overflow-x-auto overscroll-x-contain border-b border-line bg-surface px-4 py-1.5"
+    >
+      {headings.map((heading) => (
+        <a
+          key={heading.id}
+          href={`#${heading.id}`}
+          onClick={(event) => jump(event, heading.id)}
+          className={cn(
+            "inline-flex min-h-8 shrink-0 cursor-pointer items-center rounded-md border border-transparent px-2.5 font-mono text-[12.5px] whitespace-nowrap text-ink-dim",
+            "transition-colors duration-150 ease-house hover:bg-surface-2 hover:text-foreground",
+            "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+          )}
+        >
+          {heading.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
 export function RecordSheet({ subject, onOpenChange }: RecordSheetProps) {
+  /*
+   * The scroll container as state, because the portal mounts it after the first render.
+   * The row re-reads when another record opens, which is the only other time it changes.
+   */
+  const [scroll, setScroll] = useState<HTMLDivElement | null>(null);
+  const attachScroll = useCallback((element: HTMLDivElement | null) => setScroll(element), []);
+  const headings = useSheetHeadings(scroll, [
+    subject?.kind ?? "",
+    subject === null ? "" : titleOf(subject),
+  ]);
+
   return (
     <Sheet open={subject !== null} onOpenChange={onOpenChange}>
       {subject === null ? null : (
@@ -143,8 +304,10 @@ export function RecordSheet({ subject, onOpenChange }: RecordSheetProps) {
             </span>
           </SheetHeader>
 
+          <SheetJumpLinks headings={headings} scroll={scroll} />
+
           {/* The Sheet owns its own scroll on both axes, so a wide block stays intact. */}
-          <div className="min-h-0 min-w-0 flex-1 overflow-auto px-4 py-4">
+          <div ref={attachScroll} className="min-h-0 min-w-0 flex-1 overflow-auto px-4 py-4">
             <SheetBody subject={subject} />
           </div>
         </SheetContent>
@@ -247,19 +410,19 @@ function AdrBody({
   return (
     <div className="flex min-w-0 flex-col gap-4">
       {record.problem ? (
-        <Box label="Problem" tone="problem">
+        <Box label="Problem" tone="problem" anchor>
           {record.problem}
         </Box>
       ) : null}
 
       {record.decision ? (
-        <Box label="Decision" tone="solution">
+        <Box label="Decision" tone="solution" anchor>
           {record.decision}
         </Box>
       ) : null}
 
       {record.maps_to?.rule ? (
-        <Box label="The rule this decision enforces">
+        <Box label="The rule this decision enforces" anchor>
           {record.maps_to.rule}
           <span className="mt-2 flex min-w-0 flex-wrap items-center gap-1.5">
             {record.maps_to.context ? <Chip tone="accent">context {record.maps_to.context}</Chip> : null}
@@ -281,15 +444,19 @@ function AdrBody({
 
       {forces.length > 0 ? (
         <div className="flex min-w-0 flex-col gap-2">
-          <SubHead count={forces.length}>Forces</SubHead>
+          <SubHead count={forces.length} anchor>
+            Forces
+          </SubHead>
           <TextList items={forces} />
         </div>
       ) : null}
 
       {delivers ? (
         <div className="grid min-w-0 grid-cols-1 gap-3 lg:grid-cols-2">
-          <Box label="Capability">{delivers.capability}</Box>
-          <Box label="Benefit" tone="solution">
+          <Box label="Capability" anchor>
+            {delivers.capability}
+          </Box>
+          <Box label="Benefit" tone="solution" anchor>
             {delivers.benefit}
             {delivers.beneficiary.length > 0 ? (
               <span className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -304,7 +471,7 @@ function AdrBody({
 
       {record.body ? (
         <div className="flex min-w-0 flex-col gap-2">
-          <SubHead>Full record</SubHead>
+          <SubHead anchor>Full record</SubHead>
           <div className="min-w-0 rounded-lg border border-line bg-surface-2/40 p-3.5">
             <MarkdownBlock markdown={record.body} />
           </div>
@@ -314,7 +481,9 @@ function AdrBody({
       )}
 
       <div className="flex min-w-0 flex-col gap-2">
-        <SubHead count={history.length}>History</SubHead>
+        <SubHead count={history.length} anchor>
+        History
+      </SubHead>
         {history.length > 0 ? (
           <ul className="m-0 flex min-w-0 list-none flex-col gap-1.5 p-0">
             {history.map((entry, index) => (
@@ -360,7 +529,9 @@ function alts(alternatives: AdrRecord["alternatives"]): ReactNode {
   if (!alternatives || alternatives.length === 0) return null;
   return (
     <div className="flex min-w-0 flex-col gap-2">
-      <SubHead count={alternatives.length}>Rejected alternatives</SubHead>
+      <SubHead count={alternatives.length} anchor>
+        Rejected alternatives
+      </SubHead>
       <div className="flex min-w-0 flex-col gap-2">
         {alternatives.map((option, index) => (
           <div

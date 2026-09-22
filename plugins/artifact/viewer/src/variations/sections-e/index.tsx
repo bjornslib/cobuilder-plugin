@@ -12,11 +12,20 @@
  *   │ (fixed)    │                                             │
  *   └────────────┴─────────────────────────────────────────────┘
  *
- * SECTIONS (E) IS SHELL (D) WITH ONE CHANGE. The Problem & Solution level is a
- * horizontal section pager rather than a stacked page: one panel per box on a track
- * that slides sideways, and each box scrolls its own overflow. Every other section
- * keeps the layout below unchanged. `Pager.tsx` holds the three pager pieces, and its
- * header comment states what the engineer asked for and why each piece is shaped so.
+ * SECTIONS (E) IS SHELL (D) WITH TWO CHANGES, and both are the level's own layout.
+ *
+ *   Four levels are horizontal section pagers rather than stacked pages: one section per
+ *   box on a track that slides sideways, and each box scrolls its own overflow. Intent
+ *   pages the four parts of its contract. Problem & Solution pages its four panels.
+ *   Architecture regroups its level into Diagrams, Architecture Decisions, Boundaries,
+ *   and Districts and alternatives considered. Build pages its epics, six to a section.
+ *   Every other section keeps the layout below unchanged, and Build's Rubrics sub-view
+ *   keeps it too. `Pager.tsx` holds the three pager pieces, and its header comment
+ *   states what the engineer asked for and why each piece is shaped so.
+ *
+ *   A paged level also drops its visible heading band, because the section strip names
+ *   the same words a band would. It keeps the heading as `sr-only`, so the focus
+ *   contract and the document's one `h1` survive.
  *
  * SECTION 11.3'S FOUR RULES ARE THE LAYOUT CONTRACT, and each one is applied here.
  *
@@ -63,6 +72,7 @@ import { BUNDLE_DATA_URL, entitiesOf, joinsOf } from "@/data/bundle";
 import { cn } from "@/lib/utils";
 
 import { Chip, SectionHeading } from "./atoms";
+import type { AdrRecord } from "./records";
 import { JumpBar, useJumpTargets } from "./jump";
 import type { JumpTarget } from "./jump";
 import { SectionPager, SectionStage, SectionStrip, useSectionPaging } from "./Pager";
@@ -71,14 +81,27 @@ import { RecordSheet } from "./Sheet";
 import type { SheetSubject } from "./Sheet";
 import { TopBar } from "./TopBar";
 import {
-  ArchitecturePanel,
+  AbortIfSection,
   AssessmentSection,
-  IntentPanel,
+  BoundariesSection,
+  DecisionsSection,
+  DiagramsSection,
+  DistrictsAndAlternativesSection,
+  DoneWhenSection,
+  OutOfScopeSection,
   ProblemSolutionSection,
   RisksSection,
   UnknownsSection,
+  WhySection,
 } from "./panels";
-import { EpicsSection, PullRequestsSection, RubricsSection, ShippedSection } from "./sections";
+import {
+  EpicGroupSection,
+  PullRequestsSection,
+  RubricsSection,
+  ShippedSection,
+  UnresolvedSlicesSection,
+  epicGroups,
+} from "./sections";
 import type { Theme } from "./Diagram";
 import { buildWorkItems, gatesOf, levelsOf, routeHref, switcherList } from "./model";
 import type { Gates, LevelState, SectionKey, WorkItem } from "./model";
@@ -102,14 +125,112 @@ const HEADING_ID = "work-section-heading";
 const PROGRESS_PX = 4;
 
 /**
- * How many sections the paging level holds.
+ * The levels that page, in the order the rail lists them.
  *
- * Written here rather than read from the strip's own list. The strip reads the DOM, so
- * after a section change its list is one commit behind the panels that changed and the
- * pager would print a count of one for that frame. The four boxes `PagedLevel` renders
- * are fixed, so this number is fixed with them. Change the two together.
+ * A paged level lays its sections on a horizontal track, one section on screen, and it
+ * drops its visible heading band for the same reason in every case: the section strip
+ * names the level's own sections, so a band above it would repeat the same words. The
+ * other sections stack their panels into the pane's own scroll.
+ *
+ * The count is never written down. `PagedLevel` takes the sections it renders as one
+ * array and reads the length of it, so the strip, the pager text, and the boxes cannot
+ * drift apart.
  */
-const PAGED_SECTIONS = 4;
+const PAGED_LEVELS = ["intent", "problem-and-solution", "architecture", "build"] as const;
+
+type PagedLevelKey = (typeof PAGED_LEVELS)[number];
+
+/** True when this section has a track. Build's Rubrics sub-view is the one exception. */
+function isPaged(section: SectionKey): section is PagedLevelKey {
+  return (PAGED_LEVELS as readonly SectionKey[]).includes(section);
+}
+
+/**
+ * The sections a paged level lays on its track, in the order Next walks them.
+ *
+ * The Build level is the one level whose sections come from the corpus rather than from
+ * a fixed list: its epics are chunked, and the chunking rule lives beside the panel that
+ * renders one, so the two cannot drift. A route that names an epic is answered by the
+ * chunk that holds it, which is also where the reader lands.
+ */
+function pagedSections({
+  section,
+  work,
+  levelState,
+  adrs,
+  theme,
+  openSheet,
+  unresolvedSlices,
+  focusEpic,
+}: {
+  section: PagedLevelKey;
+  work: WorkItem;
+  levelState: LevelState | null;
+  adrs: Record<string, AdrRecord>;
+  theme: Theme;
+  openSheet: (subject: SheetSubject) => void;
+  unresolvedSlices: number;
+  focusEpic: string | null;
+}): ReactNode[] {
+  if (section === "intent") {
+    return [
+      <WhySection key="why" work={work} />,
+      <DoneWhenSection key="done-when" work={work} />,
+      <AbortIfSection key="abort-if" work={work} />,
+      <OutOfScopeSection key="out-of-scope" work={work} />,
+    ];
+  }
+
+  if (section === "problem-and-solution") {
+    return [
+      <ProblemSolutionSection key="problem" work={work} levelState={levelState!} />,
+      <RisksSection key="risks" work={work} />,
+      <AssessmentSection key="assessment" work={work} />,
+      <UnknownsSection key="unknowns" work={work} />,
+    ];
+  }
+
+  if (section === "architecture") {
+    return [
+      <DiagramsSection key="diagrams" work={work} theme={theme} />,
+      <DecisionsSection
+        key="decisions"
+        work={work}
+        adrs={adrs}
+        levelState={levelState!}
+        openSheet={openSheet}
+      />,
+      <BoundariesSection key="boundaries" work={work} openSheet={openSheet} />,
+      <DistrictsAndAlternativesSection key="districts" work={work} />,
+    ];
+  }
+
+  const groups = epicGroups(work);
+  return [
+    ...groups.map((group, position) => (
+      <EpicGroupSection
+        key={`epics-${position}`}
+        work={work}
+        group={group}
+        focusEpic={focusEpic}
+        openSheet={openSheet}
+      />
+    )),
+    /* The unresolved-slices panel keeps a section of its own when the bundle holds one. */
+    ...(unresolvedSlices > 0
+      ? [<UnresolvedSlicesSection key="unresolved" count={unresolvedSlices} />]
+      : []),
+  ];
+}
+
+/** The chunk a route's epic falls in, so a deep link lands on the epic itself. */
+function epicStartIndex(work: WorkItem, focusEpic: string | null): number {
+  if (focusEpic === null) return 0;
+  const found = epicGroups(work).findIndex((group) =>
+    group.some((epic) => epic.epic_id === focusEpic),
+  );
+  return Math.max(0, found);
+}
 
 /**
  * The rail's two widths, in the tokens section 9.1 and 9.2 give them.
@@ -353,11 +474,17 @@ export default function AppShell() {
   const adrs = load.state === "ready" ? load.adrs : {};
 
   /*
-   * The one level that pages. Every other section stacks its panels in the pane's own
-   * scroll, so this reads null there and the layout below stays the shell's.
+   * The level state behind a paged section. Build has none, because the rail's own gate
+   * decides it. Every other section stacks its panels in the pane's own scroll, so this
+   * reads null there and the layout below stays the shell's.
+   *
+   * RUBRICS IS NOT PAGED. The rail's Rubrics entry is a sub-view of Build, and it keeps
+   * the layout it has always had: one panel, its own scroll. Only the epics sub-view
+   * lays an epic per section on a track.
    */
-  const pagedLevel =
-    section === "problem-and-solution" ? (levels?.["problem-and-solution"] ?? null) : null;
+  const paged = isPaged(section) && !(section === "build" && route.sub === "rubrics");
+  const pagedLevel = paged && section !== "build" ? (levels?.[section] ?? null) : null;
+  const focusEpic = section === "build" && route.sub === "epics" ? route.subId : null;
 
   /* The whole route as one string: the four fields `useScrollResetOnRoute` reads. */
   const routeKey = `${route.workId ?? ""}/${route.section}/${route.sub ?? ""}/${route.subId ?? ""}`;
@@ -441,7 +568,7 @@ export default function AppShell() {
                   rather than links into a page. `PagedLevel` draws its own strip,
                   which measures the box on screen.
                 */}
-                {pagedLevel === null ? (
+                {paged ? null : (
                   <div
                     className="sticky top-0 min-w-0 bg-ground"
                     style={{ zIndex: "var(--layer-raised)" }}
@@ -455,7 +582,7 @@ export default function AppShell() {
                     />
                     <JumpBar paneId={PANE_ID} targets={jumpTargets} topOffset={PROGRESS_PX} />
                   </div>
-                ) : null}
+                )}
 
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div
@@ -472,7 +599,7 @@ export default function AppShell() {
                        * a `flex-1` child, takes exactly what the chrome above it did
                        * not spend. A level that stacks keeps the pane's own scroll.
                        */
-                      pagedLevel
+                      paged
                         ? "flex h-full min-h-0 flex-col pt-6 pb-2"
                         : "px-6 py-6 pb-12",
                     )}
@@ -494,7 +621,7 @@ export default function AppShell() {
                       the document still needs its one `h1`. A screen reader therefore
                       still hears the level name, and no reader loses the text.
                     */}
-                    {pagedLevel ? (
+                    {paged ? (
                       <h1 id={HEADING_ID} tabIndex={-1} className="sr-only outline-none">
                         {SECTION_TITLE[section]}
                       </h1>
@@ -506,40 +633,34 @@ export default function AppShell() {
                       />
                     )}
 
-                    {section === "intent" && levels ? <IntentPanel work={work} /> : null}
                     {/*
-                      Problem and solution pages. The level is the one section that
-                      does not stack its panels, so it hands the pane's remaining
-                      height to the track instead of spending it on a column.
+                      THE PAGED LEVELS LAY THEIR SECTIONS ON A TRACK. Intent, Problem and
+                      solution, Architecture, and Build's epics each hand the pane's
+                      remaining height to the track instead of spending it on a column.
+                      The order of the array is the order Next walks, and its length is
+                      the count the strip and the pager bar read, so nothing here can
+                      drift. `start` answers a route that names one section's record,
+                      which today means an epic deep link.
                     */}
-                    {pagedLevel ? (
+                    {paged ? (
                       <PagedLevel
-                        work={work}
-                        levelState={pagedLevel}
                         targets={jumpTargets}
                         routeKey={routeKey}
+                        start={epicStartIndex(work, focusEpic)}
+                        sections={pagedSections({
+                          section,
+                          work,
+                          levelState: pagedLevel,
+                          adrs,
+                          theme,
+                          openSheet,
+                          unresolvedSlices,
+                          focusEpic,
+                        })}
                       />
                     ) : null}
-                    {section === "architecture" && levels ? (
-                      <ArchitecturePanel
-                        work={work}
-                        adrs={adrs}
-                        theme={theme}
-                        levelState={levels.architecture}
-                        openSheet={openSheet}
-                      />
-                    ) : null}
-                    {section === "build" ? (
-                      route.sub === "rubrics" ? (
-                        <RubricsSection work={work} gated={gates?.rubrics ?? false} />
-                      ) : (
-                        <EpicsSection
-                          work={work}
-                          focusEpic={route.sub === "epics" ? route.subId : null}
-                          openSheet={openSheet}
-                          unresolvedSlices={unresolvedSlices}
-                        />
-                      )
+                    {section === "build" && route.sub === "rubrics" ? (
+                      <RubricsSection work={work} gated={gates?.rubrics ?? false} />
                     ) : null}
                     {section === "pull-requests" ? (
                       <PullRequestsSection
@@ -661,17 +782,20 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
  * the stacked level read.
  */
 function PagedLevel({
-  work,
-  levelState,
+  sections,
   targets,
   routeKey,
+  start = 0,
 }: {
-  work: WorkItem;
-  levelState: LevelState;
+  /** The sections, in the order Next walks them. The length is the level's count. */
+  sections: ReactNode[];
   targets: JumpTarget[];
   routeKey: string;
+  /** The section a new route lands on. 0 unless the route names a section's record. */
+  start?: number;
 }) {
-  const { index, select, previous, next } = useSectionPaging(PAGED_SECTIONS, routeKey);
+  const count = sections.length;
+  const { index, select, previous, next } = useSectionPaging(count, routeKey, start);
   const boxRef = useRef<HTMLDivElement | null>(null);
 
   return (
@@ -694,15 +818,12 @@ function PagedLevel({
         Nothing focusable lives in the strip, so no tab order changes.
       */}
       <SectionStage index={index} activeBoxRef={boxRef}>
-        <ProblemSolutionSection work={work} levelState={levelState} />
-        <RisksSection work={work} />
-        <AssessmentSection work={work} />
-        <UnknownsSection work={work} />
+        {sections}
       </SectionStage>
 
-      <LevelProgress index={index} count={PAGED_SECTIONS} boxRef={boxRef} />
+      <LevelProgress index={index} count={count} boxRef={boxRef} />
 
-      <SectionPager index={index} count={PAGED_SECTIONS} onPrevious={previous} onNext={next} />
+      <SectionPager index={index} count={count} onPrevious={previous} onNext={next} />
     </div>
   );
 }

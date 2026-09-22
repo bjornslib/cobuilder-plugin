@@ -49,18 +49,22 @@ const clamp = (wanted: number, count: number): number =>
  * new route is a new page, and a reader starts at that page's first section. The index
  * is clamped at render as well, so a shorter list can never leave it past its own end.
  *
+ * `start` is the section a new route lands on, and it is 0 for every level whose
+ * sections carry no route of their own. The Build level needs it: an epic deep link
+ * names one epic, and the section that holds that epic is the one the reader asked for.
+ *
  * The two arrow keys step. A field owns its own caret keys, so a press inside an input,
  * a textarea, or a select is left alone, and so is any press with a modifier held.
  * Vertical scrolling needs no other guard: these two keys move sideways and a box
  * scrolls up and down.
  */
-export function useSectionPaging(count: number, routeKey: string) {
+export function useSectionPaging(count: number, routeKey: string, start = 0) {
   const [state, setState] = useState(0);
   const index = clamp(state, count);
 
   useEffect(() => {
-    setState(0);
-  }, [routeKey]);
+    setState(clamp(start, count));
+  }, [routeKey, start, count]);
 
   const select = useCallback((wanted: number) => setState(clamp(wanted, count)), [count]);
   const step = useCallback(
