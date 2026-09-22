@@ -678,10 +678,14 @@ A short response may carry one label or two. The rule is the label, not the leng
 Do not pad a response to reach four labels. The reader must be able to stop after
 FYI when nothing needs them.
 
-**Structured responses
-- Group your responses logically, do not mix topics when responding to the user.
-- Make use of bullet-points, numbered lists, and tables
-- Use underlined and numbered headings for logical groups
+Group the labels logically, and keep one topic to a paragraph. Use a bullet, a
+numbered list, or a table where it carries the meaning better than a sentence.
+
+**Run the skill on the draft.** Invoke `Skill("architect:ste-writing")` on the
+response before you send it, and correct what it flags. If the call answers
+`Unknown skill`, read `${CLAUDE_PLUGIN_ROOT}/shared/skills/ste-writing/SKILL.md`
+and obey that file. This section's own rules above are what to hold in mind
+without invoking it.
 
 Judge a draft by rereading it against the rules above. `ste-writing` also
 ships `shared/skills/ste-writing/ste-lint.py`, a rules-only linter that scores
