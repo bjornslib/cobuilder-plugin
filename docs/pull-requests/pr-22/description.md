@@ -1,0 +1,59 @@
+# PR #22 — cobuilder-viewer: the build owns the committed viewer, with FlightDeck's prototype
+
+## Problem
+
+The bundle viewer is one committed HTML file, and the work to replace it landed in two halves that do not meet. The React program under plugins/artifact/viewer/src/ is a real application with a shell, a Work board, and a typed reader of the bundle's record index, and the file the bundle actually serves is still the 4,747-line hand-written page the program was meant to replace. The three things that join the halves are the build, the exporter seam, and parity. The build must reproduce the committed file byte for byte, or the committed file is a guess nobody can refresh. The exporter must match markers the build emits on purpose, or publishing breaks the moment the build changes its output. FlightDeck must read a pull request's narration, diagrams, scene art, audio, diff, and intent so that a reader meets the same content the old page showed. A build with no parity is a swap that loses content. A swap with no working publish loses the Artifact path ADR-0001 exists to protect.
+
+The swap is the moment the two halves must meet, and it cannot be deferred past E2. E2's outcome asks the build to produce the committed plugins/artifact/viewer/index.html, and the engineer moved slices 14, 15, and 16 ahead of slices 4, 5, and 8 through 13 on 2026-09-23 for one reason: once the committed file is the React application, a reader who presses a pull request meets a surface that reads none of that pull request's story records, and slice 15 is where it starts to. Slice 14 also ends in an approval, so it stops the run rather than opening the gap wider. The exporter seam was sequenced first, at E1, precisely so that E2 could not break publishing, and E2 broke it anyway.
+
+## Why this approach
+
+The branch lands four things. First, the exporter's named-marker seam: export_artifact.py holds MARKERS as module data, matches each region by name, and stops with a message naming a missing marker rather than writing a half-rewritten page. Second, the build pipeline: a pinned lockfile, Node 22.22.3, and vite-plugin-singlefile, so npm run build in plugins/artifact/viewer/ writes the committed index.html in place and a test rebuilds it and fails on any differing byte. The six marker pairs were moved into a classic inline script in src/index.html, because the default esbuild minifier strips every // comment and esbuild's TypeScript transform strips them from a .ts module even unminified. Turning minification off is not enough either, and it costs 1,261,969 bytes. Third, the FlightDeck prototype: one surface with two modes behind one switch, at plugins/artifact/viewer/src/variations/flightdeck/, with its own dev entry and two recorded state screenshots. Fourth, the plan the program is built against: six ADRs, the Gate 3 program design, the Gate 4a slice ladder, four Gate 4b epic designs, and sixteen Gate 4c rubrics. The branch name says flightdeck-single-pr, and E7's own slices are not built. The design_note field in this file states why the epic field is null.
+
+## Alternatives considered
+
+- **Ship react-viewer and review-flight-deck as two designs, sequenced** — rejected because That order would build the ordering UI against the viewer E5 is about to replace, then rebuild it in React. Someone would also resolve the name collision twice, once informally now and once for real later. Carried unchanged from docs/architecture/designs/cobuilder-viewer/intent.json, source: design.
+- **Keep ADR-0020 as decided: ordered parts under viewer/src/, concatenated by build_viewer.py, in plain JavaScript** — rejected because It fixes file size and fixes nothing about state, and it cannot type the joins that ADR-0018 already computes. Carried unchanged from docs/architecture/designs/cobuilder-viewer/intent.json, source: design.
+- **Two artefacts: a React application served locally, and a reduced single file for publishing** — rejected because It splits the truth. ADR-0001 exists because the served file and the published file are the same file. Carried unchanged from docs/architecture/designs/cobuilder-viewer/intent.json, source: design.
+- **Build single-pull-request and multi-pull-request mode as one epic** — rejected because Multi-pull-request mode needs the typed data layer and the open-pull-request entity that single-pull-request mode does not. One epic means neither reaches parity before the other's risk lands on top of it. Carried unchanged from docs/architecture/designs/cobuilder-viewer/intent.json, source: design.
+
+## Out of scope
+
+- publish parity: a publish of the React viewer does not run on this branch, and the engineer accepted that gap on 2026-09-23
+- E7's own two slices, 15 and 16, so FlightDeck reads none of a pull request's narration, diagrams, art, audio, diff, or intent sheet yet
+- the Work surface's own sections, E5's slices 8 through 13, which have not run
+- the typed data layer's remaining globals: slice 4, which owns window.STORY, window.ODYSSEY, window.DIFFS, window.ADRS, and window.DIAGRAMS
+- the Reference surface and its prototype, and the twelve epics deferred on 2026-09-22
+- any change to what the generation scripts write into the bundle
+- a new record type, a new join, or a schema version bump beyond OpenPullRequest
+- the diff view's own rendering, which the team ports as it stands
+- publishing a Notion target, which stays a reserved flag value
+
+## Risks
+
+- a publish of the committed viewer does not run, because the exporter matches a sibling data script block and a Mermaid CDN tag that the React build carries neither of. Five test cases fail on that seam
+- the bundle's own viewer copy still holds the 249,710-byte legacy page while the plugin's committed viewer holds the 1,184,484-byte React build, and shared/migrate_bundle.py refreshes the copy unconditionally from the plugin, so the next run that touches the bundle carries the broken publish path into the bundle
+- slice 3 broke slice 1's four marker tests, and E1 was sequenced before E2 to prevent exactly that
+- a contributor now needs Node 22 and npm to change the viewer, which the repository has never required
+- a committed build artifact goes stale the moment somebody edits the output instead of the source, so the guard test is the only thing holding the two together
+- a byte-equal rebuild depends on a pinned toolchain, and a version drift makes the guard test fail for the wrong reason
+- two affordances the React viewer does not carry: a boundary finding no longer advertises itself as a decision candidate, and an n/a gate renders like a pending one with no approved-gate count
+- the prototype is unreviewed, so the surface slices 15 and 16 build against has no approval behind it
+- registering the FlightDeck prototype in the comparison harness would pull its code into the shipped file, because src/Variations.tsx imports every variation statically
+
+## How this was tested
+
+No interview ran, so this block is inferred from the evidence and not stated by an author. The evidence is four things. One, the session's own record in docs/plans/cobuilder-viewer/00-status.md, which carries a measured result per slice. Two, the commands this assessment ran: uv run pytest over tests/test_viewer_build.py, tests/test_export_artifact_markers.py, and tests/test_viewer_modes.py, which reports 5 failed, 20 passed, and 1 skipped over the three files; the same run over the four webp test files, which reports 4 failed and 4 passed on a Pillow architecture fault; and uv run plugins/implement/scripts/verify_gate.py --plan docs/plans/cobuilder-viewer, which reports Overall: FAIL on the four Gate 4b approval lines alone. Three, the build's own measurement: two runs of npm run build wrote 1,184,484 bytes each at sha256 0af3663e, and the build guard test passes. Four, the browser checks the slice records name, which this assessment did not repeat. Those nine cases are every red case in the suite. One further case is skipped, and its skip message names slice 10.
+
+## Where to focus
+
+- the branch name says flightdeck-single-pr, which is E7's slug, and the branch delivers one slice of E6 and none of E7. Read the design.epic field as null and the design_note above it as the reason
+- the bundle's viewer copy and the plugin's committed viewer now disagree by 934,774 bytes, and shared/migrate_bundle.py:309 refreshes the copy unconditionally, so the first run that touches the bundle makes publishing stop
+- the committed viewer is the React application, and it reads two of the bundle's seven globals, window.INDEX and window.DESIGNS. A reader who presses a pull request meets three panels that state the gap in words
+- the FlightDeck prototype is unreviewed, and its two approval screenshots are untracked files, so a reader of the branch cannot open them
+- the four Gate 4b epic designs each read pending while five slices have run against them
+
+---
+
+_Intent inferred from the PR body, the commit messages, and the branch name. Not stated by the author._
+_Authorship: agent-assisted._
