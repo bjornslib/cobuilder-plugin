@@ -422,21 +422,7 @@ function AdrBody({
       ) : null}
 
       {record.maps_to?.rule ? (
-        /*
-          ANCHOR IS WRITTEN BEFORE LABEL, AND THE ORDER IS THE REASON THIS BOX IS FOUND.
-
-          `tests/test_viewer_modes.py`'s decisions case locates this box in the built file
-          by the pair `label:"The rule this decision enforces",children:[`. The build keeps
-          the props object in source order, so a props object with `anchor` between the two
-          hides the box from that case.
-
-          The comparison harness's own copy of this Sheet used to carry this box without an
-          anchor, and the case matched that copy. Slice 4 of cobuilder-viewer removed the
-          harness from the built file, so the shipped box is the one the case has to find.
-          Do not tidy the two props back into the other order: both reach `Box` either way,
-          and the reverse order fails a case this file does not own.
-        */
-        <Box anchor label="The rule this decision enforces">
+        <Box label="The rule this decision enforces" anchor>
           {record.maps_to.rule}
           <span className="mt-2 flex min-w-0 flex-wrap items-center gap-1.5">
             {record.maps_to.context ? <Chip tone="accent">context {record.maps_to.context}</Chip> : null}

@@ -58,6 +58,40 @@ def bounded_region(text: str, opener: str, closer: str, claim: str) -> str:
     return text[start : stop + len(closer)]
 
 
+def props_region(text: str, label: str, closer: str, claim: str) -> str:
+    """The whole props object a labelled element carries, up to the first `closer`.
+
+    `bounded_region` opens at its opener, and the opener here is the one prop a
+    reader recognises the element by. A second prop written before that one would
+    then sit outside the region, so the region would depend on the order the props
+    are written in, and a case that asserted on it could pass or fail on a tidy-up
+    alone. This opens at the props object the label belongs to, which is the `,{`
+    before it, so the props may be written in any order.
+
+    Both ends are still required. No label, or a label outside any props object,
+    fails with the opener named. A label with no `closer` after it fails with the
+    structure named as incomplete.
+    """
+    at = text.find(label)
+    assert at >= 0, (
+        f"{claim}: the build carries no {label!r}, so the structure that carried "
+        "this claim is gone from the shipped viewer."
+    )
+    start = text.rfind(",{", 0, at)
+    while start != -1 and "}" in text[start:at]:
+        start = text.rfind(",{", 0, start)
+    assert start >= 0, (
+        f"{claim}: the build carries {label!r} outside any props object, so the "
+        "structure that carried this claim cannot be read."
+    )
+    stop = text.find(closer, at)
+    assert stop >= 0, (
+        f"{claim}: the build carries {label!r} with no {closer!r} after it, so the "
+        "structure that carried this claim is incomplete."
+    )
+    return text[start : stop + len(closer)]
+
+
 def section_region(
     text: str, opener: str, closer: str, fragments: list[str], limit: int
 ) -> str:
@@ -279,21 +313,25 @@ def test_decisions_mode_lists_all_records_and_anchor_distinction():
 
     # The rule's own box, which names the context a verified anchor lands in and
     # the district an inferred one lands in.
-    rule = bounded_region(
+    rule = props_region(
         text,
-        'label:"The rule this decision enforces",children:[',
+        'label:"The rule this decision enforces"',
         'children:["district ",',
         claim,
     )
     assert_ordered(
         [
-            'label:"The rule this decision enforces",children:[',
+            'label:"The rule this decision enforces"',
             'children:["context ",',
             'children:["district ",',
         ],
         rule,
         claim,
     )
+    # The anchor prop is the one `Box` writes `data-sheet-heading` from. It is
+    # asserted on its own, because a props object may carry it before the label or
+    # after it, and either order reaches the same box.
+    assert_ordered(["anchor:"], rule, claim)
 
 
 def test_contexts_mode_leads_with_violations_and_uncovered_districts():
