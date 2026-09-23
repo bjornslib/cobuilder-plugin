@@ -58,7 +58,7 @@ window.STORY = {
         "id": "docs",
         "label": "Docs",
         "kind": "authored-source",
-        "files": 199,
+        "files": 205,
         "blurb": "Authored source that no script regenerates: architecture decision records under architecture/adr and adr, design proposals under architecture/designs, two architecture review reports, a plan for cobuilder-factory, and staged pull-request content under pull-requests. Submit and design mode write here. Generate mode never does.",
         "root_paths": [
           "docs"
@@ -68,7 +68,7 @@ window.STORY = {
         "id": ".cobuilder-architect",
         "label": "Bundle Store",
         "kind": "tooling",
-        "files": 101,
+        "files": 103,
         "blurb": "The plugin's own generated output, committed alongside the code it narrates. self holds this repo's own bundle. Two named subfolders hold committed test fixtures generated against other local checkouts. An active symlink and view-server pid and log files are the only entries meant to stay out of git.",
         "root_paths": [
           ".cobuilder-architect"
@@ -238,7 +238,166 @@ window.STORY = {
         }
       },
       "status": "merged",
-      "commit": "96c1531"
+      "commit": "96c1531",
+      "intent": {
+        "captured": "2026-09-23",
+        "source": "inferred",
+        "authorship": "agent-assisted",
+        "problem": "prodyssey had no in-repo orientation document. `skills/odyssey/SKILL.md` holds an orchestration procedure, not the repo layout or the bundle-shape conventions, so a session reconstructed both from scratch. Separately, a generated PR story could only be read from a real `.odyssey/` bundle directory with its sibling `data/` and `assets/` folders present, so sharing one story meant sending the repo and running a local server.",
+        "why_now": "No author statement of the timing survives, so this field is my reading. The PR's own title pairs the two halves and calls the artifact work the feasibility findings for the orientation doc, so the two landed as one change: the document that explains the bundle also explains what a flattened copy of it costs.",
+        "approach": "`CLAUDE.md` records the layout, the generation flow, and the bundle shape. Three new scripts plus a Publish mode turn one generated PR into a self-contained HTML file. `export_artifact.py` inlines this PR's timeline entry, its referenced ADRs, its diff, and its scene art and narration as literal globals, rewrites the viewer's three relative-path lookups to read embedded data-URI maps, drops the Google Fonts and Motion CDN tags, and recompresses the hero art from PNG to JPEG under a byte budget. `record_publish.py` writes the Artifact tool's returned URL back into `exports/publish-manifest.json`, and `export_index.py` renders a landing page over that manifest. `extract_story.py` now persists each PR's merge commit, which gives the pipeline a stable reference to test for staleness.",
+        "alternatives": [
+          {
+            "option": "Publish the raw `.odyssey` bundle directory as-is",
+            "rejected_because": "An Artifact is one file with no siblings and a CSP that blocks every external request, so the viewer's `<script src=\"../data/*.js\">` tags and its relative asset paths do not resolve."
+          },
+          {
+            "option": "Keep the scene art as lossless PNG",
+            "rejected_because": "The source PNGs run about 5 MB each, so three of them approach the 16 MiB cap before the narration audio is counted."
+          },
+          {
+            "option": "Republish on every `/prodyssey:publish` run",
+            "rejected_because": "It spends an Artifact call and mints a second URL for a PR that has not changed since its last publish."
+          },
+          {
+            "option": "Test staleness on the content hash alone, with no commit SHA",
+            "rejected_because": "The commit SHA was already computed and discarded one function away, and it catches an open PR whose branch moved while the narrated text stayed the same."
+          }
+        ],
+        "out_of_scope": [
+          "A multi-PR export in one file. The 16 MiB budget is comfortable for one PR's images and audio and not for several.",
+          "`--format notion`. The flag is accepted and reports that it has no implementation behind it.",
+          "Any action on GitHub beyond opening nothing at all: the mode posts no comment, edits no existing PR body, sets no label, and merges nothing."
+        ],
+        "risks": [
+          "An export over the byte budget is written anyway with a warning, and the Artifact platform may then reject it at its 16 MiB hard cap.",
+          "`exports/publish-manifest.json` is load-bearing state tracked in git, so a lost or hand-edited manifest costs the recorded Artifact URL.",
+          "A PR generated before this change carries no `commit` field, so the staleness check has nothing to compare until that PR is regenerated."
+        ],
+        "testing": "Not recorded by an author, because no interview ran. The evidence the diff carries is the export this session wrote and published, and the committed `exports/pr-2.html`, `exports/index.html`, and `exports/publish-manifest.json` beside `.prodyssey/digital-curator-80f83abb/exports/` — a second repo's bundle, which is the proof the pipeline works outside self-analysis too.",
+        "reviewer_focus": [
+          "`export_artifact.py`'s three relative-path rewrites and its `escape_script_close` guard. The viewer breaks quietly if a rewrite misses, or if a diff carries a literal `</script>`.",
+          "The compression tiers, and the choice to write an over-budget export with a warning instead of failing.",
+          "`exports/publish-manifest.json` as committed state rather than disposable build output."
+        ],
+        "unknowns": []
+      },
+      "assessment": {
+        "stage": "retrospective",
+        "generated": "2026-09-23",
+        "verdict": "concerns",
+        "risk_tier": "architectural",
+        "summary": "A merged, retrospective reading of PR 2, written after the fact, so this assessment carries observations and drift rather than predictions. Two problems are solved at the right layer and neither is a duplicate of anything the repo already had. Two records in the bundle do not agree with the tree any more: the entry names a merge commit that master no longer carries for PR #2, and the recorded file count disagrees with the extracted diff. The stack card's boundary greps for the touched paths return empty on every rule, which says more about this repo — prose plus standalone PEP 723 scripts, with no layered domain packages — than about the code.",
+        "sensible": {
+          "answer": "Both halves solve a real problem at the layer that owns it. The orientation gap belongs in the repo root, and `CLAUDE.md` is where this repo keeps it. The sharing gap belongs to the bundle's consumer side, and an export script beside the other bundle scripts is the right home. The second half is a new capability rather than a documentation change, and it ships under a `docs:` title, so a reader who reads the title and not the diff meets a 456-line exporter they did not expect. That is a presentation cost, not a design fault. `intent.source` is `inferred`, so this answer judges the change against my own reading of the problem, not against a statement the author gave.",
+          "evidence": [
+            "CLAUDE.md",
+            "commands/publish.md",
+            "scripts/export_artifact.py",
+            "ADR-0001"
+          ]
+        },
+        "maintainability": {
+          "answer": "The change helps. It takes a decision that lived only in a served directory — what a story needs in order to travel — and moves it into one script with one budget and one retry ladder. It costs readability in one spot: `export_artifact.py` rewrites three strings inside the viewer's own JavaScript by regex, so a later viewer edit can break the export without breaking the viewer. Nothing tests that coupling. The viewer itself gained no test when its paths became data-URI lookups.",
+          "constraint_introduced": "`exports/publish-manifest.json` is state, not output. The per-PR commit SHA and content hash in it decide whether a republish happens, and the `artifact_url` in it is the only pointer to the live page.",
+          "evidence": [
+            "scripts/export_artifact.py",
+            "scripts/record_publish.py",
+            "ADR-0002",
+            "exports/publish-manifest.json"
+          ]
+        },
+        "pattern": {
+          "verdict": "new-valuable",
+          "answer": "No script in this repo exported a bundle before this change, and no ADR described a publish path, so nothing here duplicates or reinvents an existing pattern. The pattern earns its place: it removes the repo checkout from sharing a story, and it makes a second publish run cheap and safe. The honest caveat is that the bundle holds two ADRs and one earlier PR at this point, which is a thin history to judge against. A richer corpus could have shown a static-site export or a hosted reader already in use somewhere the districts do not reach.",
+          "duplicates": [],
+          "evidence": [
+            "ADR-0001",
+            "ADR-0002",
+            "data/adrs.json"
+          ]
+        },
+        "findings": [
+          {
+            "kind": "drift",
+            "id": "pr2-commit-moved",
+            "severity": "concern",
+            "title": "The recorded commit is not the merge master carries",
+            "claim": "PR 2's timeline entry names commit `96c1531`, but the merge of PR #2 reachable from `master` today is `948a4d3`. Both subjects read `Merge pull request #2`. A mechanical re-run therefore rewrites the field, which matters because ADR-0002 keys the publish staleness check on exactly this value.",
+            "detail": "PR 2's timeline entry names commit `96c1531`, but the merge of PR #2 reachable from `master` today is `948a4d3`. Both commit subjects read `Merge pull request #2`. A mechanical re-run of `extract_story.py` therefore rewrites the field, which matters because ADR-0002 keys the publish staleness check on exactly this value.",
+            "evidence": "git log --merges master => 948a4d3 Merge pull request #2; data/story.json timeline[2].commit = 96c1531; extract_story.py --prs 2 --dry-run rewrites it to 948a4d3",
+            "district": "scripts",
+            "suggestion": "Decide which merge commit the record should name before any later re-run of extract_story.py. This bundle keeps `96c1531` by running the extractor with `--dot-range 96c1531`, which reproduces story.json with no changes at all."
+          },
+          {
+            "kind": "drift",
+            "id": "pr2-no-pre-merge-intent",
+            "severity": "note",
+            "title": "No pre-merge intent was captured, so drift kinds cannot be computed",
+            "claim": "This PR merged before Generate mode existed. It carried no `intent` block, so review-mode.md section 7's four drift kinds — `out_of_scope`, `unaddressed_risk`, `adopted_alternative`, `delta_shift` — have nothing to compare against. This assessment is the retrospective account instead.",
+            "detail": "This PR merged before Generate mode existed, so it carried no `intent` block and review-mode.md section 7's four drift kinds have nothing to compare against. The `intent` on this entry today is inferred from the diff, the ADRs, and the narration, and it is marked `source: inferred`. Do not read it as the author's own statement.",
+            "evidence": "data/story.json timeline[2] carried no intent block until 2026-09-23",
+            "district": ".odyssey",
+            "suggestion": "Read this assessment as the retrospective account it is, and expect no out_of_scope or unaddressed_risk entry for this PR."
+          },
+          {
+            "kind": "observation",
+            "id": "pr2-file-count-disagrees",
+            "severity": "note",
+            "title": "The recorded file count disagrees with the extracted diff",
+            "claim": "The timeline entry records `size.files` as 31, and its `touched` map sums to 31, while the extracted diff holds 29 file entries and the authored `file_changes` narration says 29 files. Two independent numbers describe one change.",
+            "detail": "The timeline entry records `size.files` as 31, and its `touched` map sums to 31, while `data/diffs-pr2.js` holds 29 file entries and the authored `file_changes` narration says 29 files. The two numbers come from different commands: `git diff --stat` for the size, and `extract_diffs.py`'s own scan for the diff.",
+            "evidence": "data/story.json timeline[2].size.files = 31 versus data/diffs-pr2.js (29 keys)",
+            "district": ".odyssey",
+            "suggestion": "Record which number is authoritative before a later slice asserts a file count for this PR. Leave both records alone until then."
+          },
+          {
+            "kind": "observation",
+            "id": "pr2-over-budget-warning",
+            "severity": "note",
+            "title": "An over-budget export is written, not refused",
+            "claim": "After the tightest compression tier and the audio drop, `export_artifact.py` still writes an over-budget file and prints a warning. The publish step can then be rejected by the platform's 16 MiB hard cap, one step later than the problem appeared.",
+            "detail": "After the tightest compression tier and the audio drop, `export_artifact.py` still writes an over-budget file and prints a warning. The publish step can then be rejected by the platform's 16 MiB hard cap, one step later than the problem appeared. This is a deliberate trade: a warning plus a written file is easier to inspect than a silent failure.",
+            "evidence": "scripts/export_artifact.py main — the WARNING branch after the last tier",
+            "district": "scripts",
+            "suggestion": "Keep the warning. A failed publish is cheaper to recover from than a silently truncated file, and the warning names the size."
+          },
+          {
+            "kind": "observation",
+            "id": "pr2-manifest-is-state",
+            "severity": "note",
+            "title": "The publish manifest is committed state and the only URL pointer",
+            "claim": "`exports/publish-manifest.json` becomes load-bearing in the same change that creates it. ADR-0002 records it as tracked state, so a merge conflict or a hand edit in it silently changes what the pipeline believes is published, and loses the recorded Artifact URL.",
+            "detail": "`exports/publish-manifest.json` becomes load-bearing in the same change that creates it. ADR-0002 records it as tracked state rather than disposable output, so a merge conflict or a hand edit in it silently changes what the pipeline believes is published, and loses the recorded Artifact URL that a republish needs in order to update the same page instead of minting a second one.",
+            "evidence": "ADR-0002 consequences; scripts/record_publish.py writes artifact_url into it",
+            "district": ".odyssey",
+            "suggestion": "Treat a conflict in that file as data loss, not as a formatting conflict, and resolve it by re-running the exporter."
+          }
+        ],
+        "boundary_checks": [
+          {
+            "rule": "The dependency rule: inner layers (domain, business logic) never import outer layers (HTTP, UI, DB drivers, framework code). Identify the codebase's inner packages, then grep them for framework/driver imports.",
+            "source": "stacks/generic.md",
+            "result": "not-checkable",
+            "evidence": "This repo has no inner package. It is prose plus standalone PEP 723 scripts, with no layered domain module to grep. The grep itself ran: the five files this PR adds or changes import only stdlib and Pillow, and no framework or driver import appears in any of them."
+          },
+          {
+            "rule": "Configuration crosses into code in one place, not scattered env reads.",
+            "source": "stacks/generic.md",
+            "result": "pass",
+            "evidence": "grep -n 'environ|getenv' over the five files this PR adds or changes returns no hit: none of them reads configuration, so the PR adds no new place for config to cross in. Run over the whole repo, the same grep hits three files — plugins/pr/scripts/generate_prompts.py:268, plugins/pr/scripts/generate_audio.py:67, and shared/validate_decision_state.py:69 — none of them touched here."
+          }
+        ],
+        "delta": {
+          "districts_added": [],
+          "districts_changed": [],
+          "edges_added": [],
+          "edges_removed": [],
+          "note": "Left empty on purpose, because no honest value exists. This PR's own `touched` map names six districts and their file counts - .odyssey 18, .prodyssey 3, (root) 2, commands 1, scripts 5, skills 2 - but the count each district held BEFORE the change is recorded nowhere, and writing 0 would invent a number. The inventory in the bundle has also been re-derived since, so its districts are not the ones this PR touched. No import edge is claimed either: this repo's districts are directories of markdown and standalone PEP 723 scripts, no script imports another, and a grep in both directions finds no edge to add."
+        },
+        "regret_risk": "What the team lives with is a second place to change whenever the viewer moves. `export_artifact.py` holds three regex rewrites and a regex that finds the viewer's script block, so a later viewer edit that changes those strings leaves the export quietly wrong rather than loudly broken. The cost shows up as a published page that renders but shows no hero image, and nothing in the repo tests it. The second cost is the manifest. It is committed state that decides what is already live, and its contents are a URL that exists on one platform and nowhere else. Lose it in a merge and the next publish mints a second page for a PR that already has one. Both costs are accepted for a capability the repo did not have, and both are worth a test before the viewer moves again.",
+        "drift": []
+      }
     },
     {
       "pr": 3,

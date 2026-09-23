@@ -1,0 +1,57 @@
+classDiagram
+    class ExportArtifact {
+        <<scripts/export_artifact.py>>
+        +DEFAULT_MAX_BYTES int
+        +COMPRESSION_TIERS list
+        +render_for_pr(viewer_html, entry, width, quality, include_audio) tuple
+        +build_html() str
+        +compress_png_to_jpeg(png_path, width, quality) bytes
+        +compute_source_hash(entry, adrs_obj, diffs_js) str
+        +escape_script_close(s) str
+        +load_publish_manifest(path, repo_name) dict
+        +save_publish_manifest(path, data) void
+    }
+
+    class PublishManifestEntry {
+        <<exports/publish-manifest.json>>
+        +commit str
+        +source_hash str
+        +export_file str
+        +export_bytes int
+        +artifact_url str
+        +exported_at str
+    }
+
+    class ExportIndex {
+        <<scripts/export_index.py>>
+        +render_card(pr_num, entry) str
+        +render_index(manifest) str
+    }
+
+    class RecordPublish {
+        <<scripts/record_publish.py>>
+        +now_iso() str
+    }
+
+    class ExtractStory {
+        <<scripts/extract_story.py>>
+        +build_new_story(repo, existing, dot_range, prs_filter) dict
+        +compute_merge_base(repo, base_ref, head_ref) str
+    }
+
+    class TimelineEntry {
+        <<data/story.json>>
+        +commit str
+        +status str
+        +adrs list
+    }
+
+    ExportArtifact --> PublishManifestEntry : records commit and source_hash into
+    ExportArtifact --> TimelineEntry : reads commit, adrs, title and tagline from
+    ExportArtifact --> ExtractStory : depends on the commit it now persists
+    RecordPublish --> PublishManifestEntry : writes artifact_url after the publish call
+    ExportIndex --> PublishManifestEntry : reads every PR's card from
+    ExtractStory --> TimelineEntry : writes commit for a merged or an open PR into
+
+    note for ExportArtifact "ADR-0001: inline the bundle data, drop both CDN tags,<br>recompress hero art from PNG to JPEG to fit the cap"
+    note for PublishManifestEntry "ADR-0002: republish only when commit or source_hash<br>changed, and pass the recorded artifact_url back<br>so a republish updates the same link"
