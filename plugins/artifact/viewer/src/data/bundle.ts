@@ -19,22 +19,28 @@
  *
  * EVERY SIBLING UNDER `data/` HAS A `.js` TWIN, AND THAT TWIN IS HOW A PUBLISHED
  * FILE SEES IT. The mount serves all of them, so a served surface can read either
- * form. This scaffold wires `index.json` and `designs.js`. The rest are listed here so
- * the next surface does not have to rediscover the mapping:
+ * form. This module reads every one of them, and it is the only place under `src/`
+ * that names a global:
  *
  *   data/index.json  window.INDEX     the record index and its joins. Wired here.
  *   data/story.json  window.STORY     the narrated timeline and the world districts.
- *   data/adrs.json   window.ADRS      every decision record, keyed by ADR id.
+ *   data/adrs.json   window.ADRS      every decision record, keyed by ADR id. Its
+ *                                     reader is at `./adrs`, a sibling module under
+ *                                     `src/data/`.
  *   data/designs.js  window.DESIGNS   goal, intent, narrative, and assessment per design.
- *                                     Wired here. It carries no `.json` twin, so its
- *                                     reader appends a script tag and reads the global
- *                                     that tag assigns.
+ *                                     It carries no `.json` twin, so its reader appends a
+ *                                     script tag and reads the global that tag assigns.
  *   data/diagrams.js window.DIAGRAMS  Mermaid source per pull request and level.
  *   data/manifest.js window.ODYSSEY   hero art, diff pull requests, excluded pull requests.
- *   data/diffs-pr{N}.js window.DIFFS  one pull request's diff hunks.
+ *   data/diffs-pr{N}.js window.DIFFS_BY_PR one pull request's diff hunks, keyed by path.
+ *
+ * `window.DIFFS_BY_PR` IS THE NAME THE BUNDLE WRITES, and an earlier header here called
+ * it `window.DIFFS`. No file in any bundle assigns `window.DIFFS`: `extract_diffs.py`
+ * writes one entry of `window.DIFFS_BY_PR` per pull request. The reader reads what the
+ * file assigns.
  *
  * The shipped viewer loads them in that order at plugins/artifact/viewer/index.html:1096.
- * `window.STORY`, `window.ODYSSEY`, `window.DIFFS`, `window.ADRS`, `window.DESIGNS`,
+ * `window.STORY`, `window.ODYSSEY`, `window.DIFFS_BY_PR`, `window.ADRS`, `window.DESIGNS`,
  * `window.INDEX`, and `window.DIAGRAMS` are the same globals a published file inlines,
  * so a surface that reads the global works under both readers with no branch.
  */
@@ -274,46 +280,41 @@ function isDesignRecords(value: unknown): value is DesignRecords {
 }
 
 /**
- * Append one sibling script tag and resolve with the global that tag assigns.
+ * One bundle global, read from the value the script tag assigned.
  *
- * A file that assigns no global, and a file the server does not serve, each reject with
- * the path and the likely cause. A surface states both rather than show an empty board.
+ * THE NAME IS A PARAMETER, AND EVERY CALLER PASSES A LITERAL. That is deliberate: a
+ * caller that writes the name states which global it reads, so one search for a name
+ * finds every reader of it. No file outside `src/data/` names a global at all.
  *
- * The tag below is the served path: it reaches outside the built file for a sibling.
- * A published Artifact inlines `window.DESIGNS` as a literal instead, so this is the
- * code `export_artifact.py` deletes at that point. The pair that names it lives in
- * `src/index.html`'s seam block, because no `.ts` module here can carry a `//`
- * comment through the build.
+ * The value is checked rather than trusted. A file that loaded and assigned nothing
+ * useful reads as absent, and the reader that needed it says so.
  */
-function readScriptGlobal<T>(
-  url: string,
+export function readGlobal<T>(
   globalName: string,
   looksRight: (value: unknown) => value is T,
-): Promise<T> {
-  const read = (): T | undefined => {
-    const value = (window as unknown as Record<string, unknown>)[globalName];
-    return looksRight(value) ? value : undefined;
-  };
+): T | undefined {
+  const value = (window as unknown as Record<string, unknown>)[globalName];
+  return looksRight(value) ? value : undefined;
+}
 
-  const inlined = read();
-  if (inlined) return Promise.resolve(inlined);
-
-  return new Promise<T>((resolve, reject) => {
+/**
+ * Append one sibling script tag, and resolve once it has run.
+ *
+ * The tag below is the served path: it reaches outside the built file for a sibling.
+ * A published Artifact inlines the global as a literal instead, so this is the code
+ * `export_artifact.py` deletes at that point. The pair that names it lives in
+ * `src/index.html`'s seam block, because no `.ts` module here can carry a `//`
+ * comment through the build.
+ *
+ * A file the server does not serve rejects with the path and the likely cause, so a
+ * surface states the reason rather than showing an empty panel.
+ */
+export function appendScript(url: string): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
     const tag = document.createElement("script");
     tag.src = url;
     tag.async = true;
-    tag.onload = () => {
-      const loaded = read();
-      if (loaded) resolve(loaded);
-      else {
-        reject(
-          new Error(
-            `${url} loaded but assigned no window.${globalName}. The file is a ` +
-              `sibling under data/, and it assigns exactly one global.`,
-          ),
-        );
-      }
-    };
+    tag.onload = () => resolve();
     tag.onerror = () => {
       reject(
         new Error(
@@ -323,6 +324,28 @@ function readScriptGlobal<T>(
       );
     };
     document.head.appendChild(tag);
+  });
+}
+
+/**
+ * Read one sibling file's global: the inlined value when a published file provided
+ * one, and the served sibling otherwise.
+ */
+export function readScriptGlobal<T>(
+  url: string,
+  globalName: string,
+  looksRight: (value: unknown) => value is T,
+): Promise<T> {
+  const inlined = readGlobal(globalName, looksRight);
+  if (inlined) return Promise.resolve(inlined);
+
+  return appendScript(url).then(() => {
+    const loaded = readGlobal(globalName, looksRight);
+    if (loaded) return loaded;
+    throw new Error(
+      `${url} loaded but assigned no window.${globalName}. The file is a ` +
+        `sibling under data/, and it assigns exactly one global.`,
+    );
   });
 }
 
@@ -349,6 +372,192 @@ export function loadDesigns(): Promise<DesignRecords> {
   }
   return designsPending;
 }
+
+/* ---------------------------------------------- the remaining four globals */
+
+/*
+ * WHAT THESE FOUR READERS ARE FOR, AND WHO CONSUMES THEM TODAY.
+ *
+ * No shipped surface reads a narration, a diagram, a hero picture, or a diff hunk yet.
+ * `docs/plans/cobuilder-viewer/04-slices.md` gives those to slices 15 and 16, which add
+ * the pull request's art, audio, and diffs. The four readers live here because the data
+ * module is the one place under `src/` that names a bundle global: a second reader
+ * beside the surface that needs one is how two files come to disagree about a file's
+ * shape.
+ *
+ * Each type below is narrowed to what its reader validates, and a slice that needs more
+ * widens the type where the record is declared.
+ */
+
+/* --------------------------------------------------------------- story.json */
+
+/** One level of one pull request's narration, as `story.json` writes it. */
+export interface StoryLevel {
+  narration?: string;
+  /** Present exactly when the bundle holds narration audio for this level. */
+  voice?: string;
+}
+
+/**
+ * One pull request's timeline entry.
+ *
+ * THE LEVELS ARE KEYED BY NAME, NOT BY NUMBER. The entry holds `levels` as an object
+ * whose keys are `landscape`, `problem_solution`, `architecture`, and `file_changes`.
+ * A level's number is the position of its key in that order, and no field carries it.
+ */
+export interface StoryEntry {
+  pr: number;
+  date?: string;
+  title?: string;
+  tagline?: string;
+  /** `merged`, or `open` for a pull request that has not merged. */
+  status?: string;
+  commit?: string;
+  levels?: Record<string, StoryLevel>;
+}
+
+export interface Story {
+  meta?: { repo?: string; generated?: string; schema_version?: string; levels?: string[] };
+  timeline?: StoryEntry[];
+}
+
+function isStory(value: unknown): value is Story {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    Array.isArray((value as Story).timeline)
+  );
+}
+
+let storyPending: Promise<Story> | null = null;
+
+/** The narrated timeline, and the world districts beside it. */
+export function loadStory(): Promise<Story> {
+  if (!storyPending) {
+    storyPending = readScriptGlobal(`${BUNDLE_DATA_URL}story.js`, "STORY", isStory).catch(
+      (error: unknown) => {
+        storyPending = null;
+        throw error;
+      },
+    );
+  }
+  return storyPending;
+}
+
+/* ------------------------------------------------------------- manifest.js */
+
+/**
+ * `manifest.js`, which the bundle writes as `window.ODYSSEY`.
+ *
+ * The hero list is the record of which pull request levels carry scene art. A surface
+ * that assumed `assets/pr-{N}/level-{L}.webp` for every level would ask for a picture
+ * the bundle does not hold, so the list is read rather than assumed.
+ */
+export interface Manifest {
+  schema_version?: string;
+  excluded_prs?: number[];
+  hero?: string[];
+  diff_prs?: number[];
+  diagrams?: string[];
+}
+
+function isManifest(value: unknown): value is Manifest {
+  return typeof value === "object" && value !== null;
+}
+
+let manifestPending: Promise<Manifest> | null = null;
+
+/** The hero art list, the diff pull requests, and the excluded ones. */
+export function loadManifest(): Promise<Manifest> {
+  if (!manifestPending) {
+    manifestPending = readScriptGlobal(
+      `${BUNDLE_DATA_URL}manifest.js`,
+      "ODYSSEY",
+      isManifest,
+    ).catch((error: unknown) => {
+      manifestPending = null;
+      throw error;
+    });
+  }
+  return manifestPending;
+}
+
+/* -------------------------------------------------------------- diagrams.js */
+
+/** Every diagram, keyed by pull request number and then by level number, both as strings. */
+export type DiagramsByPr = Record<string, Record<string, string>>;
+
+function isDiagramsByPr(value: unknown): value is DiagramsByPr {
+  return typeof value === "object" && value !== null;
+}
+
+let diagramsPending: Promise<DiagramsByPr> | null = null;
+
+/**
+ * One pull request's Mermaid source, keyed by level number as a string.
+ *
+ * `diagrams.js` assigns one global holding every pull request, so one reader serves
+ * them all and the promise is cached once rather than once per pull request.
+ */
+export async function loadDiagrams(pr: number): Promise<Record<string, string>> {
+  if (!diagramsPending) {
+    diagramsPending = readScriptGlobal(
+      `${BUNDLE_DATA_URL}diagrams.js`,
+      "DIAGRAMS",
+      isDiagramsByPr,
+    ).catch((error: unknown) => {
+      diagramsPending = null;
+      throw error;
+    });
+  }
+  return (await diagramsPending)[String(pr)] ?? {};
+}
+
+/* --------------------------------------------------------- diffs-pr{N}.js */
+
+/** One pull request's diff hunks, keyed by the path the diff names. */
+export type DiffByPr = Record<number, Record<string, string>>;
+
+function isDiffByPr(value: unknown): value is DiffByPr {
+  return typeof value === "object" && value !== null;
+}
+
+const diffPending = new Map<number, Promise<Record<string, string>>>();
+
+/**
+ * One pull request's diff hunks, keyed by the path the diff names.
+ *
+ * THE GLOBAL IS `DIFFS_BY_PR`, AND EACH FILE ADDS ONE ENTRY TO IT. `diffs-pr{N}.js`
+ * runs `window.DIFFS_BY_PR = window.DIFFS_BY_PR || {}` and then assigns its own pull
+ * request's entry, so the object exists from the first file that loads and carries one
+ * entry per pull request. The reader therefore checks for this pull request's entry
+ * before it appends a tag, and again after the tag has run. A reader that accepted the
+ * object alone would resolve with a map that does not hold the entry it was asked for.
+ */
+export function loadDiff(pr: number): Promise<Record<string, string>> {
+  const held = diffPending.get(pr);
+  if (held) return held;
+
+  const pending = (async (): Promise<Record<string, string>> => {
+    const existing = readGlobal("DIFFS_BY_PR", isDiffByPr)?.[pr];
+    if (existing) return existing;
+
+    const url = `${BUNDLE_DATA_URL}diffs-pr${pr}.js`;
+    await appendScript(url);
+
+    const written = readGlobal("DIFFS_BY_PR", isDiffByPr)?.[pr];
+    if (written) return written;
+    throw new Error(`${url} loaded but wrote no window.DIFFS_BY_PR[${pr}].`);
+  })().catch((error: unknown) => {
+    diffPending.delete(pr);
+    throw error;
+  });
+
+  diffPending.set(pr, pending);
+  return pending;
+}
+
+/* --------------------------------------------------------------- the index */
 
 const DONE_STATES = new Set(["completed", "merged"]);
 
@@ -377,8 +586,30 @@ export function joinsOf(index: RecordIndex): Joins {
   return index.joins;
 }
 
+/**
+ * How many slices the index could not join to an epic.
+ *
+ * The index carries the unresolved ones as a map keyed by slice id, and the shell shows
+ * the count. The key is named here rather than in the shell, so one module knows the
+ * shape of the index and no surface does.
+ */
+export function unresolvedSliceCount(index: RecordIndex): number {
+  return Object.keys(joinsOf(index).slice_to_epic_unresolved).length;
+}
+
 function sortedUnique(numbers: number[]): number[] {
   return [...new Set(numbers)].sort((a, b) => a - b);
+}
+
+/**
+ * One row per design, for the board, resolved from the index alone.
+ *
+ * `designRows` below is the derivation. This is the whole of what a board needs, so a
+ * surface hands over the index and never the joins it carries.
+ */
+export function designRowsOf(index: RecordIndex): DesignRow[] {
+  const entities = entitiesOf(index);
+  return designRows(entities.design, entities.epic, entities.slice, joinsOf(index));
 }
 
 /**

@@ -14,7 +14,7 @@ import type {
   GateStep,
   Joins,
   ProgramDesignEntity,
-  PullRequestEntity,
+  PullRequest,
   RecordIndex,
   SliceEntity,
 } from "@/data/types";
@@ -80,9 +80,9 @@ export interface ScopeData {
   diagrams: Array<{ level: string; source: string; kind: string }>;
   gates: GateStep[];
   adrById: Map<string, AdrEntity>;
-  pullRequestById: Map<number, PullRequestEntity>;
+  pullRequestById: Map<number, PullRequest>;
   epicDesigns: EpicDesignEntity[];
-  pullRequests: PullRequestEntity[];
+  pullRequests: PullRequest[];
 }
 
 export function detailFor(

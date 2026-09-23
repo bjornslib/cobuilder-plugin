@@ -79,7 +79,12 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import ScrollProgress from "@/components/smoothui/scroll-progress";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { BUNDLE_DATA_URL, designRows, entitiesOf, joinsOf } from "@/data/bundle";
+import {
+  BUNDLE_DATA_URL,
+  designRowsOf,
+  entitiesOf,
+  unresolvedSliceCount,
+} from "@/data/bundle";
 import type { DesignRow } from "@/data/types";
 import { cn } from "@/lib/utils";
 
@@ -393,12 +398,11 @@ export default function ShellApp() {
   /*
    * The board's own rows, resolved by the data layer. The board takes one row per design
    * and the record map beside it, so it reads no work item and derives no join of its
-   * own. `designRows` is the one derivation of that row, and the index is its only input.
+   * own. `designRowsOf` is the one derivation of that row, and the index is its only input.
    */
   const boardRows = useMemo((): DesignRow[] => {
     if (load.state !== "ready") return [];
-    const entities = entitiesOf(load.index);
-    return designRows(entities.design, entities.epic, entities.slice, joinsOf(load.index));
+    return designRowsOf(load.index);
   }, [load]);
 
   const work = route.workId ? (works.get(route.workId) ?? null) : null;
@@ -580,8 +584,11 @@ export default function ShellApp() {
 
   /* --------------------------------------------------------------- populated */
 
-  const unresolvedSlices =
-    load.state === "ready" ? Object.keys(joinsOf(load.index).slice_to_epic_unresolved).length : 0;
+  /*
+   * How many slices the index could not join. The data module counts them, because the
+   * join is the index's own shape and the shell names no key of it.
+   */
+  const unresolvedSlices = load.state === "ready" ? unresolvedSliceCount(load.index) : 0;
   const allPullRequests = load.state === "ready" ? entitiesOf(load.index).pull_request : [];
   const adrs = load.state === "ready" ? load.adrs : {};
   /* The board states that it is reading, so an empty map is the honest value here. */

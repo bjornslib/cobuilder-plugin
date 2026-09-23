@@ -25,7 +25,7 @@ import type {
   EpicEntity,
   Joins,
   ProgramDesignEntity,
-  PullRequestEntity,
+  PullRequest,
   SliceEntity,
 } from "@/data/types";
 
@@ -342,7 +342,7 @@ export interface EpicDetail {
   epic: EpicEntity;
   status: string;
   pr: number | null;
-  pullRequest: PullRequestEntity | null;
+  pullRequest: PullRequest | null;
   slices: SliceEntity[];
   /** The Gate 4b document, matched on the epic id and the design's plan slug. */
   doc: EpicDesignEntity | null;
@@ -363,7 +363,7 @@ export function epicDetail(
   epic: EpicEntity,
   joins: Joins,
   slicesByEpic: Map<string, SliceEntity[]>,
-  pullRequests: Map<number, PullRequestEntity>,
+  pullRequests: Map<number, PullRequest>,
   docsByFeature: Map<string, EpicDesignEntity[]>,
   plan: PlanSlug,
   planRow: EpicPlanRow | null,

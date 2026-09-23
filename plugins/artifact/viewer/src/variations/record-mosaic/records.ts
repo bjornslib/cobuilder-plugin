@@ -28,7 +28,7 @@ import type {
   EpicEntity,
   Joins,
   PublicationEntity,
-  PullRequestEntity,
+  PullRequest,
   SliceEntity,
 } from "@/data/types";
 
@@ -379,7 +379,7 @@ export interface DecisionModel {
 
 export interface PullRequestModel {
   pr: number;
-  entity: PullRequestEntity | null;
+  entity: PullRequest | null;
   /** How the design reaches this pull request, named rather than implied. */
   routes: string[];
   publication: PublicationEntity | null;
@@ -435,7 +435,7 @@ function uniqueSorted(numbers: number[]): number[] {
  * verdict, or nests a slice under its epic.
  */
 export function buildBundleModel(
-  index: { entities: { adr: AdrEntity[]; pull_request: PullRequestEntity[]; publication: PublicationEntity[]; slice: SliceEntity[] }; joins: Joins },
+  index: { entities: { adr: AdrEntity[]; pull_request: PullRequest[]; publication: PublicationEntity[]; slice: SliceEntity[] }; joins: Joins },
   rows: DesignRow[],
   records: DesignRecordMap,
 ): BundleModel {

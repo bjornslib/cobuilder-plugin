@@ -14,9 +14,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   BUNDLE_DATA_URL,
   BUNDLE_MOUNT,
-  designRows,
+  designRowsOf,
   entitiesOf,
-  joinsOf,
   loadIndex,
 } from "@/data/bundle";
 import type { DesignRow, RecordIndex } from "@/data/types";
@@ -119,13 +118,7 @@ export default function App() {
 
   const rows: DesignRow[] = useMemo(() => {
     if (load.state !== "ready") return [];
-    const entities = entitiesOf(load.index);
-    return designRows(
-      entities.design,
-      entities.epic,
-      entities.slice,
-      joinsOf(load.index),
-    );
+    return designRowsOf(load.index);
   }, [load]);
 
   return (

@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 
 import BasicAccordion from "@/components/smoothui/basic-accordion";
-import type { PullRequestEntity, SliceEntity } from "@/data/types";
+import type { PullRequest, SliceEntity } from "@/data/types";
 import { cn } from "@/lib/utils";
 
 import type { WorkItem } from "./model";
@@ -401,7 +401,7 @@ export function PullRequestsSection({
 }: {
   work: WorkItem;
   focusPr: number | null;
-  allPullRequests: PullRequestEntity[];
+  allPullRequests: PullRequest[];
   onOpenPr: (n: number) => void;
 }) {
   const flightDeck = allPullRequests.filter((pr) => pr.state === "open");
@@ -478,7 +478,7 @@ export function FlightDeckPanel({
   onOpenPr,
   span,
 }: {
-  flightDeck: PullRequestEntity[];
+  flightDeck: PullRequest[];
   onOpenPr: (n: number) => void;
   /** The bento span the caller gives this panel, when the caller lays out a grid. */
   span: TileSpan;
@@ -536,7 +536,7 @@ function PullRequestDetail({
 }: {
   work: WorkItem;
   prNumber: number;
-  allPullRequests: PullRequestEntity[];
+  allPullRequests: PullRequest[];
   onOpenPr: (n: number) => void;
 }) {
   const pr = allPullRequests.find((candidate) => candidate.id === prNumber);

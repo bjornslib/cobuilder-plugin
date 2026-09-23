@@ -26,7 +26,7 @@ import type {
   EpicEntity,
   GateStep,
   PublicationEntity,
-  PullRequestEntity,
+  PullRequest,
   RecordIndex,
   SliceEntity,
 } from "@/data/types";
@@ -102,7 +102,7 @@ export interface WorkItem {
    * The pull requests this work's own epics carry. This is the work's own set, and
    * `joins.epic_to_pull_request` is its only source. Section 3.3.
    */
-  pullRequests: PullRequestEntity[];
+  pullRequests: PullRequest[];
   /** Which epic named each pull request. */
   pullRequestVia: Map<number, string[]>;
   /** Publications for a pull request this work's own epics carry. Never another work's. */
@@ -239,7 +239,7 @@ export function buildWorkItems(index: RecordIndex, records: Record<string, Desig
     const pullRequests = [...via.keys()]
       .sort((a, b) => a - b)
       .map((n) => prById.get(n))
-      .filter((pr): pr is PullRequestEntity => pr !== undefined);
+      .filter((pr): pr is PullRequest => pr !== undefined);
 
     /* The contexts and districts the linked decisions land in. */
     const contextIds = new Set<string>();
