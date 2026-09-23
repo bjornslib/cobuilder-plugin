@@ -21,6 +21,12 @@ process tree is therefore bounded. A nested run that could re-collect its own
 parent would grow without limit, and a test that can spawn an unbounded
 process tree is a defect, even when each of its own cases passes.
 
+Several cases here run the build, and the build writes the committed viewer in
+place. The guard that holds that file to the build therefore reads its expected
+bytes from a snapshot taken at collection, before any case ran. A fresh read in
+a later case would compare the build against an earlier build's output. A hand
+edit to the committed file would then pass. See COMMITTED_VIEWER_BYTES.
+
 Run with: uv run --with pytest pytest tests/test_viewer_build.py -v
 """
 from __future__ import annotations
@@ -449,17 +455,34 @@ EXPORT_ARTIFACT = REPO_ROOT / "plugins" / "artifact" / "scripts" / "export_artif
 EXPORT_DIR = EXPORT_ARTIFACT.parent
 
 
+# The committed viewer, read once here and never read again. Every case below
+# that compares against "the committed bytes" reads this snapshot.
+#
+# The build writes INDEX_HTML from slice 3 on. A fresh read returns whatever
+# the last build left there. Case order is not a guarantee.
+#
+# In this file test_two_builds_produce_the_same_bytes runs first and rewrites
+# INDEX_HTML with its own build output. A later fresh read therefore returns
+# healed bytes, not committed ones. A hand edit to INDEX_HTML then passes the
+# guard that exists to catch it. The snapshot closes that hole, because
+# module-level code runs at collection, before any test body runs.
+COMMITTED_VIEWER_BYTES: bytes | None = (
+    INDEX_HTML.read_bytes() if INDEX_HTML.is_file() else None
+)
+
+
 def committed_bytes() -> bytes:
     """The committed viewer: plugins/artifact/viewer/index.html.
 
-    Read before a build runs, because the build writes that same file from slice
-    3 on. The bytes read here are what the build must reproduce.
+    Returns the snapshot taken at collection, when no case had built yet, so
+    these are the bytes as committed. The comment above COMMITTED_VIEWER_BYTES
+    states why a fresh read here would be wrong.
     """
-    assert INDEX_HTML.is_file(), (
+    assert COMMITTED_VIEWER_BYTES is not None, (
         f"{INDEX_HTML.relative_to(REPO_ROOT).as_posix()} is absent. It is the file "
         "the build writes, and the file this guard holds to the build."
     )
-    return INDEX_HTML.read_bytes()
+    return COMMITTED_VIEWER_BYTES
 
 
 def marker_names() -> list[str]:
@@ -555,10 +578,10 @@ def test_editing_the_output_fails_the_test(tmp_path):
     )
 
     assert INDEX_HTML.read_bytes() == source, (
-        "this case left the committed viewer changed. The edit belongs in the "
-        "temporary copy alone. A difference here means this case wrote outside "
-        "tmp_path, or that the build rewrote the committed file with bytes other "
-        "than the ones it had read."
+        "the committed viewer differs from the bytes this file read at "
+        "collection. Either this case wrote its edit outside tmp_path, or the "
+        "committed viewer already carried an edit when the run started. This "
+        "case puts its edit in the temporary copy alone."
     )
 
 
