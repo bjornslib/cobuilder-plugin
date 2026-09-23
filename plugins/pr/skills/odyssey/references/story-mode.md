@@ -187,7 +187,7 @@ Which register applies is set by `--style kleppmann|ste`, default
 
 Defer to the `ste-writing` skill (`Skill("pr:ste-writing")`)
 for the rules. If that call gives `Unknown skill`, read
-`${CLAUDE_PLUGIN_ROOT}/skills/ste-writing/SKILL.md` directly and obey that
+`${CLAUDE_PLUGIN_ROOT}/shared/skills/ste-writing/SKILL.md` directly and obey that
 file instead. This section does not restate the rules, to keep one source
 of truth. Author the
 same four levels and `beats` structure as the `kleppmann` register above.

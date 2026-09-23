@@ -1,0 +1,600 @@
+// ui-spec.jsonc — the component and interaction specification for the Work surface
+// of the bundle viewer.
+//
+// NOTHING VALIDATES THIS FILE. `plugins/implement/scripts/verify_gate.py` checks
+// only that it exists, and no schema, linter, or test reads a single field below.
+// This is the first ui-spec.jsonc written in this repository, so its shape is a
+// proposal rather than a format anything depends on. Do not read an unchecked
+// field as a verified one.
+
+// WHO READS IT. An implementer building the shell reads it beside
+// `interaction-design.md`, which owns the prose and the reasoning. This file owns
+// the machine-shaped half: which component, which states, which control, which
+// token. Where the two disagree, `interaction-design.md` wins and this file is
+// wrong.
+
+// TOKENS. Every token named below lives in
+// `plugins/artifact/viewer/src/index.css`, unless its entry says otherwise in
+// `source`. The shell declares the durations and the two easing curves itself,
+// in `shellTokens()` in `variations/sections-e/index.tsx`. They resolve to zero
+// under `prefers-reduced-motion: reduce`.
+//
+// The groups below name where each one lives.
+
+// THE HOUSE RULES THAT EVERY COMPONENT BELOW INHERITS, stated once:
+//   1. No hover, focus, selected, or active state fills with `--band`. `--band`
+//      is the heading colour, and a control that turns that colour reads as a
+//      heading. Hover stays in `--surface-2`, `--surface-3`, `--accent-wash`,
+//      and `--tint`. The one exception is a selected section heading in the
+//      section strip, which marks a heading and wears the heading fill.
+//   2. No control's sole hit target is an icon. Every target is at least 44 px
+//      in each direction, except the section strip's anchors and the sheet's
+//      jumplink anchors, which are at least 32 px tall.
+//   3. Nothing names a file, a field path, or a join. A panel states what it
+//      read, never where it read it.
+//   4. An absent record is a state, not a gap to hide. It renders in place.
+
+{
+  "version": "1.0",
+  "surface": "work",
+  "shell": "plugins/artifact/viewer/src/variations/sections-e/",
+  "prose": "docs/plans/cobuilder-viewer/interaction-design.md",
+  "decision": "docs/architecture/adr/ADR-0028-sections-and-a-paged-level.md",
+
+  // The token groups this specification names, and where each one lives.
+  "tokenSources": {
+    "palette": "src/index.css, :root and [data-theme=\"dark\"]",
+    "layers": "src/index.css, :root",
+    "radii": "src/index.css, @theme inline",
+    "shadows": "src/index.css, :root, as --shadow-1..3 behind shadow-card, shadow-raise, shadow-frame",
+    "durations": "variations/sections-e/index.tsx, shellTokens()",
+    "railWidths": "variations/sections-e/index.tsx, RAIL_WIDTHS"
+  },
+
+  "components": [
+    {
+      "name": "Shell",
+      "file": "variations/sections-e/index.tsx",
+      "role": "The frame. One top bar, one rail, and one content column. The document never scrolls.",
+      "states": [
+        {
+          "name": "loading",
+          "description": "The top bar and the rail render from the route at first paint, and the index fills in behind them.",
+          "initial": true,
+          "tokens": ["--ground", "--surface", "--line"]
+        },
+        {
+          "name": "ready",
+          "description": "The index resolved. The rail and the work item render.",
+          "tokens": ["--ground", "--ink"]
+        },
+        {
+          "name": "failed",
+          "description": "The index did not load. The pane holds the failure, the path it read, and one retry control.",
+          "tokens": ["--warn", "--warn-wash", "--ink-mid"]
+        }
+      ],
+      "controls": [
+        {
+          "name": "Retry",
+          "action": "Re-requests data/index.json, the design records, and the ADR records.",
+          "target": "the button",
+          "bounds": "at least 44 px tall",
+          "tokens": ["--surface", "--line", "--ink-mid", "--surface-2"]
+        }
+      ],
+      "tokens": {
+        "fill": "--ground",
+        "ink": "--ink",
+        "layers": ["--layer-base", "--layer-raised", "--layer-fixed", "--layer-panel", "--layer-modal"],
+        "durations": ["--dur-instant", "--dur-fast", "--dur-base", "--dur-slow", "--dur-expand", "--dur-highlight"],
+        "easing": ["--ease-out", "--ease-in-out"],
+        "radius": "--radius"
+      }
+    },
+
+    {
+      "name": "Rail",
+      "file": "variations/sections-e/Rail.tsx",
+      "role": "The traverse. Every level and every gated group, and nothing that is a record.",
+      "states": [
+        {
+          "name": "expanded",
+          "description": "The rail shows its labels. The default above 1200 px.",
+          "initial": true,
+          "tokens": ["--sidebar", "--sidebar-width"]
+        },
+        {
+          "name": "icon-collapsed",
+          "description": "Below 1200 px the rail drops to icons. The reader may still toggle it while inside the band.",
+          "tokens": ["--sidebar", "--sidebar-width-icon"]
+        },
+        {
+          "name": "drawer",
+          "description": "Below 768 px the rail is the sidebar's own drawer, opened from the top bar.",
+          "tokens": ["--sidebar", "--layer-modal"]
+        },
+        {
+          "name": "entry-selected",
+          "description": "The entry the route names carries aria-current=\"page\" and the accent wash.",
+          "tokens": ["--accent-wash", "--accent-deep"]
+        },
+        {
+          "name": "entry-absent",
+          "description": "A level the work cannot fill is absent, never disabled. An empty section wastes a click.",
+          "tokens": ["--ink-faint"]
+        }
+      ],
+      "controls": [
+        {
+          "name": "A group header",
+          "action": "Opens or closes the group.",
+          "target": "the whole header row",
+          "bounds": "full rail width, at least 32 px tall",
+          "tokens": ["--ink-mid", "--surface-2"]
+        },
+        {
+          "name": "An entry",
+          "action": "Navigates to that section. It writes the route and moves no pane.",
+          "target": "the anchor's full row",
+          "bounds": "248 px wide expanded, at least 36 px tall. 56 px wide collapsed, at least 44 px tall",
+          "tokens": ["--sidebar-accent", "--accent-wash", "--accent-deep", "--line"]
+        }
+      ],
+      "tokens": {
+        "fill": "--sidebar",
+        "ink": "--sidebar-foreground",
+        "selected": ["--sidebar-accent", "--sidebar-accent-foreground"],
+        "line": "--sidebar-border",
+        "ring": "--sidebar-ring"
+      }
+    },
+
+    {
+      "name": "TopBar",
+      "file": "variations/sections-e/TopBar.tsx",
+      "role": "The work item, held in one place. It never scrolls away.",
+      "states": [
+        {
+          "name": "work-item-named",
+          "description": "The bar names the current work item and its stage.",
+          "initial": true,
+          "tokens": ["--surface", "--ink", "--line"]
+        },
+        {
+          "name": "no-work-item",
+          "description": "The route names no work item, so the bar names none and the pane states why.",
+          "tokens": ["--ink-dim"]
+        },
+        {
+          "name": "superseded",
+          "description": "The work item reads what it supersedes beside its stage.",
+          "tokens": ["--warn", "--warn-wash"]
+        }
+      ],
+      "controls": [
+        {
+          "name": "Work-item switcher trigger",
+          "action": "Opens the switcher list.",
+          "target": "the trigger button",
+          "bounds": "at least 44 px tall",
+          "tokens": ["--surface", "--line", "--ink", "--surface-2"]
+        },
+        {
+          "name": "Work-item list",
+          "action": "Lists every design, and every epic under its design. Choosing one writes the route.",
+          "target": "one row per design or epic",
+          "bounds": "full list width, at least 44 px tall per row",
+          "tokens": ["--popover", "--layer-panel", "--shadow-2", "--line"]
+        },
+        {
+          "name": "Theme switcher",
+          "action": "Toggles data-theme on the root between light and dark.",
+          "target": "the icon button",
+          "bounds": "44 px square",
+          "tokens": ["--surface", "--ink-mid", "--surface-2"]
+        },
+        {
+          "name": "Rail drawer trigger",
+          "action": "Opens the rail as a drawer below 768 px.",
+          "target": "the button",
+          "bounds": "44 px square",
+          "tokens": ["--surface", "--line"]
+        }
+      ],
+      "tokens": {
+        "fill": "--surface",
+        "line": "--line",
+        "layer": "--layer-fixed",
+        "badge": ["--accent-wash", "--accent-deep", "--good", "--good-wash", "--warn", "--warn-wash"]
+      }
+    },
+
+    {
+      "name": "SectionStrip",
+      "file": "variations/sections-e/Pager.tsx",
+      "role": "The row of section headings at the top of a paged level. One press sets the shared index.",
+      "states": [
+        {
+          "name": "section-active",
+          "description": "The section on screen. It carries aria-current=\"step\" and the heading fill, because it marks a heading.",
+          "initial": true,
+          "tokens": ["--band", "--band-ink"]
+        },
+        {
+          "name": "section-inactive",
+          "description": "Every other section. Dim ink, and a light-tint hover.",
+          "tokens": ["--ink-dim", "--surface-2", "--foreground"]
+        },
+        {
+          "name": "row-overflowing",
+          "description": "The row scrolls itself sideways when the headings exceed the width, so no heading is unreachable.",
+          "tokens": ["--ground", "--line"]
+        }
+      ],
+      "controls": [
+        {
+          "name": "A section heading",
+          "action": "Sets the shared index to that section. The href stays for focus and for a right-click. The press does nothing, so the route never moves.",
+          "target": "the anchor",
+          "bounds": "at least 32 px tall, and the anchor is focusable",
+          "tokens": ["--band", "--band-ink", "--ink-dim", "--surface-2", "--ring"]
+        }
+      ],
+      "tokens": {
+        "fill": "--ground",
+        "line": "--line",
+        "label": "--ink-dim",
+        "focusRing": "--ring on an inactive heading, --band-ink on the active one"
+      }
+    },
+
+    {
+      "name": "SectionStage",
+      "file": "variations/sections-e/Pager.tsx",
+      "role": "The horizontal track, and the boxes on it. One box is on screen at a time.",
+      "states": [
+        {
+          "name": "at-rest",
+          "description": "The track sits at -index * 100% of its own width. The outer element is the only clip box in the shell.",
+          "initial": true,
+          "tokens": ["--ease-out"]
+        },
+        {
+          "name": "moving",
+          "description": "A step slides the track in 200 ms. Under prefers-reduced-motion the step resolves in one frame.",
+          "tokens": ["--dur-base", "--ease-out"]
+        }
+      ],
+      "controls": [],
+      "tokens": {
+        "radius": "none. The stage clips. A box's own panel carries --radius",
+        "durations": ["--dur-base"]
+      },
+      "children": [
+        {
+          "name": "SectionBox",
+          "role": "One section, at the full width of the stage.",
+          "states": [
+            {
+              "name": "box-active",
+              "description": "The box on screen. The progress strip measures this element.",
+              "initial": true
+            },
+            {
+              "name": "box-offscreen",
+              "description": "The boxes either side. They carry inert, so no reader tabs into a section they cannot see, and a screen reader does not read them out.",
+              "tokens": []
+            }
+          ],
+          "controls": [
+            {
+              "name": "The box's own scroll",
+              "action": "A section taller than its box scrolls inside the box. The pane does not move.",
+              "target": "the box element",
+              "bounds": "the box's full height",
+              "tokens": ["--ground"]
+            }
+          ],
+          "tokens": {
+            "fill": "--ground",
+            "containerQuery": "each box is a container, so a panel's inner grid measures the box and not the viewport"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "PagerBar",
+      "file": "variations/sections-e/Pager.tsx",
+      "role": "The bar under the stage: Previous, the position, and Next.",
+      "states": [
+        {
+          "name": "first-section",
+          "description": "Previous carries disabled, aria-disabled, and no pointer cursor.",
+          "initial": true,
+          "tokens": ["--surface-2", "--ink-faint"]
+        },
+        {
+          "name": "last-section",
+          "description": "Next carries disabled and aria-disabled.",
+          "tokens": ["--surface-2", "--ink-faint"]
+        },
+        {
+          "name": "middle",
+          "description": "Both controls act.",
+          "tokens": ["--surface", "--ink-mid", "--surface-2"]
+        }
+      ],
+      "controls": [
+        {
+          "name": "Previous and Next",
+          "action": "Step the shared index by one section. The arrow keys do the same, except inside an input, a textarea, or a select, or while a modifier is held.",
+          "target": "each button",
+          "bounds": "at least 44 px tall",
+          "tokens": ["--surface", "--line", "--ink-mid", "--ring"]
+        },
+        {
+          "name": "The position text",
+          "action": "None. It reads Section N of M from the same count the boxes come from.",
+          "target": "not a control",
+          "bounds": "not applicable",
+          "tokens": ["--ink-dim"]
+        }
+      ],
+      "tokens": {
+        "fill": "--ground",
+        "line": "--line",
+        "label": "--ink-dim"
+      }
+    },
+
+    {
+      "name": "ProgressStrip",
+      "file": "components/smoothui/scroll-progress/index.tsx",
+      "role": "The four-pixel strip at the top of the content column.",
+      "states": [
+        {
+          "name": "level-progress",
+          "description": "On a paged level the value is (index + within) / count, where within is the active box's own scroll progress. A box with no scroll range counts as fully read. The value never resets on a section change and never decreases on a forward walk.",
+          "initial": true,
+          "tokens": ["--band"]
+        },
+        {
+          "name": "pane-progress",
+          "description": "On a section that stacks its panels, the value is the pane's own offset.",
+          "tokens": ["--band"]
+        },
+        {
+          "name": "reduced-motion",
+          "description": "The strip skips the spring and reads the value directly.",
+          "tokens": []
+        }
+      ],
+      "controls": [],
+      "tokens": {
+        "fill": "--band",
+        "track": "color-mix of --foreground at 12 percent",
+        "thickness": "4 px, the caller's PROGRESS_PX"
+      },
+      "accessibility": {
+        "role": "progressbar",
+        "label": "Reading progress",
+        "aria": ["aria-valuemin 0", "aria-valuemax 100", "aria-valuenow, rounded to an integer"]
+      }
+    },
+
+    {
+      "name": "DiagramTiles",
+      "file": "variations/sections-e/DiagramTiles.tsx",
+      "role": "The diagram levels as tiles. One tile is a fixed-height window onto a drawing laid out at its own size.",
+      "states": [
+        {
+          "name": "pending",
+          "description": "The Mermaid runtime loads. It loads when the Diagrams section mounts, never on a press, because a tile is the drawing.",
+          "initial": true,
+          "tokens": ["--ink-dim"]
+        },
+        {
+          "name": "ready",
+          "description": "The drawing renders, scaled down with transform and transform-origin top left. The drawing carries pointer-events: none, so the whole tile is one press target.",
+          "tokens": ["--surface", "--line"]
+        },
+        {
+          "name": "failed",
+          "description": "The render failed, so the tile states it in one line and the dialog shows the authored source as text. That is the offline fallback, and the only place the source survives. There is no source toggle for the working case.",
+          "tokens": ["--warn", "--ink-dim"]
+        }
+      ],
+      "controls": [
+        {
+          "name": "A tile",
+          "action": "Opens that level's drawing in the dialog.",
+          "target": "the whole tile",
+          "bounds": "the tile's full width, 200 px tall",
+          "tokens": ["--surface", "--line", "--accent-deep", "--surface-2", "--ring"]
+        }
+      ],
+      "tokens": {
+        "fill": "--surface",
+        "line": "--line",
+        "label": "--ink-dim",
+        "columns": "three at a container width of 48 rem, one below it. The count of tiles never changes the column count, because a wider tile shows less of the drawing"
+      }
+    },
+
+    {
+      "name": "DiagramDialog",
+      "file": "variations/sections-e/DiagramTiles.tsx",
+      "role": "One drawing, whole, over the shell. A modal dialog and not a popover.",
+      "states": [
+        {
+          "name": "open",
+          "description": "The dialog portals to document.body. 92 vw by 85 vh, scrollable on both axes, the SVG at its own size.",
+          "initial": true,
+          "tokens": ["--layer-modal", "--surface", "--line", "--shadow-frame"]
+        },
+        {
+          "name": "closed",
+          "description": "The dialog is not in the document.",
+          "tokens": []
+        },
+        {
+          "name": "at-fit",
+          "description": "The zoom is 100 percent, which is the drawing fitted to the body's width. Reset to fit carries disabled here.",
+          "tokens": ["--surface-2", "--ink-faint"]
+        },
+        {
+          "name": "at-a-range-end",
+          "description": "Zoom out carries disabled at 50 percent, and zoom in at 400 percent. Each one drops the pointer cursor.",
+          "tokens": ["--surface-2", "--ink-faint"]
+        }
+      ],
+      "controls": [
+        {
+          "name": "Zoom out, Zoom in",
+          "action": "One step along 50, 75, 100, 125, 150, 200, 250, 300, 400 percent of the fitted size. The zoom sizes the drawing's box in pixels, so the zoomed drawing grows the scroll area instead of leaving it.",
+          "target": "each button",
+          "bounds": "44 px square",
+          "tokens": ["--surface", "--line", "--ink-mid", "--ring"]
+        },
+        {
+          "name": "Reset to fit",
+          "action": "Returns the zoom to 100 percent.",
+          "target": "the button",
+          "bounds": "44 px square",
+          "tokens": ["--surface", "--line", "--ink-mid"]
+        },
+        {
+          "name": "Close",
+          "action": "Closes the dialog. Escape and a press on the backdrop do the same. The close button takes focus when the dialog opens.",
+          "target": "the button, the backdrop, and the Escape key",
+          "bounds": "44 px square",
+          "tokens": ["--surface", "--line", "--ink-mid", "--layer-panel"]
+        }
+      ],
+      "tokens": {
+        "backdrop": "--layer-panel, and no blur on any surface that could be the second backdrop filter on the page",
+        "panel": "--layer-modal",
+        "fill": "--surface",
+        "header": ["--surface-2", "--line-soft"],
+        "zoomMotion": "150 ms transform, suppressed under prefers-reduced-motion"
+      }
+    },
+
+    {
+      "name": "RecordSheet",
+      "file": "variations/sections-e/Sheet.tsx",
+      "role": "One record, whole, over the pane. The pane does not move when it opens.",
+      "states": [
+        {
+          "name": "closed",
+          "description": "No subject. Nothing renders.",
+          "initial": true
+        },
+        {
+          "name": "open",
+          "description": "One subject: a decision record, a boundary rule, or an epic's technical solution design. The sheet owns its own scroll on both axes.",
+          "tokens": ["--popover", "--layer-modal", "--line"]
+        },
+        {
+          "name": "record-without-parts",
+          "description": "A record that marks no part renders no jumplink row.",
+          "tokens": []
+        }
+      ],
+      "controls": [
+        {
+          "name": "Close",
+          "action": "Closes the sheet. Escape and the overlay do the same.",
+          "target": "the registry's close button",
+          "bounds": "44 px square",
+          "tokens": ["--surface", "--line"]
+        },
+        {
+          "name": "An action inside a record",
+          "action": "Opens a further record, such as an epic's technical solution design.",
+          "target": "the button",
+          "bounds": "at least 44 px tall",
+          "tokens": ["--surface", "--line", "--accent-wash", "--accent-deep"]
+        }
+      ],
+      "tokens": {
+        "fill": "--popover",
+        "header": "--surface-2",
+        "line": "--line",
+        "layer": ["--layer-modal for the sheet, --layer-panel for its overlay"]
+      }
+    },
+
+    {
+      "name": "SheetJumpLinks",
+      "file": "variations/sections-e/Sheet.tsx",
+      "role": "The row of links at the top of a record, one per heading the record renders.",
+      "states": [
+        {
+          "name": "row-present",
+          "description": "The record marked at least one part. The row reads the parts from the rendered record, so a link cannot drift from the heading it names.",
+          "initial": true,
+          "tokens": ["--surface", "--line", "--ink-dim"]
+        },
+        {
+          "name": "row-overflowing",
+          "description": "The row scrolls itself sideways when the links exceed the width.",
+          "tokens": []
+        }
+      ],
+      "controls": [
+        {
+          "name": "A part link",
+          "action": "Scrolls the sheet's own container to that heading and moves focus to the heading, so a keyboard reader lands where the pointer did. The press does nothing, so the route never moves.",
+          "target": "the anchor",
+          "bounds": "at least 32 px tall",
+          "tokens": ["--ink-dim", "--surface-2", "--foreground", "--ring"]
+        }
+      ],
+      "tokens": {
+        "fill": "--surface",
+        "line": "--line",
+        "label": "--ink-dim"
+      }
+    }
+  ],
+
+  // The keyboard map, stated once. Every binding below is bound on the window, so
+  // it acts wherever focus sits.
+  "keyboard": [
+    {
+      "keys": "ArrowLeft, ArrowRight",
+      "scope": "a paged level only",
+      "action": "Step the shared section index.",
+      "guards": "Ignored when the event target is an input, a textarea, or a select, and ignored while a modifier key is held. Vertical scrolling needs no other guard: these two keys move sideways and a box scrolls up and down."
+    },
+    {
+      "keys": "Escape",
+      "scope": "the diagram dialog and the record sheet",
+      "action": "Close the open surface.",
+      "guards": "Each surface binds its own listener and removes it when it closes."
+    },
+    {
+      "keys": "Enter or Space",
+      "scope": "every anchor and button",
+      "action": "Activate the focused control.",
+      "guards": "None. Every control is a real anchor or button."
+    }
+  ],
+
+  // What the shell never does. Each entry is a rule an implementer can break by
+  // accident, and each one below holds in the shell as built.
+  "invariants": [
+    "A paged level's pane does not scroll at all. The box owns the scroll, so the frame a reader sees never moves.",
+    "The section strip and the pager bar derive their labels and their count from the panels the boxes rendered, so a label cannot disagree with the heading it names.",
+    "The section index is view state. A step writes no route, so the hash never moves when a reader pages.",
+    "A paged level drops its visible heading band and keeps an sr-only h1 holding the same element id, so the focus move on a section change still lands.",
+    "Only the section stage's outer element hides overflow. It hides the track, never a box's content.",
+    "The Mermaid runtime loads when the Diagrams section mounts, and at no other moment.",
+    "The envisioned pull request lives on the Pull requests level as its first block, and the level fills when a work has a drafted pull request.",
+    "A failed diagram render still gives the reader the authored source, in the dialog.",
+    "Nothing in this shell writes to the bundle. It is a read-only projection."
+  ]
+}

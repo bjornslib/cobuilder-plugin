@@ -1,0 +1,395 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+ * House idiom, ported from
+ * docs/architecture/designs/cobuilder-viewer/prototypes/work-prototype.html and
+ * from the shipped plugins/artifact/viewer/index.html.
+ *
+ * Body and chrome are JetBrains Mono. Prose is Source Serif 4. The palette is a
+ * light ivory and slate ground with one teal accent, and the four state colours
+ * (good, warn, danger, accent) each carry a wash for badge and chip fills.
+ *
+ * Dark mode is opt-in through data-theme="dark" on <html>. The prototype also
+ * follows prefers-color-scheme; this scaffold does not, because the shadcn
+ * components carry their own dark: utilities and would disagree with a
+ * media-query theme. One switch, so the two cannot drift.
+ */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme inline {
+  --font-sans: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-heading: var(--font-mono);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /*
+   * The three base tokens. These were missing, and the omission was silent:
+   * `bg-ground`, `bg-surface` and `text-ink` generate no CSS unless the token is
+   * registered here, and the browser applies nothing rather than reporting an
+   * error. Twenty-eight call sites were affected, including the shell's own
+   * frame, its scroll pane, the comparison frame, and the jump bar. The jump bar
+   * is what made it visible: it asked for `bg-ground` and rendered transparent.
+   */
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+
+  /* House extras. A bento variation reads these by name. */
+  --color-ink-dim: var(--ink-dim);
+  --color-ink-faint: var(--ink-faint);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-accent-deep: var(--accent-deep);
+  --color-accent-wash: var(--accent-wash);
+  /*
+   * The heading system. These four names generate the `bg-band`, `text-band-ink`,
+   * `bg-tint`, and `text-tint-ink` utilities the shell is written in. Without a
+   * registration here the utility generates no CSS at all, and the browser
+   * applies nothing rather than reporting an error.
+   */
+  --color-band: var(--band);
+  --color-band-ink: var(--band-ink);
+  --color-tint: var(--tint);
+  --color-tint-ink: var(--tint-ink);
+  --color-good: var(--good);
+  --color-good-wash: var(--good-wash);
+  --color-warn: var(--warn);
+  --color-warn-wash: var(--warn-wash);
+  --color-danger-wash: var(--danger-wash);
+
+  --shadow-card: var(--shadow-1);
+  --shadow-raise: var(--shadow-2);
+  --shadow-frame: var(--shadow-3);
+  --ease-house: var(--ease);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  --color-brand: var(--brand, oklch(0.72 0.2 352.53));
+  --color-brand-light: var(--brand-light, oklch(0.78 0.15 352.53));
+  --color-brand-lighter: var(--brand-lighter, oklch(0.85 0.1 352.53));
+  --color-brand-secondary: var(--brand-secondary, oklch(0.66 0.21 354.31));
+  --color-amber: var(--amber);
+  --color-amber-fg: var(--amber-fg);
+  --color-amber-hover: var(--amber-hover);
+  --color-blue: var(--blue);
+  --color-blue-fg: var(--blue-fg);
+  --color-blue-hover: var(--blue-hover);
+  --color-green: var(--green);
+  --color-green-fg: var(--green-fg);
+  --color-green-hover: var(--green-hover);
+  --color-smooth-50: var(--smooth-50);
+  --color-smooth-100: var(--smooth-100);
+  --color-smooth-200: var(--smooth-200);
+  --color-smooth-300: var(--smooth-300);
+  --color-smooth-400: var(--smooth-400);
+  --color-smooth-500: var(--smooth-500);
+  --color-smooth-600: var(--smooth-600);
+  --color-smooth-700: var(--smooth-700);
+  --color-smooth-800: var(--smooth-800);
+  --color-smooth-900: var(--smooth-900);
+  --color-smooth-950: var(--smooth-950);
+  --color-smooth-1000: var(--smooth-1000);
+}
+
+:root {
+  /*
+   * The ground is a pale teal, not a cool grey. The approved architecture
+   * concept (`docs/plans/cobuilder-viewer/design-concepts/architecture.html`)
+   * made this change, and the reason it gives is that the page then reads as a
+   * colour rather than as the absence of one. A white card sits clearly on top
+   * of it, so `--surface` stays white and is not tinted with the rest.
+   *
+   * The two container steps and the two hairlines carry the same teal, so the
+   * hierarchy a reader reads from `--surface-2` and `--line` survives the move.
+   */
+  --ground: #e9f2f3;
+  --surface: #ffffff;
+  --surface-2: #f4fafb;
+  --surface-3: #dfecee;
+  --ink: #121d1c;
+  --ink-mid: #3c4b4a;
+  --ink-dim: #6a7978;
+  --ink-faint: #93a1a0;
+  --line: #cfe0e2;
+  --line-soft: #e4eff1;
+
+  /*
+   * The heading system. Four values, used by name and never as literals.
+   *
+   *   --band       the heading band fill. The page title and every panel title
+   *                row carry it, so a heading is a solid object rather than a
+   *                line of larger type.
+   *   --band-ink   the text and the icons on that band. White on `--band` is
+   *                6.8 to 1, which clears WCAG AA for body text.
+   *   --tint       the sub-heading bar fill. The third level is lighter than
+   *                the other two, so the three levels stay apart.
+   *   --tint-ink   the text on that bar.
+   *
+   * NO HOVER, FOCUS, SELECTED, OR ACTIVE STATE MAY FILL WITH `--band`. A
+   * control that turns the heading colour on hover reads as a heading, and the
+   * engineer removed that reading. Hover stays in the light tint family:
+   * `--surface-2`, `--surface-3`, `--accent-wash`, `--tint`.
+   */
+  --band: #006572;
+  --band-ink: #ffffff;
+  --tint: #cde7ed;
+  --tint-ink: #10353b;
+
+  --teal: #1d7f8e;
+  --accent-deep: #125460;
+  --accent-wash: #dcedf0;
+  --warn: #9e5c17;
+  --warn-wash: #f6ead9;
+  --danger: #9c3333;
+  --danger-wash: #f7e3e3;
+  --good: #2f6b42;
+  --good-wash: #dfeee4;
+  --shadow-1: 0 1px 2px rgba(18, 29, 28, 0.06);
+  --shadow-2: 0 2px 6px rgba(18, 29, 28, 0.07), 0 12px 28px -14px rgba(18, 29, 28, 0.22);
+  --shadow-3: 0 4px 12px rgba(18, 29, 28, 0.1), 0 24px 48px -20px rgba(18, 29, 28, 0.3);
+  --ease: cubic-bezier(0.22, 0.75, 0.3, 1);
+
+  --background: var(--ground);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--teal);
+  --primary-foreground: #ffffff;
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--ink-mid);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--ink-dim);
+  --accent: var(--accent-wash);
+  --accent-foreground: var(--accent-deep);
+  --destructive: var(--danger);
+  --border: var(--line);
+  --input: var(--line-soft);
+  --ring: var(--teal);
+  --chart-1: var(--teal);
+  --chart-2: var(--good);
+  --chart-3: var(--warn);
+  --chart-4: var(--danger);
+  --chart-5: var(--ink-dim);
+  --radius: 0.5625rem;
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--teal);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--accent-wash);
+  --sidebar-accent-foreground: var(--accent-deep);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--teal);
+
+  /*
+   * The layering scale. It lives here, on the root, rather than on the shell's
+   * own element, because two things read it from outside the shell: the Sheet
+   * and the tooltip. Both portal to `document.body`. A token scoped to the shell
+   * is undefined out there, and an undefined value in an inline `z-index` beats
+   * the class that would otherwise order the element.
+   *
+   * The values are wide enough to order portalled content against itself and
+   * against anything the shell draws. The Sheet uses the top two: 40 for its
+   * overlay, 50 for its panel.
+   */
+  --layer-base: 0;
+  --layer-raised: 10;
+  --layer-fixed: 20;
+  --layer-panel: 30;
+  --layer-modal: 50;
+
+  color-scheme: light;
+
+  --amber: oklch(0.77 0.16 75);
+
+  --amber-fg: oklch(0.22 0 0);
+
+  --amber-hover: oklch(0.71 0.17 70);
+
+  --blue: oklch(0.62 0.19 256);
+
+  --blue-fg: #fff;
+
+  --blue-hover: oklch(0.56 0.2 256);
+
+  --green: oklch(0.7 0.17 152);
+
+  --green-fg: #fff;
+
+  --green-hover: oklch(0.64 0.18 152);
+
+  --smooth-50: oklch(0.99 0 0);
+
+  --smooth-100: oklch(0.972 0 0);
+
+  --smooth-200: oklch(0.945 0 0);
+
+  --smooth-300: oklch(0.91 0 0);
+
+  --smooth-400: oklch(0.865 0 0);
+
+  --smooth-500: oklch(0.81 0 0);
+
+  --smooth-600: oklch(0.74 0 0);
+
+  --smooth-700: oklch(0.66 0 0);
+
+  --smooth-800: oklch(0.56 0 0);
+
+  --smooth-900: oklch(0.47 0 0);
+
+  --smooth-950: oklch(0.36 0 0);
+
+  --smooth-1000: oklch(0.22 0 0);
+}
+
+[data-theme="dark"] {
+  /*
+   * The dark steps are picked for the dark theme and are not the light values
+   * reused. The ground keeps the teal of the light theme rather than the grey
+   * it carried before, so the two themes are the same page.
+   *
+   * The band stays dark enough to carry white text. `--band-ink` is white here
+   * too, and white on this band is 7.8 to 1. The sub-heading bar inverts the
+   * light relationship instead of copying it: a dark bar with light ink, which
+   * is what the light theme's pale bar with dark ink does in reverse.
+   */
+  --ground: #0a1517;
+  --surface: #131f21;
+  --surface-2: #182829;
+  --surface-3: #1e3134;
+  --ink: #e2e9e8;
+  --ink-mid: #adbab9;
+  --ink-dim: #7d8b8a;
+  --ink-faint: #5d6b6a;
+  --line: #2a3f42;
+  --line-soft: #1d3033;
+  --band: #0f5a68;
+  --band-ink: #ffffff;
+  --tint: #123a44;
+  --tint-ink: #cbe7ee;
+  --teal: #4fb2c1;
+  --accent-deep: #86d0da;
+  --accent-wash: #0e2a2f;
+  --warn: #d2954f;
+  --warn-wash: #2a2116;
+  --danger: #dd7070;
+  --danger-wash: #2b1919;
+  --good: #63ac77;
+  --good-wash: #14251a;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.5), 0 12px 28px -14px rgba(0, 0, 0, 0.8);
+  --shadow-3: 0 4px 12px rgba(0, 0, 0, 0.55), 0 24px 48px -20px rgba(0, 0, 0, 0.9);
+
+  /* Every alias from :root must be restated here. --background and
+     --foreground were missing, so a themed subtree kept the light values and
+     painted light wherever a component used bg-background or text-foreground. */
+  --background: var(--ground);
+  --foreground: var(--ink);
+  --primary: var(--teal);
+  --primary-foreground: #06110f;
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--ink-mid);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--ink-dim);
+  --accent: var(--accent-wash);
+  --accent-foreground: var(--accent-deep);
+  --destructive: var(--danger);
+  --border: var(--line);
+  --input: var(--line-soft);
+  --ring: var(--teal);
+
+  color-scheme: dark;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/*
+ ---break---
+ */
+
+.dark {
+  --amber: oklch(0.8 0.15 75);
+  --amber-fg: oklch(0.2 0 0);
+  --amber-hover: oklch(0.85 0.14 72);
+  --blue: oklch(0.66 0.18 256);
+  --blue-fg: #fff;
+  --blue-hover: oklch(0.72 0.16 256);
+  --green: oklch(0.73 0.16 152);
+  --green-fg: oklch(0.2 0 0);
+  --green-hover: oklch(0.79 0.15 152);
+  --smooth-50: oklch(0.2 0 0);
+  --smooth-100: oklch(0.235 0 0);
+  --smooth-200: oklch(0.275 0 0);
+  --smooth-300: oklch(0.315 0 0);
+  --smooth-400: oklch(0.36 0 0);
+  --smooth-500: oklch(0.41 0 0);
+  --smooth-600: oklch(0.47 0 0);
+  --smooth-700: oklch(0.55 0 0);
+  --smooth-800: oklch(0.66 0 0);
+  --smooth-900: oklch(0.74 0 0);
+  --smooth-950: oklch(0.85 0 0);
+  --smooth-1000: oklch(0.96 0 0);
+}

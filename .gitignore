@@ -21,6 +21,14 @@ __pycache__/
 .mcp.json
 .serena/
 
+# The React viewer's Node toolchain, under plugins/artifact/viewer/. ADR-0023
+# accepted a Node and npm requirement for viewer changes. Neither the installed
+# packages nor a scratch build belong in the repository. The source under
+# plugins/artifact/viewer/src/ IS committed, and so is the packaged viewer at
+# plugins/artifact/viewer/index.html until ADR-0023's output rule settles.
+node_modules/
+plugins/artifact/viewer/dist/
+
 # cobuilder-implement's blind rubrics ARE committed (they're the question
 # sheet); the validator evidence they're scored against is not, per
 # implement/SKILL.md's "Files and state" rule.

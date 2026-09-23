@@ -55,14 +55,18 @@ Legal transitions (reject anything else):
 |------|----|
 | idea | tentative, discarded |
 | tentative | decided, discarded |
-| decided | approved, challenged, discarded |
-| approved | challenged |
+| decided | approved, challenged, rejected, discarded |
+| approved | challenged, rejected |
 | challenged | decided, approved, rejected |
 | rejected / discarded | (terminal) |
 
 Rules: `approved` is **human-granted** — requires non-empty `approved_by`. Never jump states (no
 `idea → approved`). A superseded decision is not deleted: mark it `rejected` and add a `replaces`
-edge on its successor.
+edge on its successor. That is one step from a live record, so `decided` and `approved` both reach
+`rejected` directly. `challenged` is for a record somebody contests before either outcome, not a
+required waypoint on the way to `rejected`. The table above and the check in
+`shared/validate_decision_state.py` must agree; a supersession that the prose allows and the table
+forbids is a defect in the table.
 
 ## 4. The value facet (`delivers`) — mandatory
 
@@ -95,6 +99,11 @@ change with it (see `.github/pull_request_template.md`).
    Considered Options, and Consequences sections are a record of what was believed and chosen on a
    date. Never edit them to match the current tree. A changed decision gets a new record that
    supersedes this one, through the `replaces` edge and `rejected` state that §3 defines.
+   **This applies from `approved` onward.** A record still at `idea`, `tentative` or `decided`,
+   with an empty `approved_by` and nothing shipped against it, is a design-time draft. Revise it in
+   place and record the revision as a history entry that says what changed and why. Superseding a
+   draft nobody approved puts a decision nobody ever made into the register, and leaves the reader
+   two records where one is true.
    The frontmatter index fields — `maps_to`, `state`, `last_verified`, `source_pr` — point into the
    current tree instead, and keeping them accurate is expected maintenance, not history. For
    example, ADR-0011's `maps_to.modules` named `skills/odyssey` and `commands`, and the five-plugin

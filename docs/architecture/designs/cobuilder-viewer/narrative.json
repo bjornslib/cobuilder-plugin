@@ -1,0 +1,38 @@
+{
+  "landscape": {
+    "tagline": "Two designs each built half of the same page and called it Flight deck. This one merges them, so the team builds the pull-request surface once.",
+    "narration": "react-viewer set out to replace the viewer's five record-type tabs with three surfaces built around what a reader asks. review-flight-deck set out to answer a question no surface asked at all: when a team carries many open pull requests, in what order can the whole set close. Both reached the same stage, review, without either reading the other. Both also reached for the same name for their pull-request surface. The collision was not cosmetic. Sequencing them would have built review-flight-deck's ordering UI against the viewer react-viewer was already about to replace, then rebuilt it again. cobuilder-viewer merges both into one program. It has three surfaces, one build, and a FlightDeck that carries two modes instead of two designs carrying one name each."
+  },
+  "problem_solution": {
+    "problem": "react-viewer's E5 and review-flight-deck's multi-PR surface independently claimed the name Flight deck for different things. Shipping them apart means building the pull-request surface twice.",
+    "solution": "One design, cobuilder-viewer, with one FlightDeck surface and two modes. The first shows a single pull request, at parity with today's viewer. The second lets a reviewer select several open pull requests and get a validated merge-path recommendation. That simulation runs outside the browser, and the viewer only renders its result.",
+    "narration": "The merge kept both designs' hard-won decisions intact rather than re-deriving them. ADR-0023's build decision carries forward unchanged: TypeScript, React, Vite, and one committed file. review-flight-deck's common-ancestor simulation rule and its integration-branch execution model carry forward too, now folded into one ADR-0027 instead of two records. The merge also added something new. A divergent-exploration pass across six frames surfaced two ideas that looked right and were wrong. The first was a scheduled GitHub Action, which this family does not need, because it already has a mechanism for automatic triggering. The second was a cross-repo compute service, which would have broken the install-surface rule that holds this family together. The critic pass caught both. One starred survivor also came through unedited. The open pull request never gets its own type. It extends the type that single-pull-request mode already ships, so a field renamed on one and not the other fails the build instead of drifting silently.",
+    "beats": [
+      {"kind": "problem", "text": "Two designs gave their pull-request surface the same name, for different reasons, and neither had read the other."},
+      {"kind": "constraint", "text": "A browser cannot run git, so a merge-order simulation can never happen client-side, in either design's version of the surface."},
+      {"kind": "decision", "text": "Merge into one design, and supersede both sources outright, the way react-viewer had already superseded two designs before it."},
+      {"kind": "decision", "text": "FlightDeck replaces the Pull requests tab. Single-pull-request mode ships first, and multi-pull-request mode follows in the same design."},
+      {"kind": "decision", "text": "A skill run or scheduled workflow computes the merge plan and commits it as data. The viewer renders it and computes nothing."},
+      {"kind": "risk", "text": "A cross-repo compute service was proposed and caught as a trap. It breaks the no-agents, no-hooks, no-MCP-servers install rule."},
+      {"kind": "decision", "text": "OpenPullRequest extends PullRequest, defined once, so the type checker refuses to let the two entities drift apart."}
+    ],
+    "alternatives": [
+      {"option": "Ship react-viewer and review-flight-deck as two designs, sequenced", "rejected_because": "That order would build the ordering UI against the viewer E5 is about to replace, then rebuild it in React."},
+      {"option": "Recompute the merge order live in the browser", "rejected_because": "A browser cannot run git, and ADR-0001's content policy blocks it from fetching the evidence."},
+      {"option": "A scheduled GitHub Action recomputes the plan and commits it", "rejected_because": "review-flight-deck's own record already resolved automatic triggering as a scheduled skill run or workflow, matching every other Odyssey mode."},
+      {"option": "A persistent, org-owned service computes the join index and merge plan across every adopting repository", "rejected_because": "It discards the install-surface rule outright. A committed data file answers the pressure behind it just as well."},
+      {"option": "OpenPullRequest as its own hand-copied type in the multi-pull-request epic", "rejected_because": "A field renamed on one type and not the other compiles clean on both sides and drifts silently."}
+    ]
+  },
+  "architecture": {
+    "narration": "FlightDeck sits inside the same typed data layer and three-surface shell react-viewer already designed. Single-pull-request mode reads the typed model that E3 builds. That model covers STORY, ODYSSEY, DIFFS, ADRS, DESIGNS, DIAGRAMS, and index.json, and it joins them once. Multi-pull-request mode adds one new input, data/merge-plan.json. A skill run or scheduled workflow writes that file. It runs chained git merge-tree against the common ancestor of the reviewer's selected branches, replays the top candidates on a scratch worktree, and commits the result the way diagrams.js and story.json already work. The viewer never simulates. It renders a committed file. Acceptance and outcome are not silent either. The ledger records a merge-order proposal, its acceptance, and the post-merge tree hash as three subtypes of the state line ADR-0019 already defined. An auditor can then diff what the recommendation predicted against what actually happened, without asking anyone. Execution stays a separate concern. A runner, supplied by the adopting repository, reads an accepted path from the ledger and merges each bundle onto its own integration branch, never the default branch.",
+    "beats": [
+      {"kind": "component", "text": "viewer/src/data: the typed layer from react-viewer, extended with OpenPullRequest. The shared module defines that type once."},
+      {"kind": "component", "text": "viewer/src/surfaces/flightdeck: single-pull-request mode at parity with today's viewer, and multi-pull-request mode reading data/merge-plan.json."},
+      {"kind": "seam", "text": "A skill run or scheduled workflow, never the browser, runs git merge-tree and commits data/merge-plan.json beside data/index.json."},
+      {"kind": "seam", "text": "shared/ledger.py gains three state-line subtypes: merge-order proposal, acceptance, and post-merge actual result."},
+      {"kind": "seam", "text": "A runner, outside this design's install surface, reads an accepted path and merges each bundle onto its own integration branch."},
+      {"kind": "guard", "text": "The type checker fails the build when OpenPullRequest and PullRequest diverge structurally."}
+    ]
+  }
+}

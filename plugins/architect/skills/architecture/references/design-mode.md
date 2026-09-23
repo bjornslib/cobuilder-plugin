@@ -209,7 +209,7 @@ written. `verdict` uses the same values as the odyssey skill's `references/revie
 
 Write five artifacts. Run each prose pass through
 `Skill("architect:ste-writing")` in flavored mode. If that call
-gives `Unknown skill`, read `${CLAUDE_PLUGIN_ROOT}/skills/ste-writing/SKILL.md`
+gives `Unknown skill`, read `${CLAUDE_PLUGIN_ROOT}/shared/skills/ste-writing/SKILL.md`
 directly and obey that file instead. Use strict mode for ADR procedural
 text: the constraint introduced, and the boundary rules.
 

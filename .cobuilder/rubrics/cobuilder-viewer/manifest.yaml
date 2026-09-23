@@ -1,0 +1,45 @@
+feature: cobuilder-viewer
+test_command: "uv run --with pytest pytest tests/ -v"
+thresholds:
+  accept: 0.90
+  investigate: 0.70
+max_attempts: 3
+epics:
+  - { id: "cobuilder-viewer/E1",  name: "the exporter seam",              slices: [1] }
+  - { id: "cobuilder-viewer/E2",  name: "the build pipeline",             slices: [2, 3] }
+  - { id: "cobuilder-viewer/E3",  name: "the typed data layer",           slices: [4] }
+  - { id: "cobuilder-viewer/E4",  name: "the Work prototype",             slices: [5] }
+  - { id: "cobuilder-viewer/E5",  name: "the Work surface",               slices: [8, 9, 10, 11, 12, 13] }
+  - { id: "cobuilder-viewer/E6",  name: "the FlightDeck prototype",       slices: [14] }
+  - { id: "cobuilder-viewer/E7",  name: "FlightDeck, one pull request",   slices: [15, 16] }
+  - { id: "cobuilder-viewer/E19", name: "the Work board",                 slices: [6, 7] }
+  # Deferred on 2026-09-22, and they carry no slice. They stay listed so the
+  # manifest still names what left the build.
+  - { id: "cobuilder-viewer/E8",  name: "the Reference prototype",        slices: [] }
+  - { id: "cobuilder-viewer/E9",  name: "the Reference surface",          slices: [] }
+  - { id: "cobuilder-viewer/E10", name: "describe on arrival",            slices: [] }
+  - { id: "cobuilder-viewer/E11", name: "read the open set",              slices: [] }
+  - { id: "cobuilder-viewer/E12", name: "simulate and replay the routes", slices: [] }
+  - { id: "cobuilder-viewer/E13", name: "narrate and render the route",   slices: [] }
+  - { id: "cobuilder-viewer/E14", name: "the ledger and the audit",       slices: [] }
+  - { id: "cobuilder-viewer/E15", name: "execute the path",               slices: [] }
+  - { id: "cobuilder-viewer/E16", name: "publish parity",                 slices: [] }
+  - { id: "cobuilder-viewer/E17", name: "the workflow-polish carryover",  slices: [] }
+  - { id: "cobuilder-viewer/E18", name: "the feedback path",              slices: [] }
+slices:
+  - { id: 1,  name: "tracer bullet: a publish survives a marker rename", epic: "cobuilder-viewer/E1",  weight: 0.08 }
+  - { id: 2,  name: "two builds produce the same bytes",                 epic: "cobuilder-viewer/E2",  weight: 0.09 }
+  - { id: 3,  name: "the build owns the committed file",                 epic: "cobuilder-viewer/E2",  weight: 0.10 }
+  - { id: 4,  name: "one typed model reads the bundle",                  epic: "cobuilder-viewer/E3",  weight: 0.10 }
+  - { id: 5,  name: "the Work prototype, reviewed",                      epic: "cobuilder-viewer/E4",  weight: 0.04 }
+  - { id: 6,  name: "the shell lands on the bundle's designs",           epic: "cobuilder-viewer/E19", weight: 0.08 }
+  - { id: 7,  name: "a row opens the item's Work surface",               epic: "cobuilder-viewer/E19", weight: 0.05 }
+  - { id: 8,  name: "the section model",                                 epic: "cobuilder-viewer/E5",  weight: 0.10 }
+  - { id: 9,  name: "the level's progress",                              epic: "cobuilder-viewer/E5",  weight: 0.05 }
+  - { id: 10, name: "every level renders its own sections",              epic: "cobuilder-viewer/E5",  weight: 0.12 }
+  - { id: 11, name: "the diagram tiles open their drawing",              epic: "cobuilder-viewer/E5",  weight: 0.05 }
+  - { id: 12, name: "a record opens in the Sheet",                       epic: "cobuilder-viewer/E5",  weight: 0.04 }
+  - { id: 13, name: "a goal.json-only design renders",                   epic: "cobuilder-viewer/E5",  weight: 0.03 }
+  - { id: 14, name: "the FlightDeck prototype, reviewed",                epic: "cobuilder-viewer/E6",  weight: 0.02 }
+  - { id: 15, name: "a single pull request at parity",                   epic: "cobuilder-viewer/E7",  weight: 0.03 }
+  - { id: 16, name: "the joins rail",                                    epic: "cobuilder-viewer/E7",  weight: 0.02 }

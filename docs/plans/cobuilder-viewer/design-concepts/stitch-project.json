@@ -1,0 +1,27 @@
+{
+  "projectId": "7568781383690687397",
+  "designSystem": "assets/12569540375331291937",
+  "screens": {
+    "design-scheme": {
+      "screen": "projects/7568781383690687397/screens/8b794e7a41dd43a99bb4e456ddcfc20e",
+      "title": "CoBuilder M3 Design System Overview",
+      "width": "2560",
+      "height": "12628",
+      "screenshotUrl": "https://lh3.googleusercontent.com/aida/AEtjO1X2alJtaJSU2PeLNFgGXReZnaaV2Lulyd6JMAP6PEPlwiNhFgHdwPcwSFwofka8KrqkB1crUJ1RbgovMlb2UzXKNMMbqwRo3wpSlLUO8T75Pnu9K3lgX6k8rQmmyaNXwGAyzYsLqH5LExd1SK67rvljX2k4YEi0lmlUfrN15yONy7By6m3cyR28Sfs9UnhuuFsR4KErWG37vwCDqzRVVZUjMzc8q1Am_SjEhNpJL4HTvRJf7FQXMjXAWg"
+    },
+    "problem-solution": {
+      "screen": "projects/7568781383690687397/screens/860f08399a3647c484c93cdf70023242",
+      "title": "CoBuilder - Problem & Solution",
+      "width": "2880",
+      "height": "2554",
+      "screenshotUrl": "https://lh3.googleusercontent.com/aida/AEtjO1UZNnekin80U5axpVvH7hbbb1YK5YiinLfesYlOWATqUxb-bITx1Ftr-FWbml-p0zyuJV1UhpaE2F8_n0xkXfwYS7SlpPqbZytpVZ3lJVTk-17Z-NRDFtT4iKW4UZs1F0VlBdMZOkgIgf-1gGt7Feu72nKR1ln6eQh5WpdIUkmFfi4mCdyFDVGKwNos8ZYQ2Yj9LHky0iWKbTqKAnOMjCZf0gOaetX_qnPlKv6BBP25EipfC0BrELnQWQ"
+    },
+    "architecture": {
+      "screen": "projects/7568781383690687397/screens/a8d2237d136742c7a5e5f24df6b8d1a4",
+      "title": "CoBuilder - Architecture",
+      "width": "2560",
+      "height": "2048",
+      "screenshotUrl": "https://lh3.googleusercontent.com/aida/AEtjO1Vw8fSBMyUe3N79zxlBJXWzBhLapYymsCJ8A2k2PHlFf7KHf0OEOLvZO4V_pG3ZVCBZoHI20u4jvLGB55N7xwkHgWodU9BJQbuN34i2ijdcxIZ3emVBBgnIsyVbKAcBMfncHmSDda9eOBJS_2daoIdoZpa4EhofR32Z8XT_pDOxXqyfUAHaPjMQq9E4UKaOKyc4cToc0ty9uYupALpWu18ebeNRvGMPPc4a-9eoGfKEEOitCQcTFjZs2FQ"
+    }
+  }
+}
