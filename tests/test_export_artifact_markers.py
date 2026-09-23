@@ -222,3 +222,77 @@ def test_a_data_change_inside_a_marker_region_does_not_stop_the_export(tmp_path,
         f"exit={code!r}\nstderr={captured.err}"
     )
     assert (out_dir / "pr-1.html").exists()
+
+
+# ---- 5. the unchanged short-circuit does not mask a missing marker ----
+
+def test_an_up_to_date_manifest_does_not_mask_a_missing_marker(tmp_path, monkeypatch, capsys):
+    """A stale viewer must stop the export on the unchanged path too.
+
+    The exporter short-circuits when the output file exists and the source
+    hash and commit match. That path never rebuilt the page, so a missing
+    marker once slipped past it and the run reported success. The marker
+    check now runs before the short-circuit, so this case stops.
+    """
+    name = first_marker_name()
+    viewer = VIEWER_PATH.read_text()
+    assert name in viewer, f"this test renames {name!r}, so the viewer must carry it"
+
+    bundle, out_dir = write_minimal_bundle(tmp_path, viewer)
+    setup = run_exporter(bundle, out_dir, monkeypatch)
+    assert setup is None, f"the setup run must export cleanly, got exit {setup!r}"
+
+    out_path = out_dir / "pr-1.html"
+    manifest_path = out_dir / "publish-manifest.json"
+    assert out_path.exists(), "the setup run must write its page"
+    assert manifest_path.exists(), "the setup run must write its manifest"
+    page_before = out_path.read_bytes()
+    page_mtime = out_path.stat().st_mtime_ns
+    manifest_before = manifest_path.read_bytes()
+    capsys.readouterr()
+
+    # Only the viewer changes. The manifest keeps its matching hash and commit,
+    # so the exporter would take the unchanged path without this check.
+    marker = next(m for m in export_artifact.MARKERS if m["name"] == name)
+    renamed = viewer.replace(name, f"renamed-{name}")
+    assert marker["begin"] not in renamed and marker["end"] not in renamed, (
+        "the rename must remove the marker pair, or the exporter has nothing to stop on"
+    )
+    (bundle / "viewer" / "index.html").write_text(renamed)
+
+    code = run_exporter(bundle, out_dir, monkeypatch)
+    captured = capsys.readouterr()
+    said = captured.err + captured.out
+
+    assert code not in (0, None), f"the export must stop on a missing marker, got exit {code!r}"
+    assert name in said, (
+        f"the message must name the missing marker {name!r}.\nmessage was: {said}"
+    )
+    assert out_path.read_bytes() == page_before, "no half-rewritten file may reach disk"
+    assert out_path.stat().st_mtime_ns == page_mtime, "the stopped run must write nothing"
+    assert manifest_path.read_bytes() == manifest_before, "the stopped run must not move the manifest"
+
+
+def test_an_unchanged_bundle_with_intact_markers_still_short_circuits(tmp_path, monkeypatch, capsys):
+    """The short-circuit must survive the marker check.
+
+    A second export of an untouched bundle reports the work as already done
+    and writes nothing. This case is the control for the case above.
+    """
+    bundle, out_dir = write_minimal_bundle(tmp_path, VIEWER_PATH.read_text())
+
+    assert run_exporter(bundle, out_dir, monkeypatch) is None, "the setup run must export cleanly"
+    out_path = out_dir / "pr-1.html"
+    page_before = out_path.read_bytes()
+    page_mtime = out_path.stat().st_mtime_ns
+    capsys.readouterr()
+
+    code = run_exporter(bundle, out_dir, monkeypatch)
+    captured = capsys.readouterr()
+
+    assert code is None, f"the second run must finish cleanly, got exit {code!r}\nstderr={captured.err}"
+    assert "unchanged since last export" in captured.out, (
+        f"the second run must report the bundle as unchanged.\nstdout was: {captured.out}"
+    )
+    assert out_path.read_bytes() == page_before, "the short-circuit must not rewrite the page"
+    assert out_path.stat().st_mtime_ns == page_mtime, "the short-circuit must write nothing"

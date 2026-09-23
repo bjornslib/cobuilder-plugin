@@ -199,6 +199,33 @@ def missing_marker_names(html: str) -> list[str]:
     ]
 
 
+def require_markers(html: str) -> None:
+    """Stop the run if the viewer lacks one of the markers this script rewrites.
+
+    The viewer travels with the bundle, so a bundle can hold an older copy than
+    the installed plugin. A missing marker stops the run before any output file
+    is written, so a half-rewritten page can never reach disk. A stale
+    `window.DIAGRAMS = window.DIAGRAMS || {};`-style line left in place would
+    otherwise clobber the inlined data below it.
+    """
+    missing = missing_marker_names(html)
+    if not missing:
+        return
+    print(
+        "error: viewer/index.html is missing these markers: "
+        f"{', '.join(missing)}.\n"
+        "The export stops here and writes no file.\n"
+        "remediation: most often the bundle holds an older copy of the viewer than the "
+        "installed plugin (each bundle carries its own copy). Refresh it and retry:\n"
+        '  cp "${CLAUDE_PLUGIN_ROOT}/viewer/index.html" <bundle-dir>/viewer/index.html\n'
+        "or re-run /pr:baseline against the bundle, which does the same copy.\n"
+        "If the bundle's viewer is already current, then viewer/index.html was edited. "
+        "Restore the marker named above, or update MARKERS in export_artifact.py to match.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+
 # ---- filesystem / repo resolution (same conventions as the other scripts) ----
 
 def resolve_repo(repo_arg: str | None) -> Path:
@@ -410,25 +437,9 @@ def build_html(
     html = TITLE_TAG_RE.sub(f"<title>{_html_mod.escape(page_title)}</title>", html, count=1)
 
     # Fail loudly, not silently, if the viewer lacks one of the markers this script
-    # rewrites. A missing marker stops the run here, before any output file is
-    # written, so a half-rewritten page can never reach disk. A stale
-    # `window.DIAGRAMS = window.DIAGRAMS || {};`-style line left in place would
-    # otherwise clobber the inlined data below it.
-    missing = missing_marker_names(html)
-    if missing:
-        print(
-            "error: viewer/index.html is missing these markers: "
-            f"{', '.join(missing)}.\n"
-            "The export stops here and writes no file.\n"
-            "remediation: most often the bundle holds an older copy of the viewer than the "
-            "installed plugin (each bundle carries its own copy). Refresh it and retry:\n"
-            '  cp "${CLAUDE_PLUGIN_ROOT}/viewer/index.html" <bundle-dir>/viewer/index.html\n'
-            "or re-run /pr:baseline against the bundle, which does the same copy.\n"
-            "If the bundle's viewer is already current, then viewer/index.html was edited. "
-            "Restore the marker named above, or update MARKERS in export_artifact.py to match.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+    # rewrites. main() runs the same check before it reaches the unchanged
+    # short-circuit, so a stale viewer stops the run on every path.
+    require_markers(html)
     if not inline_mermaid_js and not MERMAID_CDN_RE.search(html):
         print(
             "error: viewer/index.html's Mermaid CDN <script> tag not found verbatim.\n"
@@ -641,6 +652,10 @@ def main() -> None:
         )
         sys.exit(1)
     viewer_html = viewer_path.read_text()
+
+    # Before the unchanged short-circuit below: a bundle whose viewer has lost a
+    # marker must stop the export even when the output would not be rebuilt.
+    require_markers(viewer_html)
 
     inline_mermaid_js: str | None = None
     if args.inline_mermaid:
