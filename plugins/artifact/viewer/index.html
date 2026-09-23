@@ -1105,11 +1105,17 @@
 <script src="../data/designs.js"></script>
 <script src="../data/index.js"></script>
 <script>
+// cobuilder-marker:defaults-block:begin
 window.DIFFS = window.DIFFS || {};
 window.ADRS = window.ADRS || {};
 window.DIAGRAMS = window.DIAGRAMS || {};
+// cobuilder-marker:defaults-block:end
+// cobuilder-marker:defaults-designs:begin
 window.DESIGNS = window.DESIGNS || {};
+// cobuilder-marker:defaults-designs:end
+// cobuilder-marker:defaults-index:begin
 window.INDEX = window.INDEX || {};
+// cobuilder-marker:defaults-index:end
 (function(){
   'use strict';
 
@@ -1673,7 +1679,9 @@ window.INDEX = window.INDEX || {};
       // (mountDiagrams), never interpolated into this HTML string. That's what makes
       // `<<interface>>`, `&`, and quotes inside real Mermaid syntax safe here.
       ? `<div class="diagram-viewport" data-diagram data-pr="${prNum}" data-level="${levelIdx}"><pre class="mermaid"></pre></div>`
+      // cobuilder-marker:hero-img-src:begin
       : `<img src="../assets/pr-${prNum}/level-${levelIdx}.webp" alt="${escapeHtml(alt)}" loading="lazy">`;
+      // cobuilder-marker:hero-img-src:end
     return toggleHtml + bodyHtml;
   }
   function heroFrame(prNum, levelIdx, alt){
@@ -3627,7 +3635,9 @@ window.INDEX = window.INDEX || {};
       updateAudioButtonUI();
       return;
     }
+    // cobuilder-marker:audio-src:begin
     narrationAudio.src = `../data/audio/${file}`;
+    // cobuilder-marker:audio-src:end
     const result = narrationAudio.play();
     state.audioPlaying = true;
     updateAudioButtonUI();
@@ -3675,7 +3685,9 @@ window.INDEX = window.INDEX || {};
       narrationEl.textContent = '';
       mountDiagrams(diagramEl);
     } else if (showImage){
+      // cobuilder-marker:dialog-img-src:begin
       img.src = `../assets/${rel}`;
+      // cobuilder-marker:dialog-img-src:end
       img.alt = `PR #${p.pr} — ${LEVEL_LABELS[state.level - 1]} scene art`;
       img.hidden = false;
       diagramEl.hidden = true;
