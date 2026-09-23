@@ -117,6 +117,44 @@ and the six marker names reach the built file. Slice 3 failed the slice's own re
 check in two of its three clauses, and broke slice 1's seam. The last note under "Notes for
 a fresh session" records both.
 
+**Slice 14 was built on 2026-09-23, and it waits on the engineer.** The prototype is one
+surface with two modes behind one control, and it lives at
+`plugins/artifact/viewer/src/variations/flightdeck/`. Its dev entry serves it at
+`http://localhost:5273/variations/flightdeck/dev.html`, and the two states a reader meets
+are recorded beside it as `.mode-1-single-pull-request.png` and
+`.mode-2-multi-design.png` in that same directory. Mode one reads this repository's own
+pull request 2 from `.cobuilder-architect/self/`, and it shows the six parts of parity:
+four narration levels with their narration, the three diagrams, the three scene-art
+`webp` files, the three narration audio files, the diff, and the intent and assessment
+sheet. Mode two draws the select-and-recommend path and states in three places that it is
+a design rather than a shipped surface.
+
+Its third regression clause holds, and the build proves it. `npm run build` in
+`plugins/artifact/viewer/` wrote 1,184,484 bytes with sha256
+`0af3663ede577a0b9f8cad788dd5601832cd954562248fd6ee12a0b013dbd5c6` before this work and
+after it, and two builds after it wrote byte-identical files. The build's own guard agrees:
+`tests/test_viewer_build.py::test_two_builds_produce_the_same_bytes` passes and prints that
+hash. `tests/test_viewer_modes.py::test_export_artifact_parses_updated_viewer` and the four
+marker cases stay red, which is slice 3's recorded export-seam gap, and the four webp cases
+stay red from the Pillow fault. Nine cases fail and 378 pass, which is the state this
+branch already carried.
+
+The clause nearly failed, and the cause is worth keeping. The prototype's modules never
+reach the shipped graph, because nothing imports them. Its class names did. Tailwind scans
+every file under `src/`, so twenty-three utility rules that only this variation's markup
+named were emitted into the build's stylesheet and moved the hash by 1,836 bytes. The
+repair is a rule for any later variation in this directory: use only class names the
+shipped stylesheet already holds, and reach for an inline style when a value has no
+existing utility. The prototype keeps a few inline widths and heights for that reason, and
+each one is commented where it sits.
+
+**The score and the approval are the engineer's, so this row stays `pending`.** The work
+is complete and the evidence above is recorded, and the rubric's fourth criterion asks for
+a decision the session cannot give itself. The engineer opens the two screenshots or the
+dev URL, and answers whether the surface is right. A follow-up run writes that answer, its
+date, and this location into this file and into the ladder at
+`docs/plans/cobuilder-viewer/04-slices.md`.
+
 ## Escalated
 
 **Slice 1 is escalated.** Its two CRITICAL criteria are C1 and C2. C2 passes, and C1 cannot
