@@ -144,8 +144,9 @@ writes them, so do not renumber a slice.
 **Slice 3 makes the committed file the React application, and that application
 carries no pull request story yet.** The build writes
 `plugins/artifact/viewer/index.html`, so that file becomes the React application.
-Measured on 2026-09-23, the committed file is 249,710 bytes and the build produces
-1,177,754 bytes. The application's Pull requests panel lists pull requests. Nothing
+Measured on 2026-09-23, the legacy hand-written file is 249,710 bytes and the build
+writes 1,184,484 bytes, of which about 6,800 bytes are the marker seam. The
+application's Pull requests panel lists pull requests. Nothing
 under `plugins/artifact/viewer/src/` reads a pull request's narration levels, its
 art, its audio, or its diffs. Slices 15 and 16 add those. Between slice 3 and slice
 15, a bundle served from this branch would show a pull request with no story to

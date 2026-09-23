@@ -139,3 +139,33 @@ with no Node still passes the suite.
   the source. E2 asserts they survive the build. If the single-file plugin ever
   rewrites an HTML comment, both pass and publishing breaks. Slice 2's byte comparison
   is the only case that would notice.
+
+## Corrections measured at build time (2026-09-23)
+
+The build ran, and five claims above no longer match the tree. Each entry states the
+claim, the fact, and the measurement. The claims above stay as written, because this
+document records what was believed before the build ran.
+
+1. **The marker contract.** The design says one marker sits in the document head, one
+   sits where the per-pull-request data block begins, and one sits where it ends. The
+   build emits six marker pairs, twelve lines, and all twelve are JavaScript `//`
+   comments: three asset regions and three data regions. `MARKERS` in
+   `plugins/artifact/scripts/export_artifact.py` is the authority.
+2. **`src/main.tsx`.** The design says `main.tsx` is modified, and that it is where the
+   named markers reach the output. `main.tsx` sits inside the bundle, so the minifier
+   and the esbuild TypeScript transform remove comments there. The markers reach the
+   output through a classic inline script in `src/index.html`, and no bundler re-prints
+   that script.
+3. **`package.json`.** The design says `package.json` gains a `build:check` script. It
+   does not. The build script already read `tsc --noEmit && vite build` and needed no
+   change, and no `build:check` script exists.
+4. **The test helper.** The design shows `npm_available() -> bool`. That function does
+   not exist. The file holds `missing_toolchain_reason()`.
+5. **Four files the design does not list.** The design lists `src/data/bundle.ts`,
+   `src/App.tsx`, `src/variations/lens-mosaic/PageChrome.tsx`, and
+   `src/variations/record-mosaic/records.ts` nowhere. All four changed, because the
+   shipped file asks for its data relative to itself and five absolute `/bundle/`
+   references came from four source sites.
+
+**Size.** The design predicts about 1,177,754 bytes. The build writes 1,184,484 bytes
+with the markers, and it wrote 1,177,696 bytes before them.
