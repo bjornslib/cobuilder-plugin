@@ -26,7 +26,7 @@ slices build: E2, E5, E7, and E19. The cut defers eleven epics, and they carry n
 E9, E10, E11, E12, E13, E14, E15, E16, E17, and E18.
 
 - [ ] Slice 1 — Tracer bullet: a publish survives a marker rename   score: —
-- [ ] Slice 2 — Two builds produce the same bytes                   score: —
+- [x] Slice 2 — Two builds produce the same bytes                   score: 1.00
 - [ ] Slice 3 — The build owns the committed file                   score: —
 - [ ] Slice 4 — One typed model reads the bundle                    score: —
 - [ ] Slice 5 — The Work prototype, reviewed                        score: —
@@ -76,9 +76,32 @@ action: unset that variable, then run `/login` and choose the subscription accou
 scored 0.50 of its four criteria, and its ladder row stays `pending` until the publishes run.
 
 Slice 1 belongs to `cobuilder-viewer/E1`, its only slice. Slices 6 and 7 belong to
-`cobuilder-viewer/E19` and stand at 1.0. Thirteen slices of the sixteen have not run:
-2, 3, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, and 16. Slice 1 ran, and it did not reach an
+`cobuilder-viewer/E19` and stand at 1.0. Twelve slices of the sixteen have not run:
+3, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, and 16. Slice 1 ran, and it did not reach an
 accepted score.
+
+**Slice 2 ran on 2026-09-23 and scored 1.00**, weighted 0.09. It belongs to
+`cobuilder-viewer/E2`. All four of its criteria scored 1.0, so the mean is 1.0. C1 (two
+builds of one input produce identical bytes) is the only CRITICAL criterion, and it
+scored 1.0: two runs of `npm run build` in `plugins/artifact/viewer/` each wrote a
+1,177,754 byte file with sha256
+`09a372fd5cfee74f803c483e2f7af58f19988cc8d0a3a43d4273ac03f75bda4b`, and `cmp` exited 0.
+The build ran on Node v22.22.3 and npm 10.9.8. C2 (the toolchain pins enough to reproduce
+itself) passed on the tracked `package-lock.json`, on `.nvmrc` reading `22.22.3`, and on
+`package.json` declaring `engines.node` as `>=22.22.3`. C3 (a differing byte is
+detectable, and the report names it) flipped one byte at offset 500000, the report named
+that offset, and `cmp -l` agreed. C4 (the built file still boots and renders) served and
+rendered the built file: the page title was "CoBuilder viewer", the rail showed Work with
+a count of 15, the console held zero messages, and every request returned 200. The build
+writes `plugins/artifact/viewer/dist/index.html`, which is gitignored, so the build writes
+no tracked file yet. Four test cases still fail, from the Pillow architecture fault, which
+is pre-existing and independent of this slice. The validator re-ran its measurement after
+the test file changed underneath it at commit b00129e, so this score stands on the current
+content. Two things a later session must know. First, the built file is not self-contained,
+because it fetches its data from the absolute path `/bundle/`, so serving it needs a root
+that holds a directory named `bundle`. Second, the validator reached the browser with the
+`agent-browser` CLI over CDP, not the ChromeDevTools MCP tools the rubric names, and it
+confirmed the page URL and title before each reading.
 
 ## Escalated
 

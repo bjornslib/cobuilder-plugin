@@ -76,7 +76,7 @@ opens a work item, and E5's sections render inside one.
 | | **`cobuilder-viewer/E1` — The exporter seam.** `export_artifact.py` matches named markers the build emits on purpose, so a publish survives the build changing its output. | | | | |
 | 1 | `cobuilder-viewer/E1` | **Tracer bullet: a publish survives a marker rename** | The exporter matches the built file's named markers, and a real publish of the current viewer still succeeds after the marker names move | — | pending |
 | | **`cobuilder-viewer/E2` — The build pipeline.** The toolchain reproduces the same bytes, then `npm run build` produces the committed `index.html` and a test rebuilds it and fails on any difference. | | | | |
-| 2 | `cobuilder-viewer/E2` | Two builds produce the same bytes | Two builds from the same lockfile on the same machine produce the same bytes, so the byte-equal guard is possible at all | — | pending |
+| 2 | `cobuilder-viewer/E2` | Two builds produce the same bytes | Two builds from the same lockfile on the same machine produce the same bytes, so the byte-equal guard is possible at all | 1.00 | completed |
 | 3 | `cobuilder-viewer/E2` | The build owns the committed file | The build reproduces `plugins/artifact/viewer/index.html` byte for byte, and one edited byte makes the rebuild test fail | — | pending |
 | | **`cobuilder-viewer/E3` — The typed data layer.** One module reads the six window globals and `index.json`, resolves every join, and declares `PullRequest` and its branded extension `OpenPullRequest`. | | | | |
 | 4 | `cobuilder-viewer/E3` | One typed model reads the bundle | A level renders from `index.json` with no join derived in a component, and a field renamed on `PullRequest` and not on `OpenPullRequest` fails the type check | — | pending |
