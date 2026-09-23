@@ -83,8 +83,8 @@
       "slug": "work-prototype",
       "outcome": "a detailed static HTML prototype of the Work board, against this repository's real design records, reviewed and approved before E5 starts",
       "branch": "design/cobuilder-viewer/work-prototype",
-      "pr": null,
-      "state": "planned",
+      "pr": 21,
+      "state": "open",
       "note": "New in round 2, at the engineer's direction. Prototype each surface in detail before committing to the build. review-flight-deck already used that discipline twice for FlightDeck: flightdeck-prototype.html, then flightdeck-hindsight-fork.html against real multi-author data. react-viewer's own 2026-09-07 prototype proved the Work board's shape, and it was never committed. This epic repeats that work and keeps the artifact, at docs/architecture/designs/cobuilder-viewer/prototypes/work-prototype.html. The engineer chose one pull request for the design, so all eighteen epics share one branch, design/cobuilder-viewer/work-prototype. Work starts here, because the three prototypes come before any React build."
     },
     {

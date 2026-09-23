@@ -1,12 +1,12 @@
 {
   "schema_version": "1.3",
   "sources": {
-    "git_head": "b1bf89f6087ef29484aba46a2b18b8a46d08a3ca",
+    "git_head": "74fb1a8999e2d9f65894069396f2339a1a2916c2",
     "trees": {
       "docs/architecture/adr": "sha256:8c9b27d528f4a38689cefbfb2f38c6cc8ddeeedc35f19ef9d3f33f2df216f293",
-      "docs/architecture/designs": "sha256:d14f574474e9a981e9d263064371ebe56b523c4cce6bbcfee1951741e0cdd1ab",
+      "docs/architecture/designs": "sha256:71aa2cee9ee652f6f20c251660b44bc75bd07e9b4d592a2dbc6a94b8453eac08",
       "docs/architecture/contexts": "sha256:b85daa6bfabf8944b88764cdad745c29c02f7882a31c3c5d45995633546caad0",
-      "docs/plans": "sha256:a3f136100625fe82a3bcac8df48a1118948e0fd763087d0ecb4fbc0029a8c65c"
+      "docs/plans": "sha256:328a36a30c27dd8f484103c05429e6cdba579e302140f27c5d1eb5387bc9410f"
     }
   },
   "entities": {
@@ -341,8 +341,8 @@
         "design": "cobuilder-viewer",
         "epic_id": "E4",
         "branch": "design/cobuilder-viewer/work-prototype",
-        "pr": null,
-        "state": "planned",
+        "pr": 21,
+        "state": "open",
         "note": "New in round 2, at the engineer's direction. Prototype each surface in detail before committing to the build. review-flight-deck already used that discipline twice for FlightDeck: flightdeck-prototype.html, then flightdeck-hindsight-fork.html against real multi-author data. react-viewer's own 2026-09-07 prototype proved the Work board's shape, and it was never committed. This epic repeats that work and keeps the artifact, at docs/architecture/designs/cobuilder-viewer/prototypes/work-prototype.html. The engineer chose one pull request for the design, so all eighteen epics share one branch, design/cobuilder-viewer/work-prototype. Work starts here, because the three prototypes come before any React build."
       },
       {
@@ -658,8 +658,7 @@
         "branch": "design/design-mode",
         "pr": 11,
         "state": "open",
-        "note": "One plugin becomes five. The whole packaging split: the mode renames inside today's single plugin, the deleted duplicate explore-design command, the 33 cross-pillar references, the five manifests, and the two ports. The rename is a rotation, not a split: odyssey submit becomes cobuilder-pr:generate, and the old odyssey generate, which narrates merged history, becomes cobuilder-pr:review. Four slices.",
-        "design_doc": "cobuilder-family/E1"
+        "note": "One plugin becomes five. The whole packaging split: the mode renames inside today's single plugin, the deleted duplicate explore-design command, the 33 cross-pillar references, the five manifests, and the two ports. The rename is a rotation, not a split: odyssey submit becomes cobuilder-pr:generate, and the old odyssey generate, which narrates merged history, becomes cobuilder-pr:review. Four slices."
       },
       {
         "id": "plugin-split/E2",
@@ -677,8 +676,7 @@
         "branch": "design/design-mode",
         "pr": 11,
         "state": "open",
-        "note": "The seam is version-safe. require_compatible(), min_reader_schema, the generators map, bundle format 3, and schema 1.3, so two plugins at different versions cannot corrupt one bundle. Two slices.",
-        "design_doc": "cobuilder-family/E3"
+        "note": "The seam is version-safe. require_compatible(), min_reader_schema, the generators map, bundle format 3, and schema 1.3, so two plugins at different versions cannot corrupt one bundle. Two slices."
       },
       {
         "id": "plugin-split/E4",
@@ -687,8 +685,7 @@
         "branch": "design/design-mode",
         "pr": 11,
         "state": "open",
-        "note": "The record index. build_index.py replaces the two projection scripts, emits every entity with a stable id, and resolves every join including an ADR to its pull request. Two slices.",
-        "design_doc": "cobuilder-family/E4"
+        "note": "The record index. build_index.py replaces the two projection scripts, emits every entity with a stable id, and resolves every join including an ADR to its pull request. Two slices."
       },
       {
         "id": "plugin-split/E5",
@@ -697,8 +694,7 @@
         "branch": "design/design-mode",
         "pr": 11,
         "state": "open",
-        "note": "One lifecycle surface. The Decisions, Contexts, and Builds modes, the Backlog lane, and moving generated pages out of the foreign directory into the bundle. Two slices (10, 11).",
-        "design_doc": "cobuilder-family/E5"
+        "note": "One lifecycle surface. The Decisions, Contexts, and Builds modes, the Backlog lane, and moving generated pages out of the foreign directory into the bundle. Two slices (10, 11)."
       },
       {
         "id": "plugin-split/E6",
@@ -707,8 +703,7 @@
         "branch": "design/design-mode",
         "pr": 11,
         "state": "open",
-        "note": "The reply channel. The append-only ledger and its projection, the anchor computed from the live DOM, the write endpoint, and the background wake command. Three slices (12, 13, 14).",
-        "design_doc": "cobuilder-family/E6"
+        "note": "The reply channel. The append-only ledger and its projection, the anchor computed from the live DOM, the write endpoint, and the background wake command. Three slices (12, 13, 14)."
       },
       {
         "id": "plugin-split/E7",
@@ -1353,6 +1348,13 @@
         "state": "open",
         "commit": "9ee7ce2330f2f7e6fc20c4e72e4a777416350dc7",
         "date": "2026-09-02"
+      },
+      {
+        "id": 21,
+        "title": "viewer: the Work board lands, with the plan for the rest of the program",
+        "state": "open",
+        "commit": "74fb1a8999e2d9f65894069396f2339a1a2916c2",
+        "date": "2026-09-23"
       }
     ],
     "slice": [
@@ -2161,7 +2163,7 @@
         ]
       },
       "ADR-0023": {
-        "pr": null,
+        "pr": 21,
         "via": "epic",
         "path": [
           "build-workflow-polish/E1",
@@ -2235,7 +2237,7 @@
         ]
       },
       "ADR-0027": {
-        "pr": null,
+        "pr": 21,
         "via": "epic",
         "path": [
           "cobuilder-viewer/E1",
@@ -2260,7 +2262,7 @@
         ]
       },
       "ADR-0028": {
-        "pr": null,
+        "pr": 21,
         "via": "epic",
         "path": [
           "cobuilder-viewer/E1",
@@ -2289,6 +2291,25 @@
       "book-index-tiering/E1": 16,
       "cobuilder-implement/E1": 11,
       "cobuilder-implement/E2": 12,
+      "cobuilder-viewer/E1": 21,
+      "cobuilder-viewer/E2": 21,
+      "cobuilder-viewer/E3": 21,
+      "cobuilder-viewer/E4": 21,
+      "cobuilder-viewer/E5": 21,
+      "cobuilder-viewer/E6": 21,
+      "cobuilder-viewer/E7": 21,
+      "cobuilder-viewer/E8": 21,
+      "cobuilder-viewer/E9": 21,
+      "cobuilder-viewer/E10": 21,
+      "cobuilder-viewer/E11": 21,
+      "cobuilder-viewer/E12": 21,
+      "cobuilder-viewer/E13": 21,
+      "cobuilder-viewer/E14": 21,
+      "cobuilder-viewer/E15": 21,
+      "cobuilder-viewer/E16": 21,
+      "cobuilder-viewer/E17": 21,
+      "cobuilder-viewer/E18": 21,
+      "cobuilder-viewer/E19": 21,
       "design-mode/E1": 11,
       "gate-doc-surfacing/E1": 19,
       "gate-doc-surfacing/E2": 19,
@@ -2308,25 +2329,25 @@
       "build-workflow-polish/E4": "unstarted",
       "cobuilder-implement/E1": "merged",
       "cobuilder-implement/E2": "merged",
-      "cobuilder-viewer/E1": "no-pull-request",
-      "cobuilder-viewer/E2": "no-pull-request",
-      "cobuilder-viewer/E3": "no-pull-request",
-      "cobuilder-viewer/E4": "no-pull-request",
-      "cobuilder-viewer/E5": "no-pull-request",
-      "cobuilder-viewer/E6": "no-pull-request",
-      "cobuilder-viewer/E7": "no-pull-request",
-      "cobuilder-viewer/E8": "no-pull-request",
-      "cobuilder-viewer/E9": "no-pull-request",
-      "cobuilder-viewer/E10": "no-pull-request",
-      "cobuilder-viewer/E11": "no-pull-request",
-      "cobuilder-viewer/E12": "no-pull-request",
-      "cobuilder-viewer/E13": "no-pull-request",
-      "cobuilder-viewer/E14": "no-pull-request",
-      "cobuilder-viewer/E15": "no-pull-request",
-      "cobuilder-viewer/E16": "no-pull-request",
-      "cobuilder-viewer/E17": "no-pull-request",
-      "cobuilder-viewer/E18": "no-pull-request",
-      "cobuilder-viewer/E19": "no-pull-request",
+      "cobuilder-viewer/E1": "open",
+      "cobuilder-viewer/E2": "open",
+      "cobuilder-viewer/E3": "open",
+      "cobuilder-viewer/E4": "open",
+      "cobuilder-viewer/E5": "open",
+      "cobuilder-viewer/E6": "open",
+      "cobuilder-viewer/E7": "open",
+      "cobuilder-viewer/E8": "open",
+      "cobuilder-viewer/E9": "open",
+      "cobuilder-viewer/E10": "open",
+      "cobuilder-viewer/E11": "open",
+      "cobuilder-viewer/E12": "open",
+      "cobuilder-viewer/E13": "open",
+      "cobuilder-viewer/E14": "open",
+      "cobuilder-viewer/E15": "open",
+      "cobuilder-viewer/E16": "open",
+      "cobuilder-viewer/E17": "open",
+      "cobuilder-viewer/E18": "open",
+      "cobuilder-viewer/E19": "open",
       "design-mode/E1": "merged",
       "gate-doc-surfacing/E1": "open",
       "gate-doc-surfacing/E2": "open",

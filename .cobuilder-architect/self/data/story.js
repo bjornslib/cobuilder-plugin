@@ -58,7 +58,7 @@ window.STORY = {
         "id": "docs",
         "label": "Docs",
         "kind": "authored-source",
-        "files": 120,
+        "files": 199,
         "blurb": "Authored source that no script regenerates: architecture decision records under architecture/adr and adr, design proposals under architecture/designs, two architecture review reports, a plan for cobuilder-factory, and staged pull-request content under pull-requests. Submit and design mode write here. Generate mode never does.",
         "root_paths": [
           "docs"
@@ -68,7 +68,7 @@ window.STORY = {
         "id": ".cobuilder-architect",
         "label": "Bundle Store",
         "kind": "tooling",
-        "files": 100,
+        "files": 101,
         "blurb": "The plugin's own generated output, committed alongside the code it narrates. self holds this repo's own bundle. Two named subfolders hold committed test fixtures generated against other local checkouts. An active symlink and view-server pid and log files are the only entries meant to stay out of git.",
         "root_paths": [
           ".cobuilder-architect"
@@ -1996,6 +1996,280 @@ window.STORY = {
           "edges_removed": []
         },
         "regret_risk": "If this merges as written, the team gains a real gate-doc reading surface in the viewer and a workflow-invocation fix that unblocks the next multi-epic program-scale build, at the cost of a PR whose git history reviewers must read as two stories, not one. The likelier six-month regret is narrower: the inventory.yaml staleness noted above means the next assessment on this branch's district (or any branch touching plugins/) keeps approximating districts by path instead of reading a derived baseline, and that approximation compounds each time nobody re-runs baseline mode. A second, smaller regret is that the slice-loop.js fix has no automated coverage of its own; if a future edit reintroduces a Node API import above the meta literal, only the next real program-scale build will catch it, at the cost of a wasted Workflow invocation rather than a fast test failure.",
+        "drift": []
+      }
+    },
+    {
+      "pr": 21,
+      "date": "2026-09-23",
+      "title": "viewer: the Work board lands, with the plan for the rest of the program",
+      "tagline": "",
+      "depth": "summary",
+      "size": {
+        "files": 231,
+        "adds": 67512,
+        "dels": 211
+      },
+      "touched": {
+        ".cobuilder-architect": 8,
+        ".cobuilder": 17,
+        "(root)": 2,
+        "docs": 54,
+        "plugins": 144,
+        "shared": 5,
+        "tests": 1
+      },
+      "levels": {},
+      "status": "open",
+      "commit": "74fb1a8999e2d9f65894069396f2339a1a2916c2",
+      "intent": {
+        "captured": "2026-09-23",
+        "source": "inferred",
+        "authorship": "agent-assisted",
+        "design": {
+          "name": "cobuilder-viewer",
+          "epic": "work-prototype"
+        },
+        "problem": "The bundle viewer is one committed HTML file with no landing surface. A reader arriving at a bundle meets a route that names a work item, and a route that names none falls through to the error the shell keeps for an unknown id. Nothing lists the bundle's designs, so a reader cannot survey what the bundle holds before choosing one. The typed data layer a board needs does not exist either. The committed file resolves its own joins in the browser, and ADR-0018 already put that work into one derived index.",
+        "why_now": "The viewer is being rebuilt as TypeScript and React under ADR-0023, so the landing surface arrives while the surface is new rather than being retrofitted onto a 4,747-line file. The engineer also cut the program to two surfaces on 2026-09-22, which makes the Work surface the first thing a reader meets and the surface the rest of the narrowed program sits beside.",
+        "approach": "The viewer becomes a TypeScript and React program under plugins/artifact/viewer/src/, mounted from src/main.tsx, with the reviewed prototype at src/variations/sections-e/ ported into src/shell/. The shell owns the route. The bare route renders a board of every design, and a route that names a work item renders that item's Work surface. A row is an anchor whose address names a level the design can fill, so a design whose only record is goal.json still opens. The board reads the index through src/data/ and derives no join. Beside the surface, the branch carries the plan that governs the rest of the program: the Gate 3 program design, the Gate 4a slice ladder, four Gate 4b epic designs, and sixteen Gate 4c rubrics.",
+        "alternatives": [
+          {
+            "option": "Ship react-viewer and review-flight-deck as two designs, sequenced",
+            "rejected_because": "That order would build the ordering UI against the viewer E5 is about to replace, then rebuild it in React. Someone would also resolve the name collision twice, once informally now and once for real later."
+          },
+          {
+            "option": "Keep ADR-0020 as decided: ordered parts under viewer/src/, concatenated by build_viewer.py, in plain JavaScript",
+            "rejected_because": "Carried from react-viewer's own record unchanged. It fixes file size and fixes nothing about state, and it cannot type the joins that ADR-0018 already computes."
+          },
+          {
+            "option": "Two artefacts: a React application served locally, and a reduced single file for publishing",
+            "rejected_because": "Carried from react-viewer's own record unchanged. It splits the truth. ADR-0001 exists because the served file and the published file are the same file."
+          },
+          {
+            "option": "Build single-pull-request and multi-pull-request mode as one epic",
+            "rejected_because": "Multi-pull-request mode needs the typed data layer and the open-pull-request entity that single-pull-request mode does not. One epic means neither reaches parity before the other's risk lands on top of it."
+          }
+        ],
+        "out_of_scope": [
+          "the Reference surface and its prototype",
+          "the describe-on-arrival path",
+          "the whole multi-pull-request mode, and its merge-order simulation and path runner",
+          "the ledger's three state subtypes and its audit",
+          "publish parity",
+          "the workflow-polish carryover and the feedback path",
+          "any change to what the generation scripts write into the bundle",
+          "a new record type, a new join, or a schema version bump beyond OpenPullRequest",
+          "the diff view's own rendering, which the team ports as it stands",
+          "publishing a Notion target, which stays a reserved flag value"
+        ],
+        "risks": [
+          "a contributor now needs Node and npm to change the viewer, which the repository has never required",
+          "a committed build artifact goes stale the moment somebody edits the output instead of the source, and the committed index.html is absent from this diff while 131 source files are in it",
+          "a byte-equal rebuild depends on a pinned toolchain, and a version drift makes the guard test fail for the wrong reason",
+          "the React runtime is inlined into every published Artifact, which spends part of the 16 MiB budget",
+          "the viewer no longer reaches its data at a relative path, because the built file requests an absolute one"
+        ],
+        "testing": "The viewer suite runs under vitest in plugins/artifact/viewer/: 61 tests across 7 files, all passing, with tsc --noEmit clean. Two slices were validated in a real browser through the ChromeDevTools MCP tools. Slice 6, the board, scored 1.00 across nine criteria, and slice 7, a row opening the Work surface, scored 1.00 across five. The browser checks measured the document never scrolling, the board's pane owning the scroll, one box on screen per paged level, no console message at any level, and no failed request. Two defects were found by those checks and fixed: the board's pane had no definite height on any route, and a diagram tile rendered a raw Mermaid comment as its title.",
+        "reviewer_focus": [
+          "the committed viewer and the React source can drift today, because E2 has not landed and no test compares the two",
+          "the board's address rule repeats levelsOf's Intent rule and gatesOf's Build rule, in two files",
+          "a slice's score has two sources, and only the status checklist has a reader",
+          "the rubrics generator holds its slice count as the constant 14 and defaults to the wrong rubrics directory, so this plan's sixteen rubrics reach no page",
+          "E1's exporter seam must land before any bundled output, or publishing breaks silently"
+        ],
+        "unknowns": []
+      },
+      "assessment": {
+        "stage": "pre",
+        "generated": "2026-09-23",
+        "verdict": "concerns",
+        "risk_tier": "architectural",
+        "summary": "This branch executes ADR-0023. It replaces the one committed viewer file with a TypeScript and React program under plugins/artifact/viewer/src/, gives that program a typed reader of ADR-0018's derived index, and lands the Work surface with a board for a bundle that holds designs. The intent block is inferred, not stated by an author, so this assessment measures the change against my reading of the problem and not against a person's account. The change is the right shape for its district. The join stays in shared/build_index.py, and no join moves into the browser. It carries concerns, and most of them are records that disagree with the tree. Gate 4 reads pending while four epic designs sit on disk, the status checklist calls Gate 4c pending while the plan's own mechanical checker reports it ok, and CLAUDE.md still describes ADR-0020 as decided and unexecuted while 131 files under plugins/artifact/viewer/src/ execute its successor. On the boundary checks, the react-typescript card does match this repo, because package.json declares react and typescript, tsconfig.json is present, and no next dependency is declared. Its three clean greps and one not-checkable rule therefore carry a real signal, and no fallback to generic.md was needed. The one not-checkable rule targets src/features/, a layer this viewer does not use. No card returned an all-empty set of greps.",
+        "sensible": {
+          "answer": "Yes on both halves. The problem is real at this layer. The board's own rule states that a route naming no work item is a valid address, and a route whose id the bundle lacks resolves no work item, so before this change a reader had no surface that listed what the bundle holds. The viewer district owns rendering, and the index the board needs already exists in the scripts district, so this is the right place for the fix. The change also keeps the join where ADR-0018 put it. shared/build_index.py:1433 writes data/index.json, and plugins/artifact/viewer/src/data/bundle.ts:90 reads that file rather than resolving a join in the browser. The second half holds for the same reason. The problem belongs to the viewer and not to the generation scripts, and the branch writes nothing new into generation output. One caveat travels with this answer. intent.source is inferred, so I am reading the problem off the evidence rather than judging a claim an author made.",
+          "evidence": [
+            "ADR-0018",
+            "ADR-0023",
+            "plugins/artifact/viewer/src/shell/model.ts:588",
+            "shared/build_index.py:1433",
+            "plugins/artifact/viewer/src/data/bundle.ts:90"
+          ]
+        },
+        "maintainability": {
+          "answer": "It helps on balance, and it hurts in three named ways. It helps because it moves a decision to one place. The epic-to-design-document join now lives in the new link_epic_design_docs(), which reconciles two id spaces that previously matched only when a design directory name happened to equal a plan slug. It removes the browser's own join work. It also gives the viewer its first test suite, and I ran that suite: 61 tests across 7 files pass, and tsc --noEmit exits clean. tsconfig.json sets strict, so the typed layer is real and not nominal. It hurts first by adding a Node and npm requirement to a repository of prose, Python scripts, and one HTML file. It hurts second because the board's rule for which levels a design can fill now exists in three model files instead of one. It hurts third because a change must land in both the committed viewer file and the 131 React sources, and no test compares the two. A reviewer will also meet three smell hits in the comparison harness rather than in the shipped shell, and the findings below record them.",
+          "constraint_introduced": "The viewer is a compiled application that reads one bundle's derived index read-only across a mount. It resolves no join in the browser, and its committed single file is refreshed by a build step rather than by hand.",
+          "evidence": [
+            "shared/build_index.py:742",
+            "plugins/artifact/viewer/tsconfig.json:12",
+            "plugins/artifact/viewer/vitest.config.ts",
+            "plugins/artifact/viewer/src/shell/model.ts:421"
+          ]
+        },
+        "pattern": {
+          "verdict": "new-valuable",
+          "answer": "New, and it earns its place. The repository had one hand-edited HTML file for its viewer, and ADR-0023 chose a TypeScript and React program compiled at author time. The change follows that record rather than inventing a second answer to the same question. It is not a duplicate, because no district and no ADR already provides a React viewer. It is not a reinvention either, because ADR-0020's ordered-parts solution is cited by name and its rejection is reasoned inside ADR-0023's own alternatives, which is the test the reference sets. What the pattern buys is a typed data layer in place of hand-written markup blocks and a test suite where the file had none. One thing the change adds beyond the record is a third renderer in the tree. The committed viewer file and the bundle's copy of it remain, and the new React program renders the same bundle to a gitignored dist/.",
+          "duplicates": [],
+          "evidence": [
+            "ADR-0023",
+            "ADR-0020",
+            "plugins/artifact/viewer/vite.config.ts:117",
+            "plugins/artifact/viewer/src/data/bundle.ts:53"
+          ]
+        },
+        "findings": [
+          {
+            "severity": "concern",
+            "claim": "Gate 4 is not APPROVED for this plan, and the branch has already landed implementation. The four epics that owe a Gate 4b approval, E2, E5, E7, and E19, each carry a design file with every required section, and each reads pending approval. I ran the plan's own checker, plugins/implement/scripts/verify_gate.py, against it, and it reports Overall: FAIL on those four lines alone. The build skill states that no implementation code is written before Gate 4 writes the ladder and the rubrics, and this branch adds 131 source files under plugins/artifact/viewer/src/. The two slices that reached a score, 6 and 7, shipped while the gate they sit behind reads pending.",
+            "evidence": "docs/plans/cobuilder-viewer/00-status.md:15",
+            "district": "docs",
+            "suggestion": "Record the approval on each of the four epic designs, or state in the status file why the build starts with Gate 4b open."
+          },
+          {
+            "severity": "concern",
+            "claim": "Two records of one gate disagree, and the mechanical one is the record nobody reads. The status checklist calls Gate 4c, the blind rubrics, pending. The same plan's verify_gate.py reports rubrics.count 16 and rubrics.per_slice ok, and all sixteen rubric files exist under .cobuilder/rubrics/cobuilder-viewer/. A reader who trusts the checklist cannot tell that the rubrics are complete. This inverts the lesson the repository already recorded for Gate 4b, where a step with no mechanical consumer was skipped. Here the consumer exists and its answer is not being read.",
+            "evidence": "docs/plans/cobuilder-viewer/00-status.md:16",
+            "district": "docs",
+            "suggestion": "Set the 4c line to the state verify_gate.py reports, and let the status file quote the checker rather than restate it."
+          },
+          {
+            "severity": "concern",
+            "claim": "The builds-view page cannot show this plan's rubrics, and it fails quietly. plugins/artifact/scripts/build_builds_view.py holds the slice count as a constant and its rubrics directory as a separate default. That count is 14 and that directory is cobuilder-family, while this branch adds sixteen rubrics under cobuilder-viewer. The page therefore renders a different plan's rubrics and omits slices 15 and 16 with no error. The generator reads its slice table from the plan it is given, so the count, the rubrics directory, and the plan can disagree while the run stays green.",
+            "evidence": "plugins/artifact/scripts/build_builds_view.py:33",
+            "district": "scripts",
+            "suggestion": "Read the rubric count from the plan's slice table instead of a constant, and default the rubrics directory to the plan's own slug."
+          },
+          {
+            "severity": "concern",
+            "claim": "The new STE gate fails open on every error, which makes a mechanical gate advisory. The loader's own docstring says a missing linter must not block a push and that a present linter which fails is a real failure. Both the loader and the lint call then catch every exception and return an empty violation list. A broken or moved linter therefore reports a clean record instead of a failure. The same file shows the intended shape a few hundred lines later, where a fail-open path prints a warning before it continues.",
+            "evidence": "shared/validate_decision_state.py:147",
+            "district": "scripts",
+            "suggestion": "Let an exception from a present linter propagate, or print a warning and mark the record as not checked, the way the fail-open path at line 532 already does."
+          },
+          {
+            "severity": "concern",
+            "claim": "The shipped single-file build carries the whole prototype comparison harness, and the board's rule is in three files rather than two. src/shell/App.tsx imports Variations from ../Variations and renders it on its own route, and Variations.tsx imports all five variations. gatesOf and levelsOf are each defined three times, in src/shell/model.ts, src/variations/sections-e/model.ts, and src/variations/app-shell/model.ts. The intent names this rule in two files. It is in three, and all three are in the built output because the harness is reachable from the shipped shell.",
+            "evidence": "plugins/artifact/viewer/src/shell/App.tsx:86",
+            "district": "viewer",
+            "suggestion": "Decide whether the harness ships. Exclude variations/ from the build if it does not. If it does, state in the shell header why three copies of the board's rule are kept, and add a test that holds them equal."
+          },
+          {
+            "severity": "concern",
+            "claim": "The tree now holds two renderers of one bundle, and nothing compares them. The committed plugins/artifact/viewer/index.html is absent from this diff while 131 files under plugins/artifact/viewer/src/ are in it, and the Vite build writes to a gitignored dist/ rather than to the committed file. ADR-0001 exists because the served file and the published file are the same file. After this branch they are still the same file, and the React program is a third artefact that renders the same bundle and reaches no publication path at all. The ordering is the risk. The exporter seam that would write the committed file from the source is E1, and E1 is not in this branch.",
+            "evidence": "plugins/artifact/viewer/vite.config.ts:117",
+            "district": "viewer",
+            "suggestion": "Land E1's exporter seam and E2's build pipeline before publishing from this bundle again, and add the byte-equal guard test in the same change."
+          },
+          {
+            "severity": "note",
+            "claim": "CLAUDE.md's ADR-0020 paragraph is stale on two counts. It calls ADR-0020 decided and not executed, while the record's own state is rejected and ADR-0023 declares supersedes: ADR-0020. The rejected state is correct and not the error here. The decision-records reference marks a superseded decision rejected and moves the replaces edge onto its successor. The paragraph also says no viewer/src/ directory exists yet, which this branch makes false by adding 131 files under plugins/artifact/viewer/src/. The branch edits CLAUDE.md in two other places, so it had the chance to repoint this paragraph and did not.",
+            "evidence": "CLAUDE.md:28",
+            "district": "docs",
+            "suggestion": "Repoint the paragraph to ADR-0023 and delete the sentence about viewer/src/ not existing. Leave ADR-0020's rejected state alone, because it follows the documented convention."
+          },
+          {
+            "severity": "note",
+            "claim": "inventory.yaml cannot carry this delta, and the assessment records that rather than papering over it. The districts are dated 2026-08-19 and declare root paths such as skills, scripts, commands, and viewer, which is the layout from before the five-plugin split. They match today's tree by name and not by path prefix, so every count in the delta below is name-matched. No district covers .cobuilder/, shared/, tests/, CLAUDE.md, or .gitignore, and this branch touches all five of those areas. The world map is therefore a weaker instrument on this change than on one from August.",
+            "evidence": "inventory.yaml:1",
+            "district": "docs",
+            "suggestion": "Re-derive inventory.yaml against the split layout, and add a district for the rubric store, which now holds six plans."
+          },
+          {
+            "severity": "note",
+            "claim": "State duplication in the record-mosaic variation. index.tsx copies props.index into local state, and the loading effect returns early whenever props.index is set. A later change to that prop therefore never reaches the rendered state, so the two sources of truth for one value drift apart. This is the card's named smell, in a file the comparison harness can still render. The shipped shell has a similar pair of values, and its own comment records the choice as deliberate, so I did not score that one as a hit.",
+            "evidence": "plugins/artifact/viewer/src/variations/record-mosaic/index.tsx:81",
+            "district": "viewer",
+            "suggestion": "Derive the ready state from props.index instead of copying it, or drop the prop from the effect's guard and deps together."
+          },
+          {
+            "severity": "note",
+            "claim": "Two silenced dependency arrays in the epic-first-mosaic variation, where the effect body reads a value outside the list. The body reads scope.designId while scope is absent from the dependencies, at two separate effects in the same file. The port in the shipped shell does not carry this pattern, so the harness can render a comparison that no longer matches the surface it exists to compare against.",
+            "evidence": "plugins/artifact/viewer/src/variations/epic-first-mosaic/index.tsx:557",
+            "district": "viewer",
+            "suggestion": "Add scope to the dependency list, or read designId into a plain value before the effect and depend on that."
+          },
+          {
+            "severity": "note",
+            "claim": "Prop drilling in the epic-first-mosaic variation. The theme value is owned in index.tsx and threaded through LensTiles into DiagramRow into MermaidDiagram, which is four components deep with no context. The shipped shell threads the same value through two layers. The harness therefore costs more to change than the surface it is kept beside, which is the card's drilling smell at the layer where it is cheapest to fix.",
+            "evidence": "plugins/artifact/viewer/src/variations/epic-first-mosaic/index.tsx:308",
+            "district": "viewer",
+            "suggestion": "Leave the harness alone if it retires with the arrangements. Otherwise pass theme through a small context, as the shipped shell's two-layer shape already suggests."
+          }
+        ],
+        "boundary_checks": [
+          {
+            "rule": "Components never call HTTP clients directly. Data access goes through hooks or the feature's api.ts.",
+            "source": "stacks/react-typescript.md",
+            "result": "pass",
+            "evidence": "grep over plugins/artifact/viewer/src/components/ returns no hit. The pattern is live in this repo, so the empty result is meaningful: fetch( appears at plugins/artifact/viewer/src/data/bundle.ts:90, outside components/."
+          },
+          {
+            "rule": "No cross-feature deep imports. Import a feature's index.ts, not its internals.",
+            "source": "stacks/react-typescript.md",
+            "result": "not-checkable",
+            "evidence": "plugins/artifact/viewer/src/features/ does not exist. The viewer lays out as src/shell/, src/variations/, src/components/, src/data/, src/hooks/, and src/lib/, and it uses no feature folders, so the rule targets a layer this codebase does not have."
+          },
+          {
+            "rule": "Shared components/ never import from features/.",
+            "source": "stacks/react-typescript.md",
+            "result": "pass",
+            "evidence": "grep for from.*features/ over plugins/artifact/viewer/src/components/ returns no hit."
+          },
+          {
+            "rule": "Presentational components do not import global stores. State arrives through props or feature hooks.",
+            "source": "stacks/react-typescript.md",
+            "result": "pass",
+            "evidence": "grep for useStore, useSelector, and useAtom over plugins/artifact/viewer/src/components/ returns no hit. No store library is declared either: plugins/artifact/viewer/package.json lists no zustand, redux, or jotai."
+          },
+          {
+            "rule": "The dependency rule. Inner layers (domain, business logic) never import outer layers (HTTP, UI, DB drivers, framework code).",
+            "source": "stacks/generic.md",
+            "result": "pass",
+            "evidence": "The four changed Python files import the standard library and their own siblings only. No framework, no driver, and no HTTP client. shared/build_index.py imports argparse, datetime, json, re, subprocess, sys, pathlib, hashlib, yaml, and three local modules. One caveat weakens this test: these files are flat CLI scripts with no declared inner layer, so the rule has little to test here."
+          },
+          {
+            "rule": "Configuration crosses into code in one place, not scattered env reads.",
+            "source": "stacks/generic.md",
+            "result": "pass",
+            "evidence": "Three env reads exist, and all three sit in one file: shared/validate_decision_state.py:69, :78, and :433. shared/build_index.py, shared/skills/ste-writing/ste-lint.py, and tests/test_build_index.py read no environment variable."
+          }
+        ],
+        "delta": {
+          "districts_added": [],
+          "districts_changed": [
+            {
+              "id": "viewer",
+              "files_before": 1,
+              "files_after": 139
+            },
+            {
+              "id": "docs",
+              "files_before": 148,
+              "files_after": 199
+            },
+            {
+              "id": "skills",
+              "files_before": 335,
+              "files_after": 335
+            },
+            {
+              "id": "scripts",
+              "files_before": 25,
+              "files_after": 25
+            },
+            {
+              "id": ".cobuilder-architect",
+              "files_before": 101,
+              "files_after": 101
+            }
+          ],
+          "edges_added": [
+            "scripts -> skills",
+            "viewer -> .cobuilder-architect"
+          ],
+          "edges_removed": []
+        },
+        "regret_risk": "The cost the team carries is a second toolchain and a second truth. Today this repository is prose, Python scripts, and one HTML file, and every script runs under uv with no install. After this merge a reader who changes the viewer needs Node 22 and npm, and that is the first such requirement the repository has ever had. The deeper cost is that two renderers of one bundle now live in the tree and nothing compares them. The committed viewer file is untouched by this branch while 131 React sources land around it, and the build writes to a gitignored dist/, so the day somebody refreshes the committed file from a build is the day the served bundle and the published Artifact can first disagree since ADR-0001. E1's exporter seam and E2's build pipeline are the two epics that close that gap, and neither is in this branch. Merge as written and the regret is one of ordering. The risk lands before the seam that was designed to absorb it. The gate records are cheap to fix, and the harness duplication is a review cost that should retire when the arrangements stop being read.",
         "drift": []
       }
     }
