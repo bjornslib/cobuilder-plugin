@@ -1,0 +1,88 @@
+{
+  "captured": "2026-09-02",
+  "source": "design",
+  "design_name": "review-flight-deck",
+  "authorship": "agent-generated",
+  "problem": "A team carries tens of open pull requests at once. Every surface they have reviews one change at a time, so nobody can answer the question they actually hold: in what order can this whole set close. GitHub's stacked pull requests answer a narrower version, because a stack is a parent-child chain the author declares in advance. The set a reviewer faces is whatever several people opened without coordinating, and the relationships between those branches exist nowhere.",
+  "why_now": "The team wants to get through pull request reviews with more ease. The bundle already holds the goal files, epics, boundary rules and districts a first pass could reason over, and the record index already resolves five kinds of join. A relationship between two pull requests is the one join nobody has built.",
+  "approach": "Simulate paths to close the whole open set, validate the best with git, and show one. On a pull request event the mode reads the open set, drops whatever the team's auto-merge rules already handled, and gives any pull request with no description one from /pr:generate. It simulates at least three paths against the common ancestor of the open branches, replays the best one or two on a scratch worktree, counts the real conflicts, and promotes the survivor. The viewer leads with the state the reviewer would have, then what each pull request contributes, then the merge chain as evidence. Pull requests the path cannot carry appear on the front page with a way out. The reviewer accepts a path once and chooses the pace, and a runner merges each bundle onto its own integration branch, never onto the default branch.",
+  "alternatives": [
+    {
+      "option": "Simulate against the default branch as it stands today",
+      "rejected_because": "It inverts the order whenever an open pull request restructures the tree. It produced exactly that failure here: master already carries the five-plugin split, so the first recommendation put the restructure first and the earlier work last. With all seventeen pull requests open the base is 0c099be, where commands/, scripts/ and skills/ still exist, and five open pull requests write into the three directories that pull request 11 deletes."
+    },
+    {
+      "option": "Show every simulated path side by side and let the reviewer compare",
+      "rejected_because": "It hands the comparison work back to the reviewer, which is the work the mode exists to remove. One validated path is shown. The alternatives are visible on the front page and unreachable, and opening the recommendation unlocks them with the reason each lost."
+    },
+    {
+      "option": "Describe each path by its mechanics: which pull requests, in which order, touching which paths",
+      "rejected_because": "A reviewer decides on the outcome, not on the machinery. The surface states what they would have when the path is done, then one line per pull request saying what it contributes. The order sits underneath both."
+    },
+    {
+      "option": "Simulate from the records and stop, with no git step",
+      "rejected_because": "A simulation cannot see a textual conflict, so it cannot tell an order that works from one that only reads well. The replay is what makes the recommendation something to stand behind."
+    },
+    {
+      "option": "Hold a pull request that cannot merge out of the surface entirely",
+      "rejected_because": "A path never carries every open pull request, and the ones it drops are the ones a reviewer most needs to see. A superseded branch and a conflict a merge cannot resolve are different findings, and each is shown with the file, the line span, what both sides did, and two or three ways out."
+    },
+    {
+      "option": "Merge each bundle onto the default branch",
+      "rejected_because": "The first merge is irreversible, so a path that turns out wrong at bundle two has already changed the branch everybody works from. A branch per bundle makes abandoning the path a branch deletion, and gives the reviewer a real tree to check out between bundles."
+    },
+    {
+      "option": "Rebase every branch onto the growing integration branch",
+      "rejected_because": "It rewrites other people's branches, and none of those authors asked for it. A merge leaves every checkout valid."
+    },
+    {
+      "option": "Ask the reviewer to approve each bundle as it comes",
+      "rejected_because": "It reopens a decision they already made. They commit to the path once, and the pace is one setting for the run rather than a prompt per bundle."
+    },
+    {
+      "option": "Compute the paths in the browser and render them live",
+      "rejected_because": "The browser cannot run git, so it cannot replay anything, and ADR-0001's content policy blocks it from fetching the evidence. This is the boundary ADR-0025 introduced and ADR-0026 keeps."
+    },
+    {
+      "option": "Build the mergeable-slice computation from scratch as the product",
+      "rejected_because": "Systems that precompute mergeable slices already exist. The narrative and the choice between paths are what they do not offer, so the git step keeps a narrow interface and one of those systems can replace it."
+    },
+    {
+      "option": "The region walk from ADR-0025: one keypress per contested hunk",
+      "rejected_because": "It made the reviewer do the machine's work, one hunk at a time, over a set they had to name themselves. The region computation survives inside the simulation as evidence, and stopped being a reviewer-facing step."
+    },
+    {
+      "option": "Ship a hook so the mode starts itself on a pull request event",
+      "rejected_because": "The install surface is /plugin install and nothing else, with no agents, no hooks and no MCP servers. The adopting repository supplies the trigger with a workflow or a scheduled run, and the engineer resolved this."
+    }
+  ],
+  "out_of_scope": [
+    "Defining the team's auto-merge rules. The mode reads which pull requests those rules handled and takes no position on them.",
+    "Merging the final pull request onto the default branch. That stays a human action under whatever rules the repository already has.",
+    "Deleting the integration branches after a path completes.",
+    "Any conflict computation inside the browser.",
+    "The trigger itself. A workflow or a scheduled run in the adopting repository supplies it.",
+    "Fixing the design-level join in shared/build_index.py. Deferred to the inflight-record-store design."
+  ],
+  "risks": [
+    "The replay is a snapshot taken against recorded branch heads. A push after the run invalidates it, and the run does not watch for one.",
+    "A wrong recommendation is the first thing the reviewer reads. Nothing in this design measures whether a proposed order anchors them.",
+    "Integration branches drift from the default branch while a path runs. A long pause between bundles reintroduces the conflicts the order was chosen to avoid.",
+    "A path of N bundles leaves N branches behind, and nothing here deletes them.",
+    "The runner is the first thing in this plugin family that writes to a remote. Its credentials and its permissions sit outside this design, in the adopting repository.",
+    "The mode cannot start itself. A repository that never wires the trigger gets a surface that only runs when somebody remembers to run it."
+  ],
+  "testing": "Nothing is built. The arithmetic behind the region evidence already ran in a scratchpad over the eight cached diff files: region cutting reduces the reading surface for 27 of 27 pairs of merged pull requests, from 0.00 to 0.41 of the total changed files. The four structural renames the ordering rests on are verified against this repository's history with git ls-tree at 0c099be and 6e784e5.",
+  "reviewer_focus": [
+    "Whether the common-ancestor baseline is stated strongly enough to survive an implementer who reaches for HEAD.",
+    "Whether one recommendation with the alternatives locked helps a reviewer or anchors them.",
+    "Whether the integration-branch scheme is worth N branches per path.",
+    "Whether the treatment of a pull request that cannot merge gives a reviewer enough to act, or only enough to worry."
+  ],
+  "unknowns": [
+    "Whether a reviewer trusts a proposed order more than they trust their own reading of the queue. This is the load-bearing claim and it rests on judgement.",
+    "How a path should behave when a branch in it is pushed mid-rollout.",
+    "Whether three simulated paths is the right number, or whether two is enough and four is noise.",
+    "What a team's auto-merge rules actually look like in practice, since the split shown in the prototype is invented."
+  ]
+}

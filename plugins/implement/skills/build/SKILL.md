@@ -385,15 +385,30 @@ approval protocol above for each.
 
 Save `docs/plans/<slug>/04-slices.md`. Group slices by epic in a table:
 
-- **Slice 1 is the tracer bullet:** stubbed UI or basic response wired end to
-  end.
-- **Slice 2:** happy path with real logic.
-- **Slice 3+:** edge cases, business rules, and error handling.
-- Do not build horizontally across layers. Build vertical end-to-end slices.
+- **A slice is vertical.** It crosses every layer the feature needs, however
+  thinly, and it ends in a state a reader can see or a test can assert. State
+  that end without naming a layer.
+- **The count follows the work.** An epic carries one slice per observable end
+  state. One is a legitimate answer, and it is the right one for an epic whose
+  whole outcome is a single end state. Do not pad to a fixed count.
+- **These phrases mean the slice is horizontal, so it is not a slice:** "add the
+  types", "wire the API", "build the component", "add the validation", "handle
+  the errors", "write the tests". None names something observable. Fold that work
+  into the slice whose end needs it.
+- **Gate 4b follows the count.** An epic that carries more than one slice needs a
+  technical solution design, because more than one observable end needs a
+  coordinated design. Never split an epic to plan it better. Split it when the
+  work has two ends.
 - The table must match `shared/slice_table.py`'s exact six-column shape
   (`#`, Epic, Slice, Ends with, Score, State), including its epic-header row
   convention. `verify_gate.py` and `build_index.py` both parse this file
   with that module and silently skip a row that does not match it.
+
+This skill dropped an earlier three-slice template on 2026-09-22, and the
+bullets above replace it. The template contradicted the vertical rule on its
+own next line, because it put the error layer after the happy-path layer. It
+also forced every epic to three slices, so Gate 4b demanded a technical
+solution design for nearly every epic.
 
 ### 4b. Per-epic technical solution design
 

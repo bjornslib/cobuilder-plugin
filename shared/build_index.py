@@ -739,6 +739,54 @@ def collect_gate_docs(repo: Path) -> tuple[list[dict], list[dict], list[str]]:
     return program_entities, epic_entities, failures
 
 
+def link_epic_design_docs(
+    epic_entities: list[dict],
+    slice_entities: list[dict],
+    slice_to_epic: dict[str, str],
+    epic_design_entities: list[dict],
+) -> None:
+    """Attach each epic design document to the epic entity it documents.
+
+    Two id spaces meet here, and they do not agree by default. An epic
+    entity id takes its scope from the design directory name, such as
+    ``plugin-split/E1``. An epic design document id takes its scope from
+    the plan slug, such as ``cobuilder-family/E1``. A design whose
+    directory name differs from its plan slug therefore never matches on
+    a plain id comparison.
+
+    A slice entity carries its plan slug in ``feature``, and the
+    ``slice_to_epic`` join maps that slice to a design-scoped epic id.
+    Inverting the join gives the plan slug that advances each epic. The
+    function rebuilds a candidate document id from that slug and the
+    epic's own bare id.
+
+    Each epic tries the direct match first. An epic whose design name
+    equals its plan slug keeps the id it carries today.
+    """
+    design_doc_ids = {doc["id"] for doc in epic_design_entities}
+    feature_by_slice = {s["id"]: s["feature"] for s in slice_entities}
+    slugs_by_epic: dict[str, list[str]] = {}
+    for slice_id, epic_id in slice_to_epic.items():
+        feature = feature_by_slice.get(slice_id)
+        if not feature:
+            continue
+        slugs = slugs_by_epic.setdefault(epic_id, [])
+        if feature not in slugs:
+            slugs.append(feature)
+    for epic in epic_entities:
+        if epic["id"] in design_doc_ids:
+            epic["design_doc"] = epic["id"]
+            continue
+        bare_id = epic.get("epic_id")
+        if not bare_id:
+            continue
+        for feature in slugs_by_epic.get(epic["id"], []):
+            candidate = f"{feature}/{bare_id}"
+            if candidate in design_doc_ids:
+                epic["design_doc"] = candidate
+                break
+
+
 def _gate_2b_state(plan_dir: Path) -> str:
     """Read the Gate 2b state text from a plan's 00-status.md.
 
@@ -1304,11 +1352,6 @@ def build_index(repo: Path, bundle_dir: Path) -> tuple[dict, dict, dict, list[st
 
     interaction_design_entities = discover_interaction_design_docs(repo)
 
-    epic_design_ids = {r["id"] for r in epic_design_entities}
-    for epic in epic_entities:
-        if epic["id"] in epic_design_ids:
-            epic["design_doc"] = epic["id"]
-
     entities = {
         "adr": adr_entities,
         "design": design_entities,
@@ -1327,6 +1370,11 @@ def build_index(repo: Path, bundle_dir: Path) -> tuple[dict, dict, dict, list[st
     joins, join_warnings = resolve_joins(repo, adrs_viewer, designs_viewer, entities)
     for warning in join_warnings:
         print(f"warning: {warning}", file=sys.stderr)
+
+    # This step needs the slice_to_epic join, so it runs after resolve_joins().
+    link_epic_design_docs(
+        entities["epic"], entities["slice"], joins["slice_to_epic"], entities["epic_design"]
+    )
 
     index = {
         "schema_version": INDEX_SCHEMA_VERSION,

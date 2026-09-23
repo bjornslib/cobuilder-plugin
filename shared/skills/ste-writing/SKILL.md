@@ -1,6 +1,6 @@
 ---
 name: ste-writing
-description: Write and rewrite technical prose in ASD-STE100 Issue 9 Simplified Technical English (STE). STE is a controlled language standard for plain English technical documentation, and it removes AI slop. Trigger phrases -- ASD-STE100, STE, simplified technical english, plain english, controlled language, AI slop, technical documentation. Use for READMEs, docs, ADRs, PR and commit bodies, error messages, code comments, and release notes. Two modes: strict (procedures, safety text) and flavored (general prose). Ships a rules-level linter. The linter does not certify full dictionary compliance.
+description: Write and rewrite technical prose in ASD-STE100 Issue 9 Simplified Technical English (STE). STE is a controlled language standard for plain English technical documentation, and it removes AI slop. Trigger phrases -- ASD-STE100, STE, simplified technical english, plain english, controlled language, AI slop, technical documentation. Use for READMEs, docs, ADRs, PR and commit bodies, error messages, code comments, and release notes. Two modes: strict (procedures, safety text) and flavored (general prose). Ships a rules-level linter with a target and a hard gate -- flavored prose scores 1.0 violations per 100 words or lower, and strict 2.0 or lower. A score above the target is a defect: rewrite the prose, never explain the score. The linter does not certify full dictionary compliance.
 ---
 
 # ste-writing
@@ -94,7 +94,18 @@ remark.
   rules, with the 25-word sentence cap. Relax the roughly 900-word
   dictionary lockdown so the text keeps enough range to read well.
 
-## Self-lint (run before you return text)
+## Self-lint (measure, then rewrite)
+
+Do not judge your own draft by eye, and do not read the score as advice.
+Measure it, and treat the measurement as a gate.
+
+1. Run `ste-lint.py` with `--fail-above` and the target for this mode.
+2. If it exits 0, return the text.
+3. If it exits 1, rewrite the prose. Then measure again.
+4. Repeat until it exits 0. Never return text that fails.
+
+The checklist below is what to FIX, not what to check. Run it over the
+sentences the linter names, not over the draft in your head.
 
 1. Any sentence over the cap for this mode? Split it.
 2. Any semicolon? Replace it with a period.
@@ -114,18 +125,50 @@ makes good sense to a reader. A checker cannot certify that judgment, and
 slop is not only about that judgment. This skill fixes form. It cannot
 make a hollow paragraph true.
 
+## Targets
+
+A score above the target is a defect. Rewrite the prose. Never explain the
+score.
+
+| Mode | Target | Why this number |
+|---|---|---|
+| flavored | 1.0 or lower | The existing ADR corpus runs at a median of 1.79, with a 75th percentile of 2.63. A record rewritten to this target reads far tighter than the corpus it joins. The target is reachable at length: a 2648-word design goal sits at 1.02, and a 2064-word question list at 1.07 |
+| strict | 2.0 or lower | The 20-word sentence cap raises the raw count. Measured over three files, strict mode scores about 1.5 to 2.3 times the flavored score for the same text |
+
+The target applies to prose you write or change. Do not mass-rewrite the
+existing corpus to meet it. Bring the text you add to the target. Leave
+the rest of a record alone unless you already rewrite it.
+
+## Rationalizations that are defects
+
+Every line below is a real excuse, and every one of them is wrong. When
+you catch yourself writing one, stop and rewrite instead.
+
+| Excuse | Why it fails |
+|---|---|
+| "Passive voice is normal for ADR prose" | Normal is not the target. The corpus is the baseline you beat, not the bar you meet |
+| "The score improved, so it is good enough" | An improvement from 3.2 to 2.8 is still a failing score. Only the target decides |
+| "The remaining hits are false positives" | The linter does count a predicate adjective as passive. Rewrite the sentence anyway, and the count falls. A false positive is never a reason to leave a sentence long |
+| "The rules fight the technical meaning" | Then the sentence carries too much. Split it, and keep the meaning across two sentences |
+| "This document type needs long sentences" | No document type does. The 25-word cap holds for ADRs, READMEs, and reference docs alike |
+| "A rewrite costs more than it is worth" | Rewriting is the job. The linter exists to make the cost visible, not to start a negotiation |
+
 ## Linter
 
-Run `ste-lint.py` against a draft to get a violations-per-100-words score.
-Lower reads cleaner.
+`ste-lint.py` reports a violations-per-100-words score. Lower reads
+cleaner. Run it as a gate, with the target for the mode:
 
 ```
-python3 ste-lint.py --mode flavored your-draft.md
-python3 ste-lint.py --mode strict your-draft.md
+python3 ste-lint.py --mode flavored --fail-above 1.0 your-draft.md
+python3 ste-lint.py --mode strict   --fail-above 2.0 your-draft.md
 ```
 
-Lint a draft, apply the rules above, then lint the result again. The score
-delta between the two runs is the signal, not the absolute number.
+It exits 1 when a file scores above the target, and it names every file
+that fails. Measure, rewrite, measure again, until it exits 0.
+
+With no file arguments it reads stdin and prints one JSON report, which
+lists every violation type separately. Use that form to see which rule
+drives a score.
 
 ## Attribution
 

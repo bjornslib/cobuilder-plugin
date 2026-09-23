@@ -92,29 +92,138 @@ CDN_LINK_RES = [
 # instead, same graceful-degradation posture as the Motion no-op above), or replaced
 # in place with a vendored runtime when --inline-mermaid is passed.
 MERMAID_CDN_RE = re.compile(r'<script src="https://cdn\.jsdelivr\.net/npm/mermaid[^>]*></script>\n')
-HERO_SRC_OLD = ': `<img src="../assets/pr-${prNum}/level-${levelIdx}.webp" alt="${escapeHtml(alt)}" loading="lazy">`;'
+# The replacement text for one marker region. The region's old content lives in the
+# viewer, between that marker's begin and end lines — no literal here copies it.
 HERO_SRC_NEW = (
     ": `<img src=\"${window.ODYSSEY_ASSETS['pr-' + prNum + '/level-' + levelIdx + '.webp'] || ''}\" "
     'alt="${escapeHtml(alt)}" loading="lazy">`;'
 )
-DIALOG_IMG_OLD = "img.src = `../assets/${rel}`;"
 DIALOG_IMG_NEW = "img.src = window.ODYSSEY_ASSETS[rel] || '';"
-AUDIO_SRC_OLD = "narrationAudio.src = `../data/audio/${file}`;"
 AUDIO_SRC_NEW = "narrationAudio.src = window.ODYSSEY_AUDIO[file] || '';"
 # The three script-default fallbacks the viewer sets right after its data-loading
 # <script src> block (see SCRIPT_BLOCK_RE above) — left in place after that block is
 # swapped for our inline literals, this would silently clobber window.DIAGRAMS (and
 # DIFFS/ADRS) back to `{}` since `window.X || {}` re-runs after our inline assignment
-# too. Matched and stripped verbatim, behind the same fail-loudly guard as every other
-# transform in this script — see the VERBATIM_GUARDS check in build_html().
-DEFAULTS_BLOCK_OLD = (
-    "window.DIFFS = window.DIFFS || {};\n"
-    "window.ADRS = window.ADRS || {};\n"
-    "window.DIAGRAMS = window.DIAGRAMS || {};\n"
-)
-DEFAULTS_DESIGNS_LINE = "window.DESIGNS = window.DESIGNS || {};\n"
-DEFAULTS_INDEX_LINE = "window.INDEX = window.INDEX || {};\n"
+# too. The marker seam below strips them.
 DEFAULTS_BLOCK_NEW = ""
+
+
+# ---- the named marker seam ----
+#
+# The viewer carries one marker pair per region this script rewrites. A pair is two
+# comments on their own lines. The exporter matches a pair by name and replaces the
+# whole region between the two, so no literal inside the region is ever matched. A
+# change to the viewer's own data inside a region therefore cannot stop a publish —
+# the .webp suffix in the hero <img> src is the case the tests pin.
+#
+# Every region sits inside a <script> element, and the hero region's data sits inside
+# a JavaScript template literal. A JavaScript `//` line comment is valid at all six
+# places, so every marker below is one. An HTML comment would not do: a script element
+# holds raw text, and a comment inside a template literal would be page text, not a
+# comment.
+#
+# One record per marker: name, begin line, end line, and the replacement text for
+# the whole region. The replacement carries the region's own indentation, because
+# the region starts at the begin line's first column.
+MARKERS: list[dict] = [
+    {
+        "name": "cobuilder-marker:hero-img-src",
+        "begin": "// cobuilder-marker:hero-img-src:begin",
+        "end": "// cobuilder-marker:hero-img-src:end",
+        "replace": "      " + HERO_SRC_NEW + "\n",
+    },
+    {
+        "name": "cobuilder-marker:dialog-img-src",
+        "begin": "// cobuilder-marker:dialog-img-src:begin",
+        "end": "// cobuilder-marker:dialog-img-src:end",
+        "replace": "      " + DIALOG_IMG_NEW + "\n",
+    },
+    {
+        "name": "cobuilder-marker:audio-src",
+        "begin": "// cobuilder-marker:audio-src:begin",
+        "end": "// cobuilder-marker:audio-src:end",
+        "replace": "    " + AUDIO_SRC_NEW + "\n",
+    },
+    {
+        "name": "cobuilder-marker:defaults-block",
+        "begin": "// cobuilder-marker:defaults-block:begin",
+        "end": "// cobuilder-marker:defaults-block:end",
+        "replace": DEFAULTS_BLOCK_NEW,
+    },
+    {
+        "name": "cobuilder-marker:defaults-designs",
+        "begin": "// cobuilder-marker:defaults-designs:begin",
+        "end": "// cobuilder-marker:defaults-designs:end",
+        "replace": DEFAULTS_BLOCK_NEW,
+    },
+    {
+        "name": "cobuilder-marker:defaults-index",
+        "begin": "// cobuilder-marker:defaults-index:begin",
+        "end": "// cobuilder-marker:defaults-index:end",
+        "replace": DEFAULTS_BLOCK_NEW,
+    },
+]
+
+
+def marker_bounds(html: str, marker: dict) -> tuple[int, int]:
+    """Return the (start, end) span of one marker's whole region.
+
+    The span runs from the first column of the begin line to the end of the end
+    line, its newline included. The caller replaces the whole span, so nothing
+    between the two markers can reach the output.
+    """
+    begin_at = html.find(marker["begin"])
+    end_at = html.find(marker["end"], begin_at + len(marker["begin"]))
+    line_start = html.rfind("\n", 0, begin_at)
+    start = line_start + 1 if line_start != -1 else 0
+    end = end_at + len(marker["end"])
+    newline_at = html.find("\n", end)
+    if newline_at == -1:
+        newline_at = len(html)
+    if html[end:newline_at].strip() == "":
+        end = newline_at + 1 if newline_at < len(html) else newline_at
+    return start, end
+
+
+def replace_span(html: str, start: int, end: int, new_text: str) -> str:
+    """Swap one span of html for new_text."""
+    return html[:start] + new_text + html[end:]
+
+
+def missing_marker_names(html: str) -> list[str]:
+    """Return the names of every marker the viewer does not carry."""
+    return [
+        m["name"]
+        for m in MARKERS
+        if m["begin"] not in html or m["end"] not in html
+    ]
+
+
+def require_markers(html: str) -> None:
+    """Stop the run if the viewer lacks one of the markers this script rewrites.
+
+    The viewer travels with the bundle, so a bundle can hold an older copy than
+    the installed plugin. A missing marker stops the run before any output file
+    is written, so a half-rewritten page can never reach disk. A stale
+    `window.DIAGRAMS = window.DIAGRAMS || {};`-style line left in place would
+    otherwise clobber the inlined data below it.
+    """
+    missing = missing_marker_names(html)
+    if not missing:
+        return
+    print(
+        "error: viewer/index.html is missing these markers: "
+        f"{', '.join(missing)}.\n"
+        "The export stops here and writes no file.\n"
+        "remediation: most often the bundle holds an older copy of the viewer than the "
+        "installed plugin (each bundle carries its own copy). Refresh it and retry:\n"
+        '  cp "${CLAUDE_PLUGIN_ROOT}/viewer/index.html" <bundle-dir>/viewer/index.html\n'
+        "or re-run /pr:baseline against the bundle, which does the same copy.\n"
+        "If the bundle's viewer is already current, then viewer/index.html was edited. "
+        "Restore the marker named above, or update MARKERS in export_artifact.py to match.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
 
 
 # ---- filesystem / repo resolution (same conventions as the other scripts) ----
@@ -327,33 +436,10 @@ def build_html(
 
     html = TITLE_TAG_RE.sub(f"<title>{_html_mod.escape(page_title)}</title>", html, count=1)
 
-    # Fail loudly, not silently, if the viewer no longer contains any string this
-    # script depends on verbatim — an unguarded str.replace() that finds nothing
-    # just no-ops, which for DEFAULTS_BLOCK_OLD in particular would leave a stale
-    # `window.DIAGRAMS = window.DIAGRAMS || {};`-style line able to clobber the
-    # inlined data below it. Every verbatim string this function relies on must be
-    # listed here.
-    verbatim_checks = {
-        "hero image <img> (heroFrameInner)": HERO_SRC_OLD,
-        "audio-dialog image src assignment": DIALOG_IMG_OLD,
-        "narration-audio src assignment": AUDIO_SRC_OLD,
-        "window.DIFFS/ADRS/DIAGRAMS defaults block": DEFAULTS_BLOCK_OLD,
-    }
-    missing = [label for label, needle in verbatim_checks.items() if needle not in html]
-    if missing:
-        print(
-            "error: this bundle's viewer/index.html doesn't match the expected shape for this "
-            f"transform — not found verbatim: {', '.join(missing)}.\n"
-            "remediation: most often the bundle simply holds an older copy of the viewer than the "
-            "installed plugin (each bundle carries its own copy, and the Mermaid-diagram support "
-            "changed it). Refresh it and retry:\n"
-            '  cp "${CLAUDE_PLUGIN_ROOT}/viewer/index.html" <bundle-dir>/viewer/index.html\n'
-            "or re-run /pr:baseline against the bundle, which does the same copy.\n"
-            "If the bundle's viewer is already current, then viewer/index.html was edited and "
-            "export_artifact.py's replacement strings need updating to match.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+    # Fail loudly, not silently, if the viewer lacks one of the markers this script
+    # rewrites. main() runs the same check before it reaches the unchanged
+    # short-circuit, so a stale viewer stops the run on every path.
+    require_markers(html)
     if not inline_mermaid_js and not MERMAID_CDN_RE.search(html):
         print(
             "error: viewer/index.html's Mermaid CDN <script> tag not found verbatim.\n"
@@ -361,16 +447,11 @@ def build_html(
             file=sys.stderr,
         )
         sys.exit(1)
-    html = html.replace(HERO_SRC_OLD, HERO_SRC_NEW)
-    html = html.replace(DIALOG_IMG_OLD, DIALOG_IMG_NEW)
-    html = html.replace(AUDIO_SRC_OLD, AUDIO_SRC_NEW)
-    defaults_with_all = DEFAULTS_BLOCK_OLD + DEFAULTS_DESIGNS_LINE + DEFAULTS_INDEX_LINE
-    if defaults_with_all in html:
-        html = html.replace(defaults_with_all, DEFAULTS_BLOCK_NEW)
-    else:
-        html = html.replace(DEFAULTS_BLOCK_OLD, DEFAULTS_BLOCK_NEW)
-        html = html.replace(DEFAULTS_DESIGNS_LINE, DEFAULTS_BLOCK_NEW)
-        html = html.replace(DEFAULTS_INDEX_LINE, DEFAULTS_BLOCK_NEW)
+    # One replacement per marker, by name. Every region goes in full, so a change
+    # to the data inside a region cannot stop the export.
+    for marker in MARKERS:
+        start, end = marker_bounds(html, marker)
+        html = replace_span(html, start, end, marker["replace"])
 
     if inline_mermaid_js is not None:
         # Vendor the runtime in place of the CDN fetch instead of dropping it —
@@ -412,7 +493,7 @@ window.ODYSSEY_ASSETS = {json.dumps(assets_map, ensure_ascii=False)};
 window.ODYSSEY_AUDIO = {json.dumps(audio_map, ensure_ascii=False)};
 </script>
 """
-    html = html.replace(old_block.group(0), inline_data)
+    html = replace_span(html, old_block.start(), old_block.end(), inline_data)
     return html
 
 
@@ -571,6 +652,10 @@ def main() -> None:
         )
         sys.exit(1)
     viewer_html = viewer_path.read_text()
+
+    # Before the unchanged short-circuit below: a bundle whose viewer has lost a
+    # marker must stop the export even when the output would not be rebuilt.
+    require_markers(viewer_html)
 
     inline_mermaid_js: str | None = None
     if args.inline_mermaid:

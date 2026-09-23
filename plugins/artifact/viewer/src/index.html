@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:," />
+    <title>CoBuilder viewer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      /*
+       * The marker seam. `export_artifact.py` rewrites the six pairs below by name, and
+       * this build carries the block into viewer/index.html verbatim. The exporter does
+       * not change, so its six names and its `//` comment spelling are fixed.
+       *
+       * WHY THE SEAM SITS IN THE DOCUMENT, AND NOT BESIDE THE CODE IT DELIMITS.
+       * Measured on 2026-09-23, on this build:
+       *
+       *   1. The default esbuild minifier strips every `//` line comment and collapses
+       *      the code into single lines up to 166 KB. A pair inside the bundle cannot
+       *      survive it.
+       *   2. `build.minify: false` is NOT enough. esbuild's TypeScript transform
+       *      re-prints every `.ts` module and drops its comments even with minification
+       *      off, so a pair placed beside the loader in `src/data/bundle.ts` or
+       *      `src/shell/records.ts` still never reaches the shipped file. A `.tsx`
+       *      module does keep its comments, because `@vitejs/plugin-react` sends that
+       *      extension through Babel instead.
+       *   3. `build.minify: false` costs 1,261,969 bytes: 1,177,696 becomes 2,439,665.
+       *      That lands on a file the exporter inlines into a 16 MiB Artifact, so the
+       *      cost is real and not worth paying for twelve comment lines.
+       *
+       * A classic inline script element is the one place the build carries source
+       * through untouched: no bundler re-prints it and no minifier reads it. So the
+       * seam lives here, where the ported viewer kept the same six regions.
+       * `export_artifact.py` deletes each region whole and writes its own text in the
+       * region's place.
+       *
+       * WHAT EACH PAIR DELIMITS. Every pair spans the one line that reaches outside the
+       * built file for one thing. The exporter replaces the whole span: a read of an
+       * inlined global for the three data regions, and a read of the inlined
+       * `window.ODYSSEY_ASSETS` or `window.ODYSSEY_AUDIO` map for the three asset ones.
+       * That is how a published Artifact — one file, no siblings, and a CSP that blocks
+       * every request — reaches the same record, picture, and narration.
+       *
+       * WHAT HAS NO CONSUMER YET, stated rather than hidden:
+       *
+       *   - `src/data/bundle.ts` already reads the record index and the designs, and
+       *     `src/shell/records.ts` already reads the decisions. Those three loaders are
+       *     the served-mode readers the shell actually uses, and the three `defaults-*`
+       *     regions below are the same three reads. The regions are placed here, not
+       *     beside those loaders, for reason 2 above. They delimit real code; that code
+       *     is simply not the path the shell takes today.
+       *   - No module under `src/` reads a pull request's art, its narration, or its
+       *     dialog image at all. `docs/plans/cobuilder-viewer/04-slices.md` records that
+       *     slices 15 and 16 add them, so the three asset regions have no consumer yet.
+       *     They are the least invented home available: each delimits the line that
+       *     builds that asset's URL, which is the line the exporter rewrites.
+       *
+       * The `defaults-designs` region does NOT carry the ported viewer's own
+       * `window.DESIGNS = window.DESIGNS || {}` line, and that is deliberate.
+       * `isDesignRecords({})` in `src/data/bundle.ts` accepts an empty object as a loaded
+       * record set, so a pre-set default would make `loadDesigns` resolve `{}` and never
+       * read the sibling file — a served board would render empty with no error. The
+       * region carries the sibling fallback instead, which is the code the exporter's
+       * deletion is for.
+       *
+       * escapeHtml is here because the exporter's hero replacement calls it. A published
+       * page keeps that call, so the helper has to exist in this scope.
+       */
+      (function () {
+        const DATA_URL = "../data/";
+
+        function escapeHtml(value) {
+          return String(value).replace(/[&<>"']/g, function (ch) {
+            return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
+          });
+        }
+
+        /* Append one sibling script tag and resolve with the global it assigns. */
+        function appendSibling(url, globalName) {
+          return new Promise(function (resolve, reject) {
+            const tag = document.createElement("script");
+            tag.src = url;
+            tag.async = true;
+            tag.onload = function () {
+              const loaded = window[globalName];
+              if (loaded) resolve(loaded);
+              else reject(new Error(url + " loaded but assigned no window." + globalName + "."));
+            };
+            tag.onerror = function () {
+              reject(new Error("The dev server did not serve " + url + "."));
+            };
+            document.head.appendChild(tag);
+          });
+        }
+
+        // cobuilder-marker:defaults-block:begin
+        function loadDecisions() {
+          return appendSibling(DATA_URL + "adrs.js", "ADRS");
+        }
+        // cobuilder-marker:defaults-block:end
+
+        // cobuilder-marker:defaults-designs:begin
+        function loadDesignRecords() {
+          return appendSibling(DATA_URL + "designs.js", "DESIGNS");
+        }
+        // cobuilder-marker:defaults-designs:end
+
+        // cobuilder-marker:defaults-index:begin
+        function loadRecordIndex() {
+          return fetch(DATA_URL + "index.json", { cache: "no-store" }).then(function (response) {
+            if (!response.ok) {
+              throw new Error("The dev server returned " + response.status + " for " + DATA_URL + "index.json.");
+            }
+            return response.json();
+          });
+        }
+        // cobuilder-marker:defaults-index:end
+
+        function heroImgSrc(prNum, levelIdx, alt, hasDiagram) {
+          return hasDiagram
+            ? `<div class="diagram-viewport" data-pr="${prNum}" data-level="${levelIdx}"><pre class="mermaid"></pre></div>`
+            // cobuilder-marker:hero-img-src:begin
+            : `<img src="../assets/pr-${prNum}/level-${levelIdx}.webp" alt="${escapeHtml(alt)}" loading="lazy">`;
+            // cobuilder-marker:hero-img-src:end
+        }
+
+        function dialogImgSrc(img, rel) {
+          if (rel) {
+            // cobuilder-marker:dialog-img-src:begin
+            img.src = `../assets/${rel}`;
+            // cobuilder-marker:dialog-img-src:end
+          }
+        }
+
+        function narrationFile(narrationAudio, file) {
+          // cobuilder-marker:audio-src:begin
+          narrationAudio.src = `../data/audio/${file}`;
+          // cobuilder-marker:audio-src:end
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>

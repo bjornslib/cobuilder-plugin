@@ -1,0 +1,58 @@
+{
+  "stage": "design",
+  "verdict": "concerns",
+  "risk_tier": "sensitive",
+  "regret_risk": "If this design ships as written, the team lives with everything react-viewer already accepted. That is a permanent Node and npm dependency, plus a committed build artifact that only stays true while every engineer remembers to run the build. This design adds a second remote-writing surface on top: the runner that executes an accepted merge path onto integration branches. Neither source design's regret was small, and this design shrinks neither. It adds one regret of its own. A merged eighteen-epic program is a long stretch of work, and no shippable surface exists until E5.",
+  "summary": "The merge is sound, and the collision it resolves was real rather than manufactured. react-viewer's own verdict was already concerns, for the Node toolchain cost, and this design inherits that unchanged. The verdict therefore stays concerns rather than proceed. Two things are new and load-bearing. The challenge gate corrected one diverge candidate, a GitHub Action, to the mechanism this family already uses. It also caught and rejected one real trap, a cross-repo compute service. The design then gained two concrete answers that neither source design had. The first is how the ledger carries a merge-order proposal without breaking ADR-0019's vocabulary. The second is how the open-pull-request type cannot drift from the pull-request type it extends. Both are new schema and type work, neither is built, and both are where a reviewer should look first.",
+  "constraint_introduced": "FlightDeck is one React surface with two modes. Multi-pull-request mode never simulates in the browser. A skill run or scheduled workflow computes candidate merge orders, and commits the result as data/merge-plan.json for the viewer to render. A merge-order proposal, its acceptance, and its post-merge actual result are subtypes of the ledger's existing state line kind. OpenPullRequest extends PullRequest, defined once in the shared types module.",
+  "findings": [
+    {
+      "kind": "prediction",
+      "id": "F1",
+      "severity": "high",
+      "title": "The merge is sound: building the pull-request surface twice was the real cost",
+      "detail": "react-viewer's E5 and review-flight-deck's multi-PR surface independently claimed the name Flight deck for different things, at the same stage, review, with neither having read the other. Sequencing them would have built the ordering UI against the viewer E5 is about to replace. Merging avoids the double build, and it forces the naming collision to resolve now instead of at ship time.",
+      "cites": "react-viewer/goal.json, review-flight-deck/goal.json, ADR-0023, ADR-0027"
+    },
+    {
+      "kind": "prediction",
+      "id": "F2",
+      "severity": "high",
+      "title": "react-viewer's concerns verdict carries forward unchanged, and this design does not resolve it",
+      "detail": "react-viewer's assessment held verdict concerns because a contributor now needs Node and npm to change the viewer. This repository has never paid that cost, and no epic in that design removed it. This design inherits react-viewer's epics unchanged, and nothing here reduces the cost. The verdict stays concerns for the same reason.",
+      "cites": "react-viewer/assessment.json, ADR-0023 Consequences section"
+    },
+    {
+      "kind": "prediction",
+      "id": "F3",
+      "severity": "high",
+      "title": "The challenge gate caught a real trap: a cross-repo compute service would have broken the install-surface rule",
+      "detail": "Divergent exploration's 100x/10-year frame proposed a persistent, org-owned service that computes the join index and merge plan across every adopting repository. It scored well on fit to ADR-0018's join shape, and that is what made it a trap. Adopting it would mean this family ships something that keeps running after the session ends. CLAUDE.md's install-surface rule forbids that outright, and the per-repo committed-bundle model of ADR-0016 and ADR-0017 exists to avoid it. The critic pass caught it, the challenge gate rejected it, and ADR-0027 records it as a rejected option.",
+      "cites": "CLAUDE.md install surface rule, ADR-0016, ADR-0017, ADR-0027 rejected options"
+    },
+    {
+      "kind": "prediction",
+      "id": "F4",
+      "severity": "medium",
+      "title": "The GitHub Action candidate was a near-miss: it solved a solved problem with new infrastructure",
+      "detail": "The remove-load-bearing-assumption frame correctly identified that a merge-order simulation cannot run live in a browser-served viewer process. It answered with a scheduled GitHub Action, and the challenge gate corrected that. review-flight-deck's own record already settled automatic triggering as a scheduled skill run or a workflow, which is the mechanism every other Odyssey mode uses. Without that correction, the design would have introduced CI infrastructure the family has never needed.",
+      "cites": "review-flight-deck/goal.json Round 3, ADR-0027 rejected options"
+    },
+    {
+      "kind": "prediction",
+      "id": "F5",
+      "severity": "medium",
+      "title": "Two new pieces of schema and type work carry the most risk, and neither source design specified them",
+      "detail": "Two epics resolve open questions that the source designs left open. E11 carries the ledger's proposal, acceptance, and post-merge-actual schema. E3 declares OpenPullRequest as a branded type, and E8 consumes it. Both are new work that this design's challenge gate invented. Neither carries forward from a tested prototype the way the Work board and FlightDeck single-pull-request shapes do. A reviewer should treat these two epics as the least-derisked parts of the design.",
+      "cites": "intent.json alternatives, ADR-0027 Consequences"
+    },
+    {
+      "kind": "prediction",
+      "id": "F6",
+      "severity": "low",
+      "title": "Superseding both source designs is correct, because neither was ever approved or shipped",
+      "detail": "Both react-viewer and review-flight-deck sat at stage review, with no approved history and nothing outside themselves depending on them separately. That matches the condition that let ADR-0025 be revised in place rather than superseded while it was still review-flight-deck's own record. Superseding both into cobuilder-viewer keeps one live design, instead of a resumed design plus a satellite.",
+      "cites": "react-viewer/goal.json, review-flight-deck/goal.json, decision-records.md rule 5"
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+sequenceDiagram
+    participant Engineer
+    participant Vite as vite.config.ts (build)
+    participant Guard as Byte-equal rebuild test
+    participant IndexHtml as plugins/artifact/viewer/index.html
+    participant Reviewer
+    participant Work as Work surface
+    participant FlightDeck as FlightDeck (single-PR mode)
+    participant FlightDeckM as FlightDeck (multi-PR mode)
+    participant Simulator as Skill run / workflow (merge-order simulator)
+    participant Git as git (merge-tree, worktree)
+    participant Plan as data/merge-plan.json
+    participant Ledger as feedback-ledger.jsonl
+    participant Runner as Path-execution runner
+    participant Auditor
+
+    %% Phase 1: build the viewer, then read a single pull request at today's parity
+    Note over Engineer,IndexHtml: Phase 1 — build and single-PR review
+    Engineer->>Vite: Change a viewer/src/ file, run npm run build
+    Vite->>IndexHtml: Compile TS/React, inline assets, write committed file
+    Guard->>Vite: Rebuild from source
+    Guard->>IndexHtml: Compare rebuild against committed file
+    alt Byte-equal
+        Guard-->>Engineer: Pass — committed file ships as-is
+    else Differs
+        Guard-->>Engineer: Fail — commit is stale, rebuild and recommit
+    end
+
+    Reviewer->>Work: Open the bundle, view every design's stage and epic progress
+    Reviewer->>Work: Select a design or a pull request
+    Work-->>Reviewer: Opens FlightDeck in single-pull-request mode
+    Reviewer->>FlightDeck: Read four narration levels, diagrams, scene art, intent and assessment
+
+    %% Phase 2: reviewer widens the review to the open set
+    Note over Reviewer,Auditor: Phase 2 — multi-PR select-and-recommend
+    Reviewer->>FlightDeckM: Select additional open pull requests
+    FlightDeckM-->>Simulator: Trigger skill run (or schedule triggers it)
+    Simulator->>Git: Find common ancestor of selected branches
+    Simulator->>Git: Chained git merge-tree, candidate orders
+    Simulator->>Git: Replay top one or two candidates on scratch worktree
+    Git-->>Simulator: Real conflict counts, non-authored shapes (generated-file, hot-file, identical-content)
+    Simulator->>Plan: Commit ranked candidates, conflict shapes, ancestor SHA
+    Simulator->>Ledger: Append merge-order proposal (state line, content hash of simulation output)
+
+    FlightDeckM->>Plan: Read merge-plan.json
+    FlightDeckM-->>Reviewer: Render recommended path, mark alternatives unreachable
+
+    Reviewer->>FlightDeckM: Accept recommended path
+    FlightDeckM->>Ledger: Append acceptance (state line, references proposal hash, names chosen candidate)
+
+    Runner->>Ledger: Read accepted path
+    Runner->>Git: Merge each bundle onto its own integration branch
+    Git-->>Runner: Resulting tree hash per bundle
+    Runner->>Ledger: Append post-merge actual result (state line, real tree hash)
+
+    Auditor->>Ledger: Read proposal, acceptance, post-merge actual
+    Auditor->>Auditor: Diff predicted tree hash against actual tree hash

@@ -60,9 +60,16 @@ ignored. Follow them even when the diagram would render without them.
   `Container_Boundary`, and `Rel`. Do not reach for less common C4 macros.
   They are more likely to hit a Mermaid version gap.
 
-- **No `<br/>` in labels.** Use `\n` inside a quoted label to force a line
-  break. `<br/>` is an HTML tag, and not every Mermaid renderer accepts it in
-  every diagram type.
+- **Use `\n` for a line break in a quoted C4 or sequence label.** Do not write
+  `<br/>` there. It is an HTML tag, and not every Mermaid renderer accepts it
+  in every diagram type.
+
+- **Use `<br>` for a line break in a `classDiagram` note.** The `classDiagram`
+  renderer does not interpret `\n` in a `note for` body. It writes the two
+  characters into the diagram, so the note shows a visible backslash-n. Write
+  `note for Foo "First line<br>Second line"`. Write `<br>` with no closing
+  slash. The renderer then emits a real break. This rule is the one case where
+  `<br>` is correct, and it applies to a note body only.
 
 - **Keep level-1 containers under about twelve.** A C4 diagram with more
   containers than that lays out unreadably at the hero-image width the
@@ -202,7 +209,7 @@ classDiagram
     ClipboardDecision --> InferenceHost : redact/restore via
     InferenceHost --> RecordsStore : reads/writes originals
 
-    note for InferenceHost "ADR-0001: reuses privacy-filter.ts\nverbatim instead of a native module"
+    note for InferenceHost "ADR-0001: reuses privacy-filter.ts<br>verbatim instead of a native module"
 ```
 
 ## 5. Validation
@@ -213,6 +220,10 @@ match the level's required diagram type. Brackets must balance across the
 file. The file must not be empty once comments and blank lines drop out.
 Run `--strict` to also parse each file with `mermaid-cli` through `npx`, when
 `npx` is on the PATH.
+
+No check above catches a `\n` that survives into a rendered note. A literal
+backslash-n parses, so `--strict` accepts it. Render the diagram and read the
+note text when a note carries a line break.
 
 A validation failure names the file and the line. Fix it in the `.mmd`
 source — the compiled `data/diagrams.js` is a build product, and hand-editing

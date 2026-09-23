@@ -1,0 +1,79 @@
+{
+  "design_name": "review-flight-deck",
+  "levels": {
+    "landscape": {
+      "tagline": "Not how to review one change. In what order the whole set can close.",
+      "narration": "The viewer knows how to read one pull request well. Previous, next, four levels, a dock that records a verdict. Everything in it assumes the reviewer is looking at one thing. A team with seventeen branches in flight is not looking at one thing, and the surface has nothing for the question they are actually holding. The bundle already carries the material a first answer could be built from: goal files, epics, boundary rules, districts, and a touched map for every pull request. The record index resolves five kinds of join. None of them is between two pull requests, and that is the join the question needs."
+    },
+    "problem_solution": {
+      "problem": "Tens of branches open at once, opened by people who did not coordinate. The simple ones a team already merges automatically. What is left is a queue of unrelated diffs, and the order they land in decides whether the work is easy or a week of conflict resolution. Nothing tells anybody what that order is.",
+      "solution": "Simulate several paths to close the whole set, replay the best with git, and show one. Lead with the state the reviewer would have if they accept. Then what each pull request contributes. Then whether the merges hold. Accepting records a decision, and a runner merges each bundle onto its own integration branch.",
+      "narration": "The first draft got the surface right and the arithmetic wrong. It simulated against the default branch, which already carried a merged restructure, so it recommended the restructure first and the earlier work last. With every branch open the base is the commit they all descend from, where the three directories the restructure deletes still exist, and five open pull requests write into exactly those three. The order was the reverse of what the machine said, and the machine said it with full confidence. That single fact shaped the design more than any other: a wrong baseline does not fail, it answers.",
+      "beats": [
+        {
+          "kind": "background",
+          "text": "The viewer has five view modes and one linear queue. Four of the five share its previous and next navigation."
+        },
+        {
+          "kind": "forces",
+          "text": "Field coverage across fourteen timeline entries is uneven: touched 14, narrated levels 8, cached diffs 8, intent 4, assessment 4, ledger lines 0. A surface built on authored intent alone draws empty panes for most of the corpus, so a pull request with no description gets one before the flightdeck reads it."
+        },
+        {
+          "kind": "intuition",
+          "text": "The reviewer's real alternative is reading every diff in full. Measured over 27 pairs of merged pull requests here, cutting a set by contested region reduces the reading surface every time, from 0.00 to 0.41 of the total changed files."
+        },
+        {
+          "kind": "contract",
+          "text": "A path never carries every open pull request. A superseded branch and a conflict a merge cannot resolve are different findings, and both belong on the front page rather than in a footnote."
+        },
+        {
+          "kind": "boundary",
+          "text": "The reviewer commits to a path once and keeps the pace. Each bundle merges onto its own integration branch, so abandoning a path is a branch deletion and the branch everybody works from never carried it."
+        }
+      ],
+      "alternatives": [
+        {
+          "option": "Simulate against the default branch",
+          "rejected_because": "It inverts the order whenever an open pull request restructures the tree, and it does so without any visible failure."
+        },
+        {
+          "option": "A region walk: one keypress per contested hunk",
+          "rejected_because": "It made the reviewer do the machine's work over a set they had to name themselves. The arithmetic survives as evidence."
+        },
+        {
+          "option": "Show every simulated path side by side",
+          "rejected_because": "It hands the comparison back to the reviewer, which is the work the mode exists to remove."
+        },
+        {
+          "option": "Merge each bundle onto the default branch",
+          "rejected_because": "The first merge is irreversible, so a path that turns out wrong at bundle two has already changed the branch everybody works from."
+        }
+      ]
+    },
+    "architecture": {
+      "narration": "Two boundaries carry the design. The first is unchanged from the earliest draft: computation lives terminal-side in the pr plugin, next to the modes that already read git, and the viewer is handed a projection and draws it. The second is new and decides how far a mistake travels. Nothing merges onto the default branch. Each bundle lands on its own integration branch, built from the previous one and rooted at the commit every open branch descends from, so a path is a set of branches somebody can read, keep, or delete. The ledger sits between the surface and the runner as the only durable channel, and it is append-only, so a path acceptance, a bundle merge and a blocked-pull-request decision are three new line kinds with three projections rather than an edit to any existing record.",
+      "beats": [
+        {
+          "kind": "contract",
+          "text": "A path is simulated against the common ancestor of the open branches, never against the default branch."
+        },
+        {
+          "kind": "contract",
+          "text": "A runner merges a bundle onto its own integration branch. The default branch sees one pull request at the end."
+        },
+        {
+          "kind": "boundary",
+          "text": "The mode cannot start itself. The install surface ships no agents, no hooks and no MCP servers, so the adopting repository supplies the trigger."
+        },
+        {
+          "kind": "forces",
+          "text": "ADR-0019 fixed the ledger vocabulary at comment, reply and state, and fold_threads skips a line it does not recognise. Each new kind needs its own projection."
+        },
+        {
+          "kind": "intuition",
+          "text": "Systems that precompute mergeable slices already exist. The git step keeps a narrow interface so one of them can replace it, because the narrative and the choice between paths are the parts nobody else offers."
+        }
+      ]
+    }
+  }
+}

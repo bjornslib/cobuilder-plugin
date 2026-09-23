@@ -1,0 +1,1098 @@
+<title>Flightdeck Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+:root{
+  --ground:#e9eded; --surface:#ffffff; --surface-2:#f5f8f8; --surface-3:#eef3f3;
+  --ink:#121d1c; --ink-mid:#3c4b4a; --ink-dim:#6a7978; --ink-faint:#93a1a0;
+  --line:#d5dddc; --line-soft:#e6ebeb;
+  --accent:#1d7f8e; --accent-deep:#125460; --accent-wash:#dcedf0;
+  --warn:#9e5c17; --warn-wash:#f6ead9;
+  --danger:#9c3333; --danger-wash:#f7e3e3;
+  --good:#2f6b42; --good-wash:#dfeee4;
+  --shadow-1:0 1px 2px rgba(18,29,28,.06);
+  --shadow-2:0 2px 6px rgba(18,29,28,.07), 0 12px 28px -14px rgba(18,29,28,.22);
+  --shadow-3:0 4px 12px rgba(18,29,28,.10), 0 24px 48px -20px rgba(18,29,28,.30);
+  --mono:'JetBrains Mono', ui-monospace, Menlo, monospace;
+  --serif:'Source Serif 4', Georgia, serif;
+  --ease:cubic-bezier(.22,.75,.3,1);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0b1312; --surface:#131d1c; --surface-2:#182322; --surface-3:#1e2a29;
+    --ink:#e2e9e8; --ink-mid:#adbab9; --ink-dim:#7d8b8a; --ink-faint:#5d6b6a;
+    --line:#26332f; --line-soft:#1d2827;
+    --accent:#4fb2c1; --accent-deep:#86d0da; --accent-wash:#0e2a2f;
+    --warn:#d2954f; --warn-wash:#2a2116;
+    --danger:#dd7070; --danger-wash:#2b1919;
+    --good:#63ac77; --good-wash:#14251a;
+    --shadow-1:0 1px 2px rgba(0,0,0,.5);
+    --shadow-2:0 2px 6px rgba(0,0,0,.5), 0 12px 28px -14px rgba(0,0,0,.8);
+    --shadow-3:0 4px 12px rgba(0,0,0,.55), 0 24px 48px -20px rgba(0,0,0,.9);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0b1312; --surface:#131d1c; --surface-2:#182322; --surface-3:#1e2a29;
+  --ink:#e2e9e8; --ink-mid:#adbab9; --ink-dim:#7d8b8a; --ink-faint:#5d6b6a;
+  --line:#26332f; --line-soft:#1d2827;
+  --accent:#4fb2c1; --accent-deep:#86d0da; --accent-wash:#0e2a2f;
+  --warn:#d2954f; --warn-wash:#2a2116;
+  --danger:#dd7070; --danger-wash:#2b1919;
+  --good:#63ac77; --good-wash:#14251a;
+  --shadow-1:0 1px 2px rgba(0,0,0,.5);
+  --shadow-2:0 2px 6px rgba(0,0,0,.5), 0 12px 28px -14px rgba(0,0,0,.8);
+  --shadow-3:0 4px 12px rgba(0,0,0,.55), 0 24px 48px -20px rgba(0,0,0,.9);
+  color-scheme: dark;
+}
+*{box-sizing:border-box;}
+body{background:var(--ground);color:var(--ink);font-family:var(--mono);font-size:13px;
+  line-height:1.5;-webkit-font-smoothing:antialiased;}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px;}
+
+.wrap{max-width:1180px;margin:0 auto;padding:22px 20px 40px;}
+.intro{margin-bottom:16px;display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px;}
+.intro h1{font-family:var(--mono);font-size:22px;font-weight:700;letter-spacing:-.03em;margin:0;}
+.intro p{font-family:var(--serif);font-size:15.5px;line-height:1.45;color:var(--ink-mid);
+  margin:5px 0 0;max-width:60ch;}
+.intro .spacer{flex:1;}
+.btn-tour{border:1px solid var(--accent);background:var(--accent);color:#fff;font-weight:700;
+  font-size:12px;padding:9px 16px;border-radius:6px;white-space:nowrap;box-shadow:var(--shadow-1);
+  transition:transform .15s var(--ease), filter .15s var(--ease);}
+.btn-tour:hover{transform:translateY(-1px);filter:brightness(1.08);}
+.btn-tour.playing{background:var(--surface);color:var(--accent-deep);}
+
+.app{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:var(--surface);
+  box-shadow:var(--shadow-3);display:flex;flex-direction:column;min-height:680px;}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;gap:14px;padding:10px 14px;flex-wrap:wrap;
+  border-bottom:1px solid var(--line);background:var(--surface);}
+.brand{font-size:12px;font-weight:700;white-space:nowrap;}
+.modes{display:flex;gap:2px;flex-wrap:wrap;}
+.mode{font-size:10.5px;padding:5px 10px;border-radius:5px;color:var(--ink-dim);white-space:nowrap;
+  transition:background .18s var(--ease), color .18s var(--ease);}
+.mode:hover{background:var(--surface-2);color:var(--ink);}
+.mode.on{background:var(--accent-wash);color:var(--accent-deep);font-weight:700;}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:9px;}
+.evt{display:inline-flex;align-items:center;gap:6px;font-size:9.5px;color:var(--ink-dim);
+  background:var(--surface-2);border:1px solid var(--line-soft);padding:4px 9px;border-radius:20px;white-space:nowrap;}
+.evt .dot{width:6px;height:6px;border-radius:50%;background:var(--good);display:block;animation:pulse 2.4s var(--ease) infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.btn-ledger{font-size:10.5px;border:1px solid var(--line);padding:5px 11px;border-radius:5px;color:var(--ink-mid);}
+.btn-ledger:hover{border-color:var(--accent);color:var(--accent-deep);}
+.btn-ledger b{color:var(--accent-deep);}
+
+.crumb{display:flex;align-items:center;gap:8px;padding:8px 15px;font-size:10.5px;
+  border-bottom:1px solid var(--line-soft);background:var(--surface-2);min-height:34px;flex-wrap:wrap;}
+.crumb button{color:var(--accent-deep);text-decoration:underline;text-underline-offset:2px;}
+.crumb .sep{color:var(--ink-faint);}
+.crumb .now{color:var(--ink);font-weight:700;}
+
+.stage{position:relative;flex:1;overflow:hidden;}
+.view{position:absolute;inset:0;overflow-y:auto;padding:20px 20px 24px;
+  opacity:0;visibility:hidden;transform:translateX(26px);
+  transition:opacity .3s var(--ease), transform .34s var(--ease), visibility .34s;}
+.view.on{opacity:1;visibility:visible;transform:none;}
+.view.back{transform:translateX(-26px);}
+
+/* ---------- INTAKE STRIP ---------- */
+.intake{display:flex;flex-wrap:wrap;gap:0;border:1px solid var(--line);border-radius:9px;
+  overflow:hidden;margin-bottom:20px;background:var(--surface-2);}
+.ib{flex:1;min-width:150px;padding:12px 15px;border-right:1px solid var(--line-soft);}
+.ib:last-child{border-right:0;}
+.ib .k{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);}
+.ib .v{font-size:22px;font-weight:700;letter-spacing:-.02em;margin-top:3px;font-variant-numeric:tabular-nums;}
+.ib .n{font-family:var(--serif);font-size:13px;color:var(--ink-mid);margin-top:2px;line-height:1.35;}
+.ib.auto{background:var(--good-wash);}
+.ib.auto .v{color:var(--good);}
+.ib.you{background:var(--accent-wash);}
+.ib.you .v{color:var(--accent-deep);}
+
+/* ---------- PIPELINE TRAIL ---------- */
+.trail{display:flex;align-items:stretch;gap:0;margin-bottom:20px;flex-wrap:wrap;}
+.tstep{flex:1;min-width:170px;padding:10px 14px 11px;border-left:2px solid var(--line);
+  position:relative;transition:border-color .3s var(--ease);}
+.tstep.done{border-left-color:var(--accent);}
+.tstep.final{border-left-color:var(--good);}
+.tstep .s{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-dim);}
+.tstep .h{font-size:12px;font-weight:700;margin-top:4px;}
+.tstep .d{font-family:var(--serif);font-size:13px;color:var(--ink-mid);margin-top:2px;line-height:1.38;}
+.tstep.done .h{color:var(--accent-deep);}
+.tstep.final .h{color:var(--good);}
+
+/* ---------- RECOMMENDATION ---------- */
+.rec{border:1px solid var(--accent);border-radius:11px;background:var(--surface);
+  box-shadow:0 0 0 1px var(--accent-wash), var(--shadow-2);overflow:hidden;
+  transition:transform .22s var(--ease), box-shadow .22s var(--ease);text-align:left;width:100%;display:block;}
+.rec:hover{transform:translateY(-2px);box-shadow:0 0 0 1px var(--accent-wash), var(--shadow-3);}
+.rec-top{display:flex;align-items:center;gap:10px;padding:12px 18px;background:var(--accent-wash);
+  border-bottom:1px solid var(--line-soft);flex-wrap:wrap;}
+.rec-eyebrow{font-size:10px;font-weight:700;letter-spacing:.14em;color:var(--accent-deep);}
+.conf{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:9.5px;
+  letter-spacing:.07em;text-transform:uppercase;background:var(--good-wash);color:var(--good);
+  padding:3px 10px;border-radius:11px;font-weight:700;}
+.rec-body{padding:18px 18px 4px;}
+.rec-story{font-family:var(--serif);font-size:19px;line-height:1.48;color:var(--ink);
+  max-width:58ch;margin:0;}
+.rec-story b{color:var(--accent-deep);font-weight:600;}
+.rec-sub{font-family:var(--serif);font-size:15px;line-height:1.45;color:var(--ink-mid);
+  max-width:60ch;margin:10px 0 0;}
+.waves{display:flex;align-items:center;gap:0;padding:16px 18px 4px;overflow-x:auto;}
+.wv{border:1px solid var(--line);border-radius:8px;background:var(--surface-2);padding:9px 11px;
+  min-width:0;flex:0 0 auto;transition:border-color .2s var(--ease);}
+.wv .wh{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:6px;}
+.wv .wn{font-size:11.5px;font-weight:700;margin-bottom:7px;}
+.wv .chips{display:flex;gap:4px;flex-wrap:wrap;max-width:210px;}
+.chip{font-size:10px;padding:2px 7px;border-radius:4px;background:var(--surface);
+  border:1px solid var(--line);color:var(--ink-mid);font-variant-numeric:tabular-nums;}
+.chip.big{border-color:var(--accent);color:var(--accent-deep);font-weight:700;}
+.chip.dead{border-style:dashed;color:var(--danger);border-color:var(--danger-wash);}
+.warrow{flex:0 0 auto;padding:0 9px;color:var(--ink-faint);font-size:15px;}
+.rec-foot{display:flex;align-items:center;gap:12px;padding:12px 18px;border-top:1px solid var(--line-soft);
+  margin-top:12px;flex-wrap:wrap;font-size:10.5px;color:var(--ink-dim);}
+.rec-foot .go{margin-left:auto;color:#fff;background:var(--accent);font-weight:700;
+  padding:8px 16px;border-radius:6px;font-size:11.5px;}
+
+/* fallback hint — visible, not reachable */
+.fallback{margin-top:14px;border:1px dashed var(--line);border-radius:9px;padding:13px 17px;
+  background:var(--surface-2);display:flex;align-items:center;gap:13px;flex-wrap:wrap;opacity:.72;}
+.fallback .lk{font-size:14px;color:var(--ink-faint);}
+.fallback .tx{font-family:var(--serif);font-size:14px;color:var(--ink-dim);flex:1;min-width:220px;}
+.fallback .gh{display:flex;gap:6px;}
+.fallback .ghost{border:1px solid var(--line);border-radius:5px;padding:4px 11px;font-size:10px;
+  color:var(--ink-faint);background:var(--surface);}
+
+/* auto-merge band */
+.auto-band{margin-top:18px;border:1px solid var(--line-soft);border-radius:8px;background:var(--good-wash);
+  overflow:hidden;}
+.ab-h{display:flex;align-items:center;gap:10px;padding:10px 15px;width:100%;text-align:left;flex-wrap:wrap;}
+.ab-h .t{font-size:11.5px;font-weight:700;color:var(--good);}
+.ab-h .d{font-family:var(--serif);font-size:13.5px;color:var(--ink-mid);}
+.ab-h .cv{margin-left:auto;font-size:11px;color:var(--good);}
+.ab-b{display:none;padding:0 15px 13px;flex-wrap:wrap;gap:6px;}
+.auto-band.open .ab-b{display:flex;}
+
+/* ---------- OUTCOME FIRST ---------- */
+.outcome{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px;max-width:60ch;}
+.outcome li{font-family:var(--serif);font-size:17px;line-height:1.42;color:var(--ink);
+  padding-left:24px;position:relative;}
+.outcome li::before{content:"";position:absolute;left:0;top:9px;width:9px;height:9px;
+  border-radius:2px;background:var(--accent);}
+.outcome.big li{font-size:18px;}
+.outbox{border:1px solid var(--accent);border-radius:9px;background:var(--accent-wash);padding:16px 18px;}
+.ob-h{display:block;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent-deep);margin-bottom:11px;font-weight:700;}
+.outbox .outcome li{color:var(--ink);}
+.outbox .outcome li::before{background:var(--accent-deep);}
+.pathband{border-top:1px solid var(--line-soft);margin-top:16px;padding-top:4px;}
+.pb-h{display:block;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-dim);padding:8px 18px 0;}
+
+/* ---------- BLOCKED ---------- */
+.ib.stop{background:var(--danger-wash);}
+.ib.stop .v{color:var(--danger);}
+.outcome.no{margin-top:11px;padding-top:11px;border-top:1px dashed var(--line);}
+.outcome.no li{font-size:15px;color:var(--danger);}
+.outcome.no li::before{background:var(--danger);height:2px;top:13px;border-radius:1px;}
+.blocked{margin-top:16px;border:1px solid var(--danger);border-radius:9px;overflow:hidden;background:var(--surface);}
+.blocked-h{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--danger);
+  background:var(--danger-wash);padding:9px 16px;font-weight:700;}
+.blk{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:13px;align-items:center;width:100%;
+  text-align:left;padding:12px 16px;border-bottom:1px solid var(--line-soft);
+  transition:background .16s var(--ease);}
+.blk:last-child{border-bottom:0;}
+.blk:hover{background:var(--surface-2);}
+.blk-n{font-size:12px;font-weight:700;color:var(--danger);font-variant-numeric:tabular-nums;}
+.blk-h{display:block;font-size:11.5px;font-weight:700;}
+.blk.superseded .blk-h{color:var(--warn);}
+.blk.conflict .blk-h{color:var(--danger);}
+.blk-o{display:block;font-family:var(--serif);font-size:14px;line-height:1.4;color:var(--ink-mid);margin-top:2px;}
+.blk-go{font-size:10.5px;color:var(--accent-deep);font-weight:700;white-space:nowrap;}
+.blkbox{border:1px solid var(--danger);border-radius:9px;padding:16px 18px;background:var(--danger-wash);max-width:74ch;}
+.blkbox.superseded{border-color:var(--warn);background:var(--warn-wash);}
+.blk-lead{font-family:var(--serif);font-size:17px;line-height:1.45;color:var(--ink);margin:0 0 14px;}
+.blk-tbl{border:1px solid var(--line);border-radius:7px;background:var(--surface);overflow:hidden;}
+.bt-r{display:grid;grid-template-columns:130px minmax(0,1fr);gap:12px;padding:8px 12px;
+  border-bottom:1px solid var(--line-soft);font-size:11px;}
+.bt-r:last-child{border-bottom:0;}
+.bt-k{color:var(--ink-dim);letter-spacing:.04em;}
+.bt-v{color:var(--ink);word-break:break-word;}
+.blk-why{font-family:var(--serif);font-size:14.5px;line-height:1.45;color:var(--ink-mid);margin:13px 0 0;}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;}
+.opt{border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:14px 16px;
+  text-align:left;display:flex;flex-direction:column;gap:6px;position:relative;
+  transition:transform .18s var(--ease), border-color .18s var(--ease), box-shadow .18s var(--ease);}
+.opt:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:var(--shadow-2);}
+.opt.best{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-wash);}
+.ob{font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;}
+.ol{font-size:12.5px;font-weight:700;}
+.or{font-family:var(--serif);font-size:13.5px;line-height:1.4;color:var(--ink-mid);}
+
+/* ---------- ROLLOUT + BRANCH TARGET ---------- */
+.rollout{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:11px;margin-bottom:13px;}
+.ro{border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:13px 15px;
+  text-align:left;display:flex;flex-direction:column;gap:5px;
+  transition:border-color .18s var(--ease), background .18s var(--ease);}
+.ro:hover{border-color:var(--accent);}
+.ro.on{border-color:var(--accent);background:var(--accent-wash);box-shadow:0 0 0 1px var(--accent);}
+.ro-t{font-size:12.5px;font-weight:700;}
+.ro.on .ro-t{color:var(--accent-deep);}
+.ro-t::before{content:"\25CB  ";color:var(--ink-faint);}
+.ro.on .ro-t::before{content:"\25CF  ";color:var(--accent);}
+.ro-d{font-family:var(--serif);font-size:13.5px;line-height:1.4;color:var(--ink-mid);}
+.target{border-left:3px solid var(--good);background:var(--good-wash);border-radius:0 7px 7px 0;
+  padding:12px 15px;font-family:var(--serif);font-size:14px;line-height:1.45;color:var(--ink-mid);}
+.tg-h{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--good);font-weight:700;margin-bottom:5px;}
+.target code{background:var(--surface);border-color:var(--line);}
+.wc-br{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:0 14px 9px;font-size:10px;}
+.wc-br code{font-family:var(--mono);font-size:10.5px;background:var(--surface-2);
+  border:1px solid var(--line);padding:2px 7px;border-radius:4px;color:var(--accent-deep);}
+.brk{color:var(--ink-faint);letter-spacing:.06em;}
+.ckpt{display:flex;align-items:center;gap:9px;margin:0 0 11px;padding:9px 14px;
+  border:1px dashed var(--line);border-radius:7px;background:var(--surface-2);
+  font-family:var(--serif);font-size:13.5px;color:var(--ink-mid);}
+.ckpt .ck-d{color:var(--accent);font-size:9px;}
+.ckpt code{font-size:11px;}
+
+/* ---------- PER-PR CONTRIBUTION LIST ---------- */
+.contrib{border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--surface);}
+.crow{display:grid;grid-template-columns:52px 74px minmax(0,1fr);gap:12px;align-items:baseline;
+  width:100%;text-align:left;padding:10px 14px;border-bottom:1px solid var(--line-soft);
+  transition:background .16s var(--ease);}
+.crow:last-child{border-bottom:0;}
+.crow:hover{background:var(--surface-2);}
+.crow .cn{font-size:11.5px;font-weight:700;color:var(--accent-deep);font-variant-numeric:tabular-nums;}
+.crow .cw{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);}
+.crow .cc{font-family:var(--serif);font-size:14.5px;line-height:1.4;color:var(--ink-mid);}
+.crow.dead .cn{color:var(--danger);text-decoration:line-through;}
+.crow.dead .cc{color:var(--danger);}
+@media (max-width:620px){.crow{grid-template-columns:48px 1fr;}.crow .cw{display:none;}}
+
+/* ---------- MERGE CHAIN ---------- */
+.panel.chain{background:var(--surface);border-color:var(--line);}
+.chainlist{list-style:none;margin:0;padding:0 14px 13px;counter-reset:ch;}
+.chainlist li{position:relative;padding:0 0 13px 20px;border-left:2px solid var(--line);
+  margin-left:5px;}
+.chainlist li:last-child{padding-bottom:0;border-left-color:transparent;}
+.chainlist li::before{content:"";position:absolute;left:-6px;top:4px;width:9px;height:9px;
+  border-radius:50%;background:var(--accent);border:2px solid var(--surface);}
+.cc-c{display:inline-block;font-size:10px;font-weight:700;color:var(--accent-deep);
+  background:var(--accent-wash);padding:1px 7px;border-radius:4px;}
+.cc-d{display:block;font-size:11px;color:var(--ink);margin-top:4px;word-break:break-word;}
+.cc-n{display:block;font-family:var(--serif);font-size:13px;color:var(--ink-dim);
+  margin-top:3px;line-height:1.38;}
+
+/* ---------- PLAN ---------- */
+.plan-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,320px);gap:22px;}
+@media (max-width:920px){.plan-grid{grid-template-columns:1fr;}}
+.narr{font-family:var(--serif);font-size:17px;line-height:1.55;color:var(--ink);
+  border-left:3px solid var(--accent);padding-left:16px;margin:0 0 20px;max-width:62ch;}
+.narr b{color:var(--accent-deep);font-weight:600;}
+.narr .plus{display:block;margin-top:10px;font-size:15px;color:var(--ink-mid);}
+
+.sechead{display:flex;align-items:baseline;gap:12px;margin:0 0 12px;flex-wrap:wrap;}
+.sechead h2{font-size:14px;font-weight:700;margin:0;}
+.sechead .sub{font-family:var(--serif);font-size:14px;color:var(--ink-dim);}
+
+.wavecard{border:1px solid var(--line);border-radius:9px;background:var(--surface);margin-bottom:11px;
+  overflow:hidden;transition:border-color .22s var(--ease), background .22s var(--ease);}
+.wavecard.done{border-color:var(--good);background:var(--good-wash);}
+.wc-h{display:flex;align-items:center;gap:11px;padding:12px 14px;flex-wrap:wrap;}
+.wc-n{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);flex:0 0 auto;
+  display:grid;place-items:center;font-size:10.5px;font-weight:700;color:var(--ink-dim);transition:all .25s var(--ease);}
+.wavecard.done .wc-n{background:var(--good);border-color:var(--good);color:#fff;}
+.wc-t{flex:1;min-width:200px;}
+.wc-t .h{font-size:12.5px;font-weight:700;}
+.wc-t .d{font-family:var(--serif);font-size:14px;color:var(--ink-mid);margin-top:3px;line-height:1.42;}
+.wc-prs{display:flex;gap:5px;flex-wrap:wrap;padding:0 14px 10px;}
+.wc-acts{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 12px;}
+.wavecard.done .wc-acts{display:none;}
+.act{font-size:10.5px;padding:6px 12px;border-radius:5px;border:1px solid var(--line);
+  background:var(--surface);white-space:nowrap;
+  transition:transform .16s var(--ease), border-color .16s var(--ease), background .16s var(--ease);}
+.act:hover{transform:translateY(-1px);border-color:var(--accent);background:var(--accent-wash);}
+.act.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700;}
+.act.primary:hover{filter:brightness(1.08);background:var(--accent);}
+.act.flash{animation:flash .5s var(--ease);}
+@keyframes flash{0%{box-shadow:0 0 0 0 var(--accent);}60%{box-shadow:0 0 0 7px transparent;}100%{box-shadow:0 0 0 0 transparent;}}
+.wc-note{display:none;font-size:10.5px;color:var(--good);padding:0 14px 12px;}
+.wavecard.done .wc-note{display:block;}
+
+.panel{border:1px solid var(--line);border-radius:8px;background:var(--surface-2);overflow:hidden;margin-bottom:14px;}
+.panel h4{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);
+  margin:0;padding:11px 14px 7px;font-weight:500;}
+.panel ul{margin:0;padding:0 14px 12px 29px;}
+.panel li{font-family:var(--serif);font-size:13.5px;line-height:1.42;color:var(--ink-mid);margin-bottom:6px;}
+.panel li:last-child{margin-bottom:0;}
+.panel li b{color:var(--ink);font-weight:600;}
+.panel.gap{background:var(--warn-wash);border-color:var(--warn);}
+.panel.gap h4,.panel.gap li{color:var(--warn);}
+.panel.git{background:var(--good-wash);border-color:var(--good);}
+.panel.git h4,.panel.git li{color:var(--good);}
+
+/* alternates, unlocked one level down */
+.alts{margin-top:26px;padding-top:20px;border-top:1px solid var(--line);}
+.altrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:13px;}
+.alt{border:1px solid var(--line);border-radius:9px;background:var(--surface);padding:14px 16px;
+  text-align:left;display:flex;flex-direction:column;gap:8px;
+  transition:transform .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease);}
+.alt:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:var(--shadow-2);}
+.alt .id{font-size:9.5px;letter-spacing:.13em;color:var(--ink-dim);}
+.alt .nm{font-size:13px;font-weight:700;}
+.alt .st{font-family:var(--serif);font-size:14px;line-height:1.45;color:var(--ink-mid);}
+.alt .lost{font-family:var(--serif);font-size:13px;line-height:1.4;color:var(--danger);
+  border-top:1px solid var(--line-soft);padding-top:8px;margin-top:auto;}
+.alt .lost b{color:var(--danger);font-weight:600;}
+
+/* ---------- PR VIEW ---------- */
+.prview{display:grid;grid-template-columns:150px minmax(0,1fr);border:1px solid var(--line);
+  border-radius:9px;overflow:hidden;background:var(--surface);min-height:420px;}
+@media (max-width:700px){.prview{grid-template-columns:1fr;}}
+.rail{border-right:1px solid var(--line-soft);background:var(--surface-2);padding:12px 0;}
+.rail-h{font-size:8.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-dim);padding:0 13px 8px;}
+.rail-i{display:block;width:100%;text-align:left;padding:9px 13px;border-left:2px solid transparent;
+  color:var(--ink-dim);font-size:11px;transition:all .2s var(--ease);}
+.rail-i:hover{background:var(--surface-3);color:var(--ink);}
+.rail-i.on{border-left-color:var(--accent);background:var(--accent-wash);color:var(--accent-deep);font-weight:700;}
+.rail-i small{display:block;font-size:8.5px;color:var(--ink-dim);font-weight:400;margin-top:2px;}
+.prmain{padding:16px 18px;}
+.prcap{border-bottom:1px solid var(--line-soft);padding-bottom:12px;margin-bottom:14px;}
+.prcap .t{font-size:14px;font-weight:700;}
+.prcap .m{font-size:10px;color:var(--ink-dim);margin-top:4px;}
+.lvl{font-family:var(--serif);font-size:15px;line-height:1.55;color:var(--ink-mid);}
+.lvl p{margin:0 0 .8em;} .lvl p:last-child{margin-bottom:0;}
+.lvl b{color:var(--ink);font-weight:600;}
+.lvl .src{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--ink-dim);margin-top:12px;}
+.gen{border:1px solid var(--accent);background:var(--accent-wash);color:var(--accent-deep);
+  border-radius:6px;padding:9px 12px;font-size:11px;font-family:var(--mono);margin-bottom:14px;}
+.bars{display:flex;flex-direction:column;gap:6px;margin-top:6px;}
+.bar{display:grid;grid-template-columns:140px 1fr 44px;gap:10px;align-items:center;font-size:10.5px;}
+.bar .p{color:var(--ink-mid);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.bar .t{height:8px;border-radius:4px;background:var(--surface-3);overflow:hidden;}
+.bar .f{height:100%;border-radius:4px;background:var(--accent);transform-origin:left;animation:grow .5s var(--ease) both;}
+@keyframes grow{from{transform:scaleX(0);}to{transform:scaleX(1);}}
+.bar .c{text-align:right;color:var(--ink-dim);font-variant-numeric:tabular-nums;}
+
+/* DOCK */
+.dock{display:flex;align-items:center;gap:9px;padding:11px 15px;border-top:1px solid var(--line);
+  background:var(--surface-2);flex-wrap:wrap;}
+.pill{font-size:10px;padding:4px 10px;border-radius:20px;background:var(--surface);
+  border:1px solid var(--line);color:var(--ink-dim);}
+.pill.ok{background:var(--good-wash);border-color:transparent;color:var(--good);}
+.dock .sp{flex:1;}
+
+/* LEDGER */
+.ledger{position:fixed;top:0;right:0;bottom:0;width:min(400px,92vw);background:var(--surface);
+  border-left:1px solid var(--line);box-shadow:var(--shadow-3);z-index:30;display:flex;
+  flex-direction:column;transform:translateX(100%);transition:transform .34s var(--ease);}
+.ledger.open{transform:none;}
+.ledger-h{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);}
+.ledger-h h3{font-size:12px;font-weight:700;margin:0;}
+.ledger-h .x{margin-left:auto;font-size:16px;color:var(--ink-dim);line-height:1;}
+.ledger-b{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:9px;}
+.lline{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;
+  padding:9px 11px;background:var(--surface-2);font-size:10.5px;line-height:1.6;color:var(--ink-mid);
+  white-space:pre-wrap;word-break:break-word;animation:slidein .3s var(--ease) both;}
+@keyframes slidein{from{opacity:0;transform:translateY(-7px);}to{opacity:1;transform:none;}}
+.lline .k{color:var(--accent-deep);} .lline .s{color:var(--good);}
+.ledger-empty{font-family:var(--serif);font-size:14px;color:var(--ink-dim);}
+.scrim{position:fixed;inset:0;background:rgba(10,20,19,.36);z-index:29;opacity:0;visibility:hidden;
+  transition:opacity .3s var(--ease), visibility .3s;}
+.scrim.on{opacity:1;visibility:visible;}
+
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,18px);z-index:40;
+  background:var(--ink);color:var(--ground);border-radius:7px;padding:10px 16px;font-size:11.5px;
+  box-shadow:var(--shadow-3);opacity:0;visibility:hidden;max-width:88vw;
+  transition:opacity .26s var(--ease), transform .26s var(--ease), visibility .26s;}
+.toast.on{opacity:1;visibility:visible;transform:translate(-50%,0);}
+.tour{position:fixed;left:50%;bottom:26px;transform:translate(-50%,18px);z-index:41;
+  background:var(--accent-deep);color:#fff;border-radius:8px;padding:12px 18px;font-size:12px;
+  box-shadow:var(--shadow-3);opacity:0;visibility:hidden;display:flex;align-items:center;gap:14px;max-width:92vw;
+  transition:opacity .26s var(--ease), transform .26s var(--ease), visibility .26s;}
+.tour.on{opacity:1;visibility:visible;transform:translate(-50%,0);}
+.tour .step-of{font-size:9.5px;opacity:.75;letter-spacing:.1em;white-space:nowrap;}
+.tour .stop{border:1px solid rgba(255,255,255,.4);border-radius:5px;padding:5px 11px;font-size:10.5px;}
+@media (prefers-reduced-motion: reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important;}}
+.foot{margin-top:16px;font-family:var(--serif);font-size:13.5px;color:var(--ink-dim);max-width:80ch;}
+.foot code{font-family:var(--mono);font-size:11.5px;}
+.foot b{color:var(--ink-mid);}
+</style>
+
+<div class="wrap">
+  <div class="intro">
+    <div>
+      <h1>Flightdeck prototype</h1>
+      <p>
+        Seventeen pull requests open at once. One recommendation on the front page.
+        Press <b>Play the tour</b>, or click anything.
+      </p>
+    </div>
+    <span class="spacer"></span>
+    <button class="btn-tour" id="tourBtn">Play the tour</button>
+  </div>
+
+  <div class="app">
+    <div class="topbar">
+      <span class="brand">cobuilder-plugin</span>
+      <div class="modes" role="tablist" aria-label="View mode">
+        <button class="mode" role="tab">Designs</button>
+        <button class="mode" role="tab" id="modePrs">Pull requests</button>
+        <button class="mode on" role="tab" id="modeDeck" aria-selected="true">Flightdeck</button>
+        <button class="mode" role="tab">Decisions</button>
+        <button class="mode" role="tab">Builds</button>
+      </div>
+      <div class="tb-right">
+        <span class="evt"><span class="dot"></span>ran 6 min ago &middot; PR #18 opened</span>
+        <button class="btn-ledger" id="ledgerBtn">Ledger <b id="ledgerN">0</b></button>
+      </div>
+    </div>
+
+    <div class="crumb" id="crumb"></div>
+
+    <div class="stage">
+      <section class="view on" id="v-deck" aria-label="Flightdeck"></section>
+      <section class="view" id="v-plan" aria-label="Route"></section>
+      <section class="view" id="v-pr" aria-label="Pull request"></section>
+    </div>
+
+    <div class="dock" id="dock"></div>
+  </div>
+
+  <p class="foot">
+    <b>What is real.</b> All seventeen pull requests, their titles, head branches, file
+    counts and touched paths come from this repository. Pull requests 17 and 18 really do
+    share one head branch. Pull request 1 is the initial import, so it is not a review
+    candidate. The four renames in the merge chain are verified against this repository's history. <b>Pull request 6 is a worked example.</b> Its conflict with 9 is invented, to show how a branch that cannot merge is presented. Pull request 17 really is superseded by 18. <b>What is illustrative.</b> The three paths, the auto-merge split, and the
+    git replay counts are written by hand to show the shape. Epic F2 generates them, and
+    it is not built.
+  </p>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="ledger" id="ledger" aria-label="Recorded actions">
+  <div class="ledger-h"><h3>feedback-ledger.jsonl</h3>
+    <button class="x" id="ledgerX" aria-label="Close ledger">&times;</button></div>
+  <div class="ledger-b" id="ledgerB">
+    <p class="ledger-empty">Nothing recorded yet. Every action appends one line here, and
+      nothing is ever rewritten.</p>
+  </div>
+</aside>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="tour" id="tour">
+  <span class="step-of" id="tourN"></span><span id="tourTxt"></span>
+  <button class="stop" id="tourStop">Stop</button>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============ REAL DATA ============ */
+  var PR = {
+    2:{t:"docs: add CLAUDE.md with codebase orientation and artifact feasibility findings",b:"docs/claude-md",f:31,auto:false},
+    3:{t:"Unify bundle storage under .prodyssey/, self-analysis into .prodyssey/self/",b:"feat/unify-bundle-storage",f:51,auto:false},
+    4:{t:"Mermaid diagrams for levels 1 to 3, and self-upgrading bundles",b:"feat/mermaid-diagrams",f:71,auto:false},
+    5:{t:"Close the API-key trust boundary, and fix three correctness bugs",b:"fix/api-key-boundary",f:15,auto:false},
+    6:{t:"Odyssey improvements: submit mode, schema 1.2, assessment sheet",b:"claude/pr-odyssey-improvements",f:36,auto:false},
+    7:{t:"Odyssey follow-up fixes",b:"claude/pr-odyssey-followup",f:8,auto:true,why:"8 files, one district, no shared path with anything open"},
+    8:{t:"STE writing style pass",b:"claude/ste-writing-style",f:1,auto:true,why:"1 file, prose only"},
+    9:{t:"Deduplicate rewrite_manifest(); add interview self-consistency check",b:"claude/dedup-rewrite-manifest",f:45,auto:false},
+    10:{t:"Add Swift, SwiftUI, and Vapor stack cards",b:"claude/swift-best-practices",f:7,auto:true,why:"7 new files, additive, touches nothing else open"},
+    11:{t:"Design cobuilder-architect and cobuilder-implement, split repo into five plugins",b:"design/design-mode",f:558,auto:false},
+    12:{t:"Retire adr-draft, close Gate 4b retrospectively, record two ADR maintenance rules",b:"docs/post-pr11-cleanup",f:46,auto:false},
+    13:{t:"Fix the feedback ledger, declare the artifact dependency, fence a generated page",b:"docs/artifact-dependency-cleanup",f:31,auto:false},
+    14:{t:"Worktree webp scene art",b:"worktree-webp-scene-art",f:30,auto:true,why:"30 files, almost all regenerated binary assets"},
+    15:{t:"Move the stray architecture reviews into docs/architecture/review",b:"feature/design-the-architecture",f:2,auto:true,why:"2 files moved, no content change"},
+    16:{t:"book-index.md gains a nano tier, and the security corpus stops reading in full",b:"design/book-index-tiering",f:49,auto:false},
+    17:{t:"Rename plugins to drop the cobuilder- prefix; fix Mermaid click and copy-paste",b:"rename-plugins-drop-cobuilder-prefix",f:345,auto:false},
+    18:{t:"Correcting name conflicts between plugin and skill names",b:"rename-plugins-drop-cobuilder-prefix",f:38,auto:false}
+  };
+  var DETAIL = {
+    11:{problem:"Five stages of one lifecycle shipped as one plugin, so a user installing the design stage also installed the artifact publisher, the builder, and everything else.",
+        approach:"Split the repository into five sibling plugins under plugins/, and vendor the code every plugin needs into a marketplace-root shared/ directory, symlinked into each.",
+        finding:"558 files across 14 districts. This is the widest change in the set, and every later pull request that names a plugins/ path depends on where it lands.",
+        touched:{"plugins":298,".cobuilder-architect":91,"docs":64,"shared":49,"tests":12},
+        gen:false},
+    17:{problem:"The plugin family's slash commands repeated the repository's own cobuilder- prefix on every plugin name, which made them harder to remember and type.",
+        approach:"Rename the four non-umbrella plugins to drop the prefix in plugin.json and in the plugins/ directory. cobuilder-full-lifecycle keeps its name.",
+        finding:"This pull request amends ADR-0016's chosen plugin names with no new ADR recording the rename, unlike how consistently this repository documents naming decisions.",
+        touched:{"plugins":324,"tests":11,"(root)":2,".claude":2,"shared":2},
+        gen:false},
+    18:{problem:"Plugin names and skill names collided after the rename, so a command could resolve to the wrong owner.",
+        approach:"Correct the conflicting names, and follow the rename through the tests and the manifests.",
+        finding:"Shares one head branch with pull request 17, so it carries the same commits plus two more. No pull request list shows this.",
+        touched:{"plugins":24,"tests":6,"docs":4,"shared":3,"(root)":1},
+        gen:true},
+    16:{problem:"book-index.md's Tier 2 escalation jumps from a cheap heuristic straight to one full vendored book of 300 to 1000 lines, skipping the nano and mini tiers upstream publishes.",
+        approach:"Vendor nano.md and mini.md beside each book's full.md. Load three nano excerpts first, and escalate one book only when it is judged to matter.",
+        finding:"Both new escalation rules are enforced by prose alone, with no mechanical consumer. This repository's own Gate 4b history shows an unenforced step erodes.",
+        touched:{"plugins":31,"docs":9,".cobuilder-architect":5,".cobuilder":3,"(root)":1},
+        gen:false},
+    12:{problem:"The adr-draft state had no consumer, and Gate 4b had never run for five multi-slice epics.",
+        approach:"Retire adr-draft, close Gate 4b retrospectively, and record two ADR maintenance rules that a script can check.",
+        finding:"Names docs/architecture/ paths that pull request 11 moves, so it must land after the split.",
+        touched:{"docs":18,"plugins":11,".cobuilder-architect":7,"tests":3,"scripts":1},
+        gen:true},
+    13:{problem:"The comment feature never worked. The viewer reported a saved-locally message while the server answered with a 500.",
+        approach:"Fix the ULID factory so a wrong-shaped import degrades like a failed one, declare the artifact dependency, and fence the generated region of a page.",
+        finding:"ulid-py was absent from the test environment, so nine tests passed green against an endpoint returning 500.",
+        touched:{"plugins":14,"shared":6,"docs":5,"tests":4,"(root)":2},
+        gen:true}
+  };
+  var AUTO = [7,8,10,14,15];
+  var HUMAN = [2,3,4,5,6,9,11,12,13,16,17,18];
+
+  var CONTRIB = {
+    2:"a written orientation for the repository, and proof a bundle can publish as one shareable page",
+    3:"one bundle root, and the plugin able to analyse its own repository",
+    4:"Mermaid diagrams at three levels, and bundles that upgrade themselves",
+    5:"an API key that never leaves its boundary, and three correctness bugs gone",
+    6:"a submit mode that interviews the author before the pull request opens",
+    9:"a self-consistency check that catches an author whose story does not match their diff",
+    11:"five plugins, each installable on its own",
+    12:"decision records with no dead states, and a build gate that actually runs",
+    13:"a feedback ledger that works, and a dependency the installer honours",
+    16:"a corpus that reads a cheap tier before an expensive one",
+    17:"nothing. 18 carries every commit it has",
+    18:"commands short enough to type from memory"
+  };
+
+  var OUTCOME = [
+    "Five plugins, each installing on its own, with commands short enough to type from memory.",
+    "A bundle that upgrades itself, draws diagrams at three levels, and keeps a working feedback ledger.",
+    "A review corpus that reads a cheap tier before an expensive one.",
+    "An API key that never leaves its boundary."
+  ];
+  var NOT_INCLUDED = [
+    "The submit-mode interview from pull request 6. That branch cannot merge into this path."
+  ];
+
+  var BLOCKED = {
+    17:{kind:"superseded", head:"Superseded by 18",
+        one:"Pull request 18 carries every commit 17 has, on the same head branch.",
+        detail:[
+          {k:"Head branch", v:"rename-plugins-drop-cobuilder-prefix"},
+          {k:"Also the head of", v:"pull request 18"},
+          {k:"Commits unique to 17", v:"none"}
+        ],
+        why:"Reviewing both spends the same attention twice, and risks two verdicts on one change.",
+        opts:[{l:"Close 17, keep 18",r:"18 is the later of the two and carries everything",best:true},
+              {l:"Close 18, keep 17",r:"loses the two later commits"},
+              {l:"Keep both open",r:"the path still works, and one review is wasted"}]},
+    6:{kind:"conflict", head:"Cannot merge",
+       one:"6 and 9 rewrite the same function in opposite directions. Neither side is a superset of the other.",
+       detail:[
+         {k:"File", v:"scripts/extract_story.py"},
+         {k:"Lines", v:"412-468, one hunk"},
+         {k:"PR 6 does", v:"edits rewrite_manifest() in place to add the schema 1.2 fields"},
+         {k:"PR 9 does", v:"deletes that copy and points every caller at one shared function"},
+         {k:"git merge-tree", v:"conflict, both sides modified"}
+       ],
+       why:"A merge cannot pick a side here. Somebody has to decide which shape the function keeps, and then rewrite the other change onto it.",
+       opts:[{l:"Ask 6 to rebase onto 9",r:"the smaller of the two rewrites, and it keeps both changes",best:true},
+             {l:"Take 9, re-apply 6's fields",r:"one person does the work, and 6's author does not see it"},
+             {l:"Hold 6 out of this path",r:"the path ships without the submit-mode interview"}]}
+  };
+
+  var CHAIN = [
+    {c:"0c099be", w:"base", d:"commands/ &middot; scripts/ &middot; skills/ &middot; viewer/", note:"The common ancestor of all seventeen open branches."},
+    {c:"PR 3", w:"rename", d:".odyssey/ &rarr; .prodyssey/", note:"The bundle root moves once."},
+    {c:"PR 11", w:"restructure", d:"commands/ scripts/ skills/ &rarr; plugins/cobuilder-*/", note:"The three root directories stop existing."},
+    {c:"PR 18", w:"rename", d:"plugins/cobuilder-architect/ &rarr; plugins/architect/", note:"The plugin names lose the prefix."}
+  ];
+
+  var ROUTES = {
+    A:{id:"A",name:"Follow the structure, oldest layout first",
+       conf:"validated", confTxt:"Replayed from the common ancestor &middot; 0 conflicts",
+       waves:[
+         {n:"Bundle 1", nm:"Finish the single plugin", prs:[2,3,4,5,9],
+          br:"flightdeck/path-a/1-single-plugin", from:"0c099be",
+          d:"Every one of these writes into commands/, scripts/, skills/, or the bundle root. Pull request 11 deletes all four. Land these while the directories they name still exist.",
+          acts:[{k:"release",l:"Merge bundle 1",c:"primary"},{k:"open4",l:"Open PR 4",c:""}]},
+         {n:"Bundle 2", nm:"Move it into five plugins", prs:[11],
+          br:"flightdeck/path-a/2-five-plugins", from:"bundle 1",
+          d:"One pull request, 558 files, and the only one that changes the shape of the repository. It goes alone, so the checkpoint after it is a tree anybody can check out and read.",
+          acts:[{k:"order",l:"Merge bundle 2",c:"primary"},{k:"open11",l:"Open PR 11",c:""}]},
+         {n:"Bundle 3", nm:"Name and fix the new structure", prs:[12,13,16,18],
+          br:"flightdeck/path-a/3-named", from:"bundle 2",
+          d:"Every one writes under plugins/, which only exists after bundle 2. Pull request 17 is not here, because 18 already carries it.",
+          acts:[{k:"close17",l:"Merge bundle 3",c:"primary"},{k:"open18",l:"Open PR 18",c:""}]}
+       ],
+       ev:["Base <b>0c099be</b> carries commands/, scripts/, skills/ and viewer/. Pull request 11 removes the first three.",
+           "Five pull requests write into those three directories. All five predate the split.",
+           "Four write under plugins/, which no commit before 11 contains.",
+           "17 and 18 resolve to <b>one head branch</b>. GitHub's list does not show this."],
+       git:["Replayed bundle 1, then 11, then bundle 3, from <b>0c099be</b>. <b>No conflict.</b>",
+            "Replayed 11 first, then the five earlier pull requests. <b>Every one of the five conflicts</b>, because each writes a path 11 deleted.",
+            "Pull request 6 conflicts with 9 in every order tried. It is held out, not ordered."],
+       gaps:["The replay used the recorded head of each branch. A push after the run invalidates it, and the run does not watch for one."]},
+    B:{id:"B",name:"Restructure first",
+       story:"Take the big split first, because it is the one everybody is waiting on, then bring the rest in behind it.",
+       lost:"This is the order I proposed before checking the base, and the replay kills it. Merging 11 first <b>deletes commands/, scripts/ and skills/</b>, and five open pull requests write into exactly those directories. Every one of the five then conflicts."},
+    C:{id:"C",name:"Rebase everything onto the split",
+       story:"Merge the split, then move the five earlier branches onto the new structure so nothing is left behind.",
+       lost:"It rewrites <b>five other people's branches</b>, and each one moves paths that no longer exist. That converts zero conflicts into five manual resolutions, and none of the five authors asked for it."}
+  };
+
+  var LEVELS=[{n:"Overview",t:"State, branch, size"},{n:"Problem &amp; Solution",t:"Why it exists"},
+              {n:"Architecture",t:"How it fits"},{n:"File Changes",t:"What changed"}];
+
+  var S={view:"deck",route:null,pr:null,blk:null,level:0,adopted:null,done:{},ledger:[],tour:false,unlocked:false,rollout:"step"};
+  var $=function(i){return document.getElementById(i);};
+  var stage={deck:$("v-deck"),plan:$("v-plan"),pr:$("v-pr")};
+  function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");}
+
+  /* ============ LEDGER ============ */
+  function record(o,note){
+    S.ledger.push(o);
+    var b=$("ledgerB");
+    if(S.ledger.length===1)b.innerHTML="";
+    var d=document.createElement("div");d.className="lline";
+    var parts=[];for(var k in o){var v=o[k];
+      parts.push('<span class="k">"'+k+'"</span>: <span class="s">'+(typeof v==="string"?'"'+esc(v)+'"':JSON.stringify(v))+'</span>');}
+    d.innerHTML="{"+parts.join(",\n ")+"}";
+    b.appendChild(d);b.scrollTop=b.scrollHeight;
+    $("ledgerN").textContent=S.ledger.length;
+    if(note)toast(note);
+  }
+  var tT=null;
+  function toast(m){var t=$("toast");t.textContent=m;t.classList.add("on");
+    clearTimeout(tT);tT=setTimeout(function(){t.classList.remove("on");},2400);}
+
+  /* ============ NAV ============ */
+  function go(v,back){
+    S.view=v;
+    ["deck","plan","pr"].forEach(function(k){
+      stage[k].classList.toggle("on",k===v);
+      stage[k].classList.toggle("back",k!==v&&back);
+    });
+    stage[v].scrollTop=0;crumb();dock();
+  }
+  function crumb(){
+    var c=$("crumb"),h="";
+    if(S.view==="deck"){
+      h='<span class="now">Flightdeck</span><span class="sep">&middot;</span>'+
+        '<span style="color:var(--ink-dim)">17 open &middot; 1 recommendation</span>';
+    }else if(S.view==="plan"){
+      if(!S.route){
+        c.innerHTML='<button data-go="deck">Flightdeck</button><span class="sep">/</span>'+
+          '<span class="now">PR #'+S.blk+' &middot; held out of the path</span>';
+        return;
+      }
+      h='<button data-go="deck">Flightdeck</button><span class="sep">/</span>'+
+        '<span class="now">Path '+S.route+' &middot; '+ROUTES[S.route].name+'</span>'+
+        (S.unlocked?'<span class="sep">&middot;</span><span style="color:var(--ink-dim)">2 alternative paths unlocked</span>':'');
+    }else{
+      h='<button data-go="deck">Flightdeck</button><span class="sep">/</span>'+
+        (S.route?'<button data-go="plan">Path '+S.route+'</button><span class="sep">/</span>':"")+
+        '<span class="now">PR #'+S.pr+'</span>';
+    }
+    c.innerHTML=h;
+  }
+
+  /* ============ DECK ============ */
+  function chips(list,dead){
+    return list.map(function(n){
+      var big=PR[n].f>200, d=dead&&dead.indexOf(n)>-1;
+      return '<button class="chip'+(big?" big":"")+(d?" dead":"")+'" data-pr="'+n+'" title="'+esc(PR[n].t)+'">#'+n+
+        (d?" &times;":"")+'</button>';
+    }).join("");
+  }
+  function renderDeck(){
+    var r=ROUTES.A;
+    var pathHtml=r.waves.map(function(w,i){
+      return (i?'<span class="warrow">&rsaquo;</span>':"")+
+        '<div class="wv"><div class="wh">'+w.n+'</div><div class="wn">'+w.nm+'</div>'+
+        '<div class="chips">'+chips(w.prs)+'</div></div>';
+    }).join("");
+
+    var blockedHtml=Object.keys(BLOCKED).map(function(n){
+      var x=BLOCKED[n];
+      return '<button class="blk '+x.kind+'" data-blk="'+n+'">'+
+        '<span class="blk-n">#'+n+'</span>'+
+        '<span class="blk-b"><span class="blk-h">'+x.head+'</span>'+
+        '<span class="blk-o">'+x.one+'</span></span>'+
+        '<span class="blk-go">Decide &rsaquo;</span></button>';
+    }).join("");
+
+    stage.deck.innerHTML =
+      '<div class="intake">'+
+        '<div class="ib"><span class="k">Open</span><span class="v">17</span>'+
+          '<span class="n">Every branch in flight at once.</span></div>'+
+        '<div class="ib auto"><span class="k">Merged automatically</span><span class="v">5</span>'+
+          '<span class="n">Small, single purpose. Your rules, not ours.</span></div>'+
+        '<div class="ib you"><span class="k">In this path</span><span class="v">10</span>'+
+          '<span class="n">Ordered into three bundles.</span></div>'+
+        '<div class="ib stop"><span class="k">Cannot go in</span><span class="v">2</span>'+
+          '<span class="n">One superseded, one that will not merge.</span></div>'+
+      '</div>'+
+
+      '<button class="rec" id="recCard">'+
+        '<div class="rec-top"><span class="rec-eyebrow">IF YOU ACCEPT, YOU GET</span>'+
+          '<span class="conf">&#10003; '+r.confTxt+'</span></div>'+
+        '<div class="rec-body">'+
+          '<ul class="outcome">'+OUTCOME.map(function(o){return '<li>'+o+'</li>';}).join("")+'</ul>'+
+          '<ul class="outcome no">'+NOT_INCLUDED.map(function(o){return '<li>'+o+'</li>';}).join("")+'</ul>'+
+        '</div>'+
+        '<div class="pathband"><span class="pb-h">The path &middot; ten pull requests, three bundles</span>'+
+          '<div class="waves">'+pathHtml+'</div></div>'+
+        '<div class="rec-foot"><span>Simulated from <b>0c099be</b>, the common ancestor of all seventeen branches</span>'+
+          '<span class="go">See what each one adds &rsaquo;</span></div>'+
+      '</button>'+
+
+      '<div class="blocked"><div class="blocked-h">Two cannot go in this path</div>'+blockedHtml+'</div>'+
+
+      '<div class="fallback"><span class="lk">&#9679;&#9675;&#9675;</span>'+
+        '<span class="tx">Two other paths were simulated and set aside. Open this one to see them, '+
+        'and the reason each lost.</span>'+
+        '<span class="gh"><span class="ghost">Path B</span><span class="ghost">Path C</span></span></div>'+
+
+      '<div class="auto-band" id="autoBand">'+
+        '<button class="ab-h" id="autoH"><span class="t">5 merged automatically</span>'+
+          '<span class="d">Nothing here needed a person.</span>'+
+          '<span class="cv" id="autoCv">show &rsaquo;</span></button>'+
+        '<div class="ab-b">'+AUTO.map(function(n){
+            return '<button class="chip" data-pr="'+n+'" title="'+esc(PR[n].why)+'">#'+n+' &middot; '+PR[n].f+' files</button>';
+          }).join("")+'</div>'+
+      '</div>';
+
+    $("recCard").addEventListener("click",function(){openRoute("A");});
+    $("autoH").addEventListener("click",function(){
+      var b=$("autoBand");b.classList.toggle("open");
+      $("autoCv").innerHTML=b.classList.contains("open")?"hide &rsaquo;":"show &rsaquo;";
+    });
+    stage.deck.querySelectorAll("[data-blk]").forEach(function(el){
+      el.addEventListener("click",function(e){e.stopPropagation();openBlocked(Number(el.getAttribute("data-blk")));});
+    });
+    bindPrChips(stage.deck);
+  }
+
+  /* ---- blocked pull request detail ---- */
+  function openBlocked(n){
+    S.blk=n;S.pr=null;
+    var x=BLOCKED[n],p=PR[n];
+    stage.plan.innerHTML=
+      '<div class="sechead"><h2>PR #'+n+' &middot; '+x.head+'</h2>'+
+      '<span class="sub">'+p.b+' &middot; '+p.f+' files</span></div>'+
+      '<div class="blkbox '+x.kind+'"><p class="blk-lead">'+x.one+'</p>'+
+        '<div class="blk-tbl">'+x.detail.map(function(d){
+          return '<div class="bt-r"><span class="bt-k">'+d.k+'</span><span class="bt-v">'+d.v+'</span></div>';
+        }).join("")+'</div>'+
+        '<p class="blk-why">'+x.why+'</p></div>'+
+      '<div class="sechead" style="margin-top:22px;"><h2>What you can do</h2>'+
+      '<span class="sub">A merge cannot decide this. A person has to.</span></div>'+
+      '<div class="opts">'+x.opts.map(function(o,i){
+        return '<button class="opt'+(o.best?" best":"")+'" data-blkopt="'+i+'">'+
+          (o.best?'<span class="ob">recommended</span>':'')+
+          '<span class="ol">'+o.l+'</span><span class="or">'+o.r+'</span></button>';
+      }).join("")+'</div>';
+    stage.plan.querySelectorAll("[data-blkopt]").forEach(function(el){
+      el.addEventListener("click",function(){
+        var o=x.opts[Number(el.getAttribute("data-blkopt"))];
+        record({type:"blocked_decision",pr:n,kind:x.kind,choice:o.l,path:"A",by:"human"},
+               "Recorded. The runner will "+o.l.toLowerCase()+".");
+      });
+    });
+    S.route=null;go("plan");
+  }
+
+  function bindPrChips(root){
+    root.querySelectorAll("[data-pr]").forEach(function(b){
+      b.addEventListener("click",function(e){e.stopPropagation();openPr(Number(b.getAttribute("data-pr")));});
+    });
+  }
+
+  /* ============ ROUTE ============ */
+  function openRoute(id){
+    S.route=id;
+    var r=ROUTES[id];
+    if(id==="A"&&!S.unlocked){S.unlocked=true;}
+
+    var waves=r.waves?r.waves.map(function(w,i){
+      var key=id+":"+i;
+      return '<div class="wavecard'+(S.done[key]?" done":"")+'" data-key="'+key+'">'+
+        '<div class="wc-h"><span class="wc-n">'+(S.done[key]?"&#10003;":(i+1))+'</span>'+
+        '<span class="wc-t"><span class="h">'+w.nm+'</span><span class="d">'+w.d+'</span></span></div>'+
+        '<div class="wc-br"><span class="brk">merges onto</span><code>'+w.br+'</code>'+
+          '<span class="brk">from</span><code>'+w.from+'</code></div>'+
+        '<div class="wc-prs">'+chips(w.prs,w.dead)+'</div>'+
+        '<div class="wc-acts">'+w.acts.map(function(a){
+          return '<button class="act '+a.c+'" data-w="'+i+'" data-act="'+a.k+'">'+a.l+'</button>';}).join("")+'</div>'+
+        '<div class="wc-note">Recorded. The runner will merge this bundle.</div></div>'+
+        (S.rollout==="step"&&i<r.waves.length-1?
+          '<div class="ckpt"><span class="ck-d">&#9679;</span>Checkpoint. Check out <code>'+w.br+
+          '</code> and read the tree before the next bundle.</div>':"");
+    }).join(""):"";
+
+    var alts=S.unlocked&&id==="A"?
+      '<div class="alts"><div class="sechead"><h2>The paths we set aside</h2>'+
+      '<span class="sub">Both were simulated from the same base. One was replayed with git.</span></div>'+
+      '<div class="altrow">'+["B","C"].map(function(x){
+        var a=ROUTES[x];
+        return '<button class="alt" data-route="'+x+'"><span class="id">ROUTE '+x+'</span>'+
+          '<span class="nm">'+a.name+'</span><span class="st">'+a.story+'</span>'+
+          '<span class="lost">Why it lost. '+a.lost+'</span></button>';
+      }).join("")+'</div></div>':"";
+
+    if(!r.waves){
+      stage.plan.innerHTML='<div class="sechead"><h2>Path '+id+' &middot; '+r.name+'</h2></div>'+
+        '<p class="narr">'+r.story+'<span class="plus">Why it lost. '+r.lost+'</span></p>'+
+        '<button class="act primary" data-dock="plan-a">Back to the recommended path</button>';
+      go("plan");return;
+    }
+
+    var contrib='<div class="contrib">'+r.waves.map(function(w){
+      return w.prs.map(function(n){
+        return '<button class="crow" data-pr="'+n+'">'+
+          '<span class="cn">#'+n+'</span>'+
+          '<span class="cw">'+w.n+'</span>'+
+          '<span class="cc">'+CONTRIB[n]+'</span></button>';
+      }).join("");
+    }).join("")+
+      Object.keys(BLOCKED).map(function(n){
+        var x=BLOCKED[n];
+        return '<button class="crow dead" data-blk="'+n+'">'+
+          '<span class="cn">#'+n+'</span>'+
+          '<span class="cw">'+(x.kind==="conflict"?"blocked":"dropped")+'</span>'+
+          '<span class="cc">'+CONTRIB[n]+' &mdash; <b>'+x.head.toLowerCase()+'</b></span></button>';
+      }).join("")+'</div>';
+
+    var chain='<div class="panel chain"><h4>Can they merge, and in what order</h4><ol class="chainlist">'+
+      CHAIN.map(function(x){
+        return '<li><span class="cc-c">'+x.c+'</span><span class="cc-d">'+x.d+'</span>'+
+               '<span class="cc-n">'+x.note+'</span></li>';
+      }).join("")+'</ol></div>';
+
+    stage.plan.innerHTML=
+      '<div class="plan-grid"><div>'+
+        '<div class="sechead"><h2>Path '+id+' &middot; '+r.name+'</h2>'+
+        '<span class="sub">simulated from 0c099be</span></div>'+
+        '<div class="outbox"><span class="ob-h">What you would have when this is done</span>'+
+          '<ul class="outcome big">'+OUTCOME.map(function(o){return '<li>'+o+'</li>';}).join("")+'</ul></div>'+
+        '<div class="sechead" style="margin-top:22px;"><h2>What each pull request adds</h2>'+
+        '<span class="sub">Twelve, in the order they can land.</span></div>'+
+        contrib+
+        '<div class="sechead" style="margin-top:22px;"><h2>Roll it out</h2>'+
+        '<span class="sub">You commit to the path. You keep control of the pace.</span></div>'+
+        '<div class="rollout">'+
+          '<button class="ro'+(S.rollout==="step"?" on":"")+'" data-ro="step">'+
+            '<span class="ro-t">One bundle at a time</span>'+
+            '<span class="ro-d">The runner merges a bundle and stops. You check out the tree, then release the next.</span></button>'+
+          '<button class="ro'+(S.rollout==="all"?" on":"")+'" data-ro="all">'+
+            '<span class="ro-t">All at once</span>'+
+            '<span class="ro-d">The runner merges all three bundles, then opens one pull request from the last branch onto master.</span></button>'+
+        '</div>'+
+        '<div class="target"><span class="tg-h">Nothing merges onto master</span>'+
+          'Each bundle merges onto its own integration branch. Master sees one pull request at the end, '+
+          'from <code>flightdeck/path-a/3-named</code>, and you can abandon the whole path by deleting three branches.</div>'+
+        '<div class="sechead" style="margin-top:22px;"><h2>The bundles</h2>'+
+        '<span class="sub">Each action is recorded, and the runner performs it.</span></div>'+
+        waves+alts+
+      '</div><div>'+chain+
+        '<div class="panel git"><h4>What the git replay found</h4><ul><li>'+r.git.join("</li><li>")+'</li></ul></div>'+
+        '<div class="panel"><h4>Evidence from the records</h4><ul><li>'+r.ev.join("</li><li>")+'</li></ul></div>'+
+        '<div class="panel gap"><h4>Not assessed</h4><ul><li>'+r.gaps.join("</li><li>")+'</li></ul></div>'+
+      '</div></div>';
+
+    stage.plan.querySelectorAll(".act[data-act]").forEach(function(b){
+      b.addEventListener("click",function(){doAct(id,Number(b.getAttribute("data-w")),b.getAttribute("data-act"),b);});
+    });
+    stage.plan.querySelectorAll("[data-ro]").forEach(function(b){
+      b.addEventListener("click",function(){
+        S.rollout=b.getAttribute("data-ro");
+        record({type:"rollout",path:id,mode:S.rollout,by:"human"},
+               S.rollout==="step"?"One bundle at a time. The runner stops after each.":"All three bundles in one run.");
+        openRoute(id);
+      });
+    });
+    stage.plan.querySelectorAll("[data-route]").forEach(function(b){
+      b.addEventListener("click",function(){openRoute(b.getAttribute("data-route"));});
+    });
+    stage.plan.querySelectorAll("[data-blk]").forEach(function(el){
+      el.addEventListener("click",function(e){e.stopPropagation();openBlocked(Number(el.getAttribute("data-blk")));});
+    });
+    bindPrChips(stage.plan);
+    go("plan");
+  }
+
+  function markDone(id,i){
+    S.done[id+":"+i]=true;
+    var el=stage.plan.querySelector('[data-key="'+id+':'+i+'"]');
+    if(el){el.classList.add("done");el.querySelector(".wc-n").innerHTML="&#10003;";}
+  }
+  function doAct(id,i,kind,btn){
+    if(btn){btn.classList.add("flash");setTimeout(function(){btn.classList.remove("flash");},500);}
+    if(kind==="close17"){markDone(id,i);
+      record({type:"merge_bundle",bundle:3,prs:[12,13,16,18],onto:"flightdeck/path-a/3-named",
+              from:"flightdeck/path-a/2-five-plugins",also:{close:[17]},path:id,by:"human"},
+             "Recorded. The runner will close 17 and merge bundle 3.");
+    }else if(kind==="order"){markDone(id,i);
+      record({type:"merge_bundle",bundle:2,prs:[11],onto:"flightdeck/path-a/2-five-plugins",
+              from:"flightdeck/path-a/1-single-plugin",path:id,by:"human"},
+             "Recorded. The runner will merge bundle 2 onto its branch.");
+    }else if(kind==="release"){markDone(id,i);
+      record({type:"merge_bundle",bundle:1,prs:[2,3,4,5,9],onto:"flightdeck/path-a/1-single-plugin",
+              from:"0c099be",path:id,by:"human"},
+             "Recorded. The runner will merge bundle 1 onto its branch.");
+    }else if(kind.indexOf("open")===0){markDone(id,i);openPr(Number(kind.slice(4)));}
+    dock();
+  }
+  function adopt(){
+    if(!S.route||!ROUTES[S.route].waves)return;
+    S.adopted=S.route;
+    record({type:"path_accept",picked:S.route,refused:["B","C"],in_path:[2,3,4,5,9,11,12,13,16,18],
+            blocked:{superseded:[17],conflict:[6]},rollout:S.rollout,
+            validated_with:"git replay from 0c099be, 0 conflicts",by:"human"},
+           "Path accepted. The runner starts bundle 1.");
+    dock();
+  }
+
+  /* ============ PR VIEW ============ */
+  function openPr(n){S.pr=n;S.level=0;renderPr();go("pr");}
+  function renderPr(){
+    var p=PR[S.pr],d=DETAIL[S.pr];
+    var rail=LEVELS.map(function(l,i){
+      return '<button class="rail-i'+(i===S.level?" on":"")+'" data-lvl="'+i+'">'+l.n+'<small>'+l.t+'</small></button>';
+    }).join("");
+    var body="";
+    if(!d){
+      body='<p><b>Head branch</b> '+p.b+'</p><p><b>Size</b> '+p.f+' files changed.</p>'+
+        '<p>'+(p.auto?"Merged automatically. "+p.why+".":"No detail loaded in this prototype.")+'</p>';
+    } else if(S.level===0){
+      body='<p><b>Head branch</b> '+p.b+'</p><p><b>Size</b> '+p.f+' files changed.</p>'+
+        (S.pr===18?'<p>Shares its head branch with pull request 17. The flightdeck raised that. GitHub does not.</p>':"")+
+        '<div class="src">index.json &middot; entities.pull_request</div>';
+    } else if(S.level===1){
+      body='<p><b>Problem.</b> '+d.problem+'</p><p><b>Approach.</b> '+d.approach+'</p>'+
+        '<div class="src">story.json &middot; intent.problem, intent.approach</div>';
+    } else if(S.level===2){
+      body='<p>'+d.finding+'</p><div class="src">story.json &middot; assessment.findings</div>';
+    } else {
+      var keys=Object.keys(d.touched),max=0;
+      keys.forEach(function(k){if(d.touched[k]>max)max=d.touched[k];});
+      body='<p>Changed files by path prefix.</p><div class="bars">'+keys.map(function(k,i){
+        return '<div class="bar"><span class="p">'+k+'</span><span class="t"><span class="f" style="width:'+
+          (d.touched[k]/max*100)+'%;animation-delay:'+(i*60)+'ms"></span></span><span class="c">'+d.touched[k]+'</span></div>';
+      }).join("")+'</div><div class="src">story.json &middot; touched</div>';
+    }
+    var genNote=d&&d.gen?'<div class="gen">This description did not exist. /pr:generate interviewed the '+
+      'branch and wrote one before the flightdeck ran.</div>':"";
+
+    stage.pr.innerHTML='<div class="prview"><nav class="rail"><div class="rail-h">Levels</div>'+rail+'</nav>'+
+      '<div class="prmain"><div class="prcap"><div class="t">PR #'+S.pr+' &middot; '+esc(p.t)+'</div>'+
+      '<div class="m">'+p.b+' &middot; '+p.f+' files</div></div>'+genNote+'<div class="lvl">'+body+'</div></div></div>';
+    stage.pr.querySelectorAll(".rail-i").forEach(function(b){
+      b.addEventListener("click",function(){S.level=Number(b.getAttribute("data-lvl"));renderPr();});
+    });
+  }
+
+  /* ============ DOCK ============ */
+  function dock(){
+    var el=$("dock"),h="";
+    if(S.view==="deck"){
+      h='<span class="pill'+(S.adopted?" ok":"")+'">'+(S.adopted?"Path "+S.adopted+" adopted":"No route adopted")+'</span>'+
+        '<span class="pill">'+S.ledger.length+' recorded</span><span class="sp"></span>'+
+        '<span class="pill">Open the recommendation to accept it</span>';
+    } else if(S.view==="plan"){
+      if(!S.route){
+        el.innerHTML='<span class="pill">PR #'+S.blk+' &middot; held out of path A</span><span class="sp"></span>'+
+          '<button class="act primary" data-dock="plan-a">Back to the path</button>';
+        return;
+      }
+      var r=ROUTES[S.route];
+      if(!r.waves){
+        h='<span class="pill">Route '+S.route+' &middot; set aside</span><span class="sp"></span>'+
+          '<button class="act" data-dock="plan-a">Back to the recommended path</button>'+
+          '<button class="act primary" data-dock="switch">Switch to this path</button>';
+      } else {
+        var n=r.waves.filter(function(_,i){return S.done[S.route+":"+i];}).length;
+        h='<span class="pill">'+n+' of '+r.waves.length+' waves done</span><span class="sp"></span>'+
+          '<button class="act" data-dock="deck">Back</button>'+
+          '<button class="act '+(S.adopted===S.route?"":"primary")+'" data-dock="adopt">'+
+          (S.adopted===S.route?"Accepted &#10003;":"Accept this path")+'</button>';
+      }
+    } else {
+      h='<span class="pill">PR #'+S.pr+'</span><span class="sp"></span>'+
+        '<button class="act" data-dock="'+(S.route?"plan":"deck")+'">'+
+        (S.route?"Back to path "+S.route:"Back to flightdeck")+'</button>'+
+        '<button class="act" data-dock="changes">Request changes</button>'+
+        '<button class="act primary" data-dock="approve">Approve</button>';
+    }
+    el.innerHTML=h;
+  }
+
+  document.addEventListener("click",function(e){
+    var t=e.target.closest("[data-go],[data-dock]");if(!t)return;
+    var g=t.getAttribute("data-go"),k=t.getAttribute("data-dock");
+    if(g==="deck"||k==="deck")return go("deck",true);
+    if(g==="plan"||k==="plan")return openRoute(S.route);
+    if(k==="plan-a")return openRoute("A");
+    if(k==="switch"){record({type:"route_pick",picked:S.route,refused:["A"],
+      note:"reviewer overruled the validated route",by:"human"},"Switched to path "+S.route+". The overrule is on the record.");
+      S.adopted=S.route;dock();return;}
+    if(k==="adopt")return adopt();
+    if(k==="approve"){record({type:"review",pr:S.pr,verdict:"approve",judged_against:HUMAN,route:S.route,by:"human"},
+      "PR #"+S.pr+" approved, judged against the whole open set.");dock();}
+    if(k==="changes"){record({type:"review",pr:S.pr,verdict:"request_changes",judged_against:HUMAN,route:S.route,by:"human"},
+      "Changes requested on PR #"+S.pr+".");dock();}
+  });
+  $("modeDeck").addEventListener("click",function(){go("deck",true);});
+  $("modePrs").addEventListener("click",function(){openPr(11);});
+
+  function setLedger(o){$("ledger").classList.toggle("open",o);$("scrim").classList.toggle("on",o);}
+  $("ledgerBtn").addEventListener("click",function(){setLedger(!$("ledger").classList.contains("open"));});
+  $("ledgerX").addEventListener("click",function(){setLedger(false);});
+  $("scrim").addEventListener("click",function(){setLedger(false);});
+  document.addEventListener("keydown",function(e){if(e.key==="Escape")setLedger(false);});
+
+  /* ============ TOUR ============ */
+  var TOUR=[
+    {t:"Seventeen open. Five merged automatically, ten fit one path, and two cannot go in at all.",ms:3600,f:function(){go("deck",true);setLedger(false);}},
+    {t:"The page opens with what you would have if you accept, and with what you would not.",ms:3400,f:function(){}},
+    {t:"Below it, the two that cannot go in. One is superseded. One will not merge.",ms:3400,f:function(){}},
+    {t:"Open the one that will not merge.",ms:2200,f:function(){openBlocked(6);}},
+    {t:"One file, one hunk, and both sides rewrote it. A merge cannot pick a side, so a person decides.",ms:4000,f:function(){}},
+    {t:"Three ways out, with the smaller rewrite recommended. Recording one starts the work.",ms:3400,f:function(){document.querySelector('[data-blkopt="0"]').click();}},
+    {t:"Back to the path. Ten pull requests, one line each, in the order they can land.",ms:3400,f:function(){openRoute("A");}},
+    {t:"You commit to the path, and you keep the pace. One bundle at a time is the default.",ms:3600,f:function(){}},
+    {t:"Nothing merges onto master. Each bundle has its own branch, and master sees one pull request at the end.",ms:4000,f:function(){}},
+    {t:"Merge bundle one. The runner does it, and stops at the checkpoint.",ms:3200,f:function(){doAct("A",0,"release");}},
+    {t:"Then the split, alone, so the checkpoint after it is a tree anybody can read.",ms:3400,f:function(){doAct("A",1,"order");}},
+    {t:"Then the work that names the new structure.",ms:2800,f:function(){doAct("A",2,"close17");}},
+    {t:"Open any pull request in the existing four-level layout.",ms:2600,f:function(){openPr(11);}},
+    {t:"Approve from here. The record names the whole set it was judged against.",ms:3000,f:function(){document.querySelector('[data-dock="approve"]').click();}},
+    {t:"Back to the path, and accept it.",ms:2400,f:function(){openRoute("A");}},
+    {t:"Accepting records the path, the two refusals, the two held out, and the rollout you chose.",ms:3800,f:function(){adopt();}},
+    {t:"Every line is in an append-only ledger, and the runner reads it from there.",ms:3200,f:function(){go("deck",true);setLedger(true);}},
+    {t:"That is the loop. Click anything to explore it yourself.",ms:2800,f:function(){setLedger(false);}}
+  ];
+  var ti=0,tt=null;
+  function tstop(){S.tour=false;clearTimeout(tt);$("tour").classList.remove("on");
+    $("tourBtn").classList.remove("playing");$("tourBtn").textContent="Play the tour";}
+  function tstep(){
+    if(!S.tour)return;
+    if(ti>=TOUR.length){tstop();return;}
+    var s=TOUR[ti];s.f();
+    $("tourN").textContent=(ti+1)+" / "+TOUR.length;$("tourTxt").textContent=s.t;
+    ti++;tt=setTimeout(tstep,s.ms);
+  }
+  $("tourBtn").addEventListener("click",function(){
+    if(S.tour){tstop();return;}
+    S.tour=true;ti=0;S.adopted=null;S.done={};S.ledger=[];S.route=null;S.blk=null;S.unlocked=false;S.rollout="step";
+    $("ledgerB").innerHTML='<p class="ledger-empty">Nothing recorded yet. Every action appends one line here, and nothing is ever rewritten.</p>';
+    $("ledgerN").textContent="0";renderDeck();
+    $("tour").classList.add("on");$("tourBtn").classList.add("playing");
+    $("tourBtn").textContent="Stop the tour";tstep();
+  });
+  $("tourStop").addEventListener("click",tstop);
+
+  renderDeck();crumb();dock();
+})();
+</script>
