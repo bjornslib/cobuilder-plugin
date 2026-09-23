@@ -62,14 +62,34 @@ pane slot. Both are in `src/shell/App.tsx`, and the file's header states the rul
 link, so a press opens that item's Work surface. Both CRITICAL criteria scored 1.0, and no
 console message appeared at any level on any route.
 
-Both of this epic's slices now stand at 1.0. Fourteen slices of the sixteen have not run: 1 to 5,
-and 8 to 13, and 14 to 16.
+**Slice 1 ran on 2026-09-23, and it cannot be scored in full.** It built the exporter's
+named-marker seam: `export_artifact.py` holds `MARKERS` as module data, matches each region
+by name, and stops with a message naming a missing marker instead of writing a
+half-rewritten page. The viewer carries six marker pairs. Its C2 and C3 pass, on seven tests
+in `tests/test_export_artifact_markers.py`.
+
+**Its C1 and C4 could not be scored.** C1 and C2 are the slice's two CRITICAL criteria. C2
+passes, and C1 cannot be scored, because it needs a real publish. The Artifact platform
+refuses every call in this session, which authenticates with `ANTHROPIC_AUTH_TOKEN`. The
+slice is therefore escalated on C1 alone, rather than accepted. The follow-up is one
+action: unset that variable, then run `/login` and choose the subscription account. Slice 1
+scored 0.50 of its four criteria, and its ladder row stays `pending` until the publishes run.
+
+Slice 1 belongs to `cobuilder-viewer/E1`, its only slice. Slices 6 and 7 belong to
+`cobuilder-viewer/E19` and stand at 1.0. Thirteen slices of the sixteen have not run:
+2, 3, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, and 16. Slice 1 ran, and it did not reach an
+accepted score.
 
 ## Escalated
 
-None. Slices 6 and 7 ran and each scored 1.0, so no score fell below its threshold.
+**Slice 1 is escalated.** Its two CRITICAL criteria are C1 and C2. C2 passes, and C1 cannot
+be scored, because every Artifact call in this session is refused while the session holds
+`ANTHROPIC_AUTH_TOKEN`. The
+implementation is complete and committed as `d44cc24`, and its two locally scorable
+criteria pass. A later session that logs in with the subscription account can score C1 and
+C4 without touching the code.
 
-No slice scored below its threshold on a second attempt, so nothing escalated.
+No other slice scored below its threshold, so nothing else escalated.
 
 ## Notes for a fresh session
 
@@ -178,3 +198,9 @@ at line 33, and `read_rubrics` loops `range(1, RUBRIC_COUNT + 1)`. So even a run
 `--rubrics .cobuilder/rubrics/cobuilder-viewer` would drop slices 15 and 16 in silence, and
 would print no warning. A later session should derive the count from the files present, and
 derive the default rubrics directory from the plan's slug. Neither is changed here.
+
+**Publishing is blocked in any session that holds `ANTHROPIC_AUTH_TOKEN`.** The Artifact
+platform refuses every call, because that variable takes precedence over a claude.ai
+account. Unset it, then run `/login` and choose the subscription account. This blocks
+slice 1's C1 and C4 today, and it will block E16's publish parity later. E16 is
+deferred, and it carries no slice today.
