@@ -79,7 +79,7 @@ opens a work item, and E5's sections render inside one.
 | 2 | `cobuilder-viewer/E2` | Two builds produce the same bytes | Two builds from the same lockfile on the same machine produce the same bytes, so the byte-equal guard is possible at all | 1.00 | completed |
 | 3 | `cobuilder-viewer/E2` | The build owns the committed file | The build reproduces `plugins/artifact/viewer/index.html` byte for byte, and one edited byte makes the rebuild test fail | 1.00 | completed |
 | | **`cobuilder-viewer/E3` — The typed data layer.** One module reads the six window globals and `index.json`, resolves every join, and declares `PullRequest` and its branded extension `OpenPullRequest`. | | | | |
-| 4 | `cobuilder-viewer/E3` | One typed model reads the bundle | A level renders from `index.json` with no join derived in a component, and a field renamed on `PullRequest` and not on `OpenPullRequest` fails the type check | — | pending |
+| 4 | `cobuilder-viewer/E3` | One typed model reads the bundle | A level renders from `index.json` with no join derived in a component, and a field renamed on `PullRequest` and not on `OpenPullRequest` fails the type check | 1.00 | completed |
 | | **`cobuilder-viewer/E4` — The Work prototype.** A detailed prototype of the Work board, against this repository's own design records, reviewed before E5 starts. | | | | |
 | 5 | `cobuilder-viewer/E4` | The Work prototype, reviewed | The prototype renders this repository's own designs across the Work board, and the engineer approves it or names what to change | — | pending |
 | | **`cobuilder-viewer/E5` — The Work surface.** Every level, and the sections each level pages, including a design whose records are `goal.json` only. ADR-0028 owns the shape. | | | | |
@@ -137,7 +137,7 @@ to E16 and to E18, and both are deferred.
 Four epics here carry one slice each, and none of them hides a second end.
 
 **The run order changed on 2026-09-23, and the slice numbers did not.** After slice
-3, the next slices to run are 14, 15, and 16, ahead of 4, 5, and 8 through 13. The
+3, the next slices to run are 14, 15, and 16, ahead of 5 and 8 through 13. The
 rest of the ladder keeps its order after those three. The numbers stay as the ladder
 writes them, so do not renumber a slice.
 

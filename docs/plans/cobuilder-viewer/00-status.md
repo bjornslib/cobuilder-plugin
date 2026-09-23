@@ -28,7 +28,7 @@ E9, E10, E11, E12, E13, E14, E15, E16, E17, and E18.
 - [ ] Slice 1 — Tracer bullet: a publish survives a marker rename   score: —
 - [x] Slice 2 — Two builds produce the same bytes                   score: 1.00
 - [x] Slice 3 — The build owns the committed file                   score: 1.00
-- [ ] Slice 4 — One typed model reads the bundle                    score: —
+- [x] Slice 4 — One typed model reads the bundle                    score: 1.00
 - [ ] Slice 5 — The Work prototype, reviewed                        score: —
 - [x] Slice 6 — The shell lands on the bundle's designs             score: 1.00
 - [x] Slice 7 — A row opens the item's Work surface                 score: 1.00
@@ -76,8 +76,8 @@ action: unset that variable, then run `/login` and choose the subscription accou
 scored 0.50 of its four criteria, and its ladder row stays `pending` until the publishes run.
 
 Slice 1 belongs to `cobuilder-viewer/E1`, its only slice. Slices 6 and 7 belong to
-`cobuilder-viewer/E19` and stand at 1.0. Eleven slices of the sixteen have not run:
-4, 5, 8, 9, 10, 11, 12, 13, 14, 15, and 16. Slice 1 ran, and it did not reach an
+`cobuilder-viewer/E19` and stand at 1.0. Ten slices of the sixteen have not run:
+5, 8, 9, 10, 11, 12, 13, 14, 15, and 16. Slice 1 ran, and it did not reach an
 accepted score.
 
 **Slice 2 ran on 2026-09-23 and scored 1.00**, weighted 0.09. It belongs to
@@ -116,6 +116,22 @@ and renders) scored 1.0 on a clean console. C5 (every named marker survives) sco
 and the six marker names reach the built file. Slice 3 failed the slice's own regression
 check in two of its three clauses, and broke slice 1's seam. The last note under "Notes for
 a fresh session" records both.
+
+**Slice 4 ran on 2026-09-23 and 2026-09-24, and scored 1.00 on 2026-09-24**, weighted
+0.10. It belongs to `cobuilder-viewer/E3`, and its end is that one typed model reads
+the bundle. All four of its criteria scored 1.0, so the mean is 1.00 and the
+contribution is 0.100. C1 (one module resolves every join) and C2 (the drift guard
+fires on a rename) are the CRITICAL pair. One module under `src/data/` reads every
+global the bundle defines and resolves every join, and no file outside it reads a
+global or resolves a join. An independent TypeScript AST sweep over 126 non-test
+files outside the data module proves that, and `PullRequest` and its branded
+extension `OpenPullRequest` are each declared once. C3 (a level renders from the
+typed model) scored 1.0, and a level renders this repository's own records with a
+clean console. C4 (the model reads every global the bundle defines) scored 1.0.
+The committed viewer carries sha256
+`07c29308d9417eb83bb6a78c97adaf751890f5db226bbcd23a35c3ff168660e5`. The viewer suite
+is 67 of 67 and the type check is clean, and the repository suite is unchanged at 9
+failed, 378 passed, and 1 skipped.
 
 **Slice 14 was built on 2026-09-23, and it waits on the engineer.** The prototype is one
 surface with two modes behind one control, and it lives at
@@ -243,10 +259,13 @@ surface, and `#/variations` reaches the comparison harness. The prototype keeps 
 `#/sections-e` prefix at `src/variations/sections-e/model.ts`. Any older document that
 names `#/sections-e` as a route is stale.
 
-**The built viewer asks for its data at an absolute path.** It requests
-`/bundle/data/index.json`, because the vite dev server mounts the bundle at `/bundle/`.
-A built file served beside a real bundle would 404 on its own data. E2 owns the fix, and
-it must land before the build is allowed to write the committed `index.html`.
+**The built viewer reads its data at a relative path, and the dev server mounts a bundle
+at an absolute one.** `src/data/bundle.ts` sets `BUNDLE_MOUNT` to `/bundle/` under
+`import.meta.env.DEV` and to `../` otherwise, so a dev page reads
+`/bundle/data/index.json` and a built page reads `../data/index.json` beside itself.
+`src/index.html`'s marker seam carries the same `../data/` string. A built file therefore
+resolves its own data when a bundle root sits above it. E2's fix landed in slice 3, so the
+build writes the committed `plugins/artifact/viewer/index.html`.
 
 **A diagram tile once showed a raw Mermaid comment as its title.** On the design
 `review-flight-deck`, the level 1 tile rendered the literal text `%% review-flight-deck
@@ -281,7 +300,7 @@ slice 1's C1 and C4 today, and it will block E16's publish parity later. E16 is
 deferred, and it carries no slice today.
 
 **The run order changed on 2026-09-23, and the slice numbers did not.** After slice 3,
-the next slices to run are 14, 15, and 16, ahead of 4, 5, and 8 through 13. The rest of
+the next slices to run are 14, 15, and 16, ahead of 5 and 8 through 13. The rest of
 the ladder keeps its order after those three. The numbers stay as the ladder writes
 them, so do not renumber a slice. The engineer moved those three forward because slice
 3 makes the committed `plugins/artifact/viewer/index.html` the React application, and
@@ -317,3 +336,42 @@ rubric does not require the claim, so it is unowned by rubric.
 They do not travel through a bundled module, because the minifier strips `//` comments and
 esbuild's TypeScript transform strips them from a `.ts` module even unminified. Turning
 minification off instead would cost 1,261,969 bytes.
+
+**The engineer resolved C4's scope by fixing the cause, not by choosing a reading.** Six
+prototype files each carried a reader of a bundle global, and thirteen resolved joins
+themselves. `src/Variations.tsx` imported every prototype statically, so their code and
+their duplicate Sheet, panel, atoms, and markdown copies shipped. All of that is gone:
+every prototype now reads through `src/data/`, each has its own dev entry, and the
+shipped viewer fell from 1,183,959 bytes to 727,197, which is 456,762 bytes, or 38.6
+percent. Both C1's and C4's checks now run over all of `src/` with no exclusion, and
+both pass.
+
+**C2's type guard is inert, and a reader should not mistake the passing case for the
+guard firing.** Because `OpenPullRequest` is an intersection with `PullRequest`,
+`Exclude<keyof PullRequest, keyof OpenPullRequest>` is structurally always `never`, so
+it can never fire. A renamed field still fails `tsc` and names the field, but through
+consumers that read the field, not through the guard.
+
+**A defect was found in the scan underneath both absence criteria.** The comment
+projection tracked quotes by hand, and a regex literal holding a backtick desynced it.
+C1 counted a JSDoc comment as a join resolution, and C4 was passing partly by accident,
+with six comment lines in `src/variations/flightdeck/model.ts` read as code. The
+projection now runs through the TypeScript parser, so both criteria are computed rather
+than lucky.
+
+**A word in a comment can move the shipped bytes.** Tailwind scans `src/data/` and
+`src/variations/` for class candidates, so writing the word `invisible` in a new test
+comment emitted a utility rule into the shipped stylesheet and moved its hash by 29
+bytes. A later session that rewrites a comment should expect this and rebuild.
+
+**Two plan-slug rules coexist.** `src/data/works.ts`'s `planSlugFor` serves the shell,
+and `src/variations/epic-first-mosaic/data.ts`'s `planSlugs` serves that prototype; the
+second skips a slice-id prefix equal to the design id and excludes `interaction_design`,
+which the first does neither. C1 permits it. If the two ever disagree about a real plan,
+the shell and that prototype will disagree, and nothing today would report it.
+
+**`src/variations/record-mosaic` crashes on a design row, and it did so before this
+work.** Its tile reads `entry.publication.published_at.slice(0, 10)` unconditionally,
+and the index carries two publications with `published_at: null`. Reproduced identically
+on the parent commit. The prototype is unusable past its board. No shipped output
+carries it. Fixing it is not scoped to any slice today.
