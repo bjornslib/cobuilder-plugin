@@ -15,6 +15,12 @@ Every case that shells out to npm carries a skip guard, so a checkout with no
 Node still passes the suite. This repository's suite is Python, and none of its
 other cases need Node.
 
+One case shells out to pytest and runs this file again. The nested command
+deselects that case, and the case fails at nesting depth 1 or deeper. The
+process tree is therefore bounded. A nested run that could re-collect its own
+parent would grow without limit, and a test that can spawn an unbounded
+process tree is a defect, even when each of its own cases passes.
+
 Run with: uv run --with pytest pytest tests/test_viewer_build.py -v
 """
 from __future__ import annotations
@@ -42,9 +48,21 @@ INDEX_HTML = VIEWER / "index.html"
 
 BUILD_TIMEOUT_S = 600
 
-# The nested run of this file sets this variable. The case that starts the
-# nested run skips when it sees the variable, which stops the run recursing.
-NESTED_PYTEST_ENV = "COBUILDER_VIEWER_BUILD_NESTED_RUN"
+# The nested run of this file sets this variable to its nesting depth. The
+# case that starts the nested run refuses to run at depth 1 or deeper. The
+# refusal is a hard failure, not a skip. A silent skip is what let an earlier
+# wiring mistake grow a runaway process tree.
+NESTED_DEPTH_ENV = "COBUILDER_VIEWER_BUILD_NESTED_DEPTH"
+
+# The nesting case, by name and by node id. The nested command deselects it
+# twice, so the inner run cannot collect it. pytest reports node ids relative
+# to the root directory, even when the target is an absolute path. The node id
+# below is therefore built from the file's path under the repository root.
+NESTING_CASE_NAME = "test_a_checkout_without_node_skips_rather_than_fails"
+NESTING_NODE_ID = (
+    f"{Path(__file__).resolve().relative_to(REPO_ROOT).as_posix()}"
+    f"::{NESTING_CASE_NAME}"
+)
 
 
 # ---- helpers ----
@@ -298,21 +316,45 @@ def test_a_checkout_without_node_skips_rather_than_fails(tmp_path):
     The suite stays green on a machine that never installed Node. This is the
     program design's stated requirement for this file.
 
-    The inner run sets NESTED_PYTEST_ENV, and this case skips on that mark.
-    Without it, the inner run would collect this case and run it again,
-    without end.
+    Three facts keep the nested run bounded. The nested command filters this
+    case out twice, once with -k and once with --deselect, so the inner run
+    never collects it. The command also records its nesting depth in
+    NESTED_DEPTH_ENV. This case then fails at depth 1 or deeper, so a broken
+    filter stops the run instead of recursing.
     """
-    if os.environ.get(NESTED_PYTEST_ENV) == "1":
-        pytest.skip("this case is running inside its own nested run")
+    depth = int(os.environ.get(NESTED_DEPTH_ENV) or "0")
+    if depth >= 1:
+        pytest.fail(
+            f"this case was reached at nesting depth {depth}, so the nested "
+            f"command did not deselect it. The command filters it with both "
+            f"-k and --deselect. Refusing to start another nested run, because "
+            f"a test that can spawn an unbounded process tree is a defect."
+        )
 
     path = f"{tmp_path}:/usr/bin:/bin"
     if shutil.which("npm", path=path) is not None:
         pytest.skip("the system PATH holds an npm, so node absence cannot be staged")
 
+    # The deselect is the ceiling in practice. The -k filter states the same
+    # exclusion in plain language, so a reader sees why this case never runs
+    # in the inner process. pytest counts the two filters as one deselection,
+    # because both name the same case.
+    nested_command = [
+        sys.executable,
+        "-m",
+        "pytest",
+        str(Path(__file__).resolve()),
+        "-v",
+        "-rs",
+        "-k",
+        f"not {NESTING_CASE_NAME}",
+        "--deselect",
+        NESTING_NODE_ID,
+    ]
     result = subprocess.run(
-        [sys.executable, "-m", "pytest", str(Path(__file__).resolve()), "-v", "-rs"],
+        nested_command,
         cwd=REPO_ROOT,
-        env={**os.environ, "PATH": path, NESTED_PYTEST_ENV: "1"},
+        env={**os.environ, "PATH": path, NESTED_DEPTH_ENV: str(depth + 1)},
         capture_output=True,
         text=True,
         timeout=BUILD_TIMEOUT_S,
@@ -320,6 +362,7 @@ def test_a_checkout_without_node_skips_rather_than_fails(tmp_path):
 
     assert result.returncode == 0, (
         f"the run without npm exited {result.returncode}\n"
+        f"--- command ---\n{' '.join(nested_command)}\n"
         f"--- stdout (tail) ---\n{result.stdout[-4000:]}\n"
         f"--- stderr (tail) ---\n{result.stderr[-4000:]}"
     )
@@ -331,4 +374,8 @@ def test_a_checkout_without_node_skips_rather_than_fails(tmp_path):
     summary = result.stdout.strip().splitlines()[-1]
     assert "skipped" in summary and "failed" not in summary, (
         f"the run without npm reported {summary!r} instead of skips"
+    )
+    assert "deselected" in summary, (
+        f"the nested run reported {summary!r}, so its filter did not exclude "
+        f"{NESTING_NODE_ID}. A nested run that collects this case can recurse."
     )
