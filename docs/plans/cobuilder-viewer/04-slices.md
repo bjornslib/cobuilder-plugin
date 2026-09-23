@@ -136,6 +136,25 @@ to E16 and to E18, and both are deferred.
 **A slice ends observable, so a slice can be large.** Slice 10 walks six sections.
 Four epics here carry one slice each, and none of them hides a second end.
 
+**The run order changed on 2026-09-23, and the slice numbers did not.** After slice
+3, the next slices to run are 14, 15, and 16, ahead of 4, 5, and 8 through 13. The
+rest of the ladder keeps its order after those three. The numbers stay as the ladder
+writes them, so do not renumber a slice.
+
+**Slice 3 makes the committed file the React application, and that application
+carries no pull request story yet.** The build writes
+`plugins/artifact/viewer/index.html`, so that file becomes the React application.
+Measured on 2026-09-23, the committed file is 249,710 bytes and the build produces
+1,177,754 bytes. The application's Pull requests panel lists pull requests. Nothing
+under `plugins/artifact/viewer/src/` reads a pull request's narration levels, its
+art, its audio, or its diffs. Slices 15 and 16 add those. Between slice 3 and slice
+15, a bundle served from this branch would show a pull request with no story to
+tell. The engineer chose to shorten that window rather than leave parity last.
+
+**The run stops at slice 14 and waits for the engineer.** Slice 14 ends in an
+approval, so the rubric puts the next step in the engineer's hands. Slices 15 and 16
+wait on that answer, and no run reaches them without a human step between.
+
 ## Out of scope for this ladder
 
 - Everything the eleven deferred epics hold, until the engineer brings one back.

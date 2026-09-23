@@ -227,3 +227,12 @@ platform refuses every call, because that variable takes precedence over a claud
 account. Unset it, then run `/login` and choose the subscription account. This blocks
 slice 1's C1 and C4 today, and it will block E16's publish parity later. E16 is
 deferred, and it carries no slice today.
+
+**The run order changed on 2026-09-23, and the slice numbers did not.** After slice 3,
+the next slices to run are 14, 15, and 16, ahead of 4, 5, and 8 through 13. The rest of
+the ladder keeps its order after those three. The numbers stay as the ladder writes
+them, so do not renumber a slice. The engineer moved those three forward because slice
+3 makes the committed `plugins/artifact/viewer/index.html` the React application, and
+slice 15 is where that application can tell a pull request's story. Slice 14 ends in an
+approval, so the run stops there and waits for the engineer before slices 15 and 16.
+`04-slices.md` states the reason in full under "Why this order".
