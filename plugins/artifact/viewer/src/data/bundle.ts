@@ -72,15 +72,25 @@ export const BUNDLE_DATA_URL = `${BUNDLE_MOUNT}data/`;
 declare global {
   interface Window {
     INDEX?: RecordIndex;
+    /**
+     * `data/designs.js` assigns this global.
+     *
+     * THE DECLARATION MOVED HERE IN SLICE 4 OF COBUILDER-VIEWER. Every variation that
+     * read the record file used to declare this property for itself, and each one typed
+     * it as its own copy of the record shape, so a declaration here collided with all of
+     * them. No variation declares a bundle global now: each reads through the readers in
+     * this module. So this is the one declaration, and it is the same shape `loadDesigns`
+     * validates a value against.
+     */
+    DESIGNS?: DesignRecords;
   }
 }
 
 /*
- * `window.DESIGNS` is deliberately absent from the block above. Every variation that
- * reads the record file declares that global for itself, and each one types it as its
- * own copy of the record shape. A second declaration here collides with all of them, so
- * `loadDesigns` reads the global through the guard below instead. The guard is the real
- * check: it runs at read time against the value the file assigned.
+ * `loadDesigns` still reads the global through a guard rather than through the
+ * declaration above. The declaration says what a caller who writes the global may
+ * assign, and the guard is the real check: it runs at read time against the value the
+ * file assigned, which may be anything at all.
  */
 
 function isRecordIndex(value: unknown): value is RecordIndex {

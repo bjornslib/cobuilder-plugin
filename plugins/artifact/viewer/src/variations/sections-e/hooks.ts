@@ -142,8 +142,8 @@ export function useTheme(): ThemeControl {
 /**
  * The document never scrolls, so `html` and `body` carry no overflow.
  *
- * This is applied from the shell and removed on unmount, so the other variations in
- * `Variations.tsx` keep the page scroll they were built against.
+ * This is applied from the shell and removed on unmount, so a host that renders this
+ * shell keeps the page scroll it gave the document.
  */
 export function useDocumentNoScroll(): void {
   useEffect(() => {

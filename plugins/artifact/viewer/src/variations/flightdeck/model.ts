@@ -5,9 +5,9 @@
  * WHAT THIS FILE READS, AND WHERE EACH PART COMES FROM. The shipped viewer reaches its
  * records as sibling `<script src="../data/*.js">` tags and its art and audio as
  * relative paths. This variation lives outside every bundle, so it reaches the same
- * globals through a reader instead: the dev server mounts the bundle root at
- * `vite.config.ts`'s `MOUNT`, and `@/data/bundle` holds that base. Four readers below
- * append a sibling script tag and resolve with the global that tag assigns:
+ * globals through the readers in `@/data/bundle` instead: the dev server mounts the
+ * bundle root at `vite.config.ts`'s `MOUNT`. The four readers there append a sibling
+ * script tag and resolve with the global that tag assigns:
  *
  *   data/story.js       window.STORY       the narrated timeline, and the intent and
  *                                          assessment blocks on one entry.
@@ -16,9 +16,9 @@
  *   data/manifest.js    window.ODYSSEY     the hero art list and the diff pull requests.
  *   data/diffs-pr{N}.js window.DIFFS_BY_PR one pull request's diff hunks, keyed by path.
  *
- * THE LAST ONE IS NOT `window.DIFFS`, WHATEVER `src/data/bundle.ts` SAYS. That header
- * comment names the global `window.DIFFS`, and the file the bundle ships writes
- * `window.DIFFS_BY_PR[N]`. `readDiff` reads what the file writes, and the two names are
+ * THE LAST ONE IS NOT `window.DIFFS`, WHATEVER `src/data/bundle.ts` SAYS. The data
+ * module's header names the global `window.DIFFS`, and the file the bundle ships writes
+ * `window.DIFFS_BY_PR[N]`. The reader reads what the file writes, and the two names are
  * reported as a correction rather than silently patched.
  *
  * WHY THE ART LIST IS READ AND NOT ASSUMED. `manifest.hero` holds `"pr-2/level-1.webp"`
@@ -33,7 +33,14 @@
  * story entry is the only record of which levels were voiced.
  */
 
-import { BUNDLE_DATA_URL, BUNDLE_MOUNT } from "@/data/bundle";
+import {
+  BUNDLE_DATA_URL,
+  BUNDLE_MOUNT,
+  loadDiagrams as readDiagrams,
+  loadDiff as readDiff,
+  loadManifest as readManifest,
+  loadStory as readStory,
+} from "@/data/bundle";
 
 /* ------------------------------------------------------------------ shapes */
 
@@ -166,12 +173,6 @@ export interface Manifest {
   diagrams?: string[];
 }
 
-declare global {
-  interface Window {
-    DIFFS_BY_PR?: Record<number, Record<string, string>>;
-  }
-}
-
 /* ----------------------------------------------------------------- levels */
 
 export const LEVEL_KEYS = [
@@ -267,144 +268,51 @@ export function levelsOf(
 
 /* ----------------------------------------------------------------- readers */
 
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
 /**
- * Append one sibling script tag and resolve with the global that tag assigns.
+ * The four bundle reads, through the one module under `src/` that names a global.
  *
- * The promise is cached per URL by the caller, because React's strict mode mounts twice
- * and two tags for one file would race. A file that assigns no global, and a file the
- * server does not serve, each reject with a sentence that names the path: a prototype
- * that renders an empty frame teaches a reviewer nothing.
+ * This file used to carry its own reader: a `readScriptGlobal` that appended a sibling
+ * `<script src>` tag and read the global the tag assigned. Slice 4 of cobuilder-viewer
+ * makes `src/data/` the one place under `src/` that names a bundle global, so the four
+ * readers live at `@/data/bundle` now, and the four functions below keep this
+ * variation's own names for them:
+ *
+ *   data/story.js       window.STORY       `loadStory`
+ *   data/manifest.js    window.ODYSSEY     `loadManifest`
+ *   data/diagrams.js    window.DIAGRAMS    `loadDiagrams`
+ *   data/diffs-pr{N}.js window.DIFFS_BY_PR `loadDiff`
+ *
+ * Each shared reader appends the same tag, prefers an inlined global when a published
+ * file wrote one, and caches the promise, so React's strict mode cannot race two tags
+ * for one file.
+ *
+ * THE CAST ON `loadStory` IS THE WHOLE OF THE DIFFERENCE. This variation's `StoryEntry`
+ * carries the `intent` and `assessment` blocks its sheet shows, and the data module's
+ * entry declares the fields a timeline entry always has. Each is a view of one object.
  */
-function readScriptGlobal<T>(
-  url: string,
-  globalName: string,
-  looksRight: (value: unknown) => value is T,
-): Promise<T> {
-  const read = (): T | undefined => {
-    const value = (window as unknown as Record<string, unknown>)[globalName];
-    return looksRight(value) ? value : undefined;
-  };
-
-  const inlined = read();
-  if (inlined) return Promise.resolve(inlined);
-
-  return new Promise<T>((resolve, reject) => {
-    const tag = document.createElement("script");
-    tag.src = url;
-    tag.async = true;
-    tag.onload = () => {
-      const loaded = read();
-      if (loaded) resolve(loaded);
-      else {
-        reject(
-          new Error(
-            `${url} loaded but assigned no window.${globalName}. The reader expected ` +
-              `that global and the file wrote another.`,
-          ),
-        );
-      }
-    };
-    tag.onerror = () => {
-      reject(
-        new Error(
-          `The dev server did not serve ${url}. Check that the bundle exists at ` +
-            `.cobuilder-architect/self/ and that npm run dev is the server you are reading.`,
-        ),
-      );
-    };
-    document.head.appendChild(tag);
-  });
-}
-
-let storyPending: Promise<Story> | null = null;
 
 export function loadStory(): Promise<Story> {
-  if (!storyPending) {
-    storyPending = readScriptGlobal(`${BUNDLE_DATA_URL}story.js`, "STORY", (value): value is Story =>
-      isObject(value) && Array.isArray((value as Story).timeline),
-    ).catch((error: unknown) => {
-      storyPending = null;
-      throw error;
-    });
-  }
-  return storyPending;
+  return readStory() as unknown as Promise<Story>;
 }
-
-let manifestPending: Promise<Manifest> | null = null;
 
 export function loadManifest(): Promise<Manifest> {
-  if (!manifestPending) {
-    manifestPending = readScriptGlobal(
-      `${BUNDLE_DATA_URL}manifest.js`,
-      "ODYSSEY",
-      (value): value is Manifest => isObject(value),
-    ).catch((error: unknown) => {
-      manifestPending = null;
-      throw error;
-    });
-  }
-  return manifestPending;
+  return readManifest();
 }
-
-const diagramsPending = new Map<number, Promise<Record<string, string>>>();
 
 /** One pull request's Mermaid source, keyed by level number as a string. */
 export function loadDiagrams(pr: number): Promise<Record<string, string>> {
-  const held = diagramsPending.get(pr);
-  if (held) return held;
-  const pending = readScriptGlobal(
-    `${BUNDLE_DATA_URL}diagrams.js`,
-    "DIAGRAMS",
-    (value): value is Record<string, Record<string, string>> => isObject(value),
-  ).then((all) => all[String(pr)] ?? {});
-  diagramsPending.set(pr, pending);
-  return pending;
+  return readDiagrams(pr);
 }
-
-const diffPending = new Map<number, Promise<Record<string, string>>>();
 
 /**
  * One pull request's diff hunks, keyed by the path the diff names.
  *
- * The file writes `window.DIFFS_BY_PR[N]`, so the reader merges into that object and
- * reads the entry it just wrote. It never reads `window.DIFFS`.
+ * THE GLOBAL IS `DIFFS_BY_PR`, AND EACH FILE ADDS ONE ENTRY TO IT. `diffs-pr{N}.js`
+ * writes `window.DIFFS_BY_PR[N]`, and the shared reader checks for this pull request's
+ * own entry rather than for the object alone.
  */
 export function loadDiff(pr: number): Promise<Record<string, string>> {
-  const held = diffPending.get(pr);
-  if (held) return held;
-
-  const pending = new Promise<Record<string, string>>((resolve, reject) => {
-    const existing = window.DIFFS_BY_PR?.[pr];
-    if (existing) {
-      resolve(existing);
-      return;
-    }
-    const url = `${BUNDLE_DATA_URL}diffs-pr${pr}.js`;
-    const tag = document.createElement("script");
-    tag.src = url;
-    tag.async = true;
-    tag.onload = () => {
-      const written = window.DIFFS_BY_PR?.[pr];
-      if (written) resolve(written);
-      else {
-        reject(new Error(`${url} loaded but wrote no window.DIFFS_BY_PR[${pr}].`));
-      }
-    };
-    tag.onerror = () => {
-      reject(new Error(`The dev server did not serve ${url}. The bundle holds no diff for PR ${pr}.`));
-    };
-    document.head.appendChild(tag);
-  }).catch((error: unknown) => {
-    diffPending.delete(pr);
-    throw error;
-  });
-
-  diffPending.set(pr, pending);
-  return pending;
+  return readDiff(pr);
 }
 
 /* --------------------------------------------------------------------- diff */

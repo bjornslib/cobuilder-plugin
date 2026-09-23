@@ -6,8 +6,12 @@
  * comparison, so a reader can hold the two side by side. Four things changed in the move:
  * the data comes from `@/data/bundle` instead of the variation's own scaffolding, the
  * route is the bare `#/` because the shell is no longer one variation among several, the
- * board is the shipped `./Board` with the props the E19 design fixes, and the comparison
- * harness keeps its own addresses below.
+ * THE FILE IS NOW THE ONLY ENTRY THE SHIPPED GRAPH HAS. The comparison harness that
+ * rendered the prototype arrangements used to sit beside it, and this file handed that
+ * harness its own addresses back. The harness is gone: each prototype under
+ * `src/variations/` carries a dev-only entry of its own, and no file the shell can reach
+ * imports one. So the shell answers every address the bundle's own designs answer, and
+ * an address that names no design says so.
  *
  * Three fixed regions and one scrolling region. The document does not scroll at all,
  * per interaction-design section 11.3: `html` and `body` carry no overflow, and the
@@ -88,7 +92,6 @@ import {
 import type { DesignRow } from "@/data/types";
 import { cn } from "@/lib/utils";
 
-import VariationsHarness, { VARIATION_IDS } from "../Variations";
 import { Chip, SectionHeading } from "./atoms";
 import { Board } from "./Board";
 import type { AdrRecord } from "./records";
@@ -289,22 +292,6 @@ function epicStartIndex(work: WorkItem, focusEpic: string | null): number {
 }
 
 /**
- * The comparison harness's addresses.
- *
- * `Variations.tsx` renders the prototype arrangements, and it owns a route of its own:
- * one segment per variation, so `#/sections-e/<workId>/<section>` names that variation
- * and its level. The shell is the shipped surface, so it answers `#/` and every work
- * item. It hands the harness addresses back whole, which keeps every existing variation
- * link working and keeps the prototype reachable for as long as it stays on disk.
- */
-const VARIATIONS_ROUTE = "variations";
-
-function isHarnessRoute(workId: string | null): boolean {
-  if (workId === null) return false;
-  return workId === VARIATIONS_ROUTE || VARIATION_IDS.includes(workId);
-}
-
-/**
  * The rail's two widths, in the tokens section 9.1 and 9.2 give them.
  *
  * The sidebar ships 16 rem and 3 rem. The spec fixes 248 px expanded and 56 px
@@ -495,14 +482,6 @@ export default function ShellApp() {
   useRailArrowKeys({ source: railSource, go });
 
   /* ---------------------------------------------------------------- states */
-
-  /*
-   * The harness answers its own addresses and nothing below it runs. A variation link is
-   * not a work item, so the shell neither resolves one nor reports one missing.
-   */
-  if (isHarnessRoute(route.workId)) {
-    return <VariationsHarness />;
-  }
 
   if (load.state === "failed") {
     return (

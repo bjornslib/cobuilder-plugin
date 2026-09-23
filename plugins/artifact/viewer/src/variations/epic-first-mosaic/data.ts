@@ -18,7 +18,7 @@
  * that shows a missing record says so. Nothing here invents a value to fill a gap.
  */
 
-import { BUNDLE_DATA_URL } from "@/data/bundle";
+import { loadDesigns as readDesigns } from "@/data/bundle";
 import type {
   Entities,
   EpicDesignEntity,
@@ -28,8 +28,6 @@ import type {
   PullRequest,
   SliceEntity,
 } from "@/data/types";
-
-export const DESIGNS_URL = `${BUNDLE_DATA_URL}designs.js`;
 
 /* ------------------------------------------------------------------ records */
 
@@ -138,56 +136,24 @@ export interface DesignRecord {
 
 export type DesignRecords = Record<string, DesignRecord>;
 
-function isDesignRecords(value: unknown): value is DesignRecords {
-  if (typeof value !== "object" || value === null) return false;
-  const first = Object.values(value as DesignRecords)[0];
-  return typeof first === "object" && first !== null && "goal" in first;
-}
-
-function readInlined(): DesignRecords | undefined {
-  const holder = window as unknown as { DESIGNS?: unknown };
-  return isDesignRecords(holder.DESIGNS) ? holder.DESIGNS : undefined;
-}
-
-let pending: Promise<DesignRecords> | null = null;
-
-/** Read the per-design records, from the inlined global or from the served bundle. */
+/**
+ * The per-design records, read through the one module under `src/` that names a bundle
+ * global.
+ *
+ * This variation used to append the `<script src>` tag for `data/designs.js` itself and
+ * read the global that tag assigned. Slice 4 of cobuilder-viewer makes `src/data/` the
+ * one place that names a global, so `@/data/bundle`'s `loadDesigns` reads it now: it
+ * prefers the inlined global a published file writes, and it appends the sibling tag
+ * when there is none.
+ *
+ * THE FUNCTION BELOW KEEPS THIS VARIATION'S OWN NAME AND ITS OWN RECORD TYPES, so no
+ * board of this variation changes. The cast is the whole of the difference. A board here
+ * reads `goal.created` as a string, and the data module types every field of a derived
+ * record as possibly absent, because a file that did not load can hold none of them.
+ * The runtime value is one object under either declaration.
+ */
 export function loadDesigns(): Promise<DesignRecords> {
-  const inlined = readInlined();
-  if (inlined) return Promise.resolve(inlined);
-  if (pending) return pending;
-
-  pending = new Promise<DesignRecords>((resolve, reject) => {
-    const tag = document.createElement("script");
-    tag.src = DESIGNS_URL;
-    tag.async = true;
-    tag.onload = () => {
-      const loaded = readInlined();
-      if (loaded) resolve(loaded);
-      else {
-        pending = null;
-        reject(
-          new Error(
-            `${DESIGNS_URL} loaded but assigned no window.DESIGNS. The file is a ` +
-              `sibling under data/, and it assigns one global.`,
-          ),
-        );
-      }
-    };
-    tag.onerror = () => {
-      pending = null;
-      reject(
-        new Error(
-          `The dev server did not serve ${DESIGNS_URL}. Check that the bundle ` +
-            `exists at .cobuilder-architect/self/ and that npm run dev is the ` +
-            `server you are reading.`,
-        ),
-      );
-    };
-    document.head.appendChild(tag);
-  });
-
-  return pending;
+  return readDesigns() as unknown as Promise<DesignRecords>;
 }
 
 /* -------------------------------------------------------------------- slots */

@@ -1,11 +1,12 @@
 /**
  * The dev-only entry for the FlightDeck prototype.
  *
- * It exists for one reason: this variation is deliberately absent from
- * `src/Variations.tsx` and from `src/shell/App.tsx`. That file's `VARIATION_IDS` and its
- * static imports are what would carry a variation into the shipped
- * `plugins/artifact/viewer/index.html`, and slice 14 forbids exactly that. So the
- * prototype gets its own page instead, and the dev server serves it at:
+ * It exists for one reason: this variation is deliberately absent from the shipped
+ * graph. `src/shell/App.tsx` is the entry the build reaches, and no file below it imports
+ * this variation, so none of this prototype's code travels into the shipped
+ * `plugins/artifact/viewer/index.html`. Slice 14 of cobuilder-viewer gives the prototype
+ * a page of its own for exactly that reason, and slice 4 gave every other variation the
+ * same treatment. The dev server serves this one at:
  *
  *   http://localhost:5273/variations/flightdeck/dev.html
  *

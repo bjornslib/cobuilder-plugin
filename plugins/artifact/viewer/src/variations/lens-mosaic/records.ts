@@ -9,10 +9,11 @@
  * `src/data/bundle.ts` fixes how a surface reaches a sibling under `data/`: the dev
  * server mounts the bundle root at `/bundle/`, every sibling has a `.js` twin, and
  * that twin assigns a global. `index.json` has an `.js` twin too, so a surface can
- * read either form. This reader follows that rule exactly. It appends one script
- * tag, waits for `window.DESIGNS`, and reads the global. A published Artifact
- * inlines the same global and this reader returns it with no request, which is why
- * the global is checked first.
+ * read either form. Slice 4 of cobuilder-viewer makes `@/data/bundle` the one module
+ * under `src/` that names a global, so this file reads the records through
+ * `loadDesigns()` there instead of appending a tag of its own. That reader appends the
+ * same tag, prefers the inlined global a published Artifact writes, and returns the
+ * same object.
  *
  * The types below are written from the real records. A field is optional where the
  * corpus holds a record without it, and no field is invented.
@@ -20,7 +21,7 @@
 
 import { useEffect, useState } from "react";
 
-import { BUNDLE_DATA_URL } from "@/data/bundle";
+import { loadDesigns as readDesigns } from "@/data/bundle";
 
 export interface GoalEpic {
   id: string;
@@ -144,53 +145,28 @@ export interface DesignRecord {
 
 export type DesignRecords = Record<string, DesignRecord>;
 
-/**
- * `window.DESIGNS` is read through a cast rather than through a global declaration.
- * Two variations in this app read the same record, and two `declare global` blocks
- * for one property must agree on its type or neither compiles. A local cast cannot
- * collide with a sibling.
- */
-function globalRecords(): DesignRecords | undefined {
-  return (window as unknown as { DESIGNS?: DesignRecords }).DESIGNS;
-}
-
 /** The narrative levels, whichever way round the record nests them. */
 export function levelsOf(narrative: Narrative | undefined): NarrativeLevels | null {
   if (!narrative) return null;
   return narrative.levels ?? narrative;
 }
 
+/**
+ * Read every design's authored records, through the data module.
+ *
+ * This variation used to append the `data/designs.js` tag and read `window.DESIGNS`
+ * itself. It reads `@/data/bundle`'s `loadDesigns` now, which appends the same tag,
+ * prefers the inlined global a published file writes, and caches the promise so React's
+ * strict mode cannot race two tags for one file.
+ *
+ * THE NAME AND THE TYPES BELOW ARE THIS VARIATION'S OWN, so no tile of this variation
+ * changes. The cast is the whole of the difference. A tile here reads `goal.rounds` and
+ * `assessment.findings`, and the data module types every field of a derived record as
+ * possibly absent, because a file that did not load can hold none of them. The runtime
+ * value is one object under either declaration.
+ */
 export function loadDesignRecords(): Promise<DesignRecords> {
-  const inlined = globalRecords();
-  if (inlined) return Promise.resolve(inlined);
-
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = `${BUNDLE_DATA_URL}designs.js`;
-    script.async = true;
-    script.onload = () => {
-      const loaded = globalRecords();
-      if (loaded) resolve(loaded);
-      else {
-        reject(
-          new Error(
-            `${BUNDLE_DATA_URL}designs.js loaded and assigned no window.DESIGNS. ` +
-              `Check that the bundle was built by the current shared/build_index.py.`,
-          ),
-        );
-      }
-    };
-    script.onerror = () => {
-      reject(
-        new Error(
-          `The dev server did not serve ${BUNDLE_DATA_URL}designs.js. ` +
-            `Check that the bundle exists at .cobuilder-architect/self/ and that ` +
-            `npm run dev is the server you are reading.`,
-        ),
-      );
-    };
-    document.head.appendChild(script);
-  });
+  return readDesigns() as unknown as Promise<DesignRecords>;
 }
 
 export type RecordsLoad =

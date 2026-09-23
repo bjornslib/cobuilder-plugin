@@ -18,9 +18,9 @@
  * own ref, remembers its offset per level-and-section as the switch happens, and restores
  * it when the first mode comes back.
  *
- * WHAT THIS FILE DOES NOT DO. It does not register itself in `src/Variations.tsx`, and it
- * must not. That file imports every variation statically and `src/shell/App.tsx` imports
- * that file, so a variation registered there travels into the shipped
+ * WHAT THIS FILE DOES NOT DO. Nothing in the shipped graph imports it, and nothing must.
+ * `src/shell/App.tsx` is the only entry the build reaches, so a variation that no file
+ * below that entry imports stays out of the shipped
  * `plugins/artifact/viewer/index.html`. This prototype is served by its own dev entry at
  * `variations/flightdeck/dev.html` and it stays outside the shipped graph, which is the
  * slice's third regression clause. `npm run build` proves it: the committed file's hash

@@ -61,8 +61,10 @@
  * `data/index.json`, and every record body comes from `data/designs.js` and
  * `data/adrs.js`.
  *
- * This file is scaffolding for a design decision, in the same sense `Variations.tsx`
- * is. When the arrangement is chosen, the shell becomes the Work surface.
+ * This file is scaffolding for a design decision. It was one of the arrangements the
+ * comparison harness rendered side by side; that harness is gone, and this file keeps its
+ * own dev entry at `variations/sections-e/dev.html`. When the arrangement is chosen, the
+ * shell becomes the Work surface.
  */
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";

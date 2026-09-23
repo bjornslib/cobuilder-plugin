@@ -11,15 +11,16 @@
  *   2. `loadDesigns()` here reads `data/designs.js`, the file that holds the six
  *      authored records per design. The shipped viewer loads it as a sibling
  *      `<script src="../data/designs.js">`, and that tag assigns `window.DESIGNS`.
- *      A published file inlines the same global. This loader prefers a global that
- *      already exists, and injects the tag when it does not, so both readers meet
- *      at one function exactly as `bundle.ts` describes.
+ *      A published file inlines the same global. Slice 4 of cobuilder-viewer makes
+ *      `src/data/` the one place under `src/` that names a global, so this loader
+ *      hands the read to `@/data/bundle`'s `loadDesigns` and keeps only this
+ *      variation's own name and record types.
  *
  * `buildBundleModel()` is the single place that derives a verdict. A tile renders
  * a verdict and decides nothing, so no two tiles can disagree about one design.
  */
 
-import { BUNDLE_DATA_URL, BUNDLE_MOUNT } from "@/data/bundle";
+import { loadDesigns as readDesigns } from "@/data/bundle";
 import type {
   AdrEntity,
   AdrToPullRequest,
@@ -35,56 +36,21 @@ import type {
 import type { DesignRecordMap, DesignRecords, GoalEpic, NarrativeBeat, Readiness, RecordKind, TileKind, Verdict } from "./types";
 import { RECORD_KINDS } from "./types";
 
-declare global {
-  interface Window {
-    DESIGNS?: DesignRecordMap;
-  }
-}
-
-/** The dev-server path of the record file, declared by `vite.config.ts`. */
-export const DESIGNS_URL = `${BUNDLE_DATA_URL}designs.js`;
-
-function isDesignRecordMap(value: unknown): value is DesignRecordMap {
-  if (typeof value !== "object" || value === null) return false;
-  const first = Object.values(value as Record<string, unknown>)[0];
-  return typeof first === "object" && first !== null;
-}
-
-let pending: Promise<DesignRecordMap> | null = null;
-
 /**
- * Read every design's authored records.
+ * Read every design's authored records, through the data module.
  *
- * The promise is cached while it is in flight. A failure clears the cache, so a
- * reader that retries after an error makes a fresh request rather than replaying
- * the rejection.
+ * This variation used to check `window.DESIGNS` and inject the `data/designs.js` tag
+ * itself. `@/data/bundle`'s `loadDesigns` does both of those things, against the same
+ * global, so the read lives there now and this variation reads nothing global.
+ *
+ * THE NAME AND THE TYPES BELOW ARE THIS VARIATION'S OWN, so no tile of this variation
+ * changes. The cast is the whole of the difference. A tile here reads
+ * `assessment.findings`, and the data module types every field of a derived record as
+ * possibly absent, because a file that did not load can hold none of them. The runtime
+ * value is one object under either declaration.
  */
 export function loadDesigns(): Promise<DesignRecordMap> {
-  if (isDesignRecordMap(window.DESIGNS)) {
-    return Promise.resolve(window.DESIGNS);
-  }
-  if (!pending) {
-    pending = injectDesignsScript().catch((error: unknown) => {
-      pending = null;
-      throw error;
-    });
-  }
-  return pending;
-}
-
-function injectDesignsScript(): Promise<DesignRecordMap> {
-  return new Promise<DesignRecordMap>((resolve, reject) => {
-    const tag = document.createElement("script");
-    tag.src = DESIGNS_URL;
-    tag.async = true;
-    tag.onload = () => {
-      if (isDesignRecordMap(window.DESIGNS)) resolve(window.DESIGNS);
-      else reject(new Error(`${DESIGNS_URL} loaded and assigned no window.DESIGNS.`));
-    };
-    tag.onerror = () =>
-      reject(new Error(`${DESIGNS_URL} did not load. Check that ${BUNDLE_MOUNT} is served.`));
-    document.head.appendChild(tag);
-  });
+  return readDesigns() as unknown as Promise<DesignRecordMap>;
 }
 
 /* ------------------------------------------------------------------ verdicts */

@@ -11,18 +11,17 @@
  *   `data/adrs.js`    → `window.ADRS`, one entry per decision. Holds `maps_to.rule`,
  *                       which the index's `adr` entity does not carry.
  *
- * Each loader appends a `<script src>` tag and reads the global that tag assigns. That
- * global is the same one a published Artifact inlines, so a surface that reads the
- * global works under both readers with no branch.
+ * The reader for each one lives in the data module, which appends the same
+ * `<script src>` tag the shipped viewer appends and reads the global that tag assigns.
+ * That global is the same one a published Artifact inlines, so a surface works under
+ * both readers with no branch.
  *
  * Nothing here invents a value. A record file that did not load reads as absent, and
  * every panel says so rather than guessing.
  */
 
-import { BUNDLE_DATA_URL } from "@/data/bundle";
-
-export const DESIGNS_URL = `${BUNDLE_DATA_URL}designs.js`;
-export const ADRS_URL = `${BUNDLE_DATA_URL}adrs.js`;
+import { loadAdrs as readAdrs } from "@/data/adrs";
+import { loadDesigns as readDesigns } from "@/data/bundle";
 
 /* ------------------------------------------------------------------- designs */
 
@@ -130,12 +129,6 @@ export interface DesignRecord {
 
 export type DesignRecords = Record<string, DesignRecord>;
 
-function isDesignRecords(value: unknown): value is DesignRecords {
-  if (typeof value !== "object" || value === null) return false;
-  const first = Object.values(value as DesignRecords)[0];
-  return typeof first === "object" && first !== null && "goal" in first;
-}
-
 /* ----------------------------------------------------------------- decisions */
 
 export interface AdrMapsTo {
@@ -200,83 +193,31 @@ export interface AdrRecord {
 
 export type AdrRecords = Record<string, AdrRecord>;
 
-function isAdrRecords(value: unknown): value is AdrRecords {
-  if (typeof value !== "object" || value === null) return false;
-  const first = Object.values(value as AdrRecords)[0];
-  return typeof first === "object" && first !== null && "title" in first;
-}
-
 /* ------------------------------------------------------------------ loaders */
 
 /**
- * Append one sibling script tag and resolve with the global it assigns.
+ * The two record files, read through the one module under `src/` that names a bundle
+ * global.
  *
- * A missing file rejects with the path and the likely cause, so a panel can state
- * both. The promise is cached, because React's strict mode mounts twice and two
- * script tags for one file would work but would also race.
+ * This file used to append its own `<script src>` tag for each record file and read the
+ * global that tag assigned. Slice 4 of cobuilder-viewer makes `src/data/` the one place
+ * that names a global, so both readers live there now:
+ *
+ *   `data/designs.js` → `window.DESIGNS`   read by `@/data/bundle`'s `loadDesigns`
+ *   `data/adrs.js`    → `window.ADRS`      read by `@/data/adrs`'s `loadAdrs`
+ *
+ * THE TWO FUNCTIONS BELOW KEEP THIS VARIATION'S OWN NAMES AND ITS OWN RECORD TYPES, so
+ * no panel of this variation changes. The cast is the whole of the difference. A panel
+ * here reads `goal.name` as a string, and the data module types every field of a derived
+ * record as possibly absent, because a file that did not load can hold none of them. The
+ * runtime value is one object under either declaration.
  */
-function loadGlobal<T>(url: string, globalName: string, looksRight: (v: unknown) => v is T) {
-  const holder = window as unknown as Record<string, unknown>;
-
-  const read = (): T | undefined => {
-    const value = holder[globalName];
-    return looksRight(value) ? value : undefined;
-  };
-
-  const inlined = read();
-  if (inlined) return Promise.resolve(inlined);
-
-  return new Promise<T>((resolve, reject) => {
-    const tag = document.createElement("script");
-    tag.src = url;
-    tag.async = true;
-    tag.onload = () => {
-      const loaded = read();
-      if (loaded) resolve(loaded);
-      else {
-        reject(
-          new Error(
-            `${url} loaded but assigned no window.${globalName}. The file is a ` +
-              `sibling under data/, and it assigns exactly one global.`,
-          ),
-        );
-      }
-    };
-    tag.onerror = () => {
-      reject(
-        new Error(
-          `The dev server did not serve ${url}. Check that the bundle exists at ` +
-            `.cobuilder-architect/self/ and that npm run dev is the server you are reading.`,
-        ),
-      );
-    };
-    document.head.appendChild(tag);
-  });
-}
-
-let designsPending: Promise<DesignRecords> | null = null;
-let adrsPending: Promise<AdrRecords> | null = null;
-
 export function loadDesigns(): Promise<DesignRecords> {
-  if (!designsPending) {
-    designsPending = loadGlobal(DESIGNS_URL, "DESIGNS", isDesignRecords).catch(
-      (error: unknown) => {
-        designsPending = null;
-        throw error;
-      },
-    );
-  }
-  return designsPending;
+  return readDesigns() as unknown as Promise<DesignRecords>;
 }
 
 export function loadAdrs(): Promise<AdrRecords> {
-  if (!adrsPending) {
-    adrsPending = loadGlobal(ADRS_URL, "ADRS", isAdrRecords).catch((error: unknown) => {
-      adrsPending = null;
-      throw error;
-    });
-  }
-  return adrsPending;
+  return readAdrs() as unknown as Promise<AdrRecords>;
 }
 
 /* -------------------------------------------------------------------- text */
