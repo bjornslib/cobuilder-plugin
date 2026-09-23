@@ -686,10 +686,7 @@ function DecisionsTile(p: TileProps) {
   const { data, epic, slice } = p;
 
   const reachOf = useMemo(() => {
-    return (adrId: string) => {
-      const joined = data.joins.adr_to_pull_request[adrId];
-      return joined ? joined : null;
-    };
+    return (adrId: string) => data.joins.adrPullRequest(adrId);
   }, [data.joins]);
 
   const epicForPr = useMemo(() => {
@@ -713,7 +710,7 @@ function DecisionsTile(p: TileProps) {
     const reachingPr =
       source.pr === null
         ? []
-        : Object.entries(data.joins.adr_to_pull_request)
+        : [...data.joins.adrPullRequests()]
             .filter(([, joined]) => joined.pr === source.pr)
             .map(([adrId, joined]) => ({ adrId, via: joined.via }));
 
@@ -937,7 +934,7 @@ function BuildTile(p: TileProps) {
           {slices.length === 0 ? (
             <Unavailable
               reason="No slice resolves to this epic, so the slice loop has nothing to show."
-              detail={`joins.slice_to_epic holds ${Object.keys(data.joins.slice_to_epic).length} entries and none names ${epic.epic.id}.`}
+              detail={`joins.slice_to_epic holds ${data.joins.sliceToEpicCount()} entries and none names ${epic.epic.id}.`}
             />
           ) : (
             <div>
@@ -1055,7 +1052,7 @@ function BuildTile(p: TileProps) {
                 : `${data.designSlices.length} slices under ${
                     new Set(
                       data.designSlices.map(
-                        (slice) => data.joins.slice_to_epic[slice.id],
+                        (slice) => data.joins.epicOfSlice(slice.id),
                       ),
                     ).size
                   } of its ${data.epics.length} epics.`}
@@ -1190,7 +1187,7 @@ function PullRequestTile(p: TileProps) {
         {pr === null ? (
           <Unavailable
             reason={`No pull request reaches epic ${source.epic.epic_id}.`}
-            detail={`joins.epic_to_pull_request holds ${Object.keys(data.joins.epic_to_pull_request).length} entries across the whole index, and none names ${source.epic.id}.`}
+            detail={`joins.epic_to_pull_request holds ${data.joins.epicToPullRequestCount()} entries across the whole index, and none names ${source.epic.id}.`}
             action={designAction(p, "Read the design's pull requests instead")}
           />
         ) : (
@@ -1321,7 +1318,7 @@ export function StateLegends({ data }: { data: ScopeData }) {
   const epicCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const epic of data.entities.epic) {
-      const value = data.joins.epic_status[epic.id] ?? epic.state;
+      const value = data.joins.epicState(epic).state;
       counts.set(value, (counts.get(value) ?? 0) + 1);
     }
     return [...counts.entries()].sort((a, b) => b[1] - a[1]);

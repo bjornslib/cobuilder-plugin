@@ -318,7 +318,7 @@ function EpicCard({
                   {slices.length === 0 ? (
                     <Unavailable
                       reason="No slice in the index resolves to this epic."
-                      detail={`joins.slice_to_epic holds ${Object.keys(data.joins.slice_to_epic).length} entries across the whole index, and none of them names ${epic.id}.`}
+                      detail={`joins.slice_to_epic holds ${data.joins.sliceToEpicCount()} entries across the whole index, and none of them names ${epic.id}.`}
                     />
                   ) : (
                     <div className="flex flex-col gap-2">
@@ -564,7 +564,7 @@ export function BuildRegion({
         <SectionLabel icon={Layers}>Slices that resolve to no epic</SectionLabel>
         <p className="m-0 max-w-[86ch] font-serif text-[15.5px] leading-[1.55] text-ink-mid">
           {data.unresolved.length === 0
-            ? `Every slice in the index resolves to an epic. joins.slice_to_epic holds ${Object.keys(data.joins.slice_to_epic).length} entries and the index holds ${data.entities.slice.length} slice rows, so nothing is dropped from this board.`
+            ? `Every slice in the index resolves to an epic. joins.slice_to_epic holds ${data.joins.sliceToEpicCount()} entries and the index holds ${data.entities.slice.length} slice rows, so nothing is dropped from this board.`
             : `${data.unresolved.length} slice rows resolve to no epic. They are listed here rather than dropped.`}
         </p>
         {data.unresolved.length > 0 ? (

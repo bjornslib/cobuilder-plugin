@@ -28,11 +28,11 @@ import { ArrowLeft, CornerDownRight, RotateCw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
-  designRows,
+  designRowsOf,
   entitiesOf,
-  joinsOf,
   loadIndex,
 } from "@/data/bundle";
+import { resolvedJoinsOf } from "@/data/joins";
 import type { AdrEntity, DesignRow, RecordIndex } from "@/data/types";
 import { cn } from "@/lib/utils";
 
@@ -135,13 +135,7 @@ export default function LensMosaic({
 
   const rows: DesignRow[] = useMemo(() => {
     if (!index) return [];
-    const entities = entitiesOf(index);
-    return designRows(
-      entities.design,
-      entities.epic,
-      entities.slice,
-      joinsOf(index),
-    );
+    return designRowsOf(index);
   }, [index]);
 
   const adrsById: Map<string, AdrEntity> = useMemo(() => {
@@ -363,7 +357,7 @@ function Mosaic({
   onRetryRecords: () => void;
 }) {
   const { design } = row;
-  const joins = joinsOf(index);
+  const joins = resolvedJoinsOf(index);
   const supersededBy = record?.goal.superseded_by ?? null;
   const supersedes = record?.goal.supersedes ?? [];
 

@@ -6,14 +6,15 @@
  * runners: `npm test` runs the behaviour, and `npm run typecheck` runs the type guards.
  * A type guard is a no-op at runtime, so its state shows in the `tsc` output alone.
  *
- * WHY SOME CASES READ THE SOURCE. Three criteria are about an absence: no join derived
- * outside the data module (C1), no global read outside it (C4). A reader can only fail an
- * absence by looking at the tree, so those cases scan the source and name the structure
+ * WHY SOME CASES READ THE SOURCE. Two criteria are about an absence: no join resolved
+ * outside the data module (C1), and no global read outside it (C4). A reader can only fail
+ * an absence by looking at the tree, so those cases scan the source and name the structure
  * they inspect. A hit is reported as `path:line: text`, so a failure shows what it found.
  *
- * WHAT THE SCAN READS. Comments are blanked before the scan, and string literals are kept,
- * so a comment that names a global is not a reader of it, and `loadGlobal(url, "ADRS", f)`
- * is. One limit: a global read inside a `${}` of a template literal is not seen.
+ * WHAT THE SCAN READS. Each criterion reads a projection of the source in which comments
+ * are blanked, and the text of a literal is kept or blanked according to the question that
+ * criterion asks. The projection block below states both projections, and why this file no
+ * longer scans quote characters by hand.
  *
  * WHICH GLOBALS THE SCAN NAMES. The criterion's list says `window.DIFFS`, and the bundle
  * does not write that name. `data/diffs-pr{N}.js` writes `window.DIFFS_BY_PR[N]`, and
@@ -26,20 +27,35 @@
  * fires. `word boundary` keeps the two apart: `\bDIFFS\b` does not match inside
  * `DIFFS_BY_PR`, so one reader is reported once.
  *
- * WHICH FILES THE SCAN COVERS. Every `.ts` and `.tsx` under `src/`, apart from three sets:
- * the test files, `src/data/` itself (that is the one module the criteria name), and
- * `src/variations/`. `src/Variations.tsx` calls the variations "scaffolding for a design
- * decision ... not part of the shipped viewer", and each prototype carries its own reader
- * on purpose. Everything else is covered, and that includes `src/shell/`,
- * `src/components/`, `src/lib/`, `src/hooks/`, and the two files the harness keeps at the
- * top of `src/`. A criterion that fails on a harness file is still a criterion that fails,
- * because the build carries every file the shell can reach.
+ * WHICH FILES THE SCAN COVERS. Every `.ts` and `.tsx` under `src/`, apart from two sets:
+ * the test files and `src/data/` itself, which is the one module the criteria name. No
+ * path under `src/` is excluded. `src/variations/` is covered along with `src/shell/`,
+ * `src/components/`, `src/hooks/`, `src/lib/`, and the two files at the top of `src/`,
+ * `App.tsx` and `main.tsx`.
  *
- * WHAT THAT EXCLUSION LEAVES OUT. A scope that widened to `src/variations/` would add 77
- * join-key lines and 16 global-read lines today, comments blanked, counted with the same
- * scan. Those prototypes are the arrangement each design decision argued against, and each
- * one reads the bundle its own way. No data-layer move in `src/shell/` would clear them,
- * so the widened scope would stay red until the harness goes.
+ * WHY NOTHING IS EXCLUDED NOW. A scope that once left `src/variations/` out did so for a
+ * reason that is gone. `src/Variations.tsx` imported every prototype statically, so the
+ * build carried each prototype's code and its duplicate Sheet, panel, atoms, and markdown
+ * copies. That harness is deleted, the shell's variations route with it, and each
+ * prototype has its own dev entry, so no prototype enters the built file.
+ *
+ * WHAT THE WIDENED SCOPE FINDS TODAY. Both cases pass, and both read every file under
+ * `src/` with no `src/variations/` exclusion. Neither needs one.
+ *
+ *   C4 passes. The six globals are read in `src/data/` alone. Each prototype handed its
+ *   own reader to the data module, so no file outside it names a global.
+ *
+ *   C1 passes. Every join resolves under `src/data/`, in `works.ts` and in `joins.ts`, and
+ *   a surface consumes the resolved value. The old pattern named 78 lines across 13 files,
+ *   and 48 of those were a real resolution, in 11 of the files: a join lookup, or a fallback
+ *   to an entity's own placeholder. That work moved onto the data module, and no line outside
+ *   it resolves a join or reads a join key.
+ *
+ * THE SCOPE IS A PROPERTY OF THE RULE, NOT OF THE BUNDLE. A criterion that reads every file
+ * under `src/` is the honest reading of the rule, and it does not depend on which files the
+ * build happens to carry. A prototype that resolved a join is a second source for one fact
+ * whether or not it ships, and C1 names that defect. So the case reports it either way,
+ * rather than hide it behind an exclusion that a later harness change would invalidate.
  *
  * WHAT THE SCAN DOES NOT COVER, and why the criterion stays partly unmet. C3's own
  * evidence is a served bundle read through the ChromeDevTools MCP tools. No runner in
@@ -52,6 +68,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 
 import { cleanup, render, waitFor } from "@testing-library/react";
+import ts from "typescript";
 import { beforeAll, describe, expect, it } from "vitest";
 import { expectTypeOf } from "vitest";
 
@@ -92,78 +109,163 @@ function walk(dir: string): string[] {
 }
 
 /**
- * Blank every comment and keep every string.
+ * The literal node kinds: every range of text that is data rather than code.
  *
- * Line numbers survive, because a comment is replaced by spaces and its newlines are
- * kept. A string survives, because a `//` inside one is not a comment.
+ * A template is the one kind worth naming. `TemplateHead`, `TemplateMiddle`, and
+ * `TemplateTail` are the three text chunks of `` `a${x}b${y}c` ``, and the two `${}`
+ * substitutions sit between them as ordinary expression nodes. Blanking the chunks alone
+ * therefore keeps the substitutions as code, which is what C1 needs: a join read inside a
+ * `${}` is a read of it.
  */
-function blankComments(code: string): string {
-  let out = "";
-  let i = 0;
-  let mode: "code" | "line" | "block" | "single" | "double" | "tick" = "code";
+const LITERAL_KINDS = new Set<ts.SyntaxKind>([
+  ts.SyntaxKind.StringLiteral,
+  ts.SyntaxKind.NoSubstitutionTemplateLiteral,
+  ts.SyntaxKind.TemplateHead,
+  ts.SyntaxKind.TemplateMiddle,
+  ts.SyntaxKind.TemplateTail,
+  ts.SyntaxKind.RegularExpressionLiteral,
+  /* JSX text is prose a reader sees, so it is data for the same reason a string is. */
+  ts.SyntaxKind.JsxText,
+]);
 
-  while (i < code.length) {
-    const ch = code[i];
-    const next = code[i + 1];
+/** A `.tsx` file is parsed as TSX, so a JSX element is not read as a type assertion. */
+function scriptKind(file: SourceFile): ts.ScriptKind {
+  return file.path.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
+}
 
-    if (mode === "code") {
-      if (ch === "/" && next === "/") {
-        mode = "line";
-        out += "  ";
-        i += 2;
-        continue;
-      }
-      if (ch === "/" && next === "*") {
-        mode = "block";
-        out += "  ";
-        i += 2;
-        continue;
-      }
-      if (ch === "'") mode = "single";
-      else if (ch === '"') mode = "double";
-      else if (ch === "`") mode = "tick";
-      out += ch;
-      i += 1;
-      continue;
-    }
+/** Every range of literal text in one file, in source order. */
+function literalRanges(file: SourceFile): Array<[number, number]> {
+  const source = ts.createSourceFile(
+    file.path,
+    file.text,
+    ts.ScriptTarget.Latest,
+    /* setParentNodes */ false,
+    scriptKind(file),
+  );
+  const ranges: Array<[number, number]> = [];
+  const visit = (node: ts.Node): void => {
+    if (LITERAL_KINDS.has(node.kind)) ranges.push([node.getStart(source), node.getEnd()]);
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return ranges;
+}
 
-    if (mode === "line") {
-      if (ch === "\n") mode = "code";
-      out += ch === "\n" ? "\n" : " ";
-      i += 1;
-      continue;
-    }
-
-    if (mode === "block") {
-      if (ch === "*" && next === "/") {
-        mode = "code";
-        out += "  ";
-        i += 2;
-        continue;
-      }
-      out += ch === "\n" ? "\n" : " ";
-      i += 1;
-      continue;
-    }
-
-    /* Inside a string: an escape pair travels together, and the quote closes it. */
-    if (ch === "\\") {
-      out += ch + (next ?? "");
-      i += 2;
-      continue;
-    }
+/**
+ * Every range of comment trivia, read from text whose literals are already blanked.
+ *
+ * THE ORDER MATTERS, AND IT IS THE WHOLE FIX. The TypeScript scanner decides what a `/`
+ * is from the tokens around it, and it does not re-scan a slash as the start of a regular
+ * expression on its own. A regex holding a backtick, such as the markdown-fence matcher in
+ * `src/variations/record-mosaic/records.ts`, therefore ends the scanner's string state
+ * early, and every comment after it in that file is read as code. Blanking the literals
+ * first removes the characters that could mislead it, and blanking changes no offset, so
+ * the ranges still name the right lines. A comment cannot sit inside a literal, so no real
+ * comment is lost by reading them in this order.
+ */
+function commentRanges(text: string): Array<[number, number]> {
+  const scanner = ts.createScanner(
+    ts.ScriptTarget.Latest,
+    /* skipTrivia */ false,
+    ts.LanguageVariant.Standard,
+    text,
+  );
+  const ranges: Array<[number, number]> = [];
+  let token = scanner.scan();
+  while (token !== ts.SyntaxKind.EndOfFileToken) {
     if (
-      (mode === "single" && ch === "'") ||
-      (mode === "double" && ch === '"') ||
-      (mode === "tick" && ch === "`")
+      token === ts.SyntaxKind.SingleLineCommentTrivia ||
+      token === ts.SyntaxKind.MultiLineCommentTrivia
     ) {
-      mode = "code";
+      ranges.push([scanner.getTokenPos(), scanner.getTextPos()]);
     }
-    out += ch;
-    i += 1;
+    token = scanner.scan();
   }
+  return ranges;
+}
 
-  return out;
+/** Replace every character in every range with a space, and keep every newline. */
+function blankRanges(text: string, ranges: Array<[number, number]>): string {
+  const chars = text.split("");
+  for (const [start, end] of ranges) {
+    for (let i = start; i < end; i += 1) {
+      if (chars[i] !== "\n" && chars[i] !== "\r") chars[i] = " ";
+    }
+  }
+  return chars.join("");
+}
+
+/**
+ * True when the literal starting at `start` is an element-access key: `joins["KEY"]`.
+ *
+ * That is the same read as `joins.KEY`, spelled another way, so the code projection keeps
+ * it and the pattern matches the bracket form. C1's rule says "however the call site
+ * spells it", so a spelling the projection erased would be a hole rather than a mention.
+ */
+function isIndexKey(text: string, start: number): boolean {
+  let i = start - 1;
+  while (i >= 0 && (text[i] === " " || text[i] === "\t")) i -= 1;
+  return text[i] === "[";
+}
+
+/**
+ * The two projections of one source file. Everything the two absence criteria read comes
+ * from here, and neither criterion reads the file's own text.
+ */
+interface Projections {
+  /** Comments blanked, every literal kept. C4 reads this one. */
+  withStrings: string;
+  /** Comments blanked, and every literal's text blanked. C1 reads this one. */
+  codeOnly: string;
+}
+
+/**
+ * Project one source file twice.
+ *
+ * WHY THE TYPESCRIPT PARSER, AND NOT A SCANNER THAT TRACKS QUOTES. This file used to blank
+ * comments with a hand-rolled scanner that entered a string state on any quote character
+ * and left it on the matching one. A regular-expression literal holding a backtick ends
+ * that state early, and from there on the scanner reads comments as code and code as
+ * comments. Files such as `src/variations/record-mosaic/records.ts` and
+ * `src/variations/flightdeck/model.ts` contain exactly that, and the defect went unseen
+ * because the criteria were passing or failing for reasons other than the ones they state.
+ * The parser answers the question the scanner was guessing at: it has already decided which
+ * characters are literal text by the time it reports a comment.
+ *
+ * WHY TWO PROJECTIONS. The two criteria ask different questions, and one projection cannot
+ * answer both. C4 asks whether a file reaches a bundle global, and a global's name inside a
+ * string literal is how a generic reader reaches it, so C4 needs the literal kept. C1 asks
+ * whether a file resolves a join, and a join key inside a string literal resolves nothing:
+ * `title="joins.slice_to_epic"` is a tooltip, and a glossary is prose. So C1 needs the
+ * literal's text blanked.
+ *
+ * LINE NUMBERS SURVIVE BOTH. Literal text and comment text become spaces, and newlines
+ * stay, so a hit reads `path:line: text` and a failure shows the line it found.
+ */
+function projectionsFor(file: SourceFile): Projections {
+  const text = file.text;
+
+  const literals = literalRanges(file);
+  /* Comment ranges are read from the literals-blanked text. See `commentRanges`. */
+  const comments = commentRanges(blankRanges(text, literals));
+  const kept = literals.filter(([start]) => isIndexKey(text, start));
+
+  return {
+    withStrings: blankRanges(text, comments),
+    codeOnly: blankRanges(blankRanges(text, literals.filter((range) => !kept.includes(range))), comments),
+  };
+}
+
+/** One projection per file, built on first use. Parsing a file twice serves no purpose. */
+const PROJECTIONS = new Map<string, Projections>();
+
+function projected(file: SourceFile): Projections {
+  let held = PROJECTIONS.get(file.path);
+  if (!held) {
+    held = projectionsFor(file);
+    PROJECTIONS.set(file.path, held);
+  }
+  return held;
 }
 
 const ALL_SOURCES: SourceFile[] = walk(SRC_ROOT)
@@ -173,24 +275,30 @@ const ALL_SOURCES: SourceFile[] = walk(SRC_ROOT)
 /** The data module the criteria name: every source file under `src/data/`. */
 const DATA_SOURCES = ALL_SOURCES.filter((file) => file.path.startsWith("src/data/"));
 
-/** The shipped surface, with the prototype harness left out. See this file's header. */
-const OUTSIDE_SOURCES = ALL_SOURCES.filter(
-  (file) => !file.path.startsWith("src/data/") && !file.path.startsWith("src/variations/"),
-);
+/** Every source file under `src/` that is not the data module itself. See this file's header. */
+const OUTSIDE_SOURCES = ALL_SOURCES.filter((file) => !file.path.startsWith("src/data/"));
 
-function blanked(file: SourceFile): string {
-  return blankComments(file.text);
+/** The projection a case reads. C1 reads `codeOnly`; C4 and C2 read `withStrings`. */
+type Projection = keyof Projections;
+
+function projectedText(file: SourceFile, which: Projection): string {
+  return projected(file)[which];
 }
 
 function lineAt(text: string, index: number): number {
   return text.slice(0, index).split("\n").length;
 }
 
-/** Every line of a file that matches, with its own number, so a failure shows what it found. */
-function hitsByLine(pattern: RegExp, files: SourceFile[]): string[] {
+/**
+ * Every line of a file that matches, with its own number, so a failure shows what it found.
+ *
+ * The pattern runs against one projection of the source, line by line, so a hit names the
+ * line a reader would open. See the projection block above for what each one erases.
+ */
+function hitsByLine(pattern: RegExp, files: SourceFile[], which: Projection): string[] {
   const found: string[] = [];
   for (const file of files) {
-    blanked(file)
+    projectedText(file, which)
       .split("\n")
       .forEach((line, index) => {
         pattern.lastIndex = 0;
@@ -229,7 +337,7 @@ function declarationsOf(name: string, files: SourceFile[]): { at: string; text: 
   );
   const found: { at: string; text: string }[] = [];
   for (const file of files) {
-    const text = blanked(file);
+    const text = projectedText(file, "withStrings");
     for (const match of text.matchAll(pattern)) {
       const start = match.index + (match[0].startsWith("\n") ? 1 : 0);
       found.push({
@@ -248,15 +356,52 @@ function declarationsOf(name: string, files: SourceFile[]): { at: string; text: 
  * The longest name leads each alternative, so `slice_to_epic_unresolved` is not read as
  * `slice_to_epic`.
  */
-const JOIN_KEY =
-  /\b(epic_status|epic_to_pull_request|slice_to_epic_unresolved|slice_to_epic|adr_to_pull_request|adr_to_context|adr_to_district|context_verifies_district|district_uncovered|feature_gates)\b/;
+const JOIN_KEY_NAMES =
+  "epic_status|epic_to_pull_request|slice_to_epic_unresolved|slice_to_epic|adr_to_pull_request|adr_to_context|adr_to_district|context_verifies_district|district_uncovered|feature_gates";
+
+/**
+ * An expression rooted at a joins object: the name `joins`, or a call to `joinsOf`, which
+ * is the accessor `@/data/bundle` publishes. Everything C1 reports hangs off one of these.
+ *
+ * THE ROOT IS WHAT MAKES THE PATTERN ABOUT RESOLUTION. A join key is a resolution only
+ * when something reads it off a joins object. `joins.slice_to_epic[slice.id]` resolves one.
+ * A tooltip that reads `title="joins.slice_to_epic"`, and a glossary that explains the join
+ * rules in prose, name the same key and resolve nothing. Anchoring the pattern at the root
+ * separates the two, and the anchoring is what lets the pattern stop at the key's name
+ * instead of guessing from the shape of the line around it.
+ */
+const JOINS_ROOT = String.raw`(?:\bjoins\b|\bjoinsOf\s*\([^()]*\))`;
+
+/** One member access off that root: `epic_status`, or `["epic_status"]`. */
+const ANY_MEMBER = String.raw`(?:\.\s*[A-Za-z_$][\w$]*|\[\s*["'\`][^"'\`]*["'\`]\s*\])`;
+
+/** The member that IS the join key, in either spelling. */
+const KEY_MEMBER = String.raw`(?:\.\s*(?:${JOIN_KEY_NAMES})\b|\[\s*["'\`](?:${JOIN_KEY_NAMES})["'\`]\s*\])`;
+
+/**
+ * One join resolved: a join key read off a joins object, however the call site spells it.
+ *
+ * `data.joins.slice_to_epic[slice.id]`, `index.joins.slice_to_epic_unresolved`, and
+ * `joinsOf(load.index).slice_to_epic_unresolved` all fire, because the root is named in
+ * each one and a member of the chain is the key. `Object.keys(joins.feature_gates)` fires
+ * for the same reason: reading the key as a whole value is reading it.
+ *
+ * This pattern runs against the `codeOnly` projection, so a key that appears only inside a
+ * string literal, an attribute value, a comment, or prose cannot reach it. See the
+ * projection block above, and `isIndexKey` for the one literal the projection keeps.
+ */
+const JOIN_KEY_READ = new RegExp(`${JOINS_ROOT}(?:${ANY_MEMBER})*?${KEY_MEMBER}`);
 
 /**
  * The other shape of a second derivation: resolving a joined fact from the entity's own
  * placeholder instead. `epic.state` is the unrefined state and `epic.pr` is the
- * unrefined pull request, so a fallback to either one is a second answer.
+ * unrefined pull request, so a fallback to either one is a second answer. Both the `??`
+ * and the `||` form count, and both are read from the same field list.
  */
-const PLACEHOLDER_FALLBACK = /\?\?[^;\n]*\b(epic|slice)\.(state|pr)\b|\|\|[^;\n]*\b(epic|slice)\.(state|pr)\b/;
+const ENTITY_PLACEHOLDER = String.raw`\b(epic|slice)\.(state|pr)\b`;
+const PLACEHOLDER_FALLBACK = new RegExp(
+  `\\?\\?[^;\\n]*${ENTITY_PLACEHOLDER}|\\|\\|[^;\\n]*${ENTITY_PLACEHOLDER}`,
+);
 
 /* -------------------------------------------------- C2: the drift guard */
 
@@ -316,19 +461,30 @@ describe("the typed data layer", () => {
     /*
       The shell reads the joins the index carries. No component derives one of its own,
       so one fact keeps one source. The scan names both shapes of a second derivation:
-      a line that carries a join key, and a line that falls back to an entity's own
+      a line that resolves a join, and a line that falls back to an entity's own
       unrefined placeholder.
+
+      IT NAMES RESOLUTION, NOT MENTION. A join key is reported when something reads it off
+      a joins object. A tooltip that holds `joins.slice_to_epic` as its text, and a glossary
+      whose content is the join rules written as prose, name the key and resolve nothing, so
+      they are silent. The scan reads the `codeOnly` projection, which blanks every comment
+      and every literal's text, and keeps an element-access key so that `joins["KEY"]` is
+      still a read. See the projection block above.
+
+      The scope is every file under `src/` outside `src/data/`, so `src/variations/` is
+      scanned too. Every join resolves under `src/data/` today, in `works.ts` and `joins.ts`,
+      so this list is empty over the whole of `src/`. See this file's header.
     */
     const found = [
       ...new Set([
-        ...hitsByLine(JOIN_KEY, OUTSIDE_SOURCES),
-        ...hitsByLine(PLACEHOLDER_FALLBACK, OUTSIDE_SOURCES),
+        ...hitsByLine(JOIN_KEY_READ, OUTSIDE_SOURCES, "codeOnly"),
+        ...hitsByLine(PLACEHOLDER_FALLBACK, OUTSIDE_SOURCES, "codeOnly"),
       ]),
     ];
 
     expect(
       found,
-      "no file outside src/data/ may name a join key of the index or resolve a join from an entity's placeholder",
+      "no file outside src/data/ may resolve a join or fall back to an entity's own placeholder",
     ).toEqual([]);
   });
 
@@ -374,9 +530,13 @@ describe("the typed data layer", () => {
     /*
       The six script-tag globals the bundle defines, by the names the bundle writes. One
       module reads them all, so a surface never asks which reader a bundle came from.
+
+      The scope is every file under `src/` outside `src/data/`, so `src/variations/` is
+      scanned too. Every prototype hands its global read to the data module, so the case
+      passes over the whole of `src/` rather than over the shipped surface alone.
     */
     const unread = SHIPPED_GLOBALS.filter(
-      (name) => hitsByLine(readsGlobal(name), DATA_SOURCES).length === 0,
+      (name) => hitsByLine(readsGlobal(name), DATA_SOURCES, "withStrings").length === 0,
     );
 
     expect(unread, "src/data/ reads every one of the six globals").toEqual([]);
@@ -384,7 +544,7 @@ describe("the typed data layer", () => {
 
   it("C4: reads no bundle global outside the data module", () => {
     const found = GLOBAL_SPELLINGS.flatMap((name) =>
-      hitsByLine(readsGlobal(name), OUTSIDE_SOURCES),
+      hitsByLine(readsGlobal(name), OUTSIDE_SOURCES, "withStrings"),
     );
 
     expect(

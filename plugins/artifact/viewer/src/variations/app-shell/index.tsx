@@ -55,7 +55,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import ScrollProgress from "@/components/smoothui/scroll-progress";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { BUNDLE_DATA_URL, entitiesOf, joinsOf } from "@/data/bundle";
+import { BUNDLE_DATA_URL, entitiesOf, unresolvedSliceCount } from "@/data/bundle";
 import { cn } from "@/lib/utils";
 
 import { Chip, SectionHeading } from "./atoms";
@@ -325,7 +325,7 @@ export default function AppShell() {
   /* --------------------------------------------------------------- populated */
 
   const unresolvedSlices =
-    load.state === "ready" ? Object.keys(joinsOf(load.index).slice_to_epic_unresolved).length : 0;
+    load.state === "ready" ? unresolvedSliceCount(load.index) : 0;
   const allPullRequests = load.state === "ready" ? entitiesOf(load.index).pull_request : [];
   const adrs = load.state === "ready" ? load.adrs : {};
 

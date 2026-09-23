@@ -37,7 +37,8 @@ import { AlertTriangle, RefreshCw, Sun, Moon, Info } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { designRows, entitiesOf, joinsOf, loadIndex } from "@/data/bundle";
+import { designRowsOf, entitiesOf, loadIndex } from "@/data/bundle";
+import { resolvedJoinsOf } from "@/data/joins";
 import type { DesignRow, RecordIndex } from "@/data/types";
 
 import { Board, BoardKey } from "./Board";
@@ -150,13 +151,16 @@ export default function RecordMosaic(props: RecordMosaicProps = {}) {
   const rows: DesignRow[] = useMemo(() => {
     if (indexLoad.state !== "ready") return [];
     if (props.rows) return props.rows;
-    const entities = entitiesOf(indexLoad.index);
-    return designRows(entities.design, entities.epic, entities.slice, joinsOf(indexLoad.index));
+    return designRowsOf(indexLoad.index);
   }, [indexLoad, props.rows]);
 
   const model: BundleModel | null = useMemo(() => {
     if (indexLoad.state !== "ready" || records.state !== "ready") return null;
-    return buildBundleModel(indexLoad.index, rows, records.map);
+    return buildBundleModel(
+      { entities: entitiesOf(indexLoad.index), joins: resolvedJoinsOf(indexLoad.index) },
+      rows,
+      records.map,
+    );
   }, [indexLoad, records, rows]);
 
   const ctx: TileContext | null = useMemo(() => {

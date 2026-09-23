@@ -21,13 +21,13 @@
  */
 
 import { loadDesigns as readDesigns } from "@/data/bundle";
+import type { ResolvedJoins } from "@/data/joins";
 import type {
   AdrEntity,
   AdrToPullRequest,
   DesignEntity,
   DesignRow,
   EpicEntity,
-  Joins,
   PublicationEntity,
   PullRequest,
   SliceEntity,
@@ -397,11 +397,22 @@ function uniqueSorted(numbers: number[]): number[] {
 }
 
 /**
- * Derive one model per design. This is the only place that reads a join, decides a
- * verdict, or nests a slice under its epic.
+ * Derive one model per design. This is the only place that decides a verdict or nests a
+ * slice under its epic.
+ *
+ * THE JOINS COME IN RESOLVED. `index.joins` is `@/data/joins`'s view, so the two lookups
+ * below name no join key and neither fallback is decided here.
  */
 export function buildBundleModel(
-  index: { entities: { adr: AdrEntity[]; pull_request: PullRequest[]; publication: PublicationEntity[]; slice: SliceEntity[] }; joins: Joins },
+  index: {
+    entities: {
+      adr: AdrEntity[];
+      pull_request: PullRequest[];
+      publication: PublicationEntity[];
+      slice: SliceEntity[];
+    };
+    joins: ResolvedJoins;
+  },
   rows: DesignRow[],
   records: DesignRecordMap,
 ): BundleModel {
@@ -411,14 +422,14 @@ export function buildBundleModel(
 
   const slicesByEpic = new Map<string, SliceEntity[]>();
   for (const slice of index.entities.slice) {
-    const epicId = index.joins.slice_to_epic[slice.id];
+    const epicId = index.joins.epicOfSlice(slice.id);
     if (!epicId) continue;
     const list = slicesByEpic.get(epicId);
     if (list) list.push(slice);
     else slicesByEpic.set(epicId, [slice]);
   }
 
-  const unresolvedSlices = Object.keys(index.joins.slice_to_epic_unresolved)
+  const unresolvedSlices = [...index.joins.unresolvedSlices().keys()]
     .map((id) => sliceById.get(id))
     .filter((slice): slice is SliceEntity => Boolean(slice));
 
@@ -427,17 +438,17 @@ export function buildBundleModel(
     const goal = designRecords.goal;
 
     const epics: EpicModel[] = row.epics.map((epic) => {
-      const joined = index.joins.epic_status[epic.id];
+      const state = index.joins.epicState(epic);
       const goalEpic = (goal?.epics ?? []).find((entry) => entry.id === epic.epic_id) ?? null;
       const slices = (slicesByEpic.get(epic.id) ?? [])
         .slice()
         .sort((a, b) => a.n - b.n)
         .map((slice) => ({ slice, score: asNumber(slice.score), attempts: slice.attempts }));
-      const pr = index.joins.epic_to_pull_request[epic.id] ?? epic.pr ?? null;
+      const pr = index.joins.epicPullRequest(epic);
       return {
         epic,
-        status: joined ?? epic.state,
-        resolved: joined !== undefined,
+        status: state.state,
+        resolved: state.refined,
         goalEpic,
         slices,
         designDoc: Boolean(epic.design_doc),
@@ -460,7 +471,7 @@ export function buildBundleModel(
       id,
       adr: adrById.get(id) ?? null,
       primary: id === primary,
-      reach: index.joins.adr_to_pull_request[id] ?? null,
+      reach: index.joins.adrPullRequest(id),
     }));
 
     const routes = new Map<number, string[]>();

@@ -47,11 +47,11 @@ import {
 } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  designRows,
+  designRowsOf,
   entitiesOf,
-  joinsOf,
   loadIndex,
 } from "@/data/bundle";
+import { resolvedJoinsOf } from "@/data/joins";
 import type { RecordIndex } from "@/data/types";
 
 import { Chip, Stat, TextButton } from "./atoms";
@@ -182,11 +182,8 @@ function Board({
   theme: Theme;
 }) {
   const entities = useMemo(() => entitiesOf(index), [index]);
-  const joins = useMemo(() => joinsOf(index), [index]);
-  const rows = useMemo(
-    () => designRows(entities.design, entities.epic, entities.slice, joins),
-    [entities, joins],
-  );
+  const joins = useMemo(() => resolvedJoinsOf(index), [index]);
+  const rows = useMemo(() => designRowsOf(index), [index]);
 
   const data: ScopeData | null = useMemo(() => {
     if (rows.length === 0) return null;
@@ -222,10 +219,10 @@ function Board({
       ),
     );
 
-    const mapped = new Set(Object.keys(joins.slice_to_epic));
+    const mapped = joins.resolvedSliceIds();
     const unresolvedIds = [
       ...new Set([
-        ...Object.keys(joins.slice_to_epic_unresolved),
+        ...joins.unresolvedSlices().keys(),
         ...entities.slice.filter((slice) => !mapped.has(slice.id)).map((slice) => slice.id),
       ]),
     ];
@@ -236,7 +233,7 @@ function Board({
       unresolved.push({
         slice,
         epic: null,
-        unresolvedReason: joins.slice_to_epic_unresolved[id] ?? null,
+        unresolvedReason: joins.unresolvedSlices().get(id) ?? null,
       });
     }
 
@@ -265,7 +262,7 @@ function Board({
       designSlices: row.slices,
       unresolved,
       diagrams: diagramLevels(designRecord),
-      gates: joins.feature_gates[plan.slug] ?? [],
+      gates: joins.featureGates(plan.slug) ?? [],
       adrById,
       pullRequestById,
       epicDesigns: entities.epic_design,
@@ -534,13 +531,7 @@ export default function EpicFirstMosaic() {
 
   const rows = useMemo(() => {
     if (load.state !== "ready") return [];
-    const entities = entitiesOf(load.index);
-    return designRows(
-      entities.design,
-      entities.epic,
-      entities.slice,
-      joinsOf(load.index),
-    );
+    return designRowsOf(load.index);
   }, [load]);
 
   const laneRows = useMemo(() => laneRowsOf(rows, lane), [lane, rows]);

@@ -8,14 +8,17 @@
  *
  * TWO JOINTS DECIDE WHAT SITS UNDER WHAT, AND BOTH COME FROM THE INDEX:
  *
- *   `joins.slice_to_epic` is the only correct source for a slice's epic. The slice's
- *   own `feature` field names the plan directory, which is not always the design id.
- *   `cobuilder-family/14` is the real example: the feature is `cobuilder-family` and
- *   the epic is `plugin-split/E6`.
+ *   A slice's epic is the `slice_to_epic` join's answer. The slice's own `feature` field
+ *   names the plan directory, which is not always the design id. `cobuilder-family/14` is
+ *   the real example: the feature is `cobuilder-family` and the epic is `plugin-split/E6`.
  *
- *   `joins.epic_status` is the refined state. `epic.state` on the entity is the
- *   placeholder that `refine_epic_status()` overwrites when it can. This tile reads
- *   the join first and falls back to the entity, and it names which one it read.
+ *   An epic's state is the `epic_status` join's answer. `epic.state` on the entity is the
+ *   placeholder that `refine_epic_status()` overwrites when it can. This tile reads the
+ *   join first and falls back to the entity, and it names which one it read.
+ *
+ * BOTH ANSWERS COME FROM `@/data/joins`, NOT FROM THE INDEX'S TABLES. This tile calls
+ * `joins.epicOfSlice` and `joins.refinedEpicState`, so it names no join key of its own and
+ * holds no second derivation of either fact.
  *
  * Slices the join cannot place are listed at the foot of the tile with their stated
  * reason. In this corpus the join resolves all 29, so that section says so rather
@@ -32,7 +35,8 @@ import {
   Link2Off,
 } from "lucide-react";
 
-import type { DesignRow, EpicEntity, Joins, SliceEntity } from "@/data/types";
+import type { ResolvedJoins } from "@/data/joins";
+import type { DesignRow, EpicEntity, SliceEntity } from "@/data/types";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
@@ -60,19 +64,24 @@ function goalEpicOf(record: DesignRecord | null, epicId: string): GoalEpic | nul
   return record?.goal.epics?.find((entry) => entry.id === epicId) ?? null;
 }
 
-/** The state the index carries, and the field it came from. */
-function rawEpicState(epic: EpicEntity, joins: Joins): { state: string; source: string } {
-  const joined = joins.epic_status[epic.id];
-  if (joined) return { state: joined, source: "joins.epic_status" };
-  return { state: epic.state, source: "epic.state" };
+/**
+ * The state the index carries, and the field it came from.
+ *
+ * Which of the two answered is the data module's answer, not this tile's: `joins.ts`
+ * owns the fallback, and this function only names it for the reader.
+ */
+function rawEpicState(epic: EpicEntity, joins: ResolvedJoins): { state: string; source: string } {
+  const resolved = joins.epicState(epic);
+  if (resolved.refined) return { state: resolved.state, source: "joins.epic_status" };
+  return { state: resolved.state, source: "epic.state" };
 }
 
 function slicesOfEpic(
   row: DesignRow,
   epicId: string,
-  joins: Joins,
+  joins: ResolvedJoins,
 ): SliceEntity[] {
-  return row.slices.filter((slice) => joins.slice_to_epic[slice.id] === epicId);
+  return row.slices.filter((slice) => joins.epicOfSlice(slice.id) === epicId);
 }
 
 export function BuildTile({
@@ -85,7 +94,7 @@ export function BuildTile({
   row: DesignRow;
   record: DesignRecord | null;
   recordsLoad: RecordsLoad;
-  joins: Joins;
+  joins: ResolvedJoins;
   epicDesignTitles: Map<string, string>;
 }) {
   const reduce = useReducedMotion();
@@ -115,7 +124,7 @@ export function BuildTile({
   ).length;
   const epicCount = epics.length;
 
-  const unresolved = Object.entries(joins.slice_to_epic_unresolved);
+  const unresolved = [...joins.unresolvedSlices()];
 
   return (
     <LensTile
@@ -315,7 +324,7 @@ export function BuildTile({
                                 <AbsentLine>
                                   joins.slice_to_epic places no slice under this epic. The
                                   join resolves {slices.length} for this design and{" "}
-                                  {Object.keys(joins.slice_to_epic).length} in the whole
+                                  {joins.sliceToEpicCount()} in the whole
                                   corpus.
                                 </AbsentLine>
                               ) : (

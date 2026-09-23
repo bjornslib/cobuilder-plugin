@@ -16,7 +16,8 @@
 import { useState } from "react";
 import { Boxes, ChevronRight, Landmark } from "lucide-react";
 
-import type { AdrEntity, Joins } from "@/data/types";
+import type { ResolvedJoins } from "@/data/joins";
+import type { AdrEntity } from "@/data/types";
 import { cn } from "@/lib/utils";
 
 import { MermaidSourceList, diagramKind, diagramTitle } from "./MermaidView";
@@ -44,7 +45,7 @@ export function ArchitectureTile({
   load: RecordsLoad;
   designId: string;
   adrsById: Map<string, AdrEntity>;
-  joins: Joins;
+  joins: ResolvedJoins;
   theme: Theme;
 }) {
   const status = architectureStatus(record, designId);
@@ -132,7 +133,7 @@ export function ArchitectureTile({
                     key={id}
                     id={id}
                     adr={adrsById.get(id) ?? null}
-                    pullRequest={joins.adr_to_pull_request[id] ?? null}
+                    pullRequest={joins.adrPullRequest(id)}
                   />
                 ))}
               </ul>

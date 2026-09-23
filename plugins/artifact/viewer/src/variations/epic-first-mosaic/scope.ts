@@ -5,6 +5,10 @@
  * design at a time, and the lens tiles read whatever the current selection points at.
  * `ScopeData` is that resolution, built once in `index.tsx` and passed down, so no
  * tile asks a join question for itself and two tiles cannot disagree.
+ *
+ * `joins` IS THE DATA MODULE'S RESOLVED VIEW, not the index's raw tables. The tiles
+ * read `joins.epicOfSlice(...)` and `joins.epicState(...)`, which answer with resolved
+ * values, so no tile consults a join table of its own.
  */
 
 import type {
@@ -12,12 +16,12 @@ import type {
   Entities,
   EpicDesignEntity,
   GateStep,
-  Joins,
   ProgramDesignEntity,
   PullRequest,
   RecordIndex,
   SliceEntity,
 } from "@/data/types";
+import type { ResolvedJoins } from "@/data/joins";
 
 import type {
   DesignRecord,
@@ -49,7 +53,7 @@ export interface ScopeData {
   scope: Scope;
   index: RecordIndex;
   entities: Entities;
-  joins: Joins;
+  joins: ResolvedJoins;
   /** The `designs.js` records, or null when that file did not load. */
   records: DesignRecords | null;
   /** The reason `designs.js` did not load, when it did not. */

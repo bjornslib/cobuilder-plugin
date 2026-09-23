@@ -19,11 +19,11 @@
  */
 
 import { loadDesigns as readDesigns } from "@/data/bundle";
+import type { ResolvedJoins } from "@/data/joins";
 import type {
   Entities,
   EpicDesignEntity,
   EpicEntity,
-  Joins,
   ProgramDesignEntity,
   PullRequest,
   SliceEntity,
@@ -230,6 +230,13 @@ export function recordSlots(record: DesignRecord | undefined): SlotState[] {
 
 /* ------------------------------------------------------------------- joins */
 
+/*
+ * The join-derived values this board needs come from `@/data/joins`, which reads the
+ * index's tables and answers with resolved values. The three functions below keep this
+ * board's own rules — which slug a design's plan directory carries, what a missing
+ * record reads as — and take their inputs from that module rather than from a table.
+ */
+
 /**
  * A design's plan slug, and where the slug came from.
  *
@@ -245,13 +252,13 @@ export interface PlanSlug {
   via: "slice" | "design";
 }
 
-export function planSlugs(entities: Entities, joins: Joins): Map<string, PlanSlug> {
+export function planSlugs(entities: Entities, joins: ResolvedJoins): Map<string, PlanSlug> {
   const designOfEpic = new Map<string, string>();
   for (const epic of entities.epic) designOfEpic.set(epic.id, epic.design);
 
   const candidates = new Map<string, Set<string>>();
   for (const slice of entities.slice) {
-    const epicId = joins.slice_to_epic[slice.id];
+    const epicId = joins.epicOfSlice(slice.id);
     if (!epicId) continue;
     const designId = designOfEpic.get(epicId);
     if (!designId) continue;
@@ -263,7 +270,7 @@ export function planSlugs(entities: Entities, joins: Joins): Map<string, PlanSlu
   }
 
   const known = new Set<string>([
-    ...Object.keys(joins.feature_gates),
+    ...joins.featureGateSlugs(),
     ...entities.epic_design.map((doc) => doc.feature_slug),
     ...entities.program_design.map((doc) => doc.feature_slug),
   ]);
@@ -283,16 +290,14 @@ export function planSlugs(entities: Entities, joins: Joins): Map<string, PlanSlu
   return out;
 }
 
-/** The epic's refined state. The join is the refined value; `epic.state` is not. */
-export function refinedStatus(epic: EpicEntity, joins: Joins): string {
-  return joins.epic_status[epic.id] ?? epic.state;
+/** The epic's refined state. The index's value wins, and the entity's own field is not it. */
+export function refinedStatus(epic: EpicEntity, joins: ResolvedJoins): string {
+  return joins.epicState(epic).state;
 }
 
-/** The epic's pull request. The join is the resolved value; `epic.pr` is not. */
-export function epicPr(epic: EpicEntity, joins: Joins): number | null {
-  const joined = joins.epic_to_pull_request[epic.id];
-  if (typeof joined === "number") return joined;
-  return typeof epic.pr === "number" ? epic.pr : null;
+/** The epic's pull request. The index's value wins, and `epic.pr` is not it. */
+export function epicPr(epic: EpicEntity, joins: ResolvedJoins): number | null {
+  return joins.epicPullRequest(epic);
 }
 
 const ADR_CITE = /ADR-\d{4}/g;
@@ -327,7 +332,7 @@ export interface EpicDetail {
 
 export function epicDetail(
   epic: EpicEntity,
-  joins: Joins,
+  joins: ResolvedJoins,
   slicesByEpic: Map<string, SliceEntity[]>,
   pullRequests: Map<number, PullRequest>,
   docsByFeature: Map<string, EpicDesignEntity[]>,
@@ -398,11 +403,11 @@ export function epicSlots(detail: EpicDetail, plan: PlanSlug): SlotState[] {
 }
 
 export function groupSlicesByEpic(  slices: SliceEntity[],
-  joins: Joins,
+  joins: ResolvedJoins,
 ): Map<string, SliceEntity[]> {
   const out = new Map<string, SliceEntity[]>();
   for (const slice of slices) {
-    const epicId = joins.slice_to_epic[slice.id];
+    const epicId = joins.epicOfSlice(slice.id);
     if (!epicId) continue;
     const list = out.get(epicId);
     if (list) list.push(slice);
