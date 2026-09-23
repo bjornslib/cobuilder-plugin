@@ -27,7 +27,7 @@ E9, E10, E11, E12, E13, E14, E15, E16, E17, and E18.
 
 - [ ] Slice 1 — Tracer bullet: a publish survives a marker rename   score: —
 - [x] Slice 2 — Two builds produce the same bytes                   score: 1.00
-- [ ] Slice 3 — The build owns the committed file                   score: —
+- [x] Slice 3 — The build owns the committed file                   score: 1.00
 - [ ] Slice 4 — One typed model reads the bundle                    score: —
 - [ ] Slice 5 — The Work prototype, reviewed                        score: —
 - [x] Slice 6 — The shell lands on the bundle's designs             score: 1.00
@@ -76,8 +76,8 @@ action: unset that variable, then run `/login` and choose the subscription accou
 scored 0.50 of its four criteria, and its ladder row stays `pending` until the publishes run.
 
 Slice 1 belongs to `cobuilder-viewer/E1`, its only slice. Slices 6 and 7 belong to
-`cobuilder-viewer/E19` and stand at 1.0. Twelve slices of the sixteen have not run:
-3, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, and 16. Slice 1 ran, and it did not reach an
+`cobuilder-viewer/E19` and stand at 1.0. Eleven slices of the sixteen have not run:
+4, 5, 8, 9, 10, 11, 12, 13, 14, 15, and 16. Slice 1 ran, and it did not reach an
 accepted score.
 
 **Slice 2 ran on 2026-09-23 and scored 1.00**, weighted 0.09. It belongs to
@@ -102,6 +102,20 @@ because it fetches its data from the absolute path `/bundle/`, so serving it nee
 that holds a directory named `bundle`. Second, the validator reached the browser with the
 `agent-browser` CLI over CDP, not the ChromeDevTools MCP tools the rubric names, and it
 confirmed the page URL and title before each reading.
+
+**Slice 3 ran on 2026-09-23 and scored 1.00**, weighted 0.10. It belongs to
+`cobuilder-viewer/E2`, and its end is that the build owns the committed file. All five of
+its criteria scored 1.0, so the mean is 1.00. C1 and C2 are the CRITICAL pair. C1 (the
+build writes the committed file) scored 1.0: the build now writes
+`plugins/artifact/viewer/index.html` itself, at 1,184,484 bytes with sha256
+`0af3663ede577a0b9f8cad788dd5601832cd954562248fd6ee12a0b013dbd5c6`, and two builds wrote
+byte-identical files. C2 (one edited byte fails the guard) scored 1.0: a single flipped
+byte made the guard fail and name the offset. C3 (the build does not empty the plugin
+root) scored 1.0, and the plugin root survives a build. C4 (the committed file still boots
+and renders) scored 1.0 on a clean console. C5 (every named marker survives) scored 1.0,
+and the six marker names reach the built file. Slice 3 failed the slice's own regression
+check in two of its three clauses, and broke slice 1's seam. The last note under "Notes for
+a fresh session" records both.
 
 ## Escalated
 
@@ -236,3 +250,32 @@ them, so do not renumber a slice. The engineer moved those three forward because
 slice 15 is where that application can tell a pull request's story. Slice 14 ends in an
 approval, so the run stops there and waits for the engineer before slices 15 and 16.
 `04-slices.md` states the reason in full under "Why this order".
+
+**Slice 3 failed its regression check, and the guard itself carried a real defect.** The
+slice's regression check carries three clauses. Clause 2 holds, because no file outside the
+slice scope changed. Clause 1 and clause 3 do not hold. Ten cases that passed at the
+pre-slice commit `39c1065` fail after it. Five of those cases asserted the legacy
+hand-written viewer's markup: four are now rewritten against the React shell, and one is
+skipped with a message naming slice 10, all committed in `f42809d`. The other five are the
+export seam, and they stay red. Clause 3 fails because a publish of the newly built file
+does not run. The exporter matches a sibling data `<script src>` block and a Mermaid CDN
+tag, and the React build carries neither, so it stops with its own message, exits 1, and
+writes no file. The engineer accepted no publishing parity on 2026-09-23, so publishing the
+React viewer is a recorded, scoped gap. Slice 3 therefore broke slice 1's four marker
+tests, so E1's seam is unmet again on this branch. E1 was sequenced before E2 precisely to
+prevent this.
+
+**The validator found a real defect in the byte guard, and the fix shipped.** The guard
+read the committed file when it ran rather than when the file was collected. A sibling
+case's build therefore healed a hand edit, and the whole-file run reported a pass on an
+edited viewer. The committed bytes are now read once at collection.
+
+**Two affordances the React viewer does not carry.** A boundary finding no longer
+advertises itself as a decision candidate, and an `n/a` gate renders like a `pending` one
+with no approved-gate count. Slice 10 owns the surface for the second, and slice 10's
+rubric does not require the claim, so it is unowned by rubric.
+
+**The six markers reach the build through a classic inline script in `src/index.html`.**
+They do not travel through a bundled module, because the minifier strips `//` comments and
+esbuild's TypeScript transform strips them from a `.ts` module even unminified. Turning
+minification off instead would cost 1,261,969 bytes.
