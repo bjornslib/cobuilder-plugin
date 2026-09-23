@@ -49,8 +49,18 @@ import type {
   SliceEntity,
 } from "./types";
 
-/** The dev-server mount, declared in `vite.config.ts`. */
-export const BUNDLE_MOUNT = "/bundle/";
+/**
+ * Where a bundle's root sits, relative to whoever reads this file.
+ *
+ * The dev server mounts one bundle tree at `/bundle/`, declared in `vite.config.ts`.
+ * The shipped file is committed inside a bundle at `viewer/index.html`, so its bundle
+ * root is the directory above it and its data sits at `../data/`.
+ *
+ * `import.meta.env.DEV` is Vite's own switch, and it is resolved while the build runs.
+ * The build therefore ships one path and drops the other, and no runtime guess decides
+ * which reader is in play.
+ */
+export const BUNDLE_MOUNT = import.meta.env.DEV ? "/bundle/" : "../";
 export const BUNDLE_DATA_URL = `${BUNDLE_MOUNT}data/`;
 
 declare global {
@@ -82,6 +92,12 @@ function isRecordIndex(value: unknown): value is RecordIndex {
 /**
  * Read the record index, from the inlined global when a published file provided
  * one, and from the served bundle otherwise.
+ *
+ * The fetch below is the served path: it reaches outside the built file for a
+ * sibling. A published Artifact inlines `window.INDEX` as a literal instead, so the
+ * served path is the code `export_artifact.py` deletes at that point. The marker
+ * pair that names it lives in `src/index.html`'s seam block, because no `.ts` module
+ * here can carry a `//` comment through the build.
  */
 export async function loadIndex(): Promise<RecordIndex> {
   if (isRecordIndex(window.INDEX)) {
@@ -262,6 +278,12 @@ function isDesignRecords(value: unknown): value is DesignRecords {
  *
  * A file that assigns no global, and a file the server does not serve, each reject with
  * the path and the likely cause. A surface states both rather than show an empty board.
+ *
+ * The tag below is the served path: it reaches outside the built file for a sibling.
+ * A published Artifact inlines `window.DESIGNS` as a literal instead, so this is the
+ * code `export_artifact.py` deletes at that point. The pair that names it lives in
+ * `src/index.html`'s seam block, because no `.ts` module here can carry a `//`
+ * comment through the build.
  */
 function readScriptGlobal<T>(
   url: string,

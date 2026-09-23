@@ -12,6 +12,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
+  BUNDLE_DATA_URL,
   BUNDLE_MOUNT,
   designRows,
   entitiesOf,
@@ -70,9 +71,9 @@ function DataPathNote() {
       </CollapsibleTrigger>
       <CollapsibleContent className="px-3.5 pt-1 pb-3.5">
         <p className="max-w-[80ch] font-serif text-[13.5px] leading-[1.5] text-ink-mid">
-          The dev server mounts the bundle root at{" "}
+          The bundle root sits at{" "}
           <code className="font-mono text-[11.5px]">{BUNDLE_MOUNT}</code>, so this
-          page reads <code className="font-mono text-[11.5px]">/bundle/data/index.json</code>{" "}
+          page reads <code className="font-mono text-[11.5px]">{BUNDLE_DATA_URL}index.json</code>{" "}
           straight off disk. No regeneration step sits between the corpus and the
           board.
         </p>

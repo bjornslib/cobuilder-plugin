@@ -19,7 +19,7 @@
  * a verdict and decides nothing, so no two tiles can disagree about one design.
  */
 
-import { BUNDLE_DATA_URL } from "@/data/bundle";
+import { BUNDLE_DATA_URL, BUNDLE_MOUNT } from "@/data/bundle";
 import type {
   AdrEntity,
   AdrToPullRequest,
@@ -82,7 +82,7 @@ function injectDesignsScript(): Promise<DesignRecordMap> {
       else reject(new Error(`${DESIGNS_URL} loaded and assigned no window.DESIGNS.`));
     };
     tag.onerror = () =>
-      reject(new Error(`${DESIGNS_URL} did not load. Check that the dev server serves /bundle/.`));
+      reject(new Error(`${DESIGNS_URL} did not load. Check that ${BUNDLE_MOUNT} is served.`));
     document.head.appendChild(tag);
   });
 }

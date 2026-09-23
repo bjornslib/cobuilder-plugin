@@ -87,6 +87,46 @@ TOOLCHAIN_SKIP_REASON = (
 )
 
 
+def resolvable_git() -> tuple[str | None, str]:
+    """Return the git executable that runs here, or None and the reason.
+
+    The executable is resolved once, here, and the caller then uses the
+    absolute path it returns. The nested run in
+    test_a_checkout_without_node_skips_rather_than_fails installs a PATH of
+    `<tmp>:/usr/bin:/bin`, so a bare "git" resolves to /usr/bin/git there. On
+    an arm64 host that file is the xcrun shim, and an x86_64 process cannot
+    load the arm64-only libxcrun the shim needs. A git that cannot answer must
+    never be read as "the lockfile is untracked", so the probe below decides.
+    """
+    found = shutil.which("git")
+    if found is None:
+        return None, "no git is on PATH, so the lockfile's tracking cannot be read"
+    probe = subprocess.run([found, "--version"], capture_output=True, text=True)
+    if probe.returncode != 0:
+        lines = (probe.stderr or probe.stdout).strip().splitlines()
+        detail = lines[-1].strip() if lines else "no output"
+        return None, (
+            f"the git at {found} cannot run here, so the lockfile's tracking "
+            f"cannot be read ({detail})"
+        )
+    return found, ""
+
+
+def required_git() -> str:
+    """Return the git executable that runs here, or skip this case.
+
+    The skip reason names the resolved path and the host's fault. The type
+    here is str, and not str | None, so the call site hands a narrowed value
+    to subprocess.run. The assertion states that narrowing for a checker that
+    cannot see that pytest.skip never returns.
+    """
+    git, problem = resolvable_git()
+    if git is None:
+        pytest.skip(problem)
+    assert git is not None, problem
+    return git
+
+
 def needs_npm(case):
     """Mark a case as one that shells out to npm, and guard it.
 
@@ -214,20 +254,16 @@ def test_the_toolchain_is_pinned_and_recorded():
 
     The files read here are plugins/artifact/viewer/package-lock.json,
     plugins/artifact/viewer/.nvmrc, and plugins/artifact/viewer/package.json.
+
+    The three assertions above the last one read files and shell out to
+    nothing, so every host runs them. Only the last check needs git. It
+    resolves the executable with required_git(), calls it by absolute path,
+    and skips where that executable cannot run. This case reads no npm, so it
+    runs on a checkout that never installed Node.
     """
     assert LOCKFILE.is_file(), (
         "plugins/artifact/viewer/package-lock.json is absent. One lockfile is "
         "what fixes the dependencies two builds share."
-    )
-    tracked = subprocess.run(
-        ["git", "ls-files", "--error-unmatch", LOCKFILE.relative_to(REPO_ROOT).as_posix()],
-        cwd=REPO_ROOT,
-        capture_output=True,
-        text=True,
-    )
-    assert tracked.returncode == 0, (
-        "plugins/artifact/viewer/package-lock.json exists but git does not track "
-        "it. A lockfile outside version control pins nothing."
     )
 
     locked = json.loads(LOCKFILE.read_text(encoding="utf-8"))
@@ -251,6 +287,23 @@ def test_the_toolchain_is_pinned_and_recorded():
     )
     assert re.search(r"\d", str(engines["node"])), (
         f"engines.node reads {engines['node']!r}, which pins no Node major."
+    )
+
+    # The tracking check runs last, because it is the only check here that
+    # needs git. The three assertions above read files and shell out to
+    # nothing, so a host whose git cannot execute still gets all three. The
+    # skip below then removes this one check alone. Nothing follows it.
+    git = required_git()
+
+    tracked = subprocess.run(
+        [git, "ls-files", "--error-unmatch", LOCKFILE.relative_to(REPO_ROOT).as_posix()],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert tracked.returncode == 0, (
+        "plugins/artifact/viewer/package-lock.json exists but git does not track "
+        "it. A lockfile outside version control pins nothing."
     )
 
 
@@ -379,3 +432,234 @@ def test_a_checkout_without_node_skips_rather_than_fails(tmp_path):
         f"the nested run reported {summary!r}, so its filter did not exclude "
         f"{NESTING_NODE_ID}. A nested run that collects this case can recurse."
     )
+
+
+# ---- 5. the build owns the committed file (slice 3) ----
+#
+# E2's slice 3. From here on `plugins/artifact/viewer/index.html` is a build
+# output, and the cases below hold it to the build. A hand edit to that file
+# fails test_build_reproduces_the_committed_viewer, which names the first byte
+# that differs.
+#
+# The cases come from the epic design's Test Plan, in its own order. Three of
+# them run the build, so they carry the skip guard above. Two read
+# vite.config.ts, need no Node, and run on every checkout.
+
+EXPORT_ARTIFACT = REPO_ROOT / "plugins" / "artifact" / "scripts" / "export_artifact.py"
+EXPORT_DIR = EXPORT_ARTIFACT.parent
+
+
+def committed_bytes() -> bytes:
+    """The committed viewer: plugins/artifact/viewer/index.html.
+
+    Read before a build runs, because the build writes that same file from slice
+    3 on. The bytes read here are what the build must reproduce.
+    """
+    assert INDEX_HTML.is_file(), (
+        f"{INDEX_HTML.relative_to(REPO_ROOT).as_posix()} is absent. It is the file "
+        "the build writes, and the file this guard holds to the build."
+    )
+    return INDEX_HTML.read_bytes()
+
+
+def marker_names() -> list[str]:
+    """The marker names export_artifact.py matches, read from the exporter itself.
+
+    The exporter holds its marker list as module data, so this reads that data
+    and not a literal list kept here. A name added to the exporter joins
+    test_every_marker_name_survives_a_build with no edit to this file.
+    """
+    if str(EXPORT_DIR) not in sys.path:
+        sys.path.insert(0, str(EXPORT_DIR))
+    import export_artifact
+
+    markers = getattr(export_artifact, "MARKERS", None)
+    assert markers, (
+        "export_artifact.py exposes no MARKERS data, so the names the exporter "
+        "matches a viewer by cannot be read from it."
+    )
+    names: list[str] = []
+    for entry in markers:
+        if isinstance(entry, str):
+            names.append(entry)
+        elif isinstance(entry, dict):
+            names.append(entry["name"])
+        else:
+            names.append(entry.name)
+    return names
+
+
+def assert_bytes_match(built: bytes, expected: bytes, label: str) -> None:
+    """Fail when the build's bytes differ from `expected`, and name the offset.
+
+    One comparison serves both cases below: the case that holds the committed
+    file to the build, and the case that proves that comparison can fail.
+    """
+    offset = first_difference(built, expected)
+    assert offset is None, (
+        f"{label} differs from the build\n"
+        f"  build:    {describe(built)}\n"
+        f"  expected: {describe(expected)}\n"
+        f"  first differing offset: {offset}"
+    )
+
+
+# ---- 5a. the build writes the committed file (slice 3, C1) ----
+
+@needs_npm
+def test_build_reproduces_the_committed_viewer():
+    """A fresh build writes plugins/artifact/viewer/index.html byte for byte.
+
+    The committed bytes are read first, then the build runs, then the two are
+    compared. A difference means the committed file is not what the build
+    produces, so the shipped viewer and the source have parted.
+    """
+    expected = committed_bytes()
+    assert_bytes_match(run_build(), expected, "the committed viewer")
+
+
+@needs_npm
+def test_editing_the_output_fails_the_test(tmp_path):
+    """The guard can fail, and its failure names the edited byte's offset.
+
+    A guard that never fails proves nothing, so this case gives the comparison
+    something it must catch: one flipped byte, in a TEMPORARY COPY. The
+    committed file is read and never written. The last assertion re-reads it,
+    so a case that reached outside tmp_path fails here instead of passing.
+    """
+    source = committed_bytes()
+    at = len(source) // 2
+    edited = bytearray(source)
+    edited[at] ^= 0x01
+    assert bytes(edited) != source, "the edit changed no byte"
+
+    copy = tmp_path / "index.html"
+    copy.write_bytes(bytes(edited))
+
+    built = run_build()
+
+    with pytest.raises(AssertionError) as caught:
+        assert_bytes_match(
+            built, copy.read_bytes(), "an edited copy of the committed viewer"
+        )
+    message = str(caught.value)
+
+    reported = re.search(r"first differing offset:\s*(\d+)", message)
+    assert reported is not None, (
+        "the guard failed without naming the first differing offset\n"
+        f"--- failure message ---\n{message}"
+    )
+    assert int(reported.group(1)) == at, (
+        f"offset {at} holds the one edited byte, and the guard named offset "
+        f"{reported.group(1)} instead\n--- failure message ---\n{message}"
+    )
+
+    assert INDEX_HTML.read_bytes() == source, (
+        "this case left the committed viewer changed. The edit belongs in the "
+        "temporary copy alone. A difference here means this case wrote outside "
+        "tmp_path, or that the build rewrote the committed file with bytes other "
+        "than the ones it had read."
+    )
+
+
+# ---- 5b. every marker name reaches the output (slice 3, C5) ----
+
+@needs_npm
+def test_every_marker_name_survives_a_build():
+    """Every name export_artifact.py matches appears in the build's output.
+
+    The names come from the exporter, so this case measures the build against
+    whatever the exporter carries. A name the build rewrites away stops a
+    publish, and no other case here would notice.
+    """
+    names = marker_names()
+    assert names, "export_artifact.py carries no marker name"
+
+    text = run_build().decode("utf-8", errors="replace")
+    missing = [name for name in names if name not in text]
+    assert not missing, (
+        "the build dropped marker names that export_artifact.py matches: "
+        f"{', '.join(missing)}\n"
+        "Each marker must survive the build, or a publish stops at that marker."
+    )
+
+
+# ---- 5c. the output directory is the plugin root (slice 3, C1 and C3) ----
+
+def test_out_dir_is_the_plugin_root():
+    """vite.config.ts writes the plugin root, and not a scratch `dist`.
+
+    Vite resolves `build.outDir` against `root`, which is `src`, so the plugin
+    root is `..` from there. An edit that restores `../dist` puts the build back
+    on a directory no reader of the repository sees.
+    """
+    root = config_value("root", "src")
+    out_dir = config_value("outDir", "")
+    assert out_dir, (
+        "vite.config.ts carries no quoted build.outDir, so the build's output "
+        'directory cannot be read. Slice 3 requires `outDir: ".."`.'
+    )
+
+    resolved = (VIEWER / root / out_dir).resolve()
+    assert resolved == VIEWER.resolve(), (
+        f"vite.config.ts resolves its build output to {resolved}, and the plugin "
+        f"root is {VIEWER}. The build must write the committed viewer in place."
+    )
+    assert resolved != (VIEWER / "dist").resolve(), (
+        "vite.config.ts still writes its build to the scratch directory "
+        f"{(VIEWER / 'dist').relative_to(REPO_ROOT).as_posix()}, which no commit sees."
+    )
+
+
+def test_the_build_does_not_empty_the_plugin_root():
+    """`emptyOutDir` is false, because the output directory is the plugin root.
+
+    The plugin root holds package.json, src/, and node_modules/. A build that
+    empties its own output directory deletes the project it built from.
+    """
+    declared = re.search(
+        r"\bemptyOutDir\s*:\s*(true|false)", VITE_CONFIG.read_text(encoding="utf-8")
+    )
+    assert declared is not None, (
+        "vite.config.ts declares no literal build.emptyOutDir, so whether the "
+        "build empties the plugin root is unsettled. Slice 3 requires false."
+    )
+    assert declared.group(1) == "false", (
+        "vite.config.ts sets build.emptyOutDir to true, and the build's output "
+        "directory is the plugin root. A build would delete package.json and src/."
+    )
+    for needed in (PACKAGE_JSON, VIEWER / "src"):
+        assert needed.exists(), (
+            f"{needed.relative_to(REPO_ROOT).as_posix()} is absent, so the plugin "
+            "root has already lost a directory the build would empty."
+        )
+
+
+# ---- 5d. the shipped file reads its data beside itself (slice 3, C1) ----
+
+@needs_npm
+def test_the_built_file_asks_for_its_data_at_a_relative_path():
+    """The build's output carries no absolute `/bundle/` data base.
+
+    The dev server mounts a bundle at `/bundle/`. The shipped file sits inside a
+    bundle at `viewer/index.html`, with its data beside it at `../data/`, so a
+    built file that asks for `/bundle/data/index.json` 404s on its own data.
+
+    This case reads the build's OUTPUT, not the source, so the source may keep
+    the dev path. It is about what ships.
+    """
+    text = run_build().decode("utf-8", errors="replace")
+
+    assert "/bundle/" not in text, (
+        "the build's output carries the literal /bundle/, so the shipped file "
+        "asks for its data at the dev server's mount. Served inside a bundle at "
+        "viewer/index.html, that path 404s on ../data/.\n"
+        f"  occurrences: {text.count('/bundle/')}"
+    )
+
+    for found in re.finditer(r"[\"']((?:[^\"'\\]|\\.)*data/[^\"']*)[\"']", text):
+        url = found.group(1)
+        assert not url.startswith("/"), (
+            f"the build's output asks for {url!r}, which is absolute. The data "
+            "sits beside the shipped file, at ../data/."
+        )

@@ -9,6 +9,7 @@
 
 import { Moon, RotateCw, Sun } from "lucide-react";
 
+import { BUNDLE_DATA_URL } from "@/data/bundle";
 import type { RecordIndex } from "@/data/types";
 import { cn } from "@/lib/utils";
 
@@ -157,7 +158,7 @@ export function LoadPanel({
         <div className="flex items-center gap-2.5" aria-live="polite">
           <Chip tone="accent">reading the record index</Chip>
           <span className="font-mono text-[12.5px] text-ink-dim">
-            /bundle/data/index.json and /bundle/data/designs.js
+            {BUNDLE_DATA_URL}index.json and {BUNDLE_DATA_URL}designs.js
           </span>
         </div>
         <MosaicSkeleton />

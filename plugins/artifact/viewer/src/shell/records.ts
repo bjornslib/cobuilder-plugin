@@ -105,6 +105,16 @@ function isAdrRecords(value: unknown): value is AdrRecords {
  * A missing file rejects with the path and the likely cause, so a panel can state
  * both. The promise is cached, because React's strict mode mounts twice and two
  * script tags for one file would work but would also race.
+ *
+ * The tag below is the served path: it reaches outside the built file for a sibling.
+ * A published Artifact inlines `window.ADRS` as a literal instead, so this is the
+ * code `export_artifact.py` deletes at that point. The pair that names it lives in
+ * `src/index.html`'s seam block, because no `.ts` module here can carry a `//`
+ * comment through the build.
+ *
+ * Nothing under `src/` reads a diff hunk or a diagram source yet.
+ * `docs/plans/cobuilder-viewer/04-slices.md` records that slices 15 and 16 add the
+ * pull request's art, audio, and diffs; those two globals reach no reader at all.
  */
 function loadGlobal<T>(url: string, globalName: string, looksRight: (v: unknown) => v is T) {
   const holder = window as unknown as Record<string, unknown>;

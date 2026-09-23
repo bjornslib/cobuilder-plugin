@@ -95,9 +95,9 @@ function bundleData(): Plugin {
 }
 
 export default defineConfig({
-  // The React sources live in src/ and the dev entry is src/index.html. The
-  // packaged viewer at viewer/index.html is a shipped artifact and is not the
-  // Vite entry, so no Vite command can overwrite it.
+  // The React sources live in src/ and the dev entry is src/index.html. The build
+  // writes the packaged viewer at viewer/index.html, which is the committed,
+  // shipped file from here on.
   root: "src",
   plugins: [react(), tailwindcss(), bundleData(), viteSingleFile()],
   resolve: {
@@ -114,12 +114,13 @@ export default defineConfig({
     },
   },
   build: {
-    // Not viewer/index.html. ADR-0023's output rule is under revision, and the
-    // shipped file must keep working while that is settled. This output is a
-    // scratch build, and it is not committed. `src/data/bundle.ts` holds the
-    // note on how a published single file would read its data.
-    outDir: "../dist",
-    emptyOutDir: true,
+    // The plugin root. `root` is `src`, so `..` is plugins/artifact/viewer, and the
+    // build writes the committed viewer/index.html in place. Every build rewrites
+    // that file, and no hand edit to it survives one.
+    outDir: "..",
+    // Never true here. The output directory is the plugin root, so a build that
+    // emptied it would delete package.json and src/.
+    emptyOutDir: false,
     sourcemap: false,
     target: "es2022",
   },
