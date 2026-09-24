@@ -18,6 +18,14 @@
  * that is the order the deferred work names them, and each one names the epics it defers
  * with, so an engineer reading this page can find the work.
  *
+ * WHY THERE IS NO RAIL HERE. Mode one carries the narration rail on its left. This mode
+ * does not, and the reason is that it has nothing to put in one. The rail lists the four
+ * levels of one pull request, and this mode reasons over the whole pool and names no pull
+ * request at all, so no level of it is live and every row would be a dead end. It also has
+ * no second destination: the three steps run top to bottom, and the scroll is the only
+ * navigation the page needs. A rail here would take a quarter of the width from a drawing
+ * whose whole point is showing the shape of a wide page.
+ *
  * THE POOL IS REAL. The rows under Select are this bundle's own narrated pull requests,
  * read from `window.STORY`, so the sketch is drawn at the size and shape of the corpus an
  * engineer would actually meet. The recommendation under Recommend is shaped like an
@@ -28,7 +36,7 @@ import { Check, ChevronRight, CircleSlash, Filter, ListChecks, Plane, Scale, Shu
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
-import { Chip, Panel, SectionHeading, StateBadge } from "@/shell/atoms";
+import { Chip, Panel, StateBadge } from "@/shell/atoms";
 
 import type { StoryEntry } from "./model";
 
@@ -130,16 +138,14 @@ export function MultiPrDesign({ entries }: { entries: StoryEntry[] }) {
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto">
       <div className="min-w-0 px-6 py-5">
-        <SectionHeading
-          title="FlightDeck · many pull requests"
-          lead="The select-and-recommend path, drawn as a design. Nothing on this page is wired."
-          id="flightdeck-multi-heading"
-        />
-
         {/*
-          THE ONE STATEMENT THAT MUST NOT BE MISSED. It leads the mode, it names what the
-          mode is, and it names why it is not built, so a reader who scrolls no further
-          still knows they are reading a drawing.
+          THE ONE STATEMENT THAT MUST NOT BE MISSED, AND NOW THE FIRST THING ON THE MODE.
+          It used to sit under a heading band that said the same thing twice: the band's
+          title named the mode and its lead read "drawn as a design. Nothing on this page
+          is wired", and this block said both again one line lower. The engineer removed
+          the band, so this statement leads the mode, and a reader who scrolls no further
+          still knows they are reading a drawing. It names what the mode is, and it names
+          why it is not built.
         */}
         <div className="mb-5 flex min-w-0 flex-col gap-2 rounded-xl border-2 border-dashed border-warn bg-warn-wash px-4 py-3.5">
           <span className="flex min-w-0 flex-wrap items-center gap-2">

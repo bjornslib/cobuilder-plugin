@@ -7,7 +7,7 @@
  *   1. The four narration levels and their narration — `window.STORY`, one entry per
  *      pull request, `levels` keyed by `landscape`, `problem_solution`, `architecture`,
  *      and `file_changes`. The caption band at the top of every level is the shipped
- *      viewer's own caption band, and the level strip is its rail.
+ *      viewer's own caption band, and the rail on the left lists the levels.
  *   2. The diagrams for levels 1 to 3 — `window.DIAGRAMS`, keyed by pull request and
  *      level, both as strings. The reading is unchanged: one drawing per level, and no
  *      level 4.
@@ -29,13 +29,16 @@
  * down one column. This surface pages them sideways, because the shell it sits beside
  * does, and because the sections are what E7 ports into that shell. The blocks and their
  * reading order are unchanged.
+ *
+ * ONE NAVIGATION RUNS LEFT TO RIGHT. The levels are the rail on the left and the sections
+ * inside the live level are the single strip below the level's band. The level strip that
+ * used to run across the top is gone, and its height is the level's content's again.
  */
 
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode, RefObject } from "react";
 
 import {
-  AlertTriangle,
   FileText,
   GitPullRequest,
   Image as ImageIcon,
@@ -71,6 +74,7 @@ import { LevelProgress, SectionPager, SectionStage, SectionStrip, keyPressIsTake
 
 import type { DiffFile, Level, StoryEntry } from "./model";
 import { diffFiles } from "./model";
+import { LevelRail } from "./LevelRail";
 
 /** The panel heading for each level's frame. One name for one thing. */
 const FRAME_TITLE = "The frame";
@@ -542,64 +546,73 @@ export function SinglePr(props: SinglePrProps) {
   /* The section strip reads the panels the level rendered, as the shell's does. */
   const targets = useJumpTargets(paneId, [level.key, index, sections.length]);
 
+  /*
+    ONE NAVIGATION RUNS LEFT TO RIGHT, AND IT IS THE SECTION STRIP. The four narration
+    levels sit in the rail on the left, which is the shell's own shape, and a section
+    inside the live level is the single horizontal strip below the level's band. The row
+    below is what that costs: the rail takes the left edge and the column beside it takes
+    everything else, so the removed strip's height comes back to the level's content.
+  */
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-      <LevelStrip levels={levels} levelIndex={levelIndex} onLevelIndex={onLevelIndex} />
+    <div className="flex min-h-0 min-w-0 flex-1">
+      <LevelRail levels={levels} levelIndex={levelIndex} onLevelIndex={onLevelIndex} />
 
-      <NarrationCaption
-        level={level}
-        title={entry.title ?? `PR ${entry.pr}`}
-        audio={level.audio}
-        audioFailed={audioFailed}
-        onAudioFailed={onAudioFailed}
-      />
-
-      {/*
-        The reading-progress strip. `LevelProgress` carries `order-first`, so it paints at
-        the top of whichever flex column holds it. In the shell that column is the pane;
-        here the column is this pair, so the strip lands directly under the narration
-        caption and above the level's band. It stays in the DOM after the stage, because
-        `LevelProgress` reads the box ref in a layout effect and React attaches a host ref
-        in tree order.
-      */}
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <div id={paneId} className="flex min-h-0 min-w-0 flex-1 flex-col">
-          {/*
-            The level's own band sits above the stage rather than inside the first box, so
-            the level's heading stays where a reader left it while the sections page under
-            it. It carries no panel heading, so it is not a jump target and the strip below
-            lists exactly the sections the pager walks.
-          */}
-          <div className="min-w-0 shrink-0 px-6 pt-4">
-            <SectionHeading
-              title={`PR ${entry.pr} · ${level.title}`}
-              lead={levelLeadFor(level)}
-              id={`flightdeck-level-${level.number}`}
+        <NarrationCaption
+          level={level}
+          title={entry.title ?? `PR ${entry.pr}`}
+          audio={level.audio}
+          audioFailed={audioFailed}
+          onAudioFailed={onAudioFailed}
+        />
+
+        {/*
+          The reading-progress strip. `LevelProgress` carries `order-first`, so it paints
+          at the top of whichever flex column holds it. In the shell that column is the
+          pane; here the column is this pair, so the strip lands directly under the
+          narration caption and above the level's band. It stays in the DOM after the
+          stage, because `LevelProgress` reads the box ref in a layout effect and React
+          attaches a host ref in tree order.
+        */}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <div id={paneId} className="flex min-h-0 min-w-0 flex-1 flex-col">
+            {/*
+              The level's own band sits above the stage rather than inside the first box,
+              so the level's heading stays where a reader left it while the sections page
+              under it. It carries no panel heading, so it is not a jump target and the
+              strip below lists exactly the sections the pager walks.
+            */}
+            <div className="min-w-0 shrink-0 px-6 pt-4">
+              <SectionHeading
+                title={`PR ${entry.pr} · ${level.title}`}
+                lead={levelLeadFor(level)}
+                id={`flightdeck-level-${level.number}`}
+              />
+            </div>
+
+            <SectionStrip targets={targets} activeIndex={index} onSelect={onSection} />
+
+            <SectionStage index={index} activeBoxRef={boxRef}>
+              {sections}
+            </SectionStage>
+
+            <SectionPager
+              index={index}
+              count={sections.length}
+              onPrevious={() => onSection(Math.max(index - 1, 0))}
+              onNext={() => onSection(Math.min(index + 1, sections.length - 1))}
             />
           </div>
 
-          <SectionStrip targets={targets} activeIndex={index} onSelect={onSection} />
-
-          <SectionStage index={index} activeBoxRef={boxRef}>
-            {sections}
-          </SectionStage>
-
-          <SectionPager
-            index={index}
-            count={sections.length}
-            onPrevious={() => onSection(Math.max(index - 1, 0))}
-            onNext={() => onSection(Math.min(index + 1, sections.length - 1))}
-          />
+          <LevelProgress index={index} count={sections.length} boxRef={boxRef} />
         </div>
 
-        <LevelProgress index={index} count={sections.length} boxRef={boxRef} />
+        {diffError === null ? null : (
+          <p className="m-0 border-t border-line bg-warn-wash px-6 py-2 font-mono text-[12.5px] text-warn">
+            {diffError}
+          </p>
+        )}
       </div>
-
-      {diffError === null ? null : (
-        <p className="m-0 border-t border-line bg-warn-wash px-6 py-2 font-mono text-[12.5px] text-warn">
-          {diffError}
-        </p>
-      )}
     </div>
   );
 }
@@ -614,59 +627,6 @@ function levelLeadFor(level: Level): string {
     return "This level carries no art, no drawing, and no audio. It carries the diff.";
   }
   return `This level carries ${parts.join(", ")}.`;
-}
-
-/** The four narration levels, as the shipped viewer's rail lists them. */
-function LevelStrip({
-  levels,
-  levelIndex,
-  onLevelIndex,
-}: {
-  levels: Level[];
-  levelIndex: number;
-  onLevelIndex: (index: number) => void;
-}) {
-  return (
-    <nav
-      aria-label="Narration levels"
-      className="flex min-w-0 shrink-0 items-center gap-1 overflow-x-auto border-b border-line bg-ground px-6 py-2"
-    >
-      {levels.map((level, index) => {
-        const on = index === levelIndex;
-        return (
-          <button
-            key={level.key}
-            type="button"
-            aria-current={on ? "step" : undefined}
-            onClick={() => onLevelIndex(index)}
-            title={level.narration || `Level ${level.number}`}
-            className={cn(
-              "inline-flex min-h-9 shrink-0 cursor-pointer items-center gap-2 rounded-[10px] border px-2.5 font-mono text-[12.5px] whitespace-nowrap transition-colors",
-              on
-                ? "border-transparent bg-band font-bold text-band-ink"
-                : "border-transparent text-ink-dim hover:bg-surface-2 hover:text-foreground",
-            )}
-          >
-            <span
-              className={cn(
-                "font-bold tabular-nums",
-                on ? "text-band-ink/80" : "text-ink-faint",
-              )}
-            >
-              {level.number}
-            </span>
-            {level.title}
-            {level.audio === null ? (
-              <AlertTriangle
-                className={cn("size-3.5 shrink-0", on ? "text-band-ink" : "text-warn")}
-                aria-label="no narration audio"
-              />
-            ) : null}
-          </button>
-        );
-      })}
-    </nav>
-  );
 }
 
 /* --------------------------------------------------------------- the pieces */

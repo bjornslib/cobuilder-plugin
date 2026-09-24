@@ -6,6 +6,11 @@
  * switch swaps the body. It opens no page, it writes no address, and it reloads nothing,
  * so a reader never loses the surface they were reading.
  *
+ * THE BODY ROW BELONGS TO THE MODE, INCLUDING ITS LEFT EDGE. Mode one puts the narration
+ * levels in a rail down that edge and keeps one horizontal navigation, the section strip
+ * inside the live level. Mode two puts nothing there: it has no pull request, so it has no
+ * level to make current, and `MultiPr.tsx` states the rest.
+ *
  * THE READER'S STATE LIVES HERE, AND NOT IN A MODE. A return to the first mode has to
  * show the surface the reader left, so everything a reader can change in it is held above
  * both modes and handed down: the narration level, the section inside that level, the
