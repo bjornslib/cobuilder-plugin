@@ -83,7 +83,7 @@ opens a work item, and E5's sections render inside one.
 | | **`cobuilder-viewer/E4` — The Work prototype.** A detailed prototype of the Work board, against this repository's own design records, reviewed before E5 starts. | | | | |
 | 5 | `cobuilder-viewer/E4` | The Work prototype, reviewed | The prototype renders this repository's own designs across the Work board, and the engineer approves it or names what to change | — | pending |
 | | **`cobuilder-viewer/E5` — The Work surface.** Every level, and the sections each level pages, including a design whose records are `goal.json` only. ADR-0028 owns the shape. | | | | |
-| 8 | `cobuilder-viewer/E5` | The section model | One box is on screen, the strip, the pager bar, and the two arrow keys move one index, and the pane reports no scroll at all | — | pending |
+| 8 | `cobuilder-viewer/E5` | The section model | One box is on screen, the strip, the pager bar, and the two arrow keys move one index, and the pane reports no scroll at all | 1.00 | completed |
 | 9 | `cobuilder-viewer/E5` | The level's progress | The strip reads 0 at the first section's top, 25 percent at its bottom, 50 on the second, 100 on the last, and never decreases on a forward walk | — | pending |
 | 10 | `cobuilder-viewer/E5` | Every level renders its own sections | A reader walks Intent, Problem & Solution, Architecture, Build, Pull requests, and Shipped of one work item, and the envisioned pull request leads the Pull requests level | — | pending |
 | 11 | `cobuilder-viewer/E5` | The diagram tiles open their drawing | A tile shows the drawing's miniature scaled to its box, a press opens it whole with zoom from 50 to 400 percent, Escape and the backdrop close it, and a failed render shows the authored source | — | pending |
@@ -137,7 +137,7 @@ to E16 and to E18, and both are deferred.
 Four epics here carry one slice each, and none of them hides a second end.
 
 **The run order changed on 2026-09-23, and the slice numbers did not.** After slice
-3, the next slices to run are 14, 15, and 16, ahead of 5 and 8 through 13. The
+3, the next slices to run are 14, 15, and 16, ahead of 5 and 9 through 13. The
 rest of the ladder keeps its order after those three. The numbers stay as the ladder
 writes them, so do not renumber a slice.
 

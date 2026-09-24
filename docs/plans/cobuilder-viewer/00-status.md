@@ -32,7 +32,7 @@ E9, E10, E11, E12, E13, E14, E15, E16, E17, and E18.
 - [ ] Slice 5 — The Work prototype, reviewed                        score: —
 - [x] Slice 6 — The shell lands on the bundle's designs             score: 1.00
 - [x] Slice 7 — A row opens the item's Work surface                 score: 1.00
-- [ ] Slice 8 — The section model                                   score: —
+- [x] Slice 8 — The section model                                   score: 1.00
 - [ ] Slice 9 — The level's progress                                score: —
 - [ ] Slice 10 — Every level renders its own sections                score: —
 - [ ] Slice 11 — The diagram tiles open their drawing                score: —
@@ -76,8 +76,8 @@ action: unset that variable, then run `/login` and choose the subscription accou
 scored 0.50 of its four criteria, and its ladder row stays `pending` until the publishes run.
 
 Slice 1 belongs to `cobuilder-viewer/E1`, its only slice. Slices 6 and 7 belong to
-`cobuilder-viewer/E19` and stand at 1.0. Ten slices of the sixteen have not run:
-5, 8, 9, 10, 11, 12, 13, 14, 15, and 16. Slice 1 ran, and it did not reach an
+`cobuilder-viewer/E19` and stand at 1.0. Nine slices of the sixteen have not run:
+5, 9, 10, 11, 12, 13, 14, 15, and 16. Slice 1 ran, and it did not reach an
 accepted score.
 
 **Slice 2 ran on 2026-09-23 and scored 1.00**, weighted 0.09. It belongs to
@@ -132,6 +132,20 @@ The committed viewer carries sha256
 `07c29308d9417eb83bb6a78c97adaf751890f5db226bbcd23a35c3ff168660e5`. The viewer suite
 is 67 of 67 and the type check is clean, and the repository suite is unchanged at 9
 failed, 378 passed, and 1 skipped.
+
+**Slice 8 ran and was validated on 2026-09-24, and it scored 1.00**, weighted 0.10. It
+belongs to `cobuilder-viewer/E5`, and its end is that one box is on screen, the strip,
+the pager bar, and the two arrow keys move one index, and the pane reports no scroll at
+all. All six of its criteria scored 1.0, so the mean is 1.00 and the contribution is
+0.100. C1 (one box is on screen, and the pane does not scroll) and C2 (one index drives
+the strip, the pager, and the arrow keys) are the CRITICAL pair. C3 (the strip's labels
+come from the sections themselves), C4 (the arrow keys are guarded, and they never write
+the route), C5 (a paged level drops the band and keeps the heading element), and C6
+(Rubrics keeps the stacking shape) each scored 1.0. Eighteen of the nineteen new cases
+passed on arrival, because the section model was ported into the shipped shell. The
+committed viewer carries sha256
+`658921c92ce8bdf9b77313d215b0dfb8571cade3a8e4163c4599c75566730061`, and the viewer suite
+is 86 of 86. The repository suite is unchanged at 9 failed, 378 passed, and 1 skipped.
 
 **Slice 14 was built on 2026-09-23, and it waits on the engineer.** The prototype is one
 surface with two modes behind one control, and it lives at
@@ -300,7 +314,7 @@ slice 1's C1 and C4 today, and it will block E16's publish parity later. E16 is
 deferred, and it carries no slice today.
 
 **The run order changed on 2026-09-23, and the slice numbers did not.** After slice 3,
-the next slices to run are 14, 15, and 16, ahead of 5 and 8 through 13. The rest of
+the next slices to run are 14, 15, and 16, ahead of 5 and 9 through 13. The rest of
 the ladder keeps its order after those three. The numbers stay as the ladder writes
 them, so do not renumber a slice. The engineer moved those three forward because slice
 3 makes the committed `plugins/artifact/viewer/index.html` the React application, and
@@ -375,3 +389,41 @@ work.** Its tile reads `entry.publication.published_at.slice(0, 10)` uncondition
 and the index carries two publications with `published_at: null`. Reproduced identically
 on the parent commit. The prototype is unusable past its board. No shipped output
 carries it. Fixing it is not scoped to any slice today.
+
+**The ported shell already carried most of this slice's contract.** Eighteen of the
+nineteen cases passed on arrival, because the section model was ported. Only the
+level-change focus was broken. A later slice in this epic should expect the same: check
+what the port already does before assuming a criterion needs building.
+
+**The focus defect, and why no route-triggered fix could work.** On a level change, focus
+landed on the heading of the level the reader was leaving and then fell to `<body>`.
+`AnimatePresence` in wait mode keeps the outgoing subtree mounted until its exit
+animation finishes, so one frame after the route change the document holds exactly one
+`h1` and it belongs to the outgoing level. The id is therefore ambiguous during the
+transition, and the lookup itself had to move to the moment the right element exists. The
+fix lives in `src/shell/hooks.ts` as a hook that focuses on mount, and the move is owned
+by the arriving heading inside the keyed subtree. A delay was rejected because the exit
+duration is a token, 200 milliseconds and zero under reduced motion.
+
+**A probe that does not clear focus first can read the bug as a success.** The pre-fix
+tree holds focus on the outgoing heading for the exit's duration before falling to the
+body. Measured in a real browser, the pre-fix run is body, then the outgoing heading
+`Intent`, then body. The post-fix run is body, then the rail link the reader pressed,
+then the incoming heading `Architecture`, which holds.
+
+**This slice's page-level claims were scored in a real browser, not carried as a class
+contract.** The pane reported `scrollHeight` equal to `clientHeight` on all four paged
+levels, exactly one box sat inside the pane's rectangle on each, and the track's transform
+stepped by one box width. A later slice should do the same where a browser is reachable,
+because jsdom has no layout engine and reads every height as zero.
+
+**One piece of this slice's evidence cannot be driven end to end.** The rubric asks to
+rename a section's heading and read the strip. No record field feeds a paged section's
+title; all twelve are string literals in the panels, so a record rename cannot reach the
+strip on any paged level today. The claim was driven through the live DOM instead, which
+is the change a rename would produce.
+
+**A real `Alt` or `Meta` arrow key is a browser history command** and navigates away from
+the app, which the app does not consume and is not meant to. The modifier guard was
+therefore measured with a real `Shift` arrow and with synthetic modified keydowns read
+against `defaultPrevented`.

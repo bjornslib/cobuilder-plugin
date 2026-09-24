@@ -797,13 +797,14 @@ describe("Slice 8 · a paged level drops the band and keeps the heading element"
       vocabulary, and the shell moves focus to the level's heading for it. The address is
       opened first, so the case proves the move rather than the first paint.
 
-      THIS CASE IS RED, AND THE TIMELINE SAYS WHY. Focus does move — to the heading of the
-      level the reader is leaving. The shell schedules the move one animation frame after the
-      route changes (`useFocusOnChange`), and `AnimatePresence mode="wait"` in `App.tsx`
-      keeps the outgoing subtree mounted until its exit animation finishes. That subtree owns
-      the `h1#work-section-heading` of the level being left, so the one id in the document at
-      that moment is the old heading. When the exit completes, the subtree unmounts and focus
-      falls to the body. The incoming heading never receives it.
+      THIS CASE PASSES, AND THE MOUNT IS WHY. The hook that moves focus is
+      `useFocusOnMount`, and it focuses the heading the arriving subtree owns when that
+      subtree mounts. The hook used to run one animation frame after the route changed and
+      resolve its target by id. `AnimatePresence mode="wait"` in `App.tsx` keeps the
+      outgoing subtree mounted until its exit animation finishes, and that subtree owns the
+      `h1#work-section-heading` of the level being left. So that frame focused the old
+      heading, and the exit then let focus fall to the body. The id is ambiguous during the
+      transition, so the move now belongs to the arriving heading inside the keyed subtree.
     */
     await open(PAGED[0].hash);
     await waitFor(() => expect(document.activeElement?.id).toBe(HEADING_ID));
