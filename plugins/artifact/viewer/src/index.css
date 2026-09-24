@@ -3,6 +3,19 @@
 @import "shadcn/tailwind.css";
 
 /*
+ * Tailwind scans every file under the Vite root (`src`) and reads any identifier
+ * it finds as a candidate utility class. That includes prose in a comment, so a
+ * word in a test's comment used to emit a rule the shipped viewer then carried.
+ * `shadow` did exactly that, from a comment in LevelProgress.test.tsx.
+ *
+ * A test never needs a style, so no test file contributes a candidate. The
+ * exclusion is by file name and stops there: `src/variations/` keeps contributing,
+ * because those prototypes share this stylesheet through the dev server.
+ */
+@source not "./**/*.test.ts";
+@source not "./**/*.test.tsx";
+
+/*
  * House idiom, ported from
  * docs/architecture/designs/cobuilder-viewer/prototypes/work-prototype.html and
  * from the shipped plugins/artifact/viewer/index.html.
