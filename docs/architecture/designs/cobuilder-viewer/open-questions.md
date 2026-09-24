@@ -41,3 +41,8 @@ reads as two authors rather than one design.
 
 **Not yet decided.** Which shape, and whether the change belongs in this design
 or in a separate one that owns the design-mode prompts.
+
+Three more questions are open, and ADR-0029 records all three as undecided: where
+a pull request that belongs to no program sits on the board, the fate of the
+`file_changes` narration level, and what a standalone pull request shows section by
+section. See `docs/architecture/adr/ADR-0029-intent-replaces-landscape-and-a-pull-request-in-its-work.md`.

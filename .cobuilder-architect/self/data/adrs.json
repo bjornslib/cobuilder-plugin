@@ -1919,5 +1919,96 @@
       "docs/plans/cobuilder-viewer/interaction-design.md",
       "plugins/artifact/viewer/src/variations/sections-e/"
     ]
+  },
+  "ADR-0029": {
+    "id": "ADR-0029",
+    "title": "Intent replaces landscape, and a work's pull request is content in its own sections, with its own address",
+    "state": "decided",
+    "source_pr": null,
+    "problem": "The narration level named `landscape` is a second name for a thing this repository already calls Intent. The Work surface's own level is Intent. This repository's rule is one name for one thing, so one level carries two names. Two more matters arrived with it, from the engineer's reading of the Work surface. A pull request that one of a work's own epics carries opens as a page of its own, and its three panels render nothing. A reader therefore cannot tell what the program intended from what the change did, without holding two pages in mind. The narration level named `file_changes` also reads as not done well, and its fate stays open. This record decides the first two matters. It leaves the third open, and it leaves the board placement of a pull request that belongs to no program open too.",
+    "decision": "The narration level `landscape` becomes `intent`, as a real rename and not a display label. The level key reaches the audio filenames, so the rename touches six places: the level keys in `story.json` and a design's `narrative.json`, `LEVEL_KEYS` in `shared/verify_bundle.py`, the authoring level list in `plugins/pr/skills/odyssey/references/story-mode.md`, the viewer's level labels, and the audio files themselves. It runs with the parity work, never immediately, because the audio files are paid authored assets that must move and must not be re-recorded. A pull request that belongs to a work is not a second surface. Seven parts land inside the work's own Intent, Problem & Solution, and Architecture sections, beside what the program intended. They are its three narration levels with their art, audio, and diagrams, its intent block, its assessment, the decisions it landed, and the facts of the change itself. A later slice owns the layering that separates the two accounts. The pull request keeps an address of its own, and that address renders the same content rather than a second surface.",
+    "alternatives": [
+      {
+        "option": "Keep the level key `landscape` and show the word Intent in the viewer alone",
+        "rejected_because": "One name for one thing. A display label leaves the record, the audio filename, and the authoring guide calling the level landscape. The screen and the record then disagree, and the next session reads the record rather than the screen."
+      },
+      {
+        "option": "Rename the key and re-record the narration audio in the same pass",
+        "rejected_because": "The audio is paid authored content. `data/audio/` holds one file per narrated level, and a file needs a new name rather than new words. A re-record spends Gemini calls to say the same narration again."
+      },
+      {
+        "option": "Rename `landscape` immediately, in its own change",
+        "rejected_because": "The parity work touches the same level keys and the same viewer level list. Two changes over one key set means the second rewrites what the first landed. The rename travels with the parity work instead."
+      },
+      {
+        "option": "Show a pull request that belongs to a work as a page of its own, at parity with the standalone case",
+        "rejected_because": "The work's own Intent, Problem & Solution, and Architecture levels already carry what the program intended. A second page makes a reader hold two pages in mind to answer one question."
+      },
+      {
+        "option": "Add the change's content behind a fold inside each section",
+        "rejected_because": "ADR-0028 fixed the shape. A paged section carries no fold, and its panels render open. A fold inside a page is a fold inside a fold."
+      },
+      {
+        "option": "Render the change inside its work and drop the pull request's own address",
+        "rejected_because": "A reviewer arrives from a pull request number, from a commit, or from a review thread. Each of those needs one URL for that pull request."
+      },
+      {
+        "option": "Add the content with no mark between the program's intent and the change's act",
+        "rejected_because": "It makes two accounts read as one. A later slice owes that mark, and this record states the debt."
+      }
+    ],
+    "forces": [
+      "CLAUDE.md's Vocabulary section states the rule: one name for one thing, and the same short word never names two different things. A narration level named `landscape` and a level named Intent are two names for one idea.",
+      "Two different things are both called a level in this repo. A story bundle calls `landscape`, `problem_solution`, `architecture`, and `file_changes` its levels. The Work surface calls Intent, Problem & Solution, Architecture, Build, Pull requests, and Shipped its levels.",
+      "The level key reaches an audio filename. `shared/verify_bundle.py` builds `data/audio/pr{N}_{level_key}.wav`, and the self-bundle carries `pr2_landscape.wav`.",
+      "The audio is a paid, authored asset. `data/audio/` holds one file per narrated level, and the self-bundle holds three files for pull request 2, one each for `landscape`, `problem_solution`, and `architecture`. `file_changes` carries no voice script, and the key set is four.",
+      "The viewer's level labels live in one list. `plugins/artifact/viewer/src/shell/readiness.ts` holds `{ key: landscape, label: Landscape }`.",
+      "Two more readers of the same key each carry their own level list: `shared/migrate_bundle.py` and `plugins/pr/scripts/generate_prompts.py`.",
+      "ADR-0028 fixed the shape the added content lands in. A level is a sequence of sections, one section on screen at a time, and a box owns the scroll rather than the pane.",
+      "ADR-0027 places a single pull request on the FlightDeck surface and gives it three narration levels. This record does not build a second surface for it.",
+      "A pull request already joins to a work item. `joins.epic_to_pull_request` resolves the join, and the shell reads it as `work.pullRequests` and `work.pullRequestVia`.",
+      "The work's three levels take their names from `SECTION_TITLE`, and `pagedSections` in `plugins/artifact/viewer/src/shell/App.tsx` lays out their sections.",
+      "The pull request's own detail already keys its three levels `intent`, `problem-and-solution`, and `architecture`, and renders nothing in them today. Each panel says the surface does not read a pull request's own story records yet.",
+      "The bundle already carries the change's own facts. A timeline entry holds `size`, `touched`, `commit`, and `date`, and its `levels` hold the narration and the voice.",
+      "The corpus grows. The self-bundle holds seventeen timeline entries, and a bundle can hold four narration levels per pull request."
+    ],
+    "delivers": {
+      "capability": "A reader of a work reads the change's own account inside the work's Intent, Problem & Solution, and Architecture levels. One pull request still reaches an address of its own.",
+      "benefit": "One word names one level, so a reader and a record agree. The record states the audio move before somebody performs the rename and meets that cost by surprise.",
+      "beneficiary": [
+        "developer",
+        "reviewer"
+      ],
+      "enables": [
+        "A level's key can take a new name once the audio move lands with it",
+        "The work's own levels can carry two accounts, once a later slice adds the mark between them"
+      ]
+    },
+    "body": "# ADR-0029 — Intent replaces landscape, and a work's pull request is content in its own sections, with its own address\n\n## Context\n\nThe Work surface renders one piece of work as a set of levels. Intent, Problem &\nSolution, Architecture, Build, Pull requests, and Shipped are the levels. ADR-0028\nmade each level a sequence of sections, with one section on screen at a time.\n\nA story bundle uses the word level for something else. A pull request's narration\ncarries four of them: `landscape`, `problem_solution`, `architecture`, and\n`file_changes`. `shared/verify_bundle.py` holds those four keys in `LEVEL_KEYS`.\nThis record says **narration level** for the bundle's four, and **level** for the\nWork surface's six.\n\nThree matters came up together while the engineer read the Work surface's\nprototype.\n\n**One level carried two names.** The narration level named `landscape` and the\nWork surface's level named Intent describe the same idea. The narration level's\nauthoring guide gives it a one-line hook and a mechanical summary of size and\ntouched directories. The Work surface's Intent level answers why the work exists.\nA reader meets two names for one thing, and this repository's rule is one name for\none thing.\n\n**A pull request opened a page of its own.** A pull request that one of a work's\nown epics carries reached a page of its own, inside the Pull requests level. Its\nthree panels render nothing today, and each says the surface does not read a pull\nrequest's own story records yet. So the page could not answer what the program\nintended or what the change did. The work's own Intent, Problem & Solution, and\nArchitecture levels hold the program's account. The change's account sat one page\naway.\n\n**Two matters stayed open.** The engineer reads the narration level named\n`file_changes` as not done well, and wants to remove it without having decided.\nWhere a pull request that belongs to no program sits on the Work board is also\nopen, and the engineer is still working through it.\n\n## Options considered\n\n1. **Keep the key `landscape` and show Intent on screen alone.** Rejected. A\n   display label leaves the record, the audio filename, and the authoring guide\n   calling the level landscape. The screen and the record then disagree.\n2. **Rename the key and re-record the narration audio in the same pass.** Rejected.\n   The audio is paid authored content. A file needs a new name rather than new\n   words, so a re-record spends Gemini calls to say the same narration again.\n3. **Rename `landscape` immediately, in its own change.** Rejected. The parity work\n   touches the same level keys and the same viewer level list. Two changes over one\n   key set means the second rewrites what the first landed.\n4. **Show a pull request that belongs to a work as a page of its own.** Rejected.\n   The work's own levels already carry what the program intended. A second page\n   makes a reader hold two pages in mind to answer one question.\n5. **Add the change's content behind a fold inside each section.** Rejected.\n   ADR-0028 fixed the shape. A paged section carries no fold, and its panels render\n   open. A fold inside a page is a fold inside a fold.\n6. **Render the change inside its work and drop the pull request's own address.**\n   Rejected. A reviewer arrives from a pull request number, a commit, or a review\n   thread. Each of those needs one URL for that pull request.\n7. **Add the content with no mark between the program's intent and the change's\n   act.** Rejected. It makes two accounts read as one. A later slice owes that mark,\n   and this record states the debt.\n8. **Rename `landscape` to `intent`, add the change's content into the work's own\n   levels, and keep the pull request's address as the same render.** Chosen.\n\n## Decision\n\n**One level, one name.** The narration level `landscape` becomes `intent`. The\nrename is a real rename, not a display label. It runs with the parity work, and\nnever immediately.\n\n**The rename reaches six places, and the audio is the sharp edge.** The level key\nis part of the audio filename. `data/audio/pr{N}_{level_key}.wav` is the path, so\n`data/audio/pr2_landscape.wav` in the self-bundle must become\n`data/audio/pr2_intent.wav`. The six places are the level keys in `story.json` and\na design's `narrative.json`, `LEVEL_KEYS` in `shared/verify_bundle.py`, the\nauthoring level list in `plugins/pr/skills/odyssey/references/story-mode.md`, the\nviewer's level labels in `plugins/artifact/viewer/src/shell/readiness.ts`, and the\naudio files themselves. Two more readers carry their own copy of the same key\nlist, `shared/migrate_bundle.py` and `plugins/pr/scripts/generate_prompts.py`, so\neach takes the new key too.\n\n**The audio files are what make the rename more than an edit.** Every file is a\npaid, authored asset. The rename must move each file to its new name in every\nbundle, and it must not re-record one. A level holds a file only when its `voice`\nfield carries text, so one file exists per narrated level. The self-bundle holds\nthree files for pull request 2, one each for `landscape`, `problem_solution`, and\n`architecture`, while the key set is four.\n\n**A pull request that belongs to a work is not a second surface.** Its content\nlands in the work's own Intent, Problem & Solution, and Architecture levels, beside\nwhat the program intended. The addition carries seven parts:\n\n- the three narration levels, with their scene art, their narration audio, and\n  their diagrams;\n- the change's intent block, the `intent` field a timeline entry carries, which\n  Generate mode captured before the code existed;\n- the change's assessment, the `assessment` field the same entry carries;\n- the decisions the change landed, read from the entry's `adrs` list;\n- the facts of the change itself, read from the entry's `size`, `touched`,\n  `commit`, and `date` fields, and from its diff.\n\n**The layering is a later slice's work.** A reader must be able to tell what the\nprogram intended from what the change did. This record fixes the parts and not\ntheir marks. The slice that builds the addition owns the mark, the order, and the\nwords that separate the two accounts.\n\n**The pull request keeps an address of its own.** The address is the same render,\ndeep-linked, and never a second surface. The viewer carries the route already. The\nPull requests level opens one pull request at `#/<work>/pull-requests/<pr>`, and\nthe shell reads it as `focusPr`. That render becomes the added content, and the\naddress selects it. A reader who follows a pull request number lands on the\ncontent a reader of the work's levels reads.\n\n## Consequences\n\n- **Positive:** one name covers one level. The record, the audio filename, the\n  authoring guide, and the screen agree.\n- **Positive:** a reader of a work reads the program's intent and the change's act\n  on one surface.\n- **Positive:** the pull request's address survives. A reviewer who arrives from a\n  pull request number, a commit, or a thread reaches the same content.\n- **Constraint introduced:** the narration level's only key is `intent`, and every\n  reader of that key takes the new name. The audio filename follows the key, so a\n  rename of the key is always a move of the file.\n- **Constraint introduced:** a pull request that belongs to a work renders as\n  content inside that work's levels. It never renders as a second surface with a\n  layout of its own.\n- **Negative:** the rename lands across six files and every bundle's audio\n  directory, and a browser cannot do it. A bundle that carries audio needs the move\n  on disk.\n- **Negative:** two changes touch one key set. The parity work and the rename must\n  land together, and a rename that lands first leaves the level list to be rewritten\n  twice.\n- **Negative:** the addition puts two accounts inside one level before the mark\n  exists. Between the two slices, a reader cannot tell the program's intent from\n  the change's act.\n\n## Not decided\n\nThree matters stay open. No later slice may read them as settled.\n\n**The board and its navigation.** A pull request that belongs to no program has no\nplace on the board yet. Three shapes are open: a sibling row after the designs, a\nchild row under a design, or a filtered view of one board. The engineer said they\nare still working through it.\n\n**The fate of the narration level `file_changes`.** The engineer wants to remove\nit, and reads the level as not done well today. No decision stands. One candidate\nis cheap if it is chosen: drop `file_changes` as a narration level and keep the\ndiff as a view of its own. That shape needs no migration, because the viewer\nrenders whatever narration levels a bundle carries.\n\n**What a standalone pull request shows, section by section.** The engineer asked\nfor a proposal and has not answered it yet. This record does not invent one.\n\n## Value delivered\n\n- **New capability:** a reader of a work reads the change's own account inside the\n  work's Intent, Problem & Solution, and Architecture levels.\n- **New capability:** one pull request reaches one address, and that address shows\n  the content the work's levels carry.\n- **Benefit:** the level named `landscape` no longer carries a second name for\n  Intent. A reader and a record use one word for one thing. The record states the\n  audio move before somebody performs the rename and meets that cost by surprise.\n- **Beneficiary:** a developer reading a work item and its change, and a reviewer\n  who arrives from a pull request number.\n\n## Maps to\n\nContext `cobuilder-packaging`. Modules `plugins/artifact/viewer/src`, `shared`, and\n`plugins/pr`.\n\nThe rule this record establishes is the one the boundary record carries for the\nviewer. The narration level's only key is `intent`, and the audio filename follows\nthat key. A pull request that belongs to a work renders as content inside that\nwork's own levels, and its own address renders that same content rather than a\nsecond surface.\n",
+    "maps_to": {
+      "context": "cobuilder-packaging",
+      "modules": [
+        "plugins/artifact/viewer/src",
+        "shared",
+        "plugins/pr"
+      ],
+      "rule": "The narration level's only key is `intent`, and the audio filename follows that key. A pull request that belongs to a work renders as content inside that work's own Intent, Problem & Solution, and Architecture levels, never as a second surface. Its own address, `#/<work>/pull-requests/<pr>`, renders that same content."
+    },
+    "history": [
+      {
+        "state": "decided",
+        "date": "2026-09-24",
+        "by": "bjornslib",
+        "note": "Decided while the engineer read the Work surface's prototype. The engineer directed three things: rename the narration level landscape to intent, add a pull request's own content into its work's Intent, Problem & Solution, and Architecture levels rather than showing a separate page, and keep a pull request's own URL. The engineer left the board placement, the fate of file_changes, and the standalone pull request's section list open. An agent wrote this record, so the state is decided and never approved."
+      }
+    ],
+    "provenance": "authored",
+    "related": [
+      "docs/architecture/designs/cobuilder-viewer/goal.json",
+      "docs/architecture/designs/cobuilder-viewer/intent.json",
+      "docs/architecture/designs/cobuilder-viewer/open-questions.md",
+      "plugins/artifact/viewer/src/shell/sections.tsx",
+      "plugins/artifact/viewer/src/shell/readiness.ts"
+    ]
   }
 }
