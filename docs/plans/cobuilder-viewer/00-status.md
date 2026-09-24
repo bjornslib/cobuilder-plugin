@@ -33,7 +33,7 @@ E9, E10, E11, E12, E13, E14, E15, E16, E17, and E18.
 - [x] Slice 6 — The shell lands on the bundle's designs             score: 1.00
 - [x] Slice 7 — A row opens the item's Work surface                 score: 1.00
 - [x] Slice 8 — The section model                                   score: 1.00
-- [ ] Slice 9 — The level's progress                                score: —
+- [x] Slice 9 — The level's progress                                score: 1.00
 - [ ] Slice 10 — Every level renders its own sections                score: —
 - [ ] Slice 11 — The diagram tiles open their drawing                score: —
 - [ ] Slice 12 — A record opens in the Sheet                         score: —
@@ -76,8 +76,8 @@ action: unset that variable, then run `/login` and choose the subscription accou
 scored 0.50 of its four criteria, and its ladder row stays `pending` until the publishes run.
 
 Slice 1 belongs to `cobuilder-viewer/E1`, its only slice. Slices 6 and 7 belong to
-`cobuilder-viewer/E19` and stand at 1.0. Nine slices of the sixteen have not run:
-5, 9, 10, 11, 12, 13, 14, 15, and 16. Slice 1 ran, and it did not reach an
+`cobuilder-viewer/E19` and stand at 1.0. Eight slices of the sixteen have not run:
+5, 10, 11, 12, 13, 14, 15, and 16. Slice 1 ran, and it did not reach an
 accepted score.
 
 **Slice 2 ran on 2026-09-23 and scored 1.00**, weighted 0.09. It belongs to
@@ -146,6 +146,19 @@ passed on arrival, because the section model was ported into the shipped shell. 
 committed viewer carries sha256
 `658921c92ce8bdf9b77313d215b0dfb8571cade3a8e4163c4599c75566730061`, and the viewer suite
 is 86 of 86. The repository suite is unchanged at 9 failed, 378 passed, and 1 skipped.
+
+**Slice 9 ran and was validated on 2026-09-24, and it scored 1.00**, weighted 0.05. It
+belongs to `cobuilder-viewer/E5`, and its end is that the strip reads how far through a
+level a reader is. All five of its criteria scored 1.0, so the mean is 1.00 and the
+contribution is 0.050. C1 (the reading is a position in the level) and C2 (the reading
+never decreases on a forward walk) are the CRITICAL pair. Measured in a real browser, the
+first section reads 0 at its top and 25 at its bottom, the second bottomed reads 50, and
+the last bottomed reads 100. A forward walk reads 25, 50, 75, and 100, and it never
+decreases and never resets. One step back reads 75. A box with no scroll range reads the
+whole of its share. Scrolling a box leaves the pane, the window, and the track where they
+were. Nine new cases live in `plugins/artifact/viewer/src/shell/LevelProgress.test.tsx`,
+and the viewer suite is 95 of 95. The repository suite is nine failed, 378 passed, and one
+skipped.
 
 **Slice 14 was built on 2026-09-23, and it waits on the engineer.** The prototype is one
 surface with two modes behind one control, and it lives at
@@ -314,7 +327,7 @@ slice 1's C1 and C4 today, and it will block E16's publish parity later. E16 is
 deferred, and it carries no slice today.
 
 **The run order changed on 2026-09-23, and the slice numbers did not.** After slice 3,
-the next slices to run are 14, 15, and 16, ahead of 5 and 9 through 13. The rest of
+the next slices to run are 14, 15, and 16, ahead of 5 and 10 through 13. The rest of
 the ladder keeps its order after those three. The numbers stay as the ladder writes
 them, so do not renumber a slice. The engineer moved those three forward because slice
 3 makes the committed `plugins/artifact/viewer/index.html` the React application, and
@@ -373,10 +386,17 @@ with six comment lines in `src/variations/flightdeck/model.ts` read as code. The
 projection now runs through the TypeScript parser, so both criteria are computed rather
 than lucky.
 
-**A word in a comment can move the shipped bytes.** Tailwind scans `src/data/` and
-`src/variations/` for class candidates, so writing the word `invisible` in a new test
-comment emitted a utility rule into the shipped stylesheet and moved its hash by 29
-bytes. A later session that rewrites a comment should expect this and rebuild.
+**A word in a comment can move the shipped bytes, and it has happened twice.** Tailwind
+scans every file under the Vite root and reads any identifier it finds as a candidate
+utility class, comments included. The word `invisible` emitted a rule worth 29 bytes, and
+the word `shadow` in a comment in the new slice 9 test file emitted one worth 244 bytes,
+which broke the build guard and moved the repository suite from nine failures to eleven.
+The second is the one to remember, because it made an untracked test file stale the
+committed viewer, and it took a validator two runs to establish that the extra failures
+were not pre-existing. Test files are now excluded from Tailwind's scan by two
+`@source not` lines in `plugins/artifact/viewer/src/index.css`, one per test extension. Do
+not widen that exclusion to `src/variations/`: those prototypes share this stylesheet
+through the dev server.
 
 **Two plan-slug rules coexist.** `src/data/works.ts`'s `planSlugFor` serves the shell,
 and `src/variations/epic-first-mosaic/data.ts`'s `planSlugs` serves that prototype; the
@@ -427,3 +447,25 @@ is the change a rename would produce.
 the app, which the app does not consume and is not meant to. The modifier guard was
 therefore measured with a real `Shift` arrow and with synthetic modified keydowns read
 against `defaultPrevented`.
+
+**Slice 9 had no failing case.** All nine cases passed on arrival, because the ported shell
+already satisfied the slice. The file's value is that each claim now fires when it breaks:
+inverting the reading fails eight of the nine, and reducing the progress effect's
+dependencies to the box ref alone fails exactly one case. That one case is the
+frozen-container trap, where the strip resolves its box once at mount and never re-reads
+the arriving one, and it is invisible to every other case because a box with no scroll
+range reads the same either way.
+
+**`src/index.css` is not itself scanned by Tailwind**, proved with probes, so prose in that
+stylesheet is safe. A CSS comment in it cannot contain a `**/` glob, because the glob
+contains the comment's own closing sequence and ends the comment early.
+
+**The rubric's regression clause names a file that does not exist.** It calls for every
+case in `tests/test_sections.py`, and no such file is anywhere in the repository. Slice
+8's cases live in the viewer suite instead, at `src/shell/Pager.test.tsx`.
+
+**One evidence line in the rubric is ambiguous.** Its C1 reads "Step to the second section
+and read. It is 50", but an arriving box sits at its top and reads 25 until it is bottomed,
+and C1's own earlier lines say each box is bottomed. The slice scored 1.0 with the bottoming
+protocol. The rubric is a blind instrument written before the implementation, so it is not
+amended; a later validator should apply the protocol the other lines use.
