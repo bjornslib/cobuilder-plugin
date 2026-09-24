@@ -29,7 +29,7 @@
  */
 
 import { useId, useState } from "react";
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 
 import type { LucideIcon } from "lucide-react";
 import {
@@ -848,19 +848,27 @@ export function Tile({
  * This is the top of the three levels. It is a full-width banner above the panels,
  * with the concept's own generous padding, so the page announces itself before any
  * panel does.
+ *
+ * `headingRef` is the shell's own handle on the `h1`. The move belongs to the level's
+ * mount, and the level holds the ref (`LevelHeading` in `./App.tsx`), so the ref has to
+ * reach the one focusable element here rather than stop at the banner.
  */
 export function SectionHeading({
   title,
   lead,
   id,
+  headingRef,
 }: {
   title: string;
   lead: string;
   id: string;
+  /** The shell's handle on the `h1`, so the level's own mount can move focus to it. */
+  headingRef?: Ref<HTMLHeadingElement>;
 }) {
   return (
     <header className={cn("mb-5 px-[26px] py-[22px]", BAND_SECTION)}>
       <h1
+        ref={headingRef}
         id={id}
         tabIndex={-1}
         className="m-0 font-mono text-[24px] leading-tight font-bold tracking-[-0.02em] text-band-ink outline-none"

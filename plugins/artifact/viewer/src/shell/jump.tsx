@@ -59,7 +59,7 @@ export function panelId(title: string): string {
  * The `keys` argument is the caller's. The pane does not exist while the index is
  * still loading or after it failed, so the observer has to attach again when a
  * mount brings the pane into the document. The dependency list is the caller's and
- * it is spread into the effect, in the shape `useFocusOnChange` already uses.
+ * it is spread into the effect, in the shape `useScrollResetOnRoute` already uses.
  */
 export function useJumpTargets(paneId: string, keys: readonly unknown[]): JumpTarget[] {
   const [targets, setTargets] = useState<JumpTarget[]>([]);

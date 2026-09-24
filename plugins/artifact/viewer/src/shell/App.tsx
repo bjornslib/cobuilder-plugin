@@ -146,7 +146,7 @@ import {
   useCollapsedRail,
   useDocumentNoScroll,
   useVisibleWidthCap,
-  useFocusOnChange,
+  useFocusOnMount,
   useHashRoute,
   useIndexLoad,
   useScrollResetOnRoute,
@@ -455,10 +455,12 @@ export default function ShellApp() {
     setRedirectedFrom,
   });
 
-  /* A section change moves focus to the section heading, per section 8.4. */
-  useFocusOnChange(HEADING_ID, [section, load.state, work?.id ?? ""]);
-
   /*
+   * SECTION 8.4'S FOCUS MOVE IS NOT SCHEDULED HERE. It used to be one frame after the
+   * route changed, and that frame resolved the heading of the level being left. The move
+   * belongs to the level's own mount now, and `LevelHeading` below states the whole
+   * reason. This call is the pane's scroll and nothing else.
+   *
    * A route change starts the reader at the top of the pane. The four fields are the
    * whole route. They are the work item, the section, the sub-view, and the record
    * the sub-view opens, so one list covers a section change, a work-item change, an
@@ -741,21 +743,16 @@ export default function ShellApp() {
                       THE PAGED LEVEL HAS NO VISIBLE BAND. The section strip right below
                       says the section's own name, so a banner with the same words 105 px
                       higher is a repeat of the strip. The heading stays in the flow as
-                      `sr-only`: section 8.4 moves focus to it on a section change, and
+                      `sr-only`: section 8.4 moves focus to it when the level changes, and
                       the document still needs its one `h1`. A screen reader therefore
                       still hears the level name, and no reader loses the text.
                     */}
-                    {paged ? (
-                      <h1 id={HEADING_ID} tabIndex={-1} className="sr-only outline-none">
-                        {SECTION_TITLE[section]}
-                      </h1>
-                    ) : (
-                      <SectionHeading
-                        id={HEADING_ID}
-                        title={SECTION_TITLE[section]}
-                        lead={SECTION_LEAD[section](work, gates)}
-                      />
-                    )}
+                    <LevelHeading
+                      section={section}
+                      work={work}
+                      gates={gates}
+                      paged={paged}
+                    />
 
                     {/*
                       THE PAGED LEVELS LAY THEIR SECTIONS ON A TRACK. Intent, Problem and
@@ -881,6 +878,53 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
       </span>
       {children}
     </span>
+  );
+}
+
+/**
+ * The level's heading, and the focus move that lands on it.
+ *
+ * THE HEADING MOUNTS WITH ITS LEVEL, AND THAT IS WHERE SECTION 8.4'S MOVE HAPPENS. This
+ * component is rendered inside the keyed subtree of the `AnimatePresence` below, so a
+ * level change mounts it and nothing else does. `useFocusOnMount` focuses the heading it
+ * returned, which is this level's own element, on the commit that brings the level in.
+ *
+ * WHY NOT ONE FRAME AFTER THE ROUTE CHANGED. That is what the shell used to do, and the
+ * frame resolved the wrong heading: `mode="wait"` keeps the outgoing subtree mounted for
+ * its exit, that subtree owns the `h1` of the level being left, and focus fell to `<body>`
+ * when it unmounted. `useFocusOnMount` in `./hooks` holds the measurement.
+ *
+ * A paged level drops its band and keeps the heading as `sr-only`, so the strip below is
+ * the only place the section's own words are drawn. A stacked level draws the band.
+ */
+function LevelHeading({
+  section,
+  work,
+  gates,
+  paged,
+}: {
+  section: SectionKey;
+  work: WorkItem;
+  gates: Gates | null;
+  paged: boolean;
+}) {
+  const headingRef = useFocusOnMount<HTMLHeadingElement>();
+
+  if (paged) {
+    return (
+      <h1 ref={headingRef} id={HEADING_ID} tabIndex={-1} className="sr-only outline-none">
+        {SECTION_TITLE[section]}
+      </h1>
+    );
+  }
+
+  return (
+    <SectionHeading
+      id={HEADING_ID}
+      title={SECTION_TITLE[section]}
+      lead={SECTION_LEAD[section](work, gates)}
+      headingRef={headingRef}
+    />
   );
 }
 

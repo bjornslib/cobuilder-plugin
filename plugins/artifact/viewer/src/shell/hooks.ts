@@ -239,21 +239,38 @@ export function useCollapsedRail(): boolean {
 /* --------------------------------------------------------------------- focus */
 
 /**
- * Move focus to an element when its key changes.
+ * Move focus to an element when the subtree that owns it mounts.
  *
- * Section 8.4: choosing a section moves focus to the section heading, and a
- * work-item change moves focus to the top bar's name. Both are one target id and one
- * dependency list, so both read through here. The dependency list is the caller's, so
- * it is spread into the effect rather than computed here.
+ * Section 8.4: choosing a section moves focus to the section heading, and a work-item
+ * change moves focus to the top bar's name. A surface's heading is mounted with that
+ * surface, so the mount is the moment to move to.
+ *
+ * THE MOVE IS KEYED TO THE MOUNT BECAUSE THE ROUTE CHANGE IS TOO EARLY. This hook used to
+ * run one animation frame after the route changed and resolve its target by id.
+ * `AnimatePresence mode="wait"` in `App.tsx` keeps the outgoing subtree mounted until its
+ * exit animation finishes, and that subtree owns the heading of the level being left. So
+ * the frame resolved the outgoing heading, moved focus to it, and then the subtree
+ * unmounted and focus fell to `<body>`. Measured over 1.2 s of 50 ms samples across a
+ * level change, the run held exactly two states: the outgoing `h1` for the 200 ms of the
+ * exit, then `BODY` for the rest. The incoming heading never received focus.
+ *
+ * A LONGER DELAY IS NOT THE FIX. The exit duration is a token, `--dur-base` in
+ * `App.tsx`, and it is zero under reduced motion, so any wait is either too short or a
+ * second copy of that token. The incoming subtree mounts when the exit completes, so the
+ * mount is the one moment that is neither early nor late, and the returned ref is that
+ * subtree's own element rather than an id two subtrees can answer at once.
+ *
+ * The reader's own element is focused, never one the hook resolved from the document, so
+ * a heading on its way out can never take the move.
  */
-export function useFocusOnChange(elementId: string, keys: readonly unknown[]): void {
-  const signature = keys.join("|");
+export function useFocusOnMount<T extends HTMLElement>(): RefObject<T | null> {
+  const ref = useRef<T | null>(null);
+
   useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      document.getElementById(elementId)?.focus({ preventScroll: true });
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [elementId, signature]);
+    ref.current?.focus({ preventScroll: true });
+  }, []);
+
+  return ref;
 }
 
 /* ------------------------------------------------------ scroll-pane ownership */
@@ -266,8 +283,8 @@ export function useFocusOnChange(elementId: string, keys: readonly unknown[]): v
  *
  * A route change covers every move a reader makes: another section, another work
  * item, an epic that opens, and a pull request that opens. The signature is the
- * caller's, so one dependency list covers all four, in the same shape
- * `useFocusOnChange` already uses.
+ * caller's, so one dependency list covers all four: the caller passes its keys and
+ * this hook joins them into the one signature its effect reads.
  *
  * The jump is instant. `useReducedMotion` is read so the reset can never become a
  * smooth scroll for a reader who did not ask for one, and both branches resolve to

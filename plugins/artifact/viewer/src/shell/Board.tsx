@@ -53,6 +53,7 @@ import { STAGE_ORDER } from "@/data/bundle";
 import type { DesignRow } from "@/data/types";
 import { cn } from "@/lib/utils";
 
+import { useFocusOnMount } from "./hooks";
 import type { SectionKey } from "./model";
 import { routeHref } from "./model";
 import type { DesignRecords, Readiness, RecordKind, RecordVerdicts } from "./readiness";
@@ -159,11 +160,22 @@ export function Board({ rows, records, ready, headingId }: BoardProps) {
   );
 }
 
-/** The page title. The shell moves focus here on a route change, so it carries the id. */
+/**
+ * The page title. The board takes the focus move on its own mount, so it carries the id.
+ *
+ * THE BOARD IS NOT A KEYED LEVEL, so no `AnimatePresence` subtree mounts with it and the
+ * shell has no route-change move left to make: `LevelHeading` in `./App.tsx` moves focus
+ * when a level comes in, and the board comes in through the branch above it. So the board
+ * reads the one hook the move lives in, and the heading is focused on the commit that
+ * draws it, exactly as a level's heading is.
+ */
 function BoardHeading({ headingId }: { headingId: string }) {
+  const headingRef = useFocusOnMount<HTMLHeadingElement>();
+
   return (
     <header className="mb-5 min-w-0 rounded-[16px] bg-band px-[26px] py-[22px] text-band-ink">
       <h1
+        ref={headingRef}
         id={headingId}
         tabIndex={-1}
         className="m-0 min-w-0 font-mono text-[24px] leading-tight font-bold tracking-[-0.02em] text-band-ink outline-none"
