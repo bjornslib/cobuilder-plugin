@@ -14,9 +14,10 @@
  * THE READER'S STATE LIVES HERE, AND NOT IN A MODE. A return to the first mode has to
  * show the surface the reader left, so everything a reader can change in it is held above
  * both modes and handed down: the narration level, the section inside that level, the
- * frame's image-or-diagram choice, and the diff file they opened. The sheet is held here
- * too. A mode that owned any of this would lose it on the switch, which is the state the
- * slice's first criterion is about.
+ * frame's image-or-diagram choice, and the diff file they opened. The open record is held
+ * here too, as one value that names it, so the intent and assessment sheet and a decision's
+ * record sheet can never both be open. A mode that owned any of this would lose it on the
+ * switch, which is the state the slice's first criterion is about.
  *
  * THE SCROLL IS HELD HERE FOR THE SAME REASON. The active section box is the only
  * scrolling region, and it unmounts with the mode. So the surface keeps the box as its
@@ -44,6 +45,8 @@ import { Database, Moon, Sun, TriangleAlert } from "lucide-react";
 
 import { Chip, Missing, Panel } from "@/shell/atoms";
 import type { Theme } from "@/shell/DiagramTiles";
+import { RecordSheet } from "@/shell/Sheet";
+import type { SheetSubject } from "@/shell/Sheet";
 
 import { IntentSheet } from "./IntentSheet";
 import { ModeSwitch } from "./ModeSwitch";
@@ -54,10 +57,12 @@ import {
   entriesOf,
   entryOf,
   levelsOf,
+  loadAdrs,
   loadDiff,
   loadDiagrams,
   loadManifest,
   loadStory,
+  type AdrRecords,
   type Level,
   type Manifest,
   type Story,
@@ -67,6 +72,17 @@ import {
 /** The pane the section strip reads its panels from. One per surface. */
 const PANE_ID = "flightdeck-sections";
 
+/**
+ * The record that is open over the pane, or nothing.
+ *
+ * ONE VALUE FOR BOTH SHEETS. The intent and assessment sheet and a decision's record
+ * sheet are two bodies over one pane, and a reader never wants both at once, so one field
+ * says which is open. The decision member is the shell's own `SheetSubject` member for a
+ * decision, unchanged, because the shell already renders that record and this variation
+ * adds no second body for it.
+ */
+type FlightSheet = { kind: "intent" } | Extract<SheetSubject, { kind: "adr" }>;
+
 type Loaded = {
   state: "ready";
   story: Story;
@@ -74,6 +90,7 @@ type Loaded = {
   diagrams: Record<string, string>;
   diff: Record<string, string> | null;
   diffError: string | null;
+  adrs: AdrRecords;
 };
 
 type Load = { state: "loading" } | Loaded | { state: "failed"; message: string };
@@ -87,7 +104,7 @@ export default function FlightDeck({ pr = 2 }: { pr?: number }) {
   const [sectionByLevel, setSectionByLevel] = useState<Record<number, number>>({});
   const [artMode, setArtMode] = useState<"image" | "diagram">("image");
   const [diffFile, setDiffFile] = useState<string | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheet, setSheet] = useState<FlightSheet | null>(null);
   const [failedArt, setFailedArt] = useState<string | null>(null);
   const [audioFailed, setAudioFailed] = useState<string | null>(null);
   const [theme, setTheme] = useState<Theme>(
@@ -108,15 +125,16 @@ export default function FlightDeck({ pr = 2 }: { pr?: number }) {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
-  /* One read of the bundle, and the four records a pull request needs. */
+  /* One read of the bundle, and the five records a pull request needs. */
   useEffect(() => {
     let live = true;
     (async () => {
       try {
-        const [story, manifest, diagrams] = await Promise.all([
+        const [story, manifest, diagrams, adrs] = await Promise.all([
           loadStory(),
           loadManifest(),
           loadDiagrams(pr),
+          loadAdrs(),
         ]);
         let diff: Record<string, string> | null = null;
         let diffError: string | null = null;
@@ -125,7 +143,7 @@ export default function FlightDeck({ pr = 2 }: { pr?: number }) {
         } catch (error: unknown) {
           diffError = error instanceof Error ? error.message : String(error);
         }
-        if (live) setLoad({ state: "ready", story, manifest, diagrams, diff, diffError });
+        if (live) setLoad({ state: "ready", story, manifest, diagrams, diff, diffError, adrs });
       } catch (error: unknown) {
         if (live) {
           setLoad({
@@ -175,6 +193,27 @@ export default function FlightDeck({ pr = 2 }: { pr?: number }) {
     if (saved === undefined) return;
     box.scrollTop = saved;
   }, [mode, scrollKey]);
+
+  /*
+    One decision's record, as the shell's own subject for it. The record file is the only
+    source, and it holds every field the sheet draws; a decision the file does not carry
+    still opens, and the sheet states that the body is absent. The title and the state are
+    what the shell reads from its index row, so this reads them off the record instead and
+    falls back to the id.
+  */
+  const openDecision = useCallback(
+    (adr: string) => {
+      if (load.state !== "ready") return;
+      const record = load.adrs[adr];
+      setSheet({
+        kind: "adr",
+        record: record ?? undefined,
+        title: record?.title ?? adr,
+        state: record?.state ?? "unknown",
+      });
+    },
+    [load],
+  );
 
   return (
     <div className="flex h-dvh max-h-dvh min-h-0 min-w-0 flex-col overflow-hidden bg-ground text-ink">
@@ -267,7 +306,8 @@ export default function FlightDeck({ pr = 2 }: { pr?: number }) {
             onArtMode={setArtMode}
             diffFile={diffFile}
             onDiffFile={setDiffFile}
-            onOpenSheet={() => setSheetOpen(true)}
+            onOpenSheet={() => setSheet({ kind: "intent" })}
+            onOpenDecision={openDecision}
             boxRef={boxRef}
             paneId={PANE_ID}
             failedArt={failedArt}
@@ -291,7 +331,26 @@ export default function FlightDeck({ pr = 2 }: { pr?: number }) {
         </p>
       )}
 
-      <IntentSheet open={sheetOpen} onOpenChange={setSheetOpen} entry={entry} />
+      {/*
+        The two records that open over the pane, and the one value that says which. The
+        intent and assessment sheet keeps its own body, because the shell's subject union
+        has no member for a pull request. A decision reuses the shell's record Sheet
+        whole, because the union's decision member already exists and the shell already
+        draws that record: a second body here would be a copy of it. Both take the same
+        open and close state, so one press closes the other and the two never stack.
+      */}
+      <IntentSheet
+        open={sheet?.kind === "intent"}
+        onOpenChange={(open) => setSheet(open ? { kind: "intent" } : null)}
+        entry={entry}
+      />
+
+      <RecordSheet
+        subject={sheet?.kind === "adr" ? sheet : null}
+        onOpenChange={(open) => {
+          if (!open) setSheet(null);
+        }}
+      />
     </div>
   );
 }

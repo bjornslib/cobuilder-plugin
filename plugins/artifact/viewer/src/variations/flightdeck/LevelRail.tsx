@@ -28,20 +28,28 @@
  * WHAT THIS RAIL DELIBERATELY LEAVES OUT. The sidebar's own collapse, its icon mode, its
  * mobile drawer, and its open and close keyboard shortcut all belong to the shell's
  * `SidebarProvider`. The prototype is one pane inside a reviewed page rather than the
- * shell's own frame, so the rail is fixed and always expanded. The arrow-key traversal of
- * `src/shell/Rail.tsx` is left out too: the surface already binds the left and right keys
- * to the sections, and a second pair of keys for the levels is a change the engineer did
- * not ask for.
+ * shell's own frame, so the rail is fixed and always expanded.
+ *
+ * THE ARROW-KEY TRAVERSAL IS THE SHELL'S, AND IT LIVES BESIDE THE ROWS IT WALKS. The
+ * shipped walk sits in `src/shell/App.tsx`, because the shell's rail renders a list a
+ * function builds. This rail renders the level list it was handed, so the walk sits here
+ * and steps that same array. Four things come from the shipped walk and nothing is
+ * invented: the two key names, the one guard, a position read at the press rather than at
+ * the last render, and a press that moves nothing at either end. The left and right keys
+ * are the section strip's, and this walk never answers to them.
  *
  * THE LEVEL NUMBER IS A BADGE, per the shipped rail's own meta slot, and the icon is
  * decoration. Two of the four icons are the shell's own icon for the same concept: the
  * triangle for the problem and solution level, and the network for the architecture one.
  */
 
+import { useEffect, useRef } from "react";
+
 import { AlertTriangle, FileText, Map, Network } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { keyPressIsTaken } from "@/shell/Pager";
 
 import type { Level, LevelKey } from "./model";
 
@@ -73,6 +81,51 @@ const ROW_FRAME = cn(
   "focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-ring",
 );
 
+/**
+ * The rail's rows, walked with the up and down arrows.
+ *
+ * ArrowDown moves to the next level and ArrowUp to the previous one, in the order the
+ * rail renders them. At either end the press moves nothing. The current row follows the
+ * walk, because the row that reads current is the row whose index is the reader's.
+ *
+ * IT STEPS THE LIST THE RAIL RENDERS. `levels` is the one list and the rail draws it, so
+ * the walk cannot know fewer levels than a reader sees.
+ *
+ * THE READER'S POSITION IS READ AT THE PRESS, as the shipped walk reads its address at
+ * the press rather than at the last render, so a step that just landed is the position
+ * the next press reads.
+ *
+ * THE PAGER'S GUARD APPLIES HERE TOO. `keyPressIsTaken` is the shell's one copy of it, and
+ * it leaves a press inside a field, and a press with a modifier, to whoever owns them.
+ * These two keys never touch the pager's own two: the left and right keys belong to the
+ * section strip, and this walk answers to neither of them.
+ */
+function useLevelArrowKeys({
+  levels,
+  levelIndex,
+  onLevelIndex,
+}: {
+  levels: Level[];
+  levelIndex: number;
+  onLevelIndex: (index: number) => void;
+}): void {
+  const at = useRef(levelIndex);
+  at.current = levelIndex;
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+      if (keyPressIsTaken(event)) return;
+      const wanted = at.current + (event.key === "ArrowDown" ? 1 : -1);
+      if (wanted < 0 || wanted >= levels.length) return;
+      event.preventDefault();
+      onLevelIndex(wanted);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [levels.length, onLevelIndex]);
+}
+
 export function LevelRail({
   levels,
   levelIndex,
@@ -82,6 +135,8 @@ export function LevelRail({
   levelIndex: number;
   onLevelIndex: (index: number) => void;
 }) {
+  useLevelArrowKeys({ levels, levelIndex, onLevelIndex });
+
   return (
     <nav
       aria-label="Narration levels"

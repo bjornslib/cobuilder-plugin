@@ -46,12 +46,13 @@
  * SECTION 11.3'S FOUR RULES ARE THE LAYOUT CONTRACT, and each one is applied here.
  *
  *   1. The shell fills its parent, never the viewport. The root carries `h-full` and
- *      never `h-dvh`, because the viewport height belongs to whoever owns the page.
- *      The root also caps its own height with `max-h-dvh`. A cap never overrides a
- *      definite height a host gives, because the cap only binds when the content is
- *      taller than the visible screen. The page that serves this shell sets no height
- *      on `#root`, so without the cap the shell grows to its content, the document
- *      scrolls, and no ancestor bounds the pane. That is the board's defect.
+ *      never `h-dvh`, because the viewport height belongs to whoever owns the page. The
+ *      page that serves this shell gives that height: `src/index.css` sets `height: 100%`
+ *      on `html`, `body`, and `#root`, so the root's `h-full` resolves to the viewport on
+ *      every state. The root also caps its own height with `max-h-dvh`, which binds when a
+ *      host hands it a height taller than the visible screen. Without the cap the shell
+ *      would overflow such a host, the document would scroll, and no ancestor would bound
+ *      the pane. That is the board's defect.
  *   2. The scroll pane scrolls on both axes: `overflow-auto`, never `overflow-y: auto`
  *      with `overflow-x: hidden`. A pane that hides its horizontal overflow clips a
  *      wide block with no scrollbar and no way to reach it.
@@ -1002,14 +1003,15 @@ function PagedLevel({
  * sidebar ships `min-h-svh` on its wrapper, so the shell sets `min-h-0` over it.
  *
  * THE HEIGHT CAP IS RULE 1'S OWN GUARD, and it is the height mirror of rule 5's width
- * cap. `h-full` resolves to `auto` when the host gives no height, and `src/index.css`
- * sets no height on `#root`. The shell would then grow to its content, the document
- * would scroll, and the pane would never gain a definite height from its ancestors, so
- * the pane's own `overflow-auto` would never engage. `max-h-dvh` caps the shell to the
- * visible viewport, the row's `flex-1 min-h-0` then fills the cap, and the pane takes
- * that height. One unit serves here where the width cap needs `useVisibleWidthCap` and
- * a measurement, because the visible height has a CSS unit and the visible width has
- * none.
+ * cap. A host can hand the frame a height, and that height can be taller than the
+ * visible screen. `max-h-dvh` then caps the shell to the viewport, the row's
+ * `flex-1 min-h-0` fills the cap, and the pane takes that height. One unit serves here
+ * where the width cap needs `useVisibleWidthCap` and a measurement, because the visible
+ * height has a CSS unit and the visible width has none.
+ *
+ * The floor is the page's, not the frame's. `h-full` needs a definite height from an
+ * ancestor, and `src/index.css` supplies it on `html`, `body`, and `#root`. The frame
+ * therefore never claims the viewport height itself. See the height-chain rule there.
  *
  * The two rail widths are section 9.1's and 9.2's, set here rather than in the
  * sidebar, because the spec fixes them and the added component does not.

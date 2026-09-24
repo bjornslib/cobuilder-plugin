@@ -373,6 +373,29 @@
     margin: 0;
     -webkit-font-smoothing: antialiased;
   }
+  /*
+   * THE HEIGHT CHAIN STARTS HERE. IT WAS MISSING, AND THE SHELL READ `auto` BECAUSE OF IT.
+   *
+   * Section 11.3 rule 1 says the shell fills its parent and never the viewport, so the
+   * shell frame carries `h-full` and never `h-dvh`. That rule needs the page to give a
+   * definite height. Nothing did: `html`, `body`, and `#root` all had `height: auto`,
+   * so the frame's `h-full` resolved to `auto` on every route.
+   *
+   * The frame's `max-h-dvh` cap hid half of the result. A cap stops a shell that is
+   * taller than the viewport, so the board looked right. A cap never raises a short
+   * shell, so a state whose content was shorter than the viewport drew a shell that
+   * stopped at its content and left the ground empty below it.
+   *
+   * The three rules below give the frame the definite height its `h-full` reads, so the
+   * frame measures the viewport on every state and the pane takes the rest of that
+   * height as before. The height still comes from the parent, so a host that embeds the
+   * shell in a shorter box still decides it, and rule 1 holds.
+   */
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
   :focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;

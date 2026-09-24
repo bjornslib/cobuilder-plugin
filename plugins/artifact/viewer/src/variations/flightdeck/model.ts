@@ -15,6 +15,8 @@
  *                                          level, both as strings.
  *   data/manifest.js    window.ODYSSEY     the hero art list and the diff pull requests.
  *   data/diffs-pr{N}.js window.DIFFS_BY_PR one pull request's diff hunks, keyed by path.
+ *   data/adrs.js        window.ADRS        one entry per decision, keyed by its id, and
+ *                                          read only when a reader opens a decision.
  *
  * THE LAST ONE IS NOT `window.DIFFS`, WHATEVER `src/data/bundle.ts` SAYS. The data
  * module's header names the global `window.DIFFS`, and the file the bundle ships writes
@@ -41,6 +43,8 @@ import {
   loadManifest as readManifest,
   loadStory as readStory,
 } from "@/data/bundle";
+import { loadAdrs as readAdrs } from "@/data/adrs";
+import type { AdrRecord, AdrRecords } from "@/data/adrs";
 
 /* ------------------------------------------------------------------ shapes */
 
@@ -314,6 +318,21 @@ export function loadDiagrams(pr: number): Promise<Record<string, string>> {
 export function loadDiff(pr: number): Promise<Record<string, string>> {
   return readDiff(pr);
 }
+
+/**
+ * Every decision record, keyed by the id the pull request names.
+ *
+ * THE FIFTH READ, AND THE ONE THE DECISION LIST NEEDS. A timeline entry carries the
+ * decisions a diff lands as a list of ids alone, so the list can say that a decision
+ * exists but not what it decides. The record file is the only place the whole decision
+ * lives, and the record Sheet reads it from the same global the shipped shell reads.
+ */
+export function loadAdrs(): Promise<AdrRecords> {
+  return readAdrs();
+}
+
+/** One decision record. The Sheet's own subject carries this type. */
+export type { AdrRecord, AdrRecords };
 
 /* --------------------------------------------------------------------- diff */
 

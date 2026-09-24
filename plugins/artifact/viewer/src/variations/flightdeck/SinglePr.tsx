@@ -6,8 +6,8 @@
  *
  *   1. The four narration levels and their narration — `window.STORY`, one entry per
  *      pull request, `levels` keyed by `landscape`, `problem_solution`, `architecture`,
- *      and `file_changes`. The caption band at the top of every level is the shipped
- *      viewer's own caption band, and the rail on the left lists the levels.
+ *      and `file_changes`. The caption at the head of every level's content is the
+ *      shipped viewer's own caption, and the rail on the left lists the levels.
  *   2. The diagrams for levels 1 to 3 — `window.DIAGRAMS`, keyed by pull request and
  *      level, both as strings. The reading is unchanged: one drawing per level, and no
  *      level 4.
@@ -18,7 +18,14 @@
  *      control says so in place rather than vanishing.
  *   5. The diff — `window.DIFFS_BY_PR[N]`, keyed by path.
  *   6. The intent and assessment sheet — the `intent` and `assessment` blocks on the
- *      same timeline entry. `IntentSheet.tsx` holds that one.
+ *      same timeline entry. `IntentSheet.tsx` holds that one, and a press on a decision
+ *      the Architecture level lists opens that decision's own record in the shell's
+ *      record Sheet.
+ *
+ * WHAT THE SURFACE ADDS BESIDES THE PAGER. Two records open over the pane, and one
+ * `sheet` value above this mode says which. A press on `Open the sheet` names the intent
+ * and assessment; a press on a decision names that decision. Only one can be open, so the
+ * two can never stack.
  *
  * THE FRAME IS THE SHIPPED VIEWER'S HERO FRAME. A level with both a picture and a drawing
  * carries an Image/Diagram toggle, exactly as `heroFrame()` does, and a level with only
@@ -33,6 +40,22 @@
  * ONE NAVIGATION RUNS LEFT TO RIGHT. The levels are the rail on the left and the sections
  * inside the live level are the single strip below the level's band. The level strip that
  * used to run across the top is gone, and its height is the level's content's again.
+ *
+ * THE LEVEL'S HEADING BAND IS GONE TOO, and the narration is content. The band read
+ * `PR 2 · Problem & Solution` under a lead sentence, and it spent about 140 px of the
+ * pane on words the rail already carries: the rail names the level the reader is on and
+ * the top band names the pull request. The band's own heading survives as `sr-only`, so
+ * the level still has its one `h1` and a screen reader still hears the level's name,
+ * which is what the shipped shell does for a paged level. The narration caption that used
+ * to sit above that band now sits inside the pane's content, under the section strip and
+ * above the section stage, with the band styling gone.
+ *
+ * THE CAPTION NAMES NO LEVEL EITHER. It carried the level's number and title on its first
+ * line, and the commit subject after them as faint clipped metadata. The level's name is
+ * the rail's current row and the heading above, so that prefix repeated the level a second
+ * time, and the engineer removed the same repetition from the top of the mode. The caption
+ * is now the three parts the engineer named and nothing else: the commit subject, the
+ * narration, and the audio control.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -62,7 +85,6 @@ import {
   KeyValue,
   Missing,
   Panel,
-  SectionHeading,
   StateBadge,
   SubHead,
   TextList,
@@ -84,10 +106,26 @@ const FRAME_TITLE = "The frame";
 /**
  * The shipped viewer's narration caption, in the shell's vocabulary.
  *
- * Heading and narration on the left, a fixed-width audio control on the right, so the
+ * Subject and narration on the left, a fixed-width audio control on the right, so the
  * row never reflows whether or not the level was voiced. The control always renders; a
  * level with no audio states that in the label rather than hiding the control, because
  * an absence a reader cannot see is an absence they will assume is a bug.
+ *
+ * IT CARRIES NO BAND ANY MORE. It drew a full-bleed bar with a hairline under it and the
+ * second surface as its fill, and it sat above the level's heading. The engineer moved the
+ * narration into the level's content, so the bar, its hairline, and its fill are gone and
+ * the caption is a block of the pane with the pane's own padding. The audio control stays
+ * on the level rather than inside one section's box, so a reader who pages to the second
+ * section can still start, stop, and read the progress of the level's narration.
+ *
+ * IT NAMES NO LEVEL, AND IT CARRIES THE THREE PARTS THE ENGINEER NAMED. The row used to
+ * open with `Level 2` and the level's own title, and the commit subject sat after them as
+ * faint, clipped metadata. The rail's current row and the level's own `h1` already name
+ * the level, so the engineer removed that prefix from the top of the mode, and the same
+ * prefix here repeated it a second time. Three parts remain and they are now the whole
+ * caption: the pull request's commit subject, its narration, and the audio control. The
+ * subject takes the caption's own first line, so it keeps its full width and wraps rather
+ * than clipping behind an ellipsis.
  */
 function NarrationCaption({
   level,
@@ -97,6 +135,7 @@ function NarrationCaption({
   onAudioFailed,
 }: {
   level: Level;
+  /** The pull request's commit subject. */
   title: string;
   audio: string | null;
   audioFailed: string | null;
@@ -119,19 +158,11 @@ function NarrationCaption({
   const blocked = audioFailed !== null;
 
   return (
-    <div className="flex min-w-0 shrink-0 flex-wrap items-start gap-4 border-b border-line bg-surface-2/70 px-6 py-3">
+    <div className="flex min-w-0 shrink-0 flex-wrap items-start gap-4 px-6 pt-4 pb-2">
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
-          <span className="font-mono text-[13px] font-bold text-accent-deep">
-            Level {level.number}
-          </span>
-          <span className="font-mono text-[13px] font-bold tracking-[-0.01em] text-ink">
-            {level.title}
-          </span>
-          <span className="min-w-0 truncate font-serif text-[14.5px] text-ink-faint">
-            {title}
-          </span>
-        </span>
+        <p className="m-0 min-w-0 font-serif text-[16px] leading-[1.45] text-ink">
+          {title}
+        </p>
         <p className="m-0 max-w-[92ch] font-serif text-[15.5px] leading-[1.6] text-ink-dim italic">
           {level.narration.length > 0
             ? level.narration
@@ -472,7 +503,10 @@ export interface SinglePrProps {
   /** The selected diff file, held above for the same reason. */
   diffFile: string | null;
   onDiffFile: (path: string) => void;
+  /** The intent and assessment sheet. */
   onOpenSheet: () => void;
+  /** One decision record, by the id the pull request names for it. */
+  onOpenDecision: (adr: string) => void;
   /** The stage's active box, so the surface can read and restore its own scroll. */
   boxRef: RefObject<HTMLDivElement | null>;
   paneId: string;
@@ -498,6 +532,7 @@ export function SinglePr(props: SinglePrProps) {
     diffFile,
     onDiffFile,
     onOpenSheet,
+    onOpenDecision,
     boxRef,
     paneId,
     onArtFailed,
@@ -516,6 +551,7 @@ export function SinglePr(props: SinglePrProps) {
     diffFile,
     onDiffFile,
     onOpenSheet,
+    onOpenDecision,
     onArtFailed,
     failedArt,
   });
@@ -552,45 +588,52 @@ export function SinglePr(props: SinglePrProps) {
     inside the live level is the single horizontal strip below the level's band. The row
     below is what that costs: the rail takes the left edge and the column beside it takes
     everything else, so the removed strip's height comes back to the level's content.
+
+    THE LEVEL'S HEADING IS NOT DRAWN, AND THE NARRATION IS THE LEVEL'S FIRST CONTENT. The
+    `h1` stays for the document and for a screen reader, at `sr-only`, exactly as the
+    shipped shell keeps a paged level's heading. The caption sits inside the pane, under
+    the strip and above the stage, so the reading order is: which section this is (the
+    strip), what this level is (the narration), then the section's own panels.
   */
   return (
     <div className="flex min-h-0 min-w-0 flex-1">
       <LevelRail levels={levels} levelIndex={levelIndex} onLevelIndex={onLevelIndex} />
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <NarrationCaption
-          level={level}
-          title={entry.title ?? `PR ${entry.pr}`}
-          audio={level.audio}
-          audioFailed={audioFailed}
-          onAudioFailed={onAudioFailed}
-        />
-
         {/*
           The reading-progress strip. `LevelProgress` carries `order-first`, so it paints
           at the top of whichever flex column holds it. In the shell that column is the
-          pane; here the column is this pair, so the strip lands directly under the
-          narration caption and above the level's band. It stays in the DOM after the
-          stage, because `LevelProgress` reads the box ref in a layout effect and React
-          attaches a host ref in tree order.
+          pane; here the column is this pair, so the strip lands directly above the pane
+          and above the level's own content. It stays in the DOM after the stage, because
+          `LevelProgress` reads the box ref in a layout effect and React attaches a host
+          ref in tree order.
         */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <div id={paneId} className="flex min-h-0 min-w-0 flex-1 flex-col">
             {/*
-              The level's own band sits above the stage rather than inside the first box,
-              so the level's heading stays where a reader left it while the sections page
-              under it. It carries no panel heading, so it is not a jump target and the
-              strip below lists exactly the sections the pager walks.
+              The level's own name, and nothing a reader sees. The band that used to draw
+              it is gone: the rail names the level the reader is on and the top band names
+              the pull request, so the band repeated both. The heading stays in the flow at
+              `sr-only`, so the level keeps its one `h1` and a screen reader still hears the
+              level's name.
             */}
-            <div className="min-w-0 shrink-0 px-6 pt-4">
-              <SectionHeading
-                title={`PR ${entry.pr} · ${level.title}`}
-                lead={levelLeadFor(level)}
-                id={`flightdeck-level-${level.number}`}
-              />
-            </div>
+            <h1
+              id={`flightdeck-level-${level.number}`}
+              tabIndex={-1}
+              className="sr-only outline-none"
+            >
+              {`PR ${entry.pr} · ${level.title}`}
+            </h1>
 
             <SectionStrip targets={targets} activeIndex={index} onSelect={onSection} />
+
+            <NarrationCaption
+              level={level}
+              title={entry.title ?? `PR ${entry.pr}`}
+              audio={level.audio}
+              audioFailed={audioFailed}
+              onAudioFailed={onAudioFailed}
+            />
 
             <SectionStage index={index} activeBoxRef={boxRef}>
               {sections}
@@ -615,18 +658,6 @@ export function SinglePr(props: SinglePrProps) {
       </div>
     </div>
   );
-}
-
-function levelLeadFor(level: Level): string {
-  const parts = [
-    level.art === null ? null : "scene art",
-    level.diagram === null ? null : "a drawing",
-    level.audio === null ? null : "narration audio",
-  ].filter((part): part is string => part !== null);
-  if (parts.length === 0) {
-    return "This level carries no art, no drawing, and no audio. It carries the diff.";
-  }
-  return `This level carries ${parts.join(", ")}.`;
 }
 
 /* --------------------------------------------------------------- the pieces */
@@ -655,6 +686,7 @@ function sectionsFor(
     diffFile: string | null;
     onDiffFile: (path: string) => void;
     onOpenSheet: () => void;
+    onOpenDecision: (adr: string) => void;
     onArtFailed: (url: string) => void;
     failedArt: string | null;
   },
@@ -730,11 +762,20 @@ function sectionsFor(
         lead="The author's own statement of this pull request, and the reading written against its merged diff."
         absent={!entry.intent && !entry.assessment}
         action={
+          /*
+            THE LABEL TAKES `text-ink`, AND THAT IS THE CONTRAST FIX. It read
+            `text-ink-mid`, and `index.css` declares no `--color-ink-mid`, so Tailwind
+            emits no rule for that spelling and the label inherited the panel header's own
+            `text-band-ink`. The control is a white pill on the teal band, so a white label
+            on a white fill measured 1.00 to 1 and the engineer could not read it.
+            `--color-ink` is declared, and dark ink on the pill's own fill measures 17.16
+            to 1.
+          */
           <button
             type="button"
             onClick={parts.onOpenSheet}
             className={cn(
-              "inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-full border border-line bg-card px-3 font-mono text-[12.5px] font-bold text-ink-mid",
+              "inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-full border border-line bg-card px-3 font-mono text-[12.5px] font-bold text-ink",
               "transition-colors hover:bg-surface-2",
             )}
           >
@@ -805,7 +846,7 @@ function sectionsFor(
       span="half"
       title="Decisions this diff lands"
       icon={ListTree}
-      lead="The decision records the pull request names."
+      lead="The decision records the pull request names. A press opens the whole record."
       absent={(entry.adrs ?? []).length === 0}
     >
       {(entry.adrs ?? []).length === 0 ? (
@@ -814,9 +855,21 @@ function sectionsFor(
         <ul className="m-0 flex min-w-0 list-none flex-wrap gap-2 p-0">
           {(entry.adrs ?? []).map((adr) => (
             <li key={adr} className="list-none">
-              <Chip tone="accent" icon={Shapes}>
-                {adr}
-              </Chip>
+              <button
+                type="button"
+                onClick={() => parts.onOpenDecision(adr)}
+                title={`Open the whole record for ${adr}`}
+                aria-label={`Open the whole record for ${adr}`}
+                className={cn(
+                  "inline-flex cursor-pointer rounded-md",
+                  "transition-colors duration-150 ease-house hover:bg-surface-2",
+                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                )}
+              >
+                <Chip tone="accent" icon={Shapes}>
+                  {adr}
+                </Chip>
+              </button>
             </li>
           ))}
         </ul>
