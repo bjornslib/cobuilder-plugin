@@ -34,17 +34,23 @@ the working reference. Both were built and measured.
 ## Files Touched
 
 - `plugins/artifact/viewer/src/shell/Board.tsx` — new. The board, ported from
-  the prototype with no change of behaviour.
+  the prototype with no change of behaviour. Slice 18 extends it with a second row source,
+  a tab strip, and a kind control.
 - `plugins/artifact/viewer/src/shell/readiness.ts` — new. The six record kinds,
   the three readiness words, and the one derivation. Moved with the board, because the
-  board is its only reader.
+  board is its only reader. Slice 18 widens it into the board's one pure rule module. It
+  gains the row kind, a row's status, the PR-alone source, and the tab predicates. The
+  module keeps its name, because the readiness rule stays its largest part.
 - `plugins/artifact/viewer/src/shell/Board.test.tsx` — new. The board's own
-  cases.
+  cases. Slice 18 extends them with the row count, the state on a PR-alone row, the tab
+  strip, and the kind control.
 - `plugins/artifact/viewer/src/shell/readiness.test.ts` — new. The readiness
-  rule's cases, which need no DOM.
+  rule's cases, which need no DOM. Slice 18 extends them with the pure rules the tab strip
+  reads. Those cases need no DOM either, which is why the readiness rule lives in this file.
 - `plugins/artifact/viewer/src/shell/App.tsx` — modified. `board = route.workId === null`
   selects the board, and the pane renders it instead of the unknown-id error. The
-  work-item branch keeps that error.
+  work-item branch keeps that error. Slice 18 hands the board the index's pull request
+  entities beside its rows, which is the second row source's only input.
 - `plugins/artifact/viewer/src/shell/Rail.tsx` — modified. The top entry `Work` opens the
   board, and it takes `board` and `workCount` props.
 - `plugins/artifact/viewer/src/shell/TopBar.tsx` — modified. The bar states the board
@@ -54,7 +60,8 @@ the working reference. Both were built and measured.
 - `plugins/artifact/viewer/src/shell/records.ts` — modified. `MinWork` and the `min_work`
   field on `goal`, which the goal verdict reads.
 - `plugins/artifact/viewer/src/shell/atoms.tsx` — modified. `TONE_MARK`, `TONE_PILL`,
-  `StateBadge`, and `toneForStage`, which the row's marks and badge read.
+  `StateBadge`, and `toneForStage`, which the row's marks and badge read. Slice 18 adds
+  `toneForState`, which a PR-alone row's badge reads.
 
 ## Types & Signatures
 
@@ -82,10 +89,48 @@ export function recordVerdicts(record: DesignRecord | undefined): RecordVerdicts
 /** How many of the six records exist, whole or in part. */
 export function presentCount(verdicts: RecordVerdicts): number;
 
+/* readiness.ts — slice 18. The board's pure rules: which rows it lists, and
+   which rows a tab keeps. They live here because the readiness rule does, and
+   because none of them needs a DOM to be read. */
+export type RowKind = "design" | "pull-request";
+
+/** The two kinds, in the order the kind control lists them. */
+export const ROW_KINDS: RowKind[];
+
+/** The word a row states for its kind. `PR` names the kind and never a status. */
+export const ROW_KIND_LABEL: Record<RowKind, string>;
+
+// One board row, whether it carries a design or a pull request of its own.
+export type BoardSource =
+  | { kind: "design"; row: DesignRow }
+  | { kind: "pull-request"; row: PullRequest };
+
+/** A design's stage, or a pull request's own state. One row, one status word. */
+export function boardStatus(source: BoardSource): string;
+
+/** Every status the board's rows record, deduplicated, in reading order. */
+export function statusTabs(sources: BoardSource[]): string[];
+
+/** The predicate behind one status tab. `All` is the caller's own predicate. */
+export function matchesStatus(source: BoardSource, status: string): boolean;
+
+/** The predicate behind one kind tab. */
+export function matchesKind(source: BoardSource, kind: RowKind): boolean;
+
+// Every pull request the index holds that no design's epics point at, one source
+// each, in id order. The subtraction runs against each design row's own
+// `pullRequests`, so no pull request earns two rows.
+export function prAloneSources(
+  rows: DesignRow[],
+  pullRequests: PullRequest[],
+): BoardSource[];
+
 /* Board.tsx — the props, as the component takes them. */
 export interface BoardProps {
   /** The resolved rows the record index yields, one per design. */
   rows: DesignRow[];
+  /** The index's pull request entities, which the PR-alone row source reads. */
+  pullRequests: PullRequest[];
   /** The per-design record map `data/designs.js` carries. */
   records: DesignRecords;
   /** False while the index is in flight, so the board states that and nothing else. */
@@ -109,6 +154,7 @@ export interface DesignRow {
 
 export type DesignRecord = /* one design's authored records, as designs.js writes them */;
 export type DesignRecords = Record<string, DesignRecord>;
+export type PullRequest = /* one pull request, as the index's pull_request entity holds it */;
 
 /* model.ts */
 /** The bare route: the one destination that states no section. */
@@ -168,6 +214,34 @@ record count comes from `presentCount`. The epic figure counts epics whose refin
 is `completed` or `merged`, read from the join and never from the entity. The slice
 figure counts slices whose state is `completed`, and it hides when the item carries none.
 
+**The second row source.** Slice 18 adds a row for each pull request that no design's
+epics point at. The subtraction runs against `DesignRow.pullRequests`, which the data layer
+already resolves, so no pull request earns two rows. `Board.tsx` takes the index's
+`pull_request` entities as a prop beside its rows, and `prAloneSources` derives the
+PR-alone set from those two inputs alone. A design's own pull request reads inside that
+design's row, and nowhere else. A PR-alone row carries the pull request's id, its title,
+and its state, and no six record marks. Those marks read a design directory, and a pull
+request holds none.
+
+**Two filters, one flat list.** The board keeps its flat list, and the tab strip filters
+that list rather than restating it as lanes. The strip selects by status, and its
+vocabulary is the six design stages plus the two pull request states, `open` and `merged`.
+A design row's status is its stage. A PR-alone row's status is its own state. So one tab
+selects both kinds by one rule.
+
+**The kind group rides beside the strip.** It selects `design` or `pull-request`, and the
+two groups combine with AND. So a reader reaches the PR-alone rows and then narrows them
+by status. `All` leads each group and clears that group alone. The board's key and its
+header state rows rather than designs, because the list now holds both.
+
+**The strip reuses the prototype's mechanism.** The lens prototype's lane strip is
+`Tabs`/`TabsList`/`TabsTrigger` from `@/components/ui/tabs`. It sits in
+`src/variations/lens-mosaic/index.tsx`, with `variant="line"` on the list and a count
+beside each label. Slice 18 reuses that mechanism and drops the lane vocabulary. The count
+beside a status tab is how many rows that tab keeps. A count waits for the index to
+resolve, because a count of zero would claim an empty board while the index is still in
+flight.
+
 ## Slice Decomposition
 
 Per `docs/plans/cobuilder-viewer/04-slices.md`, in build order.
@@ -179,10 +253,22 @@ Per `docs/plans/cobuilder-viewer/04-slices.md`, in build order.
 - **Slice 7 — A row opens the item's Work surface.** Depends on: slice 6, and slice 8
   (the section model the opened surface renders). Pressing a row lands on that item's
   Work surface at its first level, with the route naming the item.
+- **Slice 18 — A pull request with no design is a row of its own.** Depends on: slices 6,
+  7, and 15 to 17. Slices 15 to 17 land the surface that reads a pull request's own
+  records. The board gains a second row source. It lists every pull request the index holds
+  that no design's epics point at, one row each, beside the design rows. Each such row
+  states the pull request's own state, `open` or `merged`, and the kind word `PR`. A tab
+  strip filters the rows by status. A kind control narrows the board to the PR-alone rows,
+  and the status tabs keep working inside that set.
 
 Slice 7 is not slice 6's interaction detail. Two states: a bundle a reader can survey,
 and one item a reader can enter. Slice 6 renders the list with no navigation out of it,
 and slice 7 is the transition the board exists for.
+
+Slice 18 is not slice 6's leftover. Two row sources feed one list, and the status
+vocabulary grows from the six design stages to those six plus the two pull request states.
+The row source also answers a question no design row asks: whether a pull request already
+belongs to a design. A row that answered it twice would list one pull request as two rows.
 
 ## Test Plan
 
@@ -199,6 +285,15 @@ by role.
   written the way `data/designs.js` writes a record: a whole record reads `present`, a
   record with an empty named part reads `partial` and names it, an absent record reads
   `absent`, and a design `designs.js` does not carry reads absent on all six.
+- **`readiness.test.ts`** — slice 18. The pure rules the tab strip reads, against fixtures
+  written the way `data/index.json` writes them. `boardStatus` reads a design's stage and a
+  pull request's own state. `statusTabs` names each status the rows record once, and names
+  no status that no row carries. `matchesStatus` keeps every source that carries the status
+  and drops every other one. `matchesKind` keeps one kind alone, and the two predicates
+  together keep the PR-alone rows of one state. `prAloneSources` drops a pull request that
+  a design row already carries in its own `pullRequests`, so one pull request yields one
+  source. The file gains these cases because the readiness rule is the module's other pure
+  rule, and neither rule needs a DOM.
 - **`Board.test.tsx`** — slice 6. The row count equals the designs it was given, one row
   per design. Each row states the stage its design records. Each row carries one mark per
   `RECORD_KINDS` entry, in that order. A design with no record renders six dashed marks
@@ -207,10 +302,22 @@ by role.
   follows the lane rule, and a superseded design sorts after every live stage. A stage
   outside the vocabulary sorts last. The board draws no section strip, no pager bar, no
   level progress bar, and no reading-progress strip.
-- **The rendered page** — slices 6 and 7. The bare route renders the board and not the
+- **`Board.test.tsx`** — slice 18. The row count equals the design rows plus the PR-alone
+  pull requests. A PR-alone row states its own state and its kind word, and it carries no
+  six-mark signature. A design row whose epics carry a pull request renders no second row
+  for that pull request. A status tab keeps only the rows that carry its status. `All`
+  holds every row, and the status tabs' counts sum to `All`'s count. The kind control
+  narrows the board to `pull-request`, a status tab still filters that set, and releasing
+  the kind control returns every row. The design rows still render, still state their
+  stage, and still open a work item. The board still draws no section strip, no pager bar,
+  and no level progress bar.
+- **The rendered page** — slices 6, 7, and 18. The bare route renders the board and not the
   unknown-id error. The rail's `Work` entry returns to it. A row's href is that item's
   route, and a press lands on that item's Work surface at its first level. A sparse design
-  opens. The pane owns the scroll, and the document does not.
+  opens. A PR-alone row's href names that pull request, and one press opens that pull
+  request's own records. A press on each status tab leaves the rows that carry it, and the
+  address line names the pull request a pressed PR-alone row stated. The pane owns the
+  scroll, and the document does not.
 
 **The third group has no runner yet, and that gap is known.** The repository holds no
 browser driver. The Python suite under `tests/` checks packaging invariants, and vitest
@@ -242,8 +349,28 @@ oversight.
   `narrative.json`, or `assessment.json` exists beside their goal. The rule trusts the
   recorded field, so the board reports those two as whole. A stricter rule would
   cross-check the sibling records. That change is not made here.
-- **The board has no filter and no search.** Fifteen rows is a readable list. A bundle
-  with sixty designs would not be, and nothing in this epic says what happens then.
+- **The board holds one status filter and one kind filter, and no search.** An earlier
+  version of this design said the board had no filter. Slice 18 makes that false for status
+  and for kind. The tab strip keeps the board a flat list, because `All` holds every row
+  within one press. The lane board the Scope section rules out stays ruled out. The board
+  still carries no free-text search. A bundle with sixty designs would need one, and
+  nothing in this epic says what it looks like.
+- **A design's own pull request must not become a second row.** Slice 18 adds one row per
+  pull request that no design's epics point at. The set difference runs against
+  `DesignRow.pullRequests`, which the data layer resolves from `joins.epic_to_pull_request`
+  and the epic's own `pr` field. A row source that read the index's `pull_request` entities
+  alone would list a design's own pull request twice. It would appear once inside that
+  design's row and once beside it.
+- **The fixture is thin, so the first paint changes shape.** Measured on 2026-09-25:
+  twelve of the index's seventeen pull requests belong to no design. They are 1 to 10, 17,
+  and 22. The PR-alone set is therefore larger than the design set, and the board's first
+  paint gains twelve rows beside the fifteen it holds today. Ten of those twelve read
+  `merged` and two read `open`. So one status tab carries most of the board, and a board
+  that read as a design list now reads as a pull request list.
+- **A PR-alone row's address needs a work id.** A pull request with no design has no work
+  item. Slice 16 owns that address's shape, and slice 18 reads it rather than inventing
+  one. What the address names for a pull request no epic carries stays open here. Slice 18
+  therefore cannot ship its row's href before slice 16 answers that question.
 - **The board states completeness, which no other panel does.** Every panel in this shell
   states absence and never presence. The board breaks that rule on purpose, because its
   job is to let a reader compare two items before opening either. A later session that
