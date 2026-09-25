@@ -1,5 +1,5 @@
 {
-  "landscape": {
+  "intent": {
     "narration": "This design closes a visibility gap in the odyssey viewer: a build's Gate 3 program design and Gate 4b epic designs stay invisible to the one surface built to show build progress, so someone reviewing a build has to leave the viewer to read them.",
     "tagline": "Show the gate document, not just the gate's approval state."
   },

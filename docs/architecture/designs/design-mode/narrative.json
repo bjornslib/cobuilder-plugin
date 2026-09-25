@@ -1,5 +1,5 @@
 {
-  "landscape": {
+  "intent": {
     "narration": "This design adds a seventh Odyssey mode so an engineer can record intent, alternatives, and constraints before any code exists, then carry that record through to the pull requests that implement it.",
     "tagline": "Design before the change exists."
   },

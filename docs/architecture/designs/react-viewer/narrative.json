@@ -1,5 +1,5 @@
 {
-  "landscape": {
+  "intent": {
     "tagline": "The viewer shows five tables. A reader asks three questions. This design rebuilds it around the questions, and changes what the file is made of to make that affordable.",
     "narration": "The bundle viewer grew one tab per entity list. Designs, pull requests, decisions, contexts, and builds each got a place, and the shape was honest, because it matched what build_index.py emits. It is also why every real task crosses four tabs. A reader reviewing a pull request wants its story, the decisions it cites, the epics it carries, and the slice scores behind them. The index already joins all four. The viewer makes the reader do the join again by hand. Meanwhile the file that would have to change is 4899 lines in one function scope, with 45 places that build HTML from strings and no template anywhere. ADR-0020 saw that in August and decided to break the file into parts. That decision is recorded and unexecuted, so nothing is lost by asking a harder question now: not how to split this file, but what the file should be."
   },

@@ -6,7 +6,7 @@ window.STORY = {
     "title": "prodyssey — Codebase Odyssey",
     "description": "",
     "levels": [
-      "PR Landscape",
+      "Intent",
       "Problem & Solution",
       "Architecture",
       "File Changes"
@@ -94,7 +94,6 @@ window.STORY = {
         "commands": 3,
         "skills": 2
       },
-      "levels": {},
       "status": "merged",
       "commit": "7bd668f"
     },
@@ -122,7 +121,7 @@ window.STORY = {
         "ADR-0002"
       ],
       "levels": {
-        "landscape": {
+        "intent": {
           "narration": "This PR is now much bigger than it started: 29 files, over 7,500 lines added. It still adds the orientation doc, but the bulk of it is a new pipeline for publishing PR stories as shareable pages.",
           "voice": "This PR has grown well past where it started. Twenty-nine files, over seventy-five hundred lines added. It still adds the orientation doc, but most of the change is a new pipeline for publishing PR stories as shareable pages."
         },
@@ -424,7 +423,7 @@ window.STORY = {
         "ADR-0004"
       ],
       "levels": {
-        "landscape": {
+        "intent": {
           "narration": "This PR moves house. Fifty-one files change, but almost all of it is one mechanical rename: the self-analysis bundle that used to live at .odyssey now lives at .prodyssey/self, right next to the bundles the plugin already caches for other repos. Alongside that move, a new writing-style skill arrives for the repo's own docs.",
           "voice": "This PR moves house. Fifty-one files change, but almost all of it is one mechanical rename. The self-analysis bundle that used to live at dot-odyssey now lives at dot-prodyssey slash self, right next to the bundles the plugin already caches for other repos. Alongside that move, a new writing-style skill arrives for the repo's own documentation."
         },
@@ -572,7 +571,7 @@ window.STORY = {
         "ADR-0006"
       ],
       "levels": {
-        "landscape": {
+        "intent": {
           "narration": "This PR is dominated by one new reference library: over fifty new files under a mermaid skill, teaching Claude how to author every kind of Mermaid diagram. Underneath that bulk sit two real mechanisms — diagrams as a second visual option next to scene art, and a bundle-upgrade system so an old bundle never quietly falls out of date.",
           "voice": "This PR is dominated by one new reference library. Over fifty new files teach Claude how to author every kind of Mermaid diagram. Underneath that bulk sit two real mechanisms. Diagrams become a second visual option next to scene art, and a bundle-upgrade system means an old bundle never quietly falls out of date."
         },
@@ -715,7 +714,7 @@ window.STORY = {
         "skills": 2
       },
       "levels": {
-        "landscape": {
+        "intent": {
           "narration": "This PR is a hardening pass, not a feature. Ten commits close a genuine credential leak, lock the three scripts that read the plugin's API key, and fix three smaller correctness bugs a stricter test surfaced along the way — a wrong diff range on merge commits, a data-loss guard with two blind spots, and a manifest field that quietly went stale every generate run."
         },
         "problem_solution": {
@@ -832,7 +831,7 @@ window.STORY = {
         "viewer": 1
       },
       "levels": {
-        "landscape": {
+        "intent": {
           "narration": "This PR adds a fifth mode to the plugin: submit. Before now, baseline, generate, view, and publish all narrate history after the fact. Submit interviews the person making a change while they still remember why, assesses that change against everything the bundle already knows, and then opens the real pull request. Thirty-six files move, most of it new reference material and a new rendering script, plus a one-line schema bump that three existing bundles already carry."
         },
         "problem_solution": {
@@ -1068,7 +1067,6 @@ window.STORY = {
         "scripts": 1,
         "viewer": 1
       },
-      "levels": {},
       "status": "merged",
       "commit": "630aa4f"
     },
@@ -1086,7 +1084,6 @@ window.STORY = {
       "touched": {
         "(root)": 1
       },
-      "levels": {},
       "status": "merged",
       "commit": "d9a81d7"
     },
@@ -1108,7 +1105,7 @@ window.STORY = {
         "viewer": 1
       },
       "levels": {
-        "landscape": {
+        "intent": {
           "narration": "This PR does three things at once. It collapses three near-identical copies of one function into a single shared module. It teaches submit mode's interview to check itself — the interviewing Claude now asks the author two questions blind, before showing its own reading of the diff, and compares the two against each other. And it runs an active-voice clarity pass over the plugin's own reference documentation. Thirty files move: four scripts, thirteen reference docs and skill files, and the self-bundle's own regenerated data for the two PRs before it."
         },
         "problem_solution": {
@@ -1335,7 +1332,6 @@ window.STORY = {
         "(root)": 1,
         "skills": 6
       },
-      "levels": {},
       "status": "merged",
       "commit": "6b2fce6"
     },
@@ -1376,7 +1372,7 @@ window.STORY = {
         "ADR-0020"
       ],
       "levels": {
-        "landscape": {
+        "intent": {
           "narration": "This PR reorganized the whole plugin around five jobs instead of one, and gave it a way to capture a design's intent before the first line of code exists. Five hundred fifty-eight files moved, most of them carried unchanged into their new plugin home under the new plugins directory, with about a hundred thousand lines added against twenty-five hundred removed.",
           "voice": "This one change reshapes the whole plugin. What used to be a single install now splits into five separate plugins, one per job, so a person who only wants pull request narration no longer has to take the design tooling and the paid art pipeline along with it. It also adds a brand new design mode, so a decision gets written down before anyone writes the code that follows from it. Five hundred fifty-eight files moved in this one change, most of them carried into their new home unchanged, with roughly a hundred thousand lines added against twenty-five hundred removed."
         },
@@ -1548,7 +1544,7 @@ window.STORY = {
       "commit": "be93c04",
       "adrs": [],
       "levels": {
-        "landscape": {
+        "intent": {
           "narration": "This change cleans up three loose ends that pull request eleven left behind: a documented artifact type nobody ever produced, a review gate that never actually ran, and pull-request notes that stopped a third of the way through the work. Forty-six files changed, most of them documentation and process records rather than working code.",
           "voice": "This change cleans up after the big five-plugin split. It retires a documented step that no tool ever carried out, it closes a review gate for five pieces of work after the fact and says so plainly, and it writes down two rules about how architecture decision records should age. Forty-six files changed, and almost all of them are documentation rather than application code."
         },
@@ -1687,7 +1683,6 @@ window.STORY = {
         "docs": 9,
         "plugins": 31
       },
-      "levels": {},
       "status": "open",
       "commit": "6bad882c30e7ea84a2e1d950e604859ffd211595",
       "intent": {
@@ -1858,7 +1853,6 @@ window.STORY = {
         "shared": 2,
         "tests": 11
       },
-      "levels": {},
       "status": "open",
       "commit": "1d0c5ceb27a7df8dfaf4e3d36e2ebf9993a27735",
       "intent": {
@@ -1998,7 +1992,6 @@ window.STORY = {
         "shared": 1,
         "tests": 1
       },
-      "levels": {},
       "status": "open",
       "commit": "9ee7ce2330f2f7e6fc20c4e72e4a777416350dc7",
       "intent": {
@@ -2178,7 +2171,6 @@ window.STORY = {
         "shared": 5,
         "tests": 1
       },
-      "levels": {},
       "status": "open",
       "commit": "74fb1a8999e2d9f65894069396f2339a1a2916c2",
       "intent": {
@@ -2452,7 +2444,6 @@ window.STORY = {
         "shared": 5,
         "tests": 4
       },
-      "levels": {},
       "status": "open",
       "commit": "2f1985fdb3831f62288269d818a90948c5d9d191",
       "intent": {

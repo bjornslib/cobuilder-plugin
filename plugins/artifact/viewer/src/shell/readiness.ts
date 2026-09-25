@@ -77,10 +77,25 @@ function hasItems(value: unknown[] | undefined | null): boolean {
 
 /** The three narrative levels, in reading order. */
 const NARRATIVE_LEVELS: Array<{ key: string; label: string }> = [
-  { key: "landscape", label: "Landscape" },
+  { key: "intent", label: "Intent" },
   { key: "problem_solution", label: "Problem and solution" },
   { key: "architecture", label: "Architecture" },
 ];
+
+/**
+ * The key this shell's first level carried before ADR-0029 renamed it.
+ *
+ * A design record authored before the rename holds its narration under the key the level
+ * used to have, and `designs.js` is a projection of records authored over months. So the
+ * reader asks for the level's current key first and for this one second, and a design
+ * narrated before the rename still reads as narrated rather than as an empty level.
+ *
+ * Nothing writes this key. The level list above carries the one name the shell asks for
+ * and shows, and this table is a read of an older record and not a second name for the
+ * level. A future session that drops the read is free to, once no bundle in service
+ * predates the rename.
+ */
+const PRE_RENAME_LEVEL_KEY: Record<string, string> = { intent: "landscape" };
 
 /**
  * One narrative level, whatever shape the record wrote it in.
@@ -96,9 +111,15 @@ function narrativeLevel(
   const narrative = record.narrative;
   if (!narrative) return null;
   const source = (narrative.levels ?? narrative) as Record<string, unknown>;
-  const level = source[key];
-  if (typeof level !== "object" || level === null) return null;
-  return level as { narration?: string };
+  const previous = PRE_RENAME_LEVEL_KEY[key];
+  const names = previous === undefined ? [key] : [key, previous];
+  for (const name of names) {
+    const level = source[name];
+    if (typeof level === "object" && level !== null) {
+      return level as { narration?: string };
+    }
+  }
+  return null;
 }
 
 /** Every `##` section of a draft, as a table of contents. */

@@ -8,8 +8,10 @@
 Mechanical parts = per-PR date/size/touched and world.district file counts.
 Authored narrative fields (title, tagline, depth, levels, adrs, events) are
 never touched for PRs that already exist in story.json. New PRs discovered
-in git get a minimal stub entry (depth "summary", empty levels) so a human
-(or a later generation step) can flesh them out.
+in git get a minimal stub entry (depth "summary", no `levels`) so a human
+(or a later generation step) can flesh them out. A stub carries no `levels`
+key at all: an empty `levels` object states a level record that is not there,
+and a reader that finds the key cannot tell the two apart.
 
 If <bundle-dir>/data/story.json does not exist yet, a seed is created: world
 districts come from <bundle-dir>/inventory.yaml when present, else from a
@@ -58,7 +60,7 @@ from _bundle_meta import SCHEMA_VERSION, read_plugin_version, require_compatible
 from _manifest import rewrite_manifest
 
 PLUGIN_NAME = "pr"
-DEFAULT_LEVELS = ["PR Landscape", "Problem & Solution", "Architecture", "File Changes"]
+DEFAULT_LEVELS = ["Intent", "Problem & Solution", "Architecture", "File Changes"]
 
 EXCLUDE_PREFIXES = (".venv/", "node_modules/", ".git/")
 
@@ -533,7 +535,6 @@ def build_new_story(repo: Path, existing: dict, dot_range: str | None, prs_filte
                 "depth": "summary",
                 "size": size,
                 "touched": touched,
-                "levels": {},
                 "status": status,
                 "commit": pr_info["hash"],
             }

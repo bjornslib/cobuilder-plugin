@@ -99,7 +99,7 @@ export interface ProblemSolution {
 }
 
 export interface NarrativeLevels {
-  landscape?: { tagline?: string; narration?: string };
+  intent?: { tagline?: string; narration?: string };
   problem_solution?: ProblemSolution;
   architecture?: { narration?: string; beats?: Beat[] };
 }

@@ -24,7 +24,7 @@ Artifact key names (stable, used in --json output):
   per PR (nested under "prs"."<N>"):
     timeline               - timeline entry for this PR exists
     narrative.<level>      - non-empty `narration` for each of the 4 levels
-                              (landscape, problem_solution, architecture, file_changes)
+                              (intent, problem_solution, architecture, file_changes)
     adr.<id>                - each id in this entry's adrs[] exists in data/adrs.json
                               (missing data/adrs.json => every adr check is "missing")
     asset.level-1/2/3       - WebP exists and is >1KB
@@ -80,7 +80,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _bundle_meta import CURRENT_BUNDLE_FORMAT, SCHEMA_VERSION, SCHEMA_VERSION_KNOWN
 
-LEVEL_KEYS = ["landscape", "problem_solution", "architecture", "file_changes"]
+LEVEL_KEYS = ["intent", "problem_solution", "architecture", "file_changes"]
 MIN_ASSET_BYTES = 1024
 DIAGRAM_TYPE_BY_LEVEL = {1: "C4Container", 2: "sequenceDiagram", 3: "classDiagram"}
 # skills/odyssey/references/review-mode.md §8 and §3.

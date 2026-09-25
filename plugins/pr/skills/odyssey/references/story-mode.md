@@ -69,7 +69,7 @@ The quiz is not implemented (§5).
 
 | Level | Schema key | Fed by |
 |---|---|---|
-| 1 | `landscape` | One-line hook (tagline register) + mechanical summary of size/touched dirs |
+| 1 | `intent` | One-line hook (tagline register) + mechanical summary of size/touched dirs |
 | 2 | `problem_solution` | **Background** (deep → narrow) + **Intuition** (essence, concrete toy data, before/after) — written into the `beats` array, see §2a |
 | 3 | `architecture` | Design narrative: forces → decision → alternatives-with-rejections → consequences/boundaries → what it enables (drawn from the PR's ADRs) — forces/contract/boundary written into the `beats` array, see §2a |
 | 4 | `file_changes` | **Code** section: grouped walkthrough, each group is "why these files belong together," grounded in `git diff --name-only` |
@@ -228,7 +228,7 @@ part of story mode today. Suggested schema, for whoever picks this up:
 ## 6. Voice narration
 
 `levels.<level>.voice` (string, optional, additive) is the script a TTS model
-reads aloud for that level — landscape, problem_solution, and architecture
+reads aloud for that level — intent, problem_solution, and architecture
 each get their own. Audio files themselves are not part of the schema.
 Generate them with the plugin's `scripts/generate_audio.py`, which reads
 the `voice` fields straight out of `story.json`:
@@ -239,7 +239,7 @@ uv run "${CLAUDE_PLUGIN_ROOT}/scripts/generate_audio.py" --repo <target> --bundl
 ```
 
 Output lands at `<bundle-dir>/data/audio/pr<N>_<level>.wav`
-(e.g. `pr73_landscape.wav`), played by the bundle viewer the same
+(e.g. `pr73_intent.wav`), played by the bundle viewer the same
 manifest-gated way scene art is. Default voice is `Charon` (informative &
 professional — recommended for architecture/tech description). Generation is
 per-PR and optional — most PRs will have none.
@@ -268,4 +268,4 @@ extracted from and does not travel with the plugin. Calibrate length and
 tone from the register rules above. A full four-level PR entry runs
 roughly the density of two solid paragraphs per level for
 `problem_solution` and `architecture`, one sentence plus numbers for
-`landscape`, and 3-6 grouped file notes for `file_changes`.
+`intent`, and 3-6 grouped file notes for `file_changes`.

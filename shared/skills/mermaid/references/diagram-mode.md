@@ -16,7 +16,7 @@ compiles them into `data/diagrams.js` for the viewer.
 
 | Level | Schema key | Diagram type | Output path |
 |---|---|---|---|
-| 1 | `landscape` | `C4Container` | `<bundle-dir>/data/diagrams/pr{N}-level1.mmd` |
+| 1 | `intent` | `C4Container` | `<bundle-dir>/data/diagrams/pr{N}-level1.mmd` |
 | 2 | `problem_solution` | `sequenceDiagram` | `<bundle-dir>/data/diagrams/pr{N}-level2.mmd` |
 | 3 | `architecture` | `classDiagram` | `<bundle-dir>/data/diagrams/pr{N}-level3.mmd` |
 | 4 | `file_changes` | none | — |

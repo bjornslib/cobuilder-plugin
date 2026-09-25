@@ -79,7 +79,7 @@ AUTHORED_LEVEL_FIELDS = (
     "beats", "decision", "forces", "alternatives", "consequences", "groups",
 )
 AUTHORED_META_FIELDS = ("title", "description")
-LEVEL_KEYS = ("landscape", "problem_solution", "architecture", "file_changes")
+LEVEL_KEYS = ("intent", "problem_solution", "architecture", "file_changes")
 
 
 def harvest_authored(story: dict) -> dict[str, object]:

@@ -36,12 +36,9 @@
  *   #/<work>/pull-requests/11/architecture             the change's Architecture
  *   #/<work>/pull-requests/11/file-diffs               the change's File Diffs
  *
- * THE LEVEL KEY UNDER THE WORD INTENT IS STILL `landscape`. ADR-0029 decided the rename
- * to `intent` and states that it runs with the parity slice, never immediately, because
- * the key reaches a paid audio filename. This prototype shows the engineer's own word on
- * the screen and reads the bundle's key underneath, and `CHANGE_LEVEL_KEY` is that one
- * mapping. This is the label ADR-0029 rejects for the shipped surface, and the prototype
- * is not the shipped surface.
+ * THE LEVEL KEY UNDER THE WORD INTENT IS `intent`. ADR-0029 renamed the level key and the
+ * rename landed with the parity slice, so this prototype reads the bundle's own key with
+ * no mapping between the two. `CHANGE_LEVEL_KEY` is that one table.
  *
  * NO COLOUR, NO SIZE, AND NO LAYOUT LIVES HERE. This file holds the two accounts, their
  * rows, their addresses, and their record counts. `AccountRail.tsx` and `AccountMark.tsx`
@@ -143,12 +140,12 @@ export const GROUP_ACCOUNT: Record<GroupKey, AccountId> = {
 /**
  * The bundle's own narration level key behind each of the change's four sections.
  *
- * ADR-0029 renames `landscape` to `intent`, and the rename travels with the parity slice
- * rather than landing here. Until it does, the bundle's key is `landscape` and the
- * section's word is Intent. This table is the whole of that difference.
+ * ADR-0029 renamed the level key, and the rename landed with the parity slice. So the
+ * bundle's key and the section's word agree, and this table states that agreement in one
+ * place rather than leaving two readers to assume it.
  */
 export const CHANGE_LEVEL_KEY: Record<ChangeKey, LevelKey> = {
-  intent: "landscape",
+  intent: "intent",
   "problem-and-solution": "problem_solution",
   architecture: "architecture",
   "file-diffs": "file_changes",

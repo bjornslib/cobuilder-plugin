@@ -293,9 +293,9 @@ export function ProblemTile({
           </ProseBox>
         ) : null}
 
-        {levels?.landscape?.tagline ? (
+        {levels?.intent?.tagline ? (
           <ContentCard label="in one line" labelTone="accent">
-            {levels.landscape.tagline}
+            {levels.intent.tagline}
           </ContentCard>
         ) : null}
 

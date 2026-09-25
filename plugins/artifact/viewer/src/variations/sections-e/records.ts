@@ -107,7 +107,7 @@ export interface NarrativeBeat {
 }
 
 export interface DesignNarrative {
-  landscape?: { tagline?: string; narration?: string };
+  intent?: { tagline?: string; narration?: string };
   problem_solution?: {
     problem?: string;
     solution?: string;

@@ -116,7 +116,7 @@ export interface NarrativeBlock {
 }
 
 export interface DesignNarrative {
-  landscape?: NarrativeBlock;
+  intent?: NarrativeBlock;
   problem_solution?: { problem?: string; solution?: string };
   architecture?: NarrativeBlock;
   /** `review-flight-deck` carries this shape instead of the three above. */

@@ -254,7 +254,7 @@ that join here.
       the odyssey skill's `references/pr-description-template.md`.
 
    4. **Narrative.** Write `docs/architecture/designs/<name>/narrative.json`.
-      The viewer renders it as the design's three levels: `landscape`
+      The viewer renders it as the design's three levels: `intent`
       (`tagline`, `narration`), `problem_solution` (`problem`, `solution`,
       `narration`, `beats[]`, `alternatives[]`), and `architecture`
       (`narration`, `beats[]`). Each `beats[]` entry carries a `kind` and

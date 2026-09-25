@@ -5,7 +5,7 @@
  * pull request, and this mode shows the same six, read from the same records:
  *
  *   1. The four narration levels and their narration — `window.STORY`, one entry per
- *      pull request, `levels` keyed by `landscape`, `problem_solution`, `architecture`,
+ *      pull request, `levels` keyed by `intent`, `problem_solution`, `architecture`,
  *      and `file_changes`. The caption at the head of every level's content is the
  *      shipped viewer's own caption, and the rail on the left lists the levels.
  *   2. The diagrams for levels 1 to 3 — `window.DIAGRAMS`, keyed by pull request and
@@ -728,7 +728,7 @@ function sectionsFor(
     ];
   }
 
-  if (level.key === "landscape") {
+  if (level.key === "intent") {
     return [
       frameSection,
       <DistrictPanel key="districts" entry={entry} />,

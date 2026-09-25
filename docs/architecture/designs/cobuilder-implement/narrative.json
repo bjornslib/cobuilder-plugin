@@ -1,5 +1,5 @@
 {
-  "landscape": {
+  "intent": {
     "tagline": "A design becomes verified code, one slice at a time.",
     "narration": "cobuilder-architect can now capture a design before any code exists, but nothing on the other side of that record turns it into working software under independent checks. This design adds the missing half: four approval gates before implementation starts, and a validator that never wrote the code deciding whether each slice is actually done."
   },

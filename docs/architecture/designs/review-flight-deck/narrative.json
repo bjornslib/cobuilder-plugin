@@ -1,7 +1,7 @@
 {
   "design_name": "review-flight-deck",
   "levels": {
-    "landscape": {
+    "intent": {
       "tagline": "Not how to review one change. In what order the whole set can close.",
       "narration": "The viewer knows how to read one pull request well. Previous, next, four levels, a dock that records a verdict. Everything in it assumes the reviewer is looking at one thing. A team with seventeen branches in flight is not looking at one thing, and the surface has nothing for the question they are actually holding. The bundle already carries the material a first answer could be built from: goal files, epics, boundary rules, districts, and a touched map for every pull request. The record index resolves five kinds of join. None of them is between two pull requests, and that is the join the question needs."
     },

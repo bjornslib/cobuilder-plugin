@@ -52,6 +52,7 @@ related_concerns: []
 history:
   - { state: decided, date: 2026-09-24, by: bjornslib, note: "Decided while the engineer read the Work surface's prototype. The engineer directed three things: rename the narration level landscape to intent, add a pull request's own content into its work's Intent, Problem & Solution, and Architecture levels rather than showing a separate page, and keep a pull request's own URL. The engineer left the board placement, the fate of file_changes, and the standalone pull request's section list open. An agent wrote this record, so the state is decided and never approved." }
   - { state: decided, date: 2026-09-25, by: bjornslib, note: "Amended in place, because the model moved after the record landed and the engineer then read a prototype of the new shape. A work's pull request keeps its own space, so a reader jumps between the two accounts on the same section. The rail groups its rows as Build and Review, and the account mark carries a word and a glyph. The rename of landscape to intent, the change's own address, and the three open matters stand. The state stays decided, because an agent wrote this record and an agent does not approve its own record." }
+  - { state: decided, date: 2026-09-25, by: bjornslib, note: "Amended in place again, after the parity work landed the rename. The viewer's level reader keeps `PRE_RENAME_LEVEL_KEY`, a table that maps `intent` to `landscape`. So a design record authored before the rename still reads as narrated rather than as an empty level. The validator offered two ways out: drop the table and rename the fixture data, or keep the table and record the decision here. The record takes the second way, because a committed bundle holds records written before the rename and the table protects them. The rename, the change's own address, and the three open matters stand. The state stays decided, because an agent wrote this record and an agent does not approve its own record." }
 maps_to:
   context: cobuilder-packaging
   modules: [plugins/artifact/viewer/src, shared, plugins/pr]
@@ -283,18 +284,39 @@ survives, because a tool reads that field.
    a background fill as well, and the engineer removed it on 2026-09-25. A filled
    heading reads as something selected, and neither mark selects anything.
 
-5. **What stands unchanged.** The rename of the narration level `landscape` to
-   `intent` stands, with its six places and with the audio move. That move runs
-   with the parity work, and it never re-records a paid file. The change's own
+5. **The decisions a change landed come from the index's join.** Point 4 of the
+   original decision reads the decisions "from the entry's `adrs` list". The parity
+   slice reads them from `joins.adr_to_pull_request` instead, because that join is
+   what `data/index.json` derives, and a second list on the entry can and does
+   disagree with it. One source, so the change's account and the index cannot show
+   two answers for one pull request. The entry's `adrs` list stays as the record
+   `build_index.py` builds the join from, and no surface reads it directly.
+
+6. **What stands unchanged.** The rename of the narration level `landscape` to
+   `intent` stands, with its six places and with the audio move. That move ran
+   with the parity work, and it re-recorded no paid file. The change's own
    address stands at `#/<work>/pull-requests/<pr>`, and a named section appends one
    segment in the shell's existing slot. The three matters that the original record
    leaves undecided stay undecided. Where a pull request that belongs to no program
    sits on the board stays open, and so does the fate of `file_changes`. What a
    standalone pull request shows, section by section, stays open too.
 
+7. **A pre-rename record stays readable.** `plugins/artifact/viewer/src/shell/readiness.ts`
+   holds `PRE_RENAME_LEVEL_KEY`, a table that maps the level's current key to the one it
+   carried before the rename. The table holds one entry, `{ intent: "landscape" }`. A
+   reader asks for the level's current key first and for the pre-rename key second. A
+   design record authored before the rename therefore still reads as narrated, rather than
+   as an empty level. The validator offered two ways out on 2026-09-25. The first way drops
+   the table and renames the fixture data. The second way keeps the table and records the
+   decision here. This record takes the second way, because a committed bundle holds
+   records written before the rename, and the table protects them. Nothing writes the old
+   key. The table is a read of an older record, and it is never a second name for the
+   level. A later session may drop the read once no bundle in service predates the rename.
+
 **The prototype is the evidence.** It sits at
 `plugins/artifact/viewer/src/variations/flightdeck/`. The engineer read it at
 `http://localhost:5273/variations/flightdeck/dev.html`. The prototype shows the
-word Intent on the screen while it reads the bundle's `landscape` key. The rename
-waits for the audio move, so the prototype is evidence for the shape and not for
-that label.
+word Intent on the screen and reads the bundle's own `intent` key, because the
+rename has landed and the bundle now writes that key. The prototype was evidence
+for the shape before the rename; after it, the prototype reads the same key the
+shipped shell reads, so the two cannot disagree about the level's name.

@@ -69,6 +69,15 @@ export interface ResolvedJoins {
   adrPullRequest(adrId: string): AdrToPullRequest | null;
   /** Every decision-to-pull-request entry the index holds, keyed by decision id. */
   adrPullRequests(): Map<string, AdrToPullRequest>;
+  /**
+   * Every decision the index joined to one pull request, in decision-id order.
+   *
+   * The answer to "which decisions did this change land". The index's own
+   * `adr_to_pull_request` is the only source, so a surface that reads this answer and the
+   * index cannot disagree about the set. A decision the join reaches through an epic and
+   * one it reaches directly are both the change's own, so both are here.
+   */
+  adrIdsForPullRequest(pr: number): string[];
   /** The gate steps a plan slug holds, or null when the index holds no record for it. */
   featureGates(slug: string): GateStep[] | null;
   /** Every plan slug the gate join holds. */
@@ -113,6 +122,12 @@ export function resolvedJoinsOf(index: RecordIndex): ResolvedJoins {
 
     adrPullRequest: (adrId) => adrToPullRequest.get(adrId) ?? null,
     adrPullRequests: () => adrToPullRequest,
+
+    adrIdsForPullRequest: (pr) =>
+      [...adrToPullRequest.entries()]
+        .filter(([, entry]) => entry.pr === pr)
+        .map(([id]) => id)
+        .sort(),
 
     featureGates: (slug) => featureGates.get(slug) ?? null,
     featureGateSlugs: () => [...featureGates.keys()],

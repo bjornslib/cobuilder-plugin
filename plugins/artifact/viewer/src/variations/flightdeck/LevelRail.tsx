@@ -61,7 +61,7 @@ import { levelWord } from "./model";
  * comes in from the mode above, and this file never decides what a level is.
  */
 const ICONS: Record<LevelKey, LucideIcon> = {
-  landscape: Map,
+  intent: Map,
   problem_solution: AlertTriangle,
   architecture: Network,
   file_changes: FileText,

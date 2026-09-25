@@ -75,7 +75,7 @@ function hasItems(value: unknown[] | undefined | null): boolean {
 
 /** The three narrative levels, in reading order. */
 const NARRATIVE_LEVELS: Array<{ key: string; label: string }> = [
-  { key: "landscape", label: "Landscape" },
+  { key: "intent", label: "Intent" },
   { key: "problem_solution", label: "Problem and solution" },
   { key: "architecture", label: "Architecture" },
 ];

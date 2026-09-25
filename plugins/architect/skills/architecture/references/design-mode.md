@@ -261,7 +261,7 @@ result to the engineer per step 5 below.
 
 4. **Narrative.** Write `narrative.json` into
    `docs/architecture/designs/<name>/`. The viewer renders it as the
-   design's three levels: `landscape` (`tagline`, `narration`),
+   design's three levels: `intent` (`tagline`, `narration`),
    `problem_solution` (`problem`, `solution`, `narration`, `beats[]`,
    `alternatives[]`), and `architecture` (`narration`, `beats[]`). Each
    `beats[]` entry carries a `kind` and a `text`. Ground every field in

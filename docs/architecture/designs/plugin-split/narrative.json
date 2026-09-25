@@ -1,5 +1,5 @@
 {
-  "landscape": {
+  "intent": {
     "tagline": "One install surface, four jobs.",
     "narration": "The plugin grew until one install carried the whole architecture lifecycle: design a change, build it, submit and narrate the pull request, render the result. Four jobs, one manifest. The first sign was not a bug. It was a vocabulary table appearing in CLAUDE.md to stop the same short words meaning two things, because review meant one thing in the architecture skill and another in the odyssey skill. This design splits the install surface along the seam the words were already drawing."
   },

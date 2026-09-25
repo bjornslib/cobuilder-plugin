@@ -9,9 +9,9 @@
  *
  * THE FOUR SECTIONS ARE THE CHANGE'S FOUR NARRATION LEVELS. The engineer's Review group
  * names Intent, Problem & Solution, Architecture, and File Diffs, and the bundle's own
- * four levels are exactly those four things under the keys `landscape`, `problem_solution`,
+ * four levels are exactly those four things under the keys `intent`, `problem_solution`,
  * `architecture`, and `file_changes`. `CHANGE_LEVEL_KEY` in `./accountModel` holds that
- * mapping, and ADR-0029 states why the key under the word Intent is still `landscape`.
+ * mapping, and ADR-0029 renamed the first level's key so that the word and the key agree.
  *
  * ONE PANEL IS ONE SECTION, AND THIS FILE RETURNS THEM AS A LIST. The shell's own paged
  * level holds one panel per section, because the section strip reads its links from the

@@ -1,5 +1,5 @@
 {
-  "landscape": {
+  "intent": {
     "tagline": "Three cheap reads before one expensive one.",
     "narration": "book-index.md picks one book to load per task, and today it only owns one size: the full one. Upstream already publishes two smaller ones. This design wires them in."
   },

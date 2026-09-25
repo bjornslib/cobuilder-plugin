@@ -100,7 +100,7 @@ export interface NarrativeLevel {
 /** `review-flight-deck` wraps its three levels under `levels`, so both are read. */
 export interface NarrativeRecord extends NarrativeLevel {
   levels?: {
-    landscape?: NarrativeLevel;
+    intent?: NarrativeLevel;
     problem_solution?: NarrativeLevel;
     architecture?: NarrativeLevel;
   };

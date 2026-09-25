@@ -1,5 +1,5 @@
 {
-  "landscape": {
+  "intent": {
     "tagline": "Two designs each built half of the same page and called it Flight deck. This one merges them, so the team builds the pull-request surface once.",
     "narration": "react-viewer set out to replace the viewer's five record-type tabs with three surfaces built around what a reader asks. review-flight-deck set out to answer a question no surface asked at all: when a team carries many open pull requests, in what order can the whole set close. Both reached the same stage, review, without either reading the other. Both also reached for the same name for their pull-request surface. The collision was not cosmetic. Sequencing them would have built review-flight-deck's ordering UI against the viewer react-viewer was already about to replace, then rebuilt it again. cobuilder-viewer merges both into one program. It has three surfaces, one build, and a FlightDeck that carries two modes instead of two designs carrying one name each."
   },

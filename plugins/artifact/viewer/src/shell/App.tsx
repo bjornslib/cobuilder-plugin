@@ -91,10 +91,16 @@ import {
   unresolvedSliceCount,
 } from "@/data/bundle";
 import type { DesignRow } from "@/data/types";
+import { resolvedJoinsOf } from "@/data/joins";
 import { cn } from "@/lib/utils";
 
+import { AccountRule } from "./AccountMark";
+import type { JumpTargetLink } from "./AccountMark";
 import { Chip, SectionHeading } from "./atoms";
 import { Board } from "./Board";
+import { diffFiles, useChangeBundle, useServedAudio } from "./change/levels";
+import type { ArtMode } from "./change/Frame";
+import { changeSections } from "./change/sections";
 import type { AdrRecord } from "./records";
 import { JumpBar, useJumpTargets } from "./jump";
 import type { JumpTarget } from "./jump";
@@ -134,11 +140,15 @@ import type { Theme } from "./DiagramTiles";
 import {
   boardHref,
   buildWorkItems,
+  changeRowIndex,
+  counterpartHref,
   epicGroups,
   gatesOf,
   levelsOf,
   railGroups,
+  rowsOf,
   routeHref,
+  SECTION_LABEL,
   switcherList,
 } from "./model";
 import type { Gates, LevelState, RailSource, SectionKey, WorkItem } from "./model";
@@ -350,10 +360,8 @@ export default function ShellApp() {
   }, [narrowRail]);
 
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
-    "the-work": true,
     build: true,
-    "pull-requests": true,
-    shipped: true,
+    review: true,
   });
   const [sheet, setSheet] = useState<SheetSubject | null>(null);
 
@@ -470,19 +478,110 @@ export default function ShellApp() {
   useScrollResetOnRoute(PANE_ID, [route.workId, route.section, route.sub, route.subId]);
 
   /*
-   * The rail's own input. One object serves the rail and the arrow-key walk, so the two
-   * read the same entries in the same order.
+   * THE CHANGE'S ACCOUNT. A route that names a pull request number opens the change the
+   * work's own epics carry, and the four rows read that pull request's own records. The
+   * number comes from the route's `sub` field, which is the field the pull-request list
+   * already writes, so no second address scheme exists.
+   *
+   * The four hooks sit above the loading and error returns, because a hook that runs on
+   * one render and not the next is the defect the rules of hooks exist to prevent. A
+   * route that names no pull request reads nothing: `useChangeBundle(null)` answers the
+   * idle state and asks the bundle for no file.
    */
+  const namedPr =
+    route.sub !== null && route.sub !== "flightdeck" ? Number(route.sub) : null;
+  const changePr =
+    section === "pull-requests" && namedPr !== null && Number.isFinite(namedPr)
+      ? namedPr
+      : null;
+  const change = useChangeBundle(changePr);
+  const servedAudio = useServedAudio(change.levels);
+  const [artMode, setArtMode] = useState<ArtMode>("image");
+  const [failedArt, setFailedArt] = useState<string | null>(null);
+  const [diffFile, setDiffFile] = useState<string | null>(null);
+
+  /* A reader who opens another change meets that change's own frame, diff file, and picture. */
+  useEffect(() => {
+    setArtMode("image");
+    setFailedArt(null);
+    setDiffFile(null);
+  }, [changePr]);
+
+  /*
+   * THE INDEX'S JOINS, RESOLVED ONCE AND HELD. The change's own rows read the decisions it
+   * landed from the index's `adr_to_pull_request` and never from a second list, so the
+   * account and the index cannot disagree about that set. The hook sits above the loading
+   * and error returns, because a hook that runs on one render and not the next is the
+   * defect the rules of hooks exist to prevent.
+   */
+  const resolvedJoins = useMemo(
+    () => (load.state === "ready" ? resolvedJoinsOf(load.index) : null),
+    [load],
+  );
+
+  /*
+   * The rail's own input. One object serves the rail, the arrow-key walk, and the Review
+   * group's addresses, so all three read one derivation.
+   *
+   * THE CHANGE THE RAIL ADDRESSES IS THE ROUTE'S CHANGE, AND FAILING THAT THE WORK'S OWN.
+   * A reader on a program row still sees where the change's four rows lead, and a reader
+   * inside the change's account sees rows that open the address they are on. Without the
+   * fallback the current-row match would fail on every program row, because the route
+   * names no pull request there.
+   */
+  const railChangePr =
+    changePr ?? (work && work.pullRequests.length > 0 ? work.pullRequests[0].id : null);
   const railSource: RailSource = {
     work,
     gates,
     levels,
     board,
     workCount: load.state === "ready" ? works.size : null,
+    changePr: railChangePr,
+    changeLevels: change.levels,
+    diffFiles: change.diff === null ? null : diffFiles(change.diff).length,
+    servedAudio,
   };
 
-  /* The rail's entries, walked with the up and down arrows. */
+  /* The rail's rows, walked with the up and down arrows. */
   useRailArrowKeys({ source: railSource, go });
+
+  /*
+   * THE READER'S OWN ROW, MATCHED BY ITS ADDRESS AND NEVER BY ITS SECTION NAME. Every
+   * section of both accounts carries its account's mark, and the mark is the mark of the
+   * row the reader's own address opens. The two groups repeat three section names, so a
+   * match on the name would light more than one row at once and the mark would name the
+   * wrong account. The address is what a deep link carries, so a reader who arrives on the
+   * change's Architecture row reads Architecture's mark and not the account's first row's.
+   *
+   * A SECTION NO ACCOUNT OWNS HAS NO ROW. The pull-request list and the shipped record are
+   * sections of the shell rather than of either account, so no row opens them and no mark
+   * stands above them. The board and a work item the bundle lacks render no pane content
+   * either way.
+   */
+  const here = window.location.hash || boardHref();
+  const row =
+    rowsOf(railGroups(railSource)).find((candidate) => candidate.href === here) ?? null;
+
+  /*
+   * THE JUMP CROSSES ONLY WHERE BOTH ACCOUNTS CARRY THE SAME SECTION NAME. The row's own
+   * `shared` field holds that name or null, and it is the field the jump reads: a jump
+   * decided from a row's label would be offered on the change's File Diffs row, and on the
+   * program's Epics and Rubrics rows, which share no section name with the other account.
+   *
+   * THE ADDRESS COMES FROM `counterpartHref`, the one builder that calls both of the
+   * account builders, so the jump and the rail cannot hold two address schemes. A work
+   * whose own epics carry no pull request has no change's account to cross to, so a
+   * program row's shared sections have no jump there and say so in place.
+   */
+  const jump: JumpTargetLink | null =
+    row === null || row.shared === null || railChangePr === null
+      ? null
+      : {
+          href: counterpartHref(work?.id ?? "", railChangePr, row.account, row.shared),
+          account: row.account === "program" ? "change" : "program",
+          section: SECTION_LABEL[row.shared],
+        };
 
   /* ---------------------------------------------------------------- states */
 
@@ -585,12 +684,33 @@ export default function ShellApp() {
    * the layout it has always had: one panel, its own scroll. Only the epics sub-view
    * lays an epic per section on a track.
    */
-  const paged = isPaged(section) && !(section === "build" && route.sub === "rubrics");
-  const pagedLevel = paged && section !== "build" ? (levels?.[section] ?? null) : null;
+  const programPaged = isPaged(section) && !(section === "build" && route.sub === "rubrics");
+  /*
+   * THE CHANGE'S ACCOUNT IS A PAGED SURFACE TOO. Its four rows page through the same
+   * strip, stage, and pager the program's levels use, so the two accounts cannot disagree
+   * about how a row reads. `paged` is the layout flag; `programPaged` is the one that
+   * narrows the section to a level of the program's own records.
+   */
+  const changeAccount = changePr !== null;
+  const paged = programPaged || changeAccount;
+  const pagedLevel = programPaged && section !== "build" ? (levels?.[section] ?? null) : null;
   const focusEpic = section === "build" && route.sub === "epics" ? route.subId : null;
 
   /* The whole route as one string: the four fields `useScrollResetOnRoute` reads. */
   const routeKey = `${route.workId ?? ""}/${route.section}/${route.sub ?? ""}/${route.subId ?? ""}`;
+
+  /*
+   * Why the change's four rows read what they read. A record file that did not load and a
+   * story entry the bundle does not hold are two different facts, and the second one is
+   * already a whole sentence.
+   */
+  const changeNotice: string | null = !changeAccount
+    ? null
+    : change.state === "failed"
+      ? `The change's records did not load, so these four rows state what they could not read: ${
+          change.message ?? "no reason was given"
+        }`
+      : change.message;
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -741,6 +861,19 @@ export default function ShellApp() {
                     ) : null}
 
                     {/*
+                      A RECORD THE BUNDLE COULD NOT GIVE THE CHANGE IS STATED ABOVE THE ROWS.
+                      A story entry the bundle does not hold, and a record file that did not
+                      load, are both read failures. The rows below state what each one could
+                      not read; this line states why, once, so a reader is not left to guess
+                      whether the change is thin or the page is broken.
+                    */}
+                    {changeAccount && changeNotice !== null ? (
+                      <p className="mb-4 min-w-0 rounded-lg border border-dashed border-warn bg-warn-wash px-3.5 py-2 font-mono text-[12.5px] text-ink-dim">
+                        {changeNotice}
+                      </p>
+                    ) : null}
+
+                    {/*
                       THE PAGED LEVEL HAS NO VISIBLE BAND. The section strip right below
                       says the section's own name, so a banner with the same words 105 px
                       higher is a repeat of the strip. The heading stays in the flow as
@@ -748,11 +881,31 @@ export default function ShellApp() {
                       the document still needs its one `h1`. A screen reader therefore
                       still hears the level name, and no reader loses the text.
                     */}
+                    {/*
+                      THE ACCOUNT'S MARK STANDS ABOVE THE SECTION, AND ONE RENDER PATH
+                      SERVES BOTH ACCOUNTS. The rule reads the row the reader arrived on, so
+                      it names that section's own account and that section's own name, and a
+                      deep link carries its own section's mark rather than the account's
+                      first row's. The jump is drawn only where the two accounts carry the
+                      same section name, and the rule states the absence in place where they
+                      do not.
+                    */}
+                    {row === null ? null : (
+                      <AccountRule
+                        account={row.account}
+                        whose={row.account === "change" ? `Pull request ${railChangePr}` : work.id}
+                        section={row.label}
+                        jump={jump}
+                        onGo={go}
+                      />
+                    )}
+
                     <LevelHeading
                       section={section}
                       work={work}
                       gates={gates}
                       paged={paged}
+                      title={changeAccount ? `Pull request ${changePr}` : undefined}
                     />
 
                     {/*
@@ -763,31 +916,66 @@ export default function ShellApp() {
                       the count the strip and the pager bar read, so nothing here can
                       drift. `start` answers a route that names one section's record,
                       which today means an epic deep link.
+
+                      THE CHANGE'S FOUR ROWS USE THE SAME TRACK. One element per panel, so
+                      the strip's links and the boxes' count come from one list.
                     */}
                     {paged ? (
-                      <PagedLevel
-                        targets={jumpTargets}
-                        routeKey={routeKey}
-                        start={epicStartIndex(work, focusEpic)}
-                        sections={pagedSections({
-                          section,
-                          work,
-                          levelState: pagedLevel,
-                          adrs,
-                          theme,
-                          openSheet,
-                          unresolvedSlices,
-                          focusEpic,
-                        })}
-                      />
+                      programPaged ? (
+                        <PagedLevel
+                          targets={jumpTargets}
+                          routeKey={routeKey}
+                          start={epicStartIndex(work, focusEpic)}
+                          sections={pagedSections({
+                            section,
+                            work,
+                            levelState: pagedLevel,
+                            adrs,
+                            theme,
+                            openSheet,
+                            unresolvedSlices,
+                            focusEpic,
+                          })}
+                        />
+                      ) : (
+                        <PagedLevel
+                          targets={jumpTargets}
+                          routeKey={routeKey}
+                          /*
+                            THE APPENDED SEGMENT DECIDES WHICH ROW OPENS. The address
+                            `#/<work>/pull-requests/<pr>/architecture` names the change's
+                            Architecture row, so a deep link lands on that row rather than
+                            on the first one. A segment that names no row of the change
+                            lands on the first, which is the row the bare address opens.
+                          */
+                          start={changeRowIndex(route.subId)}
+                          sections={changeSections({
+                            entry: change.entry,
+                            levels: change.levels,
+                            servedAudio,
+                            diff: change.diff,
+                            diffMessage: change.diffMessage,
+                            theme,
+                            artMode,
+                            onArtMode: setArtMode,
+                            failedArt,
+                            onArtFailed: setFailedArt,
+                            diffFile,
+                            onDiffFile: setDiffFile,
+                            joins: resolvedJoins,
+                            adrs,
+                            openSheet,
+                          })}
+                        />
+                      )
                     ) : null}
                     {section === "build" && route.sub === "rubrics" ? (
                       <RubricsSection work={work} gated={gates?.rubrics ?? false} />
                     ) : null}
-                    {section === "pull-requests" ? (
+                    {section === "pull-requests" && !changeAccount ? (
                       <PullRequestsSection
                         work={work}
-                        focusPr={route.sub && route.sub !== "flightdeck" ? Number(route.sub) : null}
+                        focusPr={changePr}
                         allPullRequests={allPullRequests}
                         onOpenPr={openPr}
                       />
@@ -903,18 +1091,21 @@ function LevelHeading({
   work,
   gates,
   paged,
+  title,
 }: {
   section: SectionKey;
   work: WorkItem;
   gates: Gates | null;
   paged: boolean;
+  /** The level's own name, when the section's name is not the one the reader is on. */
+  title?: string;
 }) {
   const headingRef = useFocusOnMount<HTMLHeadingElement>();
 
   if (paged) {
     return (
       <h1 ref={headingRef} id={HEADING_ID} tabIndex={-1} className="sr-only outline-none">
-        {SECTION_TITLE[section]}
+        {title ?? SECTION_TITLE[section]}
       </h1>
     );
   }
@@ -922,7 +1113,7 @@ function LevelHeading({
   return (
     <SectionHeading
       id={HEADING_ID}
-      title={SECTION_TITLE[section]}
+      title={title ?? SECTION_TITLE[section]}
       lead={SECTION_LEAD[section](work, gates)}
       headingRef={headingRef}
     />
@@ -1057,42 +1248,57 @@ function Pane({ children }: { children: ReactNode }) {
 }
 
 /**
- * The rail's entries, walked with the up and down arrows.
+ * The rail's rows, walked with the up and down arrows.
  *
- * ArrowDown moves to the next entry and ArrowUp to the previous one, in the order the
- * rail renders them. At either end the press moves nothing. The keys never write a
- * section of their own: they open the address the entry carries, so a step lands exactly
- * where a press on that row lands.
+ * ArrowDown moves to the next row and ArrowUp to the previous one, in the order the rail
+ * renders them. At either end the press moves nothing. The keys never write a section of
+ * their own: they open the address the row carries, so a step lands exactly where a press
+ * on that row lands.
  *
- * IT STEPS THE RAIL'S OWN LIST. `railGroups` is the one list, and the rail renders it, so
- * the traversal cannot know fewer entries than the rail shows. A second copy of the order
- * is what stopped the walk at Architecture.
+ * IT STEPS THE RAIL'S OWN LIST, ACROSS BOTH ACCOUNTS. The board's own row comes first,
+ * because the rail draws it first, and `rowsOf` flattens the two accounts after it. So the
+ * traversal cannot know fewer rows than the rail shows, and a group boundary is one step.
+ * A folded group is a display choice and never a wall.
  *
- * A DISABLED ENTRY IS NOT A STEP. A disabled row carries `href="#"`, so a step onto it
- * would send the reader to the board. The walk therefore holds the entries whose
- * `available` is true, and only those.
+ * A ROW WHOSE RECORD IS ABSENT IS NOT A STEP. It carries `href="#"`, so a step onto it
+ * would send the reader to the board. The walk therefore holds the rows a press can reach,
+ * and only those.
+ *
+ * THE BOARD IS NOT A LEVEL. On the board the rail draws its own row alone, so the list
+ * holds one address that is the board itself, and an arrow press has nowhere to go. Two
+ * presses are covered by that: neither the up press nor the down one leaves the board.
  *
  * THE READER'S POSITION IS THEIR OWN ADDRESS. The walk reads `window.location.hash`,
- * which is the address the shell writes, and matches the entry whose `href` equals it.
- * It never matches on the section: Epics and Rubrics share the Build section, so a
- * section match would stall on the Rubrics row for a reader sitting on Epics.
- *
- * THE BOARD IS NOT A LEVEL. The rail holds the Work entry alone there, so the list holds
- * one entry that is the board itself, and an arrow press has nowhere to go. Two presses
- * are covered by that: neither the up press nor the down one leaves the board.
+ * which is the address the shell writes, and matches the row whose `href` equals it. It
+ * never matches on the section name: the two groups repeat three names, so a name match
+ * would stall on the wrong account's row.
  *
  * THE PAGER'S GUARD APPLIES HERE TOO. `keyPressIsTaken` is the one copy of it, and it
  * leaves a press inside a field, and a press with a modifier, to whoever owns it. These
  * two keys never touch the pager's own two.
  */
 function useRailArrowKeys({ source, go }: { source: RailSource; go: (href: string) => void }): void {
-  const { work, gates, levels, board, workCount } = source;
+  /*
+   * THE SOURCE IS READ AT THE PRESS, NOT CAPTURED AT THE LAST RENDER. The rail's input holds
+   * the change's own levels and the audio the bundle answered, and those objects change
+   * without the route changing, so an effect that depended on them would re-subscribe on
+   * every render. A ref keeps one subscription and still reads the rows the rail renders.
+   */
+  const latest = useRef<RailSource>(source);
+  latest.current = source;
 
   useEffect(() => {
-    /* The entries a press can reach, in the rail's own order. */
-    const steps = railGroups({ work, gates, levels, board, workCount })
-      .flatMap((group) => group.entries)
-      .filter((entry) => entry.available);
+    /*
+     * THE ADDRESSES A PRESS CAN REACH, IN THE RAIL'S OWN ORDER. The board's own row comes
+     * first, because the rail draws it first and it is the way back from any section. Then
+     * `rowsOf` flattens both accounts, so the walk crosses a group boundary as one step and
+     * reaches every reachable row whether a group is open or closed. A folded group is a
+     * display choice and never a wall.
+     */
+    const steps = (): string[] => [
+      boardHref(),
+      ...rowsOf(railGroups(latest.current)).map((row) => row.href),
+    ];
 
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
@@ -1102,16 +1308,17 @@ function useRailArrowKeys({ source, go }: { source: RailSource; go: (href: strin
        * render, so a step that just landed is the position the next press reads.
        */
       const here = window.location.hash || boardHref();
-      const at = steps.findIndex((entry) => entry.href === here);
+      const rows = steps();
+      const at = rows.indexOf(here);
       if (at < 0) return;
       const wanted = at + (event.key === "ArrowDown" ? 1 : -1);
-      if (wanted < 0 || wanted >= steps.length) return;
+      if (wanted < 0 || wanted >= rows.length) return;
       event.preventDefault();
-      go(steps[wanted].href);
+      go(rows[wanted]);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [board, gates, go, levels, work, workCount]);
+  }, [go]);
 }
 
 /**
