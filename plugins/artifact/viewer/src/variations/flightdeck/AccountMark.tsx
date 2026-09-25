@@ -4,17 +4,19 @@
  *
  * THE TWO ACCOUNTS MUST BE DISTINGUISHABLE AT A GLANCE. ADR-0029 says a later slice owns
  * the mark that separates what the program intended from what the change did, and this
- * prototype proposes one. THE MARK HERE IS A PROPOSAL AND NOT A DECISION. It carries
- * three things at once, so no reader has to see a colour to know which account they are
- * in:
+ * prototype proposes one. THE MARK HERE IS A PROPOSAL AND NOT A DECISION.
+ *
+ * THE MARK IS A WORD AND A GLYPH, AND NOTHING ELSE. It had three parts and the third was
+ * a fill: the shell's own selected-row wash for the program's account and its heading
+ * band for the change's. The engineer dropped the fill — "The title and icon are
+ * sufficient" — so the mark stands on the two parts that are not colour:
  *
  *   a word, the account's own, in the bar's left field;
- *   a glyph, one per account, beside the word;
- *   a fill, and it is the shell's own. The program's account wears the selected-row wash
- *     the shell already uses. The change's wears the shell's heading band, which nothing
- *     else on a page can wear, so the change's account is the loud one and the program's
- *     is the quiet one. That order is deliberate: the program's account is the frame a
- *     reader arrives with, and the change's is the thing being read against it.
+ *   a glyph, one per account, beside the word.
+ *
+ * NOTHING HERE WEARS A FILL ANY MORE, and the word's own ink is the page's own. The
+ * change's rule used the heading band's white, which is only readable on the band itself,
+ * so the plain ink is what makes the rule legible once the fill goes.
  *
  * The bar also names whose record the reader is in, in the account's own terms: the
  * design's id for the program, and the pull request's number for the change. A reader who
@@ -31,7 +33,7 @@
  * tells a reader where the press lands, and "Jump" does not.
  */
 
-import { ArrowLeftRight, GitPullRequest, PackageCheck, User } from "lucide-react";
+import { ArrowLeftRight, GitPullRequest, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -40,26 +42,13 @@ import { ACCOUNT_MARK } from "./accountModel";
 import type { AccountId } from "./accountModel";
 
 /**
- * How one account's rule is drawn. The same three parts the rail uses, at page size: the
- * word, the glyph, and the fill. The fills are the shell's own, and the delivery record
- * stays neutral because it is neither of the two accounts being compared.
+ * The glyph the mark draws for each account. It is the mark's second part, and the one
+ * copy of it lives here: the rule, the rail's group heading, and the top band's mark all
+ * read this map, so the three cannot show two different glyphs for one account.
  */
-const RULE_FILL: Record<AccountId, string> = {
-  program: "border-primary/50 bg-accent-wash",
-  change: "border-transparent bg-band",
-  delivery: "border-line bg-surface-2",
-};
-
-const RULE_WORD: Record<AccountId, string> = {
-  program: "text-accent-deep",
-  change: "text-band-ink",
-  delivery: "text-ink-mid",
-};
-
-const RULE_GLYPH: Record<AccountId, LucideIcon> = {
+export const ACCOUNT_GLYPH: Record<AccountId, LucideIcon> = {
   program: User,
   change: GitPullRequest,
-  delivery: PackageCheck,
 };
 
 export interface JumpTargetLink {
@@ -94,37 +83,27 @@ export function AccountRule({
   onGo: (href: string) => void;
 }) {
   const mark = ACCOUNT_MARK[account];
-  const Glyph = RULE_GLYPH[account];
+  const Glyph = ACCOUNT_GLYPH[account];
 
   return (
-    <div
-      className={cn(
-        "mb-5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border px-4 py-2.5",
-        RULE_FILL[account],
-      )}
-    >
-      <span className={cn("flex min-w-0 items-center gap-2", RULE_WORD[account])}>
+    <div className="mb-5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-line px-4 py-2.5">
+      <span className="flex min-w-0 items-center gap-2 text-ink">
         <Glyph className="size-4 shrink-0" aria-hidden="true" />
         <span className="font-mono text-[12.5px] font-bold tracking-[0.08em] uppercase">
           {mark.word} account
         </span>
       </span>
 
-      <span
-        className={cn(
-          "min-w-0 font-mono text-[12.5px] break-words",
-          RULE_WORD[account],
-        )}
-      >
+      <span className="min-w-0 font-mono text-[12.5px] break-words text-ink">
         {whose}
       </span>
 
-      <span className={cn("min-w-0 flex-1 font-serif text-[14.5px] leading-[1.5]", RULE_WORD[account])}>
+      <span className="min-w-0 flex-1 font-serif text-[14.5px] leading-[1.5] text-ink-dim">
         {mark.lead}
       </span>
 
       {jump === null ? (
-        <span className={cn("font-mono text-[12px]", RULE_WORD[account])}>
+        <span className="font-mono text-[12px] text-ink-dim">
           {section} exists on this account alone
         </span>
       ) : (

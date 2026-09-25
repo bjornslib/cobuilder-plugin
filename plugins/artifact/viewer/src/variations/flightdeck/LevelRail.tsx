@@ -52,6 +52,7 @@ import { cn } from "@/lib/utils";
 import { keyPressIsTaken } from "@/shell/Pager";
 
 import type { Level, LevelKey } from "./model";
+import { levelWord } from "./model";
 
 /**
  * One icon per level key.
@@ -157,8 +158,12 @@ export function LevelRail({
           /*
            * The number is the badge and it is decoration beside the spoken name, so the
            * row's own label carries it and the badge repeats it silently.
+           *
+           * THE NAME IS `levelWord`, AND NOT THE BUNDLE'S TITLE. The engineer asked for
+           * "Intent" in place of "PR Landscape" on this rail, and `./model` holds that one
+           * mapping. The bundle's title is unchanged underneath.
            */
-          const name = `Level ${level.number} · ${level.title}`;
+          const name = `Level ${level.number} · ${levelWord(level)}`;
           return (
             <li key={level.key} className="min-w-0 list-none">
               <button
@@ -175,7 +180,7 @@ export function LevelRail({
                 )}
               >
                 <Icon className="size-4 shrink-0" aria-hidden="true" />
-                <span className="min-w-0 flex-1 truncate">{level.title}</span>
+                <span className="min-w-0 flex-1 truncate">{levelWord(level)}</span>
                 {level.audio === null ? (
                   <AlertTriangle
                     className="size-3.5 shrink-0 text-warn"

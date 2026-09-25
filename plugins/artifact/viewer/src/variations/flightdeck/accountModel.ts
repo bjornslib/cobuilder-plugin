@@ -7,12 +7,14 @@
  * request its epics carry is the change's account. Both accounts cover the same three
  * section names, so a reader can put one beside the other.
  *
- * THE ENGINEER'S GROUPING, AND ONLY THE ENGINEER'S GROUPING. The rail holds three groups.
+ * THE ENGINEER'S GROUPING, AND ONLY THE ENGINEER'S GROUPING. The rail holds two groups.
  * Build reads Intent, Problem & Solution, Architecture, Epics, and Rubrics from the
  * program's account. Review reads Intent, Problem & Solution, Architecture, and File
- * Diffs from the change's account. Deploy is named by the engineer with no items given,
- * so its two rows are the shipped shell's own delivery-stage entries and this file says
- * so on the row.
+ * Diffs from the change's account.
+ *
+ * THE DEPLOY GROUP IS GONE. The engineer named it, gave it no items, and then asked for
+ * it to be removed. The shipped shell's own two delivery entries went with it, and the
+ * rows, the account, and the body member that fed them are gone rather than hidden.
  *
  * THE PROGRAM'S ADDRESSES FOLLOW THE SHELL'S OWN ROUTE SHAPE, and this file invents no
  * second scheme. `@/shell/model` holds the parser and the builder, and this file calls
@@ -23,8 +25,6 @@
  *   #/<work>/architecture                the program's Architecture section
  *   #/<work>/build/epics                 the work's epics
  *   #/<work>/build/rubrics               the work's rubrics
- *   #/<work>/shipped                     the delivery stage
- *   #/<work>/pull-requests               the work's own pull requests
  *
  * THE CHANGE'S ADDRESSES FOLLOW ADR-0029, AND ITS SECTION RIDES THE SHELL'S OWN SLOT.
  * ADR-0029 fixes the change's address as `#/<work>/pull-requests/<pr>`. That address is
@@ -71,10 +71,8 @@ import type { Level, LevelKey, Manifest, Story, StoryEntry } from "./model";
  *
  * `program` is the work's own design records, written before the code existed.
  * `change` is the pull request its own epics carry, narrated after the merge.
- * `delivery` is the shipped shell's own release record, and the engineer named the group
- * without naming its items.
  */
-export type AccountId = "program" | "change" | "delivery";
+export type AccountId = "program" | "change";
 
 export interface AccountMark {
   /** The word a reader sees on every section of this account, and on the rail. */
@@ -84,13 +82,17 @@ export interface AccountMark {
 }
 
 /**
- * THE PROPOSED MARK, AND THE PROPOSAL IS THE POINT.
+ * THE MARK IS A WORD AND A GLYPH, AND NOTHING ELSE.
  *
  * ADR-0029 records the debt: a reader must be able to tell what the program intended
  * from what the change did, and the slice that builds the addition owns the mark. This
  * prototype carries a mark so the engineer can judge one, and the mark is a proposal
- * rather than a decision. A later slice owns it, and this file names no colour: the
- * mark's appearance lives in `AccountMark.tsx`.
+ * rather than a decision.
+ *
+ * THE MARK CARRIES NO FILL, AND THE ENGINEER ASKED FOR THAT. It had three parts, and the
+ * third was a fill: the shell's selected-row wash for the program's account and the
+ * shell's heading band for the change's. The engineer dropped it, so two parts remain and
+ * neither is a colour. `AccountMark.tsx` and `AccountRail.tsx` draw them.
  */
 export const ACCOUNT_MARK: Record<AccountId, AccountMark> = {
   program: {
@@ -100,10 +102,6 @@ export const ACCOUNT_MARK: Record<AccountId, AccountMark> = {
   change: {
     word: "Change",
     lead: "This account is the pull request the work's own epics carry, narrated after the merge.",
-  },
-  delivery: {
-    word: "Delivery",
-    lead: "This account is the release record. The engineer named this group and gave it no items.",
   },
 };
 
@@ -130,16 +128,13 @@ export const CHANGE_KEYS = [
 ] as const;
 export type ChangeKey = (typeof CHANGE_KEYS)[number];
 
-export const DELIVERY_KEYS = ["shipped", "pull-requests"] as const;
-export type DeliveryKey = (typeof DELIVERY_KEYS)[number];
-
-export type GroupKey = "build" | "review" | "deploy";
+/** The two groups the engineer kept, after the Deploy group was removed. */
+export type GroupKey = "build" | "review";
 
 /** Which account each group reads. The engineeer named the groups and fixed this pairing. */
 export const GROUP_ACCOUNT: Record<GroupKey, AccountId> = {
   build: "program",
   review: "change",
-  deploy: "delivery",
 };
 
 /**
@@ -172,17 +167,11 @@ export const CHANGE_LEAD: Record<ChangeKey, string> = {
   "file-diffs": "The diff itself, file by file.",
 };
 
-export const DELIVERY_LEAD: Record<DeliveryKey, string> = {
-  shipped: "The stage the record carries and the publications the bundle holds.",
-  "pull-requests": "Every pull request this work's own epics carry, and the ones the bundle holds.",
-};
-
 /* ------------------------------------------------------------------ the rail */
 
 export type BodyRef =
   | { kind: "program"; section: ProgramKey }
-  | { kind: "change"; section: ChangeKey }
-  | { kind: "delivery"; section: DeliveryKey };
+  | { kind: "change"; section: ChangeKey };
 
 export interface RailRow {
   /** Stable row key. One per address, because two rows never share an address. */
@@ -196,8 +185,6 @@ export interface RailRow {
   body: BodyRef;
   /** How many records the section reads, as a short string. */
   count: string;
-  /** A note the row states about itself. Empty for most rows. */
-  note: string;
 }
 
 export interface RailGroup {
@@ -314,11 +301,11 @@ function changeCount(level: Level | null, entry: StoryEntry, diffCount: number |
  * whole point of the grouping, so the two groups are built from one list and the account
  * decides the address and the body.
  *
- * DEPLOY CARRIES THE SHIPPED SHELL'S OWN DELIVERY ITEMS, AND THE ENGINEER NAMED NONE.
- * Its two rows are the shell's `Shipped` entry and its `Pull requests` entry, which are
- * the two places the shell already records delivery. Each row states on itself that the
- * engineer did not specify it, so a reader of this prototype cannot mistake the choice
- * for an instruction.
+ * THE DEPLOY GROUP WAS HERE AND IS GONE. The engineer named it, gave it no items, and
+ * then asked for it to be removed. Its two rows were the shipped shell's own `Shipped`
+ * entry and its `Pull requests` entry. Both rows, the group that held them, the delivery
+ * account, and the body member that drew them are deleted rather than hidden, so nothing
+ * in this prototype reaches the delivery stage any more.
  */
 export function railGroups(source: AccountRailSource): RailGroup[] {
   const { work, gates, entry, changeLevels, diffFiles: diffCount } = source;
@@ -351,7 +338,6 @@ export function railGroups(source: AccountRailSource): RailGroup[] {
       shared,
       body: { kind: "program", section } as BodyRef,
       count: programCount(work, gates, section),
-      note: "",
     };
   });
 
@@ -377,23 +363,8 @@ export function railGroups(source: AccountRailSource): RailGroup[] {
             shared,
             body: { kind: "change", section } as BodyRef,
             count: changeCount(levelOf(section), entry, diffCount, section),
-            note: "",
           };
         });
-
-  const deliveryRows: RailRow[] = DELIVERY_KEYS.map((section) => ({
-    key: `delivery-${section}`,
-    label: section === "shipped" ? "Release status" : "Pull requests",
-    href: routeHref(work.id, section === "shipped" ? "shipped" : "pull-requests"),
-    account: "delivery" as AccountId,
-    shared: null,
-    body: { kind: "delivery", section } as BodyRef,
-    count:
-      section === "shipped"
-        ? `${work.publications.length} publications`
-        : `${work.pullRequests.length} pull requests`,
-    note: "not specified by the engineer",
-  }));
 
   const groups: RailGroup[] = [
     { key: "build", label: "Build", account: "program", rows: programRows },
@@ -405,8 +376,6 @@ export function railGroups(source: AccountRailSource): RailGroup[] {
     row a reader cannot fill is worse than a group that says why.
   */
   groups.push({ key: "review", label: "Review", account: "change", rows: changeRows });
-
-  groups.push({ key: "deploy", label: "Deploy", account: "delivery", rows: deliveryRows });
 
   return groups;
 }

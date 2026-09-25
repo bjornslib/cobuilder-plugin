@@ -95,7 +95,7 @@ import { useJumpTargets } from "@/shell/jump";
 import { LevelProgress, SectionPager, SectionStage, SectionStrip, keyPressIsTaken } from "@/shell/Pager";
 
 import type { DiffFile, Level, StoryEntry } from "./model";
-import { diffFiles } from "./model";
+import { diffFiles, levelWord } from "./model";
 import { LevelRail } from "./LevelRail";
 
 /** The panel heading for each level's frame. One name for one thing. */
@@ -206,7 +206,7 @@ function NarrationCaption({
               ? "narration audio (none for this level)"
               : blocked
                 ? "narration audio (failed to load)"
-                : `narration audio — ${level.title}`}
+                : `narration audio — ${levelWord(level)}`}
           </span>
         </span>
 
@@ -615,14 +615,15 @@ export function SinglePr(props: SinglePrProps) {
               it is gone: the rail names the level the reader is on and the top band names
               the pull request, so the band repeated both. The heading stays in the flow at
               `sr-only`, so the level keeps its one `h1` and a screen reader still hears the
-              level's name.
+              level's name. The name is the rail's own word for the level, so the heading
+              and the rail cannot disagree about what this level is called.
             */}
             <h1
               id={`flightdeck-level-${level.number}`}
               tabIndex={-1}
               className="sr-only outline-none"
             >
-              {`PR ${entry.pr} · ${level.title}`}
+              {`PR ${entry.pr} · ${levelWord(level)}`}
             </h1>
 
             <SectionStrip targets={targets} activeIndex={index} onSelect={onSection} />

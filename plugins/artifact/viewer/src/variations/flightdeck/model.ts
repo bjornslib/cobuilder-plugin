@@ -196,6 +196,30 @@ export const LEVEL_TITLE: Record<LevelKey, string> = {
   file_changes: "File changes",
 };
 
+/**
+ * The word this prototype shows for a level, where the bundle's own recorded title is not
+ * the word the engineer asked for.
+ *
+ * THE BUNDLE'S TITLE FOR THE FIRST LEVEL IS "PR Landscape". ADR-0029 renames the level key
+ * `landscape` to `intent`, and states that the rename runs with the parity slice rather
+ * than immediately, because the key reaches a paid audio filename. The engineer asked for
+ * the word on the one-pull-request surface's rail now, so this is a display change in this
+ * prototype only: the bundle's title, the bundle's key, and every audio address are
+ * untouched.
+ */
+export const LEVEL_WORD: Partial<Record<LevelKey, string>> = { landscape: "Intent" };
+
+/**
+ * The level's name wherever this prototype shows one.
+ *
+ * ONE READER, SO ONE NAME. The rail's row and the level's own heading both call this, so
+ * the two cannot name one level two ways. It answers the engineer's word where one is set
+ * and the bundle's own title otherwise.
+ */
+export function levelWord(level: Level): string {
+  return LEVEL_WORD[level.key] ?? level.title;
+}
+
 /** What one level is for, in one line. The surface prints this above its sections. */
 export const LEVEL_LEAD: Record<LevelKey, string> = {
   landscape:

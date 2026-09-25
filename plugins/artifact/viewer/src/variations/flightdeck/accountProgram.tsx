@@ -9,16 +9,18 @@
  * A reader who compares the prototype with the shipped surface is comparing one render
  * with itself, so the rail is the only thing this prototype changes.
  *
- * THE ONE THING THIS FILE DOES NOT REUSE IS THE PAGER. The shell lays a paged level's
- * sections on a horizontal track, one on screen, with a strip above and a pager below.
- * This prototype's navigation is the rail, so a section is a scroll box and the track is
- * gone. The panels are unchanged.
+ * ONE PANEL IS ONE SECTION, AND THIS FILE RETURNS THEM AS A LIST. The shell's own paged
+ * level holds one panel per section, because the section strip reads its links from the
+ * panel headings and a section holding two panels would put two links on the strip and
+ * one step on the pager. This file returns one element per panel, so the surface above
+ * can hand that list straight to the shell's own stage, strip, and pager and get the same
+ * one-link-per-panel shape the shipped shell has.
  *
  * THE TWO COMPOSITIONS THAT DIFFER FROM THE SHELL ARE NAMED. The shell's Intent level
  * gives the container drawing to `WhySection` and the Architecture level takes every
  * later drawing, and this file keeps that split exactly. The shell's Build level pages its
  * epics in runs of six, and this file keeps `epicGroups` too, so the two cannot disagree
- * about which epic sits in which run.
+ * about which epic sits in which run. One run is one panel, so one run is one section.
  */
 
 import type { ReactNode } from "react";
@@ -61,86 +63,75 @@ export interface ProgramBodyProps {
 }
 
 /**
- * One program section, as the shell's own panels render it.
+ * One program section, as the shell's own panels render it, one panel per returned entry.
  *
  * A level state the rail could not fill reads `null` here and the panel states its own
  * absence. The shell passes a non-null state to two of these panels, so the fallback is a
  * state that says the record is not available rather than a state that claims it is.
  */
-export function ProgramBody(props: ProgramBodyProps): ReactNode {
+export function programSections(props: ProgramBodyProps): ReactNode[] {
   const { section, work, levels, adrs, theme, gated, openSheet } = props;
   const missing: LevelState = { key: "architecture", available: false, missing: [] };
 
   if (section === "intent") {
-    return (
-      <>
-        <WhySection
-          work={work}
-          theme={theme}
-          /* The container drawing is the first level, and it belongs to this section. */
-          levels={work.diagramLevels.filter((level) => level === "1")}
-        />
-        <DoneWhenSection work={work} />
-        <AbortIfSection work={work} />
-        <OutOfScopeSection work={work} />
-      </>
-    );
+    return [
+      /* The container drawing is the first level, and it belongs to this section. */
+      <WhySection
+        key="why"
+        work={work}
+        theme={theme}
+        levels={work.diagramLevels.filter((level) => level === "1")}
+      />,
+      <DoneWhenSection key="done-when" work={work} />,
+      <AbortIfSection key="abort-if" work={work} />,
+      <OutOfScopeSection key="out-of-scope" work={work} />,
+    ];
   }
 
   if (section === "problem-and-solution") {
-    return (
-      <>
-        <ProblemSolutionSection
-          work={work}
-          levelState={levels?.["problem-and-solution"] ?? missing}
-        />
-        <RisksSection work={work} />
-        <AssessmentSection work={work} />
-        <UnknownsSection work={work} />
-      </>
-    );
+    return [
+      <ProblemSolutionSection
+        key="problem-and-solution"
+        work={work}
+        levelState={levels?.["problem-and-solution"] ?? missing}
+      />,
+      <RisksSection key="risks" work={work} />,
+      <AssessmentSection key="assessment" work={work} />,
+      <UnknownsSection key="unknowns" work={work} />,
+    ];
   }
 
   if (section === "architecture") {
-    return (
-      <>
-        <DiagramsSection
-          work={work}
-          theme={theme}
-          /* The container drawing belongs to Intent, so this section takes the rest. */
-          levels={work.diagramLevels.slice(1)}
-        />
-        <DecisionsSection
-          work={work}
-          adrs={adrs}
-          levelState={levels?.["architecture"] ?? missing}
-          openSheet={openSheet}
-        />
-        <BoundariesSection work={work} openSheet={openSheet} />
-        <DistrictsAndAlternativesSection work={work} />
-      </>
-    );
+    return [
+      /* The container drawing belongs to Intent, so this section takes the rest. */
+      <DiagramsSection key="diagrams" work={work} theme={theme} levels={work.diagramLevels.slice(1)} />,
+      <DecisionsSection
+        key="decisions"
+        work={work}
+        adrs={adrs}
+        levelState={levels?.["architecture"] ?? missing}
+        openSheet={openSheet}
+      />,
+      <BoundariesSection key="boundaries" work={work} openSheet={openSheet} />,
+      <DistrictsAndAlternativesSection key="districts-and-alternatives" work={work} />,
+    ];
   }
 
   if (section === "epics") {
-    return (
-      <>
-        {epicGroups(work).map((group, position) => (
-          <EpicGroupSection
-            key={`epics-${position}`}
-            work={work}
-            group={group}
-            focusEpic={null}
-            openSheet={openSheet}
-          />
-        ))}
-      </>
-    );
+    return epicGroups(work).map((group, position) => (
+      <EpicGroupSection
+        key={`epics-${position}`}
+        work={work}
+        group={group}
+        focusEpic={null}
+        openSheet={openSheet}
+      />
+    ));
   }
 
-  return (
-    <Bento>
+  return [
+    <Bento key="rubrics">
       <RubricsSection work={work} gated={gated} />
-    </Bento>
-  );
+    </Bento>,
+  ];
 }

@@ -13,6 +13,14 @@
  * `architecture`, and `file_changes`. `CHANGE_LEVEL_KEY` in `./accountModel` holds that
  * mapping, and ADR-0029 states why the key under the word Intent is still `landscape`.
  *
+ * ONE PANEL IS ONE SECTION, AND THIS FILE RETURNS THEM AS A LIST. The shell's own paged
+ * level holds one panel per section, because the section strip reads its links from the
+ * panel headings and a section holding two panels would put two links on the strip and
+ * one step on the pager. This file returns one element per panel, so the surface above
+ * can hand that list straight to the shell's own stage, strip, and pager. A route whose
+ * level the bundle does not hold returns no frame panel, and a route whose diff could not
+ * be read returns one more panel than its record carries.
+ *
  * THE SEVEN PARTS ADR-0029 LISTS ARE THE SECTION BODIES. A pull request that belongs to a
  * work brings seven things: its narration levels with their art, audio, and diagrams; the
  * intent block Generate mode captured; its assessment; the decisions it landed; and the
@@ -67,32 +75,30 @@ export interface ChangeBodyProps {
   openSheet: (subject: SheetSubject) => void;
 }
 
-export function ChangeBody(props: ChangeBodyProps): ReactNode {
+export function changeSections(props: ChangeBodyProps): ReactNode[] {
   const { section, entry, level, theme } = props;
 
   if (section === "file-diffs") {
-    return (
-      <>
-        <DiffNarration level={level} entry={entry} />
-        <Bento>
-          <DiffPanel
-            files={diffFilesOf(props.diff)}
-            selected={props.diffFile}
-            onSelect={props.onDiffFile}
-          />
-        </Bento>
-        {props.diffError === null ? null : (
-          <Panel title="The diff could not be read" icon={FileText} tone="warn" absent>
-            <Missing>{props.diffError}</Missing>
-          </Panel>
-        )}
-      </>
-    );
+    return [
+      <DiffNarration key="diff-narration" level={level} entry={entry} />,
+      <Bento key="diff">
+        <DiffPanel
+          files={diffFilesOf(props.diff)}
+          selected={props.diffFile}
+          onSelect={props.onDiffFile}
+        />
+      </Bento>,
+      props.diffError === null ? null : (
+        <Panel key="diff-error" title="The diff could not be read" icon={FileText} tone="warn" absent>
+          <Missing>{props.diffError}</Missing>
+        </Panel>
+      ),
+    ];
   }
 
   const frame =
     level === null ? null : (
-      <Bento>
+      <Bento key="frame">
         <FramePanel
           level={level}
           theme={theme}
@@ -105,139 +111,152 @@ export function ChangeBody(props: ChangeBodyProps): ReactNode {
     );
 
   if (section === "intent") {
-    return (
-      <>
-        <NarrationPanel level={level} onAudioFailed={props.onAudioFailed} audioFailed={props.audioFailed} />
-        {frame}
-        <Panel
-          title="The change's intent"
-          icon={Scale}
-          lead="What was captured before this pull request opened, in the author's own words where they survive."
-          absent={!entry.intent}
-        >
-          <IntentBody intent={entry.intent} />
-        </Panel>
-        <ChangeFacts entry={entry} />
-        <Bento>
-          <DistrictPanel entry={entry} />
-        </Bento>
-      </>
-    );
+    return [
+      <NarrationPanel
+        key="narration"
+        level={level}
+        onAudioFailed={props.onAudioFailed}
+        audioFailed={props.audioFailed}
+      />,
+      frame,
+      <Panel
+        key="intent"
+        title="The change's intent"
+        icon={Scale}
+        lead="What was captured before this pull request opened, in the author's own words where they survive."
+        absent={!entry.intent}
+      >
+        <IntentBody intent={entry.intent} />
+      </Panel>,
+      <ChangeFacts key="facts" entry={entry} />,
+      <Bento key="districts">
+        <DistrictPanel entry={entry} />
+      </Bento>,
+    ];
   }
 
   if (section === "problem-and-solution") {
     const held = entry.levels?.["problem_solution"];
     const beats = held?.beats ?? [];
-    return (
-      <>
-        <NarrationPanel level={level} onAudioFailed={props.onAudioFailed} audioFailed={props.audioFailed} />
-        {frame}
-        <Panel
-          title="The gap and the shape"
-          icon={GitPullRequest}
-          count={beats.length}
-          lead="The problem the diff closes and the shape it closes it with, as the change's own record states them."
-          absent={!held?.problem && !held?.solution && beats.length === 0}
-        >
-          {held?.problem ? (
-            <div className="mb-3 min-w-0 rounded-lg border border-warn/60 bg-warn-wash/60 px-3.5 py-3">
-              <div className="font-mono text-[12px] font-bold tracking-[0.08em] text-ink-dim uppercase">
-                Problem
-              </div>
-              <p className="mt-1.5 mb-0 min-w-0 font-serif text-[16px] leading-[1.6] text-foreground">
-                {held.problem}
-              </p>
+    return [
+      <NarrationPanel
+        key="narration"
+        level={level}
+        onAudioFailed={props.onAudioFailed}
+        audioFailed={props.audioFailed}
+      />,
+      frame,
+      <Panel
+        key="gap-and-shape"
+        title="The gap and the shape"
+        icon={GitPullRequest}
+        count={beats.length}
+        lead="The problem the diff closes and the shape it closes it with, as the change's own record states them."
+        absent={!held?.problem && !held?.solution && beats.length === 0}
+      >
+        {held?.problem ? (
+          <div className="mb-3 min-w-0 rounded-lg border border-warn/60 bg-warn-wash/60 px-3.5 py-3">
+            <div className="font-mono text-[12px] font-bold tracking-[0.08em] text-ink-dim uppercase">
+              Problem
             </div>
-          ) : null}
-          {held?.solution ? (
-            <div className="mb-3 min-w-0 rounded-lg border border-good/60 bg-good-wash/60 px-3.5 py-3">
-              <div className="font-mono text-[12px] font-bold tracking-[0.08em] text-ink-dim uppercase">
-                Solution
-              </div>
-              <p className="mt-1.5 mb-0 min-w-0 font-serif text-[16px] leading-[1.6] text-foreground">
-                {held.solution}
-              </p>
+            <p className="mt-1.5 mb-0 min-w-0 font-serif text-[16px] leading-[1.6] text-foreground">
+              {held.problem}
+            </p>
+          </div>
+        ) : null}
+        {held?.solution ? (
+          <div className="mb-3 min-w-0 rounded-lg border border-good/60 bg-good-wash/60 px-3.5 py-3">
+            <div className="font-mono text-[12px] font-bold tracking-[0.08em] text-ink-dim uppercase">
+              Solution
             </div>
-          ) : null}
-          {beats.length === 0 ? null : (
-            <ul className="m-0 flex min-w-0 list-none flex-col gap-2 p-0">
-              {beats.map((beat, index) => (
-                <li
-                  key={`${index}-${beat.kind ?? ""}`}
-                  className="min-w-0 rounded-lg border border-line-soft bg-surface-2/50 px-3.5 py-2.5"
-                >
-                  <span className="font-mono text-[11.5px] font-bold tracking-[0.08em] text-ink-faint uppercase">
-                    {beat.kind ?? "beat"}
-                  </span>
-                  <p className="mt-1 mb-0 min-w-0 font-serif text-[15.5px] leading-[1.6] text-foreground">
-                    {beat.text}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
-        <Panel
-          title="The change's assessment"
-          icon={Scale}
-          lead="The reading written against the merged diff, with the evidence each answer stands on."
-          absent={!entry.assessment}
-        >
-          <AssessmentBody assessment={entry.assessment} />
-        </Panel>
-      </>
-    );
+            <p className="mt-1.5 mb-0 min-w-0 font-serif text-[16px] leading-[1.6] text-foreground">
+              {held.solution}
+            </p>
+          </div>
+        ) : null}
+        {beats.length === 0 ? null : (
+          <ul className="m-0 flex min-w-0 list-none flex-col gap-2 p-0">
+            {beats.map((beat, index) => (
+              <li
+                key={`${index}-${beat.kind ?? ""}`}
+                className="min-w-0 rounded-lg border border-line-soft bg-surface-2/50 px-3.5 py-2.5"
+              >
+                <span className="font-mono text-[11.5px] font-bold tracking-[0.08em] text-ink-faint uppercase">
+                  {beat.kind ?? "beat"}
+                </span>
+                <p className="mt-1 mb-0 min-w-0 font-serif text-[15.5px] leading-[1.6] text-foreground">
+                  {beat.text}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>,
+      <Panel
+        key="assessment"
+        title="The change's assessment"
+        icon={Scale}
+        lead="The reading written against the merged diff, with the evidence each answer stands on."
+        absent={!entry.assessment}
+      >
+        <AssessmentBody assessment={entry.assessment} />
+      </Panel>,
+    ];
   }
 
   const landed = entry.adrs ?? [];
-  return (
-    <>
-      <NarrationPanel level={level} onAudioFailed={props.onAudioFailed} audioFailed={props.audioFailed} />
-      {frame}
-      <Panel
-        title="Decisions this change landed"
-        icon={ScrollText}
-        count={landed.length}
-        lead="The decisions the timeline entry names for this pull request. One press opens the whole record."
-        absent={landed.length === 0}
-      >
-        {landed.length === 0 ? (
-          <Missing>This pull request landed no decision record.</Missing>
-        ) : (
-          <ul className="m-0 flex min-w-0 list-none flex-col gap-2 p-0">
-            {landed.map((id) => {
-              const record: AdrRecord | undefined = props.adrs[id];
-              return (
-                <li key={id} className="min-w-0 list-none">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      props.openSheet({
-                        kind: "adr",
-                        record,
-                        title: record?.title ?? id,
-                        state: record?.state ?? "unknown",
-                      })
-                    }
-                    className={cn(
-                      "flex min-h-9 w-full min-w-0 cursor-pointer items-center gap-2 rounded-lg border border-line-soft bg-card px-3 py-2 text-left",
-                      "transition-colors hover:bg-surface-2",
-                      "focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-ring",
-                    )}
-                  >
-                    <ScrollText className="size-3.5 shrink-0 text-ink-faint" aria-hidden="true" />
-                    <span className="min-w-0 flex-1 truncate font-mono text-[12.5px] text-ink-mid">
-                      {id} · {record?.title ?? "no record in this bundle"}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </Panel>
-    </>
-  );
+  return [
+    <NarrationPanel
+      key="narration"
+      level={level}
+      onAudioFailed={props.onAudioFailed}
+      audioFailed={props.audioFailed}
+    />,
+    frame,
+    <Panel
+      key="decisions"
+      title="Decisions this change landed"
+      icon={ScrollText}
+      count={landed.length}
+      lead="The decisions the timeline entry names for this pull request. One press opens the whole record."
+      absent={landed.length === 0}
+    >
+      {landed.length === 0 ? (
+        <Missing>This pull request landed no decision record.</Missing>
+      ) : (
+        <ul className="m-0 flex min-w-0 list-none flex-col gap-2 p-0">
+          {landed.map((id) => {
+            const record: AdrRecord | undefined = props.adrs[id];
+            return (
+              <li key={id} className="min-w-0 list-none">
+                <button
+                  type="button"
+                  onClick={() =>
+                    props.openSheet({
+                      kind: "adr",
+                      record,
+                      title: record?.title ?? id,
+                      state: record?.state ?? "unknown",
+                    })
+                  }
+                  className={cn(
+                    "flex min-h-9 w-full min-w-0 cursor-pointer items-center gap-2 rounded-lg border border-line-soft bg-card px-3 py-2 text-left",
+                    "transition-colors hover:bg-surface-2",
+                    "focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-ring",
+                  )}
+                >
+                  <ScrollText className="size-3.5 shrink-0 text-ink-faint" aria-hidden="true" />
+                  <span className="min-w-0 flex-1 truncate font-mono text-[12.5px] text-ink-mid">
+                    {id} · {record?.title ?? "no record in this bundle"}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Panel>,
+  ];
 }
 
 function diffFilesOf(diff: Record<string, string> | null): DiffFile[] {
