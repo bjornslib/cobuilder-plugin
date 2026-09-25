@@ -39,7 +39,7 @@ E9, E10, E11, E12, E13, E14, E15, E16, E17, and E18.
 - [ ] Slice 11 — The diagram tiles open their drawing                score: —
 - [ ] Slice 12 — A record opens in the Sheet                         score: —
 - [ ] Slice 13 — A goal.json-only design renders                     score: —
-- [ ] Slice 14 — The FlightDeck prototype, reviewed                  score: —
+- [x] Slice 14 — The FlightDeck prototype, reviewed                  score: 1.00
 - [ ] Slice 15 — The change's account renders                        score: —
 - [ ] Slice 16 — The rail reads two accounts, each at its own address  score: —
 - [ ] Slice 17 — The account mark, and the jump across               score: —
@@ -79,8 +79,8 @@ action: unset that variable, then run `/login` and choose the subscription accou
 scored 0.50 of its four criteria, and its ladder row stays `pending` until the publishes run.
 
 Slice 1 belongs to `cobuilder-viewer/E1`, its only slice. Slices 6 and 7 belong to
-`cobuilder-viewer/E19` and stand at 1.0. Nine slices of the eighteen have not run:
-10, 11, 12, 13, 14, 15, 16, 17, and 18. Slice 1 ran, and it did not reach an
+`cobuilder-viewer/E19` and stand at 1.0. Eight slices of the eighteen have not run:
+10, 11, 12, 13, 15, 16, 17, and 18. Slice 1 ran, and it did not reach an
 accepted score.
 
 **The engineer approved slice 5 on 2026-09-25, and its artifact is the Work surface itself.**
@@ -211,6 +211,17 @@ dev URL, and answers whether the surface is right. A follow-up run writes that a
 date, and this location into this file and into the ladder at
 `docs/plans/cobuilder-viewer/04-slices.md`.
 
+**Slice 14 ran again on 2026-09-25 and scored 1.00**, weighted 0.02. It belongs to
+`cobuilder-viewer/E6`, and its end is an approval. All four of its criteria scored 1.0,
+so the run cleared the accept threshold of 0.90. Its artifact is the prototype the
+engineer approved, at `plugins/artifact/viewer/src/variations/flightdeck/`. The first
+attempt scored 0.625, with C2 at 0.5 and C4 at 0.0. The change's account stated the
+scene art's absence nowhere, and its Intent row's count chip read three records while
+two rendered. The record did not hold the engineer's approval when the first validator
+read it, so C4 read 0.0. Its accepted work is the commit that states the picture a
+change does not carry, `e8a3a4f`. The paragraph above this one reads `pending`, and
+this record supersedes it.
+
 ## Escalated
 
 **Slice 1 is escalated.** Its two CRITICAL criteria are C1 and C2. C2 passes, and C1 cannot
@@ -264,8 +275,9 @@ For slices 10 to 17, this note supersedes the weight list in the "E7's ladder ch
 below.
 
 Every slice already recorded at a score keeps its weight, so its contribution stands.
-Slice 1 contributes 0.030. Slices 2, 3, 4, 5, 6, 7, 8, and 9 contribute 0.080, 0.090,
-0.090, 0.040, 0.060, 0.040, 0.090, and 0.040. Those nine slices contribute 0.560 in total.
+Slice 1 contributes 0.030. Slices 2, 3, 4, 5, 6, 7, 8, 9, and 14 contribute 0.080,
+0.090, 0.090, 0.040, 0.060, 0.040, 0.090, 0.040, and 0.020. Those ten slices contribute
+0.580 in total.
 
 **E7's ladder changed on 2026-09-25, and the weights moved with it.**
 
@@ -290,9 +302,9 @@ The sum is still 1.00. Slices 1 to 8 now weigh 0.06, 0.08, 0.09, 0.09, 0.04, 0.0
 0.04, and 0.04. Every score already recorded stands. A weight that moved carries
 that score's contribution with it.
 
-Slice 1 scored 0.50 and contributes 0.030. Slices 2, 3, 4, 6, 7, 8, and 9 each
-scored 1.00. They contribute 0.080, 0.090, 0.090, 0.060, 0.040, 0.090, and 0.040.
-Those eight slices together contribute 0.520, against 0.610 before the re-cut. An
+Slice 1 scored 0.50 and contributes 0.030. Slices 2, 3, 4, 6, 7, 8, 9, and 14 each
+scored 1.00. They contribute 0.080, 0.090, 0.090, 0.060, 0.040, 0.090, 0.040, and
+0.020. Those nine slices together contribute 0.540, against 0.610 before the re-cut. An
 accepted slice therefore keeps its score and loses part of its weight. The change's
 account now carries more of the program than the two slices it replaced.
 
