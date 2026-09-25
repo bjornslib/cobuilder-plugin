@@ -19,9 +19,9 @@
  * row's address opens the same surface on its own, with no board first.
  *
  * One group follows the board's cases. "The rail's arrow keys" fixes the traversal a
- * reader makes with the up and down arrows, over every entry the rail renders. Its design
- * therefore holds a record of every kind: the rail's groups appear only when the work
- * fills them, and the walk needs all nine entries.
+ * reader makes with the up and down arrows, over every row the rail renders. Its design
+ * therefore holds a record of every kind: the rail's rows appear only when the work fills
+ * them, and the walk needs all ten rows.
  * `IntentDrawing.test.tsx` fixes which drawing level the Intent level draws.
  *
  * jsdom implements neither `matchMedia` nor `ResizeObserver`, and the shell asks both
@@ -37,7 +37,8 @@ import type { RecordIndex } from "@/data/types";
 import type { DesignRecord, DesignRecords } from "@/data/bundle";
 
 import Shell from "./App";
-import { buildWorkItems, gatesOf, levelsOf, railGroups } from "./model";
+import { boardHref, buildWorkItems, gatesOf, levelsOf, railGroups } from "./model";
+import type { AccountId } from "./model";
 
 /* ------------------------------------------------------------------- jsdom */
 
@@ -307,9 +308,16 @@ function rowNamed(label: string): HTMLElement {
 }
 
 /**
- * The rail's own input, built the way `App.tsx` builds it: the work item, its gates, and
- * its level states, each derived by `./model` from this file's own fixtures. The entry
- * list below is only as good as that input, so it is the same input the shell uses.
+ * The rail's own input, built the way `App.tsx` builds it: the work item, its gates, its
+ * level states, and the change the Review group addresses, each derived the way the
+ * shell derives it. The row list below is only as good as that input, so it is the same
+ * input the shell uses.
+ *
+ * THE CHANGE IS THE WORK'S OWN FIRST PULL REQUEST. This file's addresses name no change
+ * of their own, so `App.tsx` falls back to the first pull request the work's epics carry,
+ * and the Review group then draws its four rows rather than stating an absence. The
+ * route names no change, so the rail has read no level there and the four rows state no
+ * count, which is the state `App.tsx` passes on the same address.
  */
 function railSource(workId: string, board = false) {
   const works = buildWorkItems(INDEX, DESIGNS);
@@ -320,18 +328,53 @@ function railSource(workId: string, board = false) {
     levels: work === null ? null : levelsOf(work),
     board,
     workCount: works.size,
+    changePr: work !== null && work.pullRequests.length > 0 ? work.pullRequests[0].id : null,
+    changeLevels: [],
+    diffFiles: null,
+    servedAudio: {},
   };
 }
 
 /**
- * The least one rail entry must carry: the word a reader reads, the address a press
- * opens, and whether a press can reach it at all.
+ * The least one rail row must carry: the word a reader reads, the account it reads, what
+ * it holds, the address a press opens, and whether a press can reach it at all.
  */
 interface RailStep {
   label: string;
+  account: AccountId;
+  count: string;
   href: string;
   available: boolean;
 }
+
+/**
+ * The rail's own name for a row.
+ *
+ * `Rail.tsx` writes a row's accessible name from the row's label, its account, and its
+ * count, and that name is how the rail tells a reader which row is which. This reads the
+ * same three fields off the one row list, so a case can hold the rail and the list to one
+ * spelling rather than adding a second copy of the rail's own order.
+ */
+function nameOf(row: RailStep): string {
+  return row.count === ""
+    ? `${row.label}, the ${row.account} account`
+    : `${row.label}, the ${row.account} account · ${row.count}`;
+}
+
+/**
+ * The board's own row, which the rail draws above its two groups.
+ *
+ * `railGroups` returns the two accounts' rows and not this one, so a case that compares
+ * the rail against the one list adds the board row back by hand. It reads no account, so
+ * it carries no account and no count: the rail names it with its own word alone.
+ * `App.tsx`'s arrow walk builds the same list the same way, and `model.ts` says why the
+ * board owns no group of its own.
+ */
+const BOARD_ROW: Pick<RailStep, "label" | "href" | "available"> = {
+  label: "Work",
+  href: boardHref(),
+  available: true,
+};
 
 /** One arrow press, at the reader's own focus: the body of the document. */
 function press(key: string, init: Record<string, boolean> = {}): void {
@@ -462,42 +505,46 @@ describe("Shell", () => {
 });
 
 /*
- * The rail's entries, walked with the up and down arrows.
+ * The rail's rows, walked with the up and down arrows.
  *
- * EVERY ENTRY IS A STEP. The first cut of this traversal moved between the three level
- * entries alone, and the engineer found the hole: a reader could not reach Epics from
- * Architecture. So the traversal covers every entry the rail renders, in render order:
- * the board's Work entry, then The work, Build, Pull requests, and Shipped, each entry in
- * the order its group lists it.
+ * EVERY ROW IS A STEP. The first cut of this traversal moved between the three level rows
+ * alone, and the engineer found the hole: a reader could not reach Epics from
+ * Architecture. So the traversal covers every row the rail renders, in render order: the
+ * board's Work row, then the five rows of Build, then the four of Review.
  *
- * ONE LIST SERVES BOTH. The rail renders the entries `railGroups` returns and the
- * traversal steps the same list, so the two cannot drift. The first case compares them.
+ * ONE LIST SERVES BOTH. The rail renders the rows `railGroups` returns and the traversal
+ * steps the same list, so the two cannot drift. The second case compares them.
  *
- * A DISABLED ENTRY IS NOT A STEP. A level is disabled rather than gated, so an entry
- * whose record is absent stays in the rail with `href="#"`. A step onto it would open the
- * board, so the traversal steps the entries that carry a real address.
+ * A DISABLED ROW IS NOT A STEP. A level is disabled rather than gated, so a row whose
+ * record is absent stays in the rail with `href="#"`. A step onto it would open the
+ * board, so the traversal steps the rows that carry a real address.
  *
  * THE GUARD IS THE PAGER'S OWN. A field owns its caret keys and a modifier names a
  * command, so both kinds of press are left to the pager's key handler and to nothing
  * else. The pager's own two keys keep working beside these two.
  */
 describe("The rail's arrow keys", () => {
-  it("renders the nine entries in the rail's own order", async () => {
+  it("renders the ten rows in the rail's own order", async () => {
     at("#/cobuilder-viewer/intent");
     render(<Shell />);
     await waitFor(() => expect(levelHeading()).toBe("Intent"));
 
-    /* The order the browser reading found, and the address each entry opens. */
+    /*
+      The order the browser reading found, the name the rail gives each row, and the
+      address each row opens. The two accounts repeat three names, so a name carries its
+      account and the count the row holds.
+    */
     expect(railRows().map(labelOf)).toEqual([
       "Work",
-      "Intent",
-      "Problem & Solution",
-      "Architecture",
-      "Epics",
-      "Rubrics",
-      "This work's pull requests",
-      "FlightDeck",
-      "Release status",
+      "Intent, the program account · 6 records",
+      "Problem & Solution, the program account · 5 of 7 fields",
+      "Architecture, the program account · 3 records",
+      "Epics, the program account · 1 epics",
+      "Rubrics, the program account · none",
+      "Intent, the change account",
+      "Problem & Solution, the change account",
+      "Architecture, the change account",
+      "File Diffs, the change account",
     ]);
     expect(railRows().map(hrefOf)).toEqual([
       "#/",
@@ -506,19 +553,20 @@ describe("The rail's arrow keys", () => {
       "#/cobuilder-viewer/architecture",
       "#/cobuilder-viewer/build/epics",
       "#/cobuilder-viewer/build/rubrics",
-      "#/cobuilder-viewer/pull-requests",
-      "#/cobuilder-viewer/pull-requests/flightdeck",
-      "#/cobuilder-viewer/shipped",
+      "#/cobuilder-viewer/pull-requests/11",
+      "#/cobuilder-viewer/pull-requests/11/problem-and-solution",
+      "#/cobuilder-viewer/pull-requests/11/architecture",
+      "#/cobuilder-viewer/pull-requests/11/file-diffs",
     ]);
   });
 
-  it("holds one entry list, and the rail renders it whole", async () => {
+  it("holds one row list, and the rail renders it whole", async () => {
     at("#/cobuilder-viewer/intent");
     render(<Shell />);
     await waitFor(() => expect(levelHeading()).toBe("Intent"));
 
     /*
-      `railGroups` is the one list. Its entries carry these three facts at least, and the
+      `railGroups` is the one list. Its rows carry these three facts at least, and the
       rail and the traversal both read them here.
     */
     const entries: RailStep[] = railGroups(railSource("cobuilder-viewer")).flatMap(
@@ -526,12 +574,16 @@ describe("The rail's arrow keys", () => {
     );
 
     /*
-      The rail renders the entries this one function returns, in this one order. A second
-      copy of the order is what lost every entry below Architecture.
+      The rail renders the rows this one function returns, in this one order, under the
+      board's own row. The board row is the one row the list does not carry, so the case
+      adds it back the way `App.tsx`'s arrow walk adds it. A second copy of the order is
+      what lost every row below Architecture.
     */
-    expect(entries.map((entry) => entry.label)).toEqual(railRows().map(labelOf));
-    expect(entries.map((entry) => entry.href)).toEqual(railRows().map(hrefOf));
-    expect(entries.map((entry) => entry.available)).toEqual(
+    expect([BOARD_ROW.label, ...entries.map(nameOf)]).toEqual(railRows().map(labelOf));
+    expect([BOARD_ROW.href, ...entries.map((entry) => entry.href)]).toEqual(
+      railRows().map(hrefOf),
+    );
+    expect([BOARD_ROW.available, ...entries.map((entry) => entry.available)]).toEqual(
       railRows().map((row) => !disabledOf(row)),
     );
   });
@@ -551,13 +603,13 @@ describe("The rail's arrow keys", () => {
     }
   });
 
-  it("moves up every rail entry in render order", async () => {
-    at("#/cobuilder-viewer/shipped");
+  it("moves up every rail row in render order", async () => {
+    at("#/cobuilder-viewer/pull-requests/11/file-diffs");
     render(<Shell />);
-    await waitFor(() => expect(levelHeading()).toBe("Shipped"));
+    await waitFor(() => expect(levelHeading()).toBe("Pull request 11"));
 
     const rows = railRows();
-    /* The last entry is Release status, so this walks back to the board entry. */
+    /* The last row is the change's File Diffs, so this walks back to the board row. */
     for (const row of rows.slice(0, rows.length - 1).reverse()) {
       press("ArrowUp");
       await waitFor(() => expect(window.location.hash).toBe(hrefOf(row)));
@@ -599,36 +651,36 @@ describe("The rail's arrow keys", () => {
     expect(window.location.hash).toBe("#/");
   });
 
-  it("stays at the last entry, which is Release status", async () => {
-    at("#/cobuilder-viewer/shipped");
+  it("stays at the last row, which is the change's File Diffs", async () => {
+    at("#/cobuilder-viewer/pull-requests/11/file-diffs");
     render(<Shell />);
-    await waitFor(() => expect(levelHeading()).toBe("Shipped"));
+    await waitFor(() => expect(levelHeading()).toBe("Pull request 11"));
 
     press("ArrowDown");
     press("ArrowDown");
 
-    await waitFor(() => expect(levelHeading()).toBe("Shipped"));
-    expect(window.location.hash).toBe("#/cobuilder-viewer/shipped");
+    await waitFor(() => expect(levelHeading()).toBe("Pull request 11"));
+    expect(window.location.hash).toBe("#/cobuilder-viewer/pull-requests/11/file-diffs");
   });
 
-  it("steps down from Rubrics to the entry below it, because two entries share one section", async () => {
+  it("steps down from Rubrics to the row below it, because two rows share one section", async () => {
     at("#/cobuilder-viewer/build/rubrics");
     render(<Shell />);
     await waitFor(() => expect(levelHeading()).toBe("Build"));
 
     /*
-      Epics and Rubrics both name the Build section, so the reader's own entry is the row
+      Epics and Rubrics both name the Build section, so the reader's own row is the row
       they arrived on and not the section they share. A match on the section alone would
       find Epics below Rubrics, and the press would step onto the row the reader is
-      already on.
+      already on. The row below Rubrics is the change's own Intent row.
     */
     press("ArrowDown");
     await waitFor(() => {
-      expect(window.location.hash).toBe(hrefOf(rowNamed("This work's pull requests")));
+      expect(window.location.hash).toBe(hrefOf(rowNamed("Intent, the change account")));
     });
   });
 
-  it("steps up from Rubrics to Epics, because two entries share one section", async () => {
+  it("steps up from Rubrics to Epics, because two rows share one section", async () => {
     at("#/cobuilder-viewer/build/rubrics");
     render(<Shell />);
     await waitFor(() => expect(levelHeading()).toBe("Build"));
@@ -636,11 +688,13 @@ describe("The rail's arrow keys", () => {
     /* The same shared section, in the other direction. The row above Rubrics is Epics. */
     press("ArrowUp");
     await waitFor(() => {
-      expect(window.location.hash).toBe(hrefOf(rowNamed("Epics")));
+      expect(window.location.hash).toBe(
+        hrefOf(rowNamed("Epics, the program account · 1 epics")),
+      );
     });
   });
 
-  it("skips a disabled entry, because its row carries no address", async () => {
+  it("skips a disabled row, because its row carries no address", async () => {
     at("#/inflight-record-store/intent");
     render(<Shell />);
     await waitFor(() => expect(levelHeading()).toBe("Intent"));
@@ -651,15 +705,17 @@ describe("The rail's arrow keys", () => {
     expect(disabled.map(hrefOf)).toEqual(["#", "#"]);
 
     /*
-      The next entry a press can reach is Epics, two rows below. Architecture is not a
-      step: its row carries `#`, and a step onto it would open the board.
+      The next row a press can reach is Epics, two rows below. Architecture is not a step:
+      its row carries `#`, and a step onto it would open the board.
     */
     press("ArrowDown");
-    await waitFor(() => expect(window.location.hash).toBe(hrefOf(rowNamed("Epics"))));
+    await waitFor(() =>
+      expect(window.location.hash).toBe(hrefOf(rowNamed("Epics, the program account · 1 epics"))),
+    );
 
     press("ArrowUp");
     await waitFor(() => {
-      expect(window.location.hash).toBe(hrefOf(rowNamed("Intent")));
+      expect(window.location.hash).toBe(hrefOf(rowNamed("Intent, the program account · 1 records")));
     });
   });
 

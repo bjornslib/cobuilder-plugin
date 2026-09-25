@@ -809,7 +809,14 @@ describe("Slice 8 · a paged level drops the band and keeps the heading element"
     await open(PAGED[0].hash);
     await waitFor(() => expect(document.activeElement?.id).toBe(HEADING_ID));
 
-    fireEvent.click(screen.getByRole("link", { name: "Architecture" }));
+    /*
+      THE RAIL'S ROW IS THE ONE THIS FIXTURE FILLS. The work's own epics carry no pull
+      request, so this bundle holds no change's account and the rail draws one
+      Architecture row: the program's. Its accessible name carries the row's own account
+      and the count it read, so the name is matched on its opening words rather than on
+      the bare section word, which no row carries any more.
+    */
+    fireEvent.click(screen.getByRole("link", { name: /^Architecture,/ }));
 
     await waitFor(() => expect(levelTitle()).toBe("Architecture"));
     await waitFor(() =>

@@ -192,43 +192,73 @@ def test_viewer_contains_all_five_mode_buttons():
     the same five families through two structures, and this case holds both to
     the build:
 
-    1. the rail's own entry list, which is one list in `src/shell/model.ts`. It
-       carries the designs (the board every reader lands on), the builds (the
-       Epics and Rubrics entries), and the pull requests (this work's own, and
-       FlightDeck); and
+    1. the rail's row list, which is the two groups `src/shell/model.ts` builds.
+       It carries the designs (the board the rail draws its own row for), the
+       builds (Build's Epics and Rubrics rows), and the pull requests (Review's
+       four rows, the last of which is the diff itself); and
     2. the Architecture level's section list, which carries the decisions (the
        Architecture Decisions section) and the contexts (the Boundaries section,
        which states the rules the touched contexts declare).
 
     Both are read from `plugins/artifact/viewer/index.html`, which since slice 3
     is the build's own output.
+
+    THE RAIL RENDERS TEN ROWS AND OWNS NO MORE. The board's own row is drawn
+    above the two groups from `boardHref()`, the address `ROUTE_PREFIX` holds.
+    Build reads the program's account and carries five rows. Review reads the
+    change's account and carries four. Three rows the earlier rail carried are
+    gone with the slice that removed them: this work's pull request list, the
+    FlightDeck row, and the release status row.
     """
     text = viewer_text()
     claim = "the navigation reaches designs, pull requests, decisions, contexts, and builds"
 
-    # The shipped rail's own list. The two anchors are unique in the build: the
-    # comparison harness's rails build their groups from `items`, and this one
-    # builds them from `entries`.
-    rail = bounded_region(
+    # The board's own row, which the rail draws above the two groups. Each word
+    # occurs once in the whole build and the region holds both of them, so the
+    # words sit on one row rather than on two. The address that row opens is the
+    # route prefix, asserted with the row list below: `boardHref()` returns
+    # `ROUTE_PREFIX` and builds no address of its own.
+    board_row = bounded_region(text, 'tooltip:"Work"', '"aria-label":"Work"', claim)
+    assert_ordered(
+        [
+            'tooltip:"Work"',                 # the designs board
+            '"aria-label":"Work"',
+        ],
+        board_row,
+        claim,
+    )
+
+    # The shipped rail's own row list. Both anchors are unique in the build: no
+    # other rail and no other surface states this list.
+    rail = bounded_region(text, 'TA="#/"', "entries:mw(g)}]", claim)
+    assert_ordered(
+        [
+            'TA="#/"',                          # "#/", the board's own address
+            '["intent","problem-and-solution","architecture","epics","rubrics"]',
+            'epics:"Epics",rubrics:"Rubrics"',  # builds
+            '{key:"build",label:"Build",account:"program"',
+            '{key:"review",label:"Review",account:"change"',
+            "entries:mw(g)}]",
+        ],
+        rail,
+        claim,
+    )
+
+    # Review's four rows, which are the change's own account. The last of them is
+    # the diff itself, so the pull requests stay reachable from the rail.
+    change_rows = bounded_region(
         text,
-        'label:null,entries:[{key:"work",label:"Work"',
-        '{key:"shipped",label:"Release status"',
+        '["intent","problem-and-solution","architecture","file-diffs"]',
+        '"file-diffs":"File Diffs"',
         claim,
     )
     assert_ordered(
         [
-            'label:null,entries:[{key:"work",label:"Work"',   # the designs board
-            '{key:"the-work",label:"The work",entries:',      # the three levels
-            '{key:"build",label:"Build"',                     # builds
-            '{key:"epics",label:"Epics"',
-            '{key:"rubrics",label:"Rubrics"',
-            '{key:"pull-requests",label:"Pull requests"',     # pull requests
-            "{key:\"this-work\",label:\"This work's pull requests\"",
-            '{key:"flightdeck",label:"FlightDeck"',
-            '{key:"shipped",label:"Shipped"',
-            '{key:"shipped",label:"Release status"',
+            '["intent","problem-and-solution","architecture","file-diffs"]',
+            'architecture:"Architecture"',
+            '"file-diffs":"File Diffs"',       # pull requests
         ],
-        rail,
+        change_rows,
         claim,
     )
 
