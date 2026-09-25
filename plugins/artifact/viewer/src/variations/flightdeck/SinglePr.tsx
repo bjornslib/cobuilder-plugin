@@ -239,7 +239,7 @@ function NarrationCaption({
  * exist. The mode is the reader's and it is held above, so a switch between the two
  * modes of this surface brings it back.
  */
-function FramePanel({
+export function FramePanel({
   level,
   theme,
   artMode,
@@ -333,7 +333,7 @@ function FramePanel({
 /* -------------------------------------------------------------- district row */
 
 /** The districts this diff touched, by count. The shipped viewer shows the same chips. */
-function DistrictPanel({ entry }: { entry: StoryEntry }) {
+export function DistrictPanel({ entry }: { entry: StoryEntry }) {
   const touched = Object.entries(entry.touched ?? {}).sort((a, b) => b[1] - a[1]);
   return (
     <Panel
@@ -370,7 +370,7 @@ function DistrictPanel({ entry }: { entry: StoryEntry }) {
  * change — says that in place, because an empty hunk list is a fact about that file and
  * not a rendering failure.
  */
-function DiffPanel({
+export function DiffPanel({
   files,
   selected,
   onSelect,

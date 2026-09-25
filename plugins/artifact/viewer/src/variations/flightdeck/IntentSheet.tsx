@@ -90,7 +90,7 @@ function AnswerBlock({ title, answer }: { title: string; answer: AssessmentAnswe
   );
 }
 
-function IntentBody({ intent }: { intent: IntentRecord | undefined }) {
+export function IntentBody({ intent }: { intent: IntentRecord | undefined }) {
   if (!intent) {
     return (
       <Missing>
@@ -189,7 +189,7 @@ function IntentBody({ intent }: { intent: IntentRecord | undefined }) {
   );
 }
 
-function AssessmentBody({ assessment }: { assessment: AssessmentRecord | undefined }) {
+export function AssessmentBody({ assessment }: { assessment: AssessmentRecord | undefined }) {
   if (!assessment) {
     return (
       <Missing>
