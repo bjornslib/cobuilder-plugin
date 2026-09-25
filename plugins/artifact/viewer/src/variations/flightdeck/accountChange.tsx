@@ -27,10 +27,23 @@
  * facts of the change, including its diff. This file puts each part in the section whose
  * name it answers:
  *
- *   Intent              the first narration level, its frame, the intent block, the facts
- *   Problem & Solution  the second level, its beats, and the assessment
+ *   Intent              the first narration level with its drawing, the picture when the
+ *                       bundle holds one, the intent block, and the facts
+ *   Problem & Solution  the second level, its frame, its beats, and the assessment
  *   Architecture        the third level, its drawing, and the decisions it landed
  *   File Diffs          the fourth level's diff, and the prose that reads it
+ *
+ * THE THREE NARRATION SECTIONS WEAR THE LEVEL'S OWN NAME, AND NOT A NUMBER. They read
+ * "Why", "Problem & Solution", and "Architecture", which are the headings the program's
+ * own surfaces give those three things. The strip above the pane therefore names the
+ * section a reader is in, rather than repeating the rail's row above it.
+ *
+ * THE FIRST LEVEL'S DRAWING SITS IN ITS NARRATION SECTION, AND ITS FRAME MAY NOT EXIST.
+ * The container drawing belongs with the narration it reads, so the Why section closes
+ * with it. The level's frame section held the picture and the drawing together, and on
+ * this bundle's pull requests the first level carries no picture at all; that section
+ * therefore renders only when the level carries a picture, and a level whose whole frame
+ * was the drawing has no frame section.
  *
  * NOTHING HERE IS DERIVED TWICE. `./model` derives the four levels, the diff files, and
  * the counts, and this file reads those answers.
@@ -42,6 +55,7 @@ import { FileText, GitPullRequest, ScrollText, Scale } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Bento, Chip, KeyValue, Missing, Panel, StateBadge, TextList } from "@/shell/atoms";
+import { DiagramTiles } from "@/shell/DiagramTiles";
 import type { Theme } from "@/shell/DiagramTiles";
 import type { SheetSubject } from "@/shell/Sheet";
 import type { AdrRecord, AdrRecords } from "@/data/adrs";
@@ -110,15 +124,43 @@ export function changeSections(props: ChangeBodyProps): ReactNode[] {
       </Bento>
     );
 
+  /*
+    THE FIRST LEVEL'S FRAME HOLDS THE PICTURE ALONE, BECAUSE ITS DRAWING MOVED. The Why
+    section below closes with the container drawing, so this section would draw that same
+    drawing a second time and offer the reader a toggle between one thing and itself. The
+    level is copied with its diagram taken off, and `FramePanel`'s own rule then reads a
+    single-part frame: the picture, when there is one.
+
+    A LEVEL WITH NO PICTURE HAS NO FRAME SECTION AT ALL. The section's whole content was
+    the drawing on every pull request of this bundle, so leaving it in place would leave a
+    dashed box saying that nothing is here beside a section that draws it.
+  */
+  const picture =
+    level === null || level.art === null ? null : (
+      <Bento key="frame">
+        <FramePanel
+          level={{ ...level, diagram: null }}
+          theme={theme}
+          artMode={props.artMode}
+          onArtMode={props.onArtMode}
+          failedArt={props.failedArt}
+          onArtFailed={props.onArtFailed}
+        />
+      </Bento>
+    );
+
   if (section === "intent") {
     return [
       <NarrationPanel
         key="narration"
+        title="Why"
         level={level}
+        drawing={level?.diagram ?? null}
+        theme={theme}
         onAudioFailed={props.onAudioFailed}
         audioFailed={props.audioFailed}
       />,
-      frame,
+      picture,
       <Panel
         key="intent"
         title="The change's intent"
@@ -141,7 +183,9 @@ export function changeSections(props: ChangeBodyProps): ReactNode[] {
     return [
       <NarrationPanel
         key="narration"
+        title="Problem & Solution"
         level={level}
+        theme={theme}
         onAudioFailed={props.onAudioFailed}
         audioFailed={props.audioFailed}
       />,
@@ -208,7 +252,9 @@ export function changeSections(props: ChangeBodyProps): ReactNode[] {
   return [
     <NarrationPanel
       key="narration"
+      title="Architecture"
       level={level}
+      theme={theme}
       onAudioFailed={props.onAudioFailed}
       audioFailed={props.audioFailed}
     />,
@@ -264,24 +310,42 @@ function diffFilesOf(diff: Record<string, string> | null): DiffFile[] {
 }
 
 /**
- * The level's narration, and its audio when the bundle holds one.
+ * The level's narration, its audio when the bundle holds one, and its drawing when this
+ * section is the one that carries it.
+ *
+ * THE SECTION WEARS THE LEVEL'S OWN NAME. The title is the caller's, because each of the
+ * three levels this panel serves has its own heading, and a section that named its own
+ * number would repeat the rail's row above it.
  *
  * A level carries audio exactly when its story entry carries a `voice` string, and `./model`
  * derives the address from that key. A level whose audio the server does not serve says so
  * in place, because a silent control is a defect rather than a detail.
+ *
+ * THE DRAWING CLOSES THE PANEL, WHEN THERE IS ONE. The container drawing belongs beside
+ * the narration it reads, so the Why section passes it here and the drawing follows the
+ * text and the audio control. Every other section passes nothing, and the panel is the
+ * narration, its audio, and no picture.
  */
 function NarrationPanel({
+  title,
   level,
+  drawing = null,
+  theme,
   audioFailed,
   onAudioFailed,
 }: {
+  /** The section's own name. It is the heading the strip above the pane reads. */
+  title: string;
   level: Level | null;
+  /** The level's Mermaid source, when this section is the one that carries it. */
+  drawing?: string | null;
+  theme: Theme;
   audioFailed: string | null;
   onAudioFailed: (url: string) => void;
 }) {
   if (level === null) {
     return (
-      <Panel title="The narration" icon={FileText} absent>
+      <Panel title={title} icon={FileText} absent>
         <Missing>
           The bundle holds no narration record for this level of this pull request.
         </Missing>
@@ -290,10 +354,9 @@ function NarrationPanel({
   }
   return (
     <Panel
-      title={`The narration · level ${level.number}`}
+      title={title}
       icon={FileText}
-      lead="What this level says, in the change's own words. The narration is the record; nothing here rewrites it."
-      absent={level.narration.length === 0 && level.audio === null}
+      absent={level.narration.length === 0 && level.audio === null && drawing === null}
     >
       {level.narration.length === 0 ? (
         <Missing>This level carries no narration text.</Missing>
@@ -330,6 +393,16 @@ function NarrationPanel({
             className="w-full max-w-[42rem]"
           />
           <span className="font-mono text-[12px] text-ink-faint">{level.audio}</span>
+        </div>
+      )}
+
+      {drawing === null ? null : (
+        <div className="mt-4 min-w-0">
+          <DiagramTiles
+            levels={[String(level.number)]}
+            sources={{ [String(level.number)]: drawing }}
+            theme={theme}
+          />
         </div>
       )}
     </Panel>
@@ -379,6 +452,12 @@ function ChangeFacts({ entry }: { entry: StoryEntry }) {
  * this panel is the whole of its written record. The grouped file list the level carries
  * is printed under it, because it is the change's own account of which files belong
  * together and the diff panel cannot know that.
+ *
+ * THE PANEL ONCE SAID ALL OF THAT ABOVE ITS RECORD, AND THE ENGINEER REMOVED IT. The three
+ * absences it named are still stated on this level, by `DiffPanel`'s own lead, which names
+ * the same three. What the removed line carried and nothing else carries is the account of
+ * an absent record: a level with no written record at all now shows the absent frame and
+ * the not-present pill with no words under them.
  */
 function DiffNarration({ level, entry }: { level: Level | null; entry: StoryEntry }) {
   const groups = entry.levels?.file_changes?.groups ?? [];
@@ -386,7 +465,6 @@ function DiffNarration({ level, entry }: { level: Level | null; entry: StoryEntr
     <Panel
       title="The diff, in the change's own words"
       icon={FileText}
-      lead="The fourth level carries no scene art, no drawing, and no audio. Its written record and its grouped file list are what it holds."
       absent={level === null && groups.length === 0}
     >
       {level?.narration ? (

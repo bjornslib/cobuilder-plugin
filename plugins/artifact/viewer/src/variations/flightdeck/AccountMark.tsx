@@ -98,9 +98,13 @@ export function AccountRule({
         {whose}
       </span>
 
-      <span className="min-w-0 flex-1 font-serif text-[14.5px] leading-[1.5] text-ink-dim">
-        {mark.lead}
-      </span>
+      {/*
+        THE LINE THAT STOOD HERE IS GONE, AND THE FIELD THAT HELD IT STAYS AS A SPACER.
+        The line told the reader, for each account, whose record they are in. The engineer
+        removed both lines. The field keeps its width, so the bar's shape and the jump's
+        place at its right end do not move now that the words are gone.
+      */}
+      <span className="min-w-0 flex-1" />
 
       {jump === null ? (
         <span className="font-mono text-[12px] text-ink-dim">

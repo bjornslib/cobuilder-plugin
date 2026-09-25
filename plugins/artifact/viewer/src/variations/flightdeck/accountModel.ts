@@ -69,16 +69,20 @@ import type { Level, LevelKey, Manifest, Story, StoryEntry } from "./model";
 /**
  * Which account a group reads.
  *
- * `program` is the work's own design records, written before the code existed.
- * `change` is the pull request its own epics carry, narrated after the merge.
+ * `program` reads the work's own design records. `change` reads the pull request the
+ * work's own epics carry.
  */
 export type AccountId = "program" | "change";
 
+/**
+ * The mark's first part: the word a reader sees on every section of this account.
+ *
+ * THE GLYPH IS THE MARK'S SECOND PART AND IT IS NOT HERE. `AccountMark.tsx` holds it in
+ * `ACCOUNT_GLYPH`, because a Lucide component is a value this data module has no reason
+ * to import. A word and a glyph are the whole mark.
+ */
 export interface AccountMark {
-  /** The word a reader sees on every section of this account, and on the rail. */
   word: string;
-  /** What this account is, in one line. It states whose record the reader is in. */
-  lead: string;
 }
 
 /**
@@ -93,16 +97,15 @@ export interface AccountMark {
  * third was a fill: the shell's selected-row wash for the program's account and the
  * shell's heading band for the change's. The engineer dropped it, so two parts remain and
  * neither is a colour. `AccountMark.tsx` and `AccountRail.tsx` draw them.
+ *
+ * THE MARK ALSO CARRIED A LINE PER ACCOUNT, AND THE ENGINEER DROPPED IT. The line said
+ * whose record the account reads, and it stood on every section of both accounts. The
+ * engineer asked for both lines to go, so the rule now says the account's own word, whose
+ * record it is, and the way across to the other account.
  */
 export const ACCOUNT_MARK: Record<AccountId, AccountMark> = {
-  program: {
-    word: "Program",
-    lead: "This account is the work's own design record, written before the code existed.",
-  },
-  change: {
-    word: "Change",
-    lead: "This account is the pull request the work's own epics carry, narrated after the merge.",
-  },
+  program: { word: "Program" },
+  change: { word: "Change" },
 };
 
 /* ------------------------------------------------------------------ the keys */
