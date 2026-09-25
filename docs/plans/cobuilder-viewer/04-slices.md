@@ -82,15 +82,15 @@ opens a work item, and E5's sections render inside one.
 | 4 | `cobuilder-viewer/E3` | One typed model reads the bundle | A level renders from `index.json` with no join derived in a component, and a field renamed on `PullRequest` and not on `OpenPullRequest` fails the type check | 1.00 | completed |
 | | **`cobuilder-viewer/E4` — The Work prototype.** A detailed prototype of the Work board, against this repository's own design records, reviewed before E5 starts. | | | | |
 | 5 | `cobuilder-viewer/E4` | The Work prototype, reviewed | The Work surface itself, the ported shell, reads this repository's own records, and the engineer approved it rather than naming a change | 1.00 | completed |
-| | **`cobuilder-viewer/E5` — The Work surface.** Every level, and the sections each level pages, including a design whose records are `goal.json` only. ADR-0028 owns the shape. | | | | |
+| | **`cobuilder-viewer/E5` — The Work surface.** The program's account: every row it holds, and the sections each row pages, including a design whose records are `goal.json` only. ADR-0028 owns the shape. | | | | |
 | 8 | `cobuilder-viewer/E5` | The section model | One box is on screen, the strip, the pager bar, and the two arrow keys move one index, and the pane reports no scroll at all | 1.00 | completed |
 | 9 | `cobuilder-viewer/E5` | The level's progress | The strip reads 0 at the first section's top, 25 percent at its bottom, 50 on the second, 100 on the last, and never decreases on a forward walk | 1.00 | completed |
-| 10 | `cobuilder-viewer/E5` | Every level renders its own sections | A reader walks Intent, Problem & Solution, Architecture, Build, Pull requests, and Shipped of one work item, and the envisioned pull request leads the Pull requests level | — | pending |
+| 10 | `cobuilder-viewer/E5` | Every level renders its own sections | A reader walks Intent, Problem & Solution, Architecture, Epics, and Rubrics, and each row renders its sections | — | pending |
 | 11 | `cobuilder-viewer/E5` | The diagram tiles open their drawing | A tile shows the drawing's miniature scaled to its box, a press opens it whole with zoom from 50 to 400 percent, Escape and the backdrop close it, and a failed render shows the authored source | — | pending |
 | 12 | `cobuilder-viewer/E5` | A record opens in the Sheet | Pressing a decision, a boundary rule, or an epic's design opens the whole record, and a part link scrolls the record and moves focus to that heading | — | pending |
 | 13 | `cobuilder-viewer/E5` | A goal.json-only design renders | One of the seven sparse designs shows every level it can fill, and the rail gates the levels it cannot | — | pending |
-| | **`cobuilder-viewer/E6` — The FlightDeck prototype.** One surface, two modes behind one switch, reviewed before E7 starts. | | | | |
-| 14 | `cobuilder-viewer/E6` | The FlightDeck prototype, reviewed | One surface shows single-pull-request narration at parity and the multi-pull-request path as its second mode behind one switch, and the engineer approves it or names what to change | — | pending |
+| | **`cobuilder-viewer/E6` — The FlightDeck prototype.** One work item read as two accounts, with the rail grouped under Build and Review, reviewed before E7 starts. | | | | |
+| 14 | `cobuilder-viewer/E6` | The FlightDeck prototype, reviewed | One work item renders as two accounts, the change's account at parity, and the engineer approves it | — | pending |
 | | **`cobuilder-viewer/E7` — FlightDeck, one pull request.** The change's account of one work item: the pull request its own epics carry, read at parity with today's viewer, in its own sections beside the program's and at an address of its own. | | | | |
 | 15 | `cobuilder-viewer/E7` | The change's account renders | A reader of a work item reads the change's Intent, Problem & Solution, Architecture, and File Diffs sections, each from that pull request's own records, at parity with today's viewer | — | pending |
 | 16 | `cobuilder-viewer/E7` | The rail reads two accounts, each at its own address | The rail groups its rows under Build and Review, `#/<work>/pull-requests/<pr>` opens the change's Intent section, one appended segment selects a named section, the row that opens the reader's address reads current, and the rail's fold and its arrow walk obey one convention | — | pending |
@@ -131,6 +131,16 @@ on.
 The change's account renders through the same section model the program's account
 uses. That model puts one section on screen at a time. A slice that lands before the
 model exists has no frame to render in.
+
+**The shipped rail's grouping lands with the change's account, and never before it.**
+
+The engineer approved the rail's two groups on 2026-09-25. Build holds the program's
+account, and Review holds the change's account. Slice 16 lands the grouping in the
+shipped shell, because it owns the rail. A grouping that landed first would leave the
+Review group holding four rows that render nothing, so it travels with the account
+that fills it. Slices 10 through 13 therefore run against the grouped rail rather than
+against the flat list of six. Their numbers stay as the ladder writes them, and each
+one keeps the end state it declares.
 
 **Two answers the E2 spike used to seek now belong to deferred work.** The spike
 still settles whether the build can be byte-equal, which is what slice 3 guards. The

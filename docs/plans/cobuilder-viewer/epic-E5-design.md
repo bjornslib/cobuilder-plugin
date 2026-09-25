@@ -5,7 +5,7 @@ Epic ID: cobuilder-viewer/E5
 
 ## Scope and Intent
 
-E5 is the Work surface: one work item, four levels that page their sections, and the
+E5 is the Work surface: one work item, the five rows the program's account holds, and the
 panels that read the bundle's records. It carries the section model ADR-0028 decided,
 and it is the largest epic in the narrowed program at six slices.
 
@@ -18,10 +18,17 @@ The three claims the epic exists for:
 3. **The progress strip measures the level**, as `(index + within) / count`, where a box
    with no scroll range counts as fully read.
 
-The boundary. E5 renders one work item that a reader already chose. It does not own the
-board that lists them (E19), the FlightDeck surface (E6, E7), the record Sheet's own
-layout beyond the row that opens it, or any publishing path. It reads the record index
-and derives no join.
+The boundary. E5 renders one work item that a reader already chose, and it owns the
+program's account alone. It does not own the board (E19), the change's account (E6, E7),
+or any publishing path. The record Sheet's own layout is out of scope, beyond the row
+that opens it. E5 reads the record index and derives no join.
+
+**The rail's two groups land with the change's account, and not with this epic.** The
+engineer approved the grouping on 2026-09-25. Build holds the program's account, and
+Review holds the change's account. E7's slice 16 lands it in the shipped shell, because
+the Review group would otherwise hold four rows that render nothing. So this epic's rows
+are the five the Build group carries. Its slices 10 through 13 run against the grouped
+rail, and not against the flat list of six.
 
 `plugins/artifact/viewer/src/variations/sections-e/` is the built reference. The
 prototype holds the model as measured, and the numbers in this design come from it.
@@ -33,7 +40,8 @@ prototype holds the model as measured, and the numbers in this design come from 
 - `plugins/artifact/viewer/src/shell/Pager.tsx` — new. `SectionStrip`, `SectionStage`,
   `SectionPager`, `LevelProgress`, `useSectionPaging`, and `withinOf`.
 - `plugins/artifact/viewer/src/shell/model.ts` — new. `buildWorkItems`, `gatesOf`,
-  `levelsOf`, `readRoute`, `routeHref`, `epicGroups`, `boardHref`.
+  `levelsOf`, `readRoute`, `routeHref`, `epicGroups`, `boardHref`, and `railGroups`,
+  which holds the rail's rows. E7's slice 16 reshapes that list into the two groups.
 - `plugins/artifact/viewer/src/shell/hooks.ts` — new. `useIndexLoad`, `useHashRoute`,
   `useDocumentNoScroll`, `useVisibleWidthCap`, `useCollapsedRail`, `useFocusOnChange`,
   `useScrollResetOnRoute`, `useSectionAvailability`.
@@ -43,12 +51,8 @@ prototype holds the model as measured, and the numbers in this design come from 
   solution, Risks, Assessment, Unknowns.
 - `plugins/artifact/viewer/src/shell/panels/Architecture.tsx` — new. Diagrams,
   Architecture Decisions, Boundaries, Districts and alternatives considered.
-- `plugins/artifact/viewer/src/shell/panels/Build.tsx` — new. The epic runs, the slices,
-  the rubrics.
-- `plugins/artifact/viewer/src/shell/panels/PullRequests.tsx` — new. The envisioned pull
-  request first, then the real ones, then the FlightDeck entry.
-- `plugins/artifact/viewer/src/shell/panels/Shipped.tsx` — new. The stage, the
-  publications, and the missing deploy record.
+- `plugins/artifact/viewer/src/shell/panels/Build.tsx` — new. The Epics row's runs and
+  their slices, and the Rubrics row's gate records.
 - `plugins/artifact/viewer/src/shell/atoms.tsx` — new. `Panel`, `Box`, `Chip`,
   `TextList`, `StateBadge`, `TONE_PILL`, `TONE_MARK`, and the band and tint classes.
 - `plugins/artifact/viewer/src/shell/DiagramTiles.tsx` — new. The tiles, the dialog, the
@@ -59,6 +63,13 @@ prototype holds the model as measured, and the numbers in this design come from 
   work item.
 - `plugins/artifact/viewer/src/index.css` — modified. The token set the surface reads.
 - `tests/test_sections.py` — new. The section model's claims against the served viewer.
+
+**Two rows left the rail with the Deploy group.** `panels/PullRequests.tsx` and
+`panels/Shipped.tsx` stood for the Pull requests row and the Shipped row. The engineer
+removed Deploy on 2026-09-25, so neither row sits in the grouped rail, and neither file
+belongs to this epic. The content those rows carried holds no row in the approved shape.
+Four things lack a home: the envisioned pull request, this work's own list, the open set,
+and the release status. E7's design records the same gap, and no slice here claims one.
 
 ## Types & Signatures
 
@@ -111,7 +122,7 @@ export function readRoute(): Route;
 export function routeHref(workId: string, section: SectionKey, tail?: string): string;
 export function levelsOf(work: WorkItem): Record<LevelKey, LevelState>;
 export function gatesOf(work: WorkItem): Gates;
-/** The Build level's sections: the epics in delivery order, six to a section. */
+/** The Epics row's sections: the epics in delivery order, six to a section. */
 export function epicGroups(work: WorkItem): EpicEntity[][];
 
 /* DiagramTiles.tsx */
@@ -130,8 +141,15 @@ export function useSheetHeadings(scroll: HTMLElement | null, keys: readonly unkn
 first diagram level), Why, Done when, Abort if, and Out of scope. Problem & Solution
 holds Problem and solution, Risks, Assessment, and Unknowns. Architecture holds the
 mechanism diagrams, Architecture Decisions, Boundaries, and Districts and alternatives
-considered. Build holds its epic runs. The first three are fixed lists; Build's comes
-from `epicGroups`.
+considered. Epics holds its runs, six epics to a section, and the cut comes from
+`epicGroups`. Rubrics holds the gate records in one panel, and an empty gate reads as
+empty rather than as a pass. The first three lists are fixed, and the last two follow the
+records their row holds.
+
+**The route keys outlive the rows they name.** `SectionKey` still carries `pull-requests`,
+because the change's address opens there. It keeps `shipped` too, so an address that
+names that section still parses. Neither one is a row of the grouped rail:
+`pull-requests` is E7's address slot, and the Shipped row left the rail with Deploy.
 
 **A paged section carries no fold.** Every panel of a paged section renders open, so
 `Panel` receives no `collapsible` prop on these levels.
@@ -145,14 +163,15 @@ Per `docs/plans/cobuilder-viewer/04-slices.md`, in build order.
   the arrow keys, one box on screen, and no pane scroll.
 - **Slice 9 — The level's progress.** Depends on: slice 8, because the strip measures
   the box the model puts on screen.
-- **Slice 10 — Every level renders its own sections.** Depends on: slice 8. The six
-  sections' panels, and the envisioned pull request leading Pull requests.
+- **Slice 10 — Every level renders its own sections.** Depends on: slice 8, and on E7's
+  slice 16, which lands the grouped rail. The five program rows' panels: Intent, Problem
+  & Solution, Architecture, Epics, and Rubrics.
 - **Slice 11 — The diagram tiles open their drawing.** Depends on: slice 10, because the
   tiles live in Architecture's Diagrams section and Intent's first section.
 - **Slice 12 — A record opens in the Sheet.** Depends on: slice 10, because a Sheet
   opens from a control inside a panel.
 - **Slice 13 — A goal.json-only design renders.** Depends on: slice 10. Seven designs in
-  this repository carry one record, and each must render every level it can fill.
+  this repository carry one record, and each must render every row it can fill.
 
 Slice 9 does not fold into slice 8. They are two states: a model that moves one box, and
 a reading that reports the level's position. ADR-0028 states them as two claims.
@@ -189,10 +208,10 @@ claims belong to the Gate 4c rubrics, scored through the ChromeDevTools MCP tool
   top, one count's share higher mid-box, and the full walk never decreases.
 - `test_box_with_no_range_reads_as_read` — slice 9. A section that fits one screen
   contributes its whole share.
-- `test_every_level_renders_its_own_sections` — slice 10. Each section of each level
+- `test_every_level_renders_its_own_sections` — slice 10. Each section of each row
   renders its own panels from the bundle's records.
-- `test_the_envisioned_pull_request_leads` — slice 10. On the Pull requests level, the
-  drafted pull request renders above the real ones.
+- `test_the_rubrics_row_renders_its_gates` — slice 10. The Rubrics row renders the gate
+  records the join resolves, and an empty gate reads as empty rather than as a pass.
 - `test_diagram_tile_opens_the_dialog` — slice 11. A press opens the dialog with the
   drawing; Escape and the backdrop close it.
 - `test_diagram_zoom_steps` — slice 11. The zoom reads 50, 100, and 400 percent, and the
@@ -201,7 +220,7 @@ claims belong to the Gate 4c rubrics, scored through the ChromeDevTools MCP tool
   states the failure and the dialog shows the authored source.
 - `test_record_opens_in_the_sheet` — slice 12. A press opens the record, and a part link
   scrolls the sheet and moves focus to that heading.
-- `test_sparse_design_renders` — slice 13. A `goal.json`-only design renders every level
+- `test_sparse_design_renders` — slice 13. A `goal.json`-only design renders every row
   it can fill, and the rail gates the rest.
 
 ## Risks & Open Questions
@@ -223,6 +242,11 @@ claims belong to the Gate 4c rubrics, scored through the ChromeDevTools MCP tool
   renames itself renames its own link. The cost is a one-frame lag after a section
   change: the strip holds the previous section's labels until the observer fires. The
   pager's count comes from the sections array, so a count never disagrees.
-- **Six sections in one slice is a large slice.** Slice 10 crosses every panel the Work
-  surface holds. It is one observable state, and no smaller cut leaves a state a reader
+- **Five rows in one slice is a large slice.** Slice 10 crosses every panel the program's
+  account holds. It is one observable state, and no smaller cut leaves a state a reader
   can see.
+- **Two rows left the rail, and their content holds no row today.** The Deploy group held
+  the Pull requests row and the Shipped row. The engineer removed that group on
+  2026-09-25. So the envisioned pull request, this work's own list, the open set, and the
+  release status render nowhere in the approved shape. Where each one lands stays open,
+  and no slice here claims one.

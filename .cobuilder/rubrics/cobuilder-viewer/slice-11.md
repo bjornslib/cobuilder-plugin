@@ -80,7 +80,7 @@ case works offline or with that host blocked.
 
 ## Regression check
 - All tests that passed before this slice must still pass, including `tests/test_sections.py`, `src/shell/Board.test.tsx`, and `src/shell/readiness.test.ts`.
-- Files outside the slice scope must remain unchanged: `plugins/artifact/viewer/src/flightdeck/`, `shared/`, and `plugins/pr/scripts/build_diagrams.py`.
+- Files outside the slice scope must remain unchanged: `plugins/artifact/viewer/src/data/`, `shared/`, and `plugins/pr/scripts/build_diagrams.py`.
 - A level's other sections still render: the diagrams change nothing outside their own section.
 
 ## Out of scope — do not penalise

@@ -90,29 +90,29 @@
     {
       "id": "E5",
       "slug": "work-surface",
-      "outcome": "the Work surface renders every level and the sections each level pages, including a design whose records are goal.json only",
+      "outcome": "the Work surface renders the program's account: every row it holds, the sections each row pages, and a design whose records are goal.json only",
       "branch": "design/cobuilder-viewer/work-prototype",
       "pr": null,
       "state": "planned",
-      "note": "Carried from react-viewer E4, with one vocabulary change. The level-and-section model replaced the lens model, per ADR-0028: a level is a sequence of sections, one section on screen at a time on a horizontal track, and the box owns the scroll rather than the pane. react-viewer's lens list described navigation rather than content, and it contradicted itself: every place that named the lenses listed six (intent, problem and solution, architecture, risks and verdict, build, pull requests), while three places said seven, including this epic's outcome. No seventh lens was ever named, and nothing renders a lens now. This design's paged levels are Intent, Problem & Solution, Architecture, and Build, and each one states its own sections. The criterion that survives from that outcome is the sparse record: a design whose records are goal.json only must render. Seven designs in this repository carry one, and they are the fixture for it. E4's prototype is the reference and the approval gate for this epic, not the uncommitted 2026-09-07 prototype. E4 shipped as a React application under plugins/artifact/viewer/src/variations/sections-e/, not as the static HTML file round 2's note asked for."
+      "note": "Carried from react-viewer E4, with one vocabulary change. The level-and-section model replaced the lens model, per ADR-0028: a level is a sequence of sections, one section on screen at a time on a horizontal track, and the box owns the scroll rather than the pane. react-viewer's lens list described navigation rather than content, and it contradicted itself: every place that named the lenses listed six (intent, problem and solution, architecture, risks and verdict, build, pull requests), while three places said seven, including this epic's outcome. No seventh lens was ever named, and nothing renders a lens now. This design's five rows are Intent, Problem & Solution, Architecture, Epics, and Rubrics, and each one states its own sections. The engineer approved the rail's two groups on 2026-09-25. They land with the change's account, and not ahead of it. The criterion that survives from that outcome is the sparse record: a design whose records are goal.json only must render. Seven designs in this repository carry one, and they are the fixture for it. E4's prototype is the reference and the approval gate for this epic, not the uncommitted 2026-09-07 prototype. E4 shipped as a React application under plugins/artifact/viewer/src/variations/sections-e/, not as the static HTML file round 2's note asked for."
     },
     {
       "id": "E6",
       "slug": "flightdeck-prototype",
-      "outcome": "a detailed static HTML prototype of FlightDeck as one surface, composing single-pull-request narration and multi-pull-request select-and-recommend behind one mode switch, reviewed and approved before E7 starts",
+      "outcome": "a detailed prototype of one work item read as two accounts. The rail groups its rows under Build and Review, and a press jumps between the accounts on a section of the same name. The engineer reviews it before E7 starts",
       "branch": "design/cobuilder-viewer/work-prototype",
       "pr": null,
       "state": "planned",
-      "note": "New in round 2, at the engineer's direction. review-flight-deck's own flightdeck-prototype.html and flightdeck-hindsight-fork.html already prototyped multi-pull-request mode in detail against real data. Neither showed it composed with single-pull-request mode as one surface with a switch, and that composition is what this epic adds. It reuses both existing prototypes rather than rebuilding either half. Commits to docs/architecture/designs/cobuilder-viewer/prototypes/flightdeck-prototype.html."
+      "note": "New in round 2, at the engineer's direction. review-flight-deck's own flightdeck-prototype.html and flightdeck-hindsight-fork.html prototyped multi-pull-request mode in detail against real data, and this epic reuses both rather than rebuilding either half. The engineer read the prototype again on 2026-09-25, as one work item read through two accounts. That reading fixed the shape this epic exists for. The rail groups its rows under Build and Review, and a press crosses between the accounts on a section of the same name. The account mark is a word and a glyph with no fill. The engineer removed the third group, Deploy, and the mode switch with it. The prototype is a React variation under plugins/artifact/viewer/src/variations/flightdeck/, served at its own dev entry, and not the static HTML file round 2's note named."
     },
     {
       "id": "E7",
       "slug": "flightdeck-single-pr",
-      "outcome": "FlightDeck renders a single pull request at parity with today's viewer, plus the joins rail",
+      "outcome": "a work item's change renders as its own account, at parity with today's viewer, in the change's Intent, Problem & Solution, Architecture, and File Diffs rows. It carries an address of its own",
       "branch": "design/cobuilder-viewer/work-prototype",
       "pr": null,
       "state": "planned",
-      "note": "Carried from react-viewer E5, renamed from 'Flight deck' to FlightDeck's single-pull-request mode. Parity covers the four levels, diagrams, scene art, narration audio, the diff, and the intent and assessment sheet. Ships before E10, because E10 depends on the typed PullRequest shape this epic exercises first."
+      "note": "Carried from react-viewer E5, renamed from 'Flight deck' to FlightDeck's single-pull-request mode, and re-cut on 2026-09-25 into the change's account. A work item and the pull request its own epics carry are two accounts of one surface: E5 renders the program's account, and this epic renders the change's, which the rail reaches under its Review group. Parity covers the four narration levels, diagrams, scene art, narration audio, the diff, and the intent and assessment sheet. The joins rail is gone with the re-cut. The decisions a change landed read in its own Architecture row. The epics that carry it read in the Build group's Epics and Rubrics rows. Ships before E10, because E10 depends on the typed PullRequest shape this epic exercises first."
     },
     {
       "id": "E8",

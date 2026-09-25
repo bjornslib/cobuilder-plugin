@@ -65,7 +65,7 @@ Serve the bundle before any browser check: `python3 -m http.server` rooted at
 
 ## Regression check
 - All tests that passed before this slice must still pass, including every case in `tests/test_sections.py`, `src/shell/Board.test.tsx`, and `src/shell/readiness.test.ts`.
-- Files outside the slice scope must remain unchanged: `plugins/artifact/viewer/src/flightdeck/`, `shared/`, and `plugins/pr/`.
+- Files outside the slice scope must remain unchanged: `plugins/artifact/viewer/src/data/`, `shared/`, and `plugins/pr/`.
 - Every panel still renders its own body: the sheet is an addition, and no panel loses a control to it.
 
 ## Out of scope — do not penalise
