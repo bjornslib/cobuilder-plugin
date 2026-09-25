@@ -93,6 +93,7 @@ import {
   liveRow,
   programHref,
   railGroups,
+  servedAudioOf,
 } from "./accountModel";
 import type { AccountId, LiveRow, RailRow } from "./accountModel";
 import { programSections } from "./accountProgram";
@@ -176,6 +177,16 @@ export default function Accounts({
   const [sheet, setSheet] = useState<SheetSubject | null>(null);
   const [failedArt, setFailedArt] = useState<string | null>(null);
   const [audioFailed, setAudioFailed] = useState<string | null>(null);
+  /*
+   * THE AUDIO THE BUNDLE SERVES, READ ONCE PER CHANGE.
+   *
+   * A level's `voice` script records that the level was voiced and names the address. It
+   * does not record whether a file sits there, and `manifest.js` holds no audio list, so
+   * the rail's count cannot answer that question from any record it reads. `servedAudioOf`
+   * asks the addresses themselves, and the answer is held here so the rail's count and the
+   * panel's own audio control read one fact rather than two.
+   */
+  const [servedAudio, setServedAudio] = useState<ReadonlySet<string>>(() => new Set());
   /*
    * THE GROUP FOLD, HELD ABOVE THE RAIL, AND THE ONE CASE THAT CANNOT CLOSE. The shipped
    * rail is handed its open state and writes none of it itself, so the same choice survives
@@ -320,6 +331,22 @@ export default function Accounts({
   const programLevelStates = useMemo(() => (work === null ? null : programLevelsOf(work)), [work]);
   const gates = useMemo(() => (work === null ? null : gatesOf(work)), [work]);
 
+  /*
+    The change's audio, asked for once, and keyed on the change's own levels so the answer
+    belongs to the change a reader is on. A file the bundle does not hold answers as a miss
+    rather than a wait, so no row holds an unanswered question open. See `servedAudioOf`.
+  */
+  useEffect(() => {
+    if (changeLevels.length === 0) return;
+    let live = true;
+    servedAudioOf(changeLevels).then((served) => {
+      if (live) setServedAudio(served);
+    });
+    return () => {
+      live = false;
+    };
+  }, [changeLevels]);
+
   const groups = useMemo(
     () =>
       railGroups({
@@ -329,8 +356,9 @@ export default function Accounts({
         entry,
         changeLevels,
         diffFiles: change === null ? null : diffCountOf(change.diff),
+        servedAudio,
       }),
-    [work, gates, programLevelStates, entry, changeLevels, change],
+    [work, gates, programLevelStates, entry, changeLevels, change, servedAudio],
   );
 
   const live: LiveRow | null = useMemo(() => liveRow(groups), [groups, hash]);

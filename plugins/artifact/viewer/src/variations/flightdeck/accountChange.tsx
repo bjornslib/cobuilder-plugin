@@ -45,6 +45,12 @@
  * therefore renders only when the level carries a picture, and a level whose whole frame
  * was the drawing has no frame section.
  *
+ * AN ABSENT PICTURE IS A STATE, AND IT IS STATED IN PLACE. The dropped frame section left
+ * the picture's absence unstated on this bundle, because no panel drew it and no sentence
+ * named it. The level's narration panel now carries the statement, in the shell's own
+ * absent shape, so every level of every change answers for its picture whether the bundle
+ * holds one or not. See `NarrationPanel`.
+ *
  * NOTHING HERE IS DERIVED TWICE. `./model` derives the four levels, the diff files, and
  * the counts, and this file reads those answers.
  */
@@ -54,7 +60,16 @@ import type { ReactNode } from "react";
 import { FileText, GitPullRequest, ScrollText, Scale } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Bento, Chip, KeyValue, Missing, Panel, StateBadge, TextList } from "@/shell/atoms";
+import {
+  Bento,
+  Chip,
+  KeyValue,
+  Missing,
+  NotPresentPill,
+  Panel,
+  StateBadge,
+  TextList,
+} from "@/shell/atoms";
 import { DiagramTiles } from "@/shell/DiagramTiles";
 import type { Theme } from "@/shell/DiagramTiles";
 import type { SheetSubject } from "@/shell/Sheet";
@@ -89,6 +104,40 @@ export interface ChangeBodyProps {
   openSheet: (subject: SheetSubject) => void;
 }
 
+/** The lead for a frame whose drawing this section draws elsewhere, so only a picture is left. */
+const PICTURE_ONLY_LEAD = "The picture for this level.";
+
+/**
+ * The lead the change's account hands the frame panel, written for the parts that frame holds.
+ *
+ * THE LEAD THE FRAME CARRIES IS WRITTEN FOR A FRAME THAT HOLDS BOTH PARTS. It reads "The
+ * picture and the drawing for this level. Where both exist, the reader picks which to look
+ * at", and the count beside it answers how many parts the frame holds. On the levels this
+ * account reads, the picture is the part that is missing, so the frame holds the drawing
+ * and its count reads 1: the lead promises a picture the count beside it denies. A reader
+ * who has just been told that this pull request carries no scene art meets a line
+ * promising one, which is the defect stated here and repaired here.
+ *
+ * THE OTHER PROTOTYPE KEEPS THE INHERITED LINE. `FramePanel` is the reviewed surface's own
+ * panel, and the reviewed surface is out of this repair's scope, so its lead stays and this
+ * account passes its own. See `FramePanel`'s `lead` prop in `./SinglePr`.
+ *
+ * A PICTURE THAT DID NOT LOAD IS A PICTURE THAT IS NOT THERE. `FramePanel` counts a part
+ * by what it can draw, so a picture the browser failed on is already an absent part there,
+ * and the lead reads the same condition. The two cannot disagree.
+ */
+function frameLead(level: Level, failedArt: string | null): string {
+  const picture = level.art !== null && failedArt !== level.art;
+  const drawing = level.diagram !== null;
+  if (picture && drawing) {
+    return "The picture and the drawing for this level. Where both exist, the reader picks which to look at.";
+  }
+  if (picture) {
+    return "The picture for this level. This pull request carries no drawing for it.";
+  }
+  return "The drawing for this level. This pull request carries no scene art for it.";
+}
+
 export function changeSections(props: ChangeBodyProps): ReactNode[] {
   const { section, entry, level, theme } = props;
 
@@ -120,6 +169,7 @@ export function changeSections(props: ChangeBodyProps): ReactNode[] {
           onArtMode={props.onArtMode}
           failedArt={props.failedArt}
           onArtFailed={props.onArtFailed}
+          lead={frameLead(level, props.failedArt)}
         />
       </Bento>
     );
@@ -134,6 +184,11 @@ export function changeSections(props: ChangeBodyProps): ReactNode[] {
     A LEVEL WITH NO PICTURE HAS NO FRAME SECTION AT ALL. The section's whole content was
     the drawing on every pull request of this bundle, so leaving it in place would leave a
     dashed box saying that nothing is here beside a section that draws it.
+
+    THE ABSENT PICTURE IS STATED IN PLACE RATHER THAN DROPPED. A frame section is not the
+    only place the picture can be answered for, and it is not the place this account uses:
+    the level's own narration panel carries the statement, beside the statement the level's
+    audio already gets there. See `NarrationPanel`.
   */
   const picture =
     level === null || level.art === null ? null : (
@@ -145,6 +200,7 @@ export function changeSections(props: ChangeBodyProps): ReactNode[] {
           onArtMode={props.onArtMode}
           failedArt={props.failedArt}
           onArtFailed={props.onArtFailed}
+          lead={PICTURE_ONLY_LEAD}
         />
       </Bento>
     );
@@ -325,6 +381,15 @@ function diffFilesOf(diff: Record<string, string> | null): DiffFile[] {
  * the narration it reads, so the Why section passes it here and the drawing follows the
  * text and the audio control. Every other section passes nothing, and the panel is the
  * narration, its audio, and no picture.
+ *
+ * EVERY PART OF THE LEVEL THIS PANEL CANNOT DRAW IS STATED IN PLACE. The audio's state is
+ * the first, and it is stated as the file's own state: a level with no voice script says
+ * so, a level whose file did not load says so, and a level whose file is served gets the
+ * control. The picture is the second, and it is stated on every section rather than on the
+ * one whose frame happens to exist, because the panel that carries a picture alone renders
+ * only when there is one. Both statements wear the shell's own absent shape, so a reader of
+ * this level meets the parts the bundle holds and the absences it does not, and never meets
+ * a silence.
  */
 function NarrationPanel({
   title,
@@ -395,6 +460,23 @@ function NarrationPanel({
           <span className="font-mono text-[12px] text-ink-faint">{level.audio}</span>
         </div>
       )}
+
+      {level.art === null ? (
+        <div className="mt-3 flex min-w-0 flex-col gap-2">
+          {/*
+            THE PICTURE IS STATED WHERE THE LEVEL'S OTHER RECORDS ARE STATED, AND EVERY
+            SECTION STATES IT. A panel that carries the picture alone renders only when a
+            picture exists, so on a level with none no panel answers for it: the Why section
+            has no frame section at all, and the other two frames carry the drawing alone.
+            This panel reads the level's whole written record, so the statement belongs here,
+            in the shape the shell states every absent record with: the pill and the sentence.
+            The wording answers this level's picture alone, because the drawing is drawn below
+            it and the audio is answered above it.
+          */}
+          <NotPresentPill className="self-start" />
+          <Missing>This pull request carries no scene art for this level.</Missing>
+        </div>
+      ) : null}
 
       {drawing === null ? null : (
         <div className="mt-4 min-w-0">

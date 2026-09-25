@@ -208,6 +208,11 @@ export interface AccountRailSource {
   changeLevels: Level[];
   /** How many files the change's diff holds, or null when the bundle holds no diff. */
   diffFiles: number | null;
+  /**
+   * The audio addresses the bundle serves, read once by `servedAudioOf`. A level whose
+   * audio is not in this set reads as an absent part, not as a record.
+   */
+  servedAudio: ReadonlySet<string>;
 }
 
 /** The address of one shared section on the change's account. */
@@ -280,16 +285,35 @@ function programCount(work: WorkItem, gates: Gates | null, section: ProgramKey):
     : "none";
 }
 
-/** How many records one change section reads. The seven parts ADR-0029 lists, split up. */
-function changeCount(level: Level | null, entry: StoryEntry, diffCount: number | null, section: ChangeKey): string {
+/**
+ * How many records one change section reads. The seven parts ADR-0029 lists, split up.
+ *
+ * THE COUNT IS THE PARTS A READER CAN REACH, AND NEVER A PART THE BUNDLE ONLY PROMISES.
+ * The program's own count answers the section's list length, and a part the record does
+ * not hold reads zero: a reader who cannot reach a record reads its absence stated in
+ * place instead. The change's count answers the same question the same way, and it takes
+ * `servedAudio` for the one part no record can settle. A level's `voice` script says the
+ * level was voiced and names the audio address, and `manifest.js` holds no audio list, so
+ * the script alone cannot say whether a file sits at that address. See `servedAudioOf`.
+ *
+ * EVERY TERM NAMES ITS LEVEL. A section whose level the bundle does not hold counts zero
+ * rather than reading four absent fields as four records.
+ */
+function changeCount(
+  level: Level | null,
+  entry: StoryEntry,
+  diffCount: number | null,
+  section: ChangeKey,
+  servedAudio: ReadonlySet<string>,
+): string {
   if (section === "file-diffs") {
     return diffCount === null ? "no diff" : `${diffCount} files`;
   }
   const n = [
-    level?.narration ? true : false,
-    level?.art !== null,
-    level?.audio !== null,
-    level?.diagram !== null,
+    level !== null && Boolean(level.narration),
+    level !== null && level.art !== null,
+    level !== null && level.audio !== null && servedAudio.has(level.audio),
+    level !== null && level.diagram !== null,
     section === "intent" ? Boolean(entry.intent) : false,
     section === "problem-and-solution" ? Boolean(entry.assessment) : false,
     section === "architecture" ? (entry.adrs ?? []).length > 0 : false,
@@ -311,7 +335,7 @@ function changeCount(level: Level | null, entry: StoryEntry, diffCount: number |
  * in this prototype reaches the delivery stage any more.
  */
 export function railGroups(source: AccountRailSource): RailGroup[] {
-  const { work, gates, entry, changeLevels, diffFiles: diffCount } = source;
+  const { work, gates, entry, changeLevels, diffFiles: diffCount, servedAudio } = source;
 
   if (work === null) return [];
 
@@ -365,7 +389,7 @@ export function railGroups(source: AccountRailSource): RailGroup[] {
             account: "change" as AccountId,
             shared,
             body: { kind: "change", section } as BodyRef,
-            count: changeCount(levelOf(section), entry, diffCount, section),
+            count: changeCount(levelOf(section), entry, diffCount, section, servedAudio),
           };
         });
 
@@ -462,6 +486,50 @@ export function changeLevelsOf(
 /** The program's own level state, read from the shell's rule and not restated here. */
 export function programLevelState(work: WorkItem): Record<string, LevelState> {
   return programLevelsOf(work);
+}
+
+/* ------------------------------------------------------------- change audio */
+
+/**
+ * The audio addresses the bundle serves, asked for once per voiced level.
+ *
+ * THE VOICE SCRIPT IS A PROMISE AND NOT THE FILE. A level carries a `voice` string when
+ * the bundle records that it was voiced, and `levelsOf` in `./model` derives the address
+ * from that string. That derivation is right about the address and silent about the file.
+ * `manifest.js` holds the bundle's picture list and its diagram list and no audio list, so
+ * no record this surface reads can separate a level whose audio was recorded from a level
+ * whose audio file the bundle no longer holds. This bundle is that case: pull request 11
+ * carries three voice scripts and three `pr11_*.wav` addresses, and `data/audio/` holds no
+ * `pr11_*.wav` file. A count that trusted the script would put a record in the rail row
+ * that the panel below it can only state as a file that did not load.
+ *
+ * SO THE COUNT READS WHAT THE BROWSER FOUND, AND NOT WHAT THE SCRIPT PROMISES. This asks
+ * each voiced level's address for its metadata, once, and answers with the addresses that
+ * answered. A missing file resolves as a miss, so a surface never waits on a request that
+ * a bundle cannot satisfy. The price of asking is the one `NarrationPanel` already argues
+ * for its own control: one metadata request per voiced level.
+ *
+ * THE CHIP COUNTS NOTHING BEFORE THIS ANSWERS. A count reads an audio address as a record
+ * only once the browser has confirmed a file at it, so the chip never counts a record the
+ * bundle has not answered for, and the confirmation arrives with the rows rather than after
+ * them. `Accounts.tsx` asks once, keyed on the change's own level list, so every row of the
+ * rail and every panel under it read one answer.
+ */
+export function servedAudioOf(levels: Level[]): Promise<ReadonlySet<string>> {
+  const asked = levels.map((level) => level.audio).filter((url): url is string => url !== null);
+  return Promise.all(
+    asked.map(
+      (url) =>
+        new Promise<string | null>((resolve) => {
+          const probe = new Audio();
+          probe.preload = "metadata";
+          /* Metadata is the whole question: a served file answers, a missing one errors. */
+          probe.onloadedmetadata = () => resolve(url);
+          probe.onerror = () => resolve(null);
+          probe.src = url;
+        }),
+    ),
+  ).then((answered) => new Set(answered.filter((url): url is string => url !== null)));
 }
 
 /** The shell's own gate rule for one work item. */

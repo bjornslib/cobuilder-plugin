@@ -238,6 +238,13 @@ function NarrationCaption({
  * One level's drawing and picture, with the toggle the shipped viewer shows when both
  * exist. The mode is the reader's and it is held above, so a switch between the two
  * modes of this surface brings it back.
+ *
+ * THE LEAD NAMES WHAT THE FRAME HOLDS, AND A CALLER MAY PASS ITS OWN. The line below is
+ * written for a frame that holds both parts, because that is the frame this surface draws
+ * and the one its count of 2 answers. A caller that hands the panel a frame holding one
+ * part passes the `lead` that names that part, so the lead and the count beside it cannot
+ * disagree. `accountChange.tsx` makes that correction for the change's account, and this
+ * surface keeps the inherited line.
  */
 export function FramePanel({
   level,
@@ -246,6 +253,7 @@ export function FramePanel({
   onArtMode,
   failedArt,
   onArtFailed,
+  lead,
 }: {
   level: Level;
   theme: Theme;
@@ -253,6 +261,8 @@ export function FramePanel({
   onArtMode: (mode: "image" | "diagram") => void;
   failedArt: string | null;
   onArtFailed: (url: string) => void;
+  /** The line above the body, when the caller's frame holds fewer than both parts. */
+  lead?: string;
 }) {
   const hasImage = level.art !== null && failedArt !== level.art;
   const hasDiagram = level.diagram !== null;
@@ -281,7 +291,10 @@ export function FramePanel({
       span="band"
       title={FRAME_TITLE}
       icon={ImageIcon}
-      lead="The picture and the drawing for this level. Where both exist, the reader picks which to look at."
+      lead={
+        lead ??
+        "The picture and the drawing for this level. Where both exist, the reader picks which to look at."
+      }
       count={hasImage && hasDiagram ? 2 : 1}
       action={
         hasImage && hasDiagram ? (
