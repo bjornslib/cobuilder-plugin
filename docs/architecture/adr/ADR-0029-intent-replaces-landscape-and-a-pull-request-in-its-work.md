@@ -3,7 +3,7 @@
 title: "ADR-0029 — Intent replaces landscape, and a work's pull request is content in its own sections, with its own address"
 status: active
 type: architecture
-last_verified: 2026-09-24
+last_verified: 2026-09-25
 owner: bjornslib
 # --- 42010 decision-record index (schema: references/decision-records.md §2) ---
 id: ADR-0029
@@ -51,10 +51,11 @@ related_decisions:
 related_concerns: []
 history:
   - { state: decided, date: 2026-09-24, by: bjornslib, note: "Decided while the engineer read the Work surface's prototype. The engineer directed three things: rename the narration level landscape to intent, add a pull request's own content into its work's Intent, Problem & Solution, and Architecture levels rather than showing a separate page, and keep a pull request's own URL. The engineer left the board placement, the fate of file_changes, and the standalone pull request's section list open. An agent wrote this record, so the state is decided and never approved." }
+  - { state: decided, date: 2026-09-25, by: bjornslib, note: "Amended in place, because the model moved after the record landed and the engineer then read a prototype of the new shape. A work's pull request keeps its own space, so a reader jumps between the two accounts on the same section. The rail groups its rows as Build and Review, and the account mark carries a word and a glyph. The rename of landscape to intent, the change's own address, and the three open matters stand. The state stays decided, because an agent wrote this record and an agent does not approve its own record." }
 maps_to:
   context: cobuilder-packaging
   modules: [plugins/artifact/viewer/src, shared, plugins/pr]
-  rule: "The narration level's only key is `intent`, and the audio filename follows that key. A pull request that belongs to a work renders as content inside that work's own Intent, Problem & Solution, and Architecture levels, never as a second surface. Its own address, `#/<work>/pull-requests/<pr>`, renders that same content."
+  rule: "A work's pull request keeps its own address, `#/<work>/pull-requests/<pr>`, and renders as a space of its own, never as content inside the work's own levels. A reader reaches the program's account and the change's account by a jump on the same section. The narration level's only key becomes `intent` once the audio move lands."
 delivers:
   capability: "A reader of a work reads the change's own account inside the work's Intent, Problem & Solution, and Architecture levels. One pull request still reaches an address of its own."
   benefit: "One word names one level, so a reader and a record agree. The record states the audio move before somebody performs the rename and meets that cost by surprise."
@@ -245,3 +246,55 @@ viewer. The narration level's only key is `intent`, and the audio filename follo
 that key. A pull request that belongs to a work renders as content inside that
 work's own levels, and its own address renders that same content rather than a
 second surface.
+
+## Amendment, 2026-09-25
+
+**This section states what moved, and it governs where the two disagree.** The
+engineer chose a different shape after this record landed. A prototype now shows
+that shape. The record above keeps its original text, so a reader sees both the
+decision of 2026-09-24 and this amendment. The front matter's `decision` field
+keeps that original wording too, and `maps_to.rule` carries the invariant that
+survives, because a tool reads that field.
+
+1. **A work's pull request keeps its own space.** The work item and its pull
+   request are two spaces. A reader jumps between them on the same section:
+   Build's Intent to Review's Intent, and back. That supersedes the part of the
+   original decision that put the pull request's content inside the work's own
+   Intent, Problem & Solution, and Architecture sections. The pull request's
+   address, its intent block, its assessment, its decisions, and the facts of the
+   change all keep a place of their own.
+
+2. **The rail groups its rows in two parts.** Build holds the program's account,
+   and it reads Intent, Problem & Solution, Architecture, Epics, and Rubrics.
+   Review holds the change's account, and it reads Intent, Problem & Solution,
+   Architecture, and File Diffs. Three section names appear in both groups, and
+   that repetition makes the same-section jump possible. An earlier three-part
+   grouping carried a third group, Deploy, and the engineer removed it on
+   2026-09-25.
+
+3. **The rail's fold and its arrow walk obey one convention.** The walk visits
+   every row of both groups, open or closed. The group that holds the current row
+   stays open, so the rail refuses a press that would close it. The control
+   carries that reason in its own accessible name. The convention belongs to the
+   rail, not to the prototype that showed it, so the shipped rail takes it too.
+
+4. **The account mark is a word and a glyph, with no fill.** `Program` stands by a
+   person, and `Change` stands by a pull request. An earlier proposal gave the mark
+   a background fill as well, and the engineer removed it on 2026-09-25. A filled
+   heading reads as something selected, and neither mark selects anything.
+
+5. **What stands unchanged.** The rename of the narration level `landscape` to
+   `intent` stands, with its six places and with the audio move. That move runs
+   with the parity work, and it never re-records a paid file. The change's own
+   address stands at `#/<work>/pull-requests/<pr>`, and a named section appends one
+   segment in the shell's existing slot. The three matters that the original record
+   leaves undecided stay undecided. Where a pull request that belongs to no program
+   sits on the board stays open, and so does the fate of `file_changes`. What a
+   standalone pull request shows, section by section, stays open too.
+
+**The prototype is the evidence.** It sits at
+`plugins/artifact/viewer/src/variations/flightdeck/`. The engineer read it at
+`http://localhost:5273/variations/flightdeck/dev.html`. The prototype shows the
+word Intent on the screen while it reads the bundle's `landscape` key. The rename
+waits for the audio move, so the prototype is evidence for the shape and not for
+that label.

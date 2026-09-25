@@ -49,14 +49,14 @@ and its merge-order simulation, the ledger and its audit, the path runner, publi
 parity, the workflow-polish carryover, and the feedback path. They are named in the
 table below with no slices under them, so this ladder still says what was cut.
 
-Eight epics remain in scope and carry the sixteen slices below: E1, E2, E3, E4, E5,
+Eight epics remain in scope and carry the seventeen slices below: E1, E2, E3, E4, E5,
 E6, E7, and E19. The ladder was re-derived rather than copied. A slice survives only
 where its end still belongs to the narrowed program, and one slice moved from E5 to
 E19 because the shell now lands somewhere.
 
 ## The ladder
 
-Eight epics carry sixteen slices. Four carry more than one, and those four owe a
+Eight epics carry seventeen slices. Four carry more than one, and those four owe a
 Gate 4b design before their slices build: E2, E5, E7, and E19. Four carry exactly
 one: E1, E3, E4, and E6, and three of those four are the prototype epics, whose
 single end is an approval.
@@ -64,7 +64,7 @@ single end is an approval.
 Slice numbers run in build order. **This is not the table order.** The table groups
 slices under the epic they advance, and E19 builds before E5, so the numbers step
 out of epic order once. Build order is slice 1, then 2 and 3, then 4, then 5, then 6
-and 7, then 8 through 13, then 14, then 15 and 16.
+and 7, then 8 through 13, then 14, then 15, 16, and 17.
 
 Three dependencies set that order. E1 before E2, because the exporter's markers
 exist before the build changes how the file is produced. E3 before E19, because the
@@ -81,7 +81,7 @@ opens a work item, and E5's sections render inside one.
 | | **`cobuilder-viewer/E3` — The typed data layer.** One module reads the six window globals and `index.json`, resolves every join, and declares `PullRequest` and its branded extension `OpenPullRequest`. | | | | |
 | 4 | `cobuilder-viewer/E3` | One typed model reads the bundle | A level renders from `index.json` with no join derived in a component, and a field renamed on `PullRequest` and not on `OpenPullRequest` fails the type check | 1.00 | completed |
 | | **`cobuilder-viewer/E4` — The Work prototype.** A detailed prototype of the Work board, against this repository's own design records, reviewed before E5 starts. | | | | |
-| 5 | `cobuilder-viewer/E4` | The Work prototype, reviewed | The prototype renders this repository's own designs across the Work board, and the engineer approves it or names what to change | — | pending |
+| 5 | `cobuilder-viewer/E4` | The Work prototype, reviewed | The Work surface itself, the ported shell, reads this repository's own records, and the engineer approved it rather than naming a change | 1.00 | completed |
 | | **`cobuilder-viewer/E5` — The Work surface.** Every level, and the sections each level pages, including a design whose records are `goal.json` only. ADR-0028 owns the shape. | | | | |
 | 8 | `cobuilder-viewer/E5` | The section model | One box is on screen, the strip, the pager bar, and the two arrow keys move one index, and the pane reports no scroll at all | 1.00 | completed |
 | 9 | `cobuilder-viewer/E5` | The level's progress | The strip reads 0 at the first section's top, 25 percent at its bottom, 50 on the second, 100 on the last, and never decreases on a forward walk | 1.00 | completed |
@@ -91,9 +91,10 @@ opens a work item, and E5's sections render inside one.
 | 13 | `cobuilder-viewer/E5` | A goal.json-only design renders | One of the seven sparse designs shows every level it can fill, and the rail gates the levels it cannot | — | pending |
 | | **`cobuilder-viewer/E6` — The FlightDeck prototype.** One surface, two modes behind one switch, reviewed before E7 starts. | | | | |
 | 14 | `cobuilder-viewer/E6` | The FlightDeck prototype, reviewed | One surface shows single-pull-request narration at parity and the multi-pull-request path as its second mode behind one switch, and the engineer approves it or names what to change | — | pending |
-| | **`cobuilder-viewer/E7` — FlightDeck, one pull request.** A single pull request at parity with today's viewer, plus the joins rail. | | | | |
-| 15 | `cobuilder-viewer/E7` | A single pull request at parity | A reader opens one pull request and reads its four narration levels, its diagrams, its art, its audio, and its intent and assessment sheet, as the shipped viewer does today | — | pending |
-| 16 | `cobuilder-viewer/E7` | The joins rail | The same page lists the decisions, the design, and the epics that reach that pull request | — | pending |
+| | **`cobuilder-viewer/E7` — FlightDeck, one pull request.** The change's account of one work item: the pull request its own epics carry, read at parity with today's viewer, in its own sections beside the program's and at an address of its own. | | | | |
+| 15 | `cobuilder-viewer/E7` | The change's account renders | A reader of a work item reads the change's Intent, Problem & Solution, Architecture, and File Diffs sections, each from that pull request's own records, at parity with today's viewer | — | pending |
+| 16 | `cobuilder-viewer/E7` | The rail reads two accounts, each at its own address | The rail groups its rows under Build and Review, `#/<work>/pull-requests/<pr>` opens the change's Intent section, one appended segment selects a named section, the row that opens the reader's address reads current, and the rail's fold and its arrow walk obey one convention | — | pending |
+| 17 | `cobuilder-viewer/E7` | The account mark, and the jump across | Every section of both accounts carries its account's mark, a word and a glyph with no fill, and a press moves from one account's section to the other account's same-named section | — | pending |
 | | **`cobuilder-viewer/E8` — The Reference prototype.** Deferred on 2026-09-22, and carries no slice. | | | | |
 | | **`cobuilder-viewer/E9` — The Reference surface.** Deferred on 2026-09-22, and carries no slice. | | | | |
 | | **`cobuilder-viewer/E10` — Describe on arrival.** Deferred on 2026-09-22, and carries no slice. | | | | |
@@ -125,8 +126,11 @@ is the surface that opens a work item. E5's sections render inside the item the 
 opened, so a board that lands later would leave E5's slices with no screen to land
 on.
 
-**E5's sections come before E7's parity, and E6's prototype before E7.** FlightDeck
-is a surface beside Work, and it reuses the shell the Work surface proved.
+**E5's sections come before E7's change's account.**
+
+The change's account renders through the same section model the program's account
+uses. That model puts one section on screen at a time. A slice that lands before the
+model exists has no frame to render in.
 
 **Two answers the E2 spike used to seek now belong to deferred work.** The spike
 still settles whether the build can be byte-equal, which is what slice 3 guards. The
@@ -137,8 +141,8 @@ to E16 and to E18, and both are deferred.
 Four epics here carry one slice each, and none of them hides a second end.
 
 **The run order changed on 2026-09-23, and the slice numbers did not.** After slice
-3, the next slices to run are 14, 15, and 16, ahead of 5 and 10 through 13. The
-rest of the ladder keeps its order after those three. The numbers stay as the ladder
+3, the next slices to run are 14, 15, 16, and 17, ahead of 5 and 10 through 13. The
+rest of the ladder keeps its order after those four. The numbers stay as the ladder
 writes them, so do not renumber a slice.
 
 **Slice 3 makes the committed file the React application, and that application
@@ -148,13 +152,22 @@ Measured on 2026-09-23, the legacy hand-written file is 249,710 bytes and the bu
 writes 1,184,484 bytes, of which about 6,800 bytes are the marker seam. The
 application's Pull requests panel lists pull requests. Nothing
 under `plugins/artifact/viewer/src/` reads a pull request's narration levels, its
-art, its audio, or its diffs. Slices 15 and 16 add those. Between slice 3 and slice
+art, its audio, or its diffs. Slice 15 adds those. Between slice 3 and slice
 15, a bundle served from this branch would show a pull request with no story to
 tell. The engineer chose to shorten that window rather than leave parity last.
 
 **The run stops at slice 14 and waits for the engineer.** Slice 14 ends in an
-approval, so the rubric puts the next step in the engineer's hands. Slices 15 and 16
-wait on that answer, and no run reaches them without a human step between.
+approval, so the rubric puts the next step in the engineer's hands. Slices 15, 16,
+and 17 wait on that answer, and no run reaches them without a human step between.
+
+**E7's ladder was re-cut on 2026-09-25, and the slices kept their numbers.**
+
+The engineer approved a new model for one work item and the pull request its own
+epics carry. The two are two accounts of one surface, and a reader crosses between
+them on a section of the same name. Slices 15 and 16 now read against that model, and
+they keep their numbers. Slice 17 is new. It carries the account mark and the jump
+across. No slice moved. `00-status.md` records the reason and the weight change the
+re-cut made.
 
 ## Out of scope for this ladder
 

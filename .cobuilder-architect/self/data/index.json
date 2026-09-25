@@ -1,12 +1,12 @@
 {
   "schema_version": "1.3",
   "sources": {
-    "git_head": "f1d874a314d61bc211b288916370e3af9c993d95",
+    "git_head": "aad380853417e4acd951a0151519e76068a948bd",
     "trees": {
-      "docs/architecture/adr": "sha256:8ed22d081126233119cf08f589eee0497ac5169179a991da14ccd1eb7804ee2f",
+      "docs/architecture/adr": "sha256:dda9360a3df11738f570f42a13249eb37bef54f401bdea5dcb538546bd4e2fb8",
       "docs/architecture/designs": "sha256:3261183fa6d1d8720667ff1ca6a17c7ac50b4d6e3c34ada714b27ed7f58e8c7a",
       "docs/architecture/contexts": "sha256:b85daa6bfabf8944b88764cdad745c29c02f7882a31c3c5d45995633546caad0",
-      "docs/plans": "sha256:1d1d0f54fdfe0416b9fca32ef247a129f71a4bec48bf009c75f81729621f6b52"
+      "docs/plans": "sha256:72cf1ce6e04995c3331713cedbbf987cdff3b53981e1bae715a1963ed80a0781"
     }
   },
   "entities": {
@@ -1607,10 +1607,10 @@
         "feature": "cobuilder-viewer",
         "n": 5,
         "title": "The Work prototype, reviewed",
-        "ends_with": "The prototype renders this repository's own designs across the Work board, and the engineer approves it or names what to change",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "ends_with": "The Work surface itself, the ported shell, reads this repository's own records, and the engineer approved it rather than naming a change",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "cobuilder-viewer/8",
@@ -1686,8 +1686,8 @@
         "id": "cobuilder-viewer/15",
         "feature": "cobuilder-viewer",
         "n": 15,
-        "title": "A single pull request at parity",
-        "ends_with": "A reader opens one pull request and reads its four narration levels, its diagrams, its art, its audio, and its intent and assessment sheet, as the shipped viewer does today",
+        "title": "The change's account renders",
+        "ends_with": "A reader of a work item reads the change's Intent, Problem & Solution, Architecture, and File Diffs sections, each from that pull request's own records, at parity with today's viewer",
         "score": "—",
         "attempts": 0,
         "state": "planned"
@@ -1696,8 +1696,18 @@
         "id": "cobuilder-viewer/16",
         "feature": "cobuilder-viewer",
         "n": 16,
-        "title": "The joins rail",
-        "ends_with": "The same page lists the decisions, the design, and the epics that reach that pull request",
+        "title": "The rail reads two accounts",
+        "ends_with": "The rail groups its rows under Build and Review, `#/<work>/pull-requests/<pr>` opens the change's Intent section, one appended segment selects a named section, and the row that opens the reader's address reads current",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "cobuilder-viewer/17",
+        "feature": "cobuilder-viewer",
+        "n": 17,
+        "title": "The account mark, and the jump across",
+        "ends_with": "Every section of both accounts carries its account's mark, a word and a glyph with no fill, and a press moves from one account's section to the other account's same-named section",
         "score": "—",
         "attempts": 0,
         "state": "planned"
@@ -2556,6 +2566,7 @@
       "cobuilder-viewer/14": "cobuilder-viewer/E6",
       "cobuilder-viewer/15": "cobuilder-viewer/E7",
       "cobuilder-viewer/16": "cobuilder-viewer/E7",
+      "cobuilder-viewer/17": "cobuilder-viewer/E7",
       "cobuilder-viewer/6": "cobuilder-viewer/E19",
       "cobuilder-viewer/7": "cobuilder-viewer/E19",
       "gate-doc-surfacing/1": "gate-doc-surfacing/E1",

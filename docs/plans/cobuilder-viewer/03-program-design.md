@@ -14,7 +14,7 @@ Eleven epics deferred on that date, E8 to E18, and their material stays in this
 document rather than leaving it. That material is the Reference surface, the describe
 path, the whole multi-pull-request mode and its simulator, the path runner, the
 ledger's three state subtypes, publish parity, and the feedback path. None of it is
-part of the build. The live ladder is `04-slices.md`: sixteen slices across E1, E2,
+part of the build. The live ladder is `04-slices.md`: seventeen slices across E1, E2,
 E3, E4, E5, E6, E7, and E19. Read every section below that serves a deferred epic as
 design on the shelf, ready for the epic that returns.
 

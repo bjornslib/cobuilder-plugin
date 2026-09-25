@@ -20,7 +20,7 @@ Hindsight: unavailable (the session that wrote this status registered no Hindsig
 
 ## Slices
 
-Eight epics carry sixteen slices, written at Gate 4a in `04-slices.md`. Four of
+Eight epics carry seventeen slices, written at Gate 4a in `04-slices.md`. Four of
 those epics carry more than one slice, and each owes a Gate 4b design before its
 slices build: E2, E5, E7, and E19. The cut defers eleven epics, and they carry none: E8,
 E9, E10, E11, E12, E13, E14, E15, E16, E17, and E18.
@@ -29,7 +29,7 @@ E9, E10, E11, E12, E13, E14, E15, E16, E17, and E18.
 - [x] Slice 2 — Two builds produce the same bytes                   score: 1.00
 - [x] Slice 3 — The build owns the committed file                   score: 1.00
 - [x] Slice 4 — One typed model reads the bundle                    score: 1.00
-- [ ] Slice 5 — The Work prototype, reviewed                        score: —
+- [x] Slice 5 — The Work prototype, reviewed                        score: 1.00
 - [x] Slice 6 — The shell lands on the bundle's designs             score: 1.00
 - [x] Slice 7 — A row opens the item's Work surface                 score: 1.00
 - [x] Slice 8 — The section model                                   score: 1.00
@@ -39,8 +39,9 @@ E9, E10, E11, E12, E13, E14, E15, E16, E17, and E18.
 - [ ] Slice 12 — A record opens in the Sheet                         score: —
 - [ ] Slice 13 — A goal.json-only design renders                     score: —
 - [ ] Slice 14 — The FlightDeck prototype, reviewed                  score: —
-- [ ] Slice 15 — A single pull request at parity                     score: —
-- [ ] Slice 16 — The joins rail                                      score: —
+- [ ] Slice 15 — The change's account renders                        score: —
+- [ ] Slice 16 — The rail reads two accounts, each at its own address  score: —
+- [ ] Slice 17 — The account mark, and the jump across               score: —
 
 **Slice 6 ran on 2026-09-22 and scored 1.0**, weighted 0.08. It built the Work board at
 `src/shell/Board.tsx` and `src/shell/readiness.ts`, and the shell that reaches it at
@@ -76,9 +77,19 @@ action: unset that variable, then run `/login` and choose the subscription accou
 scored 0.50 of its four criteria, and its ladder row stays `pending` until the publishes run.
 
 Slice 1 belongs to `cobuilder-viewer/E1`, its only slice. Slices 6 and 7 belong to
-`cobuilder-viewer/E19` and stand at 1.0. Eight slices of the sixteen have not run:
-5, 10, 11, 12, 13, 14, 15, and 16. Slice 1 ran, and it did not reach an
+`cobuilder-viewer/E19` and stand at 1.0. Eight slices of the seventeen have not run:
+10, 11, 12, 13, 14, 15, 16, and 17. Slice 1 ran, and it did not reach an
 accepted score.
+
+**The engineer approved slice 5 on 2026-09-25, and its artifact is the Work surface itself.**
+
+The engineer approved the Work surface, the ported shell at
+`plugins/artifact/viewer/src/shell/`. The engineer said the Work pages were already
+approved and implemented. That approval is the slice's score, 1.00.
+
+No separate prototype exists for this slice, so a later session must not look for
+one. The prototype under `plugins/artifact/viewer/src/variations/sections-e/` is
+what E4 left behind. It is not the artifact of this slice.
 
 **Slice 2 ran on 2026-09-23 and scored 1.00**, weighted 0.09. It belongs to
 `cobuilder-viewer/E2`. All four of its criteria scored 1.0, so the mean is 1.0. C1 (two
@@ -211,6 +222,49 @@ No other slice scored below its threshold, so nothing else escalated.
 
 ## Notes for a fresh session
 
+**E7's ladder changed on 2026-09-25, and the weights moved with it.**
+
+The engineer approved a new model for one work item and the pull request its own
+epics carry. The two are two accounts of one surface. Build reads the program's
+account. Review reads the change's account. The same three section names appear in
+both, so a reader crosses between the two on a section of the same name.
+
+Slices 15 and 16 now read against that model, and they keep their numbers. Slice 17
+is new. It owns the account mark, a word and a glyph with no fill, and the jump
+across. No slice changed its number. The numbers are build order, and both the
+rubrics and this file reference them.
+
+ADR-0029 changed again on 2026-09-25, during this re-cut. The rubrics carry what it
+fixes. The rename of `landscape` to `intent` runs with slice 15's parity work. The
+rail's fold and its arrow walk obey one convention, and slice 16 carries that
+convention because it owns the rail. The change's File Diffs section renders the
+diff, and the fate of the narration level `file_changes` stays open.
+
+The sum is still 1.00. Slices 1 to 8 now weigh 0.06, 0.08, 0.09, 0.09, 0.04, 0.06,
+0.04, and 0.09. Slices 9 to 17 now weigh 0.04, 0.11, 0.04, 0.03, 0.03, 0.02, 0.10,
+0.04, and 0.04. Every score already recorded stands. A weight that moved carries
+that score's contribution with it.
+
+Slice 1 scored 0.50 and contributes 0.030. Slices 2, 3, 4, 6, 7, 8, and 9 each
+scored 1.00. They contribute 0.080, 0.090, 0.090, 0.060, 0.040, 0.090, and 0.040.
+Those eight slices together contribute 0.520, against 0.610 before the re-cut. An
+accepted slice therefore keeps its score and loses part of its weight. The change's
+account now carries more of the program than the two slices it replaced.
+
+**The engineer accepted the publish seam as a scoped gap on 2026-09-25.**
+
+Five tests stay red. `export_artifact.py` looks for a sibling data `<script src>`
+block and a Mermaid CDN tag, and the React build emits neither. The five are
+`tests/test_viewer_modes.py::test_export_artifact_parses_updated_viewer`, plus four
+marker cases in `tests/test_export_artifact_markers.py`.
+
+The engineer said the publishing seam is not something they care about. They
+accepted the gap rather than a repair. No slice in this ladder owns it, and nothing
+schedules it. E16 owns publish parity, and E16 stays deferred.
+
+A later session must not read those five red cases as a slice's unfinished work. Do
+not schedule a repair for them.
+
 **All nineteen epics share one branch.** Every epic in `goal.json` names
 `design/cobuilder-viewer/work-prototype`, and no epic names a pull request. So the
 epic state join reads `no-pull-request` for all of them, deferred ones included, and
@@ -226,7 +280,9 @@ token set and its own Vite entry. `variations/app-shell/` is the same shell
 without the section model, kept as the comparison. Both are scaffolding for the
 design decision, in the same sense `Variations.tsx` is. Do not read either one as
 the shipped viewer: the shipped file is `plugins/artifact/viewer/index.html`,
-which ADR-0023's build owns.
+which ADR-0023's build owns. The engineer settled what E4's artifact is on
+2026-09-25: the Work surface itself, the ported shell. The slice 5 record above
+states that, and these two variations are the scaffolding E4 left behind.
 
 **No `ui-spec.jsonc` exists anywhere in this repository, and none ever has.**
 This plan carries the first one written. So `verify_gate.py` checks only that the
@@ -313,12 +369,12 @@ or it drops them. It is not decided here.
 **The Builds view carries the wrong rubrics, and it can read only fourteen.** The page's
 generator, `plugins/artifact/scripts/build_builds_view.py`, defaults `--rubrics` to
 `.cobuilder/rubrics/cobuilder-family`. So a page built for this plan carries the
-`cobuilder-family` rubrics, not this plan's own, and all sixteen of this plan's rubrics are
+`cobuilder-family` rubrics, not this plan's own, and all seventeen of this plan's rubrics are
 absent from the viewer. The generator also holds `RUBRIC_COUNT` as the module constant `14`
 at line 33, and `read_rubrics` loops `range(1, RUBRIC_COUNT + 1)`. So even a run with
-`--rubrics .cobuilder/rubrics/cobuilder-viewer` would drop slices 15 and 16 in silence, and
-would print no warning. A later session should derive the count from the files present, and
-derive the default rubrics directory from the plan's slug. Neither is changed here.
+`--rubrics .cobuilder/rubrics/cobuilder-viewer` would drop slices 15, 16, and 17 in silence,
+and would print no warning. A later session should derive the count from the files present,
+and derive the default rubrics directory from the plan's slug. Neither is changed here.
 
 **Publishing is blocked in any session that holds `ANTHROPIC_AUTH_TOKEN`.** The Artifact
 platform refuses every call, because that variable takes precedence over a claude.ai
@@ -327,13 +383,13 @@ slice 1's C1 and C4 today, and it will block E16's publish parity later. E16 is
 deferred, and it carries no slice today.
 
 **The run order changed on 2026-09-23, and the slice numbers did not.** After slice 3,
-the next slices to run are 14, 15, and 16, ahead of 5 and 10 through 13. The rest of
-the ladder keeps its order after those three. The numbers stay as the ladder writes
-them, so do not renumber a slice. The engineer moved those three forward because slice
+the next slices to run are 14, 15, 16, and 17, ahead of 5 and 10 through 13. The rest of
+the ladder keeps its order after those four. The numbers stay as the ladder writes
+them, so do not renumber a slice. The engineer moved those slices forward because slice
 3 makes the committed `plugins/artifact/viewer/index.html` the React application, and
 slice 15 is where that application can tell a pull request's story. Slice 14 ends in an
-approval, so the run stops there and waits for the engineer before slices 15 and 16.
-`04-slices.md` states the reason in full under "Why this order".
+approval, so the run stops there and waits for the engineer before slices 15, 16, and
+17. `04-slices.md` states the reason in full under "Why this order".
 
 **Slice 3 failed its regression check, and the guard itself carried a real defect.** The
 slice's regression check carries three clauses. Clause 2 holds, because no file outside the
@@ -345,7 +401,8 @@ export seam, and they stay red. Clause 3 fails because a publish of the newly bu
 does not run. The exporter matches a sibling data `<script src>` block and a Mermaid CDN
 tag, and the React build carries neither, so it stops with its own message, exits 1, and
 writes no file. The engineer accepted no publishing parity on 2026-09-23, so publishing the
-React viewer is a recorded, scoped gap. Slice 3 therefore broke slice 1's four marker
+React viewer is a recorded, scoped gap. The engineer accepted that gap again on 2026-09-25,
+and the note above the slice list records what it covers. Slice 3 therefore broke slice 1's four marker
 tests, so E1's seam is unmet again on this branch. E1 was sequenced before E2 precisely to
 prevent this.
 
