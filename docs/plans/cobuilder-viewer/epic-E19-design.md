@@ -369,8 +369,9 @@ oversight.
   that read as a design list now reads as a pull request list.
 - **A PR-alone row's address needs a work id.** A pull request with no design has no work
   item. Slice 16 owns that address's shape, and slice 18 reads it rather than inventing
-  one. What the address names for a pull request no epic carries stays open here. Slice 18
-  therefore cannot ship its row's href before slice 16 answers that question.
+  one. Slice 18 answered the question, and its row's href now ships. The work segment
+  carries the pull request's own number, read forward by `pullRequestHref(pr, section)`
+  and backward by `worklessPullRequest(pullRequests, workId)`.
 - **The board states completeness, which no other panel does.** Every panel in this shell
   states absence and never presence. The board breaks that rule on purpose, because its
   job is to let a reader compare two items before opening either. A later session that

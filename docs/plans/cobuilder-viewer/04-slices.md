@@ -87,8 +87,8 @@ opens a work item, and E5's sections render inside one.
 | 9 | `cobuilder-viewer/E5` | The level's progress | The strip reads 0 at the first section's top, 25 percent at its bottom, 50 on the second, 100 on the last, and never decreases on a forward walk | 1.00 | completed |
 | 10 | `cobuilder-viewer/E5` | Every level renders its own sections | A reader walks Intent, Problem & Solution, Architecture, Epics, and Rubrics, and each row renders its sections | — | pending |
 | 11 | `cobuilder-viewer/E5` | The diagram tiles open their drawing | A tile shows the drawing's miniature scaled to its box, a press opens it whole with zoom from 50 to 400 percent, Escape and the backdrop close it, and a failed render shows the authored source | — | void (delivered by port) |
-| 12 | `cobuilder-viewer/E5` | A record opens in the Sheet | Pressing a decision, a boundary rule, or an epic's design opens the whole record, and a part link scrolls the record and moves focus to that heading | — | pending |
-| 13 | `cobuilder-viewer/E5` | A goal.json-only design renders | One of the seven sparse designs shows every level it can fill, and the rail gates the levels it cannot | — | pending |
+| 12 | `cobuilder-viewer/E5` | A record opens in the Sheet | Pressing a decision, a boundary rule, or an epic's design opens the whole record, and a part link scrolls the record and moves focus to that heading | — | void (delivered by port) |
+| 13 | `cobuilder-viewer/E5` | A goal.json-only design renders | One of the eight sparse designs shows every level it can fill, and the rail gates the levels it cannot | — | void (delivered by port) |
 | | **`cobuilder-viewer/E6` — The FlightDeck prototype.** One work item read as two accounts, with the rail grouped under Build and Review, reviewed before E7 starts. | | | | |
 | 14 | `cobuilder-viewer/E6` | The FlightDeck prototype, reviewed | One work item renders as two accounts, the change's account at parity, and the engineer approves it | 1.00 | completed |
 | | **`cobuilder-viewer/E7` — FlightDeck, one pull request.** The change's account of one work item: the pull request its own epics carry, read at parity with today's viewer, in its own sections beside the program's and at an address of its own. | | | | |
@@ -109,7 +109,10 @@ opens a work item, and E5's sections render inside one.
 | | **`cobuilder-viewer/E19` — The Work board.** New in round 3. The shell lands on a board of every design in the bundle, each row stating the item's stage and which records it holds, and a row opens that item's Work surface. Slice 18 extends the board on 2026-09-25. It adds a pull request that belongs to no design as a row of its own. A tab strip filters the board by status. | | | | |
 | 6 | `cobuilder-viewer/E19` | The shell lands on the bundle's designs | Opening the viewer with no work item named shows every design as a row, each row stating its stage and the records it holds, and no error state | 1.00 | completed |
 | 7 | `cobuilder-viewer/E19` | A row opens the item's Work surface | Pressing a row lands on that item's Work surface at its first level, with the route naming the item | 1.00 | completed |
-| 18 | `cobuilder-viewer/E19` | A pull request with no design is a row of its own | A pull request with no design reads as a row of its own, its status is its own state, and the tabs filter by status | — | pending |
+| 18 | `cobuilder-viewer/E19` | A pull request with no design is a row of its own | A pull request with no design reads as a row of its own, its status is its own state, and the tabs filter by status | 0.90 | completed |
+
+**Eight designs carry a `goal.json` and nothing else.** `implementation-conformance` is
+the eighth, and it landed on 2026-09-25, after this plan.
 
 ## Why this order
 

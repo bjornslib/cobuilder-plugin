@@ -14,7 +14,7 @@ Eleven epics deferred on that date, E8 to E18, and their material stays in this
 document rather than leaving it. That material is the Reference surface, the describe
 path, the whole multi-pull-request mode and its simulator, the path runner, the
 ledger's three state subtypes, publish parity, and the feedback path. None of it is
-part of the build. The live ladder is `04-slices.md`: seventeen slices across E1, E2,
+part of the build. The live ladder is `04-slices.md`: eighteen slices across E1, E2,
 E3, E4, E5, E6, E7, and E19. Read every section below that serves a deferred epic as
 design on the shelf, ready for the epic that returns.
 
@@ -442,7 +442,9 @@ plan splits into three kinds of case, and each kind names its runner.
 `tests/test_sections.py`. Each case asserts one claim ADR-0028 makes, and the Gate 4c
 rubrics score the same claims on the built surface. The harness serves the bundle
 rooted at `.cobuilder-architect/self/` and measures the DOM, which is how the
-prototype's numbers in this document were taken.
+prototype's numbers in this document were taken. Eight designs hold a `goal.json` and
+nothing else, and the last case renders one of them. The eighth design,
+`implementation-conformance`, landed on 2026-09-25, after this plan.
 
 1. `test_paged_level_pane_does_not_scroll` — on each of the four paged levels, the
    pane's `scrollHeight - clientHeight` is zero.
@@ -461,7 +463,7 @@ prototype's numbers in this document were taken.
    `#work-section-heading` exists as an `sr-only` `h1` carrying the level's title.
 9. `test_a_section_that_stacks_keeps_the_pane_scroll` — Rubrics scrolls its pane and
    has no strip.
-10. `test_sparse_design_renders` — one of the seven `goal.json`-only designs renders
+10. `test_sparse_design_renders` — one of the eight `goal.json`-only designs renders
     every level it can fill, and the rail gates what it cannot.
 
 ### The rest of the program (pytest)

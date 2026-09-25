@@ -37,13 +37,13 @@ E9, E10, E11, E12, E13, E14, E15, E16, E17, and E18.
 - [x] Slice 9 — The level's progress                                score: 1.00
 - [ ] Slice 10 — Every level renders its own sections                score: —
 - [ ] Slice 11 — The diagram tiles open their drawing                score: void (delivered by port)
-- [ ] Slice 12 — A record opens in the Sheet                         score: —
-- [ ] Slice 13 — A goal.json-only design renders                     score: —
+- [ ] Slice 12 — A record opens in the Sheet                         score: void (delivered by port)
+- [ ] Slice 13 — A goal.json-only design renders                     score: void (delivered by port)
 - [x] Slice 14 — The FlightDeck prototype, reviewed                  score: 1.00
 - [x] Slice 15 — The change's account renders                        score: 0.92 on attempt 3
 - [ ] Slice 16 — The rail reads two accounts, each at its own address  score: 0.83 on attempt 3
 - [x] Slice 17 — The account mark, and the jump across               score: 1.00
-- [ ] Slice 18 — A pull request with no design is a row of its own   score: —
+- [x] Slice 18 — A pull request with no design is a row of its own   score: 0.90
 
 **Slice 6 ran on 2026-09-22 and scored 1.0**, weighted 0.08. It built the Work board at
 `src/shell/Board.tsx` and `src/shell/readiness.ts`, and the shell that reaches it at
@@ -80,9 +80,9 @@ scored 0.50 of its four criteria, and its ladder row stays `pending` until the p
 
 Slice 1 belongs to `cobuilder-viewer/E1`, its only slice. Slices 6 and 7
 belong to `cobuilder-viewer/E19` and stand at 1.0. Slices 15, 16, and 17 ran
-on 2026-09-25. Four of the eighteen slices have not run: 10, 12, 13, and 18.
-Slice 1 ran, and it did not reach an accepted score. Slice 11 is void and
-delivered by port.
+on 2026-09-25, and slice 18 ran on the same date at 0.90. One of the eighteen
+slices has not run: 10. Slice 1 ran, and it did not reach an accepted score.
+Slices 11, 12, and 13 are void and delivered by port.
 
 **The engineer approved slice 5 on 2026-09-25, and its artifact is the Work surface itself.**
 
@@ -223,6 +223,40 @@ read it, so C4 read 0.0. Its accepted work is the commit that states the picture
 change does not carry, `e8a3a4f`. The paragraph above this one reads `pending`, and
 this record supersedes it.
 
+**Slice 18 ran on 2026-09-25, and it scored 0.90 on its first attempt**, weighted 0.05.
+It belongs to `cobuilder-viewer/E19`, and its end is that a pull request with no design
+reads as a row of its own. Its five criteria read C1 1.0 (CRITICAL), C2 1.0 (CRITICAL),
+C3 1.0 (CRITICAL), C4 0.5, and C5 1.0. The mean is 0.90, so the contribution is 0.045.
+It is the only slice of the last four that ran a full red-green cycle, because its
+behaviour did not exist in the tree. Its contract is `tests/test_board_pr_alone.py`, with
+eight cases, and `Board.test.tsx` under `plugins/artifact/viewer/src/shell/`, with five
+new cases.
+
+The validator passed the slice and named four gaps, and all four now stand closed.
+Pressing the row reached the unknown-id error at `#/17/pull-requests/17`, and that is C4's
+gap. `src/shell/model.ts` gained `pullRequestHref(pr, section)` and
+`worklessPullRequest(pullRequests, workId)`, and the board reads that builder instead of
+assembling an address itself. `src/shell/App.tsx` gained a workless branch, which renders
+that pull request's change account and states a redirect when the route names a section
+the change cannot fill. The bundle a reader served did not carry the slice. Rebuilt,
+migrated, and re-indexed, the served board now shows 28 rows. Sixteen of those rows are
+design rows and twelve are pull-request rows. The board carries two filter groups, one
+for status and one for kind, and its heading reads `Work`.
+`tests/test_viewer_modes.py::test_viewer_contains_all_five_mode_buttons` anchored on a
+minified identifier that the rebuild renamed, and it now matches the shape rather than
+the name. The row carried a keyboard focus stop inside its anchor, where a design row
+carries none, and the gloss is gone from its badge.
+
+An independent pass then verified the four fixes in its own browser and on its own build,
+and all four came back CONFIRMED. The two PR-alone rows render `Pull request 17` and
+`Pull request 22` with no error, and a design row still opens its Work surface. Two deep
+links redirect and state the redirect, and an id no source carries still shows the
+unknown-id error. Both the shipped file and the bundle mirror share one sha256, and the
+served board shows the 28 rows and the two filter groups across a fresh page load. No
+focusable element sits inside either row shape. That pass also found two hygiene defects
+in the test files, and both stand closed: a stale cast that switched off type checking on
+the `pullRequests` prop, and a docstring that named a minified identifier.
+
 ## Escalated
 
 **Slice 1 is escalated.** Its two CRITICAL criteria are C1 and C2. C2 passes, and C1 cannot
@@ -274,10 +308,75 @@ counts as delivered by port, and the mutation check and the browser evidence
 stand as its proof. Slices 8 and 9 carry the same condition, and the notes on
 them already say so.
 
-Slice 16 is the only other slice that scored below its threshold. Slice 11
-carries no escalation, because a void is not a score.
+**Slice 12, "a record opens in the Sheet", is void.** All of its promises hold on the
+page, and the verifier confirmed each one in a browser, on a build that reproduced the
+committed viewer byte for byte. A decision opens whole, with its state badge, its problem,
+its decision, its rule, its forces, its authored markdown, and nine part links. A boundary
+rule opens with all six of its further fields, and a rule that carries none says so in
+place. Epic E2's Gate 4b design opens in full. The History part link scrolled the record's
+box from 0 to 4195 and left focus on that heading. Escape and the backdrop both closed it,
+and the level, the open section, and the epic disclosures survived. Its contract,
+`src/shell/Sheet.test.tsx`, holds fourteen cases, and it provably fails: deleting the
+scroll call reddened the scroll case, deleting the focus call reddened the focus case,
+and closing the Sheet reddened 13 of the 14.
+
+**Slice 13, "a goal.json-only design renders", is void.** Both of its promises hold, and
+the verifier confirmed them on the same build, across four sparse designs. Every row a
+design can fill renders with its own content. Every row it cannot fill states the absence
+in place, and a press on a gated row goes nowhere. A route that names a gated level
+redirects to a filled one and says so. Its old contract was weak in kind, because nine of
+its eleven cases only asserted that a sentence still sits in a source file. That file is
+gone, and `src/shell/SparseDesign.test.tsx` replaces it with nineteen cases, which render
+the surface, take their fixture from this repository's own sparse designs, and take their
+row set from the shell's own `railGroups`. Three mutations ran, and none went uncaught.
+Four corpus claims the deleted file carried now live in
+`tests/test_sparse_design_corpus.py`, with four cases: the built viewer carries the
+gating, the real index resolves each sparse design's named decisions, every sparse design
+appears as a work item with a stage, and the derived `designs.js` agrees with its
+authored directory. The Python count falls by 11 with the deleted file and rises by 4
+with the new one.
+
+**The run fixed a focus defect that slice 12's check found.** After Escape closed the
+Sheet, focus fell to the body, so a keyboard reader lost their place. `src/shell/Sheet.tsx`
+now remembers the element that opened the record and returns focus to it, falling back to
+the level's own heading. A new case proves it: without the fix it fails with
+`expected <body …> to be <button …>`.
+
+Slice 16 is the only other slice that scored below its threshold. Slices 11,
+12, and 13 carry no escalation, because a void is not a score.
 
 ## Notes for a fresh session
+
+**This ladder's E5 group reads as though the React port had not happened.** Slices 8, 9,
+11, 12, and 13 all held behaviour that shipped before the loop reached them. Slices 8 and
+9 scored 1.00 with that condition written down when they ran. The harness now voids a
+slice whose contract also passes against the tree from before it. So the ladder cannot
+score those slices, and a direct verification with a mutation check is the honest
+substitute. That verification now stands for 11, 12, and 13.
+
+**Ten items stay open in the shipped shell.**
+
+- A workless change draws one rail row, the board row, because the rail derives its groups
+  from a design. Its change's account stays navigable through the paged strip.
+- A workless change draws no top line panel for branch, epic figure, or supersedes,
+  because each one reads a design directory.
+- The Sheet survives a route change, so a reader can hold a record over a level the pane
+  beneath it no longer shows.
+- Part links exist on decision records alone, so a boundary rule and an epic design cannot
+  exercise that promise.
+- The level pane never scrolls in this bundle, so the case that asserts its offset reads
+  zero either way.
+- An address whose work segment and section segment disagree, such as
+  `#/17/pull-requests/22`, resolves to the work segment and says nothing about discarding
+  the other one.
+- A gated rail row is a keyboard focus stop whose press does nothing, and that is
+  deliberate, so the reason reaches a keyboard reader.
+- `loadDesigns` caches its promise in module state, so a test that publishes one design
+  per case hands the second case the first case's records.
+- The unknown-id error carries an uppercase text transform, so a browser probe that reads
+  through `innerText` must match without case sensitivity.
+- A part link that targets a record's last part stops below the box top, because the box
+  already sits at its end.
 
 **Slices 15, 16, and 17 ran on 2026-09-25 in one loop, and one commit carries all three.**
 
@@ -520,14 +619,14 @@ a route that named a work item. Nothing listed the bundle's designs, and a route
 that named no work item fell through to the route error. E19 adds a board of every
 design in the bundle. Each row states the item's stage and the records it holds,
 and a row opens that item's Work surface. It is new in round 3, it reads `planned`,
-and it carries two slices.
+and it carries three slices.
 
-**Seven designs carry a `goal.json` and nothing else.** `build-workflow-polish`,
-`gate-state-resolution`, `inflight-record-store`, `interaction-design-gate`,
-`lean-bundle-diffs`, `maintainable-viewer`, and `ubiquitous-language`. E5's
-surviving criterion is that the Work surface renders each of them. They are the
-fixtures for a sparse-record test, and they need no intent, narrative, or
-assessment record to do it.
+**Eight designs carry a `goal.json` and nothing else.** `build-workflow-polish`,
+`gate-state-resolution`, `implementation-conformance`, `inflight-record-store`,
+`interaction-design-gate`, `lean-bundle-diffs`, `maintainable-viewer`, and
+`ubiquitous-language`. E5's surviving criterion is that the Work surface renders each of
+them. They are the fixtures for a sparse-record test, and they need no intent, narrative,
+or assessment record to do it.
 
 **The shipped shell owns the bare route, and the prototype does not.** `src/shell/App.tsx`
 sets `ROUTE_PREFIX` to `#/`, so `#/` is the board, `#/<design-id>` is that design's Work
