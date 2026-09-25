@@ -3,7 +3,7 @@
 title: "ADR-0027 — FlightDeck: one surface, two modes, a ledger-recorded merge-order recommendation"
 status: active
 type: architecture
-last_verified: 2026-09-18
+last_verified: 2026-09-25
 owner: bjornslib
 # --- 42010 decision-record index (schema: references/decision-records.md §2) ---
 id: ADR-0027

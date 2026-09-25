@@ -49,14 +49,14 @@ and its merge-order simulation, the ledger and its audit, the path runner, publi
 parity, the workflow-polish carryover, and the feedback path. They are named in the
 table below with no slices under them, so this ladder still says what was cut.
 
-Eight epics remain in scope and carry the seventeen slices below: E1, E2, E3, E4, E5,
+Eight epics remain in scope and carry the eighteen slices below: E1, E2, E3, E4, E5,
 E6, E7, and E19. The ladder was re-derived rather than copied. A slice survives only
 where its end still belongs to the narrowed program, and one slice moved from E5 to
-E19 because the shell now lands somewhere.
+E19 because the shell now lands somewhere. Slice 18 joined the ladder on 2026-09-25.
 
 ## The ladder
 
-Eight epics carry seventeen slices. Four carry more than one, and those four owe a
+Eight epics carry eighteen slices. Four carry more than one, and those four owe a
 Gate 4b design before their slices build: E2, E5, E7, and E19. Four carry exactly
 one: E1, E3, E4, and E6, and three of those four are the prototype epics, whose
 single end is an approval.
@@ -64,7 +64,7 @@ single end is an approval.
 Slice numbers run in build order. **This is not the table order.** The table groups
 slices under the epic they advance, and E19 builds before E5, so the numbers step
 out of epic order once. Build order is slice 1, then 2 and 3, then 4, then 5, then 6
-and 7, then 8 through 13, then 14, then 15, 16, and 17.
+and 7, then 8 through 13, then 14, then 15, 16, and 17, then 18.
 
 Three dependencies set that order. E1 before E2, because the exporter's markers
 exist before the build changes how the file is produced. E3 before E19, because the
@@ -106,9 +106,10 @@ opens a work item, and E5's sections render inside one.
 | | **`cobuilder-viewer/E16` — Publish parity.** Deferred on 2026-09-22, and carries no slice. | | | | |
 | | **`cobuilder-viewer/E17` — The workflow-polish carryover.** Deferred on 2026-09-22, and carries no slice. | | | | |
 | | **`cobuilder-viewer/E18` — The feedback path.** Deferred on 2026-09-22, and carries no slice. | | | | |
-| | **`cobuilder-viewer/E19` — The Work board.** New in round 3. The shell lands on a board of every design in the bundle, each row stating the item's stage and which records it holds, and a row opens that item's Work surface. | | | | |
+| | **`cobuilder-viewer/E19` — The Work board.** New in round 3. The shell lands on a board of every design in the bundle, each row stating the item's stage and which records it holds, and a row opens that item's Work surface. Slice 18 extends the board on 2026-09-25. It adds a pull request that belongs to no design as a row of its own. A tab strip filters the board by status. | | | | |
 | 6 | `cobuilder-viewer/E19` | The shell lands on the bundle's designs | Opening the viewer with no work item named shows every design as a row, each row stating its stage and the records it holds, and no error state | 1.00 | completed |
 | 7 | `cobuilder-viewer/E19` | A row opens the item's Work surface | Pressing a row lands on that item's Work surface at its first level, with the route naming the item | 1.00 | completed |
+| 18 | `cobuilder-viewer/E19` | A pull request with no design is a row of its own | A pull request with no design reads as a row of its own, its status is its own state, and the tabs filter by status | — | pending |
 
 ## Why this order
 
@@ -178,6 +179,12 @@ them on a section of the same name. Slices 15 and 16 now read against that model
 they keep their numbers. Slice 17 is new. It carries the account mark and the jump
 across. No slice moved. `00-status.md` records the reason and the weight change the
 re-cut made.
+
+**Slice 18 runs last, and its number says so.** The board's own slices, 6 and 7, land
+early, and a design row opens a work item. Slice 18 adds a row for a pull request that
+belongs to no design. That row needs the surface which reads a pull request's own records,
+and E7's three slices land that surface. The slice therefore takes the number 18, at the
+end of the ladder, and no slice moved to make room for it.
 
 ## Out of scope for this ladder
 

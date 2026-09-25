@@ -10,17 +10,18 @@ FlightDeck at parity.
 - Gate 2 — Architecture: APPROVED 2026-09-22
 - Gate 2b — Interaction design: APPROVED 2026-09-22
 - Gate 3 — Program Design: APPROVED 2026-09-22
-- Gate 4 — Slice plan, epic designs, and rubrics: pending
+- Gate 4 — Slice plan, epic designs, and rubrics: APPROVED 2026-09-25
   - 4a Slice plan: APPROVED 2026-09-22
-  - 4b Epic technical solution designs: in progress
-  - 4c Blind rubrics: pending
+  - 4b Epic technical solution designs: APPROVED 2026-09-25
+  - 4c Blind rubrics: APPROVED 2026-09-25
 
 Design mode: cobuilder-viewer
 Hindsight: unavailable (the session that wrote this status registered no Hindsight tool, so no retain and no recall ran)
 
 ## Slices
 
-Eight epics carry seventeen slices, written at Gate 4a in `04-slices.md`. Four of
+Eight epics carry eighteen slices, written in `04-slices.md`. Gate 4a approved the
+first seventeen on 2026-09-22, and slice 18 joined the ladder on 2026-09-25. Four of
 those epics carry more than one slice, and each owes a Gate 4b design before its
 slices build: E2, E5, E7, and E19. The cut defers eleven epics, and they carry none: E8,
 E9, E10, E11, E12, E13, E14, E15, E16, E17, and E18.
@@ -42,6 +43,7 @@ E9, E10, E11, E12, E13, E14, E15, E16, E17, and E18.
 - [ ] Slice 15 — The change's account renders                        score: —
 - [ ] Slice 16 — The rail reads two accounts, each at its own address  score: —
 - [ ] Slice 17 — The account mark, and the jump across               score: —
+- [ ] Slice 18 — A pull request with no design is a row of its own   score: —
 
 **Slice 6 ran on 2026-09-22 and scored 1.0**, weighted 0.08. It built the Work board at
 `src/shell/Board.tsx` and `src/shell/readiness.ts`, and the shell that reaches it at
@@ -77,8 +79,8 @@ action: unset that variable, then run `/login` and choose the subscription accou
 scored 0.50 of its four criteria, and its ladder row stays `pending` until the publishes run.
 
 Slice 1 belongs to `cobuilder-viewer/E1`, its only slice. Slices 6 and 7 belong to
-`cobuilder-viewer/E19` and stand at 1.0. Eight slices of the seventeen have not run:
-10, 11, 12, 13, 14, 15, 16, and 17. Slice 1 ran, and it did not reach an
+`cobuilder-viewer/E19` and stand at 1.0. Nine slices of the eighteen have not run:
+10, 11, 12, 13, 14, 15, 16, 17, and 18. Slice 1 ran, and it did not reach an
 accepted score.
 
 **The engineer approved slice 5 on 2026-09-25, and its artifact is the Work surface itself.**
@@ -221,6 +223,49 @@ C4 without touching the code.
 No other slice scored below its threshold, so nothing else escalated.
 
 ## Notes for a fresh session
+
+**Gate 4 cleared on 2026-09-25.** The engineer approved the four Gate 4b epic technical
+solution designs for E2, E5, E7, and E19 with one word, "Approved". That word covers the
+four designs, and the instruction to build the slices gives it force. So the 4b line, the
+4c line, and Gate 4's own line now read approved on that date. The gate script exits 0,
+and the command is
+`uv run plugins/implement/scripts/verify_gate.py --plan docs/plans/cobuilder-viewer`.
+`verify_gate.py` reads the 4b line in this file for its `design.approved` key. It reads no
+other approval record. That line is therefore the one the gate depends on.
+
+**The engineer approved slice 14, and its artifact is the FlightDeck prototype.**
+
+The prototype lives at `plugins/artifact/viewer/src/variations/flightdeck/`. The engineer
+read it at `http://localhost:5273/variations/flightdeck/dev.html`, and approved it on
+2026-09-25. The prototype shows one work item as two accounts. Build reads the program's
+account, and Review reads the change's account.
+
+The checklist line and the ladder row in `04-slices.md` describe this slice. Neither one
+carries the approval yet. The checklist's `score:` cell and the ladder's State cell stay as
+they are, because the validator's score is not in yet. A separate step writes both. The
+wait the "run order changed" note below declares is therefore over, so a session may run
+slices 15, 16, and 17.
+
+**Slice 18 joined the board on 2026-09-25, and the weights moved with it.**
+
+The engineer asked for one more item. A reader must reach a design together with its pull
+request, and a pull request that belongs to no design. Slice 18 answers both. The board
+carries a pull request with no design as a row of its own, beside the design rows. That
+row's status is the pull request's own state, `open` or `merged`. A tab strip filters the
+board by status. The word PR names the row's kind and never its status. `04-slices.md`
+states the slice's end in full. Its rubric is
+`.cobuilder/rubrics/cobuilder-viewer/slice-18.md`.
+
+The slice keeps the number 18, at the end of the ladder, and no slice moved.
+
+Its weight is 0.05, and three slices that have not run give it up. Slice 10 falls from 0.11
+to 0.09, slice 15 from 0.10 to 0.08, and slice 16 from 0.04 to 0.03. The sum is still 1.00.
+For slices 10 to 17, this note supersedes the weight list in the "E7's ladder changed" note
+below.
+
+Every slice already recorded at a score keeps its weight, so its contribution stands.
+Slice 1 contributes 0.030. Slices 2, 3, 4, 5, 6, 7, 8, and 9 contribute 0.080, 0.090,
+0.090, 0.040, 0.060, 0.040, 0.090, and 0.040. Those nine slices contribute 0.560 in total.
 
 **E7's ladder changed on 2026-09-25, and the weights moved with it.**
 
@@ -369,12 +414,13 @@ or it drops them. It is not decided here.
 **The Builds view carries the wrong rubrics, and it can read only fourteen.** The page's
 generator, `plugins/artifact/scripts/build_builds_view.py`, defaults `--rubrics` to
 `.cobuilder/rubrics/cobuilder-family`. So a page built for this plan carries the
-`cobuilder-family` rubrics, not this plan's own, and all seventeen of this plan's rubrics are
+`cobuilder-family` rubrics, not this plan's own, and all eighteen of this plan's rubrics are
 absent from the viewer. The generator also holds `RUBRIC_COUNT` as the module constant `14`
 at line 33, and `read_rubrics` loops `range(1, RUBRIC_COUNT + 1)`. So even a run with
-`--rubrics .cobuilder/rubrics/cobuilder-viewer` would drop slices 15, 16, and 17 in silence,
-and would print no warning. A later session should derive the count from the files present,
-and derive the default rubrics directory from the plan's slug. Neither is changed here.
+`--rubrics .cobuilder/rubrics/cobuilder-viewer` would drop slices 15, 16, 17, and 18 in
+silence, and would print no warning. A later session should derive the count from the files
+present, and derive the default rubrics directory from the plan's slug. Neither is changed
+here.
 
 **Publishing is blocked in any session that holds `ANTHROPIC_AUTH_TOKEN`.** The Artifact
 platform refuses every call, because that variable takes precedence over a claude.ai
