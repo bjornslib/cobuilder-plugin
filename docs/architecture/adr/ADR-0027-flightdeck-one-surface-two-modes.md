@@ -44,6 +44,7 @@ related_decisions:
   - { type: depends-on, target: ADR-0018 }
   - { type: depends-on, target: ADR-0019 }
   - { type: depends-on, target: ADR-0023 }
+  - { type: is-related-to, target: ADR-0029 }
 related_concerns: [C3, C6]
 history:
   - { state: tentative, date: 2026-09-18 }
@@ -134,6 +135,9 @@ accepted path from the ledger. It merges each bundle onto its own integration
 branch, built from the previous bundle and rooted at the common ancestor. The
 default branch receives one pull request, from the last bundle's branch. The
 reviewer commits to the path once, then chooses the pace.
+
+**The mode switch stays decided for the deferred multi-pull-request work**, and the
+change's account does not carry it, as ADR-0029's 2026-09-25 amendment records.
 
 ## Consequences
 

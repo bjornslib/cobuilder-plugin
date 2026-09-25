@@ -240,8 +240,10 @@ should record that measurement rather than derive it a second time.
 - **Only merged pull requests carry four narration levels.** An open pull request in this
   bundle holds fewer records. The surface states what it lacks rather than rendering an
   empty row. Absence is a state, and not a gap.
-- **Two rows left the rail, and their content holds no row today.** The Deploy group held
-  the Pull requests row and the Shipped row. The engineer removed that group on
-  2026-09-25. So the envisioned pull request, this work's own pull-request list, the open
-  set, and the release status render nowhere in the approved shape. Where each one lands
-  stays open, and no slice here claims one.
+- **Two rows left the rail, and the engineer decided their content on 2026-09-25.** Each
+  piece has a home now. The envisioned pull request lives on the program's Intent row,
+  beside the change that opened. This work's own pull-request list stays unbuilt, because
+  the Epics row already states each epic and its pull request. The open set stays deferred
+  with E11 to E13, where it already lives. The release status stays out of the build, and
+  the prototype alone keeps it. No slice here owns any of the four, so a later session
+  must not read the prototype's version as evidence that the build owes one.

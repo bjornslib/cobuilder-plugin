@@ -1,7 +1,8 @@
 # Work board: Interaction Design Specification
 
-**Version:** 2.4
-**Date:** 2026-09-22
+**Version:** 2.5
+**Date:** 2026-09-22. Gate 2b approved this version on that date
+**Corrected:** 2026-09-25, and each correction carries its own date and reason below
 **Author:** design session with bjornslib
 **Product document:** `01-product.md` (not yet written. The product intent currently lives in `docs/architecture/designs/cobuilder-viewer/goal.json`.)
 
@@ -50,6 +51,13 @@ section mounts, because a tile cannot wait for a press. The envisioned pull
 request moves to the Pull requests level, which fills when a work has a drafted
 pull request and no longer redirects. Sections 2, 2.3, 11, 11.2, and 11.3 carry
 the changes, and ADR-0028 records the decision.
+
+**Corrected 2026-09-25.** The engineer read a prototype of one work item as two
+accounts, and ADR-0029's 2026-09-25 amendment records the shape. The rail's groups are
+Build and Review. The Pull requests row and the Shipped row left the rail with the Deploy
+group. Each claim below that still describes the old rail carries a correction marker,
+with its own date and reason. Gate 2b approved this document on 2026-09-22, so its
+approved text stands beside each correction.
 
 ---
 
@@ -157,7 +165,9 @@ below it holds every panel of that section.
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-**Four levels page, and three sections stack.**
+**Four levels page, and three sections stack. Corrected 2026-09-25:** one section stacks
+in the live program, and it is Rubrics. The Pull requests row and the Shipped row left the
+rail, and the note under the table records their content.
 
 | Section | Mode | Sections on the track |
 |---|---|---|
@@ -168,6 +178,21 @@ below it holds every panel of that section.
 | Build / Rubrics | stacks | — |
 | Pull requests | stacks | — |
 | Shipped | stacks | — |
+
+**Corrected 2026-09-25.** The Pull requests row and the Shipped row are not rows of the
+rail, and no section stacks behind them. The Deploy group held both, and the engineer
+removed it on 2026-09-25. The rail's groups are two.
+
+Build holds the program's account: Intent, Problem & Solution, Architecture, Epics, and
+Rubrics. Review holds the change's account: Intent, Problem & Solution, Architecture,
+and File Diffs. The engineer decided the four pieces of content the two removed rows
+carried on 2026-09-25.
+
+The envisioned pull request lives on the program's Intent row, beside the change that
+opened. This work's own pull-request list stays unbuilt, because the Epics row already
+states each epic, its state, and its pull request. The open set stays deferred with E11
+to E13. The release status stays out of the build and in the prototype alone. So one
+section stacks in the live program, and it is Rubrics.
 
 **A section is view state, never a route.** The strip, the pager bar, and the two
 arrow keys move one shared index, and a step writes no hash. So a reader pages
@@ -219,6 +244,13 @@ rail's job is to say where a reader can go, not to enumerate what is there.
 So the rail carries the three levels and the gated groups, and nothing else. An
 epic's design document, its slices, its rubrics and its pull requests are reached
 from the epic's own detail view.
+
+**Corrected 2026-09-25.** The rail carries the three levels and two gated groups, and
+nothing else. The groups are Build, which holds the program's account, and Review, which
+holds the change's account. The engineer approved the two groups on 2026-09-25, and
+ADR-0029's 2026-09-25 amendment records the shape. The earlier third group, Deploy, is
+gone, and the Pull requests and Shipped rows left the rail with it. The approved text
+left the group count open. The count is two.
 
 **Section gating.** A section appears when the work can fill it. Sections are
 gated, not disabled, because an empty section teaches nothing and costs a click.
@@ -678,8 +710,8 @@ to see in place.**
 | Control | Renders when | Removed when |
 |---|---|---|
 | Build group | the work has at least one epic | the work carries no epics |
-| Pull requests group | `epic_to_pull_request` names a pull request for one of this work's own epics | no epic carries a pull request |
-| Shipped group | `stage` is `implemented`, or a `publication` exists for a pull request this work's own epics carry | neither holds |
+| Review group | **Corrected 2026-09-25:** the Control column read "Pull requests group" until that date. This rule gates the Review group, which renders the change's account. It renders when `epic_to_pull_request` names a pull request for one of this work's own epics | no epic carries a pull request |
+| Shipped group | **Corrected 2026-09-25:** never. The Deploy group held the Shipped row, and the engineer removed that group on 2026-09-25. No Shipped group exists in the rail, and the release status stays out of the build | it has no group to remove |
 | Rubrics item | `feature_gates` holds a gate record for this feature | the join is empty. The item then states that no gate record exists, because a missing record must not read as a pass |
 | Slice list under an epic | the epic owns at least one slice | the epic owns no slice. The epic row states the count of zero instead |
 | Render control | the diagram has not been rendered | the reader renders it |
@@ -967,7 +999,7 @@ stated failure.
 | An epic outcome missing from the index | the panel reads the outcome from `goal.epics[]` and states no source |
 | A pull request with no branch | the group renders and names the branch |
 | Two designs share a name | the id disambiguates, and both render |
-| No deploy record exists | the Shipped group says so, and reports `stage` and any publication instead |
+| No deploy record exists | **Corrected 2026-09-25:** no Shipped group exists, so this case has no surface. The top bar reports `stage`. The release status stays out of the build and in the prototype |
 | An absent record in a closed panel | the panel renders open, because an absence behind a disclosure is an absence the reader cannot see |
 | A panel a section gated away | the section-link bar holds no link for it, because the bar reads the panels the page rendered |
 | A page with no panel at all | the section-link bar renders nothing, rather than an empty strip |
@@ -1201,8 +1233,10 @@ not give the shell a definite height will break it.
 
 ## 12. Future Considerations
 
-1. **No deploy record exists.** The Shipped section reports `stage` and the
-   publication entities, and states the gap. A future record type would fill it.
+1. **No deploy record exists.** **Corrected 2026-09-25:** no Shipped section
+   exists, because the Deploy group left the rail on that date. The release
+   status stays out of the build and in the prototype. A future record type
+   would fill it in the build, if a later session brings it back.
 2. **`feature_gates` is empty.** Rubrics have nothing to read until it populates.
 3. **The epic and slice vocabularies need a schema change.** The build loop
    produces six epic states and seven slice states. The corpus carries four and

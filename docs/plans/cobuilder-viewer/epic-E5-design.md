@@ -67,9 +67,27 @@ prototype holds the model as measured, and the numbers in this design come from 
 **Two rows left the rail with the Deploy group.** `panels/PullRequests.tsx` and
 `panels/Shipped.tsx` stood for the Pull requests row and the Shipped row. The engineer
 removed Deploy on 2026-09-25, so neither row sits in the grouped rail, and neither file
-belongs to this epic. The content those rows carried holds no row in the approved shape.
-Four things lack a home: the envisioned pull request, this work's own list, the open set,
-and the release status. E7's design records the same gap, and no slice here claims one.
+belongs to this epic.
+
+**The engineer decided where that content goes, on 2026-09-25.** Four decisions settle the
+four pieces the two rows carried. E7's design records the same four.
+
+1. **The envisioned pull request lives on the program's Intent row**, beside the change
+   that opened. It is this design's own draft of the pull request it will open, so it
+   belongs on the program's side.
+
+2. **This work's own pull-request list stays unbuilt**, because the Epics row already
+   carries each epic, its state, and its pull request. A second enumeration would state
+   the same facts twice, and that is the reason, and not an omission.
+
+3. **The open set stays deferred**, with the multi-pull-request epics, E11 to E13, where
+   it already lives.
+
+4. **The release status stays out of the build.** The prototype keeps it. The engineer
+   decided it in these words: "We shouldn't build that yet. It's fine to have it in the
+   prototype, but not in what we will build." No slice owns it, so nothing schedules it.
+   A later session must not read the prototype's version as evidence that the build owes
+   one.
 
 ## Types & Signatures
 
@@ -245,8 +263,9 @@ claims belong to the Gate 4c rubrics, scored through the ChromeDevTools MCP tool
 - **Five rows in one slice is a large slice.** Slice 10 crosses every panel the program's
   account holds. It is one observable state, and no smaller cut leaves a state a reader
   can see.
-- **Two rows left the rail, and their content holds no row today.** The Deploy group held
-  the Pull requests row and the Shipped row. The engineer removed that group on
-  2026-09-25. So the envisioned pull request, this work's own list, the open set, and the
-  release status render nowhere in the approved shape. Where each one lands stays open,
-  and no slice here claims one.
+- **Two rows left the rail, and the engineer decided their content on 2026-09-25.** Each
+  of the four now has a home. The envisioned pull request lives on the program's Intent
+  row, beside the change that opened. This work's own pull-request list stays unbuilt,
+  because the Epics row already states each epic and its pull request. The open set stays
+  deferred with E11 to E13. The release status stays out of the build, and the prototype
+  alone keeps it, so no slice here owns any of the four.

@@ -593,7 +593,13 @@
     "A paged level drops its visible heading band and keeps an sr-only h1 holding the same element id, so the focus move on a section change still lands.",
     "Only the section stage's outer element hides overflow. It hides the track, never a box's content.",
     "The Mermaid runtime loads when the Diagrams section mounts, and at no other moment.",
-    "The envisioned pull request lives on the Pull requests level as its first block, and the level fills when a work has a drafted pull request.",
+    // Corrected 2026-09-25, against the engineer's two-account model. Gate 2b
+    // approved this file on 2026-09-22, so the correction carries its date and
+    // reason. The Pull requests row left the rail with the Deploy group on
+    // 2026-09-25. The engineer decided where the envisioned pull request goes on
+    // that date.
+
+    "The envisioned pull request belongs on the program's Intent row, beside the change that opened. It is this design's own draft of the pull request it will open, so it belongs on the program's side. No slice builds it yet.",
     "A failed diagram render still gives the reader the authored source, in the dialog.",
     "Nothing in this shell writes to the bundle. It is a read-only projection."
   ]

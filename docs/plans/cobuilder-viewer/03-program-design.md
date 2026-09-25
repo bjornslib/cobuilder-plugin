@@ -23,6 +23,16 @@ with two modes. ADR-0028 holds a level as sections on a track. ADR-0018 holds th
 record index, and ADR-0019 holds the ledger. Where this document and an ADR
 disagree, the ADR wins and this document is wrong.
 
+**Corrected 2026-09-25, against the two-account model.** ADR-0029's 2026-09-25 amendment
+records the shape. The engineer read a prototype of one work item as two accounts. The
+change's account is a space of its own, and not a mode behind a switch. A reader jumps
+between the two accounts on a section of the same name. ADR-0027's two-mode decision
+stands for the deferred multi-pull-request work. The change's account carries no mode
+switch.
+
+The line above that reads "ADR-0027 holds one FlightDeck surface with two modes" is
+therefore too narrow for the live program.
+
 ## Files
 
 ### The build, and the file it produces
@@ -92,9 +102,6 @@ src/shell/
     Architecture.tsx          Diagrams, Architecture Decisions, Boundaries, Districts
                               and alternatives considered
     Build.tsx                 the epic runs, the slices, the rubrics
-    PullRequests.tsx          the envisioned pull request first, then the real ones,
-                              then FlightDeck
-    Shipped.tsx               the stage, the publications, and the deploy gap
   atoms.tsx                   Panel, Box, Chip, TextList, and the band and tint classes
   DiagramTiles.tsx            the diagram tiles, the dialog, the zoom, and the offline
                               source fallback
@@ -103,6 +110,17 @@ src/shell/
   Board.tsx                   the board E19 adds: one row per design, its stage,
                               and its six record marks
 ```
+
+**Two rows left the rail, and this file map dropped them. Corrected 2026-09-25.** The
+Deploy group is gone. The engineer removed it, and the Pull requests row and the
+Shipped row left the rail with it. The two files that held those rows,
+`panels/PullRequests.tsx` and `panels/Shipped.tsx`, no longer belong to this map.
+
+The engineer decided where that content goes on 2026-09-25. The envisioned pull request
+lives on the program's Intent row, beside the change that opened. This work's own
+pull-request list stays unbuilt, because the Epics row already states each epic, its
+state, and its pull request. The open set stays deferred with E11 to E13. The release
+status stays out of the build, and the prototype alone keeps it.
 
 **Why the section model lives in `Pager.tsx` and not in each level.** One index
 drives the strip, the pager bar, and the two arrow keys, and one function computes
@@ -113,17 +131,29 @@ the level's progress. A level states its sections and nothing else.
 scaffolding for the design decision, they are not the shipped surface, and the
 slices below port what they proved into `src/shell/`.
 
-### FlightDeck
+### The change's account, and the deferred open set
+
+**Corrected 2026-09-25, against the two-account model.** ADR-0029's 2026-09-25 amendment
+records the shape. `src/flightdeck/` is not the shape the build takes. The change's
+account renders inside the shipped shell, at `src/shell/change/`, in four rows that share
+three names with the program's rows. It carries no mode switch. The joins rail is gone
+with the re-cut.
+
+The mode switch, the joins rail, and every multi-pull-request module stay deferred with
+E11 to E13. This document therefore fixes no path for them. `src/variations/flightdeck/`
+holds the prototype the engineer read. It is evidence for the shape, and not the shape
+itself.
 
 ```
-src/flightdeck/
-  OpenSet.tsx                 the multi-pull-request mode: every open pull request,
-                              its head branch, its changed files, its design, and the
-                              ones the auto-merge rules already handled
-  SinglePr.tsx                the single-pull-request mode, at parity with today's
-                              viewer, plus the joins rail
-  ModeSwitch.tsx              one surface, two modes
-  MergePlan.tsx               renders data/merge-plan.json. It computes nothing
+src/shell/change/
+  sections.tsx                the change's four rows, one element per panel
+  levels.ts                   the four narration levels, the scene art, the audio, the
+                              drawings, and the diff files
+  Frame.tsx                   the level's picture, its drawing, and the art-or-diagram
+                              toggle
+  Diff.tsx                    the diff view, ported as it stands
+  Sheets.tsx                  the change's intent body and its assessment body
+  model.ts                    the change's address, and its named-section segment
 ```
 
 ### Reference
