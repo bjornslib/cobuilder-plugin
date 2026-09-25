@@ -277,7 +277,7 @@ def golden_story() -> dict:
                 "size": {"files": 2, "adds": 10, "dels": 1},
                 "touched": {"src": 2},
                 "levels": {
-                    "landscape": {"narration": "Landscape narration.", "voice": "Landscape voice."},
+                    "intent": {"narration": "Intent narration.", "voice": "Intent voice."},
                     "problem_solution": {"problem": "No widget.", "solution": "Add one.", "narration": "n"},
                     "architecture": {"narration": "n", "groups": ["src"]},
                     "file_changes": {"narration": "n", "detail": "d"},

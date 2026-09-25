@@ -36,13 +36,13 @@ E9, E10, E11, E12, E13, E14, E15, E16, E17, and E18.
 - [x] Slice 8 — The section model                                   score: 1.00
 - [x] Slice 9 — The level's progress                                score: 1.00
 - [ ] Slice 10 — Every level renders its own sections                score: —
-- [ ] Slice 11 — The diagram tiles open their drawing                score: —
+- [ ] Slice 11 — The diagram tiles open their drawing                score: void (delivered by port)
 - [ ] Slice 12 — A record opens in the Sheet                         score: —
 - [ ] Slice 13 — A goal.json-only design renders                     score: —
 - [x] Slice 14 — The FlightDeck prototype, reviewed                  score: 1.00
-- [ ] Slice 15 — The change's account renders                        score: —
-- [ ] Slice 16 — The rail reads two accounts, each at its own address  score: —
-- [ ] Slice 17 — The account mark, and the jump across               score: —
+- [x] Slice 15 — The change's account renders                        score: 0.92 on attempt 3
+- [ ] Slice 16 — The rail reads two accounts, each at its own address  score: 0.83 on attempt 3
+- [x] Slice 17 — The account mark, and the jump across               score: 1.00
 - [ ] Slice 18 — A pull request with no design is a row of its own   score: —
 
 **Slice 6 ran on 2026-09-22 and scored 1.0**, weighted 0.08. It built the Work board at
@@ -78,10 +78,11 @@ slice is therefore escalated on C1 alone, rather than accepted. The follow-up is
 action: unset that variable, then run `/login` and choose the subscription account. Slice 1
 scored 0.50 of its four criteria, and its ladder row stays `pending` until the publishes run.
 
-Slice 1 belongs to `cobuilder-viewer/E1`, its only slice. Slices 6 and 7 belong to
-`cobuilder-viewer/E19` and stand at 1.0. Eight slices of the eighteen have not run:
-10, 11, 12, 13, 15, 16, 17, and 18. Slice 1 ran, and it did not reach an
-accepted score.
+Slice 1 belongs to `cobuilder-viewer/E1`, its only slice. Slices 6 and 7
+belong to `cobuilder-viewer/E19` and stand at 1.0. Slices 15, 16, and 17 ran
+on 2026-09-25. Four of the eighteen slices have not run: 10, 12, 13, and 18.
+Slice 1 ran, and it did not reach an accepted score. Slice 11 is void and
+delivered by port.
 
 **The engineer approved slice 5 on 2026-09-25, and its artifact is the Work surface itself.**
 
@@ -231,9 +232,144 @@ implementation is complete and committed as `d44cc24`, and its two locally scora
 criteria pass. A later session that logs in with the subscription account can score C1 and
 C4 without touching the code.
 
-No other slice scored below its threshold, so nothing else escalated.
+**Slice 16 is escalated at 0.83.** Its two CRITICAL criteria are C1 and C2. C2 scored 1.0,
+and C1 scored 0.5. C6 is the second failing criterion, at 0.5, and it is not CRITICAL.
+Both are met on the page and fragile in the tests, so the failure is evidence rather than
+behaviour. The rail does group its rows under Build and Review, and it does expose them.
+Two causes stop the tests from saying so.
+
+Cause one: a helper in the new test file `tests/test_rail_two_accounts.py`
+stripped every run of whitespace from the source text. Two assertions then matched a needle
+that carries a space, and could never land. Cause two: seven shipped viewer cases in
+`plugins/artifact/viewer/src/shell/App.test.tsx` and `Pager.test.tsx` still expected the
+rail's old nine-row list. The score did not move across the three attempts: 0.83 each
+time.
+
+The validator verified the behaviour on the served page. The rail draws the one
+row list, and it refuses to close the group that holds the reader's row. That
+row carries the reason in its accessible name. A folded group still answers
+the arrow walk, and it re-opens on arrival. An unknown segment falls back to
+the change's Intent.
+
+Two repairs followed, and each one restored evidence rather than behaviour.
+The needle repair changed `tests/test_rail_two_accounts.py` only, and that
+file now reads 16 of 16. The viewer-suite repair changed
+`plugins/artifact/viewer/src/shell/App.test.tsx`,
+`plugins/artifact/viewer/src/shell/Pager.test.tsx`, and
+`tests/test_viewer_modes.py`. The viewer suite now reads 115 passed and 0
+failed. Slice 16 stays at 0.83 and keeps its escalation, because a repair to
+the evidence does not re-score the slice.
+
+**Slice 11 is void.** All six of its criteria scored 1.00, and the validator checked them
+in a real browser. The validator also staged three mutations, and each one broke the case
+that owns it. Even so, every case in its contract also passes against the tree before the
+slice, because the feature shipped in commit `e68fd3d` on 2026-09-23. The slice's GREEN
+changed no source file: `plugins/artifact/viewer/src/shell/DiagramTiles.tsx` is
+byte-identical to HEAD. So the slice contributed no implementation, and its test result is
+evidence about nothing.
+
+A void slice takes no score, and the record writes no 1.00 red-green row
+for it. It
+counts as delivered by port, and the mutation check and the browser evidence
+stand as its proof. Slices 8 and 9 carry the same condition, and the notes on
+them already say so.
+
+Slice 16 is the only other slice that scored below its threshold. Slice 11
+carries no escalation, because a void is not a score.
 
 ## Notes for a fresh session
+
+**Slices 15, 16, and 17 ran on 2026-09-25 in one loop, and one commit carries all three.**
+
+The loop ran each slice through a RED, a GREEN, and a blind VALIDATE role. The
+three slices belong to `cobuilder-viewer/E7`, and they touch the same files:
+`plugins/artifact/viewer/src/shell/App.tsx`, `src/shell/Rail.tsx`,
+`src/shell/model.ts`, and the built viewer. A split commit would have to stage
+a tree that no slice ever measured. The three verdicts stay separate in this
+file and in the ladder. Slice 15's score of 0.92 stands, slice 16's escalation
+stands, and slice 17's 1.00 stands.
+
+They ran ahead of slices 10 through 13, as the run order of 2026-09-23
+directs.
+
+**The run accepted slice 15, "the change's account renders", at 0.92 on its third attempt.**
+
+It weighs 0.08, so the contribution is 0.08 times 0.92, which is 0.0736. The
+three attempt scores are 0.75, 0.9167, and 0.92. The accepted attempt scored
+C1 1.0 (CRITICAL), C2 1.0 (CRITICAL), C3 1.0, C4 1.0, C5 0.5, and C6 1.0. C1
+and C2 are the CRITICAL pair.
+
+The slice carried the rename of the narration level key `landscape` to
+`intent`. The rename reaches the plugin scripts, the authoring skills, the
+eight design `narrative.json` records, the bundle data, and the viewer. Its
+test files are `tests/test_change_account.py`, with nine cases, and
+`tests/test_intent_level_key.py`, with eleven cases.
+
+Attempt two is worth recording. Its mean was 0.9167, which is above the 0.90
+threshold. The validator refused it, because the viewer suite had gone from
+115 passed to 2 failed. The rubric's regression clause blocked an acceptance
+that the mean alone would allow.
+
+The attempt-one feedback fixed C4 at the cause. The change's decisions now
+come from the index join, through a new `adrIdsForPullRequest(pr)` on
+`ResolvedJoins` in `plugins/artifact/viewer/src/data/joins.ts`.
+`plugins/artifact/viewer/src/shell/change/sections.tsx` reads that join. No
+file reads the entry's own `adrs` list any more.
+
+**Slice 15's C5 gap stays open.** C5 asks that every reader of the level key names
+`intent`. It scored 0.5 on all three attempts. Five readers under
+`plugins/artifact/viewer/src/variations/` still name `landscape`:
+`sections-e/readiness.ts`, `record-mosaic/records.ts`, `flightdeck/model.ts`, and
+`flightdeck/accountModel.ts`. The shipped viewer reads `intent`, and those four prototype
+files keep the old key.
+
+**The run escalated slice 16, "the rail reads two accounts, each at its own address",
+at 0.83.** It weighs 0.03. The score did not move across the three attempts, so it read 0.83
+each time. Its criteria read C1 0.5 (CRITICAL), C2 1.0 (CRITICAL), C3 1.0, C4 1.0, C5 1.0,
+and C6 0.5. C1 and C6 are met on the page and fragile in the tests. The `## Escalated`
+entry above states the two causes and the two repairs.
+
+Its test file is `tests/test_rail_two_accounts.py`, which reads 16 of 16 after
+the needle repair. Slice 16 stays at 0.83, and nobody re-scores it.
+
+**The run accepted slice 17, "the account mark, and the jump across", at 1.00 on
+its first attempt.** It weighs 0.04. The contribution is 0.04. All five of its criteria scored
+1.0: C1 1.0 (CRITICAL), C2 1.0 (CRITICAL), C3 1.0, C4 1.0, and C5 1.0. Its test file is
+`tests/test_account_mark.py`, with fourteen cases.
+
+It landed on top of slice 16's tree, and slice 16's escalation left that work
+unaccepted. Its 1.00 is honest for the tree the run measured. A reader
+must not read it as a clean acceptance of slice 16.
+
+**Slice 11, "the diagram tiles open their drawing", is void.** Its six criteria all scored
+1.00. The validator checked them in a real browser. Its test file is
+`tests/test_diagram_tiles.py`, with twenty-three cases. Every case in its contract also
+passes against the tree before the slice, because the feature shipped in commit `e68fd3d`
+on 2026-09-23. Its GREEN changed no source file.
+
+The slice therefore contributed no implementation, and its test result is
+evidence about nothing. It takes no score, and the record writes no 1.00 red-green row for
+it. It counts as delivered by port, and the mutation check and the
+browser evidence stand as its proof. Slices 8 and 9 carry the same condition,
+and the notes on them already say so.
+
+**Two suite readings and one sha256 hold for the tree.** The repository suite reads 9
+failed, 457 passed, and 1 skipped. Two runs in a row on a quiet tree produced identical
+failure lists. The viewer suite reads 115 passed and 0 failed.
+The shipped viewer carries sha256
+`beb7ce169d4c899236f3b6d3c17c749ebd8bf1a2e2de74d8fa43df6983077ac1`.
+
+**The nine failures are the known baseline.** They split into two causes. Five fail on
+a stale Mermaid CDN pattern in `plugins/artifact/scripts/export_artifact.py`, held as
+`MERMAID_CDN_RE`, because the viewer loads Mermaid by dynamic import since an earlier
+slice. Four fail on a Pillow import: the wheel targets x86_64, and this host is arm64.
+Neither cause belongs to these slices.
+
+**One full-suite run reported 12 failures, and a serial re-run settled it.** Two repair
+agents ran builds at the same time. The overlapping run added two cases in
+`tests/test_viewer_build.py`. Two later serial runs reported 9, and the shipped viewer's
+sha256 was identical before and after. This is an orchestration error, and it is not a
+defect in the guard.
 
 **Gate 4 cleared on 2026-09-25.** The engineer approved the four Gate 4b epic technical
 solution designs for E2, E5, E7, and E19 with one word, "Approved". That word covers the
