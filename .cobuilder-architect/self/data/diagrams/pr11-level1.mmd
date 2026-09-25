@@ -31,11 +31,11 @@ C4Container
     ContainerDb(bundle, ".cobuilder-architect/self/", "Bundle directory", "data/, assets/, viewer/, exports/ - read and written by all five plugins")
 
     Rel(engineer, mkt, "Runs /plugin install against")
-    Rel(mkt, pArch, "Declares")
-    Rel(mkt, pPr, "Declares")
-    Rel(mkt, pArtifact, "Declares")
-    Rel(mkt, pImplement, "Declares")
-    Rel(mkt, pLifecycle, "Declares, depends on other four")
+    Rel(mkt, archSkill, "Declares")
+    Rel(mkt, prSkill, "Declares")
+    Rel(mkt, artSkill, "Declares")
+    Rel(mkt, implSkill, "Declares")
+    Rel(mkt, lifeSkill, "Declares, depends on other four")
 
     Rel(archSkill, shared, "Imports via plugins/cobuilder-architect/shared symlink")
     Rel(prSkill, shared, "Imports via plugins/cobuilder-pr/shared symlink")

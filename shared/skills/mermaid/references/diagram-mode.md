@@ -60,6 +60,14 @@ ignored. Follow them even when the diagram would render without them.
   `Container_Boundary`, and `Rel`. Do not reach for less common C4 macros.
   They are more likely to hit a Mermaid version gap.
 
+- **Never name a `*_Boundary` in a `Rel`.** A boundary is a grouping, not a
+  shape. A relationship resolves its endpoints against shapes only, so a
+  boundary fails on either side of the arrow. The file parses on every Mermaid
+  version, so a parse-only check passes it, and only a render reports the
+  failure. Before 11.17 it crashed, and it now reports `C4 rel "<a>" -> "<b>"
+  references an unknown shape`. Point the `Rel` at a container declared inside
+  that boundary instead.
+
 - **Use `\n` for a line break in a quoted C4 or sequence label.** Do not write
   `<br/>` there. It is an HTML tag, and not every Mermaid renderer accepts it
   in every diagram type.
