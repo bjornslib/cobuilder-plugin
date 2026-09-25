@@ -1,0 +1,71 @@
+{
+  "name": "implementation-conformance",
+  "title": "A change is checked against the program it implements",
+  "adr": "ADR-0030",
+  "adrs": [
+    "ADR-0030",
+    "ADR-0013",
+    "ADR-0018",
+    "ADR-0029",
+    "ADR-0011",
+    "ADR-0009",
+    "ADR-0022"
+  ],
+  "created": "2026-09-25",
+  "outcome": "A reviewer of a pull request reads which of the program's targets the change met and where it did something different, in what the generating or the reviewing agent writes. The agent reached those targets from the program's own records rather than from the diff.",
+  "done_when": [
+    "the agent reads the program's own records before it assesses a change. Those records are the design's intent, its problem and its solution, its architecture level, its epic list, and its slice rubrics. The agent reaches each one from the pull request through the record index, and never names one by hand",
+    "the written output names each difference between what the program targeted and what the change did, in the assessment the pull request carries and in the narrative a reader reads. Neither place is the only one that states it",
+    "a pull request that belongs to no program says so in one sentence. It never reports a clean result against a program it did not read, and the 13 of 17 timeline entries with no design still read correctly",
+    "the program's epic target and slice rubric are reachable from the record index, so the check cites a record rather than a reading of a note",
+    "a pull request whose change departed from its program's targets produces a difference entry, and a pull request that met them produces none",
+    "the three half-instructions in review-mode.md section 7, interview-guide.md section 2, and story-mode.md gain one mechanical consumer each, and each cites the artifact that consumes it"
+  ],
+  "abort_if": [
+    "the join from a pull request to its program's records cannot be resolved from the record index alone. The two paths disagree: epic_to_pull_request resolves 32 epics across 6 designs, and intent.design names 3 designs across 4 of the 17 timeline entries",
+    "the program's targets prove unreadable as targets. 73 epic entities carry 0 outcome values and 72 note values, and no entity in the record index reaches the 47 rubric files under .cobuilder/rubrics/",
+    "the difference cannot be stated in what the agents already write without widening an interface a reader depends on. A design's narrative carries three levels, and a pull request carries four"
+  ],
+  "min_work": {
+    "derived_from": "15 designs under docs/architecture/designs/. 8 carry intent.json, narrative.json, and assessment.json, and 7 carry goal.json alone. 17 timeline entries in .cobuilder-architect/self/data/story.json, and 4 carry intent.design while 13 carry none. index.json joins: epic_to_pull_request resolves 32 epics across 6 designs. adr_to_pull_request resolves all 29 records, 15 directly and 14 through an epic, with 0 unresolved. slice_to_epic resolves 45 slices. No join reaches a design from a pull request. 73 epic entities carry 0 outcome values and 72 note values. 45 of 45 slices carry an ends_with and a score. 47 rubric files sit under 6 plan directories in .cobuilder/rubrics/, committed and projected into no entity. The plan slug is not the design name: cobuilder-family holds the rubrics and plugin-split is the design. 3 reference files already carry half the instruction with no consumer: review-mode.md section 7, interview-guide.md section 2, and story-mode.md. 7 related ADRs, 1 bounded context.",
+    "challenge_stage_run": false,
+    "note": "Stage 0 and stage 1 grounding ran on 2026-09-25 and produced the measurements above. Stages 2 through 7 are deliberately deferred at the engineer's request. This design is a backlog entry, not an approved design. It carries no intent.json, narrative.json, assessment.json, or diagrams, and it must not be implemented until design mode runs to completion. ADR-0030 records the decision to do the work and is decided, not built."
+  },
+  "limits": {
+    "warn_after_rounds": 3,
+    "cutoff_rounds": 6
+  },
+  "epics": [
+    {
+      "id": "E1",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "The join resolves from a change to the program that produced it, and the resolved path is recorded once. Two paths disagree today. epic_to_pull_request in the record index resolves 32 epics across 6 designs. intent.design is set on 4 of the 17 timeline entries and names 3 designs. plugin-split, design-mode, and cobuilder-implement resolve through an epic, and no timeline entry names them. A check that trusts intent.design alone therefore skips them silently. This epic decides the authoritative path, or the precedence between both, and writes the resolution where the check reads it. It is the tracer bullet: it is useful alone, it needs no change to the program's records, and the rest of the work cannot attach until it exists."
+    },
+    {
+      "id": "E2",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "A program's target becomes a record a check can cite. Today an epic's promise is prose, because 73 epic entities carry 0 outcome values and 72 note values. The rubrics are worse: 47 rubric files under 6 plan directories are reachable by no entity, and the plan slug is not the design name. The nearest projection is the slice, where 45 of 45 carry an ends_with and a score, and that is the rubric's result rather than its criteria. ADR-0030 leaves three shapes open and gives the choice to this epic. A design can fill epics[].outcome and hold itself to a testable criterion. The index can project each rubric as its own entity. Or the check can adopt the slice's ends_with and score as the target and say so. The last shape is the cheapest and the least faithful, so this epic must record which shape it chose and why."
+    },
+    {
+      "id": "E3",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "Both agents read the program's records, and the read is recorded. interview-guide.md section 2 already says that a set intent.design makes the design's intent block the hypothesis, and that the five design topics need no re-interview. review-mode.md section 7 already says to measure per epic against that epic's slice of the design. Neither instruction has a consumer, and nothing records that either read happened. This epic attaches the read to both stages: generate mode's pre stage, beside the interview it already runs, and review mode's post stage, beside the drift array it already writes. Each agent reads the design's intent, its problem and its solution, its architecture level, its epic list, and its slice rubrics. It reaches them through E1's resolved join and measures against the epic from E2. The read must survive a sparse program, because 7 of the 15 designs carry a goal.json only, and it must record which of the program's records it found and which it did not."
+    },
+    {
+      "id": "E4",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
+      "note": "The difference is stated where a reader finds it. The check must reach the output and not only a computed field, and story-mode.md already says the author's account and the code's account can disagree. This epic owns the words and the placement: one entry per difference in the assessment the pull request carries, and the same difference stated in the narrative a reader reads, at the altitude each level already uses. It also owns the single sentence a pull request that belongs to no program writes, because a statement that says nothing must not read as a clean result. review-mode.md section 7 keeps the four existing drift kinds drawn from the pull request's own intent, so this epic adds a separate record rather than a fifth kind, or it says why the array is the right home after all. It also owns the rendered review, so the difference survives into render_review.py's output."
+    }
+  ],
+  "stage": "backlog",
+  "supersedes": null,
+  "rounds": []
+}
