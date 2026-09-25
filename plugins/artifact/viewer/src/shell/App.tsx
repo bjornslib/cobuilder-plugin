@@ -150,6 +150,7 @@ import {
   routeHref,
   SECTION_LABEL,
   switcherList,
+  worklessPullRequest,
 } from "./model";
 import type { Gates, LevelState, RailSource, SectionKey, WorkItem } from "./model";
 import {
@@ -406,6 +407,30 @@ export default function ShellApp() {
   const levels = work ? levelsOf(work) : null;
 
   /*
+   * The index's own pull request entities. They are the second row source the board reads,
+   * and the set a workless route resolves against. The value is the index's answer or an
+   * empty list, so a route read before the index lands resolves to nothing and keeps its
+   * error until the index answers.
+   */
+  const allPullRequests = load.state === "ready" ? entitiesOf(load.index).pull_request : [];
+
+  /*
+   * THE WORKLESS CHANGE. A route whose work segment names no design is not always an
+   * address that resolved to nothing. A pull request no design carries has no work item of
+   * its own, so no id names one, and `model.pullRequestHref` states that pull request's own
+   * number in the work segment. `model.worklessPullRequest` reads the same rule backwards,
+   * and this is where the shell applies it. So one segment names either a design or a pull
+   * request, and the shell renders whichever the index holds rather than the error.
+   *
+   * The lookup runs only where a design did not claim the segment, so a design row and its
+   * own pull request can never be two answers to one address.
+   */
+  const worklessPr =
+    work === null && route.workId !== null
+      ? worklessPullRequest(allPullRequests, route.workId)
+      : null;
+
+  /*
    * The bare route is the board. A route that names an id the bundle lacks is not the
    * board: it is an address that resolved to nothing, and it keeps its own error.
    */
@@ -420,12 +445,27 @@ export default function ShellApp() {
       }
     }
     if (gates?.build) set.add("build");
-    if (gates?.pullRequests) set.add("pull-requests");
+    /*
+     * A WORKLESS PULL REQUEST FILLS THE CHANGE'S ACCOUNT AND NOTHING ELSE. Its four rows
+     * live in `pull-requests`, so that section is what its address resolves to, and a route
+     * that asks for another section redirects there and states the redirect.
+     */
+    if (gates?.pullRequests || worklessPr !== null) set.add("pull-requests");
     if (gates?.shipped) set.add("shipped");
     return set;
-  }, [gates, levels]);
+  }, [gates, levels, worklessPr]);
 
-  const { section } = useSectionAvailability(route.section, filled, work === null);
+  /*
+   * THE THIRD ARGUMENT IS "THE ADDRESS RESOLVED TO NOTHING AT ALL". It used to mean "names
+   * no design", and a workless pull request named no design while its address resolved to a
+   * real surface. So the flag now covers both sources, and only an id neither source holds
+   * keeps the route's own section and its own error.
+   */
+  const { section } = useSectionAvailability(
+    route.section,
+    filled,
+    work === null && worklessPr === null,
+  );
 
   const chooseWork = useCallback(
     (id: string) => {
@@ -455,11 +495,11 @@ export default function ShellApp() {
 
   /* A redirect is stated, never silent. */
   useRedirectNotice({
-    workMissing: work === null,
+    workMissing: work === null && worklessPr === null,
     wanted: route.section,
     available: filled,
     section,
-    workId: work?.id ?? "",
+    workId: work?.id ?? route.workId ?? "",
     go,
     setRedirectedFrom,
   });
@@ -483,6 +523,14 @@ export default function ShellApp() {
    * number comes from the route's `sub` field, which is the field the pull-request list
    * already writes, so no second address scheme exists.
    *
+   * A WORKLESS ROUTE'S CHANGE IS THE PULL REQUEST ITS WORK SEGMENT NAMES, AND `sub` CANNOT
+   * OVERRIDE IT. No design carries the segment, and `model.worklessPullRequest` answered
+   * which pull request does. That pull request's change account is the address's whole
+   * destination, so a `sub` that named another number would name a change this address does
+   * not belong to. The segment therefore wins, and `#/17/pull-requests` and
+   * `#/17/pull-requests/17` answer the same change. One derivation, so the heading and the
+   * rows read the same number and cannot disagree.
+   *
    * The four hooks sit above the loading and error returns, because a hook that runs on
    * one render and not the next is the defect the rules of hooks exist to prevent. A
    * route that names no pull request reads nothing: `useChangeBundle(null)` answers the
@@ -491,9 +539,13 @@ export default function ShellApp() {
   const namedPr =
     route.sub !== null && route.sub !== "flightdeck" ? Number(route.sub) : null;
   const changePr =
-    section === "pull-requests" && namedPr !== null && Number.isFinite(namedPr)
-      ? namedPr
-      : null;
+    section !== "pull-requests"
+      ? null
+      : worklessPr !== null
+        ? worklessPr.id
+        : namedPr !== null && Number.isFinite(namedPr)
+          ? namedPr
+          : null;
   const change = useChangeBundle(changePr);
   const servedAudio = useServedAudio(change.levels);
   const [artMode, setArtMode] = useState<ArtMode>("image");
@@ -670,7 +722,6 @@ export default function ShellApp() {
    * join is the index's own shape and the shell names no key of it.
    */
   const unresolvedSlices = load.state === "ready" ? unresolvedSliceCount(load.index) : 0;
-  const allPullRequests = load.state === "ready" ? entitiesOf(load.index).pull_request : [];
   const adrs = load.state === "ready" ? load.adrs : {};
   /* The board states that it is reading, so an empty map is the honest value here. */
   const records = load.state === "ready" ? load.designs : {};
@@ -717,11 +768,26 @@ export default function ShellApp() {
       <Frame reduce={reduce} open={railOpen} onOpenChange={setRailOpen}>
         <TopBar
           workId={work?.id ?? route.workId}
-          workName={work?.design.name ?? route.workId}
+          /*
+            A WORKLESS CHANGE IS NAMED BY ITS PULL REQUEST. The top bar states the work
+            item's own name, and a workless route has no work item, so the id alone would
+            name it. The pull request's title says more, and it is the same word the board's
+            row states for the same pull request.
+          */
+          workName={
+            work?.design.name ??
+            (worklessPr === null ? route.workId : `Pull request ${worklessPr.id}`)
+          }
           stage={work?.design.stage ?? null}
           supersededBy={work?.record?.goal?.superseded_by ?? null}
           ready={load.state === "ready"}
-          board={board}
+          /*
+            A WORKLESS CHANGE NAMES NO WORK ITEM EITHER. The top bar drops the stage badge
+            and reads the switcher as "no work item selected" for both routes, because a
+            stage and a selected work item both belong to a work item and this route has
+            none. The pull request's own state is not a stage, so it takes no badge here.
+          */
+          board={board || worklessPr !== null}
           designs={workList.designs}
           epics={workList.epics}
           onChooseWork={chooseWork}
@@ -750,15 +816,25 @@ export default function ShellApp() {
             id={PANE_ID}
             ref={paneRef}
             tabIndex={-1}
-            aria-label={board ? "Work board" : `${work?.design.name ?? "No work item"}, ${section}`}
+            aria-label={
+              board
+                ? "Work board"
+                : `${
+                    work?.design.name ??
+                    (worklessPr === null ? "No work item" : `Pull request ${worklessPr.id}`)
+                  }, ${section}`
+            }
             className="min-h-0 min-w-0 flex-1 overflow-auto overscroll-contain bg-ground outline-none"
           >
             {board ? (
               /*
-                THE BOARD TAKES THE DATA LAYER'S OWN ROWS. `Board.tsx` fixed its props in
-                E19: the resolved `DesignRow[]`, the record map, the readiness flag, and
-                the heading id. It reads no work item, so the shell hands it the index's
-                answer and nothing else.
+                THE BOARD TAKES THE DATA LAYER'S OWN ROWS, AND THE INDEX'S OWN PULL
+                REQUESTS BESIDE THEM. `Board.tsx` fixed its props in E19: the resolved
+                `DesignRow[]`, the record map, the readiness flag, and the heading id.
+                Slice 18 adds the second row source, so the board also takes the index's
+                `pull_request` entities and derives the pull requests no design carries
+                from those two inputs alone. It reads no work item, so the shell hands it
+                the index's answer and nothing else.
 
                 THE SLOT IS WHAT LETS THE PANE OWN THE BOARD'S SCROLL. Section 11.3 gives
                 the pane that scroll, and `Board.tsx` says the same in its own comment.
@@ -774,25 +850,113 @@ export default function ShellApp() {
               <div className="min-w-0 shrink-0">
                 <Board
                   rows={boardRows}
+                  pullRequests={allPullRequests}
                   records={records}
                   ready={load.state === "ready"}
                   headingId={HEADING_ID}
                 />
               </div>
             ) : work === null ? (
-              <div className="min-w-0 px-6 py-6">
-                <div className="max-w-[80ch] rounded-xl border border-dashed border-warn bg-warn-wash px-4 py-3.5">
-                  <p className="m-0 font-mono text-[12.5px] font-bold tracking-[0.06em] text-warn uppercase">
-                    The route names an id the bundle lacks
-                  </p>
-                  <p className="mt-2 mb-0 font-serif text-[16px] leading-[1.55] text-ink-mid">
-                    The route asks for work item{" "}
-                    <code className="font-mono text-[13px]">{route.workId ?? "(none)"}</code>.
-                    The index resolved {works.size} designs, and none of them carries that id.
-                    Pick one in the work-item switcher above.
-                  </p>
+              /*
+                THE WORKLESS CHANGE IS NOT THE UNKNOWN-ID ERROR. An id no design carries
+                may still name a pull request, and then the address resolves to that pull
+                request's own change account. `model.worklessPullRequest` answered above, so
+                this branch states the account rather than the error, and only an id neither
+                source holds reaches the error below.
+
+                THE ACCOUNT IS THE CHANGE'S OWN, AND NOTHING ELSE. A pull request with no
+                design has no branch, no epic figure, and no supersedes list, so the top line
+                panel is absent rather than empty. The rail's two groups read a work item and
+                are therefore absent too, and the account's own four rows are the section
+                strip and the two pager arrows below. So a reader still reaches all four.
+
+                THE PULL REQUEST'S OWN NUMBER NAMES THE CHANGE HERE, AND `changePr` IS THAT
+                SAME NUMBER. The derivation above fixes it to the work segment's own pull
+                request for a workless route, so the heading and the rows below read one
+                number and cannot disagree. This branch therefore reads `worklessPr.id` and
+                needs no guard on `changePr`.
+              */
+              worklessPr === null ? (
+                <div className="min-w-0 px-6 py-6">
+                  <div className="max-w-[80ch] rounded-xl border border-dashed border-warn bg-warn-wash px-4 py-3.5">
+                    <p className="m-0 font-mono text-[12.5px] font-bold tracking-[0.06em] text-warn uppercase">
+                      The route names an id the bundle lacks
+                    </p>
+                    <p className="mt-2 mb-0 font-serif text-[16px] leading-[1.55] text-ink-mid">
+                      The route asks for work item{" "}
+                      <code className="font-mono text-[13px]">{route.workId ?? "(none)"}</code>.
+                      The index resolved {works.size} designs and {allPullRequests.length} pull
+                      requests, and neither source carries that id. Pick one in the work-item
+                      switcher above.
+                    </p>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div
+                    key={`${worklessPr.id}/${section}/${route.subId ?? ""}`}
+                    initial={reduce ? false : { opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={reduce ? undefined : { opacity: 0 }}
+                    transition={{ duration: 0.2, ease: [0.22, 0.75, 0.3, 1] }}
+                    className={cn(
+                      "min-w-0",
+                      paged ? "flex h-full min-h-0 flex-col pt-6 pb-2" : "px-6 py-6 pb-12",
+                    )}
+                  >
+                    {redirectedFrom !== null ? (
+                      <p className="mb-4 min-w-0 rounded-lg border border-dashed border-line bg-surface-2 px-3.5 py-2 font-mono text-[12.5px] text-ink-dim">
+                        The route named {redirectedFrom}, and this pull request carries no such
+                        section. The shell redirected to {section}.
+                      </p>
+                    ) : null}
+
+                    {changeNotice !== null ? (
+                      <p className="mb-4 min-w-0 rounded-lg border border-dashed border-warn bg-warn-wash px-3.5 py-2 font-mono text-[12.5px] text-ink-dim">
+                        {changeNotice}
+                      </p>
+                    ) : null}
+
+                    {/*
+                      THE HEADING NAMES THE PULL REQUEST, NOT THE WORK ITEM. There is no work
+                      item, so the design's own name has nothing to say here. A paged level
+                      keeps its heading `sr-only` and moves focus onto it, so a screen reader
+                      hears the pull request it landed on. The number is `worklessPr.id`,
+                      which `changePr` equals for this route.
+                    */}
+                    <LevelHeading
+                      section={section}
+                      work={null}
+                      gates={null}
+                      paged={paged}
+                      title={`Pull request ${worklessPr.id}`}
+                    />
+
+                    <PagedLevel
+                      targets={jumpTargets}
+                      routeKey={routeKey}
+                      start={changeRowIndex(route.subId)}
+                      sections={changeSections({
+                        entry: change.entry,
+                        levels: change.levels,
+                        servedAudio,
+                        diff: change.diff,
+                        diffMessage: change.diffMessage,
+                        theme,
+                        artMode,
+                        onArtMode: setArtMode,
+                        failedArt,
+                        onArtFailed: setFailedArt,
+                        diffFile,
+                        onDiffFile: setDiffFile,
+                        joins: resolvedJoins,
+                        adrs,
+                        openSheet,
+                      })}
+                    />
+                  </motion.div>
+                </AnimatePresence>
+              )
             ) : (
               <>
                 {/*
@@ -1085,6 +1249,13 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
  *
  * A paged level drops its band and keeps the heading as `sr-only`, so the strip below is
  * the only place the section's own words are drawn. A stacked level draws the band.
+ *
+ * THE WORK ITEM IS NULLABLE, BECAUSE A WORKLESS PULL REQUEST HAS NONE. Every caller of the
+ * stacked form passes one, and that form reads it for the section's lead. A workless change
+ * carries no work item and is always paged, so it passes null and the heading names the pull
+ * request through `title`. The branch below answers the `sr-only` heading for a null work
+ * item too, so a caller that broke the pairing would state the section rather than crash on
+ * a lead it cannot read.
  */
 function LevelHeading({
   section,
@@ -1094,7 +1265,7 @@ function LevelHeading({
   title,
 }: {
   section: SectionKey;
-  work: WorkItem;
+  work: WorkItem | null;
   gates: Gates | null;
   paged: boolean;
   /** The level's own name, when the section's name is not the one the reader is on. */
@@ -1102,7 +1273,7 @@ function LevelHeading({
 }) {
   const headingRef = useFocusOnMount<HTMLHeadingElement>();
 
-  if (paged) {
+  if (paged || work === null) {
     return (
       <h1 ref={headingRef} id={HEADING_ID} tabIndex={-1} className="sr-only outline-none">
         {title ?? SECTION_TITLE[section]}

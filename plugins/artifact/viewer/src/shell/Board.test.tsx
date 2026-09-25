@@ -10,13 +10,18 @@
  * The board takes its data the way the rest of this package does. `rows` is the resolved
  * `DesignRow[]` the record index yields, and `records` is the per-design record map that
  * `data/designs.js` carries.
+ *
+ * Slice 18 adds the second row source and the two filters, and its cases sit in their own
+ * block below. That block hands the board the index's pull request entities beside its
+ * rows, exactly as `App.tsx` does, and it reads the block's own fixtures so the slice-6
+ * cases above keep the rows they were written against.
  */
 
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
-import type { DesignEntity, DesignRow, EpicEntity } from "@/data/types";
+import type { DesignEntity, DesignRow, EpicEntity, PullRequest } from "@/data/types";
 
 import { Board, type BoardProps } from "./Board";
 import {
@@ -276,5 +281,213 @@ describe("Board", () => {
     expect(rowHeadings()).toHaveLength(0);
     expect(screen.queryByRole("alert")).toBeNull();
     expect((document.body.textContent ?? "").trim().length).toBeGreaterThan(0);
+  });
+});
+
+/* ------------------------------------------------- the board's second row source */
+
+/**
+ * Slice 18: a pull request that belongs to no design reads as a row of its own.
+ *
+ * The block below hands the board the index's pull request entities beside its rows,
+ * the way `App.tsx` does, and it fixes the three claims the slice's own end states:
+ * a PR-alone row exists, its status is the pull request's own state, and the two
+ * filters keep the rows their vocabulary names.
+ *
+ * The block's props are typed as `BoardProps`, the same type the slice-6 block above
+ * uses, and it renders `Board` directly with no cast. Slice 18 added `pullRequests` to
+ * `BoardProps`, so a case that hands the board a pull request list is checked against
+ * the component's own prop types: a misspelled prop name or a wrong shape reaches `tsc`
+ * as an error rather than passing through a cast that erases the props.
+ */
+
+/** One pull request, as `data/index.json` writes the entity. */
+function pullRequest(id: number, state: string): PullRequest {
+  return {
+    id,
+    title: `Pull request ${id}`,
+    state,
+    commit: "abc1234",
+    date: "2026-09-20",
+  };
+}
+
+/* Four design rows, and four pull requests. One design's epics carry `21`, so the
+   board must list it inside that design's row and never beside it. */
+const PR_DESIGNS: DesignRow[] = [
+  { ...DESIGNS[0], pullRequests: [21] },
+  DESIGNS[1],
+  DESIGNS[2],
+  { ...DESIGNS[3], design: { ...DESIGNS[3].design, stage: "decided" } },
+];
+
+const PULL_REQUESTS: PullRequest[] = [
+  pullRequest(11, "merged"),
+  pullRequest(21, "merged"),
+  pullRequest(17, "open"),
+  pullRequest(22, "open"),
+];
+
+/** The three pull requests no design's epics carry: 11, 17, and 22. */
+const PR_ALONE_IDS = [11, 17, 22];
+
+function renderPrBoard(overrides: Partial<BoardProps> = {}) {
+  const props: BoardProps = {
+    rows: PR_DESIGNS,
+    records: RECORDS,
+    ready: true,
+    headingId: HEADING_ID,
+    pullRequests: PULL_REQUESTS,
+    ...overrides,
+  };
+  return render(
+    <TooltipProvider delayDuration={150}>
+      <Board {...props} />
+    </TooltipProvider>,
+  );
+}
+
+/** Every board row. A row is a list item that carries the row's one anchor. */
+function boardRows(): HTMLElement[] {
+  return screen
+    .queryAllByRole("listitem")
+    .filter((item) => item.querySelector("a") !== null);
+}
+
+/** The one board row whose text names `name`, or a failure naming it. */
+function boardRowOf(name: string): HTMLElement {
+  const found = boardRows().find((row) => (row.textContent ?? "").includes(name));
+  expect(found, `a board row names ${name}`).toBeTruthy();
+  return found as HTMLElement;
+}
+
+/** Every tab on the board: the status strip's, then the kind control's. */
+function tabs(): HTMLElement[] {
+  const found = screen.queryAllByRole("tab");
+  expect(found.length, "the board draws a tab strip").toBeGreaterThan(0);
+  return found;
+}
+
+/** The tab whose label reads `pattern`, or a failure naming the pattern. */
+function tabMatching(pattern: RegExp): HTMLElement {
+  const found = tabs().find((tab) => pattern.test((tab.textContent ?? "").trim()));
+  expect(found, `a tab whose label reads ${pattern}`).toBeTruthy();
+  return found as HTMLElement;
+}
+
+/** A tab's count, as the number it reads beside its label. */
+function tabCount(tab: HTMLElement): number {
+  const digits = (tab.textContent ?? "").match(/\d+/g) ?? [];
+  expect(digits.length, `a count beside the tab ${tab.textContent ?? ""}`).toBeGreaterThan(
+    0,
+  );
+  return Number(digits[digits.length - 1]);
+}
+
+/** A press, in the two events a tab strip listens for. */
+function pressTab(tab: HTMLElement): void {
+  fireEvent.mouseDown(tab, { button: 0 });
+  fireEvent.click(tab);
+}
+
+describe("Board, with the index's pull requests beside its rows", () => {
+  it("lists a pull request no design carries as a row of its own", () => {
+    renderPrBoard();
+
+    expect(boardRows()).toHaveLength(PR_DESIGNS.length + 3);
+    for (const id of PR_ALONE_IDS) {
+      expect(boardRowOf(`Pull request ${id}`), `a row for pull request ${id}`);
+    }
+
+    /* The board is not a paged level, and slice 18 changes nothing about that. */
+    expect(screen.queryByText(/Section \d+ of \d+/)).toBeNull();
+    expect(screen.queryByRole("button", { name: /^next$/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^previous$/i })).toBeNull();
+  });
+
+  it("states the pull request's own state and kind word, and no record signature", () => {
+    renderPrBoard();
+
+    const row = boardRowOf("Pull request 17");
+    expect(row.textContent ?? "").toMatch(/\bopen\b/i);
+    expect(row.textContent ?? "").toMatch(/\bPR\b/);
+    expect(
+      within(row).queryAllByLabelText(SIGNATURE_LABEL),
+      "a pull request holds no design directory, so its row carries no six marks",
+    ).toHaveLength(0);
+
+    const merged = boardRowOf("Pull request 11");
+    expect(merged.textContent ?? "").toMatch(/\bmerged\b/i);
+  });
+
+  it("renders no second row for a pull request a design's own epics carry", () => {
+    renderPrBoard();
+
+    expect(boardRows()).toHaveLength(PR_DESIGNS.length + 3);
+    expect(
+      boardRows().filter((row) => (row.textContent ?? "").includes("Pull request 21")),
+      "pull request 21 reads inside its design's row, and nowhere else",
+    ).toHaveLength(0);
+
+    /* The design rows still render, still state their stage, and still open a work
+       item: slice 18 adds rows beside them and changes nothing inside them. */
+    for (const row of PR_DESIGNS) {
+      const rendered = boardRowOf(row.design.name);
+      expect(rendered.textContent ?? "").toMatch(new RegExp(row.design.stage, "i"));
+      const link = rendered.querySelector("a");
+      expect(link?.getAttribute("href"), `${row.design.name} still opens a work item`)
+        .toBeTruthy();
+      expect(within(rendered).getAllByLabelText(SIGNATURE_LABEL)).toHaveLength(1);
+    }
+  });
+
+  it("keeps only the rows a status tab names, and counts them", () => {
+    renderPrBoard();
+
+    const all = tabCount(tabMatching(/^All\b/i));
+    expect(all).toBe(PR_DESIGNS.length + 3);
+    expect(tabCount(tabMatching(/\bopen\b/i))).toBe(2);
+    expect(tabCount(tabMatching(/\bmerged\b/i))).toBe(1);
+
+    pressTab(tabMatching(/\bopen\b/i));
+    expect(boardRows()).toHaveLength(2);
+    expect(
+      boardRows().every((row) => /open/i.test(row.textContent ?? "")),
+      "every row the open tab keeps carries that status",
+    ).toBe(true);
+
+    pressTab(tabMatching(/\bmerged\b/i));
+    expect(boardRows()).toHaveLength(1);
+    expect(boardRows()[0].textContent ?? "").toContain("Pull request 11");
+
+    for (const tab of tabs().filter((one) => /^All\b/i.test(one.textContent ?? ""))) {
+      pressTab(tab);
+    }
+    expect(boardRows()).toHaveLength(all);
+  });
+
+  it("narrows to the PR-alone rows under the kind control, and filters them by status", () => {
+    renderPrBoard();
+
+    expect(boardRows()).toHaveLength(PR_DESIGNS.length + 3);
+
+    pressTab(tabMatching(/\bPR\b/));
+    expect(boardRows()).toHaveLength(3);
+    expect(
+      boardRows().every((row) => /PR/.test(row.textContent ?? "")),
+      "every row the kind control keeps is a pull request row",
+    ).toBe(true);
+
+    pressTab(tabMatching(/\bopen\b/i));
+    expect(boardRows()).toHaveLength(2);
+
+    for (const tab of tabs().filter((one) => /^All\b/i.test(one.textContent ?? ""))) {
+      pressTab(tab);
+    }
+    expect(boardRows()).toHaveLength(PR_DESIGNS.length + 3);
+
+    /* Still no section strip, no pager bar, and no level progress bar. */
+    expect(screen.queryByText(/Section \d+ of \d+/)).toBeNull();
+    expect(screen.queryByRole("button", { name: /^next$/i })).toBeNull();
   });
 });

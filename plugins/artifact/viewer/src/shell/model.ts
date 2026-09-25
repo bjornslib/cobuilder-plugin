@@ -31,7 +31,7 @@
  * the shell is now the shipped surface rather than one variation among several.
  */
 
-import type { EpicEntity, GateStep } from "@/data/types";
+import type { EpicEntity, GateStep, PullRequest } from "@/data/types";
 import type { NarrativeBeat } from "@/data/bundle";
 import type { WorkItem } from "@/data/works";
 
@@ -460,6 +460,38 @@ export function programHref(workId: string, section: ProgramKey): string {
 export function changeHref(workId: string, pr: number, section: ChangeKey): string {
   if (section === "intent") return routeHref(workId, "pull-requests", String(pr));
   return routeHref(workId, "pull-requests", `${pr}/${section}`);
+}
+
+/**
+ * The address of a pull request that no design carries.
+ *
+ * A pull request with no design has no work item, so no id names one. That case is not an
+ * address that resolved to nothing, and it must not end in the unknown-id error. The rule
+ * is therefore stated once, here, beside the two account builders: the address's work
+ * segment carries the pull request's own number, and `changeHref` builds the rest. A row
+ * that assembled this address where it is drawn would be a second address scheme beside
+ * the ones this file fixes.
+ *
+ * `worklessPullRequest` below reads the same rule backwards, so the builder and the
+ * resolver cannot disagree about which address belongs to which pull request.
+ */
+export function pullRequestHref(pr: number, section: ChangeKey): string {
+  return changeHref(String(pr), pr, section);
+}
+
+/**
+ * The pull request a workless route's work segment names, or null.
+ *
+ * The inverse of `pullRequestHref`. The shell resolves a route's work segment among the
+ * index's designs first, because a design owns that segment when one carries the id. Only
+ * a segment no design carries is read here, and then the pull request whose own number the
+ * segment states is the one the address names.
+ */
+export function worklessPullRequest(
+  pullRequests: PullRequest[],
+  workId: string,
+): PullRequest | null {
+  return pullRequests.find((pull) => String(pull.id) === workId) ?? null;
 }
 
 /**

@@ -39,29 +39,73 @@
  * `--primary` border, and the focus ring takes `--ring`, which resolves to the same teal
  * as `--primary`. `--band` is the heading fill, and no row state takes it, because a row
  * that took it would read as a heading.
+ *
+ * THE BOARD LISTS TWO KINDS OF ROW. A design row is one design directory. A pull request
+ * row is one pull request the index holds that no design's own epics point at, so it
+ * belongs to no design and earns a row of its own. The subtraction runs against
+ * `DesignRow.pullRequests`, which the data layer already resolves, so a design's own pull
+ * request reads inside that design's row and nowhere else. A pull request row states its
+ * own state and the kind word `PR`, and it carries no six record marks, because those
+ * marks read a design directory and a pull request holds none.
+ *
+ * TWO FILTERS, ONE FLAT LIST. The strip selects by status, and the kind control selects by
+ * kind. The two groups combine with AND, so a reader reaches the pull request rows and
+ * then narrows them by state. `All` leads each group and clears that group alone. The
+ * strip is the lens prototype's own mechanism: `Tabs`, `TabsList`, and `TabsTrigger` from
+ * the repository's tabs wrapper, with `variant="line"` and a count beside each label. The
+ * count is how many rows that tab keeps, and it waits for the index to resolve, because a
+ * count of zero would claim an empty board while the index is still in flight.
  */
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { Check, CircleDashed, CircleDot, Minus } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StageBadge } from "@/components/work/StageBadge";
 import { STAGE_ORDER } from "@/data/bundle";
-import type { DesignRow } from "@/data/types";
+import type { DesignRow, PullRequest } from "@/data/types";
 import { cn } from "@/lib/utils";
 
+import { StateBadge, toneForState } from "./atoms";
 import { useFocusOnMount } from "./hooks";
 import type { SectionKey } from "./model";
-import { routeHref } from "./model";
-import type { DesignRecords, Readiness, RecordKind, RecordVerdicts } from "./readiness";
-import { RECORD_KINDS, RECORD_LABEL, presentCount, recordVerdicts } from "./readiness";
+import { pullRequestHref, routeHref } from "./model";
+import type {
+  BoardSource,
+  DesignRecords,
+  Readiness,
+  RecordKind,
+  RecordVerdicts,
+  RowKind,
+} from "./readiness";
+import {
+  RECORD_KINDS,
+  RECORD_LABEL,
+  ROW_KINDS,
+  ROW_KIND_LABEL,
+  matchesKind,
+  matchesStatus,
+  presentCount,
+  prAloneSources,
+  recordVerdicts,
+  statusTabs,
+} from "./readiness";
 
 export interface BoardProps {
   /** The resolved rows the record index yields, one per design. */
   rows: DesignRow[];
+  /**
+   * The index's pull request entities, which the pull request row source reads.
+   *
+   * The shell hands both row sources in together. A caller that names no pull request
+   * reads the design rows alone, so an absent list reads as an empty one rather than as
+   * an error. `useBoardRows` takes the pair as one input.
+   */
+  pullRequests?: PullRequest[];
   /** The record map `data/designs.js` carries, keyed by design id. */
   records: DesignRecords;
   /** False while the index is still in flight, so the board states that and nothing else. */
@@ -121,8 +165,75 @@ function boardRows(rows: DesignRow[], records: DesignRecords): BoardRow[] {
     });
 }
 
-export function Board({ rows, records, ready, headingId }: BoardProps) {
+/**
+ * The value each filter group leads with, and the value that clears that group alone.
+ *
+ * It is not a status and not a kind, so no row can ever carry it. A group that read a row
+ * kind here would select a kind rather than clear the group.
+ */
+const ALL = "all";
+
+/** True when a source is a pull request's own row, so its row is a pull request. */
+function isPullRequestSource(
+  source: BoardSource,
+): source is { kind: "pull-request"; row: PullRequest } {
+  return source.kind === "pull-request";
+}
+
+/** True when a row survives both groups, which combine with AND. */
+function keepsRow(source: BoardSource, status: string, kind: string): boolean {
+  if (status !== ALL && !matchesStatus(source, status)) return false;
+  if (kind !== ALL && !matchesKind(source, kind as RowKind)) return false;
+  return true;
+}
+
+/**
+ * The board's rows, resolved once from the two row sources and the record map.
+ *
+ * THE TWO SOURCES TRAVEL TOGETHER. A design row reads the resolved `DesignRow[]` the
+ * record index yields. A pull request row reads the index's `pull_request` entities
+ * beside them, and the subtraction runs against each row's own `pullRequests`, so a pull
+ * request a design's epics point at earns one row inside that design and none beside it.
+ *
+ * One derivation answers both lists, so the rows the board renders, the counts beside its
+ * two controls, and its two predicates cannot disagree about one index. The design rows
+ * keep the lane order, and the pull request rows follow them in id order.
+ */
+function useBoardRows({
+  rows,
+  records,
+  pullRequests,
+}: {
+  rows: DesignRow[];
+  pullRequests: PullRequest[];
+  records: DesignRecords;
+}): { ordered: BoardRow[]; alone: BoardSource[]; sources: BoardSource[] } {
   const ordered = useMemo(() => boardRows(rows, records), [rows, records]);
+  const alone = useMemo(() => prAloneSources(rows, pullRequests), [rows, pullRequests]);
+
+  const sources = useMemo((): BoardSource[] => {
+    const designs: BoardSource[] = ordered.map((boardRow) => ({
+      kind: "design",
+      row: boardRow.row,
+    }));
+    return [...designs, ...alone];
+  }, [ordered, alone]);
+
+  return { ordered, alone, sources };
+}
+
+export function Board({ rows, records, ready, headingId, pullRequests = [] }: BoardProps) {
+  const { ordered, alone, sources } = useBoardRows({ rows, records, pullRequests });
+  const [status, setStatus] = useState<string>(ALL);
+  const [kind, setKind] = useState<string>(ALL);
+
+  const shownDesigns = ordered.filter((boardRow) =>
+    keepsRow({ kind: "design", row: boardRow.row }, status, kind),
+  );
+  const shownPulls = alone
+    .filter(isPullRequestSource)
+    .filter((source) => keepsRow(source, status, kind));
+  const shownCount = shownDesigns.length + shownPulls.length;
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col">
@@ -132,7 +243,7 @@ export function Board({ rows, records, ready, headingId }: BoardProps) {
 
         {/*
           A board that is still reading states that and nothing else. It renders no row
-          list, so a reader never meets a half-read index as a short board.
+          list and no count, so a reader never meets a half-read index as a short board.
         */}
         {!ready ? (
           <p className="m-0 min-w-0 font-mono text-[13px] text-ink-dim">
@@ -140,16 +251,31 @@ export function Board({ rows, records, ready, headingId }: BoardProps) {
           </p>
         ) : (
           <>
-            <BoardKey count={ordered.length} />
+            <BoardKey rowCount={sources.length} designCount={ordered.length} />
 
-            {ordered.length === 0 ? (
+            <BoardFilters
+              sources={sources}
+              status={status}
+              kind={kind}
+              onStatus={setStatus}
+              onKind={setKind}
+            />
+
+            {shownCount === 0 ? (
               <p className="m-0 min-w-0 font-serif text-[16px] text-ink-dim">
-                The record index resolved and lists no design.
+                The record index resolved, and no row matches the two filters.
               </p>
             ) : (
               <ul className="m-0 flex min-w-0 list-none flex-col gap-3 p-0">
-                {ordered.map((boardRow, index) => (
+                {shownDesigns.map((boardRow, index) => (
                   <BoardRowView key={boardRow.row.design.id} boardRow={boardRow} index={index} />
+                ))}
+                {shownPulls.map((source, index) => (
+                  <PullRequestRowView
+                    key={`pr-${source.row.id}`}
+                    pull={source.row}
+                    index={shownDesigns.length + index}
+                  />
                 ))}
               </ul>
             )}
@@ -157,6 +283,118 @@ export function Board({ rows, records, ready, headingId }: BoardProps) {
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * The two filter groups: one status strip, then one kind control.
+ *
+ * Two groups, two roots, and both combine with AND. Each group leads with `All`, which
+ * clears that group alone and leaves the other group's choice in place.
+ *
+ * THE STRIP IS THE LENS PROTOTYPE'S MECHANISM. `Tabs`, `TabsList`, and `TabsTrigger` from
+ * the repository's tabs wrapper, with `variant="line"` on the list. The prototype's lane
+ * vocabulary is gone; the statuses the rows record replace it.
+ *
+ * A COUNT WAITS FOR THE INDEX TO RESOLVE, and this component only renders once the index
+ * has resolved, so every count here is a number a row earned.
+ */
+function BoardFilters({
+  sources,
+  status,
+  kind,
+  onStatus,
+  onKind,
+}: {
+  sources: BoardSource[];
+  status: string;
+  kind: string;
+  onStatus: (value: string) => void;
+  onKind: (value: string) => void;
+}) {
+  const statuses = statusTabs(sources);
+  const countOf = (one: string) =>
+    sources.filter((source) => matchesStatus(source, one)).length;
+  const kindCountOf = (one: RowKind) =>
+    sources.filter((source) => matchesKind(source, one)).length;
+  const everyRow = sources.length;
+
+  return (
+    <div
+      aria-label="Filter the rows"
+      className="mb-5 flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2"
+    >
+      {/*
+        The status strip scrolls sideways rather than pushing the page wider, the way the
+        prototype's lane strip does. A status a reader cannot reach is worse than one that
+        needs a scroll.
+      */}
+      <div className="min-w-0 max-w-full overflow-x-auto">
+        <Tabs
+          value={status}
+          onValueChange={onStatus}
+          className="min-w-0"
+          aria-label="Rows by status"
+        >
+          <TabsList variant="line" className="h-auto gap-1 bg-transparent p-0">
+            <FilterTab value={ALL} label="All" count={everyRow} />
+            {statuses.map((one) => (
+              <FilterTab key={one} value={one} label={one} count={countOf(one)} />
+            ))}
+          </TabsList>
+        </Tabs>
+      </div>
+
+      <div className="min-w-0 overflow-x-auto">
+        <Tabs
+          value={kind}
+          onValueChange={onKind}
+          className="min-w-0"
+          aria-label="Rows by kind"
+        >
+          <TabsList variant="line" className="h-auto gap-1 bg-transparent p-0">
+            <FilterTab value={ALL} label="All" count={everyRow} />
+            {ROW_KINDS.map((one) => (
+              <FilterTab
+                key={one}
+                value={one}
+                label={ROW_KIND_LABEL[one]}
+                count={kindCountOf(one)}
+              />
+            ))}
+          </TabsList>
+        </Tabs>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * One filter tab: its label, and how many rows it keeps.
+ *
+ * The label and the count are two text nodes with a space between them, so a reader who
+ * copies the strip reads "merged 10" rather than "merged10" and a word-reading tool finds
+ * the label's own word.
+ */
+function FilterTab({
+  value,
+  label,
+  count,
+}: {
+  value: string;
+  label: string;
+  count: number;
+}) {
+  return (
+    <TabsTrigger
+      value={value}
+      className="h-8 cursor-pointer gap-1.5 rounded-none px-2.5 font-mono text-[13px] font-bold data-active:text-accent-deep"
+    >
+      {label}{" "}
+      <span className="font-mono text-[12px] font-normal text-ink-faint tabular-nums">
+        {count}
+      </span>
+    </TabsTrigger>
   );
 }
 
@@ -183,8 +421,9 @@ function BoardHeading({ headingId }: { headingId: string }) {
         Work
       </h1>
       <p className="mt-1.5 mb-0 min-w-0 max-w-[92ch] font-serif text-[16px] leading-[1.55] text-band-ink/85">
-        Every design in the bundle. A design that waits on a decision comes first, and a
-        superseded design comes last.
+        Every row in the bundle. A design waits on a decision and comes first, and a
+        superseded design comes last. A pull request that belongs to no design reads as a
+        row of its own, and the two controls below filter the list by status and by kind.
       </p>
     </header>
   );
@@ -195,19 +434,23 @@ function BoardHeading({ headingId }: { headingId: string }) {
  *
  * The board states completeness, which no panel in this shell does, so a reader meets
  * three readiness words here for the first time. The key names all three beside the mark
- * that carries them, and it states how many designs the board lists.
+ * that carries them, and it states how many rows the board lists and how many are designs.
+ * The row count is the two row sources together, and the design count is what the six
+ * marks beside it can read.
  */
-function BoardKey({ count }: { count: number }) {
+function BoardKey({ rowCount, designCount }: { rowCount: number; designCount: number }) {
   return (
     <div className="mb-5 flex min-w-0 flex-col gap-2.5 rounded-xl border border-line bg-card p-4">
       <p className="m-0 min-w-0 max-w-[92ch] font-serif text-[15px] leading-[1.5] text-ink-mid">
-        <b className="font-mono font-bold text-foreground tabular-nums">{count}</b>{" "}
-        {count === 1 ? "design" : "designs"}. Each row carries one mark per authored
-        record, in this order:{" "}
+        <b className="font-mono font-bold text-foreground tabular-nums">{rowCount}</b>{" "}
+        {rowCount === 1 ? "row" : "rows"}, {designCount} of them{" "}
+        {designCount === 1 ? "a design" : "designs"}. A design row carries one mark per
+        authored record, in this order:{" "}
         <span className="font-mono text-[14px]">
           {RECORD_KINDS.map((kind) => RECORD_LABEL[kind]).join(", ")}
         </span>
-        . A mark names its record and its readiness.
+        . A mark names its record and its readiness. A pull request row carries its own
+        state, the kind word PR, and no marks.
       </p>
       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
         <ReadinessPill state="present" />
@@ -326,6 +569,24 @@ function RecordSignature({ verdicts }: { verdicts: RecordVerdicts }) {
  */
 const ENTER_EASE = [0.22, 0.75, 0.3, 1] as const;
 
+/**
+ * The one row shape both kinds share. A row is one anchor, and neither kind is an
+ * exception, so the two read as one list rather than as two.
+ */
+const ROW_ANCHOR = cn(
+  "flex min-w-0 flex-col gap-2.5 rounded-xl border border-line bg-card p-4 shadow-card",
+  "transition-colors duration-150 ease-house hover:border-primary hover:bg-surface-2",
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+);
+
+/** The entrance both kinds of row take. One motion, so the two kinds move alike. */
+const ROW_ENTER = { duration: 0.18, ease: ENTER_EASE };
+
+/** The stagger, capped so a board of many rows never trails. */
+function enterDelay(index: number, reduce: boolean | null): number {
+  return reduce ? 0 : Math.min(index * 0.012, 0.12);
+}
+
 function BoardRowView({ boardRow, index }: { boardRow: BoardRow; index: number }) {
   const reduce = useReducedMotion();
   const { row, verdicts, present, section } = boardRow;
@@ -336,11 +597,7 @@ function BoardRowView({ boardRow, index }: { boardRow: BoardRow; index: number }
     <motion.li
       initial={reduce ? false : { opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{
-        duration: 0.18,
-        delay: reduce ? 0 : Math.min(index * 0.012, 0.12),
-        ease: ENTER_EASE,
-      }}
+      transition={{ ...ROW_ENTER, delay: enterDelay(index, reduce) }}
       className="min-w-0"
     >
       {/*
@@ -351,11 +608,7 @@ function BoardRowView({ boardRow, index }: { boardRow: BoardRow; index: number }
       <a
         href={href}
         aria-label={`Open ${design.name}, stage ${design.stage}`}
-        className={cn(
-          "flex min-w-0 flex-col gap-2.5 rounded-xl border border-line bg-card p-4 shadow-card",
-          "transition-colors duration-150 ease-house hover:border-primary hover:bg-surface-2",
-          "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-        )}
+        className={ROW_ANCHOR}
       >
         <div className="flex min-w-0 flex-wrap items-start gap-x-3 gap-y-2">
           <h2 className="m-0 min-w-0 flex-1 font-mono text-[16px] leading-[1.25] font-bold tracking-[-0.01em] break-words">
@@ -392,6 +645,71 @@ function BoardRowView({ boardRow, index }: { boardRow: BoardRow; index: number }
               {done} of {epics.length} {epics.length === 1 ? "epic" : "epics"}
             </Badge>
           </span>
+        </div>
+      </a>
+    </motion.li>
+  );
+}
+
+/**
+ * One pull request that no design's own epics point at.
+ *
+ * The row states three things and no fourth. It names the pull request by its own title,
+ * it states the state the index writes for it, and it states the kind word `PR`. It
+ * carries no outcome, no epic figure, and no six-mark signature, because every one of
+ * those reads a design directory and this row has none.
+ *
+ * A ROW IS A DESTINATION, THE SAME AS A DESIGN ROW. The address is the shell's change
+ * address for this pull request, read from `model.pullRequestHref`, which is the one home of
+ * the workless rule. A pull request with no design has no work item, so no id names one, and
+ * that builder states the pull request's own number in the work segment. The shell resolves
+ * that segment among the index's pull requests through the builder's inverse,
+ * `model.worklessPullRequest`, so a press opens this pull request's own change account
+ * rather than the unknown-id error. The board builds no address of its own.
+ *
+ * NO INTERACTIVE ELEMENT SITS INSIDE THE ANCHOR, the same as a design row. The state badge
+ * is passed no gloss, so it sets no `tabIndex` and holds no focus stop. The row's one
+ * control is the anchor, and the anchor's own label already states the state it carries.
+ *
+ * The tone comes from `toneForState`, so a merged pull request reads done and an open one
+ * reads live, the same as the design stage badges beside it.
+ */
+function PullRequestRowView({ pull, index }: { pull: PullRequest; index: number }) {
+  const reduce = useReducedMotion();
+
+  return (
+    <motion.li
+      initial={reduce ? false : { opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ ...ROW_ENTER, delay: enterDelay(index, reduce) }}
+      className="min-w-0"
+    >
+      <a
+        href={pullRequestHref(pull.id, "intent")}
+        aria-label={`Open pull request ${pull.id}, ${pull.state}`}
+        className={ROW_ANCHOR}
+      >
+        <div className="flex min-w-0 flex-wrap items-start gap-x-3 gap-y-2">
+          <h2 className="m-0 min-w-0 flex-1 font-mono text-[16px] leading-[1.25] font-bold tracking-[-0.01em] break-words">
+            {pull.title}
+          </h2>{" "}
+          {/*
+            The state is the row's status word, so a status tab selects this row by the
+            same rule it selects a design row. It is set apart from the title and the kind
+            word by a space, so a copied row reads as words rather than as one token.
+          */}
+          <StateBadge
+            word={pull.state}
+            tone={toneForState(pull.state)}
+            className="min-w-0 shrink-0"
+          />{" "}
+          <Badge
+            variant="outline"
+            title="This row is a pull request, and no design's own epics point at it."
+            className="min-w-0 shrink-0 border-line bg-surface-2 font-mono text-[10px] text-ink-dim"
+          >
+            {ROW_KIND_LABEL["pull-request"]}
+          </Badge>
         </div>
       </a>
     </motion.li>

@@ -12,6 +12,7 @@ Run with: uv run --with pytest pytest tests/test_viewer_modes.py -v
 """
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -228,17 +229,37 @@ def test_viewer_contains_all_five_mode_buttons():
         claim,
     )
 
-    # The shipped rail's own row list. Both anchors are unique in the build: no
-    # other rail and no other surface states this list.
-    rail = bounded_region(text, 'TA="#/"', "entries:mw(g)}]", claim)
+    # The shipped rail's own row list. The opener is the module constant that
+    # holds the route prefix, and the closer is the row list's own tail: no other
+    # rail and no other surface states either one.
+    #
+    # BOTH ANCHORS ARE STRUCTURES AND NEVER MINIFIED NAMES. The build renames its
+    # local identifiers on every build, because the minifier owns them, so a case
+    # anchored on one of those names fails on a rename that changes no behaviour.
+    # The opener's shape, `const <name>="#/"`, and the closer's,
+    # `entries:<name>(g)}]`, are structures the minifier cannot rename, so both
+    # anchors survive a rename of the identifier each one carries.
+    # `bounded_region` and `assert_ordered` take literals, so each match is read
+    # here and passed on as its own text.
+    prefix_binding = re.search(r'const [A-Za-z_$][A-Za-z0-9_$]*="#/"', text)
+    assert prefix_binding is not None, (
+        f"{claim}: the build carries no `const <name>=\"#/\"`, so the constant that "
+        "holds the board's own address is gone from the shipped viewer."
+    )
+    row_list_tail = re.search(r"entries:[A-Za-z_$][A-Za-z0-9_$]*\(g\)\}\]", text)
+    assert row_list_tail is not None, (
+        f"{claim}: the build carries no `entries:<name>(g)}}]`, so the rail's own row "
+        "list is gone from the shipped viewer."
+    )
+    rail = bounded_region(text, prefix_binding.group(0), row_list_tail.group(0), claim)
     assert_ordered(
         [
-            'TA="#/"',                          # "#/", the board's own address
+            prefix_binding.group(0),            # "#/", the board's own address
             '["intent","problem-and-solution","architecture","epics","rubrics"]',
             'epics:"Epics",rubrics:"Rubrics"',  # builds
             '{key:"build",label:"Build",account:"program"',
             '{key:"review",label:"Review",account:"change"',
-            "entries:mw(g)}]",
+            row_list_tail.group(0),
         ],
         rail,
         claim,

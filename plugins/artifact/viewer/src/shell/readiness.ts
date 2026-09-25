@@ -17,9 +17,16 @@
  *
  * One place derives a verdict, and every row renders one. So no two rows can disagree
  * about one record.
+ *
+ * THE BOARD'S ROW RULES LIVE HERE TOO. The board lists two kinds of row: a design, and a
+ * pull request that belongs to no design. Which rows it lists, which status a row states,
+ * and which rows a tab keeps are all pure, so they need no DOM and they sit beside the
+ * readiness rule. The module keeps its name, because the readiness rule stays its largest
+ * part.
  */
 
 import type { DesignRecord, DesignRecords } from "@/data/bundle";
+import type { DesignRow, PullRequest } from "@/data/types";
 
 export type { DesignRecord, DesignRecords };
 
@@ -226,4 +233,90 @@ export function recordVerdicts(record: DesignRecord | undefined): RecordVerdicts
 /** How many of the six records exist, in full or in part. */
 export function presentCount(verdicts: RecordVerdicts): number {
   return RECORD_KINDS.filter((kind) => verdicts[kind].state !== "absent").length;
+}
+
+/* ------------------------------------------------------------- the board's rows */
+
+/**
+ * The two kinds of row the board lists.
+ *
+ * A design row reads one design directory. A pull request row reads one pull request the
+ * index holds that no design's own epics point at. The two are the board's whole
+ * vocabulary, so every row states one of exactly two words.
+ */
+export type RowKind = "design" | "pull-request";
+
+/** The two kinds, in the order the kind control lists them. */
+export const ROW_KINDS: RowKind[] = ["design", "pull-request"];
+
+/** The word a row states for its kind. `PR` names the kind and never a status. */
+export const ROW_KIND_LABEL: Record<RowKind, string> = {
+  design: "Design",
+  "pull-request": "PR",
+};
+
+/** One board row, whether it carries a design or a pull request of its own. */
+export type BoardSource =
+  | { kind: "design"; row: DesignRow }
+  | { kind: "pull-request"; row: PullRequest };
+
+/**
+ * The status one row states: a design's stage, or a pull request's own state.
+ *
+ * One rule reads both kinds, so one status tab selects a design and a pull request by the
+ * same predicate. The index writes `open` and `merged` for a pull request, and those two
+ * words join the six design stages in the strip's vocabulary.
+ */
+export function boardStatus(source: BoardSource): string {
+  return source.kind === "design" ? source.row.design.stage : source.row.state;
+}
+
+/**
+ * Every status the board's rows record, deduplicated, in reading order.
+ *
+ * A status no row carries earns no tab, so the strip never offers a filter that would
+ * empty the board. The order follows the rows, so the strip reads in the order the list
+ * below it does.
+ */
+export function statusTabs(sources: BoardSource[]): string[] {
+  const statuses: string[] = [];
+  for (const source of sources) {
+    const status = boardStatus(source);
+    if (!statuses.includes(status)) statuses.push(status);
+  }
+  return statuses;
+}
+
+/** The predicate behind one status tab. `All` is the caller's own predicate. */
+export function matchesStatus(source: BoardSource, status: string): boolean {
+  return boardStatus(source) === status;
+}
+
+/** The predicate behind one kind tab. */
+export function matchesKind(source: BoardSource, kind: RowKind): boolean {
+  return source.kind === kind;
+}
+
+/**
+ * Every pull request the index holds that no design's epics point at, one source each.
+ *
+ * THE SUBTRACTION RUNS AGAINST THE ROWS. `DesignRow.pullRequests` is the set the data
+ * layer resolves from `joins.epic_to_pull_request` and the epic's own `pr` field, so a
+ * rule that reads the index's pull request entities alone would list a design's own pull
+ * request twice: once inside that design's row and once beside it. The list is sorted by
+ * id, so two runs of one index read in one order.
+ */
+export function prAloneSources(
+  rows: DesignRow[],
+  pullRequests: PullRequest[],
+): BoardSource[] {
+  const carried = new Set<number>();
+  for (const row of rows) {
+    for (const id of row.pullRequests) carried.add(id);
+  }
+  return pullRequests
+    .slice()
+    .sort((a, b) => a.id - b.id)
+    .filter((pull) => !carried.has(pull.id))
+    .map((pull) => ({ kind: "pull-request" as const, row: pull }));
 }

@@ -147,6 +147,19 @@ export function toneForStage(stage: string): Tone {
   return "neutral";
 }
 
+/**
+ * The tone for a pull request's own state word.
+ *
+ * A pull request that belongs to no design holds no stage, so its row states the state
+ * the index writes for it. `merged` is done, so it reads good. `open` is live and waits
+ * on somebody, so it reads accent, the same tone a design in review takes.
+ */
+export function toneForState(state: string): Tone {
+  if (state === "merged") return "good";
+  if (state === "open") return "accent";
+  return "neutral";
+}
+
 export function toneForSeverity(severity: string | undefined): Tone {
   if (severity === "high") return "danger";
   if (severity === "medium") return "warn";
