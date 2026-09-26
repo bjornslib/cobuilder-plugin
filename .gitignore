@@ -26,8 +26,11 @@ __pycache__/
 # packages nor a scratch build belong in the repository. The source under
 # plugins/artifact/viewer/src/ IS committed, and so is the packaged viewer at
 # plugins/artifact/viewer/index.html until ADR-0023's output rule settles.
+# The vitest cache under plugins/artifact/viewer/.vitest/ is a third such
+# path. A test run writes it, holds nothing authored, and leaves it behind.
 node_modules/
 plugins/artifact/viewer/dist/
+plugins/artifact/viewer/.vitest/
 
 # cobuilder-implement's blind rubrics ARE committed (they're the question
 # sheet); the validator evidence they're scored against is not, per
