@@ -339,3 +339,244 @@ def test_slice_loop_js_is_syntactically_valid_node():
     assert result.returncode == 0, (
         f"node --check {SLICE_LOOP_JS} failed:\n{result.stdout}\n{result.stderr}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Slice 7 (E4 real content): the vocabulary agent, the loop step, and design
+# mode.
+#
+# Contract under test (docs/plans/slice-agents-and-vocabulary/epic-E4-design.md,
+# Test Plan, slice 7 row):
+#
+# - plugins/implement/agents/vocabulary.md exists, frontmatter parses,
+#   name == "vocabulary", no "model" key, tools exclude "Edit", description
+#   non-empty. (The whole-directory ignored-key test above already covers
+#   this file for hooks/mcpServers/permissionMode/initialPrompt.)
+# - Its body names DDD-VOCABULARY.md, the three finding tags, the
+#   "### Vocabulary" heading, the CLEAN/FINDINGS verdicts, the six name
+#   kinds, states it does not score, does not edit code, and appends via
+#   Bash (">>").
+# - slice-loop.md names implement:vocabulary, "parallel", and states the
+#   vocabulary verdict is not part of the score.
+# - slice-loop.js spawns agentType 'implement:vocabulary' and calls
+#   parallel(); node --check passes.
+# - design-mode.md's Stage 1 and Stage 5 sections both name
+#   DDD-VOCABULARY.md, Stage 5 also names "conflict", and the stage heading
+#   count is unchanged (Stage 0 through Stage 7, each exactly once).
+# ---------------------------------------------------------------------------
+
+VOCAB_AGENT_PATH = AGENTS_DIR / "vocabulary.md"
+
+DESIGN_MODE_MD = (
+    REPO_ROOT
+    / "plugins"
+    / "architect"
+    / "skills"
+    / "architecture"
+    / "references"
+    / "design-mode.md"
+)
+
+
+def test_vocabulary_agent_file_exists_and_frontmatter_parses():
+    _parse_frontmatter(VOCAB_AGENT_PATH)
+
+
+def test_vocabulary_agent_name_equals_vocabulary():
+    data = _parse_frontmatter(VOCAB_AGENT_PATH)
+    assert data.get("name") == "vocabulary", (
+        f"{VOCAB_AGENT_PATH}: expected name == 'vocabulary', got {data.get('name')!r}"
+    )
+
+
+def test_vocabulary_agent_description_is_non_empty():
+    data = _parse_frontmatter(VOCAB_AGENT_PATH)
+    description = data.get("description")
+    assert isinstance(description, str) and description.strip() != "", (
+        f"{VOCAB_AGENT_PATH}: description must be a non-empty string, got {description!r}"
+    )
+
+
+def test_vocabulary_agent_has_no_model_key():
+    data = _parse_frontmatter(VOCAB_AGENT_PATH)
+    assert "model" not in data, (
+        f"{VOCAB_AGENT_PATH}: vocabulary must inherit the model, so it must "
+        f"carry no model key, got model={data.get('model')!r}"
+    )
+
+
+def test_vocabulary_agent_tools_exclude_edit():
+    data = _parse_frontmatter(VOCAB_AGENT_PATH)
+    assert "tools" in data, f"{VOCAB_AGENT_PATH}: missing tools key"
+    tools = _normalize_tools(data["tools"])
+    assert "Edit" not in tools, (
+        f"{VOCAB_AGENT_PATH}: vocabulary's tools must exclude Edit, got {tools}"
+    )
+
+
+def _vocabulary_agent_body():
+    text = VOCAB_AGENT_PATH.read_text(encoding="utf-8")
+    match = FRONTMATTER_RE.match(text)
+    assert match is not None, f"{VOCAB_AGENT_PATH}: expected frontmatter to parse"
+    return text[match.end():]
+
+
+def test_vocabulary_agent_body_names_the_vocabulary_file():
+    body = _vocabulary_agent_body()
+    assert "DDD-VOCABULARY.md" in body, (
+        f"{VOCAB_AGENT_PATH}: expected body to name 'DDD-VOCABULARY.md'"
+    )
+
+
+def test_vocabulary_agent_body_names_the_three_finding_tags():
+    body = _vocabulary_agent_body()
+    for tag in ["[AVOID]", "[UNDEFINED]", "[CONFLICT]"]:
+        assert tag in body, f"{VOCAB_AGENT_PATH}: expected body to contain {tag!r}"
+
+
+def test_vocabulary_agent_body_names_the_vocabulary_section_heading():
+    body = _vocabulary_agent_body()
+    assert "### Vocabulary" in body, (
+        f"{VOCAB_AGENT_PATH}: expected body to contain the '### Vocabulary' heading"
+    )
+
+
+def test_vocabulary_agent_body_names_the_two_verdicts():
+    body = _vocabulary_agent_body()
+    for verdict in ["CLEAN", "FINDINGS"]:
+        assert verdict in body, (
+            f"{VOCAB_AGENT_PATH}: expected body to contain verdict {verdict!r}"
+        )
+
+
+def test_vocabulary_agent_body_names_the_six_name_kinds():
+    body = _vocabulary_agent_body()
+    for kind in ["district", "directory", "file", "class", "function", "method"]:
+        assert kind in body, (
+            f"{VOCAB_AGENT_PATH}: expected body to name the kind {kind!r}"
+        )
+
+
+def test_vocabulary_agent_body_states_it_does_not_score():
+    body = _vocabulary_agent_body()
+    assert "does not score" in body or "Do not score" in body, (
+        f"{VOCAB_AGENT_PATH}: expected body to state it does not score"
+    )
+
+
+def test_vocabulary_agent_body_states_it_does_not_edit_code():
+    body = _vocabulary_agent_body()
+    assert "does not edit code" in body or "Do not edit code" in body.replace(
+        "does not edit code", "Do not edit code"
+    ) or "not edit code" in body, (
+        f"{VOCAB_AGENT_PATH}: expected body to state it does not edit code"
+    )
+
+
+def test_vocabulary_agent_body_appends_via_bash_redirect():
+    body = _vocabulary_agent_body()
+    assert ">>" in body, (
+        f"{VOCAB_AGENT_PATH}: expected body to show an append-via-Bash example "
+        f"containing '>>', since the agent has no Write/Edit tool"
+    )
+
+
+def test_slice_loop_md_names_vocabulary_agent_and_parallel():
+    text = SLICE_LOOP_MD.read_text(encoding="utf-8")
+    assert "implement:vocabulary" in text, (
+        f"{SLICE_LOOP_MD}: expected it to name the agent 'implement:vocabulary'"
+    )
+    idx = text.index("implement:vocabulary")
+    window = text[max(0, idx - 1500):idx + 1500]
+    assert "parallel" in window, (
+        f"{SLICE_LOOP_MD}: expected the word 'parallel' near the "
+        f"'implement:vocabulary' mention"
+    )
+
+
+def test_slice_loop_md_vocabulary_verdict_is_not_part_of_score():
+    text = SLICE_LOOP_MD.read_text(encoding="utf-8")
+    assert "not part of the score" in text or "separate axis" in text, (
+        f"{SLICE_LOOP_MD}: expected it to state the vocabulary verdict is not "
+        f"part of the score (phrase 'not part of the score' or 'separate axis')"
+    )
+
+
+def test_slice_loop_js_spawns_vocabulary_agent():
+    text = SLICE_LOOP_JS.read_text(encoding="utf-8")
+    assert re.search(r"agentType\s*:\s*['\"]implement:vocabulary['\"]", text), (
+        f"{SLICE_LOOP_JS}: expected it to spawn agentType "
+        f"'implement:vocabulary' (either quote style)"
+    )
+
+
+def test_slice_loop_js_calls_parallel():
+    text = SLICE_LOOP_JS.read_text(encoding="utf-8")
+    assert re.search(r"\bparallel\s*\(", text), (
+        f"{SLICE_LOOP_JS}: expected a `parallel(` call"
+    )
+
+
+def test_slice_loop_js_is_syntactically_valid_node_after_vocabulary_change():
+    if shutil.which("node") is None:
+        pytest.skip("node is not on PATH; skipping node --check on slice-loop.js")
+    result = subprocess.run(
+        ["node", "--check", str(SLICE_LOOP_JS)],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, (
+        f"node --check {SLICE_LOOP_JS} failed:\n{result.stdout}\n{result.stderr}"
+    )
+
+
+STAGE_HEADING_RE = re.compile(r"^## \d+\. (Stage \d+)\b.*$", re.MULTILINE)
+
+
+def _design_mode_section(text, heading_prefix):
+    """Return the text of the '## N. <heading_prefix>...' section, from its
+    heading line up to (excluding) the next '## ' heading line."""
+    lines = text.splitlines()
+    start = None
+    for i, line in enumerate(lines):
+        if line.startswith("## ") and heading_prefix in line:
+            start = i
+            break
+    assert start is not None, f"no '## ' heading containing {heading_prefix!r} found"
+    end = len(lines)
+    for i in range(start + 1, len(lines)):
+        if lines[i].startswith("## "):
+            end = i
+            break
+    return "\n".join(lines[start:end])
+
+
+def test_design_mode_stage_1_section_names_the_vocabulary_file():
+    text = DESIGN_MODE_MD.read_text(encoding="utf-8")
+    section = _design_mode_section(text, "Stage 1")
+    assert "DDD-VOCABULARY.md" in section, (
+        f"{DESIGN_MODE_MD}: expected the Stage 1 section to name "
+        f"'DDD-VOCABULARY.md'"
+    )
+
+
+def test_design_mode_stage_5_section_names_the_vocabulary_file_and_conflict():
+    text = DESIGN_MODE_MD.read_text(encoding="utf-8")
+    section = _design_mode_section(text, "Stage 5")
+    assert "DDD-VOCABULARY.md" in section, (
+        f"{DESIGN_MODE_MD}: expected the Stage 5 section to name "
+        f"'DDD-VOCABULARY.md'"
+    )
+    assert "conflict" in section.lower(), (
+        f"{DESIGN_MODE_MD}: expected the Stage 5 section to mention 'conflict'"
+    )
+
+
+def test_design_mode_stage_headings_unchanged():
+    text = DESIGN_MODE_MD.read_text(encoding="utf-8")
+    found = STAGE_HEADING_RE.findall(text)
+    expected = [f"Stage {n}" for n in range(8)]
+    assert sorted(found) == sorted(expected), (
+        f"{DESIGN_MODE_MD}: expected exactly the stage headings "
+        f"{expected}, found {found}"
+    )
