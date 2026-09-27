@@ -126,6 +126,15 @@ const VALIDATE_SCHEMA = {
   },
 }
 
+const VOCAB_SCHEMA = {
+  type: 'object',
+  required: ['verdict', 'findings'],
+  properties: {
+    verdict: { type: 'string', enum: ['CLEAN', 'FINDINGS'] },
+    findings: { type: 'array', items: { type: 'string' } },
+  },
+}
+
 const results = []
 
 // How many slices, across the whole build, each epic carries. An epic that
@@ -229,6 +238,11 @@ ${attempt > 1
 exists. Every gap in its "Actionable guidance" section MUST be addressed in
 this attempt. Do not repeat a mistake the feedback already named.`
   : `This is attempt 1. The feedback file will not exist yet.`}
+${(attempt > 1 && last && last.verdict === 'FAIL' && last.vocabulary && last.vocabulary.verdict === 'FINDINGS' && last.vocabulary.findings && last.vocabulary.findings.length)
+  ? `\nThe previous attempt also drew vocabulary findings, a separate axis
+from the validator score. Address these alongside the validator's
+"Actionable guidance":\n${last.vocabulary.findings.map((f) => `- ${f}`).join('\n')}\n`
+  : ''}
 ${s.guidance ? `\nSlice-specific guidance:\n${s.guidance}\n` : ''}
 ${s.browserEvidence ? `\nThis slice requires browser evidence. Write
 ${evidence}/slice-${s.id}-browser.md recording the page(s) you loaded, the
@@ -245,8 +259,14 @@ file's path as browserEvidencePath.` : ''}`,
     }
 
     phase('Validate')
-    const v = await agent(
-      `slug: ${slug}
+    // VALIDATE scores this attempt against the blind rubric. VOCABULARY
+    // checks the same diff against DDD-VOCABULARY.md. Neither reads the
+    // other's output, so they run together instead of one after the other.
+    const diffCommand = 'git diff HEAD; git status --porcelain'
+    // parallel() is the Workflow runtime's own global, not a local helper.
+    const [v, vocab] = await parallel([
+      () => agent(
+        `slug: ${slug}
 slice: ${s.id} — "${s.name}"
 rubric: ${rubrics}/slice-${s.id}.md
 manifest: ${rubrics}/manifest.yaml
@@ -262,22 +282,41 @@ screenshot/DOM excerpt does not match what the criterion claims.` : ''}
 
 Write your findings to ${evidence}/slice-${s.id}-attempt-${attempt}.md and
 append the same block to ${evidence}/slice-${s.id}-feedback.md.`,
-      { label: `validate:slice-${s.id}:a${attempt}`, phase: 'Validate', schema: VALIDATE_SCHEMA, effort: 'high', agentType: 'implement:validate' },
-    )
+        { label: `validate:slice-${s.id}:a${attempt}`, phase: 'Validate', schema: VALIDATE_SCHEMA, effort: 'high', agentType: 'implement:validate' },
+      ),
+      () => agent(
+        `slug: ${slug}
+slice: ${s.id} — "${s.name}"
+diff command: ${diffCommand}
+this is attempt ${attempt} of ${MAX_ATTEMPTS}
+
+Append your "### Vocabulary" section to
+${evidence}/slice-${s.id}-attempt-${attempt}.md.`,
+        { label: `vocabulary:slice-${s.id}:a${attempt}`, phase: 'Validate', schema: VOCAB_SCHEMA, agentType: 'implement:vocabulary' },
+      ),
+    ])
 
     if (!v) {
       last = { verdict: 'ERROR', reason: 'VALIDATE agent returned nothing', attempt }
       break
     }
 
-    last = { ...v, attempt, green }
-    log(`Slice ${s.id} attempt ${attempt}: ${v.verdict} @ ${v.overallScore}`)
+    // The vocabulary verdict is a separate axis. It never enters
+    // overall_score and never turns a PASS into a FAIL by itself.
+    last = { ...v, attempt, green, vocabulary: vocab || null }
+    log(`Slice ${s.id} attempt ${attempt}: ${v.verdict} @ ${v.overallScore}`
+      + (vocab ? `, vocabulary ${vocab.verdict}` : ', vocabulary check returned nothing'))
 
     if (v.verdict === 'PASS' || v.verdict === 'VOID' || v.verdict === 'ESCALATION') {
       verdict = v.verdict
       break
     }
-    // FAIL → loop back into Green with the feedback file now on disk.
+    // FAIL → loop back into Green with the feedback file now on disk, and
+    // with any vocabulary findings folded into that same feedback so a
+    // naming gap gets fixed in the same retry as everything else.
+    if (vocab && vocab.verdict === 'FINDINGS' && vocab.findings && vocab.findings.length) {
+      log(`Slice ${s.id} attempt ${attempt}: vocabulary findings carried into the next GREEN attempt: ${vocab.findings.join('; ')}`)
+    }
   }
 
   if (!verdict && last) verdict = last.verdict === 'ERROR' ? 'ERROR' : 'ESCALATION'

@@ -102,6 +102,23 @@ scoring guide, the evidence file format, and the verdict rules. That step
 requires opening a frontend slice in a real browser: a component test that
 calls `.click()` is not that check.
 
+Spawn VALIDATE and VOCABULARY in parallel, not one after the other. VALIDATE
+uses `subagent_type: "implement:validate"`. VOCABULARY uses `subagent_type:
+"implement:vocabulary"`, and its spawn message carries the slug, the slice
+number, and the exact diff command. Its own body
+(`plugins/implement/agents/vocabulary.md`) holds the finding tags and the
+evidence-file format. Running both agents in parallel costs no extra wall
+time, because neither reads the other's output.
+
+**The vocabulary verdict is a separate axis, not part of the score.** A
+`CLEAN` or `FINDINGS` verdict never enters `overall_score`, and it never
+turns a PASS into a FAIL by itself. A `FINDINGS` verdict routes through the
+gap decision tree in `validation-scoring.md`, the same way any criterion
+gap below 1.0 does: judge whether the finding blocks the slice or can wait.
+On a VALIDATE `FAIL`, pass the vocabulary findings to the next GREEN
+attempt alongside VALIDATE's own feedback, so a naming mistake gets fixed
+in the same retry as everything else.
+
 ---
 
 ## Handling the verdict

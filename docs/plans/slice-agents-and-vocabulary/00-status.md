@@ -19,7 +19,7 @@ Hindsight: unavailable
 - [x] Slice 4 — E3 tracer bullet: the hook fires for GREEN only           score: 1.00
 - [x] Slice 5 — E3 edge cases, requirement, and credit                    score: 1.00
 - [x] Slice 6 — E4 tracer bullet: the glossary file and its format        score: 1.00 (attempt 2)
-- [ ] Slice 7 — E4 real content: vocabulary agent and design mode         score: —
+- [x] Slice 7 — E4 real content: vocabulary agent and design mode         score: 1.00 (attempt 2)
 - [ ] Slice 8 — E4 move: the CLAUDE.md table goes to the glossary         score: —
 
 ## Escalated
