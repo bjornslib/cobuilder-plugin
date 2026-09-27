@@ -38,9 +38,84 @@ A standalone PEP-723 `uv run` Python file under a plugin's `scripts/`, or under 
 <a id="bundle"></a>
 **Bundle** (`cobuilder-packaging`):
 The derived output directory tree for one target repo, either `<target>/.cobuilder-architect/self/` or `<hub>/.cobuilder-architect/<repo-slug>/`. Scripts write it and the viewer reads it.
+_Avoid_: docs/ (authored source, never derived), story.json (one file inside the bundle, not the bundle itself)
 
 <a id="vendoring"></a>
 **Vendoring** (`cobuilder-packaging`):
 The mechanism, decided in ADR-0017, that shares code between the five plugins: a `shared/` directory at the marketplace root, symlinked into each plugin's own root and dereferenced into that plugin's install cache.
 
+## architect
+
+<a id="design"></a>
+**Design** (`architect`):
+`/architect:design`, the pre-code interview-and-challenge mode that produces an ADR plus `intent.json`. See "a design" for the artifact directory it produces, a different entry.
+
+<a id="a-design"></a>
+**a design** (`architect`):
+One `docs/architecture/designs/<name>/` directory holding `goal.json`, `intent.json`, `narrative.json`, `assessment.json`, and `pr-draft.md`. See "Design" for the mode that produces it, a different entry.
+_Avoid_: ADR (a design also produces one, but the ADR outlives it under docs/architecture/adr/)
+
+<a id="backlog-design"></a>
+**backlog design** (`architect`):
+A design at `stage: "backlog"`, with only a `goal.json` of planned epics, and `maintainable-viewer` and `inflight-record-store` are both backlog designs today. This is a deliberate, sparse state before Design mode's later stages run, not an abandoned design.
+
+<a id="review"></a>
+**Review** (`architect`):
+`/architect:review`, the self-only security, architecture, and quality audit that produces paired Technical and Founder HTML reports under `docs/architecture/review/`. See "Review mode" for the Odyssey per-PR sweep, a different entry.
+_Avoid_: code review
+
+<a id="bounded-context"></a>
+**Bounded context** (`architect`):
+A `docs/architecture/contexts/<context-id>/` bundle of `canvas.md` and `boundary.yaml`, produced by the self-only Describe mode, with every claim grep-verified against real import edges. See "District" for the lightweight, unverified version used for a foreign repo.
+
+## pr
+
+<a id="district"></a>
+**District** (`pr`):
+A `world.districts` entry in `story.json` or `inventory.yaml`, inferred by Odyssey's describe-lite procedure for any repo, including a foreign `--repo` target. See "Bounded context" for the verified version, which never covers a foreign repo.
+
+<a id="review-mode"></a>
+**Review mode** (`pr`):
+The per-PR narration sweep, `/pr:review`, that narrates already-merged history into the bundle.
+_Avoid_: Review (a different corpus, a different output shape, and no HTML report), review-mode.md (a same-named but unrelated reference file)
+
+<a id="review-mode-md"></a>
+**review-mode.md** (`pr`):
+The PR-assessment reference for `/pr:generate`'s `--stage post` step: three questions with evidence, verdicts, and drift detection. See "Review mode" for the narration sweep, a different mode with a different job despite the shared word.
+
+<a id="assessment-stage"></a>
+**Assessment stage** (`pr`):
+The `stage` field on `assessment.json`: `"design"` (`plugin-split` and `cobuilder-implement` are `"design"`) is for an assessment written before the code exists, carrying `prediction` findings, and `"retrospective"` (`design-mode`) is for one written after the design shipped, carrying `observation` or `drift` findings. Nothing enforces this field today: `build_index.py` projects only `verdict` and `findings`, and `verify_bundle.py` never checks it.
+_Avoid_: verdict (proceed/concerns/rework, a separate field)
+
+<a id="drift"></a>
+**Drift** (`pr`):
+An `assessment.json` finding of `kind: "drift"`: a report that a shipped record no longer matches the tree, which sometimes should stay unfixed as a true account of what was believed at the time. See `intent.drift`, a different, per-PR array that `/pr:generate --stage post` populates by comparing a PR's stated intent against its merged diff.
+_Avoid_: bug
+
+## implement
+
+<a id="epic"></a>
+**Epic** (`implement`):
+One unit inside a design's `goal.json.epics[]`, owned and decomposed by `implement`, mapped to zero or one pull request through `epics[].branch`. It is the join key between a design and a PR, not an ADR, a design, or a PR itself.
+
+<a id="gate-4a-4b-4c"></a>
+**Gate 4a / 4b / 4c** (`implement`):
+The three sub-steps of Gate 4 in `implement`, each with its own line in `00-status.md`: 4a is the slice plan, 4b is a technical solution design required only for a multi-slice epic and marked `n/a`, not pending, for a single-slice epic, and 4c is the blind rubrics. `verify_gate.py` checks all three.
+_Avoid_: Gate 4 as a whole (00-status.md tracks three lines, and the whole gate cannot read APPROVED while any sub-step still reads pending)
+
+<a id="gate-2b"></a>
+**Gate 2b** (`implement`):
+The conditional interaction-design gate in `implement`, running only when the feature has a front end, with its own line in `docs/plans/<feature-slug>/00-status.md`. It writes `interaction-design.md` and `ui-spec.jsonc`, a feature with no front end writes one `n/a (no UI)` line instead, and Gate 3 must not start until this gate reads APPROVED or n/a.
+_Avoid_: Gate 2 (Gate 2b is not a sub-step of Gate 2. It has its own status line), Gate 4c (Gate 4c reads interaction-design.md for its eight required headings, after the document exists)
+
 ## Cross-cutting
+
+<a id="self"></a>
+**Self** (`cross-cutting`):
+The session's own checkout, the only target the six Architecture modes accept. See "foreign" for a `--repo`-targeted checkout, reachable only through Odyssey.
+
+<a id="foreign"></a>
+**foreign** (`cross-cutting`):
+A `--repo`-targeted checkout, reachable only through Odyssey. Its bundle always lands under the session's own repo as `<hub>`, never inside the foreign repo itself.
+_Avoid_: hub

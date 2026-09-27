@@ -13,4 +13,4 @@
 | | **`slice-agents-and-vocabulary/E4` — One DDD vocabulary.** A root glossary that design mode writes and a vocabulary agent enforces. | | | | |
 | 6 | `slice-agents-and-vocabulary/E4` | Tracer bullet: the glossary file and its format | `DDD-VOCABULARY.md` exists with every canvas term, in the entry shape, and each canvas term links to its entry. | 1.00 (attempt 2) | accepted |
 | 7 | `slice-agents-and-vocabulary/E4` | Real content: the vocabulary agent and design mode | `implement:vocabulary` exists and runs beside VALIDATE in both loop paths. `design-mode.md` reads the glossary in stage 1 and writes it in stage 5. | 1.00 (attempt 2) | accepted |
-| 8 | `slice-agents-and-vocabulary/E4` | Move: the CLAUDE.md table goes to the glossary | Every term from the `CLAUDE.md` Vocabulary table is in `DDD-VOCABULARY.md`. `CLAUDE.md` holds a pointer, not the table. | — | pending |
+| 8 | `slice-agents-and-vocabulary/E4` | Move: the CLAUDE.md table goes to the glossary | Every term from the `CLAUDE.md` Vocabulary table is in `DDD-VOCABULARY.md`. `CLAUDE.md` holds a pointer, not the table. | 1.00 (attempt 2) | accepted |
