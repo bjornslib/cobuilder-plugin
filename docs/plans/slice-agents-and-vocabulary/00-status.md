@@ -16,7 +16,7 @@ Hindsight: unavailable
 - [x] Slice 1 — E1 whole epic: ADR-0025, packaging test, CLAUDE.md rule   score: 1.00
 - [x] Slice 2 — E2 tracer bullet: three agent files that parse            score: 1.00
 - [x] Slice 3 — E2 real content: prompts move, loops spawn by name        score: 1.00
-- [ ] Slice 4 — E3 tracer bullet: the hook fires for GREEN only           score: —
+- [x] Slice 4 — E3 tracer bullet: the hook fires for GREEN only           score: 1.00
 - [ ] Slice 5 — E3 edge cases, requirement, and credit                    score: —
 - [ ] Slice 6 — E4 tracer bullet: the glossary file and its format        score: —
 - [ ] Slice 7 — E4 real content: vocabulary agent and design mode         score: —
