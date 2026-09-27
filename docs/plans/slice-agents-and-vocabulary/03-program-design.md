@@ -25,7 +25,7 @@
 
 ```python
 # plugins/implement/scripts/habit_coach.py  (PEP 723, stdlib only)
-GREEN_AGENT_TYPES: frozenset[str]   # {"implement:green", "green"}
+GREEN_AGENT_TYPES: frozenset[str]   # {"implement:green"}
 
 def is_green(payload: dict) -> bool: ...
 def target_path(payload: dict) -> str | None: ...        # tool_input.file_path

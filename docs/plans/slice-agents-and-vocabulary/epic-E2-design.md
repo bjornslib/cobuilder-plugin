@@ -39,11 +39,8 @@ read-first list with `<slug>`, `<N>`, `<epic-id>`, and `<test_command>`
 placeholders, the steps, and the report format. The spawn message supplies
 the placeholder values.
 
-`slice-loop.js`: each `agent()` call passes the agent name in the option
-that the Workflow tool accepts for an agent type, and a short message with
-the placeholder values. If the Workflow tool has no such option, the script
-logs that and returns a result that tells the orchestrator to use Manual
-mode. It never falls back to a pasted prompt.
+`slice-loop.js`: each `agent()` call passes `agentType: 'implement:red'`
+(and green, validate), and a short message with the placeholder values.
 
 ## Slice Decomposition
 
@@ -70,8 +67,7 @@ mode. It never falls back to a pasted prompt.
 
 ## Risks & Open Questions
 
-- The Workflow tool's `agent()` option for a named agent type is not
-  verified. Slice 3 must find out from the tool's own schema and record the
-  answer in `00-status.md`.
+- `agentType` is documented by secondary sources, not by the official
+  workflows page. The engineer confirmed that `agent()` accepts a named agent.
 - Moving prompts risks losing a line. The test pins the lines that matter
   most, and the VALIDATE rubric compares old and new text.

@@ -1,13 +1,13 @@
 # Status: Slice agents, coding habits, and a DDD vocabulary
 
-- Gate 1 — Product: in progress
-- Gate 2 — Architecture: in progress
+- Gate 1 — Product: APPROVED 2026-09-27
+- Gate 2 — Architecture: APPROVED 2026-09-27
 - Gate 2b — Interaction design: n/a (no UI) — Screens: "no UI"
-- Gate 3 — Program Design: in progress
-- Gate 4 — Slice plan, epic designs, and rubrics: in progress
-  - 4a Slice plan: pending
-  - 4b Epic technical solution designs: pending
-  - 4c Blind rubrics: pending
+- Gate 3 — Program Design: APPROVED 2026-09-27
+- Gate 4 — Slice plan, epic designs, and rubrics: APPROVED 2026-09-27
+  - 4a Slice plan: APPROVED 2026-09-27
+  - 4b Epic technical solution designs: APPROVED 2026-09-27
+  - 4c Blind rubrics: APPROVED 2026-09-27
 
 Design mode: declined
 Hindsight: unavailable
@@ -38,5 +38,17 @@ none yet
 - Plugin agents ignore a `hooks` frontmatter key, per the Claude Code plugin
   docs. The hook therefore lives in `hooks/hooks.json` and filters on
   `agent_type`.
+- **Gate 4c approval is delegated.** The engineer approved Gates 1 to 4b in
+  chat and asked for the build to run without an interview. The orchestrator
+  wrote the rubrics after that approval and did not present them, to keep
+  them blind. Reopen 4c if the engineer wants to read them.
+- **Agent names are `implement:<role>`,** confirmed by the engineer on
+  2026-09-27. The engineer also stated that the Workflow tool's `agent()`
+  accepts a named agent. The option is `agentType` (secondary sources:
+  alexop.dev and claude-world.com. The official workflows page does not list
+  the options).
+- **Test command** needs extra packages in this container:
+  `uv run --with pytest --with requests --with pyyaml --with pillow pytest tests/ -q`.
+  Baseline: 365 passed, 1 pre-existing failure (missing `google-genai`).
 - Design mode did not run. The design record was written by hand, like
   `interaction-design-gate`.

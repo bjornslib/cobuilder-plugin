@@ -29,7 +29,7 @@ slices when habit-hooks is missing. The plugin credits habit-hooks.
 ```
 
 ```python
-GREEN_AGENT_TYPES = frozenset({"implement:green", "green"})
+GREEN_AGENT_TYPES = frozenset({"implement:green"})
 
 def is_green(payload: dict) -> bool
 def target_path(payload: dict) -> str | None
