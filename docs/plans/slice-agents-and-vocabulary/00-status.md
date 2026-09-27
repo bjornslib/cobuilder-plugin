@@ -17,7 +17,7 @@ Hindsight: unavailable
 - [x] Slice 2 — E2 tracer bullet: three agent files that parse            score: 1.00
 - [x] Slice 3 — E2 real content: prompts move, loops spawn by name        score: 1.00
 - [x] Slice 4 — E3 tracer bullet: the hook fires for GREEN only           score: 1.00
-- [ ] Slice 5 — E3 edge cases, requirement, and credit                    score: —
+- [x] Slice 5 — E3 edge cases, requirement, and credit                    score: 1.00
 - [ ] Slice 6 — E4 tracer bullet: the glossary file and its format        score: —
 - [ ] Slice 7 — E4 real content: vocabulary agent and design mode         score: —
 - [ ] Slice 8 — E4 move: the CLAUDE.md table goes to the glossary         score: —
@@ -50,5 +50,10 @@ none yet
 - **Test command** needs extra packages in this container:
   `uv run --with pytest --with requests --with pyyaml --with pillow pytest tests/ -q`.
   Baseline: 365 passed, 1 pre-existing failure (missing `google-genai`).
+- **Live `agent_type` value: not observed.** This build ran in a cloud
+  session where the implement plugin is not installed, so no real
+  `implement:green` agent could fire the hook. The engineer confirmed the
+  name form `implement:green`. The first local run after install must
+  confirm that the hook input carries that exact string.
 - Design mode did not run. The design record was written by hand, like
   `interaction-design-gate`.

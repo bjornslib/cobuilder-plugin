@@ -38,8 +38,9 @@ generate mode, `artifact` to view or publish a bundle, and
 `architect` and `pr` both hand off to
 `artifact`'s view and publish modes, so each declares
 `artifact` as a dependency. Installing either one also installs
-`artifact`. Nothing here adds an agent, a hook, or an MCP server.
-The install surface stays `/plugin install` alone.
+`artifact`. Only `implement` adds agents and a hook. See ADR-0025.
+No plugin adds an MCP server. The install surface stays `/plugin
+install` alone.
 
 GitHub redirects a renamed repository, so an existing
 `/plugin marketplace add bjornslib/prodyssey` install should keep resolving.
@@ -416,9 +417,15 @@ Key manifest fields, one per plugin (`plugins/<name>/.claude-plugin/plugin.json`
 }
 ```
 
-No plugin ships agents, hooks, MCP servers, or output styles. This is
-deliberate: a plugin must work in any session without touching that
-session's permission or hook surface.
+Only `implement` ships agents and a hook. `architect`, `pr`,
+`artifact`, and `cobuilder-full-lifecycle` ship none of the three, and no
+plugin ships an MCP server or an output style. See ADR-0025. This is
+deliberate: a plugin adds agents or a hook only where a role in its own
+skill needs one, and every plugin still avoids an MCP server.
+
+`implement` requires the habit-hooks command-line tool for `/implement:start`.
+A `PostToolUse` hook coaches the GREEN agent with its output. See
+`plugins/implement/NOTICE.md` for the credit.
 
 `mermaid` and `ste-writing` are shared skills, vendored the same way
 `shared/`'s scripts are. `mermaid` holds authoring rules for the level 1

@@ -490,6 +490,24 @@ uv run plugins/implement/scripts/verify_gate.py --plan docs/plans/<feature-slug>
 
 ---
 
+## Prerequisite: habit-hooks
+
+The implement plugin ships a `PostToolUse` hook. It runs habit-hooks after
+each file the GREEN agent writes. The hook coaches GREEN only. It never
+blocks a write.
+
+Before slice 1, run `habit-hooks --version`. If it fails, stop. Tell the
+user to run `uv tool install "habit-hooks[python]"` and to name every
+language in one install command. A second install replaces the first.
+
+If `.habit-hooks/config.toml` is missing, run `habit-hooks init`. Then
+snooze the existing backlog with `habit-sensors --all | habit-snooze
+--snooze`. Commit `.habit-hooks/snooze.json`.
+
+See `plugins/implement/NOTICE.md` for the habit-hooks credit.
+
+---
+
 ## Building a slice — the red-green-validate loop
 
 Execute the three-role loop for each slice:

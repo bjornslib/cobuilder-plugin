@@ -90,7 +90,18 @@ def main(stdin: IO[str], stdout: IO[str], runner=run_habit_hooks) -> int:
 
     code, text = runner(path)
     if code == 1:
-        message = f"habit-hooks coaching for {path}:{text}"
+        message = f"habit-hooks coaching for {path}:\n{text}"
+    elif code == 127:
+        message = (
+            'habit-hooks is not installed, install it with '
+            '`uv tool install "habit-hooks[python]"` and name every '
+            "language in one install command."
+        )
+    elif code == 2:
+        message = (
+            f"habit-hooks failed to run on {path}. "
+            f"Report this in your GREEN report.\n{text}"
+        )
     else:
         message = text
 
