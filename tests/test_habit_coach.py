@@ -1,10 +1,10 @@
-"""Tests for the E3 tracer bullet: the habit-hooks PostToolUse hook.
+"""Tests for the E3 habit-hooks PostToolUse hook.
 
-Scope: slice 4 only ("the hook fires for GREEN only"). This covers
-hooks.json registration, is_green, target_path, and the exit-0 / exit-1
-paths of main(). Slice 5 (exit 2, exit 127, invalid JSON, missing
-file_path, SKILL.md prerequisite, NOTICE.md, version bump) is out of
-scope here.
+Slice 4 ("the hook fires for GREEN only") covers hooks.json registration,
+is_green, target_path, and the exit-0 / exit-1 paths of main(). Slice 5
+("edge cases, requirement, and credit") covers exit 2, exit 127, invalid
+JSON, a GREEN payload with no file_path, the SKILL.md prerequisite
+section, NOTICE.md, the README credit, and the plugin.json version bump.
 
 Run with: uv run --with pytest --with requests --with pyyaml --with pillow pytest tests/ -q
 """
@@ -220,3 +220,170 @@ def test_main_no_agent_type_writes_nothing_and_skips_runner(habit_coach):
     assert rc == 0
     assert stdout.getvalue() == ""
     assert runner.calls == []
+
+
+# ---------------------------------------------------------------------------
+# Slice 5: exit 2, exit 127, bad input, prerequisite section, NOTICE.md,
+# README credit, version bump.
+# ---------------------------------------------------------------------------
+
+
+def test_main_green_exit_two_reports_failure_to_run_and_asks_for_green_report(habit_coach):
+    runner = FakeRunner((2, "bad config key"))
+    path = "/x/a.py"
+    stdin = io.StringIO(json.dumps(_green_payload(path)))
+    stdout = io.StringIO()
+
+    rc = habit_coach.main(stdin, stdout, runner=runner)
+
+    assert rc == 0
+    out_text = stdout.getvalue().strip()
+    parsed = json.loads(out_text)
+    output = parsed["hookSpecificOutput"]
+    assert output["hookEventName"] == "PostToolUse"
+    context = output["additionalContext"]
+    assert f"habit-hooks failed to run on {path}" in context
+    assert "bad config key" in context
+    assert "GREEN report" in context
+
+
+def test_main_green_exit_127_reports_install_command(habit_coach):
+    runner = FakeRunner((127, "habit-hooks is not installed."))
+    stdin = io.StringIO(json.dumps(_green_payload("/x/a.py")))
+    stdout = io.StringIO()
+
+    rc = habit_coach.main(stdin, stdout, runner=runner)
+
+    assert rc == 0
+    out_text = stdout.getvalue().strip()
+    parsed = json.loads(out_text)
+    context = parsed["hookSpecificOutput"]["additionalContext"]
+    lines = [line for line in context.splitlines() if line.strip()]
+    matching = [line for line in lines if 'uv tool install "habit-hooks[python]"' in line]
+    assert len(matching) == 1, f"expected exactly one matching line, got: {lines!r}"
+
+
+def test_run_habit_hooks_returns_127_when_binary_absent_from_path(habit_coach, monkeypatch, tmp_path):
+    empty_bin_dir = tmp_path / "empty-bin"
+    empty_bin_dir.mkdir()
+    monkeypatch.setenv("PATH", str(empty_bin_dir))
+
+    code, text = habit_coach.run_habit_hooks("/x/a.py")
+
+    assert code == 127
+    assert isinstance(text, str) and text
+
+
+def test_main_invalid_json_on_stdin_writes_nothing_and_returns_zero(habit_coach):
+    stdin = io.StringIO("{not valid json")
+    stdout = io.StringIO()
+
+    rc = habit_coach.main(stdin, stdout, runner=FakeRunner((1, "unused")))
+
+    assert rc == 0
+    assert stdout.getvalue() == ""
+
+
+def test_main_green_payload_without_file_path_writes_nothing_and_skips_runner(habit_coach):
+    payload = {"agent_type": "implement:green", "tool_name": "Write", "tool_input": {}}
+    runner = FakeRunner((1, "should not be seen"))
+    stdin = io.StringIO(json.dumps(payload))
+    stdout = io.StringIO()
+
+    rc = habit_coach.main(stdin, stdout, runner=runner)
+
+    assert rc == 0
+    assert stdout.getvalue() == ""
+    assert runner.calls == []
+
+
+def test_main_green_exit_one_context_has_path_header_then_newline_then_runner_text(habit_coach):
+    path = "/x/a.py"
+    runner_text = "too-many-parameters: coaching text"
+    runner = FakeRunner((1, runner_text))
+    stdin = io.StringIO(json.dumps(_green_payload(path)))
+    stdout = io.StringIO()
+
+    rc = habit_coach.main(stdin, stdout, runner=runner)
+
+    assert rc == 0
+    parsed = json.loads(stdout.getvalue().strip())
+    context = parsed["hookSpecificOutput"]["additionalContext"]
+    assert f"habit-hooks coaching for {path}:\n{runner_text}" in context
+
+
+# ---------------------------------------------------------------------------
+# SKILL.md: prerequisite section
+# ---------------------------------------------------------------------------
+
+SKILL_MD_PATH = REPO_ROOT / "plugins" / "implement" / "skills" / "build" / "SKILL.md"
+
+
+def test_skill_md_has_prerequisite_habit_hooks_section_before_building_a_slice():
+    assert SKILL_MD_PATH.exists(), f"missing {SKILL_MD_PATH}"
+    text = SKILL_MD_PATH.read_text()
+
+    prereq_heading = "## Prerequisite: habit-hooks"
+    building_heading = "## Building a slice"
+
+    prereq_index = text.find(prereq_heading)
+    building_index = text.find(building_heading)
+
+    assert prereq_index != -1, f"missing heading {prereq_heading!r} in SKILL.md"
+    assert building_index != -1, f"missing heading {building_heading!r} in SKILL.md"
+    assert prereq_index < building_index, (
+        "expected '## Prerequisite: habit-hooks' to appear before "
+        "'## Building a slice'"
+    )
+
+    # Slice the section body: from the prerequisite heading up to the next
+    # '## ' heading (or end of file if it is the last section).
+    rest = text[prereq_index + len(prereq_heading):]
+    next_heading_offset = rest.find("\n## ")
+    section_body = rest if next_heading_offset == -1 else rest[:next_heading_offset]
+
+    assert "habit-hooks --version" in section_body
+    assert 'uv tool install "habit-hooks[python]"' in section_body
+    assert "habit-hooks init" in section_body
+    assert "snooze" in section_body
+    assert "optional" not in section_body.lower()
+
+
+# ---------------------------------------------------------------------------
+# NOTICE.md
+# ---------------------------------------------------------------------------
+
+NOTICE_MD_PATH = REPO_ROOT / "plugins" / "implement" / "NOTICE.md"
+
+
+def test_notice_md_exists_and_credits_habit_hooks():
+    assert NOTICE_MD_PATH.exists(), f"missing {NOTICE_MD_PATH}"
+    text = NOTICE_MD_PATH.read_text()
+
+    assert "habit-hooks" in text
+    assert "MIT" in text
+    assert "https://github.com/habit-hooks/habit-hooks" in text
+    assert "Ivett Ördög" in text
+
+
+# ---------------------------------------------------------------------------
+# README.md credit
+# ---------------------------------------------------------------------------
+
+
+def test_readme_credits_habit_hooks():
+    readme_path = REPO_ROOT / "README.md"
+    assert readme_path.exists(), f"missing {readme_path}"
+    assert "habit-hooks" in readme_path.read_text()
+
+
+# ---------------------------------------------------------------------------
+# plugin.json version bump
+# ---------------------------------------------------------------------------
+
+
+def test_implement_plugin_json_version_is_0_3_0():
+    plugin_json_path = REPO_ROOT / "plugins" / "implement" / ".claude-plugin" / "plugin.json"
+    assert plugin_json_path.exists(), f"missing {plugin_json_path}"
+    data = json.loads(plugin_json_path.read_text())
+    assert data["version"] == "0.3.0"
