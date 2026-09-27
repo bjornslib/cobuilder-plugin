@@ -35,12 +35,17 @@ that span the plugin family.
 Entry:
 
 ```markdown
+<a id="<term-slug>"></a>
 **<Term>** (`<context-id>`):
 <One or two sentences: what it IS, not what it does.>
 _Avoid_: <synonym>, <synonym>
 ```
 
 A homonym gets one entry per context, and each entry names the other.
+The anchor line gives each entry a stable link target, because a bold line
+makes no heading anchor. The context id must match the enclosing `##`
+heading, except under `## Cross-cutting`. A definition holds at most two
+sentences. (Tightened after slice 6 attempt 1.)
 
 Canvas link: in the "Ubiquitous language" table, each term cell becomes
 `[**Term**](../../../../DDD-VOCABULARY.md#<anchor>)`.
