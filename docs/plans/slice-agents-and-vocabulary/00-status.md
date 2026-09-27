@@ -13,7 +13,7 @@ Design mode: declined
 Hindsight: unavailable
 
 ## Slices
-- [ ] Slice 1 — E1 whole epic: ADR-0025, packaging test, CLAUDE.md rule   score: —
+- [x] Slice 1 — E1 whole epic: ADR-0025, packaging test, CLAUDE.md rule   score: 1.00
 - [ ] Slice 2 — E2 tracer bullet: three agent files that parse            score: —
 - [ ] Slice 3 — E2 real content: prompts move, loops spawn by name        score: —
 - [ ] Slice 4 — E3 tracer bullet: the hook fires for GREEN only           score: —

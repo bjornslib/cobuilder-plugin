@@ -37,8 +37,9 @@ also installs `artifact`. The handoff still crosses the plugin
 boundary by mode name only, and the state it carries still travels through
 the bundle, per ADR-0016. A `dependencies` entry guarantees co-installation.
 It does not grant one plugin's code a file path into another plugin's root.
-The install-surface rule is unchanged: no plugin in this family ships an
-agent, a hook, or an MCP server.
+The install-surface rule is narrower now. `implement` alone may ship an
+agent or a hook, per ADR-0025. No plugin, including `implement`, ships an
+MCP server.
 
 `implement` declares `architect` as a `dependencies` entry too, for a
 narrower reason: `/implement:debug` dispatches straight into `architect`'s
@@ -74,9 +75,10 @@ resolution section for the exact rule and slug derivation.
 Install surface: `/plugin marketplace add bjornslib/cobuilder-plugin` then
 `/plugin install <plugin-name>@cobuilder-plugin` for any one of the five
 plugin names, or `/plugin install cobuilder-full-lifecycle@cobuilder-plugin`
-for all five at once. No agents, no hooks, no MCP servers, in any of the
-five. That is deliberate, so no plugin ever touches another session's
-permission surface.
+for all five at once. Only `implement` ships an agent or a hook, per
+ADR-0025. No plugin ships an MCP server. That is deliberate, so no plugin
+outside `implement`'s narrow, documented exception touches another
+session's permission surface.
 
 That rule governs the five plugins only. `.claude/hooks/deny-git-stash.py`
 and its entry in `.claude/settings.json` are local development tooling for
@@ -654,7 +656,8 @@ Judge a draft by rereading it against the rules above. `ste-writing` also
 ships `shared/skills/ste-writing/ste-lint.py`, a rules-only linter that scores
 violations per 100 words, for a quick optional check. The linter checks
 rules only. It does not certify ASD-STE100 dictionary compliance. The
-install constraint is no agents, no hooks, and no MCP servers.
+install constraint allows `implement` alone to ship agents and hooks, per
+ADR-0025, and forbids an MCP server for every plugin.
 
 ## Recent history
 

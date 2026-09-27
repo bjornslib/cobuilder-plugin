@@ -3,7 +3,7 @@
 | # | Epic | Slice | Ends with | Score | State |
 |---|---|---|---|---|---|
 | | **`slice-agents-and-vocabulary/E1` — The narrowed install-surface rule.** An ADR lets `implement` ship agents and hooks. | | | | |
-| 1 | `slice-agents-and-vocabulary/E1` | Tracer bullet and whole epic: ADR-0025, the packaging test, and the CLAUDE.md rule | ADR-0025 exists. `test_plugin_manifests.py` passes with an `agents/` and `hooks/` directory in `implement` and fails for any other plugin. `CLAUDE.md` states the narrowed rule and cites ADR-0025. | — | pending |
+| 1 | `slice-agents-and-vocabulary/E1` | Tracer bullet and whole epic: ADR-0025, the packaging test, and the CLAUDE.md rule | ADR-0025 exists. `test_plugin_manifests.py` passes with an `agents/` and `hooks/` directory in `implement` and fails for any other plugin. `CLAUDE.md` states the narrowed rule and cites ADR-0025. | 1.00 | accepted |
 | | **`slice-agents-and-vocabulary/E2` — The three slice roles as agents.** RED, GREEN, and VALIDATE become named plugin agents. | | | | |
 | 2 | `slice-agents-and-vocabulary/E2` | Tracer bullet: three agent files that parse | `plugins/implement/agents/{red,green,validate}.md` exist, parse, carry `name` and `description`, and use no ignored field. | — | pending |
 | 3 | `slice-agents-and-vocabulary/E2` | Real content: the prompts move and both loop paths spawn by name | Each agent body holds its role prompt, scope contract, and blind rule. `slice-loop.md` and `slice-loop.js` spawn `implement:red`, `implement:green`, and `implement:validate` and no longer paste the prompts. | — | pending |
