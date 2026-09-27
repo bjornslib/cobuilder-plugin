@@ -517,6 +517,14 @@ def test_slice_loop_js_calls_parallel():
     )
 
 
+def test_slice_loop_js_uses_the_runtime_parallel():
+    text = SLICE_LOOP_JS.read_text(encoding="utf-8")
+    assert not re.search(r"(function\s+parallel\b|(const|let|var)\s+parallel\s*=)", text), (
+        f"{SLICE_LOOP_JS}: must not declare a local `parallel`, "
+        "which shadows the Workflow runtime's built-in parallel() global"
+    )
+
+
 def test_slice_loop_js_is_syntactically_valid_node_after_vocabulary_change():
     if shutil.which("node") is None:
         pytest.skip("node is not on PATH; skipping node --check on slice-loop.js")
