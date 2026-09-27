@@ -37,8 +37,9 @@ also installs `artifact`. The handoff still crosses the plugin
 boundary by mode name only, and the state it carries still travels through
 the bundle, per ADR-0016. A `dependencies` entry guarantees co-installation.
 It does not grant one plugin's code a file path into another plugin's root.
-The install-surface rule is unchanged: no plugin in this family ships an
-agent, a hook, or an MCP server.
+The install-surface rule is narrower now. `implement` alone may ship an
+agent or a hook, per ADR-0025. No plugin, including `implement`, ships an
+MCP server.
 
 `implement` declares `architect` as a `dependencies` entry too, for a
 narrower reason: `/implement:debug` dispatches straight into `architect`'s
@@ -74,9 +75,10 @@ resolution section for the exact rule and slug derivation.
 Install surface: `/plugin marketplace add bjornslib/cobuilder-plugin` then
 `/plugin install <plugin-name>@cobuilder-plugin` for any one of the five
 plugin names, or `/plugin install cobuilder-full-lifecycle@cobuilder-plugin`
-for all five at once. No agents, no hooks, no MCP servers, in any of the
-five. That is deliberate, so no plugin ever touches another session's
-permission surface.
+for all five at once. Only `implement` ships an agent or a hook, per
+ADR-0025. No plugin ships an MCP server. That is deliberate, so no plugin
+outside `implement`'s narrow, documented exception touches another
+session's permission surface.
 
 That rule governs the five plugins only. `.claude/hooks/deny-git-stash.py`
 and its entry in `.claude/settings.json` are local development tooling for
@@ -103,37 +105,25 @@ reading the files.
 ## Vocabulary
 
 The same short words name different things in this plugin's two skill
-families. Use the exact term a section below assigns to a concept, not a
-synonym, and check this table before reusing a word from one family in the
-other's context.
+families. `DDD-VOCABULARY.md` at the repository root is the one glossary
+for every such term. Use the exact name it assigns to a concept, not a
+synonym, before reusing a word from one family in the other's context.
+Code, districts, files, classes, methods, and prose all use its names.
+Design mode reads and writes it, and the `implement:vocabulary` agent
+checks each slice against it.
 
-| Term | Meaning | Not to confuse with |
-|---|---|---|
-| **Design** (capital, mode) | `/architect:design`, the pre-code interview-and-challenge mode that produces an ADR plus `intent.json` | a *design* (lowercase), the artifact directory it produces (see below) |
-| **a design** | One `docs/architecture/designs/<name>/` directory: `goal.json`, `intent.json`, `narrative.json`, `assessment.json`, `pr-draft.md` | an ADR, which a design also produces but which outlives it under `docs/architecture/adr/` |
-| **backlog design** | A design at `stage: "backlog"`: a `goal.json` with planned epics only, and no `intent.json`, `narrative.json`, `assessment.json`, or diagrams. This is a legitimate, deliberately sparse state, because Design mode's stages 2 through 7 have not run yet. `maintainable-viewer/` and `inflight-record-store/` are both backlog designs today | an incomplete or abandoned design — a sparse directory here is the expected shape, not a sign that generation stopped partway |
-| **Epic** | One unit inside a design's `goal.json.epics[]`. Maps to zero or one pull request through `epics[].branch`. Owned and decomposed by `implement`, not by design mode | an ADR, a design, or a PR — an epic is the join key between a design and a PR, not any of the three itself |
-| **District** | A `world.districts` entry in `story.json` / `inventory.yaml`, derived by Odyssey's *describe-lite* procedure (`baseline-derivation.md`) for any repo, including a foreign `--repo` target. Inferred, not verified against import edges | a bounded context (below) — a district is the lightweight version of the same underlying concept, usable when nobody maintains the target repo |
-| **Bounded context** | A `docs/architecture/contexts/<context-id>/` bundle: `canvas.md` + `boundary.yaml`, produced by the self-only Describe mode. Every claim is grep-verified against real import edges before it is written | a district — a bounded context is the heavyweight, verified version; it never covers a foreign repo |
-| **Review** (Architecture skill) | `/architect:review`, the self-only security/architecture/quality audit that produces the paired Technical/Founder HTML reports under `docs/architecture/review/` | Odyssey's Review mode (below), or the assessment reference described in the next row, or the general-purpose `/code-review` Claude Code skill, which is unrelated to this plugin |
-| **Review mode** (Odyssey) | The per-PR narration sweep, `/pr:review` (dispatches `Skill("odyssey", args="review ...")`), that narrates already-merged history into the bundle | the Architecture skill's Review mode (above) — different corpus, different output shape, no HTML report. Also not the PR-assessment step described in the next row |
-| **review-mode.md** (Odyssey reference) | The PR-assessment step of `/pr:generate`, governed by `plugins/pr/skills/odyssey/references/review-mode.md`: three questions with evidence, verdicts, drift detection | Odyssey's Review mode (above), which is a different mode with a different job, despite the shared word |
-| **Bundle** | The whole derived-output directory tree for one target repo: `.cobuilder-architect/self/` or `.cobuilder-architect/<repo-slug>/`, holding `data/`, `assets/`, `viewer/`, `exports/` | `docs/` (authored source, never derived) and `story.json` (one file inside the bundle, not the bundle itself) |
-| **Self** vs **foreign** (repo) | *Self* is the session's own checkout — the only target the six Architecture modes accept. *Foreign* is a `--repo`-targeted checkout, only reachable through Odyssey | `<hub>`, which is always the *session's* repo even when analyzing a foreign target — the foreign repo is never the hub |
-| **Gate 4a / 4b / 4c** | The three sub-steps of Gate 4 in `implement`, defined in `plugins/implement/skills/build/SKILL.md`. 4a is the slice plan (`04-slices.md`). 4b is a technical solution design, required only for an epic that carries more than one slice, and marked `n/a` instead of pending for a single-slice epic. 4c is the blind rubrics. `verify_gate.py` checks all three | Gate 4 as a whole — `00-status.md` used to track Gate 4 as one line and now tracks 4a, 4b, and 4c as three, and the whole gate cannot read APPROVED while any sub-step still reads pending |
-| **Gate 2b** | The conditional interaction-design gate in `implement`, defined in `plugins/implement/skills/build/SKILL.md`. It sits between Gate 2 and Gate 3. It runs only when the feature has a front end. It writes two files into `docs/plans/<feature-slug>/`: `interaction-design.md` and `ui-spec.jsonc`. The skill is the vendored `implement:design-to-code` (ADR-0024). A feature with no front end writes one line instead. That line reads `n/a (no UI)` and quotes the `## Screens` entry that justified it | Gate 2, or a sub-step of Gate 2 — Gate 2b has its own line in `00-status.md`, and Gate 3 must not start until that line reads `APPROVED` or `n/a`. Also not Gate 4c, which reads `interaction-design.md` for its eight required headings after the document exists |
-| **Assessment stage** | The `stage` field on `assessment.json`: `"design"` for an assessment written before the code exists, carrying `prediction` findings, or `"retrospective"` for one written after the design shipped, carrying `observation` or `drift` findings. `plugin-split` and `cobuilder-implement` are `"design"`. `design-mode` is `"retrospective"` | a verdict (`proceed`/`concerns`/`rework`, a separate field) — and note that nothing enforces `stage` today: `ASSESSMENT_FIELDS` in `shared/build_index.py` projects only `verdict` and `findings`, and `shared/verify_bundle.py` never checks `stage` |
-| **Drift** (finding kind) | An `assessment.json` finding of `kind: "drift"`: a report that a shipped record no longer matches the tree. The correct response is sometimes to leave the record alone, as a true account of what was believed at the time | a bug — a drift finding is not a defect to fix, and also not `review-mode.md`'s per-PR `intent.drift` array, which Generate mode's `--stage post` populates by comparing a PR's stated intent against its merged diff. Same word, two different records: one on a design's assessment, one on a PR's intent block |
-
-If a future term collides with one of these across the two skill families, resolve the collision here before it ships — do not let two modes silently mean different things by the same word.
+If a future term collides with one already in `DDD-VOCABULARY.md` across
+the two skill families, resolve the collision there before it ships — do
+not let two modes silently mean different things by the same word.
 
 ### A superseded gazetteer
 
 `.cobuilder-architect/self/pages/cobuilder-vocabulary.html` is a session
 gazetteer dated 2026-08-20. It listed ten decisions as pending an ADR.
 Several of them shipped differently. Treat that page as a historical
-session record, not a specification. The Vocabulary table above is the
-current source of truth. Do not edit the HTML page to match this file.
+session record, not a specification. `DDD-VOCABULARY.md` at the repository
+root is the current source of truth. Do not edit the HTML page to match
+this file.
 
 Measured differences between the gazetteer and what shipped:
 
@@ -654,7 +644,8 @@ Judge a draft by rereading it against the rules above. `ste-writing` also
 ships `shared/skills/ste-writing/ste-lint.py`, a rules-only linter that scores
 violations per 100 words, for a quick optional check. The linter checks
 rules only. It does not certify ASD-STE100 dictionary compliance. The
-install constraint is no agents, no hooks, and no MCP servers.
+install constraint allows `implement` alone to ship agents and hooks, per
+ADR-0025, and forbids an MCP server for every plugin.
 
 ## Recent history
 

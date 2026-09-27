@@ -89,10 +89,12 @@ def test_start_command_lists_both_artifacts() -> None:
     assert "ui-spec.jsonc" in text, "start.md must name ui-spec.jsonc"
 
 
-def test_plugin_version_is_0_2_0() -> None:
-    """The plugin gains a skill, so the minor version moves to 0.2.0."""
+def test_plugin_version_is_at_least_0_2_0() -> None:
+    """The plugin gains a skill, so the minor version moves to at least 0.2.0."""
+    # Pin relaxed to >= because slice-agents-and-vocabulary bumps to 0.3.0.
     manifest = json.loads(PLUGIN_JSON.read_text())
-    assert manifest["version"] == "0.2.0"
+    version = tuple(int(part) for part in manifest["version"].split("."))
+    assert version >= (0, 2, 0)
 
 
 def test_rubric_authoring_names_both_artifacts() -> None:

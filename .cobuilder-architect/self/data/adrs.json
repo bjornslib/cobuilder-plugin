@@ -1562,5 +1562,79 @@
     "related": [
       "docs/architecture/contexts/cobuilder-packaging/boundary.yaml"
     ]
+  },
+  "ADR-0025": {
+    "id": "ADR-0025",
+    "title": "implement ships slice agents and a coaching hook",
+    "state": "approved",
+    "source_pr": null,
+    "problem": "The install-surface rule says no plugin in this family ships an agent, a hook, or an MCP server. implement's build skill runs a red-green-validate slice loop, and its role prompts today are pasted text, not stable agent identities. A hook cannot filter on a role that has no identity to filter on. Claude Code also ignores a hooks frontmatter key inside a plugin agent file, so a per-agent hook cannot live next to the agent it targets. Nothing in the family can adopt habit-hooks, an external coaching CLI, without a hook to call it from.",
+    "decision": "The implement plugin may ship agents/ (RED, GREEN, VALIDATE, and a vocabulary reviewer agent) and hooks/hooks.json (one PostToolUse hook on Write|Edit that runs habit-hooks for the GREEN agent only). The other four plugins, architect, pr, artifact, and cobuilder-full-lifecycle, still ship no agents and no hooks. No plugin in the family ships an MCP server. GREEN needs a stable identity, implement:green, that the hook filters on through the hook input's agent_type field. Because Claude Code ignores a hooks key in a plugin agent's frontmatter, the hook has to sit at the plugin level, in hooks/hooks.json, not beside the agent it targets. The role prompts that RED, GREEN, VALIDATE, and the vocabulary reviewer used as pasted text become agent definitions instead, each with its own file and its own identity. habit-hooks is a required external CLI, MIT licensed, at https://github.com/habit-hooks/habit-hooks, by Ivett Ördög and contributors. The plugin calls it as a subprocess. It vendors none of its code.",
+    "alternatives": [
+      {
+        "option": "Keep the blanket no-agents, no-hooks rule and paste habit-hooks coaching text into the GREEN role prompt instead",
+        "rejected_because": "Pasted text is not a hookable event. habit-hooks runs on a tool call, after the fact, and reads the actual diff. A paragraph in a role prompt cannot see a Write or Edit call the model already made, so it cannot coach against what really happened."
+      },
+      {
+        "option": "Give every one of the five plugins the same agents/ and hooks/ allowance, instead of implement alone",
+        "rejected_because": "Only implement's build skill runs a slice loop with a GREEN step. architect, pr, and artifact have no role that a coaching hook on Write or Edit would ever fire for. Widening the allowance to plugins with no matching role adds install surface with no matching use."
+      },
+      {
+        "option": "Put the hook inside each agent's own frontmatter",
+        "rejected_because": "Claude Code ignores a hooks key inside a plugin agent file. A hook declared there never runs, so this option does not exist as a working mechanism."
+      },
+      {
+        "option": "Vendor habit-hooks's code into shared/ under ADR-0017 instead of calling it as an external CLI",
+        "rejected_because": "habit-hooks is a required external tool with its own release cycle. Vendoring its code would fork a dependency the family does not maintain, and shared/ is a marketplace-wide commitment ADR-0017 scoped to code every plugin needs, not one plugin's one dependency."
+      },
+      {
+        "option": "Filter the hook on the tool call's file path instead of agent_type",
+        "rejected_because": "RED, GREEN, and VALIDATE all write and edit files in the same slice. A path-based filter cannot tell which role made the call, so it either coaches every role or none. agent_type is the one field the hook input carries that names the caller directly."
+      }
+    ],
+    "forces": [
+      "GREEN needs a stable identity so a hook can filter on it. Without one, a hook has nothing to check against the caller.",
+      "Claude Code ignores a hooks key inside a plugin agent file, so a per-agent hook cannot sit next to the agent it targets. The hook must live at the plugin level instead.",
+      "The install-surface rule from ADR-0016 says no plugin in this family ships an agent, a hook, or an MCP server. Any change here must state which plugins keep that rule and which do not.",
+      "habit-hooks is an external tool, MIT licensed, not code this family maintains. The plugin can call it as a subprocess, but it should not vendor its code.",
+      "A PostToolUse hook fires on every Write or Edit call in the user's session, not only during the step it targets, so it must filter itself down to the one role it should act on."
+    ],
+    "delivers": {
+      "capability": "A hook can coach the GREEN step of the slice loop on every Write or Edit call it makes, using an external tool that reads the real diff instead of a static role prompt.",
+      "benefit": "Coaching happens at the moment a file changes, against what the model actually wrote, instead of as advice the model may or may not have followed.",
+      "beneficiary": [
+        "developer",
+        "validator-agent"
+      ],
+      "enables": [
+        "A stable implement:green identity that later tooling can target the same way"
+      ],
+      "addresses_problem": "P1"
+    },
+    "body": "# ADR-0025 — implement ships slice agents and a coaching hook\n\n## Context\n\nThe install-surface rule in `CLAUDE.md` has read, since the five-plugin\nsplit, that no plugin in this family ships an agent, a hook, or an MCP\nserver. That rule kept every plugin's install surface identical to the\nother four: no plugin ever touched another session's permission surface.\n\n`implement`'s build skill runs a slice loop with three steps: RED writes a\nfailing test, GREEN makes it pass, and VALIDATE scores the result against a\nblind rubric. `plugins/implement/skills/build/SKILL.md` and its\n`references/` files carry each role as prose the orchestrating Claude reads\nand adopts in turn. No role has a stable identity of its own. A hook that\nwants to act only during the GREEN step has nothing to filter on, because\nnothing in the session states which role is currently active.\n\nhabit-hooks is an external, MIT-licensed coaching tool\n(https://github.com/habit-hooks/habit-hooks, by Ivett Ördög and\ncontributors) that runs on a `PostToolUse` event and reads the tool call\nthat just happened. It can coach a `Write` or `Edit` call the moment it\nlands, against the real diff, in a way a pasted role paragraph cannot. Using\nit requires a hook. The blanket rule forbids one.\n\nA hook cannot live inside an agent's own frontmatter either. Claude Code\nignores a `hooks` key declared inside a plugin agent file. A hook that\ntargets one role has to sit at the plugin level and filter by the caller's\nidentity, which means the role first needs an identity worth filtering on.\n\n## Decision\n\nThe `implement` plugin may ship `agents/` and `hooks/hooks.json`. The other\nfour plugins, `architect`, `pr`, `artifact`, and\n`cobuilder-full-lifecycle`, still ship no agents and no hooks. No plugin in\nthe family, including `implement`, ships an MCP server.\n\n`implement/agents/` holds four agent definitions: RED, GREEN, VALIDATE, and\na vocabulary reviewer. Each role prompt that used to live as pasted text in\n`SKILL.md` or a `references/` file becomes its own agent file instead, with\nits own name. GREEN's agent identity is `implement:green`.\n\n`implement/hooks/hooks.json` declares one `PostToolUse` hook, matched on\n`Write|Edit`, that runs habit-hooks. The hook reads the hook input's\n`agent_type` field. It runs habit-hooks only when that field reads\n`implement:green`. For every other caller, including RED, VALIDATE, the\nvocabulary reviewer, and the orchestrating Claude itself, the hook exits\nwithout effect.\n\nhabit-hooks stays an external, required CLI. The plugin invokes it as a\nsubprocess and vendors none of its source.\n\n## Alternatives considered\n\n- **Keep the blanket rule, and paste habit-hooks coaching text into the\n  GREEN role prompt instead.** Pasted text cannot see a tool call after it\n  happens. habit-hooks's value is that it reads the real diff a `Write` or\n  `Edit` call produced. A paragraph of advice in a role prompt has nothing\n  to react to.\n- **Give every plugin the same agents-and-hooks allowance.** Only\n  `implement` runs a slice loop with a GREEN step. The other four plugins\n  have no role a Write-or-Edit coaching hook would ever fire for. Widening\n  the allowance would add install surface nothing in those plugins would\n  use.\n- **Put the hook inside each agent's own frontmatter.** Claude Code ignores\n  a `hooks` key inside a plugin agent file. A hook declared there never\n  runs, so this is not a working option.\n- **Vendor habit-hooks's code into `shared/` under ADR-0017.** habit-hooks\n  is a required external tool with its own release cycle, not code the\n  family maintains. ADR-0017 scoped `shared/` to code every plugin needs.\n  One plugin's one external dependency does not meet that bar.\n- **Filter the hook on the tool call's file path instead of `agent_type`.**\n  RED, GREEN, and VALIDATE all write and edit files during the same slice.\n  A path-based filter cannot tell which role made a given call, so it\n  either coaches every role or none. `agent_type` is the field the hook\n  input carries that names the caller directly.\n\n## Consequences\n\n- Installing `implement` adds one `PostToolUse` hook to the user's session.\n  It fires on every `Write` or `Edit` call, and it exits silently unless\n  the caller's `agent_type` is `implement:green`.\n- The packaging test, `tests/test_plugin_manifests.py`, enforces the\n  narrowed rule. Only `implement` may ship `agents/` or `hooks/`. No\n  plugin, including `implement`, may ship an MCP server declaration or\n  manifest key.\n- RED, GREEN, VALIDATE, and the vocabulary reviewer become named agents\n  with stable identities, in place of pasted role text the orchestrating\n  Claude used to adopt in turn.\n- habit-hooks becomes a required external dependency for anyone who\n  installs `implement`, alongside the existing requirements for `uv` on\n  `PATH` and a git repository.\n\n## Value delivered\n\nA hook can now coach the GREEN step of the slice loop on every file change\nit makes, using a tool that reads the actual diff instead of a static role\nprompt. The correction lands at the moment a file changes, not as advice\nthe model may or may not have followed.\n\n## Maps to\n\n`implement/agents/`, `implement/hooks/hooks.json`, and\n`tests/test_plugin_manifests.py`. `implement` is the one plugin in the\nfamily that may ship agents or hooks. Every other plugin still ships\nneither, and no plugin ships an MCP server.\n",
+    "maps_to": {
+      "context": "cobuilder-packaging",
+      "modules": [
+        "plugins/implement/agents",
+        "plugins/implement/hooks",
+        "tests/test_plugin_manifests.py"
+      ],
+      "rule": "implement is the one plugin in the family that may ship agents/ and hooks/. Every other plugin still ships neither. No plugin ships an MCP server. The hook in implement's hooks/hooks.json runs habit-hooks on Write or Edit, and it exits without effect unless the caller's agent_type is implement:green."
+    },
+    "approved_by": "bjornslib",
+    "history": [
+      {
+        "state": "decided",
+        "date": "2026-09-27",
+        "note": "Recorded from the design session. The narrowed install-surface rule, the plugin-level hook placement, and the required habit-hooks dependency were each approved by the human during that session."
+      },
+      {
+        "state": "approved",
+        "date": "2026-09-27",
+        "by": "bjornslib",
+        "note": "Approved by the human in session, before merge."
+      }
+    ],
+    "related": []
   }
 }

@@ -20,6 +20,9 @@ user supplied after `/implement:start`:
 Skill("build", args="implement $ARGUMENTS")
 ```
 
+Run `/implement:install` first, if this repo has not run it yet. It sets up
+habit-hooks, which the red-green-validate loop below relies on.
+
 ## What this writes
 
 This command writes plan documents and blind rubrics to disk:

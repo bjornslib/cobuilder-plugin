@@ -1,0 +1,35 @@
+{
+  "name": "slice-agents-and-vocabulary",
+  "title": "Ship the slice roles as agents, coach GREEN with habit-hooks, and hold code to one DDD vocabulary",
+  "adr": "ADR-0025",
+  "adrs": ["ADR-0025", "ADR-0016", "ADR-0013"],
+  "created": "2026-09-27",
+  "outcome": "A slice built with /implement:start gets structural coaching while GREEN writes, and a vocabulary verdict beside its score, against one root glossary that design mode keeps current.",
+  "done_when": [
+    "`plugins/implement/agents/` holds red, green, validate, and vocabulary agents, and both slice-loop paths spawn them by name",
+    "A GREEN file write returns habit-hooks coaching as additionalContext, and no other agent receives it",
+    "`/implement:start` stops before slice 1 when `habit-hooks --version` fails",
+    "`DDD-VOCABULARY.md` is the one glossary, design mode reads and writes it, and `CLAUDE.md` points to it"
+  ],
+  "abort_if": [
+    "Claude Code gives a PostToolUse hook no way to tell the GREEN agent from other agents",
+    "habit-hooks coaching on every write makes a GREEN attempt slower than the slice loop can accept"
+  ],
+  "min_work": {
+    "derived_from": "A review of mattpocock/skills and habit-hooks/habit-hooks, and the engineer's decisions in one chat session",
+    "alternatives_explored": 6,
+    "boundary_rules_checked": true,
+    "challenge_stage_run": false,
+    "note": "Written by hand. Design mode did not run. The engineer dropped four of six candidate ideas in chat. intent.json, assessment.json, narrative.json, and pr-draft.md are absent on purpose."
+  },
+  "limits": {"warn_after_rounds": 3, "cutoff_rounds": 6},
+  "epics": [
+    {"id": "E1", "branch": null, "pr": null, "state": "planned", "note": "ADR-0025 narrows the install-surface rule so implement may ship agents and hooks. Slice 1."},
+    {"id": "E2", "branch": null, "pr": null, "state": "planned", "note": "RED, GREEN, and VALIDATE as plugin agents, spawned by name. Slices 2 and 3."},
+    {"id": "E3", "branch": null, "pr": null, "state": "planned", "note": "A required PostToolUse hook runs habit-hooks for GREEN only, with credit to habit-hooks. Slices 4 and 5."},
+    {"id": "E4", "branch": null, "pr": null, "state": "planned", "note": "DDD-VOCABULARY.md, the vocabulary agent, design mode read and write, and the CLAUDE.md table move. Slices 6 to 8."}
+  ],
+  "stage": "decided",
+  "supersedes": null,
+  "rounds": []
+}
