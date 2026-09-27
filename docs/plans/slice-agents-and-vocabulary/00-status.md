@@ -23,7 +23,21 @@ Hindsight: unavailable
 - [x] Slice 8 — E4 move: the CLAUDE.md table goes to the glossary         score: 1.00 (attempt 2)
 
 ## Escalated
-none yet
+none. Slices 6, 7, and 8 each passed on attempt 2 after a validator FAIL.
+
+## Needs a local install to verify
+These checks cannot run in the cloud session that built this feature:
+1. Install `implement@cobuilder-plugin` 0.3.0 and confirm `/agents` lists
+   `implement:red`, `implement:green`, `implement:validate`, and
+   `implement:vocabulary`.
+2. Install habit-hooks (`uv tool install "habit-hooks[python]"`) and run
+   `habit-hooks init` in a target repo.
+3. Run one real slice. Confirm the GREEN transcript shows habit-hooks
+   coaching after a Write or Edit, and that RED and the main session get none.
+   This also confirms the live `agent_type` string is `implement:green`.
+4. Run the scripted path once (Workflow tool) and confirm `agentType`
+   resolves the plugin agents and `parallel()` runs VALIDATE and the
+   vocabulary agent together.
 
 ## Notes for a fresh session
 - The engineer asked for no interview. Gates 1 to 4b were drafted in one
