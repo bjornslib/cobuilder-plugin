@@ -42,12 +42,12 @@ that lets a user install the plugin and lets its parts call one another.
 
 | Term | Meaning inside this context |
 |------|-----------------------------|
-| **Plugin** | The single installable unit declared in `.claude-plugin/plugin.json`. Today there is one: `cobuilder-architect`. |
-| **Command** | A thin dispatcher file under `commands/*.md`. Its only job is one `Skill(...)` call. |
-| **Skill** | An auto-discovered directory under `skills/`. Five exist today: `architecture`, `odyssey`, `mermaid`, `ste-writing`, `collaborate-with-user`. |
-| **Script** | A standalone PEP-723 `uv run` Python file under `scripts/`. No `venv`, no `requirements.txt`. |
-| **Bundle** | The derived output directory (`.cobuilder-architect/<slug>/` or `self/`) that scripts write and the viewer reads. It is this context's output, not a module inside it. |
-| **Vendoring** | The mechanism ADR-0017 proposes for sharing code between plugins after a split: a symlinked `shared/` directory at the marketplace root, dereferenced into each plugin's install cache. Not yet built. |
+| [**Plugin**](../../../../DDD-VOCABULARY.md#plugin) | The single installable unit declared in `.claude-plugin/plugin.json`. Five plugins exist today under `plugins/`: `architect`, `pr`, `artifact`, `implement`, and the umbrella `cobuilder-full-lifecycle`. |
+| [**Command**](../../../../DDD-VOCABULARY.md#command) | A thin dispatcher file under `commands/*.md`. Its only job is one `Skill(...)` call. |
+| [**Skill**](../../../../DDD-VOCABULARY.md#skill) | An auto-discovered directory under a plugin's `skills/`. `mermaid` and `ste-writing` are shared skills, vendored by symlink into every plugin that needs them. |
+| [**Script**](../../../../DDD-VOCABULARY.md#script) | A standalone PEP-723 `uv run` Python file under `scripts/`. No `venv`, no `requirements.txt`. |
+| [**Bundle**](../../../../DDD-VOCABULARY.md#bundle) | The derived output directory (`.cobuilder-architect/<slug>/` or `self/`) that scripts write and the viewer reads. It is this context's output, not a module inside it. |
+| [**Vendoring**](../../../../DDD-VOCABULARY.md#vendoring) | The mechanism ADR-0017 decided for sharing code between the five plugins: a symlinked `shared/` directory at the marketplace root, dereferenced into each plugin's install cache. It is built and in use. |
 
 <!-- "Skill" and "command" carry the same meaning across the whole repo — no homonym
      conflict with the odyssey/architecture vocabulary table in CLAUDE.md, which

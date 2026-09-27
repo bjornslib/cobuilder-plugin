@@ -29,8 +29,9 @@ related:
 
 | Term | Meaning inside this context |
 |------|-----------------------------|
-| **<term>** | <definition> |
+| [**<term>**](<relative path to>/DDD-VOCABULARY.md#<term>) | <definition> |
 
+<!-- Every term in this table must also have an entry in DDD-VOCABULARY.md at the repo root. -->
 <!-- If terms are homonyms with another context, add a contrast column disambiguating them. -->
 
 ## 4. Business / capability decisions (what it owns)

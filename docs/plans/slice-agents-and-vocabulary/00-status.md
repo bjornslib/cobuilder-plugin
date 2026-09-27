@@ -18,7 +18,7 @@ Hindsight: unavailable
 - [x] Slice 3 — E2 real content: prompts move, loops spawn by name        score: 1.00
 - [x] Slice 4 — E3 tracer bullet: the hook fires for GREEN only           score: 1.00
 - [x] Slice 5 — E3 edge cases, requirement, and credit                    score: 1.00
-- [ ] Slice 6 — E4 tracer bullet: the glossary file and its format        score: —
+- [x] Slice 6 — E4 tracer bullet: the glossary file and its format        score: 1.00 (attempt 2)
 - [ ] Slice 7 — E4 real content: vocabulary agent and design mode         score: —
 - [ ] Slice 8 — E4 move: the CLAUDE.md table goes to the glossary         score: —
 
