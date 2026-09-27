@@ -1,3 +1,9 @@
+// RED, GREEN, and VALIDATE are plugin agents, not inline prompts. Each
+// agent() call below spawns one by its agentType ('implement:red',
+// 'implement:green', 'implement:validate'). Their bodies, under
+// plugins/implement/agents/, hold the scope contract, the blind rule, and
+// the report format. The message passed here carries only the per-slice
+// values those bodies need filled in.
 export const meta = {
   name: 'slice-loop',
   description: 'Build approved vertical slices via red-green-validate, gated on an independent blind score',
@@ -177,28 +183,16 @@ for (const s of slices) {
   }
 
   const red = await agent(
-    `You are the RED role in a test-driven slice. Write failing tests. Write no implementation.
+    `slug: ${slug}
+plan directory: ${plan}
+slice: ${s.id} — "${s.name}"
+epic design doc: ${epicDesignDoc}
+04-slices.md: ${plan}/04-slices.md
+test command: ${testCommand}
 
 ${scopeContract(s)}
-${BLIND}
-
-Read first:
-  ${plan}/03-program-design.md   (the test plan section)
-  ${epicDesignDoc}               (epic technical solution design)
-  ${plan}/04-slices.md
-
-Then:
-1. Write tests that define the contract for slice ${s.id} only. Every behavior the
-   slice promises needs at least one test.
-2. The tests MUST fail, and must fail on assertions — not on import errors,
-   missing fixtures, or syntax errors. A test that errors out proves nothing.
-3. Run the full suite: ${testCommand}
-   Tests from earlier slices must still pass. Only your new tests fail.
-4. Do NOT write any implementation code.
-
-Report the test files created, how many new tests fail, whether every failure is
-an assertion failure, and the pass count for pre-existing tests.`,
-    { label: `red:slice-${s.id}`, phase: 'Red', schema: RED_SCHEMA, model: BUILD_MODEL },
+${BLIND}`,
+    { label: `red:slice-${s.id}`, phase: 'Red', schema: RED_SCHEMA, model: BUILD_MODEL, agentType: 'implement:red' },
   )
 
   if (!red) {
@@ -220,43 +214,29 @@ an assertion failure, and the pass count for pre-existing tests.`,
 
     phase('Green')
     const green = await agent(
-      `You are the GREEN role in a test-driven slice. Make the failing tests pass.
+      `slug: ${slug}
+plan directory: ${plan}
+slice: ${s.id} — "${s.name}"
+epic design doc: ${epicDesignDoc}
+failing test files: ${(red.testFiles || []).join(', ')}
+test command: ${testCommand}
 
 ${scopeContract(s)}
 ${BLIND}
-Do NOT modify any test file. The tests are the contract. Changing a test changes
-the requirement, which is not yours to do.
-
-Read first:
-  ${plan}/03-program-design.md
-  ${epicDesignDoc}
-  the failing test files: ${(red.testFiles || []).join(', ')}
-  ${evidence}/slice-${s.id}-feedback.md   — ONLY IF IT EXISTS
 
 ${attempt > 1
-  ? `This is RETRY ${attempt}. The feedback file exists. Every gap in its
-"Actionable guidance" section MUST be addressed in this attempt. Do not repeat a
-mistake the feedback already named.`
+  ? `This is RETRY ${attempt}. The feedback file at ${evidence}/slice-${s.id}-feedback.md
+exists. Every gap in its "Actionable guidance" section MUST be addressed in
+this attempt. Do not repeat a mistake the feedback already named.`
   : `This is attempt 1. The feedback file will not exist yet.`}
 ${s.guidance ? `\nSlice-specific guidance:\n${s.guidance}\n` : ''}
-Then:
-1. Write the MINIMAL code that makes the failing tests pass. No gold-plating.
-2. Run the full suite: ${testCommand}. All new tests pass, nothing previously
-   passing breaks.
-3. Before reporting, verify:
-   - git diff --name-only shows only files in this slice's scope
-   - no TODO, FIXME, HACK, or XXX markers in the files you touched
-   - no test file appears in your diff
-${s.browserEvidence ? `4. Exercise the slice in a real browser and capture evidence:
-   write ${evidence}/slice-${s.id}-browser.md recording the page(s) you loaded,
-   the actions you took, a screenshot or DOM excerpt proving the behavior, and
-   the full console log for that session. A run with a console error in it is
-   not evidence of a working slice — fix the error before reporting. Report
-   the file's path as browserEvidencePath.` : ''}
-
-Report files changed, real pass/fail counts, whether any test file appears in
-your diff, and how you addressed the prior feedback if this was a retry.`,
-      { label: `green:slice-${s.id}:a${attempt}`, phase: 'Green', schema: GREEN_SCHEMA, model: BUILD_MODEL },
+${s.browserEvidence ? `\nThis slice requires browser evidence. Write
+${evidence}/slice-${s.id}-browser.md recording the page(s) you loaded, the
+actions you took, a screenshot or DOM excerpt proving the behavior, and the
+full console log for that session. A run with a console error in it is not
+evidence of a working slice — fix the error before reporting. Report the
+file's path as browserEvidencePath.` : ''}`,
+      { label: `green:slice-${s.id}:a${attempt}`, phase: 'Green', schema: GREEN_SCHEMA, model: BUILD_MODEL, agentType: 'implement:green' },
     )
 
     if (!green) {
@@ -266,55 +246,23 @@ your diff, and how you addressed the prior feedback if this was a retry.`,
 
     phase('Validate')
     const v = await agent(
-      `You are the VALIDATOR. You are an independent auditor. You did not write this
-code and you do not trust its author's report.
+      `slug: ${slug}
+slice: ${s.id} — "${s.name}"
+rubric: ${rubrics}/slice-${s.id}.md
+manifest: ${rubrics}/manifest.yaml
+feedback file (if it exists): ${evidence}/slice-${s.id}-feedback.md
+test command: ${testCommand}
+this is attempt ${attempt} of ${MAX_ATTEMPTS}
+accept threshold: ${ACCEPT}
+${s.browserEvidence ? `\nThis slice requires browser evidence. Read
+${green.browserEvidencePath || `${evidence}/slice-${s.id}-browser.md`}. Score
+every browser-related criterion 0.0, with that fact as the cited evidence, if
+the file is missing, records no console log or a console error, or the
+screenshot/DOM excerpt does not match what the criterion claims.` : ''}
 
-SCOPE CONTRACT
-Score only slice ${s.id} ("${s.name}") against the criteria in its rubric. Do not
-penalise the implementation for capabilities belonging to later slices — see the
-rubric's "Out of scope" section.
-
-Read:
-  ${rubrics}/slice-${s.id}.md          your criteria
-  ${rubrics}/manifest.yaml             thresholds
-  ${evidence}/slice-${s.id}-feedback.md   (if it exists — prior attempts)
-
-This is attempt ${attempt} of ${MAX_ATTEMPTS}.
-
-Steps:
-1. Run the suite YOURSELF: ${testCommand}. Do not rely on any claimed result.
-${s.browserEvidence ? `1b. Read ${green.browserEvidencePath || `${evidence}/slice-${s.id}-browser.md`}.
-    Score EVERY browser-related criterion 0.0, with that fact as the cited
-    evidence, if any of these holds:
-      - the file is missing
-      - it records no console log, or a console error
-      - the screenshot or DOM excerpt does not match what the criterion claims
-    Do not take the GREEN report's word for a passing browser check — the file
-    is the evidence, not the summary of it.
-` : ''}2. Check for a rigged pass. Any of these VOIDS the run — set voided=true and say
-   why:
-   - a test file changed in this slice's diff
-   - a test skipped, xfailed, commented out, or its assertion weakened
-   - a test that would also pass against the pre-change code
-3. Score each rubric criterion using its own scoring guide: 1.0 fully met,
-   0.5 partial or fragile or happy-path-only, 0.0 missing or wrong or failing.
-   EVERY score needs cited evidence — a file:line, a test name, or command
-   output. A score without evidence is an opinion and does not count.
-4. overallScore = the plain average of the criterion scores.
-5. Check regressions: tests passing before this slice must still pass.
-6. Write your findings to ${evidence}/slice-${s.id}-attempt-${attempt}.md and
-   APPEND the same block to ${evidence}/slice-${s.id}-feedback.md, using the
-   format in the rubric-authoring reference (## Validation Result header,
-   per-criterion results with evidence, regression check, actionable guidance).
-7. Verdict:
-   PASS       — overallScore >= ${ACCEPT} AND no CRITICAL criterion below 1.0
-   FAIL       — otherwise, and ${attempt} < ${MAX_ATTEMPTS}
-   ESCALATION — otherwise, and ${attempt} >= ${MAX_ATTEMPTS}
-   VOID       — a rigged pass was found in step 2
-
-Guidance is mandatory unless PASS, and must be specific: file paths, function
-names, the exact behavior that must change. Vague guidance wastes a retry.`,
-      { label: `validate:slice-${s.id}:a${attempt}`, phase: 'Validate', schema: VALIDATE_SCHEMA, effort: 'high' },
+Write your findings to ${evidence}/slice-${s.id}-attempt-${attempt}.md and
+append the same block to ${evidence}/slice-${s.id}-feedback.md.`,
+      { label: `validate:slice-${s.id}:a${attempt}`, phase: 'Validate', schema: VALIDATE_SCHEMA, effort: 'high', agentType: 'implement:validate' },
     )
 
     if (!v) {
