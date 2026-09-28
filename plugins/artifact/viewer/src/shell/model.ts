@@ -376,11 +376,17 @@ export const PROGRAM_KEYS = [
 ] as const;
 
 /**
- * The Plan row follows the five. It always shows. For a work with no plan directory, it
- * is disabled with the reason "no plan", so it is kept apart from the list of five.
+ * The Plan row sits after Architecture, the order the gate sequence names: the plan
+ * documents approve after the architecture review, before the epics and rubrics. It
+ * always shows. For a work with no plan directory, it is disabled with the reason
+ * "no plan", so it is kept apart from the list of five.
  */
 export const PLAN_KEY = "plan" as const;
-const BUILD_ROW_KEYS = [...PROGRAM_KEYS, PLAN_KEY];
+const BUILD_ROW_KEYS = [
+  ...PROGRAM_KEYS.slice(0, 3),
+  PLAN_KEY,
+  ...PROGRAM_KEYS.slice(3),
+];
 export type ProgramKey = (typeof PROGRAM_KEYS)[number] | typeof PLAN_KEY;
 
 /**
