@@ -37,10 +37,11 @@ related_decisions:
 related_concerns: []
 history:
   - { state: decided, date: 2026-09-28, by: bjornslib, note: "The user made decisions 1 to 7 in chat on 2026-09-28 and approved the scope. An agent wrote this record, so the state is decided and never approved." }
+  - { state: decided, date: 2026-09-28, by: bjornslib, note: "Amended in place: the link moves from a suffix on the gate line's state text to its own `view:` line directly under the gate line, indented. Two facts rode one string, so every parser had to split them, and one projection failed to. The state stays decided, because an agent wrote this amendment and an agent does not approve its own record." }
 maps_to:
   context: cobuilder-packaging
   modules: [plugins/artifact, plugins/implement, plugins/architect, shared]
-  rule: "A workflow that asks the user to approve a document prints a viewer link to that document first. The link is checked live. An APPROVED gate line dated on or after 2026-09-28 names the link, and verify_gate.py fails a line that does not."
+  rule: "A workflow that asks the user to approve a document prints a viewer link to that document first. The link is checked live. An APPROVED gate line dated on or after 2026-09-28 carries its link on a `view:` line directly under it, indented two spaces, and verify_gate.py fails a gate line with no such view line."
 delivers:
   capability: "A reviewer opens the document under review in the viewer from one link, at the moment of review."
   benefit: "The reviewer reads the rendered document with its diagrams and joins, not a bullet summary in chat."
@@ -120,3 +121,44 @@ no mechanical consumer gets skipped. `verify_gate.py` is the consumer.
 - The committed `viewer/index.html` needs a rebuild when the page ships.
 - The interaction design gate keeps a file path. A reviewer of that gate
   still reads the file outside the viewer.
+
+## Amendment, 2026-09-28
+
+**This section states what moved, and it governs where the two disagree.** The
+link moves off the gate line's state text. The original decision put the link
+at the end of the state, as `APPROVED <date> — view: <url>`. The record above
+keeps its original text, so a reader sees the decision of 2026-09-28 and this
+amendment. The front matter's `decision` field keeps the original wording
+too, and `maps_to.rule` carries the new shape, because a tool reads that
+field.
+
+1. **The link is its own line.** A gate block now reads:
+
+   ```
+   - Gate 1 — Product: APPROVED 2026-09-28
+     view: http://127.0.0.1:<port>/active/viewer/index.html#/<work>/build/plan/product
+   ```
+
+   The `view:` line sits directly under the gate line, indented two spaces,
+   the same indent style the 4a, 4b, and 4c sub-lines under Gate 4 already
+   use. The URL itself is unchanged: it is the full deep link that View mode
+   prints. This change is field separation, not URL reform.
+
+2. **Why it moved.** Two facts rode one string: the approval state and the
+   link. Every parser of the line had to split them, and one projection
+   failed to, so a machine-specific absolute URL reached a derived index and
+   a rendered page. One fact per line removes the split from every reader.
+   The state text carries the approval and nothing else, so no projection can
+   leak a URL through it again.
+
+3. **The check reads the pair.** `verify_gate.py` reads a gate line and then
+   the line directly after it. A gate line dated on or after 2026-09-28 with
+   no following `view:` line reads "missing", exactly as before. Gate 2b
+   keeps no link, because its document has no viewer page.
+
+4. **The derived index keeps the portable fact.** `shared/gate_status.py` is
+   the one parser of the gate block, and it projects the route fragment of
+   the link, from its first `#`, into the gate step's own `view` field. The
+   absolute URL, with its host and port, reaches no derived payload. The
+   inline-suffix split it replaced is gone: no authored file carries the
+   suffix, and one format beats a tolerated second one.

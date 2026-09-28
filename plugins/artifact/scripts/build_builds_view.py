@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -75,9 +74,10 @@ ASK_NOTES = {
     "4": "Approval starts the build. Slice 1 is the tracer bullet.",
 }
 
-# Was: re.compile(r"- Gate (\d) — ([^:]+): (.+)"). The label group now
-# accepts a letter suffix, so "Gate 2b" parses.
-GATE_LINE = re.compile(r"- Gate (\d\w?) — ([^:]+): (.+)")
+# Was: a local `GATE_LINE` regex here, `- Gate (\d\w?) — ([^:]+): (.+)`. The
+# gate block's parser moved into shared/gate_status.py, the one place a
+# 00-status.md gate line and its `view:` line are read, so this script and
+# build_index.py cannot disagree about the shape.
 
 BEGIN_MARKER = "<!-- BEGIN GENERATED -->"
 END_MARKER = "<!-- END GENERATED -->"
@@ -172,20 +172,17 @@ def read_plan(plan_dir: Path, designs_dir: Path, rubrics_dir: Path) -> dict:
     rubric_docs, rubric_paths = read_rubrics(rubrics_dir)
     docs.update(rubric_docs)
     paths.update(rubric_paths)
+    # The gate block is parsed by the one parser in gate_status: the gate line
+    # carries the approval state, and the link lives on its own `view:` line
+    # under it (ADR-0032, amendment of 2026-09-28). The portable route projects
+    # into its own field. The document text above keeps the whole authored
+    # line, URL included, because 00-status.md is displayed as itself.
     gates = []
-    for line in docs.get("00-status.md", "").splitlines():
-        m = GATE_LINE.match(line.strip())
-        if m:
-            # The state tail carries an authored view link (ADR-0032). The
-            # shared split keeps the portable route in its own field and
-            # keeps the machine-specific absolute URL out of the payload.
-            # The document text above keeps the line whole, URL included,
-            # because 00-status.md is displayed as the authored document.
-            state, view = gate_status.split_gate_state(m.group(3))
-            gate = {"n": m.group(1), "name": m.group(2).strip(), "state": state}
-            if view is not None:
-                gate["view"] = view
-            gates.append(gate)
+    for step in gate_status.parse_status_gates(docs.get("00-status.md", "")):
+        gate = {"n": step["n"], "name": step["name"], "state": step["state"]}
+        if step["view"] is not None:
+            gate["view"] = step["view"]
+        gates.append(gate)
     epics = read_epics(designs_dir, docs.get("04-slices.md", ""))
     return {"docs": docs, "gates": gates, "epics": epics, "paths": paths}
 

@@ -573,9 +573,12 @@ def collect_districts(bundle_dir: Path) -> tuple[list[dict], list[str]]:
 # --------------------------------------------------------------------------
 # Slices — feeds "slice" entities, from docs/plans/<feature>/04-slices.md
 # --------------------------------------------------------------------------
+#
+# The gate-line regex that used to sit beside STATUS_SLICE_RE moved into
+# shared/gate_status.py, the one parser of a 00-status.md gate block. Its
+# resolve_feature_gates() and _gate_2b_state() read the block from there.
 
 
-STATUS_GATE_RE = re.compile(r"^-\s*Gate\s*(\d+\w?)\s*[—–-]\s*([^:]+):\s*(.+)$")
 STATUS_SLICE_RE = re.compile(
     r"^-\s*\[(x| )\]\s*Slice\s*(\d+)\s*[—–-]\s*(.*?)(?:\s+score:\s*([^\s]+)(?:\s+on\s+attempt\s+(\d+))?)?$",
     re.IGNORECASE,
@@ -899,24 +902,21 @@ def _gate_2b_state(plan_dir: Path) -> str:
     """Read the Gate 2b state text from a plan's 00-status.md.
 
     Returns "n/a" when the file is absent, unreadable, or carries no Gate 2b
-    line. Uses the same STATUS_GATE_RE as resolve_feature_gates().
-
-    Gate 2b is link-exempt today, and nothing renders a link for it, so the
-    view half of the split is dropped here. The read still goes through the
-    split, so a future 2b line that carries a link projects a clean state
-    rather than reopening the leak.
+    line. The read goes through the one parser in gate_status, so a 2b block
+    projects a clean state. Gate 2b is link-exempt today (GATES_WITHOUT_PAGE in
+    verify_gate.py names it) and nothing renders a link for it, so the view
+    half of the block is dropped here.
     """
     status_path = plan_dir / "00-status.md"
     if not status_path.is_file():
         return "n/a"
     try:
-        lines = status_path.read_text().splitlines()
+        text = status_path.read_text()
     except OSError:
         return "n/a"
-    for line in lines:
-        gm = STATUS_GATE_RE.search(line.strip())
-        if gm and gm.group(1) == "2b":
-            return gate_status.split_gate_state(gm.group(3))[0]
+    for step in gate_status.parse_status_gates(text):
+        if step["n"] == "2b":
+            return step["state"]
     return "n/a"
 
 
@@ -1304,31 +1304,30 @@ def resolve_feature_gates(repo: Path) -> dict[str, list[dict]]:
         feature = status_path.parent.name
         gates = []
         try:
-            for line in status_path.read_text().splitlines():
-                gm = STATUS_GATE_RE.search(line.strip())
-                if gm:
-                    # The state tail carries an authored view link (ADR-0032).
-                    # gate_status splits it, so the machine-specific absolute URL
-                    # never reaches the index and the portable route lives in its
-                    # own field. A line with no link projects no `view` key.
-                    state, view = gate_status.split_gate_state(gm.group(3))
-                    gate = {
-                        "n": gm.group(1),
-                        "name": gm.group(2).strip(),
-                        "state": state,
-                    }
-                    if view is not None:
-                        gate["view"] = view
-                    doc_kind = GATE_DOC_KINDS.get(gate["n"])
-                    if doc_kind and (doc_kind, feature) in plan_doc_features:
-                        gate["doc"] = feature
-                        gate["doc_kind"] = doc_kind
-                    elif gate["n"] == "2b" and feature in interaction_design_features:
-                        gate["doc"] = feature
-                        gate["doc_kind"] = "interaction"
-                    gates.append(gate)
+            text = status_path.read_text()
         except OSError:
             continue
+        # gate_status is the one parser of a gate block: the gate line carries
+        # the approval state, and the link lives on its own `view:` line under
+        # it (ADR-0032, amendment of 2026-09-28). The portable route projects
+        # into its own field, and the machine-specific absolute URL never
+        # reaches the index. A block with no view line projects no `view` key.
+        for step in gate_status.parse_status_gates(text):
+            gate = {
+                "n": step["n"],
+                "name": step["name"],
+                "state": step["state"],
+            }
+            if step["view"] is not None:
+                gate["view"] = step["view"]
+            doc_kind = GATE_DOC_KINDS.get(gate["n"])
+            if doc_kind and (doc_kind, feature) in plan_doc_features:
+                gate["doc"] = feature
+                gate["doc_kind"] = doc_kind
+            elif gate["n"] == "2b" and feature in interaction_design_features:
+                gate["doc"] = feature
+                gate["doc_kind"] = "interaction"
+            gates.append(gate)
         if gates:
             gates_by_feature[feature] = gates
     return gates_by_feature

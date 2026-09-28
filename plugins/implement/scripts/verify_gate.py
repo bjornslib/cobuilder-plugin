@@ -53,8 +53,9 @@ Artifact key names (stable, used in --json output):
   links (ADR-0032, keyed "gate.<n>", one per top-level Gate line in
       00-status.md):
     gate.<n>           - "ok" when an APPROVED line dated on or after
-                         2026-09-28 carries " — view: <url>". "missing" when
-                         such a line has no link. "n/a" when the line is
+                         2026-09-28 has a "view:" line directly under it,
+                         indented. "missing" when such a gate line has no
+                         view line. "n/a" when the line is
                          dated before 2026-09-28, is not APPROVED, or has no
                          viewer page.
     Rule for sub-lines and gates with no page: the check reads top-level
@@ -326,21 +327,35 @@ STATUS_GATE_RE = re.compile(
     r"^-\s*Gate\s*(\w+)\b.*?:\s*APPROVED\s+(\d{4}-\d{2}-\d{2})(.*)$",
     re.IGNORECASE,
 )
+# The view line of a gate block (ADR-0032, amendment of 2026-09-28). It sits
+# directly under the gate line and is indented, so the leading whitespace is
+# what makes it a sub-line of the gate above it. This script keeps its own
+# regex on purpose: check_links() verifies the raw authored URL, not the
+# portable route a projection derives, so it shares no parser with
+# shared/gate_status.py.
+VIEW_LINE_RE = re.compile(r"^\s+view:\s*\S+")
 
 
 def check_links(status_text: str | None) -> dict[str, str]:
-    """Return "gate.<n>" -> "ok" | "n/a" | "missing" for top-level Gate lines."""
+    """Return "gate.<n>" -> "ok" | "n/a" | "missing" for top-level Gate lines.
+
+    The link lives on the view line directly under the gate line, so the
+    check reads the gate line and then the line after it. Nothing sits
+    between the two: a gate line whose following line is not an indented
+    `view:` line carries no link, and reads "missing" exactly as before.
+    """
     results: dict[str, str] = {}
     if status_text is None:
         return results
-    for line in status_text.splitlines():
+    lines = status_text.splitlines()
+    for i, line in enumerate(lines):
         match = STATUS_GATE_RE.match(line)
         if not match:
             continue
-        gate, date, rest = match.group(1).lower(), match.group(2), match.group(3)
+        gate, date = match.group(1).lower(), match.group(2)
         if gate in GATES_WITHOUT_PAGE or date < LINK_CUTOFF:
             results[f"gate.{gate}"] = "n/a"
-        elif re.search(r"view:\s*\S+", rest):
+        elif i + 1 < len(lines) and VIEW_LINE_RE.match(lines[i + 1]):
             results[f"gate.{gate}"] = "ok"
         else:
             results[f"gate.{gate}"] = "missing"
@@ -487,7 +502,8 @@ def main() -> None:
         print(
             "\nViewer link missing for: " + ", ".join(f"Gate {g}" for g in missing_links) + ".\n"
             "remediation: run View mode with --route for the gate's page, and add "
-            "' — view: <url>' to the gate line in 00-status.md.",
+            "a `view: <url>` line directly under the gate line in 00-status.md, "
+            "indented two spaces.",
             file=sys.stderr,
         )
     sys.exit(0 if ok else 1)

@@ -218,9 +218,10 @@ export interface GateStep {
   doc_kind?: string;
   /**
    * The portable route of the gate's authored view link, such as
-   * `#/review-link/build/plan/product`. The index splits the link from the
-   * state so the machine-specific absolute URL never travels, and no surface
-   * renders it yet: the plan row already opens the same page.
+   * `#/review-link/build/plan/product`. The link lives on its own `view:`
+   * line under the gate line in 00-status.md, and the index projects its
+   * route fragment here, so the machine-specific absolute URL never travels.
+   * No surface renders it yet: the plan row already opens the same page.
    */
   view?: string;
 }

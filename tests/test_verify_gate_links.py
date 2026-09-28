@@ -1,7 +1,9 @@
 """Tests for the viewer-link check in plugins/implement/scripts/verify_gate.py.
 
-ADR-0032: a gate line approved on or after 2026-09-28 must carry a viewer
-link, in the form `- Gate N — <name>: APPROVED <date> — view: <url>`.
+ADR-0032, amendment of 2026-09-28: a gate line approved on or after
+2026-09-28 must carry a viewer link on its own `view:` line directly under
+the gate line, indented. The gate line reads `- Gate N — <name>:
+APPROVED <date>` and the view line under it reads `view: <url>`.
 verify_gate.py reports `links.gate.<n>` as `ok`, `n/a`, or `missing`.
 
 Run with: uv run pytest tests/test_verify_gate_links.py -v
@@ -28,10 +30,10 @@ SLICES = """# Slices: demo
 """
 
 
-def status(gate1_line: str) -> str:
+def status(gate1_block: str) -> str:
     return f"""# Status: demo
 
-{gate1_line}
+{gate1_block}
 - Gate 4 — Slice plan, epic designs, and rubrics: APPROVED 2026-09-01
   - 4a Slice plan: APPROVED 2026-09-01
   - 4b Epic technical solution designs: n/a (no epic carries more than one slice)
@@ -39,11 +41,11 @@ def status(gate1_line: str) -> str:
 """
 
 
-def make_plan(tmp_path: Path, gate1_line: str) -> tuple[Path, Path]:
+def make_plan(tmp_path: Path, gate1_block: str) -> tuple[Path, Path]:
     plan = tmp_path / "docs" / "plans" / "demo"
     plan.mkdir(parents=True)
     (plan / "04-slices.md").write_text(SLICES)
-    (plan / "00-status.md").write_text(status(gate1_line))
+    (plan / "00-status.md").write_text(status(gate1_block))
     rubrics = tmp_path / "rubrics" / "demo"
     rubrics.mkdir(parents=True)
     (rubrics / "slice-1.md").write_text("criteria\n")
@@ -80,11 +82,29 @@ def test_after_adr_date_without_link_fails(tmp_path):
     assert links_of(proc).get("gate.1") == "missing"
 
 
-def test_on_adr_date_with_link_passes(tmp_path):
-    plan, rubrics = make_plan(tmp_path, f"- Gate 1 — Product: APPROVED 2026-09-28 — view: {URL}")
+def test_on_adr_date_with_view_line_passes(tmp_path):
+    block = (
+        "- Gate 1 — Product: APPROVED 2026-09-28\n"
+        f"  view: {URL}\n"
+    )
+    plan, rubrics = make_plan(tmp_path, block)
     proc = run(plan, rubrics, "--json")
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert links_of(proc).get("gate.1") == "ok"
+
+
+def test_view_line_must_sit_directly_under_the_gate_line(tmp_path):
+    # A blank line between the gate line and the view line ends the block,
+    # so the gate reads as carrying no link.
+    block = (
+        "- Gate 1 — Product: APPROVED 2026-09-28\n"
+        "\n"
+        f"  view: {URL}\n"
+    )
+    plan, rubrics = make_plan(tmp_path, block)
+    proc = run(plan, rubrics, "--json")
+    assert proc.returncode == 1
+    assert links_of(proc).get("gate.1") == "missing"
 
 
 def test_before_adr_date_without_link_passes(tmp_path):

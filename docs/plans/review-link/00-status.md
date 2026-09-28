@@ -1,10 +1,14 @@
 # Status: Review link
 
-- Gate 1 — Product: APPROVED 2026-09-28 — view: http://127.0.0.1:62583/active/viewer/index.html#/review-link/build/plan/product
-- Gate 2 — Architecture: APPROVED 2026-09-28 — view: http://127.0.0.1:62583/active/viewer/index.html#/review-link/build/plan/architecture
+- Gate 1 — Product: APPROVED 2026-09-28
+  view: http://127.0.0.1:62583/active/viewer/index.html#/review-link/build/plan/product
+- Gate 2 — Architecture: APPROVED 2026-09-28
+  view: http://127.0.0.1:62583/active/viewer/index.html#/review-link/build/plan/architecture
 - Gate 2b — Interaction design: APPROVED 2026-09-28
-- Gate 3 — Program Design: APPROVED 2026-09-28 — view: http://127.0.0.1:62583/active/viewer/index.html#/review-link/build/plan/program
-- Gate 4 — Slice plan, epic designs, and rubrics: APPROVED 2026-09-28 — view: http://127.0.0.1:62583/active/viewer/index.html#/review-link/build/epics
+- Gate 3 — Program Design: APPROVED 2026-09-28
+  view: http://127.0.0.1:62583/active/viewer/index.html#/review-link/build/plan/program
+- Gate 4 — Slice plan, epic designs, and rubrics: APPROVED 2026-09-28
+  view: http://127.0.0.1:62583/active/viewer/index.html#/review-link/build/epics
   - 4a Slice plan: APPROVED 2026-09-28
   - 4b Epic technical solution designs: APPROVED 2026-09-28
   - 4c Blind rubrics: APPROVED 2026-09-28
@@ -30,6 +34,7 @@ Slice 1 C6 scored 0.5: no test writes two port lines to the log to prove the las
 - Slice 3 C3 scored 0.5: no blind transcript showed an agent writing the view link onto a gate line, because the blind agents could not write files.
 - Slice 3 had one valid blind pass, on a build gate. No blind pass covered the after-slice step, ESCALATE, or the architect modes. The packaging tests cover those points by text only.
 - A gate link names the local port of the View server. After a restart on another port the link fails, but its route still names the page the approver saw.
+- The gate view links moved off the state text onto their own `view:` lines under the gate lines, per the ADR-0032 amendment of 2026-09-28. Two facts rode one string, so every parser had to split them, and one projection failed to.
 - verify_gate.py keeps a comment near line 99 that names plugins/artifact/scripts/build_builds_view.py. It was there before this feature. A grep for plugins/artifact/ in plugins/implement matches it.
 
 ## Notes for a fresh session

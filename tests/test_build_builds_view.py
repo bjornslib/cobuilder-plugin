@@ -189,16 +189,16 @@ def test_read_rubrics_omits_keys_for_files_that_do_not_exist(tmp_path):
     assert paths == {}
 
 
-# --- read_plan(): the gate state and its authored view link ---
+# --- read_plan(): the gate block and its view line (ADR-0032) ---
 
 
-def test_read_plan_splits_the_gate_view_link_from_the_state(tmp_path):
+def test_read_plan_reads_the_gate_block_and_its_view_line(tmp_path):
     plan_dir = tmp_path / "plan"
     plan_dir.mkdir()
     (plan_dir / "00-status.md").write_text(
         "# Status: demo\n\n"
-        "- Gate 1 — Product: APPROVED 2026-09-28 — view: "
-        "http://127.0.0.1:62583/active/viewer/index.html#/demo/build/plan/product\n"
+        "- Gate 1 — Product: APPROVED 2026-09-28\n"
+        "  view: http://127.0.0.1:62583/active/viewer/index.html#/demo/build/plan/product\n"
         "- Gate 2 — Architecture: APPROVED 2026-09-28\n"
     )
     payload = bbv.read_plan(plan_dir, make_designs(tmp_path), tmp_path / "rubrics")
@@ -208,11 +208,11 @@ def test_read_plan_splits_the_gate_view_link_from_the_state(tmp_path):
     assert gates["1"]["state"] == "APPROVED 2026-09-28"
     assert gates["1"]["view"] == "#/demo/build/plan/product"
     assert "127.0.0.1" not in str(payload["gates"])
-    # A line with no link projects no `view` key.
+    # A gate block with no view line projects no `view` key.
     assert gates["2"]["state"] == "APPROVED 2026-09-28"
     assert "view" not in gates["2"]
     # The document itself is the authored record, displayed as itself, so its
-    # text keeps the whole line, URL included.
+    # text keeps the whole view line, URL included.
     assert "view: http://127.0.0.1:62583" in payload["docs"]["00-status.md"]
 
 

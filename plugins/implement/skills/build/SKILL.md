@@ -191,11 +191,15 @@ Template for `00-status.md`:
 ```markdown
 # Status: <feature name>
 
-- Gate 1 — Product: pending | in progress | APPROVED <date> — view: <url>
-- Gate 2 — Architecture: pending | in progress | APPROVED <date> — view: <url>
+- Gate 1 — Product: pending | in progress | APPROVED <date>
+  view: <url>
+- Gate 2 — Architecture: pending | in progress | APPROVED <date>
+  view: <url>
 - Gate 2b — Interaction design: pending | in progress | APPROVED <date> | n/a (no UI) — Screens: "<the ## Screens entry>"
-- Gate 3 — Program Design: pending | in progress | APPROVED <date> — view: <url>
-- Gate 4 — Slice plan, epic designs, and rubrics: pending | in progress | APPROVED <date> — view: <url>
+- Gate 3 — Program Design: pending | in progress | APPROVED <date>
+  view: <url>
+- Gate 4 — Slice plan, epic designs, and rubrics: pending | in progress | APPROVED <date>
+  view: <url>
   - 4a Slice plan: pending | APPROVED <date>
   - 4b Epic technical solution designs: pending | APPROVED <date> | n/a (no epic carries more than one slice)
   - 4c Blind rubrics: pending | APPROVED <date>
@@ -229,9 +233,10 @@ Run this protocol at every gate and before implementing an epic:
    gate. Gate 2b and Gate 4c have no page.
 4. Ask the user: **"Approve Gate N, or what should change?"**
 5. The user must clearly approve before you proceed.
-6. Record approval in `00-status.md`. Add the link from step 3 to the gate
-   line as ` — view: <url>`. `verify_gate.py` fails a line with no link when
-   its approval date is 2026-09-28 or later.
+6. Record approval in `00-status.md`. Add the link from step 3 on its own
+   `view:` line directly under the gate line, indented two spaces.
+   `verify_gate.py` fails a gate line dated 2026-09-28 or later that has no
+   view line.
 7. If later work invalidates a decision, update the document, set status to "in
    progress", and request approval again.
 
