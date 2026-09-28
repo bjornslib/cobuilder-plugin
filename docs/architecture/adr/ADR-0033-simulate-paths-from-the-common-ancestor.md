@@ -1,12 +1,12 @@
 ---
 # --- doc-gardener required frontmatter ---
-title: "ADR-0025 — Simulate paths to close the open set, from the common ancestor, and show one validated path"
+title: "ADR-0033 — Simulate paths to close the open set, from the common ancestor, and show one validated path"
 status: active
 type: architecture
 last_verified: 2026-09-18
 owner: bjornslib
 # --- 42010 decision-record index (schema: references/decision-records.md §2) ---
-id: ADR-0025
+id: ADR-0033
 source_pr: null
 name: "Simulate paths to close the open set, from the common ancestor, and show one validated path"
 state: rejected
@@ -72,7 +72,12 @@ related:
   - "docs/architecture/designs/review-flight-deck/flightdeck-prototype.html"
 ---
 
-# ADR-0025 — Simulate paths to close the open set, from the common ancestor, and show one validated path
+# ADR-0033 — Simulate paths to close the open set, from the common ancestor, and show one validated path
+
+> **Renumbered on 2026-09-28.** This record was ADR-0025 until master took that number for
+> "implement ships slice agents and a coaching hook". The two records met in the merge of PR #24.
+> The state does not change. The record stays rejected, superseded by ADR-0027. A citation that
+> reads ADR-0025 in a commit or pull request dated before 2026-09-28 means this record.
 
 ## Context
 

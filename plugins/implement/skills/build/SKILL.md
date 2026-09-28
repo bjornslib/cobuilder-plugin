@@ -33,6 +33,64 @@ and a score after. A slice is complete when an independent validator scores it a
 This skill requires only a git repository, a test command, and the ability to
 spawn a subagent.
 
+## Install mode
+
+This mode sets up habit-hooks for the target repo. Run it once, before the
+first `/implement:start` run, or whenever the target repo gains a new
+language.
+
+1. **Detect languages from marker files.** Check the repo root for these
+   markers and build the list of detected languages:
+   - `pyproject.toml`, `requirements*.txt`, or `setup.py` → python.
+   - `package.json` with a `typescript` dependency, or `tsconfig.json` →
+     typescript.
+   - `composer.json` → php.
+   - `pom.xml` or `build.gradle` → java.
+   - `Gemfile` → ruby.
+
+2. **Show the plan and ask for confirmation.** List the detected languages.
+   Show the one combined install command,
+   `uv tool install "habit-hooks[<extras>]"`, with every detected language
+   as an extra in that single command. Explain that a later
+   `uv tool install` with different extras rebuilds the tool environment and
+   silently replaces this one, so every needed language must appear in one
+   command. Ask the user to confirm before running it.
+
+3. **Run the confirmed install command.** Then verify it with
+   `habit-hooks --version`.
+
+4. **Install the per-project detectors, after confirmation.** Each detected
+   language needs its own detector package in the target repo, not in
+   habit-hooks itself:
+   - generic (always) → `npm install --save-dev jscpd`.
+   - python → `pip install ruff deptry`, or `uv add --dev ruff deptry`.
+   - typescript → `npm install --save-dev eslint knip ts-morph`, plus
+     `node`. Add `@typescript-eslint/parser @typescript-eslint/eslint-plugin`
+     too when the repo has no eslint config of its own.
+   - php → a PHP runtime.
+   - java → `pmd`.
+   - ruby → `rubocop`.
+
+5. **Run `habit-hooks init`.** It detects languages on its own, writes
+   `.habit-hooks/config.toml`, and lists any detector it still cannot find.
+   Running it again is safe.
+
+6. **Offer the backlog snooze. Never run it without explicit approval.**
+   Explain that `habit-sensors --all | habit-snooze --snooze` snoozes every
+   existing finding, so new code is coached but old debt is not flagged.
+   Only run it if the user says yes. Remind the user to commit both
+   `.habit-hooks/config.toml` and `.habit-hooks/snooze.json` after this mode
+   finishes.
+
+7. **Report the result.** State which languages have both habit-hooks and
+   their detector installed, and which detector is still missing for which
+   language.
+
+`ste-writing` needs no install step. It ships in every plugin through
+`shared/`, so it is already present once the plugin is installed.
+
+---
+
 ## Implement mode
 
 This mode runs the gate and slice workflow for a feature.
@@ -505,6 +563,26 @@ uv run plugins/implement/scripts/verify_gate.py --plan docs/plans/<feature-slug>
 # Exit code 0 required before starting slices. A non-zero exit names which
 # of 4a, 4b, or 4c is missing or incomplete, and for which epic.
 ```
+
+---
+
+## Prerequisite: habit-hooks
+
+The implement plugin ships a `PostToolUse` hook. It runs habit-hooks after
+each file the GREEN agent writes. The hook coaches GREEN only. It never
+blocks a write.
+
+Before slice 1, run `habit-hooks --version`. If it fails, stop. Tell the
+user to run `/implement:install`, which runs the confirmed
+`uv tool install "habit-hooks[python]"` command for the languages it
+detects, names every language in one install command, and verifies the
+result with `habit-hooks --version`. A second install replaces the first.
+
+If `.habit-hooks/config.toml` is missing, run `habit-hooks init`. Then
+snooze the existing backlog with `habit-sensors --all | habit-snooze
+--snooze`. Commit `.habit-hooks/snooze.json`.
+
+See `plugins/implement/NOTICE.md` for the habit-hooks credit.
 
 ---
 

@@ -51,7 +51,7 @@
       "id": "F6",
       "severity": "low",
       "title": "Superseding both source designs is correct, because neither was ever approved or shipped",
-      "detail": "Both react-viewer and review-flight-deck sat at stage review, with no approved history and nothing outside themselves depending on them separately. That matches the condition that let ADR-0025 be revised in place rather than superseded while it was still review-flight-deck's own record. Superseding both into cobuilder-viewer keeps one live design, instead of a resumed design plus a satellite.",
+      "detail": "Both react-viewer and review-flight-deck sat at stage review, with no approved history and nothing outside themselves depending on them separately. That matches the condition that let ADR-0033 be revised in place rather than superseded while it was still review-flight-deck's own record. Superseding both into cobuilder-viewer keeps one live design, instead of a resumed design plus a satellite.",
       "cites": "react-viewer/goal.json, review-flight-deck/goal.json, decision-records.md rule 5"
     }
   ]

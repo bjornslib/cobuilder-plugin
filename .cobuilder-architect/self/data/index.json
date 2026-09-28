@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "027ee3532e9dc57bb234f66620ff8ed92c44aaa8",
+    "git_head": "eb1a39f9e2706b5ef6dc0fde97196e69650e33e0",
     "trees": {
-      "docs/architecture/adr": "sha256:a0bddf218f1aa38fc2afcd5c5ddf3c5f01c4e0fab3e98e9496e66cbab97acf33",
-      "docs/architecture/designs": "sha256:28bcdf80c3029cc2ffbad0a97bef10f83515519d71405de8634db5b69815dcef",
-      "docs/architecture/contexts": "sha256:b85daa6bfabf8944b88764cdad745c29c02f7882a31c3c5d45995633546caad0",
-      "docs/plans": "sha256:5361fbd3229ea39fef50f78c2454e473c91861a89e2f208cb9607afad64b6f9a",
-      ".cobuilder/rubrics": "sha256:da176b479c584db32188f2e834587ddfd328792669a91f71cf66a09d1f103d4d"
+      "docs/architecture/adr": "sha256:f53f9bc01fc4314357a021f57ad678fdf5dedebbe7493f652954711f83e09988",
+      "docs/architecture/designs": "sha256:dfb5fd7b8bec7f2dc7916d69a2a69df8965b435528c0c57ab4e8c8cd4c58c22a",
+      "docs/architecture/contexts": "sha256:2f1cde1db74ea6f95b55152c3de109c6e281619cc3beae3fb939d8650a4005c8",
+      "docs/plans": "sha256:f507a738988020b82ef31fb895aca7e65156e6002d619f94446901d883117937",
+      ".cobuilder/rubrics": "sha256:cdadfb4f1b3cf79ff2a2486d35ba29949bc1801a86f065926fa9dee93beca577"
     }
   },
   "entities": {
@@ -134,8 +134,8 @@
       },
       {
         "id": "ADR-0025",
-        "title": "Simulate paths to close the open set, from the common ancestor, and show one validated path",
-        "state": "rejected"
+        "title": "implement ships slice agents and a coaching hook",
+        "state": "approved"
       },
       {
         "id": "ADR-0026",
@@ -171,6 +171,11 @@
         "id": "ADR-0032",
         "title": "A document under review carries a viewer link",
         "state": "decided"
+      },
+      {
+        "id": "ADR-0033",
+        "title": "Simulate paths to close the open set, from the common ancestor, and show one validated path",
+        "state": "rejected"
       }
     ],
     "design": [
@@ -275,6 +280,12 @@
         "name": "review-link",
         "outcome": "Each time a workflow asks the user to approve a document, the user gets a checked link to that document's page in the viewer before the question.",
         "stage": "backlog"
+      },
+      {
+        "id": "slice-agents-and-vocabulary",
+        "name": "slice-agents-and-vocabulary",
+        "outcome": "A slice built with /implement:start gets structural coaching while GREEN writes, and a vocabulary verdict beside its score, against one root glossary that design mode keeps current.",
+        "stage": "decided"
       },
       {
         "id": "ubiquitous-language",
@@ -983,6 +994,45 @@
         "state": "planned",
         "note": "A viewer link for each document under review. Slice 1 adds review_link.py and a --route argument to View mode. Slice 2 projects the Gate 1 and Gate 2 documents and adds the plan page under the Build level. Slice 3 adds the Present for review procedure to every presentation point, and the link check to verify_gate.py.",
         "design_doc": "review-link/E1"
+      },
+      {
+        "id": "slice-agents-and-vocabulary/E1",
+        "design": "slice-agents-and-vocabulary",
+        "epic_id": "E1",
+        "branch": null,
+        "pr": null,
+        "state": "planned",
+        "note": "ADR-0025 narrows the install-surface rule so implement may ship agents and hooks. Slice 1."
+      },
+      {
+        "id": "slice-agents-and-vocabulary/E2",
+        "design": "slice-agents-and-vocabulary",
+        "epic_id": "E2",
+        "branch": null,
+        "pr": null,
+        "state": "planned",
+        "note": "RED, GREEN, and VALIDATE as plugin agents, spawned by name. Slices 2 and 3.",
+        "design_doc": "slice-agents-and-vocabulary/E2"
+      },
+      {
+        "id": "slice-agents-and-vocabulary/E3",
+        "design": "slice-agents-and-vocabulary",
+        "epic_id": "E3",
+        "branch": null,
+        "pr": null,
+        "state": "planned",
+        "note": "A required PostToolUse hook runs habit-hooks for GREEN only, with credit to habit-hooks. Slices 4 and 5.",
+        "design_doc": "slice-agents-and-vocabulary/E3"
+      },
+      {
+        "id": "slice-agents-and-vocabulary/E4",
+        "design": "slice-agents-and-vocabulary",
+        "epic_id": "E4",
+        "branch": null,
+        "pr": null,
+        "state": "planned",
+        "note": "DDD-VOCABULARY.md, the vocabulary agent, design mode read and write, and the CLAUDE.md table move. Slices 6 to 8.",
+        "design_doc": "slice-agents-and-vocabulary/E4"
       },
       {
         "id": "ubiquitous-language/E1",
@@ -1981,6 +2031,86 @@
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
+      },
+      {
+        "id": "slice-agents-and-vocabulary/1",
+        "feature": "slice-agents-and-vocabulary",
+        "n": 1,
+        "title": "Tracer bullet and whole epic: ADR-0025, the packaging test, and the CLAUDE.md rule",
+        "ends_with": "ADR-0025 exists. `test_plugin_manifests.py` passes with an `agents/` and `hooks/` directory in `implement` and fails for any other plugin. `CLAUDE.md` states the narrowed rule and cites ADR-0025.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "slice-agents-and-vocabulary/2",
+        "feature": "slice-agents-and-vocabulary",
+        "n": 2,
+        "title": "Tracer bullet: three agent files that parse",
+        "ends_with": "`plugins/implement/agents/{red,green,validate}.md` exist, parse, carry `name` and `description`, and use no ignored field.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "slice-agents-and-vocabulary/3",
+        "feature": "slice-agents-and-vocabulary",
+        "n": 3,
+        "title": "Real content: the prompts move and both loop paths spawn by name",
+        "ends_with": "Each agent body holds its role prompt, scope contract, and blind rule. `slice-loop.md` and `slice-loop.js` spawn `implement:red`, `implement:green`, and `implement:validate` and no longer paste the prompts.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "slice-agents-and-vocabulary/4",
+        "feature": "slice-agents-and-vocabulary",
+        "n": 4,
+        "title": "Tracer bullet: the hook fires for GREEN only",
+        "ends_with": "`hooks/hooks.json` registers `habit_coach.py` on `Write|Edit`. The script returns `additionalContext` for a GREEN payload with findings and nothing for any other agent.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "slice-agents-and-vocabulary/5",
+        "feature": "slice-agents-and-vocabulary",
+        "n": 5,
+        "title": "Edge cases, requirement, and credit",
+        "ends_with": "Exit 2, a missing binary, and a missing `file_path` each behave as designed. The build skill stops before slice 1 when `habit-hooks --version` fails. `NOTICE.md` credits habit-hooks. `plugin.json` reads 0.3.0.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "slice-agents-and-vocabulary/6",
+        "feature": "slice-agents-and-vocabulary",
+        "n": 6,
+        "title": "Tracer bullet: the glossary file and its format",
+        "ends_with": "`DDD-VOCABULARY.md` exists with every canvas term, in the entry shape, and each canvas term links to its entry.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "slice-agents-and-vocabulary/7",
+        "feature": "slice-agents-and-vocabulary",
+        "n": 7,
+        "title": "Real content: the vocabulary agent and design mode",
+        "ends_with": "`implement:vocabulary` exists and runs beside VALIDATE in both loop paths. `design-mode.md` reads the glossary in stage 1 and writes it in stage 5.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "slice-agents-and-vocabulary/8",
+        "feature": "slice-agents-and-vocabulary",
+        "n": 8,
+        "title": "Move: the CLAUDE.md table goes to the glossary",
+        "ends_with": "Every term from the `CLAUDE.md` Vocabulary table is in `DDD-VOCABULARY.md`. `CLAUDE.md` holds a pointer, not the table.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       }
     ],
     "publication": [
@@ -2054,6 +2184,15 @@
         "body_md": "# Product: Review link\n\n## Problem\n\nA workflow asks the user to approve a document at each gate. The user gets a\nshort list of bullets and a file path in chat. The viewer can show the same\ndocument with its title, its gate, and its place in the work. But the\nworkflow opens the viewer only after the user answers, and then it shows the\nfront page, not the document.\n\nSo the user reviews the document in the least helpful place. The viewer is\nclosed at the one moment it can help.\n\n## Success metric\n\n- At every gate, the user gets one link that opens the document under review.\n  The link arrives before the approval question.\n- Every link opens a page that works. No link leads to an error page.\n- A gate that the user approves on or after 2026-09-28 records its link. A\n  check fails when the link is missing.\n\n## Announcement — the blog post before the feature\n\nYou approve a plan at each step of a build. Until now you read a summary in\nchat and hunted for the file. Now each request for approval comes with a\nlink. Click it, and the viewer opens on the document itself, under the Build\nlevel of your work.\n\nYou read the product plan, the architecture, and the\nprogram design on one page. The link works when you get it, because the\nworkflow tests it first. The interaction design stays a file for now.\n\n## Screens\n\n- Plan page: one page under the Build level of a piece of work, at\n  `#/<work>/build/plan`. It shows the product, architecture, and program\n  design documents, each with its gate name. A missing document shows an\n  empty state in its place.\n",
         "approved_date": null,
         "source_path": "docs/plans/review-link/01-product.md"
+      },
+      {
+        "id": "slice-agents-and-vocabulary",
+        "feature_slug": "slice-agents-and-vocabulary",
+        "gate": 1,
+        "title": "Product: Slice agents, coding habits, and a DDD vocabulary",
+        "body_md": "# Product: Slice agents, coding habits, and a DDD vocabulary\n\n## Problem\n\nAn engineer who builds a feature with `/implement:start` gets code that\npasses its tests and its blind rubric, but two kinds of defect still get\nthrough.\n\n1. **Structural smells.** Long functions, deep nesting, duplicated code, and\n   too many parameters. The validator scores behaviour, not shape. Nothing\n   in the loop coaches the implementer while it writes.\n2. **Vocabulary drift.** The same concept gets two names, or a name that\n   the project already rejected. The terms live in three places: the\n   Vocabulary table in `CLAUDE.md`, the \"Ubiquitous language\" section of\n   each bounded-context canvas, and the districts in `inventory.yaml`.\n   Nothing joins them, and nothing checks new code against them.\n\nToday the RED, GREEN, and VALIDATE roles exist only as prompt text that the\norchestrator pastes into a general-purpose subagent. A rule that must apply\nto one role only, such as \"coach GREEN after each file it writes\", has no\nplace to live.\n\n## Success metric\n\nThree measurements, each read from files on disk:\n\n1. **Coaching reaches GREEN.** In a slice built after this change, the GREEN\n   role's transcript shows habit-hooks output after each file write, and the\n   final diff reports clean on `habit-hooks --branch <base>`. Measured on the\n   first real feature built after release.\n2. **One vocabulary.** `DDD-VOCABULARY.md` at the repository root is the one\n   glossary. `CLAUDE.md` holds a pointer to it, not a copy. Every\n   bounded-context canvas links its terms to it.\n3. **Drift gets caught.** VALIDATE reports a vocabulary verdict for every\n   slice. Seeded test: a slice that names a class with a term from an\n   `_Avoid_` list gets a vocabulary finding.\n\n## Announcement: the blog post before the feature\n\nThe implement plugin now ships its three slice roles as real agents: RED,\nGREEN, and VALIDATE. GREEN runs habit-hooks after every file it writes, so\nit gets a short coaching note about a smell at the moment it creates one,\nnot at review time. habit-hooks is an MIT project by Ivett Ördög and its\ncontributors, and we credit it in the plugin. The repository also has one\nDDD vocabulary, `DDD-VOCABULARY.md`. Design mode reads it and adds to it,\nand a vocabulary check in VALIDATE holds new code to it.\n\n## Screens\n\nno UI\n",
+        "approved_date": null,
+        "source_path": "docs/plans/slice-agents-and-vocabulary/01-product.md"
       }
     ],
     "architecture_doc": [
@@ -2101,6 +2240,15 @@
         "body_md": "# Architecture: Review link\n\n## Fit\n\nFour layers change. Each one keeps its current owner.\n\n- **Server.** View mode in `plugins/artifact/skills/cobuilder-artifacts/`\n  owns the python `http.server`, its pid file, and its log file. A new script,\n  `plugins/artifact/scripts/review_link.py`, reads those two files. It does not\n  start a server. View mode starts it, as it does today.\n- **Index.** `shared/build_index.py` gains two plan document kinds, for\n  `01-product.md` and `02-architecture.md`, beside the existing\n  `program_design` kind.\n- **Viewer.** The React viewer under `plugins/artifact/viewer/src/` gains one\n  page, the plan page, at `#/<work>/build/plan`. The build step recompiles the\n  committed `viewer/index.html`.\n- **Procedure.** A Present for review section in the cobuilder-artifacts\n  skill holds the procedure. The build skill and the architecture skill name\n  it by mode. `plugins/implement/scripts/verify_gate.py` checks the result.\n\nNo plugin names a file path in another plugin (ADR-0016). The build skill and\nthe architecture skill call `Skill(\"cobuilder-artifacts\", args=\"view --route\n<route>\")`.\n\n## Endpoints\n\nNo new endpoint. The viewer is a static page. The link is\n`http://127.0.0.1:<port>/active/viewer/index.html#/<work>/<section>/<tail>`.\nThe script requests `/active/viewer/index.html` and the index file, and\nexpects HTTP 200 from both.\n\n## Data\n\n`data/index.json` gains two entity lists, `product_doc` and\n`architecture_doc`. Each entity carries the same fields as a `program_design`\nentity: an id, the feature slug, a title, a source path, and `body_md`.\n`joins.feature_gates[slug]` points gates 1 and 2 at the new ids, in the same\nway it points gate 3 at the program design today.\n\n`00-status.md` gate lines gain an optional trailing ` — view: <url>` part.\n`verify_gate.py` reads it.\n\n## Flow\n\n1. A workflow writes a gate document to disk.\n2. The workflow runs `build_index.py`.\n3. The workflow calls View mode with a route for the document.\n4. View mode starts or reuses the server, then runs `review_link.py`.\n5. `review_link.py` checks the work id and the page, and prints the link.\n6. The workflow shows the summary, the file path, and the link.\n7. The workflow asks \"Approve Gate N, or what should change?\".\n8. On approval, the workflow writes the gate line with the link.\n9. `verify_gate.py` fails a line dated on or after 2026-09-28 with no link.\n\n## External\n\nNone. The script uses the Python standard library only. No CDN, no Vite dev\nserver, and no Claude Artifact publish.\n",
         "approved_date": null,
         "source_path": "docs/plans/review-link/02-architecture.md"
+      },
+      {
+        "id": "slice-agents-and-vocabulary",
+        "feature_slug": "slice-agents-and-vocabulary",
+        "gate": 2,
+        "title": "Architecture: Slice agents, coding habits, and a DDD vocabulary",
+        "body_md": "# Architecture: Slice agents, coding habits, and a DDD vocabulary\n\n## Fit\n\n| Existing part | Role today | Change |\n|---|---|---|\n| `plugins/implement/skills/build/` | Runs the gates and the RED, GREEN, VALIDATE slice loop. The three roles are prompt text in `references/slice-loop.md` and `workflows/slice-loop.js`. | The prompts move into agent definitions. The loop spawns agents by name. The prerequisite check gains `habit-hooks`. |\n| `plugins/implement/.claude-plugin/plugin.json` | Manifest, version 0.2.0. | Version 0.3.0. No new manifest key: Claude Code finds `agents/` and `hooks/hooks.json` by convention. |\n| `tests/test_plugin_manifests.py` | Fails if any plugin ships `agents/`, `hooks/`, or an MCP server. | Allows `agents/` and `hooks/` for `implement` only. The MCP ban stays for all five plugins. |\n| `CLAUDE.md` | States \"no agents, no hooks, no MCP servers\" for all five plugins, and holds the Vocabulary table. | Narrowed install-surface rule, citing the new ADR. The Vocabulary table becomes a pointer to `DDD-VOCABULARY.md`. |\n| `plugins/architect/skills/architecture/references/design-mode.md` | Design mode stages 0 to 7. | Stage 1 reads the vocabulary. Stage 5 adds or sharpens terms. |\n| `plugins/architect/skills/architecture/references/templates/canvas-template.md` and `docs/architecture/contexts/*/canvas.md` | Each canvas holds its own \"Ubiquitous language\" table. | Each term links to its entry in `DDD-VOCABULARY.md`. The canvas keeps the context-specific meaning. |\n\nNew parts:\n\n- `plugins/implement/agents/red.md`, `green.md`, `validate.md`, `vocabulary.md`: four agent definitions.\n- `plugins/implement/hooks/hooks.json`: one `PostToolUse` hook on `Write|Edit`.\n- `plugins/implement/scripts/habit_coach.py`: the hook command.\n- `plugins/implement/NOTICE.md`: credit for habit-hooks.\n- `DDD-VOCABULARY.md` at the repository root.\n- `docs/architecture/adr/ADR-0025-implement-ships-slice-agents-and-a-coaching-hook.md`.\n\n## Endpoints\n\nnone\n\n## Data\n\nNo database. Two file formats are new.\n\n1. **`DDD-VOCABULARY.md`.** One entry per term: the term, a one- or\n   two-sentence definition, the bounded context or district that owns it, and\n   an `_Avoid_:` list of rejected synonyms. Terms group under one heading per\n   bounded context. The format merges Matt Pocock's `CONTEXT.md` glossary\n   format with the canvas \"Ubiquitous language\" table.\n2. **Hook output.** `habit_coach.py` writes one JSON object to stdout:\n   `{\"hookSpecificOutput\": {\"hookEventName\": \"PostToolUse\", \"additionalContext\": \"<coaching text>\"}}`.\n\n## Flow\n\n**Coaching during GREEN:**\n\n1. The orchestrator spawns `implement:green` for a slice.\n2. GREEN writes or edits a file.\n3. Claude Code fires `PostToolUse` for `Write|Edit` with the payload on stdin.\n4. `habit_coach.py` reads `agent_type`. If the value does not name the\n   GREEN agent, the script exits 0 with no output.\n5. The script runs `habit-hooks --file <tool_input.file_path>`.\n6. Exit 0: no output. Exit 1: the coaching text goes back as\n   `additionalContext`. Exit 2: a one-line note that the tool failed goes\n   back as `additionalContext`, with the reason.\n7. GREEN reads the coaching and fixes the smell before its report.\n\n**Vocabulary check during VALIDATE:**\n\n1. After GREEN reports, the orchestrator spawns `implement:validate` and\n   `implement:vocabulary` in parallel.\n2. `implement:vocabulary` reads `DDD-VOCABULARY.md` and the slice diff. It\n   checks district, directory, file, class, and method names, and prose\n   terms. It reports each finding with the entry it breaks.\n3. VALIDATE keeps its rubric score. The vocabulary verdict appears beside\n   it in the evidence file. It is a separate axis, not merged into the score.\n\n**Vocabulary during design:**\n\n1. `/architect:design` stage 1 reads `DDD-VOCABULARY.md` with the districts.\n2. Stage 5 writes each term that the interview resolved or sharpened, and\n   flags a term that conflicts with an entry.\n\n## External\n\n- **habit-hooks** (MIT, https://github.com/habit-hooks/habit-hooks, by Ivett\n  Ördög and contributors). A required command-line tool, version 1.5.0 or\n  later. The build skill checks `habit-hooks --version` before the first\n  slice and stops with install steps if it is missing.\n- **Claude Code hook contract.** Plugin agents ignore a `hooks` frontmatter\n  field, so the hook lives in the plugin's `hooks/hooks.json`. The hook input\n  carries `agent_type` for a tool call made inside a subagent.\n- No new environment variable.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/slice-agents-and-vocabulary/02-architecture.md"
       }
     ],
     "program_design": [
@@ -2157,6 +2305,15 @@
         "body_md": "# Program Design: Review link\n\n## Files\n\n| File | Change | Slice |\n|---|---|---|\n| `plugins/artifact/scripts/review_link.py` | New. Finds the server, checks the route, prints the link | 1 |\n| `plugins/artifact/skills/cobuilder-artifacts/SKILL.md` | View mode gains `--route`. A new Present for review section | 1, 3 |\n| `tests/test_review_link.py` | New. Runs a real temporary server | 1 |\n| `shared/build_index.py` | Projects `01-product.md` and `02-architecture.md` | 2 |\n| `tests/test_build_index_plan_docs.py` | New. Tests the projection | 2 |\n| `plugins/artifact/viewer/src/shell/model.ts` | Adds `plan` to `PROGRAM_KEYS` | 2 |\n| `plugins/artifact/viewer/src/data/types.ts`, `data/works.ts` | Read the two new entity lists into a work item | 2 |\n| `plugins/artifact/viewer/src/shell/panels/Plan.tsx` | New. The plan page | 2 |\n| `plugins/artifact/viewer/src/shell/panels/Plan.test.tsx` | New. Vitest for the page | 2 |\n| `plugins/artifact/viewer/index.html` | Rebuilt | 2 |\n| `plugins/implement/skills/build/SKILL.md` | Viewer step moves before the question. Gate 4b and after-slice steps link | 3 |\n| `plugins/implement/skills/build/references/validation-scoring.md` | ESCALATE links the document | 3 |\n| `plugins/architect/skills/architecture/SKILL.md` | Design stage 5 step 6, decisions step 8, describe step 6 | 3 |\n| `plugins/architect/skills/architecture/references/design-mode.md` | Stage 6 links each round | 3 |\n| `plugins/implement/scripts/verify_gate.py` | Adds the link check | 3 |\n| `tests/test_verify_gate_links.py` | New. Tests the link check | 3 |\n| `docs/plans/review-link/00-status.md` | Its own gate lines gain a link | 3 |\n\n## Types & signatures\n\n```python\n# plugins/artifact/scripts/review_link.py\ndef read_server_port(hub: Path) -> int            # raises NoServer\ndef active_bundle(hub: Path) -> Path              # resolves .cobuilder-architect/active\ndef work_ids(bundle: Path) -> set[str]            # from data/index.json\ndef parse_route(route: str) -> tuple[str, str]    # \"#/<work>/<rest>\" -> (work, rest)\ndef check_page(url: str, timeout: float = 3.0) -> int   # the HTTP status\ndef main(argv: list[str] | None = None) -> int    # 0 on a printed link, 1 on any failure\n\n# shared/build_index.py\nPLAN_DOC_FILES = {\"product_doc\": \"01-product.md\", \"architecture_doc\": \"02-architecture.md\"}\ndef project_plan_doc(kind: str, feature_slug: str, path: Path, text: str, repo: Path) -> dict\n\n# plugins/implement/scripts/verify_gate.py\nLINK_REQUIRED_FROM = date(2026, 9, 28)\ndef check_gate_links(status_text: str | None) -> dict[str, str]   # \"gate.<n>\": \"ok\" | \"n/a\" | \"missing\"\n```\n\n```ts\n// plugins/artifact/viewer/src/data/types.ts\nexport interface PlanDoc { id: string; kind: \"product\" | \"architecture\" | \"program\"; title: string; source: string; body_md: string }\n// WorkItem gains: plan: Record<\"product\" | \"architecture\" | \"program\", PlanDoc | null>\n```\n\n## Call stack\n\n```\nbuild SKILL approval protocol step 2\n  -> build_index.py\n  -> Skill(\"cobuilder-artifacts\", args=\"view --route #/<work>/build/plan/product\")\n       -> View mode steps 1-9 (start or reuse the server)\n       -> uv run review_link.py --hub <hub> --route <route>\n            -> read_server_port -> active_bundle -> work_ids -> check_page\n            -> print http://127.0.0.1:<port>/active/viewer/index.html#/<work>/...\n  -> show summary, path, link\n  -> ask \"Approve Gate N, or what should change?\"\n  -> write \"- Gate 1 — Product: APPROVED <date> — view: <link>\"\nverify_gate.py --plan docs/plans/<slug>\n  -> check_gate_links -> \"missing\" for a dated line with no link\n```\n\n## Test plan\n\n- `test_review_link.py`: start `http.server` on port 0 over a temporary hub.\n  Write the pid and log files the way View mode does. Assert the printed link\n  for a known work id. Assert exit 1 for an unknown work id, for no server,\n  and for a viewer file that returns 404.\n- `test_build_index_plan_docs.py`: a temporary repo with the three plan files\n  produces the three entity kinds and the gate joins. A repo with none\n  produces empty lists.\n- `Plan.test.tsx`: renders three blocks in gate order. An absent document\n  shows the empty line.\n- `test_verify_gate_links.py`: a line dated 2026-09-27 with no link passes. A\n  line dated 2026-09-28 with no link fails. A line with a link passes.\n\n## Least confident decisions\n\n- The route for an ADR under review in decisions mode, and for a bounded\n  context in describe mode. Slice 3 uses the page the viewer has for that\n  record, or the work's Intent page when no record page exists.\n- The link format in `00-status.md`. ` — view: <url>` is a new convention\n  that no reader other than `verify_gate.py` uses.\n- The port in a committed link goes stale when the server restarts. The link\n  records what the reviewer opened. It is not a permanent address.\n",
         "approved_date": null,
         "source_path": "docs/plans/review-link/03-program-design.md"
+      },
+      {
+        "id": "slice-agents-and-vocabulary",
+        "feature_slug": "slice-agents-and-vocabulary",
+        "gate": 3,
+        "title": "Program Design: Slice agents, coding habits, and a DDD vocabulary",
+        "body_md": "# Program Design: Slice agents, coding habits, and a DDD vocabulary\n\n## Files\n\n| File | Epic | Why |\n|---|---|---|\n| `docs/architecture/adr/ADR-0025-implement-ships-slice-agents-and-a-coaching-hook.md` | E1 | Records the narrowed install-surface rule. |\n| `tests/test_plugin_manifests.py` | E1 | Allows `agents/` and `hooks/` in `implement` only. |\n| `CLAUDE.md` | E1, E4 | Install-surface rule (E1). Vocabulary pointer (E4 final slice). |\n| `plugins/implement/agents/{red,green,validate}.md` | E2 | The three roles as named agents. |\n| `plugins/implement/skills/build/references/slice-loop.md` | E2, E4 | Spawns agents by name. Adds the vocabulary step. |\n| `plugins/implement/skills/build/workflows/slice-loop.js` | E2, E4 | Same change for the scripted path. |\n| `plugins/implement/hooks/hooks.json` | E3 | The PostToolUse registration. |\n| `plugins/implement/scripts/habit_coach.py` | E3 | The hook command. |\n| `plugins/implement/NOTICE.md` | E3 | Credit and licence of habit-hooks. |\n| `plugins/implement/skills/build/SKILL.md` | E3 | Prerequisite check for `habit-hooks`. |\n| `plugins/implement/.claude-plugin/plugin.json` | E3 | Version 0.3.0. |\n| `DDD-VOCABULARY.md` | E4 | The one glossary. |\n| `plugins/implement/agents/vocabulary.md` | E4 | The vocabulary reviewer. |\n| `plugins/architect/skills/architecture/references/design-mode.md` | E4 | Stage 1 reads, stage 5 writes. |\n| `plugins/architect/skills/architecture/references/templates/canvas-template.md`, `docs/architecture/contexts/cobuilder-packaging/canvas.md` | E4 | Link canvas terms to the glossary. |\n| `tests/test_slice_agents.py`, `tests/test_habit_coach.py`, `tests/test_ddd_vocabulary.py` | E2 to E4 | Written by RED. |\n\n## Types & signatures\n\n```python\n# plugins/implement/scripts/habit_coach.py  (PEP 723, stdlib only)\nGREEN_AGENT_TYPES: frozenset[str]   # {\"implement:green\"}\n\ndef is_green(payload: dict) -> bool: ...\ndef target_path(payload: dict) -> str | None: ...        # tool_input.file_path\ndef run_habit_hooks(path: str) -> tuple[int, str]: ...   # (exit code, stdout+stderr)\ndef render(code: int, text: str) -> dict | None: ...     # hook JSON or None\ndef main(stdin: TextIO, stdout: TextIO, runner=run_habit_hooks) -> int: ...  # always 0\n```\n\nAgent definition frontmatter (each of the four files):\n\n```yaml\nname: green            # red | green | validate | vocabulary\ndescription: <one line: the role and when the build skill spawns it>\ntools: <role-specific list; vocabulary and validate get no Write/Edit on source>\nmodel: sonnet          # red and green only. validate and vocabulary inherit.\n```\n\n`DDD-VOCABULARY.md` entry shape:\n\n```markdown\n## <Bounded context or district name>\n\n**<Term>** (`<context-id>`):\n<One or two sentences: what it IS.>\n_Avoid_: <synonym>, <synonym>\n```\n\n## Call stack\n\n```\n/implement:start → Skill(\"build\")\n  prerequisite check → habit-hooks --version        (E3)\n  slice N:\n    Agent(subagent_type=\"implement:red\")             (E2)\n    Agent(subagent_type=\"implement:green\")           (E2)\n      Write|Edit → hooks.json → habit_coach.py main()  (E3)\n        is_green → target_path → run_habit_hooks → render\n    parallel:\n      Agent(subagent_type=\"implement:validate\")      (E2)\n      Agent(subagent_type=\"implement:vocabulary\")    (E4)\n/architect:design\n  stage 1 → read DDD-VOCABULARY.md                   (E4)\n  stage 5 → add or sharpen entries                   (E4)\n```\n\n## Test plan\n\n- **Packaging:** `implement` may ship `agents/` and `hooks/`. The other four\n  may not. No plugin ships an MCP server. Each agent file parses, carries\n  `name` and `description`, and uses no ignored field (`hooks`,\n  `mcpServers`, `permissionMode`).\n- **Prompt parity:** each agent body holds the scope contract and the blind\n  rule that `slice-loop.md` held. `slice-loop.md` and `slice-loop.js` name\n  the agents and no longer paste the role prompts.\n- **Hook, with a fake runner:** a non-GREEN payload gives no output. A GREEN\n  payload with exit 0 gives no output. Exit 1 gives `additionalContext` with\n  the coaching text. Exit 2 gives a tool-failure note. A missing binary gives\n  a note and exit 0. A payload with no `file_path` gives no output.\n  `hooks.json` registers `PostToolUse` with matcher `Write|Edit` and a\n  command under `${CLAUDE_PLUGIN_ROOT}`.\n- **Credit:** `NOTICE.md` names habit-hooks, its MIT licence, its URL, and\n  its author.\n- **Vocabulary:** every entry parses into the shape above. Every term from\n  the old `CLAUDE.md` table exists. Every canvas term links to an entry.\n  `design-mode.md` names the file in stage 1 and stage 5.\n- **Behavioural (Gate 4c special case):** the agent prompts and\n  `design-mode.md` govern agent behaviour, so their rubrics use one blind\n  subagent pass.\n\n## Least confident decisions\n\n1. **The value of `agent_type` for a plugin agent.** The docs show\n   `agent_type` in the hook input, but not the exact string for a\n   namespaced plugin agent. The script accepts `implement:green` and\n   `green`. Slice 5 confirms the real value in a live run.\n2. **The Workflow tool path.** It is not known whether `agent()` in\n   `slice-loop.js` can spawn a named plugin agent. If it cannot, the\n   scripted path cannot receive coaching. Slice 3 checks this. The\n   fallback is that the script tells the orchestrator to use Manual mode.\n3. **A required tool in a plugin family with no other install step.**\n   Making habit-hooks required means `/implement:start` stops on a machine\n   without it. You asked for this. The stop message gives the one-line\n   install.\n4. **Vocabulary as a separate axis.** VALIDATE's score does not include the\n   vocabulary verdict. A slice can pass at 0.95 with a vocabulary finding.\n   The finding routes through the gap tree like any other gap.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/slice-agents-and-vocabulary/03-program-design.md"
       }
     ],
     "epic_design": [
@@ -2303,6 +2460,33 @@
         "body_md": "# Epic Technical Solution Design: E1 — A viewer link for each document under review\n\nDesign: `review-link`. Decision record: ADR-0032. Branch: `design/review-link/E1`.\n\n## Scope and Intent\n\nA workflow that asks the user to approve a document prints a checked viewer\nlink to that document first. The epic adds the script that makes the link,\nthe page that the link opens, and the procedure that uses both. It also adds\nthe check that fails a gate line with no link.\n\nOut of scope: a Claude Artifact publish, the Vite dev server, and a viewer\npage for the interaction design document.\n\n## Files Touched\n\n- Slice 1: `plugins/artifact/scripts/review_link.py` (new),\n  `plugins/artifact/skills/cobuilder-artifacts/SKILL.md` (View mode `--route`),\n  `tests/test_review_link.py` (new).\n- Slice 2: `shared/build_index.py`, `plugins/artifact/viewer/src/shell/model.ts`,\n  `plugins/artifact/viewer/src/data/types.ts`, `plugins/artifact/viewer/src/data/works.ts`,\n  `plugins/artifact/viewer/src/shell/panels/Plan.tsx` (new), its test (new),\n  the rail and section wiring, `plugins/artifact/viewer/index.html` (rebuilt),\n  `tests/test_build_index_plan_docs.py` (new).\n- Slice 3: `plugins/artifact/skills/cobuilder-artifacts/SKILL.md` (Present for\n  review), `plugins/implement/skills/build/SKILL.md`,\n  `plugins/implement/skills/build/references/validation-scoring.md`,\n  `plugins/architect/skills/architecture/SKILL.md`,\n  `plugins/architect/skills/architecture/references/design-mode.md`,\n  `plugins/implement/scripts/verify_gate.py`, `tests/test_verify_gate_links.py`\n  (new), `docs/plans/review-link/00-status.md`.\n\n## Types & Signatures\n\nSee `03-program-design.md`, Types & signatures. The key contracts:\n\n- `review_link.py --hub <path> --route '#/<work>/<rest>'` prints one line, the\n  link, on stdout and exits 0. On any failure it prints the reason on stderr\n  and exits 1. It never prints a link it did not check.\n- The port comes from the last `port <N>` in `.view-server.log`, and the pid\n  in `.view-server.pid` must name a live `http.server` process.\n- `data/index.json` gains `product_doc` and `architecture_doc` lists, with the\n  same fields as `program_design`.\n- A gate line takes the form `- Gate N — <name>: APPROVED <date> — view: <url>`.\n  `verify_gate.py` reports `links.gate.<n>` as `ok`, `n/a`, or `missing`.\n\n## Slice Decomposition\n\n1. **Tracer bullet.** The script and View mode's `--route`. It links to an\n   existing page, `#/<work>/build/epics`, so it needs no viewer change. This\n   proves the whole path from server to printed link.\n2. **The page.** The projection and the plan page. After this slice, Gates 1,\n   2, and 3 have a page to link to.\n3. **The procedure.** The Present for review section, every presentation\n   point, and the check. It lands last, because it needs the page and the\n   script to exist.\n\n## Test Plan\n\n- Slice 1: pytest with a real `http.server` on port 0 in a temporary hub. The\n  cases are a good route, an unknown work id, no pid file, a dead pid, and a\n  404 from the viewer file.\n- Slice 2: pytest for the projection and the gate joins, and vitest for the\n  plan page, present and absent states. A browser demo through the running\n  View server opens `#/review-link/build/plan`.\n- Slice 3: pytest for the link check, with the date boundary on both sides. A\n  behavioral rubric checks the procedure text at each named point.\n\n## Risks & Open Questions\n\n- The decisions mode and describe mode records may have no viewer page. The\n  fallback is the work's Intent page. A reviewer then needs one more click.\n- A committed link names a port that goes stale after a restart. The link\n  records what the reviewer opened, and the check tests its presence only.\n- This plan's own gate lines are dated 2026-09-28 and carry no link. Slice 3\n  must add them, or `verify_gate.py` fails this plan.\n- The rebuilt `viewer/index.html` must also reach each bundle. The existing\n  `migrate_bundle.py` refresh covers that.\n",
         "approved_date": null,
         "source_path": "docs/plans/review-link/epic-E1-design.md"
+      },
+      {
+        "id": "slice-agents-and-vocabulary/E2",
+        "epic_id": "E2",
+        "feature_slug": "slice-agents-and-vocabulary",
+        "title": "Epic Technical Solution Design: E2 — The three slice roles as agents",
+        "body_md": "# Epic Technical Solution Design: E2 — The three slice roles as agents\n\nFeature: slice-agents-and-vocabulary\nEpic ID: E2\n\n## Scope and Intent\n\nMove the RED, GREEN, and VALIDATE prompts out of `slice-loop.md` and\n`slice-loop.js` into three plugin agent files. The loop then spawns each\nrole by name. This gives a role a stable identity, which E3's hook needs to\ntell GREEN apart from every other agent. The prompt wording does not\nchange, except for the placeholders that the orchestrator now fills in its\nspawn message.\n\n## Files Touched\n\n- `plugins/implement/agents/red.md`, `green.md`, `validate.md` (new)\n- `plugins/implement/skills/build/references/slice-loop.md`\n- `plugins/implement/skills/build/workflows/slice-loop.js`\n- `tests/test_slice_agents.py` (new, written by RED)\n\n## Types & Signatures\n\nFrontmatter per agent:\n\n| Agent | `name` | `tools` | `model` |\n|---|---|---|---|\n| RED | `red` | Read, Grep, Glob, Write, Edit, Bash | `sonnet` |\n| GREEN | `green` | Read, Grep, Glob, Write, Edit, Bash | `sonnet` |\n| VALIDATE | `validate` | Read, Grep, Glob, Bash, Write | inherit (no `model` key) |\n\nVALIDATE needs `Write` for its evidence file only. Its body says so.\nNo agent file may carry `hooks`, `mcpServers`, `permissionMode`, or\n`initialPrompt`, because Claude Code ignores them for plugin agents.\n\nEach body holds: the role statement, the SCOPE CONTRACT, the blind rule\n(\"Do not read anything under `.cobuilder/`\", absent for VALIDATE), the\nread-first list with `<slug>`, `<N>`, `<epic-id>`, and `<test_command>`\nplaceholders, the steps, and the report format. The spawn message supplies\nthe placeholder values.\n\n`slice-loop.js`: each `agent()` call passes `agentType: 'implement:red'`\n(and green, validate), and a short message with the placeholder values.\n\n## Slice Decomposition\n\n- Slice 2 (tracer bullet): the three files with valid frontmatter and a\n  one-paragraph body each.\n- Slice 3 (real content): full prompt bodies, and both loop paths spawn by\n  name. Depends on slice 2.\n\n## Test Plan\n\n`tests/test_slice_agents.py`:\n\n- Slice 2: the files exist, the frontmatter parses as YAML, `name` equals\n  the file stem, `description` is not empty, no ignored key is present,\n  and VALIDATE carries no `model` key.\n- Slice 3: RED and GREEN bodies contain \"Do not read anything under\n  .cobuilder/\". GREEN contains \"Do NOT modify any test file\". VALIDATE\n  contains the three verdict names and the 0.90 threshold.\n  `slice-loop.md` names all three `implement:` agents and no longer\n  contains the \"You are the RED role\" prompt block. `slice-loop.js` names\n  all three agents.\n- Slice 3 also has behavioural criteria (Gate 4c special case), scored with\n  one blind subagent pass.\n\n## Risks & Open Questions\n\n- `agentType` is documented by secondary sources, not by the official\n  workflows page. The engineer confirmed that `agent()` accepts a named agent.\n- Moving prompts risks losing a line. The test pins the lines that matter\n  most, and the VALIDATE rubric compares old and new text.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/slice-agents-and-vocabulary/epic-E2-design.md"
+      },
+      {
+        "id": "slice-agents-and-vocabulary/E3",
+        "epic_id": "E3",
+        "feature_slug": "slice-agents-and-vocabulary",
+        "title": "Epic Technical Solution Design: E3 — habit-hooks coaches GREEN",
+        "body_md": "# Epic Technical Solution Design: E3 — habit-hooks coaches GREEN\n\nFeature: slice-agents-and-vocabulary\nEpic ID: E3\n\n## Scope and Intent\n\nShip a required `PostToolUse` hook in the implement plugin. It coaches the\nGREEN agent after each file write, with habit-hooks output. Every other\nagent and the main session see no effect. The build skill refuses to start\nslices when habit-hooks is missing. The plugin credits habit-hooks.\n\n## Files Touched\n\n- `plugins/implement/hooks/hooks.json` (new)\n- `plugins/implement/scripts/habit_coach.py` (new)\n- `plugins/implement/NOTICE.md` (new)\n- `plugins/implement/skills/build/SKILL.md` (a prerequisite section)\n- `plugins/implement/.claude-plugin/plugin.json` (0.3.0)\n- `README.md` (one line in the implement section, with the credit)\n- `tests/test_habit_coach.py` (new, written by RED)\n\n## Types & Signatures\n\n```json\n{\"hooks\": {\"PostToolUse\": [{\"matcher\": \"Write|Edit\", \"hooks\": [\n  {\"type\": \"command\",\n   \"command\": \"uv run \\\"${CLAUDE_PLUGIN_ROOT}/scripts/habit_coach.py\\\"\"}]}]}}\n```\n\n```python\nGREEN_AGENT_TYPES = frozenset({\"implement:green\"})\n\ndef is_green(payload: dict) -> bool\ndef target_path(payload: dict) -> str | None\ndef run_habit_hooks(path: str) -> tuple[int, str]   # FileNotFoundError -> (127, msg)\ndef render(code: int, text: str) -> dict | None\ndef main(stdin, stdout, runner=run_habit_hooks) -> int   # always returns 0\n```\n\n| Condition | Output |\n|---|---|\n| not GREEN, or no `file_path`, or bad JSON | nothing |\n| exit 0 | nothing |\n| exit 1 | `additionalContext` = \"habit-hooks coaching for <path>:\" + text |\n| exit 2 | `additionalContext` = \"habit-hooks failed to run on <path>. Report this in your GREEN report.\" + text |\n| exit 127 (not installed) | `additionalContext` = one line with the install command |\n\nThe hook never blocks. `PostToolUse` cannot block, and a coaching tool\nmust not stop a write.\n\n`SKILL.md` gains `## Prerequisite: habit-hooks` before the slice loop\nsection. Before slice 1, run `habit-hooks --version`. On failure, stop and\nprint `uv tool install \"habit-hooks[python]\"` with a note to name every\nlanguage in one install command. When `.habit-hooks/config.toml` is\nmissing, run `habit-hooks init`, then snooze the existing backlog.\n\n## Slice Decomposition\n\n- Slice 4 (tracer bullet): `hooks.json`, `is_green`, `target_path`, and\n  the exit 0 and exit 1 paths.\n- Slice 5 (edge cases, requirement, credit): exit 2, exit 127, bad input,\n  the prerequisite section, `NOTICE.md`, README credit, version bump.\n\n## Test Plan\n\n`tests/test_habit_coach.py`, with a fake `runner` and no real habit-hooks:\n\n- Slice 4: `hooks.json` parses and has the registration above. A GREEN\n  payload with runner exit 1 writes JSON with `hookEventName` =\n  `PostToolUse` and the coaching text. A payload with `agent_type` =\n  `implement:red`, and one with no `agent_type`, write nothing. Exit 0\n  writes nothing.\n- Slice 5: exit 2 and exit 127 texts. Invalid JSON on stdin returns 0 with\n  no output. `SKILL.md` names `habit-hooks --version` before the slice\n  loop. `NOTICE.md` names \"habit-hooks\", \"MIT\", the repository URL, and\n  \"Ivett Ördög\". `plugin.json` version is 0.3.0.\n\n## Risks & Open Questions\n\n- The exact `agent_type` string for a plugin agent is not documented. The\n  script accepts both forms. Slice 5's validator checks a live GREEN run if\n  the harness allows it, and records the observed value.\n- `uv run` on each write adds start-up time. The script has no\n  dependencies, so `uv` uses no network after the first run.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/slice-agents-and-vocabulary/epic-E3-design.md"
+      },
+      {
+        "id": "slice-agents-and-vocabulary/E4",
+        "epic_id": "E4",
+        "feature_slug": "slice-agents-and-vocabulary",
+        "title": "Epic Technical Solution Design: E4 — One DDD vocabulary",
+        "body_md": "# Epic Technical Solution Design: E4 — One DDD vocabulary\n\nFeature: slice-agents-and-vocabulary\nEpic ID: E4\n\n## Scope and Intent\n\nCreate `DDD-VOCABULARY.md` at the repository root as the one glossary. It\nmerges Matt Pocock's glossary format (term, short definition, `_Avoid_`\nlist) with this repository's DDD canvases (each term belongs to one bounded\ncontext or district). Design mode reads and writes it. A vocabulary agent\nchecks each slice against it. Finally, the `CLAUDE.md` Vocabulary table\nmoves into it.\n\n## Files Touched\n\n- `DDD-VOCABULARY.md` (new)\n- `plugins/architect/skills/architecture/references/templates/canvas-template.md`\n- `docs/architecture/contexts/cobuilder-packaging/canvas.md`\n- `plugins/implement/agents/vocabulary.md` (new)\n- `plugins/implement/skills/build/references/slice-loop.md`\n- `plugins/implement/skills/build/workflows/slice-loop.js`\n- `plugins/architect/skills/architecture/references/design-mode.md`\n- `CLAUDE.md` (slice 8 only)\n- `tests/test_ddd_vocabulary.py` (new, written by RED)\n\n## Types & Signatures\n\nFile header: a two-sentence purpose, then a \"How to use\" list: one name per\nconcept, a term belongs to one context, add a term when it is resolved, and\nlist rejected synonyms under `_Avoid_`. Then one `## <context>` heading per\nbounded context or district, and a `## Cross-cutting` heading for terms\nthat span the plugin family.\n\nEntry:\n\n```markdown\n<a id=\"<term-slug>\"></a>\n**<Term>** (`<context-id>`):\n<One or two sentences: what it IS, not what it does.>\n_Avoid_: <synonym>, <synonym>\n```\n\nA homonym gets one entry per context, and each entry names the other.\nThe anchor line gives each entry a stable link target, because a bold line\nmakes no heading anchor. The context id must match the enclosing `##`\nheading, except under `## Cross-cutting`. A definition holds at most two\nsentences. (Tightened after slice 6 attempt 1.)\n\nCanvas link: in the \"Ubiquitous language\" table, each term cell becomes\n`[**Term**](../../../../DDD-VOCABULARY.md#<anchor>)`.\n\n`implement:vocabulary` agent: `tools: Read, Grep, Glob, Bash`, inherits the\nmodel. Input: slice number, slug, and the diff command. It checks district,\ndirectory, file, class, function, and method names, plus changed prose.\nFindings: `[AVOID]` a word from an `_Avoid_` list, `[UNDEFINED]` a new\ndomain concept with no entry, `[CONFLICT]` a term used with a different\nmeaning than its entry. Output appends a `### Vocabulary` section to the\nslice evidence file, with a verdict of `CLEAN` or `FINDINGS`. It does not\nscore and does not edit code.\n\n`design-mode.md`: stage 1 loads `DDD-VOCABULARY.md` next to the districts.\nStage 5 adds or sharpens each term the interview resolved, and flags a\nconflict with an entry to the engineer as a question.\n\n## Slice Decomposition\n\n- Slice 6 (tracer bullet): the file, its header, every canvas term, canvas\n  links.\n- Slice 7 (real content): the vocabulary agent, the loop step, and design\n  mode. Depends on slice 6.\n- Slice 8 (the move): the `CLAUDE.md` table into the glossary, a pointer\n  left behind. Depends on slice 6. Runs last, as you asked.\n\n## Test Plan\n\n`tests/test_ddd_vocabulary.py`:\n\n- Slice 6: the file exists. Every entry matches the entry regex. Every term\n  in each canvas \"Ubiquitous language\" table has an entry, and each canvas\n  term cell links to `DDD-VOCABULARY.md`.\n- Slice 7: `agents/vocabulary.md` parses, has no ignored key, and names the\n  three finding tags. `slice-loop.md` and `slice-loop.js` name\n  `implement:vocabulary`. `design-mode.md` names `DDD-VOCABULARY.md` in\n  the stage 1 and stage 5 sections. Behavioural criterion: a blind agent\n  given a seeded diff with an `_Avoid_` term reports `[AVOID]`.\n- Slice 8: every bold term in the old table has an entry. `CLAUDE.md` has\n  no `| Term | Meaning |` table and links to `DDD-VOCABULARY.md`.\n\n## Risks & Open Questions\n\n- The `CLAUDE.md` table carries \"Not to confuse with\" text. That text maps\n  to `_Avoid_` for synonyms and to the homonym note for collisions. It must\n  not be lost.\n- `docs/architecture/contexts/` has one context today. Other terms belong\n  to districts, which are inferred. Terms with no context go under\n  `## Cross-cutting`.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/slice-agents-and-vocabulary/epic-E4-design.md"
       }
     ],
     "interaction_design": [
@@ -2739,6 +2923,70 @@
         "title": "Slice 3 — Present for review procedure and the link check",
         "body_md": "# Rubric: Slice 3 — Present for review procedure and the link check\n\nFeature: review-link\nEpic: review-link/E1\nSlice goal: Every presentation point names Present for review before its question. `verify_gate.py` fails an APPROVED line dated on or after 2026-09-28 with no link. This plan's own gate lines carry links.\nTest command: `uv run --with pytest pytest tests/ -v`\n\nSources: `04-slices.md` (row 3, Route for each gate, Rubric note for slice 3), `epic-E1-design.md`, `02-architecture.md` (Fit, Flow), `03-program-design.md`, ADR-0032.\n\nThis slice edits files that govern agent procedure. Per the Gate 4c special case in `plugins/implement/skills/build/SKILL.md`, C1 to C3 are behavioral. Score them against the transcript of one blind pass: a fresh subagent with no memory of this session gets only the changed skill files and a realistic task (for example, \"you have written 01-product.md for feature X; present it for Gate 1\"). It does not get this rubric, the word \"test\", or the behavior under check. The orchestrator captures its tool calls and messages in order.\n\n## Presentation points (from `04-slices.md`, Route for each gate)\n\n| Point | Expected route |\n|---|---|\n| Gate 1 | `#/<work>/build/plan/product` |\n| Gate 2 | `#/<work>/build/plan/architecture` |\n| Gate 2b | none — gives the file path |\n| Gate 3 | `#/<work>/build/plan/program` |\n| Gate 4a and 4b | `#/<work>/build/epics` |\n| Gate 4c | none — the set is approved by count |\n| After a slice, and ESCALATE | `#/<work>/build/epics` |\n| Design mode stage 5 and stage 6 | `#/<work>/intent` |\n| Decisions mode and describe mode | the record's own page, or `#/<work>/intent` |\n\n## Criteria\n\n### C1 — The link comes before the question at every point [CRITICAL] (behavioral)\n**Must be true:** At each point in the table that has a route, the agent runs View mode with that route and shows the printed link before it asks the approval question. At Gate 2b and Gate 4c it gives the file path or the count, and it does not invent a route.\n**Evidence to check:**\n- Transcript order in the blind pass for Gate 1: the call `Skill(\"cobuilder-artifacts\", args=\"view --route #/<work>/build/plan/product\")` (or its View mode run of `review_link.py`) comes before the message that asks \"Approve Gate 1, or what should change?\". The link text appears in that message or an earlier one.\n- Repeat the blind pass for at least three more points: one build gate (Gate 3 or 4a), one after-slice or ESCALATE point, and one architect point (design stage 5 or 6). Record the order each time.\n- A static cross-check: for each file in slice scope, `grep -n \"Present for review\" <file>` hits at each named point, and at each hit the link step appears on a line before the question text.\n**Scoring:**\n- 1.0 — every blind pass shows the link before the question with the correct route, and every named point has the reference in the text.\n- 0.5 — the blind passes are correct, but one named point lacks the reference in the text, or one pass uses a wrong route.\n- 0.0 — any blind pass asks the question before it shows the link, or shows no link.\n\n### C2 — A failed link check stops the presentation (behavioral)\n**Must be true:** When `review_link.py` exits 1, the agent does not paste a guessed or unchecked link. It reports the failure reason and gives the file path instead, or starts the server and retries.\n**Evidence to check:**\n- One blind pass with the View server stopped and no way to start it (or with an unknown work id). The transcript shows no `http://127.0.0.1` link in the question message. It shows the stderr reason or the file path.\n**Scoring:**\n- 1.0 — no unchecked link, and the reason or path is shown.\n- 0.5 — no unchecked link, but no reason or path is given.\n- 0.0 — an unchecked link reaches the user.\n\n### C3 — The approved gate line records the link (behavioral)\n**Must be true:** After the user approves, the agent writes the gate line as `- Gate N — <name>: APPROVED <date> — view: <url>`, with the link it showed.\n**Evidence to check:**\n- In the Gate 1 blind pass, answer \"approved\". The next write to `00-status.md` in the transcript holds the line in that form, with the same URL the agent showed.\n**Scoring:**\n- 1.0 — the line has the form and the same URL.\n- 0.5 — the line has a link in another form.\n- 0.0 — no link on the line.\n\n### C4 — `verify_gate.py` enforces the link from 2026-09-28 [CRITICAL]\n**Must be true:** An APPROVED gate line dated 2026-09-28 or later with no ` — view: <url>` part fails the gate check (`links.gate.<n>` reads `missing`, exit non-zero). A line dated 2026-09-27 with no link passes (`n/a` or `ok`). A dated line with a link passes (`ok`).\n**Evidence to check:**\n- `uv run --with pytest pytest tests/test_verify_gate_links.py -v` passes, with cases on both sides of the date boundary and a case with a link.\n- Manual check: copy `docs/plans/review-link/` to a temporary directory, remove the ` — view:` part from one 2026-09-28 line, run `uv run plugins/implement/scripts/verify_gate.py --plan <tmp>`. Expect a non-zero exit and `missing` for that gate. Change the date on that line to 2026-09-27 and run again. That gate no longer reads `missing`.\n**Scoring:**\n- 1.0 — the test passes and both manual runs give the expected result.\n- 0.5 — the test passes, but the boundary date is off by one day in the manual runs.\n- 0.0 — a dated line with no link passes, or an older line fails.\n\n### C5 — No plugin names another plugin's file path (ADR-0016) [CRITICAL]\n**Must be true:** The build skill and the architecture skill reach the link only through `Skill(\"cobuilder-artifacts\", args=\"view --route <route>\")`. No file under `plugins/implement/` or `plugins/architect/` names `review_link.py` or a `plugins/artifact/` path.\n**Evidence to check:**\n- `grep -rn \"review_link\\|plugins/artifact/\" plugins/implement plugins/architect` returns no line (exit status 1).\n- `grep -rn 'view --route' plugins/implement plugins/architect` returns at least one hit per changed skill file.\n- `uv run --with pytest pytest tests/ -v` passes, including the packaging invariant tests.\n**Scoring:**\n- 1.0 — the first grep is empty, the second hits in each changed file, and the tests pass.\n- 0.0 — any cross-plugin path appears.\n\n### C6 — This plan's own gate lines carry links\n**Must be true:** Each APPROVED gate line in `docs/plans/review-link/00-status.md` dated 2026-09-28 carries a ` — view: <url>` part, except where the route table gives none (Gate 2b and Gate 4c are then not `missing` in the check). `verify_gate.py` passes this plan.\n**Evidence to check:**\n- `grep -n 'APPROVED 2026-09-28' docs/plans/review-link/00-status.md` and read each line for ` — view: `.\n- `uv run plugins/implement/scripts/verify_gate.py --plan docs/plans/review-link` exits 0, and no `links.gate.*` key reads `missing`.\n**Scoring:**\n- 1.0 — every required line has a link, and the command exits 0.\n- 0.5 — the lines have links, but the command fails on another key the slice owns.\n- 0.0 — the command reports a `missing` link for this plan.\n\n## Regression check\n- All tests that passed before this slice still pass: `uv run --with pytest pytest tests/ -v`.\n- `uv run plugins/implement/scripts/verify_gate.py --plan docs/plans/cobuilder-viewer` gives the same exit status as before this slice, or fails only on `links.gate.*` for lines dated 2026-09-28 or later.\n- Files outside the slice scope remain unchanged. Scope: `plugins/artifact/skills/cobuilder-artifacts/SKILL.md` (Present for review), `plugins/implement/skills/build/SKILL.md`, `plugins/implement/skills/build/references/validation-scoring.md`, `plugins/architect/skills/architecture/SKILL.md`, `plugins/architect/skills/architecture/references/design-mode.md`, `plugins/implement/scripts/verify_gate.py`, `tests/test_verify_gate_links.py`, `docs/plans/review-link/00-status.md`.\n\n## Out of scope — do not penalise\n- `review_link.py` internals and View mode `--route` (slice 1).\n- The plan page and the index entities (slice 2).\n- A viewer page for the interaction design, or a route for Gate 2b (ADR-0032, decision 6).\n- A stale port in a committed link. The check tests presence only (`epic-E1-design.md`, Risks).\n",
         "source_path": ".cobuilder/rubrics/review-link/slice-3.md"
+      },
+      {
+        "id": "slice-agents-and-vocabulary/1",
+        "feature_slug": "slice-agents-and-vocabulary",
+        "n": 1,
+        "title": "Slice 1 — E1: ADR-0025, the packaging test, and the CLAUDE.md rule",
+        "body_md": "# Rubric: Slice 1 — E1: ADR-0025, the packaging test, and the CLAUDE.md rule\n\nFeature: slice-agents-and-vocabulary\nEpic: E1\nSlice goal: ADR-0025 narrows the install-surface rule so that only `implement` may ship `agents/` and `hooks/`. The test and `CLAUDE.md` match.\nTest command: uv run --with pytest --with requests --with pyyaml --with pillow pytest tests/ -q\n\n## Criteria\n\n### C1 — ADR-0025 exists and decides the narrowed rule [CRITICAL]\n**Must be true:** `docs/architecture/adr/ADR-0025-*.md` exists in the same shape as ADR-0024 (front matter, status, context, decision, consequences). It decides: `implement` may ship `agents/` and `hooks/hooks.json`. The other four plugins may not. No plugin ships an MCP server. It names the reason (GREEN needs a stable identity and a hook, and plugin agents ignore a `hooks` frontmatter key) and names habit-hooks as the hook's tool.\n**Evidence to check:** read the ADR. Compare headings with ADR-0024.\n**Scoring:** 1.0 all points present. 0.5 the decision is present but a point is missing. 0.0 no ADR, or it allows agents or hooks in every plugin.\n\n### C2 — the test enforces the narrowed rule in both directions [CRITICAL]\n**Must be true:** `tests/test_plugin_manifests.py` passes for `implement` with `agents/` or `hooks/` present, and fails for any other plugin with either directory. The MCP check still applies to all five. A test proves the \"other plugin\" direction with a temporary fixture, not only by the current tree.\n**Evidence to check:** run the suite. Read the test. Create `plugins/pr/agents/` in a scratch copy or read the fixture test that does so.\n**Scoring:** 1.0 both directions tested and passing. 0.5 only the allow direction tested. 0.0 the ban is gone for all plugins.\n\n### C3 — CLAUDE.md states the narrowed rule and cites ADR-0025\n**Must be true:** Every place in `CLAUDE.md` that says no plugin ships an agent or a hook now names the `implement` exception and ADR-0025. No sentence still claims that no plugin ships a hook.\n**Evidence to check:** `grep -n -i \"no agents\\|no hooks\\|ships an agent\\|a hook\" CLAUDE.md`.\n**Scoring:** 1.0 all updated. 0.5 one stale sentence remains. 0.0 not updated.\n\n### C4 — prose follows the writing standard\n**Must be true:** The ADR and the changed `CLAUDE.md` lines use no contractions, no semicolons, and active voice.\n**Evidence to check:** `uv run shared/skills/ste-writing/ste-lint.py <ADR path>` and a read.\n**Scoring:** 1.0 clean. 0.5 a few violations. 0.0 many.\n\n## Regression check\n- `uv run --with pytest --with requests --with pyyaml --with pillow pytest tests/ -q` shows no new failure. Baseline: 365 passed, 1 pre-existing failure in `test_generate_prompts_webp.py`.\n- `uv run plugins/implement/scripts/verify_gate.py --plan docs/plans/interaction-design-gate` still reports `Overall: OK`.\n\n## Out of scope — do not penalise\n- The agent files and the hook themselves (slices 2 to 5).\n- The vocabulary table (slice 8).\n",
+        "source_path": ".cobuilder/rubrics/slice-agents-and-vocabulary/slice-1.md"
+      },
+      {
+        "id": "slice-agents-and-vocabulary/2",
+        "feature_slug": "slice-agents-and-vocabulary",
+        "n": 2,
+        "title": "Slice 2 — E2 tracer bullet: three agent files that parse",
+        "body_md": "# Rubric: Slice 2 — E2 tracer bullet: three agent files that parse\n\nFeature: slice-agents-and-vocabulary\nEpic: E2\nSlice goal: `plugins/implement/agents/{red,green,validate}.md` exist with valid frontmatter.\nTest command: uv run --with pytest --with requests --with pyyaml --with pillow pytest tests/ -q\n\n## Criteria\n\n### C1 — three files with parseable frontmatter [CRITICAL]\n**Must be true:** Each file starts with YAML frontmatter that parses. `name` equals the file stem (`red`, `green`, `validate`). `description` is a non-empty line that says when the build skill spawns the agent.\n**Evidence to check:** run the suite and read `tests/test_slice_agents.py`. Parse each file yourself with PyYAML.\n**Scoring:** 1.0 all three. 0.5 one defect. 0.0 a file is missing or fails to parse.\n\n### C2 — no field that plugin agents ignore [CRITICAL]\n**Must be true:** No file carries `hooks`, `mcpServers`, `permissionMode`, or `initialPrompt`. A test asserts this for every file in `plugins/implement/agents/`, so a later file is also covered.\n**Evidence to check:** read the frontmatter and the test.\n**Scoring:** 1.0 absent and tested for the whole directory. 0.5 absent but tested only for named files. 0.0 present.\n\n### C3 — tools and model match the epic design\n**Must be true:** RED and GREEN carry `model: sonnet` and tools Read, Grep, Glob, Write, Edit, Bash. VALIDATE has no `model` key and its tools exclude Edit.\n**Evidence to check:** read the frontmatter. Compare with the table in `docs/plans/slice-agents-and-vocabulary/epic-E2-design.md`.\n**Scoring:** 1.0 exact match. 0.5 one mismatch. 0.0 VALIDATE carries `model: sonnet` or Edit.\n\n## Regression check\n- `uv run --with pytest --with requests --with pyyaml --with pillow pytest tests/ -q` shows no new failure. Baseline: 365 passed, 1 pre-existing failure in `test_generate_prompts_webp.py`.\n- `uv run plugins/implement/scripts/verify_gate.py --plan docs/plans/interaction-design-gate` still reports `Overall: OK`.\n\n## Out of scope — do not penalise\n- Full prompt bodies and the loop changes (slice 3). A one-paragraph body is enough here.\n",
+        "source_path": ".cobuilder/rubrics/slice-agents-and-vocabulary/slice-2.md"
+      },
+      {
+        "id": "slice-agents-and-vocabulary/3",
+        "feature_slug": "slice-agents-and-vocabulary",
+        "n": 3,
+        "title": "Slice 3 — E2 real content: the prompts move, and both loop paths spawn by name",
+        "body_md": "# Rubric: Slice 3 — E2 real content: the prompts move, and both loop paths spawn by name\n\nFeature: slice-agents-and-vocabulary\nEpic: E2\nSlice goal: The agent bodies hold the full role prompts. `slice-loop.md` and `slice-loop.js` spawn the agents by name.\nTest command: uv run --with pytest --with requests --with pyyaml --with pillow pytest tests/ -q\n\n## Criteria\n\n### C1 — no prompt line lost in the move [CRITICAL]\n**Must be true:** Each rule in the RED, GREEN, and VALIDATE prompts of `git show HEAD~0:plugins/implement/skills/build/references/slice-loop.md` as it was before this feature (see commit before slice 3) appears in the matching agent body: scope contract, blind rule (RED and GREEN), \"Do NOT modify any test file\" (GREEN), assertion-failure rule (RED), false-pass checks, scoring guide, evidence file format, and verdict rules with 0.90 (VALIDATE). Placeholders `<slug>`, `<N>`, `<epic-id>`, `<test_command>` remain for the orchestrator to fill.\n**Evidence to check:** diff the old prompt blocks against the agent bodies rule by rule.\n**Scoring:** 1.0 nothing lost. 0.5 one minor rule lost. 0.0 a CRITICAL rule lost (blind rule, test immutability, verdict threshold).\n\n### C2 — the manual path spawns by name [CRITICAL]\n**Must be true:** `slice-loop.md` tells the orchestrator to spawn `implement:red`, `implement:green`, and `implement:validate` with the Agent tool's `subagent_type`, and says what the spawn message must carry. It no longer contains the pasted prompt blocks. The prose around them (state files, verdict handling, anti-patterns) is kept.\n**Evidence to check:** read the file. `grep -c \"You are the RED role\" slice-loop.md` returns 0.\n**Scoring:** 1.0 all points. 0.5 names used but a prompt block remains. 0.0 no names.\n\n### C3 — the workflow path passes agentType\n**Must be true:** Each RED, GREEN, and VALIDATE `agent()` call in `slice-loop.js` passes `agentType: 'implement:red'` (and green, validate). The inline prompt shrinks to the per-slice values and the retry and browser-evidence text. `model: BUILD_MODEL` stays on RED and GREEN only. The file still parses: `node --check` passes, or the test suite parses it.\n**Evidence to check:** read the calls. Run `node --check plugins/implement/skills/build/workflows/slice-loop.js` if node exists.\n**Scoring:** 1.0 all three. 0.5 one call missing it. 0.0 none.\n\n### C4 — a blind agent follows the agent body (behavioural)\n**Must be true:** A fresh subagent given only `plugins/implement/agents/green.md` and a realistic spawn message for a toy slice does not open any path under `.cobuilder/` and does not edit a test file.\n**Evidence to check:** the orchestrator runs one blind pass per the Gate 4c special case and records the tool-call list in the evidence file.\n**Scoring:** 1.0 both hold. 0.0 either fails.\n\n## Regression check\n- `uv run --with pytest --with requests --with pyyaml --with pillow pytest tests/ -q` shows no new failure. Baseline: 365 passed, 1 pre-existing failure in `test_generate_prompts_webp.py`.\n- `uv run plugins/implement/scripts/verify_gate.py --plan docs/plans/interaction-design-gate` still reports `Overall: OK`.\n\n## Out of scope — do not penalise\n- The vocabulary agent and its step (slice 7). The hook (slices 4 and 5).\n",
+        "source_path": ".cobuilder/rubrics/slice-agents-and-vocabulary/slice-3.md"
+      },
+      {
+        "id": "slice-agents-and-vocabulary/4",
+        "feature_slug": "slice-agents-and-vocabulary",
+        "n": 4,
+        "title": "Slice 4 — E3 tracer bullet: the hook fires for GREEN only",
+        "body_md": "# Rubric: Slice 4 — E3 tracer bullet: the hook fires for GREEN only\n\nFeature: slice-agents-and-vocabulary\nEpic: E3\nSlice goal: `hooks/hooks.json` registers `habit_coach.py` on `Write|Edit`. The script coaches GREEN and ignores every other agent.\nTest command: uv run --with pytest --with requests --with pyyaml --with pillow pytest tests/ -q\n\n## Criteria\n\n### C1 — the registration [CRITICAL]\n**Must be true:** `plugins/implement/hooks/hooks.json` parses, has a top-level `hooks` key, a `PostToolUse` entry with matcher `Write|Edit`, and one `command` hook whose command runs `${CLAUDE_PLUGIN_ROOT}/scripts/habit_coach.py`.\n**Evidence to check:** read the file and the test.\n**Scoring:** 1.0 exact. 0.5 a detail differs but it would still fire. 0.0 it would not fire.\n\n### C2 — GREEN with findings gets coaching [CRITICAL]\n**Must be true:** For a payload with `agent_type` `implement:green` and a `tool_input.file_path`, and a runner that returns exit 1 with text, `main()` writes one JSON object with `hookSpecificOutput.hookEventName` = `PostToolUse` and `additionalContext` containing the path and the runner text. It returns 0.\n**Evidence to check:** the test, and a manual run: `echo '<payload>' | uv run plugins/implement/scripts/habit_coach.py` with a fake `habit-hooks` on PATH.\n**Scoring:** 1.0 correct. 0.5 text present but wrong shape. 0.0 no output.\n\n### C3 — every other caller gets nothing [CRITICAL]\n**Must be true:** `agent_type` `implement:red`, `implement:validate`, an absent `agent_type` (the main session), and runner exit 0 each produce empty stdout and return 0. The runner is not called for a non-GREEN payload.\n**Evidence to check:** the tests, including an assertion that the fake runner was not called.\n**Scoring:** 1.0 all four. 0.5 three. 0.0 fewer.\n\n### C4 — the script is testable and dependency-free\n**Must be true:** PEP 723 header with `dependencies = []`. `main` takes an injectable `runner`. Functions match the signatures in `epic-E3-design.md`.\n**Evidence to check:** read the script.\n**Scoring:** 1.0 yes. 0.5 one deviation. 0.0 imports a third-party package.\n\n## Regression check\n- `uv run --with pytest --with requests --with pyyaml --with pillow pytest tests/ -q` shows no new failure. Baseline: 365 passed, 1 pre-existing failure in `test_generate_prompts_webp.py`.\n- `uv run plugins/implement/scripts/verify_gate.py --plan docs/plans/interaction-design-gate` still reports `Overall: OK`.\n\n## Out of scope — do not penalise\n- Exit 2, the missing binary, bad JSON, the prerequisite check, NOTICE, and the version bump (slice 5).\n",
+        "source_path": ".cobuilder/rubrics/slice-agents-and-vocabulary/slice-4.md"
+      },
+      {
+        "id": "slice-agents-and-vocabulary/5",
+        "feature_slug": "slice-agents-and-vocabulary",
+        "n": 5,
+        "title": "Slice 5 — E3 edge cases, requirement, and credit",
+        "body_md": "# Rubric: Slice 5 — E3 edge cases, requirement, and credit\n\nFeature: slice-agents-and-vocabulary\nEpic: E3\nSlice goal: Failure paths behave as designed, the build skill requires habit-hooks, and the plugin credits it.\nTest command: uv run --with pytest --with requests --with pyyaml --with pillow pytest tests/ -q\n\n## Criteria\n\n### C1 — failure paths never block and always explain [CRITICAL]\n**Must be true:** Runner exit 2 gives `additionalContext` saying habit-hooks failed on the path, with its text. A missing binary (runner exit 127, or `FileNotFoundError` in the real runner) gives one line with the install command. Invalid JSON on stdin and a payload with no `file_path` give no output. Every case returns 0.\n**Evidence to check:** the tests. Read `run_habit_hooks` for the `FileNotFoundError` path.\n**Scoring:** 1.0 all four. 0.5 three. 0.0 any case exits non-zero or raises.\n\n### C2 — the build skill requires habit-hooks [CRITICAL]\n**Must be true:** `plugins/implement/skills/build/SKILL.md` has a `## Prerequisite: habit-hooks` section before the slice-loop section. It says to run `habit-hooks --version` before slice 1 and to stop on failure with `uv tool install \"habit-hooks[python]\"` and the note to name every language in one install. It says to run `habit-hooks init` and snooze the backlog when `.habit-hooks/config.toml` is missing. It does not call the tool optional.\n**Evidence to check:** read the section. `grep -n -i optional` near it.\n**Scoring:** 1.0 all. 0.5 one missing. 0.0 absent or optional.\n\n### C3 — the plugin credits habit-hooks\n**Must be true:** `plugins/implement/NOTICE.md` names habit-hooks, the MIT licence, https://github.com/habit-hooks/habit-hooks, and Ivett Ördög, and says the plugin calls the tool and does not vendor its code. `README.md` mentions the requirement and the credit in the implement section.\n**Evidence to check:** read both.\n**Scoring:** 1.0 all. 0.5 one missing. 0.0 no credit.\n\n### C4 — version and live value\n**Must be true:** `plugins/implement/.claude-plugin/plugin.json` reads 0.3.0. `00-status.md` notes record whether a live `agent_type` value was observed, or that it could not be observed in this harness.\n**Evidence to check:** read both.\n**Scoring:** 1.0 both. 0.5 one. 0.0 neither.\n\n## Regression check\n- `uv run --with pytest --with requests --with pyyaml --with pillow pytest tests/ -q` shows no new failure. Baseline: 365 passed, 1 pre-existing failure in `test_generate_prompts_webp.py`.\n- `uv run plugins/implement/scripts/verify_gate.py --plan docs/plans/interaction-design-gate` still reports `Overall: OK`.\n\n## Out of scope — do not penalise\n- Whether habit-hooks is installed on the validating machine. Tests use a fake runner.\n",
+        "source_path": ".cobuilder/rubrics/slice-agents-and-vocabulary/slice-5.md"
+      },
+      {
+        "id": "slice-agents-and-vocabulary/6",
+        "feature_slug": "slice-agents-and-vocabulary",
+        "n": 6,
+        "title": "Slice 6 — E4 tracer bullet: the glossary file and its format",
+        "body_md": "# Rubric: Slice 6 — E4 tracer bullet: the glossary file and its format\n\nFeature: slice-agents-and-vocabulary\nEpic: E4\nSlice goal: `DDD-VOCABULARY.md` exists at the root with every canvas term, and each canvas links to it.\nTest command: uv run --with pytest --with requests --with pyyaml --with pillow pytest tests/ -q\n\n## Criteria\n\n### C1 — the file and its header [CRITICAL]\n**Must be true:** `DDD-VOCABULARY.md` exists at the repository root. Its header states its purpose in two sentences and a \"How to use\" list: one name per concept, one owning context per term, add a term when it is resolved, rejected synonyms under `_Avoid_`. It credits the glossary format to Matt Pocock's `domain-modeling` skill.\n**Evidence to check:** read the file.\n**Scoring:** 1.0 all. 0.5 one missing. 0.0 no file.\n\n### C2 — every entry has the entry shape [CRITICAL]\n**Must be true:** Every entry is `**Term** (\\`context-id\\`):` then one or two definition sentences, then an optional `_Avoid_:` line. Entries sit under a `## <context>` or `## Cross-cutting` heading. A test parses every entry and fails on a malformed one.\n**Evidence to check:** the test and a read.\n**Scoring:** 1.0 all parse and the test is strict. 0.5 the test is loose. 0.0 no test.\n\n### C3 — canvas terms are covered and linked\n**Must be true:** Every term in the \"Ubiquitous language\" table of every `docs/architecture/contexts/*/canvas.md` has an entry. Each canvas term cell links to `DDD-VOCABULARY.md`. The canvas template shows the link form. The test reads the canvases, not a hard-coded list.\n**Evidence to check:** the test. Read `canvas-template.md`.\n**Scoring:** 1.0 all. 0.5 covered but not linked, or the list is hard-coded. 0.0 terms missing.\n\n## Regression check\n- `uv run --with pytest --with requests --with pyyaml --with pillow pytest tests/ -q` shows no new failure. Baseline: 365 passed, 1 pre-existing failure in `test_generate_prompts_webp.py`.\n- `uv run plugins/implement/scripts/verify_gate.py --plan docs/plans/interaction-design-gate` still reports `Overall: OK`.\n\n## Out of scope — do not penalise\n- The vocabulary agent and design mode (slice 7). The CLAUDE.md table (slice 8).\n",
+        "source_path": ".cobuilder/rubrics/slice-agents-and-vocabulary/slice-6.md"
+      },
+      {
+        "id": "slice-agents-and-vocabulary/7",
+        "feature_slug": "slice-agents-and-vocabulary",
+        "n": 7,
+        "title": "Slice 7 — E4 real content: the vocabulary agent and design mode",
+        "body_md": "# Rubric: Slice 7 — E4 real content: the vocabulary agent and design mode\n\nFeature: slice-agents-and-vocabulary\nEpic: E4\nSlice goal: `implement:vocabulary` runs beside VALIDATE in both loop paths, and design mode reads and writes the glossary.\nTest command: uv run --with pytest --with requests --with pyyaml --with pillow pytest tests/ -q\n\n## Criteria\n\n### C1 — the agent definition [CRITICAL]\n**Must be true:** `plugins/implement/agents/vocabulary.md` parses, has `name: vocabulary`, no `model` key, no ignored field, and no Edit tool. Its body checks district, directory, file, class, function, and method names and changed prose against `DDD-VOCABULARY.md`. It uses the tags `[AVOID]`, `[UNDEFINED]`, `[CONFLICT]`. It appends a `### Vocabulary` section with `CLEAN` or `FINDINGS` to the slice evidence file. It does not score and does not edit code.\n**Evidence to check:** read the file and the test.\n**Scoring:** 1.0 all. 0.5 one missing. 0.0 the agent scores or edits code.\n\n### C2 — both loop paths run it beside VALIDATE [CRITICAL]\n**Must be true:** `slice-loop.md` spawns `implement:vocabulary` in parallel with VALIDATE and states that its verdict is a separate axis, not part of the score, routed through the gap tree. `slice-loop.js` runs both in `parallel()` with `agentType: 'implement:vocabulary'` and reports the vocabulary verdict in the slice result.\n**Evidence to check:** read both files.\n**Scoring:** 1.0 both. 0.5 one. 0.0 neither.\n\n### C3 — design mode reads and writes the glossary [CRITICAL]\n**Must be true:** `design-mode.md` stage 1 (§4) loads `DDD-VOCABULARY.md` next to the districts. Stage 5 (§9) adds each resolved term in the entry shape and asks the engineer about a term that conflicts with an entry. The stage count and the five-topic interview cap do not change.\n**Evidence to check:** read §4 and §9.\n**Scoring:** 1.0 both. 0.5 one. 0.0 neither.\n\n### C4 — a blind agent flags a seeded term (behavioural)\n**Must be true:** A fresh subagent given only `agents/vocabulary.md`, `DDD-VOCABULARY.md`, and a small diff that names a class with a word from an `_Avoid_` list reports an `[AVOID]` finding that names the entry.\n**Evidence to check:** the orchestrator's blind-pass record in the evidence file.\n**Scoring:** 1.0 flagged with the entry. 0.5 flagged without the entry. 0.0 missed.\n\n## Regression check\n- `uv run --with pytest --with requests --with pyyaml --with pillow pytest tests/ -q` shows no new failure. Baseline: 365 passed, 1 pre-existing failure in `test_generate_prompts_webp.py`.\n- `uv run plugins/implement/scripts/verify_gate.py --plan docs/plans/interaction-design-gate` still reports `Overall: OK`.\n\n## Out of scope — do not penalise\n- Moving the CLAUDE.md table (slice 8).\n",
+        "source_path": ".cobuilder/rubrics/slice-agents-and-vocabulary/slice-7.md"
+      },
+      {
+        "id": "slice-agents-and-vocabulary/8",
+        "feature_slug": "slice-agents-and-vocabulary",
+        "n": 8,
+        "title": "Slice 8 — E4 move: the CLAUDE.md table goes to the glossary",
+        "body_md": "# Rubric: Slice 8 — E4 move: the CLAUDE.md table goes to the glossary\n\nFeature: slice-agents-and-vocabulary\nEpic: E4\nSlice goal: The `CLAUDE.md` Vocabulary table moves into `DDD-VOCABULARY.md`, and `CLAUDE.md` keeps a pointer.\nTest command: uv run --with pytest --with requests --with pyyaml --with pillow pytest tests/ -q\n\n## Criteria\n\n### C1 — no term lost [CRITICAL]\n**Must be true:** Every bold term in the Vocabulary table of `CLAUDE.md` before this slice (`git show <commit before slice 8>:CLAUDE.md`) has an entry in `DDD-VOCABULARY.md`. Each \"Not to confuse with\" note survives as an `_Avoid_` item for a synonym or as a homonym note for a collision.\n**Evidence to check:** compare the old table row by row against the glossary.\n**Scoring:** 1.0 nothing lost. 0.5 a note lost. 0.0 a term lost.\n\n### C2 — CLAUDE.md points, not copies [CRITICAL]\n**Must be true:** `CLAUDE.md` has no `| Term | Meaning |` table. The Vocabulary section links to `DDD-VOCABULARY.md` and keeps the rule to resolve a collision in the glossary before it ships. The \"A superseded gazetteer\" subsection now names `DDD-VOCABULARY.md` as the source of truth.\n**Evidence to check:** read `CLAUDE.md`. A test asserts the table is absent and the link present.\n**Scoring:** 1.0 all. 0.5 a stale reference. 0.0 the table remains.\n\n### C3 — the glossary still parses\n**Must be true:** Slice 6's format test still passes with the new entries.\n**Evidence to check:** run the suite.\n**Scoring:** 1.0 pass. 0.0 fail.\n\n## Regression check\n- `uv run --with pytest --with requests --with pyyaml --with pillow pytest tests/ -q` shows no new failure. Baseline: 365 passed, 1 pre-existing failure in `test_generate_prompts_webp.py`.\n- `uv run plugins/implement/scripts/verify_gate.py --plan docs/plans/interaction-design-gate` still reports `Overall: OK`.\n\n## Out of scope — do not penalise\n- Wording changes to terms beyond the move, unless a term was lost.\n",
+        "source_path": ".cobuilder/rubrics/slice-agents-and-vocabulary/slice-8.md"
       }
     ]
   },
@@ -2827,7 +3075,11 @@
           "implementation-conformance/E4",
           "interaction-design-gate/E1",
           "interaction-design-gate/E2",
-          "interaction-design-gate/E3"
+          "interaction-design-gate/E3",
+          "slice-agents-and-vocabulary/E1",
+          "slice-agents-and-vocabulary/E2",
+          "slice-agents-and-vocabulary/E3",
+          "slice-agents-and-vocabulary/E4"
         ]
       },
       "ADR-0014": {
@@ -2950,13 +3202,10 @@
         "pr": null,
         "via": "epic",
         "path": [
-          "review-flight-deck/F0",
-          "review-flight-deck/F1",
-          "review-flight-deck/F2",
-          "review-flight-deck/F3",
-          "review-flight-deck/F4",
-          "review-flight-deck/F5",
-          "review-flight-deck/F6"
+          "slice-agents-and-vocabulary/E1",
+          "slice-agents-and-vocabulary/E2",
+          "slice-agents-and-vocabulary/E3",
+          "slice-agents-and-vocabulary/E4"
         ]
       },
       "ADR-0026": {
@@ -3079,6 +3328,19 @@
         "path": [
           "review-link/E1"
         ]
+      },
+      "ADR-0033": {
+        "pr": null,
+        "via": "epic",
+        "path": [
+          "review-flight-deck/F0",
+          "review-flight-deck/F1",
+          "review-flight-deck/F2",
+          "review-flight-deck/F3",
+          "review-flight-deck/F4",
+          "review-flight-deck/F5",
+          "review-flight-deck/F6"
+        ]
       }
     },
     "epic_to_pull_request": {
@@ -3192,6 +3454,10 @@
       "review-flight-deck/F5": "no-pull-request",
       "review-flight-deck/F6": "no-pull-request",
       "review-link/E1": "no-pull-request",
+      "slice-agents-and-vocabulary/E1": "unstarted",
+      "slice-agents-and-vocabulary/E2": "unstarted",
+      "slice-agents-and-vocabulary/E3": "unstarted",
+      "slice-agents-and-vocabulary/E4": "unstarted",
       "ubiquitous-language/E1": "unstarted",
       "ubiquitous-language/E2": "unstarted",
       "ubiquitous-language/E3": "unstarted",
@@ -3248,7 +3514,15 @@
       "interaction-design-gate/7": "interaction-design-gate/E3",
       "review-link/1": "review-link/E1",
       "review-link/2": "review-link/E1",
-      "review-link/3": "review-link/E1"
+      "review-link/3": "review-link/E1",
+      "slice-agents-and-vocabulary/1": "slice-agents-and-vocabulary/E1",
+      "slice-agents-and-vocabulary/2": "slice-agents-and-vocabulary/E2",
+      "slice-agents-and-vocabulary/3": "slice-agents-and-vocabulary/E2",
+      "slice-agents-and-vocabulary/4": "slice-agents-and-vocabulary/E3",
+      "slice-agents-and-vocabulary/5": "slice-agents-and-vocabulary/E3",
+      "slice-agents-and-vocabulary/6": "slice-agents-and-vocabulary/E4",
+      "slice-agents-and-vocabulary/7": "slice-agents-and-vocabulary/E4",
+      "slice-agents-and-vocabulary/8": "slice-agents-and-vocabulary/E4"
     },
     "slice_to_epic_unresolved": {},
     "context_verifies_district": {
@@ -3279,7 +3553,8 @@
       "ADR-0029": "cobuilder-packaging",
       "ADR-0030": "cobuilder-packaging",
       "ADR-0031": "cobuilder-packaging",
-      "ADR-0032": "cobuilder-packaging"
+      "ADR-0032": "cobuilder-packaging",
+      "ADR-0033": "cobuilder-packaging"
     },
     "adr_to_district": {
       "ADR-0001": "scripts",
@@ -3502,6 +3777,39 @@
           "n": "4",
           "name": "Slice plan, epic designs, and rubrics",
           "state": "in progress"
+        }
+      ],
+      "slice-agents-and-vocabulary": [
+        {
+          "n": "1",
+          "name": "Product",
+          "state": "APPROVED 2026-09-27",
+          "doc": "slice-agents-and-vocabulary",
+          "doc_kind": "product"
+        },
+        {
+          "n": "2",
+          "name": "Architecture",
+          "state": "APPROVED 2026-09-27",
+          "doc": "slice-agents-and-vocabulary",
+          "doc_kind": "architecture"
+        },
+        {
+          "n": "2b",
+          "name": "Interaction design",
+          "state": "n/a (no UI) — Screens: \"no UI\""
+        },
+        {
+          "n": "3",
+          "name": "Program Design",
+          "state": "APPROVED 2026-09-27",
+          "doc": "slice-agents-and-vocabulary",
+          "doc_kind": "program"
+        },
+        {
+          "n": "4",
+          "name": "Slice plan, epic designs, and rubrics",
+          "state": "APPROVED 2026-09-27"
         }
       ]
     }

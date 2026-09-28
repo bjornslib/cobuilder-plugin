@@ -30,8 +30,8 @@
       "id": "F4",
       "kind": "prediction",
       "question": "sensible",
-      "cites": "ADR-0025",
-      "text": "The strongest finding, and it is about the baseline. Simulating against the default branch fails silently: it returns a well-formed, confident, inverted order. It did exactly that on the first run here. The constraint is now stated in ADR-0025's maps_to rule and carries an abort condition on this design, and it still rests on an implementer not reaching for HEAD because HEAD is what every other script in this repository reads."
+      "cites": "ADR-0033",
+      "text": "The strongest finding, and it is about the baseline. Simulating against the default branch fails silently: it returns a well-formed, confident, inverted order. It did exactly that on the first run here. The constraint is now stated in ADR-0033's maps_to rule and carries an abort condition on this design, and it still rests on an implementer not reaching for HEAD because HEAD is what every other script in this repository reads."
     },
     {
       "id": "F5",

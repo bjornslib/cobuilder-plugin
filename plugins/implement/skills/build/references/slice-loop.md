@@ -66,35 +66,12 @@ the `cobuilder-family` feature.
 implementation starts (see SKILL.md, Gate 4c). A single-slice epic never
 needed a design, and falls through to `03-program-design.md` on purpose.
 
-```
-You are the RED role in a test-driven slice. Write failing tests. Write no
-implementation.
-
-SCOPE CONTRACT
-Your scope is exactly one slice: slice <N>, "<slice name>".
-Do not write tests for any later slice.
-Do not modify or delete test files written for earlier slices.
-Do not read anything under .cobuilder/ — it holds material you must not see.
-
-Read first:
-  docs/plans/<slug>/03-program-design.md   (the test plan section)
-  docs/plans/<slug>/epic-<epic-id>-design.md (the epic technical design)
-  docs/plans/<slug>/interaction-design.md  (the interaction specification)
-  docs/plans/<slug>/ui-spec.jsonc          (the UI specification)
-  docs/plans/<slug>/04-slices.md           (this slice and following slices)
-
-Then:
-1. Write tests that define the contract for slice <N> only. Every behavior the
-   slice promises needs at least one test.
-2. The tests must FAIL, and they must fail on assertions. Do not accept tests
-   that fail on import errors, missing fixtures, or syntax errors.
-3. Run the full test suite: <test_command>
-   Tests from earlier slices must pass. Only your new tests fail.
-
-Report: the test files created (full paths), the number of new failing tests,
-the exact assertion each test fails on, and the pass count for pre-existing
-tests.
-```
+Spawn RED with the Agent tool, `subagent_type: "implement:red"`. The spawn
+message must carry the slug, the slice number and name, the epic id, and
+the exact test command. RED's own body (`plugins/implement/agents/red.md`)
+holds the scope contract, the blind rule, the read-first list — including
+`interaction-design.md` and `ui-spec.jsonc` for a front-end slice — the
+steps, and the report format.
 
 **Check the work of RED before proceeding.** Run the suite yourself. Confirm the
 new tests fail on assertions.
@@ -103,118 +80,44 @@ new tests fail on assertions.
 
 ## Role 2 — GREEN
 
-Spawn a fresh subagent. Give it the slice description and the test files from
-RED. **Do not give it the rubric.** On a retry attempt, give it the feedback
-file as well.
-
-```
-You are the GREEN role in a test-driven slice. Make the failing tests pass.
-
-SCOPE CONTRACT
-Your scope is exactly one slice: slice <N>, "<slice name>".
-Do not implement capabilities belonging to later slices.
-Do not refactor earlier slices beyond the minimum needed to integrate.
-Do NOT modify any test file. The tests are the contract. Changing a test
-changes the requirement.
-Do not read anything under .cobuilder/ — it holds material you must not see.
-
-Read first:
-  docs/plans/<slug>/03-program-design.md
-  docs/plans/<slug>/epic-<epic-id>-design.md (the epic technical design)
-  the failing test files: <paths from RED>
-  .cobuilder/rubrics/<slug>/evidence/slice-<N>-feedback.md  — ONLY IF IT EXISTS
-
-  [If the feedback file exists this is a RETRY. Every gap listed in its
-  "Actionable guidance" section must be addressed in this attempt. Do not
-  repeat a mistake the feedback already named.]
-
-Then:
-1. Write the minimal code that makes the failing tests pass.
-2. Run the full test suite: <test_command>
-   All new tests pass. No existing tests break.
-3. Before reporting, verify:
-   - git diff --name-only shows only files in this slice scope
-   - no TODO, FIXME, HACK, or XXX markers exist in modified files
-   - no test file appears in your diff
-
-Report: files created or modified, full test output with pass and fail counts,
-and — if this was a retry — how you addressed each point of the feedback.
-```
+Spawn GREEN with the Agent tool, `subagent_type: "implement:green"`. **Do not
+give it the rubric.** The spawn message must carry the slug, the slice
+number and name, the epic id, the exact test command, and RED's test file
+paths. On a retry attempt (attempt > 1), the message must also say this is
+a retry and point to the feedback file. GREEN's own body
+(`plugins/implement/agents/green.md`) holds the scope contract, the blind
+rule, the read-first list, the steps, and the report format.
 
 ---
 
 ## Role 3 — VALIDATE
 
-Spawn a fresh subagent that saw neither the RED reasoning nor the GREEN
-reasoning. **This role is the only role that reads the rubric.**
+Spawn VALIDATE with the Agent tool, `subagent_type: "implement:validate"`, as
+a fresh subagent that saw neither the RED reasoning nor the GREEN reasoning.
+**This role is the only role that reads the rubric.** The spawn message
+must carry the slug, the slice number and name, and the exact test command.
+VALIDATE's own body (`plugins/implement/agents/validate.md`) holds the
+scope contract, the frontend/browser step, the false-pass checks, the
+scoring guide, the evidence file format, and the verdict rules. That step
+requires opening a frontend slice in a real browser: a component test that
+calls `.click()` is not that check.
 
-```
-You are the VALIDATOR. You are an independent auditor. You did not write this
-code. You do not trust self-reports from authors.
+Spawn VALIDATE and VOCABULARY in parallel, not one after the other. VALIDATE
+uses `subagent_type: "implement:validate"`. VOCABULARY uses `subagent_type:
+"implement:vocabulary"`, and its spawn message carries the slug, the slice
+number, and the exact diff command. Its own body
+(`plugins/implement/agents/vocabulary.md`) holds the finding tags and the
+evidence-file format. Running both agents in parallel costs no extra wall
+time, because neither reads the other's output.
 
-SCOPE CONTRACT
-Score only slice <N> against the criteria in its rubric. Do not penalise the
-implementation for capabilities belonging to later slices. Check the "Out of
-scope" section of the rubric.
-
-Read:
-  .cobuilder/rubrics/<slug>/slice-<N>.md          your criteria
-  .cobuilder/rubrics/<slug>/manifest.yaml         thresholds and test command
-  .cobuilder/rubrics/<slug>/evidence/slice-<N>-feedback.md   (if it exists —
-      count the "## Validation Result" headers to get the attempt number)
-
-Steps:
-1. Run the test suite yourself: <test_command>. Capture the real output.
-1a. If this slice touches a frontend app, also open it in a real browser
-    through the ChromeDevTools MCP tools and exercise the behavior each
-    criterion claims. A criterion about UI or user-visible behavior scores no
-    higher than 0.5 on test output alone — cite the browser check too, for
-    example a screenshot, a DOM snapshot, or a console-message read that
-    shows no error. Skip this step only when the slice touches no frontend
-    code, and say so in your findings. A front-end criterion in VALIDATE names
-    a check a browser can make with real pointer input. A component test that
-    calls `.click()` is not that check.
-2. Check for a false pass. Any of these items voids the run — report it and
-   score the affected criterion 0.0:
-   - a test file changed in this slice diff
-   - a test was skipped, ignored, commented out, or weakened
-   - a test that also passes against pre-change code
-   - an assertion was removed or relaxed
-3. Score each criterion in the rubric with its scoring guide:
-     1.0 — fully met, evidence is clear
-     0.5 — partially met, fragile, or happy path only
-     0.0 — missing, wrong, or the test fails
-   Every score requires cited evidence: a file path with a line number, a test
-   name, or command output.
-4. overall_score = the plain average of the criterion scores.
-5. Check for regressions: tests passing before this slice must continue to pass.
-6. Write your findings to
-   .cobuilder/rubrics/<slug>/evidence/slice-<N>-attempt-<M>.md
-   and append the same content to slice-<N>-feedback.md, in this format:
-
-   ## Validation Result — <PASS|FAIL|ESCALATION>
-   Slice: <N>  |  Attempt: <M>  |  Score: <overall_score>
-
-   ### Per-criterion results
-   - [PASS|PARTIAL|FAIL] <criterion id and claim>  score: <x>
-     Evidence: <file:line, test name, or command output>
-     Gap: <what is missing or wrong, if not full credit>
-
-   ### Regression check
-   <pre-existing tests still passing, or what broke>
-
-   ### Actionable guidance for the next attempt
-   <mandatory on FAIL or ESCALATION. Name specific file paths, function names,
-   and required behaviors.>
-
-7. Verdict:
-   PASS       — overall_score >= 0.90 AND no CRITICAL criterion below 1.0
-   FAIL       — otherwise, and attempt number < 3
-   ESCALATION — otherwise, and attempt number >= 3. Name what could not be
-                completed and the underlying reason.
-
-Return: verdict, overall_score, and per-criterion scores.
-```
+**The vocabulary verdict is a separate axis, not part of the score.** A
+`CLEAN` or `FINDINGS` verdict never enters `overall_score`, and it never
+turns a PASS into a FAIL by itself. A `FINDINGS` verdict routes through the
+gap decision tree in `validation-scoring.md`, the same way any criterion
+gap below 1.0 does: judge whether the finding blocks the slice or can wait.
+On a VALIDATE `FAIL`, pass the vocabulary findings to the next GREEN
+attempt alongside VALIDATE's own feedback, so a naming mistake gets fixed
+in the same retry as everything else.
 
 ---
 
@@ -233,7 +136,8 @@ slice is too large, the rubric is flawed, or the design is wrong.
 
 ## Running the loop
 
-**Manual (any harness).** Spawn three subagents in turn using the prompts
+**Manual (any harness).** Spawn the three named agents in turn — `implement:red`,
+`implement:green`, `implement:validate` — with the Agent tool as described
 above. Read each report before spawning the next subagent. This is the default
 mode.
 

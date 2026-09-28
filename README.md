@@ -38,8 +38,9 @@ generate mode, `artifact` to view or publish a bundle, and
 `architect` and `pr` both hand off to
 `artifact`'s view and publish modes, so each declares
 `artifact` as a dependency. Installing either one also installs
-`artifact`. Nothing here adds an agent, a hook, or an MCP server.
-The install surface stays `/plugin install` alone.
+`artifact`. Only `implement` adds agents and a hook. See ADR-0025.
+No plugin adds an MCP server. The install surface stays `/plugin
+install` alone.
 
 GitHub redirects a renamed repository, so an existing
 `/plugin marketplace add bjornslib/prodyssey` install should keep resolving.
@@ -416,9 +417,16 @@ Key manifest fields, one per plugin (`plugins/<name>/.claude-plugin/plugin.json`
 }
 ```
 
-No plugin ships agents, hooks, MCP servers, or output styles. This is
-deliberate: a plugin must work in any session without touching that
-session's permission or hook surface.
+Only `implement` ships agents and a hook. `architect`, `pr`,
+`artifact`, and `cobuilder-full-lifecycle` ship none of the three, and no
+plugin ships an MCP server or an output style. See ADR-0025. This is
+deliberate: a plugin adds agents or a hook only where a role in its own
+skill needs one, and every plugin still avoids an MCP server.
+
+`implement` requires the habit-hooks command-line tool for `/implement:start`.
+Run `/implement:install` first to set it up, including its TypeScript
+detector support. A `PostToolUse` hook coaches the GREEN agent with its
+output. See `plugins/implement/NOTICE.md` for the credit.
 
 `mermaid` and `ste-writing` are shared skills, vendored the same way
 `shared/`'s scripts are. `mermaid` holds authoring rules for the level 1
@@ -552,3 +560,26 @@ or under `--art image`, and no images under `--art diagram`. Cost runs from
 single-digit cents to low single-digit dollars, and depends on the Gemini
 tier. `--art diagram` costs less. The prerequisite gate exists so that you
 never discover a missing key three stages into a sweep.
+
+---
+
+## Credits
+
+**habit-hooks.** MIT license, copyright Ivett Ördög and contributors.
+https://github.com/habit-hooks/habit-hooks. `plugins/implement/scripts/habit_coach.py`
+calls the habit-hooks command-line tool through the `PostToolUse` hook in
+`plugins/implement/hooks/hooks.json`, after each file the `implement:green`
+agent writes. We vendor none of its code. Its study,
+https://github.com/LiinaSuoniemi/prompt-vs-metric-eval by Liina Suoniemi, is
+the evidence behind coaching an agent instead of showing it a bare metric.
+
+**Matt Pocock's skills.** MIT license, copyright Matt Pocock.
+https://github.com/mattpocock/skills. We borrowed two ideas, not code or
+prose. The `domain-modeling` skill's glossary entry format (term, short
+definition, an `_Avoid_` list of rejected synonyms, one file per context)
+shaped how `DDD-VOCABULARY.md` merges with this repo's bounded-context
+canvases. The `code-review` skill's separate review axis, standards and
+spec reviewed in separate subagents and never merged, shaped the
+`implement:vocabulary` agent. That agent reports beside VALIDATE and never
+changes its score. We did not adopt `improve-codebase-architecture`,
+`wayfinder`, or `to-spec` from that repository.

@@ -18,7 +18,7 @@ alternatives:
   - option: "Ship react-viewer and review-flight-deck as two designs, sequenced"
     rejected_because: "That order would build the ordering UI against the viewer E5 is about to replace, then rebuild it in React. Someone would also resolve the name collision twice, once informally and once for real."
   - option: "Recompute the merge order live in the browser, on demand"
-    rejected_because: "A browser cannot run git. ADR-0001's content policy also blocks it from fetching the evidence. That constraint is hard, not a preference, and it carries forward unchanged from ADR-0025."
+    rejected_because: "A browser cannot run git. ADR-0001's content policy also blocks it from fetching the evidence. That constraint is hard, not a preference, and it carries forward unchanged from ADR-0033."
   - option: "A scheduled GitHub Action recomputes the plan and commits it"
     rejected_because: "review-flight-deck's own record already resolved automatic triggering. A scheduled skill run or a workflow supplies it, matching every other Odyssey mode. A GitHub Action would add CI infrastructure this family has never needed."
   - option: "A persistent, org-owned service computes the join index and the merge plan across every adopting repository"
@@ -38,7 +38,7 @@ forces:
   - "A spike measured the ordering problem on real history. Thirty open branches shared one true common ancestor, and 42.5 percent of pairwise merges conflicted. A greedy minimum-conflict order beat arrival order by roughly 40 percent on stop count."
   - "A replay is a snapshot against recorded branch heads, and a push after the run invalidates it. The ledger therefore records the exact ancestor SHA and the per-step inputs a later replay needs."
 related_decisions:
-  - { type: replaces, target: ADR-0025 }
+  - { type: replaces, target: ADR-0033 }
   - { type: replaces, target: ADR-0026 }
   - { type: depends-on, target: ADR-0001 }
   - { type: depends-on, target: ADR-0018 }
@@ -48,7 +48,7 @@ related_decisions:
 related_concerns: [C3, C6]
 history:
   - { state: tentative, date: 2026-09-18 }
-  - { state: decided, date: 2026-09-18, by: bjornslib, note: "Merges ADR-0025 and ADR-0026 into one record for the cobuilder-viewer design, which itself merges react-viewer and review-flight-deck. Both source records were never approved and never shipped, and nothing outside this design depends on them separately." }
+  - { state: decided, date: 2026-09-18, by: bjornslib, note: "Merges ADR-0033 and ADR-0026 into one record for the cobuilder-viewer design, which itself merges react-viewer and review-flight-deck. Both source records were never approved and never shipped, and nothing outside this design depends on them separately." }
 maps_to:
   context: cobuilder-packaging
   modules: [plugins/artifact/viewer/src, plugins/pr, shared/build_index.py, shared/ledger.py]
@@ -68,7 +68,7 @@ related:
 
 `react-viewer` (ADR-0023) rebuilds the bundle viewer as three surfaces: Work,
 Flight deck, and Reference. Its E5 epic names Flight deck the
-single-pull-request narration view. `review-flight-deck` (ADR-0025, ADR-0026)
+single-pull-request narration view. `review-flight-deck` (ADR-0033, ADR-0026)
 independently gave its multi-pull-request merge-ordering surface the same name,
 for something unrelated. Both designs reached `stage: "review"` before this
 collision surfaced.
@@ -152,7 +152,7 @@ change's account does not carry it, as ADR-0029's 2026-09-25 amendment records.
   browser. Only a skill run or scheduled workflow runs `git merge-tree`, and it
   commits the output as data before the viewer renders it.
 - **Negative:** the ledger's proposal line must record the exact ancestor SHA
-  and the per-step simulation inputs. ADR-0025 did not carry that schema work.
+  and the per-step simulation inputs. ADR-0033 did not carry that schema work.
 - **Negative:** referenced SHAs can fall to garbage collection between
   acceptance and audit. Nothing here keeps them reachable, and this record does
   not settle that.

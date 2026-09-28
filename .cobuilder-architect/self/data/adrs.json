@@ -1567,111 +1567,77 @@
   },
   "ADR-0025": {
     "id": "ADR-0025",
-    "title": "Simulate paths to close the open set, from the common ancestor, and show one validated path",
-    "state": "rejected",
+    "title": "implement ships slice agents and a coaching hook",
+    "state": "approved",
     "source_pr": null,
-    "problem": "A team carries tens of open pull requests. No surface answers the question a reviewer actually holds. That question is not how to review one change, but in what order the whole set can close. The record index resolves five kinds of join, and none of them is between two pull requests. An order simulated against the default branch gives a confident wrong answer. It fails whenever an open pull request restructures the tree, because the default branch already carries whatever merged before.",
-    "decision": "A mode in the pr plugin simulates several paths to close the whole open set. It always works against the common ancestor of the open branches. It replays the best one or two with git on a scratch worktree, counts the real conflicts, and promotes the survivor. The viewer shows one validated path. It leads with the state the reviewer would have and the pull requests the path cannot carry. It computes nothing.",
+    "problem": "The install-surface rule says no plugin in this family ships an agent, a hook, or an MCP server. implement's build skill runs a red-green-validate slice loop, and its role prompts today are pasted text, not stable agent identities. A hook cannot filter on a role that has no identity to filter on. Claude Code also ignores a hooks frontmatter key inside a plugin agent file, so a per-agent hook cannot live next to the agent it targets. Nothing in the family can adopt habit-hooks, an external coaching CLI, without a hook to call it from.",
+    "decision": "The implement plugin may ship agents/ (RED, GREEN, VALIDATE, and a vocabulary reviewer agent) and hooks/hooks.json (one PostToolUse hook on Write|Edit that runs habit-hooks for the GREEN agent only). The other four plugins, architect, pr, artifact, and cobuilder-full-lifecycle, still ship no agents and no hooks. No plugin in the family ships an MCP server. GREEN needs a stable identity, implement:green, that the hook filters on through the hook input's agent_type field. Because Claude Code ignores a hooks key in a plugin agent's frontmatter, the hook has to sit at the plugin level, in hooks/hooks.json, not beside the agent it targets. The role prompts that RED, GREEN, VALIDATE, and the vocabulary reviewer used as pasted text become agent definitions instead, each with its own file and its own identity. habit-hooks is a required external CLI, MIT licensed, at https://github.com/habit-hooks/habit-hooks, by Ivett Ördög and contributors. The plugin calls it as a subprocess. It vendors none of its code.",
     "alternatives": [
       {
-        "option": "Simulate against the default branch as it stands today",
-        "rejected_because": "It inverts the order whenever an open pull request restructures the tree. Measured on this repository: with all seventeen pull requests open the base is 0c099be, where commands/, scripts/ and skills/ still exist. Five open pull requests write into exactly the three directories that pull request 11 deletes. A run against master put the restructure first. It produced a confident wrong answer rather than no answer."
+        "option": "Keep the blanket no-agents, no-hooks rule and paste habit-hooks coaching text into the GREEN role prompt instead",
+        "rejected_because": "Pasted text is not a hookable event. habit-hooks runs on a tool call, after the fact, and reads the actual diff. A paragraph in a role prompt cannot see a Write or Edit call the model already made, so it cannot coach against what really happened."
       },
       {
-        "option": "A region walk: one keypress per contested hunk, over a set the reviewer names",
-        "rejected_because": "The first draft of this record. It made the reviewer do the machine's work one hunk at a time, over a set they had to assemble themselves. The region computation survives inside the simulation as evidence. It stopped being a reviewer-facing step."
+        "option": "Give every one of the five plugins the same agents/ and hooks/ allowance, instead of implement alone",
+        "rejected_because": "Only implement's build skill runs a slice loop with a GREEN step. architect, pr, and artifact have no role that a coaching hook on Write or Edit would ever fire for. Widening the allowance to plugins with no matching role adds install surface with no matching use."
       },
       {
-        "option": "Show every simulated path side by side, and let the reviewer compare",
-        "rejected_because": "It returns the reviewer to the work the mode exists to remove. One validated path is shown. The alternatives are visible and unreachable, and opening the recommendation unlocks them with the reason each lost."
+        "option": "Put the hook inside each agent's own frontmatter",
+        "rejected_because": "Claude Code ignores a hooks key inside a plugin agent file. A hook declared there never runs, so this option does not exist as a working mechanism."
       },
       {
-        "option": "Describe each path by its mechanics: which pull requests, in which order, on which paths",
-        "rejected_because": "A reviewer decides on the outcome, not on the machinery. The surface states what they would have when the path is done. Then it gives one line per pull request saying what it contributes, and the order sits underneath."
+        "option": "Vendor habit-hooks's code into shared/ under ADR-0017 instead of calling it as an external CLI",
+        "rejected_because": "habit-hooks is a required external tool with its own release cycle. Vendoring its code would fork a dependency the family does not maintain, and shared/ is a marketplace-wide commitment ADR-0017 scoped to code every plugin needs, not one plugin's one dependency."
       },
       {
-        "option": "Rank paths by simulation alone, with no git step",
-        "rejected_because": "A simulation from records cannot see a textual conflict. So it cannot tell an ordering that works from one that only looks like it does. Replaying the top candidates is what makes the recommendation something to stand behind."
-      },
-      {
-        "option": "Hold a pull request that cannot merge out of the surface entirely",
-        "rejected_because": "A path never carries every open pull request, and the ones it drops are the ones a reviewer most needs to see. A superseded branch and an unresolvable conflict are different findings. Each is shown on the front page with two or three ways out."
-      },
-      {
-        "option": "Compute the paths in the browser and render them live",
-        "rejected_because": "The browser cannot run git, so it cannot replay anything. ADR-0001's content policy also blocks it from fetching the evidence."
-      },
-      {
-        "option": "Build the mergeable-slice computation from scratch as the product",
-        "rejected_because": "Systems that precompute mergeable slices already exist. The narrative and the choice between paths are the parts they do not offer. So the git step keeps a narrow interface, and one of those systems can replace it."
-      },
-      {
-        "option": "Ship a hook so the mode starts itself on a pull request event",
-        "rejected_because": "The install surface is /plugin install and nothing else, with no agents, no hooks and no MCP servers. The adopting repository supplies the trigger with a workflow or a scheduled run."
+        "option": "Filter the hook on the tool call's file path instead of agent_type",
+        "rejected_because": "RED, GREEN, and VALIDATE all write and edit files in the same slice. A path-based filter cannot tell which role made the call, so it either coaches every role or none. agent_type is the one field the hook input carries that names the caller directly."
       }
     ],
     "forces": [
-      "The default branch already carries whatever merged before. So it is the wrong baseline for a set of branches that all predate it.",
-      "ADR-0001 holds the viewer to one self-contained file under a content policy that blocks every external request. The browser cannot fetch, and it cannot run git.",
-      "Field coverage across this repository's timeline is uneven: touched 14 of 14, narrated levels 8, cached diffs 8, intent 4, assessment 4, ledger lines 0.",
-      "8 of 12 pull requests reaching a reviewer here carry no description. A surface built on authored intent alone therefore draws empty panes.",
-      "A team's own auto-merge rules already handle the simple pull requests, and this design does not define those rules.",
-      "ADR-0020 names viewer/index.html the repository's largest maintenance problem, and it is decided and not executed.",
-      "ADR-0019 fixed the ledger vocabulary at comment, reply, and state, and fold_threads skips an unrecognised line.",
-      "The install surface ships no hooks, so the mode cannot start itself."
+      "GREEN needs a stable identity so a hook can filter on it. Without one, a hook has nothing to check against the caller.",
+      "Claude Code ignores a hooks key inside a plugin agent file, so a per-agent hook cannot sit next to the agent it targets. The hook must live at the plugin level instead.",
+      "The install-surface rule from ADR-0016 says no plugin in this family ships an agent, a hook, or an MCP server. Any change here must state which plugins keep that rule and which do not.",
+      "habit-hooks is an external tool, MIT licensed, not code this family maintains. The plugin can call it as a subprocess, but it should not vendor its code.",
+      "A PostToolUse hook fires on every Write or Edit call in the user's session, not only during the step it targets, so it must filter itself down to the one role it should act on."
     ],
     "delivers": {
-      "capability": "A reviewer opens one page and sees the state they would have if the whole open set closed. The page also shows the order that gets there, the pull requests that cannot come along, and the evidence that a git replay actually held.",
-      "benefit": "Review stops being a queue of unrelated diffs. It becomes one decision about an order. The reason for that order survives as a record rather than as somebody's memory.",
+      "capability": "A hook can coach the GREEN step of the slice loop on every Write or Edit call it makes, using an external tool that reads the real diff instead of a static role prompt.",
+      "benefit": "Coaching happens at the moment a file changes, against what the model actually wrote, instead of as advice the model may or may not have followed.",
       "beneficiary": [
         "developer",
-        "operator",
-        "the-business"
-      ]
+        "validator-agent"
+      ],
+      "enables": [
+        "A stable implement:green identity that later tooling can target the same way"
+      ],
+      "addresses_problem": "P1"
     },
-    "body": "# ADR-0025 — Simulate paths to close the open set, from the common ancestor, and show one validated path\n\n## Context\n\nThe viewer reviews one pull request at a time. Previous, next, a strip of queue\ndots, four levels down the left rail. That shape reads one change well, and it\nanswers nothing about a set.\n\nA team carrying tens of open branches asks a different question. Not how to\nreview one change, but in what order the whole set can close. The relationships\nthat would answer it exist nowhere. The record index resolves five kinds of join,\nand none of them is between two pull requests.\n\nSix isolated exploration frames and a separate critic pass produced the first\ndraft of this record. That draft held a terminal-side proposer that computed\ncontested regions, and a reviewer who walked them one keypress at a time over a\nset they named themselves. Six rounds of review against a working prototype\nreplaced everything above the boundary. Three measurements decided what replaced\nit.\n\n**The baseline decides the order, and the obvious baseline is wrong.** The first\nrecommendation simulated against `master`. Master already carried the five-plugin\nsplit, so the restructure looked like a prerequisite. The earlier work looked\nlike follow-up. With all seventeen pull requests open the base is `0c099be`,\nwhere `commands/`, `scripts/` and `skills/` still exist. Five open pull requests\nwrite into exactly those three directories, and pull request 11 deletes all\nthree. The correct order is the reverse.\n\nFour renames in this repository's history make the chain checkable. `0c099be` carries the three root directories.\nPull request 3 moves `.odyssey/` to `.prodyssey/`. Commit `6e784e5` moves the\nthree directories into `plugins/cobuilder-*/`. Pull requests 17 and 18 drop the\nprefix.\n\n**A path never carries the whole set.** In the worked scenario, ten of twelve\npull requests fit one path. Pull request 18 supersedes 17 on the same head\nbranch, which no pull-request list shows. A second is held out by a conflict a\nmerge cannot resolve, where both sides rewrote the same hunk in opposite\ndirections.\n\n**Simulation alone cannot tell a working order from a plausible one.** A path\nderived from goal files, epics, boundary rules and districts is a hypothesis. The\ngit replay is what turns it into a recommendation.\n\nThe product is therefore not a review aid for a set somebody names. It is a set\nof possible paths to close every open pull request. That separates into three\nquestions a reviewer asks in order. What would I have when this is done. What\ndoes each pull request contribute. Do the merges physically hold, and in what\norder.\n\n## Options considered\n\n1. **A region walk over a named set.** The first draft of this record. It moved\n   the computation off the browser, which was right. It also left the reviewer\n   doing the machine's work one hunk at a time. The region arithmetic survives as\n   evidence inside a simulated path.\n2. **Simulate against the default branch.** The obvious choice, and it produced a\n   confidently inverted order on the first run. Rejected, and recorded as an abort\n   condition on the design, because it fails in no visible way at all.\n3. **Show every path side by side.** Returns the comparison work to the reviewer.\n4. **Describe paths by their mechanics.** A reviewer decides on the outcome. The\n   mechanics move underneath it.\n5. **Simulate and stop, with no git step.** Cheaper, and it cannot distinguish an\n   order that works from one that reads well.\n6. **Simulate from the common ancestor, replay the top candidates with git, and\n   render one validated path (chosen).**\n\n## Decision\n\nA mode in the `pr` plugin runs on a pull request event.\n\nIt reads the open set, less whatever the team's own auto-merge rules already\nhandled. It calls `/pr:generate` for any pull request with no description. It\nsimulates at least three paths to close the set, always against the common\nancestor of the open branches. It replays the best one or two with git on a\nscratch worktree, counts the real conflicts, and promotes the survivor.\n\nIt writes the result as a derived projection in the bundle. The viewer renders\nit. The state the reviewer would have comes first. Then what each pull request\ncontributes. Then the merge chain as its own evidence. Then what the replay could\nnot check. Pull requests the path cannot carry appear on the front page, each\nwith the kind of block named and two or three ways out.\n\nThe reviewer accepts a path. That records a decision, and a runner performs it.\nWhere the runner sends its merges is ADR-0026.\n\nThe boundary from this record's first draft holds. The terminal computes the\nrelationship and writes it as a projection. The viewer renders it and computes\nnothing.\n\nOut of scope: defining the team's auto-merge rules, supplying the trigger, and\nany computation inside the browser.\n\n## Consequences\n\n- **Positive:** the reviewer answers one question about an order rather than\n  reading every diff in full. The answer carries the evidence that a replay held.\n- **Positive:** the surface names what it cannot do. A blocked pull request, an\n  unreplayed bundle, and a missing description all stay visible rather than\n  absent.\n- **Positive:** the viewer gains a renderer and no computation. So this design\n  does not enlarge `viewer/index.html` before ADR-0020's split has run.\n- **Constraint introduced:** the mode simulates a path against the common\n  ancestor of the open branches, never against the default branch, and the viewer\n  renders the result without computing any part of it.\n- **Negative:** the replay is a snapshot. A push after the run invalidates it, and\n  the run does not watch for one.\n- **Negative:** the mode cannot start itself, because the install surface ships no\n  hooks. A workflow or a scheduled run in the adopting repository supplies the\n  trigger.\n- **Negative:** a wrong recommendation is the first thing the reviewer reads, and\n  nothing here measures whether a proposed order anchors them.\n",
+    "body": "# ADR-0025 — implement ships slice agents and a coaching hook\n\n## Context\n\nThe install-surface rule in `CLAUDE.md` has read, since the five-plugin\nsplit, that no plugin in this family ships an agent, a hook, or an MCP\nserver. That rule kept every plugin's install surface identical to the\nother four: no plugin ever touched another session's permission surface.\n\n`implement`'s build skill runs a slice loop with three steps: RED writes a\nfailing test, GREEN makes it pass, and VALIDATE scores the result against a\nblind rubric. `plugins/implement/skills/build/SKILL.md` and its\n`references/` files carry each role as prose the orchestrating Claude reads\nand adopts in turn. No role has a stable identity of its own. A hook that\nwants to act only during the GREEN step has nothing to filter on, because\nnothing in the session states which role is currently active.\n\nhabit-hooks is an external, MIT-licensed coaching tool\n(https://github.com/habit-hooks/habit-hooks, by Ivett Ördög and\ncontributors) that runs on a `PostToolUse` event and reads the tool call\nthat just happened. It can coach a `Write` or `Edit` call the moment it\nlands, against the real diff, in a way a pasted role paragraph cannot. Using\nit requires a hook. The blanket rule forbids one.\n\nA hook cannot live inside an agent's own frontmatter either. Claude Code\nignores a `hooks` key declared inside a plugin agent file. A hook that\ntargets one role has to sit at the plugin level and filter by the caller's\nidentity, which means the role first needs an identity worth filtering on.\n\n## Decision\n\nThe `implement` plugin may ship `agents/` and `hooks/hooks.json`. The other\nfour plugins, `architect`, `pr`, `artifact`, and\n`cobuilder-full-lifecycle`, still ship no agents and no hooks. No plugin in\nthe family, including `implement`, ships an MCP server.\n\n`implement/agents/` holds four agent definitions: RED, GREEN, VALIDATE, and\na vocabulary reviewer. Each role prompt that used to live as pasted text in\n`SKILL.md` or a `references/` file becomes its own agent file instead, with\nits own name. GREEN's agent identity is `implement:green`.\n\n`implement/hooks/hooks.json` declares one `PostToolUse` hook, matched on\n`Write|Edit`, that runs habit-hooks. The hook reads the hook input's\n`agent_type` field. It runs habit-hooks only when that field reads\n`implement:green`. For every other caller, including RED, VALIDATE, the\nvocabulary reviewer, and the orchestrating Claude itself, the hook exits\nwithout effect.\n\nhabit-hooks stays an external, required CLI. The plugin invokes it as a\nsubprocess and vendors none of its source.\n\n## Alternatives considered\n\n- **Keep the blanket rule, and paste habit-hooks coaching text into the\n  GREEN role prompt instead.** Pasted text cannot see a tool call after it\n  happens. habit-hooks's value is that it reads the real diff a `Write` or\n  `Edit` call produced. A paragraph of advice in a role prompt has nothing\n  to react to.\n- **Give every plugin the same agents-and-hooks allowance.** Only\n  `implement` runs a slice loop with a GREEN step. The other four plugins\n  have no role a Write-or-Edit coaching hook would ever fire for. Widening\n  the allowance would add install surface nothing in those plugins would\n  use.\n- **Put the hook inside each agent's own frontmatter.** Claude Code ignores\n  a `hooks` key inside a plugin agent file. A hook declared there never\n  runs, so this is not a working option.\n- **Vendor habit-hooks's code into `shared/` under ADR-0017.** habit-hooks\n  is a required external tool with its own release cycle, not code the\n  family maintains. ADR-0017 scoped `shared/` to code every plugin needs.\n  One plugin's one external dependency does not meet that bar.\n- **Filter the hook on the tool call's file path instead of `agent_type`.**\n  RED, GREEN, and VALIDATE all write and edit files during the same slice.\n  A path-based filter cannot tell which role made a given call, so it\n  either coaches every role or none. `agent_type` is the field the hook\n  input carries that names the caller directly.\n\n## Consequences\n\n- Installing `implement` adds one `PostToolUse` hook to the user's session.\n  It fires on every `Write` or `Edit` call, and it exits silently unless\n  the caller's `agent_type` is `implement:green`.\n- The packaging test, `tests/test_plugin_manifests.py`, enforces the\n  narrowed rule. Only `implement` may ship `agents/` or `hooks/`. No\n  plugin, including `implement`, may ship an MCP server declaration or\n  manifest key.\n- RED, GREEN, VALIDATE, and the vocabulary reviewer become named agents\n  with stable identities, in place of pasted role text the orchestrating\n  Claude used to adopt in turn.\n- habit-hooks becomes a required external dependency for anyone who\n  installs `implement`, alongside the existing requirements for `uv` on\n  `PATH` and a git repository.\n\n## Value delivered\n\nA hook can now coach the GREEN step of the slice loop on every file change\nit makes, using a tool that reads the actual diff instead of a static role\nprompt. The correction lands at the moment a file changes, not as advice\nthe model may or may not have followed.\n\n## Maps to\n\n`implement/agents/`, `implement/hooks/hooks.json`, and\n`tests/test_plugin_manifests.py`. `implement` is the one plugin in the\nfamily that may ship agents or hooks. Every other plugin still ships\nneither, and no plugin ships an MCP server.\n",
     "maps_to": {
       "context": "cobuilder-packaging",
       "modules": [
-        "plugins/pr",
-        "shared/build_index.py",
-        "shared/ledger.py",
-        "plugins/artifact/viewer/index.html"
+        "plugins/implement/agents",
+        "plugins/implement/hooks",
+        "tests/test_plugin_manifests.py"
       ],
-      "rule": "A path is simulated against the common ancestor of the open branches, never against the default branch, and the viewer renders the result without computing any part of it."
+      "rule": "implement is the one plugin in the family that may ship agents/ and hooks/. Every other plugin still ships neither. No plugin ships an MCP server. The hook in implement's hooks/hooks.json runs habit-hooks on Write or Edit, and it exits without effect unless the caller's agent_type is implement:green."
     },
+    "approved_by": "bjornslib",
     "history": [
       {
-        "state": "tentative",
-        "date": "2026-09-01"
-      },
-      {
         "state": "decided",
-        "date": "2026-09-01",
-        "note": "First draft: a terminal-side proposer, a region walk of contested hunks, and a partition the reviewer corrects."
+        "date": "2026-09-27",
+        "note": "Recorded from the design session. The narrowed install-surface rule, the plugin-level hook placement, and the required habit-hooks dependency were each approved by the human during that session."
       },
       {
-        "state": "decided",
-        "date": "2026-09-02",
+        "state": "approved",
+        "date": "2026-09-27",
         "by": "bjornslib",
-        "note": "Revised in place before approval, after six rounds of design review against a working prototype. The terminal-computes-viewer-renders boundary is unchanged. The region walk, the reviewer-named set, and the union-find partition are gone, and the common-ancestor baseline is new. Revised rather than superseded because this record was never approved, never shipped, and nothing depends on it."
-      },
-      {
-        "state": "challenged",
-        "date": "2026-09-18",
-        "note": "react-viewer independently claimed the same Flight deck surface name for its single-pull-request view, and neither design had read the other. The engineer directed the two designs to merge, which made this record's scope a surface inside a larger program rather than a design of its own."
-      },
-      {
-        "state": "rejected",
-        "date": "2026-09-18",
-        "by": "bjornslib",
-        "note": "Superseded by ADR-0027, which merges this record with ADR-0026 into one decision for the cobuilder-viewer design. The common-ancestor rule and every rejected option here carry forward unchanged."
+        "note": "Approved by the human in session, before merge."
       }
     ],
-    "related": [
-      "docs/architecture/designs/review-flight-deck/goal.json",
-      "docs/architecture/designs/review-flight-deck/flightdeck-prototype.html"
-    ]
+    "related": []
   },
   "ADR-0026": {
     "id": "ADR-0026",
@@ -1718,7 +1684,7 @@
         "operator"
       ]
     },
-    "body": "# ADR-0026 — Execute an accepted path onto integration branches, never onto the default branch\n\n## Context\n\nADR-0025 decided how a path is simulated, validated and shown. Accepting one\ncommits a team to merging ten pull requests in a stated order. Something has to\ncarry that out. Where it sends its merges decides whether the decision is\nreversible.\n\nTwo facts make the default branch the wrong target.\n\n**A path is a hypothesis with a replay behind it, not a proof.** The replay runs\non a scratch worktree against recorded branch heads. A push after the run\ninvalidates it. The tree the runner produces can differ from the tree the replay\nproduced. The first merge is where that shows up.\n\n**A checkpoint has to be a real tree.** The reviewer's stated preference is to\ncommit to a path once and then control the pace. They merge one bundle and read\nthe result before releasing the next. That preference is only meaningful if the\nintermediate state sits somewhere they can check out.\n\nThe worked scenario gives the shape. Ten pull requests fall into three bundles.\nFive finish the single plugin. One splits the repository into five plugins. Four\nname and fix the new structure.\n\n## Options considered\n\n1. **Merge each bundle onto the default branch.** Simplest to implement. It makes\n   bundle one irreversible before bundle two is attempted.\n2. **One integration branch for the whole path.** Abandonable, and it offers no\n   checkpoint between bundles.\n3. **A pull request per bundle onto the default branch.** Multiplies the reviews\n   the path exists to collapse.\n4. **Rebase each branch onto the growing integration branch.** Rewrites branches\n   this design does not own.\n5. **One integration branch per bundle, chained (chosen).**\n\n## Decision\n\nA runner reads an accepted path from the ledger. It merges each bundle onto its\nown integration branch. Each branch is built from the previous one, and the first\nis built from the common ancestor:\n\n```\n0c099be  ──▶  flightdeck/<path>/1-<slug>      bundle 1\n              flightdeck/<path>/2-<slug>      bundle 2, from bundle 1\n              flightdeck/<path>/3-<slug>      bundle 3, from bundle 2\n                       │\n                  default branch              one pull request, at the end\n```\n\nThe reviewer commits to the path once, and separately chooses the pace. One\nbundle at a time is the default. The runner merges a bundle and stops, and the\nreviewer checks out that branch before releasing the next. All at once runs the\nthree merges and opens the pull request.\n\nThe runner never rebases, amends, or force-pushes a branch it does not own.\n\nOut of scope: merging the final pull request. That stays a human action on the\ndefault branch, under whatever rules that repository already has.\n\n## Consequences\n\n- **Positive:** abandoning an accepted path is three branch deletions. The branch\n  everybody works from never carried any of it.\n- **Positive:** every checkpoint is a real tree with a name. Reading the\n  intermediate state needs no special tooling.\n- **Constraint introduced:** a runner merges a bundle onto its own integration\n  branch and never onto the default branch. Abandoning an accepted path is a\n  branch deletion, not a revert.\n- **Negative:** a path of N bundles leaves N branches to clean up, and nothing\n  here deletes them.\n- **Negative:** the integration branches drift from the default branch while the\n  path runs. A long pause between bundles reintroduces the conflicts the path was\n  ordered to avoid.\n- **Negative:** this is the first remote write in the plugin family. The adopting\n  repository supplies the runner rather than the plugin, so its credentials and\n  its permissions sit outside this design.\n",
+    "body": "# ADR-0026 — Execute an accepted path onto integration branches, never onto the default branch\n\n## Context\n\nADR-0033 decided how a path is simulated, validated and shown. Accepting one\ncommits a team to merging ten pull requests in a stated order. Something has to\ncarry that out. Where it sends its merges decides whether the decision is\nreversible.\n\nTwo facts make the default branch the wrong target.\n\n**A path is a hypothesis with a replay behind it, not a proof.** The replay runs\non a scratch worktree against recorded branch heads. A push after the run\ninvalidates it. The tree the runner produces can differ from the tree the replay\nproduced. The first merge is where that shows up.\n\n**A checkpoint has to be a real tree.** The reviewer's stated preference is to\ncommit to a path once and then control the pace. They merge one bundle and read\nthe result before releasing the next. That preference is only meaningful if the\nintermediate state sits somewhere they can check out.\n\nThe worked scenario gives the shape. Ten pull requests fall into three bundles.\nFive finish the single plugin. One splits the repository into five plugins. Four\nname and fix the new structure.\n\n## Options considered\n\n1. **Merge each bundle onto the default branch.** Simplest to implement. It makes\n   bundle one irreversible before bundle two is attempted.\n2. **One integration branch for the whole path.** Abandonable, and it offers no\n   checkpoint between bundles.\n3. **A pull request per bundle onto the default branch.** Multiplies the reviews\n   the path exists to collapse.\n4. **Rebase each branch onto the growing integration branch.** Rewrites branches\n   this design does not own.\n5. **One integration branch per bundle, chained (chosen).**\n\n## Decision\n\nA runner reads an accepted path from the ledger. It merges each bundle onto its\nown integration branch. Each branch is built from the previous one, and the first\nis built from the common ancestor:\n\n```\n0c099be  ──▶  flightdeck/<path>/1-<slug>      bundle 1\n              flightdeck/<path>/2-<slug>      bundle 2, from bundle 1\n              flightdeck/<path>/3-<slug>      bundle 3, from bundle 2\n                       │\n                  default branch              one pull request, at the end\n```\n\nThe reviewer commits to the path once, and separately chooses the pace. One\nbundle at a time is the default. The runner merges a bundle and stops, and the\nreviewer checks out that branch before releasing the next. All at once runs the\nthree merges and opens the pull request.\n\nThe runner never rebases, amends, or force-pushes a branch it does not own.\n\nOut of scope: merging the final pull request. That stays a human action on the\ndefault branch, under whatever rules that repository already has.\n\n## Consequences\n\n- **Positive:** abandoning an accepted path is three branch deletions. The branch\n  everybody works from never carried any of it.\n- **Positive:** every checkpoint is a real tree with a name. Reading the\n  intermediate state needs no special tooling.\n- **Constraint introduced:** a runner merges a bundle onto its own integration\n  branch and never onto the default branch. Abandoning an accepted path is a\n  branch deletion, not a revert.\n- **Negative:** a path of N bundles leaves N branches to clean up, and nothing\n  here deletes them.\n- **Negative:** the integration branches drift from the default branch while the\n  path runs. A long pause between bundles reintroduces the conflicts the path was\n  ordered to avoid.\n- **Negative:** this is the first remote write in the plugin family. The adopting\n  repository supplies the runner rather than the plugin, so its credentials and\n  its permissions sit outside this design.\n",
     "maps_to": {
       "context": "cobuilder-packaging",
       "modules": [
@@ -1739,13 +1705,13 @@
       {
         "state": "challenged",
         "date": "2026-09-18",
-        "note": "The same merge that challenged ADR-0025 also challenged this record. Its scope moved from a design of its own to one epic inside cobuilder-viewer."
+        "note": "The same merge that challenged ADR-0033 also challenged this record. Its scope moved from a design of its own to one epic inside cobuilder-viewer."
       },
       {
         "state": "rejected",
         "date": "2026-09-18",
         "by": "bjornslib",
-        "note": "Superseded by ADR-0027, which merges this record with ADR-0025 into one decision for the cobuilder-viewer design. The integration-branch execution model carries forward unchanged."
+        "note": "Superseded by ADR-0027, which merges this record with ADR-0033 into one decision for the cobuilder-viewer design. The integration-branch execution model carries forward unchanged."
       }
     ],
     "related": [
@@ -1766,7 +1732,7 @@
       },
       {
         "option": "Recompute the merge order live in the browser, on demand",
-        "rejected_because": "A browser cannot run git. ADR-0001's content policy also blocks it from fetching the evidence. That constraint is hard, not a preference, and it carries forward unchanged from ADR-0025."
+        "rejected_because": "A browser cannot run git. ADR-0001's content policy also blocks it from fetching the evidence. That constraint is hard, not a preference, and it carries forward unchanged from ADR-0033."
       },
       {
         "option": "A scheduled GitHub Action recomputes the plan and commits it",
@@ -1807,7 +1773,7 @@
         "validator-agent"
       ]
     },
-    "body": "# ADR-0027 — FlightDeck: one surface, two modes, a ledger-recorded merge-order recommendation\n\n## Context\n\n`react-viewer` (ADR-0023) rebuilds the bundle viewer as three surfaces: Work,\nFlight deck, and Reference. Its E5 epic names Flight deck the\nsingle-pull-request narration view. `review-flight-deck` (ADR-0025, ADR-0026)\nindependently gave its multi-pull-request merge-ordering surface the same name,\nfor something unrelated. Both designs reached `stage: \"review\"` before this\ncollision surfaced.\n\nShipping them as two designs means building the pull-request surface twice.\nE5 replaces the viewer, so an ordering UI built first would then need a rebuild\nin React. The name would also mean two things in one application, which\n`CLAUDE.md`'s Vocabulary table exists to prevent.\n\nThree questions stayed open across both source records. Where can a merge-order\nsimulation run, given that a browser cannot invoke git? How does the ledger\ncarry a proposal, an acceptance, and a real outcome without breaking\nADR-0019's fixed three-kind vocabulary? Who owns the open pull request as a\nrecord-index entity, given that a later design (`inflight-record-store`) needed\nthe same thing?\n\nA divergent-exploration pass across six frames, and a separate critic pass,\nsurfaced two more findings. First, the pressure toward precomputing the merge\nplan rather than simulating it live is real. The frame that answered with a\nscheduled GitHub Action missed that this family already solved automatic\ntriggering with a skill run or workflow. Second, a frame proposed a cross-repo\nshared computation service. That option was a trap. It reads as sound scaling\narchitecture, and it silently discards the install-surface rule that holds this\nfamily together.\n\n## Decision\n\nFlightDeck is one surface in `cobuilder-viewer`, replacing the Pull requests\ntab. It carries two modes.\n\n**Single-pull-request mode** ships first, as an epic in `cobuilder-viewer`. It\nreaches parity with today's viewer: four narration levels, Mermaid diagrams,\nscene art, narration audio, the diff, and the intent and assessment sheet.\n\n**Multi-pull-request mode** ships as a later epic in the same design. A reviewer\nselects open pull requests. A skill run or scheduled workflow, never the\nbrowser, simulates candidate merge orders with chained `git merge-tree` against\nthe common ancestor. It replays the best one or two on a scratch worktree, then\ncommits the result as `data/merge-plan.json`, alongside `data/index.json`. The\nviewer renders that file and computes nothing.\n\nThree non-authored conflict shapes get their own labels, distinct from a real\nauthorship disagreement. A shared generated file re-diverges from different\ninputs. A hot file needs to land before many others touch it. Two branches add\nidentical content independently through a shared upstream merge. A reviewer\nshould not adjudicate any of the three.\n\nThe ledger records three moments as subtypes of the existing `state` line kind.\nThe first is a merge-order proposal, carrying the base commit, the ranked\ncandidates, per-file shape labels, and a content hash of the simulation output.\nThe second is an acceptance, referencing the proposal's hash and naming the\nchosen candidate. The third is a post-merge actual result, carrying the real\nresulting tree hash. An auditor diffs the accepted candidate's predicted hash\nagainst the actual one, without asking the merger anything. A mismatch is a\nrefusable, renderable state, never silently reconciled.\n\nThe shared types module defines `OpenPullRequest` once, as\n`PullRequest & { status: \"open\" }`, in the epic that ships single-pull-request\nmode. Multi-pull-request mode may not declare a PR-shaped type of its own. A\nfield renamed on one and not reflected in the other fails the build.\n\nExecution carries ADR-0026's decision forward unchanged. A runner reads an\naccepted path from the ledger. It merges each bundle onto its own integration\nbranch, built from the previous bundle and rooted at the common ancestor. The\ndefault branch receives one pull request, from the last bundle's branch. The\nreviewer commits to the path once, then chooses the pace.\n\n**The mode switch stays decided for the deferred multi-pull-request work**, and the\nchange's account does not carry it, as ADR-0029's 2026-09-25 amendment records.\n\n## Consequences\n\n- **Positive:** the team builds the pull-request surface once. Multi-pull-request\n  mode extends single-pull-request mode's types and data layer instead of\n  duplicating them.\n- **Positive:** the ledger keeps exactly the vocabulary ADR-0019 fixed. A future\n  reader of `fold_threads` never meets an unrecognised top-level kind.\n- **Positive:** an auditor reconstructs what a reviewer saw and what actually\n  merged, from the ledger alone, without asking anyone.\n- **Constraint introduced:** multi-pull-request mode never simulates in the\n  browser. Only a skill run or scheduled workflow runs `git merge-tree`, and it\n  commits the output as data before the viewer renders it.\n- **Negative:** the ledger's proposal line must record the exact ancestor SHA\n  and the per-step simulation inputs. ADR-0025 did not carry that schema work.\n- **Negative:** referenced SHAs can fall to garbage collection between\n  acceptance and audit. Nothing here keeps them reachable, and this record does\n  not settle that.\n- **Open, deferred to the design's epics:** two measurement questions stay open.\n  The epics settle the byte-equality test that tells a generated-file conflict\n  from a real one, and the heuristic that ranks candidate orders.\n",
+    "body": "# ADR-0027 — FlightDeck: one surface, two modes, a ledger-recorded merge-order recommendation\n\n## Context\n\n`react-viewer` (ADR-0023) rebuilds the bundle viewer as three surfaces: Work,\nFlight deck, and Reference. Its E5 epic names Flight deck the\nsingle-pull-request narration view. `review-flight-deck` (ADR-0033, ADR-0026)\nindependently gave its multi-pull-request merge-ordering surface the same name,\nfor something unrelated. Both designs reached `stage: \"review\"` before this\ncollision surfaced.\n\nShipping them as two designs means building the pull-request surface twice.\nE5 replaces the viewer, so an ordering UI built first would then need a rebuild\nin React. The name would also mean two things in one application, which\n`CLAUDE.md`'s Vocabulary table exists to prevent.\n\nThree questions stayed open across both source records. Where can a merge-order\nsimulation run, given that a browser cannot invoke git? How does the ledger\ncarry a proposal, an acceptance, and a real outcome without breaking\nADR-0019's fixed three-kind vocabulary? Who owns the open pull request as a\nrecord-index entity, given that a later design (`inflight-record-store`) needed\nthe same thing?\n\nA divergent-exploration pass across six frames, and a separate critic pass,\nsurfaced two more findings. First, the pressure toward precomputing the merge\nplan rather than simulating it live is real. The frame that answered with a\nscheduled GitHub Action missed that this family already solved automatic\ntriggering with a skill run or workflow. Second, a frame proposed a cross-repo\nshared computation service. That option was a trap. It reads as sound scaling\narchitecture, and it silently discards the install-surface rule that holds this\nfamily together.\n\n## Decision\n\nFlightDeck is one surface in `cobuilder-viewer`, replacing the Pull requests\ntab. It carries two modes.\n\n**Single-pull-request mode** ships first, as an epic in `cobuilder-viewer`. It\nreaches parity with today's viewer: four narration levels, Mermaid diagrams,\nscene art, narration audio, the diff, and the intent and assessment sheet.\n\n**Multi-pull-request mode** ships as a later epic in the same design. A reviewer\nselects open pull requests. A skill run or scheduled workflow, never the\nbrowser, simulates candidate merge orders with chained `git merge-tree` against\nthe common ancestor. It replays the best one or two on a scratch worktree, then\ncommits the result as `data/merge-plan.json`, alongside `data/index.json`. The\nviewer renders that file and computes nothing.\n\nThree non-authored conflict shapes get their own labels, distinct from a real\nauthorship disagreement. A shared generated file re-diverges from different\ninputs. A hot file needs to land before many others touch it. Two branches add\nidentical content independently through a shared upstream merge. A reviewer\nshould not adjudicate any of the three.\n\nThe ledger records three moments as subtypes of the existing `state` line kind.\nThe first is a merge-order proposal, carrying the base commit, the ranked\ncandidates, per-file shape labels, and a content hash of the simulation output.\nThe second is an acceptance, referencing the proposal's hash and naming the\nchosen candidate. The third is a post-merge actual result, carrying the real\nresulting tree hash. An auditor diffs the accepted candidate's predicted hash\nagainst the actual one, without asking the merger anything. A mismatch is a\nrefusable, renderable state, never silently reconciled.\n\nThe shared types module defines `OpenPullRequest` once, as\n`PullRequest & { status: \"open\" }`, in the epic that ships single-pull-request\nmode. Multi-pull-request mode may not declare a PR-shaped type of its own. A\nfield renamed on one and not reflected in the other fails the build.\n\nExecution carries ADR-0026's decision forward unchanged. A runner reads an\naccepted path from the ledger. It merges each bundle onto its own integration\nbranch, built from the previous bundle and rooted at the common ancestor. The\ndefault branch receives one pull request, from the last bundle's branch. The\nreviewer commits to the path once, then chooses the pace.\n\n**The mode switch stays decided for the deferred multi-pull-request work**, and the\nchange's account does not carry it, as ADR-0029's 2026-09-25 amendment records.\n\n## Consequences\n\n- **Positive:** the team builds the pull-request surface once. Multi-pull-request\n  mode extends single-pull-request mode's types and data layer instead of\n  duplicating them.\n- **Positive:** the ledger keeps exactly the vocabulary ADR-0019 fixed. A future\n  reader of `fold_threads` never meets an unrecognised top-level kind.\n- **Positive:** an auditor reconstructs what a reviewer saw and what actually\n  merged, from the ledger alone, without asking anyone.\n- **Constraint introduced:** multi-pull-request mode never simulates in the\n  browser. Only a skill run or scheduled workflow runs `git merge-tree`, and it\n  commits the output as data before the viewer renders it.\n- **Negative:** the ledger's proposal line must record the exact ancestor SHA\n  and the per-step simulation inputs. ADR-0033 did not carry that schema work.\n- **Negative:** referenced SHAs can fall to garbage collection between\n  acceptance and audit. Nothing here keeps them reachable, and this record does\n  not settle that.\n- **Open, deferred to the design's epics:** two measurement questions stay open.\n  The epics settle the byte-equality test that tells a generated-file conflict\n  from a real one, and the heuristic that ranks candidate orders.\n",
     "maps_to": {
       "context": "cobuilder-packaging",
       "modules": [
@@ -1827,7 +1793,7 @@
         "state": "decided",
         "date": "2026-09-18",
         "by": "bjornslib",
-        "note": "Merges ADR-0025 and ADR-0026 into one record for the cobuilder-viewer design, which itself merges react-viewer and review-flight-deck. Both source records were never approved and never shipped, and nothing outside this design depends on them separately."
+        "note": "Merges ADR-0033 and ADR-0026 into one record for the cobuilder-viewer design, which itself merges react-viewer and review-flight-deck. Both source records were never approved and never shipped, and nothing outside this design depends on them separately."
       }
     ],
     "related": [
@@ -2257,6 +2223,114 @@
       "plugins/implement/skills/build/SKILL.md",
       "plugins/implement/scripts/verify_gate.py",
       "shared/build_index.py"
+    ]
+  },
+  "ADR-0033": {
+    "id": "ADR-0033",
+    "title": "Simulate paths to close the open set, from the common ancestor, and show one validated path",
+    "state": "rejected",
+    "source_pr": null,
+    "problem": "A team carries tens of open pull requests. No surface answers the question a reviewer actually holds. That question is not how to review one change, but in what order the whole set can close. The record index resolves five kinds of join, and none of them is between two pull requests. An order simulated against the default branch gives a confident wrong answer. It fails whenever an open pull request restructures the tree, because the default branch already carries whatever merged before.",
+    "decision": "A mode in the pr plugin simulates several paths to close the whole open set. It always works against the common ancestor of the open branches. It replays the best one or two with git on a scratch worktree, counts the real conflicts, and promotes the survivor. The viewer shows one validated path. It leads with the state the reviewer would have and the pull requests the path cannot carry. It computes nothing.",
+    "alternatives": [
+      {
+        "option": "Simulate against the default branch as it stands today",
+        "rejected_because": "It inverts the order whenever an open pull request restructures the tree. Measured on this repository: with all seventeen pull requests open the base is 0c099be, where commands/, scripts/ and skills/ still exist. Five open pull requests write into exactly the three directories that pull request 11 deletes. A run against master put the restructure first. It produced a confident wrong answer rather than no answer."
+      },
+      {
+        "option": "A region walk: one keypress per contested hunk, over a set the reviewer names",
+        "rejected_because": "The first draft of this record. It made the reviewer do the machine's work one hunk at a time, over a set they had to assemble themselves. The region computation survives inside the simulation as evidence. It stopped being a reviewer-facing step."
+      },
+      {
+        "option": "Show every simulated path side by side, and let the reviewer compare",
+        "rejected_because": "It returns the reviewer to the work the mode exists to remove. One validated path is shown. The alternatives are visible and unreachable, and opening the recommendation unlocks them with the reason each lost."
+      },
+      {
+        "option": "Describe each path by its mechanics: which pull requests, in which order, on which paths",
+        "rejected_because": "A reviewer decides on the outcome, not on the machinery. The surface states what they would have when the path is done. Then it gives one line per pull request saying what it contributes, and the order sits underneath."
+      },
+      {
+        "option": "Rank paths by simulation alone, with no git step",
+        "rejected_because": "A simulation from records cannot see a textual conflict. So it cannot tell an ordering that works from one that only looks like it does. Replaying the top candidates is what makes the recommendation something to stand behind."
+      },
+      {
+        "option": "Hold a pull request that cannot merge out of the surface entirely",
+        "rejected_because": "A path never carries every open pull request, and the ones it drops are the ones a reviewer most needs to see. A superseded branch and an unresolvable conflict are different findings. Each is shown on the front page with two or three ways out."
+      },
+      {
+        "option": "Compute the paths in the browser and render them live",
+        "rejected_because": "The browser cannot run git, so it cannot replay anything. ADR-0001's content policy also blocks it from fetching the evidence."
+      },
+      {
+        "option": "Build the mergeable-slice computation from scratch as the product",
+        "rejected_because": "Systems that precompute mergeable slices already exist. The narrative and the choice between paths are the parts they do not offer. So the git step keeps a narrow interface, and one of those systems can replace it."
+      },
+      {
+        "option": "Ship a hook so the mode starts itself on a pull request event",
+        "rejected_because": "The install surface is /plugin install and nothing else, with no agents, no hooks and no MCP servers. The adopting repository supplies the trigger with a workflow or a scheduled run."
+      }
+    ],
+    "forces": [
+      "The default branch already carries whatever merged before. So it is the wrong baseline for a set of branches that all predate it.",
+      "ADR-0001 holds the viewer to one self-contained file under a content policy that blocks every external request. The browser cannot fetch, and it cannot run git.",
+      "Field coverage across this repository's timeline is uneven: touched 14 of 14, narrated levels 8, cached diffs 8, intent 4, assessment 4, ledger lines 0.",
+      "8 of 12 pull requests reaching a reviewer here carry no description. A surface built on authored intent alone therefore draws empty panes.",
+      "A team's own auto-merge rules already handle the simple pull requests, and this design does not define those rules.",
+      "ADR-0020 names viewer/index.html the repository's largest maintenance problem, and it is decided and not executed.",
+      "ADR-0019 fixed the ledger vocabulary at comment, reply, and state, and fold_threads skips an unrecognised line.",
+      "The install surface ships no hooks, so the mode cannot start itself."
+    ],
+    "delivers": {
+      "capability": "A reviewer opens one page and sees the state they would have if the whole open set closed. The page also shows the order that gets there, the pull requests that cannot come along, and the evidence that a git replay actually held.",
+      "benefit": "Review stops being a queue of unrelated diffs. It becomes one decision about an order. The reason for that order survives as a record rather than as somebody's memory.",
+      "beneficiary": [
+        "developer",
+        "operator",
+        "the-business"
+      ]
+    },
+    "body": "# ADR-0033 — Simulate paths to close the open set, from the common ancestor, and show one validated path\n\n> **Renumbered on 2026-09-28.** This record was ADR-0025 until master took that number for\n> \"implement ships slice agents and a coaching hook\". The two records met in the merge of PR #24.\n> The state does not change. The record stays rejected, superseded by ADR-0027. A citation that\n> reads ADR-0025 in a commit or pull request dated before 2026-09-28 means this record.\n\n## Context\n\nThe viewer reviews one pull request at a time. Previous, next, a strip of queue\ndots, four levels down the left rail. That shape reads one change well, and it\nanswers nothing about a set.\n\nA team carrying tens of open branches asks a different question. Not how to\nreview one change, but in what order the whole set can close. The relationships\nthat would answer it exist nowhere. The record index resolves five kinds of join,\nand none of them is between two pull requests.\n\nSix isolated exploration frames and a separate critic pass produced the first\ndraft of this record. That draft held a terminal-side proposer that computed\ncontested regions, and a reviewer who walked them one keypress at a time over a\nset they named themselves. Six rounds of review against a working prototype\nreplaced everything above the boundary. Three measurements decided what replaced\nit.\n\n**The baseline decides the order, and the obvious baseline is wrong.** The first\nrecommendation simulated against `master`. Master already carried the five-plugin\nsplit, so the restructure looked like a prerequisite. The earlier work looked\nlike follow-up. With all seventeen pull requests open the base is `0c099be`,\nwhere `commands/`, `scripts/` and `skills/` still exist. Five open pull requests\nwrite into exactly those three directories, and pull request 11 deletes all\nthree. The correct order is the reverse.\n\nFour renames in this repository's history make the chain checkable. `0c099be` carries the three root directories.\nPull request 3 moves `.odyssey/` to `.prodyssey/`. Commit `6e784e5` moves the\nthree directories into `plugins/cobuilder-*/`. Pull requests 17 and 18 drop the\nprefix.\n\n**A path never carries the whole set.** In the worked scenario, ten of twelve\npull requests fit one path. Pull request 18 supersedes 17 on the same head\nbranch, which no pull-request list shows. A second is held out by a conflict a\nmerge cannot resolve, where both sides rewrote the same hunk in opposite\ndirections.\n\n**Simulation alone cannot tell a working order from a plausible one.** A path\nderived from goal files, epics, boundary rules and districts is a hypothesis. The\ngit replay is what turns it into a recommendation.\n\nThe product is therefore not a review aid for a set somebody names. It is a set\nof possible paths to close every open pull request. That separates into three\nquestions a reviewer asks in order. What would I have when this is done. What\ndoes each pull request contribute. Do the merges physically hold, and in what\norder.\n\n## Options considered\n\n1. **A region walk over a named set.** The first draft of this record. It moved\n   the computation off the browser, which was right. It also left the reviewer\n   doing the machine's work one hunk at a time. The region arithmetic survives as\n   evidence inside a simulated path.\n2. **Simulate against the default branch.** The obvious choice, and it produced a\n   confidently inverted order on the first run. Rejected, and recorded as an abort\n   condition on the design, because it fails in no visible way at all.\n3. **Show every path side by side.** Returns the comparison work to the reviewer.\n4. **Describe paths by their mechanics.** A reviewer decides on the outcome. The\n   mechanics move underneath it.\n5. **Simulate and stop, with no git step.** Cheaper, and it cannot distinguish an\n   order that works from one that reads well.\n6. **Simulate from the common ancestor, replay the top candidates with git, and\n   render one validated path (chosen).**\n\n## Decision\n\nA mode in the `pr` plugin runs on a pull request event.\n\nIt reads the open set, less whatever the team's own auto-merge rules already\nhandled. It calls `/pr:generate` for any pull request with no description. It\nsimulates at least three paths to close the set, always against the common\nancestor of the open branches. It replays the best one or two with git on a\nscratch worktree, counts the real conflicts, and promotes the survivor.\n\nIt writes the result as a derived projection in the bundle. The viewer renders\nit. The state the reviewer would have comes first. Then what each pull request\ncontributes. Then the merge chain as its own evidence. Then what the replay could\nnot check. Pull requests the path cannot carry appear on the front page, each\nwith the kind of block named and two or three ways out.\n\nThe reviewer accepts a path. That records a decision, and a runner performs it.\nWhere the runner sends its merges is ADR-0026.\n\nThe boundary from this record's first draft holds. The terminal computes the\nrelationship and writes it as a projection. The viewer renders it and computes\nnothing.\n\nOut of scope: defining the team's auto-merge rules, supplying the trigger, and\nany computation inside the browser.\n\n## Consequences\n\n- **Positive:** the reviewer answers one question about an order rather than\n  reading every diff in full. The answer carries the evidence that a replay held.\n- **Positive:** the surface names what it cannot do. A blocked pull request, an\n  unreplayed bundle, and a missing description all stay visible rather than\n  absent.\n- **Positive:** the viewer gains a renderer and no computation. So this design\n  does not enlarge `viewer/index.html` before ADR-0020's split has run.\n- **Constraint introduced:** the mode simulates a path against the common\n  ancestor of the open branches, never against the default branch, and the viewer\n  renders the result without computing any part of it.\n- **Negative:** the replay is a snapshot. A push after the run invalidates it, and\n  the run does not watch for one.\n- **Negative:** the mode cannot start itself, because the install surface ships no\n  hooks. A workflow or a scheduled run in the adopting repository supplies the\n  trigger.\n- **Negative:** a wrong recommendation is the first thing the reviewer reads, and\n  nothing here measures whether a proposed order anchors them.\n",
+    "maps_to": {
+      "context": "cobuilder-packaging",
+      "modules": [
+        "plugins/pr",
+        "shared/build_index.py",
+        "shared/ledger.py",
+        "plugins/artifact/viewer/index.html"
+      ],
+      "rule": "A path is simulated against the common ancestor of the open branches, never against the default branch, and the viewer renders the result without computing any part of it."
+    },
+    "history": [
+      {
+        "state": "tentative",
+        "date": "2026-09-01"
+      },
+      {
+        "state": "decided",
+        "date": "2026-09-01",
+        "note": "First draft: a terminal-side proposer, a region walk of contested hunks, and a partition the reviewer corrects."
+      },
+      {
+        "state": "decided",
+        "date": "2026-09-02",
+        "by": "bjornslib",
+        "note": "Revised in place before approval, after six rounds of design review against a working prototype. The terminal-computes-viewer-renders boundary is unchanged. The region walk, the reviewer-named set, and the union-find partition are gone, and the common-ancestor baseline is new. Revised rather than superseded because this record was never approved, never shipped, and nothing depends on it."
+      },
+      {
+        "state": "challenged",
+        "date": "2026-09-18",
+        "note": "react-viewer independently claimed the same Flight deck surface name for its single-pull-request view, and neither design had read the other. The engineer directed the two designs to merge, which made this record's scope a surface inside a larger program rather than a design of its own."
+      },
+      {
+        "state": "rejected",
+        "date": "2026-09-18",
+        "by": "bjornslib",
+        "note": "Superseded by ADR-0027, which merges this record with ADR-0026 into one decision for the cobuilder-viewer design. The common-ancestor rule and every rejected option here carry forward unchanged."
+      }
+    ],
+    "related": [
+      "docs/architecture/designs/review-flight-deck/goal.json",
+      "docs/architecture/designs/review-flight-deck/flightdeck-prototype.html"
     ]
   }
 }

@@ -1,0 +1,16 @@
+feature: slice-agents-and-vocabulary
+test_command: "uv run --with pytest --with requests --with pyyaml --with pillow pytest tests/ -q"
+baseline: "365 passed, 1 failed (tests/test_generate_prompts_webp.py::test_call_gemini_saves_webp_quality_90, missing google-genai, pre-existing)"
+thresholds:
+  accept: 0.90
+  investigate: 0.70
+max_attempts: 3
+slices:
+  - {id: 1, name: "E1 whole epic: ADR-0025, packaging test, CLAUDE.md rule", weight: 0.10}
+  - {id: 2, name: "E2 tracer bullet: three agent files that parse", weight: 0.10}
+  - {id: 3, name: "E2 real content: prompts move, loops spawn by name", weight: 0.15}
+  - {id: 4, name: "E3 tracer bullet: the hook fires for GREEN only", weight: 0.15}
+  - {id: 5, name: "E3 edge cases, requirement, and credit", weight: 0.15}
+  - {id: 6, name: "E4 tracer bullet: the glossary file and its format", weight: 0.10}
+  - {id: 7, name: "E4 real content: vocabulary agent and design mode", weight: 0.15}
+  - {id: 8, name: "E4 move: the CLAUDE.md table goes to the glossary", weight: 0.10}

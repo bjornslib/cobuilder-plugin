@@ -74,8 +74,10 @@ a pointer to the new name.
 ## 4. Stage 1 — Ground
 
 Read only now. Load the districts in `inventory.yaml` that the outcome
-touches. Load the ADRs that cover those districts. Load the matching
-stack card, and earlier timeline entries in the same districts.
+touches. Load `DDD-VOCABULARY.md` next to the districts, so every term you
+use later matches an existing entry or a gap you already know about. Load
+the ADRs that cover those districts. Load the matching stack card, and
+earlier timeline entries in the same districts.
 
 If the bundle has no baseline, `SKILL.md` instructs you to run `baseline`
 and continue. Say that it will run, then report the elapsed time. Do not
@@ -273,6 +275,20 @@ result to the engineer per step 5 below.
 5. **Intent and assessment.** Write `intent.json` and a
    `stage: "design"` assessment into `docs/architecture/designs/<name>/`.
    Show both to the engineer before you write them to disk.
+
+After the five artifacts above are written, update the glossary. This is a
+separate step, not a sixth artifact: it updates an existing repository-wide
+file, `DDD-VOCABULARY.md`, rather than writing a new file under this
+design's own directory.
+
+**Vocabulary.** For each term the interview resolved, add or sharpen its
+entry in `DDD-VOCABULARY.md`, in the glossary's own format: an anchor
+line, the bold term with its context id, at most two sentences on what
+the term is, and an `_Avoid_` line for any rejected synonym. If a term
+the engineer used in this design conflicts with an existing entry, that
+is a conflict, not a silent overwrite. Ask the engineer which meaning
+holds before you write anything, and record the losing usage under
+`_Avoid_` on the entry that wins.
 
 ## 10. Stage 6 — Review routing
 

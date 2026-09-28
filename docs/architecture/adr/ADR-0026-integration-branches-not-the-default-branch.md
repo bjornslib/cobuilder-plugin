@@ -36,15 +36,15 @@ forces:
   - "The install surface ships no hooks, so the adopting repository supplies the runner, not the plugin."
 
 related_decisions:
-  - { type: depends-on, target: ADR-0025 }
+  - { type: depends-on, target: ADR-0033 }
   - { type: depends-on, target: ADR-0019 }
 related_concerns: [C3, C6]
 
 history:
   - { state: tentative, date: 2026-09-02 }
   - { state: decided, date: 2026-09-02 }
-  - { state: challenged, date: 2026-09-18, note: "The same merge that challenged ADR-0025 also challenged this record. Its scope moved from a design of its own to one epic inside cobuilder-viewer." }
-  - { state: rejected, date: 2026-09-18, by: bjornslib, note: "Superseded by ADR-0027, which merges this record with ADR-0025 into one decision for the cobuilder-viewer design. The integration-branch execution model carries forward unchanged." }
+  - { state: challenged, date: 2026-09-18, note: "The same merge that challenged ADR-0033 also challenged this record. Its scope moved from a design of its own to one epic inside cobuilder-viewer." }
+  - { state: rejected, date: 2026-09-18, by: bjornslib, note: "Superseded by ADR-0027, which merges this record with ADR-0033 into one decision for the cobuilder-viewer design. The integration-branch execution model carries forward unchanged." }
 
 maps_to:
   context: cobuilder-packaging
@@ -63,7 +63,7 @@ related:
 
 ## Context
 
-ADR-0025 decided how a path is simulated, validated and shown. Accepting one
+ADR-0033 decided how a path is simulated, validated and shown. Accepting one
 commits a team to merging ten pull requests in a stated order. Something has to
 carry that out. Where it sends its merges decides whether the decision is
 reversible.
