@@ -155,7 +155,6 @@ export function Rail(props: RailProps) {
             const holdsCurrent = group.rows.some((row) => row.href === here);
             const isOpen = holdsCurrent || (open[group.key] ?? true);
             const shown = icons || isOpen;
-            const heldNote = "This group holds the row you are reading, so it stays open.";
 
             return (
               <SidebarGroup key={group.key} className="min-w-0 pb-0">
@@ -170,8 +169,8 @@ export function Rail(props: RailProps) {
                         onToggleGroup(group.key);
                       }}
                       aria-expanded={isOpen}
-                      aria-label={holdsCurrent ? `${group.label}. ${heldNote}` : undefined}
-                      title={holdsCurrent ? heldNote : undefined}
+                      aria-label={holdsCurrent ? group.label : undefined}
+                      title={holdsCurrent ? group.label : undefined}
                       className={cn(
                         "min-h-8 w-full min-w-0 cursor-pointer gap-1.5 rounded-md px-3 py-1.5 text-left",
                         "transition-colors duration-150 ease-house hover:bg-surface-2",
@@ -234,7 +233,7 @@ export function Rail(props: RailProps) {
               {work === null
                 ? ""
                 : absent.length === 0
-                  ? "Every row this rail holds has its record."
+                  ? "All rows in this rail have a record."
                   : `Absent for this work item: ${absent
                       .map((row) => `${row.label}: ${absentLine(row.absent ?? [])}`)
                       .join(". ")}.`}

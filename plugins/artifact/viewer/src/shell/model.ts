@@ -751,3 +751,7 @@ function changeCount(
   ].filter(Boolean).length;
   return `${held} of 4 parts`;
 }
+
+/** The lead line for the stage, the publications, and the deploy status. Shared by the work-item Shipped section and the pull-request level line. */
+export const STAGE_PUBLICATIONS_DEPLOY_LEAD =
+  "The stage, the publications, and the deploy status.";

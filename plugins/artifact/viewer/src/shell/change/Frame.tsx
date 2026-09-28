@@ -50,17 +50,6 @@ export interface ChangeFrameProps {
   onArtFailed: (url: string) => void;
 }
 
-const BOTH_LEAD =
-  "The picture and the drawing for this level. Where both exist, the reader picks which to look at.";
-
-const PICTURE_LEAD =
-  "The picture for this level. This pull request carries no drawing for it.";
-
-const DRAWING_LEAD =
-  "The drawing for this level. This pull request carries no scene art for it.";
-
-const NEITHER_LEAD = "The picture and the drawing for this level. Neither exists here.";
-
 export function ChangeFrame({
   level,
   theme,
@@ -78,14 +67,6 @@ export function ChangeFrame({
    * level holding one part resolves to that part rather than to a choice it never offered.
    */
   const mode: ArtMode = hasImage && hasDiagram ? artMode : hasImage ? "image" : "diagram";
-  const leadLine =
-    parts === 0
-      ? NEITHER_LEAD
-      : hasImage && hasDiagram
-        ? BOTH_LEAD
-        : hasImage
-          ? PICTURE_LEAD
-          : DRAWING_LEAD;
 
   return (
     <div className="mb-4 flex min-w-0 flex-col gap-3">
@@ -112,10 +93,6 @@ export function ChangeFrame({
           </span>
         ) : null}
       </span>
-
-      <p className="m-0 max-w-[92ch] font-serif text-[15px] leading-[1.5] text-ink-dim italic">
-        {leadLine}
-      </p>
 
       {parts === 0 ? (
         <div className="flex min-w-0 flex-col gap-2">

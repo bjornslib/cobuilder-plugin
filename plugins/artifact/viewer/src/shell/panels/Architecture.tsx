@@ -72,7 +72,6 @@ export function DiagramsSection({
     <Panel
       title="Diagrams"
       icon={Network}
-      lead="One tile per level. A press opens the drawing whole."
       absent={levels.length === 0 || sources === null}
     >
       {levels.length > 0 && sources ? (
@@ -103,7 +102,6 @@ export function DecisionsSection({
     <Panel
       title="Architecture Decisions"
       icon={ScrollText}
-      lead="Each decision with the rule it enforces, and its whole record one press away."
       absent={!levelState.available}
     >
       {linked.length > 0 ? (
@@ -134,7 +132,7 @@ export function BoundariesSection({
     <Panel
       title="Boundaries"
       icon={AlertOctagon}
-      lead="The rules the touched contexts declare, and the reason each one carries."
+      lead="The rules of each affected context, with the reason for each rule."
       absent={work.boundaryRules.length === 0}
       count={work.boundaryRules.length}
     >
@@ -218,7 +216,7 @@ export function DistrictsAndAlternativesSection({ work }: { work: WorkItem }) {
     <Panel
       title="Districts and alternatives considered"
       icon={Boxes}
-      lead="Where the linked decisions land, and what the design rejected."
+      lead="The location of each decision in the code, and the rejected options."
       absent={reachEmpty && alternatives.length === 0}
       count={alternatives.length}
     >

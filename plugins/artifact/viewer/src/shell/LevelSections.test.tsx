@@ -140,7 +140,6 @@ const DRAFT = "# The section model\n\n## What changes\n\nOne box on screen.\n";
 /** The draft, flattened by `excerpt`: the panel shows one line, not the markdown. */
 const DRAFT_FLAT = "# The section model ## What changes One box on screen.";
 const DRAFT_TITLE = "The pull request this work will open";
-const DRAFT_LEAD = "It is not a pull request that exists yet.";
 /** The count in the title is this work's own pull-request count, and 3 is its one. */
 const WORK_PR_TITLE = `This work's pull requests · 1`;
 const FLIGHTDECK_TITLE = "An open pull request";
@@ -857,7 +856,9 @@ describe("Slice 10 · the envisioned pull request leads its level", () => {
     expect(heading.textContent, "and the heading is the one this level leads with").toBe(
       DRAFT_TITLE,
     );
-    expect(draft.textContent, "the lead states what a draft is").toContain(DRAFT_LEAD);
+    const lead = draft.querySelector("p.italic");
+    expect(lead, "the panel carries a lead line").not.toBeNull();
+    expect(lead?.textContent?.length ?? 0, "the lead line is not empty").toBeGreaterThan(0);
   });
 
   it("renders no draft block for a work whose design wrote none", async () => {
@@ -874,9 +875,9 @@ describe("Slice 10 · the envisioned pull request leads its level", () => {
     expect(titles[0], "the real pull requests lead instead").toBe(WORK_PR_TITLE);
     expect(holds(panelNamed(WORK_PR_TITLE), OTHER_PR_TITLE)).toBe(true);
     expect(
-      pane().textContent,
-      "and no panel states the draft's own sentence",
-    ).not.toContain(DRAFT_LEAD);
+      pane().querySelectorAll(`[aria-label="${DRAFT_TITLE}"]`).length,
+      "and no draft panel exists at all",
+    ).toBe(0);
   });
 });
 

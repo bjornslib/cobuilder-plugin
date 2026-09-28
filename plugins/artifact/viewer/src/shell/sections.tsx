@@ -45,6 +45,7 @@ import type { EpicEntity, PullRequest, SliceEntity } from "@/data/types";
 import { cn } from "@/lib/utils";
 
 import type { WorkItem } from "./model";
+import { STAGE_PUBLICATIONS_DEPLOY_LEAD } from "./model";
 import { excerpt } from "./records";
 import type { SheetSubject } from "./Sheet";
 import {
@@ -304,7 +305,7 @@ export function EpicGroupSection({
     <Panel
       title={`Epics ${first}–${last}`}
       icon={ListTree}
-      lead={`${group.length} epics in delivery order. An epic discloses its own slices, and a slice discloses its own ends-with, score, and attempts.`}
+      lead={`${group.length} epics in delivery order.`}
       absent={group.length === 0}
       count={group.length}
     >
@@ -327,7 +328,7 @@ export function UnresolvedSlicesSection({ count }: { count: number }) {
     <Panel
       title="Unresolved slices"
       icon={ShieldQuestion}
-      lead="Slices that belong to no epic. This section renders only while the bundle holds one."
+      lead="Slices that belong to no epic."
     >
       <p className="m-0 min-w-0 font-serif text-[16px]">{count} slices belong to no epic.</p>
     </Panel>
@@ -342,7 +343,7 @@ export function RubricsSection({ work, gated }: { work: WorkItem; gated: boolean
         span="band"
         title="Rubrics"
         icon={ClipboardCheck}
-        lead="The blind acceptance rubric each slice is scored against."
+        lead="The acceptance rubric for each slice."
         absent={!(gated && steps.length > 0)}
       >
         {gated && steps.length > 0 ? (
@@ -423,7 +424,7 @@ export function PullRequestsSection({
           span="band"
           title="The pull request this work will open"
           icon={Compass}
-          lead="The draft the design wrote before any code existed. It is not a pull request that exists yet."
+          lead="The pull request that the design planned before the code existed. This pull request is not open."
         >
           <Box label="Draft">{excerpt(work.record.pr_draft, 260)}</Box>
         </Panel>
@@ -433,7 +434,6 @@ export function PullRequestsSection({
         span="band"
         title={`This work's pull requests · ${work.pullRequests.length}`}
         icon={GitPullRequest}
-        lead="Only a pull request one of this work's own epics carries. A decision's pull request is not the work's, so it stays beside that decision in the Architecture level."
         absent={work.pullRequests.length === 0}
       >
         {work.pullRequests.length > 0 ? (
@@ -499,7 +499,6 @@ export function FlightDeckPanel({
       span={span}
       title="FlightDeck"
       icon={Plane}
-      lead="The whole open set, one click away from this work. FlightDeck reads every open pull request, not only this work's."
       absent={flightDeck.length === 0}
     >
       {flightDeck.length > 0 ? (
@@ -558,19 +557,19 @@ function PullRequestDetail({
       key: "intent",
       title: "Pull request intent",
       icon: Target,
-      line: "The author's own statement of what this pull request is for, captured by Generate mode before the code existed.",
+      line: "The purpose of this pull request, in the words of its author, from before the code existed.",
     },
     {
       key: "problem-and-solution",
       title: "Pull request problem and solution",
       icon: FileText,
-      line: "The assessed problem, the approach the diff takes, and the findings the assessment recorded against it.",
+      line: "The problem, the approach of the diff, and the findings of the assessment.",
     },
     {
       key: "architecture",
       title: "Pull request architecture",
       icon: GitPullRequest,
-      line: "The decisions the diff lands, the diagram levels for this pull request, and the scene art beside them.",
+      line: "The decisions of the diff, the diagrams, and the scene art.",
     },
   ];
 
@@ -633,7 +632,7 @@ export function ShippedSection({ work }: { work: WorkItem }) {
         span="band"
         title="Release status"
         icon={PackageCheck}
-        lead="The stage the record carries, the publications the bundle holds, and the deploy record that does not exist."
+        lead={STAGE_PUBLICATIONS_DEPLOY_LEAD}
         absent={!shipped}
       >
         <div className="flex min-w-0 flex-wrap items-center gap-2">

@@ -153,6 +153,7 @@ import {
   worklessPullRequest,
 } from "./model";
 import type { Gates, LevelState, RailSource, SectionKey, WorkItem } from "./model";
+import { STAGE_PUBLICATIONS_DEPLOY_LEAD } from "./model";
 import {
   sectionHref,
   useCollapsedRail,
@@ -1541,18 +1542,18 @@ const SECTION_TITLE: Record<SectionKey, string> = {
 
 const SECTION_LEAD: Record<SectionKey, (work: WorkItem, gates: Gates | null) => string> = {
   intent: (work) =>
-    `Why ${work.id} exists, what would make it done, and what would stop it.`,
+    `The goal, the done-when condition, and the blockers of ${work.id}.`,
   "problem-and-solution": () =>
-    "What was wrong, what answers it, and what the answer costs.",
+    "The problem, the solution, and the cost of the solution.",
   architecture: () =>
-    "The decisions this work lands, the boundaries they touch, and the diagrams the bundle holds.",
+    "The decisions, the affected boundaries, and the diagrams of this work.",
   build: (work, gates) =>
     `${work.epics.length} epics, ${work.slices.length} slices, and ${
       gates?.rubrics ? "a gate record" : "no gate record"
-    }. A slice opens inside the epic that owns it.`,
+    }.`,
   "pull-requests": (work) =>
-    `${work.pullRequests.length} pull requests one of this work's own epics carries, and the whole open set beside them.`,
-  shipped: () => "The stage, the publications, and the deploy record that does not exist.",
+    `${work.pullRequests.length} pull requests from this work's epics, and all open pull requests.`,
+  shipped: () => STAGE_PUBLICATIONS_DEPLOY_LEAD,
 };
 
 export type { Theme };

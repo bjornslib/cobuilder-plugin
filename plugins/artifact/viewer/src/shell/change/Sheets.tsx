@@ -121,7 +121,7 @@ export function ChangeIntentBody({ intent }: { intent: StoryIntent | undefined }
       {inferred ? (
         <p className="m-0 flex min-w-0 items-start gap-2 font-mono text-[12.5px] leading-[1.6] text-warn">
           <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-          <span>No author wrote this. It is a reading of the diff, and the record says so.</span>
+          <span>A reading of the diff. No author wrote this block.</span>
         </p>
       ) : null}
 

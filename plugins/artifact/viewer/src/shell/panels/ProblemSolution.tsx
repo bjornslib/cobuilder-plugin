@@ -62,7 +62,6 @@ export function ProblemSolutionSection({
     <Panel
       title="Problem and solution"
       icon={Scale}
-      lead="The narrative beats, split by kind: problem and constraint on the left, decision and risk on the right."
       absent={!levelState.available}
     >
       {/* One card per column. The lead is the record's own prose; the rows are the beats. */}
@@ -100,7 +99,7 @@ export function RisksSection({ work }: { work: WorkItem }) {
     <Panel
       title="Risks"
       icon={ShieldAlert}
-      lead="What the work costs if it ships as written."
+      lead="The cost of this work if it ships without changes."
       absent={risks.length === 0}
       count={risks.length}
     >
@@ -122,7 +121,6 @@ export function AssessmentSection({ work }: { work: WorkItem }) {
     <Panel
       title="Assessment"
       icon={BookMarked}
-      lead="The verdict leads, because it is the answer a reader came for."
       absent={!assessment}
       count={findings.length}
       action={
@@ -174,7 +172,7 @@ export function UnknownsSection({ work }: { work: WorkItem }) {
     <Panel
       title="Unknowns"
       icon={CircleHelp}
-      lead="What nobody has settled yet."
+      lead="The open questions."
       absent={unknowns.length === 0}
       count={unknowns.length}
     >

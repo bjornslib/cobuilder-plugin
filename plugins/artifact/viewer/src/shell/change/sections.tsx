@@ -101,16 +101,10 @@ export const CHANGE_LABEL: Record<ChangeKey, string> = {
   "file-diffs": "File Diffs",
 };
 
-/** One line per row: whose record it is, and what the row holds. */
-export const CHANGE_LEAD: Record<ChangeKey, string> = {
-  intent:
-    "What the change is, in one breath: its narration, its picture, its drawing, and the intent block captured before it opened.",
+/** One line per row: whose record it is, and what the row holds. Not every row has one. */
+export const CHANGE_LEAD: Partial<Record<ChangeKey, string>> = {
   "problem-and-solution":
-    "The gap the diff closes, the shape it closes it with, and the assessment written against the merged diff.",
-  architecture:
-    "The mechanism as a drawing, the narration that reads it, and the decisions this change landed.",
-  "file-diffs":
-    "The diff itself, file by file. This level carries no scene art, no drawing, and no audio.",
+    "The problem that the diff solves, the solution, and the assessment of the merged diff.",
 };
 
 /** What each row reads, and the callbacks its controls raise. */
@@ -471,7 +465,7 @@ function Narration({
         </div>
       ) : served === false ? (
         <Missing>
-          {`This level carries a voice script and the bundle holds no audio file at ${level.audio}. The level reads silent rather than broken.`}
+          {`This level carries a voice script and the bundle holds no audio file at ${level.audio}.`}
         </Missing>
       ) : (
         <AbsentRecordLine>Asking the bundle whether this level's audio is served.</AbsentRecordLine>

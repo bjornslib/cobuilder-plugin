@@ -339,7 +339,6 @@ def test_decisions_mode_lists_all_records_and_anchor_distinction():
     assert_ordered(
         [
             'title:"Architecture Decisions"',
-            'lead:"Each decision with the rule it enforces, and its whole record one press away."',
             'children:"This work names no decision."',
         ],
         panel,
@@ -429,7 +428,7 @@ def test_contexts_mode_leads_with_violations_and_uncovered_districts():
     assert_ordered(
         [
             'title:"Boundaries"',
-            'lead:"The rules the touched contexts declare, and the reason each one carries."',
+            'lead:"',  # the Boundaries panel carries a lead line; wording is not pinned
             'children:"Open the whole rule"',
         ],
         boundaries,
@@ -482,7 +481,7 @@ def test_contexts_mode_renders_boundary_record_as_readable_rules():
     assert_ordered(
         [
             'title:"Boundaries"',
-            'lead:"The rules the touched contexts declare, and the reason each one carries."',
+            'lead:"',  # the Boundaries panel carries a lead line; wording is not pinned
             'children:"Open the whole rule"',
         ],
         card,

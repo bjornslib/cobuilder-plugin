@@ -373,9 +373,11 @@ export function RecordSheet({ subject, onOpenChange }: RecordSheetProps) {
                 {titleOf(subject)}
               </SheetTitle>
             </span>
-            <SheetDescription className="font-serif text-[15.5px] leading-[1.5] text-ink-dim">
-              {descriptionOf(subject)}
-            </SheetDescription>
+            {descriptionOf(subject) ? (
+              <SheetDescription className="font-serif text-[15.5px] leading-[1.5] text-ink-dim">
+                {descriptionOf(subject)}
+              </SheetDescription>
+            ) : null}
             <span className="flex flex-wrap items-center gap-2">
               {badgesOf(subject)}
             </span>
@@ -408,12 +410,9 @@ function titleOf(subject: SheetSubject): string {
   return subject.doc.title;
 }
 
-function descriptionOf(subject: SheetSubject): string {
-  if (subject.kind === "adr") {
-    return "The whole decision record, with every field the bundle keeps for it.";
-  }
-  if (subject.kind === "boundary") {
-    return `A boundary rule the context ${subject.context} declares, with every field the record carries.`;
+function descriptionOf(subject: SheetSubject): string | null {
+  if (subject.kind === "adr" || subject.kind === "boundary") {
+    return null;
   }
   return `The Gate 4b technical solution design for epic ${subject.epic.epic_id}.`;
 }
