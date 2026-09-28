@@ -40,6 +40,7 @@ related_decisions:
   - { type: depends-on, target: ADR-0001 }
   - { type: is-related-to, target: ADR-0018 }
   - { type: is-related-to, target: ADR-0019 }
+  - { type: is-related-to, target: ADR-0027 }
 history:
   - { state: tentative, date: 2026-09-07 }
   - { state: decided, date: 2026-09-07 }
@@ -52,9 +53,11 @@ delivers:
   benefit: "A review that took four tab changes takes none, because the joins the index already computed are rendered together. A new surface costs one component and one route, not another pass of scattered predicate calls."
   beneficiary: [developer, reviewer, validator-agent]
 related:
+  - "docs/architecture/designs/cobuilder-viewer/goal.json"
   - "docs/architecture/designs/react-viewer/goal.json"
   - "docs/architecture/designs/build-workflow-polish/goal.json"
   - "docs/architecture/adr/ADR-0020-viewer-parts-and-an-author-time-build.md"
+  - "docs/architecture/adr/ADR-0027-flightdeck-one-surface-two-modes.md"
 ---
 
 # ADR-0023 — A TypeScript and React viewer, compiled at author time

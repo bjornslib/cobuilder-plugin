@@ -163,49 +163,32 @@ may already exist from a prior Baseline or Review run (the same
    ln -sfn "<absolute-selected-bundle-dir>" "<hub>/.cobuilder-architect/active"
    ```
 
-8. **Reuse or start the server:**
+8. **Reuse or start the server.** View mode always uses port 62583, so a
+   recorded review link stays valid after a restart. Pass `--port N` only
+   when the user passed it:
    ```bash
-   PIDFILE="<hub>/.cobuilder-architect/.view-server.pid"
-   LOGFILE="<hub>/.cobuilder-architect/.view-server.log"
-   REQUESTED_PORT="<value of --port if the user passed it, else 0 for an OS-assigned port>"
-   if [ -f "$PIDFILE" ] && ps -p "$(cat "$PIDFILE")" -o command= | grep -q "http.server"; then
-     RUNNING_PORT=$(grep -o "port [0-9]*" "$LOGFILE" | tail -1 | grep -o "[0-9]*")
-     echo "already running on port $RUNNING_PORT — active bundle switched, just refresh the browser tab"
-   else
-     nohup python3 -u -m http.server "$REQUESTED_PORT" --bind 127.0.0.1 --directory "<hub>/.cobuilder-architect" > "$LOGFILE" 2>&1 &
-     echo $! > "$PIDFILE"
-   fi
+   uv run ${CLAUDE_PLUGIN_ROOT}/scripts/view_server.py --hub "<hub>" [--port N]
    ```
-   If a server is already running for this hub, do NOT start a second
-   one. Repointing `active` (step 7) is enough. The running server picks
-   up the new symlink target on its next request, so it needs no
-   restart. Just report the existing port and URL, and tell the user to
-   refresh. Note that `--port` has no effect in this branch, since it
-   applies only to a fresh start. If the user explicitly passed `--port`
-   while a server is already running on a different port, tell them so,
-   rather than silently ignoring it. Run the start branch as a normal
-   (non-backgrounded-tool-call) Bash invocation. The trailing shell `&`
-   detaches the server process itself, so the tool call returns
-   immediately, with nothing left running in its own foreground. Do not
-   use the Bash tool's own `run_in_background` option here. That option
-   is for commands that eventually finish, and this one never does.
+   The script finds the process that listens on the port:
+   - If that process serves this hub's `.cobuilder-architect/`, the script
+     reuses it. Repointing `active` (step 7) is enough, because the server
+     reads the new symlink target on its next request.
+   - If an `http.server` or `serve_bundle.py` process serves another
+     directory, the script stops it and starts this hub's server.
+   - If another program holds the port, the script does not stop it. It
+     prints the pid and the command, and exits 2. Show both to the user
+     and STOP.
+   - If the port is free, the script starts the server.
 
-9. **Confirm a fresh start actually came up** (skip this if step 8 reused
-   an existing server). Poll the log briefly rather than a single fixed
-   sleep, because `http.server` startup time varies under load:
-   ```bash
-   for i in 1 2 3 4 5 6 7 8 9 10; do
-     grep -q "Serving HTTP" "$LOGFILE" 2>/dev/null && break
-     sleep 0.3
-   done
-   cat "$LOGFILE"
-   ```
-   If a `Serving HTTP on ... port NNNNN ...` line appears, parse the port
-   out of it. If it does not appear within the poll window, treat it as a
-   failed start. The cause may be a port collision (`--port <N>` pointed
-   at something already listening), a permission error, or something
-   else. Show the log contents to the user verbatim, and STOP. Never
-   report a URL that has not been confirmed live.
+   The script writes `.view-server.pid` and `.view-server.log`, which
+   `review_link.py` reads. It waits for the `Serving HTTP` line before it
+   exits, and detaches the server, so the tool call returns at once. Do
+   not use the Bash tool's `run_in_background` option here.
+
+9. **Check the result.** On success, the script prints the URL on its
+   last line. On failure, it prints the log or the reason on stderr and
+   exits non-zero. Show that text to the user and STOP. Never report a URL
+   that the script did not confirm.
 
 10. **Report the URL:** `http://localhost:<port>/active/viewer/`. Tell
     the user the server keeps running in the background, so the session
@@ -213,6 +196,19 @@ may already exist from a prior Baseline or Review run (the same
     means re-running `/artifact:view --repo <other>` (or
     answering the picker) and refreshing the tab. Tell them that
     `/artifact:view --stop` shuts the server down entirely.
+
+11. **Print a deep link, if the user passed `--route`.** The value is a
+    viewer route of the form `#/<work>/<rest>`, for example
+    `#/review-link/build/epics`. Run the script after step 10:
+    ```bash
+    uv run ${CLAUDE_PLUGIN_ROOT}/scripts/review_link.py --hub "<hub>" --route "<value of --route>"
+    ```
+    The script checks that the server process is live and reads its port
+    from the log. It checks that the work id is in the active bundle's
+    `data/index.json`. It checks that the viewer page answers with HTTP 200.
+    On success, it prints one line, the link. Give that link to the user.
+    On failure, it prints the reason on stderr and exits 1. Show the reason
+    to the user. Do not make a link by hand.
 
 ## Publish mode
 
@@ -290,6 +286,41 @@ cloud-provider-credential sessions cannot publish. Even then, the export
 files this mode produces stay valid deliverables. Tell the user where
 they landed (`<bundle-dir>/exports/`), so they can open or share them
 another way, instead of letting the run look like a silent failure.
+
+## Present for review
+
+Use this procedure before you ask the user to approve a document or to answer
+about it (ADR-0032). Other plugins name this section by mode name. They do not
+name a path in this plugin.
+
+1. Rebuild the index:
+   ```bash
+   uv run "${CLAUDE_PLUGIN_ROOT}/shared/build_index.py"
+   ```
+2. Start View mode, or use the server that runs for this hub. View mode never
+   starts a second server.
+3. Run View mode with `--route` for the page of the document. Use the route
+   table below. For example:
+   `Skill("cobuilder-artifacts", args="view --route '#/<work>/build/plan/product'")`.
+4. Give the user the printed link, then ask the question.
+5. If the check fails, tell the user that it failed. Give the file path of the
+   document instead of a link.
+
+| Document or point | Route |
+|---|---|
+| Gate 1, Product | `#/<work>/build/plan/product` |
+| Gate 2, Architecture | `#/<work>/build/plan/architecture` |
+| Gate 2b, Interaction design | none |
+| Gate 3, Program design | `#/<work>/build/plan/program` |
+| Gate 4a and 4b | `#/<work>/build/epics` |
+| Gate 4c, Blind rubrics | none |
+| After a slice, and ESCALATE | `#/<work>/build/epics` |
+| Design mode stage 5 and stage 6 | `#/<work>/intent` |
+| Decisions mode and describe mode | the page of the record, or `#/<work>/intent` |
+
+Two documents have no page. For the interaction design (Gate 2b), give the
+file path. For the blind rubrics (Gate 4c), give the count of rubric files.
+The user must not read the rubrics, so do not give a link or their text.
 
 ## Presenting decisions and gates (collaborative presentation)
 

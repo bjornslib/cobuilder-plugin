@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+
+<html class="scroll-smooth" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CoBuilder Design System - Material Design 3 Spec</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;0,7..72,600;1,7..72,400&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Script -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "secondary-container": "#cde7ed",
+            "on-background": "#191c1d",
+            "surface-tint": "#006876",
+            "error-container": "#ffdad6",
+            "tertiary-fixed-dim": "#bcc5eb",
+            "on-primary-fixed-variant": "#004e59",
+            "code-on-surface": "#e2e8f0",
+            "primary-fixed": "#9fefff",
+            "outline-variant": "#bec8cb",
+            "on-surface-variant": "#3e484b",
+            "outline": "#6e797b",
+            "on-surface": "#191c1d",
+            "surface-variant": "#e1e3e4",
+            "error": "#ba1a1a",
+            "tertiary-container": "#6a7395",
+            "surface-container-lowest": "#ffffff",
+            "on-tertiary-fixed-variant": "#3c4665",
+            "tertiary": "#515a7b",
+            "secondary": "#4a6267",
+            "surface-container-low": "#f2f4f5",
+            "on-error": "#ffffff",
+            "on-secondary-fixed": "#051f23",
+            "on-primary-container": "#f5fdff",
+            "on-error-container": "#93000a",
+            "surface-container-highest": "#e1e3e4",
+            "inverse-on-surface": "#eff1f2",
+            "callout-tip": "#059669",
+            "surface-bright": "#f8fafa",
+            "primary-fixed-dim": "#7fd3e3",
+            "secondary-fixed-dim": "#b1cbd1",
+            "on-tertiary-container": "#fefbff",
+            "on-primary": "#ffffff",
+            "callout-warning": "#d97706",
+            "tertiary-fixed": "#dbe1ff",
+            "surface-container-high": "#e6e8e9",
+            "primary": "#006572",
+            "background": "#f8fafa",
+            "surface": "#f8fafa",
+            "on-secondary-container": "#50686d",
+            "surface-container": "#eceeef",
+            "inverse-surface": "#2e3132",
+            "on-tertiary-fixed": "#101a37",
+            "secondary-fixed": "#cde7ed",
+            "inverse-primary": "#7fd3e3",
+            "surface-dim": "#d8dadb",
+            "primary-container": "#1d7f8e",
+            "on-tertiary": "#ffffff",
+            "on-primary-fixed": "#001f24",
+            "code-surface": "#1e2326",
+            "callout-note": "#0284c7",
+            "on-secondary": "#ffffff",
+            "on-secondary-fixed-variant": "#334b4f"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "gutter-sm": "1rem",
+            "margin-mobile": "1rem",
+            "space-lg": "1.5rem",
+            "space-xs": "0.25rem",
+            "gutter": "1.5rem",
+            "margin": "2rem",
+            "space-md": "1rem",
+            "space-sm": "0.5rem",
+            "space-xl": "2.5rem"
+          },
+          "fontFamily": {
+            "title-lg": ["Hanken Grotesk"],
+            "label-lg": ["Hanken Grotesk"],
+            "headline-sm": ["Hanken Grotesk"],
+            "headline-md": ["Hanken Grotesk"],
+            "title-md": ["Hanken Grotesk"],
+            "body-lg": ["Literata"],
+            "body-sm": ["Literata"],
+            "label-md": ["Hanken Grotesk"],
+            "label-sm": ["Hanken Grotesk"],
+            "display-lg": ["Hanken Grotesk"],
+            "headline-lg-mobile": ["Hanken Grotesk"],
+            "body-md": ["Literata"],
+            "headline-lg": ["Hanken Grotesk"],
+            "mono": ["JetBrains Mono", "monospace"]
+          },
+          "fontSize": {
+            "title-lg": ["18px", { "lineHeight": "26px", "letterSpacing": "0.15px", "fontWeight": "600" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.1px", "fontWeight": "500" }],
+            "headline-sm": ["20px", { "lineHeight": "28px", "letterSpacing": "0px", "fontWeight": "500" }],
+            "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "0px", "fontWeight": "500" }],
+            "title-md": ["16px", { "lineHeight": "24px", "letterSpacing": "0.15px", "fontWeight": "600" }],
+            "body-lg": ["18px", { "lineHeight": "30px", "letterSpacing": "0.15px", "fontWeight": "400" }],
+            "body-sm": ["14px", { "lineHeight": "22px", "letterSpacing": "0.25px", "fontWeight": "400" }],
+            "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500" }],
+            "label-sm": ["11px", { "lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500" }],
+            "display-lg": ["57px", { "lineHeight": "64px", "letterSpacing": "-0.25px", "fontWeight": "600" }],
+            "headline-lg-mobile": ["26px", { "lineHeight": "32px", "letterSpacing": "0px", "fontWeight": "600" }],
+            "body-md": ["16px", { "lineHeight": "28px", "letterSpacing": "0.25px", "fontWeight": "400" }],
+            "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "0px", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 20px;
+      line-height: 1;
+      letter-spacing: normal;
+      text-transform: none;
+      display: inline-block;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+      -webkit-font-smoothing: antialiased;
+    }
+    .spec-card-hover {
+      transition: border-color 0.15s ease-in-out, transform 0.15s ease-in-out;
+    }
+    .spec-card-hover:hover {
+      border-color: #1d7f8e;
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface antialiased min-h-screen flex flex-col font-title-md">
+<!-- TopNavBar (Shared Component Anchor) -->
+<header class="sticky top-0 z-50 flex items-center justify-between w-full px-gutter bg-surface/95 backdrop-blur-sm h-16 border-b border-outline-variant/30">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="w-8 h-8 rounded-lg bg-primary-container text-on-primary flex items-center justify-center font-bold text-lg tracking-wider font-title-lg">C</span>
+<div class="flex flex-col">
+<span class="text-title-lg font-title-lg font-bold text-primary">CoBuilder Design System</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant hidden sm:inline">Material Design 3 Specification</span>
+</div>
+</div>
+<span class="px-2.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container text-label-sm font-label-sm font-semibold">M3 Spec v1.0</span>
+</div>
+<!-- Navigation Jump Links -->
+<nav class="hidden md:flex items-center gap-6 text-label-md font-label-md">
+<a class="text-primary border-b-2 border-primary pb-1 font-semibold transition-colors" href="#colour">Colour</a>
+<a class="text-on-surface-variant hover:text-on-surface pb-1 transition-colors" href="#typography">Typography</a>
+<a class="text-on-surface-variant hover:text-on-surface pb-1 transition-colors" href="#shape">Shape</a>
+<a class="text-on-surface-variant hover:text-on-surface pb-1 transition-colors" href="#elevation">Elevation</a>
+<a class="text-on-surface-variant hover:text-on-surface pb-1 transition-colors" href="#spacing">Spacing</a>
+</nav>
+<!-- Search & Secondary Actions -->
+<div class="flex items-center gap-3">
+<div class="relative hidden sm:block w-48 lg:w-64">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-on-surface-variant text-[18px]">search</span>
+<input class="w-full pl-9 pr-8 py-1.5 bg-surface-container text-on-surface placeholder-on-surface-variant text-body-sm font-body-sm rounded-full border border-outline-variant/40 focus:outline-none focus:border-primary text-xs" placeholder="Search tokens..." type="text"/>
+<span class="absolute right-2.5 top-2 px-1.5 py-0.2 rounded bg-surface border border-outline-variant/40 text-[10px] text-on-surface-variant font-mono">⌘K</span>
+</div>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary-container text-on-secondary-container text-label-md font-label-md hover:bg-primary-container hover:text-on-primary transition-colors" onclick="navigator.clipboard.writeText(':root { --md-sys-color-primary: #1d7f8e; }'); alert('Tokens copied to clipboard!');">
+<span class="material-symbols-outlined text-[16px]">code</span>
+<span class="hidden lg:inline">Copy Tokens</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-on-surface rounded-full hover:bg-surface-container transition-colors" title="Toggle Light/Dark">
+<span class="material-symbols-outlined">light_mode</span>
+</button>
+</div>
+</header>
+<div class="flex flex-1 w-full max-w-[1600px] mx-auto">
+<!-- SideNavBar (Shared Component Anchor) -->
+<aside class="hidden lg:flex flex-col justify-between w-72 h-[calc(100vh-4rem)] sticky top-16 bg-surface-container-low border-r border-outline-variant/30 py-space-md px-space-sm overflow-y-auto">
+<div class="flex flex-col gap-6">
+<!-- Sidebar Header -->
+<div class="px-3 pt-2">
+<p class="text-title-md font-title-md font-bold text-on-surface">Specifications</p>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Material Design 3 tokens</p>
+</div>
+<!-- Spec Links -->
+<div class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-xl bg-secondary-container text-on-secondary-container font-semibold transition-colors" href="#colour">
+<span class="material-symbols-outlined text-primary">palette</span>
+<span class="text-label-md font-label-md">Colour Palette</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" href="#typography">
+<span class="material-symbols-outlined">text_fields</span>
+<span class="text-label-md font-label-md">Typography Scale</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" href="#shape">
+<span class="material-symbols-outlined">crop_free</span>
+<span class="text-label-md font-label-md">Shape Scale</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" href="#elevation">
+<span class="material-symbols-outlined">layers</span>
+<span class="text-label-md font-label-md">Elevation &amp; Tint</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" href="#spacing">
+<span class="material-symbols-outlined">straighten</span>
+<span class="text-label-md font-label-md">Spacing Scale</span>
+</a>
+</div>
+</div>
+<!-- Footer Actions in Sidebar -->
+<div class="flex flex-col gap-3 pt-4 border-t border-outline-variant/30 px-2">
+<a class="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-full bg-primary text-on-primary text-label-md font-label-md hover:bg-primary/90 transition-colors" href="#download">
+<span class="material-symbols-outlined text-[18px]">download</span>
+<span>Download Spec</span>
+</a>
+<div class="flex flex-col gap-1">
+<a class="flex items-center gap-2 px-3 py-1.5 text-label-sm font-label-sm text-on-surface-variant hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined text-[16px]">terminal</span>
+<span>GitHub Repo</span>
+</a>
+<a class="flex items-center gap-2 px-3 py-1.5 text-label-sm font-label-sm text-on-surface-variant hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined text-[16px]">token</span>
+<span>API Tokens</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 w-full min-w-0 px-4 sm:px-8 lg:px-12 py-8 bg-surface">
+<div class="max-w-[1080px] mx-auto space-y-16">
+<!-- Document Intro Header -->
+<section class="space-y-4 border-b border-outline-variant/30 pb-10">
+<div class="flex items-center gap-2 text-label-sm font-label-sm text-primary font-semibold tracking-wider uppercase">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+            CoBuilder System Architecture
+          </div>
+<h1 class="text-headline-lg font-headline-lg text-on-surface tracking-tight">Material Design 3 Token Scheme</h1>
+<p class="text-body-lg font-body-lg text-on-surface-variant max-w-[760px] leading-relaxed">
+            The CoBuilder Design System adopts Material Design 3 foundation tokens calibrated expressly for engineer workflow efficiency. Every atomic unit prioritizes legibility, typographic pacing, and flat tonal differentiation over arbitrary skeuomorphic effects.
+          </p>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4">
+<div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/30">
+<p class="text-label-sm font-label-sm text-on-surface-variant">Tokens Defined</p>
+<p class="text-title-lg font-title-lg text-primary mt-0.5">48 Total</p>
+</div>
+<div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/30">
+<p class="text-label-sm font-label-sm text-on-surface-variant">Type Specimen</p>
+<p class="text-title-lg font-title-lg text-primary mt-0.5">15 Tiers</p>
+</div>
+<div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/30">
+<p class="text-label-sm font-label-sm text-on-surface-variant">Elevation Model</p>
+<p class="text-title-lg font-title-lg text-primary mt-0.5">Tonal Tint (0-5)</p>
+</div>
+<div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/30">
+<p class="text-label-sm font-label-sm text-on-surface-variant">Base Spacing</p>
+<p class="text-title-lg font-title-lg text-primary mt-0.5">8dp / 4dp sub</p>
+</div>
+</div>
+</section>
+<!-- SECTION 1: COLOUR SCHEME -->
+<section class="space-y-8 scroll-mt-20" id="colour">
+<div class="border-b border-outline-variant/30 pb-4">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-primary-container text-on-primary text-label-sm font-label-sm font-mono">01</span>
+<h2 class="text-headline-md font-headline-md text-on-surface">Colour Scheme</h2>
+</div>
+<p class="text-body-md font-body-md text-on-surface-variant mt-2 max-w-[760px]">
+              The M3 tonal palette constructs visual hierarchy through tonal keying. All values adhere strictly to WCAG 2.1 AA/AAA contrast ratios against their paired containers.
+            </p>
+</div>
+<!-- Group 1: Primary Group -->
+<div class="space-y-3">
+<h3 class="text-title-md font-title-md text-on-surface flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-[#1d7f8e]"></span> Primary Role Group
+            </h3>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+<!-- Primary -->
+<div class="p-3 rounded-xl border border-outline-variant/30 bg-surface-container-lowest spec-card-hover">
+<div class="h-20 rounded-lg flex items-end p-2.5 text-white" style="background-color: #1d7f8e;">
+<span class="text-label-sm font-label-sm font-mono opacity-90">Aa</span>
+</div>
+<div class="mt-3">
+<p class="text-title-md font-title-md font-bold text-on-surface">primary</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">#1d7f8e</p>
+</div>
+</div>
+<!-- On Primary -->
+<div class="p-3 rounded-xl border border-outline-variant/30 bg-surface-container-lowest spec-card-hover">
+<div class="h-20 rounded-lg flex items-end p-2.5 text-[#191c1d] border border-outline-variant/40" style="background-color: #ffffff;">
+<span class="text-label-sm font-label-sm font-mono opacity-90">Aa</span>
+</div>
+<div class="mt-3">
+<p class="text-title-md font-title-md font-bold text-on-surface">on-primary</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">#ffffff</p>
+</div>
+</div>
+<!-- Primary Container -->
+<div class="p-3 rounded-xl border border-outline-variant/30 bg-surface-container-lowest spec-card-hover">
+<div class="h-20 rounded-lg flex items-end p-2.5 text-[#002026]" style="background-color: #b7eaf1;">
+<span class="text-label-sm font-label-sm font-mono opacity-90">Aa</span>
+</div>
+<div class="mt-3">
+<p class="text-title-md font-title-md font-bold text-on-surface">primary-container</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">#b7eaf1</p>
+</div>
+</div>
+<!-- On Primary Container -->
+<div class="p-3 rounded-xl border border-outline-variant/30 bg-surface-container-lowest spec-card-hover">
+<div class="h-20 rounded-lg flex items-end p-2.5 text-white" style="background-color: #002026;">
+<span class="text-label-sm font-label-sm font-mono opacity-90">Aa</span>
+</div>
+<div class="mt-3">
+<p class="text-title-md font-title-md font-bold text-on-surface">on-primary-container</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">#002026</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Group 2: Secondary Group -->
+<div class="space-y-3">
+<h3 class="text-title-md font-title-md text-on-surface flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-[#4a6267]"></span> Secondary Role Group
+            </h3>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+<!-- Secondary -->
+<div class="p-3 rounded-xl border border-outline-variant/30 bg-surface-container-lowest spec-card-hover">
+<div class="h-20 rounded-lg flex items-end p-2.5 text-white" style="background-color: #4a6267;">
+<span class="text-label-sm font-label-sm font-mono opacity-90">Aa</span>
+</div>
+<div class="mt-3">
+<p class="text-title-md font-title-md font-bold text-on-surface">secondary</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">#4a6267</p>
+</div>
+</div>
+<!-- On Secondary -->
+<div class="p-3 rounded-xl border border-outline-variant/30 bg-surface-container-lowest spec-card-hover">
+<div class="h-20 rounded-lg flex items-end p-2.5 text-[#191c1d] border border-outline-variant/40" style="background-color: #ffffff;">
+<span class="text-label-sm font-label-sm font-mono opacity-90">Aa</span>
+</div>
+<div class="mt-3">
+<p class="text-title-md font-title-md font-bold text-on-surface">on-secondary</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">#ffffff</p>
+</div>
+</div>
+<!-- Secondary Container -->
+<div class="p-3 rounded-xl border border-outline-variant/30 bg-surface-container-lowest spec-card-hover">
+<div class="h-20 rounded-lg flex items-end p-2.5 text-[#051f23]" style="background-color: #cde7ec;">
+<span class="text-label-sm font-label-sm font-mono opacity-90">Aa</span>
+</div>
+<div class="mt-3">
+<p class="text-title-md font-title-md font-bold text-on-surface">secondary-container</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">#cde7ec</p>
+</div>
+</div>
+<!-- On Secondary Container -->
+<div class="p-3 rounded-xl border border-outline-variant/30 bg-surface-container-lowest spec-card-hover">
+<div class="h-20 rounded-lg flex items-end p-2.5 text-white" style="background-color: #051f23;">
+<span class="text-label-sm font-label-sm font-mono opacity-90">Aa</span>
+</div>
+<div class="mt-3">
+<p class="text-title-md font-title-md font-bold text-on-surface">on-secondary-container</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">#051f23</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Group 3: Tertiary Group -->
+<div class="space-y-3">
+<h3 class="text-title-md font-title-md text-on-surface flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-[#555c7e]"></span> Tertiary Role Group
+            </h3>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+<!-- Tertiary -->
+<div class="p-3 rounded-xl border border-outline-variant/30 bg-surface-container-lowest spec-card-hover">
+<div class="h-20 rounded-lg flex items-end p-2.5 text-white" style="background-color: #555c7e;">
+<span class="text-label-sm font-label-sm font-mono opacity-90">Aa</span>
+</div>
+<div class="mt-3">
+<p class="text-title-md font-title-md font-bold text-on-surface">tertiary</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">#555c7e</p>
+</div>
+</div>
+<!-- On Tertiary -->
+<div class="p-3 rounded-xl border border-outline-variant/30 bg-surface-container-lowest spec-card-hover">
+<div class="h-20 rounded-lg flex items-end p-2.5 text-[#191c1d] border border-outline-variant/40" style="background-color: #ffffff;">
+<span class="text-label-sm font-label-sm font-mono opacity-90">Aa</span>
+</div>
+<div class="mt-3">
+<p class="text-title-md font-title-md font-bold text-on-surface">on-tertiary</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">#ffffff</p>
+</div>
+</div>
+<!-- Tertiary Container -->
+<div class="p-3 rounded-xl border border-outline-variant/30 bg-surface-container-lowest spec-card-hover">
+<div class="h-20 rounded-lg flex items-end p-2.5 text-[#111937]" style="background-color: #dce1ff;">
+<span class="text-label-sm font-label-sm font-mono opacity-90">Aa</span>
+</div>
+<div class="mt-3">
+<p class="text-title-md font-title-md font-bold text-on-surface">tertiary-container</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">#dce1ff</p>
+</div>
+</div>
+<!-- On Tertiary Container -->
+<div class="p-3 rounded-xl border border-outline-variant/30 bg-surface-container-lowest spec-card-hover">
+<div class="h-20 rounded-lg flex items-end p-2.5 text-white" style="background-color: #111937;">
+<span class="text-label-sm font-label-sm font-mono opacity-90">Aa</span>
+</div>
+<div class="mt-3">
+<p class="text-title-md font-title-md font-bold text-on-surface">on-tertiary-container</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">#111937</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Group 4: Surface Group -->
+<div class="space-y-3">
+<h3 class="text-title-md font-title-md text-on-surface flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-[#f8fafa] border border-outline"></span> Surface Tonal Steps
+            </h3>
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+<div class="p-3 rounded-xl border border-outline-variant/30 bg-surface-container-lowest spec-card-hover">
+<div class="h-16 rounded-lg border border-outline-variant/30 flex items-end p-2" style="background-color: #f8fafa;">
+<span class="text-label-sm font-label-sm font-mono text-on-surface">surface</span>
+</div>
+<p class="text-label-md font-label-md font-bold text-on-surface mt-2">surface</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">#f8fafa</p>
+</div>
+<div class="p-3 rounded-xl border border-outline-variant/30 bg-surface-container-lowest spec-card-hover">
+<div class="h-16 rounded-lg border border-outline-variant/30 flex items-end p-2" style="background-color: #ffffff;">
+<span class="text-label-sm font-label-sm font-mono text-on-surface">lowest</span>
+</div>
+<p class="text-label-md font-label-md font-bold text-on-surface mt-2">lowest</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">#ffffff</p>
+</div>
+<div class="p-3 rounded-xl border border-outline-variant/30 bg-surface-container-lowest spec-card-hover">
+<div class="h-16 rounded-lg flex items-end p-2" style="background-color: #f2f4f5;">
+<span class="text-label-sm font-label-sm font-mono text-on-surface">low</span>
+</div>
+<p class="text-label-md font-label-md font-bold text-on-surface mt-2">low</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">#f2f4f5</p>
+</div>
+<div class="p-3 rounded-xl border border-outline-variant/30 bg-surface-container-lowest spec-card-hover">
+<div class="h-16 rounded-lg flex items-end p-2" style="background-color: #eceeef;">
+<span class="text-label-sm font-label-sm font-mono text-on-surface">container</span>
+</div>
+<p class="text-label-md font-label-md font-bold text-on-surface mt-2">container</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">#eceeef</p>
+</div>
+<div class="p-3 rounded-xl border border-outline-variant/30 bg-surface-container-lowest spec-card-hover">
+<div class="h-16 rounded-lg flex items-end p-2" style="background-color: #e6e9ea;">
+<span class="text-label-sm font-label-sm font-mono text-on-surface">high</span>
+</div>
+<p class="text-label-md font-label-md font-bold text-on-surface mt-2">high</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">#e6e9ea</p>
+</div>
+<div class="p-3 rounded-xl border border-outline-variant/30 bg-surface-container-lowest spec-card-hover">
+<div class="h-16 rounded-lg flex items-end p-2" style="background-color: #e0e3e4;">
+<span class="text-label-sm font-label-sm font-mono text-on-surface">highest</span>
+</div>
+<p class="text-label-md font-label-md font-bold text-on-surface mt-2">highest</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">#e0e3e4</p>
+</div>
+</div>
+</div>
+<!-- Group 5, 6, 7: Content, Boundaries & Error Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Text / Content Group -->
+<div class="p-4 rounded-xl border border-outline-variant/30 bg-surface-container-low space-y-3">
+<p class="text-title-md font-title-md text-on-surface">Text / Content Group</p>
+<div class="space-y-2">
+<div class="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-lowest border border-outline-variant/20">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded bg-[#191c1d]"></span>
+<span class="text-label-md font-label-md font-bold">on-surface</span>
+</div>
+<span class="text-label-sm font-label-sm font-mono text-on-surface-variant">#191c1d</span>
+</div>
+<div class="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-lowest border border-outline-variant/20">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded bg-[#40484a]"></span>
+<span class="text-label-md font-label-md font-bold">on-surface-variant</span>
+</div>
+<span class="text-label-sm font-label-sm font-mono text-on-surface-variant">#40484a</span>
+</div>
+</div>
+</div>
+<!-- Lines / Boundaries Group -->
+<div class="p-4 rounded-xl border border-outline-variant/30 bg-surface-container-low space-y-3">
+<p class="text-title-md font-title-md text-on-surface">Lines / Boundaries</p>
+<div class="space-y-2">
+<div class="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-lowest border border-outline-variant/20">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded bg-[#70797b]"></span>
+<span class="text-label-md font-label-md font-bold">outline</span>
+</div>
+<span class="text-label-sm font-label-sm font-mono text-on-surface-variant">#70797b</span>
+</div>
+<div class="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-lowest border border-outline-variant/20">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded bg-[#bfc8ca]"></span>
+<span class="text-label-md font-label-md font-bold">outline-variant</span>
+</div>
+<span class="text-label-sm font-label-sm font-mono text-on-surface-variant">#bfc8ca</span>
+</div>
+</div>
+</div>
+<!-- Error Group -->
+<div class="p-4 rounded-xl border border-outline-variant/30 bg-surface-container-low space-y-3">
+<p class="text-title-md font-title-md text-on-surface">Error Group</p>
+<div class="space-y-2">
+<div class="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-lowest border border-outline-variant/20">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded bg-[#ba1a1a]"></span>
+<span class="text-label-md font-label-md font-bold">error</span>
+</div>
+<span class="text-label-sm font-label-sm font-mono text-on-surface-variant">#ba1a1a</span>
+</div>
+<div class="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-lowest border border-outline-variant/20">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded bg-[#ffdad6]"></span>
+<span class="text-label-md font-label-md font-bold">error-container</span>
+</div>
+<span class="text-label-sm font-label-sm font-mono text-on-surface-variant">#ffdad6</span>
+</div>
+<div class="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-lowest border border-outline-variant/20">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded bg-[#410002]"></span>
+<span class="text-label-md font-label-md font-bold">on-error-container</span>
+</div>
+<span class="text-label-sm font-label-sm font-mono text-on-surface-variant">#410002</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 2: TYPOGRAPHY SCALE -->
+<section class="space-y-8 scroll-mt-20" id="typography">
+<div class="border-b border-outline-variant/30 pb-4">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-primary-container text-on-primary text-label-sm font-label-sm font-mono">02</span>
+<h2 class="text-headline-md font-headline-md text-on-surface">Typography Scale</h2>
+</div>
+<p class="text-body-md font-body-md text-on-surface-variant mt-2 max-w-[760px]">
+              CoBuilder pairs neutral grotesque sans-serif (<code class="text-xs bg-surface-container px-1 py-0.5 rounded font-mono">Hanken Grotesk</code>) for headlines, navigation chrome, and badges with an editorial literary serif (<code class="text-xs bg-surface-container px-1 py-0.5 rounded font-mono">Literata</code>) for sustained long-form developer documentation prose.
+            </p>
+</div>
+<!-- All 15 M3 Type Scale Specimens -->
+<div class="border border-outline-variant/30 rounded-2xl bg-surface-container-lowest divide-y divide-outline-variant/30 overflow-hidden">
+<!-- 1. Display Large -->
+<div class="p-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+<div class="space-y-1">
+<span class="px-2 py-0.5 rounded bg-surface-container text-label-sm font-label-sm font-mono">display-lg</span>
+<p class="text-title-md font-title-md font-bold text-on-surface">Display Large</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">57px / 64px • Grotesque</p>
+</div>
+<div class="md:col-span-3">
+<div class="font-display-lg text-display-lg text-on-surface overflow-hidden text-ellipsis whitespace-nowrap">CoBuilder System</div>
+</div>
+</div>
+<!-- 2. Display Medium -->
+<div class="p-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+<div class="space-y-1">
+<span class="px-2 py-0.5 rounded bg-surface-container text-label-sm font-label-sm font-mono">display-md</span>
+<p class="text-title-md font-title-md font-bold text-on-surface">Display Medium</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">45px / 52px • Grotesque</p>
+</div>
+<div class="md:col-span-3">
+<div class="font-title-lg font-bold text-[45px] leading-[52px] text-on-surface overflow-hidden text-ellipsis whitespace-nowrap">Unified Token Architecture</div>
+</div>
+</div>
+<!-- 3. Display Small -->
+<div class="p-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+<div class="space-y-1">
+<span class="px-2 py-0.5 rounded bg-surface-container text-label-sm font-label-sm font-mono">display-sm</span>
+<p class="text-title-md font-title-md font-bold text-on-surface">Display Small</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">36px / 44px • Grotesque</p>
+</div>
+<div class="md:col-span-3">
+<div class="font-title-lg font-bold text-[36px] leading-[44px] text-on-surface">Adaptive Micro-Frontend Surfaces</div>
+</div>
+</div>
+<!-- 4. Headline Large -->
+<div class="p-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+<div class="space-y-1">
+<span class="px-2 py-0.5 rounded bg-surface-container text-label-sm font-label-sm font-mono">headline-lg</span>
+<p class="text-title-md font-title-md font-bold text-on-surface">Headline Large</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">32px / 40px • Neutral Grotesque</p>
+</div>
+<div class="md:col-span-3">
+<div class="font-headline-lg text-headline-lg text-on-surface">Decoupled Architectural Boundaries</div>
+</div>
+</div>
+<!-- 5. Headline Medium -->
+<div class="p-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+<div class="space-y-1">
+<span class="px-2 py-0.5 rounded bg-surface-container text-label-sm font-label-sm font-mono">headline-md</span>
+<p class="text-title-md font-title-md font-bold text-on-surface">Headline Medium</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">28px / 36px • Neutral Grotesque</p>
+</div>
+<div class="md:col-span-3">
+<div class="font-headline-md text-headline-md text-on-surface">Runtime Tree Shake Engine v2.4</div>
+</div>
+</div>
+<!-- 6. Headline Small -->
+<div class="p-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+<div class="space-y-1">
+<span class="px-2 py-0.5 rounded bg-surface-container text-label-sm font-label-sm font-mono">headline-sm</span>
+<p class="text-title-md font-title-md font-bold text-on-surface">Headline Small</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">24px / 32px • Neutral Grotesque</p>
+</div>
+<div class="md:col-span-3">
+<div class="font-headline-sm text-headline-sm text-on-surface">Stateless Protocol Pipelines</div>
+</div>
+</div>
+<!-- 7. Title Large -->
+<div class="p-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+<div class="space-y-1">
+<span class="px-2 py-0.5 rounded bg-surface-container text-label-sm font-label-sm font-mono">title-lg</span>
+<p class="text-title-md font-title-md font-bold text-on-surface">Title Large</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">22px / 28px • Grotesque</p>
+</div>
+<div class="md:col-span-3">
+<div class="font-title-lg text-title-lg text-on-surface">Module Federation Interface Manifest</div>
+</div>
+</div>
+<!-- 8. Title Medium -->
+<div class="p-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+<div class="space-y-1">
+<span class="px-2 py-0.5 rounded bg-surface-container text-label-sm font-label-sm font-mono">title-md</span>
+<p class="text-title-md font-title-md font-bold text-on-surface">Title Medium</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">16px / 24px • Medium weight</p>
+</div>
+<div class="md:col-span-3">
+<div class="font-title-md text-title-md text-on-surface">Compile-time AST Node Inspection</div>
+</div>
+</div>
+<!-- 9. Title Small -->
+<div class="p-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+<div class="space-y-1">
+<span class="px-2 py-0.5 rounded bg-surface-container text-label-sm font-label-sm font-mono">title-sm</span>
+<p class="text-title-md font-title-md font-bold text-on-surface">Title Small</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">14px / 20px • Medium weight</p>
+</div>
+<div class="md:col-span-3">
+<div class="font-title-md font-medium text-[14px] leading-[20px] text-on-surface">Endpoint Serialization Schema</div>
+</div>
+</div>
+<!-- 10. Body Large (CRITICAL: Editorial Serif Specimen) -->
+<div class="p-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-start bg-secondary-container/15">
+<div class="space-y-1">
+<span class="px-2 py-0.5 rounded bg-primary-container text-on-primary text-label-sm font-label-sm font-mono">body-lg • Serif</span>
+<p class="text-title-md font-title-md font-bold text-primary">Body Large</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">16px / 24px • Serif Face</p>
+</div>
+<div class="md:col-span-3">
+<p class="font-serif italic font-body-lg text-body-lg text-on-surface leading-relaxed max-w-[720px]">
+                  "CoBuilder parses component trees dynamically at compile-time to guarantee zero-overhead serialization across micro-frontend boundaries."
+                </p>
+<span class="mt-2 inline-block text-label-sm font-label-sm text-primary font-mono">↑ Documentation body copy default (Literata serif)</span>
+</div>
+</div>
+<!-- 11. Body Medium -->
+<div class="p-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+<div class="space-y-1">
+<span class="px-2 py-0.5 rounded bg-surface-container text-label-sm font-label-sm font-mono">body-md</span>
+<p class="text-title-md font-title-md font-bold text-on-surface">Body Medium</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">14px / 20px • Regular</p>
+</div>
+<div class="md:col-span-3">
+<p class="font-body-md text-body-md text-on-surface">
+                  Hydration flags trigger re-evaluation of reactive context states only when upstream token parameters mutate.
+                </p>
+</div>
+</div>
+<!-- 12. Body Small -->
+<div class="p-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+<div class="space-y-1">
+<span class="px-2 py-0.5 rounded bg-surface-container text-label-sm font-label-sm font-mono">body-sm</span>
+<p class="text-title-md font-title-md font-bold text-on-surface">Body Small</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">12px / 16px • Regular</p>
+</div>
+<div class="md:col-span-3">
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                  Secondary footnote references and contextual documentation hints inherit standard neutral tone washes.
+                </p>
+</div>
+</div>
+<!-- 13. Label Large -->
+<div class="p-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+<div class="space-y-1">
+<span class="px-2 py-0.5 rounded bg-surface-container text-label-sm font-label-sm font-mono">label-lg</span>
+<p class="text-title-md font-title-md font-bold text-on-surface">Label Large</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">14px / 20px • Grotesque</p>
+</div>
+<div class="md:col-span-3">
+<span class="px-3 py-1.5 rounded-full bg-primary-container text-on-primary font-label-lg text-label-lg">EXECUTE_TRANSPILE_JOB</span>
+</div>
+</div>
+<!-- 14. Label Medium -->
+<div class="p-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+<div class="space-y-1">
+<span class="px-2 py-0.5 rounded bg-surface-container text-label-sm font-label-sm font-mono">label-md</span>
+<p class="text-title-md font-title-md font-bold text-on-surface">Label Medium</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">12px / 16px • Grotesque</p>
+</div>
+<div class="md:col-span-3">
+<span class="px-2.5 py-1 rounded bg-secondary-container text-on-secondary-container font-label-md text-label-md">HTTP/2 PUSH ENABLED</span>
+</div>
+</div>
+<!-- 15. Label Small -->
+<div class="p-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+<div class="space-y-1">
+<span class="px-2 py-0.5 rounded bg-surface-container text-label-sm font-label-sm font-mono">label-sm</span>
+<p class="text-title-md font-title-md font-bold text-on-surface">Label Small</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">11px / 16px • Grotesque</p>
+</div>
+<div class="md:col-span-3">
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm">DEPRECATED_V0.9</span>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 3: SHAPE SCALE -->
+<section class="space-y-8 scroll-mt-20" id="shape">
+<div class="border-b border-outline-variant/30 pb-4">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-primary-container text-on-primary text-label-sm font-label-sm font-mono">03</span>
+<h2 class="text-headline-md font-headline-md text-on-surface">Shape Scale</h2>
+</div>
+<p class="text-body-md font-body-md text-on-surface-variant mt-2 max-w-[760px]">
+              Corner curvature tokens standardize the physical boundary feel across UI components. Cards and modals standardize on Medium (12px) and Large (16px), while all interactive chips and primary action buttons utilize Full (9999px).
+            </p>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+<!-- 1. None -->
+<div class="p-5 rounded-none bg-surface-container-lowest border-2 border-outline-variant/50 space-y-3">
+<div class="flex items-center justify-between">
+<span class="text-title-md font-title-md font-bold text-on-surface">None</span>
+<span class="text-label-sm font-label-sm font-mono text-on-surface-variant">0px</span>
+</div>
+<div class="h-20 bg-surface-container-low border border-dashed border-outline rounded-none flex items-center justify-center text-label-sm font-label-sm font-mono text-on-surface-variant">
+                rounded-none
+              </div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Full bleed surfaces, table cell dividers.</p>
+</div>
+<!-- 2. Extra-Small -->
+<div class="p-5 rounded bg-surface-container-lowest border border-outline-variant/40 space-y-3">
+<div class="flex items-center justify-between">
+<span class="text-title-md font-title-md font-bold text-on-surface">Extra-Small</span>
+<span class="text-label-sm font-label-sm font-mono text-on-surface-variant">4px</span>
+</div>
+<div class="h-20 bg-surface-container-low border border-outline-variant rounded flex items-center justify-center text-label-sm font-label-sm font-mono text-on-surface-variant">
+                rounded
+              </div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Inline code snippets, badge pills, tooltips.</p>
+</div>
+<!-- 3. Small -->
+<div class="p-5 rounded-lg bg-surface-container-lowest border border-outline-variant/40 space-y-3">
+<div class="flex items-center justify-between">
+<span class="text-title-md font-title-md font-bold text-on-surface">Small</span>
+<span class="text-label-sm font-label-sm font-mono text-on-surface-variant">8px</span>
+</div>
+<div class="h-20 bg-surface-container-low border border-outline-variant rounded-lg flex items-center justify-center text-label-sm font-label-sm font-mono text-on-surface-variant">
+                rounded-lg
+              </div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Syntax code blocks, alert banners, popovers.</p>
+</div>
+<!-- 4. Medium (Cards Specimen) -->
+<div class="p-5 rounded-xl bg-surface-container-lowest border-2 border-primary space-y-3 relative shadow-sm">
+<div class="absolute -top-3 right-3 px-2 py-0.5 rounded bg-primary text-on-primary text-[10px] font-mono uppercase font-bold">
+                Standard Cards &amp; Modals
+              </div>
+<div class="flex items-center justify-between">
+<span class="text-title-md font-title-md font-bold text-primary">Medium</span>
+<span class="text-label-sm font-label-sm font-mono text-primary font-bold">12px</span>
+</div>
+<div class="h-20 bg-primary/10 border border-primary/40 rounded-xl flex items-center justify-center text-label-sm font-label-sm font-mono text-primary font-bold">
+                rounded-xl (Card Default)
+              </div>
+<p class="text-body-sm font-body-sm text-on-surface">Applied to standard cards, documentation panels, and dialog sheets.</p>
+</div>
+<!-- 5. Large (Floating Panels) -->
+<div class="p-5 rounded-2xl bg-surface-container-lowest border-2 border-secondary space-y-3 relative">
+<div class="absolute -top-3 right-3 px-2 py-0.5 rounded bg-secondary text-on-secondary text-[10px] font-mono uppercase font-bold">
+                Large Floating Panels
+              </div>
+<div class="flex items-center justify-between">
+<span class="text-title-md font-title-md font-bold text-secondary">Large</span>
+<span class="text-label-sm font-label-sm font-mono text-secondary font-bold">16px</span>
+</div>
+<div class="h-20 bg-secondary/10 border border-secondary/40 rounded-2xl flex items-center justify-center text-label-sm font-label-sm font-mono text-secondary">
+                rounded-2xl
+              </div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Applied to floating side sheets and modal overlays.</p>
+</div>
+<!-- 6. Extra-Large -->
+<div class="p-5 rounded-3xl bg-surface-container-lowest border border-outline-variant/40 space-y-3">
+<div class="flex items-center justify-between">
+<span class="text-title-md font-title-md font-bold text-on-surface">Extra-Large</span>
+<span class="text-label-sm font-label-sm font-mono text-on-surface-variant">28px</span>
+</div>
+<div class="h-20 bg-surface-container-low border border-outline-variant rounded-3xl flex items-center justify-center text-label-sm font-label-sm font-mono text-on-surface-variant">
+                rounded-3xl
+              </div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Expanded navigational drawers and hero callout blocks.</p>
+</div>
+<!-- 7. Full (Buttons Specimen) -->
+<div class="p-5 rounded-full bg-surface-container-lowest border-2 border-primary-container space-y-3 relative sm:col-span-2">
+<div class="absolute -top-3 right-6 px-2 py-0.5 rounded bg-primary-container text-on-primary text-[10px] font-mono uppercase font-bold">
+                Buttons &amp; Interactive Chips
+              </div>
+<div class="flex items-center justify-between px-4">
+<span class="text-title-md font-title-md font-bold text-primary">Full</span>
+<span class="text-label-sm font-label-sm font-mono text-primary font-bold">9999px (Pill)</span>
+</div>
+<div class="h-16 bg-primary-container/10 border border-primary-container rounded-full flex items-center justify-center gap-3 px-6">
+<span class="px-4 py-1.5 rounded-full bg-primary text-on-primary text-label-md font-label-md font-bold">Action Button</span>
+<span class="px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container text-label-sm font-label-sm font-mono">filter:v2</span>
+<span class="text-label-sm font-label-sm font-mono text-on-surface-variant">rounded-full</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant px-4 text-center">Standard token for all primary CTAs, icon actions, and active filter tags.</p>
+</div>
+</div>
+</section>
+<!-- SECTION 4: ELEVATION & SURFACE TINT -->
+<section class="space-y-8 scroll-mt-20" id="elevation">
+<div class="border-b border-outline-variant/30 pb-4">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-primary-container text-on-primary text-label-sm font-label-sm font-mono">04</span>
+<h2 class="text-headline-md font-headline-md text-on-surface">Elevation &amp; Surface Tint</h2>
+</div>
+<p class="text-body-md font-body-md text-on-surface-variant mt-2 max-w-[760px]">
+              Elevation in the CoBuilder specification repudiates traditional drop shadows. Visual depth is established exclusively via primary-derived surface color tinting.
+            </p>
+</div>
+<!-- Architectural Rule Callout Banner -->
+<div class="p-4 rounded-xl bg-secondary-container/30 border-l-4 border-primary flex items-start gap-3">
+<span class="material-symbols-outlined text-primary mt-0.5">info</span>
+<div>
+<p class="text-title-md font-title-md font-bold text-on-surface">System Architectural Rule</p>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1 leading-relaxed">
+                In CoBuilder's developer documentation viewer, elevation is communicated strictly through surface color tinting derived from the Primary role, eliminating drop shadows to maximize code readability and reduce visual fatigue.
+              </p>
+</div>
+</div>
+<!-- 5 Identical Elevation Cards (Flat, No Shadows) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+<!-- Level 0 -->
+<div class="p-4 rounded-xl border border-outline-variant/40 flex flex-col justify-between h-48" style="background-color: #f8fafa; box-shadow: none;">
+<div>
+<span class="px-2 py-0.5 rounded bg-surface border border-outline-variant/30 text-label-sm font-label-sm font-mono">Level 0</span>
+<p class="text-title-md font-title-md font-bold text-on-surface mt-2">0% Tint</p>
+</div>
+<div class="space-y-1">
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">#f8fafa</p>
+<p class="text-[11px] text-on-surface-variant">Canvas ground level</p>
+</div>
+</div>
+<!-- Level 1 -->
+<div class="p-4 rounded-xl border border-outline-variant/30 flex flex-col justify-between h-48" style="background-color: #f0f5f6; box-shadow: none;">
+<div>
+<span class="px-2 py-0.5 rounded bg-surface/60 text-label-sm font-label-sm font-mono">Level 1</span>
+<p class="text-title-md font-title-md font-bold text-on-surface mt-2">+5% Tint</p>
+</div>
+<div class="space-y-1">
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">#f0f5f6</p>
+<p class="text-[11px] text-on-surface-variant">Resting card tiles</p>
+</div>
+</div>
+<!-- Level 2 -->
+<div class="p-4 rounded-xl border border-outline-variant/30 flex flex-col justify-between h-48" style="background-color: #e9f1f3; box-shadow: none;">
+<div>
+<span class="px-2 py-0.5 rounded bg-surface/60 text-label-sm font-label-sm font-mono">Level 2</span>
+<p class="text-title-md font-title-md font-bold text-on-surface mt-2">+8% Tint</p>
+</div>
+<div class="space-y-1">
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">#e9f1f3</p>
+<p class="text-[11px] text-on-surface-variant">Hover state panels</p>
+</div>
+</div>
+<!-- Level 3 -->
+<div class="p-4 rounded-xl border border-outline-variant/30 flex flex-col justify-between h-48" style="background-color: #e0edef; box-shadow: none;">
+<div>
+<span class="px-2 py-0.5 rounded bg-surface/60 text-label-sm font-label-sm font-mono">Level 3</span>
+<p class="text-title-md font-title-md font-bold text-on-surface mt-2">+11% Tint</p>
+</div>
+<div class="space-y-1">
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">#e0edef</p>
+<p class="text-[11px] text-on-surface-variant">Standard dialogs</p>
+</div>
+</div>
+<!-- Level 4 -->
+<div class="p-4 rounded-xl border border-outline-variant/30 flex flex-col justify-between h-48" style="background-color: #dcebeb; box-shadow: none;">
+<div>
+<span class="px-2 py-0.5 rounded bg-surface/60 text-label-sm font-label-sm font-mono">Level 4</span>
+<p class="text-title-md font-title-md font-bold text-on-surface mt-2">+12% Tint</p>
+</div>
+<div class="space-y-1">
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">#dcebeb</p>
+<p class="text-[11px] text-on-surface-variant">Context flyout menus</p>
+</div>
+</div>
+<!-- Level 5 -->
+<div class="p-4 rounded-xl border border-outline-variant/30 flex flex-col justify-between h-48" style="background-color: #d5e7e8; box-shadow: none;">
+<div>
+<span class="px-2 py-0.5 rounded bg-surface/60 text-label-sm font-label-sm font-mono">Level 5</span>
+<p class="text-title-md font-title-md font-bold text-on-surface mt-2">+14% Tint</p>
+</div>
+<div class="space-y-1">
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">#d5e7e8</p>
+<p class="text-[11px] text-on-surface-variant">Modal overlays</p>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 5: SPACING SCALE -->
+<section class="space-y-8 scroll-mt-20 pb-16" id="spacing">
+<div class="border-b border-outline-variant/30 pb-4">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-primary-container text-on-primary text-label-sm font-label-sm font-mono">05</span>
+<h2 class="text-headline-md font-headline-md text-on-surface">Spacing Scale</h2>
+</div>
+<p class="text-body-md font-body-md text-on-surface-variant mt-2 max-w-[760px]">
+              Strict 8dp rhythmic layout grid augmented by a 4dp micro-step for compact icon and inline button geometry.
+            </p>
+</div>
+<div class="space-y-4">
+<!-- 4dp (Micro) -->
+<div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div class="w-44">
+<p class="text-title-md font-title-md font-bold text-on-surface">space-4</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">4dp • 0.25rem • 4px</p>
+<span class="text-label-sm font-label-sm text-primary">Micro</span>
+</div>
+<div class="flex-1 flex items-center gap-4">
+<div class="h-6 bg-primary rounded" style="width: 4px;"></div>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Application: Icon interior padding, tag gap separators.</span>
+</div>
+</div>
+<!-- 8dp (XXS) -->
+<div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div class="w-44">
+<p class="text-title-md font-title-md font-bold text-on-surface">space-8</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">8dp • 0.5rem • 8px</p>
+<span class="text-label-sm font-label-sm text-primary">XXS</span>
+</div>
+<div class="flex-1 flex items-center gap-4">
+<div class="h-6 bg-primary rounded" style="width: 8px;"></div>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Application: Button inner vertical padding, compact badge offsets.</span>
+</div>
+</div>
+<!-- 12dp (XS) -->
+<div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div class="w-44">
+<p class="text-title-md font-title-md font-bold text-on-surface">space-12</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">12dp • 0.75rem • 12px</p>
+<span class="text-label-sm font-label-sm text-primary">XS</span>
+</div>
+<div class="flex-1 flex items-center gap-4">
+<div class="h-6 bg-primary rounded" style="width: 12px;"></div>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Application: List item vertical rhythm, tab horizontal padding.</span>
+</div>
+</div>
+<!-- 16dp (S - Default baseline) -->
+<div class="p-4 rounded-xl bg-surface-container-lowest border-2 border-primary flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div class="w-44">
+<p class="text-title-md font-title-md font-bold text-primary">space-16</p>
+<p class="text-label-sm font-label-sm font-mono text-primary font-bold">16dp • 1rem • 16px</p>
+<span class="text-label-sm font-label-sm text-primary font-bold">S • Default Baseline</span>
+</div>
+<div class="flex-1 flex items-center gap-4">
+<div class="h-6 bg-primary rounded" style="width: 16px;"></div>
+<span class="text-label-sm font-label-sm text-on-surface font-semibold">Application: Default card gutter, standard input inner padding, sidebar cell padding.</span>
+</div>
+</div>
+<!-- 24dp (M) -->
+<div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div class="w-44">
+<p class="text-title-md font-title-md font-bold text-on-surface">space-24</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">24dp • 1.5rem • 24px</p>
+<span class="text-label-sm font-label-sm text-primary">M</span>
+</div>
+<div class="flex-1 flex items-center gap-4">
+<div class="h-6 bg-primary rounded" style="width: 24px;"></div>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Application: Card interior padding, desktop grid gutters, header offsets.</span>
+</div>
+</div>
+<!-- 32dp (L) -->
+<div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div class="w-44">
+<p class="text-title-md font-title-md font-bold text-on-surface">space-32</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">32dp • 2rem • 32px</p>
+<span class="text-label-sm font-label-sm text-primary">L</span>
+</div>
+<div class="flex-1 flex items-center gap-4">
+<div class="h-6 bg-primary rounded" style="width: 32px;"></div>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Application: Section margins, component group separation.</span>
+</div>
+</div>
+<!-- 48dp (XL) -->
+<div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div class="w-44">
+<p class="text-title-md font-title-md font-bold text-on-surface">space-48</p>
+<p class="text-label-sm font-label-sm font-mono text-on-surface-variant">48dp • 3rem • 48px</p>
+<span class="text-label-sm font-label-sm text-primary">XL</span>
+</div>
+<div class="flex-1 flex items-center gap-4">
+<div class="h-6 bg-primary rounded" style="width: 48px;"></div>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Application: Section rhythm, major content band whitespace, hero padding.</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,30 @@
+{
+  "intent": {
+    "tagline": "The tracker takes the state. The documents keep the words.",
+    "narration": "CoBuilder knew what its slices meant and could not say what was next. The ladder lived in a markdown table that every session reread and any session could contradict. This design gives the state a store and leaves every document exactly where it was.",
+    "beats": []
+  },
+  "problem_solution": {
+    "problem": "Slice state, scores, and attempts lived in prose tables. Epic branches and pull-request numbers lived in hand-edited joins. Nothing answered what is next, what blocks what, or what changed while two sessions worked one ladder.",
+    "solution": "One beads tracker per narrated repo. Programs, epics, and slices become issues with a namespaced metadata envelope. The ladder becomes blocked-by dependencies, readiness becomes bd ready, and the index rebuild gains one read.",
+    "narration": "The mapping is deliberate about the line. Records with a stage, a score, or a position become issues. Records that are prose or external facts stay files and get pointers.",
+    "beats": [
+      {"kind": "map", "text": "Program, epic, slice, and decision become issues; pull requests, districts, and publications stay out with pointers."},
+      {"kind": "envelope", "text": "Every issue carries metadata.cb with kind, version, and the consumer ids the viewer already uses."},
+      {"kind": "ladder", "text": "Slice n blocks slice n+1, so bd ready names the next slice the table used to name by hand."}
+    ],
+    "alternatives": [
+      {"option": "Markdown tables as the only state", "rejected_because": "State in prose races at whole-file grain and has no history."},
+      {"option": "GitHub Issues as the store", "rejected_because": "Network-bound and wrong-grained; ADR-0029 already reads the pull request from GitHub."},
+      {"option": "A bespoke SQLite store", "rejected_because": "It rebuilds readiness, gates, and sync that beads already ships."}
+    ]
+  },
+  "architecture": {
+    "narration": "Beads sits under the index as the state layer. The scripts speak bd, the documents stay sources of record, and the viewer never learns the tracker exists.",
+    "beats": [
+      {"kind": "write", "text": "Sessions write state through bd commands with envelope files; bd is the only writer."},
+      {"kind": "read", "text": "build_index.py reads bd list --json once, projects the same entities and joins, and writes the same index."},
+      {"kind": "fallback", "text": "When bd is absent, scripts fall back to the file flow and the index projects from files alone."}
+    ]
+  }
+}

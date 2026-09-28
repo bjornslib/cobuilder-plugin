@@ -32,7 +32,7 @@ related_decisions:
 history:
   - { state: decided, date: 2026-09-01 }
 maps_to:
-  context: viewer
+  context: cobuilder-packaging
   modules: [shared/build_index.py, plugins/artifact/viewer/index.html]
   rule: "A gate document is indexed and read-only from the viewer, joined to its build by the same key (feature_slug or epic id) the build's own Gate Rail or epic card already carries. Never a new top-level reading surface for it."
 delivers:

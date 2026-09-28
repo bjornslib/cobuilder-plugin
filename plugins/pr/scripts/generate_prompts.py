@@ -10,11 +10,11 @@
 """Generate Nano Banana Pro (Gemini image model) prompts for a Codebase Odyssey bundle.
 
 Reads <bundle>/data/story.json and, for every requested PR in the timeline and
-every one of the 4 story levels (PR Landscape / Problem & Solution /
+every one of the 4 story levels (Intent / Problem & Solution /
 Architecture / File Changes), composes an image-generation prompt describing
 that scene. Prompts are written to <bundle>/data/prompts.json.
 
-For levels 1-3 (landscape, problem_solution, architecture), the prompt is
+For levels 1-3 (intent, problem_solution, architecture), the prompt is
 data-driven: that PR's own timeline entry (unmodified) is serialized as JSON
 and handed to the model with a level-specific "visually describe this PR"
 instruction, letting Nano Banana Pro do the creative synthesis instead of a
@@ -56,13 +56,13 @@ SHARED_STYLE = (
     "typography."
 )
 
-LEVEL_KEYS = ["landscape", "problem_solution", "architecture", "file_changes"]
+LEVEL_KEYS = ["intent", "problem_solution", "architecture", "file_changes"]
 
 # Level-specific "visually describe this PR" framing for the data-driven builder
 # (levels 1-3). Each is distinct so the 3 renders per PR don't converge on the
 # same image.
 VISUAL_DESCRIBE_INSTRUCTIONS = {
-    "landscape": (
+    "intent": (
         "You are given the JSON data for one pull request from a codebase's evolution "
         "timeline. Visually describe a wide establishing view of this PR's place in the "
         "codebase's evolution — its scale, which parts of the codebase (districts) it "
@@ -318,7 +318,7 @@ def main() -> None:
     parser.add_argument(
         "--levels",
         default="1,2,3",
-        help="comma-separated level numbers to generate (1=landscape, 2=problem_solution, "
+        help="comma-separated level numbers to generate (1=intent, 2=problem_solution, "
         "3=architecture, 4=file_changes; default: 1,2,3 — the bundle/viewer only render art "
         "for levels 1-3, pass --levels 1,2,3,4 to also generate level 4)",
     )

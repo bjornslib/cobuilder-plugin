@@ -1,0 +1,19 @@
+C4Container
+title Beads storage for CoBuilder — level 1
+
+Container(sessions, "CoBuilder sessions", "architect, implement, pr plugins", "Author designs, run ladders, narrate change")
+Container(bd, "bd 1.3.0", "CLI + embedded Dolt", "Tracker: issues, dependencies, gates, metadata, readiness")
+Container(build_index, "shared/build_index.py", "Python", "Projects sources into data/index.json")
+Container(markdown, "docs/ + .cobuilder/", "Git-tracked files", "Sources of record: designs, ADRs, plans, evidence")
+ContainerDb(indexjson, "data/index.json", "Static JSON", "The read model the viewer loads")
+Container(viewer, "plugins/artifact/viewer", "Static single-file HTML", "Build-free viewer, reads index.json only")
+System_Ext(github, "GitHub", "Pull requests, the change's account")
+
+Rel(sessions, bd, "writes state with envelope files", "bd CLI")
+Rel(sessions, markdown, "writes prose documents")
+Rel(bd, markdown, "external_ref points back at documents")
+Rel(build_index, bd, "reads one bd list --json", "bd CLI")
+Rel(build_index, markdown, "walks unchanged sources")
+Rel(build_index, indexjson, "writes the index, full rebuild")
+Rel(viewer, indexjson, "loads the static index")
+Rel(sessions, github, "reads pull requests", "gh CLI")

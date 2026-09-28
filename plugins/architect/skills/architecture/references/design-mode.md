@@ -211,7 +211,7 @@ written. `verdict` uses the same values as the odyssey skill's `references/revie
 
 Write five artifacts. Run each prose pass through
 `Skill("architect:ste-writing")` in flavored mode. If that call
-gives `Unknown skill`, read `${CLAUDE_PLUGIN_ROOT}/skills/ste-writing/SKILL.md`
+gives `Unknown skill`, read `${CLAUDE_PLUGIN_ROOT}/shared/skills/ste-writing/SKILL.md`
 directly and obey that file instead. Use strict mode for ADR procedural
 text: the constraint introduced, and the boundary rules.
 
@@ -263,7 +263,7 @@ result to the engineer per step 5 below.
 
 4. **Narrative.** Write `narrative.json` into
    `docs/architecture/designs/<name>/`. The viewer renders it as the
-   design's three levels: `landscape` (`tagline`, `narration`),
+   design's three levels: `intent` (`tagline`, `narration`),
    `problem_solution` (`problem`, `solution`, `narration`, `beats[]`,
    `alternatives[]`), and `architecture` (`narration`, `beats[]`). Each
    `beats[]` entry carries a `kind` and a `text`. Ground every field in
@@ -291,6 +291,10 @@ holds before you write anything, and record the losing usage under
 `_Avoid_` on the entry that wins.
 
 ## 10. Stage 6 — Review routing
+
+Before the engineer reads the draft, follow Present for review in
+`Skill("cobuilder-artifacts")` with the route `#/<work>/intent`. Give the
+engineer the link.
 
 The engineer reads the draft and answers in the session. Material
 feedback returns to stage 3. A real objection usually invalidates an

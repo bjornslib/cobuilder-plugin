@@ -1,0 +1,129 @@
+classDiagram
+    class RecordIndex {
+        <<viewer/src/data, index.json joins>>
+        +adrToPullRequest map
+        +epicToPullRequest map
+        +sliceToEpic map
+        +epicStatus map
+        +contextVerifiesDistrict map
+        +resolve() BundleModel
+    }
+
+    class BundleModel {
+        <<viewer/src/data, resolved once>>
+        +designs Design[]
+        +pullRequests PullRequest[]
+        +adrs string[]
+        +diagrams string[]
+    }
+
+    class Design {
+        +name string
+        +stage string
+        +epics Epic[]
+        +lensesAvailable Lens[]
+    }
+
+    class Epic {
+        +id string
+        +slug string
+        +branch string
+        +state string
+    }
+
+    class Surface {
+        <<enumeration>>
+        WORK
+        FLIGHTDECK
+        REFERENCE
+    }
+
+    class Lens {
+        <<enumeration>>
+        INTENT
+        PROBLEM_SOLUTION
+        ARCHITECTURE
+        RISKS_AND_VERDICT
+        BUILD
+        PULL_REQUESTS
+    }
+
+    class PullRequest {
+        +number int
+        +headBranch string
+        +changedFiles string[]
+        +design string
+    }
+
+    class OpenPullRequest {
+        <<branded extension>>
+        +status "open"
+    }
+
+    class MergePlan {
+        +ancestorSha string
+        +candidates CandidatePath[]
+        +contentHash string
+    }
+
+    class CandidatePath {
+        +order string[]
+        +stopCount int
+        +conflicts ConflictShape[]
+        +replayed bool
+        +failureReason string
+    }
+
+    class ConflictShape {
+        <<enumeration>>
+        GENERATED_FILE
+        HOT_FILE
+        IDENTICAL_CONTENT
+    }
+
+    class StateLine {
+        <<ledger line kind, ADR-0019>>
+        +kind "state"
+        +subtype string
+        +timestamp string
+    }
+
+    class MergeOrderProposal {
+        <<state subtype>>
+        +ancestorSha string
+        +candidates CandidatePath[]
+        +contentHash string
+    }
+
+    class Acceptance {
+        <<state subtype>>
+        +proposalHash string
+        +chosenCandidate string
+    }
+
+    class PostMergeActual {
+        <<state subtype>>
+        +actualTreeHash string
+    }
+
+    RecordIndex --> BundleModel : resolves
+    BundleModel "1" o-- "*" Design : lists
+    BundleModel "1" o-- "*" PullRequest : lists
+    Design "1" o-- "*" Epic : tracks
+    Design --> Lens : lensesAvailable, disabled when no record
+    Epic --> PullRequest : branch join
+    PullRequest <|-- OpenPullRequest : branded extension
+    Surface --> BundleModel : Work / FlightDeck / Reference each read
+    Surface --> PullRequest : FlightDeck single-PR mode renders
+    Surface --> MergePlan : FlightDeck multi-PR mode renders
+    MergePlan "1" o-- "*" CandidatePath : ranks
+    CandidatePath "1" o-- "*" ConflictShape : classifies
+    StateLine <|-- MergeOrderProposal
+    StateLine <|-- Acceptance
+    StateLine <|-- PostMergeActual
+    Acceptance --> MergeOrderProposal : references proposalHash
+    PostMergeActual --> Acceptance : diffed against by auditor
+    MergeOrderProposal --> MergePlan : mirrors committed data
+
+    note for OpenPullRequest "PullRequest & { status: 'open' }, defined once in the<br>shared types module single-pull-request mode ships.<br>A field renamed on one type and not the other<br>fails the build instead of drifting silently (ADR-0027)."
+    note for RecordIndex "Joins computed once by shared/build_index.py<br>into index.json, read (never recomputed) by<br>viewer/src/data, per ADR-0018."

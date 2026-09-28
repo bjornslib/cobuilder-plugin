@@ -1,0 +1,44 @@
+sequenceDiagram
+    participant Author
+    participant Cmd as commands/publish.md
+    participant Skill as skills/odyssey/SKILL.md
+    participant Extract as scripts/extract_story.py
+    participant Export as scripts/export_artifact.py
+    participant Manifest as exports/publish-manifest.json
+    participant Tool as Claude Artifact tool
+    participant Recorder as scripts/record_publish.py
+
+    Author->>Cmd: /prodyssey:publish --prs 2
+    Cmd->>Skill: Publish mode, args forwarded
+
+    Skill->>Extract: uv run extract_story.py --bundle-dir .odyssey/self
+    Extract->>Manifest: writes entry commit 96c1531 for PR 2
+    note over Extract: The commit is the value the script always<br>computed for size/touched and discarded.<br>ADR-0002 keeps it.
+
+    Skill->>Export: uv run export_artifact.py --prs 2
+    Export->>Manifest: read the prior source_hash and commit
+    Manifest-->>Export: no entry for PR 2 yet
+    note over Export: First export, so the staleness check<br>cannot answer "unchanged"
+
+    Export->>Export: inline window.STORY/ODYSSEY/DIFFS/ADRS as literal JSON
+    Export->>Export: rewrite the hero-image, dialog-image and audio src lookups to read window.ODYSSEY_ASSETS / ODYSSEY_AUDIO
+    Export->>Export: drop the Google Fonts and Motion CDN tags
+    Export->>Export: escape a literal </script> inside a diff before inlining
+
+    alt Flattened file is under the 15 MiB target
+        Export-->>Skill: exports/pr-2.html at 1400px q78
+    else File is over the target
+        Export->>Export: retry at 1100px q68, then 900px q55
+        Export->>Export: drop narration audio as the last resort
+        Export-->>Skill: exports/pr-2.html, with a warning on stderr
+    end
+
+    Export->>Manifest: write commit, source_hash, export_file, export_bytes
+    Skill->>Tool: publish exports/pr-2.html
+    Tool-->>Skill: a claude.ai artifact URL
+    Skill->>Recorder: uv run record_publish.py --target pr-2 --url the-url
+    Recorder->>Manifest: store artifact_url and published_at
+    Skill->>Export: uv run export_index.py
+    Export-->>Author: exports/index.html lists PR 2 with its link
+
+    Note over Author,Tool: A second run for the same PR at the same commit<br>reports "unchanged since last export"<br>and leaves the published link alone

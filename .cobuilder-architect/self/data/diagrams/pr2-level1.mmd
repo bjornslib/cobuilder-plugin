@@ -1,0 +1,39 @@
+C4Container
+    title PR 2 - Publish a PR story as a self-contained Claude Artifact
+
+    Person(author, "Story author", "Runs /prodyssey:publish from a repo that already holds a generated bundle")
+
+    System_Ext(artifact, "Claude Artifact platform", "One self-contained file, a CSP that blocks every external request, and a 16 MiB rendered size cap")
+
+    Container_Boundary(plugin, "prodyssey plugin - the publish surface this PR adds") {
+        Container(publishcmd, "commands/publish.md", "command, 54 lines", "Thin dispatch into SKILL.md's Publish mode")
+        Container(skillmd, "skills/odyssey/SKILL.md", "orchestration", "Publish mode: export, call the Artifact tool, record the URL. Also carries the open-PR narration-tense guidance in references/story-mode.md")
+        Container(exportart, "scripts/export_artifact.py", "uv script + Pillow, 456 lines", "Inlines story, ADR, diff and art data; rewrites three relative-path lookups; recompresses hero art from PNG to JPEG")
+        Container(exportidx, "scripts/export_index.py", "uv script, 173 lines", "Renders the landing page from publish-manifest.json")
+        Container(recordpub, "scripts/record_publish.py", "uv script, 76 lines", "Writes the returned Artifact URL back into the manifest after the publish call")
+        Container(extract, "scripts/extract_story.py, scripts/extract_diffs.py", "uv scripts, changed", "Persists entry commit; resolves an open PR's diff against the merge-base of its head and base branches")
+    }
+
+    Container_Boundary(bundle, "A generated bundle - .odyssey/self/ or .prodyssey/repo-slug, committed") {
+        ContainerDb(story, "data/story.json", "JSON, schema 1.x", "One timeline entry per PR: four levels, adrs, commit")
+        ContainerDb(assets, "assets/pr-2/level-1..3.png, data/audio/pr2_*.wav", "PNG + WAV", "Scene art and narration, read by relative path only")
+        Container(viewer, "viewer/index.html", "one HTML file", "Reads window.STORY / ODYSSEY / DIFFS / ADRS through sibling script tags")
+        ContainerDb(exports, "exports/publish-manifest.json", "JSON, tracked in git", "Per PR: commit, source_hash, export_file, artifact_url")
+        Container(flat, "exports/pr-2.html, exports/index.html", "flattened HTML", "The published page and the landing page")
+    }
+
+    Rel(author, publishcmd, "Runs /prodyssey:publish")
+    Rel(publishcmd, skillmd, "Dispatches into Publish mode")
+    Rel(skillmd, exportart, "Runs once per PR")
+    Rel(skillmd, exportidx, "Runs once per invocation")
+    Rel(skillmd, artifact, "Calls the Artifact tool with the flattened file")
+    Rel(skillmd, recordpub, "Records the URL the tool returned")
+    Rel(exportart, story, "Reads this PR's timeline entry, its ADRs and its diff")
+    Rel(exportart, viewer, "Reads the viewer file it is about to flatten")
+    Rel(exportart, assets, "Reads hero PNG and narration WAV, embeds them as data URIs")
+    Rel(exportart, exports, "Writes commit and source_hash before the publish call")
+    Rel(exportart, flat, "Writes one self-contained file per PR")
+    Rel(recordpub, exports, "Updates artifact_url and published_at")
+    Rel(exportidx, exports, "Reads every PR's recorded card")
+    Rel(exportidx, flat, "Writes the landing page")
+    Rel(extract, story, "Writes commit, size and touched for a merged or an open PR")

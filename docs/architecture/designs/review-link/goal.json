@@ -1,0 +1,32 @@
+{
+  "name": "review-link",
+  "title": "A document under review carries a viewer link",
+  "adr": "ADR-0032",
+  "adrs": ["ADR-0032"],
+  "created": "2026-09-28",
+  "outcome": "Each time a workflow asks the user to approve a document, the user gets a checked link to that document's page in the viewer before the question.",
+  "done_when": [
+    "review_link.py prints a deep link only after the page answers HTTP 200",
+    "The viewer renders the product, architecture, and program design documents at #/<work>/build/plan",
+    "verify_gate.py fails an APPROVED gate line dated on or after 2026-09-28 that carries no viewer link"
+  ],
+  "abort_if": [],
+  "min_work": {
+    "derived_from": "Five hand-offs call View mode and print the root URL only. build_index.py projects 03-program-design.md but not 01-product.md or 02-architecture.md, and the React viewer renders no page for a plan document. The build skill starts the viewer after the approval, not before it.",
+    "challenge_stage_run": false,
+    "note": "The user made the seven decisions in ADR-0032 in chat on 2026-09-28, and approved one ADR, one epic, and three slices, built without further questions. Design mode stages 2 to 7 did not run. This design carries a goal.json only."
+  },
+  "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
+  "epics": [
+    {
+      "id": "E1",
+      "branch": "design/review-link/E1",
+      "pr": null,
+      "state": "planned",
+      "note": "A viewer link for each document under review. Slice 1 adds review_link.py and a --route argument to View mode. Slice 2 projects the Gate 1 and Gate 2 documents and adds the plan page under the Build level. Slice 3 adds the Present for review procedure to every presentation point, and the link check to verify_gate.py."
+    }
+  ],
+  "stage": "backlog",
+  "supersedes": null,
+  "rounds": []
+}

@@ -250,10 +250,14 @@ Template for `00-status.md`:
 # Status: <feature name>
 
 - Gate 1 — Product: pending | in progress | APPROVED <date>
+  view: <url>
 - Gate 2 — Architecture: pending | in progress | APPROVED <date>
+  view: <url>
 - Gate 2b — Interaction design: pending | in progress | APPROVED <date> | n/a (no UI) — Screens: "<the ## Screens entry>"
 - Gate 3 — Program Design: pending | in progress | APPROVED <date>
+  view: <url>
 - Gate 4 — Slice plan, epic designs, and rubrics: pending | in progress | APPROVED <date>
+  view: <url>
   - 4a Slice plan: pending | APPROVED <date>
   - 4b Epic technical solution designs: pending | APPROVED <date> | n/a (no epic carries more than one slice)
   - 4c Blind rubrics: pending | APPROVED <date>
@@ -281,18 +285,16 @@ Run this protocol at every gate and before implementing an epic:
 1. Write the document to disk.
 2. Present a short summary of five to ten bullets to the user, with the file
    path.
-3. Ask the user: **"Approve Gate N, or what should change?"**
-4. The user must clearly approve before you proceed.
-5. Record approval in `00-status.md`.
-6. **Refresh the bundle and start the viewer.** `00-status.md` just changed
-   what the Builds Backlog Lane shows. Rebuild the self-bundle projection,
-   then start the viewer so the user can watch the gate land, the same way
-   step 5 after each slice does:
-   ```bash
-   uv run "${CLAUDE_PLUGIN_ROOT}/shared/build_index.py"
-   ```
-   Then `Skill("cobuilder-artifacts", args="view")`. Reuses an
-   already-running server for this hub; never starts a second one.
+3. **Present for review.** Refresh the bundle, then follow the Present for
+   review section of `Skill("cobuilder-artifacts")`. Give the user the link
+   to the page of the gate document. That section holds the route for each
+   gate. Gate 2b and Gate 4c have no page.
+4. Ask the user: **"Approve Gate N, or what should change?"**
+5. The user must clearly approve before you proceed.
+6. Record approval in `00-status.md`. Add the link from step 3 on its own
+   `view:` line directly under the gate line, indented two spaces.
+   `verify_gate.py` fails a gate line dated 2026-09-28 or later that has no
+   view line.
 7. If later work invalidates a decision, update the document, set status to "in
    progress", and request approval again.
 
@@ -443,15 +445,30 @@ approval protocol above for each.
 
 Save `docs/plans/<slug>/04-slices.md`. Group slices by epic in a table:
 
-- **Slice 1 is the tracer bullet:** stubbed UI or basic response wired end to
-  end.
-- **Slice 2:** happy path with real logic.
-- **Slice 3+:** edge cases, business rules, and error handling.
-- Do not build horizontally across layers. Build vertical end-to-end slices.
+- **A slice is vertical.** It crosses every layer the feature needs, however
+  thinly, and it ends in a state a reader can see or a test can assert. State
+  that end without naming a layer.
+- **The count follows the work.** An epic carries one slice per observable end
+  state. One is a legitimate answer, and it is the right one for an epic whose
+  whole outcome is a single end state. Do not pad to a fixed count.
+- **These phrases mean the slice is horizontal, so it is not a slice:** "add the
+  types", "wire the API", "build the component", "add the validation", "handle
+  the errors", "write the tests". None names something observable. Fold that work
+  into the slice whose end needs it.
+- **Gate 4b follows the count.** An epic that carries more than one slice needs a
+  technical solution design, because more than one observable end needs a
+  coordinated design. Never split an epic to plan it better. Split it when the
+  work has two ends.
 - The table must match `shared/slice_table.py`'s exact six-column shape
   (`#`, Epic, Slice, Ends with, Score, State), including its epic-header row
   convention. `verify_gate.py` and `build_index.py` both parse this file
   with that module and silently skip a row that does not match it.
+
+This skill dropped an earlier three-slice template on 2026-09-22, and the
+bullets above replace it. The template contradicted the vertical rule on its
+own next line, because it put the error layer after the happy-path layer. It
+also forced every epic to three slices, so Gate 4b demanded a technical
+solution design for nearly every epic.
 
 ### 4b. Per-epic technical solution design
 
@@ -487,7 +504,8 @@ Epic ID: <epic-id>
 ```
 
 Present this document to the user and obtain approval before authoring rubrics
-for the epic. Record the approval on the `4b` line in `00-status.md`. When no
+for the epic. Before you ask, follow Present for review in
+`Skill("cobuilder-artifacts")` with the epics route. Record the approval on the `4b` line in `00-status.md`. When no
 epic in `04-slices.md` carries more than one slice, mark `4b` as `n/a` instead
 of pending, and skip straight to 4c.
 
@@ -614,13 +632,9 @@ A harness with no Workflow tool always uses Manual, regardless of scope.
 3. **Record the score** in `00-status.md` and mark the slice complete.
 4. **Route gaps** below 1.0 using the gap decision tree in
    [references/validation-scoring.md](references/validation-scoring.md).
-5. **Refresh the bundle and start the viewer**, same as step 6 of the
-   approval protocol above:
-   ```bash
-   uv run "${CLAUDE_PLUGIN_ROOT}/shared/build_index.py"
-   ```
-   Then `Skill("cobuilder-artifacts", args="view")`. Reuses an
-   already-running server for this hub; never starts a second one.
+5. **Present for review.** Refresh the bundle, then follow the Present for
+   review section of `Skill("cobuilder-artifacts")` with the epics route.
+   Give the user the link.
 6. **Ask the user:** "Proceed to the next slice, or adjust direction?"
 
 ---

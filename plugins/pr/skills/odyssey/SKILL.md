@@ -4,7 +4,7 @@ title: "Codebase Odyssey Generator"
 status: active
 version: 0.3.0
 description: >
-  Generate a narrated four-level codebase story bundle (landscape, problem/solution,
+  Generate a narrated four-level codebase story bundle (intent, problem/solution,
   architecture, file-changes) with scene art, voice narration, and retro-extracted
   architecture decision records for any locally checked-out git repo. Also interviews
   a change's author before the PR opens, assesses the change against the bundle, and
@@ -398,7 +398,7 @@ This mode runs the per-PR narrative, ADR, art, and audio sweep. Steps:
       alternatives. Do not re-derive them from the diff. See the opening
       of `references/story-mode.md` for what carries over and what does
       not.
-      Author the four levels (`landscape`, `problem_solution`,
+      Author the four levels (`intent`, `problem_solution`,
       `architecture`, `file_changes`), plus the tagline and the `voice`
       scripts. Write all of it directly into `data/story.json` for this
       PR. **`problem_solution` and `architecture` also each need a
@@ -432,16 +432,18 @@ This mode runs the per-PR narrative, ADR, art, and audio sweep. Steps:
       prompt must:
       - tell it to invoke `Skill("pr:mermaid")` first. If
         that call gives `Unknown skill`, tell it to read
-        `${CLAUDE_PLUGIN_ROOT}/skills/mermaid/SKILL.md` directly, and obey
-        that file instead. The skill resolves by name only in a session
+        `${CLAUDE_PLUGIN_ROOT}/shared/skills/mermaid/SKILL.md` directly, and
+        obey that file instead. The skill resolves by name only in a session
         that has an installed plugin version containing it. A session
         that runs from a development checkout, or from an installed
         version older than the skill, does not find it. The path always
-        resolves, because `${CLAUDE_PLUGIN_ROOT}` points at the copy in
-        use.
+        resolves, because `mermaid` is a shared skill, and the `shared`
+        symlink is dereferenced into the plugin's own cache at install
+        time, so `${CLAUDE_PLUGIN_ROOT}/shared/skills/mermaid/` names the
+        copy in use.
 
       - then tell it to read
-        `${CLAUDE_PLUGIN_ROOT}/skills/mermaid/references/diagram-mode.md`.
+        `${CLAUDE_PLUGIN_ROOT}/shared/skills/mermaid/references/diagram-mode.md`.
         This file moved into the mermaid skill because both the odyssey
         and architecture pillars need it, and mermaid is already vendored
         into every plugin per ADR-0017.
@@ -452,8 +454,7 @@ This mode runs the per-PR narrative, ADR, art, and audio sweep. Steps:
         `<bundle-dir>/inventory.yaml`.
 
       - state the three output paths and the diagram type each one needs:
-        `<bundle-dir>/data/diagrams/pr{N}-level1.mmd` (`C4Container`, PR
-        landscape), `<bundle-dir>/data/diagrams/pr{N}-level2.mmd`
+        `<bundle-dir>/data/diagrams/pr{N}-level1.mmd` (`C4Container`, intent), `<bundle-dir>/data/diagrams/pr{N}-level2.mmd`
         (`sequenceDiagram`, problem and solution), and
         `<bundle-dir>/data/diagrams/pr{N}-level3.mmd` (`classDiagram`,
         architecture). Level 4 has no diagram.

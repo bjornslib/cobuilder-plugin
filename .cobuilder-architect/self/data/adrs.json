@@ -1376,7 +1376,7 @@
     },
     "body": "# ADR-0022 — Gate documents projected into the record index\n\n## Context\n\n`implement`'s build skill produces two authored documents per feature\nthat the viewer never reads: `docs/plans/<slug>/03-program-design.md`\n(Gate 3, one per feature) and `docs/plans/<slug>/epic-<id>-design.md`\n(Gate 4b, one per multi-slice epic). `shared/build_index.py`'s\n`resolve_feature_gates()` already parses `00-status.md` to show each\ngate's approval state on the Builds view's Gate Rail, but it has never\nread the gate document's content. A colleague session approving Gate 3\nasked to see the program design in the viewer and found nothing indexed\nfor it — a real gap, not a bug, because the index's five entity types\n(`adr`, `design`, `epic`, `slice`, `pull_request`) have no sixth for a\ngate document. The immediate fix was publishing the doc as a standalone\nClaude Artifact, which reads well once but has no rebuild hook back to\n`docs/plans/` and is not discoverable from the viewer itself.\n\n## Options considered\n\n1. **A new top-level viewer tab for plans or gate docs.** Rejected.\n   ADR-0018 decided one lifecycle surface precisely to stop the reading\n   surface count growing with every new artifact type. A gate doc has no\n   independent existence — it is always scoped to one build, which the\n   Builds view already renders.\n2. **Client-side parsing in the viewer at render time.** Rejected. The\n   viewer is one committed HTML file with access only to its bundled\n   `data/*.js` scripts, never the raw repository tree, so this option is\n   not mechanically available even before weighing it against ADR-0018.\n3. **Execute ADR-0020's viewer-parts split now, and add gate docs to the\n   new structure.** Rejected. ADR-0020 is decided, not executed — CLAUDE.md\n   is explicit that `viewer/src/` does not exist yet and the viewer is\n   still one committed file. Bundling that execution into this narrower\n   change would make this decision own scope it did not ask for.\n4. **Two new index entities, surfaced on the existing Gate Rail and epic\n   cards (chosen).** `program_design` keys on `feature_slug`, matching\n   `joins.feature_gates`. `epic_design` keys on epic id, matching\n   `entities.epic`. Both follow the existing `project_fields(source,\n   fields)` pattern. The viewer makes a Gate Rail card and, where an\n   approved 4b design exists, an epic card, clickable — opening a\n   read-only sheet modeled on the existing `openAdrSheet`.\n\n## Decision\n\nAdd `program_design` and `epic_design` as index entities in\n`shared/build_index.py`, projected from `docs/plans/<slug>/*.md`. Surface\nthem as a clickable state on `plugins/artifact/viewer/index.html`'s\nexisting Gate Rail cards and epic cards, in `renderBuildsMainContent`.\nNo new join table: both entities key on values the Builds view already\ncarries. Out of scope: a new viewer tab, editing a gate doc from the\nviewer, and any change to how `00-status.md`'s own approval-state line is\nparsed or displayed.\n\n## Consequences\n\n- **Positive:** A gate document becomes readable from the one surface\n  already built to show a build's progress, kept current by the same\n  `build_index.py` rebuild every other entity relies on.\n- **Constraint introduced:** A gate document is indexed and read-only from\n  the viewer, joined to its build by the key the build's own Gate Rail or\n  epic card already carries. It never gets a new top-level reading\n  surface.\n- **Negative / accepted:** The sheet pattern (`openAdrSheet`) was built for\n  ADR-length text. A long program-design doc may not read as well in the\n  same component; this is deferred to implementation-time verification\n  against a real doc, not resolved here.\n\n## Value delivered\n\n- **New capability:** A reviewer reads a build's Gate 3 or Gate 4b document\n  from inside the odyssey viewer.\n- **Benefit:** The document a reviewer sees is always the current one,\n  rebuilt with the index, rather than a one-off Artifact snapshot that can\n  drift from `docs/plans/` with no warning.\n- **Beneficiary:** operator, developer.\n\n## Maps to\n\nContext `viewer`, module(s) `shared/build_index.py`,\n`plugins/artifact/viewer/index.html`. See the boundary record's rule and\nthe context canvas.\n",
     "maps_to": {
-      "context": "viewer",
+      "context": "cobuilder-packaging",
       "modules": [
         "shared/build_index.py",
         "plugins/artifact/viewer/index.html"
@@ -1462,9 +1462,11 @@
       }
     ],
     "related": [
+      "docs/architecture/designs/cobuilder-viewer/goal.json",
       "docs/architecture/designs/react-viewer/goal.json",
       "docs/architecture/designs/build-workflow-polish/goal.json",
-      "docs/architecture/adr/ADR-0020-viewer-parts-and-an-author-time-build.md"
+      "docs/architecture/adr/ADR-0020-viewer-parts-and-an-author-time-build.md",
+      "docs/architecture/adr/ADR-0027-flightdeck-one-surface-two-modes.md"
     ]
   },
   "ADR-0024": {
@@ -1636,5 +1638,699 @@
       }
     ],
     "related": []
+  },
+  "ADR-0026": {
+    "id": "ADR-0026",
+    "title": "Execute an accepted path onto integration branches, never onto the default branch",
+    "state": "rejected",
+    "source_pr": null,
+    "problem": "Accepting a path commits a team to merging ten pull requests in a stated order. An execution onto the default branch makes the first merge irreversible and the whole path unabandonable. It also gives the reviewer no tree to inspect between one bundle and the next. It makes the runner the first thing in this plugin family that writes to a shared branch.",
+    "decision": "A runner reads an accepted path from the ledger. It merges each bundle onto its own integration branch, built from the previous bundle's branch and rooted at the common ancestor. The default branch receives one pull request at the end, from the last bundle's branch. The reviewer commits to the path once, and separately chooses the pace: all bundles in one run, or one bundle with a checkpoint after each.",
+    "alternatives": [
+      {
+        "option": "Merge each bundle straight onto the default branch",
+        "rejected_because": "The first merge is irreversible, so a path that turns out wrong at bundle two has already changed the branch everybody works from. Abandoning it becomes a revert exercise instead of a branch deletion."
+      },
+      {
+        "option": "One integration branch for the whole path, with every bundle merged into it",
+        "rejected_because": "It is abandonable, and it gives the reviewer nothing to check out between bundles. A branch per bundle is the checkpoint, and it costs one branch each."
+      },
+      {
+        "option": "Open a pull request per bundle onto the default branch",
+        "rejected_because": "It multiplies the reviews the path exists to collapse. It also puts a partially applied path in front of everyone before the reviewer has seen the tree."
+      },
+      {
+        "option": "Let the reviewer choose the pace on every bundle, one at a time",
+        "rejected_because": "It reopens the decision the reviewer already made. They commit to the path once, and the pace is one setting for the run, not a prompt per bundle."
+      },
+      {
+        "option": "Apply the path with a rebase of each branch onto the growing integration branch",
+        "rejected_because": "It rewrites other people's branches. A merge leaves every author's checkout valid, and this design never touches a branch it does not own."
+      }
+    ],
+    "forces": [
+      "The default branch is what everybody works from, so a partially applied path there is a shared cost.",
+      "A path is a hypothesis validated by a replay, and a replay is a snapshot. The tree the runner produces can differ from the tree the replay produced.",
+      "A checkpoint is only useful if it is a real tree somebody can check out and read.",
+      "Rewriting a contributor's branch invalidates their checkout, and no author asked for it.",
+      "This runner is the first thing in the plugin family that writes to a remote. Everything before it wrote into the bundle or the ledger.",
+      "The install surface ships no hooks, so the adopting repository supplies the runner, not the plugin."
+    ],
+    "delivers": {
+      "capability": "A team accepts a whole merge path in one decision. It still stops after any bundle to check out the resulting tree before releasing the next.",
+      "benefit": "Committing to an order stops being a risk. A path that turns out wrong costs three branch deletions, and the branch everybody works from never carried it.",
+      "beneficiary": [
+        "developer",
+        "operator"
+      ]
+    },
+    "body": "# ADR-0026 — Execute an accepted path onto integration branches, never onto the default branch\n\n## Context\n\nADR-0033 decided how a path is simulated, validated and shown. Accepting one\ncommits a team to merging ten pull requests in a stated order. Something has to\ncarry that out. Where it sends its merges decides whether the decision is\nreversible.\n\nTwo facts make the default branch the wrong target.\n\n**A path is a hypothesis with a replay behind it, not a proof.** The replay runs\non a scratch worktree against recorded branch heads. A push after the run\ninvalidates it. The tree the runner produces can differ from the tree the replay\nproduced. The first merge is where that shows up.\n\n**A checkpoint has to be a real tree.** The reviewer's stated preference is to\ncommit to a path once and then control the pace. They merge one bundle and read\nthe result before releasing the next. That preference is only meaningful if the\nintermediate state sits somewhere they can check out.\n\nThe worked scenario gives the shape. Ten pull requests fall into three bundles.\nFive finish the single plugin. One splits the repository into five plugins. Four\nname and fix the new structure.\n\n## Options considered\n\n1. **Merge each bundle onto the default branch.** Simplest to implement. It makes\n   bundle one irreversible before bundle two is attempted.\n2. **One integration branch for the whole path.** Abandonable, and it offers no\n   checkpoint between bundles.\n3. **A pull request per bundle onto the default branch.** Multiplies the reviews\n   the path exists to collapse.\n4. **Rebase each branch onto the growing integration branch.** Rewrites branches\n   this design does not own.\n5. **One integration branch per bundle, chained (chosen).**\n\n## Decision\n\nA runner reads an accepted path from the ledger. It merges each bundle onto its\nown integration branch. Each branch is built from the previous one, and the first\nis built from the common ancestor:\n\n```\n0c099be  ──▶  flightdeck/<path>/1-<slug>      bundle 1\n              flightdeck/<path>/2-<slug>      bundle 2, from bundle 1\n              flightdeck/<path>/3-<slug>      bundle 3, from bundle 2\n                       │\n                  default branch              one pull request, at the end\n```\n\nThe reviewer commits to the path once, and separately chooses the pace. One\nbundle at a time is the default. The runner merges a bundle and stops, and the\nreviewer checks out that branch before releasing the next. All at once runs the\nthree merges and opens the pull request.\n\nThe runner never rebases, amends, or force-pushes a branch it does not own.\n\nOut of scope: merging the final pull request. That stays a human action on the\ndefault branch, under whatever rules that repository already has.\n\n## Consequences\n\n- **Positive:** abandoning an accepted path is three branch deletions. The branch\n  everybody works from never carried any of it.\n- **Positive:** every checkpoint is a real tree with a name. Reading the\n  intermediate state needs no special tooling.\n- **Constraint introduced:** a runner merges a bundle onto its own integration\n  branch and never onto the default branch. Abandoning an accepted path is a\n  branch deletion, not a revert.\n- **Negative:** a path of N bundles leaves N branches to clean up, and nothing\n  here deletes them.\n- **Negative:** the integration branches drift from the default branch while the\n  path runs. A long pause between bundles reintroduces the conflicts the path was\n  ordered to avoid.\n- **Negative:** this is the first remote write in the plugin family. The adopting\n  repository supplies the runner rather than the plugin, so its credentials and\n  its permissions sit outside this design.\n",
+    "maps_to": {
+      "context": "cobuilder-packaging",
+      "modules": [
+        "plugins/pr",
+        "shared/ledger.py"
+      ],
+      "rule": "A runner merges a bundle onto its own integration branch and never onto the default branch. Abandoning an accepted path is a branch deletion, not a revert."
+    },
+    "history": [
+      {
+        "state": "tentative",
+        "date": "2026-09-02"
+      },
+      {
+        "state": "decided",
+        "date": "2026-09-02"
+      },
+      {
+        "state": "challenged",
+        "date": "2026-09-18",
+        "note": "The same merge that challenged ADR-0033 also challenged this record. Its scope moved from a design of its own to one epic inside cobuilder-viewer."
+      },
+      {
+        "state": "rejected",
+        "date": "2026-09-18",
+        "by": "bjornslib",
+        "note": "Superseded by ADR-0027, which merges this record with ADR-0033 into one decision for the cobuilder-viewer design. The integration-branch execution model carries forward unchanged."
+      }
+    ],
+    "related": [
+      "docs/architecture/designs/review-flight-deck/goal.json"
+    ]
+  },
+  "ADR-0027": {
+    "id": "ADR-0027",
+    "title": "FlightDeck: one surface, two modes, a ledger-recorded merge-order recommendation",
+    "state": "decided",
+    "source_pr": null,
+    "problem": "Two designs each claimed part of the same surface. react-viewer's E5 rebuilds the single-pull-request narration view in React and names it Flight deck. review-flight-deck computes a merge order for the whole open pull-request set and gives its surface the same name. Shipping them apart means building the pull-request surface twice. The two designs also left three questions open between them, because neither had read the other. Where can a merge-order simulation run, when a browser cannot invoke git. How does the ledger carry a proposal, an acceptance, and a real outcome without breaking ADR-0019's vocabulary. Who owns the open pull request as a record-index entity.",
+    "decision": "FlightDeck is one surface in cobuilder-viewer, and it replaces the Pull requests tab. It carries two modes. Single-pull-request mode ships first, at parity with today's four-level narration, diagrams, scene art, audio, and intent and assessment sheet. Multi-pull-request mode ships later in the same design. A reviewer selects open pull requests. A skill run or scheduled workflow then simulates candidate merge orders against the common ancestor with git merge-tree. It replays the best one or two on a scratch worktree and commits the result as data. The viewer only renders that data. The ledger records a merge-order proposal, its acceptance, and the post-merge tree hash as three subtypes of the existing state line kind. OpenPullRequest extends the single-pull-request type, and the shared types module defines it once.",
+    "alternatives": [
+      {
+        "option": "Ship react-viewer and review-flight-deck as two designs, sequenced",
+        "rejected_because": "That order would build the ordering UI against the viewer E5 is about to replace, then rebuild it in React. Someone would also resolve the name collision twice, once informally and once for real."
+      },
+      {
+        "option": "Recompute the merge order live in the browser, on demand",
+        "rejected_because": "A browser cannot run git. ADR-0001's content policy also blocks it from fetching the evidence. That constraint is hard, not a preference, and it carries forward unchanged from ADR-0033."
+      },
+      {
+        "option": "A scheduled GitHub Action recomputes the plan and commits it",
+        "rejected_because": "review-flight-deck's own record already resolved automatic triggering. A scheduled skill run or a workflow supplies it, matching every other Odyssey mode. A GitHub Action would add CI infrastructure this family has never needed."
+      },
+      {
+        "option": "A persistent, org-owned service computes the join index and the merge plan across every adopting repository",
+        "rejected_because": "This option discards the install-surface rule outright. No plugin in this family ships an agent, a hook, or an MCP server, and every bundle is a per-repo, git-committed artifact by design. The pressure behind the option is real, and a committed data file answers it."
+      },
+      {
+        "option": "Three new top-level ledger line kinds: path-acceptance, bundle-merge, blocked-pr-decision",
+        "rejected_because": "ADR-0019 fixed the ledger vocabulary at comment, reply, and state, deliberately. A proposal, an acceptance referencing it, and a post-merge actual result are three subtypes of state. A future reader then never meets an unrecognised top-level kind."
+      },
+      {
+        "option": "OpenPullRequest as its own hand-copied type in the multi-pull-request epic",
+        "rejected_because": "A field renamed on one type and not the other compiles clean on both sides and drifts silently. One branded extension, defined once, makes the type checker refuse the drift instead."
+      },
+      {
+        "option": "Build both modes as one epic",
+        "rejected_because": "Multi-pull-request mode needs the typed data layer and the open-pull-request entity that single-pull-request mode does not. One epic means neither reaches parity before the other's risk lands on top of it."
+      }
+    ],
+    "forces": [
+      "ADR-0001 holds the viewer to one self-contained file under a content policy that blocks every external request. The browser cannot fetch, and it cannot run git.",
+      "ADR-0018 already computes joins in data/index.json. Both FlightDeck modes read that index rather than re-deriving joins by hand.",
+      "ADR-0019 fixed the ledger vocabulary at comment, reply, and state, and fold_threads skips a line it does not recognise.",
+      "ADR-0023 fixes the build: TypeScript, React, Vite, one committed file, and a test that fails when the build and the committed output differ.",
+      "The install surface ships no hooks, so nothing in this design starts itself. The adopting repository supplies the trigger.",
+      "A spike measured the ordering problem on real history. Thirty open branches shared one true common ancestor, and 42.5 percent of pairwise merges conflicted. A greedy minimum-conflict order beat arrival order by roughly 40 percent on stop count.",
+      "A replay is a snapshot against recorded branch heads, and a push after the run invalidates it. The ledger therefore records the exact ancestor SHA and the per-step inputs a later replay needs."
+    ],
+    "delivers": {
+      "capability": "A reviewer opens one surface for a pull request, whether it is one change or the whole open set. It shows a validated recommendation with the evidence that a git replay held, never a live simulation to wait on or trust blind.",
+      "benefit": "The team builds the pull-request surface once. The ledger stays inside its fixed vocabulary. An open pull request's type cannot drift silently from a merged one.",
+      "beneficiary": [
+        "developer",
+        "reviewer",
+        "validator-agent"
+      ]
+    },
+    "body": "# ADR-0027 — FlightDeck: one surface, two modes, a ledger-recorded merge-order recommendation\n\n## Context\n\n`react-viewer` (ADR-0023) rebuilds the bundle viewer as three surfaces: Work,\nFlight deck, and Reference. Its E5 epic names Flight deck the\nsingle-pull-request narration view. `review-flight-deck` (ADR-0033, ADR-0026)\nindependently gave its multi-pull-request merge-ordering surface the same name,\nfor something unrelated. Both designs reached `stage: \"review\"` before this\ncollision surfaced.\n\nShipping them as two designs means building the pull-request surface twice.\nE5 replaces the viewer, so an ordering UI built first would then need a rebuild\nin React. The name would also mean two things in one application, which\n`CLAUDE.md`'s Vocabulary table exists to prevent.\n\nThree questions stayed open across both source records. Where can a merge-order\nsimulation run, given that a browser cannot invoke git? How does the ledger\ncarry a proposal, an acceptance, and a real outcome without breaking\nADR-0019's fixed three-kind vocabulary? Who owns the open pull request as a\nrecord-index entity, given that a later design (`inflight-record-store`) needed\nthe same thing?\n\nA divergent-exploration pass across six frames, and a separate critic pass,\nsurfaced two more findings. First, the pressure toward precomputing the merge\nplan rather than simulating it live is real. The frame that answered with a\nscheduled GitHub Action missed that this family already solved automatic\ntriggering with a skill run or workflow. Second, a frame proposed a cross-repo\nshared computation service. That option was a trap. It reads as sound scaling\narchitecture, and it silently discards the install-surface rule that holds this\nfamily together.\n\n## Decision\n\nFlightDeck is one surface in `cobuilder-viewer`, replacing the Pull requests\ntab. It carries two modes.\n\n**Single-pull-request mode** ships first, as an epic in `cobuilder-viewer`. It\nreaches parity with today's viewer: four narration levels, Mermaid diagrams,\nscene art, narration audio, the diff, and the intent and assessment sheet.\n\n**Multi-pull-request mode** ships as a later epic in the same design. A reviewer\nselects open pull requests. A skill run or scheduled workflow, never the\nbrowser, simulates candidate merge orders with chained `git merge-tree` against\nthe common ancestor. It replays the best one or two on a scratch worktree, then\ncommits the result as `data/merge-plan.json`, alongside `data/index.json`. The\nviewer renders that file and computes nothing.\n\nThree non-authored conflict shapes get their own labels, distinct from a real\nauthorship disagreement. A shared generated file re-diverges from different\ninputs. A hot file needs to land before many others touch it. Two branches add\nidentical content independently through a shared upstream merge. A reviewer\nshould not adjudicate any of the three.\n\nThe ledger records three moments as subtypes of the existing `state` line kind.\nThe first is a merge-order proposal, carrying the base commit, the ranked\ncandidates, per-file shape labels, and a content hash of the simulation output.\nThe second is an acceptance, referencing the proposal's hash and naming the\nchosen candidate. The third is a post-merge actual result, carrying the real\nresulting tree hash. An auditor diffs the accepted candidate's predicted hash\nagainst the actual one, without asking the merger anything. A mismatch is a\nrefusable, renderable state, never silently reconciled.\n\nThe shared types module defines `OpenPullRequest` once, as\n`PullRequest & { status: \"open\" }`, in the epic that ships single-pull-request\nmode. Multi-pull-request mode may not declare a PR-shaped type of its own. A\nfield renamed on one and not reflected in the other fails the build.\n\nExecution carries ADR-0026's decision forward unchanged. A runner reads an\naccepted path from the ledger. It merges each bundle onto its own integration\nbranch, built from the previous bundle and rooted at the common ancestor. The\ndefault branch receives one pull request, from the last bundle's branch. The\nreviewer commits to the path once, then chooses the pace.\n\n**The mode switch stays decided for the deferred multi-pull-request work**, and the\nchange's account does not carry it, as ADR-0029's 2026-09-25 amendment records.\n\n## Consequences\n\n- **Positive:** the team builds the pull-request surface once. Multi-pull-request\n  mode extends single-pull-request mode's types and data layer instead of\n  duplicating them.\n- **Positive:** the ledger keeps exactly the vocabulary ADR-0019 fixed. A future\n  reader of `fold_threads` never meets an unrecognised top-level kind.\n- **Positive:** an auditor reconstructs what a reviewer saw and what actually\n  merged, from the ledger alone, without asking anyone.\n- **Constraint introduced:** multi-pull-request mode never simulates in the\n  browser. Only a skill run or scheduled workflow runs `git merge-tree`, and it\n  commits the output as data before the viewer renders it.\n- **Negative:** the ledger's proposal line must record the exact ancestor SHA\n  and the per-step simulation inputs. ADR-0033 did not carry that schema work.\n- **Negative:** referenced SHAs can fall to garbage collection between\n  acceptance and audit. Nothing here keeps them reachable, and this record does\n  not settle that.\n- **Open, deferred to the design's epics:** two measurement questions stay open.\n  The epics settle the byte-equality test that tells a generated-file conflict\n  from a real one, and the heuristic that ranks candidate orders.\n",
+    "maps_to": {
+      "context": "cobuilder-packaging",
+      "modules": [
+        "plugins/artifact/viewer/src",
+        "plugins/pr",
+        "shared/build_index.py",
+        "shared/ledger.py"
+      ],
+      "rule": "FlightDeck is one React surface with two modes. Multi-pull-request mode never simulates in the browser. A skill run or scheduled workflow computes candidate merge orders, and commits the result as data/merge-plan.json for the viewer to render. A merge-order proposal, its acceptance, and its post-merge actual result are subtypes of the ledger's existing state line kind. OpenPullRequest extends PullRequest, defined once in the shared types module."
+    },
+    "history": [
+      {
+        "state": "tentative",
+        "date": "2026-09-18"
+      },
+      {
+        "state": "decided",
+        "date": "2026-09-18",
+        "by": "bjornslib",
+        "note": "Merges ADR-0033 and ADR-0026 into one record for the cobuilder-viewer design, which itself merges react-viewer and review-flight-deck. Both source records were never approved and never shipped, and nothing outside this design depends on them separately."
+      }
+    ],
+    "related": [
+      "docs/architecture/designs/cobuilder-viewer/goal.json",
+      "docs/architecture/adr/ADR-0023-react-viewer-and-a-vite-build.md"
+    ]
+  },
+  "ADR-0028": {
+    "id": "ADR-0028",
+    "title": "A level is sections on a track, and the box owns the scroll",
+    "state": "decided",
+    "source_pr": null,
+    "problem": "A long page has no bound. A level of the Work surface put every panel in one column. Intent ran to 4.2 pages. Build's eighteen epics ran to 2.1 pages as one panel. Architecture's rule list ran to 2.31 pages. A reader in that column cannot tell how much is left. The reader cannot name the part they are in either, and cannot tell whether the next screen holds what they came for. A chat transcript fails the same way, and this viewer exists to remove that failure. A scrollbar reports a fraction of a page. It does not report a fraction of the work, so it answers a question nobody asked.",
+    "decision": "A level is a sequence of sections. One section is on screen at a time, on a horizontal track. The box owns the scroll and not the pane. So a paged level's pane does not scroll at all, and the frame a reader sees never moves. A section taller than its box scrolls inside that box. The section strip at the top, the pager bar at the bottom, and the two arrow keys move one shared index. That index is view state and never a route. The strip and the pager read their labels and their count from the sections the level rendered. So a label cannot disagree with the heading it names. The progress strip reports (index + within) / count, where within is the active box's own scroll progress. A box with no scroll range counts as fully read. So the value never resets on a section change, and it never decreases on a forward walk. A paged level drops its visible heading band. It keeps an sr-only h1 with the same id, so the focus move still lands. Four levels page today: Intent, Problem & Solution, Architecture, and Build. Build computes its sections from its epics, in delivery order and six to a section, because it records no state that divides them.",
+    "alternatives": [
+      {
+        "option": "Keep one long scrolling page per level",
+        "rejected_because": "That is the failure itself. Intent measured 4.2 pages. So a reader cannot tell how much is left, and cannot name the part they are in. A scrollbar answers a fraction of a page. The real question is how much of this level remains, and the scrollbar does not answer it."
+      },
+      {
+        "option": "A vertical scroll-snap pager the reader drags through",
+        "rejected_because": "Scroll-snap keeps the page's own scroll, so the frame still moves. A section taller than the viewport cannot snap to anything either. The reader drags, the snap fights the overflow, and the landing point depends on where the drag stopped. A section that does not fit its screen is the common case here, not the exception."
+      },
+      {
+        "option": "A separate route per section",
+        "rejected_because": "A section is view state and not a destination. A route per section multiplies the deep-link surface by the section count. Every page step would write a history entry the reader did not ask for. It also gives the rail's rule a second reading, because the rail names sections. And a step could fail the gate, when a section the work cannot fill has no route to land on."
+      },
+      {
+        "option": "The six design lenses, the model before this one",
+        "rejected_because": "The lens list described navigation rather than content. It did not survive its own contradiction: every place that named the lenses listed six, three places said seven, and no seventh lens was ever named. A lens also answers the wrong question. A reader picks a topic, a topic has no bound, and the level still runs several thousand pixels with no way to say where the reader is."
+      },
+      {
+        "option": "A wide track inside the pane, with the reader scrolling it sideways",
+        "rejected_because": "The pane would own a horizontal scroll over one very wide row. The reader's position would become a pixel offset rather than a section number. The arrow keys would have nothing discrete to step. The progress strip would report a fraction of a track several thousand pixels long. The frame would still move, which is half of the problem the model has to solve."
+      },
+      {
+        "option": "Open every panel of a level, and let each panel's own fold carry the structure",
+        "rejected_because": "A fold inside a page is a fold inside a fold. Once a level shows one section at a time, three closed panels hide most of that one section. A reader who must open three folds to see one screen has the long-page problem again, with extra presses."
+      }
+    ],
+    "forces": [
+      "The document never scrolls. The shell fills its host, and the content owns whatever scroll there is. So a level's overflow must land in a region that is not the pane.",
+      "ADR-0023 fixes the build: TypeScript, React, Vite, and one committed file. The model must hold inside a single-file React application with no router. That is why the index is component state rather than a route.",
+      "The rail lists sections and never records. A section is therefore the unit a reader moves between, and a section must be meaningful on its own.",
+      "The corpus grows. This design carries eighteen epics, and the repository carries twenty-nine slices. So no list that grows with the corpus can be a rail item or an unbounded spine.",
+      "Measured on the built mockup: Intent ran to 4.2 pages as one column. Its Done when section alone is 2.55 pages. Build's eighteen epics ran to 2.1 pages as one panel. Architecture's Boundaries section is 2.31 pages, and its Districts and alternatives section is 1.63 pages.",
+      "Measured on the built mockup: on a paged level the pane reports zero overflow, and the boxes carry the scroll. Intent's Done when box holds 849 px of range. Architecture's Boundaries box holds 722 px, and its Districts and alternatives box holds 362 px.",
+      "A section that fits one screen must still contribute its whole share of the level. Without that rule the progress strip would stall at a boundary that is not real.",
+      "The engineer's own reading of the earlier level: once a level shows less at a time, it should show everything it does show. So the panels of a paged section render open and carry no fold."
+    ],
+    "delivers": {
+      "capability": "A reader knows where they are in a level, and how much of it is left. One section is on screen, the strip names every section, and the progress strip reports a position in the level rather than a fraction of a page.",
+      "benefit": "The reader never has to guess how far the end is. That guess is the failure this viewer exists to remove. A level that grows by a section stays readable, because the reader meets one screen at a time and the strip says how many remain.",
+      "beneficiary": [
+        "developer",
+        "reviewer",
+        "the-business"
+      ],
+      "enables": [
+        "A level can hold any number of sections without becoming a long page",
+        "A section can carry a drawing, a rule set, or an epic run at its own size, because the box owns the scroll"
+      ],
+      "addresses_problem": "P3"
+    },
+    "body": "# ADR-0028 — A level is sections on a track, and the box owns the scroll\n\n## Context\n\nThe Work surface renders one piece of work as a set of levels. Intent, Problem &\nSolution, and Architecture are the levels. Build, Pull requests, and Shipped\nextend them. Each level used to render every panel it holds in one column inside\nthe pane. The pane owned the only scroll.\n\nA column of that shape has no bound. Measured on the built prototype, Intent ran\nto 4.2 pages. Architecture's Boundaries panel ran to 2.31 pages. Its Districts\nand alternatives panel ran to 1.63 pages. Build's eighteen epic rows ran to 2.1\npages as one panel.\n\nA reader in that column cannot tell how much is left. The reader cannot name the\npart they are in either. A scrollbar reports a fraction of a page, and that\nanswer does not help.\n\nThe earlier model named six design lenses. The lenses were intent,\nproblem/solution, architecture, risks and verdict, build, and pull requests. The\nlist described navigation rather than content. It also did not survive its own\nrecord. Every place that named the lenses listed six. Three places said seven,\nand no seventh lens was ever named.\n\nThe engineer's reading of the rebuilt level fixed the second half of the\nproblem. Once a level shows less at a time, it should show everything it does\nshow. So the panels of a section render open and carry no fold. A fold inside a\npage is a fold inside a fold.\n\n## Options considered\n\n1. **One long scrolling page per level.** The shape in place. Rejected: it is the\n   failure itself.\n2. **A vertical scroll-snap pager.** Rejected: scroll-snap keeps the page's own\n   scroll, so the frame still moves. A tall section cannot snap cleanly.\n3. **A separate route per section.** Rejected: a section is view state. A route\n   multiplies the deep-link surface and records every step in history.\n4. **A wide track the reader scrolls sideways inside the pane.** Rejected: the\n   reader's position becomes a pixel offset, and the frame still moves.\n5. **The six design lenses.** Rejected: the list is navigation, it contradicted\n   itself, and a topic has no bound.\n6. **Sections on a track, one on screen, with the box owning the scroll.**\n   Chosen.\n\n## Decision\n\nA level is a sequence of sections. One section is on screen at a time, on a\nhorizontal track that moves by transform.\n\n**The box owns the scroll, never the pane.** On a paged level the pane does not\nscroll at all, so the frame a reader sees never moves. A section taller than its\nbox scrolls inside that box, on both axes. The measurement holds: the pane\nreports zero overflow, and the boxes carry the range. Intent's Done when box\nholds 849 px. Architecture's Boundaries box holds 722 px, and its Districts and\nalternatives box holds 362 px.\n\n**One index drives three controls.** The section strip at the top, the pager bar\nat the bottom, and the `ArrowLeft` and `ArrowRight` keys move the same index. The\nindex is view state, so a step writes no route and the hash never moves.\n\n**The controls derive their own labels.** The strip reads the section headings\nthe level rendered. The pager reads its count from the same array of sections the\nboxes come from. A section that renames itself renames its own link.\n\n**The progress strip measures the level.** Its value is `(index + within) /\ncount`. `within` is the active box's own scroll progress. A box with no scroll\nrange counts as fully read. So a section that fits one screen contributes its\nwhole share, with no special case. The value never resets on a section change,\nand it never decreases on a forward walk.\n\n**A paged level drops its visible heading band.** The strip names the same words\nlower down, so a band above it would repeat them. The heading stays in the\ndocument as an `sr-only` `h1`. It holds the same element id, so the focus move on\na section change still lands and the document keeps its one `h1`.\n\n**A paged section carries no fold.** Its panels render open. An absent record is\nstill `absent`, which is a stated state and not a fold.\n\n**Four levels page today.** Intent holds Diagrams, Why, Done when, Abort if, and\nOut of scope. Problem & Solution holds Problem and solution, Risks, Assessment,\nand Unknowns. Architecture holds Diagrams, Architecture Decisions, Boundaries,\nand Districts and alternatives considered. Build holds three runs of six epics.\nRubrics keeps the stacking shape.\n\n**Build computes its sections, because no state divides its epics.** All\neighteen epics of this design read `no-pull-request` in the join. All eighteen\nread `planned` in the entity. All eighteen name one branch, and the design\nrecords no slices and no epic solution designs. One state over eighteen epics is\nnot a spine. The level therefore cuts the epic order it already has, six to a\nsection. A section is then one screen, and the sequence a reader follows is\npreserved.\n\n**Two more consequences follow from the same reading.** The first diagram level\nis the container drawing. It names the surfaces and the people who use them, so\nit belongs to Intent. The levels after it are mechanism and stay in Architecture.\nThe envisioned pull request moved to the Pull requests level. That level now\nfills when a work has a drafted pull request, so a design with no merged pull\nrequest can still reach the level that names the one it will open.\n\n## Consequences\n\n- **Positive:** a reader always knows how much of a level remains.\n- **Positive:** the frame a reader is reading never moves under them.\n- **Positive:** a level grows by adding a section, and the strip absorbs the\n  growth. The rail's rule is untouched, because a section is not a record.\n- **Positive:** a section can hold content of any size, because its box owns the\n  scroll. A 2.55-page section and a 0.47-page section sit on the same track.\n- **Constraint introduced:** on a paged level the pane owns no scroll. So any\n  block wider than its box must scroll inside the box. The shell's\n  scroll-ownership rules carry this as their two-region form.\n- **Constraint introduced:** the section index lives in component state and not\n  in the route. A reader cannot share a link to one section of one level. A\n  record inside a section is still shareable, and an epic deep link lands on the\n  run that holds it.\n- **Negative:** a paged level cannot be read as one document. A reader who wants\n  to scan the whole level must step through it instead. The strip and the arrow\n  keys make that cheap, and it is still a change.\n- **Negative:** the progress strip needs the active box's own scroll position, so\n  the strip is bound to the box and not to the pane. A box that cannot scroll\n  counts as fully read. That rule is honest, and it reads as a full bar on a\n  short section.\n- **Open, deferred to the design's epics:** whether a section can be addressed by\n  a route without giving the rail a second meaning. Also open: whether the strip\n  should carry a per-section reading rather than one level-wide position.\n\n## Value delivered\n\n- **New capability:** a reader sees one section at a time, and reads their\n  position in the level from the strip.\n- **New capability:** the reader no longer scrolls a column of unknown length.\n- **Benefit:** the failure this viewer exists to remove is gone from the Work\n  surface's levels. A reader who cannot tell how far the end is has that problem\n  no more, and the fix holds as a level grows.\n- **Beneficiary:** a developer reading a work item before a change, a reviewer\n  checking what a work claims, and the team that reads the bundle instead of a\n  raw diff.\n\n## Maps to\n\nContext `cobuilder-packaging`. Modules `plugins/artifact/viewer/src`,\n`plugins/pr`, and `shared`.\n\nThe rule this record establishes is the one the boundary record carries for the\nviewer. A level is a sequence of sections. The box owns the scroll. One index\ndrives the strip, the pager, and the arrow keys, and the progress strip reports a\nposition in the level.\n",
+    "maps_to": {
+      "context": "cobuilder-packaging",
+      "modules": [
+        "plugins/artifact/viewer/src",
+        "plugins/pr",
+        "shared"
+      ],
+      "rule": "A level is a sequence of sections. One section is on screen at a time on a horizontal track, and the box owns the scroll rather than the pane. The section strip, the pager bar, and the arrow keys move one shared index, which is view state and never a route. The progress strip reports (index + within) / count over the level, where a box with no scroll range counts as fully read. A paged level drops its visible heading band and keeps an sr-only h1 with the same id."
+    },
+    "history": [
+      {
+        "state": "tentative",
+        "date": "2026-09-22"
+      },
+      {
+        "state": "decided",
+        "date": "2026-09-22",
+        "by": "bjornslib",
+        "note": "Decided while the Work surface's prototype was rebuilt as sections. The engineer approved the model: a level is sections on a track, the box owns the scroll, and the panels of a section render open. The prototype lives at plugins/artifact/viewer/src/variations/sections-e/."
+      }
+    ],
+    "related": [
+      "docs/architecture/designs/cobuilder-viewer/goal.json",
+      "docs/plans/cobuilder-viewer/interaction-design.md",
+      "plugins/artifact/viewer/src/variations/sections-e/"
+    ]
+  },
+  "ADR-0029": {
+    "id": "ADR-0029",
+    "title": "Intent replaces landscape, and a work's pull request is content in its own sections, with its own address",
+    "state": "decided",
+    "source_pr": null,
+    "problem": "The narration level named `landscape` is a second name for a thing this repository already calls Intent. The Work surface's own level is Intent. This repository's rule is one name for one thing, so one level carries two names. Two more matters arrived with it, from the engineer's reading of the Work surface. A pull request that one of a work's own epics carries opens as a page of its own, and its three panels render nothing. A reader therefore cannot tell what the program intended from what the change did, without holding two pages in mind. The narration level named `file_changes` also reads as not done well, and its fate stays open. This record decides the first two matters. It leaves the third open, and it leaves the board placement of a pull request that belongs to no program open too.",
+    "decision": "The narration level `landscape` becomes `intent`, as a real rename and not a display label. The level key reaches the audio filenames, so the rename touches six places: the level keys in `story.json` and a design's `narrative.json`, `LEVEL_KEYS` in `shared/verify_bundle.py`, the authoring level list in `plugins/pr/skills/odyssey/references/story-mode.md`, the viewer's level labels, and the audio files themselves. It runs with the parity work, never immediately, because the audio files are paid authored assets that must move and must not be re-recorded. A pull request that belongs to a work is not a second surface. Seven parts land inside the work's own Intent, Problem & Solution, and Architecture sections, beside what the program intended. They are its three narration levels with their art, audio, and diagrams, its intent block, its assessment, the decisions it landed, and the facts of the change itself. A later slice owns the layering that separates the two accounts. The pull request keeps an address of its own, and that address renders the same content rather than a second surface.",
+    "alternatives": [
+      {
+        "option": "Keep the level key `landscape` and show the word Intent in the viewer alone",
+        "rejected_because": "One name for one thing. A display label leaves the record, the audio filename, and the authoring guide calling the level landscape. The screen and the record then disagree, and the next session reads the record rather than the screen."
+      },
+      {
+        "option": "Rename the key and re-record the narration audio in the same pass",
+        "rejected_because": "The audio is paid authored content. `data/audio/` holds one file per narrated level, and a file needs a new name rather than new words. A re-record spends Gemini calls to say the same narration again."
+      },
+      {
+        "option": "Rename `landscape` immediately, in its own change",
+        "rejected_because": "The parity work touches the same level keys and the same viewer level list. Two changes over one key set means the second rewrites what the first landed. The rename travels with the parity work instead."
+      },
+      {
+        "option": "Show a pull request that belongs to a work as a page of its own, at parity with the standalone case",
+        "rejected_because": "The work's own Intent, Problem & Solution, and Architecture levels already carry what the program intended. A second page makes a reader hold two pages in mind to answer one question."
+      },
+      {
+        "option": "Add the change's content behind a fold inside each section",
+        "rejected_because": "ADR-0028 fixed the shape. A paged section carries no fold, and its panels render open. A fold inside a page is a fold inside a fold."
+      },
+      {
+        "option": "Render the change inside its work and drop the pull request's own address",
+        "rejected_because": "A reviewer arrives from a pull request number, from a commit, or from a review thread. Each of those needs one URL for that pull request."
+      },
+      {
+        "option": "Add the content with no mark between the program's intent and the change's act",
+        "rejected_because": "It makes two accounts read as one. A later slice owes that mark, and this record states the debt."
+      }
+    ],
+    "forces": [
+      "CLAUDE.md's Vocabulary section states the rule: one name for one thing, and the same short word never names two different things. A narration level named `landscape` and a level named Intent are two names for one idea.",
+      "Two different things are both called a level in this repo. A story bundle calls `landscape`, `problem_solution`, `architecture`, and `file_changes` its levels. The Work surface calls Intent, Problem & Solution, Architecture, Build, Pull requests, and Shipped its levels.",
+      "The level key reaches an audio filename. `shared/verify_bundle.py` builds `data/audio/pr{N}_{level_key}.wav`, and the self-bundle carries `pr2_landscape.wav`.",
+      "The audio is a paid, authored asset. `data/audio/` holds one file per narrated level, and the self-bundle holds three files for pull request 2, one each for `landscape`, `problem_solution`, and `architecture`. `file_changes` carries no voice script, and the key set is four.",
+      "The viewer's level labels live in one list. `plugins/artifact/viewer/src/shell/readiness.ts` holds `{ key: landscape, label: Landscape }`.",
+      "Two more readers of the same key each carry their own level list: `shared/migrate_bundle.py` and `plugins/pr/scripts/generate_prompts.py`.",
+      "ADR-0028 fixed the shape the added content lands in. A level is a sequence of sections, one section on screen at a time, and a box owns the scroll rather than the pane.",
+      "ADR-0027 places a single pull request on the FlightDeck surface and gives it three narration levels. This record does not build a second surface for it.",
+      "A pull request already joins to a work item. `joins.epic_to_pull_request` resolves the join, and the shell reads it as `work.pullRequests` and `work.pullRequestVia`.",
+      "The work's three levels take their names from `SECTION_TITLE`, and `pagedSections` in `plugins/artifact/viewer/src/shell/App.tsx` lays out their sections.",
+      "The pull request's own detail already keys its three levels `intent`, `problem-and-solution`, and `architecture`, and renders nothing in them today. Each panel says the surface does not read a pull request's own story records yet.",
+      "The bundle already carries the change's own facts. A timeline entry holds `size`, `touched`, `commit`, and `date`, and its `levels` hold the narration and the voice.",
+      "The corpus grows. The self-bundle holds seventeen timeline entries, and a bundle can hold four narration levels per pull request."
+    ],
+    "delivers": {
+      "capability": "A reader of a work reads the change's own account inside the work's Intent, Problem & Solution, and Architecture levels. One pull request still reaches an address of its own.",
+      "benefit": "One word names one level, so a reader and a record agree. The record states the audio move before somebody performs the rename and meets that cost by surprise.",
+      "beneficiary": [
+        "developer",
+        "reviewer"
+      ],
+      "enables": [
+        "A level's key can take a new name once the audio move lands with it",
+        "The work's own levels can carry two accounts, once a later slice adds the mark between them"
+      ]
+    },
+    "body": "# ADR-0029 — Intent replaces landscape, and a work's pull request is content in its own sections, with its own address\n\n## Context\n\nThe Work surface renders one piece of work as a set of levels. Intent, Problem &\nSolution, Architecture, Build, Pull requests, and Shipped are the levels. ADR-0028\nmade each level a sequence of sections, with one section on screen at a time.\n\nA story bundle uses the word level for something else. A pull request's narration\ncarries four of them: `landscape`, `problem_solution`, `architecture`, and\n`file_changes`. `shared/verify_bundle.py` holds those four keys in `LEVEL_KEYS`.\nThis record says **narration level** for the bundle's four, and **level** for the\nWork surface's six.\n\nThree matters came up together while the engineer read the Work surface's\nprototype.\n\n**One level carried two names.** The narration level named `landscape` and the\nWork surface's level named Intent describe the same idea. The narration level's\nauthoring guide gives it a one-line hook and a mechanical summary of size and\ntouched directories. The Work surface's Intent level answers why the work exists.\nA reader meets two names for one thing, and this repository's rule is one name for\none thing.\n\n**A pull request opened a page of its own.** A pull request that one of a work's\nown epics carries reached a page of its own, inside the Pull requests level. Its\nthree panels render nothing today, and each says the surface does not read a pull\nrequest's own story records yet. So the page could not answer what the program\nintended or what the change did. The work's own Intent, Problem & Solution, and\nArchitecture levels hold the program's account. The change's account sat one page\naway.\n\n**Two matters stayed open.** The engineer reads the narration level named\n`file_changes` as not done well, and wants to remove it without having decided.\nWhere a pull request that belongs to no program sits on the Work board is also\nopen, and the engineer is still working through it.\n\n## Options considered\n\n1. **Keep the key `landscape` and show Intent on screen alone.** Rejected. A\n   display label leaves the record, the audio filename, and the authoring guide\n   calling the level landscape. The screen and the record then disagree.\n2. **Rename the key and re-record the narration audio in the same pass.** Rejected.\n   The audio is paid authored content. A file needs a new name rather than new\n   words, so a re-record spends Gemini calls to say the same narration again.\n3. **Rename `landscape` immediately, in its own change.** Rejected. The parity work\n   touches the same level keys and the same viewer level list. Two changes over one\n   key set means the second rewrites what the first landed.\n4. **Show a pull request that belongs to a work as a page of its own.** Rejected.\n   The work's own levels already carry what the program intended. A second page\n   makes a reader hold two pages in mind to answer one question.\n5. **Add the change's content behind a fold inside each section.** Rejected.\n   ADR-0028 fixed the shape. A paged section carries no fold, and its panels render\n   open. A fold inside a page is a fold inside a fold.\n6. **Render the change inside its work and drop the pull request's own address.**\n   Rejected. A reviewer arrives from a pull request number, a commit, or a review\n   thread. Each of those needs one URL for that pull request.\n7. **Add the content with no mark between the program's intent and the change's\n   act.** Rejected. It makes two accounts read as one. A later slice owes that mark,\n   and this record states the debt.\n8. **Rename `landscape` to `intent`, add the change's content into the work's own\n   levels, and keep the pull request's address as the same render.** Chosen.\n\n## Decision\n\n**One level, one name.** The narration level `landscape` becomes `intent`. The\nrename is a real rename, not a display label. It runs with the parity work, and\nnever immediately.\n\n**The rename reaches six places, and the audio is the sharp edge.** The level key\nis part of the audio filename. `data/audio/pr{N}_{level_key}.wav` is the path, so\n`data/audio/pr2_landscape.wav` in the self-bundle must become\n`data/audio/pr2_intent.wav`. The six places are the level keys in `story.json` and\na design's `narrative.json`, `LEVEL_KEYS` in `shared/verify_bundle.py`, the\nauthoring level list in `plugins/pr/skills/odyssey/references/story-mode.md`, the\nviewer's level labels in `plugins/artifact/viewer/src/shell/readiness.ts`, and the\naudio files themselves. Two more readers carry their own copy of the same key\nlist, `shared/migrate_bundle.py` and `plugins/pr/scripts/generate_prompts.py`, so\neach takes the new key too.\n\n**The audio files are what make the rename more than an edit.** Every file is a\npaid, authored asset. The rename must move each file to its new name in every\nbundle, and it must not re-record one. A level holds a file only when its `voice`\nfield carries text, so one file exists per narrated level. The self-bundle holds\nthree files for pull request 2, one each for `landscape`, `problem_solution`, and\n`architecture`, while the key set is four.\n\n**A pull request that belongs to a work is not a second surface.** Its content\nlands in the work's own Intent, Problem & Solution, and Architecture levels, beside\nwhat the program intended. The addition carries seven parts:\n\n- the three narration levels, with their scene art, their narration audio, and\n  their diagrams;\n- the change's intent block, the `intent` field a timeline entry carries, which\n  Generate mode captured before the code existed;\n- the change's assessment, the `assessment` field the same entry carries;\n- the decisions the change landed, read from the entry's `adrs` list;\n- the facts of the change itself, read from the entry's `size`, `touched`,\n  `commit`, and `date` fields, and from its diff.\n\n**The layering is a later slice's work.** A reader must be able to tell what the\nprogram intended from what the change did. This record fixes the parts and not\ntheir marks. The slice that builds the addition owns the mark, the order, and the\nwords that separate the two accounts.\n\n**The pull request keeps an address of its own.** The address is the same render,\ndeep-linked, and never a second surface. The viewer carries the route already. The\nPull requests level opens one pull request at `#/<work>/pull-requests/<pr>`, and\nthe shell reads it as `focusPr`. That render becomes the added content, and the\naddress selects it. A reader who follows a pull request number lands on the\ncontent a reader of the work's levels reads.\n\n## Consequences\n\n- **Positive:** one name covers one level. The record, the audio filename, the\n  authoring guide, and the screen agree.\n- **Positive:** a reader of a work reads the program's intent and the change's act\n  on one surface.\n- **Positive:** the pull request's address survives. A reviewer who arrives from a\n  pull request number, a commit, or a thread reaches the same content.\n- **Constraint introduced:** the narration level's only key is `intent`, and every\n  reader of that key takes the new name. The audio filename follows the key, so a\n  rename of the key is always a move of the file.\n- **Constraint introduced:** a pull request that belongs to a work renders as\n  content inside that work's levels. It never renders as a second surface with a\n  layout of its own.\n- **Negative:** the rename lands across six files and every bundle's audio\n  directory, and a browser cannot do it. A bundle that carries audio needs the move\n  on disk.\n- **Negative:** two changes touch one key set. The parity work and the rename must\n  land together, and a rename that lands first leaves the level list to be rewritten\n  twice.\n- **Negative:** the addition puts two accounts inside one level before the mark\n  exists. Between the two slices, a reader cannot tell the program's intent from\n  the change's act.\n\n## Not decided\n\nThree matters stay open. No later slice may read them as settled.\n\n**The board and its navigation.** A pull request that belongs to no program has no\nplace on the board yet. Three shapes are open: a sibling row after the designs, a\nchild row under a design, or a filtered view of one board. The engineer said they\nare still working through it.\n\n**The fate of the narration level `file_changes`.** The engineer wants to remove\nit, and reads the level as not done well today. No decision stands. One candidate\nis cheap if it is chosen: drop `file_changes` as a narration level and keep the\ndiff as a view of its own. That shape needs no migration, because the viewer\nrenders whatever narration levels a bundle carries.\n\n**What a standalone pull request shows, section by section.** The engineer asked\nfor a proposal and has not answered it yet. This record does not invent one.\n\n## Value delivered\n\n- **New capability:** a reader of a work reads the change's own account inside the\n  work's Intent, Problem & Solution, and Architecture levels.\n- **New capability:** one pull request reaches one address, and that address shows\n  the content the work's levels carry.\n- **Benefit:** the level named `landscape` no longer carries a second name for\n  Intent. A reader and a record use one word for one thing. The record states the\n  audio move before somebody performs the rename and meets that cost by surprise.\n- **Beneficiary:** a developer reading a work item and its change, and a reviewer\n  who arrives from a pull request number.\n\n## Maps to\n\nContext `cobuilder-packaging`. Modules `plugins/artifact/viewer/src`, `shared`, and\n`plugins/pr`.\n\nThe rule this record establishes is the one the boundary record carries for the\nviewer. The narration level's only key is `intent`, and the audio filename follows\nthat key. A pull request that belongs to a work renders as content inside that\nwork's own levels, and its own address renders that same content rather than a\nsecond surface.\n\n## Amendment, 2026-09-25\n\n**This section states what moved, and it governs where the two disagree.** The\nengineer chose a different shape after this record landed. A prototype now shows\nthat shape. The record above keeps its original text, so a reader sees both the\ndecision of 2026-09-24 and this amendment. The front matter's `decision` field\nkeeps that original wording too, and `maps_to.rule` carries the invariant that\nsurvives, because a tool reads that field.\n\n1. **A work's pull request keeps its own space.** The work item and its pull\n   request are two spaces. A reader jumps between them on the same section:\n   Build's Intent to Review's Intent, and back. That supersedes the part of the\n   original decision that put the pull request's content inside the work's own\n   Intent, Problem & Solution, and Architecture sections. The pull request's\n   address, its intent block, its assessment, its decisions, and the facts of the\n   change all keep a place of their own.\n\n2. **The rail groups its rows in two parts.** Build holds the program's account,\n   and it reads Intent, Problem & Solution, Architecture, Epics, and Rubrics.\n   Review holds the change's account, and it reads Intent, Problem & Solution,\n   Architecture, and File Diffs. Three section names appear in both groups, and\n   that repetition makes the same-section jump possible. An earlier three-part\n   grouping carried a third group, Deploy, and the engineer removed it on\n   2026-09-25.\n\n3. **The rail's fold and its arrow walk obey one convention.** The walk visits\n   every row of both groups, open or closed. The group that holds the current row\n   stays open, so the rail refuses a press that would close it. The control\n   carries that reason in its own accessible name. The convention belongs to the\n   rail, not to the prototype that showed it, so the shipped rail takes it too.\n\n4. **The account mark is a word and a glyph, with no fill.** `Program` stands by a\n   person, and `Change` stands by a pull request. An earlier proposal gave the mark\n   a background fill as well, and the engineer removed it on 2026-09-25. A filled\n   heading reads as something selected, and neither mark selects anything.\n\n5. **The decisions a change landed come from the index's join.** Point 4 of the\n   original decision reads the decisions \"from the entry's `adrs` list\". The parity\n   slice reads them from `joins.adr_to_pull_request` instead, because that join is\n   what `data/index.json` derives, and a second list on the entry can and does\n   disagree with it. One source, so the change's account and the index cannot show\n   two answers for one pull request. The entry's `adrs` list stays as the record\n   `build_index.py` builds the join from, and no surface reads it directly.\n\n6. **What stands unchanged.** The rename of the narration level `landscape` to\n   `intent` stands, with its six places and with the audio move. That move ran\n   with the parity work, and it re-recorded no paid file. The change's own\n   address stands at `#/<work>/pull-requests/<pr>`, and a named section appends one\n   segment in the shell's existing slot. The three matters that the original record\n   leaves undecided stay undecided. Where a pull request that belongs to no program\n   sits on the board stays open, and so does the fate of `file_changes`. What a\n   standalone pull request shows, section by section, stays open too.\n\n7. **A pre-rename record stays readable.** `plugins/artifact/viewer/src/shell/readiness.ts`\n   holds `PRE_RENAME_LEVEL_KEY`, a table that maps the level's current key to the one it\n   carried before the rename. The table holds one entry, `{ intent: \"landscape\" }`. A\n   reader asks for the level's current key first and for the pre-rename key second. A\n   design record authored before the rename therefore still reads as narrated, rather than\n   as an empty level. The validator offered two ways out on 2026-09-25. The first way drops\n   the table and renames the fixture data. The second way keeps the table and records the\n   decision here. This record takes the second way, because a committed bundle holds\n   records written before the rename, and the table protects them. Nothing writes the old\n   key. The table is a read of an older record, and it is never a second name for the\n   level. A later session may drop the read once no bundle in service predates the rename.\n\n**The prototype is the evidence.** It sits at\n`plugins/artifact/viewer/src/variations/flightdeck/`. The engineer read it at\n`http://localhost:5273/variations/flightdeck/dev.html`. The prototype shows the\nword Intent on the screen and reads the bundle's own `intent` key, because the\nrename has landed and the bundle now writes that key. The prototype was evidence\nfor the shape before the rename; after it, the prototype reads the same key the\nshipped shell reads, so the two cannot disagree about the level's name.\n",
+    "maps_to": {
+      "context": "cobuilder-packaging",
+      "modules": [
+        "plugins/artifact/viewer/src",
+        "shared",
+        "plugins/pr"
+      ],
+      "rule": "A work's pull request keeps its own address, `#/<work>/pull-requests/<pr>`, and renders as a space of its own, never as content inside the work's own levels. A reader reaches the program's account and the change's account by a jump on the same section. The narration level's only key becomes `intent` once the audio move lands."
+    },
+    "history": [
+      {
+        "state": "decided",
+        "date": "2026-09-24",
+        "by": "bjornslib",
+        "note": "Decided while the engineer read the Work surface's prototype. The engineer directed three things: rename the narration level landscape to intent, add a pull request's own content into its work's Intent, Problem & Solution, and Architecture levels rather than showing a separate page, and keep a pull request's own URL. The engineer left the board placement, the fate of file_changes, and the standalone pull request's section list open. An agent wrote this record, so the state is decided and never approved."
+      },
+      {
+        "state": "decided",
+        "date": "2026-09-25",
+        "by": "bjornslib",
+        "note": "Amended in place, because the model moved after the record landed and the engineer then read a prototype of the new shape. A work's pull request keeps its own space, so a reader jumps between the two accounts on the same section. The rail groups its rows as Build and Review, and the account mark carries a word and a glyph. The rename of landscape to intent, the change's own address, and the three open matters stand. The state stays decided, because an agent wrote this record and an agent does not approve its own record."
+      },
+      {
+        "state": "decided",
+        "date": "2026-09-25",
+        "by": "bjornslib",
+        "note": "Amended in place again, after the parity work landed the rename. The viewer's level reader keeps `PRE_RENAME_LEVEL_KEY`, a table that maps `intent` to `landscape`. So a design record authored before the rename still reads as narrated rather than as an empty level. The validator offered two ways out: drop the table and rename the fixture data, or keep the table and record the decision here. The record takes the second way, because a committed bundle holds records written before the rename and the table protects them. The rename, the change's own address, and the three open matters stand. The state stays decided, because an agent wrote this record and an agent does not approve its own record."
+      }
+    ],
+    "provenance": "authored",
+    "related": [
+      "docs/architecture/designs/cobuilder-viewer/goal.json",
+      "docs/architecture/designs/cobuilder-viewer/intent.json",
+      "docs/architecture/designs/cobuilder-viewer/open-questions.md",
+      "plugins/artifact/viewer/src/shell/sections.tsx",
+      "plugins/artifact/viewer/src/shell/readiness.ts"
+    ]
+  },
+  "ADR-0030": {
+    "id": "ADR-0030",
+    "title": "A change is checked against the program it implements",
+    "state": "decided",
+    "source_pr": null,
+    "problem": "A pull request that implements a program is assessed as a change on its own. The assessment compares the pull request's own pre-stage `intent` against its merged diff, and it reports the differences in a `drift` array. That is a comparison inside one pull request. Nothing compares the change against the program that produced it, so no reader learns from the assessment whether the change met the program's targets or where it did something different. The program's records exist. They are its intent, its problem and its solution, its architecture level, its epic list, and its slice rubrics. Three reference files already carry half an instruction to read them, and none of the three has a consumer.",
+    "decision": "A pull request that belongs to a program is checked against that program's records, and every difference between what the program targeted and what the change did is stated in what the generating agent and the reviewing agent write. The check reads the program's intent, its problem and its solution, its architecture level, its epic list, and its slice rubrics, reached from the pull request through the record index. It measures against the epic that carries the pull request, never against a whole multi-epic design. A pull request that belongs to no program says so in one sentence, instead of reporting no difference.",
+    "alternatives": [
+      {
+        "option": "Extend the existing `drift` array to read the program's records too",
+        "rejected_because": "The `drift` array is a comparison inside one pull request, between what its author said before the merge and what the merge did. Its four kinds, `out_of_scope`, `unaddressed_risk`, `adopted_alternative`, and `delta_shift`, all read the pull request's own `intent` block. The program's records are a different corpus. One array holds one comparison, or a reader cannot tell which corpus a claim came from."
+      },
+      {
+        "option": "Attach the whole design to every pull request and measure the pull request against all of it",
+        "rejected_because": "`review-mode.md` §7 forbids this in one sentence. No single pull request was going to satisfy all of a multi-epic design. The epic is the join, so the check measures against the epic that carries the pull request."
+      },
+      {
+        "option": "Report the difference into the `assessment` block alone, and let the narrative read from it",
+        "rejected_because": "A reader of the story reads the narrative levels, not the assessment JSON. `story-mode.md` states that the author's account and the code's account can disagree, and it points that disagreement at the post stage. A computed field with no reader reports nothing."
+      },
+      {
+        "option": "Decide nothing, and leave the three existing half-instructions to carry it",
+        "rejected_because": "None of the three has a mechanical consumer, and CLAUDE.md states the outcome of that shape: a step with no mechanical consumer gets skipped, however well it is documented. `review-mode.md` §7, `interview-guide.md` §2, and `story-mode.md` each already carry part of this rule, and no artifact records that any of the three ran."
+      },
+      {
+        "option": "Make the check a gate that refuses a pull request whose change departed from the program",
+        "rejected_because": "`review-mode.md` §9 settles this. No gate. Nothing in the assessment blocks a merge or refuses to open a pull request. The engineer asked for a statement of the difference, not a refusal."
+      },
+      {
+        "option": "Read the program's records by naming them from the pull request, by hand",
+        "rejected_because": "That is the work the join already does. The record index resolves 32 epics to a pull request, across 6 designs, so a hand-written list repeats a resolution the index holds and drifts from it on the next design."
+      }
+    ],
+    "forces": [
+      "The engineer asked for it, in these words: the agent that creates and reviews a pull request should read the original intent, problem and solution, architecture design, epics and rubrics, then check it against what was implemented, and state in what it writes out wherever something different was done than originally targeted.",
+      "The join exists and it resolves. `joins.epic_to_pull_request` in `.cobuilder-architect/self/data/index.json` maps 32 epics to a pull request, across 6 designs. `joins.adr_to_pull_request` resolves all 29 records, 15 through a direct `source_pr` and 14 through an epic.",
+      "The second join path is thinner, and it disagrees with the first. `intent.design` is set on 4 of the 17 timeline entries, and it names 3 designs. `plugin-split`, `design-mode`, and `cobuilder-implement` each reach a pull request through an epic, and no timeline entry names them.",
+      "An epic's promise is prose. 73 epic entities carry 0 `outcome` values and 72 `note` values. The design-mode schema calls `epics[].outcome` a testable criterion, and no record holds one.",
+      "The rubrics are the sharpest gap. 47 rubric files sit under `.cobuilder/rubrics/<plan-slug>/`, committed and reachable by no entity in the record index. The plan slug is not the design name. `cobuilder-family` holds the rubrics, and `plugin-split` is the design.",
+      "The nearest projection is the slice. `joins.slice_to_epic` resolves 45 slices, and all 45 carry an `ends_with` and a `score`. That is the rubric's result, not the rubric's criteria.",
+      "Three references already carry part of this rule, and none of them has a consumer. `review-mode.md` §7 says to measure drift per epic against that epic's slice of the design. `interview-guide.md` §2 says a set `intent.design` makes the design's intent block the hypothesis. `story-mode.md` says the two accounts can disagree, and points that disagreement at the post stage.",
+      "CLAUDE.md states the rule this record answers. A process step with no mechanical consumer gets skipped, however well it is documented. Gate 4b is the recorded example of that failure.",
+      "The assessment is judgment work, not a defect hunt. `review-mode.md` §9 keeps commodity findings out of it, because a review that mixes them with judgment buries the judgment.",
+      "A design's records already carry four levels, and a bundle can hold seventeen timeline entries. Eight of the 15 designs carry an `intent.json`, a `narrative.json`, and an `assessment.json`. The other seven carry a `goal.json` only, so a check must survive a program whose records are sparse."
+    ],
+    "delivers": {
+      "capability": "A reader of a pull request learns which of its program's targets the change met, and where the change did something different.",
+      "benefit": "The program's records stop being a document a reader has to hold in mind beside the assessment. The difference is stated where the change is reviewed, instead of being reconstructed long after the merge.",
+      "beneficiary": [
+        "developer",
+        "reviewer"
+      ],
+      "enables": [
+        "A program's own assessment can measure what its epics delivered against what it targeted",
+        "A decision record extracted after the merge can name a departure instead of rediscovering it"
+      ],
+      "addresses_problem": "P1"
+    },
+    "body": "# ADR-0030 — A change is checked against the program it implements\n\n## Context\n\nThe plugin narrates a pull request as a change. It interviews the author,\nassesses the change against the bundle, and writes a story a reader opens. The\nprogram that the change implements is a separate set of records, under\n`docs/architecture/designs/<name>/`. It holds an intent, a problem and a\nsolution, an architecture level, an epic list, and a set of slice rubrics.\n\nThe two record sets never meet. The assessment compares the pull request's own\npre-stage `intent` against its merged diff. `review-mode.md` §7 calls that array\n`drift`, and it fixes four kinds, `out_of_scope`, `unaddressed_risk`,\n`adopted_alternative`, and `delta_shift`. Each kind reads the pull request's own\n`intent` block. That is one comparison, inside one pull request.\n\nThe engineer names the missing one. An agent that generates or reviews a pull\nrequest ought to read the program's records: its intent, its problem and its\nsolution, its architecture, its epics, and its rubrics. It ought to check those\nrecords against the implementation, and to state wherever the implementation did\nsomething different from what was targeted.\n\n**Three reference files already write half of that rule, and none has a\nconsumer.** `review-mode.md` §7 says to measure drift per epic against that\nepic's slice of the design. `interview-guide.md` §2 says a set `intent.design`\nmakes the design's intent block the hypothesis, so the five design topics need\nno re-interview. `story-mode.md` says the author's account and the code's\naccount can disagree, and it points that disagreement at the post stage. No\nartifact records that any of the three ran. CLAUDE.md states the rule this\nrecord answers: a process step with no mechanical consumer gets skipped,\nhowever well it is documented.\n\n**The join resolves, and one path is thinner than the other.** The record index\ncarries `joins.epic_to_pull_request`, which maps 32 epics to a pull request\nacross 6 designs. The timeline carries a second path, `intent.design`, which\nnames 3 designs and appears on 4 of the 17 entries. Three of those designs\nresolve through an epic, and no timeline entry names them. So a reader who\narrives at a pull request can reach its program through the epic, and not always\nthrough `intent.design`.\n\n**The program's targets are the weak part of the join.** 73 epic entities carry\n0 `outcome` values and 72 `note` values, so the target an epic promised is\nprose. The rubrics are sharper still: 47 rubric files sit under\n`.cobuilder/rubrics/<plan-slug>/`, committed and reachable by no entity, and the\nplan slug is not the design name. `cobuilder-family` holds the rubrics, and\n`plugin-split` is the design. The nearest projection is the slice, and all 45\nslices carry an `ends_with` and a `score`. That is the rubric's result, not the\nrubric's criteria.\n\n## Options considered\n\n1. **Extend the existing `drift` array.** Rejected. Its four kinds read the\n   pull request's own `intent`. The program's records are a different corpus,\n   and one array holds one comparison.\n2. **Measure the pull request against the whole design.** Rejected.\n   `review-mode.md` §7 already forbids it. No single pull request satisfies a\n   multi-epic design.\n3. **Report into the `assessment` block alone.** Rejected. A reader reads the\n   narrative. A computed field with no reader reports nothing.\n4. **Decide nothing, and leave the three half-instructions in place.**\n   Rejected. None has a consumer, and this repository records what happens\n   next.\n5. **Make it a gate.** Rejected. `review-mode.md` §9 keeps the assessment out\n   of the merge path. The engineer asked for a statement, not a refusal.\n6. **Name the program's records from the pull request, by hand.** Rejected. The\n   index already resolves 32 epics to a pull request. A hand-written list\n   repeats that work and drifts from it.\n7. **Check a pull request against the program it implements, and state every\n   difference where a reader finds it.** Chosen.\n\n## Decision\n\n**A change is checked against the program that produced it.** The generating\nagent and the reviewing agent each read the program's own records. Those records\nare its intent, its problem and its solution, its architecture level, its epic\nlist, and its slice rubrics. Each agent states the differences between what the\nprogram targeted and what the change did.\n\n**The join is the record index, and the epic is the measure.** A pull request\nreaches its program through `joins.epic_to_pull_request`. The check measures\nagainst the epic that carries the pull request, never against a whole\nmulti-epic design. This keeps `review-mode.md` §7's existing bound and gives it\nits first consumer.\n\n**A pull request that belongs to no program says so.** `intent.design` is the\ndiscriminator, and 13 of the 17 timeline entries carry no design. One sentence\nstates that, and the check does not report the absence as a clean result\nagainst a program it never read.\n\n**The difference reaches the output, not only a field.** It belongs in the\nassessment the pull request carries and in the narrative a reader reads. E4 of\nthe design that carries this record owns the placement, the order, and the\nwording.\n\n**The program's targets must become readable before the check can cite them.**\nAn epic's promise is a `note`, and a rubric is unprojected. The design that\ncarries this record gives that gap its own epic, and it allows the nearest\navailable stand-in only if the epic states which stand-in it used.\n\n**The check is a report.** It writes no gate, blocks no merge, and opens no pull\nrequest. It is a fourth thing the assessment answers, beside the three questions\n`review-mode.md` §3 already asks.\n\n## Consequences\n\n- **Positive:** a reader learns what the program targeted and where the change\n  departed from it, at the place the change is reviewed.\n- **Positive:** the three half-instructions in `review-mode.md` §7,\n  `interview-guide.md` §2, and `story-mode.md` gain one consumer each.\n- **Positive:** the check survives a sparse program. Seven of the 15 designs\n  carry a `goal.json` only.\n- **Constraint introduced:** a pull request that belongs to a program is\n  assessed against that program's records, reached through the record index and\n  measured against the epic that carries the pull request. Every difference is\n  stated in the assessment and in the narrative. A pull request that belongs to\n  no program says so, and the assessment never claims a target it did not read.\n- **Negative:** the check reads a corpus larger than the diff. A design can\n  carry an intent, a narrative, an assessment, diagrams, and a draft, so the\n  read grows with the program.\n- **Negative:** the two join paths disagree today. Three designs resolve through\n  an epic and no timeline entry names them, so a check that trusts\n  `intent.design` alone silently skips them.\n- **Negative:** an epic's target is prose in a `note`, so the check compares a\n  change against a sentence. Until the index projects the target, the comparison\n  rests on a reading rather than on a record.\n\n## Not decided\n\nTwo matters stay open. No epic may read them as settled.\n\n**Which join path is authoritative.** The epic path resolves 32 epics across 6\ndesigns. `intent.design` resolves 3 designs and is set on 4 entries. The check\nneeds one answer. E1 of `docs/architecture/designs/implementation-conformance/`\nowns that decision, and it may choose the epic path, the `intent.design` path\nwith a fallback, or both with a stated precedence.\n\n**How a program stores its target, so a check can cite it.** This record leaves\nthree shapes open. A design can fill the epic's `outcome` field. The record\nindex can project each rubric as an entity of its own. The slice's existing\n`ends_with` and `score` can serve as the target. E2 of the same design owns that\ndecision, and this record invents none of them.\n\n## Value delivered\n\n- **New capability:** a reader of a pull request learns which of its program's\n  targets the change met, and where the change did something different.\n- **Benefit:** the program's records no longer live beside the assessment, in a\n  document a reader must hold in mind. The assessment states the difference\n  where the change is reviewed, so it records a departure from the plan instead\n  of reconstructing the departure long after the merge.\n- **Beneficiary:** a developer reading a pull request, and a reviewer who wants\n  to know whether the change did what the program asked.\n\n## Maps to\n\nContext `cobuilder-packaging`. Modules `plugins/pr` and `shared`.\n\nThe rule this record establishes is the one the boundary record carries for the\nassessment. A pull request that belongs to a program is assessed against that\nprogram's own records, reached through the record index and measured against the\nepic that carries the pull request. Every difference between what the program\ntargeted and what the change did is stated in the assessment and in the\nnarrative. A pull request that belongs to no program says so in one sentence.\n",
+    "maps_to": {
+      "context": "cobuilder-packaging",
+      "modules": [
+        "plugins/pr",
+        "shared"
+      ],
+      "rule": "A pull request that belongs to a program is assessed against that program's own records, reached through the record index and measured against the epic that carries the pull request. Every difference between what the program targeted and what the change did is stated in the assessment the pull request carries and in the narrative a reader reads. A pull request that belongs to no program says so in one sentence, and the assessment never claims a target it did not read."
+    },
+    "history": [
+      {
+        "state": "decided",
+        "date": "2026-09-25",
+        "by": "bjornslib",
+        "note": "Decided while the engineer recorded the gap in a work item. Design stage 0 and stage 1 grounding ran for the design that carries this record, at docs/architecture/designs/implementation-conformance/. Stages 2 through 7 are deliberately deferred, so the options above are the shapes the corpus rules out and not the output of a challenge gate. An agent wrote this record, so the state is decided and never approved."
+      }
+    ],
+    "provenance": "authored",
+    "related": [
+      "docs/architecture/designs/implementation-conformance/goal.json",
+      "plugins/pr/skills/odyssey/references/review-mode.md",
+      "plugins/pr/skills/odyssey/references/interview-guide.md",
+      "plugins/pr/skills/odyssey/references/story-mode.md",
+      "shared/build_index.py"
+    ]
+  },
+  "ADR-0031": {
+    "id": "ADR-0031",
+    "title": "Beads is the storage layer for CoBuilder programs, epics, and slices",
+    "state": "decided",
+    "source_pr": null,
+    "problem": "CoBuilder workflow state has no storage layer. Slice states, scores, and attempts live in the markdown tables of docs/plans/<slug>/04-slices.md. Any session can silently contradict that prose. Epic branches and pull-request numbers live in hand-maintained index joins. Nothing below the file level answers what is next. Nothing answers what blocks what, or what changed while two sessions worked one ladder. The record index has a read model and no write model.",
+    "decision": "Beads v1.3.0 becomes the storage layer for CoBuilder workflow state. The narrated repo gains one .beads tracker. Each program, epic, and slice becomes one beads issue. The issue is typed, parented, and chained in the slice ladder with blocked-by dependencies. Every record keeps its shape under a namespaced metadata envelope, metadata.cb. Beads stores the envelope as well-formed JSON on the issue. The markdown sources of record stay untouched as documents. Beads holds the state. shared/build_index.py gains one beads read and writes the same data/index.json. The viewer stays build-free per ADR-0001, ADR-0018, and ADR-0020. The mapping below fixes every field.",
+    "alternatives": [
+      {
+        "option": "Keep markdown tables and hand-edited JSON as the only state",
+        "rejected_because": "The state columns of 04-slices.md sit in prose. Any session can contradict them. Two sessions editing one table conflict at whole-file grain. Readiness is recomputed by humans. Nothing records who changed what."
+      },
+      {
+        "option": "Store the same records in GitHub Issues or Projects",
+        "rejected_because": "Every state flip needs network and credentials, and offline work stops. ADR-0029 reads the pull request from GitHub as content. GitHub does not need to become the tracker too. Slice granularity would collapse into labels on long-lived issues."
+      },
+      {
+        "option": "Write a bespoke JSON or SQLite store for the bundle",
+        "rejected_because": "It reinvents what beads already ships. Beads ships readiness, dependencies, gates, leases, compaction, history, and Dolt-backed sync. A second engine would need its own CLI, audit trail, and merge story."
+      },
+      {
+        "option": "Use beads milestone type for programs and avoid custom types",
+        "rejected_because": "Milestone means a completion marker with no work attached. It reads right for the container half of a program. A program also carries a stage workflow and an outcome. The implement plugin filters programs by type, not by milestone. types.custom is the sanctioned path for orchestrator types."
+      }
+    ],
+    "forces": [
+      "Slices carry state, score, and attempts in the tables of docs/plans/<slug>/04-slices.md. shared/slice_table.py parses that prose with regexes for three callers, and the attempts column must be bumped by hand in the same commit as the evidence file.",
+      "Epic branch and pull-request joins are hand-maintained. The index is a full rebuild every run, so state has no durable home and no writer.",
+      "Beads v1.3.0 stores arbitrary well-formed JSON metadata per issue as the sanctioned extension point (GH#1406), with readiness, dependencies, gates, leases, compaction, history, and Dolt-backed sync.",
+      "ADR-0029 decided the pull request is content read from GitHub, so the tracker must not become a second copy of GitHub state.",
+      "ADR-0016 set the install-surface rule: the plugins ship no agent, no hook, and no MCP server. Any new store is called from scripts, the way git and gh are."
+    ],
+    "delivers": {
+      "capability": "Programs, epics, and slices gain a real store with readiness, blocking, history, and sync. The viewer keeps reading the same static index.",
+      "benefit": "bd ready answers what is next, gates hold merges, and two sessions on one ladder stop racing at whole-file grain.",
+      "beneficiary": [
+        "developer",
+        "implement-worker"
+      ],
+      "enables": [
+        "The slice ladder is machine-readable, so any session can claim the next slice",
+        "The merge gate can automate once beads gh:pr gates land",
+        "The tracker syncs across machines through Dolt without a new protocol"
+      ]
+    },
+    "body": "# ADR-0031 — Beads is the storage layer for CoBuilder programs, epics, and slices\n\n## Context\n\nThe bundle family narrates a locally checked-out git repo. Its records come from files. `shared/build_index.py` rebuilds the whole index on every run. The current corpus holds 16 designs, 77 epics, 47 slices, 30 ADRs, 17 pull requests, 4 publications, 5 program designs, 15 epic designs, 1 context, 6 districts, and 16 boundary rules.\n\nThe state lives in three places, and none of them is a store.\n\nSlices carry `state`, `score`, and `attempts` inside the markdown tables of `docs/plans/<slug>/04-slices.md`. `shared/slice_table.py` parses that table with regexes for three callers. An attempt is an appended file under `.cobuilder/rubrics/<slug>/evidence/`. The table's `attempts` column must be bumped by hand in the same commit.\n\nEpics carry `branch`, `pr`, and `state` in the index joins, hand-maintained by whatever session last edited them.\n\nThe index is a full rebuild. It answers reads well and has no write model. Nothing records who moved a slice or what blocked what. Two sessions editing one ladder race at whole-file grain. Readiness is a human judgment re-derived from prose each time.\n\nBeads v1.3.0 is available in this workspace. The beads fork sync work in this workspace exercised its full surface. Issue records carry arbitrary well-formed JSON metadata as the sanctioned extension point (GH#1406). This design leans on the dependency graph, the readiness projection, gates, and Dolt-backed sync.\n\n## Options considered\n\n1. **Status quo.** Markdown tables stay the state. Rejected: the state sits in prose, races at file grain, and has no history.\n2. **GitHub as the store.** Rejected: network-bound, offline-blind, and the wrong granularity for slices. ADR-0029 already decided the pull request is content read from GitHub, not a second record kept here.\n3. **A bespoke JSON or SQLite store.** Rejected: rebuilds the engine beads ships, with no reader other than the scripts that would have to maintain it.\n4. **Beads with built-in types only.** Rejected for programs specifically. recorded in the frontmatter alternatives.\n\n## Decision\n\n### Where the tracker lives\n\nThe narrated repo owns one `.beads/` tracker. For this repository the tracker is its own: this repo is also a narrated repo (the `cobuilder-viewer` program narrates this checkout), so the pilot seeds here. Prefix `cb`.\n\nA target repo gets its tracker when a program seeds into it, not at plugin install. ADR-0016 sets the install-surface rule. The plugins ship no agent, no hook, and no MCP server. They call `bd` from scripts exactly as they call `git` and `gh` today.\n\nBeads v1.3.0 requires `types.custom = program` in the tracker config. Set it once at `bd init`. The custom-type surface is the upstream-sanctioned home for orchestrator types. the beads fork's own tracker already carries `merge-request` this way.\n\n### The schema mapping\n\nThe mapping keeps every existing consumer key alive. Beads ids (`cb-1j6.1`) are storage keys. The CoBuilder composite ids (`<design>/E5`, `<design>/<n>`) stay in metadata. The index and the viewer keep working unchanged.\n\n| CoBuilder record | Beads issue | Field map |\n|---|---|---|\n| `DesignEntity` (program) | type `program` (custom), P1 | `name` → title suffix and `metadata.cb.name`. `outcome` → issue description. `stage` → `metadata.cb.stage`. design doc → untouched file, path in `external_ref`. `done_when` → issue `acceptance_criteria` |\n| `EpicEntity` | type `epic` (built-in), `--parent <program>` | `epic_id` (\"E5\") → `metadata.cb.epic_id`. `branch` → `metadata.cb.branch`. `pr` → `metadata.cb.pr`. `note` → issue description |\n| `SliceEntity` | type `task` (built-in), `--parent <epic>`, `--deps blocked-by:<slice n-1>` | `n` → `metadata.cb.n`. `title` → issue title. `ends_with` → `metadata.cb.ends_with`. `score` → `metadata.cb.score`. `attempts` → `metadata.cb.attempts`. `feature` → `metadata.cb.feature` |\n| `AdrEntity` | type `decision` (built-in), `--deps relates-to <program>` | ADR id → title prefix and `metadata.cb.adr`. ADR file → untouched, path in `external_ref`. districts → `metadata.cb.districts` |\n| `PullRequest` | no issue | The epic's `metadata.cb.pr` plus `external_ref: gh-<n>`. GitHub stays the source of record, per ADR-0029 |\n| `GateStep` (feature gates) | type `gate`, `--blocks <slice or epic>` | `name` → gate title. `state` → gate resolution |\n| `Publication` | no issue | Stays index-derived from the publish step. a publish is an event, not tracked work |\n| `DistrictEntity`, `BoundaryRule`, `ContextEntity` | no issue | Architecture geography stays in `docs/architecture/contexts/`. decisions name districts in metadata |\n| `ProgramDesignEntity`, `EpicDesignEntity`, `InteractionDesignEntity` | no issue | Prose documents. The program issue's `external_ref` points at the design directory |\n\nRecords with a stage, a score, or a ladder position become issues. Prose and external facts stay out and get a pointer.\n\n### The metadata envelope\n\nBeads stores one `metadata` JSON object per issue. It validates only that the value is well-formed JSON. CoBuilder claims one top-level key and owns everything under it.\n\n```json\n{\n  \"cb\": {\n    \"v\": 1,\n    \"kind\": \"slice\",\n    \"design\": \"cobuilder-viewer\",\n    \"epic\": \"E5\",\n    \"n\": 2,\n    \"ends_with\": \"types.ts declares every index record\",\n    \"score\": \"0.85\",\n    \"attempts\": 1,\n    \"feature\": \"cobuilder-viewer\",\n    \"evidence\": [\n      \".cobuilder/rubrics/cobuilder-viewer/evidence/slice-18-attempt-1.md\"\n    ]\n  }\n}\n```\n\nRules:\n\n1. **One key per tool.** The envelope sits under `cb`, versioned by `v`. A second extension later adds its own key beside it, never inside it.\n2. **Scalars, paths, and lists of paths only.** No prose blobs. The documents stay in git. the tracker carries pointers.\n3. **`kind` discriminates.** `program`, `epic`, `slice`, `decision`, `gate`. `shared/build_index.py` projects each entity kind from the matching issues.\n4. **Evidence stays files.** Rubric evidence, screenshots, and attempt narratives live under `.cobuilder/rubrics/<slug>/evidence/`. The envelope lists their paths. A tracker that stores screenshots is a document store. This design already decided beads is not one.\n5. **Consumer ids live here.** `metadata.cb.epic_id` and `metadata.cb.n` reproduce the composite ids the viewer and the tests already use, so the mapping costs no consumer changes.\n\nDependency edge metadata exists in beads too (`Dependency.metadata`), but the v1 mapping needs no edge data. The dependency types carry the joins.\n\n### State vocabularies\n\nBeads status is a lifecycle projection. CoBuilder's vocabularies are richer, so the full word stays in metadata and the status carries the workflow shape.\n\n| CoBuilder value | `metadata` keeps | beads `status` |\n|---|---|---|\n| program: `backlog`, `decided`, `design`, `review`, `approved` | `stage` | `open` |\n| program: `implemented` | `stage` | `closed` |\n| program: `superseded` | `stage` | `closed`, with a `supersedes` edge to the successor |\n| epic: `planned` | `state` | `open` |\n| epic: `open` | `state` | `in_progress` |\n| epic: `deferred` | `state` | `open`, excluded from `bd ready` by its blocked gate or its parent's |\n| epic: `completed`, `merged` | `state` | `closed`, close reason carries the word |\n| slice: `planned` | nothing. status suffices | `open` |\n| slice: `completed` | nothing. status suffices | `closed` |\n| slice claimed by a worker | `attempts` bump | `in_progress` or `hooked` |\n\nThe rubric score never maps to priority. Priority stays the tracker's scheduling order (program P1, epic P2, slice P2). Score is assessment history in metadata.\n\n### The joins, mapped\n\n| Index join today | Beads projection |\n|---|---|\n| `epic_status` | the epic issue's `status` and `metadata.cb.state` |\n| `slice_to_epic` | the parent-child dependency (the hierarchical id encodes it) |\n| `epic_to_pull_request` | `metadata.cb.pr` on the epic |\n| `adr_to_pull_request` | `metadata.cb.pr` on the decision |\n| `adr_to_context`, `adr_to_district` | `metadata.cb.districts` on the decision |\n| `feature_gates` | gate issues. `bd show <epic>` returns the blocking gates |\n| `slice_to_epic_unresolved` | a seed-time report: a slice whose epic id has no issue. Unresolvable by construction afterwards |\n| `context_verifies_district`, `district_uncovered` | unchanged, still derived from `docs/architecture/contexts/` |\n\n### The read model\n\n`shared/build_index.py` gains one source. It calls `bd list --json` once for the whole corpus. Five programs and roughly two hundred issues make the corpus small. The script projects entities and joins exactly as today and writes the same `data/index.json`. The viewer stays build-free and reads the static index. ADR-0001, ADR-0018, and ADR-0020 stand unchanged.\n\nThe workflow reads never touch the index. `bd ready` names the next actionable slice. `bd tree` renders the board's rows. `bd show <epic>` returns the epic with its gates.\n\n### The write model\n\n| CoBuilder moment | Command |\n|---|---|\n| Gate 3 passes. the design seeds a program | `bd create \"Program: <name>\" -t program --metadata @envelope.json --external-ref <goal.json>` |\n| Epics enter the program | `bd create \"E5: <title>\" -t epic --parent <program> --metadata @envelope.json` |\n| The ladder is authored for an epic | `bd create \"Slice <n>: <title>\" -t task --parent <epic> --deps blocked-by:<prev> --metadata @envelope.json` |\n| An attempt fails | append the evidence file. `bd update <slice> --metadata @envelope.json` with `attempts` bumped |\n| A worker claims a slice | `bd update <slice> --status in_progress` |\n| A slice passes its rubric | `bd close <slice> --reason \"<ends_with> verified\"` |\n| A pull request opens | `bd gate create \"Merge PR <n>\" --type human --blocks <epic>` |\n| The pull request merges | `bd gate resolve <gate>`. `bd close <epic> --reason merged` |\n| A design is superseded | `bd close <program>` plus a `supersedes` edge to the successor |\n\nThe envelope files are written next to the work by the session that does it, then fed to `bd` with `--metadata @file`. No plugin code parses beads JSON to write it. `bd` is the only writer, which is the whole point of a store.\n\nSmoke-verified against bd 1.3.0: `--parent` creates the parent-child dependency itself, and adding a second `parent-child` edge by hand is refused as a cycle. The ladder read flips correctly: with slice 1 open, `bd ready` names slice 1. after `bd close`, it names slice 2. `bd export` carries the full envelope, so a plain JSONL interchange stays available to any future consumer.\n\n### What beads must not hold\n\nProse documents, screenshots, pull-request state, district geography, and publication history stay where they are. Beads is the state layer, not the corpus. A pointer beats a copy wherever the source of record already exists.\n\n## Consequences\n\nThe write path gains a real store. Readiness, blocking, history, and Dolt-backed sync come from beads instead of from human discipline. Two sessions on one ladder get row-level truth and a recorded trail. The index keeps its shape. Every existing consumer key survives in metadata.\n\nThe costs are real. `bd` becomes a system dependency. scripts must detect its absence and fall back to today's file flow rather than fail a session. The tracker config must ship `types.custom = program`. Metadata has no query language, so corpus-wide questions stay with the index, which is where the viewer's questions already live. And two sources of state exist during the migration window, which is why the seed script is idempotent and dry-run first.\n\n## Not decided\n\nWhether `04-slices.md` state columns become generated from beads or leave the document. When `gh:pr` gate automation replaces the human merge gate. Which plugin runs `bd init` in a target repo, and how it asks consent. Who owns `shared/beads_seed.py`.\n",
+    "maps_to": {
+      "context": "cobuilder-packaging",
+      "modules": [
+        "shared",
+        "plugins/implement",
+        "plugins/architect"
+      ],
+      "rule": "Workflow state for programs, epics, and slices lives in beads under the metadata.cb envelope. Documents keep the prose. build_index.py reads beads when bd is present and files otherwise, and both paths project the same shapes. bd is the only writer of state."
+    },
+    "history": [
+      {
+        "state": "decided",
+        "date": "2026-09-26",
+        "by": "bjornslib",
+        "note": "Decided after the beads fork sync landed bd 1.3.0 in this workspace and smoke-tested the mapping in a scratch tracker. The engineer directed the design: map CoBuilder to beads and extend it through the metadata envelope. The mapping fixes the field-level home of every stateful record. The cutover of the 04-slices.md state columns, the gh:pr gate timing, and the seed-script ownership stay open."
+      }
+    ],
+    "provenance": "authored",
+    "related": [
+      "docs/architecture/designs/beads-storage/goal.json",
+      "docs/architecture/designs/beads-storage/intent.json",
+      "docs/architecture/designs/beads-storage/assessment.json",
+      "docs/plans/cobuilder-viewer/04-slices.md",
+      "shared/build_index.py",
+      "shared/slice_table.py"
+    ]
+  },
+  "ADR-0032": {
+    "id": "ADR-0032",
+    "title": "A document under review carries a viewer link",
+    "state": "decided",
+    "source_pr": null,
+    "problem": "The architect and implement workflows present a document for review in chat, as a bullet summary and a file path. The build skill starts the viewer only after the user approves a gate. Five hand-offs call View mode, and each one prints the root URL of the viewer, never a link to the document. Gate 1 and Gate 2 documents are not in the record index, so no viewer page exists for them. The Gate 3 program design is in the index, but the viewer renders no page for it. The user reads the document in chat, and the viewer stays closed at the one moment it helps.",
+    "decision": "Each document that a workflow presents for review carries a deep link to its page in the viewer. The link comes before the approval question. View mode owns the server, so a new Present for review section in the cobuilder-artifacts skill owns the procedure. View mode accepts a route, checks that the page answers HTTP 200, and prints the deep link. The record index projects the Gate 1 and Gate 2 documents, and the viewer shows the three plan documents on one page under the Build level. The gate verifier checks that each APPROVED gate line dated on or after 2026-09-28 carries a viewer link.",
+    "alternatives": [
+      {
+        "option": "Serve the viewer from the Vite dev server",
+        "rejected_because": "An installed plugin has no node_modules. The dev server runs only in a checkout with the viewer's dependencies installed. View mode's python http.server serves the committed, built viewer, and it runs everywhere the plugin installs."
+      },
+      {
+        "option": "Publish each document under review as a Claude Artifact",
+        "rejected_because": "The user put publishing out of scope for this work. The publish path is also broken at present, so it cannot carry a step that runs at every gate."
+      },
+      {
+        "option": "Add a prose rule to the skills, and no check",
+        "rejected_because": "CLAUDE.md records the lesson. A process step with no mechanical consumer gets skipped, however well it is documented. Gate 4b ran for zero of five epics before it had a check. The gate verifier is the consumer of this rule."
+      },
+      {
+        "option": "Keep the viewer step after the approval, as it is today",
+        "rejected_because": "The user reads the document before the answer. A link that arrives after the approval shows a decision that is already made."
+      }
+    ],
+    "forces": [
+      "The user decided the scope in chat on 2026-09-28: one ADR, one epic, and a small number of slices, built without further questions.",
+      "View mode owns the server, the pid file, and the log file. A second owner of the port would duplicate its reuse logic.",
+      "ADR-0016 forbids a file path from one plugin into another. The architect and implement workflows name the mode, and the artifact skill resolves its own path.",
+      "The interaction design document has no viewer page. Its gate gives a file path, and the user accepted that.",
+      "A link must answer HTTP 200 before the workflow prints it. A dead link is worse than a file path."
+    ],
+    "delivers": {
+      "capability": "A reviewer opens the document under review in the viewer from one link, at the moment of review.",
+      "benefit": "The reviewer reads the rendered document with its diagrams and joins, not a bullet summary in chat.",
+      "beneficiary": [
+        "developer",
+        "reviewer"
+      ],
+      "enables": [
+        "A later comment ledger entry can anchor to the page the reviewer approved"
+      ],
+      "addresses_problem": "P1"
+    },
+    "body": "# ADR-0032 — A document under review carries a viewer link\n\n## Context\n\nThe architect and implement workflows stop at each gate and ask the user to\napprove a document. Today they show a bullet summary and a file path in chat.\nThe build skill starts the viewer in step 6 of its approval protocol, which is\nafter the user answers.\n\nFive hand-offs call `Skill(\"cobuilder-artifacts\", args=\"view\")`. Each one\nprints `http://localhost:<port>/active/viewer/`, the root of the viewer. None\nof them prints a link to the document under review.\n\nThe viewer also has gaps. `shared/build_index.py` projects the Gate 3 program\ndesign and the Gate 4b epic designs. It does not project `01-product.md` or\n`02-architecture.md`. The React viewer reads `program_design` entities only to\nfind work slugs, and it renders no page for them. So a link to a plan\ndocument has no page to point at today.\n\n## Decision\n\nThe user made these decisions on 2026-09-28.\n\n1. A **Present for review** section lives in the cobuilder-artifacts skill,\n   because View mode owns the server. The architect and implement workflows\n   name that section by mode name, never by a file path into another plugin\n   (ADR-0016).\n2. View mode accepts a route and prints a deep link, for example\n   `http://127.0.0.1:<port>/active/viewer/index.html#/<work>/build/plan`. It\n   checks that the page answers HTTP 200 before it prints the link.\n3. `build_index.py` projects `01-product.md` and `02-architecture.md`. The\n   viewer shows the product, architecture, and program design documents on\n   one page under the Build level, so each of those gates has a link.\n4. `verify_gate.py` checks that each APPROVED gate line dated on or after\n   2026-09-28 carries a viewer link. An older line is exempt.\n5. The server is View mode's python `http.server`, which serves the built\n   viewer. It is not the Vite dev server.\n6. The interaction design document gets no viewer page. Its gate gives a\n   file path, and that is accepted.\n7. Publishing to Claude Artifacts is out of scope.\n\n## Options considered\n\n**The Vite dev server.** Rejected. An installed plugin has no\n`node_modules`, so the dev server cannot start outside a checkout.\n\n**A Claude Artifact publish per document.** Rejected. The user put it out of\nscope, and the publish path is broken at present.\n\n**A prose rule with no check.** Rejected. CLAUDE.md records that a step with\nno mechanical consumer gets skipped. `verify_gate.py` is the consumer.\n\n## Consequences\n\n- The approval question moves after the link. The viewer step moves before\n  \"Approve Gate N\", not after the approval.\n- A gate line in `00-status.md` gains a `view:` link. The check exempts lines\n  dated before 2026-09-28, so the existing plans keep passing.\n- The index gains two plan document kinds. The viewer gains one page, at\n  `#/<work>/build/plan`.\n- The committed `viewer/index.html` needs a rebuild when the page ships.\n- The interaction design gate keeps a file path. A reviewer of that gate\n  still reads the file outside the viewer.\n\n## Amendment, 2026-09-28\n\n**This section states what moved, and it governs where the two disagree.** The\nlink moves off the gate line's state text. The original decision put the link\nat the end of the state, as `APPROVED <date> — view: <url>`. The record above\nkeeps its original text, so a reader sees the decision of 2026-09-28 and this\namendment. The front matter's `decision` field keeps the original wording\ntoo, and `maps_to.rule` carries the new shape, because a tool reads that\nfield.\n\n1. **The link is its own line.** A gate block now reads:\n\n   ```\n   - Gate 1 — Product: APPROVED 2026-09-28\n     view: http://127.0.0.1:<port>/active/viewer/index.html#/<work>/build/plan/product\n   ```\n\n   The `view:` line sits directly under the gate line, indented two spaces,\n   the same indent style the 4a, 4b, and 4c sub-lines under Gate 4 already\n   use. The URL itself is unchanged: it is the full deep link that View mode\n   prints. This change is field separation, not URL reform.\n\n2. **Why it moved.** Two facts rode one string: the approval state and the\n   link. Every parser of the line had to split them, and one projection\n   failed to, so a machine-specific absolute URL reached a derived index and\n   a rendered page. One fact per line removes the split from every reader.\n   The state text carries the approval and nothing else, so no projection can\n   leak a URL through it again.\n\n3. **The check reads the pair.** `verify_gate.py` reads a gate line and then\n   the line directly after it. A gate line dated on or after 2026-09-28 with\n   no following `view:` line reads \"missing\", exactly as before. Gate 2b\n   keeps no link, because its document has no viewer page.\n\n4. **The derived index keeps the portable fact.** `shared/gate_status.py` is\n   the one parser of the gate block, and it projects the route fragment of\n   the link, from its first `#`, into the gate step's own `view` field. The\n   absolute URL, with its host and port, reaches no derived payload. The\n   inline-suffix split it replaced is gone: no authored file carries the\n   suffix, and one format beats a tolerated second one.\n",
+    "maps_to": {
+      "context": "cobuilder-packaging",
+      "modules": [
+        "plugins/artifact",
+        "plugins/implement",
+        "plugins/architect",
+        "shared"
+      ],
+      "rule": "A workflow that asks the user to approve a document prints a viewer link to that document first. The link is checked live. An APPROVED gate line dated on or after 2026-09-28 carries its link on a `view:` line directly under it, indented two spaces, and verify_gate.py fails a gate line with no such view line."
+    },
+    "history": [
+      {
+        "state": "decided",
+        "date": "2026-09-28",
+        "by": "bjornslib",
+        "note": "The user made decisions 1 to 7 in chat on 2026-09-28 and approved the scope. An agent wrote this record, so the state is decided and never approved."
+      },
+      {
+        "state": "decided",
+        "date": "2026-09-28",
+        "by": "bjornslib",
+        "note": "Amended in place: the link moves from a suffix on the gate line's state text to its own `view:` line directly under the gate line, indented. Two facts rode one string, so every parser had to split them, and one projection failed to. The state stays decided, because an agent wrote this amendment and an agent does not approve its own record."
+      }
+    ],
+    "provenance": "authored",
+    "related": [
+      "docs/architecture/designs/review-link/goal.json",
+      "docs/plans/review-link/",
+      "plugins/artifact/skills/cobuilder-artifacts/SKILL.md",
+      "plugins/implement/skills/build/SKILL.md",
+      "plugins/implement/scripts/verify_gate.py",
+      "shared/build_index.py"
+    ]
+  },
+  "ADR-0033": {
+    "id": "ADR-0033",
+    "title": "Simulate paths to close the open set, from the common ancestor, and show one validated path",
+    "state": "rejected",
+    "source_pr": null,
+    "problem": "A team carries tens of open pull requests. No surface answers the question a reviewer actually holds. That question is not how to review one change, but in what order the whole set can close. The record index resolves five kinds of join, and none of them is between two pull requests. An order simulated against the default branch gives a confident wrong answer. It fails whenever an open pull request restructures the tree, because the default branch already carries whatever merged before.",
+    "decision": "A mode in the pr plugin simulates several paths to close the whole open set. It always works against the common ancestor of the open branches. It replays the best one or two with git on a scratch worktree, counts the real conflicts, and promotes the survivor. The viewer shows one validated path. It leads with the state the reviewer would have and the pull requests the path cannot carry. It computes nothing.",
+    "alternatives": [
+      {
+        "option": "Simulate against the default branch as it stands today",
+        "rejected_because": "It inverts the order whenever an open pull request restructures the tree. Measured on this repository: with all seventeen pull requests open the base is 0c099be, where commands/, scripts/ and skills/ still exist. Five open pull requests write into exactly the three directories that pull request 11 deletes. A run against master put the restructure first. It produced a confident wrong answer rather than no answer."
+      },
+      {
+        "option": "A region walk: one keypress per contested hunk, over a set the reviewer names",
+        "rejected_because": "The first draft of this record. It made the reviewer do the machine's work one hunk at a time, over a set they had to assemble themselves. The region computation survives inside the simulation as evidence. It stopped being a reviewer-facing step."
+      },
+      {
+        "option": "Show every simulated path side by side, and let the reviewer compare",
+        "rejected_because": "It returns the reviewer to the work the mode exists to remove. One validated path is shown. The alternatives are visible and unreachable, and opening the recommendation unlocks them with the reason each lost."
+      },
+      {
+        "option": "Describe each path by its mechanics: which pull requests, in which order, on which paths",
+        "rejected_because": "A reviewer decides on the outcome, not on the machinery. The surface states what they would have when the path is done. Then it gives one line per pull request saying what it contributes, and the order sits underneath."
+      },
+      {
+        "option": "Rank paths by simulation alone, with no git step",
+        "rejected_because": "A simulation from records cannot see a textual conflict. So it cannot tell an ordering that works from one that only looks like it does. Replaying the top candidates is what makes the recommendation something to stand behind."
+      },
+      {
+        "option": "Hold a pull request that cannot merge out of the surface entirely",
+        "rejected_because": "A path never carries every open pull request, and the ones it drops are the ones a reviewer most needs to see. A superseded branch and an unresolvable conflict are different findings. Each is shown on the front page with two or three ways out."
+      },
+      {
+        "option": "Compute the paths in the browser and render them live",
+        "rejected_because": "The browser cannot run git, so it cannot replay anything. ADR-0001's content policy also blocks it from fetching the evidence."
+      },
+      {
+        "option": "Build the mergeable-slice computation from scratch as the product",
+        "rejected_because": "Systems that precompute mergeable slices already exist. The narrative and the choice between paths are the parts they do not offer. So the git step keeps a narrow interface, and one of those systems can replace it."
+      },
+      {
+        "option": "Ship a hook so the mode starts itself on a pull request event",
+        "rejected_because": "The install surface is /plugin install and nothing else, with no agents, no hooks and no MCP servers. The adopting repository supplies the trigger with a workflow or a scheduled run."
+      }
+    ],
+    "forces": [
+      "The default branch already carries whatever merged before. So it is the wrong baseline for a set of branches that all predate it.",
+      "ADR-0001 holds the viewer to one self-contained file under a content policy that blocks every external request. The browser cannot fetch, and it cannot run git.",
+      "Field coverage across this repository's timeline is uneven: touched 14 of 14, narrated levels 8, cached diffs 8, intent 4, assessment 4, ledger lines 0.",
+      "8 of 12 pull requests reaching a reviewer here carry no description. A surface built on authored intent alone therefore draws empty panes.",
+      "A team's own auto-merge rules already handle the simple pull requests, and this design does not define those rules.",
+      "ADR-0020 names viewer/index.html the repository's largest maintenance problem, and it is decided and not executed.",
+      "ADR-0019 fixed the ledger vocabulary at comment, reply, and state, and fold_threads skips an unrecognised line.",
+      "The install surface ships no hooks, so the mode cannot start itself."
+    ],
+    "delivers": {
+      "capability": "A reviewer opens one page and sees the state they would have if the whole open set closed. The page also shows the order that gets there, the pull requests that cannot come along, and the evidence that a git replay actually held.",
+      "benefit": "Review stops being a queue of unrelated diffs. It becomes one decision about an order. The reason for that order survives as a record rather than as somebody's memory.",
+      "beneficiary": [
+        "developer",
+        "operator",
+        "the-business"
+      ]
+    },
+    "body": "# ADR-0033 — Simulate paths to close the open set, from the common ancestor, and show one validated path\n\n> **Renumbered on 2026-09-28.** This record was ADR-0025 until master took that number for\n> \"implement ships slice agents and a coaching hook\". The two records met in the merge of PR #24.\n> The state does not change. The record stays rejected, superseded by ADR-0027. A citation that\n> reads ADR-0025 in a commit or pull request dated before 2026-09-28 means this record.\n\n## Context\n\nThe viewer reviews one pull request at a time. Previous, next, a strip of queue\ndots, four levels down the left rail. That shape reads one change well, and it\nanswers nothing about a set.\n\nA team carrying tens of open branches asks a different question. Not how to\nreview one change, but in what order the whole set can close. The relationships\nthat would answer it exist nowhere. The record index resolves five kinds of join,\nand none of them is between two pull requests.\n\nSix isolated exploration frames and a separate critic pass produced the first\ndraft of this record. That draft held a terminal-side proposer that computed\ncontested regions, and a reviewer who walked them one keypress at a time over a\nset they named themselves. Six rounds of review against a working prototype\nreplaced everything above the boundary. Three measurements decided what replaced\nit.\n\n**The baseline decides the order, and the obvious baseline is wrong.** The first\nrecommendation simulated against `master`. Master already carried the five-plugin\nsplit, so the restructure looked like a prerequisite. The earlier work looked\nlike follow-up. With all seventeen pull requests open the base is `0c099be`,\nwhere `commands/`, `scripts/` and `skills/` still exist. Five open pull requests\nwrite into exactly those three directories, and pull request 11 deletes all\nthree. The correct order is the reverse.\n\nFour renames in this repository's history make the chain checkable. `0c099be` carries the three root directories.\nPull request 3 moves `.odyssey/` to `.prodyssey/`. Commit `6e784e5` moves the\nthree directories into `plugins/cobuilder-*/`. Pull requests 17 and 18 drop the\nprefix.\n\n**A path never carries the whole set.** In the worked scenario, ten of twelve\npull requests fit one path. Pull request 18 supersedes 17 on the same head\nbranch, which no pull-request list shows. A second is held out by a conflict a\nmerge cannot resolve, where both sides rewrote the same hunk in opposite\ndirections.\n\n**Simulation alone cannot tell a working order from a plausible one.** A path\nderived from goal files, epics, boundary rules and districts is a hypothesis. The\ngit replay is what turns it into a recommendation.\n\nThe product is therefore not a review aid for a set somebody names. It is a set\nof possible paths to close every open pull request. That separates into three\nquestions a reviewer asks in order. What would I have when this is done. What\ndoes each pull request contribute. Do the merges physically hold, and in what\norder.\n\n## Options considered\n\n1. **A region walk over a named set.** The first draft of this record. It moved\n   the computation off the browser, which was right. It also left the reviewer\n   doing the machine's work one hunk at a time. The region arithmetic survives as\n   evidence inside a simulated path.\n2. **Simulate against the default branch.** The obvious choice, and it produced a\n   confidently inverted order on the first run. Rejected, and recorded as an abort\n   condition on the design, because it fails in no visible way at all.\n3. **Show every path side by side.** Returns the comparison work to the reviewer.\n4. **Describe paths by their mechanics.** A reviewer decides on the outcome. The\n   mechanics move underneath it.\n5. **Simulate and stop, with no git step.** Cheaper, and it cannot distinguish an\n   order that works from one that reads well.\n6. **Simulate from the common ancestor, replay the top candidates with git, and\n   render one validated path (chosen).**\n\n## Decision\n\nA mode in the `pr` plugin runs on a pull request event.\n\nIt reads the open set, less whatever the team's own auto-merge rules already\nhandled. It calls `/pr:generate` for any pull request with no description. It\nsimulates at least three paths to close the set, always against the common\nancestor of the open branches. It replays the best one or two with git on a\nscratch worktree, counts the real conflicts, and promotes the survivor.\n\nIt writes the result as a derived projection in the bundle. The viewer renders\nit. The state the reviewer would have comes first. Then what each pull request\ncontributes. Then the merge chain as its own evidence. Then what the replay could\nnot check. Pull requests the path cannot carry appear on the front page, each\nwith the kind of block named and two or three ways out.\n\nThe reviewer accepts a path. That records a decision, and a runner performs it.\nWhere the runner sends its merges is ADR-0026.\n\nThe boundary from this record's first draft holds. The terminal computes the\nrelationship and writes it as a projection. The viewer renders it and computes\nnothing.\n\nOut of scope: defining the team's auto-merge rules, supplying the trigger, and\nany computation inside the browser.\n\n## Consequences\n\n- **Positive:** the reviewer answers one question about an order rather than\n  reading every diff in full. The answer carries the evidence that a replay held.\n- **Positive:** the surface names what it cannot do. A blocked pull request, an\n  unreplayed bundle, and a missing description all stay visible rather than\n  absent.\n- **Positive:** the viewer gains a renderer and no computation. So this design\n  does not enlarge `viewer/index.html` before ADR-0020's split has run.\n- **Constraint introduced:** the mode simulates a path against the common\n  ancestor of the open branches, never against the default branch, and the viewer\n  renders the result without computing any part of it.\n- **Negative:** the replay is a snapshot. A push after the run invalidates it, and\n  the run does not watch for one.\n- **Negative:** the mode cannot start itself, because the install surface ships no\n  hooks. A workflow or a scheduled run in the adopting repository supplies the\n  trigger.\n- **Negative:** a wrong recommendation is the first thing the reviewer reads, and\n  nothing here measures whether a proposed order anchors them.\n",
+    "maps_to": {
+      "context": "cobuilder-packaging",
+      "modules": [
+        "plugins/pr",
+        "shared/build_index.py",
+        "shared/ledger.py",
+        "plugins/artifact/viewer/index.html"
+      ],
+      "rule": "A path is simulated against the common ancestor of the open branches, never against the default branch, and the viewer renders the result without computing any part of it."
+    },
+    "history": [
+      {
+        "state": "tentative",
+        "date": "2026-09-01"
+      },
+      {
+        "state": "decided",
+        "date": "2026-09-01",
+        "note": "First draft: a terminal-side proposer, a region walk of contested hunks, and a partition the reviewer corrects."
+      },
+      {
+        "state": "decided",
+        "date": "2026-09-02",
+        "by": "bjornslib",
+        "note": "Revised in place before approval, after six rounds of design review against a working prototype. The terminal-computes-viewer-renders boundary is unchanged. The region walk, the reviewer-named set, and the union-find partition are gone, and the common-ancestor baseline is new. Revised rather than superseded because this record was never approved, never shipped, and nothing depends on it."
+      },
+      {
+        "state": "challenged",
+        "date": "2026-09-18",
+        "note": "react-viewer independently claimed the same Flight deck surface name for its single-pull-request view, and neither design had read the other. The engineer directed the two designs to merge, which made this record's scope a surface inside a larger program rather than a design of its own."
+      },
+      {
+        "state": "rejected",
+        "date": "2026-09-18",
+        "by": "bjornslib",
+        "note": "Superseded by ADR-0027, which merges this record with ADR-0026 into one decision for the cobuilder-viewer design. The common-ancestor rule and every rejected option here carry forward unchanged."
+      }
+    ],
+    "related": [
+      "docs/architecture/designs/review-flight-deck/goal.json",
+      "docs/architecture/designs/review-flight-deck/flightdeck-prototype.html"
+    ]
   }
 }

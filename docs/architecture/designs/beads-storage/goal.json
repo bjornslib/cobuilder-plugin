@@ -1,0 +1,41 @@
+{
+  "name": "beads-storage",
+  "title": "Beads is the storage layer for CoBuilder programs, epics, and slices",
+  "adr": "ADR-0031",
+  "adrs": ["ADR-0031", "ADR-0018", "ADR-0016", "ADR-0029", "ADR-0001", "ADR-0020"],
+  "created": "2026-09-26",
+  "outcome": "CoBuilder workflow state for programs, epics, and slices is stored in beads, read back through the same data/index.json, and answered by bd ready instead of by a human rereading a markdown table.",
+  "done_when": [
+    "a seeded tracker holds every program, epic, slice, and decision of this repository with its metadata envelope, and the counts match the current index: 16 designs, 77 epics, 47 slices, 30 ADRs",
+    "shared/build_index.py produces a byte-comparable data/index.json from the beads read plus the unchanged file sources, and the viewer needs no change",
+    "the slice ladder answers what is next with bd ready, closing slice n-1 makes slice n appear, and a gate blocks its epic until resolve",
+    "every script that writes state calls bd and degrades to the file flow when bd is absent"
+  ],
+  "abort_if": [
+    "the metadata envelope cannot round-trip through bd create, bd update, bd export, and bd list --json without loss",
+    "the index rebuild depends on network state or on GitHub credentials, because beads is the only new source and it is local",
+    "the mapping needs a second custom type beyond program, which would mean the built-in vocabulary was misread"
+  ],
+  "min_work": {
+    "challenge_stage_run": true,
+    "note": "The mapping was smoke-tested against bd 1.3.0 in a scratch tracker before drafting: parent-child creation, blocked-by ladder chaining, the readiness flip after close, gate creation with --blocks, and envelope round-trip through export and list --json all passed. Divergent exploration compared four storage options and kept beads with one custom type. Two risks surfaced and were accepted: the bd binary dependency with a file-flow fallback, and the missing metadata query language with the index staying the query surface."
+  },
+  "limits": {"warn_after_rounds": 3, "cutoff_rounds": 6},
+  "epics": [
+    {
+      "id": "beads-storage/E1",
+      "title": "Seed the tracker: shared/beads_seed.py seeds programs, epics, slices, and decisions idempotently by external_ref"
+    },
+    {
+      "id": "beads-storage/E2",
+      "title": "Read model: build_index.py projects entities and joins from bd list --json beside the file sources"
+    },
+    {
+      "id": "beads-storage/E3",
+      "title": "Write model: implement and architect scripts flip slice and epic state through bd, with evidence files and gates"
+    }
+  ],
+  "stage": "decided",
+  "supersedes": null,
+  "rounds": 0
+}

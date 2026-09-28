@@ -197,7 +197,7 @@ that join here.
    Then write five artifacts. Run each prose pass through
    `Skill("architect:ste-writing")` in flavored mode. If that
    call gives `Unknown skill`, read
-   `${CLAUDE_PLUGIN_ROOT}/skills/ste-writing/SKILL.md` directly and obey
+   `${CLAUDE_PLUGIN_ROOT}/shared/skills/ste-writing/SKILL.md` directly and obey
    that file instead. Use strict mode for ADR procedural text: the
    constraint introduced, and the boundary rules. The plugin ships no
    hooks, so "automatic" means this section instructs the step.
@@ -214,16 +214,17 @@ that join here.
       `.mmd` files itself. Spawn one subagent. Its prompt must:
       - tell it to invoke `Skill("architect:mermaid")` first.
         If that call gives `Unknown skill`, tell it to read
-        `${CLAUDE_PLUGIN_ROOT}/skills/mermaid/SKILL.md` directly, and
+        `${CLAUDE_PLUGIN_ROOT}/shared/skills/mermaid/SKILL.md` directly, and
         obey that file instead. The skill resolves by name only in a
         session that has an installed plugin version containing it. A
         session that runs from a development checkout, or from an
         installed version older than the skill, does not find it. The
-        path always resolves, because `${CLAUDE_PLUGIN_ROOT}` points at
-        the copy in use.
+        path always resolves, because `mermaid` is a shared skill, and
+        the `shared` symlink is dereferenced into the plugin's own cache
+        at install time.
 
       - then tell it to read
-        `${CLAUDE_PLUGIN_ROOT}/skills/mermaid/references/diagram-mode.md`.
+        `${CLAUDE_PLUGIN_ROOT}/shared/skills/mermaid/references/diagram-mode.md`.
         This file lives in the mermaid skill because both this pillar and
         odyssey need it, and mermaid is already vendored into every
         plugin per ADR-0017.
@@ -253,7 +254,7 @@ that join here.
       the odyssey skill's `references/pr-description-template.md`.
 
    4. **Narrative.** Write `docs/architecture/designs/<name>/narrative.json`.
-      The viewer renders it as the design's three levels: `landscape`
+      The viewer renders it as the design's three levels: `intent`
       (`tagline`, `narration`), `problem_solution` (`problem`, `solution`,
       `narration`, `beats[]`, `alternatives[]`), and `architecture`
       (`narration`, `beats[]`). Each `beats[]` entry carries a `kind` and
@@ -278,11 +279,19 @@ that join here.
       for this hub, view mode reuses it (see its Step 8) — this never
       starts a second one.
 
+      Then follow Present for review in
+      `Skill("cobuilder-artifacts")` with the route `#/<work>/intent`, and
+      give the engineer the link.
+
 9. **Stage 6 — Review routing.** Follow `references/design-mode.md` §10.
    The engineer reads the draft and answers in the session. Material
    feedback returns to stage 3. Cosmetic feedback returns to stage 5.
    Wording, diagram layout, and ADR order are cosmetic. **State the
    classification. Let the engineer overrule it.**
+
+   Each round, follow Present for review in `Skill("cobuilder-artifacts")`
+   with the route `#/<work>/intent` before you ask about the draft. Give the
+   engineer the link.
 
    Detect churn. Each round, hash the ADR draft plus the option set. Two
    consecutive rounds with no material change mean the loop circles. Say
@@ -386,6 +395,10 @@ If no prior report exists, state: "This is the first scan. Future audits will co
    Then `Skill("cobuilder-artifacts", args="view")`. Reuses an
    already-running server for this hub; never starts a second one.
 
+   Before you ask the engineer about the record, follow Present for review
+   in `Skill("cobuilder-artifacts")`. Use the page of the record, or
+   `#/<work>/intent`. Give the engineer the link.
+
 **Output:** ADR file(s) plus updated viewpoint indexes, under `{doc_root}`. Canonical standard: `references/standard.md` §5.4.
 
 ### Describe Mode (Architecture Description)
@@ -407,6 +420,10 @@ If no prior report exists, state: "This is the first scan. Future audits will co
    ```
    Then `Skill("cobuilder-artifacts", args="view")`. Reuses an
    already-running server for this hub; never starts a second one.
+
+   Before you ask the engineer about the record, follow Present for review
+   in `Skill("cobuilder-artifacts")`. Use the page of the record, or
+   `#/<work>/intent`. Give the engineer the link.
 
 **Output:** `canvas.md` plus `boundary.yaml` for the context, an updated INVENTORY, and a list of surfaced ADR candidates, under `{doc_root}`. Minimum bar: `references/standard.md` §8.
 

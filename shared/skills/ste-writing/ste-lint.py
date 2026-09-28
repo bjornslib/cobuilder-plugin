@@ -315,7 +315,17 @@ With no file arguments, reads text from stdin and prints one JSON report.
 With file arguments, prints one summary line per file.
 
   --mode strict|flavored   sentence-length cap and rule set (default: flavored)
+  --fail-above N           exit 1 when any file scores above N violations per
+                           100 words. The target for flavored mode is 1.0, and
+                           for strict mode 2.0. Use it as a gate, not a report:
+                           a failure means rewrite the prose, not explain the
+                           number.
   -h, --help               show this message and exit
+
+Examples:
+
+  python3 ste-lint.py --mode flavored --fail-above 1.0 docs/architecture/adr/ADR-0027-*.md
+  python3 ste-lint.py --mode strict   --fail-above 2.0 docs/architecture/adr/ADR-0027-*.md
 """
 
 if __name__ == "__main__":
@@ -328,6 +338,16 @@ if __name__ == "__main__":
         i = argv.index("--mode")
         mode = argv[i + 1]
         del argv[i:i + 2]
+    ceiling = None
+    if "--fail-above" in argv:
+        i = argv.index("--fail-above")
+        try:
+            ceiling = float(argv[i + 1])
+        except (IndexError, ValueError):
+            print("--fail-above needs a number, for example --fail-above 1.0",
+                  file=sys.stderr)
+            sys.exit(2)
+        del argv[i:i + 2]
     files = argv
     if not files:
         print(json.dumps(lint(sys.stdin.read(), mode=mode), indent=2))
@@ -335,7 +355,18 @@ if __name__ == "__main__":
     exp = []
     for f in files:
         exp += sorted(glob.glob(f)) if any(c in f for c in "*?[") else [f]
+    over = []
     for f in exp:
         with open(f) as fh:
             r = lint(fh.read(), mode=mode)
-        print(f"{os.path.basename(f):32} words={r['words']:4d} total={r['total']:3d} per100w={r['total_per100w']:6.2f} em_dash={r['em_dash(slop-marker)']:2d}")
+        flag = ""
+        if ceiling is not None and r["total_per100w"] > ceiling:
+            flag = "  <-- OVER"
+            over.append((f, r["total_per100w"]))
+        print(f"{os.path.basename(f):32} words={r['words']:4d} total={r['total']:3d} per100w={r['total_per100w']:6.2f} em_dash={r['em_dash(slop-marker)']:2d}{flag}")
+    if over:
+        print(f"\nFAIL: {len(over)} file(s) above the {ceiling} target for {mode} mode.")
+        print("Rewrite the prose and measure again. Do not explain the score away.")
+        for f, s in over:
+            print(f"  {f}  {s:.2f}")
+        sys.exit(1)

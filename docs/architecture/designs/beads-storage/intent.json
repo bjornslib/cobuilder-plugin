@@ -1,0 +1,54 @@
+{
+  "captured": "2026-09-26",
+  "source": "design",
+  "design_name": "beads-storage",
+  "authorship": "agent-generated",
+  "problem": "CoBuilder workflow state has no store. Slice states, scores, and attempts sit in the markdown tables of docs/plans/<slug>/04-slices.md, and any session can silently contradict that prose. Epic branches and pull-request numbers sit in hand-maintained index joins. Nothing below the file level answers what is next, what blocks what, or what changed while two sessions worked one ladder.",
+  "why_now": "The implement plugin is about to drive real ladders across sessions, and the beads fork work just landed v1.3.0 with the metadata extension point verified in this workspace. The cost of seeding grows with every slice that lands in prose.",
+  "approach": "One beads tracker per narrated repo. Program, epic, and slice records become beads issues typed, parented, and chained in the slice ladder. Every record keeps its shape under a namespaced metadata envelope, metadata.cb, that beads stores as well-formed JSON. Markdown sources of record stay untouched as documents. build_index.py gains one beads read and writes the same data/index.json, so the viewer stays build-free.",
+  "alternatives": [
+    {
+      "option": "Keep markdown tables and hand-edited JSON as the only state",
+      "rejected_because": "State in prose races at whole-file grain, readiness is a human judgment, and nothing records who changed what."
+    },
+    {
+      "option": "Store the same records in GitHub Issues or Projects",
+      "rejected_because": "Every flip needs network and credentials, offline work stops, and slice granularity would collapse into labels."
+    },
+    {
+      "option": "Write a bespoke JSON or SQLite store for the bundle",
+      "rejected_because": "It rebuilds the engine beads already ships: readiness, dependencies, gates, leases, history, and sync."
+    },
+    {
+      "option": "Use beads milestone type for programs and avoid custom types",
+      "rejected_because": "Milestone fits the container half but not the stage workflow, and types.custom is the sanctioned path the queries want."
+    }
+  ],
+  "out_of_scope": [
+    "Moving prose documents, screenshots, or publication history into the tracker",
+    "Storing pull requests as issues; GitHub stays the source of record per ADR-0029",
+    "The gh:pr gate automation; the human gate carries merges until beads phase 3 lands here",
+    "Changing the viewer, the index shape, or any consumer key"
+  ],
+  "risks": [
+    "bd becomes a system dependency; scripts must detect its absence and fall back to the file flow",
+    "types.custom = program must ship in the tracker config or the seed fails on a fresh clone",
+    "Two sources of state exist during the migration window until the 04-slices.md cutover lands",
+    "Metadata has no query language, so corpus-wide questions stay with the index"
+  ],
+  "testing": [
+    "Seed against a copy of the repo and compare projected counts against data/index.json",
+    "Round-trip one envelope through create, update, export, and list --json and compare keys",
+    "Close slice n and assert bd ready names slice n+1",
+    "Create a gate with --blocks and assert the epic stays out of bd ready until resolve"
+  ],
+  "reviewer_focus": [
+    "The state vocabularies table: does every existing value land in a status or in metadata without loss",
+    "The write model: does each command match a moment a session actually performs",
+    "The fallback rule when bd is absent"
+  ],
+  "unknowns": [
+    "Whether bd tree scales acceptably past a few thousand issues; the corpus is two hundred today",
+    "Whether the implement worker claim flow wants leases or plain in_progress status"
+  ]
+}

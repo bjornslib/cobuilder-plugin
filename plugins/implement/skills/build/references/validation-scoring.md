@@ -93,7 +93,7 @@ not ignore any gap.
 | **RETRY** | In scope, mechanical, no architecture change. Missing import, missing header, unhandled branch. | Add to the feedback file. GREEN fixes it in the next attempt. |
 | **DEFER** | A planned future slice owns the capability. | Add a line to that future slice rubric. Do not build it now. |
 | **FILE** | In scope and fixable, but large or high risk. Crosses a service boundary or needs a migration. | Record as a follow-up work item in `00-status.md`. Do not block the slice. |
-| **ESCALATE** | Fixing it requires an architectural or product decision. | Stop. Present the issue to the user. Update earlier gate documents if needed and request re-approval. |
+| **ESCALATE** | Fixing it requires an architectural or product decision. | Stop. Update earlier gate documents if needed. Follow Present for review in `Skill("cobuilder-artifacts")` with the epics route, give the user the link, and present the issue. Then request re-approval. |
 
 ---
 

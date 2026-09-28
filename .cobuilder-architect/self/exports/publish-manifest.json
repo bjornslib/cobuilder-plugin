@@ -14,6 +14,28 @@
       "date": "2026-07-22",
       "artifact_url": "https://claude.ai/code/artifact/ea2c0f34-c5e5-46f7-b619-2bb7c72b5583",
       "published_at": "2026-07-22T09:56:34Z"
+    },
+    "11": {
+      "title": "Design cobuilder-architect and cobuilder-implement, split repo into five plugins and skills",
+      "tagline": "One plugin doing four jobs became five, a new design mode now interviews before code exists, and the biggest ADR of the batch admits the viewer split it decided is not built yet.",
+      "date": "2026-08-25",
+      "status": "merged",
+      "commit": "a389892",
+      "source_hash": "326c0060f1bb8c4d",
+      "export_file": "exports/pr-11.html",
+      "export_bytes": 7506587,
+      "exported_at": "2026-09-23T01:48:07Z"
+    },
+    "12": {
+      "title": "Retire adr-draft, close Gate 4b retrospectively, and record two ADR maintenance rules",
+      "tagline": "Pull request eleven left three kinds of debt, and this change pays each one off honestly, including a recovery that could have lost the whole branch.",
+      "date": "2026-08-25",
+      "status": "merged",
+      "commit": "be93c04",
+      "source_hash": "71518899af2cdba3",
+      "export_file": "exports/pr-12.html",
+      "export_bytes": 1864053,
+      "exported_at": "2026-09-23T02:21:03Z"
     }
   },
   "index": {

@@ -1,0 +1,60 @@
+classDiagram
+    title Beads storage for CoBuilder — level 3: the mapped schema
+
+    class Issue {
+        +String id
+        +String title
+        +Status status
+        +IssueType issue_type
+        +JSON metadata
+        +String external_ref
+    }
+    class Dependency {
+        +String issue_id
+        +String depends_on_id
+        +DependencyType type
+    }
+    class Envelope {
+        +int v
+        +String kind
+    }
+    class ProgramEnvelope {
+        +String name
+        +String stage
+        +int gate
+        +Dict sources
+    }
+    class EpicEnvelope {
+        +String design
+        +String epic_id
+        +String branch
+        +int pr
+        +String state
+    }
+    class SliceEnvelope {
+        +String design
+        +String epic
+        +int n
+        +String ends_with
+        +String score
+        +int attempts
+        +String feature
+        +List evidence
+    }
+    class DecisionEnvelope {
+        +String adr
+        +List districts
+        +int pr
+    }
+
+    Issue "1" --> "0..*" Dependency : edges
+    Issue *-- Envelope : metadata.cb
+    Envelope <|-- ProgramEnvelope
+    Envelope <|-- EpicEnvelope
+    Envelope <|-- SliceEnvelope
+    Envelope <|-- DecisionEnvelope
+    Dependency : blocks
+    Dependency : parent-child
+    Dependency : blocked-by ladder
+    Dependency : relates-to
+    Dependency : supersedes

@@ -1,0 +1,50 @@
+{
+  "stage": "design",
+  "verdict": "sound",
+  "risk_tier": "medium",
+  "regret_risk": "If the team later abandons bd, the metadata envelope keeps every consumer key and the seed script reverses into an exporter, so the records leave intact. The regret concentrates in workflow habits: sessions that learned bd ready and gates must relearn the file flow, and the 04-slices.md state columns drift during any long window before the cutover epic lands.",
+  "summary": "The design moves CoBuilder workflow state into beads and keeps every document where it is. The mapping is total over the stateful records and empty over the prose records, which is what makes the index rebuild tractable. The envelope costs one JSON key and buys namespacing for every future extension.",
+  "constraint_introduced": "Every CoBuilder stateful record carries a metadata.cb envelope with kind and v, and no prose enters the tracker. build_index.py reads state from beads when bd is present and from files otherwise, and the two paths must project the same shapes.",
+  "findings": [
+    {
+      "kind": "prediction",
+      "id": "F1",
+      "severity": "info",
+      "title": "The mapping is total over stateful records",
+      "detail": "Every record kind with a stage, state, score, attempts, branch, or ladder position maps to an issue with a field-level home. Records without state stay files with pointers. Nothing in the index loses its source.",
+      "cites": ["ADR-0031", "ADR-0018"]
+    },
+    {
+      "kind": "prediction",
+      "id": "F2",
+      "severity": "info",
+      "title": "The viewer rule survives untouched",
+      "detail": "build_index.py keeps writing data/index.json and the viewer keeps reading it static. The beads read is one more source beside the file walkers, so ADR-0001 and ADR-0020 hold without amendment.",
+      "cites": ["ADR-0001", "ADR-0020", "ADR-0018"]
+    },
+    {
+      "kind": "prediction",
+      "id": "F3",
+      "severity": "medium",
+      "title": "The bd dependency is a new failure mode for scripts",
+      "detail": "verify_gate.py and the state writers currently need only Python and git. Adding bd means a missing binary can fail a session. The fallback rule keeps the file flow as the degraded path, but the two paths must project the same shapes or the index bifurcates.",
+      "cites": ["ADR-0016"]
+    },
+    {
+      "kind": "prediction",
+      "id": "F4",
+      "severity": "medium",
+      "title": "Migration window holds two sources of state",
+      "detail": "Until the 04-slices.md cutover lands, the tables and the tracker can disagree. The seed script is idempotent and dry-run first, and the cutover epic should flip authority in one commit, not gradually.",
+      "cites": ["ADR-0031"]
+    },
+    {
+      "kind": "prediction",
+      "id": "F5",
+      "severity": "info",
+      "title": "Custom type budget is one",
+      "detail": "Only programs need a custom type. Epics, tasks, decisions, and gates are built-in. If a second custom type appears, the vocabulary was misread and the mapping should be revisited.",
+      "cites": ["ADR-0031"]
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+%% review-flight-deck level 1 — where each part runs
+C4Container
+    title Flightdeck — the terminal simulates and executes, the viewer renders
+
+    Person(reviewer, "Reviewer", "Holds tens of open pull requests and one question about the order")
+    System_Ext(gh, "GitHub", "Open pull requests, head branches, the default branch")
+    System_Ext(git, "Local git", "The common ancestor, a scratch worktree, merge replay")
+    System_Ext(trigger, "Workflow or schedule", "Supplied by the adopting repository\nThe plugin ships no hook")
+
+    Container_Boundary(pr, "plugins/pr") {
+        Container(gen, "generate mode", "Claude skill", "Writes a description for any pull request that has none")
+        Container(fd, "flightdeck mode", "Claude skill + PEP 723 script", "Reads the open set, simulates paths from the common ancestor, replays the best with git")
+        Container(runner, "path runner", "PEP 723 script", "Reads an accepted path and merges each bundle onto its own integration branch")
+    }
+
+    Container_Boundary(sh, "shared/") {
+        Container(ledger, "ledger.py", "Python", "Append-only writer, direct file access")
+        Container(index, "build_index.py", "Python", "Full rebuild of the record index")
+    }
+
+    Container_Boundary(bundle, "bundle") {
+        ContainerDb(jsonl, "feedback-ledger.jsonl", "Line-delimited JSON", "path_accept, merge_bundle, blocked_decision")
+        ContainerDb(paths, "data/paths.js", "window.PATHS", "The simulated paths, the replay result, the blocked pull requests")
+    }
+
+    Container_Boundary(art, "plugins/artifact") {
+        Container(viewer, "viewer/index.html", "One self-contained file", "Renders the validated path\nComputes nothing")
+    }
+
+    Rel(trigger, fd, "Starts the mode on a pull request event")
+    Rel(fd, gh, "Reads the open set and the head branches")
+    Rel(fd, gen, "Calls it for a pull request with no description")
+    Rel(fd, git, "Finds the common ancestor, replays each path on a scratch worktree")
+    Rel(fd, paths, "Writes the projection")
+    Rel(viewer, paths, "Reads a sibling script tag")
+    Rel(reviewer, viewer, "Reads the outcome, then the contributions, then the merge chain")
+    Rel(reviewer, viewer, "Accepts a path and chooses the pace")
+    Rel(viewer, ledger, "Appends the decision")
+    Rel(ledger, jsonl, "Writes one line")
+    Rel(runner, jsonl, "Reads the accepted path")
+    Rel(runner, gh, "Merges each bundle onto its integration branch")
+    Rel(index, jsonl, "Folds the lines into the record index")

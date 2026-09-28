@@ -57,7 +57,7 @@ _Avoid_: ADR (a design also produces one, but the ADR outlives it under docs/arc
 
 <a id="backlog-design"></a>
 **backlog design** (`architect`):
-A design at `stage: "backlog"`, with only a `goal.json` of planned epics, and `maintainable-viewer` and `inflight-record-store` are both backlog designs today. This is a deliberate, sparse state before Design mode's later stages run, not an abandoned design.
+A design at `stage: "backlog"`, with only a `goal.json` of planned epics, and `inflight-record-store` is a backlog design today. `maintainable-viewer` was one, and now reads `stage: "superseded"`. This is a deliberate, sparse state before Design mode's later stages run, not an abandoned design.
 
 <a id="review"></a>
 **Review** (`architect`):

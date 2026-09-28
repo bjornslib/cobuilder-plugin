@@ -7,7 +7,8 @@
 
 SELF-ONLY. Do not "fix" this later to accept a foreign bundle.
 
-Source is the authored tree under ``<repo>/docs/`` plus the bundle's own
+Source is the authored tree under ``<repo>/docs/`` plus the blind acceptance
+rubrics under ``<repo>/.cobuilder/rubrics/`` and the bundle's own
 ``inventory.yaml`` and ``data/story.json``. Destination is always
 ``<repo>/.cobuilder-architect/self/data/`` (``index.json`` and ``index.js``).
 
@@ -56,17 +57,23 @@ from _bundle_meta import (  # noqa: E402
     stamp_generator,
 )
 import slice_table  # noqa: E402
+import gate_status  # noqa: E402
 
-INDEX_SCHEMA_VERSION = "1.3"
+# Bumped to 1.4 when the index gained the "rubric" entity kind and the
+# .cobuilder/rubrics tracked subtree. Nothing gates on this value; it names the
+# shape for a reader, the way the module docstring names the sources.
+INDEX_SCHEMA_VERSION = "1.4"
 
 SELF_BUNDLE = Path(".cobuilder-architect") / "self"
 ADR_SOURCE_SUBDIR = Path("docs") / "architecture" / "adr"
 DESIGN_SOURCE_SUBDIR = Path("docs") / "architecture" / "designs"
 CONTEXT_SOURCE_SUBDIR = Path("docs") / "architecture" / "contexts"
 PLANS_SOURCE_SUBDIR = Path("docs") / "plans"
+RUBRICS_SOURCE_SUBDIR = Path(".cobuilder") / "rubrics"
 
 ADR_FILENAME_RE = re.compile(r"^(ADR-\d{4})(?:-.*)?\.md$")
 TITLE_PREFIX_RE = re.compile(r"^ADR-\d{4}\s+[—–-]\s+(.*)$")
+RUBRIC_FILENAME_RE = re.compile(r"^slice-(\d+)\.md$")
 
 
 # --------------------------------------------------------------------------
@@ -248,6 +255,7 @@ INTENT_FIELDS = ("problem", "approach", "alternatives")
 ASSESSMENT_FIELDS = ("verdict", "findings")
 PROGRAM_DESIGN_FIELDS = ("id", "feature_slug", "gate", "title", "body_md", "approved_date", "source_path")
 EPIC_DESIGN_FIELDS = ("id", "epic_id", "feature_slug", "title", "body_md", "approved_date", "source_path")
+RUBRIC_FIELDS = ("id", "feature_slug", "n", "title", "body_md", "source_path")
 
 
 def discover_goal_files(designs_dir: Path) -> list[Path]:
@@ -565,9 +573,12 @@ def collect_districts(bundle_dir: Path) -> tuple[list[dict], list[str]]:
 # --------------------------------------------------------------------------
 # Slices — feeds "slice" entities, from docs/plans/<feature>/04-slices.md
 # --------------------------------------------------------------------------
+#
+# The gate-line regex that used to sit beside STATUS_SLICE_RE moved into
+# shared/gate_status.py, the one parser of a 00-status.md gate block. Its
+# resolve_feature_gates() and _gate_2b_state() read the block from there.
 
 
-STATUS_GATE_RE = re.compile(r"^-\s*Gate\s*(\d+\w?)\s*[—–-]\s*([^:]+):\s*(.+)$")
 STATUS_SLICE_RE = re.compile(
     r"^-\s*\[(x| )\]\s*Slice\s*(\d+)\s*[—–-]\s*(.*?)(?:\s+score:\s*([^\s]+)(?:\s+on\s+attempt\s+(\d+))?)?$",
     re.IGNORECASE,
@@ -651,6 +662,12 @@ def _extract_title(text: str, fallback: str) -> str:
     return fallback
 
 
+# Gate 1 and Gate 2 documents, projected with the program design's field set.
+PLAN_DOC_FILES = (("product", "01-product.md"), ("architecture", "02-architecture.md"))
+PLAN_DOC_GATES = {"product": 1, "architecture": 2, "program": 3}
+GATE_DOC_KINDS = {"1": "product", "2": "architecture", "3": "program"}
+
+
 def discover_plan_gate_docs(repo: Path) -> list[dict]:
     plans_dir = repo / PLANS_SOURCE_SUBDIR
     if not plans_dir.is_dir():
@@ -658,6 +675,23 @@ def discover_plan_gate_docs(repo: Path) -> list[dict]:
     found: list[dict] = []
     for slug_dir in sorted(p for p in plans_dir.iterdir() if p.is_dir()):
         feature_slug = slug_dir.name
+        for kind, filename in PLAN_DOC_FILES:
+            plan_path = slug_dir / filename
+            if not plan_path.is_file():
+                continue
+            try:
+                text = plan_path.read_text()
+            except OSError:
+                continue
+            found.append(
+                {
+                    "kind": kind,
+                    "feature_slug": feature_slug,
+                    "epic_id": None,
+                    "path": plan_path,
+                    "text": text,
+                }
+            )
         program_path = slug_dir / "03-program-design.md"
         if program_path.is_file():
             try:
@@ -695,12 +729,14 @@ def discover_plan_gate_docs(repo: Path) -> list[dict]:
     return found
 
 
-def project_program_design(feature_slug: str, path: Path, text: str, repo: Path) -> dict:
+def project_program_design(
+    feature_slug: str, path: Path, text: str, repo: Path, gate: int = 3
+) -> dict:
     rel = path.relative_to(repo) if path.is_relative_to(repo) else path
     source = {
         "id": feature_slug,
         "feature_slug": feature_slug,
-        "gate": 3,
+        "gate": gate,
         "title": _extract_title(text, feature_slug),
         "body_md": text,
         "approved_date": None,
@@ -723,11 +759,86 @@ def project_epic_design(epic_id: str, feature_slug: str, path: Path, text: str, 
     return project_fields(source, EPIC_DESIGN_FIELDS)
 
 
+def collect_plan_docs(repo: Path) -> dict[str, list[dict]]:
+    """Project 01-product.md and 02-architecture.md, keyed by entity kind."""
+    out: dict[str, list[dict]] = {"product_doc": [], "architecture_doc": []}
+    for doc in discover_plan_gate_docs(repo):
+        if doc["kind"] in ("product", "architecture"):
+            out[f"{doc['kind']}_doc"].append(
+                project_program_design(
+                    doc["feature_slug"], doc["path"], doc["text"], repo,
+                    gate=PLAN_DOC_GATES[doc["kind"]],
+                )
+            )
+    return out
+
+
+# --------------------------------------------------------------------------
+# Slice rubrics — feeds "rubric" entities, from
+# .cobuilder/rubrics/<slug>/slice-N.md
+# --------------------------------------------------------------------------
+
+
+def project_rubric(feature_slug: str, n: int, path: Path, text: str, repo: Path) -> dict:
+    """One rubric entity. The id is ``<slug>/<n>``, the same id space the
+    slice entity uses, so the viewer joins the two on a plain id comparison
+    and no new join key exists. The title is the file's own heading with the
+    ``Rubric:`` prefix dropped: the words after it name the slice's acceptance
+    test, and a reader who already knows they are on the Rubrics page loses
+    nothing by the prefix going.
+    """
+    rel = path.relative_to(repo) if path.is_relative_to(repo) else path
+    title = _extract_title(text, f"Slice {n}")
+    if title.startswith("Rubric:"):
+        title = title[len("Rubric:"):].strip()
+    source = {
+        "id": f"{feature_slug}/{n}",
+        "feature_slug": feature_slug,
+        "n": n,
+        "title": title,
+        "body_md": text,
+        "source_path": str(rel),
+    }
+    return project_fields(source, RUBRIC_FIELDS)
+
+
+def collect_rubrics(repo: Path) -> list[dict]:
+    """Read every ``.cobuilder/rubrics/<slug>/slice-N.md``.
+
+    A repo with no rubrics directory projects an empty list, and a slice with
+    no rubric file simply has no entity: the viewer states that absence in
+    place rather than reading it as a passed gate. The directory also holds
+    ``manifest.yaml`` and an ``evidence/`` subtree; the filename regex keeps
+    both out, because neither is a rubric.
+    """
+    rubrics_dir = repo / RUBRICS_SOURCE_SUBDIR
+    if not rubrics_dir.is_dir():
+        return []
+    entities: list[dict] = []
+    for slug_dir in sorted(p for p in rubrics_dir.iterdir() if p.is_dir()):
+        numbered: list[tuple[int, dict]] = []
+        for path in slug_dir.glob("slice-*.md"):
+            match = RUBRIC_FILENAME_RE.match(path.name)
+            if not match:
+                continue
+            try:
+                text = path.read_text()
+            except OSError:
+                continue
+            n = int(match.group(1))
+            numbered.append((n, project_rubric(slug_dir.name, n, path, text, repo)))
+        numbered.sort(key=lambda pair: pair[0])
+        entities.extend(entity for _, entity in numbered)
+    return entities
+
+
 def collect_gate_docs(repo: Path) -> tuple[list[dict], list[dict], list[str]]:
     failures: list[str] = []
     program_entities: list[dict] = []
     epic_entities: list[dict] = []
     for doc in discover_plan_gate_docs(repo):
+        if doc["kind"] in ("product", "architecture"):
+            continue
         if doc["kind"] == "program":
             program_entities.append(
                 project_program_design(doc["feature_slug"], doc["path"], doc["text"], repo)
@@ -739,23 +850,73 @@ def collect_gate_docs(repo: Path) -> tuple[list[dict], list[dict], list[str]]:
     return program_entities, epic_entities, failures
 
 
+def link_epic_design_docs(
+    epic_entities: list[dict],
+    slice_entities: list[dict],
+    slice_to_epic: dict[str, str],
+    epic_design_entities: list[dict],
+) -> None:
+    """Attach each epic design document to the epic entity it documents.
+
+    Two id spaces meet here, and they do not agree by default. An epic
+    entity id takes its scope from the design directory name, such as
+    ``plugin-split/E1``. An epic design document id takes its scope from
+    the plan slug, such as ``cobuilder-family/E1``. A design whose
+    directory name differs from its plan slug therefore never matches on
+    a plain id comparison.
+
+    A slice entity carries its plan slug in ``feature``, and the
+    ``slice_to_epic`` join maps that slice to a design-scoped epic id.
+    Inverting the join gives the plan slug that advances each epic. The
+    function rebuilds a candidate document id from that slug and the
+    epic's own bare id.
+
+    Each epic tries the direct match first. An epic whose design name
+    equals its plan slug keeps the id it carries today.
+    """
+    design_doc_ids = {doc["id"] for doc in epic_design_entities}
+    feature_by_slice = {s["id"]: s["feature"] for s in slice_entities}
+    slugs_by_epic: dict[str, list[str]] = {}
+    for slice_id, epic_id in slice_to_epic.items():
+        feature = feature_by_slice.get(slice_id)
+        if not feature:
+            continue
+        slugs = slugs_by_epic.setdefault(epic_id, [])
+        if feature not in slugs:
+            slugs.append(feature)
+    for epic in epic_entities:
+        if epic["id"] in design_doc_ids:
+            epic["design_doc"] = epic["id"]
+            continue
+        bare_id = epic.get("epic_id")
+        if not bare_id:
+            continue
+        for feature in slugs_by_epic.get(epic["id"], []):
+            candidate = f"{feature}/{bare_id}"
+            if candidate in design_doc_ids:
+                epic["design_doc"] = candidate
+                break
+
+
 def _gate_2b_state(plan_dir: Path) -> str:
     """Read the Gate 2b state text from a plan's 00-status.md.
 
     Returns "n/a" when the file is absent, unreadable, or carries no Gate 2b
-    line. Uses the same STATUS_GATE_RE as resolve_feature_gates().
+    line. The read goes through the one parser in gate_status, so a 2b block
+    projects a clean state. Gate 2b is link-exempt today (GATES_WITHOUT_PAGE in
+    verify_gate.py names it) and nothing renders a link for it, so the view
+    half of the block is dropped here.
     """
     status_path = plan_dir / "00-status.md"
     if not status_path.is_file():
         return "n/a"
     try:
-        lines = status_path.read_text().splitlines()
+        text = status_path.read_text()
     except OSError:
         return "n/a"
-    for line in lines:
-        gm = STATUS_GATE_RE.search(line.strip())
-        if gm and gm.group(1) == "2b":
-            return gm.group(3).strip()
+    for step in gate_status.parse_status_gates(text):
+        if step["n"] == "2b":
+            return step["state"]
     return "n/a"
 
 
@@ -1131,8 +1292,10 @@ def resolve_feature_gates(repo: Path) -> dict[str, list[dict]]:
     gates_by_feature: dict[str, list[dict]] = {}
     if not plans_dir.is_dir():
         return gates_by_feature
-    program_design_features = {
-        doc["feature_slug"] for doc in discover_plan_gate_docs(repo) if doc["kind"] == "program"
+    plan_doc_features = {
+        (doc["kind"], doc["feature_slug"])
+        for doc in discover_plan_gate_docs(repo)
+        if doc["kind"] in PLAN_DOC_GATES
     }
     interaction_design_features = {
         path.parent.name for path in plans_dir.glob("*/interaction-design.md") if path.is_file()
@@ -1141,23 +1304,30 @@ def resolve_feature_gates(repo: Path) -> dict[str, list[dict]]:
         feature = status_path.parent.name
         gates = []
         try:
-            for line in status_path.read_text().splitlines():
-                gm = STATUS_GATE_RE.search(line.strip())
-                if gm:
-                    gate = {
-                        "n": gm.group(1),
-                        "name": gm.group(2).strip(),
-                        "state": gm.group(3).strip(),
-                    }
-                    if gate["n"] == "3" and feature in program_design_features:
-                        gate["doc"] = feature
-                        gate["doc_kind"] = "program"
-                    elif gate["n"] == "2b" and feature in interaction_design_features:
-                        gate["doc"] = feature
-                        gate["doc_kind"] = "interaction"
-                    gates.append(gate)
+            text = status_path.read_text()
         except OSError:
             continue
+        # gate_status is the one parser of a gate block: the gate line carries
+        # the approval state, and the link lives on its own `view:` line under
+        # it (ADR-0032, amendment of 2026-09-28). The portable route projects
+        # into its own field, and the machine-specific absolute URL never
+        # reaches the index. A block with no view line projects no `view` key.
+        for step in gate_status.parse_status_gates(text):
+            gate = {
+                "n": step["n"],
+                "name": step["name"],
+                "state": step["state"],
+            }
+            if step["view"] is not None:
+                gate["view"] = step["view"]
+            doc_kind = GATE_DOC_KINDS.get(gate["n"])
+            if doc_kind and (doc_kind, feature) in plan_doc_features:
+                gate["doc"] = feature
+                gate["doc_kind"] = doc_kind
+            elif gate["n"] == "2b" and feature in interaction_design_features:
+                gate["doc"] = feature
+                gate["doc_kind"] = "interaction"
+            gates.append(gate)
         if gates:
             gates_by_feature[feature] = gates
     return gates_by_feature
@@ -1221,6 +1391,7 @@ TRACKED_SUBTREES = (
     "docs/architecture/designs",
     "docs/architecture/contexts",
     "docs/plans",
+    ".cobuilder/rubrics",
 )
 
 
@@ -1304,11 +1475,6 @@ def build_index(repo: Path, bundle_dir: Path) -> tuple[dict, dict, dict, list[st
 
     interaction_design_entities = discover_interaction_design_docs(repo)
 
-    epic_design_ids = {r["id"] for r in epic_design_entities}
-    for epic in epic_entities:
-        if epic["id"] in epic_design_ids:
-            epic["design_doc"] = epic["id"]
-
     entities = {
         "adr": adr_entities,
         "design": design_entities,
@@ -1319,14 +1485,21 @@ def build_index(repo: Path, bundle_dir: Path) -> tuple[dict, dict, dict, list[st
         "pull_request": pull_request_entities,
         "slice": slice_entities,
         "publication": publication_entities,
+        **collect_plan_docs(repo),
         "program_design": program_design_entities,
         "epic_design": epic_design_entities,
         "interaction_design": interaction_design_entities,
+        "rubric": collect_rubrics(repo),
     }
 
     joins, join_warnings = resolve_joins(repo, adrs_viewer, designs_viewer, entities)
     for warning in join_warnings:
         print(f"warning: {warning}", file=sys.stderr)
+
+    # This step needs the slice_to_epic join, so it runs after resolve_joins().
+    link_epic_design_docs(
+        entities["epic"], entities["slice"], joins["slice_to_epic"], entities["epic_design"]
+    )
 
     index = {
         "schema_version": INDEX_SCHEMA_VERSION,
