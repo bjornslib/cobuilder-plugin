@@ -1,0 +1,12 @@
+feature: review-link
+test_command: "uv run --with pytest pytest tests/ -v"
+thresholds:
+  accept: 0.90
+  investigate: 0.70
+max_attempts: 3
+epics:
+  - { id: "review-link/E1", name: "a viewer link for each document under review", slices: [1, 2, 3] }
+slices:
+  - { id: 1, name: "tracer bullet: review_link.py prints a checked deep link",     epic: "review-link/E1", weight: 0.30 }
+  - { id: 2, name: "plan documents in the index and a plan page in the viewer",   epic: "review-link/E1", weight: 0.35 }
+  - { id: 3, name: "Present for review procedure and the link check",             epic: "review-link/E1", weight: 0.35, behavioral: true }

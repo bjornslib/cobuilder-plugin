@@ -214,6 +214,19 @@ may already exist from a prior Baseline or Review run (the same
     answering the picker) and refreshing the tab. Tell them that
     `/artifact:view --stop` shuts the server down entirely.
 
+11. **Print a deep link, if the user passed `--route`.** The value is a
+    viewer route of the form `#/<work>/<rest>`, for example
+    `#/review-link/build/epics`. Run the script after step 10:
+    ```bash
+    uv run ${CLAUDE_PLUGIN_ROOT}/scripts/review_link.py --hub "<hub>" --route "<value of --route>"
+    ```
+    The script checks that the server process is live and reads its port
+    from the log. It checks that the work id is in the active bundle's
+    `data/index.json`. It checks that the viewer page answers with HTTP 200.
+    On success, it prints one line, the link. Give that link to the user.
+    On failure, it prints the reason on stderr and exits 1. Show the reason
+    to the user. Do not make a link by hand.
+
 ## Publish mode
 
 This mode flattens already-generated PRs into self-contained Claude

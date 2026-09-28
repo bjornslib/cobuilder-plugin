@@ -12,7 +12,7 @@ session keeps going while the server runs.
 
 Invoke the `cobuilder-artifacts` skill in view mode, forwarding any arguments the user
 supplied after `/artifact:view` (`--repo <path>`, `--store local|central`,
-`--port <N>`, `--stop`, `--list`):
+`--port <N>`, `--route '#/<work>/<rest>'`, `--stop`, `--list`):
 
 ```
 Skill("cobuilder-artifacts", args="view $ARGUMENTS")
@@ -50,5 +50,6 @@ server against nothing.
 /artifact:view --list
 /artifact:view --repo ~/code/other-project
 /artifact:view --port 9000
+/artifact:view --route '#/review-link/build/epics'
 /artifact:view --stop
 ```

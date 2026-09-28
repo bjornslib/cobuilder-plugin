@@ -1,0 +1,43 @@
+// ui-spec.jsonc — the plan page of the Work surface.
+//
+// Nothing validates this file. verify_gate.py checks only that it exists.
+// interaction-design.md in this directory owns the prose. Where the two
+// disagree, interaction-design.md wins. The house rules and tokens come from
+// docs/plans/cobuilder-viewer/ui-spec.jsonc, and this file adds none.
+{
+  "page": {
+    "id": "plan",
+    "route": "#/<work>/build/plan",
+    "routeTail": ["product", "architecture", "program"],
+    "railGroup": "build",
+    "railOrder": ["intent", "problem-and-solution", "architecture", "epics", "rubrics", "plan"],
+    "readOnly": true
+  },
+  "components": {
+    "planBlock": {
+      "order": ["product", "architecture", "program"],
+      "gateLabel": {
+        "product": "Gate 1 — Product",
+        "architecture": "Gate 2 — Architecture",
+        "program": "Gate 3 — Program design"
+      },
+      "states": {
+        "present": { "shows": ["headingBand", "sourcePath", "body"] },
+        "absent": { "shows": ["headingBand", "emptyLine"], "emptyText": "No <document> for this work yet.", "color": "--text-3" }
+      },
+      "body": { "renderer": "existing markdown renderer", "overflowX": "own box" }
+    },
+    "planRailRow": {
+      "base": "nav item",
+      "minHeightPx": 44,
+      "disabledWhen": "the work item has no plan slug",
+      "disabledReason": "no plan"
+    }
+  },
+  "motion": {
+    "sectionChange": "existing shell section duration and easing",
+    "tailScroll": "no animation",
+    "reducedMotion": "all durations zero"
+  },
+  "scroll": { "owner": "main column" }
+}
