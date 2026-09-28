@@ -279,11 +279,19 @@ that join here.
       for this hub, view mode reuses it (see its Step 8) — this never
       starts a second one.
 
+      Then follow Present for review in
+      `Skill("cobuilder-artifacts")` with the route `#/<work>/intent`, and
+      give the engineer the link.
+
 9. **Stage 6 — Review routing.** Follow `references/design-mode.md` §10.
    The engineer reads the draft and answers in the session. Material
    feedback returns to stage 3. Cosmetic feedback returns to stage 5.
    Wording, diagram layout, and ADR order are cosmetic. **State the
    classification. Let the engineer overrule it.**
+
+   Each round, follow Present for review in `Skill("cobuilder-artifacts")`
+   with the route `#/<work>/intent` before you ask about the draft. Give the
+   engineer the link.
 
    Detect churn. Each round, hash the ADR draft plus the option set. Two
    consecutive rounds with no material change mean the loop circles. Say
@@ -387,6 +395,10 @@ If no prior report exists, state: "This is the first scan. Future audits will co
    Then `Skill("cobuilder-artifacts", args="view")`. Reuses an
    already-running server for this hub; never starts a second one.
 
+   Before you ask the engineer about the record, follow Present for review
+   in `Skill("cobuilder-artifacts")`. Use the page of the record, or
+   `#/<work>/intent`. Give the engineer the link.
+
 **Output:** ADR file(s) plus updated viewpoint indexes, under `{doc_root}`. Canonical standard: `references/standard.md` §5.4.
 
 ### Describe Mode (Architecture Description)
@@ -408,6 +420,10 @@ If no prior report exists, state: "This is the first scan. Future audits will co
    ```
    Then `Skill("cobuilder-artifacts", args="view")`. Reuses an
    already-running server for this hub; never starts a second one.
+
+   Before you ask the engineer about the record, follow Present for review
+   in `Skill("cobuilder-artifacts")`. Use the page of the record, or
+   `#/<work>/intent`. Give the engineer the link.
 
 **Output:** `canvas.md` plus `boundary.yaml` for the context, an updated INVENTORY, and a list of surfaced ADR candidates, under `{doc_root}`. Minimum bar: `references/standard.md` §8.
 

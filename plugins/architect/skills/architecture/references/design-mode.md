@@ -276,6 +276,10 @@ result to the engineer per step 5 below.
 
 ## 10. Stage 6 — Review routing
 
+Before the engineer reads the draft, follow Present for review in
+`Skill("cobuilder-artifacts")` with the route `#/<work>/intent`. Give the
+engineer the link.
+
 The engineer reads the draft and answers in the session. Material
 feedback returns to stage 3. A real objection usually invalidates an
 option or surfaces a constraint. Cosmetic feedback returns to stage 5.

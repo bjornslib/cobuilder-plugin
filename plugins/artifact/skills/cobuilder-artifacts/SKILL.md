@@ -304,6 +304,41 @@ files this mode produces stay valid deliverables. Tell the user where
 they landed (`<bundle-dir>/exports/`), so they can open or share them
 another way, instead of letting the run look like a silent failure.
 
+## Present for review
+
+Use this procedure before you ask the user to approve a document or to answer
+about it (ADR-0032). Other plugins name this section by mode name. They do not
+name a path in this plugin.
+
+1. Rebuild the index:
+   ```bash
+   uv run "${CLAUDE_PLUGIN_ROOT}/shared/build_index.py"
+   ```
+2. Start View mode, or use the server that runs for this hub. View mode never
+   starts a second server.
+3. Run View mode with `--route` for the page of the document. Use the route
+   table below. For example:
+   `Skill("cobuilder-artifacts", args="view --route '#/<work>/build/plan/product'")`.
+4. Give the user the printed link, then ask the question.
+5. If the check fails, tell the user that it failed. Give the file path of the
+   document instead of a link.
+
+| Document or point | Route |
+|---|---|
+| Gate 1, Product | `#/<work>/build/plan/product` |
+| Gate 2, Architecture | `#/<work>/build/plan/architecture` |
+| Gate 2b, Interaction design | none |
+| Gate 3, Program design | `#/<work>/build/plan/program` |
+| Gate 4a and 4b | `#/<work>/build/epics` |
+| Gate 4c, Blind rubrics | none |
+| After a slice, and ESCALATE | `#/<work>/build/epics` |
+| Design mode stage 5 and stage 6 | `#/<work>/intent` |
+| Decisions mode and describe mode | the page of the record, or `#/<work>/intent` |
+
+Two documents have no page. For the interaction design (Gate 2b), give the
+file path. For the blind rubrics (Gate 4c), give the count of rubric files.
+The user must not read the rubrics, so do not give a link or their text.
+
 ## Presenting decisions and gates (collaborative presentation)
 
 Present important gates, design decisions, and status readouts as

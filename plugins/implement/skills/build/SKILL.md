@@ -191,11 +191,11 @@ Template for `00-status.md`:
 ```markdown
 # Status: <feature name>
 
-- Gate 1 — Product: pending | in progress | APPROVED <date>
-- Gate 2 — Architecture: pending | in progress | APPROVED <date>
+- Gate 1 — Product: pending | in progress | APPROVED <date> — view: <url>
+- Gate 2 — Architecture: pending | in progress | APPROVED <date> — view: <url>
 - Gate 2b — Interaction design: pending | in progress | APPROVED <date> | n/a (no UI) — Screens: "<the ## Screens entry>"
-- Gate 3 — Program Design: pending | in progress | APPROVED <date>
-- Gate 4 — Slice plan, epic designs, and rubrics: pending | in progress | APPROVED <date>
+- Gate 3 — Program Design: pending | in progress | APPROVED <date> — view: <url>
+- Gate 4 — Slice plan, epic designs, and rubrics: pending | in progress | APPROVED <date> — view: <url>
   - 4a Slice plan: pending | APPROVED <date>
   - 4b Epic technical solution designs: pending | APPROVED <date> | n/a (no epic carries more than one slice)
   - 4c Blind rubrics: pending | APPROVED <date>
@@ -223,18 +223,15 @@ Run this protocol at every gate and before implementing an epic:
 1. Write the document to disk.
 2. Present a short summary of five to ten bullets to the user, with the file
    path.
-3. Ask the user: **"Approve Gate N, or what should change?"**
-4. The user must clearly approve before you proceed.
-5. Record approval in `00-status.md`.
-6. **Refresh the bundle and start the viewer.** `00-status.md` just changed
-   what the Builds Backlog Lane shows. Rebuild the self-bundle projection,
-   then start the viewer so the user can watch the gate land, the same way
-   step 5 after each slice does:
-   ```bash
-   uv run "${CLAUDE_PLUGIN_ROOT}/shared/build_index.py"
-   ```
-   Then `Skill("cobuilder-artifacts", args="view")`. Reuses an
-   already-running server for this hub; never starts a second one.
+3. **Present for review.** Refresh the bundle, then follow the Present for
+   review section of `Skill("cobuilder-artifacts")`. Give the user the link
+   to the page of the gate document. That section holds the route for each
+   gate. Gate 2b and Gate 4c have no page.
+4. Ask the user: **"Approve Gate N, or what should change?"**
+5. The user must clearly approve before you proceed.
+6. Record approval in `00-status.md`. Add the link from step 3 to the gate
+   line as ` — view: <url>`. `verify_gate.py` fails a line with no link when
+   its approval date is 2026-09-28 or later.
 7. If later work invalidates a decision, update the document, set status to "in
    progress", and request approval again.
 
@@ -444,7 +441,8 @@ Epic ID: <epic-id>
 ```
 
 Present this document to the user and obtain approval before authoring rubrics
-for the epic. Record the approval on the `4b` line in `00-status.md`. When no
+for the epic. Before you ask, follow Present for review in
+`Skill("cobuilder-artifacts")` with the epics route. Record the approval on the `4b` line in `00-status.md`. When no
 epic in `04-slices.md` carries more than one slice, mark `4b` as `n/a` instead
 of pending, and skip straight to 4c.
 
@@ -551,13 +549,9 @@ A harness with no Workflow tool always uses Manual, regardless of scope.
 3. **Record the score** in `00-status.md` and mark the slice complete.
 4. **Route gaps** below 1.0 using the gap decision tree in
    [references/validation-scoring.md](references/validation-scoring.md).
-5. **Refresh the bundle and start the viewer**, same as step 6 of the
-   approval protocol above:
-   ```bash
-   uv run "${CLAUDE_PLUGIN_ROOT}/shared/build_index.py"
-   ```
-   Then `Skill("cobuilder-artifacts", args="view")`. Reuses an
-   already-running server for this hub; never starts a second one.
+5. **Present for review.** Refresh the bundle, then follow the Present for
+   review section of `Skill("cobuilder-artifacts")` with the epics route.
+   Give the user the link.
 6. **Ask the user:** "Proceed to the next slice, or adjust direction?"
 
 ---

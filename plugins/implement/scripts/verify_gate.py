@@ -50,6 +50,20 @@ Artifact key names (stable, used in --json output):
                          a matching rubric file. "missing:<n,...>" names the
                          slice numbers with no rubric.
 
+  links (ADR-0032, keyed "gate.<n>", one per top-level Gate line in
+      00-status.md):
+    gate.<n>           - "ok" when an APPROVED line dated on or after
+                         2026-09-28 carries " — view: <url>". "missing" when
+                         such a line has no link. "n/a" when the line is
+                         dated before 2026-09-28, is not APPROVED, or has no
+                         viewer page.
+    Rule for sub-lines and gates with no page: the check reads top-level
+    "- Gate N" lines only. The 4a, 4b, and 4c sub-lines are not checked.
+    The Gate 4 line carries the one link, to the epics page, and that page
+    shows the slice plan and the epic designs. Gate 2b has no page (the
+    user gets the file path), so gate.2b is always "n/a". Gate 4c has no
+    page either, and as a sub-line it is not checked.
+
 Exit 0 iff every key above is "ok" or "n/a" (slices.count and rubrics.count
 pass when they are a positive integer, not literally the word "ok").
 
@@ -304,6 +318,35 @@ def check_4c(rubrics_dir: Path, slices: list[dict]) -> dict[str, str]:
     return results
 
 
+# ADR-0032 date. A gate line approved on or after this date needs a link.
+LINK_CUTOFF = "2026-09-28"
+# Gates whose document has no viewer page. The user gets the file path.
+GATES_WITHOUT_PAGE = {"2b"}
+STATUS_GATE_RE = re.compile(
+    r"^-\s*Gate\s*(\w+)\b.*?:\s*APPROVED\s+(\d{4}-\d{2}-\d{2})(.*)$",
+    re.IGNORECASE,
+)
+
+
+def check_links(status_text: str | None) -> dict[str, str]:
+    """Return "gate.<n>" -> "ok" | "n/a" | "missing" for top-level Gate lines."""
+    results: dict[str, str] = {}
+    if status_text is None:
+        return results
+    for line in status_text.splitlines():
+        match = STATUS_GATE_RE.match(line)
+        if not match:
+            continue
+        gate, date, rest = match.group(1).lower(), match.group(2), match.group(3)
+        if gate in GATES_WITHOUT_PAGE or date < LINK_CUTOFF:
+            results[f"gate.{gate}"] = "n/a"
+        elif re.search(r"view:\s*\S+", rest):
+            results[f"gate.{gate}"] = "ok"
+        else:
+            results[f"gate.{gate}"] = "missing"
+    return results
+
+
 def is_ok(value: str) -> bool:
     if value == "ok":
         return True
@@ -362,6 +405,7 @@ def main() -> None:
     b_results = check_4b(plan_dir, slices, status_text)
     c_results = check_4c(rubrics_dir, slices)
     b2_results = check_2b(plan_dir, status_text)
+    link_results = check_links(status_text)
 
     flat = {}
     flat.update(flatten("4a.", a_results))
@@ -369,6 +413,7 @@ def main() -> None:
         flat.update(flatten(f"4b.{epic_id}.", entry))
     flat.update(flatten("4c.", c_results))
     flat.update(flatten("2b.", b2_results))
+    flat.update(flatten("links.", link_results))
 
     ok = all_ok(flat)
 
@@ -380,6 +425,7 @@ def main() -> None:
             "4b": b_results,
             "4c": c_results,
             "2b": b2_results,
+            "links": link_results,
             "ok": ok,
         }
         print(json.dumps(payload, indent=2, ensure_ascii=False))
@@ -410,6 +456,11 @@ def main() -> None:
             marker = "(ok)" if is_ok(value) else "(FAIL)"
             print(f"  {key:<20} {value:<30} {marker}")
 
+        print("\nViewer links (ADR-0032)")
+        for key, value in link_results.items():
+            marker = "(ok)" if is_ok(value) else "(FAIL)"
+            print(f"  {key:<20} {value:<30} {marker}")
+
         print(f"\nOverall: {'OK' if ok else 'FAIL'}")
         if not ok:
             missing_designs = [
@@ -431,6 +482,14 @@ def main() -> None:
                     "get user approval, and record it in 00-status.md."
                 )
 
+    missing_links = [k.split(".", 1)[1] for k, v in link_results.items() if v == "missing"]
+    if missing_links:
+        print(
+            "\nViewer link missing for: " + ", ".join(f"Gate {g}" for g in missing_links) + ".\n"
+            "remediation: run View mode with --route for the gate's page, and add "
+            "' — view: <url>' to the gate line in 00-status.md.",
+            file=sys.stderr,
+        )
     sys.exit(0 if ok else 1)
 
 
