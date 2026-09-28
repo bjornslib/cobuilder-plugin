@@ -37,3 +37,5 @@ plugins/artifact/viewer/.vitest/
 # implement/SKILL.md's "Files and state" rule.
 .cobuilder/rubrics/*/evidence/
 .cobuilder-architect/digital-curator-80f83abb/docs/
+
+.venv/

@@ -1,0 +1,21 @@
+# Dev environment for the test suite only. This repo ships no Python package.
+# Plugin scripts keep their own PEP 723 inline dependencies.
+[project]
+name = "cobuilder-plugin-dev"
+version = "0"
+requires-python = ">=3.11"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pillow",
+    "google-genai",
+    "python-dotenv",
+    "pyyaml",
+    "requests",
+]
+
+[tool.uv]
+package = false
+python-preference = "only-managed"
