@@ -1,0 +1,62 @@
+// ui-spec: work-drawer
+// The controls the plan's slices own, as the repository's ui-spec.jsonc shape
+// carries them. Comments carry the why; the values are the interaction
+// design's declared defaults.
+{
+  "surface": "work-drawer-deck",
+
+  "drawer": {
+    "direction": "bottom",
+    "snapPoints": [0.6, 0.95],
+    "openSnap": 0.6,
+    "dismissible": true,
+    "title": "Work",
+    "description": "The Work board as a dense departure board of collapsible lanes, behind a state filter. The search refines as you type."
+  },
+
+  "search": {
+    "autofocusOnOpen": true,
+    "placeholder": "refine the deck…",
+    "typingResetsFilterToAll": true,
+    "clearButtonWhenNeedle": true,
+    "singleResultSelectsItself": true
+  },
+
+  "stateFilter": {
+    "groupLabel": "Filter the lanes by state",
+    "chips": ["All", "Needs a decision", "Ready to build", "In review", "Shipped", "Superseded"],
+    "default": "All",
+    "arrowKeysStepChips": { "left": "previous chip", "right": "next chip", "stopsAtEnds": true }
+  },
+
+  "lanes": {
+    "count": 5,
+    "order": ["Needs a decision", "Ready to build", "In review", "Shipped", "Superseded"],
+    "eachFoldable": true,
+    "foldControl": "shadcn Collapsible trigger, chevron rotates -90deg when folded"
+  },
+
+  "rows": {
+    "shape": "one line: dot, name, dotted leader, epic meter, merged PRs",
+    "walkKeys": { "up": "previous row", "down": "next row", "aliasKeys": ["k", "j"] },
+    "selectedRowAgain": "clears selection, drops drawer to 0.6",
+    "enterReadsTall": { "snap": 0.95, "fromFieldStaysTall": true }
+  },
+
+  "detailPane": {
+    "visibleWhileSelected": true,
+    "followsTheWalk": true,
+    "buttons": { "shellLink": "Open work item", "dismiss": "Close" },
+    "recordMarks": { "kinds": ["goal", "intent", "narrative", "assessment", "pr-draft", "diagrams"], "states": ["present", "partial", "absent"] },
+    "epicStates": "refined epic_status through the data layer; the placeholder field is never a fallback"
+  },
+
+  "header": {
+    "carries": ["title", "design count", "shown count"],
+    "carriesNoHeldOutText": true
+  },
+
+  "footer": {
+    "carries": ["the exclusion rule with the counts it held out"]
+  }
+}
