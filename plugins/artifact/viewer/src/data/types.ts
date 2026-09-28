@@ -1,7 +1,7 @@
 /**
  * The shape of `.cobuilder-architect/<bundle>/data/index.json`.
  *
- * Written by hand from the file that `shared/build_index.py` produces, schema 1.3,
+ * Written by hand from the file that `shared/build_index.py` produces, schema 1.4,
  * and narrowed to the entities a Work board reads. Every field below is present in
  * the real corpus. Nothing here is invented, and nothing here is optional-by-guess:
  * a field is `| null` only where the corpus holds a null.
@@ -164,6 +164,23 @@ export interface InteractionDesignEntity {
   body_md: string;
 }
 
+/**
+ * One slice's blind acceptance rubric.
+ *
+ * The index projects `.cobuilder/rubrics/<slug>/slice-N.md` into this entity. The id is
+ * `<slug>/<n>`, the same string a slice entity carries, so a work joins the two by a
+ * plain id lookup and no new join key exists. `body_md` is the whole file text, because
+ * the rubric is a single authored document with no fields worth taking apart.
+ */
+export interface RubricEntity {
+  id: string;
+  feature_slug: string;
+  n: number;
+  title: string;
+  body_md: string;
+  source_path: string;
+}
+
 export interface Entities {
   adr: AdrEntity[];
   design: DesignEntity[];
@@ -180,6 +197,11 @@ export interface Entities {
   program_design: ProgramDesignEntity[];
   epic_design: EpicDesignEntity[];
   interaction_design: InteractionDesignEntity[];
+  /**
+   * Slice rubrics. Optional like `product_doc`: a bundle built before the kind
+   * existed carries no `rubric` key, and it must keep loading.
+   */
+  rubric?: RubricEntity[];
 }
 
 export interface AdrToPullRequest {
@@ -194,6 +216,13 @@ export interface GateStep {
   state: string;
   doc?: string;
   doc_kind?: string;
+  /**
+   * The portable route of the gate's authored view link, such as
+   * `#/review-link/build/plan/product`. The index splits the link from the
+   * state so the machine-specific absolute URL never travels, and no surface
+   * renders it yet: the plan row already opens the same page.
+   */
+  view?: string;
 }
 
 export interface Joins {

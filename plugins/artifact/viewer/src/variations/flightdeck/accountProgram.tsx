@@ -131,7 +131,7 @@ export function programSections(props: ProgramBodyProps): ReactNode[] {
 
   return [
     <Bento key="rubrics">
-      <RubricsSection work={work} gated={gated} />
+      <RubricsSection work={work} gated={gated} openSheet={openSheet} />
     </Bento>,
   ];
 }

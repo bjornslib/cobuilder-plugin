@@ -183,6 +183,74 @@ def test_resolve_feature_gates_gate3_doc_key_absent_when_no_md_file(tmp_path):
 
 
 # ---------------------------------------------------------------------
+# The trailing view link an authored gate line carries (ADR-0032)
+# ---------------------------------------------------------------------
+
+
+def write_status_with_view_links(repo: Path, slug: str) -> None:
+    """A status whose gate lines carry the ``— view: <url>`` tail that
+    verify_gate.py requires in the authored file. The three dash forms the
+    repo tolerates each appear once, and one token carries no ``#``."""
+    plan_dir = repo / "docs" / "plans" / slug
+    plan_dir.mkdir(parents=True, exist_ok=True)
+    (plan_dir / "00-status.md").write_text(
+        f"# Status: {slug}\n\n"
+        "- Gate 1 — Product: APPROVED 2026-09-28 — view: "
+        "http://127.0.0.1:62583/active/viewer/index.html#/widget/build/plan/product\n"
+        "- Gate 2 — Architecture: APPROVED 2026-09-28 – view: http://example.test/gate-2\n"
+        "- Gate 3 — Program Design: APPROVED 2026-09-28 - view: #/widget/build/plan/program\n"
+        "- Gate 4 — Slice plan: APPROVED 2026-09-28\n"
+        "- Gate 2b — Interaction design: APPROVED 2026-09-28 view: a-word-not-a-link\n"
+    )
+
+
+def test_resolve_feature_gates_splits_the_trailing_view_link(tmp_path):
+    init_repo(tmp_path)
+    write_status_with_view_links(tmp_path, "widget-feature")
+    gates = {g["n"]: g for g in build_index.resolve_feature_gates(tmp_path)["widget-feature"]}
+    # The state holds the approval text only, whatever dash form preceded the link.
+    assert gates["1"]["state"] == "APPROVED 2026-09-28"
+    assert gates["2"]["state"] == "APPROVED 2026-09-28"
+    assert gates["3"]["state"] == "APPROVED 2026-09-28"
+    # `view` keeps the portable route from the token's first `#`.
+    assert gates["1"]["view"] == "#/widget/build/plan/product"
+    # A token with no `#` is kept whole.
+    assert gates["2"]["view"] == "http://example.test/gate-2"
+    # A bare route token works too.
+    assert gates["3"]["view"] == "#/widget/build/plan/program"
+    # The machine-specific absolute URL reaches no projected field.
+    for gate in gates.values():
+        assert "127.0.0.1" not in str(gate)
+
+
+def test_resolve_feature_gates_state_without_a_link_projects_unchanged(tmp_path):
+    init_repo(tmp_path)
+    write_status_with_view_links(tmp_path, "widget-feature")
+    gates = {g["n"]: g for g in build_index.resolve_feature_gates(tmp_path)["widget-feature"]}
+    # A line with no link projects no `view` key, and its state is byte-identical.
+    assert gates["4"]["state"] == "APPROVED 2026-09-28"
+    assert "view" not in gates["4"]
+    # The marker is `view:` preceded by a dash form, so a `view:` with no dash
+    # before it is a word in the state, not a link, and it stays.
+    assert gates["2b"]["state"] == "APPROVED 2026-09-28 view: a-word-not-a-link"
+    assert "view" not in gates["2b"]
+
+
+def test_gate_2b_state_routes_through_the_same_split(tmp_path):
+    init_repo(tmp_path)
+    plan_dir = tmp_path / "docs" / "plans" / "widget-feature"
+    plan_dir.mkdir(parents=True)
+    (plan_dir / "00-status.md").write_text(
+        "# Status: widget-feature\n\n"
+        "- Gate 2b — Interaction design: APPROVED 2026-09-28 — view: "
+        "http://127.0.0.1:62583/active/viewer/index.html#/widget/build/plan\n"
+    )
+    # Gate 2b is link-exempt today, but a line that carried one would still
+    # project a clean state: nothing shows a 2b link, so the view half is dropped.
+    assert build_index._gate_2b_state(plan_dir) == "APPROVED 2026-09-28"
+
+
+# ---------------------------------------------------------------------
 # Slice 3 — edge cases
 # ---------------------------------------------------------------------
 

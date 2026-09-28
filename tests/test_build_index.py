@@ -179,6 +179,8 @@ def test_every_entity_type_appears_with_correct_count(repo, bundle_dir):
     assert len(entities["district"]) == 1
     assert len(entities["pull_request"]) == 1
     assert len(entities["publication"]) == 0
+    # The synthetic fixture writes no rubrics, so the new kind reads empty here.
+    assert len(entities["rubric"]) == 0
 
 
 # --- C2: an epic id is scoped to its design; two E1s must not collide ---

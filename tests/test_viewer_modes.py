@@ -237,8 +237,10 @@ def test_viewer_contains_all_five_mode_buttons():
     # local identifiers on every build, because the minifier owns them, so a case
     # anchored on one of those names fails on a rename that changes no behaviour.
     # The opener's shape, `const <name>="#/"`, and the closer's,
-    # `entries:<name>(g)}]`, are structures the minifier cannot rename, so both
-    # anchors survive a rename of the identifier each one carries.
+    # `entries:<name>(<arg>)}]`, are structures the minifier cannot rename. The
+    # closer's argument is a minified name too, so the pattern matches any
+    # identifier there; anchoring on one letter held the build to whichever names
+    # one earlier build happened to hand out.
     # `bounded_region` and `assert_ordered` take literals, so each match is read
     # here and passed on as its own text.
     prefix_binding = re.search(r'const [A-Za-z_$][A-Za-z0-9_$]*="#/"', text)
@@ -246,9 +248,11 @@ def test_viewer_contains_all_five_mode_buttons():
         f"{claim}: the build carries no `const <name>=\"#/\"`, so the constant that "
         "holds the board's own address is gone from the shipped viewer."
     )
-    row_list_tail = re.search(r"entries:[A-Za-z_$][A-Za-z0-9_$]*\(g\)\}\]", text)
+    row_list_tail = re.search(
+        r"entries:[A-Za-z_$][A-Za-z0-9_$]*\([A-Za-z_$][A-Za-z0-9_$]*\)\}\]", text
+    )
     assert row_list_tail is not None, (
-        f"{claim}: the build carries no `entries:<name>(g)}}]`, so the rail's own row "
+        f"{claim}: the build carries no `entries:<name>(<arg>)}}]`, so the rail's own row "
         "list is gone from the shipped viewer."
     )
     rail = bounded_region(text, prefix_binding.group(0), row_list_tail.group(0), claim)

@@ -1138,7 +1138,12 @@ export default function ShellApp() {
                       )
                     ) : null}
                     {section === "build" && route.sub === "rubrics" ? (
-                      <RubricsSection work={work} gated={gates?.rubrics ?? false} />
+                      <RubricsSection
+                        work={work}
+                        gated={gates?.rubrics ?? false}
+                        openSheet={openSheet}
+                        focus={route.subId}
+                      />
                     ) : null}
                     {section === "build" && route.sub === "plan" ? <PlanSection work={work} focus={route.subId} /> : null}
                     {section === "pull-requests" && !changeAccount ? (

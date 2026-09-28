@@ -710,6 +710,7 @@ function emptyEntities(): Entities {
     program_design: [],
     epic_design: [],
     interaction_design: [],
+    rubric: [],
   };
 }
 

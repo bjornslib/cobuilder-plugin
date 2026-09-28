@@ -7,7 +7,8 @@
 
 SELF-ONLY. Do not "fix" this later to accept a foreign bundle.
 
-Source is the authored tree under ``<repo>/docs/`` plus the bundle's own
+Source is the authored tree under ``<repo>/docs/`` plus the blind acceptance
+rubrics under ``<repo>/.cobuilder/rubrics/`` and the bundle's own
 ``inventory.yaml`` and ``data/story.json``. Destination is always
 ``<repo>/.cobuilder-architect/self/data/`` (``index.json`` and ``index.js``).
 
@@ -56,17 +57,23 @@ from _bundle_meta import (  # noqa: E402
     stamp_generator,
 )
 import slice_table  # noqa: E402
+import gate_status  # noqa: E402
 
-INDEX_SCHEMA_VERSION = "1.3"
+# Bumped to 1.4 when the index gained the "rubric" entity kind and the
+# .cobuilder/rubrics tracked subtree. Nothing gates on this value; it names the
+# shape for a reader, the way the module docstring names the sources.
+INDEX_SCHEMA_VERSION = "1.4"
 
 SELF_BUNDLE = Path(".cobuilder-architect") / "self"
 ADR_SOURCE_SUBDIR = Path("docs") / "architecture" / "adr"
 DESIGN_SOURCE_SUBDIR = Path("docs") / "architecture" / "designs"
 CONTEXT_SOURCE_SUBDIR = Path("docs") / "architecture" / "contexts"
 PLANS_SOURCE_SUBDIR = Path("docs") / "plans"
+RUBRICS_SOURCE_SUBDIR = Path(".cobuilder") / "rubrics"
 
 ADR_FILENAME_RE = re.compile(r"^(ADR-\d{4})(?:-.*)?\.md$")
 TITLE_PREFIX_RE = re.compile(r"^ADR-\d{4}\s+[—–-]\s+(.*)$")
+RUBRIC_FILENAME_RE = re.compile(r"^slice-(\d+)\.md$")
 
 
 # --------------------------------------------------------------------------
@@ -248,6 +255,7 @@ INTENT_FIELDS = ("problem", "approach", "alternatives")
 ASSESSMENT_FIELDS = ("verdict", "findings")
 PROGRAM_DESIGN_FIELDS = ("id", "feature_slug", "gate", "title", "body_md", "approved_date", "source_path")
 EPIC_DESIGN_FIELDS = ("id", "epic_id", "feature_slug", "title", "body_md", "approved_date", "source_path")
+RUBRIC_FIELDS = ("id", "feature_slug", "n", "title", "body_md", "source_path")
 
 
 def discover_goal_files(designs_dir: Path) -> list[Path]:
@@ -762,6 +770,65 @@ def collect_plan_docs(repo: Path) -> dict[str, list[dict]]:
     return out
 
 
+# --------------------------------------------------------------------------
+# Slice rubrics — feeds "rubric" entities, from
+# .cobuilder/rubrics/<slug>/slice-N.md
+# --------------------------------------------------------------------------
+
+
+def project_rubric(feature_slug: str, n: int, path: Path, text: str, repo: Path) -> dict:
+    """One rubric entity. The id is ``<slug>/<n>``, the same id space the
+    slice entity uses, so the viewer joins the two on a plain id comparison
+    and no new join key exists. The title is the file's own heading with the
+    ``Rubric:`` prefix dropped: the words after it name the slice's acceptance
+    test, and a reader who already knows they are on the Rubrics page loses
+    nothing by the prefix going.
+    """
+    rel = path.relative_to(repo) if path.is_relative_to(repo) else path
+    title = _extract_title(text, f"Slice {n}")
+    if title.startswith("Rubric:"):
+        title = title[len("Rubric:"):].strip()
+    source = {
+        "id": f"{feature_slug}/{n}",
+        "feature_slug": feature_slug,
+        "n": n,
+        "title": title,
+        "body_md": text,
+        "source_path": str(rel),
+    }
+    return project_fields(source, RUBRIC_FIELDS)
+
+
+def collect_rubrics(repo: Path) -> list[dict]:
+    """Read every ``.cobuilder/rubrics/<slug>/slice-N.md``.
+
+    A repo with no rubrics directory projects an empty list, and a slice with
+    no rubric file simply has no entity: the viewer states that absence in
+    place rather than reading it as a passed gate. The directory also holds
+    ``manifest.yaml`` and an ``evidence/`` subtree; the filename regex keeps
+    both out, because neither is a rubric.
+    """
+    rubrics_dir = repo / RUBRICS_SOURCE_SUBDIR
+    if not rubrics_dir.is_dir():
+        return []
+    entities: list[dict] = []
+    for slug_dir in sorted(p for p in rubrics_dir.iterdir() if p.is_dir()):
+        numbered: list[tuple[int, dict]] = []
+        for path in slug_dir.glob("slice-*.md"):
+            match = RUBRIC_FILENAME_RE.match(path.name)
+            if not match:
+                continue
+            try:
+                text = path.read_text()
+            except OSError:
+                continue
+            n = int(match.group(1))
+            numbered.append((n, project_rubric(slug_dir.name, n, path, text, repo)))
+        numbered.sort(key=lambda pair: pair[0])
+        entities.extend(entity for _, entity in numbered)
+    return entities
+
+
 def collect_gate_docs(repo: Path) -> tuple[list[dict], list[dict], list[str]]:
     failures: list[str] = []
     program_entities: list[dict] = []
@@ -833,6 +900,11 @@ def _gate_2b_state(plan_dir: Path) -> str:
 
     Returns "n/a" when the file is absent, unreadable, or carries no Gate 2b
     line. Uses the same STATUS_GATE_RE as resolve_feature_gates().
+
+    Gate 2b is link-exempt today, and nothing renders a link for it, so the
+    view half of the split is dropped here. The read still goes through the
+    split, so a future 2b line that carries a link projects a clean state
+    rather than reopening the leak.
     """
     status_path = plan_dir / "00-status.md"
     if not status_path.is_file():
@@ -844,7 +916,7 @@ def _gate_2b_state(plan_dir: Path) -> str:
     for line in lines:
         gm = STATUS_GATE_RE.search(line.strip())
         if gm and gm.group(1) == "2b":
-            return gm.group(3).strip()
+            return gate_status.split_gate_state(gm.group(3))[0]
     return "n/a"
 
 
@@ -1235,11 +1307,18 @@ def resolve_feature_gates(repo: Path) -> dict[str, list[dict]]:
             for line in status_path.read_text().splitlines():
                 gm = STATUS_GATE_RE.search(line.strip())
                 if gm:
+                    # The state tail carries an authored view link (ADR-0032).
+                    # gate_status splits it, so the machine-specific absolute URL
+                    # never reaches the index and the portable route lives in its
+                    # own field. A line with no link projects no `view` key.
+                    state, view = gate_status.split_gate_state(gm.group(3))
                     gate = {
                         "n": gm.group(1),
                         "name": gm.group(2).strip(),
-                        "state": gm.group(3).strip(),
+                        "state": state,
                     }
+                    if view is not None:
+                        gate["view"] = view
                     doc_kind = GATE_DOC_KINDS.get(gate["n"])
                     if doc_kind and (doc_kind, feature) in plan_doc_features:
                         gate["doc"] = feature
@@ -1313,6 +1392,7 @@ TRACKED_SUBTREES = (
     "docs/architecture/designs",
     "docs/architecture/contexts",
     "docs/plans",
+    ".cobuilder/rubrics",
 )
 
 
@@ -1410,6 +1490,7 @@ def build_index(repo: Path, bundle_dir: Path) -> tuple[dict, dict, dict, list[st
         "program_design": program_design_entities,
         "epic_design": epic_design_entities,
         "interaction_design": interaction_design_entities,
+        "rubric": collect_rubrics(repo),
     }
 
     joins, join_warnings = resolve_joins(repo, adrs_viewer, designs_viewer, entities)

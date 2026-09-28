@@ -611,7 +611,7 @@ export function railGroups(source: RailSource): RailGroup[] {
       href: programHref(work.id, section),
       account: "program",
       shared: shared(section),
-      count: programCount(work, gates, section),
+      count: programCount(work, section),
       available: true,
     };
 
@@ -691,7 +691,7 @@ export function rowsOf(groups: RailGroup[]): RailRow[] {
  * whose record is absent reads zero, and the body under the row states the absence in
  * place.
  */
-function programCount(work: WorkItem, gates: Gates | null, section: ProgramKey): string {
+function programCount(work: WorkItem, section: ProgramKey): string {
   const record = work.record;
 
   if (section === "epics") return `${work.epics.length} epics`;
@@ -701,9 +701,12 @@ function programCount(work: WorkItem, gates: Gates | null, section: ProgramKey):
     return `${held} of 3 documents`;
   }
   if (section === "rubrics") {
-    return gates?.gateSteps && gates.gateSteps.length > 0
-      ? `${gates.gateSteps.length} steps`
-      : "none";
+    /*
+     * The row names the rubric documents the page reads. A work that holds none keeps
+     * an absence word, because a zero would read as a count of records the rail read
+     * and the row below states the absence per slice in place.
+     */
+    return work.rubrics.length > 0 ? `${work.rubrics.length} rubrics` : "none";
   }
   if (section === "intent") {
     const parts = [

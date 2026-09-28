@@ -189,6 +189,33 @@ def test_read_rubrics_omits_keys_for_files_that_do_not_exist(tmp_path):
     assert paths == {}
 
 
+# --- read_plan(): the gate state and its authored view link ---
+
+
+def test_read_plan_splits_the_gate_view_link_from_the_state(tmp_path):
+    plan_dir = tmp_path / "plan"
+    plan_dir.mkdir()
+    (plan_dir / "00-status.md").write_text(
+        "# Status: demo\n\n"
+        "- Gate 1 — Product: APPROVED 2026-09-28 — view: "
+        "http://127.0.0.1:62583/active/viewer/index.html#/demo/build/plan/product\n"
+        "- Gate 2 — Architecture: APPROVED 2026-09-28\n"
+    )
+    payload = bbv.read_plan(plan_dir, make_designs(tmp_path), tmp_path / "rubrics")
+    gates = {g["n"]: g for g in payload["gates"]}
+    # The state holds the approval text only, and the view keeps the portable
+    # route. The machine-specific absolute URL reaches no projected field.
+    assert gates["1"]["state"] == "APPROVED 2026-09-28"
+    assert gates["1"]["view"] == "#/demo/build/plan/product"
+    assert "127.0.0.1" not in str(payload["gates"])
+    # A line with no link projects no `view` key.
+    assert gates["2"]["state"] == "APPROVED 2026-09-28"
+    assert "view" not in gates["2"]
+    # The document itself is the authored record, displayed as itself, so its
+    # text keeps the whole line, URL included.
+    assert "view: http://127.0.0.1:62583" in payload["docs"]["00-status.md"]
+
+
 # --- render(): hand-authored-line preservation ---
 
 PAGE_TEMPLATE = """<!doctype html>

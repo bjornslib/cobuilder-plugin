@@ -34,7 +34,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import type { ReactNode } from "react";
 
 import type { LucideIcon } from "lucide-react";
-import { AlertOctagon, ListChecks, ScrollText } from "lucide-react";
+import { AlertOctagon, ClipboardCheck, ListChecks, ScrollText } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 
 import {
@@ -44,7 +44,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import type { ContextEntity, EpicDesignEntity, EpicEntity } from "@/data/types";
+import type { ContextEntity, EpicDesignEntity, EpicEntity, RubricEntity, SliceEntity } from "@/data/types";
 import { cn } from "@/lib/utils";
 
 import type { AdrRecord } from "./records";
@@ -84,6 +84,13 @@ export type SheetSubject =
       kind: "epic-design";
       doc: EpicDesignEntity;
       epic: EpicEntity;
+    }
+  | {
+      kind: "rubric";
+      /** The rubric document the slice was scored against. */
+      doc: RubricEntity;
+      /** The slice the rubric belongs to, for the sheet's own badges and description. */
+      slice: SliceEntity;
     };
 
 export interface RecordSheetProps {
@@ -95,6 +102,7 @@ const ICON: Record<SheetSubject["kind"], LucideIcon> = {
   adr: ScrollText,
   boundary: AlertOctagon,
   "epic-design": ListChecks,
+  rubric: ClipboardCheck,
 };
 
 /** One scalar as text. Objects and nulls fall through to the caller's list reader. */
@@ -277,8 +285,8 @@ function SheetJumpLinks({
  * return focus to a surface that is gone. The read is taken once per opening, so a second
  * record opened from a second control returns to that control.
  *
- * The three record kinds share this one path, so the decision, the boundary rule, and the
- * epic design behave the same way.
+ * The record kinds share this one path, so the decision, the boundary rule, the
+ * epic design, and the slice rubric behave the same way.
  */
 
 /** The element the reader had focused when the record opened, or null when none did. */
@@ -407,12 +415,16 @@ function RecordIcon({ kind }: { kind: SheetSubject["kind"] }) {
 function titleOf(subject: SheetSubject): string {
   if (subject.kind === "adr") return subject.record?.title ?? subject.title;
   if (subject.kind === "boundary") return subject.target;
+  if (subject.kind === "rubric") return subject.doc.title;
   return subject.doc.title;
 }
 
 function descriptionOf(subject: SheetSubject): string | null {
   if (subject.kind === "adr" || subject.kind === "boundary") {
     return null;
+  }
+  if (subject.kind === "rubric") {
+    return `The blind acceptance rubric the slice ${subject.slice.n} work was scored against.`;
   }
   return `The Gate 4b technical solution design for epic ${subject.epic.epic_id}.`;
 }
@@ -447,6 +459,19 @@ function badgesOf(subject: SheetSubject): ReactNode {
       </>
     );
   }
+  if (subject.kind === "rubric") {
+    return (
+      <>
+        <Chip>{subject.doc.feature_slug}</Chip>
+        <Chip>slice {subject.slice.n}</Chip>
+        <StateBadge
+          word={subject.slice.state}
+          tone={subject.slice.state === "completed" ? "good" : "neutral"}
+          gloss="The slice's own state field."
+        />
+      </>
+    );
+  }
   return (
     <>
       <Chip>{subject.doc.feature_slug}</Chip>
@@ -458,6 +483,7 @@ function badgesOf(subject: SheetSubject): ReactNode {
 function SheetBody({ subject }: { subject: SheetSubject }) {
   if (subject.kind === "adr") return <AdrBody subject={subject} />;
   if (subject.kind === "boundary") return <BoundaryBody subject={subject} />;
+  if (subject.kind === "rubric") return <RubricBody subject={subject} />;
   return <EpicDesignBody subject={subject} />;
 }
 
@@ -701,6 +727,28 @@ function EpicDesignBody({
     <div className="flex min-w-0 flex-col gap-4">
       <div className="flex min-w-0 flex-wrap items-baseline gap-x-5 gap-y-2">
         <KeyValue label="epic" value={subject.doc.epic_id} />
+        <KeyValue label="plan" value={subject.doc.feature_slug} />
+        <KeyValue label="characters" value={subject.doc.body_md.length.toLocaleString()} />
+      </div>
+
+      <div className="min-w-0 rounded-lg border border-line bg-surface-2/40 p-3.5">
+        <MarkdownBlock markdown={subject.doc.body_md} />
+      </div>
+    </div>
+  );
+}
+
+/* ----------------------------------------------------------------- rubric */
+
+function RubricBody({
+  subject,
+}: {
+  subject: Extract<SheetSubject, { kind: "rubric" }>;
+}) {
+  return (
+    <div className="flex min-w-0 flex-col gap-4">
+      <div className="flex min-w-0 flex-wrap items-baseline gap-x-5 gap-y-2">
+        <KeyValue label="slice" value={subject.slice.id} />
         <KeyValue label="plan" value={subject.doc.feature_slug} />
         <KeyValue label="characters" value={subject.doc.body_md.length.toLocaleString()} />
       </div>

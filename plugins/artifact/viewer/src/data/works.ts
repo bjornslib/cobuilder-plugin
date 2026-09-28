@@ -30,6 +30,7 @@ import type {
   PublicationEntity,
   PullRequest,
   RecordIndex,
+  RubricEntity,
   SliceEntity,
 } from "@/data/types";
 import type { DesignRecord } from "@/data/bundle";
@@ -113,6 +114,17 @@ export interface WorkItem {
   boundaryRules: BoundaryRule[];
   /** Districts no context verifies. The index computes this list once. */
   districtsUncovered: DistrictEntity[];
+  /**
+   * This work's plan-slug rubric documents, in slice order. A work whose plan holds no
+   * rubric carries an empty list, and the Rubrics page states that absence per slice.
+   */
+  rubrics: RubricEntity[];
+  /**
+   * Each rubric keyed by its slice id. The ids are the same string by construction —
+   * both are `<plan slug>/<n>` — so this is a lookup and not a join, and no new join
+   * key exists for the shell to read.
+   */
+  rubricBySlice: Map<string, RubricEntity>;
   diagramLevels: string[];
 }
 
@@ -165,6 +177,19 @@ export function buildWorkItems(index: RecordIndex, records: Record<string, Desig
    * a key of its own.
    */
   const designById = new Map(entities.epic_design.map((doc) => [doc.id, doc]));
+
+  /*
+   * The rubric documents of each plan slug, in slice order. One map for every work,
+   * because each work reads the slice of it its own plan slug names, the same way
+   * `planDocs` resolves below.
+   */
+  const rubricsBySlug = new Map<string, RubricEntity[]>();
+  for (const rubric of entities.rubric ?? []) {
+    const list = rubricsBySlug.get(rubric.feature_slug);
+    if (list) list.push(rubric);
+    else rubricsBySlug.set(rubric.feature_slug, [rubric]);
+  }
+  for (const list of rubricsBySlug.values()) list.sort((a, b) => a.n - b.n);
 
   const byDesign = new Map<string, EpicEntity[]>();
   for (const epic of entities.epic) {
@@ -255,6 +280,7 @@ export function buildWorkItems(index: RecordIndex, records: Record<string, Desig
       });
 
     const plan = planSlugFor(design.id, slices, knownSlugs);
+    const rubrics = rubricsBySlug.get(plan.slug) ?? [];
 
     /*
      * The Gate 4b technical solution design for each epic of this work. The index resolves
@@ -306,6 +332,8 @@ export function buildWorkItems(index: RecordIndex, records: Record<string, Desig
       contexts,
       districts,
       boundaryRules,
+      rubrics,
+      rubricBySlice: new Map(rubrics.map((rubric) => [rubric.id, rubric])),
       districtsUncovered: joins.district_uncovered
         .map((id) => districtById.get(id))
         .filter((d): d is DistrictEntity => d !== undefined),

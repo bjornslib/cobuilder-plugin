@@ -2106,5 +2106,151 @@
       "plugins/pr/skills/odyssey/references/story-mode.md",
       "shared/build_index.py"
     ]
+  },
+  "ADR-0031": {
+    "id": "ADR-0031",
+    "title": "Beads is the storage layer for CoBuilder programs, epics, and slices",
+    "state": "decided",
+    "source_pr": null,
+    "problem": "CoBuilder workflow state has no storage layer. Slice states, scores, and attempts live in the markdown tables of docs/plans/<slug>/04-slices.md. Any session can silently contradict that prose. Epic branches and pull-request numbers live in hand-maintained index joins. Nothing below the file level answers what is next. Nothing answers what blocks what, or what changed while two sessions worked one ladder. The record index has a read model and no write model.",
+    "decision": "Beads v1.3.0 becomes the storage layer for CoBuilder workflow state. The narrated repo gains one .beads tracker. Each program, epic, and slice becomes one beads issue. The issue is typed, parented, and chained in the slice ladder with blocked-by dependencies. Every record keeps its shape under a namespaced metadata envelope, metadata.cb. Beads stores the envelope as well-formed JSON on the issue. The markdown sources of record stay untouched as documents. Beads holds the state. shared/build_index.py gains one beads read and writes the same data/index.json. The viewer stays build-free per ADR-0001, ADR-0018, and ADR-0020. The mapping below fixes every field.",
+    "alternatives": [
+      {
+        "option": "Keep markdown tables and hand-edited JSON as the only state",
+        "rejected_because": "The state columns of 04-slices.md sit in prose. Any session can contradict them. Two sessions editing one table conflict at whole-file grain. Readiness is recomputed by humans. Nothing records who changed what."
+      },
+      {
+        "option": "Store the same records in GitHub Issues or Projects",
+        "rejected_because": "Every state flip needs network and credentials, and offline work stops. ADR-0029 reads the pull request from GitHub as content. GitHub does not need to become the tracker too. Slice granularity would collapse into labels on long-lived issues."
+      },
+      {
+        "option": "Write a bespoke JSON or SQLite store for the bundle",
+        "rejected_because": "It reinvents what beads already ships. Beads ships readiness, dependencies, gates, leases, compaction, history, and Dolt-backed sync. A second engine would need its own CLI, audit trail, and merge story."
+      },
+      {
+        "option": "Use beads milestone type for programs and avoid custom types",
+        "rejected_because": "Milestone means a completion marker with no work attached. It reads right for the container half of a program. A program also carries a stage workflow and an outcome. The implement plugin filters programs by type, not by milestone. types.custom is the sanctioned path for orchestrator types."
+      }
+    ],
+    "forces": [
+      "Slices carry state, score, and attempts in the tables of docs/plans/<slug>/04-slices.md. shared/slice_table.py parses that prose with regexes for three callers, and the attempts column must be bumped by hand in the same commit as the evidence file.",
+      "Epic branch and pull-request joins are hand-maintained. The index is a full rebuild every run, so state has no durable home and no writer.",
+      "Beads v1.3.0 stores arbitrary well-formed JSON metadata per issue as the sanctioned extension point (GH#1406), with readiness, dependencies, gates, leases, compaction, history, and Dolt-backed sync.",
+      "ADR-0029 decided the pull request is content read from GitHub, so the tracker must not become a second copy of GitHub state.",
+      "ADR-0016 set the install-surface rule: the plugins ship no agent, no hook, and no MCP server. Any new store is called from scripts, the way git and gh are."
+    ],
+    "delivers": {
+      "capability": "Programs, epics, and slices gain a real store with readiness, blocking, history, and sync. The viewer keeps reading the same static index.",
+      "benefit": "bd ready answers what is next, gates hold merges, and two sessions on one ladder stop racing at whole-file grain.",
+      "beneficiary": [
+        "developer",
+        "implement-worker"
+      ],
+      "enables": [
+        "The slice ladder is machine-readable, so any session can claim the next slice",
+        "The merge gate can automate once beads gh:pr gates land",
+        "The tracker syncs across machines through Dolt without a new protocol"
+      ]
+    },
+    "body": "# ADR-0031 — Beads is the storage layer for CoBuilder programs, epics, and slices\n\n## Context\n\nThe bundle family narrates a locally checked-out git repo. Its records come from files. `shared/build_index.py` rebuilds the whole index on every run. The current corpus holds 16 designs, 77 epics, 47 slices, 30 ADRs, 17 pull requests, 4 publications, 5 program designs, 15 epic designs, 1 context, 6 districts, and 16 boundary rules.\n\nThe state lives in three places, and none of them is a store.\n\nSlices carry `state`, `score`, and `attempts` inside the markdown tables of `docs/plans/<slug>/04-slices.md`. `shared/slice_table.py` parses that table with regexes for three callers. An attempt is an appended file under `.cobuilder/rubrics/<slug>/evidence/`. The table's `attempts` column must be bumped by hand in the same commit.\n\nEpics carry `branch`, `pr`, and `state` in the index joins, hand-maintained by whatever session last edited them.\n\nThe index is a full rebuild. It answers reads well and has no write model. Nothing records who moved a slice or what blocked what. Two sessions editing one ladder race at whole-file grain. Readiness is a human judgment re-derived from prose each time.\n\nBeads v1.3.0 is available in this workspace. The beads fork sync work in this workspace exercised its full surface. Issue records carry arbitrary well-formed JSON metadata as the sanctioned extension point (GH#1406). This design leans on the dependency graph, the readiness projection, gates, and Dolt-backed sync.\n\n## Options considered\n\n1. **Status quo.** Markdown tables stay the state. Rejected: the state sits in prose, races at file grain, and has no history.\n2. **GitHub as the store.** Rejected: network-bound, offline-blind, and the wrong granularity for slices. ADR-0029 already decided the pull request is content read from GitHub, not a second record kept here.\n3. **A bespoke JSON or SQLite store.** Rejected: rebuilds the engine beads ships, with no reader other than the scripts that would have to maintain it.\n4. **Beads with built-in types only.** Rejected for programs specifically. recorded in the frontmatter alternatives.\n\n## Decision\n\n### Where the tracker lives\n\nThe narrated repo owns one `.beads/` tracker. For this repository the tracker is its own: this repo is also a narrated repo (the `cobuilder-viewer` program narrates this checkout), so the pilot seeds here. Prefix `cb`.\n\nA target repo gets its tracker when a program seeds into it, not at plugin install. ADR-0016 sets the install-surface rule. The plugins ship no agent, no hook, and no MCP server. They call `bd` from scripts exactly as they call `git` and `gh` today.\n\nBeads v1.3.0 requires `types.custom = program` in the tracker config. Set it once at `bd init`. The custom-type surface is the upstream-sanctioned home for orchestrator types. the beads fork's own tracker already carries `merge-request` this way.\n\n### The schema mapping\n\nThe mapping keeps every existing consumer key alive. Beads ids (`cb-1j6.1`) are storage keys. The CoBuilder composite ids (`<design>/E5`, `<design>/<n>`) stay in metadata. The index and the viewer keep working unchanged.\n\n| CoBuilder record | Beads issue | Field map |\n|---|---|---|\n| `DesignEntity` (program) | type `program` (custom), P1 | `name` → title suffix and `metadata.cb.name`. `outcome` → issue description. `stage` → `metadata.cb.stage`. design doc → untouched file, path in `external_ref`. `done_when` → issue `acceptance_criteria` |\n| `EpicEntity` | type `epic` (built-in), `--parent <program>` | `epic_id` (\"E5\") → `metadata.cb.epic_id`. `branch` → `metadata.cb.branch`. `pr` → `metadata.cb.pr`. `note` → issue description |\n| `SliceEntity` | type `task` (built-in), `--parent <epic>`, `--deps blocked-by:<slice n-1>` | `n` → `metadata.cb.n`. `title` → issue title. `ends_with` → `metadata.cb.ends_with`. `score` → `metadata.cb.score`. `attempts` → `metadata.cb.attempts`. `feature` → `metadata.cb.feature` |\n| `AdrEntity` | type `decision` (built-in), `--deps relates-to <program>` | ADR id → title prefix and `metadata.cb.adr`. ADR file → untouched, path in `external_ref`. districts → `metadata.cb.districts` |\n| `PullRequest` | no issue | The epic's `metadata.cb.pr` plus `external_ref: gh-<n>`. GitHub stays the source of record, per ADR-0029 |\n| `GateStep` (feature gates) | type `gate`, `--blocks <slice or epic>` | `name` → gate title. `state` → gate resolution |\n| `Publication` | no issue | Stays index-derived from the publish step. a publish is an event, not tracked work |\n| `DistrictEntity`, `BoundaryRule`, `ContextEntity` | no issue | Architecture geography stays in `docs/architecture/contexts/`. decisions name districts in metadata |\n| `ProgramDesignEntity`, `EpicDesignEntity`, `InteractionDesignEntity` | no issue | Prose documents. The program issue's `external_ref` points at the design directory |\n\nRecords with a stage, a score, or a ladder position become issues. Prose and external facts stay out and get a pointer.\n\n### The metadata envelope\n\nBeads stores one `metadata` JSON object per issue. It validates only that the value is well-formed JSON. CoBuilder claims one top-level key and owns everything under it.\n\n```json\n{\n  \"cb\": {\n    \"v\": 1,\n    \"kind\": \"slice\",\n    \"design\": \"cobuilder-viewer\",\n    \"epic\": \"E5\",\n    \"n\": 2,\n    \"ends_with\": \"types.ts declares every index record\",\n    \"score\": \"0.85\",\n    \"attempts\": 1,\n    \"feature\": \"cobuilder-viewer\",\n    \"evidence\": [\n      \".cobuilder/rubrics/cobuilder-viewer/evidence/slice-18-attempt-1.md\"\n    ]\n  }\n}\n```\n\nRules:\n\n1. **One key per tool.** The envelope sits under `cb`, versioned by `v`. A second extension later adds its own key beside it, never inside it.\n2. **Scalars, paths, and lists of paths only.** No prose blobs. The documents stay in git. the tracker carries pointers.\n3. **`kind` discriminates.** `program`, `epic`, `slice`, `decision`, `gate`. `shared/build_index.py` projects each entity kind from the matching issues.\n4. **Evidence stays files.** Rubric evidence, screenshots, and attempt narratives live under `.cobuilder/rubrics/<slug>/evidence/`. The envelope lists their paths. A tracker that stores screenshots is a document store. This design already decided beads is not one.\n5. **Consumer ids live here.** `metadata.cb.epic_id` and `metadata.cb.n` reproduce the composite ids the viewer and the tests already use, so the mapping costs no consumer changes.\n\nDependency edge metadata exists in beads too (`Dependency.metadata`), but the v1 mapping needs no edge data. The dependency types carry the joins.\n\n### State vocabularies\n\nBeads status is a lifecycle projection. CoBuilder's vocabularies are richer, so the full word stays in metadata and the status carries the workflow shape.\n\n| CoBuilder value | `metadata` keeps | beads `status` |\n|---|---|---|\n| program: `backlog`, `decided`, `design`, `review`, `approved` | `stage` | `open` |\n| program: `implemented` | `stage` | `closed` |\n| program: `superseded` | `stage` | `closed`, with a `supersedes` edge to the successor |\n| epic: `planned` | `state` | `open` |\n| epic: `open` | `state` | `in_progress` |\n| epic: `deferred` | `state` | `open`, excluded from `bd ready` by its blocked gate or its parent's |\n| epic: `completed`, `merged` | `state` | `closed`, close reason carries the word |\n| slice: `planned` | nothing. status suffices | `open` |\n| slice: `completed` | nothing. status suffices | `closed` |\n| slice claimed by a worker | `attempts` bump | `in_progress` or `hooked` |\n\nThe rubric score never maps to priority. Priority stays the tracker's scheduling order (program P1, epic P2, slice P2). Score is assessment history in metadata.\n\n### The joins, mapped\n\n| Index join today | Beads projection |\n|---|---|\n| `epic_status` | the epic issue's `status` and `metadata.cb.state` |\n| `slice_to_epic` | the parent-child dependency (the hierarchical id encodes it) |\n| `epic_to_pull_request` | `metadata.cb.pr` on the epic |\n| `adr_to_pull_request` | `metadata.cb.pr` on the decision |\n| `adr_to_context`, `adr_to_district` | `metadata.cb.districts` on the decision |\n| `feature_gates` | gate issues. `bd show <epic>` returns the blocking gates |\n| `slice_to_epic_unresolved` | a seed-time report: a slice whose epic id has no issue. Unresolvable by construction afterwards |\n| `context_verifies_district`, `district_uncovered` | unchanged, still derived from `docs/architecture/contexts/` |\n\n### The read model\n\n`shared/build_index.py` gains one source. It calls `bd list --json` once for the whole corpus. Five programs and roughly two hundred issues make the corpus small. The script projects entities and joins exactly as today and writes the same `data/index.json`. The viewer stays build-free and reads the static index. ADR-0001, ADR-0018, and ADR-0020 stand unchanged.\n\nThe workflow reads never touch the index. `bd ready` names the next actionable slice. `bd tree` renders the board's rows. `bd show <epic>` returns the epic with its gates.\n\n### The write model\n\n| CoBuilder moment | Command |\n|---|---|\n| Gate 3 passes. the design seeds a program | `bd create \"Program: <name>\" -t program --metadata @envelope.json --external-ref <goal.json>` |\n| Epics enter the program | `bd create \"E5: <title>\" -t epic --parent <program> --metadata @envelope.json` |\n| The ladder is authored for an epic | `bd create \"Slice <n>: <title>\" -t task --parent <epic> --deps blocked-by:<prev> --metadata @envelope.json` |\n| An attempt fails | append the evidence file. `bd update <slice> --metadata @envelope.json` with `attempts` bumped |\n| A worker claims a slice | `bd update <slice> --status in_progress` |\n| A slice passes its rubric | `bd close <slice> --reason \"<ends_with> verified\"` |\n| A pull request opens | `bd gate create \"Merge PR <n>\" --type human --blocks <epic>` |\n| The pull request merges | `bd gate resolve <gate>`. `bd close <epic> --reason merged` |\n| A design is superseded | `bd close <program>` plus a `supersedes` edge to the successor |\n\nThe envelope files are written next to the work by the session that does it, then fed to `bd` with `--metadata @file`. No plugin code parses beads JSON to write it. `bd` is the only writer, which is the whole point of a store.\n\nSmoke-verified against bd 1.3.0: `--parent` creates the parent-child dependency itself, and adding a second `parent-child` edge by hand is refused as a cycle. The ladder read flips correctly: with slice 1 open, `bd ready` names slice 1. after `bd close`, it names slice 2. `bd export` carries the full envelope, so a plain JSONL interchange stays available to any future consumer.\n\n### What beads must not hold\n\nProse documents, screenshots, pull-request state, district geography, and publication history stay where they are. Beads is the state layer, not the corpus. A pointer beats a copy wherever the source of record already exists.\n\n## Consequences\n\nThe write path gains a real store. Readiness, blocking, history, and Dolt-backed sync come from beads instead of from human discipline. Two sessions on one ladder get row-level truth and a recorded trail. The index keeps its shape. Every existing consumer key survives in metadata.\n\nThe costs are real. `bd` becomes a system dependency. scripts must detect its absence and fall back to today's file flow rather than fail a session. The tracker config must ship `types.custom = program`. Metadata has no query language, so corpus-wide questions stay with the index, which is where the viewer's questions already live. And two sources of state exist during the migration window, which is why the seed script is idempotent and dry-run first.\n\n## Not decided\n\nWhether `04-slices.md` state columns become generated from beads or leave the document. When `gh:pr` gate automation replaces the human merge gate. Which plugin runs `bd init` in a target repo, and how it asks consent. Who owns `shared/beads_seed.py`.\n",
+    "maps_to": {
+      "context": "cobuilder-packaging",
+      "modules": [
+        "shared",
+        "plugins/implement",
+        "plugins/architect"
+      ],
+      "rule": "Workflow state for programs, epics, and slices lives in beads under the metadata.cb envelope. Documents keep the prose. build_index.py reads beads when bd is present and files otherwise, and both paths project the same shapes. bd is the only writer of state."
+    },
+    "history": [
+      {
+        "state": "decided",
+        "date": "2026-09-26",
+        "by": "bjornslib",
+        "note": "Decided after the beads fork sync landed bd 1.3.0 in this workspace and smoke-tested the mapping in a scratch tracker. The engineer directed the design: map CoBuilder to beads and extend it through the metadata envelope. The mapping fixes the field-level home of every stateful record. The cutover of the 04-slices.md state columns, the gh:pr gate timing, and the seed-script ownership stay open."
+      }
+    ],
+    "provenance": "authored",
+    "related": [
+      "docs/architecture/designs/beads-storage/goal.json",
+      "docs/architecture/designs/beads-storage/intent.json",
+      "docs/architecture/designs/beads-storage/assessment.json",
+      "docs/plans/cobuilder-viewer/04-slices.md",
+      "shared/build_index.py",
+      "shared/slice_table.py"
+    ]
+  },
+  "ADR-0032": {
+    "id": "ADR-0032",
+    "title": "A document under review carries a viewer link",
+    "state": "decided",
+    "source_pr": null,
+    "problem": "The architect and implement workflows present a document for review in chat, as a bullet summary and a file path. The build skill starts the viewer only after the user approves a gate. Five hand-offs call View mode, and each one prints the root URL of the viewer, never a link to the document. Gate 1 and Gate 2 documents are not in the record index, so no viewer page exists for them. The Gate 3 program design is in the index, but the viewer renders no page for it. The user reads the document in chat, and the viewer stays closed at the one moment it helps.",
+    "decision": "Each document that a workflow presents for review carries a deep link to its page in the viewer. The link comes before the approval question. View mode owns the server, so a new Present for review section in the cobuilder-artifacts skill owns the procedure. View mode accepts a route, checks that the page answers HTTP 200, and prints the deep link. The record index projects the Gate 1 and Gate 2 documents, and the viewer shows the three plan documents on one page under the Build level. The gate verifier checks that each APPROVED gate line dated on or after 2026-09-28 carries a viewer link.",
+    "alternatives": [
+      {
+        "option": "Serve the viewer from the Vite dev server",
+        "rejected_because": "An installed plugin has no node_modules. The dev server runs only in a checkout with the viewer's dependencies installed. View mode's python http.server serves the committed, built viewer, and it runs everywhere the plugin installs."
+      },
+      {
+        "option": "Publish each document under review as a Claude Artifact",
+        "rejected_because": "The user put publishing out of scope for this work. The publish path is also broken at present, so it cannot carry a step that runs at every gate."
+      },
+      {
+        "option": "Add a prose rule to the skills, and no check",
+        "rejected_because": "CLAUDE.md records the lesson. A process step with no mechanical consumer gets skipped, however well it is documented. Gate 4b ran for zero of five epics before it had a check. The gate verifier is the consumer of this rule."
+      },
+      {
+        "option": "Keep the viewer step after the approval, as it is today",
+        "rejected_because": "The user reads the document before the answer. A link that arrives after the approval shows a decision that is already made."
+      }
+    ],
+    "forces": [
+      "The user decided the scope in chat on 2026-09-28: one ADR, one epic, and a small number of slices, built without further questions.",
+      "View mode owns the server, the pid file, and the log file. A second owner of the port would duplicate its reuse logic.",
+      "ADR-0016 forbids a file path from one plugin into another. The architect and implement workflows name the mode, and the artifact skill resolves its own path.",
+      "The interaction design document has no viewer page. Its gate gives a file path, and the user accepted that.",
+      "A link must answer HTTP 200 before the workflow prints it. A dead link is worse than a file path."
+    ],
+    "delivers": {
+      "capability": "A reviewer opens the document under review in the viewer from one link, at the moment of review.",
+      "benefit": "The reviewer reads the rendered document with its diagrams and joins, not a bullet summary in chat.",
+      "beneficiary": [
+        "developer",
+        "reviewer"
+      ],
+      "enables": [
+        "A later comment ledger entry can anchor to the page the reviewer approved"
+      ],
+      "addresses_problem": "P1"
+    },
+    "body": "# ADR-0032 — A document under review carries a viewer link\n\n## Context\n\nThe architect and implement workflows stop at each gate and ask the user to\napprove a document. Today they show a bullet summary and a file path in chat.\nThe build skill starts the viewer in step 6 of its approval protocol, which is\nafter the user answers.\n\nFive hand-offs call `Skill(\"cobuilder-artifacts\", args=\"view\")`. Each one\nprints `http://localhost:<port>/active/viewer/`, the root of the viewer. None\nof them prints a link to the document under review.\n\nThe viewer also has gaps. `shared/build_index.py` projects the Gate 3 program\ndesign and the Gate 4b epic designs. It does not project `01-product.md` or\n`02-architecture.md`. The React viewer reads `program_design` entities only to\nfind work slugs, and it renders no page for them. So a link to a plan\ndocument has no page to point at today.\n\n## Decision\n\nThe user made these decisions on 2026-09-28.\n\n1. A **Present for review** section lives in the cobuilder-artifacts skill,\n   because View mode owns the server. The architect and implement workflows\n   name that section by mode name, never by a file path into another plugin\n   (ADR-0016).\n2. View mode accepts a route and prints a deep link, for example\n   `http://127.0.0.1:<port>/active/viewer/index.html#/<work>/build/plan`. It\n   checks that the page answers HTTP 200 before it prints the link.\n3. `build_index.py` projects `01-product.md` and `02-architecture.md`. The\n   viewer shows the product, architecture, and program design documents on\n   one page under the Build level, so each of those gates has a link.\n4. `verify_gate.py` checks that each APPROVED gate line dated on or after\n   2026-09-28 carries a viewer link. An older line is exempt.\n5. The server is View mode's python `http.server`, which serves the built\n   viewer. It is not the Vite dev server.\n6. The interaction design document gets no viewer page. Its gate gives a\n   file path, and that is accepted.\n7. Publishing to Claude Artifacts is out of scope.\n\n## Options considered\n\n**The Vite dev server.** Rejected. An installed plugin has no\n`node_modules`, so the dev server cannot start outside a checkout.\n\n**A Claude Artifact publish per document.** Rejected. The user put it out of\nscope, and the publish path is broken at present.\n\n**A prose rule with no check.** Rejected. CLAUDE.md records that a step with\nno mechanical consumer gets skipped. `verify_gate.py` is the consumer.\n\n## Consequences\n\n- The approval question moves after the link. The viewer step moves before\n  \"Approve Gate N\", not after the approval.\n- A gate line in `00-status.md` gains a `view:` link. The check exempts lines\n  dated before 2026-09-28, so the existing plans keep passing.\n- The index gains two plan document kinds. The viewer gains one page, at\n  `#/<work>/build/plan`.\n- The committed `viewer/index.html` needs a rebuild when the page ships.\n- The interaction design gate keeps a file path. A reviewer of that gate\n  still reads the file outside the viewer.\n",
+    "maps_to": {
+      "context": "cobuilder-packaging",
+      "modules": [
+        "plugins/artifact",
+        "plugins/implement",
+        "plugins/architect",
+        "shared"
+      ],
+      "rule": "A workflow that asks the user to approve a document prints a viewer link to that document first. The link is checked live. An APPROVED gate line dated on or after 2026-09-28 names the link, and verify_gate.py fails a line that does not."
+    },
+    "history": [
+      {
+        "state": "decided",
+        "date": "2026-09-28",
+        "by": "bjornslib",
+        "note": "The user made decisions 1 to 7 in chat on 2026-09-28 and approved the scope. An agent wrote this record, so the state is decided and never approved."
+      }
+    ],
+    "provenance": "authored",
+    "related": [
+      "docs/architecture/designs/review-link/goal.json",
+      "docs/plans/review-link/",
+      "plugins/artifact/skills/cobuilder-artifacts/SKILL.md",
+      "plugins/implement/skills/build/SKILL.md",
+      "plugins/implement/scripts/verify_gate.py",
+      "shared/build_index.py"
+    ]
   }
 }

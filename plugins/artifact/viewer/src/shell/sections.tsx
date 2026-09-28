@@ -336,49 +336,162 @@ export function UnresolvedSlicesSection({ count }: { count: number }) {
   );
 }
 
-export function RubricsSection({ work, gated }: { work: WorkItem; gated: boolean }) {
+export function RubricsSection({
+  work,
+  gated,
+  openSheet,
+  focus = null,
+}: {
+  work: WorkItem;
+  gated: boolean;
+  openSheet: (subject: SheetSubject) => void;
+  /**
+   * The slice number the route's tail names, or null. A tail that names a slice
+   * with a rubric opens that rubric's Sheet on arrival.
+   */
+  focus?: string | null;
+}) {
   const steps = work.gateSteps ?? [];
+  const focusSlice =
+    focus !== null ? (work.slices.find((slice) => String(slice.n) === focus) ?? null) : null;
+  const focusRubric =
+    focusSlice === null ? null : (work.rubricBySlice.get(focusSlice.id) ?? null);
+
+  /*
+   * THE ROUTE'S SLICE OPENS ITS RUBRIC HERE. The epic-design Sheet opens only from a
+   * press, and no route reaches it. A rubric tail route names a real record, so this
+   * opens the Sheet through the same `openSheet` callback a press uses, on mount. That
+   * needs no new state channel: the App owns the subject, and the route names which
+   * one. The shell remounts this section when the tail changes, so a second arrival
+   * opens the second rubric, and a Sheet the reader closed stays closed.
+   */
+  useEffect(() => {
+    if (focusSlice === null || focusRubric === null) return;
+    openSheet({ kind: "rubric", doc: focusRubric, slice: focusSlice });
+  }, [focusSlice, focusRubric, openSheet]);
+
+  /*
+   * THE RUBRIC READING SURFACE. One row per slice, in slice order. A row with a rubric
+   * is a button that opens the whole document in the Sheet, the same way an epic's
+   * technical solution design opens, because a rubric is deep content and a panel that
+   * held it would bury its own subject. A slice with no rubric keeps its row and
+   * states the absence in place. It is not a button, so a press cannot open an empty
+   * Sheet, and the honest-absence phrasing the interaction design pins stays where
+   * the reader looks for the record.
+   *
+   * The block is absent when the work holds no slice, on the rule this file states
+   * above: a block that held nothing but a sentence about holding nothing is gone, and
+   * each epic's own row already states its slice count.
+   */
+  const rubricRows =
+    work.slices.length > 0 ? (
+      <div className="mt-4 flex min-w-0 flex-col gap-2">
+        <SubHead count={work.slices.length}>Slice rubrics</SubHead>
+        {work.slices.map((slice) => {
+          const rubric = work.rubricBySlice.get(slice.id);
+          if (!rubric) {
+            return (
+              <div
+                key={slice.id}
+                data-testid="rubric-empty"
+                className="flex min-w-0 items-center gap-3 rounded-lg border border-dashed border-warn bg-warn-wash px-3.5 py-2.5"
+              >
+                <span className="shrink-0 font-mono text-[14px] font-bold text-accent-deep tabular-nums">
+                  #{slice.n}
+                </span>
+                <span className="min-w-0 font-serif text-[15.5px] leading-[1.55] text-ink-mid">
+                  No rubric document exists for slice {slice.n}. An absent record is not a
+                  passed gate.
+                </span>
+              </div>
+            );
+          }
+          return (
+            <button
+              key={slice.id}
+              type="button"
+              onClick={() => openSheet({ kind: "rubric", doc: rubric, slice })}
+              aria-label={`Open the acceptance rubric for slice ${slice.n}`}
+              className={cn(
+                "flex min-h-12 w-full cursor-pointer items-center gap-3 rounded-lg border border-line-soft bg-card px-3.5 py-2 text-left",
+                "transition-colors duration-150 ease-house hover:bg-surface-2",
+                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+              )}
+            >
+              <ChevronRight className="size-4 shrink-0 text-ink-faint" aria-hidden="true" />
+              <span className="shrink-0 font-mono text-[14px] font-bold text-accent-deep tabular-nums">
+                #{slice.n}
+              </span>
+              <span className="min-w-0 flex-1 truncate font-serif text-[16px]">{slice.title}</span>
+              <span className="flex shrink-0 flex-wrap gap-1.5">
+                {slice.score ? (
+                  <Chip title="The score the independent validator gave this slice.">
+                    {slice.score}
+                  </Chip>
+                ) : (
+                  <Chip dashed className="text-ink-faint" title="No score is recorded for this slice.">
+                    no score
+                  </Chip>
+                )}
+                <StateBadge
+                  word={slice.state}
+                  tone={slice.state === "completed" ? "good" : "neutral"}
+                  gloss="The slice's own state field."
+                />
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    ) : null;
+
   return (
     <Bento>
       <Panel
         span="band"
         title="Rubrics"
         icon={ClipboardCheck}
-        lead="The acceptance rubric for each slice."
+        lead="The gate record this work runs under, and the rubric each slice was scored against."
         absent={!(gated && steps.length > 0)}
       >
         {gated && steps.length > 0 ? (
-          <ul className="m-0 flex min-w-0 list-none flex-col gap-2 p-0">
-            {steps.map((step) => (
-              <li
-                key={step.n}
-                className="flex min-w-0 items-center gap-3 rounded-lg border border-line-soft bg-surface-2/50 px-3 py-2"
-              >
-                <Chip>{step.n}</Chip>
-                <span className="min-w-0 flex-1 font-serif text-[16px]">{step.name}</span>
-                <StateBadge
-                  word={step.state}
-                  tone={step.state === "approved" ? "good" : "neutral"}
-                />
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className="m-0 flex min-w-0 list-none flex-col gap-2 p-0">
+              {steps.map((step) => (
+                <li
+                  key={step.n}
+                  className="flex min-w-0 items-center gap-3 rounded-lg border border-line-soft bg-surface-2/50 px-3 py-2"
+                >
+                  <Chip>{step.n}</Chip>
+                  <span className="min-w-0 flex-1 font-serif text-[16px]">{step.name}</span>
+                  <StateBadge
+                    word={step.state}
+                    tone={step.state === "approved" ? "good" : "neutral"}
+                  />
+                </li>
+              ))}
+            </ul>
+            {rubricRows}
+          </>
         ) : (
-          <div className="flex min-w-0 flex-col gap-3">
-            <div className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-dashed border-warn bg-warn-wash px-3.5 py-3">
-              <p className="m-0 flex items-center gap-2 font-mono text-[12px] font-bold tracking-[0.06em] text-warn uppercase">
-                <ShieldQuestion className="size-4 shrink-0" aria-hidden="true" />
-                No gate record exists
-              </p>
-              <p className="m-0 min-w-0 font-serif text-[16px] leading-[1.55] text-ink-mid">
-                This work has no gate record, so this section has nothing to read. That is
-                an absent record, not a passed gate. It must not read as a pass.
-              </p>
+          <>
+            <div className="flex min-w-0 flex-col gap-3">
+              <div className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-dashed border-warn bg-warn-wash px-3.5 py-3">
+                <p className="m-0 flex items-center gap-2 font-mono text-[12px] font-bold tracking-[0.06em] text-warn uppercase">
+                  <ShieldQuestion className="size-4 shrink-0" aria-hidden="true" />
+                  No gate record exists
+                </p>
+                <p className="m-0 min-w-0 font-serif text-[16px] leading-[1.55] text-ink-mid">
+                  This work has no gate record, so this section has nothing to read. That is
+                  an absent record, not a passed gate. It must not read as a pass.
+                </p>
+              </div>
+              <AbsentLine>
+                No gate record carries this work. An absent record is not a passed gate.
+              </AbsentLine>
             </div>
-            <AbsentLine>
-              No gate record carries this work. An absent record is not a passed gate.
-            </AbsentLine>
-          </div>
+            {rubricRows}
+          </>
         )}
       </Panel>
     </Bento>

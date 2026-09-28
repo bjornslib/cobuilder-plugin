@@ -23,6 +23,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "shared"))
+import gate_status  # noqa: E402
 import slice_table  # noqa: E402
 
 # This script sits at <repo_root>/plugins/artifact/scripts/, so the
@@ -175,8 +176,16 @@ def read_plan(plan_dir: Path, designs_dir: Path, rubrics_dir: Path) -> dict:
     for line in docs.get("00-status.md", "").splitlines():
         m = GATE_LINE.match(line.strip())
         if m:
-            gates.append({"n": m.group(1), "name": m.group(2).strip(),
-                          "state": m.group(3).strip()})
+            # The state tail carries an authored view link (ADR-0032). The
+            # shared split keeps the portable route in its own field and
+            # keeps the machine-specific absolute URL out of the payload.
+            # The document text above keeps the line whole, URL included,
+            # because 00-status.md is displayed as the authored document.
+            state, view = gate_status.split_gate_state(m.group(3))
+            gate = {"n": m.group(1), "name": m.group(2).strip(), "state": state}
+            if view is not None:
+                gate["view"] = view
+            gates.append(gate)
     epics = read_epics(designs_dir, docs.get("04-slices.md", ""))
     return {"docs": docs, "gates": gates, "epics": epics, "paths": paths}
 
