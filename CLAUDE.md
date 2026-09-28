@@ -25,10 +25,15 @@ DOM at annotation time and appended to a durable, append-only store
 ADR-0001, rather than reversing it. It decides that authoring moves to
 parts under `viewer/src/`, compiled into the committed `viewer/index.html`
 by a build step that runs only when an engineer changes the viewer, never
-at `/plugin install` and never in the browser. ADR-0020 is **decided and
-not executed**: no `viewer/src/` directory exists yet, and the viewer is
-still the one committed file described below. Treat that ADR as a plan,
-not as the current shape of the file.
+at `/plugin install` and never in the browser.
+
+The work on ADR-0020 is complete. The
+viewer source lives under `plugins/artifact/viewer/src/`, in React,
+TypeScript, Vite, and Tailwind, with Vitest tests. `npm run build` runs
+`tsc --noEmit && vite build` and writes the committed
+`plugins/artifact/viewer/index.html`. `tests/test_viewer_build.py` checks
+that the build reproduces the committed bytes. `shared/migrate_bundle.py`
+copies that file into each bundle.
 
 `architect` and `pr` both hand off to
 `artifact`'s View and Publish modes, so each manifest declares
@@ -111,7 +116,7 @@ other's context.
 |---|---|---|
 | **Design** (capital, mode) | `/architect:design`, the pre-code interview-and-challenge mode that produces an ADR plus `intent.json` | a *design* (lowercase), the artifact directory it produces (see below) |
 | **a design** | One `docs/architecture/designs/<name>/` directory: `goal.json`, `intent.json`, `narrative.json`, `assessment.json`, `pr-draft.md` | an ADR, which a design also produces but which outlives it under `docs/architecture/adr/` |
-| **backlog design** | A design at `stage: "backlog"`: a `goal.json` with planned epics only, and no `intent.json`, `narrative.json`, `assessment.json`, or diagrams. This is a legitimate, deliberately sparse state, because Design mode's stages 2 through 7 have not run yet. `maintainable-viewer/` and `inflight-record-store/` are both backlog designs today | an incomplete or abandoned design — a sparse directory here is the expected shape, not a sign that generation stopped partway |
+| **backlog design** | A design at `stage: "backlog"`: a `goal.json` with planned epics only, and no `intent.json`, `narrative.json`, `assessment.json`, or diagrams. This is a legitimate, deliberately sparse state, because Design mode's stages 2 through 7 have not run yet. `inflight-record-store/` is a backlog design today. `maintainable-viewer/` was one, and now reads `stage: "superseded"` | an incomplete or abandoned design — a sparse directory here is the expected shape, not a sign that generation stopped partway |
 | **Epic** | One unit inside a design's `goal.json.epics[]`. Maps to zero or one pull request through `epics[].branch`. Owned and decomposed by `implement`, not by design mode | an ADR, a design, or a PR — an epic is the join key between a design and a PR, not any of the three itself |
 | **District** | A `world.districts` entry in `story.json` / `inventory.yaml`, derived by Odyssey's *describe-lite* procedure (`baseline-derivation.md`) for any repo, including a foreign `--repo` target. Inferred, not verified against import edges | a bounded context (below) — a district is the lightweight version of the same underlying concept, usable when nobody maintains the target repo |
 | **Bounded context** | A `docs/architecture/contexts/<context-id>/` bundle: `canvas.md` + `boundary.yaml`, produced by the self-only Describe mode. Every claim is grep-verified against real import edges before it is written | a district — a bounded context is the heavyweight, verified version; it never covers a foreign repo |
@@ -156,7 +161,8 @@ paths do not match the Layout section above.
 shared/                symlinked into every plugin's own root as plugins/<name>/shared/
                        (ADR-0017). Vendored, not itself a plugin:
                        _bundle_meta.py, _manifest.py, build_index.py,
-                       ledger.py, migrate_bundle.py, slice_table.py,
+                       gate_status.py, ledger.py, migrate_bundle.py,
+                       migrate_png_assets_to_webp.py, slice_table.py,
                        validate_decision_state.py, verify_bundle.py,
                        skills/{mermaid,ste-writing}/
 plugins/
@@ -187,8 +193,10 @@ plugins/
     commands/          view.md, publish.md → Skill("cobuilder-artifacts", args=...)
     skills/cobuilder-artifacts/
     scripts/           export_artifact.py, export_index.py, record_publish.py,
-                       build_builds_view.py
-    viewer/index.html  the bundle viewer (4747 lines, single file, see below)
+                       build_builds_view.py, review_link.py,
+                       serve_bundle.py, view_server.py
+    viewer/src/        the viewer source: React, TypeScript, Vite, Tailwind
+    viewer/index.html  the built viewer, committed (see below)
     shared/            -> ../../shared (symlink)
   implement/             build a design's epics, one vertical slice at a time
     .claude-plugin/plugin.json
@@ -358,25 +366,29 @@ It is a recorded, scoped gap.
 file, but it depends on three things that only exist *next to* it inside a
 real `.cobuilder-architect/` bundle:
 
-1. **Sibling `<script src="../data/*.js">` tags** (`story.js`, `manifest.js`,
-   per-PR `diffs-pr{N}.js` via `document.write`, `adrs.js`) — this is how
-   `window.STORY` / `window.ODYSSEY` / `window.DIFFS` / `window.ADRS` get
-   populated. No inline data anywhere.
-2. **Relative asset paths** — hero images at `../assets/pr-{N}/level-{L}.png`
-   (built in `heroFrame()` and the audio-dialog image, both in
-   `viewer/index.html`), narration audio at `../data/audio/pr{N}_{level}.wav`
-   (`toggleAudio()`).
-3. **Three external CDN requests.** Google Fonts supplies JetBrains Mono.
-   `cdn.jsdelivr.net/npm/motion` drives the micro-animations. A
-   version-pinned Mermaid 11 script renders the `<pre class="mermaid">`
-   blocks for levels 1 through 3. Each one degrades gracefully when the CDN
-   is unreachable. Mermaid shows the plain diagram source, Motion becomes a
-   no-op, and the fonts fall back to the existing `monospace` and
-   `sans-serif` stack.
+1. **Data files it loads on demand.** `src/data/bundle.ts` appends a
+   sibling `<script>` tag for `../data/story.js` and the other `.js` files,
+   and fetches `../data/index.json`. It checks each global first
+   (`window.STORY`, `window.ODYSSEY`, `window.DIFFS_BY_PR`, `window.ADRS`,
+   `window.DESIGNS`, `window.DIAGRAMS`, `window.INDEX`). It skips the
+   request when the global holds data. The page has no data-loading
+   `<script>` block and no inline data.
+2. **Relative asset paths.** Hero images are at
+   `../assets/pr-{N}/level-{L}.webp`, and narration audio is at
+   `../data/audio/pr{N}_{level}.wav`. `src/shell/change/levels.ts` builds
+   both paths. A classic inline script in `src/index.html` holds six
+   `cobuilder-marker` regions that the exporter rewrites.
+3. **Two external requests.** Google Fonts supplies JetBrains Mono and
+   Source Serif 4. `src/shell/DiagramTiles.tsx` dynamic-imports Mermaid 11
+   from `cdn.jsdelivr.net`. The page has no Mermaid `<script>` tag. Motion
+   is an npm package that the build bundles, not a CDN request.
 
-Serve the bundle with `python3 -m http.server`, rooted at the bundle root.
-That root is the parent of `viewer/`, for example `.cobuilder-architect/self/`. Do not
-root it inside `viewer/` itself. `viewer/index.html` requests sibling files
+View mode serves the bundle with
+`plugins/artifact/scripts/view_server.py`, on the fixed port 62583 by
+default. A recorded review link thus stays valid after a restart. The script
+runs `python3 -m http.server` on `127.0.0.1`, rooted at
+`<hub>/.cobuilder-architect/`, so each bundle is one directory below the
+root. Do not root a server inside `viewer/` itself. `viewer/index.html` requests sibling files
 such as `../data/story.js`, so a server rooted inside `viewer/` returns a
 404 error for every data file. The future production app keeps the same
 relative file layout in its *Import bundle* flow.
@@ -392,9 +404,9 @@ both CDN tags, and rewrote the asset and audio paths to read a
 audio dialog all worked. Two things came out of that experiment that matter
 if anybody revisits it:
 
-- The Motion CDN script already has a graceful no-op fallback in `anim()`:
-  `if (!el || !window.Motion) return {finished: Promise.resolve()}`.
-  Dropping it costs micro-animations, not correctness. A Google Fonts
+- That experiment used the earlier single-file viewer. Motion was then a
+  CDN script with a no-op fallback, and dropping it cost only the
+  micro-animations. The React viewer bundles Motion instead. A Google Fonts
   failure falls back to the `monospace` and `sans-serif` stack in the font
   declarations.
 - The 16 MiB artifact size cap is the real constraint for a multi-PR bundle,
@@ -423,12 +435,16 @@ recognized, reserved flag value with no implementation behind it yet.
 
 Diagrams reuse this pipeline rather than replicate it. `export_artifact.py`
 inlines `window.DIAGRAMS` as literal JSON, the same way it inlines `STORY`,
-`ODYSSEY`, `DIFFS`, and `ADRS`. It strips the Mermaid CDN tag instead of
-inlining a runtime, because the Claude Artifact platform renders
-`<pre class="mermaid">` blocks natively. An `--inline-mermaid` flag is the
-escape hatch if native rendering cannot handle blocks injected after page
-load. That flag inlines a vendored `mermaid.min.js` instead. A PR published
-with `--art diagram` carries no PNGs at all, which relieves the 16 MiB
+`ODYSSEY`, `DIFFS_BY_PR`, and `ADRS`. It puts the inline data before the
+viewer's module script, so the viewer finds each global set and fetches
+nothing. It removes a Mermaid CDN tag only when one is present, because the
+Claude Artifact platform renders `<pre class="mermaid">` blocks natively.
+An `--inline-mermaid` flag is the escape hatch if native rendering cannot
+handle blocks injected after page load. That flag inlines a vendored
+`mermaid.min.js` before the module script (commit `f9c3223`).
+
+A PR published
+with `--art diagram` carries no scene images at all, which relieves the 16 MiB
 budget pressure above — a diagram is plain text, not base64 image data.
 
 A bundle written before the diagram change once needed its viewer copy
@@ -443,9 +459,10 @@ and migration below.
 <bundle-dir>/       <target>/.cobuilder-architect/self/ for self-analysis, <hub>/.cobuilder-architect/<repo-slug>/ for a foreign repo
   bundle.json        bundle_format, schema_version, generator_version, migrated_at
   data/{story.json, story.js, adrs.json, adrs.js, manifest.js,
+        index.json, index.js, designs.js,
         diffs-pr{N}.js…, audio/pr{N}_{level}.wav,
         diagrams/pr{N}-level{1,2,3}.mmd, diagrams.js}
-  assets/pr-{N}/level-{1..3}.png
+  assets/pr-{N}/level-{1..3}.webp
   inventory.yaml
   viewer/index.html
   exports/{publish-manifest.json, pr-{N}.html…, index.html}   # written by /artifact:publish
@@ -472,10 +489,10 @@ flag it was generated with (see Review mode in `plugins/pr/skills/odyssey/SKILL.
 `exports/` appears only after `/artifact:publish` runs at least once. It is
 as committable as the rest of the bundle — see Publish mode notes below.
 
-`story.json`'s `meta.schema_version` is currently `"1.2"`, and it is the
+`story.json`'s `meta.schema_version` is currently `"1.3"`, and it is the
 source of truth for a bundle's data shape. `bundle.json` only mirrors it.
 `shared/_bundle_meta.py` holds the constant, and `shared/verify_bundle.py` gates
-on it through `SCHEMA_VERSION_KNOWN`. That set also accepts `"1.0"` and `"1.1"`, so
+on it through `SCHEMA_VERSION_KNOWN`. That set also accepts `"1.0"`, `"1.1"`, and `"1.2"`, so
 migration can still read an older bundle.
 
 This repo commits everything under `.cobuilder-architect/`. Only five bookkeeping
@@ -731,7 +748,7 @@ Gate 4b enforcement added at three levels after it ran for zero of five
 moving retain from once per feature to once per accepted slice → ADR-0018
 (one lifecycle surface, a derived record index) and ADR-0019 (an anchored-comments
 ledger) decided and implemented → ADR-0020 (viewer parts and an author-time
-build) decided, not yet executed → the Designs sheet retired, its two
+build) decided → the Designs sheet retired, its two
 sections folded into the Designs tab, and `shared/build_index.py` gained a
 `pr-draft.md` projection → the four non-umbrella plugins renamed their
 manifest `name` (and their `plugins/` directory) to drop the `cobuilder-`
@@ -741,7 +758,13 @@ so a command reads `/architect:design` instead of
 `/cobuilder-architect:design`. `cobuilder-full-lifecycle` keeps its name,
 since the repo itself, `cobuilder-plugin`, is the thing the `cobuilder-`
 prefix now names. The bundle directory `.cobuilder-architect/` is unrelated
-to this rename and did not change.
+to this rename and did not change. Next, the viewer moved to React,
+TypeScript, and Vite under `plugins/artifact/viewer/src/`, which executed
+ADR-0020. ADR-0032 then added the review link: `review_link.py`, a plan
+page at `#/<work>/build/plan`, a "Present for review" section, and a
+`verify_gate.py` check on each viewer link. `view_server.py` then put View
+mode on the fixed port 62583. Last, the exporter stopped needing a Mermaid
+CDN tag or a data-loading script block.
 No CI config. The repo has a root `pyproject.toml`, a non-package uv
 project with `[tool.uv] package = false` and `python-preference =
 "only-managed"`. A `dev` dependency group lists pytest, pillow,
