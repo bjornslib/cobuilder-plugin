@@ -1,5 +1,6 @@
 {
   "name": "cobuilder-plugin",
+  "description": "Plugins that narrate the pull requests of a git repo, review its architecture, and build a design one slice at a time.",
   "owner": {
     "name": "bjornslib",
     "url": "https://github.com/bjornslib/cobuilder-plugin"
@@ -9,31 +10,31 @@
       "name": "architect",
       "description": "Design, review, maintenance, decisions, describe, and debug for a local git repo.",
       "source": "./plugins/architect",
-      "version": "0.5.0"
+      "version": "0.6.0"
     },
     {
       "name": "pr",
       "description": "Narrated PR history and submit-mode review. Output is a portable .cobuilder-architect/ bundle.",
       "source": "./plugins/pr",
-      "version": "0.5.0"
+      "version": "0.6.0"
     },
     {
       "name": "artifact",
       "description": "Serve a bundle locally and publish a level as a self-contained Claude Artifact.",
       "source": "./plugins/artifact",
-      "version": "0.5.0"
+      "version": "0.6.0"
     },
     {
       "name": "implement",
       "description": "Build a feature one vertical slice at a time with four approval gates, blind rubrics, and independent validation.",
       "source": "./plugins/implement",
-      "version": "0.1.0"
+      "version": "0.3.0"
     },
     {
       "name": "cobuilder-full-lifecycle",
       "description": "Umbrella plugin for the CoBuilder family.",
       "source": "./plugins/cobuilder-full-lifecycle",
-      "version": "0.1.0"
+      "version": "0.1.1"
     }
   ]
 }
