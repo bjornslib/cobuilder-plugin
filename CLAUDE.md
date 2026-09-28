@@ -742,7 +742,21 @@ so a command reads `/architect:design` instead of
 since the repo itself, `cobuilder-plugin`, is the thing the `cobuilder-`
 prefix now names. The bundle directory `.cobuilder-architect/` is unrelated
 to this rename and did not change.
-No CI config, no package manager — this is prose + Python scripts + one
-HTML file, with a `tests/` suite of 268 tests that checks packaging
-invariants across the five plugins, plus the slice-table parser, the
-Gate 4 verifier, and the deny-git-stash hook.
+No CI config. The repo has a root `pyproject.toml`, a non-package uv
+project with `[tool.uv] package = false` and `python-preference =
+"only-managed"`. A `dev` dependency group lists pytest, pillow,
+google-genai, python-dotenv, pyyaml, and requests. A `.python-version`
+file pins Python 3.11, and `uv.lock` locks the versions. Plain `uv run
+pytest tests -q` runs the test suite on uv's managed Python, on the
+host's own architecture. The plugin scripts still carry PEP 723 headers
+and resolve their own dependencies. The viewer is no longer one
+hand-written HTML file. It is authored under
+`plugins/artifact/viewer/src/` in React, TypeScript, and Vite, and built
+into the committed `plugins/artifact/viewer/index.html`. Check
+`plugins/artifact/viewer/package.json` for the build and test commands,
+for example `npm run build` and `npm run test` (Vitest). The `tests/`
+suite currently collects about 534 Python tests with `uv run pytest
+tests -q --collect-only`. It checks packaging invariants across the five
+plugins, the slice-table parser, the Gate 4 verifier, and the
+deny-git-stash hook. The Vitest suite currently passes about 179 tests
+for the viewer.
