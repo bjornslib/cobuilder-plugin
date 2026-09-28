@@ -688,3 +688,102 @@ def test_project_epics_rejects_a_missing_id_directly(repo, bundle_dir):
     assert error == "`epics[0]` must carry a non-empty `id` so it joins to the slice table"
     assert build_index.project_epics(None) == ([], None)
     assert build_index.project_epics([]) == ([], None)
+
+
+# --- C3: `done_when` and `abort_if` must be arrays of strings ---
+
+
+def test_a_string_done_when_fails_the_goal_and_writes_nothing(repo, bundle_dir):
+    write_raw_goal(
+        repo,
+        "design-a",
+        {
+            "name": "design-a",
+            "outcome": "An outcome.",
+            "done_when": "The viewer renders the Intent panel without crashing.",
+        },
+    )
+
+    _, _, _, failures = build_index.build_index(repo, bundle_dir)
+    assert failures == [
+        "docs/architecture/designs/design-a/goal.json: `done_when` must be an "
+        "array of strings"
+    ]
+    assert not (bundle_dir / "data" / "index.json").exists()
+
+
+def test_a_done_when_with_non_string_items_fails_the_goal(repo, bundle_dir):
+    write_raw_goal(
+        repo,
+        "design-a",
+        {"name": "design-a", "outcome": "An outcome.", "done_when": [1, 2]},
+    )
+
+    _, _, _, failures = build_index.build_index(repo, bundle_dir)
+    assert failures == [
+        "docs/architecture/designs/design-a/goal.json: `done_when[0]` must be a "
+        "non-empty string"
+    ]
+
+
+def test_a_done_when_with_an_empty_string_item_fails_the_same_way(repo, bundle_dir):
+    write_raw_goal(
+        repo,
+        "design-a",
+        {"name": "design-a", "outcome": "An outcome.", "done_when": ["  "]},
+    )
+
+    _, _, _, failures = build_index.build_index(repo, bundle_dir)
+    assert failures == [
+        "docs/architecture/designs/design-a/goal.json: `done_when[0]` must be a "
+        "non-empty string"
+    ]
+
+
+def test_a_list_of_strings_done_when_passes(repo, bundle_dir):
+    write_raw_goal(
+        repo,
+        "design-a",
+        {
+            "name": "design-a",
+            "outcome": "An outcome.",
+            "done_when": ["The panel renders.", "The build passes."],
+            "abort_if": ["The bundle exceeds the size cap."],
+        },
+    )
+
+    _, _, designs_viewer, failures = build_index.build_index(repo, bundle_dir)
+    assert failures == []
+    record = designs_viewer["design-a"]
+    assert record["goal"]["done_when"] == ["The panel renders.", "The build passes."]
+    assert record["goal"]["abort_if"] == ["The bundle exceeds the size cap."]
+
+
+def test_absent_or_null_done_when_and_abort_if_pass(repo, bundle_dir):
+    write_raw_goal(
+        repo,
+        "design-absent",
+        {"name": "design-absent", "outcome": "An outcome.", "epics": []},
+    )
+    write_raw_goal(
+        repo,
+        "design-null",
+        {"name": "design-null", "outcome": "An outcome.", "done_when": None, "abort_if": None},
+    )
+
+    _, _, _, failures = build_index.build_index(repo, bundle_dir)
+    assert failures == []
+    assert len(build_index.build_index(repo, bundle_dir)[0]["entities"]["design"]) == 2
+
+
+def test_project_string_list_rejects_bad_shapes_directly():
+    assert build_index.project_string_list("one thing", "done_when") == (
+        None,
+        "`done_when` must be an array of strings",
+    )
+    assert build_index.project_string_list([1], "done_when") == (
+        None,
+        "`done_when[0]` must be a non-empty string",
+    )
+    assert build_index.project_string_list(None, "done_when") == ([], None)
+    assert build_index.project_string_list([], "abort_if") == ([], None)

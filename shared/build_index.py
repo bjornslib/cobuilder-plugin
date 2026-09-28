@@ -305,6 +305,17 @@ def project_epics(raw) -> tuple[list | None, str | None]:
     return projected, None
 
 
+def project_string_list(raw, key: str) -> tuple[list | None, str | None]:
+    if raw is None:
+        return [], None
+    if not isinstance(raw, list):
+        return None, f"`{key}` must be an array of strings"
+    for i, item in enumerate(raw):
+        if not isinstance(item, str) or not item.strip():
+            return None, f"`{key}[{i}]` must be a non-empty string"
+    return raw, None
+
+
 def project_goal(raw: object, rel: Path) -> tuple[dict | None, list[str]]:
     if not isinstance(raw, dict):
         return None, [f"{rel}: goal.json must be an object"]
@@ -315,6 +326,11 @@ def project_goal(raw: object, rel: Path) -> tuple[dict | None, list[str]]:
         failures.append(f"{rel}: `name` is required")
     if not isinstance(outcome, str) or not outcome.strip():
         failures.append(f"{rel}: `outcome` is required")
+    for key in ("done_when", "abort_if"):
+        if key in raw and raw[key] is not None:
+            value, error = project_string_list(raw[key], key)
+            if error:
+                failures.append(f"{rel}: {error}")
     epics, epic_error = project_epics(raw.get("epics"))
     if epic_error:
         failures.append(f"{rel}: {epic_error}")

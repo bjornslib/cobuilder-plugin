@@ -1,9 +1,16 @@
 {
   "name": "artifact",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Serve a codebase-odyssey bundle locally and publish a level as a self-contained Claude Artifact.",
-  "author": { "name": "bjornslib" },
+  "author": {
+    "name": "bjornslib"
+  },
   "repository": "https://github.com/bjornslib/cobuilder-architect",
   "license": "MIT",
-  "keywords": ["claude-code", "artifact", "viewer", "publish"]
+  "keywords": [
+    "claude-code",
+    "artifact",
+    "viewer",
+    "publish"
+  ]
 }

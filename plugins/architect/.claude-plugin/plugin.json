@@ -1,10 +1,20 @@
 {
   "name": "architect",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Design, review, maintenance, decisions, describe, and debug for a local git repo. Self-only architecture governance.",
-  "author": { "name": "bjornslib" },
+  "author": {
+    "name": "bjornslib"
+  },
   "repository": "https://github.com/bjornslib/cobuilder-architect",
   "license": "MIT",
-  "keywords": ["claude-code", "architecture", "adr", "code-review", "design"],
-  "dependencies": ["artifact@cobuilder-plugin"]
+  "keywords": [
+    "claude-code",
+    "architecture",
+    "adr",
+    "code-review",
+    "design"
+  ],
+  "dependencies": [
+    "artifact@cobuilder-plugin"
+  ]
 }
