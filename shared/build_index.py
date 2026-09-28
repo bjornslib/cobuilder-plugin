@@ -295,6 +295,12 @@ def project_epics(raw) -> tuple[list | None, str | None]:
     for i, item in enumerate(raw):
         if not isinstance(item, dict):
             return None, f"`epics[{i}]` must be an object"
+        epic_id = item.get("id")
+        if not isinstance(epic_id, str) or not epic_id.strip():
+            return (
+                None,
+                "`epics[%d]` must carry a non-empty `id` so it joins to the slice table" % i,
+            )
         projected.append(project_fields(item, EPIC_FIELDS))
     return projected, None
 

@@ -602,3 +602,89 @@ def test_slice_8_entities_still_present_alongside_joins(repo, bundle_dir):
     assert [c["id"] for c in index["entities"]["context"]] == ["ctx-a"]
     assert "joins" in index
     assert "sources" in index
+
+
+# --- an epics entry without an `id` is a validation failure, not a silent drop ---
+
+
+def write_raw_goal(repo: Path, design_id: str, goal: dict) -> None:
+    """Write a goal.json verbatim, for entries the helpers never produce."""
+    design_dir = repo / "docs" / "architecture" / "designs" / design_id
+    design_dir.mkdir(parents=True, exist_ok=True)
+    (design_dir / "goal.json").write_text(json.dumps(goal))
+
+
+def test_an_epics_entry_without_an_id_fails_the_goal(repo, bundle_dir):
+    write_raw_goal(
+        repo,
+        "design-a",
+        {
+            "name": "design-a",
+            "outcome": "An outcome.",
+            "epics": [{"slug": "first-epic", "branch": "feat/first-epic"}],
+        },
+    )
+
+    _, _, _, failures = build_index.build_index(repo, bundle_dir)
+    assert failures == [
+        "docs/architecture/designs/design-a/goal.json: `epics[0]` must carry a "
+        "non-empty `id` so it joins to the slice table"
+    ]
+
+
+def test_an_epics_entry_with_an_empty_id_fails_the_same_way(repo, bundle_dir):
+    write_raw_goal(
+        repo,
+        "design-a",
+        {
+            "name": "design-a",
+            "outcome": "An outcome.",
+            "epics": [{"id": "", "branch": "feat/first-epic"}],
+        },
+    )
+
+    _, _, _, failures = build_index.build_index(repo, bundle_dir)
+    assert failures == [
+        "docs/architecture/designs/design-a/goal.json: `epics[0]` must carry a "
+        "non-empty `id` so it joins to the slice table"
+    ]
+
+
+def test_an_epics_entry_with_a_whitespace_id_fails_the_same_way(repo, bundle_dir):
+    write_raw_goal(
+        repo,
+        "design-a",
+        {
+            "name": "design-a",
+            "outcome": "An outcome.",
+            "epics": [{"id": "   ", "branch": "feat/first-epic"}],
+        },
+    )
+
+    _, _, _, failures = build_index.build_index(repo, bundle_dir)
+    assert failures == [
+        "docs/architecture/designs/design-a/goal.json: `epics[0]` must carry a "
+        "non-empty `id` so it joins to the slice table"
+    ]
+
+
+def test_empty_or_absent_epics_still_pass(repo, bundle_dir):
+    write_raw_goal(
+        repo, "design-empty", {"name": "design-empty", "outcome": "An outcome.", "epics": []}
+    )
+    write_raw_goal(
+        repo, "design-none", {"name": "design-none", "outcome": "An outcome."}
+    )
+
+    index, _, _, failures = build_index.build_index(repo, bundle_dir)
+    assert failures == []
+    assert len(index["entities"]["design"]) == 2
+    assert len(index["entities"]["epic"]) == 0
+
+
+def test_project_epics_rejects_a_missing_id_directly(repo, bundle_dir):
+    epics, error = build_index.project_epics([{"slug": "e1"}])
+    assert epics is None
+    assert error == "`epics[0]` must carry a non-empty `id` so it joins to the slice table"
+    assert build_index.project_epics(None) == ([], None)
+    assert build_index.project_epics([]) == ([], None)

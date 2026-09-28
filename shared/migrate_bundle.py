@@ -296,20 +296,56 @@ def write_bundle_json(
     (bundle_dir / "bundle.json").write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
 
 
+def _version_key(version: str) -> tuple[int, ...]:
+    """Dotted-integer sort key for a version string, so 0.10.0 sorts above
+    0.9.0. Non-numeric parts count as 0."""
+    parts: list[int] = []
+    for chunk in version.split("."):
+        digits = "".join(c for c in chunk if c.isdigit())
+        parts.append(int(digits) if digits else 0)
+    return tuple(parts)
+
+
 def find_viewer_source() -> Path | None:
+    """Finds the committed viewer/index.html to refresh bundles with, in
+    precedence order:
+
+    1. PLUGIN_ROOT/viewer/index.html — the artifact plugin's own root, in
+       this repository.
+    2. PLUGIN_ROOT/plugins/artifact/viewer/index.html — the pre-split
+       layout, kept so an old tree still migrates.
+    3. <PLUGIN_ROOT.parent or PLUGIN_ROOT.parent.parent>/artifact/<version>/
+       viewer/index.html — the marketplace install cache, one or two levels
+       up. A non-artifact plugin's installed cache has no viewer of its own,
+       but the sibling artifact plugin's cache does, so the installer probes
+       it and picks the highest version.
+    """
     candidate = PLUGIN_ROOT / "viewer" / "index.html"
     if candidate.exists():
         return candidate
     candidate = PLUGIN_ROOT / "plugins" / "artifact" / "viewer" / "index.html"
     if candidate.exists():
         return candidate
+
+    # A non-artifact plugin's installed cache holds no viewer. Its sibling
+    # artifact plugin cache does, so probe one and two levels up and take
+    # the highest version. One level up fits a tree where PLUGIN_ROOT is
+    # the marketplace root; two levels up fits the installed cache, where
+    # PLUGIN_ROOT is <marketplace>/<plugin>/<version>.
+    cache_hits: list[Path] = []
+    for base in (PLUGIN_ROOT.parent, PLUGIN_ROOT.parent.parent):
+        cache_hits.extend(base.glob("artifact/*/viewer/index.html"))
+    if cache_hits:
+        return max(cache_hits, key=lambda p: _version_key(p.parent.parent.name))
     return None
 
 
 def refresh_viewer(bundle_dir: Path, dry_run: bool) -> str:
     """Unconditional content-compared viewer refresh. Returns "refreshed",
-    "unchanged", or "missing-source" (the plugin's own viewer is absent —
-    should not happen in a real install, but don't crash on it)."""
+    "unchanged", or "missing-source" (no viewer source found — a real
+    non-artifact plugin install hits this, and find_viewer_source() probes
+    the sibling plugin caches before giving up; the summary print below
+    warns when no viewer source is found)."""
     src = find_viewer_source()
     if src is None:
         return "missing-source"
@@ -539,6 +575,13 @@ def main() -> None:
         report["made_changes"] = made_changes
         print(json.dumps(report, indent=2, ensure_ascii=False))
     else:
+        if report["viewer"] == "missing-source":
+            print(
+                f"WARNING: viewer: missing-source. No viewer/index.html "
+                f"found under {PLUGIN_ROOT} (checked its own root, "
+                "plugins/artifact/, and the sibling artifact plugin cache). "
+                "The bundle's viewer/index.html was NOT refreshed."
+            )
         if not made_changes:
             print("already current: no viewer, layout, or data changes.")
         else:

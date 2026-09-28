@@ -201,3 +201,75 @@ def test_viewer_refresh_is_not_version_gated_in_source():
         "current_format ==" in line or "current_schema ==" in line
         for line in last_lines
     )
+
+
+# --- C6: viewer-source resolution for non-artifact plugin caches ---
+
+
+def test_find_viewer_source_returns_none_without_any_probe_hit(tmp_path, monkeypatch):
+    """A plugin root with no viewer of its own and no sibling artifact
+    cache resolves to None, not to a wrong path."""
+    plugin_root = tmp_path / "architect"
+    (plugin_root / "shared").mkdir(parents=True)
+    monkeypatch.setattr(mb, "PLUGIN_ROOT", plugin_root)
+    assert mb.find_viewer_source() is None
+
+
+def test_find_viewer_source_resolves_marketplace_cache(tmp_path, monkeypatch):
+    """A non-artifact plugin's installed cache has no viewer of its own.
+    The sibling artifact plugin cache does, and the highest version wins."""
+    fake_plugin_root = tmp_path / "someplugin"
+    (fake_plugin_root / "shared").mkdir(parents=True)
+    for version in ("0.5.0", "0.6.0"):
+        viewer_dir = tmp_path / "artifact" / version / "viewer"
+        viewer_dir.mkdir(parents=True)
+        (viewer_dir / "index.html").write_text(f"viewer {version}")
+
+    monkeypatch.setattr(mb, "PLUGIN_ROOT", fake_plugin_root)
+    resolved = mb.find_viewer_source()
+    assert resolved == tmp_path / "artifact" / "0.6.0" / "viewer" / "index.html"
+
+
+def test_find_viewer_source_marketplace_cache_sorts_versions_numerically(tmp_path, monkeypatch):
+    """0.10.0 must win over 0.9.0, so the sort key is dotted integers, not
+    the lexicographic string order that would put 0.10.0 below 0.9.0."""
+    fake_plugin_root = tmp_path / "someplugin"
+    (fake_plugin_root / "shared").mkdir(parents=True)
+    for version in ("0.9.0", "0.10.0"):
+        viewer_dir = tmp_path / "artifact" / version / "viewer"
+        viewer_dir.mkdir(parents=True)
+        (viewer_dir / "index.html").write_text(f"viewer {version}")
+
+    monkeypatch.setattr(mb, "PLUGIN_ROOT", fake_plugin_root)
+    resolved = mb.find_viewer_source()
+    assert resolved == tmp_path / "artifact" / "0.10.0" / "viewer" / "index.html"
+
+
+def test_main_warns_when_no_viewer_source_found(tmp_path, monkeypatch, capsys):
+    """A stale bundle viewer with no viewer source anywhere must print a
+    loud warning naming missing-source, even when nothing else changes."""
+    bundle_dir = make_bundle(
+        tmp_path,
+        {
+            "bundle_format": _bundle_meta.CURRENT_BUNDLE_FORMAT,
+            "schema_version": _bundle_meta.SCHEMA_VERSION,
+            "min_reader_schema": _bundle_meta.SCHEMA_VERSION,
+            "generators": {"cobuilder-architect": "9.9.9"},
+        },
+        minimal_story(_bundle_meta.SCHEMA_VERSION),
+    )
+    (bundle_dir / "viewer").mkdir(parents=True)
+    (bundle_dir / "viewer" / "index.html").write_text("this is stale content, not the real viewer")
+
+    plugin_root = tmp_path / "architect"
+    (plugin_root / "shared").mkdir(parents=True)
+    monkeypatch.setattr(mb, "PLUGIN_ROOT", plugin_root)
+
+    sys.argv = ["migrate_bundle.py", "--bundle-dir", str(bundle_dir)]
+    mb.main()
+    out = capsys.readouterr().out
+    assert "missing-source" in out
+    assert str(plugin_root) in out
+    assert "was NOT refreshed" in out
+    # The warning is honest: it must not claim a viewer refresh happened.
+    assert "viewer: refreshed" not in out
