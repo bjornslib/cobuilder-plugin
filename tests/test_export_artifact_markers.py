@@ -296,3 +296,52 @@ def test_an_unchanged_bundle_with_intact_markers_still_short_circuits(tmp_path, 
     )
     assert out_path.read_bytes() == page_before, "the short-circuit must not rewrite the page"
     assert out_path.stat().st_mtime_ns == page_mtime, "the short-circuit must write nothing"
+
+
+# ---- 5. the Mermaid CDN tag is optional ----
+#
+# The React viewer loads Mermaid by dynamic import, so it carries no Mermaid
+# CDN <script> tag. A published Artifact renders <pre class="mermaid"> blocks
+# natively, so the exporter must not need the tag. When an older viewer still
+# carries it, the exporter removes it, or replaces it with --inline-mermaid.
+
+CDN_TAG = '<script src="https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.min.js"></script>\n'
+RUNTIME = "window.FIXTURE_MERMAID_RUNTIME = 1;"
+
+
+def viewer_without_cdn_tag() -> str:
+    html = VIEWER_PATH.read_text()
+    return export_artifact.MERMAID_CDN_RE.sub("", html)
+
+
+def viewer_with_cdn_tag() -> str:
+    html = viewer_without_cdn_tag()
+    assert "<head>\n" in html
+    return html.replace("<head>\n", "<head>\n" + CDN_TAG, 1)
+
+
+def build_with(viewer_html: str, inline_mermaid_js: str | None) -> str:
+    return export_artifact.build_html(
+        viewer_html, {}, {}, None, {}, {}, {}, {}, {}, "fixture page", inline_mermaid_js
+    )
+
+
+def test_a_viewer_with_no_mermaid_cdn_tag_builds():
+    out = build_with(viewer_without_cdn_tag(), None)
+    assert "window.STORY" in out
+
+
+def test_a_present_mermaid_cdn_tag_is_removed():
+    out = build_with(viewer_with_cdn_tag(), None)
+    assert CDN_TAG not in out
+
+
+def test_inline_mermaid_replaces_a_present_cdn_tag():
+    out = build_with(viewer_with_cdn_tag(), RUNTIME)
+    assert CDN_TAG not in out
+    assert RUNTIME in out
+
+
+def test_inline_mermaid_still_inlines_the_runtime_with_no_cdn_tag():
+    out = build_with(viewer_without_cdn_tag(), RUNTIME)
+    assert RUNTIME in out

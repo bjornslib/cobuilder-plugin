@@ -92,6 +92,9 @@ CDN_LINK_RES = [
 # instead, same graceful-degradation posture as the Motion no-op above), or replaced
 # in place with a vendored runtime when --inline-mermaid is passed.
 MERMAID_CDN_RE = re.compile(r'<script src="https://cdn\.jsdelivr\.net/npm/mermaid[^>]*></script>\n')
+# The React viewer's own code. With no data-loading block, the exporter puts its
+# inline data, and an inlined Mermaid runtime, before this tag.
+MODULE_SCRIPT_RE = re.compile(r'<script type="module"[^>]*>')
 # The replacement text for one marker region. The region's old content lives in the
 # viewer, between that marker's begin and end lines — no literal here copies it.
 HERO_SRC_NEW = (
@@ -440,13 +443,9 @@ def build_html(
     # rewrites. main() runs the same check before it reaches the unchanged
     # short-circuit, so a stale viewer stops the run on every path.
     require_markers(html)
-    if not inline_mermaid_js and not MERMAID_CDN_RE.search(html):
-        print(
-            "error: viewer/index.html's Mermaid CDN <script> tag not found verbatim.\n"
-            "remediation: the viewer was edited — update export_artifact.py's MERMAID_CDN_RE to match.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+    # The Mermaid CDN tag is optional. The React viewer loads Mermaid by dynamic
+    # import and carries no such tag. A published Artifact renders
+    # <pre class="mermaid"> blocks natively, so the export does not need it.
     # One replacement per marker, by name. Every region goes in full, so a change
     # to the data inside a region cannot stop the export.
     for marker in MARKERS:
@@ -457,21 +456,23 @@ def build_html(
         # Vendor the runtime in place of the CDN fetch instead of dropping it —
         # for viewing contexts (e.g. this script's own file:// verification, or any
         # non-Artifact host) that don't render `<pre class="mermaid">` natively.
-        html = MERMAID_CDN_RE.sub(
-            "<script>" + escape_script_close(inline_mermaid_js) + "</script>\n",
-            html,
-            count=1,
-        )
+        runtime_tag = "<script>" + escape_script_close(inline_mermaid_js) + "</script>\n"
+        if MERMAID_CDN_RE.search(html):
+            html = MERMAID_CDN_RE.sub(lambda _m: runtime_tag, html, count=1)
+        else:
+            # No CDN tag to replace. Put the runtime before the viewer's own scripts.
+            html = insert_before_first_script(html, runtime_tag)
     else:
         # Published Claude Artifacts render `<pre class="mermaid">` blocks NATIVELY,
         # so no runtime needs inlining — drop the CDN tag same as Fonts/Motion above.
         html = MERMAID_CDN_RE.sub("", html, count=1)
 
     old_block = SCRIPT_BLOCK_RE.search(html)
-    if not old_block:
+    if not old_block and not MODULE_SCRIPT_RE.search(html):
         print(
-            "error: viewer/index.html's data-loading <script> block not found verbatim.\n"
-            "remediation: the viewer was edited — update export_artifact.py's SCRIPT_BLOCK_RE to match.",
+            "error: viewer/index.html has no data-loading <script> block and no module <script>.\n"
+            "remediation: the viewer was edited. Update SCRIPT_BLOCK_RE or MODULE_SCRIPT_RE "
+            "in export_artifact.py to match it.",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -493,8 +494,19 @@ window.ODYSSEY_ASSETS = {json.dumps(assets_map, ensure_ascii=False)};
 window.ODYSSEY_AUDIO = {json.dumps(audio_map, ensure_ascii=False)};
 </script>
 """
-    html = replace_span(html, old_block.start(), old_block.end(), inline_data)
+    if old_block:
+        html = replace_span(html, old_block.start(), old_block.end(), inline_data)
+    else:
+        # The React viewer loads its data files on demand. It reads each global
+        # first, so data set before its module script stops each fetch.
+        html = insert_before_first_script(html, inline_data)
     return html
+
+
+def insert_before_first_script(html: str, tag: str) -> str:
+    """Insert tag before the viewer's module <script>. The caller checks that it exists."""
+    match = MODULE_SCRIPT_RE.search(html)
+    return html[: match.start()] + tag + html[match.start() :]
 
 
 def render_for_pr(
