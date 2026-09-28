@@ -376,8 +376,8 @@ export const PROGRAM_KEYS = [
 ] as const;
 
 /**
- * The Plan row follows the five. It shows only for a work with a plan directory, so it
- * is kept apart from the list every work renders.
+ * The Plan row follows the five. It always shows. For a work with no plan directory, it
+ * is disabled with the reason "no plan", so it is kept apart from the list of five.
  */
 export const PLAN_KEY = "plan" as const;
 const BUILD_ROW_KEYS = [...PROGRAM_KEYS, PLAN_KEY];
