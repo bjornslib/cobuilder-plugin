@@ -1,0 +1,24 @@
+sequenceDiagram
+    title Beads storage for CoBuilder — level 2: a slice lands
+
+    actor Engineer
+    participant impl as implement session
+    participant bd as bd 1.3.0
+    participant fs as docs/ + .cobuilder/
+    participant idx as build_index.py
+    participant gh as GitHub
+
+    impl->>bd: bd ready
+    bd-->>impl: slice n is next (ladder projection)
+    impl->>fs: append attempt evidence file
+    impl->>bd: bd update slice --metadata @envelope (attempts+1)
+    impl->>bd: bd close slice --reason "ends_with verified"
+    bd-->>impl: slice n+1 unblocked
+    impl->>gh: open pull request (epic branch)
+    impl->>bd: bd gate create "Merge PR" --type human --blocks epic
+    Engineer->>gh: merge the pull request
+    impl->>bd: bd gate resolve gate
+    impl->>bd: bd close epic --reason merged
+    idx->>bd: bd list --json
+    idx->>fs: walk unchanged sources
+    idx-->>idx: write data/index.json (same shape)
