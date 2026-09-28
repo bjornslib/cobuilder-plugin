@@ -1,0 +1,18 @@
+flowchart TB
+    subgraph WorkDrawer[work-drawer-deck]
+        Index[loadIndex → designRowsOf] --> Rules
+        subgraph Rules[pure rules · unit-tested]
+            LanesRule[lane rule: 5 lanes from stage]
+            Exclude[exclusion rule: designs only]
+            Match[search predicate]
+            Single[single-result rule]
+        end
+        Rules --> Board[DrawerBody]
+        Board --> FilterStrip[State filter chips · ←/→ steps]
+        Board --> DeckRows[Deck rows · ↑/↓ walks, Enter reads tall]
+        Board --> Pane[DetailPane · follows the walk]
+        Pane --> Records[loadDesigns → recordVerdicts · six record marks]
+        Pane --> EpicState[resolvedJoinsOf epicState · refined, never the placeholder]
+        Pane --> OpenBtn[Open work item → #/<id>/build]
+    end
+    Vaul[vaul Drawer · snap 0.6 / 0.95] --> Board

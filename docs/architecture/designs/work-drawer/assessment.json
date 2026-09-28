@@ -1,0 +1,34 @@
+{
+  "stage": "decided",
+  "verdict": "approved",
+  "risk_tier": "low",
+  "regret_risk": "low",
+  "summary": "The Work board becomes a drawer over the shell, prototyped twice against real bundle data and refined twice under the engineer's review before this record was authored. The arrangement (day deck: collapsible lanes, state filter, incremental search, detail pane that follows the walk) is the measured winner of the comparison with the column arrangement (prototype A), which is kept on disk as the comparison. The seven refinements in this design are the engineer's own review comments, carried verbatim into done_when. Risk is low because the shipped board is untouched: the drawer lives beside it as a prototype surface, and the port that replaces the board route is a separate, later epic under the same design.",
+  "constraint_introduced": "The board's row vocabulary is designs only. Any surface that wants to list decision records or unfinished pull requests must say so in its own words and cannot inherit the Work board's rows, because the exclusion rule is the board's rule and not the index's.",
+  "findings": [
+    {
+      "kind": "gate",
+      "name": "Challenge gate",
+      "detail": "Three arrangements were challenged against the two prototypes. The full-page board with corrected filters was rejected because the round trip was the defect the engineer named first. A command palette was rejected because it answers find and not survey; its speed survives in the drawer's keyboard walk. A modal at fixed height was rejected because the snap is the feature the prototypes measured. Prototype A's columns were rejected for the drawer's height budget: five columns behind a sideways scroll need a second scrollbar per lane body, which the day deck avoids with one vertical read.",
+      "evidence": "intent.json alternatives, and the two prototype directories kept as the comparison"
+    },
+    {
+      "kind": "conformance",
+      "name": "C1 — no join resolves outside the data module",
+      "detail": "The deck's first draft read the refined epic state with a fallback to the epic entity's own placeholder field. The repository's conformance test rejected the draft; the rule was rerouted through the data layer's own predicate, and the placeholder is never read at a call site.",
+      "evidence": "plugins/artifact/viewer/src/data/bundle.test.tsx, C1 criterion"
+    },
+    {
+      "kind": "interaction",
+      "name": "Escape is Radix's, not the deck's",
+      "detail": "Radix's dismissable layer listens for Escape in the capture phase, so a press that means 'close the detail' cannot be intercepted from a bubble-phase handler. The contract is written to what the machine does: Escape closes the drawer, Enter toggles the detail, and both the hint line and the pane's Close button state exactly that.",
+      "evidence": "plugins/artifact/viewer/node_modules/@radix-ui/react-dismissable-layer, capture-phase keydown"
+    },
+    {
+      "kind": "verified",
+      "name": "The refined controls were read in Chrome with real key events",
+      "detail": "Filter chip selection, fold and unfold with counts, search refinement with amber hit marks, the arrow walk over rows, Enter reading a record tall at the 0.95 snap, and the single-result auto-read were each exercised against the running dev server on the real bundle (19 designs, 85 epics, 17 pull requests, 33 decision records).",
+      "evidence": "docs/plans/work-drawer/00-status.md verification record"
+    }
+  ]
+}

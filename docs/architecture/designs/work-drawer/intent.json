@@ -1,0 +1,51 @@
+{
+  "captured": "2026-09-28",
+  "source": "design",
+  "design_name": "work-drawer",
+  "authorship": "agent-assisted",
+  "problem": "The viewer's Build and Review surfaces read well, and the Work board does not. The board is a page the reader must travel to: it replaces the surface they were reading, it lists thirty-one rows that mix designs with pull requests the designs carry, its two filter groups (status tabs and kind tabs) offer statuses no reader asked for — including unfinished pull requests, which are a change in flight rather than work — and it holds no search at all. A reader who wants to answer 'what should I work on next' pays a navigation round trip for every item they inspect.",
+  "why_now": "The day-deck drawer prototype (plugins/artifact/viewer/src/variations/work-drawer-deck) was built against the repository's real record index, refined twice under the engineer's review, and approved: the engineer asked for it to be designed and implemented end to end on a branch, with seven named refinements that this design carries as its done_when criteria. The prototype-first gate (cobuilder-viewer goal.json, epics E4 to E5) is satisfied for this surface; building without the design record would repeat the react-viewer pattern of an approved prototype with no authored reason behind it.",
+  "approach": "The Work board becomes a vaul bottom drawer (the engine under shadcn's Drawer) opened by the shell's own Work icon, at two snap points — 0.6, where it opens, and 0.95, where the detail pane reads tall. The board inside is the day-deck arrangement: five lanes as collapsible sections in one vertical read; a state filter strip above them whose chips the left and right arrow keys step; an incremental search whose match is marked on the row; and a detail pane beside the board that follows the selection. The exclusion rule is the correction the engineer asked for: a decision record (ADR) is settled and read in the Architecture level, and a pull request that is not merged is a change in flight, so neither is work; both are held out, and the drawer states the counts it held out. A search that resolves to one work item selects it, because a reader who typed a name and gets one item should not spend a second press reading it. Data reaches the drawer through the existing typed data layer and its joins — the drawer resolves no join and reads no placeholder field of its own, per the C1 conformance criterion.",
+  "alternatives": [
+    {
+      "option": "Keep the full-page board and add the search and corrected filters to it",
+      "rejected_because": "It fixes the filters and fixes nothing about the round trip. The engineer approved the drawer arrangement against two working prototypes; the board's defect was never its filter row alone."
+    },
+    {
+      "option": "A command palette (command-K) over the shell",
+      "rejected_because": "The palette answers 'find this item' and cannot answer 'survey the work'. The lanes are the survey: they state how much waits on a decision, how much is ready, and how much shipped, at a glance. The keyboard walk in the drawer keeps the palette's speed where it is worth keeping."
+    },
+    {
+      "option": "A modal dialog rather than a drawer, at the same 60 percent height",
+      "rejected_because": "The drawer's drag is the feature: one reader opens at 0.6, another drags to 0.95 for the whole board, and neither re-learns anything, because the snap is the only difference between the two states. A modal opens at one height or two code paths."
+    },
+    {
+      "option": "Prototype A's five lane columns inside the drawer",
+      "rejected_because": "Built and compared: five columns behind a sideways scroll spend the drawer's width on chrome and its height on nothing, and every lane's body needs a second scrollbar. The day deck's vertical read fits the 0.6 snap with one scroll, and the fold plus the state filter answer the depth."
+    }
+  ],
+  "out_of_scope": [
+    "The port that replaces the shipped shell's Board route and BoardRowLink with the drawer. It is this design's next epic, so the shipped board never regresses while the drawer is under review.",
+    "Standalone pull request rows in the deck. Prototype A carries them in its Shipped lane; the deck states in its footer that A is the answer to that row, and the comparison stands until the port decides it.",
+    "Multi-pull-request mode and the open-set surface. That is cobuilder-viewer E11 to E13 and stays deferred there.",
+    "The FlightDeck and Reference surfaces."
+  ],
+  "risks": [
+    "The drawer at 0.6 with the detail pane open costs the board forty-two percent of its width. The pane is a preview: its rows keep the one-line shape, and the reader reads the record tall only by pressing Enter, which is a decision and not an accident.",
+    "Radix's dismissable layer listens for Escape in the capture phase, so Escape closes the whole drawer even while the detail pane holds a row. The contract says so — Escape closes the deck, Enter closes the detail — and the hint line and the pane's own button state exactly that.",
+    "The exclusion rule is a UI rule, not an index field. If the index later records a state vocabulary where 'merged' is not the only finished pull-request state, the predicate in the viewer's data layer must change with it, or the rule holds out finished work."
+  ],
+  "testing": [
+    "Every rule the drawer states is pure and unit-tested beside its data: the lane rule, the exclusion counts, the search predicate, and the single-result rule.",
+    "The keyboard contract is read in Chrome with real key events: slash focuses the field, the arrows step the filter and walk the rows, Enter reads a record tall and drops it back, Escape closes the drawer.",
+    "The repository's gates hold: tsc --noEmit, vitest (181 passing, none skipped), and the production build, which must still emit the committed viewer/index.html unchanged in shape."
+  ],
+  "reviewer_focus": [
+    "Whether a search that resolves to one item auto-selecting it surprises a reader who then keeps typing. The rule is: the selection follows the result set, and a second character that widens the result past one clears it.",
+    "Whether typing in the search resetting the state filter to All is the right reset. The engineer's words: typing anything into the search must reset the filter to All. The rationale is recorded in narrative.json's problem_solution level."
+  ],
+  "unknowns": [
+    "Whether the detail pane should keep following the walk once the drawer ports into the shipped shell's rail, where the Work icon is a row and not a top-left button. The pane-follows-walk behaviour is measured here first.",
+    "Whether standalone merged pull requests earn rows at the port, or whether prototype A's answer is the one the engineer takes."
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "name": "work-drawer",
+  "title": "The Work board is a drawer over the shell",
+  "adr": "ADR-0034",
+  "adrs": [
+    "ADR-0034",
+    "ADR-0023",
+    "ADR-0027",
+    "ADR-0018",
+    "ADR-0031"
+  ],
+  "created": "2026-09-28",
+  "outcome": "The Work board stops being a page the reader travels to and becomes a drawer over whatever Build or Review surface they were reading: one press on the Work icon opens a vaul drawer at sixty percent of the viewport, holding the bundle's work on a kanban of five collapsible lanes — needs a decision, ready to build, in review, shipped, superseded — behind a state filter and an incremental search. Decision records and unfinished pull requests are held out of the board by rule. A search that resolves to exactly one work item reads that item's record in the detail pane without a second press, and the arrow keys walk both the rows and the filter strip.",
+  "done_when": [
+    "the shipped shell's Work icon opens the drawer over the surface the reader is on, and closing it leaves that surface scrolled and focused as it was",
+    "the drawer holds five lanes whose headers fold and unfold with shadcn Collapsible, and a folded lane leaves the keyboard walk and the counts",
+    "the state filter strip and the search combine with AND, and typing any character into the search resets the filter to All",
+    "pressing slash anywhere in the open drawer moves the cursor into the search field, and the arrow keys step the filter chips left and right when the board holds the focus",
+    "a search that resolves to exactly one work item selects it and reads its record in the detail pane with no second press",
+    "the board lists designs only: every decision record and every pull request that is not merged is held out by rule, and a merged pull request no design carries never earns a row of its own",
+    "the detail pane names its buttons Open work item and Close, and its epic states read the refined epic_status join through the data layer and never the placeholder field"
+  ],
+  "abort_if": [
+    "the drawer's 60 percent height cannot hold the four live lanes' rows without a second scrollbar at 1280 by 800, because a departure board that needs two scrolls is the full-page board's defect again",
+    "the detail pane beside the board leaves the rows unreadable below 900 pixels, because the pane is a preview and must never cost the board its read"
+  ],
+  "min_work": {
+    "derived_from": "docs/architecture/designs/cobuilder-viewer/goal.json E5 work-surface, and the two drawer prototypes at plugins/artifact/viewer/src/variations/work-drawer and work-drawer-deck",
+    "alternatives_explored": 3,
+    "challenge_stage_run": true,
+    "boundary_rules_checked": true,
+    "note": "Two prototypes were built first, against the repository's real record index, and prototype B (the day deck) was refined twice under the engineer's review. The refinements are this design's requirements: they are listed in done_when verbatim."
+  },
+  "epics": [
+    {
+      "id": "E1",
+      "slug": "work-drawer",
+      "branch": "design/work-drawer",
+      "pr": null,
+      "state": "planned",
+      "outcome": "the day-deck drawer holds the Work board: five collapsible lanes, a state filter that the arrow keys step, an incremental search that resets the filter and auto-reads a single result, and a detail pane that follows the walk",
+      "note": "One pull request. The engineer chose one pull request for the design, so the epic carries the branch alone. The prototypes stay under src/variations/ as the reference arrangement while the drawer is the prototype surface; the port that replaces shell/Board.tsx's full-page board is this design's next epic and is deliberately not in this one, so the shipped board never regresses while the drawer is under review."
+    }
+  ],
+  "limits": { "warn_after_rounds": 2, "cutoff_rounds": 4 },
+  "stage": "decided",
+  "supersedes": [],
+  "rounds": [
+    {
+      "n": 1,
+      "changed": false,
+      "feedback_class": "approved"
+    }
+  ]
+}

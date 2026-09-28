@@ -1,0 +1,12 @@
+flowchart TB
+    subgraph Files[The drawer's files]
+        deck[deck.ts — LANES, laneRows, matches, highlight]
+        index[index.tsx — Backdrop, DrawerBody, keyboard contract]
+        detail[detail.tsx — DetailPane, record marks, useDesignRecords]
+        dev[dev.html / dev.tsx — the dev-only entry]
+    end
+    BundleData[data/bundle.ts] -->|DesignRow[] · entitiesOf · loadDesigns| deck
+    DataJoins[data/joins.ts] -->|resolvedJoinsOf epicState| detail
+    ShellReadiness[shell/readiness.ts] -->|recordVerdicts · RECORD_KINDS| detail
+    Collap[ui/collapsible.tsx] -->|lane folds| index
+    VaulPkg[vaul] -->|Drawer.Root snap 0.6/0.95| index
