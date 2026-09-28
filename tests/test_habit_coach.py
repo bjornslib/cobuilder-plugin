@@ -57,6 +57,15 @@ class FakeRunner:
         return self.result
 
 
+class _FakeCompleted:
+    """Stands in for subprocess.CompletedProcess in tests."""
+
+    def __init__(self, returncode: int, stdout: str, stderr: str):
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+
+
 # ---------------------------------------------------------------------------
 # hooks.json
 # ---------------------------------------------------------------------------
@@ -310,6 +319,124 @@ def test_main_green_exit_one_context_has_path_header_then_newline_then_runner_te
     parsed = json.loads(stdout.getvalue().strip())
     context = parsed["hookSpecificOutput"]["additionalContext"]
     assert f"habit-hooks coaching for {path}:\n{runner_text}" in context
+
+
+# ---------------------------------------------------------------------------
+# habit_coach.py: automatic install of habit-hooks
+# ---------------------------------------------------------------------------
+
+
+def test_main_green_exit_127_with_fake_runner_does_not_attempt_install(habit_coach, monkeypatch):
+    calls: list[tuple] = []
+
+    def fake_install() -> tuple[int, str]:
+        calls.append(())
+        return 0, "installed"
+
+    monkeypatch.setattr(habit_coach, "install_habit_hooks", fake_install)
+    runner = FakeRunner((127, "habit-hooks is not installed."))
+    stdin = io.StringIO(json.dumps(_green_payload("/x/a.py")))
+    stdout = io.StringIO()
+
+    rc = habit_coach.main(stdin, stdout, runner=runner)
+
+    assert rc == 0
+    assert calls == [], "runner seam must bypass the installer entirely"
+    context = json.loads(stdout.getvalue().strip())["hookSpecificOutput"]["additionalContext"]
+    assert 'uv tool install "habit-hooks[python]"' in context
+
+
+def test_install_habit_hooks_runs_uv_tool_install(habit_coach, monkeypatch):
+    recorded: list[list[str]] = []
+
+    def fake_run(*args, **kwargs):
+        recorded.append(list(args[0]))
+        return _FakeCompleted(0, "Installed 1 package", "")
+
+    monkeypatch.setattr(habit_coach.subprocess, "run", fake_run)
+
+    code, text = habit_coach.install_habit_hooks()
+
+    assert (code, text) == (0, "Installed 1 package")
+    assert recorded == [["uv", "tool", "install", "habit-hooks[python]"]]
+
+
+def test_install_habit_hooks_returns_output_and_code(habit_coach, monkeypatch):
+    def fake_run(*args, **kwargs):
+        return _FakeCompleted(1, "stdout line", "stderr line")
+
+    monkeypatch.setattr(habit_coach.subprocess, "run", fake_run)
+
+    code, text = habit_coach.install_habit_hooks()
+
+    assert code == 1
+    assert "stdout line" in text
+    assert "stderr line" in text
+
+
+def test_install_habit_hooks_returns_127_when_uv_is_absent(habit_coach, monkeypatch):
+    def fake_run(*args, **kwargs):
+        raise FileNotFoundError("uv")
+
+    monkeypatch.setattr(habit_coach.subprocess, "run", fake_run)
+
+    code, text = habit_coach.install_habit_hooks()
+
+    assert code == 127
+    assert text == "uv is not installed."
+
+
+def test_run_habit_hooks_installs_and_retries_on_missing_binary(habit_coach, monkeypatch):
+    runs: list[list[str]] = []
+
+    def fake_run(*args, **kwargs):
+        runs.append(list(args[0]))
+        if runs and runs[0][0] == "habit-hooks" and len(runs) == 1:
+            raise FileNotFoundError("habit-hooks")
+        if runs[-1][0] == "uv":
+            raise AssertionError("installer should be monkeypatched, not real uv")
+        return _FakeCompleted(0, "clean write", "")
+
+    monkeypatch.setattr(habit_coach.subprocess, "run", fake_run)
+    monkeypatch.setattr(habit_coach, "install_habit_hooks", lambda: (0, "installed"))
+
+    code, text = habit_coach.run_habit_hooks("/x/a.py")
+
+    assert code == 0
+    assert text == "clean write"
+    assert [r[0] for r in runs] == ["habit-hooks", "habit-hooks"]
+
+
+def test_run_habit_hooks_returns_127_when_install_fails(habit_coach, monkeypatch):
+    install_calls: list[int] = []
+
+    def fake_run(*args, **kwargs):
+        raise FileNotFoundError("habit-hooks")
+
+    def fake_install():
+        install_calls.append(1)
+        return 1, "boom"
+
+    monkeypatch.setattr(habit_coach.subprocess, "run", fake_run)
+    monkeypatch.setattr(habit_coach, "install_habit_hooks", fake_install)
+
+    code, text = habit_coach.run_habit_hooks("/x/a.py")
+
+    assert code == 127
+    assert text == "habit-hooks is not installed."
+    assert install_calls == [1]
+
+
+def test_run_habit_hooks_returns_127_when_install_succeeds_but_binary_still_missing(
+    habit_coach, monkeypatch
+):
+    monkeypatch.setattr(habit_coach.subprocess, "run", lambda *a, **k: (_ for _ in ()).throw(FileNotFoundError()))
+    monkeypatch.setattr(habit_coach, "install_habit_hooks", lambda: (0, "installed"))
+
+    code, text = habit_coach.run_habit_hooks("/x/a.py")
+
+    assert code == 127
+    assert text == "habit-hooks is not installed."
 
 
 # ---------------------------------------------------------------------------

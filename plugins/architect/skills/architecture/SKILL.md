@@ -221,10 +221,14 @@ that join here.
         installed version older than the skill, does not find it. The
         path always resolves, because `mermaid` is a shared skill, and
         the `shared` symlink is dereferenced into the plugin's own cache
-        at install time.
+        at install time. Outside Claude Code (an OMP or pi session), the
+        skill lives at the repo's `.agents/skills/mermaid/` instead, and
+        the consumer session reads it from there.
 
       - then tell it to read
-        `${CLAUDE_PLUGIN_ROOT}/shared/skills/mermaid/references/diagram-mode.md`.
+        `${CLAUDE_PLUGIN_ROOT}/shared/skills/mermaid/references/diagram-mode.md`
+        (`.agents/skills/mermaid/references/diagram-mode.md` in a repo
+        that carries the copied skill).
         This file lives in the mermaid skill because both this pillar and
         odyssey need it, and mermaid is already vendored into every
         plugin per ADR-0017.

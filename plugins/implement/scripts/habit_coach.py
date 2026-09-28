@@ -11,6 +11,12 @@ runs habit-hooks against that file and reports the result as additional
 context for the agent. It never blocks a write, because PostToolUse cannot
 block, and a coaching tool must not stop a write anyway.
 
+When the habit-hooks binary is missing, the script attempts a one-time
+install with `uv tool install "habit-hooks[python]"`. A successful install
+is not recorded anywhere. The next hook invocation simply finds the binary
+on PATH. A failed install does not block anything: the hook still reports
+exit code 127 with the install notice.
+
 habit-hooks is MIT licensed, by Ivett Ordog and contributors.
 See https://github.com/habit-hooks/habit-hooks.
 """
@@ -35,11 +41,11 @@ def target_path(payload: dict) -> str | None:
     return tool_input.get("file_path")
 
 
-def run_habit_hooks(path: str) -> tuple[int, str]:
-    """Run habit-hooks against path and return its exit code and output.
+def _run_habit_hooks_once(path: str) -> tuple[int, str]:
+    """Run habit-hooks against path once and return its exit code and output.
 
-    A missing habit-hooks binary returns exit code 127 with a short
-    message, instead of raising FileNotFoundError.
+    A missing habit-hooks binary raises FileNotFoundError, which the caller
+    handles. A timeout returns exit code 2.
     """
     try:
         result = subprocess.run(
@@ -49,10 +55,46 @@ def run_habit_hooks(path: str) -> tuple[int, str]:
             timeout=30,
         )
         return result.returncode, result.stdout + result.stderr
-    except FileNotFoundError:
-        return 127, "habit-hooks is not installed."
     except subprocess.TimeoutExpired:
         return 2, "habit-hooks timed out."
+
+
+def install_habit_hooks() -> tuple[int, str]:
+    """Install habit-hooks with uv tool and return the exit code and output."""
+    try:
+        result = subprocess.run(
+            ["uv", "tool", "install", "habit-hooks[python]"],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        return result.returncode, result.stdout + result.stderr
+    except FileNotFoundError:
+        return 127, "uv is not installed."
+
+
+def run_habit_hooks(path: str) -> tuple[int, str]:
+    """Run habit-hooks against path and return its exit code and output.
+
+    A missing habit-hooks binary triggers one attempt to install it with
+    `uv tool install "habit-hooks[python]"`. When the install succeeds, the
+    hook runs habit-hooks again against the same path. When the install
+    fails, the function returns exit code 127 with a short message, so the
+    install notice in main() still fires.
+    """
+    try:
+        return _run_habit_hooks_once(path)
+    except FileNotFoundError:
+        pass
+
+    install_code, _install_text = install_habit_hooks()
+    if install_code == 0:
+        try:
+            return _run_habit_hooks_once(path)
+        except FileNotFoundError:
+            return 127, "habit-hooks is not installed."
+
+    return 127, "habit-hooks is not installed."
 
 
 def render(code: int, text: str) -> dict | None:
