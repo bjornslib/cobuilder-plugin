@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Export this repo's skills as portable copies for coding harnesses that
-# do not support Claude Code plugins: no Skill() tool, no slash commands,
-# no MCP tools. Copies each plugin's skills/ directory as-is, skips
-# commands/ (slash-command shims with no equivalent elsewhere), and
+# Export this repo's skills and agents as portable copies for coding
+# harnesses that do not support Claude Code plugins: no Skill() tool, no
+# slash commands, no MCP tools. Copies each plugin's skills/ directory
+# as-is, copies each plugin's agents/*.md into a flat agents/ directory,
+# skips commands/ (slash-command shims with no equivalent elsewhere), and
 # stamps each copy with its source plugin, version, and commit so a stale
 # copy is visible on the next export.
 #
@@ -12,6 +13,9 @@
 # Examples:
 #   scripts/export-agent-skills.sh --target /path/to/other-repo/.agents/skills
 #   scripts/export-agent-skills.sh --target /path/to/other-repo/.agents/skills --plugin architect
+#
+# Each selected plugin's agents/ markdown files land in
+# <target>/agents/<agent-name>.md, stamped the same way skills are.
 
 set -euo pipefail
 
@@ -107,5 +111,47 @@ for plugin_dir in "$REPO_ROOT"/plugins/*/; do
     fi
 
     echo "exported $skill_name <- ${plugin_name}@${plugin_version}"
+  done
+
+  for agent_md in "$plugin_dir"agents/*.md; do
+    [[ -f "$agent_md" ]] || continue
+    agent_name="$(basename "$agent_md" .md)"
+    dest="$TARGET/agents/$agent_name.md"
+
+    if [[ -f "$dest" ]] && ! grep -q "^source: " "$dest"; then
+      echo "skip agent $agent_name: $dest exists and was not produced by this script (no 'source:' stamp) -- remove it manually first" >&2
+      continue
+    fi
+
+    mkdir -p "$TARGET/agents"
+    cp "$agent_md" "$dest"
+
+    claude_only_count="$( (grep -Eo 'CLAUDE_PLUGIN_ROOT|mcp__[A-Za-z0-9_]+' "$dest" || true) | wc -l | tr -d ' ')"
+    source_line="source: ${plugin_name}@${plugin_version} (${SHA})"
+
+    if [[ "$claude_only_count" -gt 0 ]]; then
+      callout="> **Claude Code only:** this copy mentions \`CLAUDE_PLUGIN_ROOT\` paths or \`mcp__\` tools in ${claude_only_count} place(s). Those do not resolve outside Claude Code -- grep for them before you rely on this content."
+    else
+      callout=""
+    fi
+
+    awk -v src="$source_line" -v callout="$callout" '
+      BEGIN { c = 0 }
+      {
+        print
+        if ($0 == "---") {
+          c++
+          if (c == 1) {
+            print src
+          } else if (c == 2 && callout != "") {
+            print ""
+            print callout
+          }
+        }
+      }
+    ' "$dest" > "$dest.tmp"
+    mv "$dest.tmp" "$dest"
+
+    echo "exported agent $agent_name <- ${plugin_name}@${plugin_version}"
   done
 done
