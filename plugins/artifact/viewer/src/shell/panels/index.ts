@@ -26,7 +26,12 @@ export {
   DistrictsAndAlternativesSection,
 } from "./Architecture";
 
-export { EpicGroupSection, RubricsSection, UnresolvedSlicesSection } from "./Build";
+export {
+  EpicGroupSection,
+  PlanSection,
+  RubricsSection,
+  UnresolvedSlicesSection,
+} from "./Build";
 
 export { PullRequestsSection } from "./PullRequests";
 

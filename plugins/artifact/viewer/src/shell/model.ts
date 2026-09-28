@@ -374,7 +374,14 @@ export const PROGRAM_KEYS = [
   "epics",
   "rubrics",
 ] as const;
-export type ProgramKey = (typeof PROGRAM_KEYS)[number];
+
+/**
+ * The Plan row follows the five. It shows only for a work with a plan directory, so it
+ * is kept apart from the list every work renders.
+ */
+export const PLAN_KEY = "plan" as const;
+const BUILD_ROW_KEYS = [...PROGRAM_KEYS, PLAN_KEY];
+export type ProgramKey = (typeof PROGRAM_KEYS)[number] | typeof PLAN_KEY;
 
 /**
  * One name for one row, so the rail and the section it opens read the same word.
@@ -389,6 +396,7 @@ const PROGRAM_LABEL: Record<ProgramKey, string> = {
   architecture: SECTION_LABEL.architecture,
   epics: "Epics",
   rubrics: "Rubrics",
+  plan: "Plan",
 };
 
 /**
@@ -447,6 +455,7 @@ export interface RailGroup {
 export function programHref(workId: string, section: ProgramKey): string {
   if (section === "epics") return routeHref(workId, "build", "epics");
   if (section === "rubrics") return routeHref(workId, "build", "rubrics");
+  if (section === "plan") return routeHref(workId, "build", "plan");
   return routeHref(workId, section);
 }
 
@@ -595,7 +604,7 @@ export function railGroups(source: RailSource): RailGroup[] {
     return changeLevels.find((level) => level.key === key) ?? null;
   };
 
-  const programRows: RailRow[] = PROGRAM_KEYS.map((section) => {
+  const programRows: RailRow[] = BUILD_ROW_KEYS.map((section) => {
     const row: RailRow = {
       key: `program-${section}`,
       label: PROGRAM_LABEL[section],
@@ -608,6 +617,10 @@ export function railGroups(source: RailSource): RailGroup[] {
 
     /* Epics and Rubrics are sections of the work, and the work always states both. */
     if (section === "rubrics") return row;
+    /* A work with no plan directory keeps the row, disabled, so the gap reads in place. */
+    if (section === "plan") {
+      return work.hasPlan ? row : { ...row, href: "#", available: false, absent: ["no plan"] };
+    }
     if (section === "epics") {
       return gates?.build
         ? row
@@ -682,6 +695,11 @@ function programCount(work: WorkItem, gates: Gates | null, section: ProgramKey):
   const record = work.record;
 
   if (section === "epics") return `${work.epics.length} epics`;
+  if (section === "plan") {
+    const docs = work.planDocs;
+    const held = [docs.product, docs.architecture, docs.program].filter(Boolean).length;
+    return `${held} of 3 documents`;
+  }
   if (section === "rubrics") {
     return gates?.gateSteps && gates.gateSteps.length > 0
       ? `${gates.gateSteps.length} steps`

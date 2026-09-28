@@ -705,6 +705,8 @@ function emptyEntities(): Entities {
     pull_request: [],
     slice: [],
     publication: [],
+    product_doc: [],
+    architecture_doc: [],
     program_design: [],
     epic_design: [],
     interaction_design: [],

@@ -524,7 +524,7 @@ describe("Shell", () => {
  * else. The pager's own two keys keep working beside these two.
  */
 describe("The rail's arrow keys", () => {
-  it("renders the ten rows in the rail's own order", async () => {
+  it("renders the eleven rows in the rail's own order", async () => {
     at("#/cobuilder-viewer/intent");
     render(<Shell />);
     await waitFor(() => expect(levelHeading()).toBe("Intent"));
@@ -541,6 +541,7 @@ describe("The rail's arrow keys", () => {
       "Architecture, the program account · 3 records",
       "Epics, the program account · 1 epics",
       "Rubrics, the program account · none",
+      "Plan",
       "Intent, the change account",
       "Problem & Solution, the change account",
       "Architecture, the change account",
@@ -553,6 +554,7 @@ describe("The rail's arrow keys", () => {
       "#/cobuilder-viewer/architecture",
       "#/cobuilder-viewer/build/epics",
       "#/cobuilder-viewer/build/rubrics",
+      "#",
       "#/cobuilder-viewer/pull-requests/11",
       "#/cobuilder-viewer/pull-requests/11/problem-and-solution",
       "#/cobuilder-viewer/pull-requests/11/architecture",
@@ -579,12 +581,17 @@ describe("The rail's arrow keys", () => {
       adds it back the way `App.tsx`'s arrow walk adds it. A second copy of the order is
       what lost every row below Architecture.
     */
-    expect([BOARD_ROW.label, ...entries.map(nameOf)]).toEqual(railRows().map(labelOf));
+    /*
+      `entries` holds the rows a press can reach, so the rendered side drops the disabled
+      rows. The "eleven rows" case holds the disabled Plan row in place.
+    */
+    const reachable = railRows().filter((row) => !disabledOf(row));
+    expect([BOARD_ROW.label, ...entries.map(nameOf)]).toEqual(reachable.map(labelOf));
     expect([BOARD_ROW.href, ...entries.map((entry) => entry.href)]).toEqual(
-      railRows().map(hrefOf),
+      reachable.map(hrefOf),
     );
     expect([BOARD_ROW.available, ...entries.map((entry) => entry.available)]).toEqual(
-      railRows().map((row) => !disabledOf(row)),
+      reachable.map((row) => !disabledOf(row)),
     );
   });
 
@@ -597,7 +604,7 @@ describe("The rail's arrow keys", () => {
       Intent is the second entry, so this walks from the third to the last. The engineer's
       own case sits in here: from Architecture, the next press reaches Epics.
     */
-    for (const row of railRows().slice(2)) {
+    for (const row of railRows().slice(2).filter((one) => !disabledOf(one))) {
       press("ArrowDown");
       await waitFor(() => expect(window.location.hash).toBe(hrefOf(row)));
     }
@@ -608,7 +615,7 @@ describe("The rail's arrow keys", () => {
     render(<Shell />);
     await waitFor(() => expect(levelHeading()).toBe("Pull request 11"));
 
-    const rows = railRows();
+    const rows = railRows().filter((one) => !disabledOf(one));
     /* The last row is the change's File Diffs, so this walks back to the board row. */
     for (const row of rows.slice(0, rows.length - 1).reverse()) {
       press("ArrowUp");
@@ -699,10 +706,13 @@ describe("The rail's arrow keys", () => {
     render(<Shell />);
     await waitFor(() => expect(levelHeading()).toBe("Intent"));
 
-    /* This design holds `goal.json` alone, so two level rows read disabled. */
+    /*
+      This design holds `goal.json` alone, so two level rows read disabled. It holds no plan
+      document either, so the Plan row reads disabled too.
+    */
     const disabled = railRows().filter(disabledOf);
-    expect(disabled.map(labelOf)).toEqual(["Problem & Solution", "Architecture"]);
-    expect(disabled.map(hrefOf)).toEqual(["#", "#"]);
+    expect(disabled.map(labelOf)).toEqual(["Problem & Solution", "Architecture", "Plan"]);
+    expect(disabled.map(hrefOf)).toEqual(["#", "#", "#"]);
 
     /*
       The next row a press can reach is Epics, two rows below. Architecture is not a step:

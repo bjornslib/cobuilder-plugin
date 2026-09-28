@@ -130,6 +130,7 @@ import {
   ProblemSolutionSection,
   PullRequestsSection,
   RisksSection,
+  PlanSection,
   RubricsSection,
   ShippedSection,
   UnknownsSection,
@@ -736,7 +737,9 @@ export default function ShellApp() {
    * the layout it has always had: one panel, its own scroll. Only the epics sub-view
    * lays an epic per section on a track.
    */
-  const programPaged = isPaged(section) && !(section === "build" && route.sub === "rubrics");
+  const programPaged =
+    isPaged(section) &&
+    !(section === "build" && (route.sub === "rubrics" || route.sub === "plan"));
   /*
    * THE CHANGE'S ACCOUNT IS A PAGED SURFACE TOO. Its four rows page through the same
    * strip, stage, and pager the program's levels use, so the two accounts cannot disagree
@@ -1137,6 +1140,7 @@ export default function ShellApp() {
                     {section === "build" && route.sub === "rubrics" ? (
                       <RubricsSection work={work} gated={gates?.rubrics ?? false} />
                     ) : null}
+                    {section === "build" && route.sub === "plan" ? <PlanSection work={work} focus={route.subId} /> : null}
                     {section === "pull-requests" && !changeAccount ? (
                       <PullRequestsSection
                         work={work}

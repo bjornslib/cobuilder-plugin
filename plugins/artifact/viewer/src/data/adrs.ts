@@ -87,7 +87,10 @@ export type AdrRecords = Record<string, AdrRecord>;
 
 function isAdrRecords(value: unknown): value is AdrRecords {
   if (typeof value !== "object" || value === null) return false;
-  const first = Object.values(value as AdrRecords)[0];
+  const records = Object.values(value as AdrRecords);
+  /* A bundle with no decision assigns an empty map, and that is a real answer. */
+  if (records.length === 0) return true;
+  const first = records[0];
   return typeof first === "object" && first !== null && "title" in first;
 }
 

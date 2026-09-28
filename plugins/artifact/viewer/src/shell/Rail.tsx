@@ -43,7 +43,7 @@
  * ever opening, so the absent row owns its own frame.
  */
 
-import { ChevronDown, ClipboardCheck, FileText, LayoutGrid, ListTree, Network, Target, TriangleAlert } from "lucide-react";
+import { ChevronDown, ClipboardCheck, FileText, LayoutGrid, ListTree, Network, ScrollText, Target, TriangleAlert } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 
@@ -79,6 +79,7 @@ const ICONS: Record<string, LucideIcon> = {
   "program-architecture": Network,
   "program-epics": ListTree,
   "program-rubrics": ClipboardCheck,
+  "program-plan": ScrollText,
   "change-intent": Target,
   "change-problem-and-solution": TriangleAlert,
   "change-architecture": Network,
@@ -333,6 +334,7 @@ function RailRowItem({
               onClick={(event) => event.preventDefault()}
               className={cn(
                 ROW_FRAME,
+                row.key === "program-plan" && "min-h-11",
                 "flex cursor-not-allowed flex-col justify-center opacity-45",
                 "group-data-[collapsible=icon]:flex-row group-data-[collapsible=icon]:items-center",
               )}
@@ -376,7 +378,7 @@ function RailRowItem({
         asChild
         isActive={current}
         tooltip={row.count === "" ? row.label : `${row.label} · ${row.count}`}
-        className={ROW_FRAME}
+        className={cn(ROW_FRAME, row.key === "program-plan" && "min-h-11")}
       >
         <a
           href={row.href}

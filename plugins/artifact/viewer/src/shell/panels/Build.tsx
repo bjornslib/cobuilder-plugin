@@ -13,4 +13,9 @@
  * of the track.
  */
 
-export { EpicGroupSection, RubricsSection, UnresolvedSlicesSection } from "../sections";
+export {
+  EpicGroupSection,
+  PlanSection,
+  RubricsSection,
+  UnresolvedSlicesSection,
+} from "../sections";

@@ -22,7 +22,7 @@
  * `./panels/PullRequests.tsx`, and `./panels/Shipped.tsx`.
  */
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
 import type { LucideIcon } from "lucide-react";
 import {
@@ -46,6 +46,7 @@ import { cn } from "@/lib/utils";
 
 import type { WorkItem } from "./model";
 import { STAGE_PUBLICATIONS_DEPLOY_LEAD } from "./model";
+import { MarkdownBlock } from "./markdown";
 import { excerpt } from "./records";
 import type { SheetSubject } from "./Sheet";
 import {
@@ -381,6 +382,66 @@ export function RubricsSection({ work, gated }: { work: WorkItem; gated: boolean
         )}
       </Panel>
     </Bento>
+  );
+}
+
+/* ---------------------------------------------------------------------- Plan */
+
+const PLAN_BLOCKS = [
+  { kind: "product", gate: "Gate 1 — Product", noun: "product document" },
+  { kind: "architecture", gate: "Gate 2 — Architecture", noun: "architecture document" },
+  { kind: "program", gate: "Gate 3 — Program design", noun: "program design" },
+] as const;
+
+export function PlanSection({ work, focus = null }: { work: WorkItem; focus?: string | null }) {
+  /*
+   * A gate tail route names one block. The scroll runs on the next frame, after the
+   * shell's own scroll reset, and with no animation.
+   */
+  useEffect(() => {
+    if (!PLAN_BLOCKS.some((block) => block.kind === focus)) return;
+    const frame = requestAnimationFrame(() => {
+      document
+        .querySelector(`[data-plan-block="${focus}"]`)
+        ?.scrollIntoView({ behavior: "auto", block: "start" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [focus, work.id]);
+
+  return (
+    <div className="flex min-w-0 flex-col gap-6">
+      {PLAN_BLOCKS.map(({ kind, gate, noun }) => {
+        const doc = work.planDocs[kind];
+        return (
+          <section
+            key={kind}
+            id={`plan-${kind}`}
+            data-plan-block={kind}
+            className="flex min-w-0 flex-col gap-3 rounded-lg border border-line-soft bg-surface-2/50 px-4 py-3"
+          >
+            <p className="m-0 font-mono text-[12px] font-bold tracking-[0.06em] text-ink-mid uppercase">
+              {gate}
+            </p>
+            {doc ? (
+              <>
+                {doc.source_path ? (
+                  <p className="m-0 min-w-0 break-all font-mono text-[12px] text-ink-mid">
+                    {doc.source_path}
+                  </p>
+                ) : null}
+                <div className="min-w-0 overflow-x-auto">
+                  <MarkdownBlock markdown={doc.body_md} />
+                </div>
+              </>
+            ) : (
+              <p data-testid="plan-empty" className="m-0 font-serif text-[16px] text-ink-dim">
+                No {noun} for this work yet.
+              </p>
+            )}
+          </section>
+        );
+      })}
+    </div>
   );
 }
 

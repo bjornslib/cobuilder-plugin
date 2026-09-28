@@ -388,6 +388,21 @@ function promised(
     };
   }
   if (section === "rubrics") return { available: true, absent: [] };
+  if (section === "plan") {
+    /*
+     * PLAN IS BACKED BY A PLAN DOCUMENT. The fixture's index holds the plan documents a
+     * work carries, so any entry there that names this design is a plan.
+     */
+    const planned =
+      [
+        ...INDEX.entities.program_design,
+        ...INDEX.entities.epic_design,
+        ...INDEX.entities.interaction_design,
+        ...INDEX.entities.slice,
+      ].some((doc) => JSON.stringify(doc).includes(design.id)) ||
+      Object.keys(INDEX.joins.feature_gates).includes(design.id);
+    return { available: planned, absent: planned ? [] : ["no plan"] };
+  }
 
   /* A row this file has not promised must fail loudly rather than pass by default. */
   throw new Error(

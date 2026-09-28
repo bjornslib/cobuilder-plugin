@@ -26,6 +26,7 @@ import type {
   EpicDesignEntity,
   EpicEntity,
   GateStep,
+  ProgramDesignEntity,
   PublicationEntity,
   PullRequest,
   RecordIndex,
@@ -54,6 +55,13 @@ export interface BoundaryRule {
  * shows no pull request beside a decision, so a decision's carrier has nothing to
  * feed. Do not add it back without a surface that shows one.
  */
+/** A work's three plan documents, in gate order. */
+export interface PlanDocs {
+  product: ProgramDesignEntity | null;
+  architecture: ProgramDesignEntity | null;
+  program: ProgramDesignEntity | null;
+}
+
 export interface WorkItem {
   /** The design id. It is the route's `:workId`. */
   id: string;
@@ -91,6 +99,8 @@ export interface WorkItem {
    * whose plan is simply missing one epic's document. The two need different sentences.
    */
   hasPlan: boolean;
+  /** The Gates 1, 2, and 3 documents of this work's plan, or null for an absent one. */
+  planDocs: PlanDocs;
   gateSteps: GateStep[] | null;
   /** Every feature slug the gate join holds. The Rubrics panel names what it did not read. */
   gateSlugs: Record<string, GateStep[]>;
@@ -140,6 +150,8 @@ export function buildWorkItems(index: RecordIndex, records: Record<string, Desig
     ...Object.keys(joins.feature_gates),
     ...entities.epic_design.map((doc) => doc.feature_slug),
     ...entities.program_design.map((doc) => doc.feature_slug),
+    ...(entities.product_doc ?? []).map((doc) => doc.feature_slug),
+    ...(entities.architecture_doc ?? []).map((doc) => doc.feature_slug),
     ...(entities.interaction_design ?? []).map((doc) => doc.feature_slug),
   ]);
 
@@ -281,6 +293,12 @@ export function buildWorkItems(index: RecordIndex, records: Record<string, Desig
       planSlug: plan.slug,
       planSlugVia: plan.via,
       hasPlan: knownSlugs.has(plan.slug),
+      planDocs: {
+        product: (entities.product_doc ?? []).find((d) => d.feature_slug === plan.slug) ?? null,
+        architecture:
+          (entities.architecture_doc ?? []).find((d) => d.feature_slug === plan.slug) ?? null,
+        program: entities.program_design.find((d) => d.feature_slug === plan.slug) ?? null,
+      },
       gateSteps: joins.feature_gates[plan.slug] ?? null,
       gateSlugs: joins.feature_gates,
       epicDesigns,

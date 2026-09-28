@@ -651,6 +651,12 @@ def _extract_title(text: str, fallback: str) -> str:
     return fallback
 
 
+# Gate 1 and Gate 2 documents, projected with the program design's field set.
+PLAN_DOC_FILES = (("product", "01-product.md"), ("architecture", "02-architecture.md"))
+PLAN_DOC_GATES = {"product": 1, "architecture": 2, "program": 3}
+GATE_DOC_KINDS = {"1": "product", "2": "architecture", "3": "program"}
+
+
 def discover_plan_gate_docs(repo: Path) -> list[dict]:
     plans_dir = repo / PLANS_SOURCE_SUBDIR
     if not plans_dir.is_dir():
@@ -658,6 +664,23 @@ def discover_plan_gate_docs(repo: Path) -> list[dict]:
     found: list[dict] = []
     for slug_dir in sorted(p for p in plans_dir.iterdir() if p.is_dir()):
         feature_slug = slug_dir.name
+        for kind, filename in PLAN_DOC_FILES:
+            plan_path = slug_dir / filename
+            if not plan_path.is_file():
+                continue
+            try:
+                text = plan_path.read_text()
+            except OSError:
+                continue
+            found.append(
+                {
+                    "kind": kind,
+                    "feature_slug": feature_slug,
+                    "epic_id": None,
+                    "path": plan_path,
+                    "text": text,
+                }
+            )
         program_path = slug_dir / "03-program-design.md"
         if program_path.is_file():
             try:
@@ -695,12 +718,14 @@ def discover_plan_gate_docs(repo: Path) -> list[dict]:
     return found
 
 
-def project_program_design(feature_slug: str, path: Path, text: str, repo: Path) -> dict:
+def project_program_design(
+    feature_slug: str, path: Path, text: str, repo: Path, gate: int = 3
+) -> dict:
     rel = path.relative_to(repo) if path.is_relative_to(repo) else path
     source = {
         "id": feature_slug,
         "feature_slug": feature_slug,
-        "gate": 3,
+        "gate": gate,
         "title": _extract_title(text, feature_slug),
         "body_md": text,
         "approved_date": None,
@@ -723,11 +748,27 @@ def project_epic_design(epic_id: str, feature_slug: str, path: Path, text: str, 
     return project_fields(source, EPIC_DESIGN_FIELDS)
 
 
+def collect_plan_docs(repo: Path) -> dict[str, list[dict]]:
+    """Project 01-product.md and 02-architecture.md, keyed by entity kind."""
+    out: dict[str, list[dict]] = {"product_doc": [], "architecture_doc": []}
+    for doc in discover_plan_gate_docs(repo):
+        if doc["kind"] in ("product", "architecture"):
+            out[f"{doc['kind']}_doc"].append(
+                project_program_design(
+                    doc["feature_slug"], doc["path"], doc["text"], repo,
+                    gate=PLAN_DOC_GATES[doc["kind"]],
+                )
+            )
+    return out
+
+
 def collect_gate_docs(repo: Path) -> tuple[list[dict], list[dict], list[str]]:
     failures: list[str] = []
     program_entities: list[dict] = []
     epic_entities: list[dict] = []
     for doc in discover_plan_gate_docs(repo):
+        if doc["kind"] in ("product", "architecture"):
+            continue
         if doc["kind"] == "program":
             program_entities.append(
                 project_program_design(doc["feature_slug"], doc["path"], doc["text"], repo)
@@ -1179,8 +1220,10 @@ def resolve_feature_gates(repo: Path) -> dict[str, list[dict]]:
     gates_by_feature: dict[str, list[dict]] = {}
     if not plans_dir.is_dir():
         return gates_by_feature
-    program_design_features = {
-        doc["feature_slug"] for doc in discover_plan_gate_docs(repo) if doc["kind"] == "program"
+    plan_doc_features = {
+        (doc["kind"], doc["feature_slug"])
+        for doc in discover_plan_gate_docs(repo)
+        if doc["kind"] in PLAN_DOC_GATES
     }
     interaction_design_features = {
         path.parent.name for path in plans_dir.glob("*/interaction-design.md") if path.is_file()
@@ -1197,9 +1240,10 @@ def resolve_feature_gates(repo: Path) -> dict[str, list[dict]]:
                         "name": gm.group(2).strip(),
                         "state": gm.group(3).strip(),
                     }
-                    if gate["n"] == "3" and feature in program_design_features:
+                    doc_kind = GATE_DOC_KINDS.get(gate["n"])
+                    if doc_kind and (doc_kind, feature) in plan_doc_features:
                         gate["doc"] = feature
-                        gate["doc_kind"] = "program"
+                        gate["doc_kind"] = doc_kind
                     elif gate["n"] == "2b" and feature in interaction_design_features:
                         gate["doc"] = feature
                         gate["doc_kind"] = "interaction"
@@ -1362,6 +1406,7 @@ def build_index(repo: Path, bundle_dir: Path) -> tuple[dict, dict, dict, list[st
         "pull_request": pull_request_entities,
         "slice": slice_entities,
         "publication": publication_entities,
+        **collect_plan_docs(repo),
         "program_design": program_design_entities,
         "epic_design": epic_design_entities,
         "interaction_design": interaction_design_entities,

@@ -135,6 +135,8 @@ export interface ProgramDesignEntity {
   gate: number;
   title: string;
   body_md: string;
+  approved_date?: string | null;
+  source_path?: string;
 }
 
 export interface EpicDesignEntity {
@@ -172,6 +174,9 @@ export interface Entities {
   pull_request: PullRequest[];
   slice: SliceEntity[];
   publication: PublicationEntity[];
+  /** Gate 1 and Gate 2 documents. They carry the program design's field set. */
+  product_doc?: ProgramDesignEntity[];
+  architecture_doc?: ProgramDesignEntity[];
   program_design: ProgramDesignEntity[];
   epic_design: EpicDesignEntity[];
   interaction_design: InteractionDesignEntity[];
