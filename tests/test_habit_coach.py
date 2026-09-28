@@ -509,8 +509,8 @@ def test_readme_credits_habit_hooks():
 # ---------------------------------------------------------------------------
 
 
-def test_implement_plugin_json_version_is_0_3_0():
+def test_implement_plugin_json_version_is_0_3_1():
     plugin_json_path = REPO_ROOT / "plugins" / "implement" / ".claude-plugin" / "plugin.json"
     assert plugin_json_path.exists(), f"missing {plugin_json_path}"
     data = json.loads(plugin_json_path.read_text())
-    assert data["version"] == "0.3.0"
+    assert data["version"] == "0.3.1"
