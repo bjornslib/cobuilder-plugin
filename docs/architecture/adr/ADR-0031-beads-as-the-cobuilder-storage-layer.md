@@ -3,7 +3,7 @@
 title: "ADR-0031 — Beads is the storage layer for CoBuilder programs, epics, and slices"
 status: active
 type: architecture
-last_verified: 2026-09-26
+last_verified: 2026-09-29
 owner: bjornslib
 # --- 42010 decision-record index (schema: references/decision-records.md §2) ---
 id: ADR-0031
@@ -32,6 +32,8 @@ delivers:
 provenance: authored
 history:
   - { state: decided, date: 2026-09-26, by: bjornslib, note: "Decided after the beads fork sync landed bd 1.3.0 in this workspace and smoke-tested the mapping in a scratch tracker. The engineer directed the design: map CoBuilder to beads and extend it through the metadata envelope. The mapping fixes the field-level home of every stateful record. The cutover of the 04-slices.md state columns, the gh:pr gate timing, and the seed-script ownership stay open." }
+  - { state: decided, date: 2026-09-29, by: engineer, note: "Amendment after review against the sync goal: the status file maps into beads too, the seed gains a newest-wins reconcile in both directions, the bd-absent fallback becomes read-only, and the implemented and superseded program closings gain a named moment." }
+  - { state: decided, date: 2026-09-29, by: engineer, note: "Second amendment: the stateful sections generate from beads and a separate beads-to-file sync is dropped; comment surfaces verified across list, export, and show; epic scope notes added for the seed reconcile, the read-model scripts, and the goal.json authoring shape; bd init must run --skip-agents --skip-hooks." }
 related:
   - "docs/architecture/designs/beads-storage/goal.json"
   - "docs/architecture/designs/beads-storage/intent.json"
@@ -188,7 +190,7 @@ The workflow reads never touch the index. `bd ready` names the next actionable s
 
 The envelope files are written next to the work by the session that does it, then fed to `bd` with `--metadata @file`. No plugin code parses beads JSON to write it. `bd` is the only writer, which is the whole point of a store.
 
-Smoke-verified against bd 1.3.0: `--parent` creates the parent-child dependency itself, and adding a second `parent-child` edge by hand is refused as a cycle. The ladder read flips correctly: with slice 1 open, `bd ready` names slice 1. after `bd close`, it names slice 2. `bd export` carries the full envelope, so a plain JSONL interchange stays available to any future consumer.
+Smoke-verified against bd 1.3.0: `--parent` creates the parent-child dependency itself, and adding a second `parent-child` edge by hand is refused as a cycle. The ladder read flips correctly: with slice 1 open, `bd ready` names slice 1. after `bd close`, it names slice 2. `bd export` carries the full envelope, so a plain JSONL interchange stays available to any future consumer. Verified 2026-09-29: `bd export` also carries the comments array inline on each issue. `bd list --json` exposes `updated_at` and `comment_count` on every row. `bd show <id> --json --include-comments` streams one issue's comments.
 
 ### What beads must not hold
 
@@ -200,6 +202,27 @@ The write path gains a real store. Readiness, blocking, history, and Dolt-backed
 
 The costs are real. `bd` becomes a system dependency. scripts must detect its absence and fall back to today's file flow rather than fail a session. The tracker config must ship `types.custom = program`. Metadata has no query language, so corpus-wide questions stay with the index, which is where the viewer's questions already live. And two sources of state exist during the migration window, which is why the seed script is idempotent and dry-run first.
 
+# Amendment 2026-09-29 — the status file, the reconcile rule, the fallback, the closings
+
+A review against the sync goal found the ADR silent on four surfaces. This amendment fixes each. Verified on the corpus, `docs/plans/<slug>/00-status.md` is the second state surface. Its nine files share one anatomy. It holds a prose header, gate approval lines with an indented `view:` route line, the 4a/4b/4c sub-lines of Gate 4, slice lines of the form `- [x] Slice N — <title> score: X.XX (attempt M)`, an escalation section, and prose sections for the fresh-session notes and the verification record. `shared/gate_status.py` parses the gate lines per ADR-0032. The slice lines restate the `04-slices.md` table. Two files carry one truth, and that duplication is the observed drift mechanism.
+
+**The status file maps into beads.** A gate approval line is the resolution of a gate issue. The session runs `bd gate resolve <gate>`. The approval date becomes the close reason, and the `view:` route becomes `metadata.cb.view`. A slice PASS line is an envelope update (`score`, `attempts`) plus a dated `bd comment <slice>` line that keeps the narrative. bd 1.3.0 comments are append-only per issue, and rule 2 stands. Metadata stays scalars. Comments are beads's own prose surface, not envelope prose. An escalation is an escalated-true envelope flag plus a comment that carries the score and the reason. The prose sections stay authored documents.
+
+**The seed reconciles, newest wins, both directions.** `shared/beads_seed.py` is not create-only. Every run diffs each record's file source against its issue envelope. Equal is a no-op. The file newer than the issue's `updated_at` updates the issue. The issue newer than the file updates the file's stateful lines. That backfill repairs the state a degraded session wrote while bd was absent. The comparison key is the record's last git commit date against the issue `updated_at`, not file mtime. A fresh clone stamps fresh mtimes on old files. When both sides changed since the last reconcile, or the tie cannot be decided, the pair is reported as a conflict and nothing moves.
+
+**The bd-absent fallback is read-only.** Scripts read the file sources and refuse to write workflow state. The engineer may instruct a degraded file write as an exception; the next reconcile imports it. Nothing writes file state silently.
+
+**The program closings get a named moment.** Nothing in today's workflows sets stage `implemented` or `superseded` — verified across all four plugin command sets. The moments now belong to the write model: when every epic issue of a program is closed, the closing session runs `bd close <program> --reason implemented`. When a design decides a successor, the deciding session runs `bd close <program> --reason superseded` plus the `supersedes` edge to the successor program. Both are beads commands; the file sources stop carrying these two words.
+
+**The stateful sections generate from beads, and a separate beads-to-file sync is dropped.** The engineer decided this in the second 2026-09-29 review. The generator is the seed's reconcile itself: the file-newer and issue-newer branches already rewrite the file's stateful lines, so generation adds no second writer. The workflow runs the reconcile beside the existing refresh-the-bundle step after bd writes. Agent-facing aggregate reads keep the generated file: the status update reaches a fresh session as one file read in today's shape, not as comment queries.
+
+**Comments are history. Scalars are state.** The per-issue comment surface is append-only, which is correct for it. The whole-corpus read stays `bd list --json`. The reconcile detects comment drift through `comment_count` without reading comments. The full audit read is `bd export`, which returns every issue with its complete comments in one call. The per-issue history read is `bd comments <id>` or `bd show <id> --json --include-comments`. No consumer opens comments issue by issue in a loop. `bd init` must run with `--skip-agents --skip-hooks`: bd init installs an agent skill, Cursor rules, and git hooks by default, which would breach ADR-0016's install-surface rule in the narrated repo.
+
+**Epic scope notes.** E1 gains deliverables: the reconcile, the conflict report, and a count check that derives its counts from the current index at run time, no pinned literal. E2 gains two readers: `plugins/artifact/scripts/build_builds_view.py` reads `04-slices.md` directly through `slice_table`, so it joins the bd-first rule beside `build_index.py`; `verify_gate.py` keeps its own raw-line link check and moves its state reads the same way. E3 gains the authored `goal.json` shape change: `epics[]` stops carrying `branch`, `pr`, and `state`, and `goal-sync.md` retires. A guardrail test lands with E2: every join scalar comes from the envelope, never from parsed comment text.
+
 ## Not decided
 
-Whether `04-slices.md` state columns become generated from beads or leave the document. When `gh:pr` gate automation replaces the human merge gate. Which plugin runs `bd init` in a target repo, and how it asks consent. Who owns `shared/beads_seed.py`.
+- How the 4a, 4b, and 4c sub-lines of Gate 4 map. The leaning is three real gate issues, because the sub-lines already carry their own approval dates while the parent line holds one, and some files mark a sub-line n/a while the parent stays approved. Two bd behaviours are untested: `bd gate create --blocks <gate-issue>` on a gate-type target, and several gates blocking one target. Smoke-check both before E3; if gate-on-gate fails, the sub-gates block the same target Gate 4 blocks.
+- Whether an n/a gate (`Gate 2b — n/a (no UI)`) resolves with a reason on the gate issue or stays an authored line.
+- When `gh:pr` gate automation replaces the human merge gate. Which plugin runs `bd init` in a target repo, and how consent is asked. Who owns `shared/beads_seed.py`.
+- The thread ledger (`shared/ledger.py`, thread state open and resolved) stays out of the mapping. It is a reply-channel vocabulary, not work-item state; its exclusion belongs on the record.
