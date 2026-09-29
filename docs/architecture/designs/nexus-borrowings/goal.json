@@ -1,0 +1,36 @@
+{
+  "name": "nexus-borrowings",
+  "title": "Design mode drafts the runtime structure, the contracts, and the draft review",
+  "created": "2026-09-29",
+  "outcome": "A design drafted in design mode carries its runtime structure. The design directory holds a runtime architecture diagram as a named diagram slot beside the three narrative levels, a contracts file when the design touches a public interface, and stage 6 runs a draft review subagent that validates against a blind rubric and re-explores alternatives before the engineer reads.",
+  "done_when": [
+    "A design drafted in the updated design mode contains docs/architecture/designs/<name>/diagrams/runtime-architecture.mmd, build_index.py compiles it to record[\"diagrams\"][\"runtime\"], and the viewer renders it as the lead tile of the design's architecture level with the level-1 overview untouched",
+    "A design whose design mode detects a public interface or durable state carries contracts.md compiled into its record index entity; a design that touches none carries none, and the skip is stated",
+    "Stage 6 runs the validate-and-re-explore reviewer before the engineer reads, its findings enter the review as classified challenges, and goal.min_work.draft_review_run records that it ran",
+    "Marketplace manifest versions for architect, implement, and artifact are bumped so installed users auto-update"
+  ],
+  "abort_if": [
+    "The named diagram slot breaks an existing designs record consumer — build_index.py designs projections or the viewer's design route",
+    "The runtime-architecture contract cannot express clustered boundaries and protocol-labeled boundary edges in mermaid within the single-page 8-to-30-node constraint"
+  ],
+  "min_work": {
+    "derived_from": "3 districts (cobuilder-packaging, architect, artifact), colliding ADRs 0005, 0018, 0025, 1 boundary rule (ADR-0020 build-free viewer)",
+    "alternatives_explored": 3,
+    "boundary_rules_checked": true,
+    "challenge_stage_run": true,
+    "draft_review_run": false
+  },
+  "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
+  "epics": [
+    { "id": "E1", "slug": "runtime-arch-diagram", "branch": "design/nexus-borrowings/runtime-arch-diagram", "pr": null, "state": "planned" },
+    { "id": "E2", "slug": "draft-reviewer", "branch": null, "pr": null, "state": "planned" },
+    { "id": "E3", "slug": "contracts-doc", "branch": null, "pr": null, "state": "planned" }
+  ],
+  "stage": "review",
+  "supersedes": null,
+  "rounds": [
+    { "n": 1, "changed": true, "feedback_class": "material" }
+  ],
+  "approved_by": "Bjorn Schliebitz",
+  "approved_at": "2026-09-29"
+}

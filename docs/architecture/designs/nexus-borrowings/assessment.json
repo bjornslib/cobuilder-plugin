@@ -1,0 +1,37 @@
+{
+  "stage": "design",
+  "verdict": "proceed",
+  "risk_tier": "medium",
+  "regret_risk": "low",
+  "summary": "All three borrowings are additive and none touches an existing consumer's contract. The load-bearing decision is the named diagram slot: it keeps the level keys, the readiness check, and the overview's lead position intact while adding exactly one record field and one tile. Everything here is a prediction; the design has no diff.",
+  "findings": [
+    {
+      "kind": "prediction",
+      "id": "F1",
+      "severity": "medium",
+      "title": "The named diagram slot is the only borrowing that crosses the record-index boundary",
+      "detail": "build_index.py compiles design diagrams by a closed loop over level filenames 1, 2, 3. A named slot is one extra read plus one dict key, and the dict already carries arbitrary string keys for the viewer. The prediction: no call site that filters [\"1\",\"2\",\"3\"] will misbehave, because the runtime key is additive; the risk is only in rendering-order expectations, which the program design must state explicitly.",
+      "cites": "ADR-0018, shared/build_index.py design-record compile, viewer record tiles",
+      "mitigation": "Compile the slot under a dedicated key and render it inside the architecture level only, keeping the narrative levels untouched."
+    },
+    {
+      "kind": "prediction",
+      "id": "F2",
+      "severity": "low",
+      "title": "The stage-6 reviewer improves the challenge gate without shipping a new install surface",
+      "detail": "ADR-0025 keeps implement the only agent-owning plugin. Design mode already session-spawns subagents through the ADR-0005 dual-path pattern for divergent exploration and diagram authoring. The reviewer reuses that pattern: no agent file, no hook, no manifest change to architect. The prediction: the advisory classification survives review, because Nexus's numeric gate would contradict the mode's own no-checks-before-a-diff rule.",
+      "cites": "ADR-0025, ADR-0005, plugins/architect/skills/architecture/references/design-mode.md stage 4 evidence rule",
+      "mitigation": "State the advisory rule in the design-mode reference, and record draft_review_run in min_work so a silent skip is detectable."
+    },
+    {
+      "kind": "prediction",
+      "id": "F3",
+      "severity": "low",
+      "title": "contracts.md follows the pr-draft.md projection path exactly",
+      "detail": "pr-draft.md already shows the pattern: an authored markdown file in the design directory, attached to the record when non-empty, rendered as a viewer section, silently omitted when absent. contracts.md takes the identical path with a skip-reason line when absent, so no new join in the sense ADR-0018 deferred is needed.",
+      "cites": "ADR-0018, shared/build_index.py pr-draft read, viewer design route",
+      "mitigation": "Mirror the pr-draft compile block for contracts and add its absence to the skip-with-reason convention already used by Gate 2b."
+    }
+  ],
+  "regret_risk": "If the runtime diagram proves noisy in mermaid's C4 renderer, teams will add it anyway because the contract demands it, and designs will carry tiles that render poorly. The escape is the contract's own 8-to-30-node cap and the option to fall back to flowchart subgraphs, both written into the reference before E1 ships."
+}

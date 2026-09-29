@@ -55,6 +55,16 @@ The mechanism, decided in ADR-0017, that shares code between the five plugins: a
 One `docs/architecture/designs/<name>/` directory holding `goal.json`, `intent.json`, `narrative.json`, `assessment.json`, and `pr-draft.md`. See "Design" for the mode that produces it, a different entry.
 _Avoid_: ADR (a design also produces one, but the ADR outlives it under docs/architecture/adr/)
 
+<a id="runtime-architecture-diagram"></a>
+**Runtime architecture diagram** (`architect`):
+The named diagram slot `designs/<name>/diagrams/runtime-architecture.mmd`, a prediction-grounded picture of services, libraries, data stores, and external systems with clustered boundaries and protocol-labeled boundary edges. Rendered as the lead tile of the design's architecture level; never a numbered level. See "architecture-diagram contract" in the mermaid skill.
+_Avoid_: level-4 diagram (that slot belongs to the per-PR contract and has no diagram there)
+
+<a id="contracts-doc"></a>
+**contracts doc** (`architect`):
+Optional `contracts.md` in a design directory carrying the envisioned API endpoints and data models. Written only when the design touches a public interface or durable state; the skip is stated, never silent.
+_Avoid_: data-types (the class diagram's members are types, not envisioned contracts)
+
 <a id="backlog-design"></a>
 **backlog design** (`architect`):
 A design at `stage: "backlog"`, with only a `goal.json` of planned epics, and `inflight-record-store` is a backlog design today. `maintainable-viewer` was one, and now reads `stage: "superseded"`. This is a deliberate, sparse state before Design mode's later stages run, not an abandoned design.

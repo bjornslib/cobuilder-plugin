@@ -1,0 +1,37 @@
+%% Overview: what nexus-borrowings touches.
+%% Level 1 = intent. Solid containers exist today; the three
+%% additions named "pending" are predictions the ADR-0035 draft carries.
+C4Container
+    title Design mode gains a runtime slot, a reviewer, and a contracts file
+
+    Person(engineer, "Engineer", "States outcome, adjudicates review")
+    System_Ext(session, "Claude Code session", "Runs design mode stages 0 to 7")
+
+    Container_Boundary(architect, "architect plugin") {
+        Container(skill, "skills/architecture", "SKILL.md + references", "Design mode prose; gains architecture-diagram contract and stage-6 reviewer step")
+        Container(designmode, "references/design-mode.md", "reference", "Seven stages; stage 5 gains runtime-architecture.mmd and contracts.md; stage 6 gains the draft reviewer")
+    }
+
+    Container_Boundary(shared, "shared/ vendored code") {
+        Container(archcontract, "references/architecture-diagram.md", "new mermaid contract", "Pending: runtime architecture rules borrowed from Nexus _ARCH_SYSTEM")
+        Container(buildindex, "shared/build_index.py", "uv script", "Compiles designs; gains diagrams.runtime and contracts projections")
+    }
+
+    Container_Boundary(store, "authored tree") {
+        ContainerDb(bedesign, "designs/<name>/", "markdown + json", "goal, intent, assessment, narrative, pr-draft, contracts.md (pending), diagrams/level-1..3 + runtime-architecture.mmd (pending)")
+        ContainerDb(beddr, "adr/ADR-0035", "markdown", "The decision record this design writes")
+    }
+
+    Container_Boundary(bundle, "bundle + viewer") {
+        ContainerDb(bundle, ".cobuilder-architect/self/data", "index.json / index.js", "Record index; designs entities gain runtime and contracts keys")
+        Container(viewer, "artifact viewer", "React, Vite build", "Design route; architecture level renders the runtime tile ahead of the class tile (pending)")
+        Container(marketplace, ".claude-plugin/marketplace.json", "manifest", "architect, implement, artifact versions bump")
+    }
+
+    Rel(engineer, designmode, "stated outcome and five interview topics", "AskUserQuestion and session")
+    Rel(designmode, archcontract, "loads contract at stage 5", "Skill read")
+    Rel(designmode, buildindex, "compile after ADR", "uv run subprocess")
+    Rel(buildindex, bedesign, "reads authored files", "filesystem")
+    Rel(buildindex, bundle, "writes index.json", "filesystem")
+    Rel(viewer, bundle, "serves design route", "HTTP (View server)")
+    Rel(marketplace, viewer, "pins co-installable version", "plugin dependency")
