@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "eb1a39f9e2706b5ef6dc0fde97196e69650e33e0",
+    "git_head": "e04de1f2eac930d6c3d598f74a7098a6c4881a8f",
     "trees": {
-      "docs/architecture/adr": "sha256:f53f9bc01fc4314357a021f57ad678fdf5dedebbe7493f652954711f83e09988",
-      "docs/architecture/designs": "sha256:dfb5fd7b8bec7f2dc7916d69a2a69df8965b435528c0c57ab4e8c8cd4c58c22a",
+      "docs/architecture/adr": "sha256:b56a471139234ddceaa65afb42d464a9b31d2ebf58964f5c3a5d9e7cc1749961",
+      "docs/architecture/designs": "sha256:5af8623acaf02f65d75e2422ffe3962ecc00fe2791643bacb8e0ca1093aaa659",
       "docs/architecture/contexts": "sha256:2f1cde1db74ea6f95b55152c3de109c6e281619cc3beae3fb939d8650a4005c8",
-      "docs/plans": "sha256:f507a738988020b82ef31fb895aca7e65156e6002d619f94446901d883117937",
-      ".cobuilder/rubrics": "sha256:cdadfb4f1b3cf79ff2a2486d35ba29949bc1801a86f065926fa9dee93beca577"
+      "docs/plans": "sha256:ae412e96f43785f3f74489e2c2cb3ff907a4922a961ddaf4e7f746487f99a2f6",
+      ".cobuilder/rubrics": "sha256:0f4e5db5ed28cb699bc4dfa747691dddd7350af5d26eda190b7967c70a7a1b4b"
     }
   },
   "entities": {
@@ -176,6 +176,11 @@
         "id": "ADR-0033",
         "title": "Simulate paths to close the open set, from the common ancestor, and show one validated path",
         "state": "rejected"
+      },
+      {
+        "id": "ADR-0034",
+        "title": "The Work board is a drawer over the shell, and the board's rows are work only",
+        "state": "decided"
       }
     ],
     "design": [
@@ -292,6 +297,12 @@
         "name": "ubiquitous-language",
         "outcome": "One term means one thing across every plugin, skill, design, and ADR in the repo, and a new or colliding term cannot reach a merged pull request undetected.",
         "stage": "backlog"
+      },
+      {
+        "id": "work-drawer",
+        "name": "work-drawer",
+        "outcome": "The Work board stops being a page the reader travels to and becomes a drawer over whatever Build or Review surface they were reading: one press on the Work icon opens a vaul drawer at sixty percent of the viewport, holding the bundle's work on a kanban of five collapsible lanes — needs a decision, ready to build, in review, shipped, superseded — behind a state filter and an incremental search. Decision records and unfinished pull requests are held out of the board by rule. A search that resolves to exactly one work item reads that item's record in the detail pane without a second press, and the arrow keys walk both the rows and the filter strip.",
+        "stage": "decided"
       }
     ],
     "epic": [
@@ -1078,6 +1089,15 @@
         "pr": null,
         "state": "planned",
         "note": "Repair the existing drift. Refresh cobuilder-packaging's canvas section 3 and its boundary.yaml public_interface against the shipped five-plugin tree, delete the now-false homonym comment, and reconcile the two glossaries into E1's record."
+      },
+      {
+        "id": "work-drawer/E1",
+        "design": "work-drawer",
+        "epic_id": "E1",
+        "branch": "design/work-drawer",
+        "pr": null,
+        "state": "planned",
+        "note": "One pull request. The engineer chose one pull request for the design, so the epic carries the branch alone. The prototypes stay under src/variations/ as the reference arrangement while the drawer is the prototype surface; the port that replaces shell/Board.tsx's full-page board is this design's next epic and is deliberately not in this one, so the shipped board never regresses while the drawer is under review."
       }
     ],
     "context": [
@@ -2111,6 +2131,26 @@
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
+      },
+      {
+        "id": "work-drawer/1",
+        "feature": "work-drawer",
+        "n": 1,
+        "title": "The search owns the result set: the needle drives the filter, the focus, and the self-read",
+        "ends_with": "In Chrome with real key events: pressing `/` from any row moves the caret into the field; typing `gate` resets the filter to All, refines the rows, and marks each hit; a needle that resolves to one work item selects it and opens the pane with no second press, and a second character that widens the set past one clears it. The repository's typecheck, tests, and build hold.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "work-drawer/2",
+        "feature": "work-drawer",
+        "n": 2,
+        "title": "Labels and the filter walk: the renames, the header line, and the chip walk",
+        "ends_with": "The drawer's header carries the title, the design count, and the shown count, and no held-out text; the pane's buttons read \"Open work item\" and \"Close\"; pressing `←`/`→` while the strip holds the focus moves the active chip through the lanes' vocabulary and stops at the ends. The repository's typecheck, tests, and build hold.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       }
     ],
     "publication": [
@@ -2193,6 +2233,15 @@
         "body_md": "# Product: Slice agents, coding habits, and a DDD vocabulary\n\n## Problem\n\nAn engineer who builds a feature with `/implement:start` gets code that\npasses its tests and its blind rubric, but two kinds of defect still get\nthrough.\n\n1. **Structural smells.** Long functions, deep nesting, duplicated code, and\n   too many parameters. The validator scores behaviour, not shape. Nothing\n   in the loop coaches the implementer while it writes.\n2. **Vocabulary drift.** The same concept gets two names, or a name that\n   the project already rejected. The terms live in three places: the\n   Vocabulary table in `CLAUDE.md`, the \"Ubiquitous language\" section of\n   each bounded-context canvas, and the districts in `inventory.yaml`.\n   Nothing joins them, and nothing checks new code against them.\n\nToday the RED, GREEN, and VALIDATE roles exist only as prompt text that the\norchestrator pastes into a general-purpose subagent. A rule that must apply\nto one role only, such as \"coach GREEN after each file it writes\", has no\nplace to live.\n\n## Success metric\n\nThree measurements, each read from files on disk:\n\n1. **Coaching reaches GREEN.** In a slice built after this change, the GREEN\n   role's transcript shows habit-hooks output after each file write, and the\n   final diff reports clean on `habit-hooks --branch <base>`. Measured on the\n   first real feature built after release.\n2. **One vocabulary.** `DDD-VOCABULARY.md` at the repository root is the one\n   glossary. `CLAUDE.md` holds a pointer to it, not a copy. Every\n   bounded-context canvas links its terms to it.\n3. **Drift gets caught.** VALIDATE reports a vocabulary verdict for every\n   slice. Seeded test: a slice that names a class with a term from an\n   `_Avoid_` list gets a vocabulary finding.\n\n## Announcement: the blog post before the feature\n\nThe implement plugin now ships its three slice roles as real agents: RED,\nGREEN, and VALIDATE. GREEN runs habit-hooks after every file it writes, so\nit gets a short coaching note about a smell at the moment it creates one,\nnot at review time. habit-hooks is an MIT project by Ivett Ördög and its\ncontributors, and we credit it in the plugin. The repository also has one\nDDD vocabulary, `DDD-VOCABULARY.md`. Design mode reads it and adds to it,\nand a vocabulary check in VALIDATE holds new code to it.\n\n## Screens\n\nno UI\n",
         "approved_date": null,
         "source_path": "docs/plans/slice-agents-and-vocabulary/01-product.md"
+      },
+      {
+        "id": "work-drawer",
+        "feature_slug": "work-drawer",
+        "gate": 1,
+        "title": "Product: Work drawer",
+        "body_md": "# Product: Work drawer\n\n## Outcome\n\nThe Work board opens as a drawer over the surface the reader is on, holds the\nbundle's work on five collapsible lanes, narrows by state and by search, and\nreads a record beside the board without a navigation round trip.\n\n## Screens\n\n| Screen | Purpose |\n|---|---|\n| Work drawer (over any shell surface) | The one screen this plan changes. Opens from the Work icon in the top-left; closes with Escape, an overlay press, or the drawer's own drag. |\n\nNo new page. The shell surface beneath the drawer is the reader's own and is\nnot changed by this plan.\n\n## The reader's questions, answered in place\n\n1. **Where does the work stand?** The lanes: needs a decision, ready to build,\n   in review, shipped, superseded — each with its count, each foldable.\n2. **What should I work on next?** The first live lane is the first the board\n   holds, and the state filter narrows the board to one answer.\n3. **Where is that thing I half remember?** The search: a needle over names,\n   ids, stages, outcomes, epics, branches, and pull request numbers, refined\n   as the reader types.\n4. **What is in it?** The detail pane: the outcome prose, the six authored\n   record marks, the epics with their refined states, and the merged pull\n   requests.\n\n## What the board holds\n\nDesigns only. A decision record is settled and is read in the Architecture\nlevel; a pull request that is not merged is a change in flight. Neither is a\nwork item. The drawer's footer states the rule with the counts it held out —\nthe footer, and no longer the header, so the header keeps the one number the\nreader came for: what the board holds.",
+        "approved_date": null,
+        "source_path": "docs/plans/work-drawer/01-product.md"
       }
     ],
     "architecture_doc": [
@@ -2314,6 +2363,15 @@
         "body_md": "# Program Design: Slice agents, coding habits, and a DDD vocabulary\n\n## Files\n\n| File | Epic | Why |\n|---|---|---|\n| `docs/architecture/adr/ADR-0025-implement-ships-slice-agents-and-a-coaching-hook.md` | E1 | Records the narrowed install-surface rule. |\n| `tests/test_plugin_manifests.py` | E1 | Allows `agents/` and `hooks/` in `implement` only. |\n| `CLAUDE.md` | E1, E4 | Install-surface rule (E1). Vocabulary pointer (E4 final slice). |\n| `plugins/implement/agents/{red,green,validate}.md` | E2 | The three roles as named agents. |\n| `plugins/implement/skills/build/references/slice-loop.md` | E2, E4 | Spawns agents by name. Adds the vocabulary step. |\n| `plugins/implement/skills/build/workflows/slice-loop.js` | E2, E4 | Same change for the scripted path. |\n| `plugins/implement/hooks/hooks.json` | E3 | The PostToolUse registration. |\n| `plugins/implement/scripts/habit_coach.py` | E3 | The hook command. |\n| `plugins/implement/NOTICE.md` | E3 | Credit and licence of habit-hooks. |\n| `plugins/implement/skills/build/SKILL.md` | E3 | Prerequisite check for `habit-hooks`. |\n| `plugins/implement/.claude-plugin/plugin.json` | E3 | Version 0.3.0. |\n| `DDD-VOCABULARY.md` | E4 | The one glossary. |\n| `plugins/implement/agents/vocabulary.md` | E4 | The vocabulary reviewer. |\n| `plugins/architect/skills/architecture/references/design-mode.md` | E4 | Stage 1 reads, stage 5 writes. |\n| `plugins/architect/skills/architecture/references/templates/canvas-template.md`, `docs/architecture/contexts/cobuilder-packaging/canvas.md` | E4 | Link canvas terms to the glossary. |\n| `tests/test_slice_agents.py`, `tests/test_habit_coach.py`, `tests/test_ddd_vocabulary.py` | E2 to E4 | Written by RED. |\n\n## Types & signatures\n\n```python\n# plugins/implement/scripts/habit_coach.py  (PEP 723, stdlib only)\nGREEN_AGENT_TYPES: frozenset[str]   # {\"implement:green\"}\n\ndef is_green(payload: dict) -> bool: ...\ndef target_path(payload: dict) -> str | None: ...        # tool_input.file_path\ndef run_habit_hooks(path: str) -> tuple[int, str]: ...   # (exit code, stdout+stderr)\ndef render(code: int, text: str) -> dict | None: ...     # hook JSON or None\ndef main(stdin: TextIO, stdout: TextIO, runner=run_habit_hooks) -> int: ...  # always 0\n```\n\nAgent definition frontmatter (each of the four files):\n\n```yaml\nname: green            # red | green | validate | vocabulary\ndescription: <one line: the role and when the build skill spawns it>\ntools: <role-specific list; vocabulary and validate get no Write/Edit on source>\nmodel: sonnet          # red and green only. validate and vocabulary inherit.\n```\n\n`DDD-VOCABULARY.md` entry shape:\n\n```markdown\n## <Bounded context or district name>\n\n**<Term>** (`<context-id>`):\n<One or two sentences: what it IS.>\n_Avoid_: <synonym>, <synonym>\n```\n\n## Call stack\n\n```\n/implement:start → Skill(\"build\")\n  prerequisite check → habit-hooks --version        (E3)\n  slice N:\n    Agent(subagent_type=\"implement:red\")             (E2)\n    Agent(subagent_type=\"implement:green\")           (E2)\n      Write|Edit → hooks.json → habit_coach.py main()  (E3)\n        is_green → target_path → run_habit_hooks → render\n    parallel:\n      Agent(subagent_type=\"implement:validate\")      (E2)\n      Agent(subagent_type=\"implement:vocabulary\")    (E4)\n/architect:design\n  stage 1 → read DDD-VOCABULARY.md                   (E4)\n  stage 5 → add or sharpen entries                   (E4)\n```\n\n## Test plan\n\n- **Packaging:** `implement` may ship `agents/` and `hooks/`. The other four\n  may not. No plugin ships an MCP server. Each agent file parses, carries\n  `name` and `description`, and uses no ignored field (`hooks`,\n  `mcpServers`, `permissionMode`).\n- **Prompt parity:** each agent body holds the scope contract and the blind\n  rule that `slice-loop.md` held. `slice-loop.md` and `slice-loop.js` name\n  the agents and no longer paste the role prompts.\n- **Hook, with a fake runner:** a non-GREEN payload gives no output. A GREEN\n  payload with exit 0 gives no output. Exit 1 gives `additionalContext` with\n  the coaching text. Exit 2 gives a tool-failure note. A missing binary gives\n  a note and exit 0. A payload with no `file_path` gives no output.\n  `hooks.json` registers `PostToolUse` with matcher `Write|Edit` and a\n  command under `${CLAUDE_PLUGIN_ROOT}`.\n- **Credit:** `NOTICE.md` names habit-hooks, its MIT licence, its URL, and\n  its author.\n- **Vocabulary:** every entry parses into the shape above. Every term from\n  the old `CLAUDE.md` table exists. Every canvas term links to an entry.\n  `design-mode.md` names the file in stage 1 and stage 5.\n- **Behavioural (Gate 4c special case):** the agent prompts and\n  `design-mode.md` govern agent behaviour, so their rubrics use one blind\n  subagent pass.\n\n## Least confident decisions\n\n1. **The value of `agent_type` for a plugin agent.** The docs show\n   `agent_type` in the hook input, but not the exact string for a\n   namespaced plugin agent. The script accepts `implement:green` and\n   `green`. Slice 5 confirms the real value in a live run.\n2. **The Workflow tool path.** It is not known whether `agent()` in\n   `slice-loop.js` can spawn a named plugin agent. If it cannot, the\n   scripted path cannot receive coaching. Slice 3 checks this. The\n   fallback is that the script tells the orchestrator to use Manual mode.\n3. **A required tool in a plugin family with no other install step.**\n   Making habit-hooks required means `/implement:start` stops on a machine\n   without it. You asked for this. The stop message gives the one-line\n   install.\n4. **Vocabulary as a separate axis.** VALIDATE's score does not include the\n   vocabulary verdict. A slice can pass at 0.95 with a vocabulary finding.\n   The finding routes through the gap tree like any other gap.\n",
         "approved_date": null,
         "source_path": "docs/plans/slice-agents-and-vocabulary/03-program-design.md"
+      },
+      {
+        "id": "work-drawer",
+        "feature_slug": "work-drawer",
+        "gate": 3,
+        "title": "Program design: Work drawer",
+        "body_md": "# Program design: Work drawer\n\n## Scope and Intent\n\nThe day-deck drawer prototype (`plugins/artifact/viewer/src/variations/work-drawer-deck/`) takes the seven refinements the engineer reviewed into its behaviour. The drawer stays the prototype surface: no shipped file changes, because the port that retires the full-page board route is the design's next epic. The refinements are behavioural, so the program is small: the search owns the result set and the filter, the selection follows the result set, and the arrows walk the two structures without stealing each other's keys.\n\n## Files Touched\n\n| File | Change |\n|---|---|\n| `plugins/artifact/viewer/src/variations/work-drawer-deck/index.tsx` | The drawer body's behaviour: search typing resets the lane filter to `All`; slash focuses the field from anywhere in the open drawer; a single-result search selects the row; `←`/`→` step the active filter chip when the strip holds the focus. The header drops the held-out text. |\n| `plugins/artifact/viewer/src/variations/work-drawer-deck/detail.tsx` | The pane's buttons read `Open work item` and `Close`. |\n| `plugins/artifact/viewer/src/variations/work-drawer-deck/rules.test.ts` (new) | Unit tests beside the rules the drawer states: the filter reset, the search predicate, the single-result rule, and the chip walk, run pure against rows shaped like the real bundle. |\n\nThe shipped files (`src/shell/Board.tsx`, `src/shell/Rail.tsx`, `src/shell/model.ts`) are touched by nothing in this plan.\n\n## Types & Signatures\n\n```ts\n// work-drawer-deck/deck.ts — already pure; unchanged in shape\nexport function matches(row: DesignRow, needle: string): boolean;\nexport function laneRows(lane: Lane, rows: DesignRow[], needle: string): DesignRow[];\nexport function walkedRows(lanes: Lane[], rows: DesignRow[], needle: string): DesignRow[];\n\n// work-drawer-deck/index.tsx — the new pure rules the slices state\n// Typing resets the filter: the search owns the result set, so the filter\n// resets the moment the search has a needle.\nexport function filterForTyping(current: string): string; // → \"all\"\n// A single result reads itself: the selection follows the result set.\nexport function soleOf(rows: DesignRow[]): DesignRow | null;\n// The arrows step the filter strip through the lanes' vocabulary.\nexport function chipStepped(current: string, step: 1 | -1, chips: string[]): string;\n```\n\n## Slice Decomposition\n\n| Epic | Slices | Rule |\n|---|---|---|\n| `work-drawer/E1` | 1 — the search owns the result set | The search, the filter reset, the focus rule, and the single-result read, in one slice, because the four effects share one state machine (needle → result set → selection). |\n| `work-drawer/E2` | 1 — labels and the filter walk | The label renames, the header line's drop, and the chip walk, in one slice, because the label changes and the walk land on the same two files and score against the same reading. |\n\nOne slice per epic, so no epic technical solution design is required by Gate 4b.\n\n## Test Plan\n\n1. **Unit (beside the rules).** `works.test.tsx` runs the pure rules against fixture rows shaped like the real bundle: a needle resets to `all`; a predicate over name, id, stage, outcome, epics, branches, and pull request numbers; a sole of one and of many; a chip step that walks `All → lanes → back` and stops at the ends.\n2. **Keyboard, in Chrome with real key events.** Open the drawer; press `/` from a row and read the caret in the field; type `gate` and read two lanes' rows refine; widen the filter and read the counts move; press `←` from `Ready to build` and read `All` active; press `↓` and read the row select and the pane open; press `Enter` on the deck and read the record tall; press it again and read the deck drop back.\n3. **Repository gates.** `npm run typecheck`, `npm run test` (181 passing, none skipped), and `npm run build`, whose output rewrites the committed viewer unchanged in shape.\n\n## Risks & Open Questions\n\n- The single-result auto-read surprises a reader who keeps typing. The rule is written: the selection follows the result set, and a second character that widens the set past one clears it. The reading in the slice loop measures exactly this.\n- The chip walk needs a focus home. The strip's group container takes `tabIndex={0}` and the arrows act while it holds the focus, so left and right never type into the search field by accident and never steal the row walk.\n- The footer's rule sentence replaces the header's held-out text; the rule must stay stated somewhere, or a reader who expected a row finds no reason. The footer carries it permanently.",
+        "approved_date": null,
+        "source_path": "docs/plans/work-drawer/03-program-design.md"
       }
     ],
     "epic_design": [
@@ -2505,6 +2563,14 @@
         "state": "APPROVED 2026-09-28",
         "source_path": "docs/plans/review-link/interaction-design.md",
         "body_md": "# Plan page: Interaction Design Specification\n\nThis document covers one new page of the Work surface, the plan page. It\nextends `docs/plans/cobuilder-viewer/interaction-design.md` and does not\nrepeat it. Where this file is silent, that file governs. The page uses the\nexisting shell, rail, heading bands, and tokens. It adds no new token.\n\n## 1. Overview\n\nThe plan page shows the three plan documents of one piece of work: product\n(Gate 1), architecture (Gate 2), and program design (Gate 3). A reviewer\nreaches it from a link that a workflow prints before an approval question.\nThe page is read-only.\n\n## 2. Information Architecture\n\nThe plan page is one row of the Build group in the rail, after Epics and\nRubrics. Its address is `#/<work>/build/plan`. The page holds three blocks, in\ngate order: Product, Architecture, Program design. Each block has a heading\nband with the gate name, the source path, and the rendered document body.\n\n### 2.3 Declared Defaults\n\n- The page opens scrolled to the top, at the Product block.\n- A tail of `#/<work>/build/plan/<gate>` scrolls to that block on load. The\n  values of `<gate>` are `product`, `architecture`, and `program`.\n- Each block is open. No block collapses.\n\n## 3. States\n\n### 3.2 Component States\n\n**Plan block.** Two states.\n\n- *Present.* A heading band with the gate name, for example \"Gate 1 —\n  Product\". Under it, the source path in the mono face, then the body,\n  rendered through the viewer's existing markdown renderer.\n- *Absent.* The same heading band. Under it, one line in `--text-3`: \"No\n  <document> for this work yet.\" The block keeps its height small and holds\n  no control.\n\n**Plan rail row.** The states of the existing nav item, with no change.\n\n### 3.3 Visibility Gating\n\n- The Plan rail row shows for every work item that has a plan slug.\n- A work item with no plan slug shows the row disabled, with the reason \"no\n  plan\", the same way a level with no record shows today.\n- The page renders all three blocks always. An absent document shows its\n  empty state and never hides its block, so the gate order stays fixed.\n\n## 4. Transitions\n\n### 4.1 Transition Table\n\n| From | Event | To | Motion |\n|---|---|---|---|\n| Any Build row | Select the Plan row | Plan page | The existing section change |\n| Outside link | Load with `#/<work>/build/plan/<gate>` | Plan page, at that block | Scroll with no animation |\n| Plan page | Select another rail row | That row's page | The existing section change |\n\n### 4.2 Timing Tokens\n\nThe page adds no timing token. A section change uses the shell's existing\nsection duration and easing. Under `prefers-reduced-motion: reduce`, all\ndurations resolve to zero, as they do today.\n\n## 11. Accessibility details\n\n### 11.2 Hit Targets\n\nThe page has one new control, the Plan rail row. It uses the nav item's\nexisting 44 px minimum height. The document bodies carry links from the\nmarkdown only, and those keep the house link style.\n\n### 11.3 Scroll Ownership\n\nThe main column owns the scroll, as on every other Build page. A block never\nscrolls on its own. A wide table or code block in a document scrolls\nhorizontally inside its own box, so the page never scrolls sideways.\n"
+      },
+      {
+        "feature_slug": "work-drawer",
+        "gate": "2b",
+        "title": "Interaction design: Work drawer",
+        "state": "APPROVED 2026-09-28",
+        "source_path": "docs/plans/work-drawer/interaction-design.md",
+        "body_md": "# Interaction design: Work drawer\n\nFeature: `work-drawer`. One screen changes: the Work drawer over any shell\nsurface. The reader's own surface beneath the drawer is unchanged.\n\n## 1. Vocabulary\n\n| Word | Meaning |\n|---|---|\n| Drawer | The vaul bottom sheet holding the Work board. Snap points 0.6 and 0.95 of the viewport. |\n| Deck | The board inside the drawer: five lanes, one vertical read. |\n| Lane | One state of work. Five lanes: needs a decision, ready to build, in review, shipped, superseded. Each folds. |\n| Filter chip | One control of the state strip: `All` plus one per lane. One chip is active at a time. |\n| Row | One work item on the deck: one design, one line. |\n| Pane | The detail pane beside the deck, showing the selected row's record. |\n\n## 2. Information Architecture\n\nThe drawer is an overlay, not a route. It holds no address and writes no\nhistory entry; the shell's address stays whatever the reader's surface names.\nThe deck's structure is flat: header, search, filter strip, lanes, footer.\nThe pane sits beside the lanes, not above them, so the record and the board\ncompare without a scroll.\n\n### 2.3 Declared Defaults\n\n| State | Default |\n|---|---|\n| Drawer open | Snap 0.6. Never opens tall. |\n| Search field | Focused on open, empty. |\n| State filter | `All`. |\n| Lanes | All five unfolded. |\n| Selection | None. The pane shows nothing when no row is selected. |\n| Search needle | Cleared when the drawer closes. |\n\n## 3. Controls\n\n### 3.1 Inventory\n\n| Control | Kind | Behaviour |\n|---|---|---|\n| Work icon (top-left) | Button | Opens the drawer. |\n| Search field | Text input | Refines the rows as the reader types. Typing any character resets the state filter to `All`. A result set of exactly one selects that row. |\n| Filter chip | Button ×6 | Sets the active lane set. `All` restores the whole board. |\n| Lane header | Collapsible trigger ×5 | Folds and unfolds the lane's rows. A folded lane leaves the walk and the counts. |\n| Row | Button | Selects. Pressing the selected row again closes the pane and drops the drawer to 0.6. |\n| Pane: Open work item | Link | Opens the shell's address for the selected design. |\n| Pane: Close | Button | Clears the selection and drops the drawer to 0.6. |\n\n### 3.2 Component States\n\n| Component | Rest | Hover | Active | Focus |\n|---|---|---|---|---|\n| Work icon | surface + line | accent wash, primary border | — | visible ring |\n| Search field | line, placeholder ink-faint | — | caret | visible ring on the field's container |\n| Filter chip, inactive | line, ink-mid | primary/60 border | — | visible ring |\n| Filter chip, active | primary border, accent wash, accent-deep ink | — | pressed | visible ring |\n| Lane header | line underline | surface-2 wash | — | visible ring |\n| Row, unselected | transparent border-left | surface-2 wash | — | visible ring |\n| Row, selected | primary border-left, accent wash | — | pressed | visible ring |\n| Pane buttons | card + line | surface-2 wash | — | visible ring |\n\n### 3.3 Visibility Gating\n\n| Thing | Visible when |\n|---|---|\n| Detail pane | Exactly while a row is selected. The pane follows the walk. |\n| Search clear button | While the field holds a needle. |\n| Lane body | While the lane is unfolded. |\n| Lane empty state | While the lane is unfolded and holds no row: \"no match\" under a needle, the lane's own empty sentence otherwise. |\n| Board empty state | While no visible lane holds a row: the sentence names the cause (a needle, or every lane folded). |\n| Held-out counts | In the footer, always. The header carries no held-out text. |\n\n## 4. Motion\n\n### 4.1 Transition Table\n\n| From | To | Motion |\n|---|---|---|\n| Drawer closed | Drawer open at 0.6 | vaul's spring, the drawer's own |\n| Drawer 0.6 | Drawer 0.95 (Enter reads a record tall) | vaul's snap spring |\n| Rows entering the deck | Settled | 160 ms, 6px sideways, stagger capped at 100 ms |\n| Fold | Unfold | Radix Collapsible's own, 150 ms |\n| Selection moved | New row | no transition; the row scrolls itself minimally into view |\n\n### 4.2 Timing Tokens\n\n| Token | Value | Used by |\n|---|---|---|\n| `--ease` | cubic-bezier(0.22, 0.75, 0.3, 1) | every transition on this surface |\n| Row enter | 160 ms | deck rows |\n| Stagger cap | 100 ms | deck rows, `min(index * 8ms, 100ms)` |\n| Chip / fold | 150 ms | filter chips, lane folds |\n| Reduced motion | off whole | `useReducedMotion` turns every entrance off |\n\n## 5. The keyboard contract\n\nThe contract says what the machine does, and the machine's Escape is Radix's:\nthe dismissable layer listens in the capture phase, so a bubble-phase handler\nnever sees Escape.\n\n| Key | Where | Effect |\n|---|---|---|\n| `/` | anywhere in the open drawer | Cursor moves into the search field. From the field itself, no-op. |\n| `←` / `→` | the filter strip (and nowhere else) | The previous / next chip becomes active. The walk stops at the ends. |\n| `↑` / `↓`, `k` / `j` | the deck (and the field: the arrows only) | The previous / next visible row selects. The pane follows. |\n| `Enter` | the field | The first visible result reads tall at 0.95. Again stays tall. |\n| `Enter` | the deck | The selected row reads tall. The selected row again closes the pane and drops the deck to 0.6. |\n| `Escape` | anywhere | Radix closes the drawer. The drawer's close resets the search, the filter, the fold, and the selection. |\n\nThe arrows walk the filter from the strip and the rows from the deck, and\nneither steals the other's key: left and right mean lanes, up and down mean\nrows.\n\n## 11. Layout\n\n### 11.2 Hit Targets\n\nEvery control on this surface carries at least a 36px hit floor, and the\npointer-only controls 44px: the Work icon and the row buttons are 36px+,\nthe chips 28px within a 32px+ row, and the pane's buttons 36px+. The search\nfield is 36px tall inside its frame.\n\n### 11.3 Scroll Ownership\n\nThe drawer owns one scroll: the deck's vertical read. The pane scrolls its\nown overflow when the record runs taller than the drawer. The lane bodies\nscroll nothing — the deck scrolls, the lanes do not — and the document behind\nthe drawer never scrolls, because the shell owns that rule and the drawer\ninherits it.\n\nThe horizontal rule applies to the header and the strip: both wrap, neither\npushes the drawer wider than its host.\n\n## 12. Accessibility\n\n- The drawer is a `dialog` named Work, with a description stating the drag and\n  the search.\n- The filter strip is one group labelled \"Filter the lanes by state\"; chips\n  carry `aria-pressed`.\n- The refinement count is a polite live region.\n- The search-hit mark is decoration on the visible name; the row's accessible\n  name is the plain design name and stage.\n- The record marks state their verdict twice: visibly as a mark and word, and\n  invisibly as a full sentence naming what a partial record misses."
       }
     ],
     "rubric": [
@@ -2987,6 +3053,22 @@
         "title": "Slice 8 — E4 move: the CLAUDE.md table goes to the glossary",
         "body_md": "# Rubric: Slice 8 — E4 move: the CLAUDE.md table goes to the glossary\n\nFeature: slice-agents-and-vocabulary\nEpic: E4\nSlice goal: The `CLAUDE.md` Vocabulary table moves into `DDD-VOCABULARY.md`, and `CLAUDE.md` keeps a pointer.\nTest command: uv run --with pytest --with requests --with pyyaml --with pillow pytest tests/ -q\n\n## Criteria\n\n### C1 — no term lost [CRITICAL]\n**Must be true:** Every bold term in the Vocabulary table of `CLAUDE.md` before this slice (`git show <commit before slice 8>:CLAUDE.md`) has an entry in `DDD-VOCABULARY.md`. Each \"Not to confuse with\" note survives as an `_Avoid_` item for a synonym or as a homonym note for a collision.\n**Evidence to check:** compare the old table row by row against the glossary.\n**Scoring:** 1.0 nothing lost. 0.5 a note lost. 0.0 a term lost.\n\n### C2 — CLAUDE.md points, not copies [CRITICAL]\n**Must be true:** `CLAUDE.md` has no `| Term | Meaning |` table. The Vocabulary section links to `DDD-VOCABULARY.md` and keeps the rule to resolve a collision in the glossary before it ships. The \"A superseded gazetteer\" subsection now names `DDD-VOCABULARY.md` as the source of truth.\n**Evidence to check:** read `CLAUDE.md`. A test asserts the table is absent and the link present.\n**Scoring:** 1.0 all. 0.5 a stale reference. 0.0 the table remains.\n\n### C3 — the glossary still parses\n**Must be true:** Slice 6's format test still passes with the new entries.\n**Evidence to check:** run the suite.\n**Scoring:** 1.0 pass. 0.0 fail.\n\n## Regression check\n- `uv run --with pytest --with requests --with pyyaml --with pillow pytest tests/ -q` shows no new failure. Baseline: 365 passed, 1 pre-existing failure in `test_generate_prompts_webp.py`.\n- `uv run plugins/implement/scripts/verify_gate.py --plan docs/plans/interaction-design-gate` still reports `Overall: OK`.\n\n## Out of scope — do not penalise\n- Wording changes to terms beyond the move, unless a term was lost.\n",
         "source_path": ".cobuilder/rubrics/slice-agents-and-vocabulary/slice-8.md"
+      },
+      {
+        "id": "work-drawer/1",
+        "feature_slug": "work-drawer",
+        "n": 1,
+        "title": "Slice 1 — Tracer bullet: the search owns the result set",
+        "body_md": "# Rubric: Slice 1 — Tracer bullet: the search owns the result set\n\nFeature: `work-drawer`\nEpic: `work-drawer/E1` — The search owns the result set\nSlice goal: A needle over the deck drives the filter, the focus, and the self-read.\nTest command: `cd plugins/artifact/viewer && npm run typecheck && npm run test`\n\n## Criteria\n\n### C1 — Typing anything into the search resets the state filter to All [CRITICAL]\n\n**Must be true:** The moment the search field holds a needle, the state\nfilter's active chip is `All`, whatever it held before. A reader who left the\nboard narrowed to `Shipped` and then types sees the whole board's rows and a\ncount the board earns.\n\n**Evidence to check:** Narrow the board to `Shipped`. Focus the field and\ntype one character. Read the strip: `All` is active, and the rows and the\nshown count read the needle's result set across all five lanes, not `Shipped`'s.\n\n**Scoring:** 1.0 = the reset is immediate and the count reads the needle's\nresult. 0.5 = the rows refine but the strip keeps its old choice. 0.0 = no\nreset.\n\n### C2 — Pressing slash anywhere in the open drawer moves the cursor into the search field [CRITICAL]\n\n**Must be true:** With the drawer open, `/` puts the caret in the search\nfield, from a row, a chip, a fold, or the footer. From the field itself, `/`\ntypes the character and moves nothing.\n\n**Evidence to check:** Click a row (which selects, not types), then press\n`/`, and read the active element is the search input. Then focus the field\nand press `/` again, and read the character lands in the field.\n\n**Scoring:** 1.0 = the caret lands from a row and slash types from the\nfield. 0.5 = the caret lands but slash also types from the field, or the\ncaret never lands. 0.0 = the key does nothing.\n\n### C3 — A search that resolves to exactly one work item displays that item's details [CRITICAL]\n\n**Must be true:** A needle whose result set is exactly one row selects that\nrow and shows the detail pane with no second press. A needle that widens the\nset past one clears the selection. The pane's content is that design's own:\nthe outcome prose, the six authored record marks, the epics with their\nrefined states, and the merged pull requests.\n\n**Evidence to check:** Type a needle that names exactly one design (a\ndistinct word of its outcome). Read the pane: it is open and carries that\ndesign. Type one more character that broadens the set; read the pane: it\nclears.\n\n**Scoring:** 1.0 = the sole result reads itself and a broader set clears.\n0.5 = the sole result reads itself but never clears. 0.0 = the pane stays\nclosed.\n\n### C4 — The repository's gates hold [CRITICAL]\n\n**Must be true:** `npm run typecheck`, `npm run test`, and `npm run build`\nall pass in the viewer, with no test skipped and no new failure.\n\n**Evidence to check:** Run the three in the viewer directory and print the\ntails.\n\n**Scoring:** 1.0 = all three pass. 0.0 = any fails or any test skips.",
+        "source_path": ".cobuilder/rubrics/work-drawer/slice-1.md"
+      },
+      {
+        "id": "work-drawer/2",
+        "feature_slug": "work-drawer",
+        "n": 2,
+        "title": "Slice 2 — Labels and the filter walk",
+        "body_md": "# Rubric: Slice 2 — Labels and the filter walk\n\nFeature: `work-drawer`\nEpic: `work-drawer/E2` — Labels and the filter walk\nSlice goal: The drawer says what it holds, the pane's buttons say what they do, and the arrows step the filter.\nTest command: `cd plugins/artifact/viewer && npm run typecheck && npm run test`\n\n## Criteria\n\n### C1 — The header carries no held-out text [CRITICAL]\n\n**Must be true:** The drawer's header carries the title, the design count,\nand the shown count. The text \"held out: … ADRs · … unfinished PRs\" is not in\nthe header. The exclusion rule stays stated, permanently, in the footer.\n\n**Evidence to check:** Open the drawer and read the header line: no held-out\ntext. Read the footer: the rule and the counts are there.\n\n**Scoring:** 1.0 = the header is clean and the footer states the rule.\n0.5 = the header is clean but the rule is stated nowhere. 0.0 = the header\nstill narrates it.\n\n### C2 — The pane's shell link reads \"Open work item\" [CRITICAL]\n\n**Must be true:** The detail pane's link to the shell reads \"Open work\nitem\", with the row's own design name in the link's accessible name.\n\n**Evidence to check:** Select a row and read the pane's link text and its\naria-label.\n\n**Scoring:** 1.0 = the label reads \"Open work item\" and the accessible name\ncarries the design. 0.0 = either is missing.\n\n### C3 — The pane's dismiss control reads \"Close\" [CRITICAL]\n\n**Must be true:** The detail pane's dismiss button reads \"Close\", and a press\nclears the selection and drops the drawer to its working snap.\n\n**Evidence to check:** Select a row, read the button's text, press it, and\nread the selection gone and the drawer back at 0.6.\n\n**Scoring:** 1.0 = the label reads \"Close\" and the press does both. 0.0 =\neither is missing.\n\n### C4 — Tapping forward/backward arrow selects the next/previous filter [CRITICAL]\n\n**Must be true:** While the filter strip holds the focus, `→` makes the next\nchip active and `←` makes the previous chip active, through the lanes'\nvocabulary, stopping at the ends. Up and down still walk the deck, and left\nand right never type into the search field by accident.\n\n**Evidence to check:** Focus the strip; press `→` from `All` and read\n`Needs a decision` active; walk to the last chip and press `→` again and read\nthe walk stop; press `←` twice and read the chip step back. Then press `↓`\nand read the row walk unaffected.\n\n**Scoring:** 1.0 = the chip steps, the ends stop, and the row walk is\nunaffected. 0.5 = the chip steps but the ends do not stop. 0.0 = the keys do\nnothing.\n\n### C5 — The repository's gates hold [CRITICAL]\n\n**Must be true:** `npm run typecheck`, `npm run test`, and `npm run build`\nall pass in the viewer, with no test skipped and no new failure.\n\n**Evidence to check:** Run the three in the viewer directory and print the\ntails.\n\n**Scoring:** 1.0 = all three pass. 0.0 = any fails or any test skips.",
+        "source_path": ".cobuilder/rubrics/work-drawer/slice-2.md"
       }
     ]
   },
@@ -3185,7 +3267,8 @@
           "react-viewer/E6",
           "react-viewer/E7",
           "react-viewer/E8",
-          "react-viewer/E9"
+          "react-viewer/E9",
+          "work-drawer/E1"
         ]
       },
       "ADR-0024": {
@@ -3243,7 +3326,8 @@
           "cobuilder-viewer/E16",
           "cobuilder-viewer/E17",
           "cobuilder-viewer/E18",
-          "cobuilder-viewer/E19"
+          "cobuilder-viewer/E19",
+          "work-drawer/E1"
         ]
       },
       "ADR-0028": {
@@ -3319,7 +3403,8 @@
         "path": [
           "beads-storage/beads-storage/E1",
           "beads-storage/beads-storage/E2",
-          "beads-storage/beads-storage/E3"
+          "beads-storage/beads-storage/E3",
+          "work-drawer/E1"
         ]
       },
       "ADR-0032": {
@@ -3340,6 +3425,13 @@
           "review-flight-deck/F4",
           "review-flight-deck/F5",
           "review-flight-deck/F6"
+        ]
+      },
+      "ADR-0034": {
+        "pr": null,
+        "via": "epic",
+        "path": [
+          "work-drawer/E1"
         ]
       }
     },
@@ -3462,7 +3554,8 @@
       "ubiquitous-language/E2": "unstarted",
       "ubiquitous-language/E3": "unstarted",
       "ubiquitous-language/E4": "unstarted",
-      "ubiquitous-language/E5": "unstarted"
+      "ubiquitous-language/E5": "unstarted",
+      "work-drawer/E1": "no-pull-request"
     },
     "slice_to_epic": {
       "cobuilder-family/4": "plugin-split/E1",
@@ -3522,9 +3615,12 @@
       "slice-agents-and-vocabulary/5": "slice-agents-and-vocabulary/E3",
       "slice-agents-and-vocabulary/6": "slice-agents-and-vocabulary/E4",
       "slice-agents-and-vocabulary/7": "slice-agents-and-vocabulary/E4",
-      "slice-agents-and-vocabulary/8": "slice-agents-and-vocabulary/E4"
+      "slice-agents-and-vocabulary/8": "slice-agents-and-vocabulary/E4",
+      "work-drawer/1": "work-drawer/E1"
     },
-    "slice_to_epic_unresolved": {},
+    "slice_to_epic_unresolved": {
+      "work-drawer/2": "epic header names 'work-drawer/E2', which no design declares."
+    },
     "context_verifies_district": {
       "cobuilder-packaging": [
         "commands",
@@ -3554,7 +3650,8 @@
       "ADR-0030": "cobuilder-packaging",
       "ADR-0031": "cobuilder-packaging",
       "ADR-0032": "cobuilder-packaging",
-      "ADR-0033": "cobuilder-packaging"
+      "ADR-0033": "cobuilder-packaging",
+      "ADR-0034": "cobuilder-packaging"
     },
     "adr_to_district": {
       "ADR-0001": "scripts",
@@ -3810,6 +3907,43 @@
           "n": "4",
           "name": "Slice plan, epic designs, and rubrics",
           "state": "APPROVED 2026-09-27"
+        }
+      ],
+      "work-drawer": [
+        {
+          "n": "1",
+          "name": "Product (no tech talk)",
+          "state": "APPROVED 2026-09-28",
+          "view": "#/work-drawer/build/plan/product`",
+          "doc": "work-drawer",
+          "doc_kind": "product"
+        },
+        {
+          "n": "2",
+          "name": "Architecture",
+          "state": "APPROVED 2026-09-28",
+          "view": "#/work-drawer/build/plan/architecture`"
+        },
+        {
+          "n": "2b",
+          "name": "Interaction design",
+          "state": "APPROVED 2026-09-28",
+          "doc": "work-drawer",
+          "doc_kind": "interaction"
+        },
+        {
+          "n": "3",
+          "name": "Program design",
+          "state": "APPROVED 2026-09-28",
+          "view": "#/work-drawer/build/plan/program`",
+          "doc": "work-drawer",
+          "doc_kind": "program"
+        },
+        {
+          "n": "4",
+          "name": "Slice plan, epic designs, and rubrics",
+          "state": "APPROVED 2026-09-28",
+          "view": "#/work-drawer/build/plan/epics`"
         }
       ]
     }
