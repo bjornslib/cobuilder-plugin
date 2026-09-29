@@ -13,7 +13,7 @@
   "outcome": "The Work board stops being a page the reader travels to and becomes a drawer over whatever Build or Review surface they were reading: one press on the Work icon opens a vaul drawer at sixty percent of the viewport, holding the bundle's work on a kanban of five collapsible lanes — needs a decision, ready to build, in review, shipped, superseded — behind a state filter and an incremental search. Decision records and unfinished pull requests are held out of the board by rule. A search that resolves to exactly one work item reads that item's record in the detail pane without a second press, and the arrow keys walk both the rows and the filter strip.",
   "done_when": [
     "the shipped shell's Work icon opens the drawer over the surface the reader is on, and closing it leaves that surface scrolled and focused as it was",
-    "the drawer holds five lanes whose headers fold and unfold with shadcn Collapsible, and a folded lane leaves the keyboard walk and the counts",
+    "the drawer holds five lanes whose headers fold and unfold, and a folded lane holds its rows: the walk and the counts keep them, the lane holding the current row refuses the fold, and the walk that lands on a row of a folded lane opens it",
     "the state filter strip and the search combine with AND, and typing any character into the search resets the filter to All",
     "pressing slash anywhere in the open drawer moves the cursor into the search field, and the arrow keys step the filter chips left and right when the board holds the focus",
     "a search that resolves to exactly one work item selects it and reads its record in the detail pane with no second press",
@@ -40,9 +40,21 @@
       "state": "planned",
       "outcome": "the day-deck drawer holds the Work board: five collapsible lanes, a state filter that the arrow keys step, an incremental search that resets the filter and auto-reads a single result, and a detail pane that follows the walk",
       "note": "One pull request. The engineer chose one pull request for the design, so the epic carries the branch alone. The prototypes stay under src/variations/ as the reference arrangement while the drawer is the prototype surface; the port that replaces shell/Board.tsx's full-page board is this design's next epic and is deliberately not in this one, so the shipped board never regresses while the drawer is under review."
+    },
+    {
+      "id": "E2",
+      "slug": "work-drawer",
+      "branch": "design/work-drawer",
+      "pr": null,
+      "state": "planned",
+      "outcome": "the header and the pane's buttons state themselves, and the state strip's chips step with the arrow keys",
+      "note": "The second epic of the same pull request: the renames, the header's counts, and the chip walk."
     }
   ],
-  "limits": { "warn_after_rounds": 2, "cutoff_rounds": 4 },
+  "limits": {
+    "warn_after_rounds": 2,
+    "cutoff_rounds": 4
+  },
   "stage": "decided",
   "supersedes": [],
   "rounds": [

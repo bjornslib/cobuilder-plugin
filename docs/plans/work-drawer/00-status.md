@@ -114,3 +114,5 @@ Filled with the same evidence standard as slices 1–2: real browser
 verification of the bare route over dev server, drawer auto-open, the empty
 pane behind it, and the pane's link landing on Intent (verified on
 `inflight-record-store`, whose goal record fills it).
+
+- **Defect found and fixed in the port (2026-09-29).** Folding a lane — the engineer's `> Needs a decision` — removed the lane's rows entirely from the board: they left the walk, the counts, and the DOM. The deck now holds the rail's own convention (a fold is a display choice, never an exclusion): rows stay mounted behind the closed header, the counts and the walk keep them, the fold that holds the current row is refused (`disabled` + a stated reason), and the walk that lands on a folded lane's row reopens the lane. One latent find on the way: the fold handler's polarity was inverted, so closing did nothing; the sole-selection effect's render loop (fixed earlier the same day) had hidden it.

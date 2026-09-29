@@ -381,6 +381,75 @@ describe("Shell", () => {
     ).toBeTruthy();
   });
 
+  it("folds a lane, and the fold removes nothing", async () => {
+    /*
+      A FOLD IS A DISPLAY CHOICE, NOT AN EXCLUSION — the rule the rail's
+      groups already hold, and the deck now holds too (the engineer caught
+      the deck removing folded rows entirely from the board). The folded
+      lane collapses to its header; the rows stay mounted, in the walk and
+      in the counts. The lane holding the current row refuses the fold.
+    */
+    at("#/");
+    render(<Shell />);
+
+    await waitFor(() => {
+      expect(drawerScope()).toBeTruthy();
+    });
+    const dialog = drawerScope();
+    const lane = within(dialog)
+      .getAllByRole("button", { name: /Superseded/ })
+      .find((b) => b.getAttribute("aria-controls") === "lane-superseded-rows");
+    expect(lane).toBeTruthy();
+
+    /* Fold: the header says closed, and the row is still on the board. */
+    fireEvent.click(lane!);
+    expect(lane!.getAttribute("aria-expanded")).toBe("false");
+    expect(
+      within(dialog).getByRole("button", { name: "inflight-record-store, stage superseded" }),
+    ).toBeTruthy();
+
+    /* The current lane cannot fold: the control refuses. */
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "inflight-record-store, stage superseded" }),
+    );
+    const supersededLane = within(dialog)
+      .getAllByRole("button", { name: /Superseded/ })
+      .find((b) => b.getAttribute("aria-controls") === "lane-superseded-rows");
+    expect(supersededLane!.getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("the walk onto a row in a folded lane reopens the lane", async () => {
+    at("#/");
+    render(<Shell />);
+
+    await waitFor(() => {
+      expect(drawerScope()).toBeTruthy();
+    });
+    const dialog = drawerScope();
+
+    /* Fold the only lane the walk's second step needs. */
+    const lane = within(dialog)
+      .getAllByRole("button", { name: /Superseded/ })
+      .find((b) => b.getAttribute("aria-controls") === "lane-superseded-rows");
+    fireEvent.click(lane!);
+    expect(lane!.getAttribute("aria-expanded")).toBe("false");
+
+    /* The deck takes its own keys; the walk steps the folded row. */
+    const deckBody = lane!.closest("div.min-h-0.min-w-0.flex-1") as HTMLElement;
+    fireEvent.keyDown(deckBody, { key: "ArrowDown", bubbles: true });
+    fireEvent.keyDown(deckBody, { key: "ArrowDown", bubbles: true });
+
+    await waitFor(() => {
+      const reopened = within(dialog)
+        .getAllByRole("button", { name: /Superseded/ })
+        .find((b) => b.getAttribute("aria-controls") === "lane-superseded-rows");
+      expect(reopened?.getAttribute("aria-expanded")).toBe("true");
+      expect(
+        within(dialog).getByRole("button", { name: "inflight-record-store, stage superseded" }),
+      ).toBeTruthy();
+    });
+  });
+
   it("draws no strip, no pager, and no progress strip on the landing", async () => {
     at("#/");
     render(<Shell />);
@@ -464,26 +533,18 @@ describe("Shell", () => {
       narrows to one row, the sole result reads itself, and the pane's link
       opens the surface the shell routes. The drawer closes as it leaves.
     */
-    console.error("PROBE A: hash set");
     at("#/");
     render(<Shell />);
-    console.error("PROBE B: rendered");
     await waitFor(() => {
-      console.error("PROBE C: dialog check");
       expect(screen.getByRole("dialog", { name: "WORK" })).toBeTruthy();
     });
-    console.error("PROBE D: dialog up");
     const dialog = screen.getByRole("dialog", { name: "WORK" });
     const field = within(dialog).getByRole("textbox", { name: "Search the work items" });
-    console.error("PROBE E: firing change");
     fireEvent.change(field, { target: { value: "inflight" } });
-    console.error("PROBE F: change fired; waiting link");
     const link = await waitFor(() =>
       within(dialog).getByRole("link", { name: "Open work item: inflight-record-store" }),
     );
-    console.error("PROBE G: link found href=" + link.getAttribute("href"));
     fireEvent.click(link);
-    console.error("PROBE H: clicked");
 
     /* The drawer closed on its way out, and the surface it opened resolves. */
     await waitFor(() => {

@@ -1,12 +1,12 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "e04de1f2eac930d6c3d598f74a7098a6c4881a8f",
+    "git_head": "801afe729f817a9ddefeb5539efa5df5c17fafa1",
     "trees": {
-      "docs/architecture/adr": "sha256:b56a471139234ddceaa65afb42d464a9b31d2ebf58964f5c3a5d9e7cc1749961",
-      "docs/architecture/designs": "sha256:5af8623acaf02f65d75e2422ffe3962ecc00fe2791643bacb8e0ca1093aaa659",
+      "docs/architecture/adr": "sha256:5836849a1625569e39f5a741295a2315800cb2fca5dccba7d9e760808e6fd89d",
+      "docs/architecture/designs": "sha256:d3a1346f02e7a42a33435425c4f8e480e6a567ff2a4b563a34c3407ea1e369d3",
       "docs/architecture/contexts": "sha256:2f1cde1db74ea6f95b55152c3de109c6e281619cc3beae3fb939d8650a4005c8",
-      "docs/plans": "sha256:ae412e96f43785f3f74489e2c2cb3ff907a4922a961ddaf4e7f746487f99a2f6",
+      "docs/plans": "sha256:817bd9b7e71145999deb9fe7cbf22e6941c664bddc07c309ff075bf35691303d",
       ".cobuilder/rubrics": "sha256:0f4e5db5ed28cb699bc4dfa747691dddd7350af5d26eda190b7967c70a7a1b4b"
     }
   },
@@ -1098,6 +1098,15 @@
         "pr": null,
         "state": "planned",
         "note": "One pull request. The engineer chose one pull request for the design, so the epic carries the branch alone. The prototypes stay under src/variations/ as the reference arrangement while the drawer is the prototype surface; the port that replaces shell/Board.tsx's full-page board is this design's next epic and is deliberately not in this one, so the shipped board never regresses while the drawer is under review."
+      },
+      {
+        "id": "work-drawer/E2",
+        "design": "work-drawer",
+        "epic_id": "E2",
+        "branch": "design/work-drawer",
+        "pr": null,
+        "state": "planned",
+        "note": "The second epic of the same pull request: the renames, the header's counts, and the chip walk."
       }
     ],
     "context": [
@@ -3268,7 +3277,8 @@
           "react-viewer/E7",
           "react-viewer/E8",
           "react-viewer/E9",
-          "work-drawer/E1"
+          "work-drawer/E1",
+          "work-drawer/E2"
         ]
       },
       "ADR-0024": {
@@ -3327,7 +3337,8 @@
           "cobuilder-viewer/E17",
           "cobuilder-viewer/E18",
           "cobuilder-viewer/E19",
-          "work-drawer/E1"
+          "work-drawer/E1",
+          "work-drawer/E2"
         ]
       },
       "ADR-0028": {
@@ -3398,13 +3409,14 @@
         ]
       },
       "ADR-0031": {
-        "pr": null,
+        "pr": 25,
         "via": "epic",
         "path": [
           "beads-storage/beads-storage/E1",
           "beads-storage/beads-storage/E2",
           "beads-storage/beads-storage/E3",
-          "work-drawer/E1"
+          "work-drawer/E1",
+          "work-drawer/E2"
         ]
       },
       "ADR-0032": {
@@ -3428,10 +3440,11 @@
         ]
       },
       "ADR-0034": {
-        "pr": null,
+        "pr": 25,
         "via": "epic",
         "path": [
-          "work-drawer/E1"
+          "work-drawer/E1",
+          "work-drawer/E2"
         ]
       }
     },
@@ -3467,7 +3480,9 @@
       "plugin-split/E4": 11,
       "plugin-split/E5": 11,
       "plugin-split/E6": 11,
-      "plugin-split/E8": 18
+      "plugin-split/E8": 18,
+      "work-drawer/E1": 25,
+      "work-drawer/E2": 25
     },
     "epic_status": {
       "beads-storage/beads-storage/E1": "unstarted",
@@ -3555,7 +3570,8 @@
       "ubiquitous-language/E3": "unstarted",
       "ubiquitous-language/E4": "unstarted",
       "ubiquitous-language/E5": "unstarted",
-      "work-drawer/E1": "no-pull-request"
+      "work-drawer/E1": "open",
+      "work-drawer/E2": "open"
     },
     "slice_to_epic": {
       "cobuilder-family/4": "plugin-split/E1",
@@ -3616,11 +3632,10 @@
       "slice-agents-and-vocabulary/6": "slice-agents-and-vocabulary/E4",
       "slice-agents-and-vocabulary/7": "slice-agents-and-vocabulary/E4",
       "slice-agents-and-vocabulary/8": "slice-agents-and-vocabulary/E4",
-      "work-drawer/1": "work-drawer/E1"
+      "work-drawer/1": "work-drawer/E1",
+      "work-drawer/2": "work-drawer/E2"
     },
-    "slice_to_epic_unresolved": {
-      "work-drawer/2": "epic header names 'work-drawer/E2', which no design declares."
-    },
+    "slice_to_epic_unresolved": {},
     "context_verifies_district": {
       "cobuilder-packaging": [
         "commands",

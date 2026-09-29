@@ -25,8 +25,11 @@
  *   7. `←`/`→` step the filter strip's active chip from its own vocabulary,
  *      stopping at the ends (`chipStepped`).
  *
- * THE LANES FOLD BEHIND SHADCN'S COLLAPSIBLE. A folded lane leaves the walk
- * and the counts, so the walk never lands on a row the reader cannot see.
+ * THE LANES FOLD, AND A FOLDED LANE IS NOT A GAP. A fold is a display
+ * choice, never an exclusion: the rows stay in the walk and in the counts,
+ * and the lane holding the current row refuses to fold, the same rule the
+ * rail's groups hold — so the walk never lands on a row the deck cannot
+ * show, and nothing a reader folded takes content off the board.
  *
  * THE RAIL'S ARROW WALK SLEEPS WHILE THE DRAWER HOLDS THE KEYS. The shell's
  * rail walks its own rows from a window-level listener; the deck stops the
@@ -47,11 +50,6 @@ import { ChevronDown, GitMerge, X } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { Drawer } from "vaul";
 
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { StageBadge } from "@/components/work/StageBadge";
 import { entitiesOf } from "@/data/bundle";
 import type { DesignRecord, DesignRecords } from "@/data/bundle";
@@ -69,6 +67,7 @@ import {
   filterChipsOf,
   filterForTyping,
   highlight,
+  laneOf,
   laneRows,
   soleOf,
   walkedRows,
@@ -374,10 +373,17 @@ function DrawerBody({
   setSnap: (snapPoint: number) => void;
 }) {
   const searchRef = useRef<HTMLInputElement>(null);
+  /* The deck's own reduce answer: a reduced reader folds with no height
+     animation, like every other animated thing the house draws. */
+  const reduce = useReducedMotion() ?? false;
   const [needle, setNeedle] = useState("");
   /* The state filter selects whole lanes; `all` is the value that clears it. */
   const [laneFilter, setLaneFilter] = useState<string>(FILTER_ALL);
-  /* The fold, per lane key. A lane the reader folded is out of the walk. */
+  /*
+   * THE FOLD, PER LANE KEY. A folded lane collapses to its header line — a
+   * display choice only. Its rows stay in the walk and in the counts, and
+   * the lane holding the current row refuses the fold.
+   */
   const [folded, setFolded] = useState<Record<string, boolean>>({});
   /*
    * THE SELECTION AND ITS TWO SOURCES. An explicit selection is a row the
@@ -405,16 +411,12 @@ function DrawerBody({
 
   const needleText = needle.trim().toLowerCase();
 
-  /* THE WALK READS ONLY WHAT THE READER CAN SEE. The filter drops whole lanes,
-     the fold drops their rows, and the search refines what remains — in that
-     order, once, so the strip's counts, the walk, and the board cannot
-     disagree about what is visible. */
+  /* THE WALK READS ONLY WHAT THE FILTER NARROWS. The filter drops whole
+     lanes, and the search refines what remains — in that order, once. A fold
+     drops neither: a folded lane is not a gap, the same rule the rail holds. */
   const visibleLanes = useMemo(
-    () =>
-      LANES.filter(
-        (lane) => (laneFilter === FILTER_ALL || laneFilter === lane.key) && !folded[lane.key],
-      ),
-    [laneFilter, folded],
+    () => LANES.filter((lane) => laneFilter === FILTER_ALL || laneFilter === lane.key),
+    [laneFilter],
   );
   const walk = useMemo(
     () => walkedRows(visibleLanes, rows, needleText),
@@ -463,6 +465,19 @@ function DrawerBody({
       setSelection(null);
     }
   }, [sole, walk, selection, dismissed]);
+
+  /*
+   * THE LANE HOLDING THE CURRENT ROW OPENS. The walk never lands on a row
+   * the board cannot show, so the fold cannot hold the row the selection
+   * is on: it opens the moment the walk steps onto it. Same rule, enforced
+   * from the selection side.
+   */
+  useEffect(() => {
+    if (selection === null) return;
+    const stage = rows.find((row) => row.design.id === selection.id)?.design.stage;
+    const lane = stage ? laneOf(stage) : null;
+    if (lane && folded[lane.key]) setFolded((was) => ({ ...was, [lane.key]: false }));
+  }, [selection, rows, folded]);
 
   /*
    * THE DRAWER RESETS WHEN IT CLOSES, so the next open is the whole deck: the
@@ -672,47 +687,83 @@ function DrawerBody({
                 ? "The bundle holds no design."
                 : needleText.length > 0
                   ? `Nothing on the deck matches “${needle.trim()}”. Clear the search, or widen the state filter above.`
-                  : "No lane is open and holding rows. Unfold a lane, or widen the state filter."}
+                  : "No lane holds these stages with this filter. Widen the state filter above."}
             </p>
           ) : (
+            /*
+              THE FOLD IS A DISPLAY CHOICE, AND THE CONTENT STAYS. The deck
+              folds a lane to its header line, and the rows remain mounted
+              beneath it — the walk and the counts keep them, the refusal
+              keeps the current row's lane open, and a folded lane opened by
+              the walk stays put. It is the house `rt` fold (mounted content,
+              animated height, inert off), not a v-if, because a v-if is
+              removal: the defect the engineer named.
+            */
             visibleLanes.map((lane) => {
               const scoped = laneRows(lane, rows, needleText);
               const isOpen = !folded[lane.key];
+              const holdsSelection =
+                selected !== null &&
+                lane.stages.includes(selected.design.stage);
+              const contentId = `lane-${lane.key}-rows`;
+              const refuse =
+                holdsSelection ? " — the lane holding the current row stays open" : "";
               return (
-                <Collapsible
-                  key={lane.key}
-                  open={isOpen}
-                  onOpenChange={(next) => setFolded((was) => ({ ...was, [lane.key]: !next }))}
-                >
-                  <section aria-label={lane.label} className="mb-2 min-w-0">
-                    <CollapsibleTrigger
+                <section aria-label={lane.label} className="mb-2 min-w-0" key={lane.key}>
+                  <button
+                    type="button"
+                    aria-expanded={isOpen}
+                    aria-controls={contentId}
+                    disabled={holdsSelection}
+                    title={`Fold “${lane.label}”${refuse}`}
+                    onClick={() => {
+                      /* Clicking an open lane folds it: `folded[key]` is
+                         true when closed, so the next value is `isOpen` —
+                         the press inverts what the lane now is. */
+                      if (holdsSelection) return;
+                      setFolded((was) => ({ ...was, [lane.key]: isOpen }));
+                    }}
+                    className={cn(
+                      "group flex w-full min-w-0 items-baseline gap-2 rounded-md px-2.5 pt-2 pb-1 text-left",
+                      "border-b border-line transition-colors duration-150 ease-house hover:bg-surface-2/60",
+                      "cursor-pointer disabled:cursor-not-allowed",
+                      "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                    )}
+                  >
+                    <ChevronDown
                       className={cn(
-                        "group flex w-full min-w-0 cursor-pointer items-baseline gap-2 rounded-md px-2.5 pt-2 pb-1 text-left",
-                        "border-b border-line transition-colors duration-150 ease-house hover:bg-surface-2/60",
-                        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                        "size-4 shrink-0 self-center text-ink-faint transition-transform duration-150 ease-house",
+                        !isOpen && "-rotate-90",
                       )}
+                      aria-hidden="true"
+                    />
+                    <h3 className="m-0 font-mono text-[12.5px] font-bold tracking-[0.08em] text-ink-dim uppercase">
+                      {lane.label}
+                    </h3>
+                    <span className="font-mono text-[12px] text-ink-faint tabular-nums">
+                      {scoped.length}
+                    </span>
+                    <span
+                      className="min-w-0 flex-1 truncate font-serif text-[13px] text-ink-faint"
+                      title={lane.blurb}
                     >
-                      <ChevronDown
-                        className={cn(
-                          "size-4 shrink-0 self-center text-ink-faint transition-transform duration-150 ease-house",
-                          !isOpen && "-rotate-90",
-                        )}
-                        aria-hidden="true"
-                      />
-                      <h3 className="m-0 font-mono text-[12.5px] font-bold tracking-[0.08em] text-ink-dim uppercase">
-                        {lane.label}
-                      </h3>
-                      <span className="font-mono text-[12px] text-ink-faint tabular-nums">
-                        {scoped.length}
-                      </span>
-                      <span
-                        className="min-w-0 flex-1 truncate font-serif text-[13px] text-ink-faint"
-                        title={lane.blurb}
-                      >
-                        {lane.blurb}
-                      </span>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
+                      {lane.blurb}
+                    </span>
+                  </button>
+                  {/* The rows stay mounted: a fold animates the height and
+                      hides nothing from the walk. */}
+                  <div
+                    id={contentId}
+                    style={{
+                      display: "grid",
+                      gridTemplateRows: isOpen ? "1fr" : "0fr",
+                      transition: reduce
+                        ? undefined
+                        : "grid-template-rows 200ms var(--ease-house, ease)"
+                    }}
+                    className="min-w-0 overflow-hidden"
+                  >
+                    <div className="min-h-0 min-w-0 overflow-hidden">
                       {scoped.length === 0 ? (
                         <p className="m-0 px-2.5 py-2 font-serif text-[13.5px] text-ink-dim italic">
                           {needleText.length > 0 ? "no match" : lane.empty}
@@ -731,9 +782,9 @@ function DrawerBody({
                           ))}
                         </div>
                       )}
-                    </CollapsibleContent>
-                  </section>
-                </Collapsible>
+                    </div>
+                  </div>
+                </section>
               );
             })
           )}

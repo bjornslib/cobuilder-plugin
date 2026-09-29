@@ -42,7 +42,7 @@ compare without a scroll.
 | Work icon (top-left) | Button | Opens the drawer. |
 | Search field | Text input | Refines the rows as the reader types. Typing any character resets the state filter to `All`. A result set of exactly one selects that row. |
 | Filter chip | Button ×6 | Sets the active lane set. `All` restores the whole board. |
-| Lane header | Collapsible trigger ×5 | Folds and unfolds the lane's rows. A folded lane leaves the walk and the counts. |
+| Lane header | Collapsible trigger ×5 | Folds and unfolds the lane's rows. A fold is a display choice and removes nothing: the rows stay mounted, in the walk and in the counts, the lane holding the current row refuses the fold, and the walk that lands on a folded lane's row reopens it. (The engineer caught the deck removing folded rows entirely; the deck now holds the rail's own fold convention.) |
 | Row | Button | Selects. Pressing the selected row again closes the pane and drops the drawer to 0.6. |
 | Pane: Open work item | Link | Opens the shell's address for the selected design. |
 | Pane: Close | Button | Clears the selection and drops the drawer to 0.6. |
