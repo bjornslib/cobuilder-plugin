@@ -2,7 +2,16 @@
 
 **Feature:** `work-drawer`
 **Epics:** E1 — the search owns the result set · E2 — labels and the filter walk
-**Slices:** 2
+**Slices:** 2 · both completed at 1.00 (see `Verification record`)
+
+**Scope note, 2026-09-28, later the same day.** The engineer read the refined
+drawer and asked for it wired into the shipped viewer before the slices were
+scored. The port this plan deliberately held out has therefore started: the
+day deck now ships beside the shell as `src/shell/WorkDrawer.tsx` with its
+pure rules in `src/shell/workDeck.ts`, the shell's own Work icon in the top
+bar opens it, and the full-page board route `#/` keeps rendering untouched,
+exactly as ADR-0034's consequence states. Retiring that route is still the
+design's next epic.
 
 ## Gates
 
@@ -25,8 +34,8 @@ Hindsight: available — initiative page kp-b6fe94648e5b4e74830dbd5516b02872
 
 ## Slices
 
-- [ ] Slice 1 — the search owns the result set: score: pending
-- [ ] Slice 2 — labels and the filter walk: score: pending
+- [x] Slice 1 — the search owns the result set: score: 1.00 (attempt 1)
+- [x] Slice 2 — labels and the filter walk: score: 1.00 (attempt 1)
 
 ## Notes for a fresh session
 
@@ -49,4 +58,32 @@ the contract and the hint line states it again.
 
 ## Verification record
 
-(filled by the slice loop; see the tail of this file after the slices close)
+Filled 2026-09-28, attempt 1 of each slice, in Chrome with real key events
+(CDP `Input.dispatchKeyEvent` — synthetic events do not reach React's
+listeners). Full records: `.cobuilder/rubrics/work-drawer/evidence/`.
+
+- **Slice 1 — 1.00.** Typing `plugin` after narrowing to `Shipped` reset the
+  strip to All and read the needle's result set across all five lanes; `/`
+  focused the field from a lane trigger and typed the character from the
+  field; `ubiquitous` and `cobuilder-vi` auto-read their sole results, a
+  broadened set cleared the automatic read entirely, and a dismissed sole
+  stayed dismissed until the needle changed, which started a new read.
+  Gates: typecheck clean, 210 tests passing (181 baseline + the rules
+  beside the prototype and the shipped port), build shape unchanged.
+- **Slice 2 — 1.00.** Header carries `WORK` + the counts and no held-out
+  text; the footer states the rule with 33 decisions and 5 unfinished pull
+  requests in one sentence; `Open work item` follows the shell's own route
+  builder and closes the drawer on navigation; `Close` closes the pane.
+  The chip walk stepped `Ready to build → In review → Shipped → Super…`,
+  stopped at both ends, and `↓` from the strip walked rows with the filter
+  unchanged while the rail's own walk slept.
+- **Port check.** The drawer over the shipped shell: opened from the
+  top bar's Work icon at the 0.6 snap, sole result auto-read with the
+  amber hit marked, the pane's record marks read the real
+  `load.designs`, Enter toggled the pane and moved the snap (322/805 →
+  40/805), Escape closed and reopening presented the whole deck.
+- **Defects found and fixed during the run.** Two, both in the prototype
+  first: an automatic selection survived its own broadening as a highlight
+  without a pane, and the dismissed sole never re-read after a needle
+  change. Both fixed; the fixes are stated in `index.tsx` and ported into
+  `src/shell/WorkDrawer.tsx`.

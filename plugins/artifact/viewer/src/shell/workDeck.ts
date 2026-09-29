@@ -1,18 +1,23 @@
 /**
- * Prototype B's board rules: the lanes, the exclusion rule, and the search
- * predicate.
+ * The Work drawer's board rules: the lanes, the search predicate, and the
+ * interaction rules ADR-0034 decides.
  *
- * THE EXCLUSION RULE IS THE CORRECTION THE FEEDBACK ASKED FOR, and it is the
- * same rule prototype A states: ADRs and unfinished pull requests are not
- * work, so they are held out of the deck. The deck differs from A in one
- * respect — it carries no standalone pull request rows at all. A merged pull
- * request is evidence its design's card reads, and a merged one no design
- * carries is history the Work drawer need not re-litigate. The header states
- * both exclusions with their counts, so the rule is never silent.
+ * EVERY RULE HERE IS PURE — no DOM, no React, and no join resolution — so the
+ * conformance criterion C1 holds and the drawer's own unit tests can run them
+ * against rows shaped like the real bundle. The reads the drawer makes of the
+ * index's joins happen in `WorkDrawer.tsx`, through `resolvedJoinsOf`, which
+ * is the one sanctioned reader.
  *
- * The lane rule is the approved Work board prototype's. A superseded design
- * keeps a lane here as in A, because a lane that hides its members is a tab
- * and not a lane.
+ * THE EXCLUSION RULE IS ADR-0034's. A decision record is settled the day it
+ * is filed and is read in the Architecture level; a pull request that is not
+ * merged is a change in flight and its design's own card reads it as
+ * evidence. Both are held out of the board. The drawer states the rule in its
+ * footer with the counts it produced, so it is never silent; this module is
+ * the predicate and the tests, not the sentence.
+ *
+ * THE LANES ARE THE APPROVED VOCABULARY. A lane's `stages` are the design
+ * stages it reads, in the bundle's own words, and a superseded design keeps a
+ * lane because a lane that hides its members is a tab and not a lane.
  */
 
 import type { DesignRow } from "@/data/types";
@@ -73,8 +78,8 @@ export function laneOf(stage: string): Lane | null {
  *
  * A reader types a pull request three ways — "PR 10", "#10", "10" — and all
  * three name the same row. So the query drops the kind prefix and reads the
- * number, and the kind word alone never matches, because a needle of "pr"
- * that matched nothing would teach the reader to distrust the field.
+ * number alone, and the kind word never matches by itself, because a needle
+ * of "pr" that matched nothing would teach the reader to distrust the field.
  */
 function matchKey(raw: string): string {
   return raw
@@ -111,59 +116,12 @@ export function laneRows(lane: Lane, rows: DesignRow[], needle: string): DesignR
     .filter((row) => matches(row, needle));
 }
 
-/**
- * The drawer's own pure rules, beside the data layer's readers.
- *
- * Each rule states one fact the drawer narrates on screen, and each one is
- * pure: no DOM, no React, so the slice loop can run them against rows shaped
- * like the real bundle and the drawer cannot disagree with its own tests.
- */
-
-/** The state strip's clearing value. No row can ever carry it. */
-export const FILTER_ALL = "all";
-
-/**
- * Typing resets the filter: the search owns the result set.
- *
- * A reader who starts typing has left the lane survey and asked a find. A
- * filter left behind from a previous question would silently narrow that
- * find, and the reader would trust a wrong count. So the filter resets the
- * moment the search has a needle.
- */
-export function filterForTyping(): string {
-  return FILTER_ALL;
-}
-
-/**
- * A result set of exactly one reads itself.
- *
- * A reader who typed a name and gets one item should not spend a second
- * press reading it. Many or none earn no selection from this rule: an empty
- * result has nothing to read, and a broad one is still a survey.
- */
-export function soleOf(rows: DesignRow[]): DesignRow | null {
-  return rows.length === 1 ? rows[0] : null;
-}
-
-/**
- * The arrows step the filter strip through the lanes' vocabulary.
- *
- * The walk stops at the ends, and a chip the strip does not carry falls back
- * to the first chip, so a stale choice from a previous read resolves instead
- * of dead-ending.
- */
-export function chipStepped(current: string, step: 1 | -1, chips: string[]): string {
-  const at = chips.indexOf(current);
-  if (at === -1) return chips[0];
-  return chips[Math.min(Math.max(at + step, 0), chips.length - 1)];
-}
-
 /** The flat, visible, lane-ordered row list the keyboard walk steps through. */
 export function walkedRows(lanes: Lane[], rows: DesignRow[], needle: string): DesignRow[] {
   return lanes.flatMap((lane) => laneRows(lane, rows, needle));
 }
 
-/** The first match of the design's name, as three spans around the hit. */
+/** The first match of a text as three spans around the hit, or null. */
 export function highlight(text: string, needle: string): {
   before: string;
   hit: string;
@@ -178,4 +136,53 @@ export function highlight(text: string, needle: string): {
     hit: text.slice(at, at + query.length),
     after: text.slice(at + query.length),
   };
+}
+
+/* --------------------------------------------------- the four stated rules */
+
+/** The state strip's clearing value. No row can ever carry it. */
+export const FILTER_ALL = "all";
+
+/**
+ * THE SEARCH OWNS THE RESULT SET: typing resets the filter.
+ *
+ * A reader who starts typing has left the lane survey and asked a find. A
+ * filter left behind from a previous question would silently narrow that
+ * find, and the reader would trust a wrong count. So the filter resets the
+ * moment the search has a needle — whatever it held before.
+ */
+export function filterForTyping(): string {
+  return FILTER_ALL;
+}
+
+/**
+ * A RESULT SET OF EXACTLY ONE READS ITSELF.
+ *
+ * A reader who typed a name and gets one item should not spend a second press
+ * reading it. Many or none earn no selection from this rule: an empty result
+ * has nothing to read, and a broad one is still a survey.
+ */
+export function soleOf(rows: DesignRow[]): DesignRow | null {
+  return rows.length === 1 ? rows[0] : null;
+}
+
+/**
+ * THE ARROWS STEP THE FILTER STRIP through the lanes' vocabulary, from `All`
+ * through every lane and back.
+ *
+ * The walk stops at the ends, and a chip the strip does not carry falls back
+ * to the first chip, so a stale choice from a previous read resolves instead
+ * of dead-ending.
+ */
+export function chipStepped(current: string, step: 1 | -1, chips: string[]): string {
+  const at = chips.indexOf(current);
+  if (at === -1) return chips[0];
+  return chips[Math.min(Math.max(at + step, 0), chips.length - 1)];
+}
+
+/**
+ * The strip's chip order, one place, so the walk and the render agree.
+ */
+export function filterChipsOf(lanes: Lane[]): string[] {
+  return [FILTER_ALL, ...lanes.map((lane) => lane.key)];
 }

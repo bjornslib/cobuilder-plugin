@@ -37,10 +37,13 @@ unit-tested, and stated in the drawer's footer with the counts it held out.
 |---|---|
 | `plugins/artifact/viewer/package.json` | Add `vaul`, the engine under shadcn's Drawer. |
 | `plugins/artifact/viewer/src/variations/work-drawer/` | Prototype A: the house kanban — five lane columns, incremental search, the corrected exclusion rule. The comparison. |
-| `plugins/artifact/viewer/src/variations/work-drawer-deck/` | Prototype B: the day deck — the arrangement this design takes forward. |
+| `plugins/artifact/viewer/src/variations/work-drawer-deck/` | Prototype B: the day deck — the arrangement this design takes forward, refined under the engineer's review. |
+| `plugins/artifact/viewer/src/shell/workDeck.ts` + `workDeck.test.ts` | The shipped pure rules beside the data layer's readers: the lanes, the search predicate, the exclusion predicate, and the four stated rules, with their units. The wiring was requested by the engineer on 2026-09-28. |
+| `plugins/artifact/viewer/src/shell/WorkDrawer.tsx` | The day deck in the shell: the drawer, the deck, the pane — reading the shell's own rows, records, and joins. |
+| `plugins/artifact/viewer/src/shell/App.tsx`, `TopBar.tsx` | The shell's own Work icon opens the drawer; the board route renders untouched. |
 | `docs/architecture/adr/ADR-0034-*.md` | The decision record. |
 | `docs/plans/work-drawer/` | The implement plan: product, interaction design, ui-spec, program design, slices. |
-| `.cobuilder/rubrics/work-drawer/` | The blind acceptance rubrics for the plan's slices. |
+| `.cobuilder/rubrics/work-drawer/` | The blind acceptance rubrics for the plan's slices, with the attempts' evidence. |
 
 The shipped shell's `src/shell/Board.tsx` and the rail's board row are **not**
 in this pull request. The port that retires the full-page board route is

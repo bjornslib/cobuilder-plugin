@@ -191,10 +191,11 @@ function DetailPane({
       <footer className="mt-auto min-w-0 border-t border-line-soft pt-3">
         <a
           href={`#/${design.id}/build`}
+          aria-label={`Open work item: ${design.name}`}
           className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-line bg-card px-2.5 py-1.5 font-mono text-[13px] font-bold text-accent-deep transition-colors duration-150 ease-house hover:bg-accent-wash focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           <CornerDownRight className="size-3.5" aria-hidden="true" />
-          Open this design on the shell
+          Open work item
         </a>
       </footer>
 
@@ -203,7 +204,7 @@ function DetailPane({
         onClick={onClose}
         className="shrink-0 cursor-pointer self-start rounded-md border border-line px-2.5 py-1.5 font-mono text-[12.5px] text-ink-dim transition-colors duration-150 ease-house hover:bg-surface-2 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
-        Close the detail
+        Close
       </button>
     </aside>
   );

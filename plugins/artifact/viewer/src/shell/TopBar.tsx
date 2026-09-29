@@ -17,7 +17,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import type { LucideIcon } from "lucide-react";
-import { Check, ChevronDown, Layers, Moon, Search, Sun } from "lucide-react";
+import { Check, ChevronDown, Layers, LayoutGrid, Moon, Search, Sun } from "lucide-react";
 import { Popover as PopoverPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
@@ -49,6 +49,8 @@ export interface TopBarProps {
   onChooseEpic: (design: string, epicId: string) => void;
   theme: Theme;
   onToggleTheme: () => void;
+  /** Open the Work board's drawer, per ADR-0034: the shell's own Work icon. */
+  onOpenWork: () => void;
   /** The id of the scroll pane, so the skip link and the switcher can reach it. */
   paneId: string;
   nameId: string;
@@ -96,6 +98,7 @@ export function TopBar({
   onChooseEpic,
   theme,
   onToggleTheme,
+  onOpenWork,
   paneId,
   nameId,
 }: TopBarProps) {
@@ -160,6 +163,28 @@ export function TopBar({
         variant="ghost"
         className="size-11 shrink-0 cursor-pointer md:hidden"
       />
+
+      {/*
+        THE WORK BOARD'S OWN ICON, per ADR-0034. The board is a drawer over
+        whatever surface the reader is on, and this is the one control that
+        opens it from any level. `aria-haspopup="dialog"` is what the drawer
+        is; the pressed state carries the open state, so a screen reader reads
+        the drawer's state on the icon itself.
+      */}
+      <button
+        type="button"
+        onClick={onOpenWork}
+        aria-label="Work board"
+        aria-haspopup="dialog"
+        title="Work board"
+        className={cn(
+          "inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-line bg-surface text-ink-mid",
+          "transition-colors duration-150 ease-house hover:bg-surface-2 hover:text-foreground",
+          "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        )}
+      >
+        <LayoutGrid className="size-[18px]" aria-hidden="true" />
+      </button>
 
       <PopoverPrimitive.Root open={open} onOpenChange={setOpen}>
         <PopoverPrimitive.Trigger asChild>

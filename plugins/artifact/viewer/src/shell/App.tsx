@@ -117,6 +117,7 @@ import { Rail } from "./Rail";
 import { RecordSheet } from "./Sheet";
 import type { SheetSubject } from "./Sheet";
 import { TopBar } from "./TopBar";
+import { WorkDrawer } from "./WorkDrawer";
 import {
   AbortIfSection,
   AssessmentSection,
@@ -367,6 +368,14 @@ export default function ShellApp() {
     review: true,
   });
   const [sheet, setSheet] = useState<SheetSubject | null>(null);
+
+  /*
+   * THE WORK BOARD'S DRAWER, per ADR-0034. The shell's own Work icon opens it
+   * over whatever level the reader is on; the drawer holds its own state, and
+   * the board route `#/` keeps rendering the full-page board untouched, so a
+   * deep link never regresses while the drawer is under review.
+   */
+  const [workDrawerOpen, setWorkDrawerOpen] = useState(false);
 
   /*
    * The scroll pane, as an element. The reading-progress strip measures this ref and
@@ -662,6 +671,7 @@ export default function ShellApp() {
             onToggleTheme={toggleTheme}
             paneId={PANE_ID}
             nameId="work-item-name"
+            onOpenWork={() => setWorkDrawerOpen(true)}
           />
           <Pane>
             <div className="max-w-[80ch] rounded-xl border border-dashed border-warn bg-warn-wash px-4 py-3.5">
@@ -798,6 +808,7 @@ export default function ShellApp() {
           onChooseEpic={chooseEpic}
           theme={theme}
           onToggleTheme={toggleTheme}
+          onOpenWork={() => setWorkDrawerOpen(true)}
           paneId={PANE_ID}
           nameId="work-item-name"
         />
@@ -1163,6 +1174,19 @@ export default function ShellApp() {
         </div>
 
         <RecordSheet subject={sheet} onOpenChange={closeSheet} />
+
+        {/*
+          THE WORK BOARD'S DRAWER, mounted once. The rows, the index, and the
+          records are the shell's own answers, and the drawer holds none of
+          them when it is closed.
+        */}
+        <WorkDrawer
+          open={workDrawerOpen}
+          onOpenChange={setWorkDrawerOpen}
+          rows={boardRows}
+          index={load.state === "ready" ? load.index : null}
+          records={load.state === "ready" ? load.designs : null}
+        />
       </Frame>
     </TooltipProvider>
   );

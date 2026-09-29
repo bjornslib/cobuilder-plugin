@@ -19,26 +19,40 @@
  *   │ ● beads-storage ·············· 0/3 ▏        │ │ the detail │
  *   │ ● gate-doc-surfacing ········· 0/2 ·#19     │ │ pane, when │
  *   │ ⌄ READY TO BUILD ·2 ────────────────────────┤ │ a row is   │
- *   │ ● cobuilder-implement ········ 2/2 ·#11 #12 │ │ selected   │
+ *   │ ● cobuilder-implement ········ 2/2 ·#11 #12 │ │ shown      │
  *   └─────────────────────────────────────────────┴─┴────────────┘
  *
- * THREE DECISIONS SEPARATE THIS FROM PROTOTYPE A, and each one is worth
- * holding onto during the comparison:
+ * THE ENGINEER'S SEVEN REFINEMENTS ARE THE CONTRACT, each one shaped by the
+ * review that named it:
  *
- *   1. LANES ARE COLLAPSIBLE SECTIONS, NOT COLUMNS. A stacks five columns
- *      behind a sideways scroll; B stacks five lane sections in one vertical
- *      read, and each folds behind a shadcn Collapsible chevron, so a reader
- *      can put Superseded away and keep Needs a decision open. A folded lane
- *      leaves the keyboard walk too, so the walk never lands on a row the
- *      reader cannot see.
- *   2. A STATE FILTER SITS ABOVE THE LANES. The strip selects whole lanes —
- *      the same vocabulary the lanes speak — and combines with the search,
- *      which refines rows within the lanes the strip leaves visible. One
- *      filter narrows where to read; the other narrows what is on the page.
- *   3. THE DETAIL PANE IS PART OF THE DRAWER, not a second route. The reader
- *      compares a record against the board beside it without the drawer ever
- *      leaving, which is the thing the full-page Work board could never do.
+ *   1. TYPING RESETS THE FILTER. The moment the search holds a needle, the
+ *      state strip reads All, whatever it held before — a find is a new
+ *      question, and a filter from the previous one would silently narrow
+ *      it. `filterForTyping` in `./deck` is the one place the rule lives.
+ *   2. SLASH FINDS THE FIELD. From any row, chip, fold, or footer in the open
+ *      drawer, `/` moves the cursor into the search input; from the field
+ *      itself, `/` types the character. The command-palette convention.
+ *   3. THE HEADER KEEPS THE BOARD'S OWN FACT. The held-out counts left the
+ *      header line: the header states what the board holds, and the footer
+ *      states what it held out and how many, permanently.
+ *   4. ONE RESULT READS ITSELF. A needle whose result set is exactly one
+ *      selects that row and shows the detail pane with no second press; a
+ *      second character that broadens the set past one takes the read away.
+ *      The mirror is the render's own derivation — `soleOf` — so a Close or
+ *      a second press is a decision the board remembers and does not undo
+ *      while the same sole result holds.
+ *   5. THE PANE'S LINK READS "Open work item" — what the reader opens, not
+ *      where it opens. The address is the shell's own deep link.
+ *   6. THE PANE'S DISMISS READS "Close". One word; the control's job is
+ *      obvious and its label spends nothing proving it.
+ *   7. LEFT AND RIGHT STEP THE FILTER. While a chip holds the focus, `←` and
+ *      `→` make the previous and next chip active through the lanes'
+ *      vocabulary, stopping at the ends. Up and down still walk the rows;
+ *      the two walks never steal each other's key.
  *
+ * THE LANES THEMSELVES FOLD. Each lane header is a shadcn `Collapsible`
+ * trigger, and a folded lane leaves the keyboard walk and the counts, so the
+ * walk never lands on a row the reader cannot see.
  * THE SEARCH IS THE SAME PREDICATE AS A's, minus the pull-request words the
  * deck carries no rows for. It reads names, ids, stages, outcomes, epic ids,
  * branches, and pull request numbers, and the header counts the refinement as
@@ -66,7 +80,16 @@ import type { DesignRow, RecordIndex } from "@/data/types";
 import { cn } from "@/lib/utils";
 
 import DetailPane, { useDesignRecords } from "./detail";
-import { LANES, highlight, laneRows, walkedRows } from "./deck";
+import {
+  FILTER_ALL,
+  LANES,
+  chipStepped,
+  filterForTyping,
+  highlight,
+  laneRows,
+  soleOf,
+  walkedRows,
+} from "./deck";
 
 type Load =
   | { state: "loading" }
@@ -261,19 +284,35 @@ function DrawerBody({
 }) {
   const searchRef = useRef<HTMLInputElement>(null);
   const [needle, setNeedle] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   /* The state filter selects whole lanes; `all` is the value that clears it. */
   const [laneFilter, setLaneFilter] = useState<string>("all");
   /* The fold, per lane key. A lane the reader folded is out of the walk. */
   const [folded, setFolded] = useState<Record<string, boolean>>({});
+  /*
+   * THE SELECTION AND ITS TWO SOURCES. An explicit selection is a row the
+   * reader chose; an automatic one is the mirror of a result set of exactly
+   * one. A dismissed automatic read is remembered for as long as the same
+   * sole result holds, so a Close or a second press is a decision the board
+   * does not undo, and a changed needle starts a new read.
+   */
+  const [selection, setSelection] = useState<{ id: string; auto: boolean } | null>(null);
+  const [dismissed, setDismissed] = useState<ReadonlySet<string>>(new Set());
   const recordsLoad = useDesignRecords(0);
 
-  const entities = entitiesOf(index);
   const rows: DesignRow[] = useMemo(() => designRowsOf(index), [index]);
-  const excluded = {
-    decisions: entities.adr.length,
-    openPulls: entities.pull_request.filter((pull) => pull.state !== "merged").length,
-  };
+  /*
+   * THE RULE THE BOARD DOES NOT UNDO. The exclusion counts live in the
+   * footer, permanently: the header keeps the one number the reader came
+   * for, and the footer states what the board held out and how many, so a
+   * reader who expected a row finds the reason in one line.
+   */
+  const heldOut = useMemo(() => {
+    const entities = entitiesOf(index);
+    return {
+      decisions: entities.adr.length,
+      openPulls: entities.pull_request.filter((pull) => pull.state !== "merged").length,
+    };
+  }, [index]);
 
   const needleText = needle.trim().toLowerCase();
 
@@ -301,7 +340,7 @@ function DrawerBody({
             row.design.stage,
           ),
         ).length;
-  const selected = selectedId ? (rows.find((row) => row.design.id === selectedId) ?? null) : null;
+  const selected = selection ? (rows.find((row) => row.design.id === selection.id) ?? null) : null;
 
   /*
    * THE PANE FOLLOWS THE WALK. There is no second "detail open" state to lie
@@ -311,65 +350,116 @@ function DrawerBody({
    */
   const detailOpen = selected !== null;
 
-  /* The detail toggle is the pointer contract and Enter's, in one place:
-     choosing the selected row again closes the pane and drops the drawer
-     back; choosing another row moves the pane to it and reads it tall. */
-  function toggleDetail(id: string) {
-    if (id === selectedId) {
-      setSelectedId(null);
+  /*
+   * THE ROW CONTRACT, POINTER AND ENTER ALIKE. Choosing the row the board
+   * already shows closes the pane and drops the drawer back — a dismissed
+   * automatic read is remembered for as long as the same sole result holds.
+   * Choosing any other row moves the pane to it and reads it tall.
+   */
+  function toggleDetail(id: string): boolean {
+    if (selection && selection.id === id) {
+      setDismissed((prev) => new Set(prev).add(id));
+      setSelection(null);
       setSnap(0.6);
-    } else {
-      setSelectedId(id);
-      setSnap(0.95);
+      return true;
     }
+    setSelection({ id, auto: false });
+    setSnap(0.95);
+    return false;
   }
 
   /* The search reclaims its focus on open and clears itself on close, so the
      deck a reader meets next time is the whole deck, never a stale filter —
-     the search, the state strip, and the fold all reset with it. */
+     the search, the state strip, the fold, the selection, and the dismissed
+     reads all reset with it. */
   useEffect(() => {
     if (open) searchRef.current?.focus();
     else {
       setNeedle("");
-      setSelectedId(null);
-      setLaneFilter("all");
+      setSelection(null);
+      setDismissed(new Set());
+      setLaneFilter(FILTER_ALL);
       setFolded({});
     }
   }, [open]);
 
-  /* A search or a fold that refines under the walk keeps the walk honest: when
-     the selected row leaves the list, the selection — and the pane, and the
-     tall snap it read at — leave with it. */
+  /*
+   * THE SELECTION FOLLOWS THE RESULT SET.
+   *
+   * A sole result mirrors itself into the board with no second press — the
+   * reader who narrows to a name and stops is reading the record. A set that
+   * broadens past one takes the automatic read away, and a visible explicit
+   * row stays only while it is visible. A stale selection from a previous
+   * read resolves to nothing rather than dead-ending the walk.
+   */
+  const sole = useMemo(() => soleOf(walk), [walk]);
   useEffect(() => {
-    if (selectedId !== null && !walk.some((row) => row.design.id === selectedId)) {
-      setSelectedId(null);
-      setSnap(0.6);
+    if (sole !== null) {
+      if (dismissed.has(sole.design.id)) return;
+      setSelection((was) =>
+        was === null || was.auto || !walk.some((row) => row.design.id === was.id)
+          ? { id: sole.design.id, auto: true }
+          : was,
+      );
+      return;
     }
-  }, [walk, selectedId, setSnap]);
+    /*
+     * THE RESULT SET BROADENED PAST ONE, so the automatic read is gone. An
+     * automatic selection was never the reader's — it was the mirror of a
+     * result set that no longer exists — so it does not survive its own
+     * broadening as a highlight without a pane. An explicit one stays only
+     * while its row is visible.
+     */
+    if (selection !== null && (selection.auto || !walk.some((row) => row.design.id === selection.id))) {
+      setSelection(null);
+    }
+  }, [sole, walk, selection, dismissed]);
 
   function moveSelection(step: 1 | -1) {
     if (walk.length === 0) return;
-    const at = selectedId === null ? -1 : walk.findIndex((row) => row.design.id === selectedId);
+    const at = selection === null ? -1 : walk.findIndex((row) => row.design.id === selection.id);
     const next = Math.min(Math.max(at + step, 0), walk.length - 1);
-    setSelectedId(walk[next].design.id);
+    setSelected(walk[next].design.id);
+  }
+
+  /* The selection moves through the handler in one word: an empty string is
+     no selection. */
+  function setSelected(id: string) {
+    setSelection(id.length > 0 ? { id, auto: false } : null);
   }
 
   function onKeyDown(event: React.KeyboardEvent) {
     const onInput = event.target instanceof HTMLInputElement;
 
+    /*
+     * THE FILTER OWNS LEFT AND RIGHT FROM ITS STRIP. While a chip holds the
+     * focus, the arrows step the active chip through the lanes' vocabulary
+     * and stop at the ends. From anywhere else, left and right mean nothing
+     * here: up and down mean rows, and the two walks never steal a key.
+     */
+    const onChip =
+      event.target instanceof HTMLElement && event.target.closest("[data-chip-strip]") !== null;
+    if (onChip && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+      event.preventDefault();
+      const chips = [FILTER_ALL, ...LANES.map((lane) => lane.key)];
+      setLaneFilter(chipStepped(laneFilter, event.key === "ArrowRight" ? 1 : -1, chips));
+      return;
+    }
+
     /* ESCAPE IS NOT THIS HANDLER'S. Radix's dismissable layer listens in the
        capture phase, so Escape closes the whole drawer before this handler
        can see it, and the honest contract is the one that implies: Escape
-       closes the deck, Enter closes the detail. */
+       closes the deck, Enter toggles the detail. */
     if (event.key === "/" && !onInput) {
       event.preventDefault();
       searchRef.current?.focus();
       return;
     }
 
-    /* THE WALK AND THE SEARCH SHARE THE ARROWS. The deck opens with the search
-       focused, so the walk has to work from inside it — the command-palette
-       convention. j and k stay for a reader whose hands have left the field. */
+    /* THE WALK AND THE SEARCH SHARE THE UP AND DOWN ARROWS. The deck opens
+       with the search focused, so the walk has to work from inside it — the
+       command-palette convention. j and k stay for a reader whose hands have
+       left the field. */
     if (event.key === "ArrowDown") {
       event.preventDefault();
       moveSelection(1);
@@ -384,13 +474,13 @@ function DrawerBody({
       /* TWO ENTERS, TWO JOBS. From the field, Enter reads the first result
          tall — and again stays tall, because a field press that closed what
          it never opened would read as a fault. From the board, Enter toggles
-         the selected row: open what is closed, close what is open. */
+         the shown row: close what is shown, show what is closed. */
       event.preventDefault();
       if (onInput) {
-        setSelectedId(walk[0].design.id);
+        setSelected(walk[0].design.id);
         setSnap(0.95);
       } else {
-        toggleDetail(selectedId ?? walk[0].design.id);
+        toggleDetail(selection?.id ?? walk[0].design.id);
       }
       return;
     }
@@ -399,7 +489,7 @@ function DrawerBody({
     /* ESCAPE IS NOT THIS HANDLER'S. Radix's dismissable layer listens in the
        capture phase, so Escape closes the whole drawer before this handler
        can see it, and the honest contract is the one that implies: Escape
-       closes the deck, Enter closes the detail. */
+       closes the deck, Enter toggles the detail. */
     if (event.key === "j") {
       event.preventDefault();
       moveSelection(1);
@@ -420,9 +510,6 @@ function DrawerBody({
         <span className="font-mono text-[13px] text-ink-faint tabular-nums">
           {rows.length} designs · {shown} shown
         </span>
-        <span className="ml-auto font-mono text-[12px] text-ink-faint">
-          held out: {excluded.decisions} ADRs · {excluded.openPulls} unfinished PRs
-        </span>
       </header>
 
       <div className="flex shrink-0 items-center gap-2 border-b border-line px-4 py-2.5">
@@ -432,7 +519,18 @@ function DrawerBody({
         <input
           ref={searchRef}
           value={needle}
-          onChange={(event) => setNeedle(event.target.value)}
+          onChange={(event) => {
+            setNeedle(event.target.value);
+            /* TYPING RESETS THE FILTER. The search owns the result set, so
+               the filter resets the moment the search has a needle — and
+               `filterForTyping` is the one place the rule lives. */
+            setLaneFilter(filterForTyping());
+            /* A NEW NEEDLE IS A NEW READ. The dismissed sole belongs to the
+               previous read, so the fresh result set may read itself again —
+               the close the reader made says "this read, closed", and the
+               needle moved on. */
+            setDismissed(new Set());
+          }}
           placeholder="refine the deck…"
           aria-label="Search the work items"
           className="h-7 min-w-0 flex-1 bg-transparent font-mono text-[14px] text-foreground outline-none placeholder:text-ink-faint"
@@ -462,6 +560,7 @@ function DrawerBody({
       */}
       <div
         aria-label="Filter the lanes by state"
+        data-chip-strip=""
         className="flex min-w-0 shrink-0 flex-wrap items-center gap-1.5 border-b border-line px-4 py-2"
       >
         {[
@@ -559,7 +658,7 @@ function DrawerBody({
                               key={row.design.id}
                               row={row}
                               needle={needleText}
-                              selected={row.design.id === selectedId}
+                              selected={row.design.id === selection?.id}
                               onSelect={() => toggleDetail(row.design.id)}
                               index={index}
                             />
@@ -581,7 +680,8 @@ function DrawerBody({
               recordsLoad={recordsLoad}
               epicState={(epic) => resolvedJoinsOf(index).epicState(epic)}
               onClose={() => {
-                setSelectedId(null);
+                setDismissed((prev) => new Set(prev).add(selected.design.id));
+                setSelection(null);
                 setSnap(0.6);
               }}
             />
@@ -591,9 +691,14 @@ function DrawerBody({
 
       <footer className="shrink-0 border-t border-line px-4 py-1.5">
         <p className="m-0 font-mono text-[12px] leading-[1.5] text-ink-faint">
+          Held out of the board by rule:{" "}
+          <b className="text-foreground tabular-nums">{heldOut.decisions}</b> decision
+          records (ADR) and{" "}
+          <b className="text-foreground tabular-nums">{heldOut.openPulls}</b> unfinished
+          pull requests. A merged pull request reads inside its design
           {detailOpen
-            ? "The pane follows the walk. ↵ from the board drops the deck back to its working height."
-            : "A merged pull request reads inside its design. The deck lists designs only; standalone merged pull requests are prototype A's answer to that row."}
+            ? ", and the pane follows the walk: ↵ from the board drops the deck back."
+            : "."}
         </p>
       </footer>
 
