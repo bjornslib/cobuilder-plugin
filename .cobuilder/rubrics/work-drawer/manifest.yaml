@@ -1,0 +1,13 @@
+feature: work-drawer
+test_command: "cd plugins/artifact/viewer && npm run typecheck && npm run test"
+thresholds:
+  accept: 0.90
+  investigate: 0.70
+max_attempts: 3
+slices:
+  - id: 1
+    name: "E1 tracer bullet: the search owns the result set"
+    weight: 0.50
+  - id: 2
+    name: "E2 labels and the filter walk"
+    weight: 0.50

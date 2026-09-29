@@ -265,8 +265,6 @@ function sourceOf(design: SparseDesign): RailSource {
     work,
     gates: work === null ? null : gatesOf(work),
     levels: work === null ? null : levelsOf(work),
-    board: false,
-    workCount: works.size,
     changePr: null,
     changeLevels: [],
     diffFiles: null,
@@ -463,7 +461,7 @@ describe("a goal.json-only design's Work surface", () => {
       /* The rows are the shell's own list. This file names none of them. */
       const rows = rowsOfShell(design);
       expect(rows.length, "the rail holds rows for a sparse design").toBeGreaterThan(0);
-      expect(railRows().map(labelOf)).toEqual(["Work", ...rows.map((row) => row.label)]);
+      expect(railRows().map(labelOf)).toEqual(rows.map((row) => row.label));
 
       const gated = rows.filter((row) => !promised(row, design, recordOf(design)).available);
       expect(

@@ -559,10 +559,6 @@ export interface RailSource {
   work: WorkItem | null;
   gates: Gates | null;
   levels: Record<string, LevelState> | null;
-  /** True while the route names no work item, which is the board. */
-  board: boolean;
-  /** How many work items the board lists, or null while the index is in flight. */
-  workCount: number | null;
   /**
    * The change the Review group addresses: the pull request the route names, or the one
    * this work's own epics carry. Absent when the work carries none, and then the Review

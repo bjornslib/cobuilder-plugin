@@ -1,0 +1,12 @@
+flowchart LR
+    Reader[Reader on any shell surface] -->|presses Work icon| Drawer
+    subgraph Shell[The shell surface, unmoved]
+        Surface[Build / Review surface]
+    end
+    Drawer[Work drawer · 60% of the viewport] --> Kanban
+    subgraph Kanban[The day deck]
+        Filter[State filter strip] --> Lanes
+        Search[Incremental search] --> Lanes
+        Lanes[Five collapsible lanes] --> Detail[Detail pane · follows the walk]
+    end
+    Bundle[(Record index + joins)] -->|typed data layer| Kanban
