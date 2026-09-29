@@ -224,7 +224,7 @@ function DetailPane({
 
       <footer className="mt-auto min-w-0 border-t border-line-soft pt-3">
         <a
-          href={routeHref(design.id, "build")}
+          href={routeHref(design.id, "intent")}
           aria-label={`Open work item: ${design.name}`}
           onClick={onLeave}
           className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-line bg-card px-2.5 py-1.5 font-mono text-[13px] font-bold text-accent-deep transition-colors duration-150 ease-house hover:bg-accent-wash focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
@@ -271,9 +271,11 @@ function DeckRow({
   const pct = epics.length === 0 ? null : Math.round((done / epics.length) * 100);
 
   /* The keyboard walk must never lose its place: a row the walk lands on
-     scrolls itself into view, minimally. */
+     scrolls itself into view, minimally. jsdom carries no scroll target and
+     the guard is for it, not for any browser. */
   useEffect(() => {
-    if (selected) rowRef.current?.scrollIntoView({ block: "nearest" });
+    const row = rowRef.current;
+    if (selected) row?.scrollIntoView?.({ block: "nearest" });
   }, [selected]);
 
   return (
@@ -442,9 +444,15 @@ function DrawerBody({
     if (sole !== null) {
       if (dismissed.has(sole.design.id)) return;
       setSelection((was) =>
-        was === null || was.auto || !walk.some((row) => row.design.id === was.id)
-          ? { id: sole.design.id, auto: true }
-          : was,
+        was !== null && was.id === sole.design.id && was.auto
+          ? /* The auto of this very sole is already in: bailing on the same
+               value is what keeps this effect from re-rendering forever,
+               because setState with a new object is a change even when no
+               field changed. */
+            was
+          : was === null || was.auto || !walk.some((row) => row.design.id === was.id)
+            ? { id: sole.design.id, auto: true }
+            : was,
       );
       return;
     }

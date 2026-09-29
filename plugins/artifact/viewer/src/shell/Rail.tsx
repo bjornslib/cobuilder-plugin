@@ -32,9 +32,9 @@
  *      so it reaches every row of both groups whether a group is open or closed. One rule,
  *      one place, and the walk stays a walk.
  *
- * THE BOARD'S ROW IS THE RAIL'S OWN, AND NOT A ROW OF EITHER ACCOUNT. The board reads the
- * work list and not a work item's records, so it belongs to no group and no group folds it
- * away. It sits above both groups, and it is the one way back from three sections deep.
+ * THE WORK BOARD IS NOT IN THE RAIL, and it is not a row of either account. ADR-0034
+ * makes the board a drawer over the shell, and the top bar's Work icon is the one
+ * control that opens it from any level, so the rail renders the two accounts alone.
  *
  * An available row is a `SidebarMenuButton`, so it takes the sidebar's hover, focus, and
  * active treatment. A row whose record is absent is a plain anchor inside the same
@@ -64,7 +64,7 @@ import {
 } from "@/components/ui/sidebar";
 
 import type { RailRow, RailSource } from "./model";
-import { boardHref, railGroups } from "./model";
+import { railGroups } from "./model";
 
 /*
  * One icon per row key.
@@ -118,7 +118,7 @@ const ROW_FRAME = cn(
 );
 
 export function Rail(props: RailProps) {
-  const { work, workCount, open, onToggleGroup } = props;
+  const { work, open, onToggleGroup } = props;
   const reduce = useReducedMotion();
   const { state, isMobile } = useSidebar();
   /* Icon mode is the sidebar's own collapse, and never applies to the mobile drawer. */
@@ -129,9 +129,10 @@ export function Rail(props: RailProps) {
 
   /*
    * The reader's own address, which is the hash the shell writes. A row is current when
-   * it opens this address. An empty hash is the bare route, which is the board.
+   * it opens this address. An empty hash is the bare route — the drawer — where no work
+   * row is current.
    */
-  const here = window.location.hash || boardHref();
+  const here = window.location.hash;
 
   /* The rows whose record the rail could not read, for the live region below. */
   const absent = groups.flatMap((group) => group.rows).filter((row) => !row.available);
@@ -144,9 +145,6 @@ export function Rail(props: RailProps) {
     >
       <SidebarContent>
         <nav aria-label="Work sections" className="min-w-0">
-          {/* The board's own row: the way back, above both accounts, and never folded. */}
-          <BoardRow here={here} icons={icons} count={workCount} />
-
           {groups.map((group) => {
             /*
              * THE READER'S OWN GROUP NEVER CLOSES. The rule is enforced twice on purpose:
@@ -246,54 +244,6 @@ export function Rail(props: RailProps) {
       {/* The sidebar's own collapse handle, on the rail's edge. */}
       <SidebarCollapseHandle />
     </Sidebar>
-  );
-}
-
-/**
- * The rail's own row back to the board.
- *
- * IT IS NOT A ROW OF EITHER ACCOUNT, so it is not a `RailRow` and no group holds it. The
- * board reads the work list, not a work item's records, and a reader who has chosen a work
- * item still needs one press to reach the list again.
- */
-function BoardRow({
-  here,
-  icons,
-  count,
-}: {
-  /** The reader's own address. The board's row is current when it opens this one. */
-  here: string;
-  icons: boolean;
-  /** How many work items the board lists, or null while the index is in flight. */
-  count: number | null;
-}) {
-  const current = here === boardHref();
-  return (
-    <SidebarGroup className="min-w-0 pb-0">
-      <SidebarGroupContent>
-        <SidebarMenu className="min-w-0 gap-0.5">
-          <SidebarMenuItem className="min-w-0">
-            <SidebarMenuButton asChild isActive={current} tooltip="Work" className={ROW_FRAME}>
-              <a
-                href={boardHref()}
-                aria-current={current ? "page" : undefined}
-                aria-label="Work"
-                className={cn(
-                  "flex items-center",
-                  current
-                    ? "border-l-2 border-l-primary bg-accent-wash font-bold text-accent-deep"
-                    : "text-ink-mid",
-                )}
-              >
-                <LayoutGrid className="size-4 shrink-0" aria-hidden="true" />
-                <span className={cn("min-w-0 flex-1 truncate", icons && "hidden")}>Work</span>
-              </a>
-            </SidebarMenuButton>
-            {count !== null && !icons ? <SidebarMenuBadge>{count}</SidebarMenuBadge> : null}
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
   );
 }
 

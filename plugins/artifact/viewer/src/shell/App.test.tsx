@@ -37,7 +37,7 @@ import type { RecordIndex } from "@/data/types";
 import type { DesignRecord, DesignRecords } from "@/data/bundle";
 
 import Shell from "./App";
-import { boardHref, buildWorkItems, gatesOf, levelsOf, railGroups } from "./model";
+import { buildWorkItems, gatesOf, levelsOf, railGroups } from "./model";
 import type { AccountId } from "./model";
 
 /* ------------------------------------------------------------------- jsdom */
@@ -241,23 +241,13 @@ function at(hash: string): void {
 }
 
 /**
- * The one link one board row carries, found the way `Board.test.tsx` finds the row: by
- * its level-2 heading. Slice 7 gives the row that link, so the board route has to settle
- * before this reads one.
+ * The drawer's own scope, found by its title. The deck's rows and its pane
+ * live inside the dialog, and while the drawer is open the shell behind it is
+ * `aria-hidden` — the modal's own rule — so every read of the deck reads it
+ * from within this scope.
  */
-async function boardRowLink(name: string): Promise<HTMLElement> {
-  const heading = await waitFor(() => {
-    const found = screen
-      .getAllByRole("heading", { level: 2 })
-      .find((one) => (one.textContent ?? "").trim() === name);
-    expect(found, `a board row names ${name}`).toBeTruthy();
-    return found as HTMLElement;
-  });
-  const row = heading.closest("li");
-  expect(row, `the row for ${name} is a list item`).toBeTruthy();
-  const links = within(row as HTMLElement).queryAllByRole("link");
-  expect(links.length, `the row for ${name} carries one link`).toBe(1);
-  return links[0];
+function drawerScope(): HTMLElement {
+  return screen.getByRole("dialog", { name: "WORK" });
 }
 
 /** The top line of a Work surface names the work item the route carried. */
@@ -319,15 +309,13 @@ function rowNamed(label: string): HTMLElement {
  * route names no change, so the rail has read no level there and the four rows state no
  * count, which is the state `App.tsx` passes on the same address.
  */
-function railSource(workId: string, board = false) {
+function railSource(workId: string) {
   const works = buildWorkItems(INDEX, DESIGNS);
-  const work = board ? null : (works.get(workId) ?? null);
+  const work = works.get(workId) ?? null;
   return {
     work,
     gates: work === null ? null : gatesOf(work),
     levels: work === null ? null : levelsOf(work),
-    board,
-    workCount: works.size,
     changePr: work !== null && work.pullRequests.length > 0 ? work.pullRequests[0].id : null,
     changeLevels: [],
     diffFiles: null,
@@ -361,21 +349,6 @@ function nameOf(row: RailStep): string {
     : `${row.label}, the ${row.account} account · ${row.count}`;
 }
 
-/**
- * The board's own row, which the rail draws above its two groups.
- *
- * `railGroups` returns the two accounts' rows and not this one, so a case that compares
- * the rail against the one list adds the board row back by hand. It reads no account, so
- * it carries no account and no count: the rail names it with its own word alone.
- * `App.tsx`'s arrow walk builds the same list the same way, and `model.ts` says why the
- * board owns no group of its own.
- */
-const BOARD_ROW: Pick<RailStep, "label" | "href" | "available"> = {
-  label: "Work",
-  href: boardHref(),
-  available: true,
-};
-
 /** One arrow press, at the reader's own focus: the body of the document. */
 function press(key: string, init: Record<string, boolean> = {}): void {
   fireEvent.keyDown(document.body, { key, ...init });
@@ -384,31 +357,51 @@ function press(key: string, init: Record<string, boolean> = {}): void {
 /* -------------------------------------------------------------------- tests */
 
 describe("Shell", () => {
-  it("lands on the board when the route names no work item", async () => {
+  it("opens the Work drawer when the route names no work item", async () => {
+    /*
+      The board is the drawer now (ADR-0034): the bare route renders the muted
+      landing behind it and the drawer opens itself, so a deep link to `#/`
+      lands in the deck — five lanes, the state strip, the search — over the
+      shell.
+    */
     at("#/");
     render(<Shell />);
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Work" })).toBeTruthy();
+      expect(screen.getByRole("dialog", { name: "WORK" })).toBeTruthy();
     });
 
-    const rows = screen
-      .getAllByRole("heading", { level: 2 })
-      .filter((heading) => heading.closest("li") !== null);
-    expect(rows.map((heading) => (heading.textContent ?? "").trim()).sort()).toEqual([
-      "cobuilder-viewer",
-      "inflight-record-store",
-    ]);
+    const dialog = screen.getByRole("dialog", { name: "WORK" });
+    /* The deck's rows are the fixture's own designs, in the lanes they carry. */
+    expect(
+      within(dialog).getByRole("button", { name: "cobuilder-viewer, stage approved" }),
+    ).toBeTruthy();
+    expect(
+      within(dialog).getByRole("button", { name: "inflight-record-store, stage superseded" }),
+    ).toBeTruthy();
   });
 
-  it("draws no strip, no pager, and no progress strip on the board", async () => {
+  it("draws no strip, no pager, and no progress strip on the landing", async () => {
     at("#/");
     render(<Shell />);
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Work" })).toBeTruthy();
+      expect(screen.getByRole("dialog", { name: "WORK" })).toBeTruthy();
     });
 
+    /* Close the drawer, so the landing answers for itself. */
+    fireEvent.keyDown(document.body, { key: "Escape" });
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "WORK" })).toBeNull();
+    });
+
+    /*
+      The landing is an empty pane per ADR-0034: the drawer is the board, so
+      the pane behind it carries no copy and no second control. What must
+      not exist on it is the old board's own apparatus.
+    */
+    expect(screen.queryByRole("heading", { name: "Work" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Open the Work board" })).toBeNull();
     expect(screen.queryByRole("navigation", { name: "Sections of this level" })).toBeNull();
     expect(screen.queryByText(/Section \d+ of \d+/)).toBeNull();
     expect(screen.queryByRole("button", { name: "Previous" })).toBeNull();
@@ -429,13 +422,22 @@ describe("Shell", () => {
     expect(screen.queryByRole("heading", { name: "Work" })).toBeNull();
   });
 
-  it("returns to the board from the rail's top entry", async () => {
+  it("opens the drawer from the top bar's Work icon", async () => {
+    /*
+      The rail's Work entry is gone (ADR-0034), so the top bar's icon is the
+      one control that opens the deck from a Work surface. `href="#/"` was
+      the old way back; the icon is the new one.
+    */
     at("#/cobuilder-viewer/intent");
     render(<Shell />);
 
-    const work = await waitFor(() => screen.getByRole("link", { name: "Work" }));
+    const icon = await waitFor(() => screen.getByRole("button", { name: "Work board" }));
+    fireEvent.click(icon);
 
-    expect(work.getAttribute("href")).toBe("#/");
+    await waitFor(() => {
+      expect(drawerScope()).toBeTruthy();
+    });
+    expect(window.location.hash).toBe("#/cobuilder-viewer/intent");
   });
 
   it("no longer hands an address to the comparison harness", async () => {
@@ -456,42 +458,52 @@ describe("Shell", () => {
     expect(screen.queryByRole("navigation", { name: "Variation" })).toBeNull();
   });
 
-  it("opens the pressed row's Work surface, on the level the row names", async () => {
+  it("opens a work item's surface through the drawer itself", async () => {
+    /*
+      The deck's own path: the bare route opens the drawer, the search
+      narrows to one row, the sole result reads itself, and the pane's link
+      opens the surface the shell routes. The drawer closes as it leaves.
+    */
+    console.error("PROBE A: hash set");
     at("#/");
     render(<Shell />);
-
-    const link = await boardRowLink("inflight-record-store");
+    console.error("PROBE B: rendered");
+    await waitFor(() => {
+      console.error("PROBE C: dialog check");
+      expect(screen.getByRole("dialog", { name: "WORK" })).toBeTruthy();
+    });
+    console.error("PROBE D: dialog up");
+    const dialog = screen.getByRole("dialog", { name: "WORK" });
+    const field = within(dialog).getByRole("textbox", { name: "Search the work items" });
+    console.error("PROBE E: firing change");
+    fireEvent.change(field, { target: { value: "inflight" } });
+    console.error("PROBE F: change fired; waiting link");
+    const link = await waitFor(() =>
+      within(dialog).getByRole("link", { name: "Open work item: inflight-record-store" }),
+    );
+    console.error("PROBE G: link found href=" + link.getAttribute("href"));
     fireEvent.click(link);
+    console.error("PROBE H: clicked");
 
-    /*
-      The heading the shell moves focus to states the level the row's section named. It
-      renders once the index resolved, so waiting on it waits on the whole surface. While
-      the board still stands, that element reads "Work" and this never resolves.
-    */
+    /* The drawer closed on its way out, and the surface it opened resolves. */
     await waitFor(() => {
       expect(levelHeading()).toBe("Intent");
     });
-
     expect(workItemName()).toBe("inflight-record-store");
-    /* The surface renders that design's own goal, and not another design's. */
     expect(screen.getByText("The join resolves an open pull request.")).toBeTruthy();
-
-    const rows = screen
-      .queryAllByRole("heading", { level: 2 })
-      .filter((heading) => heading.closest("li") !== null);
-    expect(rows, "the board is gone once the surface replaces it").toEqual([]);
   });
 
-  it("opens a row's address with no board first", async () => {
+  it("opens a row's address with no drawer first", async () => {
     at("#/");
     render(<Shell />);
 
-    const href = (await boardRowLink("inflight-record-store")).getAttribute("href") ?? "";
-    expect(href.startsWith("#/"), "the row carries a route").toBe(true);
+    await waitFor(() => {
+      expect(screen.getByRole("dialog", { name: "WORK" })).toBeTruthy();
+    });
 
     /* A fresh page load of that address, the way a new tab would open it. */
     cleanup();
-    at(href);
+    at("#/inflight-record-store/intent");
     render(<Shell />);
 
     await waitFor(() => {
@@ -524,7 +536,7 @@ describe("Shell", () => {
  * else. The pager's own two keys keep working beside these two.
  */
 describe("The rail's arrow keys", () => {
-  it("renders the eleven rows in the rail's own order", async () => {
+  it("renders the ten rows in the rail's own order", async () => {
     at("#/cobuilder-viewer/intent");
     render(<Shell />);
     await waitFor(() => expect(levelHeading()).toBe("Intent"));
@@ -535,7 +547,6 @@ describe("The rail's arrow keys", () => {
       account and the count the row holds.
     */
     expect(railRows().map(labelOf)).toEqual([
-      "Work",
       "Intent, the program account · 6 records",
       "Problem & Solution, the program account · 5 of 7 fields",
       "Architecture, the program account · 3 records",
@@ -548,7 +559,6 @@ describe("The rail's arrow keys", () => {
       "File Diffs, the change account",
     ]);
     expect(railRows().map(hrefOf)).toEqual([
-      "#/",
       "#/cobuilder-viewer/intent",
       "#/cobuilder-viewer/problem-and-solution",
       "#/cobuilder-viewer/architecture",
@@ -576,21 +586,19 @@ describe("The rail's arrow keys", () => {
     );
 
     /*
-      The rail renders the rows this one function returns, in this one order, under the
-      board's own row. The board row is the one row the list does not carry, so the case
-      adds it back the way `App.tsx`'s arrow walk adds it. A second copy of the order is
-      what lost every row below Architecture.
+      The rail renders the rows this one function returns, in this one order. The board
+      row is gone (ADR-0034): the rail and the walk now read the same list with no row
+      added back by hand. A second copy of the order is what lost every row below
+      Architecture.
     */
     /*
       `entries` holds the rows a press can reach, so the rendered side drops the disabled
-      rows. The "eleven rows" case holds the disabled Plan row in place.
+      rows. The "ten rows" case holds the disabled Plan row in place.
     */
     const reachable = railRows().filter((row) => !disabledOf(row));
-    expect([BOARD_ROW.label, ...entries.map(nameOf)]).toEqual(reachable.map(labelOf));
-    expect([BOARD_ROW.href, ...entries.map((entry) => entry.href)]).toEqual(
-      reachable.map(hrefOf),
-    );
-    expect([BOARD_ROW.available, ...entries.map((entry) => entry.available)]).toEqual(
+    expect(entries.map(nameOf)).toEqual(reachable.map(labelOf));
+    expect(entries.map((entry) => entry.href)).toEqual(reachable.map(hrefOf));
+    expect(entries.map((entry) => entry.available)).toEqual(
       reachable.map((row) => !disabledOf(row)),
     );
   });
@@ -601,10 +609,10 @@ describe("The rail's arrow keys", () => {
     await waitFor(() => expect(levelHeading()).toBe("Intent"));
 
     /*
-      Intent is the second entry, so this walks from the third to the last. The engineer's
-      own case sits in here: from Architecture, the next press reaches Epics.
+      Intent is the first entry now, so this walks from the second to the last. The
+      engineer's own case sits in here: from Architecture, the next press reaches Epics.
     */
-    for (const row of railRows().slice(2).filter((one) => !disabledOf(one))) {
+    for (const row of railRows().slice(1).filter((one) => !disabledOf(one))) {
       press("ArrowDown");
       await waitFor(() => expect(window.location.hash).toBe(hrefOf(row)));
     }
@@ -616,44 +624,46 @@ describe("The rail's arrow keys", () => {
     await waitFor(() => expect(levelHeading()).toBe("Pull request 11"));
 
     const rows = railRows().filter((one) => !disabledOf(one));
-    /* The last row is the change's File Diffs, so this walks back to the board row. */
+    /* The last row is the change's File Diffs, so this walks back to the first program row. */
     for (const row of rows.slice(0, rows.length - 1).reverse()) {
       press("ArrowUp");
       await waitFor(() => expect(window.location.hash).toBe(hrefOf(row)));
     }
   });
 
-  it("reaches the board from the first level on ArrowUp", async () => {
+  it("stays on the first row when ArrowUp finds no row above", async () => {
+    /*
+      The board is not a rail entry since ADR-0034, so the program's Intent
+      row is the first one. A walk that reaches it has nowhere above: the
+      press clamps, and the address does not move.
+    */
     at("#/cobuilder-viewer/intent");
     render(<Shell />);
     await waitFor(() => expect(levelHeading()).toBe("Intent"));
 
-    /* Work is a rail entry, so the first level steps up into the board. */
     press("ArrowUp");
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Work" })).toBeTruthy();
-    });
-    expect(window.location.hash).toBe("#/");
+    expect(window.location.hash).toBe("#/cobuilder-viewer/intent");
   });
 
   it("stays at the first entry, which is the board", async () => {
     at("#/");
     render(<Shell />);
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Work" })).toBeTruthy();
+      expect(drawerScope()).toBeTruthy();
     });
 
     /*
-      The board drops every group, so its rail holds the Work entry alone and that entry
-      is the board itself. An arrow press there can only name the entry it is already on.
+      The bare route's rail holds the Work entry alone — no work item means no
+      groups — so an arrow press there can only name the entry it is already
+      on, and the deck stays in front.
     */
-    expect(railRows().map(labelOf)).toEqual(["Work"]);
+    expect(window.location.hash).toBe("#/");
 
     press("ArrowUp");
     press("ArrowDown");
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Work" })).toBeTruthy();
+      expect(drawerScope()).toBeTruthy();
     });
     expect(window.location.hash).toBe("#/");
   });

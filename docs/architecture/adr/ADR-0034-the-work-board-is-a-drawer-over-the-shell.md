@@ -1,3 +1,4 @@
+---
 # --- doc-gardener required frontmatter ---
 title: "ADR-0034 — The Work board is a drawer over the shell, and the board's rows are work only"
 status: active
@@ -23,8 +24,27 @@ alternatives:
   - option: "Five kanban lane columns inside the drawer (prototype A's arrangement)"
     rejected_because: "Built and compared. Five columns behind a sideways scroll spend the drawer's width on chrome and need a second scrollbar inside every lane body. The day deck's vertical read fits the 0.6 snap with one scroll, and the fold plus the state filter answer the depth."
 consequences:
-  - "The shipped shell's Board route survives this decision untouched. The port that retires it is a later epic under the same design, so the shipped surface never regresses while the drawer is under review."
   - "The board's row vocabulary is designs only, by rule. A surface that wants to list decisions or unfinished pull requests must say so in its own words."
   - "The drawer adopts vaul as the viewer's drawer engine. The shadcn Sheet that opens ADRs stays the separate slide-over mechanism, and the Sidebar rail's mobile drawer is unchanged."
   - "The exclusion predicate lives beside the data layer's own readers and resolves no join of its own, per the C1 conformance criterion."
+forces:
+  - "A reader mid-read on a Build or Review surface loses the surface's scroll position when they travel to the board and back."
+  - "The board's full page is a second navigation surface with its own filters, which multiplied the vocabularies a reader must hold."
+  - "The keyboard walk a reader already holds on the rail (ArrowDown/ArrowUp) should keep working; a second walk that collides with it breaks both."
+  - "A drawer is transient and the snap heights carry a reader from survey to tall-read without a page change."
+history:
+  - { state: proposed, date: 2026-09-28 }
+  - { state: decided, date: 2026-09-28, by: bjornslib, note: "Decided against prototype B (the day deck) after prototype A (five kanban columns) was built and compared. Ported into the shipped shell the same day under docs/plans/work-drawer, and the bare route now opens the drawer over an empty landing." }
+maps_to:
+  context: cobuilder-packaging
+  modules: [plugins/artifact/viewer/src/shell/WorkDrawer.tsx, plugins/artifact/viewer/src/shell/workDeck.ts, plugins/artifact/viewer/src/shell/App.tsx, plugins/artifact/viewer/src/shell/TopBar.tsx, plugins/artifact/viewer/src/variations/work-drawer-deck]
+  rule: "A surface's read state stays where it is when the board is consulted; the drawer overlays it and the bare route opens the drawer over an empty landing, so no full-page board route remains."
+delivers:
+  capability: "A reader surveys every design in the bundle, filters by state, and searches as they type, over whatever surface they were reading — and one tap takes them into the record."
+  benefit: "Surveying the work costs no navigation round trip, so review and build keep their place; every exclusion is stated with counts rather than silently dropped."
+  beneficiary: [developer, operator]
 notes: "The two prototypes at plugins/artifact/viewer/src/variations/work-drawer (A) and work-drawer-deck (B, the arrangement this record takes forward) are this record's evidence, built against the real bundle on 2026-09-28 and refined twice under the engineer's review the same day."
+related:
+  - "docs/architecture/designs/work-drawer/goal.json"
+  - "docs/plans/work-drawer/00-status.md"
+---

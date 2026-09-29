@@ -45,10 +45,16 @@ unit-tested, and stated in the drawer's footer with the counts it held out.
 | `docs/plans/work-drawer/` | The implement plan: product, interaction design, ui-spec, program design, slices. |
 | `.cobuilder/rubrics/work-drawer/` | The blind acceptance rubrics for the plan's slices, with the attempts' evidence. |
 
-The shipped shell's `src/shell/Board.tsx` and the rail's board row are **not**
-in this pull request. The port that retires the full-page board route is
-`work-drawer`'s next epic, so the shipped surface never regresses while the
-drawer is under review.
+The full-page board is retired in the second commit of this pull request.
+The route the bare hash named (`#/`) renders no page of its own: it normalizes
+an empty hash to `#/` without a history entry and opens the drawer itself,
+over an empty pane with no copy and no second control. The rail's own Work
+row — `BoardRow`, and the `board`/`workCount` fields it alone read — is gone,
+and the top bar's Work icon is the one way in. The rail's arrow walk steps
+the two accounts' rows alone, and clamps at the first. `src/shell/Board.tsx`
+and its tests are deleted. One behavioural change comes with it: the pane's
+"Open work item" opens the work item at Intent, the surface the deck's own
+reader is about to read.
 
 ## Done when
 

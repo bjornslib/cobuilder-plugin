@@ -97,7 +97,6 @@ import { cn } from "@/lib/utils";
 import { AccountRule } from "./AccountMark";
 import type { JumpTargetLink } from "./AccountMark";
 import { Chip, SectionHeading } from "./atoms";
-import { Board } from "./Board";
 import { diffFiles, useChangeBundle, useServedAudio } from "./change/levels";
 import type { ArtMode } from "./change/Frame";
 import { changeSections } from "./change/sections";
@@ -140,7 +139,6 @@ import {
 } from "./panels";
 import type { Theme } from "./DiagramTiles";
 import {
-  boardHref,
   buildWorkItems,
   changeRowIndex,
   counterpartHref,
@@ -371,9 +369,11 @@ export default function ShellApp() {
 
   /*
    * THE WORK BOARD'S DRAWER, per ADR-0034. The shell's own Work icon opens it
-   * over whatever level the reader is on; the drawer holds its own state, and
-   * the board route `#/` keeps rendering the full-page board untouched, so a
-   * deep link never regresses while the drawer is under review.
+   * over whatever level the reader is on, and THE BARE ROUTE OPENS IT ITSELF:
+   * a deep link to `#/`, the rail's Work row, and a fresh load all land in the
+   * deck; closing it lands on the muted landing behind. The reader's own close
+   * is a decision this effect does not undo — it fires when the route's
+   * board-ness changes, not on every render.
    */
   const [workDrawerOpen, setWorkDrawerOpen] = useState(false);
 
@@ -404,9 +404,8 @@ export default function ShellApp() {
   }, [load, works]);
 
   /*
-   * The board's own rows, resolved by the data layer. The board takes one row per design
-   * and the record map beside it, so it reads no work item and derives no join of its
-   * own. `designRowsOf` is the one derivation of that row, and the index is its only input.
+   * The board's own rows, resolved by the data layer. The work drawer reads
+   * one row per design, and `designRowsOf` is the one derivation of that row.
    */
   const boardRows = useMemo((): DesignRow[] => {
     if (load.state !== "ready") return [];
@@ -446,6 +445,16 @@ export default function ShellApp() {
    * board: it is an address that resolved to nothing, and it keeps its own error.
    */
   const board = route.workId === null;
+
+  /*
+   * THE BARE ROUTE OPENS THE DRAWER ITSELF (ADR-0034): a deep link to `#/`,
+   * the rail's Work row, and a fresh load all land in the deck. The reader's
+   * own close is a decision this effect does not undo — it fires when the
+   * route's board-ness changes, not on every render.
+   */
+  useEffect(() => {
+    if (board) setWorkDrawerOpen(true);
+  }, [board]);
 
   /* Which sections this work fills. A section that fails its rule is absent. */
   const filled = useMemo(() => {
@@ -598,8 +607,6 @@ export default function ShellApp() {
     work,
     gates,
     levels,
-    board,
-    workCount: load.state === "ready" ? works.size : null,
     changePr: railChangePr,
     changeLevels: change.levels,
     diffFiles: change.diff === null ? null : diffFiles(change.diff).length,
@@ -622,9 +629,21 @@ export default function ShellApp() {
    * stands above them. The board and a work item the bundle lacks render no pane content
    * either way.
    */
-  const here = window.location.hash || boardHref();
+  const here = window.location.hash;
   const row =
     rowsOf(railGroups(railSource)).find((candidate) => candidate.href === here) ?? null;
+
+  /*
+   * THE ROOT IS THE BOARD ROUTE. A reader who opens the server's root carries an empty
+   * hash, and the shell's own answer is the bare route the deck opens over — so the
+   * address normalizes to `#/` and the reader's later steps read one scheme. The
+   * replacement carries no history entry: the root was always the board route.
+   */
+  useEffect(() => {
+    if (window.location.hash === "") {
+      window.history.replaceState(null, "", "#/");
+    }
+  }, []);
 
   /*
    * THE JUMP CROSSES ONLY WHERE BOTH ACCOUNTS CARRY THE SAME SECTION NAME. The row's own
@@ -735,8 +754,6 @@ export default function ShellApp() {
    */
   const unresolvedSlices = load.state === "ready" ? unresolvedSliceCount(load.index) : 0;
   const adrs = load.state === "ready" ? load.adrs : {};
-  /* The board states that it is reading, so an empty map is the honest value here. */
-  const records = load.state === "ready" ? load.designs : {};
 
   /*
    * The level state behind a paged section. Build has none, because the rail's own gate
@@ -843,34 +860,14 @@ export default function ShellApp() {
           >
             {board ? (
               /*
-                THE BOARD TAKES THE DATA LAYER'S OWN ROWS, AND THE INDEX'S OWN PULL
-                REQUESTS BESIDE THEM. `Board.tsx` fixed its props in E19: the resolved
-                `DesignRow[]`, the record map, the readiness flag, and the heading id.
-                Slice 18 adds the second row source, so the board also takes the index's
-                `pull_request` entities and derives the pull requests no design carries
-                from those two inputs alone. It reads no work item, so the shell hands it
-                the index's answer and nothing else.
-
-                THE SLOT IS WHAT LETS THE PANE OWN THE BOARD'S SCROLL. Section 11.3 gives
-                the pane that scroll, and `Board.tsx` says the same in its own comment.
-                The board's root reads `h-full`, so against the pane's definite height it
-                would resolve to that height, the board would fit the pane exactly, and
-                the pane would never scroll. This box carries no height of its own, so
-                the root's `h-full` resolves to the board's own content instead, and
-                `shrink-0` keeps the box at that height inside the pane's column. The
-                board then stands taller than the pane and the pane takes the overflow.
-                The height at work here is the board's own, never a number this file
-                picks.
+                THE BARE ROUTE HOLDS NOTHING BEHIND THE DRAWER, per ADR-0034. The
+                drawer is the board, and it opens itself on this route, so the
+                landing is an empty pane: no copy, no second control, nothing to
+                read that the deck does not show. The reader who closes the
+                drawer here sees the empty pane and the top bar's Work icon
+                above it — the way back in is the one control the shell keeps.
               */
-              <div className="min-w-0 shrink-0">
-                <Board
-                  rows={boardRows}
-                  pullRequests={allPullRequests}
-                  records={records}
-                  ready={load.state === "ready"}
-                  headingId={HEADING_ID}
-                />
-              </div>
+              null
             ) : work === null ? (
               /*
                 THE WORKLESS CHANGE IS NOT THE UNKNOWN-ID ERROR. An id no design carries
@@ -1495,15 +1492,13 @@ function useRailArrowKeys({ source, go }: { source: RailSource; go: (href: strin
   useEffect(() => {
     /*
      * THE ADDRESSES A PRESS CAN REACH, IN THE RAIL'S OWN ORDER. The board's own row comes
-     * first, because the rail draws it first and it is the way back from any section. Then
-     * `rowsOf` flattens both accounts, so the walk crosses a group boundary as one step and
-     * reaches every reachable row whether a group is open or closed. A folded group is a
-     * display choice and never a wall.
+     * THE ADDRESSES A PRESS CAN REACH, IN THE RAIL'S OWN ORDER. The board is not a step:
+     * ADR-0034 makes it a drawer and not an address the hash names, so the walk holds the
+     * two accounts' rows alone. `rowsOf` flattens them, so the walk crosses a group
+     * boundary as one step and reaches every reachable row whether a group is open or
+     * closed. A folded group is a display choice and never a wall.
      */
-    const steps = (): string[] => [
-      boardHref(),
-      ...rowsOf(railGroups(latest.current)).map((row) => row.href),
-    ];
+    const steps = (): string[] => rowsOf(railGroups(latest.current)).map((row) => row.href);
 
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
@@ -1512,7 +1507,7 @@ function useRailArrowKeys({ source, go }: { source: RailSource; go: (href: strin
        * The reader's own address, read at the press rather than captured at the last
        * render, so a step that just landed is the position the next press reads.
        */
-      const here = window.location.hash || boardHref();
+      const here = window.location.hash;
       const rows = steps();
       const at = rows.indexOf(here);
       if (at < 0) return;

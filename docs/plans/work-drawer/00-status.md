@@ -87,3 +87,30 @@ listeners). Full records: `.cobuilder/rubrics/work-drawer/evidence/`.
   without a pane, and the dismissed sole never re-read after a needle
   change. Both fixed; the fixes are stated in `index.tsx` and ported into
   `src/shell/WorkDrawer.tsx`.
+## Slice 3 — the board route retires (2026-09-29, attempt 1 at 1.00)
+
+The engineer's follow-up asked for the rest of ADR-0034's epic: retire the
+full-page board.
+
+- The bare route `#/` renders no full page. It normalizes an empty hash to
+  `#/` (no history entry — the root *is* the board route) and opens the
+  drawer itself, over an empty pane. The pane carries no copy and no second
+  control: the drawer is the board, so the landing's text and its
+  "Open the Work board" button go too.
+- The rail's own `Work` row (`model.ts`'s `BoardRow` and its badge count) is
+  gone. The top bar's Work icon — already the drawer's one control — is the
+  way in, and the rail renders the two accounts alone. `RailSource` loses
+  the `board` and `workCount` fields the row was the only reader of.
+- The rail's arrow walk no longer steps the board's address: the drawer is
+  not an address the hash names, so `steps()` is the two accounts' rows
+  alone, and a walk that reaches the first row clamps. The pane's
+  "Open work item" opens the work item at **Intent** (`routeHref(id,
+  "intent")`) per the engineer's direction — "once a work item is selected,
+  navigate to Intent".
+- Deleted: `src/shell/Board.tsx`, `Board.test.tsx`, `BoardRowLink.test.tsx`.
+  The jsdom suite is 190 tests, all passing (the deleted files took the rest).
+
+Filled with the same evidence standard as slices 1–2: real browser
+verification of the bare route over dev server, drawer auto-open, the empty
+pane behind it, and the pane's link landing on Intent (verified on
+`inflight-record-store`, whose goal record fills it).
