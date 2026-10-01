@@ -24,3 +24,10 @@ user supplied after `/implement:debug`:
 ```
 Skill("architecture", args="debug $ARGUMENTS")
 ```
+
+Ground the diagnosis in the repository's own names: with that grounding
+step, check whether `DDD-VOCABULARY.md` exists at the repository root, and
+state the result. When it is absent, say that vocabulary checking will run
+against no glossary, and that one is created with the vocabulary bootstrap
+in `/architect:design` stage 1 (ADR-0036). Debug never runs the bootstrap
+itself.

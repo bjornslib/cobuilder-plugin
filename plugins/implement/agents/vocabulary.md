@@ -13,6 +13,15 @@ The orchestrator's spawn message gives the slug `<slug>`, the slice number
 
 Steps:
 
+0. Check that `DDD-VOCABULARY.md` exists at the repository root. If it does
+   not, do not clean-check anything: the verdict is `FINDINGS` with
+   exactly one finding, tagged `[UNDEFINED]`, naming the missing glossary
+   and pointing at the vocabulary bootstrap in `/architect:design` stage 1
+   (ADR-0036), which creates it when the engineer consents. Append that
+   result to the slice evidence file as step 6 describes — the `###
+   Vocabulary` block with `Verdict: FINDINGS` and that one item on its
+   own line — and stop. Never return a silent `CLEAN` from a missing
+   file.
 1. Read `DDD-VOCABULARY.md` in full.
 2. Run the diff command the spawn message gave you. It is `git diff HEAD`
    followed by `git status --porcelain`, so tracked changes and new

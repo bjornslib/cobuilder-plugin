@@ -10,7 +10,7 @@
       "name": "architect",
       "description": "Seven modes for a local git repo: design, review, maintenance, decisions, describe, debug, and options.",
       "source": "./plugins/architect",
-      "version": "0.6.0"
+      "version": "0.7.0"
     },
     {
       "name": "pr",
@@ -22,13 +22,13 @@
       "name": "artifact",
       "description": "Serve a bundle locally and publish a level as a self-contained Claude Artifact.",
       "source": "./plugins/artifact",
-      "version": "0.6.0"
+      "version": "0.7.0"
     },
     {
       "name": "implement",
       "description": "Build a feature one vertical slice at a time with four approval gates, blind rubrics, and independent validation.",
       "source": "./plugins/implement",
-      "version": "0.3.0"
+      "version": "0.4.0"
     },
     {
       "name": "cobuilder-full-lifecycle",
