@@ -37,12 +37,12 @@ Do each stage before the next.
 | Stage | Name | What the agent does |
 |---|---|---|
 | 0 | Frame | Name the scope. Make a slug `<name>`. Confirm the repo is the session repo. Create `docs/architecture/options/<name>/`. |
-| 1 | Ground | Load the skill files and the corpus (section 3). Then read the repo and its decisions (section 4). |
+| 1 | Ground | Load the skill files and the corpus (section 3). Check `DDD-VOCABULARY.md`. Then read the repo and its decisions (section 4). |
 | 2 | Inquire | Write the inquiries (section 5). |
 | 3 | Options | Write the alternatives for each inquiry (section 6). |
 | 4 | Draw and write | Draw three diagrams (section 8). Fill the template (section 7). |
 | 5 | Verify | Run the validator. Check the render (section 10). |
-| 6 | Hand off | Tell the user where the report is and what to do next (section 11). |
+| 6 | Hand off | Tell the user where the report is and what to do next. Offer the vocabulary bootstrap when the glossary is absent (section 11). |
 
 ## 3. Stage 1, part one: load
 
@@ -60,6 +60,9 @@ or `cat`, because the content is then not read.
 6. The `resilience` cards, when the system calls external services.
 7. The pre-flight gate in `references/divergent-exploration.md` section 1.
    State the result in one line. This mode does not run the exploration.
+8. Check whether `DDD-VOCABULARY.md` exists at the repo root (or in
+   `<bundle-dir>/` for a foreign target). Record in the Evidence section
+   whether the glossary exists.
 
 Record what you loaded. It goes into the Evidence section of the report.
 If a card does not match the stack well, say so. Example: a plain Starlette
@@ -116,6 +119,11 @@ Rules:
   rejected alternatives.
 - Each inquiry needs at least one cited evidence item.
 - Do not repeat what an earlier review already reports. Link its ID.
+- When the stage-1 check found the glossary absent, add one inquiry note
+  that the repo runs without a glossary. Name the fix: the vocabulary
+  bootstrap in design stage 1 (`references/vocabulary-bootstrap.md`). Put
+  the note in the Evidence section, or in a glossary/ubiquitous-language
+  gap inquiry if the report's structure gives it a natural place.
 - Rank each inquiry by impact: `High`, `Medium`, `Low`.
 
 Give every claim one confidence tag:
@@ -153,6 +161,8 @@ Copy `references/reports/options-report-TEMPLATE.html` to
 `docs/architecture/options/<name>/options-report-YYYY-MM-DD.html`. Fill it.
 This file is the only output. Write no `options.json` and no other
 machine-readable file. The validator is the one consumer of the report.
+The one declared exception is the consented glossary write at stage 6
+(ADR-0036).
 
 | # | Section | Anchor | Must contain |
 |---|---|---|---|
@@ -266,6 +276,12 @@ Print three things:
 2. The inquiry IDs the user can pick (`F1`, `T1`, `G1`, and so on).
 3. The suggested next command: `/architect:design`, with the chosen
    inquiry as the outcome.
+4. When stage 1 recorded the glossary as absent, tell the user so and
+   ask whether to run the vocabulary bootstrap now, per
+   `references/vocabulary-bootstrap.md`. Only an explicit yes triggers
+   the write, and the write follows that reference's procedure. This
+   consented write is the one declared exception to the rule that the
+   mode writes nothing but the report (ADR-0036).
 
 Tell the user to paste the "Copy all answers" text into that command. Do
 not start the command. Options mode proposes. Design stage 4 decides.

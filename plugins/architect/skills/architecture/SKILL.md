@@ -136,6 +136,11 @@ that join here.
       mini or full only when its principles are judged to matter for this
       design (ADR-0021). Full-tier loading is never automatic.
 
+   Vocabulary fallback: when `DDD-VOCABULARY.md` is absent, stage 1
+   runs the vocabulary bootstrap (`references/vocabulary-bootstrap.md`)
+   before drafting, declared to the engineer like the baseline run
+   above. `references/design-mode.md` holds the full procedure.
+
    Draft a private hypothesis and a gap list from this grounding. Keep
    both hidden until stage 2 asks the problem and the approach. The
    divergent-exploration pre-flight gate runs later, at stage 3.
@@ -394,6 +399,13 @@ Findings are business-impact-first, with right-aligned severity badges (`Blockin
 
 **Always generate both reports.** No toggle to skip either.
 
+**Vocabulary check:** When `DDD-VOCABULARY.md` is absent, the
+ubiquitous-language check reports a `P1` finding -- an absent glossary
+means no name to check against. The generic-technical-name row in
+`references/corpus-index.md` is the finding template. The offer to run
+the vocabulary bootstrap (`references/vocabulary-bootstrap.md`) comes
+AFTER the reports are written, at the run's end -- never mid-run.
+
 ### Maintenance Mode
 
 **Scope:** Trend analysis and net-new finding detection. Reuses the review corpus chain.
@@ -408,6 +420,10 @@ If a prior scan exists:
 If no prior report exists, state: "This is the first scan. Future audits will compare against this baseline."
 
 **Corpus chain:** Same as Review mode.
+
+**Vocabulary check:** When `DDD-VOCABULARY.md` exists at the repo root,
+load it where the mode names districts or terms. When it is absent,
+state the absence in the run's output. This mode writes no glossary.
 
 **Refactoring invocation:** When diagnostics flag a specific smell (god class, duplicated code, long function, and so on), load the matching `references/corpus/refactorings/<smell>.yaml` on demand. Do not pre-load all refactoring files.
 
@@ -439,6 +455,10 @@ If no prior report exists, state: "This is the first scan. Future audits will co
    in `Skill("cobuilder-artifacts")`. Use the page of the record, or
    `#/<work>/intent`. Give the engineer the link.
 
+**Vocabulary check:** When `DDD-VOCABULARY.md` exists at the repo root,
+load it where the mode names districts or terms. When it is absent,
+state the absence in the run's output. This mode writes no glossary.
+
 **Output:** ADR file(s) plus updated viewpoint indexes, under `{doc_root}`. Canonical standard: `references/standard.md` §5.4.
 
 ### Describe Mode (Architecture Description)
@@ -465,6 +485,14 @@ If no prior report exists, state: "This is the first scan. Future audits will co
    in `Skill("cobuilder-artifacts")`. Use the page of the record, or
    `#/<work>/intent`. Give the engineer the link.
 
+**Vocabulary check:** When `DDD-VOCABULARY.md` exists at the repo root,
+load it where the mode names districts or terms. For a foreign target
+the vocabulary lands in the bundle, at `<bundle-dir>/DDD-VOCABULARY.md`,
+matching the odyssey skill's `references/baseline-derivation.md`
+discipline. When it
+is absent, state the absence in the run's output. This mode writes no
+glossary.
+
 **Output:** `canvas.md` plus `boundary.yaml` for the context, an updated INVENTORY, and a list of surfaced ADR candidates, under `{doc_root}`. Minimum bar: `references/standard.md` §8.
 
 ### Debug Mode
@@ -478,6 +506,10 @@ If no prior report exists, state: "This is the first scan. Future audits will co
 
 4. Run that test, inside the repo.
 5. Converge on a root cause, or re-diverge on the surviving hypotheses if the test does not resolve it.
+
+**Vocabulary check:** When `DDD-VOCABULARY.md` exists at the repo root,
+load it where the mode names districts or terms. When it is absent,
+state the absence in the run's output. This mode writes no glossary.
 
 **Output:** A root-cause statement, the evidence, the specific discriminating observation that confirmed it, a recommended fix, and a regression test that would have caught it. This mode delivers diagnosis and a recommended fix, not the fix itself. It writes no report directory.
 
