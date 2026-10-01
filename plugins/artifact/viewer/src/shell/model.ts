@@ -718,6 +718,7 @@ function programCount(work: WorkItem, section: ProgramKey): string {
       record?.assessment,
       record?.diagrams,
       record?.pr_draft,
+      record?.contracts,
     ].filter((part) => part !== undefined).length;
     return `${parts} records`;
   }

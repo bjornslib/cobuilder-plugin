@@ -156,6 +156,7 @@ export function labelFor(source: string): string {
   if (/classdiagram/i.test(first)) return "Classes";
   if (/sequencediagram/i.test(first)) return "Sequence";
   if (/c4container/i.test(first)) return "Container";
+  if (/^<svg/i.test(first)) return "Runtime architecture";
   return first || "Diagram";
 }
 
@@ -186,6 +187,24 @@ export function DiagramTiles({
     const settle = (level: string, next: Drawn) =>
       setDrawn((current) => ({ ...current, [level]: next }));
 
+    /*
+      The named runtime slot (ADR-0036) is authored inline SVG, checked by
+      `check_design_svg.py` at authoring time. It never enters the mermaid
+      pipeline: it is already a drawing, so this effect settles it directly,
+      before any mermaid load, so a failed CDN load never blanks it. A script
+      element means the validator was skipped, so the tile says so instead of
+      rendering the file raw.
+    */
+    const runtimeSource = sources["runtime"];
+    if (runtimeSource !== undefined) {
+      settle(
+        "runtime",
+        /<script/i.test(runtimeSource)
+          ? { state: "failed", message: "authored SVG carries a <script> element" }
+          : { state: "ready", svg: runtimeSource },
+      );
+    }
+
     (async () => {
       let api: MermaidApi;
       try {
@@ -193,14 +212,17 @@ export function DiagramTiles({
       } catch (error: unknown) {
         /* No runtime means no drawing for any level. Each tile says so. */
         if (live) {
-          for (const level of levels) settle(level, { state: "failed", message: reason(error) });
+          for (const level of levels) {
+            if (level === "runtime") continue;
+            settle(level, { state: "failed", message: reason(error) });
+          }
         }
         return;
       }
 
       for (const level of levels) {
         const source = sources[level];
-        if (source === undefined) continue;
+        if (source === undefined || level === "runtime") continue;
         if (live) settle(level, { state: "pending" });
         try {
           /* Sequential, because Mermaid writes a temporary element per render. */

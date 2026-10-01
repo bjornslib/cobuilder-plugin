@@ -337,11 +337,37 @@ export function buildWorkItems(index: RecordIndex, records: Record<string, Desig
       districtsUncovered: joins.district_uncovered
         .map((id) => districtById.get(id))
         .filter((d): d is DistrictEntity => d !== undefined),
-      diagramLevels: record?.diagrams
-        ? Object.keys(record.diagrams).sort((a, b) => Number(a) - Number(b))
-        : [],
+      diagramLevels: architectureTileLevels(record),
     });
   }
 
   return works;
+}
+
+/* ------------------------------------------------------------------ diagrams */
+
+/**
+ * The design's diagram levels, in the order the shell draws them (ADR-0036).
+ *
+ * The numeric levels come first, ascending. The named `runtime` slot sits
+ * ahead of the class level: the reading order is overview (what the system
+ * is), sequence (how it flows), runtime architecture (how it is structured),
+ * then classes (what the types are). The slot is never a narrative level and
+ * never renumbers one; the overview always leads the design.
+ */
+export function architectureTileLevels(
+  record: { diagrams?: Record<string, string> | undefined } | null | undefined,
+): string[] {
+  const diagrams = record?.diagrams;
+  if (!diagrams) return [];
+  const numeric = Object.keys(diagrams)
+    .filter((key) => /^\d+$/.test(key))
+    .sort((a, b) => Number(a) - Number(b));
+  const levels = [...numeric];
+  if (diagrams["runtime"]) {
+    const classIndex = levels.indexOf("3");
+    if (classIndex === -1) levels.push("runtime");
+    else levels.splice(classIndex, 0, "runtime");
+  }
+  return levels;
 }
