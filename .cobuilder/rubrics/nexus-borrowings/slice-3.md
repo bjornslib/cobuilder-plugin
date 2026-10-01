@@ -2,16 +2,16 @@
 
 Feature: nexus-borrowings
 Epic: nexus-borrowings/E1
-Slice goal: `architectureTileLevels` returns `["runtime","3"]` when the named key is present; the overview still leads the design. The `runtime` value renders as inline SVG, never through the mermaid renderer. `ContractsSection` hides on absence. Viewer tests pass.
+Slice goal: `architectureTileLevels` returns the ordered level list with `runtime` ahead of the class level and behind the sequence; the overview always leads. The `runtime` value renders as inline SVG, never through the mermaid renderer. `ContractsSection` hides on absence. Viewer tests pass.
 Test command: viewer test suite (LevelSections and design-route tests)
 
 Sources: `04-slices.md` row 3, `epic-E1-design.md`, `03-program-design.md`, ADR-0036, ADR-0020.
 
 ## Criteria
 
-### C1 — Tile order: runtime leads the architecture level, never the design [CRITICAL]
-**Must be true:** Inside the architecture level, the runtime tile renders before the `"3"` class tile. The level-1 overview remains the first diagram of the design. No level list gains an entry; `"4"` never appears.
-**Evidence to check:** `architectureTileLevels` (single source) returns `["runtime","3"]`/`["3"]`; the test asserts order and the untouched overview.
+### C1 — Tile order: runtime leads the class tile, never the design [CRITICAL]
+**Must be true:** Inside the architecture level, the runtime tile renders before the `"3"` class tile and after the `"2"` sequence. The level-1 overview remains the first diagram of the design. No level list gains an entry; `"4"` is never invented.
+**Evidence to check:** `architectureTileLevels` (single source, in `src/data/works.ts`) returns the ordered list; the test asserts runtime sits ahead of `"3"` and behind `"2"`, and that `"1"` still leads.
 **Scoring:** 1.0 with a single-source function and tests; 0.5 order right but call sites hard-code the key; 0.0 wrong.
 
 ### C2 — runtime renders inline SVG; never through mermaid [CRITICAL]

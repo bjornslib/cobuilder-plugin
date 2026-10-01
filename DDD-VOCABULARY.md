@@ -57,7 +57,8 @@ _Avoid_: ADR (a design also produces one, but the ADR outlives it under docs/arc
 
 <a id="runtime-architecture-diagram"></a>
 **Runtime architecture diagram** (`architect`):
-The named diagram slot `designs/<name>/diagrams/runtime-architecture.svg`, authored inline SVG — ADR-0035 accepted the format as the exception to the shared mermaid pipeline — a prediction-grounded picture of services, libraries, data stores, and external systems with clustered boundaries and protocol-labeled boundary edges. Rendered as the lead tile of the design's architecture level; never a numbered level. The runtime-architecture-diagram.md reference in the architect plugin owns the contract; check_design_svg.py validates the file.
+The named diagram slot `designs/<name>/diagrams/runtime-architecture.svg`, authored inline SVG per the runtime-architecture-diagram.md contract in the architect plugin and validated by check_design_svg (ADR-0035 accepted the format as the exception to the shared mermaid pipeline): a prediction-grounded picture of services, libraries, data stores, and external systems with clustered boundaries and protocol-labeled boundary edges.
+Rendered as the lead tile of the design's architecture level, ahead of the class level; never a numbered level.
 _Avoid_: level-4 diagram (that slot belongs to the per-PR contract and has no diagram there), architecture-diagram contract in the mermaid skill (the pre-rebase draft's mermaid contract, deleted)
 
 <a id="contracts-doc"></a>
@@ -67,7 +68,8 @@ _Avoid_: data-types (the class diagram's members are types, not envisioned contr
 
 <a id="vocabulary-bootstrap"></a>
 **Vocabulary bootstrap** (`architect`):
-The step that creates `DDD-VOCABULARY.md` when a repo never made one. Design stage 1 runs it: propose terms from baseline-verified districts and real code symbols, grill the engineer with the ubiquitous-language scenario bank, write the glossary at the target root or the bundle dir. Options mode offers it at hand-off; review reports its absence as a P1 finding; implement modes only surface a notice.
+The step that creates `DDD-VOCABULARY.md` in a repo that never made one: design stage 1 proposes terms from baseline-verified districts and real code symbols, grills the engineer with the ubiquitous-language scenario bank, and writes the glossary at the target root or the bundle dir.
+Options mode offers it at hand-off and review reports its absence as a P1 finding; implement modes only surface a notice — only design and a consented offer write the glossary.
 _Avoid_: glossary update (stage 5 adds to an existing file; the bootstrap creates the first one)
 
 <a id="draft-review"></a>
