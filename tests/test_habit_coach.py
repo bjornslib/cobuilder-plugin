@@ -509,8 +509,13 @@ def test_readme_credits_habit_hooks():
 # ---------------------------------------------------------------------------
 
 
-def test_implement_plugin_json_version_is_0_3_1():
+def test_implement_plugin_json_version_matches_marketplace():
     plugin_json_path = REPO_ROOT / "plugins" / "implement" / ".claude-plugin" / "plugin.json"
+    marketplace_path = REPO_ROOT / ".claude-plugin" / "marketplace.json"
     assert plugin_json_path.exists(), f"missing {plugin_json_path}"
+    assert marketplace_path.exists(), f"missing {marketplace_path}"
     data = json.loads(plugin_json_path.read_text())
-    assert data["version"] == "0.3.1"
+    entry = next(
+        p for p in json.loads(marketplace_path.read_text())["plugins"] if p["name"] == "implement"
+    )
+    assert data["version"] == entry["version"]
