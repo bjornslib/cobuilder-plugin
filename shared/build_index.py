@@ -371,6 +371,39 @@ def project_assessment(raw: object, rel: Path) -> tuple[dict | None, str | None]
     return assessment, None
 
 
+def compile_design_diagrams(diagrams_dir: Path) -> dict[str, str]:
+    """Compile a design's diagrams into the record's diagrams dict (ADR-0036).
+
+    The numeric keys "1".."3" come from the mermaid narrative levels. The named
+    key "runtime" comes from the authored runtime-architecture.svg. A file that
+    is absent or empty yields no key: the record omits it and the viewer shows
+    nothing, exactly as the pr_draft block behaves.
+    """
+    diagrams: dict[str, str] = {}
+    if not diagrams_dir.is_dir():
+        return diagrams
+    for level in (1, 2, 3):
+        mmd = diagrams_dir / f"level-{level}.mmd"
+        if mmd.is_file():
+            text = mmd.read_text()
+            if text.strip():
+                diagrams[str(level)] = text
+    runtime = diagrams_dir / "runtime-architecture.svg"
+    if runtime.is_file():
+        text = runtime.read_text()
+        if text.strip():
+            diagrams["runtime"] = text
+    return diagrams
+
+
+def attach_authored_file(record: dict, path: Path, key: str) -> None:
+    """Stamp an authored markdown file onto the record under `key` when non-empty."""
+    if path.is_file():
+        text = path.read_text()
+        if text.strip():
+            record[key] = text
+
+
 def collect_designs(
     repo: Path,
 ) -> tuple[list[dict], list[dict], dict[str, dict], list[str]]:
@@ -445,26 +478,16 @@ def collect_designs(
             else:
                 record["narrative"] = narrative_raw
 
-        diagrams: dict[str, str] = {}
-        diagrams_dir = path.parent / "diagrams"
-        if diagrams_dir.is_dir():
-            for level in (1, 2, 3):
-                mmd = diagrams_dir / f"level-{level}.mmd"
-                if mmd.is_file():
-                    text = mmd.read_text()
-                    if text.strip():
-                        diagrams[str(level)] = text
+        diagrams = compile_design_diagrams(path.parent / "diagrams")
         if diagrams:
             record["diagrams"] = diagrams
 
-        # The pull request draft is authored markdown that accompanies a design.
-        # The viewer reads it to populate the "Envisioned pull request" section.
-        # A design without a draft simply omits the key; do not invent a placeholder.
-        pr_draft_path = path.parent / "pr-draft.md"
-        if pr_draft_path.is_file():
-            draft_text = pr_draft_path.read_text()
-            if draft_text.strip():
-                record["pr_draft"] = draft_text
+        # The pull-request draft ("pr_draft") and the contracts page ("contracts",
+        # ADR-0036) are authored markdown files that accompany a design. The
+        # viewer reads them to populate their sections. A design without a file
+        # simply omits the key; do not invent a placeholder.
+        for filename, key in (("pr-draft.md", "pr_draft"), ("contracts.md", "contracts")):
+            attach_authored_file(record, path.parent / filename, key)
 
         viewer_records[name] = record
         design_entities.append(

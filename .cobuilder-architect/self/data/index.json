@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "47b13d232c0d7b43be8591087ad998dbe8b776a5",
+    "git_head": "d55a9fd5db38727e42923ee79d325d006d74b6cb",
     "trees": {
-      "docs/architecture/adr": "sha256:95c050980f35dd5b9365f0fbdfe0b00b0bc4db1cd6fed77f39a6c42c065de4e4",
-      "docs/architecture/designs": "sha256:8b46e1937aa784b1011a6c45a0032f46a1b3da6a5684f677cb09bfa200c67080",
+      "docs/architecture/adr": "sha256:bdecb42c2252d69139e95f297c4c6abeb31d4b24afc6c38fdd25c05c7cf7286d",
+      "docs/architecture/designs": "sha256:0a52671a9868d6dcb2d168744d5d58c33df73f0e448a8188a9686a169d19150c",
       "docs/architecture/contexts": "sha256:2f1cde1db74ea6f95b55152c3de109c6e281619cc3beae3fb939d8650a4005c8",
-      "docs/plans": "sha256:561a4d83e51a7a76db38406319512bd1ac43caa1a832deb83c58dcb748cd3b1e",
-      ".cobuilder/rubrics": "sha256:90523da1890d59a358dae32f4965c5410f4d3dc8a34170b1ba0bcd8cae407d78"
+      "docs/plans": "sha256:8d45707b45ec3a30a9ce5b10ac0532c9ffdf0edd999faba47f4d60e718041dd7",
+      ".cobuilder/rubrics": "sha256:dab9802a05f402c87295148b5a04ff45a678e99047fd334f3d3ce2e31c8d77dc"
     }
   },
   "entities": {
@@ -186,6 +186,11 @@
         "id": "ADR-0035",
         "title": "The options mode proposes alternatives, and design mode decides",
         "state": "decided"
+      },
+      {
+        "id": "ADR-0036",
+        "title": "design mode drafts the runtime structure, the contracts, and the draft review",
+        "state": "decided"
       }
     ],
     "design": [
@@ -266,6 +271,12 @@
         "name": "maintainable-viewer",
         "outcome": "An engineer changes one view mode of the bundle viewer by opening one file of a few hundred lines, and the file that ships is still one self-contained HTML page that publishes as an Artifact unchanged.",
         "stage": "superseded"
+      },
+      {
+        "id": "nexus-borrowings",
+        "name": "nexus-borrowings",
+        "outcome": "A design drafted in design mode carries its runtime structure. The design directory holds a runtime architecture diagram as a named diagram slot beside the three narrative levels, a contracts file when the design touches a public interface, and stage 6 runs a draft review subagent that validates against a blind rubric and re-explores alternatives before the engineer reads.",
+        "stage": "review"
       },
       {
         "id": "options-mode",
@@ -785,6 +796,46 @@
         "pr": null,
         "state": "planned",
         "note": "Each mode owns its own part. The five view modes stop interleaving: the 50 scattered mode-predicate calls collapse into one registry, and renderContextsMainContent, renderBuildsMainContent, and renderMainContent stop being three functions of over 200 lines that live beside each other. Adding a sixth mode becomes one new part plus one registry entry."
+      },
+      {
+        "id": "nexus-borrowings/E1",
+        "design": "nexus-borrowings",
+        "epic_id": "E1",
+        "branch": "design/nexus-borrowings/runtime-arch-diagram",
+        "pr": null,
+        "state": "planned",
+        "note": null,
+        "design_doc": "nexus-borrowings/E1"
+      },
+      {
+        "id": "nexus-borrowings/E2",
+        "design": "nexus-borrowings",
+        "epic_id": "E2",
+        "branch": "design/nexus-borrowings/runtime-arch-diagram",
+        "pr": null,
+        "state": "planned",
+        "note": null,
+        "design_doc": "nexus-borrowings/E2"
+      },
+      {
+        "id": "nexus-borrowings/E3",
+        "design": "nexus-borrowings",
+        "epic_id": "E3",
+        "branch": "design/nexus-borrowings/runtime-arch-diagram",
+        "pr": null,
+        "state": "planned",
+        "note": null,
+        "design_doc": "nexus-borrowings/E3"
+      },
+      {
+        "id": "nexus-borrowings/E4",
+        "design": "nexus-borrowings",
+        "epic_id": "E4",
+        "branch": "design/nexus-borrowings/runtime-arch-diagram",
+        "pr": null,
+        "state": "planned",
+        "note": null,
+        "design_doc": "nexus-borrowings/E4"
       },
       {
         "id": "options-mode/E1",
@@ -2053,6 +2104,86 @@
         "state": "completed"
       },
       {
+        "id": "nexus-borrowings/1",
+        "feature": "nexus-borrowings",
+        "n": 1,
+        "title": "The SVG contract and its validator",
+        "ends_with": "`plugins/architect/skills/architecture/references/runtime-architecture-diagram.md` exists and `shared/skills/mermaid/references/architecture-diagram.md` is gone. `uv run plugins/architect/scripts/check_design_svg.py` passes this design's `runtime-architecture.svg` and fails each broken fixture for its own check; a long-text fixture only warns. `tests/test_design_svg.py` passes",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "nexus-borrowings/2",
+        "feature": "nexus-borrowings",
+        "n": 2,
+        "title": "build_index compiles the named slot and the contracts file",
+        "ends_with": "`compile_design_diagrams` reads `runtime-architecture.svg` → `record[\"diagrams\"][\"runtime\"]` and `attach_authored_file` stamps `contracts`; a fixture design without either file omits both keys with no error. `tests/test_build_index.py` passes",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "nexus-borrowings/3",
+        "feature": "nexus-borrowings",
+        "n": 3,
+        "title": "Viewer renders the runtime tile and the contracts section",
+        "ends_with": "`architectureTileLevels` returns `[\"runtime\",\"3\"]` when the named key is present; the overview still leads the design. The `runtime` value renders as inline SVG, never through the mermaid renderer. `ContractsSection` hides on absence. Viewer tests pass",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "nexus-borrowings/4",
+        "feature": "nexus-borrowings",
+        "n": 4,
+        "title": "Stage 6 spawns the validate-and-re-explore reviewer",
+        "ends_with": "`design-mode.md` §6 holds the spawn block: blind rubric derived from `goal.json` + `intent.json` before reading the draft, re-explore seeded with the final draft, findings are classified predictions the engineer adjudicates, endorsed survivors reach `intent.alternatives` only through the stage-4 record (ADR-0035), spawn model `glm-5.3-flash:cloud`, `min_work.draft_review_run` set on a returned round. `build/SKILL.md` Gate 2 grounding line untouched by E2",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "nexus-borrowings/5",
+        "feature": "nexus-borrowings",
+        "n": 5,
+        "title": "contracts.md becomes a stage-5 artifact with a stated skip rule",
+        "ends_with": "`design-mode.md` §5 carries the authoring + show-before-write rule and the skip rule; the artifacts-before-write list includes it; the viewer's `ContractsSection` is grounded in slice 3. `build/SKILL.md` Gate 2/3 grounds in `contracts.md` when a design record exists",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "nexus-borrowings/6",
+        "feature": "nexus-borrowings",
+        "n": 6,
+        "title": "The bootstrap reference and the design stage-1 fallback",
+        "ends_with": "`references/vocabulary-bootstrap.md` exists (districts → grill → write; corpus cites only principles/ddd + scenarios/architecture_ddd; scenarios/ddd is README-only and named as such). `design-mode.md` stage 1 carries the symmetric fallback and the consent flow. `DDD-VOCABULARY.md` keeps the new terms",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "nexus-borrowings/7",
+        "feature": "nexus-borrowings",
+        "n": 7,
+        "title": "Options and review surface the check",
+        "ends_with": "`options-mode.md` stage 1 checks the glossary and the report notes absence; the stage-6 hand-off offers the bootstrap. `SKILL.md` review section reports absence as a `P1` finding and offers the bootstrap at run end",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "nexus-borrowings/8",
+        "feature": "nexus-borrowings",
+        "n": 8,
+        "title": "Implement notices, the vocabulary agent guard, and the bumps",
+        "ends_with": "`implement:start`/`install`/`debug` surface the existence notice; `implement:vocabulary` step 0 returns `FINDINGS` with one `[UNDEFINED]` bootstrap item on a missing file, never a silent `CLEAN`. Marketplace bumps: architect 0.7.0, implement 0.4.0, artifact 0.7.0. Self-bundle rebuilt: `uv run shared/build_index.py` exits 0 and records `diagrams[\"runtime\"]` + `contracts` for nexus-borrowings; full pytest green",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
         "id": "options-mode/1",
         "feature": "options-mode",
         "n": 1,
@@ -2287,6 +2418,15 @@
         "source_path": "docs/plans/interaction-design-gate/01-product.md"
       },
       {
+        "id": "nexus-borrowings",
+        "feature_slug": "nexus-borrowings",
+        "gate": 1,
+        "title": "Product: Nexus borrowings — runtime diagram, draft reviewer, contracts doc",
+        "body_md": "# Product: Nexus borrowings — runtime diagram, draft reviewer, contracts doc\n\n## Problem\n\nEngineers who install the Cobuilder plugins to run a design lifecycle get a\ndrafted ADR, a narrative, and three diagrams — but no picture of how the\ndesigned system will hold together at runtime, no contract surface for what it\nwill expose, and no independent review of the draft before the human reads it.\nThe comparison against Nexus's architecture pipeline made all three gaps\nmeasurable at once.\n\n## Success metric\n\nOne measurable metric with its measurement: **time-to-informed-review** — after\nthis feature ships, a design's architecture review has three inputs it cannot\nlose (the runtime tile, the contracts file, the reviewer's challenges), measured\nby design-mode run logs where `goal.min_work.draft_review_run` is true and the\nruntime + contracts artifacts are present in 100% of new designs that touch a\npublic interface. Adopted designs are counted in `build_index.py`'s design\nentities at each bundle rebuild.\n\n## Announcement — the blog post before the feature\n\nDesign mode now drafts how your system will hold together, not just how work\nwill flow. Every new design carries a runtime architecture diagram — clustered\nboundaries, data stores, external systems, every boundary edge labeled with its\nprotocol — rendered first inside the architecture view, before the class\ninventory. When a design touches an interface, it carries its envisioned\nendpoints and data models in one reviewable place. And before you ever read the\ndraft, an independent reviewer subagent has validated it against your goal and\nre-explored the alternatives, so what reaches you is already challenged once.\n\n## Screens\n\nNo new screens. The design route (#/work/<name>/intent) and the plan pages gain\ncontent only: a runtime tile inside the existing architecture level, a contracts\nsection beside the envisioned pull request, and a reviewer-findings line in the\ndesign surface's stage-6 rendering when present.",
+        "approved_date": null,
+        "source_path": "docs/plans/nexus-borrowings/01-product.md"
+      },
+      {
         "id": "options-mode",
         "feature_slug": "options-mode",
         "gate": 1,
@@ -2361,6 +2501,15 @@
         "source_path": "docs/plans/interaction-design-gate/02-architecture.md"
       },
       {
+        "id": "nexus-borrowings",
+        "feature_slug": "nexus-borrowings",
+        "gate": 2,
+        "title": "Architecture: Nexus borrowings — runtime diagram, draft reviewer, contracts doc",
+        "body_md": "# Architecture: Nexus borrowings — runtime diagram, draft reviewer, contracts doc\n\nRead before authoring: `docs/architecture/designs/nexus-borrowings/` (goal,\nintent, narrative, assessment, contracts) and ADR-0036. This document grounds\nGate 2 in that design's `intent.json` per the design-mode join (ADR-0013).\n\n## Fit\n\n- `plugins/architect/skills/architecture/references/design-mode.md` — stage 5\n  gains two artifacts and their rules; stage 6 gains the reviewer spawn and the\n  `min_work.draft_review_run` derivation. Its role: the procedural home of the\n  design lifecycle.\n- `plugins/architect/skills/architecture/SKILL.md` — Design Mode run order gains\n  the stage-5 additions and the stage-6 spawn with the dual-path guard.\n- `plugins/architect/skills/architecture/references/runtime-architecture-diagram.md` — new SVG contract\n  (architect-owned; ADR-0035 accepted inline SVG as the exception to the shared\n  mermaid pipeline). Its\n  role: the runtime rules Nexus's `_ARCH_SYSTEM` translated.\n- `shared/build_index.py` — projections: one named read for the runtime slot,\n  the contracts attach beside pr_draft. Its role: the only writer of the\n  self bundle's record index (ADR-0018).\n- `plugins/artifact/viewer/src/` — the design route's architecture level tile\n  order and a contracts section. Its role: the only rendering surface;\n  build-free-authoring stays under ADR-0020 (parts compiled by the engineer's\n  build step only).\n- `.claude-plugin/marketplace.json` — version fields for architect, implement,\n  and artifact. Its role: the co-installation surface users resolve on update.\n\n## Endpoints\n\n- No new routes. The record index endpoint (`.cobuilder-architect/self/data/index.json`,\n  served by the artifact View server) gains additive per-design fields:\n  `diagrams[\"runtime\"]` and `contracts`. Viewer routes unchanged;\n  `#/work/<name>/intent` gains content. No MCP servers anywhere (ADR-0025).\n\n## Data\n\n- `designs` entity in `index.json`: gains optional `diagrams[\"runtime\"]`\n  (string, compiled from the authored SVG file) and optional `contracts` (string).\n  Both additive; absence stays an omission, not an error.\n- `goal.json`: `min_work` gains `draft_review_run: bool`, derived.\n- `.claude-plugin/marketplace.json`: `architect` 0.6.0 → 0.7.0,\n  `implement` 0.3.0 → 0.4.0, `artifact` 0.6.0 → 0.7.0. This is the auto-update\n  mechanism for installed users.\n\n## Flow\n\nPrimary path: design-mode session reaches stage 5 → drafts the two new\nartifacts alongside the five → shows them before write → stage 6 spawns the\nreviewer once per round before the engineer reads → findings classified into\nstage 3/5 feedback or approval → stage 7 first-epic branch → `uv run\nshared/build_index.py` compiles the record index → artifact View server serves\n`index.json` → viewer design route reads the design entity and renders the\nruntime tile ahead of the class tile → implement gates (when the engineer runs\n`/implement:start`) ground Gate 2 and Gate 3 in `contracts.md` alongside\n`intent.json`.\n\n## External\n\n- No external APIs. No new environment variables.\n- One session subagent spawn per stage-6 round (Reviewer) — not an external\n  service; runs in-session on `glm-5.3-flash:cloud` per the standing directive.\n- `verify_gate.py` gains no new gate lines (2b and 4c remain page-free).",
+        "approved_date": null,
+        "source_path": "docs/plans/nexus-borrowings/02-architecture.md"
+      },
+      {
         "id": "options-mode",
         "feature_slug": "options-mode",
         "gate": 2,
@@ -2433,6 +2582,15 @@
         "body_md": "# Program design: Interaction design gate\n\n## Files\n\n### New\n\n- `plugins/implement/skills/design-to-code/SKILL.md`\n- `plugins/implement/skills/design-to-code/references/jsonc-schema.md`\n- `plugins/implement/skills/design-to-code/references/research-workflow.md`\n- `plugins/implement/skills/design-to-code/references/shadcn-patterns.md`\n- `plugins/implement/skills/design-to-code/references/implementation-rules.md`\n- `plugins/implement/skills/design-to-code/templates/interaction-design.md`\n- `plugins/implement/skills/design-to-code/examples/workflow-matrix-interaction-design.md`\n- `plugins/implement/skills/design-to-code/examples/voice-dashboard.jsonc`\n- `tests/test_design_to_code_skill.py`\n- `tests/test_gate_2b.py`\n- `docs/plans/interaction-design-gate/interaction-design.md`. The plan's own\n  artifact. It is written only if Gate 2b applies, and it does not apply, so\n  this file is not created.\n\n### Modified\n\n| File | Change |\n|---|---|\n| `plugins/implement/scripts/verify_gate.py` | A `2b` group and its status regex. The docstring and the `--json` payload gain the `2b` key. |\n| `shared/build_index.py` | `STATUS_GATE_RE` accepts a `2b` label. A new `interaction_design` array. `resolve_feature_gates()` writes a string `n`. |\n| `plugins/artifact/scripts/build_builds_view.py` | `GATE_LINE` accepts `2b`. `GATE_DOCS` gains a `2b` key. `current_doc()` treats `n/a` as done. |\n| `plugins/implement/skills/build/SKILL.md` | The `## Gate 2b` section. The `2b` line in the `00-status.md` template. The resume rule. |\n| `plugins/implement/skills/build/references/rubric-authoring.md` | §4 gains both artifacts as derivation sources. |\n| `plugins/implement/skills/build/references/slice-loop.md` | RED reads both documents. VALIDATE's front-end criteria name a browser check. |\n| `plugins/implement/commands/start.md` | The \"What this writes\" list. |\n| `plugins/implement/.claude-plugin/plugin.json` | `version` 0.1.0 to 0.2.0. |\n| `tests/test_pillar_boundaries.py` | `KNOWN_OTHER_SKILLS` gains `design-to-code`. |\n\n### Deleted\n\nThree files of the upstream five-step skill do not travel. Each one serves the\nproduct brief, which Gate 1 owns.\n\n- `templates/brief-template.md`\n- `templates/prd.md`\n- `examples/workflow-matrix-prd.md`\n\n## Types & signatures\n\n### `plugins/implement/scripts/verify_gate.py`\n\n```python\n# The 00-status.md Gate 2b line, e.g.:\n#   - Gate 2b — Interaction design: pending | APPROVED 2026-09-14 | n/a (no UI) — Screens: \"...\"\nSTATUS_2B_RE = re.compile(\n    r\"^\\s*-\\s*Gate\\s*2b\\b.*?:\\s*(APPROVED\\b.*|pending|in progress|n/a.*)\\s*$\",\n    re.IGNORECASE,\n)\n\n# The load-bearing headings of templates/interaction-design.md. Each one\n# carries a concept that no other approved document states.\nREQUIRED_INTERACTION_SECTIONS = [\n    \"## 2. Information Architecture\",\n    \"### 2.3 Declared Defaults\",\n    \"### 3.2 Component States\",\n    \"### 3.3 Visibility Gating\",\n    \"### 4.1 Transition Table\",\n    \"### 4.2 Timing Tokens\",\n    \"### 11.2 Hit Targets\",\n    \"### 11.3 Scroll Ownership\",\n]\n\n\ndef check_2b_status(status_text: str | None) -> str:\n    \"\"\"Return \"ok\", \"n/a\", or \"pending\" for the 2b line in 00-status.md.\n\n    A status file with no 2b line returns \"n/a\". The gate is newer than those\n    files, so their silence means \"this gate did not exist\", not \"this gate is\n    waiting\". A 2b line that is present and unapproved returns \"pending\".\n    \"\"\"\n\n\ndef check_interaction_sections(text: str) -> str:\n    \"\"\"Return \"ok\", or \"incomplete:<missing,...>\". Mirrors\n    check_design_sections().\"\"\"\n\n\ndef check_2b(plan_dir: Path, status_text: str | None) -> dict[str, str]:\n    \"\"\"Return the 2b group.\n\n    Keys:\n      interaction.file      \"ok\" | \"missing\" | \"n/a\"\n      interaction.sections  \"ok\" | \"incomplete:<...>\" | \"missing\" | \"n/a\"\n      ui_spec.file          \"ok\" | \"missing\" | \"n/a\"\n      interaction.approved  \"ok\" | \"pending\" | \"n/a\"\n    \"\"\"\n```\n\n`is_ok()` already accepts `\"n/a\"`, so no change is needed there. The `--json`\npayload gains `\"2b\": results`. The exit rule stays: exit 0 only when every key\nis ok or n/a.\n\n### `shared/build_index.py`\n\n```python\n# Was: r\"^-\\s*Gate\\s*(\\d+)\\s*[—–-]\\s*([^:]+):\\s*(.+)$\"\n# The label group now accepts a letter suffix, so \"Gate 2b\" parses.\nSTATUS_GATE_RE = re.compile(r\"^-\\s*Gate\\s*(\\d+\\w?)\\s*[—–-]\\s*([^:]+):\\s*(.+)$\")\n\n\ndef discover_interaction_design_docs(repo: Path) -> list[dict]:\n    \"\"\"Project docs/plans/<slug>/interaction-design.md into entities.\n\n    Mirrors discover_plan_gate_docs() under ADR-0022. Returns one entity per\n    plan that carries the file. The entity carries feature_slug, gate, title,\n    state, source_path, and body_md.\n    \"\"\"\n\n\ndef resolve_feature_gates(repo: Path) -> dict[str, list[dict]]:\n    \"\"\"Unchanged contract. `n` becomes a string for every gate, not only 2b,\n    so one type serves the whole array.\"\"\"\n```\n\n### `plugins/artifact/scripts/build_builds_view.py`\n\n```python\n# Was: re.compile(r\"- Gate (\\d) — ([^:]+): (.+)\")\nGATE_LINE = re.compile(r\"- Gate (\\d\\w?) — ([^:]+): (.+)\")\n\nGATE_DOCS = {\n    \"1\": [\"01-product.md\"],\n    \"2\": [\"02-architecture.md\", \"02a-artifact-map.md\",\n          \"02b-view-designs.md\", \"02c-record-model.md\"],\n    \"2b\": [\"interaction-design.md\"],\n    \"3\": [\"03-program-design.md\"],\n    \"4\": [\"04-slices.md\", \"rubric-manifest\"] + [...],\n}\n\n\ndef current_doc(gates: list[dict]) -> tuple[str, str, bool]:\n    \"\"\"A gate counts as done when its state starts with \"APPROVED\" or with\n    \"n/a\". The second test is new: an \"n/a\" gate needs no answer, so the page\n    must not open on it.\"\"\"\n```\n\n### `tests/test_gate_2b.py`\n\n```python\ndef test_missing_2b_line_is_n/a(tmp_path): ...\ndef test_pending_2b_line_fails(tmp_path): ...\ndef test_approved_2b_line_passes_with_both_files(tmp_path): ...\ndef test_approved_2b_line_fails_when_a_section_is_absent(tmp_path): ...\ndef test_n/a_2b_line_passes_without_any_artifact(tmp_path): ...\ndef test_two_historical_plans_still_pass(): ...\n```\n\n### `tests/test_design_to_code_skill.py`\n\n```python\ndef test_skill_frontmatter_parses(): ...\ndef test_overview_names_three_steps(): ...\ndef test_every_relative_path_cited_resolves(): ...\ndef test_removed_brief_files_are_not_cited(): ...\ndef test_no_product_brief_terminology(): ...\n```\n",
         "approved_date": null,
         "source_path": "docs/plans/interaction-design-gate/03-program-design.md"
+      },
+      {
+        "id": "nexus-borrowings",
+        "feature_slug": "nexus-borrowings",
+        "gate": 3,
+        "title": "Program Design: Nexus borrowings — runtime SVG diagram, draft reviewer, contracts doc, vocabulary bootstrap",
+        "body_md": "# Program Design: Nexus borrowings — runtime SVG diagram, draft reviewer, contracts doc, vocabulary bootstrap\n\nEpic grouping (from `goal.json`, round 2): E1 `runtime-arch-diagram`, E2\n`draft-reviewer`, E3 `contracts-doc`, E4 `vocabulary-bootstrap`. Gate 4\nsplits the slices; the contract surfaces below are feature-level, from this\nGate 3. Round 2 reconciled this program with the merged options mode\n(ADR-0035): the runtime slot moved from mermaid to authored inline SVG, the\nADR renumbered 0035 → 0036, and the vocabulary bootstrap leg joined.\n\n## Files\n\nCreated / modified, with rationale:\n\n1. `plugins/architect/skills/architecture/references/runtime-architecture-diagram.md` —\n   **created**. The SVG runtime contract translated from Nexus\n   `_ARCH_SYSTEM`: clustered boundaries, cylinder/dashed/rounded shape\n   semantics, protocol-labeled boundary edges, 8-30 nodes, one page,\n   `viewBox`, no external references. Cites ADR-0035's SVG exception and the\n   options-report SVG conventions. Replaces the pre-merge mermaid contract,\n   `shared/skills/mermaid/references/architecture-diagram.md` (deleted).\n2. `plugins/architect/scripts/check_design_svg.py` — **created**. Structural\n   validator for the new slot, in the `check_options_report.py` pattern:\n   root is `<svg>` with a `viewBox`, every `<g id>` holds a `<title>`, no\n   `<script>`, no external reference, long text warns.\n3. `plugins/architect/skills/architecture/references/vocabulary-bootstrap.md` —\n   **created**. The glossary-bootstrap procedure: propose terms from\n   baseline-verified districts and real code symbols, annotate DDD kind from\n   kind-matched `corpus/principles/ddd` cards, grill the engineer with\n   `corpus/scenarios/architecture_ddd/004_ubiquitous_language_naming.yaml`\n   as the question bank and `003_bounded_context_splitting.yaml` for\n   scoping, write the glossary at the target root (self repos) or\n   `<bundle-dir>/` (foreign targets). `corpus/scenarios/ddd/` holds only a\n   README today and is not cited as content.\n4. `plugins/architect/skills/architecture/references/design-mode.md` —\n   **modify**. §stage 1 gains the vocabulary fallback (bootstrap when the\n   glossary is absent, symmetric to the baseline fallback); §stage 5 gains\n   the runtime `runtime-architecture.svg` slot + `contracts.md` artifact\n   (with skip rule); §stage 6 gains the reviewer spawn, the blind-rubric\n   derivation rule, the advisory classification, and the ADR-0035 routing\n   line (endorsed survivors reach `intent.alternatives` only through the\n   stage-4 record); goal schema gains `min_work.draft_review_run`.\n5. `plugins/architect/skills/architecture/SKILL.md` — **modify**. Design Mode\n   run order: stage 1 fallback, stage 5 artifact list, stage 6 spawn with the\n   ADR-0005 dual-path guard; review mode line: glossary absence is a `P1`\n   finding and the bootstrap is offered at run end. Mode count prose stays at\n   seven (options mode is merged).\n6. `plugins/architect/skills/architecture/references/options-mode.md` —\n   **modify**. Stage 1 gains the glossary existence check and the\n   report inquiry that notes it; stage 6 hand-off gains the bootstrap offer.\n   ADR-0035's \"writes nothing else\" gets one declared exception recorded in\n   ADR-0036: a consented glossary write from the hand-off.\n7. `shared/build_index.py` — **modify**. The design-record compiler reads\n   `diagrams/runtime-architecture.svg` → `record[\"diagrams\"][\"runtime\"]`\n   (non-empty or absent; no numeric key, no readiness effect); reads\n   `contracts.md` → `record[\"contracts\"]` beside the `pr_draft` block.\n8. `plugins/artifact/viewer/src/` (the record tiles and the design route\n   section that renders `pr_draft`) — **modify**. Render\n   `diagrams[\"runtime\"]` — an inline-SVG string — as the lead tile inside\n   the architecture level ahead of the `\"3\"` tile; render the `contracts`\n   section beside the envisioned pull request. No levels list changes; the\n   readiness check is untouched for the new keys; the SVG renders inline\n   with the `runtime` key never passed to the mermaid renderer.\n9. `plugins/implement/skills/build/SKILL.md` — **modify**. Gate 2 and Gate 3\n   grounding line: when a design record exists, ground `02-architecture.md`\n   in its `contracts.md` as well as `intent.json`. No gate lines change shape.\n10. `plugins/implement/commands/start.md` + `plugins/implement/commands/install.md`\n    (+ `debug.md` notice line) — **modify**. One existence notice: state\n    whether `DDD-VOCABULARY.md` exists, point at design stage 1 for the\n    bootstrap. No behavior beyond the notice.\n11. `plugins/implement/agents/vocabulary.md` — **modify**. Step 0: when the\n    glossary is absent, return `FINDINGS` with one `[UNDEFINED]` item that\n    names the bootstrap — never a silent `CLEAN`.\n12. `DDD-VOCABULARY.md` — **note**: the file already carries the three new\n    terms (`Runtime architecture diagram` updated to SVG, `contracts doc`,\n    `vocabulary bootstrap`, `draft review`); done, listed for conformance.\n13. `docs/architecture/designs/nexus-borrowings/` — **created earlier on this\n    branch**, amended by round 2 (SVG slot, ADR-0036, vocabulary leg). The\n    design's own `contracts.md` and `runtime-architecture.svg` dogfood the\n    new formats.\n14. `.claude-plugin/marketplace.json` — **modify** (final slice):\n    `architect` 0.6.0 → **0.7.0**, `implement` 0.3.0 → **0.4.0**,\n    `artifact` 0.6.0 → **0.7.0**. Executed last, after all slices land —\n    this is how installed users auto-update.\n15. Tests — **modify**: `tests/test_build_index.py` (runtime + contracts\n    projections, absence semantics), new `tests/test_design_svg.py` (good\n    fixture exits 0; one broken fixture per error check exits 1 with its\n    check number; long text warns), viewer tests for tile order and the\n    contracts section, `tests/test_sparse_design_corpus.py`\n    (nexus-borrowings fixture listed), `tests/test_commands.py` and\n    `tests/test_plugin_manifests.py` stay green with no new shipped agents.\n\n## Types & signatures\n\n`shared/build_index.py` (Python 3.10+, PEP-723):\n\n- `def compile_design_diagrams(diagrams_dir: Path) -> dict[str, str]` —\n  replaces the inline loop: numeric keys `1..3` from `level-{n}.mmd`; the\n  named key `runtime` from `runtime-architecture.svg` when non-empty and\n  present. Called from the existing design-record block; no other callers.\n- `def attach_authored_file(record: dict, path: Path, key: str) -> None` —\n  generalize the `pr_draft` block: read, check non-empty, stamp\n  `record[key] = text` (used for `contracts`; `pr_draft` refactored onto it).\n\n`plugins/architect/scripts/check_design_svg.py` (PEP-723, no dependencies):\n\n```\ndef check_design_svg(svg_text: str) -> list[Result]:\n    # checks 1..5, mirroring check_options_report.py's SVG checks:\n    #  1 root element is <svg>\n    #  2 root carries a viewBox\n    #  3 every <g id> holds a <title>\n    #  4 no <script> and no external href/style anywhere\n    #  5 long single-line <text> warns (warning, never an error)\n@dataclass(frozen=True)\nclass Result: check: int; severity: str; message: str\ndef main(argv) -> int:  # 0 when no error result, else 1\n```\n\nViewer (TypeScript, React 19):\n\n- `type DesignDiagrams = { \"1\"?: string; \"2\"?: string; \"3\"?: string;\n  runtime?: string }` replacing the implicit index type where declared.\n- `function architectureTileLevels(record: DesignRecord): string[]` —\n  returns `[\"runtime\", \"3\"]` when `runtime` present, `[\"3\"]` otherwise;\n  single source of the tile order; no call site hard-codes the runtime key\n  afterward.\n- `props: ContractsSectionProps = { contracts: string | null }` — renders a\n  contracts section; hidden when `null` (absence, not an error). Rendered\n  next to the envisioned-pull-request section. The `runtime` value renders\n  via inline SVG markup, never through the mermaid renderer.\n\ndesign-mode prose additions (not code): `min_work.draft_review_run: bool` —\nset true only after a stage-6 reviewer round returns; the reviewer reads\n`goal.json` + `intent.json` and the blind rubric before reading the draft.\n\n## Call stack\n\nCompile: design-mode session → `uv run shared/build_index.py` →\n`compile_design_diagrams(diagrams_dir)` → design-record assembly →\n`attach_authored_file(record, path.parent/\"contracts.md\", \"contracts\")` →\n`data/index.json` write.\n\nValidate: design-mode session at stage 5 → `uv run\nplugins/architect/scripts/check_design_svg.py <svg>` → exit 0 / printed\nchecks. Review: session at stage 6 → spawn Reviewer (`glm-5.3-flash:cloud`)\nwith rubric derived from `goal.json` + `intent.json` → findings returned\nin-message → classification → material → stage 3/5 (survivors later to\nstage 4), otherwise approval → `min_work.draft_review_run = true`.\n\nRender: artifact View server → `index.json` → viewer design route →\n`architectureTileLevels(record)` → runtime SVG tile then `\"3\"` class tile →\n`ContractsSection` beside the envisioned-PR section.\n\n## Test plan\n\n- `tests/test_design_svg.py`: author a good fixture (this design's\n  runtime-architecture.svg) → exit 0. One broken fixture per error check →\n  exit 1 with the check number in the output. Long text warns and exits 0.\n- `tests/test_build_index.py::test_design_runtime_diagram_compiles` — fixture\n  design with `runtime-architecture.svg` → `record[\"diagrams\"][\"runtime\"]`;\n  fixture without → key absent, no error.\n- `tests/test_build_index.py::test_design_contracts_projection` — same\n  two-way absence semantics, matching the `pr_draft` block's behavior.\n- viewer pytest (`tests/test_viewer_modes.py`, `LevelSections.test.tsx`) —\n  tile order: runtime renders inside the architecture level, before `\"3\"`;\n  overview (`\"1\"`) still leads the design; readiness unchanged when runtime\n  is absent; contracts section hidden when the key is absent.\n- `tests/test_sparse_design_corpus.py` — nexus-borrowings fixture listed.\n- `uv run shared/build_index.py` over the self bundle — exits 0; entity\n  counts gain one design; `diagrams[\"runtime\"]` present for\n  nexus-borrowings only.\n- `tests/test_design_to_code_skill.py`, `test_verify_gate_2b.py` —\n  untouched, must stay green (2b resolution is prose-level n/a, no script\n  behavior change).\n- `tests/test_commands.py`, `tests/test_plugin_manifests.py` — no new\n  shipped agents; seven modes unchanged.\n\n## Least confident decisions\n\n1. Inline SVG in the viewer's design tiles renders via raw markup; the\n   mitigation is the validator's no-script, no-external-reference checks and\n   the viewer never passing `runtime` through the mermaid renderer. The\n   visual bar settles on the first real design run (this design's own SVG).\n2. One reviewer spawn per round may be under-provisioned; making `k` a\n   `goal.json` field is cheap if E2's dogfood run shows thin findings.\n3. Gate 2b as n/a rests on \"no new interaction\" — the runtime tile and\n   contracts section render through existing tile/section components; if a\n   viewer interaction is needed (expand/collapse), 2b re-opens with Path 2\n   and the design-to-code skill before the affected rubrics pass.\n4. The blind rule at stage 6 (reviewer must not read the ADR/draft before\n   scoring) is enforced only by prose; enforcement stays in the spawn brief,\n   not in code, until E2 proves otherwise.\n5. The vocabulary bootstrap's consent flow in options and review modes is a\n   prose rule; the only mechanical guard is implement's vocabulary agent\n   step 0. If the consented-write exception drifts in practice, the followup\n   is one line in each mode's own reference, not new code.",
+        "approved_date": null,
+        "source_path": "docs/plans/nexus-borrowings/03-program-design.md"
       },
       {
         "id": "options-mode",
@@ -2606,6 +2764,42 @@
         "body_md": "# Epic E3 design: The mechanical consumer and the projection\n\n## Scope and Intent\n\nTwo jobs, both about the gate being real rather than recorded.\n\n1. `verify_gate.py` checks the gate. A 2b line that reads pending fails the\n   script, so a session cannot reach a slice while the design is missing.\n2. The Builds view shows the document. A reviewer reads the interaction design\n   the same way as the other gate documents, without opening the file system.\n\nThis epic is separable. If the reviewer wants a smaller change, this is the\nepic to cut. Gate 2b still works without it, because `verify_gate.py` needs no\nviewer and the rubric author reads a file. The cost of cutting it is that a\nreviewer must open `docs/plans/<slug>/interaction-design.md` by hand.\n\nThis epic is also larger than it first looks. Three places assume a gate label\nis a small integer. Each one is named below, with its line number.\n\n## Files Touched\n\n| File | Change |\n|---|---|\n| `plugins/implement/scripts/verify_gate.py` | A `STATUS_2B_RE` regex, `REQUIRED_INTERACTION_SECTIONS`, and three functions: `check_2b_status()`, `check_interaction_sections()`, `check_2b()`. The `--json` payload and the printed table gain a 2b block. The docstring changes. |\n| `shared/build_index.py` | `STATUS_GATE_RE` accepts a letter suffix. A new `discover_interaction_design_docs()` function. A new `interaction_design` key beside `program_design` and `epic_design` (line 1255). |\n| `plugins/artifact/scripts/build_builds_view.py` | `GATE_LINE` accepts a letter suffix. `GATE_DOCS` gains a `\"2b\"` key. `current_doc()` treats an `n/a` gate as done. |\n| `plugins/artifact/viewer/index.html` | Line 3290 stops comparing `g.n` to the literal `4`. |\n| `tests/test_gate_2b.py` | New. Six tests. |\n| `tests/test_build_index_gate_docs.py` | Covers the new entity, following the pattern already used for `program_design`. |\n\n### The three integer-only assumptions\n\n| # | Location | Code today | Why it breaks |\n|---|---|---|---|\n| 1 | `shared/build_index.py:1091` | `if gate[\"n\"] == 3 and feature in program_design_features:` | `n` is an integer, so `\"2b\"` never equals it. The comparison is also untyped, so a string `n` silently stops matching gate 3. |\n| 2 | `plugins/artifact/viewer/index.html:3290` | `const isCurrent = g.n === 4;` | The rail marks gate 4 as current. The literal assumes the last gate is number 4. |\n| 3 | `plugins/artifact/scripts/build_builds_view.py:181` | `if not g[\"state\"].startswith(\"APPROVED\"):` | An `n/a` gate is not approved, so the page opens on a gate that asks for nothing. |\n\nAssumption 3 is the sharpest. It is a live defect for the `n/a` convention\nitself, not only for Gate 2b. If Gate 4b ever reads `n/a` for every epic, the\nsame bug appears today.\n\n## Types & Signatures\n\n```python\n# --- plugins/implement/scripts/verify_gate.py -----------------------------\n\ndef check_2b_status(status_text: str | None) -> str:\n    \"\"\"Return \"ok\", \"n/a\", or \"pending\" for the 2b line.\n\n    No 2b line at all returns \"n/a\". The gate is newer than those status\n    files, so silence means the gate did not exist. This choice keeps\n    docs/plans/cobuilder-family and docs/plans/gate-doc-surfacing passing.\n    A 2b line that is present and unapproved returns \"pending\".\n    \"\"\"\n\n\ndef check_interaction_sections(text: str) -> str:\n    \"\"\"Return \"ok\", or \"incomplete:<missing,...>\". Mirrors\n    check_design_sections(), which Gate 4b already uses.\"\"\"\n\n\ndef check_2b(plan_dir: Path, status_text: str | None) -> dict[str, str]:\n    \"\"\"Return {interaction.file, interaction.sections, ui_spec.file,\n    interaction.approved}.\"\"\"\n\n\n# --- shared/build_index.py ------------------------------------------------\n\nSTATUS_GATE_RE = re.compile(r\"^-\\s*Gate\\s*(\\d+\\w?)\\s*[—–-]\\s*([^:]+):\\s*(.+)$\")\n\n\ndef discover_interaction_design_docs(repo: Path) -> list[dict]:\n    \"\"\"One entity per docs/plans/<slug>/interaction-design.md.\n\n    Keys: feature_slug, gate (\"2b\"), title, state, source_path, body_md.\n    Mirrors discover_plan_gate_docs() under ADR-0022.\n    \"\"\"\n\n\ndef resolve_feature_gates(repo: Path) -> dict[str, list[dict]]:\n    \"\"\"`n` becomes str(gm.group(1)) for every gate, so one type serves the\n    array. Callers that compare a number must compare a string.\"\"\"\n```\n\n```javascript\n// --- plugins/artifact/viewer/index.html ----------------------------------\n// Was: const isCurrent = g.n === 4;\n// The last gate in the array is the current one when every gate is done.\nconst isCurrent = g === gates[gates.length - 1] && g.n !== '2b';\n```\n\n## Slice Decomposition\n\n- **Slice 5** adds the 2b group to `verify_gate.py`. It proves enforcement works\n  before anything depends on the viewer. This slice is the mechanical consumer\n  that the ADR requires.\n- **Slice 6** projects the entity and renders the rail card. It proves a\n  reviewer can read the document in the Builds view.\n- **Slice 7** repairs the three integer-only assumptions. It proves the two\n  historical plans still pass, which is the regression test that matters.\n\nSlice 7 carries the risk. A regex widened to `(\\d+\\w?)` matches more than\n`2b`, so the tests must show that gates 1 to 4 behave exactly as before.\n\n## Test Plan\n\n`tests/test_gate_2b.py` — new. Fixtures in `tmp_path`, no network.\n\n| Test | Assertion |\n|---|---|\n| Missing 2b line | Reports `n/a` and exits 0 |\n| Pending 2b line | Reports `pending` and exits non-zero |\n| Approved, both files, all sections | Reports `ok` and exits 0 |\n| Approved, one section absent | Reports `incomplete:` and exits non-zero |\n| `n/a` line, no artifact | Reports `n/a` and exits 0 |\n| Two historical plans | `cobuilder-family` and `gate-doc-surfacing` both report `Overall: OK` |\n\n`tests/test_build_index_gate_docs.py` gains a case for `interaction_design`,\nfollowing the pattern already there for `program_design`.\n\nThe last row of the first table is the regression test. It runs the script\nagainst the two plans that pass today, so a widened regex cannot quietly break\nthem.\n\n## Risks & Open Questions\n\n- **The 2b label widens two regexes.** `(\\d+)` becomes `(\\d+\\w?)`. A plan with a\n  line such as `- Gate 2b — ...` in prose could match, so the regex stays\n  anchored at the line start. Covered by slice 9.\n- **`n` changes type in `data/index.json`.** This is a breaking change for any\n  consumer outside this repository. The viewer is the only consumer found.\n  Open question: should `n` stay an integer, with the label in a second field?\n  That would keep `feature_gates` stable and add `label`. Not decided, and\n  slice 8 should settle it.\n- **The viewer's landing gate changes.** Adding a 2b gate to a plan that has one\n  changes which gate the page opens on. For plans with no 2b line, nothing\n  changes. Accepted.\n- **`current_doc()` and `n/a` is a pre-existing defect.** Fixing it is worth\n  doing on its own line, because Gate 4b can read `n/a` today. Open question:\n  should that fix ship in this epic, or in its own change?\n- **The Builds view is a static bundle.** The rail reads `data/index.json`, so\n  the document appears only after an index rebuild. Accepted. Every other gate\n  document behaves the same way.\n- **This plan's epic joins resolve.** Epic identity comes from\n  `docs/architecture/designs/<name>/goal.json`. A design record was written by\n  hand on 2026-09-14 at `docs/architecture/designs/interaction-design-gate/`,\n  holding the outcome, the epic registry for E1 to E3, and `stage: decided`.\n  `uv run shared/build_index.py` printed no warnings, and all seven slices joined\n  to their epics.\n\n  The record is the minimum the index reads. Design mode did not run, so its\n  four companion files are absent on purpose. `min_work.note` says so, and\n  ADR-0024 holds the reasoning.\n",
         "approved_date": null,
         "source_path": "docs/plans/interaction-design-gate/epic-E3-design.md"
+      },
+      {
+        "id": "nexus-borrowings/E1",
+        "epic_id": "E1",
+        "feature_slug": "nexus-borrowings",
+        "title": "Epic E1: The runtime SVG diagram",
+        "body_md": "# Epic E1: The runtime SVG diagram\n\nSources: `02-architecture.md` §runtime-slot, `03-program-design.md`, ADR-0036, ADR-0035 (SVG exception).\n\n## Technical approach\n\nThe design's runtime picture lands as one authored, self-contained SVG at\n`docs/architecture/designs/<name>/diagrams/runtime-architecture.svg`.\n`shared/build_index.py` compiles it into `record[\"diagrams\"][\"runtime\"]` —\nthe diagrams dict already carries arbitrary string keys, so this is additive.\nThe viewer renders that value as the lead tile inside the design's\narchitecture level, ahead of the `\"3\"` class tile, and never passes it to the\nmermaid renderer.\n\nThree moving parts:\n\n1. **The contract prose** (`references/runtime-architecture-diagram.md`):\n   clustered boundaries (`bound-client` … `bound-<name>`), cylinder data\n   stores, dashed external systems, rounded services, pending badges for\n   drafted components, protocol-labeled boundary edges, 8-30 nodes, one page,\n   `viewBox`, no `<script>`, no external references. The contract cites ADR-0035,\n   which accepted inline SVG for the options report, and the pre-merge\n   mermaid contract is deleted.\n2. **The validator** (`plugins/architect/scripts/check_design_svg.py`): mirrors\n   `check_options_report.py`'s SVG checks. Exit 0 on clean, exit 1 with\n   `ERROR check N` on failure, `WARN check N` for long text. No third-party\n   imports; `html.parser` subclass only, reading the SVG file as text.\n3. **The compile step**: `compile_design_diagrams(diagrams_dir)` replaces the\n   `(1, 2, 3)` loop — same numeric keys, plus the named key. `attach_authored_file`\n   generalizes the `pr_draft` stamp; `contracts` rides the same helper.\n\n## Boundary rules touched\n\n- ADR-0018 (one lifecycle surface): additive record keys only; no new joins.\n- ADR-0017 (vendored shared code): nothing added to `shared/` — the contract\n  is architect-owned because only design mode authors the slot.\n- ADR-0035 (inline SVG exception): extended from reports to design records.\n\n## Risks\n\nRaw markup in the viewer: mitigated by the validator's no-script and\nno-external-reference checks, and by the `runtime` key never touching the\nmermaid renderer. A broken file renders blank in the worst case; the\nauthoring-time check is the gate.",
+        "approved_date": null,
+        "source_path": "docs/plans/nexus-borrowings/epic-E1-design.md"
+      },
+      {
+        "id": "nexus-borrowings/E2",
+        "epic_id": "E2",
+        "feature_slug": "nexus-borrowings",
+        "title": "Epic E2: The draft reviewer",
+        "body_md": "# Epic E2: The draft reviewer\n\nSources: `02-architecture.md` §reviewer, `03-program-design.md`, ADR-0036, ADR-0005 (dual-path), ADR-0035 (alternatives seam).\n\n## Technical approach\n\nDesign mode stage 6 gains a spawn block in `design-mode.md` prose. Before the\nengineer reads the draft, the session spawns a reviewer subagent via the\nADR-0005 dual-path pattern (a named agent when the harness resolves it, the\npasted-prompt fallback otherwise). No new agent file ships anywhere.\n\nThe spawn brief pins four things:\n\n1. **Blindness**: the reviewer reads `goal.json` (`outcome`, `done_when`,\n   `abort_if`) and `intent.json` and writes the blind rubric from those two\n   files alone, before it opens the ADR draft, the diagrams, or\n   `runtime-architecture.svg`.\n2. **Two passes**: (a) validate — score the draft against the rubric, every\n   finding cited (ADR id, district id, boundary rule), everything `kind:\n   \"prediction\"`; (b) re-explore — seed divergent exploration with the final\n   draft and return survivor options that beat `intent.approach` on the\n   criteria the goal states, with reasons.\n3. **Routing**: findings enter stage 6 as classified challenges the engineer\n   adjudicates. Endorsed survivors reach `intent.alternatives` only through\n   the stage-4 record — the reviewer never writes the intent file (ADR-0035:\n   design stage 4 alone fills `intent.alternatives`).\n4. **Model**: `glm-5.3-flash:cloud`, per the engineer's standing directive.\n\nOutcome recording: `goal.min_work.draft_review_run` is set to true only after\na reviewer round returns. Existing churn-detection and the round limits\n(`warn_after_rounds`, `cutoff_rounds`) govern retries; the reviewer is\nadvisory and cannot block approval on its own.\n\n## Boundary rules touched\n\n- ADR-0025: no agent file ships; the spawn is session-level.\n- ADR-0013: design mode keeps framing/exploration/challenge; this extends the\n  challenge stage with an automated first pass.\n- ADR-0035: options mode proposes whole-system alternatives once, before a\n  design exists; the reviewer closes the loop after one design's draft.\n\n## Risks\n\nLatency: one spawn per round adds runtime to every design round. Thin rubrics:\ngoal.json alone may score loose; mitigation is mandatory citation, and `k`\nstays a follow-up field if the dogfood run shows thin findings.",
+        "approved_date": null,
+        "source_path": "docs/plans/nexus-borrowings/epic-E2-design.md"
+      },
+      {
+        "id": "nexus-borrowings/E3",
+        "epic_id": "E3",
+        "feature_slug": "nexus-borrowings",
+        "title": "Epic E3: The contracts doc",
+        "body_md": "# Epic E3: The contracts doc\n\nSources: `02-architecture.md` §contracts, `03-program-design.md`, ADR-0036.\n\n## Technical approach\n\n`docs/architecture/designs/<name>/contracts.md` becomes the optional sixth\nartifact of stage 5, authored when and only when the design touches **a\npublic interface or durable state** — endpoints, entity models, index keys,\nmanifest schemas, stored file formats. It carries two sections, `## Endpoints`\nand `## Data models` (entity, fields, relations), every entry marked as a\nprediction grounded in the ADR draft, not a check.\n\nThe skip rule is stated prose, Gate 2b style: a design touching no public\nsurface says so with a reason (for example `n/a (no public interface —\nprose-only mode change)`), so absence stays meaningful and cannot go silent.\n\nThe compile side rides E1's `attach_authored_file`:\n`record[\"contracts\"]` is stamped when the file exists and is non-empty,\nexactly matching the `pr_draft` behavior — presence optional, absence not an\nerror.\n\nThe consume side: `build/SKILL.md`'s Gate 2 and Gate 3 grounding line gains\none clause — when a design record exists for the feature, ground the\n`02-architecture.md` draft and Gate 3's types in its `contracts.md` as well\nas `intent.json`. The viewer renders the section beside the envisioned pull\nrequest (E1 slice 3's `ContractsSection`, built there so the two epics ship\none compile-and-render unit).\n\n## Boundary rules touched\n\n- ADR-0018: one more authored file attached to the existing record entity.\n- ADR-0013: the artifact budget in stage 5 grows by one with an explicit skip\n  rule, so the budget stays deliberate.\n\n## Risks\n\nRitual: designs that touch nothing may still write the file to look complete.\nThe stated skip rule, show-before-write, and the absence semantics in\nbuild_index are the counterweight.",
+        "approved_date": null,
+        "source_path": "docs/plans/nexus-borrowings/epic-E3-design.md"
+      },
+      {
+        "id": "nexus-borrowings/E4",
+        "epic_id": "E4",
+        "feature_slug": "nexus-borrowings",
+        "title": "Epic E4: The vocabulary bootstrap",
+        "body_md": "# Epic E4: The vocabulary bootstrap\n\nSources: `02-architecture.md` §glossary, `03-program-design.md`, ADR-0036, ADR-0035 (write-surface exception), baseline-derivation.md.\n\n## Technical approach\n\n`DDD-VOCABULARY.md` is read or updated at several points but created by\nnone. Epic E4 adds one bootstrap and a set of existence checks.\n\n**The bootstrap** (`references/vocabulary-bootstrap.md`): design mode stage 1\nruns it when the glossary is absent — symmetric to the existing baseline\nfallback. Sequence:\n\n1. **Propose from evidence.** From the baseline districts (`inventory.yaml`)\n   and verified code symbols (real directories, classes, methods, events —\n   the baseline discipline's never-an-unverified-boundary rule), list term\n   candidates per district, each annotated with its DDD kind. The kind\n   annotations come from the kind-matched `corpus/principles/ddd` cards\n   (entities, value objects, repositories, domain events, aggregates) loaded\n   under the existing corpus load cap.\n2. **Grill.** Through `AskUserQuestion`: confirm, rename to the domain word,\n   or reject each candidate; then the inverted question — what does the team\n   call this that the code does not name (the generic-name check inverted,\n   using `corpus/scenarios/architecture_ddd/004_ubiquitous_language_naming.yaml`\n   as the question bank); then cross-context scoping — does a term mean the\n   same thing across districts,\n   `003_bounded_context_splitting.yaml` decides when a district is really two\n   contexts. The corpus supplies the questions, never the words.\n3. **Write.** One file in the established entry format, at the target repo\n   root for self repos, `<bundle-dir>/DDD-VOCABULARY.md` for foreign targets\n   (the describe-lite surface, beside `inventory.yaml`).\n\n**The existence checks.** Every architect and implement mode checks the\nglossary's existence and states the result:\n\n- **Design stage 1**: bootstrap (primary, consented during the stage).\n- **Options mode stage 1**: check; a missing glossary becomes an inquiry\n  note in the report; the stage-6 hand-off offers the bootstrap. Consented\n  glossary write = the one declared exception to ADR-0035's \"writes nothing\n  else\", shared with design stage 5's update rule and recorded in ADR-0036.\n- **Review mode**: the absence is a `P1` finding (the generic-names row in\n  `corpus-index.md` is the finding template); the bootstrap is offered when\n  the run ends, after the reports are written.\n- **`/implement:install` / `/implement:start` / `/implement:debug`**: one\n  notice line — glossary present or absent, and where the bootstrap lives.\n  No auto-run: the build surface never interviews the engineer mid-feature.\n- **`implement:vocabulary` agent**: step 0 — on a missing file, return\n  `FINDINGS` with one `[UNDEFINED]` item naming the bootstrap; never a\n  silent `CLEAN`.\n\n## Boundary rules touched\n\n- ADR-0025: no agent file changes in kind — `vocabulary.md` gains a step, not\n  a new identity; no new agents or hooks ship anywhere.\n- ADR-0018: for foreign targets the glossary joins the bundle shape (authored\n  file, not a derived projection); the self-bundle path is unchanged.\n\n## Risks\n\nInterview weight on large repos: the grill is capped at the terms the\ndistricts name. Consent drift (offers become silent writes): the mechanical\nguard is only implement's step 0; the consent rule lives in prose and is\nre-checked in review.",
+        "approved_date": null,
+        "source_path": "docs/plans/nexus-borrowings/epic-E4-design.md"
       },
       {
         "id": "options-mode/E1",
@@ -3071,6 +3265,70 @@
         "title": "Slice 7 — E3 edge cases: the three integer-only assumptions",
         "body_md": "# Rubric: Slice 7 — E3 edge cases: the three integer-only assumptions\n\nFeature: interaction-design-gate\nEpic: E3\nSlice goal: The three places that assume a gate number is an integer handle a string label, and the gates that existed before this change behave exactly as they did.\nTest command: uv run --with pytest pytest tests/ -v\n\n## Criteria\n\n### C1 — every gate number is a string, not only 2b [CRITICAL]\n**Must be true:** `resolve_feature_gates()` writes `n` as a string for every\ngate, so one type serves the whole array. Widening only the 2b entry would leave\ntwo types in one list.\n**Evidence to check:**\n- Run `uv run shared/build_index.py`.\n- Run\n  `python3 -c \"import json; d=json.load(open('.cobuilder-architect/self/data/index.json')); ns=[g['n'] for g in d['joins']['feature_gates']['interaction-design-gate']]; print(ns, [type(x).__name__ for x in ns])\"`.\n  Expect five string values.\n- Read `resolve_feature_gates()` in `shared/build_index.py` and confirm the\n  conversion happens once, for the whole array.\n**Scoring:**\n- 1.0 — every gate carries a string `n`.\n- 0.5 — the 2b entry is a string and the others are integers, so the array holds two types.\n- 0.0 — the 2b entry is an integer, so the viewer cannot match it against `GATE_DOCS`.\n\n### C2 — the gates that already worked keep working [CRITICAL]\n**Must be true:** The two plans that reported `Overall: OK` before this change\nstill report it, and the plan that failed Gate 4 still fails it for the same\nreason. The widened pattern must not change what a plain gate line parses into.\n**Evidence to check:**\n- Run `python3 plugins/implement/scripts/verify_gate.py --plan docs/plans/cobuilder-family`\n  and `--plan docs/plans/gate-doc-surfacing`. Both must report `Overall: OK`.\n- Run the same command against `docs/plans/skill-collision-fix` and confirm the\n  failure is still the Gate 4 rubric failure, not a new parsing failure.\n- Run `uv run --with pytest pytest tests/ -v` and confirm the historical-plans\n  test named in `docs/plans/interaction-design-gate/03-program-design.md` passes.\n**Scoring:**\n- 1.0 — both passing plans still pass and the failing plan fails for the same reason.\n- 0.5 — a passing plan still passes, but a gate's parsed label or state text changed.\n- 0.0 — a plan that passed now fails, or the failing plan fails for a new reason.\n\n### C3 — the viewer no longer asks whether a gate is gate 4\n**Must be true:** `plugins/artifact/viewer/index.html` no longer compares the\ngate number to the integer `4` to decide which gate is current. That comparison\nwas one of the three integer-only assumptions, and it breaks the moment a gate\nlabel carries a letter.\n**Evidence to check:**\n- Run `grep -n 'n === 4\\|n == 4\\|isCurrent' plugins/artifact/viewer/index.html`\n  and read each match.\n- Compare the replacement against the code shown in\n  `docs/plans/interaction-design-gate/epic-E3-design.md`, section Types & Signatures.\n- Browser check: open the Builds view, confirm a current gate is highlighted on\n  the rail, and confirm the console shows no error.\n**Scoring:**\n- 1.0 — the comparison is gone, and the rail still marks a current gate.\n- 0.5 — the comparison is replaced, but no gate is highlighted, or the wrong one is.\n- 0.0 — the integer comparison survives.\n\n### C4 — an `n/a` gate is treated as answered\n**Must be true:** `current_doc()` counts a gate as done when its state starts\nwith `APPROVED` or with `n/a`. An `n/a` gate needs no answer, so the page must\nnot open on it.\n**Evidence to check:**\n- Read `current_doc()` in `plugins/artifact/scripts/build_builds_view.py`.\n- Browser check: open the Builds view for `interaction-design-gate`, whose Gate\n  2b line reads `n/a`. Confirm the page opens on a gate that still needs an\n  answer, and does not open on the `n/a` gate.\n- Read the console messages and confirm no error appears.\n**Scoring:**\n- 1.0 — `n/a` counts as done, and the page opens on the first gate that needs an answer.\n- 0.5 — `n/a` counts as done, but the page opens on a gate chosen at random.\n- 0.0 — the page opens on the `n/a` gate, so a reader is asked to answer a gate that never applies.\n\n### C5 — a plain gate line still parses after the pattern was widened\n**Must be true:** A `00-status.md` line reading `- Gate 3 — Program Design:\nAPPROVED 2026-09-14` still parses, and `resolve_feature_gates()` still attaches\nthe Gate 3 document where it did before.\n**Evidence to check:**\n- Run a focused check: build a fixture status file with one plain Gate 3 line,\n  run the parser over it, and read the result.\n- Run `uv run shared/build_index.py` and read the `feature_gates` entries for\n  `gate-doc-surfacing`, which carries a Gate 3 document.\n**Scoring:**\n- 1.0 — the plain line parses, and the Gate 3 document still attaches.\n- 0.5 — the plain line parses, but the document no longer attaches.\n- 0.0 — the widened pattern rejects a plain numeric label.\n\n## Regression check\n- All tests that passed before this slice must still pass:\n  `uv run --with pytest pytest tests/ -q`.\n- The four pre-existing `PIL` WebP failures are the baseline and are not this\n  slice's fault.\n- Files outside `shared/build_index.py`,\n  `plugins/artifact/scripts/build_builds_view.py`, and\n  `plugins/artifact/viewer/index.html` must be unchanged.\n\n## Out of scope — do not penalise\n- The `2b` group in `verify_gate.py` (slice 5).\n- The `interaction_design` entity and the rail card (slice 6).\n- Any change to the vendored skill (epic E1) or the build skill (epic E2).\n- The committed copy of `.cobuilder-architect/self/data/index.json`.\n- The `/home/user` paths inside that committed copy. That defect is recorded and\n  is not part of this feature.\n",
         "source_path": ".cobuilder/rubrics/interaction-design-gate/slice-7.md"
+      },
+      {
+        "id": "nexus-borrowings/1",
+        "feature_slug": "nexus-borrowings",
+        "n": 1,
+        "title": "Slice 1 — The SVG contract and its validator",
+        "body_md": "# Rubric: Slice 1 — The SVG contract and its validator\n\nFeature: nexus-borrowings\nEpic: nexus-borrowings/E1\nSlice goal: `plugins/architect/skills/architecture/references/runtime-architecture-diagram.md` exists and `shared/skills/mermaid/references/architecture-diagram.md` is gone. `uv run plugins/architect/scripts/check_design_svg.py` passes this design's `runtime-architecture.svg` and fails each broken fixture for its own check; a long-text fixture only warns. `tests/test_design_svg.py` passes.\nTest command: `uv run --with pytest pytest tests/test_design_svg.py -q`\n\nSources: `04-slices.md` row 1, `epic-E1-design.md`, ADR-0036.\n\n## Criteria\n\n### C1 — The contract reference exists and the mermaid contract is gone [CRITICAL]\n**Must be true:** `plugins/architect/skills/architecture/references/runtime-architecture-diagram.md` exists, states the slot path `docs/architecture/designs/<name>/diagrams/runtime-architecture.svg`, the clustered-boundary, shape-semantics, protocol-label, 8-30-node, and single-page rules, the no-script/no-external-reference SVG rules, and cites ADR-0035. `shared/skills/mermaid/references/architecture-diagram.md` does not exist.\n**Evidence to check:**\n- Read both paths.\n- `grep -n \"ADR-0035\" plugins/architect/skills/architecture/references/runtime-architecture-diagram.md` finds the citation.\n**Scoring:** 1.0 both; 0.5 contract exists but the mermaid contract lingers; 0.0 either missing.\n\n### C2 — The validator passes a good SVG and fails broken ones for their own check [CRITICAL]\n**Must be true:** `uv run plugins/architect/scripts/check_design_svg.py docs/architecture/designs/nexus-borrowings/diagrams/runtime-architecture.svg` exits 0. Each broken fixture under `tests/fixtures/design_svg/` exits 1 with its check number in the output. A long-text fixture exits 0 and prints a warning.\n**Evidence to check:**\n- Run the commands; read the output lines (`ERROR check N:` / `WARN check N:`).\n**Scoring:** 1.0 all three behaviors; 0.5 passes good but fixtures cannot be matched to checks; 0.0 validator missing or wrong on the good file.\n\n### C3 — The checker mirrors the options-report checker's discipline [IMPORTANT]\n**Must be true:** No third-party imports; `html.parser` subclass; `Result` dataclass with `check`, `severity`, `message`; `main` exit-0-only-when-no-error; the module docstring names the pattern source.\n**Evidence to check:** Read the script head; compare with `plugins/architect/scripts/check_options_report.py`.\n**Scoring:** 1.0 all; 0.5 works but imports a dependency or skips the docstring; 0.0 otherwise.\n\n### C4 — Out of scope respected [IMPORTANT]\n**Must be true:** No change to `shared/build_index.py` (slice 2), the viewer (slice 3), or any level-{1,2,3} consumer. `build_diagrams.py` untouched.\n**Evidence to check:** `git diff` for the slice touches only the two new files, fixtures, tests, and the deleted mermaid contract.\n**Scoring:** 1.0 clean; 0.0 scope creep.",
+        "source_path": ".cobuilder/rubrics/nexus-borrowings/slice-1.md"
+      },
+      {
+        "id": "nexus-borrowings/2",
+        "feature_slug": "nexus-borrowings",
+        "n": 2,
+        "title": "Slice 2 — build_index compiles the named slot and the contracts file",
+        "body_md": "# Rubric: Slice 2 — build_index compiles the named slot and the contracts file\n\nFeature: nexus-borrowings\nEpic: nexus-borrowings/E1\nSlice goal: `compile_design_diagrams` reads `runtime-architecture.svg` → `record[\"diagrams\"][\"runtime\"]` and `attach_authored_file` stamps `contracts`; a fixture design without either file omits both keys with no error. `tests/test_build_index.py` passes.\nTest command: `uv run --with pytest pytest tests/test_build_index.py -q`\n\nSources: `04-slices.md` row 2, `epic-E1-design.md`, `epic-E3-design.md`, ADR-0036.\n\n## Criteria\n\n### C1 — The named key compiles from the SVG file [CRITICAL]\n**Must be true:** A design fixture whose `diagrams/` holds a non-empty `runtime-architecture.svg` compiles with `record[\"diagrams\"][\"runtime\"]` set to the file's text; numeric keys `1..3` still compile the same way. A design without the file omits the key — no error, no placeholder.\n**Evidence to check:** `tests/test_build_index.py::test_design_runtime_diagram_compiles` (or equivalent) asserts both directions with real fixtures.\n**Scoring:** 1.0 both directions asserted; 0.5 key appears but absence is not asserted; 0.0 wrong or missing.\n\n### C2 — contracts rides the generalized authored-file stamp [CRITICAL]\n**Must be true:** `attach_authored_file` (or an equivalent helper) stamps `record[\"contracts\"]` from `contracts.md` exactly like the existing `pr_draft` block; the `pr_draft` behavior is unchanged after the refactor.\n**Evidence to check:** The test asserting contracts projection; a second assertion (or existing test) that `pr_draft` still compiles.\n**Scoring:** 1.0 both; 0.5 contracts works but the pr_draft refactor regressed or is untested; 0.0 otherwise.\n\n### C3 — No readiness or level semantics shift [CRITICAL]\n**Must be true:** The readiness check and the numeric-key consumers behave exactly as before: the new keys never enter their level lists, absent files raise nothing.\n**Evidence to check:** Existing readiness/levels assertions in `tests/test_build_index.py` stay green; `uv run --with pytest pytest tests/ -q` reports no new failure.\n**Scoring:** 1.0 green suite; 0.0 any regression.",
+        "source_path": ".cobuilder/rubrics/nexus-borrowings/slice-2.md"
+      },
+      {
+        "id": "nexus-borrowings/3",
+        "feature_slug": "nexus-borrowings",
+        "n": 3,
+        "title": "Slice 3 — Viewer renders the runtime tile and the contracts section",
+        "body_md": "# Rubric: Slice 3 — Viewer renders the runtime tile and the contracts section\n\nFeature: nexus-borrowings\nEpic: nexus-borrowings/E1\nSlice goal: `architectureTileLevels` returns `[\"runtime\",\"3\"]` when the named key is present; the overview still leads the design. The `runtime` value renders as inline SVG, never through the mermaid renderer. `ContractsSection` hides on absence. Viewer tests pass.\nTest command: viewer test suite (LevelSections and design-route tests)\n\nSources: `04-slices.md` row 3, `epic-E1-design.md`, `03-program-design.md`, ADR-0036, ADR-0020.\n\n## Criteria\n\n### C1 — Tile order: runtime leads the architecture level, never the design [CRITICAL]\n**Must be true:** Inside the architecture level, the runtime tile renders before the `\"3\"` class tile. The level-1 overview remains the first diagram of the design. No level list gains an entry; `\"4\"` never appears.\n**Evidence to check:** `architectureTileLevels` (single source) returns `[\"runtime\",\"3\"]`/`[\"3\"]`; the test asserts order and the untouched overview.\n**Scoring:** 1.0 with a single-source function and tests; 0.5 order right but call sites hard-code the key; 0.0 wrong.\n\n### C2 — runtime renders inline SVG; never through mermaid [CRITICAL]\n**Must be true:** The `runtime` value is injected as SVG markup. The mermaid renderer never receives it. No `<script>` content executes — the value comes pre-validated by check_design_svg at authoring time.\n**Evidence to check:** The render path test; grep shows `runtime` and `mermaid` never meet in a call.\n**Scoring:** 1.0; 0.5 renders but via the mermaid path; 0.0 otherwise.\n\n### C3 — ContractsSection beside the envisioned PR, hidden on absence [CRITICAL]\n**Must be true:** A contracts section renders next to the envisioned-pull-request section when `record[\"contracts\"]` is set; a record without the key renders nothing there — not a placeholder, not an error.\n**Evidence to check:** Two-direction test with real record fixtures.\n**Scoring:** 1.0 both; 0.0 otherwise.\n\n### C4 — Viewer build and ADR-0020 discipline hold [IMPORTANT]\n**Must be true:** `npm run build` (or the committed `viewer/index.html` path) reflects the source change per ADR-0020; the readiness logic for levels is untouched.\n**Evidence to check:** Build output or committed build artifact updated; readiness tests green.\n**Scoring:** 1.0 both; 0.5 tests green but build artifact stale; 0.0 otherwise.",
+        "source_path": ".cobuilder/rubrics/nexus-borrowings/slice-3.md"
+      },
+      {
+        "id": "nexus-borrowings/4",
+        "feature_slug": "nexus-borrowings",
+        "n": 4,
+        "title": "Slice 4 — Stage 6 spawns the validate-and-re-explore reviewer",
+        "body_md": "# Rubric: Slice 4 — Stage 6 spawns the validate-and-re-explore reviewer\n\nFeature: nexus-borrowings\nEpic: nexus-borrowings/E2\nSlice goal: `design-mode.md` §6 holds the spawn block. Behavioral rubric (Gate 4c special case).\nTest command: `uv run --with pytest pytest tests/ -q` (static prose checks) + a blind transcript review.\n\nSources: `04-slices.md` row 4, `epic-E2-design.md`, ADR-0036, ADR-0005, ADR-0035.\n\n## Criteria\n\n### C1 — Blind rubric precedes the draft [CRITICAL]\n**Must be true:** A transcript of design mode reaching stage 6 shows the reviewer reads `goal.json` and `intent.json` and states a rubric before opening the ADR draft, the diagrams, or the runtime SVG.\n**Evidence to check (blind transcript):** the order of Read actions and the rubric's provenance.\n**Scoring:** 1.0 rubric stated before any draft read; 0.0 draft read first.\n\n### C2 — Both passes present; findings are cited predictions [CRITICAL]\n**Must be true:** The reviewer's result contains (a) rubric-scored findings, each with a citation (ADR id, district, or boundary rule) and `kind: \"prediction\"`, and (b) at least one re-explore survivor or an argued none-found.\n**Evidence to check (blind transcript):** both sections present; citation on every finding.\n**Scoring:** 1.0 both; 0.5 one pass; 0.0 neither.\n\n### C3 — The reviewer never writes intent, and survivors route through stage 4 [CRITICAL]\n**Must be true:** The transcript shows no Write/Edit to `intent.json` by the reviewer path; an endorsed survivor, if any, is handed to the engineer for the stage-4 record.\n**Evidence to check (blind transcript + tool log):** no write call from the reviewer; the routing line appears in the prose.\n**Scoring:** 1.0; 0.0 any direct intent write.\n\n### C4 — Spawn discipline and flag [CRITICAL]\n**Must be true:** The spawn carries model `glm-5.3-flash:cloud` (or states the fallback when the harness cannot resolve it); the session-spawn is the dual-path form (no new agent file shipped); `goal.min_work.draft_review_run` flips true only on a returned round. The static prose in `design-mode.md` §6 states all of this.\n**Evidence to check:** grep of the spawn block; no new files under any `plugins/*/agents/`; goal.json updated.\n**Scoring:** 1.0 all; 0.5 missing flag or model line; 0.0 otherwise.",
+        "source_path": ".cobuilder/rubrics/nexus-borrowings/slice-4.md"
+      },
+      {
+        "id": "nexus-borrowings/5",
+        "feature_slug": "nexus-borrowings",
+        "n": 5,
+        "title": "Slice 5 — contracts.md becomes a stage-5 artifact with a stated skip rule",
+        "body_md": "# Rubric: Slice 5 — contracts.md becomes a stage-5 artifact with a stated skip rule\n\nFeature: nexus-borrowings\nEpic: nexus-borrowings/E3\nSlice goal: `design-mode.md` §5 carries the authoring + show-before-write rule and the skip rule; `build/SKILL.md` Gate 2/3 grounds in `contracts.md` when a design record exists.\nTest command: `uv run --with pytest pytest tests/ -q`\n\nSources: `04-slices.md` row 5, `epic-E3-design.md`, ADR-0036.\n\n## Criteria\n\n### C1 — Stage-5 authoring rule with sections and skip rule [CRITICAL]\n**Must be true:** `design-mode.md` stage 5 names `contracts.md`, its `## Endpoints` and `## Data models` sections, the show-before-write rule, the prediction marking, and the stated-skip rule for designs touching no public surface (a reason, Gate 2b style — never silence).\n**Evidence to check:** read the stage-5 block; all four parts present.\n**Scoring:** 1.0 all; 0.5 missing the skip rule; 0.0 otherwise.\n\n### C2 — Implement grounding [IMPORTANT]\n**Must be true:** `build/SKILL.md`'s Gate 2 and Gate 3 prose says, when a design record exists, ground in its `contracts.md` as well as `intent.json`; no gate lines change shape.\n**Evidence to check:** grep the grounding lines; the surrounding gate prose is unchanged.\n**Scoring:** 1.0; 0.5 mentioned only at one gate; 0.0 absent.",
+        "source_path": ".cobuilder/rubrics/nexus-borrowings/slice-5.md"
+      },
+      {
+        "id": "nexus-borrowings/6",
+        "feature_slug": "nexus-borrowings",
+        "n": 6,
+        "title": "Slice 6 — The bootstrap reference and the design stage-1 fallback",
+        "body_md": "# Rubric: Slice 6 — The bootstrap reference and the design stage-1 fallback\n\nFeature: nexus-borrowings\nEpic: nexus-borrowings/E4\nSlice goal: `references/vocabulary-bootstrap.md` exists (districts → grill → write; corpus cites only principles/ddd + scenarios/architecture_ddd; scenarios/ddd is README-only and named as such). `design-mode.md` stage 1 carries the symmetric fallback and the consent flow. Behavioral rubric (Gate 4c special case).\nTest command: `uv run --with pytest pytest tests/ -q` + a blind transcript review.\n\nSources: `04-slices.md` row 6, `epic-E4-design.md`, ADR-0036.\n\n## Criteria\n\n### C1 — The reference holds the full procedure with the corpus limits [CRITICAL]\n**Must be true:** `vocabulary-bootstrap.md` states: propose from baseline-verified districts + real symbols; annotate DDD kind from kind-matched `corpus/principles/ddd` cards under the corpus load cap; grill via AskUserQuestion (confirm/rename/reject + the inverted what-would-you-call-this question, `004_ubiquitous_language_naming.yaml` as the bank, `003_bounded_context_splitting.yaml` for scoping); write in the established entry format at the target root (self) or `<bundle-dir>/` (foreign). It states the corpus supplies questions, never terms, and notes `scenarios/ddd/` is README-only.\n**Evidence to check:** read the reference; all parts present and the empty-dir note explicit.\n**Scoring:** 1.0 all; 0.5 missing the scenarios/ddd note or the foreign-target surface; 0.0 otherwise.\n\n### C2 — Design stage-1 fallback is symmetric to the baseline fallback [CRITICAL]\n**Must be true:** `design-mode.md` stage 1 says: when `DDD-VOCABULARY.md` is absent, run the bootstrap (declared to the engineer, like the baseline run), then continue. Glossary terms come from districts and the interview only.\n**Evidence to check (blind transcript):** a design run in a repo without the glossary declares the run, proposes grounded candidates, grills, writes once, then proceeds to draft the hypothesis.\n**Scoring:** 1.0 declared + grounded + grilled + written; 0.5 runs but silently or proposes corpus-invented terms; 0.0 skips the bootstrap.\n\n### C3 — Consent before any glossary write outside stage 5 [IMPORTANT]\n**Must be true:** The reference and the stage-1 prose say the engineer's answers gate each write; a refusal or silence ends the bootstrap without writing.\n**Evidence to check (blind transcript):** at least one AskUserQuestion round; no write before answers.\n**Scoring:** 1.0; 0.0 any unconditional write.",
+        "source_path": ".cobuilder/rubrics/nexus-borrowings/slice-6.md"
+      },
+      {
+        "id": "nexus-borrowings/7",
+        "feature_slug": "nexus-borrowings",
+        "n": 7,
+        "title": "Slice 7 — Options and review surface the check",
+        "body_md": "# Rubric: Slice 7 — Options and review surface the check\n\nFeature: nexus-borrowings\nEpic: nexus-borrowings/E4\nSlice goal: `options-mode.md` stage 1 checks the glossary and the report notes absence; the stage-6 hand-off offers the bootstrap. `SKILL.md` review section reports absence as a `P1` finding and offers the bootstrap at run end. Behavioral rubric (Gate 4c special case).\nTest command: `uv run --with pytest pytest tests/ -q` + a blind transcript review.\n\nSources: `04-slices.md` row 7, `epic-E4-design.md`, ADR-0035, ADR-0036.\n\n## Criteria\n\n### C1 — Options mode checks at stage 1, offers at hand-off, writes nothing else [CRITICAL]\n**Must be true:** `options-mode.md` stage 1 gains the glossary existence check; a missing glossary becomes an inquiry note in the report evidence; the stage-6 hand-off offers the bootstrap and writes the glossary only on the engineer's explicit yes — the one declared exception to ADR-0035's write surface, cross-referenced.\n**Evidence to check (blind transcript):** a non-interactive run with the glossary absent notes the absence in the report and asks at hand-off; an interactive refusal writes nothing.\n**Scoring:** 1.0 check + report note + consented offer; 0.5 offer present but the check or the exception note missing; 0.0 otherwise.\n\n### C2 — Review reports absence as P1 and offers at run end [CRITICAL]\n**Must be true:** The review-mode prose states: when `DDD-VOCABULARY.md` is absent, the ubiquitous-language check reports a `P1` finding (template: the generic-names row in `corpus-index.md`), the run's severity flow is unchanged, and the bootstrap is offered after the reports are written.\n**Evidence to check:** read `SKILL.md`'s review section; the finding names P1 (not P0/P2) and the offer sits at run end, not mid-run.\n**Scoring:** 1.0; 0.5 wrong severity or mid-run write; 0.0 absent.\n\n### C3 — Other modes state presence, change nothing [IMPORTANT]\n**Must be true:** The remaining architect modes (maintenance, decisions, describe, debug) gain only a load-if-present / state-the-absence line where they name districts or terms; no mode outside design/options/review writes the glossary.\n**Evidence to check:** grep for the notice lines; the write-permission statement appears once, in ADR-0036 and the bootstrap reference.\n**Scoring:** 1.0; 0.5 some modes loud, some silent; 0.0 otherwise.",
+        "source_path": ".cobuilder/rubrics/nexus-borrowings/slice-7.md"
+      },
+      {
+        "id": "nexus-borrowings/8",
+        "feature_slug": "nexus-borrowings",
+        "n": 8,
+        "title": "Slice 8 — Implement notices, the vocabulary agent guard, and the bumps",
+        "body_md": "# Rubric: Slice 8 — Implement notices, the vocabulary agent guard, and the bumps\n\nFeature: nexus-borrowings\nEpic: nexus-borrowings/E4\nSlice goal: `implement:start`/`install`/`debug` surface the existence notice; `implement:vocabulary` step 0 returns `FINDINGS` with one `[UNDEFINED]` bootstrap item on a missing file, never a silent `CLEAN`. Marketplace bumps: architect 0.7.0, implement 0.4.0, artifact 0.7.0. Self-bundle rebuilt; full pytest green.\nTest command: `uv run --with pytest pytest tests/ -q`\n\nSources: `04-slices.md` row 8, `epic-E4-design.md`, ADR-0036, ADR-0025.\n\n## Criteria\n\n### C1 — The agent guard is mechanical [CRITICAL]\n**Must be true:** `plugins/implement/agents/vocabulary.md` step 0: when `DDD-VOCABULARY.md` is absent, the agent returns `FINDINGS` with one `[UNDEFINED]` item that names the design-stage-1 bootstrap — and never appends a `Verdict: CLEAN` block in that case.\n**Evidence to check (transcript against a repo without the glossary):** the evidence file records FINDINGS with the bootstrap item; the `CLEAN` template is not used.\n**Scoring:** 1.0; 0.0 any silent CLEAN on a missing file.\n\n### C2 — The three implement commands surface the notice [IMPORTANT]\n**Must be true:** `/implement:install`, `/implement:start`, and `/implement:debug` state whether the glossary exists and point at design stage 1; none runs the bootstrap itself.\n**Evidence to check:** read the three command files; the notice lines present; no auto-run prose.\n**Scoring:** 1.0 all three; 0.5 two; 0.0 absent or auto-running.\n\n### C3 — Bumps and bundle rebuild [CRITICAL]\n**Must be true:** `.claude-plugin/marketplace.json` reads architecture 0.7.0, implement 0.4.0, artifact 0.7.0 (pr and cobuilder-full-lifecycle unchanged); `tests/test_plugin_manifests.py` green; the self bundle rebuilt with `uv run shared/build_index.py` exits 0 and the nexus-borrowings entity carries `diagrams[\"runtime\"]` and `contracts`.\n**Evidence to check:** read the manifest; run build_index; run the full suite with no new failures.\n**Scoring:** 1.0 all; 0.5 bumps right but bundle stale or suite red; 0.0 otherwise.\n\n### C4 — No new install surface [IMPORTANT]\n**Must be true:** No new agent files, hooks, or MCP servers anywhere; ADR-0025's packaging test stays green untouched.\n**Evidence to check:** `tests/test_plugin_manifests.py` passes; manifest diff shows version strings only.\n**Scoring:** 1.0; 0.0 otherwise.",
+        "source_path": ".cobuilder/rubrics/nexus-borrowings/slice-8.md"
       },
       {
         "id": "options-mode/1",
@@ -3577,11 +3835,16 @@
         ]
       },
       "ADR-0035": {
-        "pr": null,
+        "pr": 26,
         "via": "epic",
         "path": [
           "options-mode/E1"
         ]
+      },
+      "ADR-0036": {
+        "pr": null,
+        "via": "none",
+        "path": []
       }
     },
     "epic_to_pull_request": {
@@ -3610,6 +3873,7 @@
       "design-mode/E1": 11,
       "gate-doc-surfacing/E1": 19,
       "gate-doc-surfacing/E2": 19,
+      "options-mode/E1": 26,
       "plugin-split/E1": 11,
       "plugin-split/E2": 11,
       "plugin-split/E3": 11,
@@ -3672,7 +3936,11 @@
       "maintainable-viewer/E2": "unstarted",
       "maintainable-viewer/E3": "unstarted",
       "maintainable-viewer/E4": "unstarted",
-      "options-mode/E1": "no-pull-request",
+      "nexus-borrowings/E1": "no-pull-request",
+      "nexus-borrowings/E2": "no-pull-request",
+      "nexus-borrowings/E3": "no-pull-request",
+      "nexus-borrowings/E4": "no-pull-request",
+      "options-mode/E1": "open",
       "plugin-split/E1": "merged",
       "plugin-split/E2": "merged",
       "plugin-split/E3": "merged",
@@ -3758,6 +4026,14 @@
       "interaction-design-gate/5": "interaction-design-gate/E3",
       "interaction-design-gate/6": "interaction-design-gate/E3",
       "interaction-design-gate/7": "interaction-design-gate/E3",
+      "nexus-borrowings/1": "nexus-borrowings/E1",
+      "nexus-borrowings/2": "nexus-borrowings/E1",
+      "nexus-borrowings/3": "nexus-borrowings/E1",
+      "nexus-borrowings/4": "nexus-borrowings/E2",
+      "nexus-borrowings/5": "nexus-borrowings/E3",
+      "nexus-borrowings/6": "nexus-borrowings/E4",
+      "nexus-borrowings/7": "nexus-borrowings/E4",
+      "nexus-borrowings/8": "nexus-borrowings/E4",
       "options-mode/1": "options-mode/E1",
       "options-mode/2": "options-mode/E1",
       "options-mode/3": "options-mode/E1",
@@ -3808,7 +4084,8 @@
       "ADR-0032": "cobuilder-packaging",
       "ADR-0033": "cobuilder-packaging",
       "ADR-0034": "cobuilder-packaging",
-      "ADR-0035": "cobuilder-packaging"
+      "ADR-0035": "cobuilder-packaging",
+      "ADR-0036": "cobuilder-packaging"
     },
     "adr_to_district": {
       "ADR-0001": "scripts",
@@ -3980,6 +4257,43 @@
           "n": "4",
           "name": "Slice plan, epic designs, and rubrics",
           "state": "APPROVED 2026-09-14"
+        }
+      ],
+      "nexus-borrowings": [
+        {
+          "n": "1",
+          "name": "Product",
+          "state": "APPROVED 2026-09-29",
+          "view": "#/work/nexus-borrowings/build/plan/product",
+          "doc": "nexus-borrowings",
+          "doc_kind": "product"
+        },
+        {
+          "n": "2",
+          "name": "Architecture",
+          "state": "APPROVED 2026-09-29",
+          "view": "#/work/nexus-borrowings/build/plan/architecture",
+          "doc": "nexus-borrowings",
+          "doc_kind": "architecture"
+        },
+        {
+          "n": "2b",
+          "name": "Interaction design",
+          "state": "n/a (no new interaction — the runtime tile and contracts section render through the existing read-only tile and section components; the only visual change is tile order inside the existing architecture level) — Screens: \"No new screens. The design route (#/work/<name>/intent) and the plan pages gain content only.\""
+        },
+        {
+          "n": "3",
+          "name": "Program Design",
+          "state": "APPROVED 2026-09-29",
+          "view": "#/work/nexus-borrowings/build/plan/program",
+          "doc": "nexus-borrowings",
+          "doc_kind": "program"
+        },
+        {
+          "n": "4",
+          "name": "Slice plan, epic designs, and blind rubrics",
+          "state": "APPROVED 2026-10-01",
+          "view": "#/work/nexus-borrowings/build/epics"
         }
       ],
       "options-mode": [
