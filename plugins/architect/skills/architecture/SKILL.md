@@ -577,6 +577,35 @@ Render the size category as a `.tag` next to the severity badge.
 
 Do not fabricate health scores. Compute category scores from the actual findings counts.
 
+### Severity and Category Mapping
+
+The saas checklist (`references/saas-checklist.md`) rates a finding with its own scale and category names. Map each finding before you count it. Apply the checklist's escalation rules (its Section 12) first, then map the result.
+
+| Checklist severity | Counts as |
+|---|---|
+| Critical | `P0` |
+| High | `P1` |
+| Medium, Low | `P2` |
+| Informational | Not counted. List it as a note. |
+
+| Checklist `category` | Scoring category |
+|---|---|
+| `security`, `cloud_platform` | Security |
+| `architecture` | Architecture |
+| `quality` | Code Quality |
+| `performance` | Scaling |
+| `observability` | Maintainability |
+| `business_risk` | Technical Debt |
+| `testing` | Testing |
+
+Four findings go to another category than their row:
+- A `security` finding about dependencies or supply chain counts under Dependency Health.
+- A `quality` finding about documentation or onboarding counts under Maintainability.
+- A `business_risk` finding about a single point of failure counts under Architecture.
+- A vocabulary finding from step 10 counts under Maintainability.
+
+The checklist's Phase 4 scorer runs on its own, from the same findings data. It is a scan-time diagnostic with 14 categories and its own weights. Do not report its score. The reported score comes only from the P0/P1/P2 counts and `compute_scores.py`, below.
+
 ### Category Score Formula
 
 ```
