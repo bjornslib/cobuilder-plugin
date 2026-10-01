@@ -2,18 +2,9 @@
   "name": "implement",
   "version": "0.4.0",
   "description": "Build a feature one vertical slice at a time with four approval gates, blind rubrics, and independent validation.",
-  "author": {
-    "name": "bjornslib"
-  },
+  "author": { "name": "bjornslib" },
   "repository": "https://github.com/bjornslib/cobuilder-architect",
   "license": "MIT",
-  "keywords": [
-    "claude-code",
-    "build",
-    "slices"
-  ],
-  "dependencies": [
-    "architect@cobuilder-plugin",
-    "artifact@cobuilder-plugin"
-  ]
+  "keywords": ["claude-code", "build", "slices"],
+  "dependencies": ["architect@cobuilder-plugin", "artifact@cobuilder-plugin"]
 }
