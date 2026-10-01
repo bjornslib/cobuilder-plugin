@@ -158,18 +158,44 @@ def test_generate_command_dispatches_odyssey_generate_mode():
     assert (skill_name, mode_token) == ("odyssey", "generate")
 
 
-def test_architecture_skill_declares_exactly_six_modes():
+ARCHITECT_MODES = {
+    "design",
+    "review",
+    "maintenance",
+    "decisions",
+    "describe",
+    "debug",
+    "options",
+}
+
+
+def test_architecture_skill_declares_exactly_seven_modes():
     modes = declared_modes_for_command(
         PLUGINS_DIR / "architect" / "commands" / "review.md", "architecture"
     )
-    assert modes == {
-        "design",
-        "review",
-        "maintenance",
-        "decisions",
-        "describe",
-        "debug",
-    }
+    assert modes == ARCHITECT_MODES
+
+
+def test_architect_command_files_equal_declared_modes():
+    """Every architect command dispatches one architecture mode, and every
+    declared mode has a command, so a later mode cannot drift."""
+    commands_dir = PLUGINS_DIR / "architect" / "commands"
+    dispatched = set()
+    for command_path in sorted(commands_dir.glob("*.md")):
+        skill_name, mode_token = extract_dispatch(command_path)
+        assert skill_name == "architecture", command_path.name
+        dispatched.add(mode_token)
+    declared = declared_modes_for_command(
+        commands_dir / "review.md", "architecture"
+    )
+    assert dispatched == declared
+
+
+def test_options_command_dispatches_architecture_options_mode():
+    path = PLUGINS_DIR / "architect" / "commands" / "options.md"
+    assert path.exists(), "architect must ship commands/options.md"
+    skill_name, mode_token = extract_dispatch(path)
+    assert (skill_name, mode_token) == ("architecture", "options")
 
 
 def test_odyssey_review_name_appears_nowhere_in_prose():

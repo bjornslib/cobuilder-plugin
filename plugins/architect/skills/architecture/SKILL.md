@@ -1,6 +1,6 @@
 ---
 name: architecture
-description: This skill should be used when the user asks to "review architecture", "audit codebase health", "design a system", "maintain codebase health", "check system design", "perform architecture review", "assess code quality", "security audit", "record an architecture decision", "create an ADR", "document a bounded context", "write a boundary record", "generate decision viewpoints", "document the architecture", "debug this", "find the root cause", "why is this failing", "diagnose", or mentions review, design, maintenance, architecture audit, codebase health, technical debt, refactoring plan, system design, decision records, architecture description, bounded context, or architecture governance. Supports six modes -- design, review, maintenance, decisions, describe, and debug -- invoked via skill argument or interactive prompt.
+description: This skill should be used when the user asks to "review architecture", "audit codebase health", "design a system", "maintain codebase health", "check system design", "perform architecture review", "assess code quality", "security audit", "record an architecture decision", "create an ADR", "document a bounded context", "write a boundary record", "generate decision viewpoints", "document the architecture", "debug this", "find the root cause", "why is this failing", "diagnose", "explore options", "compare alternatives", "are these the right technology choices", "is this flow designed correctly", or mentions review, design, maintenance, architecture audit, codebase health, technical debt, refactoring plan, system design, decision records, architecture description, bounded context, or architecture governance. Supports seven modes -- design, review, maintenance, decisions, describe, debug, and options -- invoked via skill argument or interactive prompt.
 version: 1.0.0
 title: "Architecture Review, Design & Maintenance"
 status: active
@@ -8,9 +8,9 @@ status: active
 
 # Architecture Review, Design & Maintenance
 
-A mode-switchable skill for six use cases. System design covers architecture decisions and ADRs. Codebase review runs a security, architecture, and quality audit and produces dual HTML reports. Maintenance covers trend analysis and an incremental backlog.
+A mode-switchable skill for seven use cases. System design covers architecture decisions and ADRs. Codebase review runs a security, architecture, and quality audit and produces dual HTML reports. Maintenance covers trend analysis and an incremental backlog.
 
-Decision records follow 42010 governance rules, with a state machine and a value facet. Architecture description documents a bounded context to the project standard. Debug diagnoses a root cause through divergent hypothesis generation.
+Decision records follow 42010 governance rules, with a state machine and a value facet. Architecture description documents a bounded context to the project standard. Debug diagnoses a root cause through divergent hypothesis generation. Options asks whether the flow and the technology choices are still right, and writes one HTML report of inquiries, diagrams, and alternatives.
 
 Design, review, and maintenance modes load a curated subset of the bundled corpus through `references/corpus-index.md`, plus the detected stack card from `references/stacks/`. Decisions and describe modes follow `references/decision-records.md` and `references/architecture-documentation.md`. Design, review, and debug modes also use `references/divergent-exploration.md`.
 
@@ -26,12 +26,13 @@ Accept a mode argument if the user supplies one at invocation. Prompt for one if
 - `/architect:decisions` -- Decision Records mode
 - `/architect:describe` -- Architecture Description mode
 - `/architect:debug` -- Debug mode
+- `/architect:options` -- Options mode
 
 These modes are self-only. They analyse only the repo of the current session. Odyssey can target another checkout. Architecture cannot. If the user asks to analyse a different local checkout, or to override where output lands, refuse.
 
-**Interactive fallback:** If invoked without an argument, prompt: "Which mode? (design / review / maintenance / decisions / describe / debug)". Do not assume review mode by default.
+**Interactive fallback:** If invoked without an argument, prompt: "Which mode? (design / review / maintenance / decisions / describe / debug / options)". Do not assume review mode by default.
 
-**Content-inferred fallback:** If the user says "help me design this" without a mode argument, infer `design`. If the user says "audit my codebase", infer `review`. If the user says "record this decision", "create an ADR", or "extract decisions from this PR", infer `decisions`. If the user says "document this module or context" or "write the boundary record", infer `describe`. If the user asks "why is X failing", asks to "find the root cause", or says "debug this", infer `debug`.
+**Content-inferred fallback:** If the user says "help me design this" without a mode argument, infer `design`. If the user says "audit my codebase", infer `review`. If the user says "record this decision", "create an ADR", or "extract decisions from this PR", infer `decisions`. If the user says "document this module or context" or "write the boundary record", infer `describe`. If the user asks "why is X failing", asks to "find the root cause", or says "debug this", infer `debug`. If the user asks "is this flow right", "are these the right technology choices", or "what are the alternatives", infer `options`.
 
 Narrated per-PR story generation, meaning explain-diff narratives, scene art, and voice narration, is not part of this skill. It lives in the `odyssey` skill in this plugin.
 
@@ -56,6 +57,7 @@ Resulting layout:
 {doc_root}/INVENTORY.md
 {doc_root}/decisions/           # generated viewpoints
 {doc_root}/review/              # HTML reports, both files together
+{doc_root}/options/<name>/      # options report, one HTML file
 ```
 
 ## Mode Workflows
@@ -326,6 +328,40 @@ that join here.
 `docs/architecture/adr/ADR-NNNN-<slug>.md`, with component boundaries,
 interface contracts, and dependency direction. `references/design-mode.md`
 is the source of truth for each artifact's exact shape.
+
+### Options Mode
+
+This mode asks whether the flow and the technology choices of a system are
+still right, and what other options exist. Load `references/options-mode.md`
+on demand. That file is the source of truth for the full procedure. This
+section is the summary.
+
+**Scope:** One system area, or the whole repo with `--non-interactive`. The
+mode is self-only. It refuses `--repo`, `--store`, and any output override.
+It needs `uv` and a git repo, never `GEMINI_API_KEY`. It proposes and never
+decides. Design mode stage 4 alone fills `intent.alternatives`. It runs no
+divergent exploration. It states the pre-flight gate result in one line.
+
+**Workflow:** Seven stages, 0 to 6: Frame, Ground, Inquire, Options, Draw
+and write, Verify, Hand off. Stage 6 prints the report path and the
+inquiry IDs. It suggests `/architect:design` and does not start it.
+
+**Corpus chain:**
+1. Read `references/corpus-index.md` Section 1 for symptom mappings.
+2. Detect the stack through `references/stacks/` and load the Corpus Load
+   list of each matched card.
+3. Load up to 3 files from `references/corpus/principles/architecture/*`,
+   `references/corpus/principles/ddd/*`, and
+   `references/corpus/principles/design_patterns/*`.
+4. Load `references/corpus/principles/resilience/*` if the system calls
+   external services.
+5. Read the repo, its ADRs, and earlier reviews and plans.
+
+**Output:** One file, `docs/architecture/options/<name>/options-report-YYYY-MM-DD.html`.
+It holds three inline SVG figures and the inquiries `F1`, `T1`, `G1`. It
+is the only output. Run `scripts/check_options_report.py` on it before the
+hand-off.
+
 ### Review Mode
 
 **Scope:** An audit of security, architecture, code quality, scaling, maintainability, dependency health, and testing. Produces two linked self-contained HTML reports.
@@ -604,6 +640,9 @@ Escalate a file to a full read when its summary shows the category applies, or w
 | `references/stacks/README.md` | Stack card contract: detection precedence, card fields, STUB convention. Per-stack cards (`python-fastapi`, `react-typescript`, `nextjs`, `generic`) live beside it. |
 | `references/decision-records.md` | Decisions mode: 42010 record schema, state machine + legal transitions, delivers facet, integrity rules |
 | `references/architecture-documentation.md` | Describe mode: bounded-context authoring procedure (canvas, boundary record, verification discipline) |
+| `references/options-mode.md` | Options mode: the seven-stage procedure, the ground table, the lenses, the report structure, the decision forms, the hand-off |
+| `references/reports/options-report-TEMPLATE.html` | Template of the options report: ten anchors, three SVG figures, decision forms with copy buttons |
+| `${CLAUDE_PLUGIN_ROOT}/scripts/check_options_report.py` | Validator of the options report. It checks form only, not truth. |
 | `references/divergent-exploration.md` | Diverge/focus engine used by design, review, and debug modes: pre-flight abort gate, three frame catalogues, separate critic pass (scores, traps, agreement, starred survivors), output schema |
 | `references/templates/adr-template.md` | Canonical ADR skeleton (scripts validate against this shape) |
 | `references/templates/canvas-template.md` | Canonical Bounded Context Canvas skeleton (8 sections + C2/C3) |

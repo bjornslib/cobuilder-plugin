@@ -1,0 +1,41 @@
+{
+  "name": "options-mode",
+  "title": "An options mode for the architect plugin",
+  "adr": "ADR-0035",
+  "adrs": [
+    "ADR-0035"
+  ],
+  "created": "2026-10-01",
+  "outcome": "An engineer runs /architect:options and gets one self-contained HTML report of inquiries about the flow, the technology, and the gaps of the whole system, with alternatives and diagrams. The engineer pastes the decisions text into /architect:design.",
+  "done_when": [
+    "/architect:options dispatches the architecture skill, and the skill declares seven modes",
+    "a validator script passes a good report and fails each broken fixture for the intended reason",
+    "the full test suite passes with the mode count at seven, and the mode ships no agent, hook, or MCP server"
+  ],
+  "abort_if": [
+    "a read of design stage 3 shows that options adds no inquiry that stage 3 would not find"
+  ],
+  "min_work": {
+    "derived_from": "4 districts (skills, scripts, commands, docs), 3 colliding ADRs (ADR-0013, ADR-0017, ADR-0018), 1 boundary rule on install surface (ADR-0025)",
+    "alternatives_explored": 6,
+    "boundary_rules_checked": true,
+    "challenge_stage_run": true,
+    "note": "Stage 3 (divergent exploration) was skipped on the engineer's word: no need, the main options were settled in chat. Stage 4 ran with two cited challenges, ADR-0013 (contested, the engineer kept the separate mode) and ADR-0018 (accepted for now)."
+  },
+  "limits": {
+    "warn_after_rounds": 3,
+    "cutoff_rounds": 6
+  },
+  "epics": [
+    {
+      "id": "E1",
+      "branch": "design/options-mode",
+      "pr": null,
+      "state": "implemented",
+      "note": "One epic. Four slices: the mode and its command, the report template and validator, the manifests and glossary and counts, and one real run of the mode."
+    }
+  ],
+  "stage": "implemented",
+  "supersedes": null,
+  "rounds": []
+}

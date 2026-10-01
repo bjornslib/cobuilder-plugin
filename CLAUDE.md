@@ -7,7 +7,7 @@ Guidance for Claude Code instances working in this repo.
 This repository is a Claude Code marketplace (`.claude-plugin/marketplace.json`)
 that ships five sibling plugins under `plugins/`, not an app with a
 build/test/deploy cycle. `architect` covers design, review,
-maintenance, decisions, describe, and debug. `pr` covers generate
+maintenance, decisions, describe, debug, and options. `pr` covers generate
 and review: the pull-request narration and assessment lifecycle.
 `artifact` serves and publishes the bundle. `implement`
 builds a design's epics. `cobuilder-full-lifecycle` is an umbrella plugin
@@ -54,7 +54,7 @@ the plugin they are already using. This is the same "name the other
 plugin's mode, let its own skill resolve its own path" pattern as the
 `artifact` handoff above, not a new exception to it.
 
-The five Odyssey modes still take `--repo`. The six architecture modes are
+The five Odyssey modes still take `--repo`. The seven architecture modes are
 self-only. They analyze the session's own repo and refuse a foreign target.
 
 Generate mode, in `pr`, is the one Odyssey path that does not
@@ -94,7 +94,7 @@ command for subagents only, and never for the main agent.
 Each plugin ships its own skills under its own `plugins/<name>/skills/`.
 `pr` ships `odyssey`, which orchestrates the five history modes
 this file describes. `architect` ships `architecture`, which runs
-the six self-only modes. `mermaid` and `ste-writing` are shared skills,
+the seven self-only modes. `mermaid` and `ste-writing` are shared skills,
 vendored by symlink into every plugin that needs them (ADR-0017). `mermaid`
 holds the authoring rules for the Mermaid diagrams below. The
 diagram-authoring subagent that `odyssey` spawns invokes `mermaid` for
@@ -156,14 +156,14 @@ shared/                symlinked into every plugin's own root as plugins/<name>/
                        validate_decision_state.py, verify_bundle.py,
                        skills/{mermaid,ste-writing}/
 plugins/
-  architect/             design, review, maintenance, decisions, describe, debug. Self-only
+  architect/             design, review, maintenance, decisions, describe, debug, options. Self-only
     .claude-plugin/plugin.json
     commands/          design.md, review.md, maintenance.md, decisions.md,
-                       describe.md, debug.md → Skill("architecture", args=...)
-    skills/architecture/
+                       describe.md, debug.md, options.md → Skill("architecture", args=...)
+    skills/architecture/   runs seven modes
       SKILL.md
       references/      includes design-mode, loaded on demand by Design mode
-    scripts/           compute_scores.py, html_to_pdf.py
+    scripts/           compute_scores.py, html_to_pdf.py, check_options_report.py
     shared/            -> ../../shared (symlink)
   pr/                    the five Odyssey history modes, and generate mode
     .claude-plugin/plugin.json
@@ -596,7 +596,7 @@ hand.
   already in `story.json`. A new PR gets a minimal stub. A second run is
   safe.
 - `--repo <path>` works on the five Odyssey commands, not on the architecture
-  six. It targets any local checkout, not only the session's own working
+  seven. It targets any local checkout, not only the session's own working
   directory. The storage rule in Hub resolution decides where the bundle
   lands: `<target>/.cobuilder-architect/self/` for self-analysis, or
   `<hub>/.cobuilder-architect/<repo-slug>/` for a foreign repo. `--store

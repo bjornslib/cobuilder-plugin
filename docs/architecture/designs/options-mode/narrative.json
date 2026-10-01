@@ -1,0 +1,64 @@
+{
+  "intent": {
+    "tagline": "Ask whether the design is right before you design.",
+    "narration": "The options mode lets an engineer examine the flow and the technology of a whole system and compare alternatives. It produces one report that the engineer carries into design mode."
+  },
+  "problem_solution": {
+    "narration": "Review mode finds defects, and design mode starts from an outcome already named. The options mode fills the gap between them. It proposes alternatives and leaves the decision to design stage 4.",
+    "problem": "Nothing asks whether the flow and the technology choices of the whole system are still right, or what other options exist for the same outcome.",
+    "solution": "A seventh mode, /architect:options, writes one self-contained HTML report with a fixed structure. A validator script checks that structure. The engineer pastes the decisions text into /architect:design.",
+    "beats": [
+      {
+        "kind": "background",
+        "text": "Review mode scores defects. Design mode designs one change from an outcome the engineer named. Neither one compares alternatives for the system as a whole."
+      },
+      {
+        "kind": "intuition",
+        "text": "Frame the scope. Ground in the code, the ADRs, and the corpus. Write inquiries, then options for each. Draw three diagrams. Verify the file. Hand off by paste."
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "A pre-step inside design mode",
+        "rejected": "Design mode designs one change. The options mode covers the whole system."
+      },
+      {
+        "option": "An options.json beside the report",
+        "rejected": "Nothing would read it."
+      },
+      {
+        "option": "Mermaid diagrams",
+        "rejected": "Mermaid cannot draw the emphasis borders and badges."
+      },
+      {
+        "option": "A Lavish dependency",
+        "rejected": "The report must open from a double click."
+      },
+      {
+        "option": "Divergent exploration inside the mode",
+        "rejected": "It costs seven agent calls and belongs to design stage 3."
+      },
+      {
+        "option": "The word finding or question",
+        "rejected": "Both words already have a meaning. The item is an inquiry."
+      }
+    ]
+  },
+  "architecture": {
+    "narration": "The mode is a command file, a skill section, a reference, a template, and a validator script. It writes under docs/architecture/options/ and nowhere else.",
+    "beats": [
+      {
+        "kind": "forces",
+        "text": "Only implement may ship an agent or a hook. Architecture modes are self-only. The report must work with no network and no editor."
+      },
+      {
+        "kind": "contract",
+        "text": "The report keeps ten fixed anchors and stable inquiry IDs. The validator reads the HTML and exits non-zero on a failed check."
+      },
+      {
+        "kind": "boundary",
+        "text": "Options proposes and never decides. Design stage 4 alone fills intent.alternatives."
+      }
+    ]
+  }
+}

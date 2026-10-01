@@ -1,0 +1,30 @@
+C4Container
+    title Options mode - a seventh architect mode that proposes and never decides
+
+    Person(engineer, "Engineer", "Wants to know if the flow and technology choices of the whole system are still right")
+
+    Container_Boundary(arch, "plugins/architect - existing") {
+        Container(skill, "SKILL.md", "architecture skill", "Routes the mode argument to a mode reference")
+        Container(designmode, "design mode", "architecture skill", "Stage 4 alone fills intent.alternatives")
+        Container(corpus, "Corpus and references", "Markdown", "Evidence the mode reads")
+    }
+
+    Container_Boundary(opt, "Options mode - new in this design") {
+        Container(cmd, "commands/options.md", "Command file", "Dispatches the architecture skill in options mode")
+        Container(ref, "references/options-mode.md", "Markdown", "Holds the seven-stage procedure, stages 0 to 6")
+        Container(tpl, "options-report-TEMPLATE.html", "HTML", "Fixed report structure with inline SVG")
+        Container(css, "design-system.css", "CSS asset", "Styles the report")
+        Container(validator, "check_options_report.py", "Python script", "Reads the HTML and exits non-zero on a failed check")
+        ContainerDb(report, "docs/architecture/options/name/", "One HTML report", "The only file the mode writes")
+    }
+
+    Rel(engineer, cmd, "Runs /architect:options")
+    Rel(cmd, skill, "Dispatches")
+    Rel(skill, ref, "Loads on demand")
+    Rel(ref, corpus, "Reads evidence from")
+    Rel(ref, tpl, "Fills")
+    Rel(tpl, css, "Embeds styling from")
+    Rel(ref, report, "Writes")
+    Rel(validator, report, "Reads and checks")
+    Rel(engineer, report, "Reads, then copies the decisions text")
+    Rel(engineer, designmode, "Pastes decisions text into /architect:design")

@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "architect",
-      "description": "Design, review, maintenance, decisions, describe, and debug for a local git repo.",
+      "description": "Seven modes for a local git repo: design, review, maintenance, decisions, describe, debug, and options.",
       "source": "./plugins/architect",
       "version": "0.6.0"
     },

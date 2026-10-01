@@ -26,7 +26,7 @@ install the plugin or plugins you need:
 ```
 
 `architect` covers design, review, maintenance, decisions,
-describe, and debug. Install `pr` for narrated history and
+describe, debug, and options. Install `pr` for narrated history and
 generate mode, `artifact` to view or publish a bundle, and
 `implement` to build a design's epics. Install
 `cobuilder-full-lifecycle` instead to get all four in one step:
@@ -376,10 +376,10 @@ shared/                            vendored into every plugin as plugins/<name>/
                                     migrate_bundle.py, slice_table.py, validate_decision_state.py,
                                     verify_bundle.py, skills/{mermaid,ste-writing}/
 plugins/
-  architect/              design, review, maintenance, decisions, describe, debug. Self-only
-    commands/             design.md, review.md, maintenance.md, decisions.md, describe.md, debug.md
-    skills/architecture/  the six self-only modes, plus corpus and books
-    scripts/              compute_scores.py, html_to_pdf.py
+  architect/              design, review, maintenance, decisions, describe, debug, options. Self-only
+    commands/             design.md, review.md, maintenance.md, decisions.md, describe.md, debug.md, options.md
+    skills/architecture/  the seven self-only modes, plus corpus and books
+    scripts/              compute_scores.py, html_to_pdf.py, check_options_report.py
   pr/                     the five Odyssey history modes, and generate mode
     commands/             baseline.md, generate.md, review.md
     skills/odyssey/       SKILL.md, references/{story-mode, decision-records-lite,

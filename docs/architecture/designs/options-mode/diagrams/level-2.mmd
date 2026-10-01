@@ -1,0 +1,29 @@
+sequenceDiagram
+    participant Eng as Engineer
+    participant Cmd as commands/options.md
+    participant Skill as architecture SKILL.md
+    participant Ref as options-mode.md
+    participant Src as Template, design-system.css, corpus
+    participant Report as docs/architecture/options/name/ report
+    participant Val as check_options_report.py
+    participant Design as design mode (/architect:design)
+
+    Eng->>Cmd: /architect:options
+    Cmd->>Skill: Dispatch architecture skill in options mode
+    Skill->>Ref: Load the procedure
+    Ref->>Src: Read template, stylesheet, and corpus
+    Src-->>Ref: Structure, styling, and evidence
+    Note over Ref: Stage 2 inquires and stage 3 proposes options.<br>No divergent exploration runs. No options.json is written.
+    Ref->>Report: Write one self-contained HTML report
+    Ref->>Val: Run the validator on the report
+    Val->>Report: Read the HTML
+    alt A check fails
+        Val-->>Ref: Exit non-zero with the failed check
+        Ref->>Report: Fix the report
+    else All checks pass
+        Val-->>Ref: Exit zero
+    end
+    Ref-->>Eng: Hand off the report path
+    Eng->>Report: Read it and copy the decisions text
+    Eng->>Design: Paste decisions text with inquiry IDs
+    Note over Design: Stage 4 alone decides and fills intent.alternatives

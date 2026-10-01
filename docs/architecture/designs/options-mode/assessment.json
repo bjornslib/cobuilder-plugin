@@ -1,0 +1,72 @@
+{
+  "stage": "design",
+  "verdict": "concerns",
+  "risk_tier": "medium",
+  "regret_risk": "If the design ships as written, the team lives with a seventh mode whose report is invisible to the viewer and reaches design mode only by a paste. A reader may take a recommendation in a report as a checked fact, because the validator checks the form of a confidence tag and not its honesty. The cost is small and reversible: one command file, one reference, one template, and one script.",
+  "summary": "The design adds /architect:options as a seventh architect mode. It writes one HTML report and proposes alternatives. Design stage 4 still decides, and alone fills intent.alternatives. The invariant it introduces: an architect mode that proposes options never records a decision. Every finding below is a prediction made before the code exists.",
+  "findings": [
+    {
+      "kind": "prediction",
+      "id": "F1",
+      "severity": "medium",
+      "title": "The mode overlaps the framing that ADR-0013 gives to design mode",
+      "detail": "ADR-0013 says design mode owns framing, exploration, and the challenge. The options mode frames inquiries before a design exists. The engineer kept the separate mode because it covers the whole system and design mode covers one change.",
+      "cites": "ADR-0013",
+      "mitigation": "State the scope split in ADR-0035 and in the options-mode reference. Options proposes. Design stage 4 decides."
+    },
+    {
+      "kind": "prediction",
+      "id": "F2",
+      "severity": "medium",
+      "title": "The report is not a record in the lifecycle index",
+      "detail": "ADR-0018 gives the viewer one lifecycle surface fed by data/index.json. A report under docs/architecture/options/ is not an entity in that index, so the viewer does not show it. The engineer accepted this gap for now.",
+      "cites": "ADR-0018",
+      "mitigation": "Record the gap as an unknown. A later design can add a build_index.py projection."
+    },
+    {
+      "kind": "prediction",
+      "id": "F3",
+      "severity": "low",
+      "title": "Inline SVG leaves the shared diagram pipeline",
+      "detail": "The mermaid skill is vendored into every plugin so that diagrams share one pipeline. The report uses hand-written SVG for emphasis borders and badges, and ships no .mmd copy.",
+      "cites": "ADR-0017",
+      "mitigation": "ADR-0035 records the exception and the reason."
+    },
+    {
+      "kind": "prediction",
+      "id": "F4",
+      "severity": "low",
+      "title": "The mode must keep the install surface closed",
+      "detail": "Only implement may ship an agent or a hook. The options mode adds a command file, a skill section, a reference, a template, and a script. It ships no agent, hook, or MCP server.",
+      "cites": "ADR-0025",
+      "mitigation": "A test asserts that the architect plugin ships no agent, hook, or MCP server."
+    },
+    {
+      "kind": "prediction",
+      "id": "F5",
+      "severity": "medium",
+      "title": "The validator checks form and not truth",
+      "detail": "The validator reads the HTML only. It checks anchors, figures, links from rows to directions, confidence values, and external links. It cannot tell whether a Verified tag is honest.",
+      "cites": "district: scripts",
+      "mitigation": "State the limit in the options-mode reference. The reviewer reads the evidence section of each report."
+    }
+  ],
+  "boundary_checks": [
+    {
+      "rule": "No agents, no hooks, no MCP servers in the architect install surface",
+      "result": "holds",
+      "note": "The mode is a command file that dispatches the architecture skill, the same shape as the other six."
+    },
+    {
+      "rule": "Architecture modes are self-only and take no --repo",
+      "result": "holds",
+      "note": "The mode refuses a foreign target and an output override."
+    },
+    {
+      "rule": "No plugin script or skill names another plugin's path",
+      "result": "holds",
+      "note": "The validator lives in plugins/architect/scripts/. The hand-off to design names the mode and not a path."
+    }
+  ],
+  "drift": []
+}

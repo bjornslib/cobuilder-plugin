@@ -1,0 +1,52 @@
+classDiagram
+    class Report {
+        +path string
+        +inquiries list
+        +gaps list
+        +decisionForm DecisionForm
+        +inlineSvgFigures list
+    }
+
+    class Inquiry {
+        +id string
+        +confidence string
+        +evidence list
+        +externalLinks list
+    }
+
+    class Option {
+        +direction string
+        +badge string
+        +linkedFromRow bool
+    }
+
+    class Gap {
+        +description string
+    }
+
+    class DecisionForm {
+        +decisionsText string
+        +copyButton bool
+    }
+
+    class Validator {
+        <<check_options_report.py>>
+        +checkAnchors() bool
+        +checkFigures() bool
+        +checkRowToDirectionLinks() bool
+        +checkConfidenceValues() bool
+        +checkExternalLinks() bool
+        +checkCopyButton() bool
+        +main() int
+    }
+
+    Report "1" *-- "many" Inquiry : holds
+    Report "1" *-- "many" Gap : lists
+    Report "1" *-- "1" DecisionForm : ends with
+    Inquiry "1" o-- "many" Option : proposes
+    DecisionForm ..> Inquiry : cites by ID
+    Validator ..> Report : reads HTML and exits non-zero
+
+    note for Report "Ten anchors fix the structure.<br>The validator checks each one is present."
+    note for Option "Proposes only. It never records a decision."
+    note for DecisionForm "Pasted into design mode,<br>whose stage 4 decides"

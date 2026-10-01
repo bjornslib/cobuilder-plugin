@@ -1,0 +1,13 @@
+feature: options-mode
+test_command: "uv run --with pytest pytest tests/ -q"
+thresholds:
+  accept: 0.90
+  investigate: 0.70
+max_attempts: 3
+epics:
+  - { id: "options-mode/E1", name: "the /architect:options mode", slices: [1, 2, 3, 4] }
+slices:
+  - { id: 1, name: "tracer bullet: the command and the skill declare a seventh mode", epic: "options-mode/E1", weight: 0.25, behavioral: true }
+  - { id: 2, name: "the report template and the validator",                         epic: "options-mode/E1", weight: 0.35 }
+  - { id: 3, name: "manifests, glossary, and mode counts",                           epic: "options-mode/E1", weight: 0.20 }
+  - { id: 4, name: "one real run of the mode",                                       epic: "options-mode/E1", weight: 0.20, behavioral: true }

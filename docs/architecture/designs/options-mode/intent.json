@@ -1,0 +1,61 @@
+{
+  "captured": "2026-10-01",
+  "source": "design",
+  "design_name": "options-mode",
+  "authorship": "agent-assisted",
+  "problem": "Review mode finds defects. Design mode starts from an outcome that the engineer already named. Nothing asks whether the flow and the technology choices of the whole system are still right, or what other options exist for the same outcome. An engineer who wants that answer today must run the work by hand.",
+  "why_now": "A user of CoBuilder asked for it. A manual run already produced a report with a fixed structure, and a written brief now describes that report in full.",
+  "approach": "A seventh mode, /architect:options, runs seven stages, from frame to hand off. It writes one self-contained HTML report under docs/architecture/options/<name>/ and nothing else. A validator script in plugins/architect/scripts/ checks the structure of the report. The mode runs no divergent exploration. The engineer pastes the decisions text of the report into /architect:design, which then explores and decides.",
+  "alternatives": [
+    {
+      "option": "Add an optional pre-step to design mode instead of a seventh mode",
+      "rejected_because": "Design mode designs one change. The options mode examines the architecture of the whole system. A pre-step of one design cannot hold that scope."
+    },
+    {
+      "option": "Write an options.json beside the report so that design mode reads decisions by ID",
+      "rejected_because": "Nothing would read the file. The design forbids a change to design mode. A file with no reader is the kind of step this repo skips. The inquiry IDs and the pasted decisions text carry the hand-off."
+    },
+    {
+      "option": "Draw the diagrams in Mermaid, as design mode does",
+      "rejected_because": "Mermaid cannot draw the emphasis borders and the NEW and CHG badges that the report needs. The report uses inline SVG only. The ADR records the exception."
+    },
+    {
+      "option": "Depend on Lavish for the decision forms",
+      "rejected_because": "A report that needs an editor does not open from a double click. The forms use copy buttons only."
+    },
+    {
+      "option": "Run divergent exploration inside the mode",
+      "rejected_because": "It costs seven agent calls for each run, and it belongs to design stage 3. The options mode proposes. Design stage 4 decides."
+    },
+    {
+      "option": "Call each item a finding or a question",
+      "rejected_because": "Both words already have a meaning in the glossary. The item is an inquiry."
+    }
+  ],
+  "out_of_scope": [
+    "running divergent exploration inside the mode",
+    "an options.json file or any schema file",
+    "a Lavish integration",
+    "a change to design, review, or any other mode, except the mode count in prose and tests",
+    "a PDF export",
+    "a foreign-repo target",
+    "a record-index entry for the report in the viewer"
+  ],
+  "risks": [
+    "the agreeable report: the mode proposes the alternatives it looks for, and a recommendation reads as a checked fact",
+    "a confidence tag that the validator checks for form and not for honesty",
+    "the paste hand-off decays, and design mode starts again from a blank outcome",
+    "the Lavish code of the reference report survives into the template"
+  ],
+  "testing": "The validator and its tests cover the structure of the report: anchors, figures, links from rows to directions, confidence values, external links, and the copy button. The mode runs once on the think-with-ai repo with --non-interactive, and a reviewer compares the report to the reference.",
+  "reviewer_focus": [
+    "the split between stage 2 (inquire) and stage 3 (options), because options must propose and never decide",
+    "the hand-off, where the pasted inquiry IDs reach design mode",
+    "validator checks 5 and 8"
+  ],
+  "unknowns": [
+    "whether inquiry IDs stay useful once pasted into design mode",
+    "whether inline SVG diagrams stay maintainable for a repo with a large component map",
+    "whether the report should join the record index of ADR-0018 later"
+  ]
+}
