@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Is the install surface of the architect plugin still right?</title>
+<style>
+/*
+ * HTML Document Design System
+ * Copy this entire file into the <style> block of every document.
+ * Then extend with category-specific components as needed.
+ */
+
+:root {
+  --ivory:    #FAF9F5;
+  --slate:    #141413;
+  --clay:     #D97757;
+  --oat:      #E3DACC;
+  --olive:    #788C5D;
+  --rust:     #B04A3F;
+  --sky:      #6A8CAF;
+  --gray-150: #F0EEE6;
+  --gray-300: #D1CFC5;
+  --gray-500: #87867F;
+  --gray-700: #3D3D3A;
+  --white:    #FFFFFF;
+
+  --serif: ui-serif, Georgia, 'Times New Roman', serif;
+  --sans:  system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono:  ui-monospace, 'SF Mono', Menlo, Monaco, monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--sans);
+  background: var(--ivory);
+  color: var(--gray-700);
+  line-height: 1.55;
+  padding: 56px 32px 120px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+/* Typography */
+
+h1 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 38px;
+  line-height: 1.15;
+  color: var(--slate);
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 26px;
+  color: var(--slate);
+  letter-spacing: -0.01em;
+}
+
+h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 19px;
+  color: var(--slate);
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+}
+
+.lead {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--gray-700);
+  max-width: 640px;
+}
+
+p {
+  font-size: 15px;
+  margin-bottom: 12px;
+  max-width: 720px;
+}
+
+/* Header with Prompt Box */
+
+header.page-head {
+  margin-bottom: 48px;
+  max-width: 820px;
+}
+
+.prompt-box {
+  background: var(--gray-150);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-size: 14.5px;
+  color: var(--gray-700);
+}
+
+.prompt-box .label {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray-500);
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* Cards / Panels */
+
+.card {
+  background: var(--white);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.card-head {
+  padding: 16px 20px;
+  border-bottom: 1.5px solid var(--gray-300);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Chips / Pills / Tags */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--gray-300);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--slate);
+  background: var(--white);
+}
+
+.tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1.5px solid var(--gray-300);
+  background: var(--gray-150);
+}
+
+.tag.safe   { background: rgba(120,140,93,0.12); border-color: rgba(120,140,93,0.4); color: var(--olive); }
+.tag.medium { background: var(--oat); color: #7A6A4F; }
+.tag.risk   { background: rgba(217,119,87,0.12); border-color: rgba(217,119,87,0.45); color: var(--clay); }
+.tag.critical { background: rgba(176,74,63,0.12); border-color: rgba(176,74,63,0.4); color: var(--rust); }
+
+.risk-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.risk-dot.safe   { background: var(--olive); }
+.risk-dot.medium { background: #B89B6E; }
+.risk-dot.risk   { background: var(--clay); }
+.risk-dot.critical { background: var(--rust); }
+
+/* Tables */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+thead th {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray-500);
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1.5px solid var(--gray-300);
+}
+
+tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--gray-150);
+  color: var(--gray-700);
+}
+
+tbody tr:hover { background: var(--gray-150); }
+
+/* Code Blocks */
+
+code {
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.code-block {
+  background: var(--slate);
+  color: #E8E6DC;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.7;
+  padding: 18px 20px;
+  border-radius: 10px;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.code-block .comment { color: #8A98A0; }
+.code-block .keyword { color: #C792EA; }
+.code-block .string  { color: var(--olive); }
+
+/* Diff Blocks */
+
+.diff {
+  background: var(--slate);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+  overflow-x: auto;
+  border-radius: 10px;
+}
+
+.diff-row {
+  display: grid;
+  grid-template-columns: 48px 18px 1fr;
+  align-items: baseline;
+  padding: 0 14px 0 0;
+  white-space: pre;
+}
+
+.diff-row .ln   { text-align: right; padding-right: 14px; color: var(--gray-500); user-select: none; }
+.diff-row .mark { text-align: center; color: var(--gray-500); }
+.diff-row .code { color: #E8E6DC; }
+.diff-row.ctx .code { color: #B8B6AC; }
+.diff-row.add       { background: rgba(120,140,93,0.15); }
+.diff-row.add .mark { color: var(--olive); }
+.diff-row.del       { background: rgba(176,74,63,0.15); }
+.diff-row.del .mark { color: var(--rust); }
+.diff-row.hunk .code { color: var(--gray-500); }
+
+/* Buttons */
+
+button.primary {
+  background: var(--slate);
+  color: var(--ivory);
+  border: 1.5px solid var(--slate);
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 9px 20px;
+  cursor: pointer;
+}
+button.primary:hover { background: var(--gray-700); }
+button.primary.copied { background: var(--olive); border-color: var(--olive); }
+
+button.ghost {
+  background: transparent;
+  color: var(--gray-700);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 9px 20px;
+  cursor: pointer;
+}
+button.ghost:hover { border-color: var(--gray-500); }
+
+/* Section Structure */
+
+section { margin-bottom: 64px; }
+
+.sec-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+.sec-head .num {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--oat);
+  color: var(--slate);
+  padding: 3px 9px;
+  border-radius: 8px;
+}
+
+.sec-intro {
+  font-size: 14.5px;
+  color: var(--gray-500);
+  max-width: 720px;
+  margin-bottom: 28px;
+}
+
+/* Comment Bubbles (for code review) */
+
+.bubble {
+  position: relative;
+  background: var(--white);
+  border: 1.5px solid var(--gray-300);
+  border-left-width: 4px;
+  border-radius: 8px;
+  padding: 12px 14px 12px 16px;
+}
+
+.bubble.blocking { border-left-color: var(--clay); }
+.bubble.nit      { border-left-color: var(--gray-300); }
+
+.bubble .author {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--slate);
+  margin-bottom: 4px;
+}
+
+.bubble .text {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--gray-700);
+}
+
+/* SVG Diagrams */
+
+.diagram {
+  background: var(--white);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 12px;
+  padding: 28px;
+  overflow-x: auto;
+}
+
+.diagram svg { display: block; min-width: 760px; }
+
+.diagram text {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.caption {
+  font-size: 13px;
+  color: var(--gray-500);
+  margin-top: 12px;
+}
+
+/* Responsive Breakpoints */
+
+@media (max-width: 900px) {
+  .grid-2    { grid-template-columns: 1fr; }
+  .grid-3    { grid-template-columns: 1fr 1fr; }
+  .grid-4    { grid-template-columns: 1fr 1fr; }
+  body       { padding: 32px 20px 80px; }
+  h1         { font-size: 28px; }
+}
+
+@media (max-width: 600px) {
+  .grid-3    { grid-template-columns: 1fr; }
+  .grid-4    { grid-template-columns: 1fr; }
+}
+
+/* Utility Classes */
+
+.text-mono   { font-family: var(--mono); }
+.text-small  { font-size: 12px; color: var(--gray-500); }
+.color-safe  { color: var(--olive); }
+.color-risk  { color: var(--clay); }
+.color-crit  { color: var(--rust); }
+.color-info  { color: var(--sky); }
+.flex        { display: flex; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.gap-8       { gap: 8px; }
+.gap-12      { gap: 12px; }
+.gap-16      { gap: 16px; }
+.gap-24      { gap: 24px; }
+.mb-8        { margin-bottom: 8px; }
+.mb-16       { margin-bottom: 16px; }
+.mb-24       { margin-bottom: 24px; }
+.mb-48       { margin-bottom: 48px; }
+/* ---- extensions for the options report ---- */
+*, *::before, *::after { box-sizing: border-box; }
+:where(.grid-2, .grid-3, .grid-4, .flex) > * { min-width: 0; }
+:where(p, h1, h2, h3, h4, li, dd, td, th) { overflow-wrap: anywhere; }
+.tag, .nav .chip, td.mono, td[data-confidence] { white-space: nowrap; overflow-wrap: normal; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 0; }
+.nav a { text-decoration: none; }
+.stat { background: var(--white); border: 1.5px solid var(--gray-300); border-radius: 12px; padding: 16px 18px; }
+.stat .n { font-family: var(--serif); font-size: 34px; color: var(--slate); line-height: 1.1; }
+.stat .l { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--gray-500); margin-top: 4px; }
+.callout { border: 1.5px solid var(--gray-300); border-left: 5px solid var(--clay); background: var(--white); border-radius: 10px; padding: 14px 18px; margin: 16px 0; }
+.callout.good { border-left-color: var(--olive); }
+.callout.info { border-left-color: var(--sky); }
+.callout p:last-child, .card p:last-child { margin-bottom: 0; }
+.callout .k { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--gray-500); display: block; margin-bottom: 4px; }
+.tag.info { background: rgba(106,140,175,.14); border-color: rgba(106,140,175,.45); color: var(--sky); }
+ul.tight, ol.tight { margin: 0 0 12px 20px; font-size: 14.5px; max-width: 720px; }
+ul.tight li, ol.tight li { margin-bottom: 6px; }
+.card h3 { margin-bottom: 8px; }
+.card .eyebrow { margin-bottom: 6px; display: block; }
+.dir { margin-bottom: 40px; }
+.dir-body { border: 1.5px solid var(--gray-300); border-top: 0; border-radius: 0 0 12px 12px; padding: 20px; background: var(--white); }
+.dir-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border: 1.5px solid var(--gray-300); border-radius: 12px 12px 0 0; background: var(--gray-150); padding: 14px 20px; }
+.dir-head h3 { margin: 0; }
+.table-wrap { overflow-x: auto; border: 1.5px solid var(--gray-300); border-radius: 12px; background: var(--white); margin: 12px 0 16px; }
+.table-wrap table { min-width: 640px; }
+td.good { background: rgba(120,140,93,.14); }
+td.mid  { background: var(--oat); }
+td.bad  { background: rgba(176,74,63,.12); }
+.mono { font-family: var(--mono); font-size: 12.5px; }
+.diagram svg { min-width: 0; width: 100%; height: auto; }
+.diagram { padding: 16px; }
+svg .zone { fill: var(--gray-150); fill-opacity: .55; stroke: var(--gray-300); stroke-dasharray: 5 4; stroke-width: 1.2; }
+svg .zl { font: 600 10.5px var(--mono); fill: var(--gray-500); letter-spacing: .06em; }
+svg .node { fill: var(--white); stroke: var(--gray-300); stroke-width: 1.5; }
+svg .node.hot { stroke: var(--clay); stroke-width: 2; }
+svg .node.dash { stroke-dasharray: 5 4; }
+svg .chip { fill: var(--gray-150); stroke: var(--gray-300); stroke-width: 1.2; }
+svg .chip.hot { fill: rgba(217,119,87,.12); stroke: var(--clay); stroke-width: 1.6; }
+svg .t  { font: 600 12.5px var(--mono); fill: var(--slate); }
+svg .s  { font: 400 10.5px var(--mono); fill: var(--gray-500); }
+svg .c  { font: 400 10.5px var(--mono); fill: var(--slate); }
+svg .edge { stroke: var(--gray-500); stroke-width: 1.5; fill: none; }
+svg .edge.hot { stroke: var(--clay); stroke-width: 2; }
+svg .edge.dash { stroke-dasharray: 5 4; }
+svg .life { stroke: var(--gray-300); stroke-width: 1.2; stroke-dasharray: 3 5; }
+svg .band { fill: rgba(217,119,87,.08); stroke: var(--clay); stroke-dasharray: 6 4; stroke-width: 1.2; }
+svg .halo { paint-order: stroke; stroke: var(--ivory); stroke-width: 4px; stroke-linejoin: round; }
+svg .bdg rect { fill: var(--clay); }
+svg .bdg text { font: 600 10px var(--mono); fill: var(--white); text-anchor: middle; }
+svg .newtag rect { fill: var(--olive); }
+svg .newtag text { font: 600 9px var(--mono); fill: var(--white); text-anchor: middle; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--gray-700); margin-top: 12px; }
+.legend span.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+form.q { border: 1.5px solid var(--gray-300); border-radius: 12px; background: var(--white); padding: 18px 20px; margin-bottom: 20px; }
+form.q fieldset { border: 0; margin: 0 0 12px; }
+form.q legend { font-family: var(--serif); font-size: 18px; color: var(--slate); margin-bottom: 10px; }
+form.q label { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; font-size: 14.5px; border-bottom: 1px solid var(--gray-150); cursor: pointer; }
+form.q label:last-child { border-bottom: 0; }
+form.q input[type=checkbox], form.q input[type=radio] { margin-top: 4px; }
+form.q textarea { width: 100%; min-height: 80px; font: 14px var(--sans); padding: 10px; border: 1.5px solid var(--gray-300); border-radius: 8px; background: var(--ivory); }
+.status { font-family: var(--mono); font-size: 12px; color: var(--gray-500); margin-left: 12px; }
+details { border: 1.5px solid var(--gray-300); border-radius: 10px; background: var(--white); padding: 12px 16px; margin-bottom: 12px; }
+details summary { cursor: pointer; font-family: var(--serif); font-size: 17px; color: var(--slate); }
+details[open] summary { margin-bottom: 10px; }
+@media (max-width: 900px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+thead th:first-child { white-space: nowrap; overflow-wrap: normal; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="page-head">
+  <div class="eyebrow">Options report · architect mode · 2026-10-01</div>
+  <h1>Is the install surface of the architect plugin still right?</h1>
+  <p class="lead">This page asks six inquiries about the install surface of the architect plugin: how its commands resolve into skills, how its versions drift, and what its tests do not cover. It proposes draft directions only. It decides nothing.</p>
+  <div class="prompt-box">
+    <span class="label">Prompt</span>
+    Run the options mode of the architecture skill on this repository, with --non-interactive. The scope is: the install surface of the architect plugin.
+  </div>
+  <nav class="nav" aria-label="Sections">
+    <a class="chip" href="#summary">1 Summary</a>
+    <a class="chip" href="#current">2 Current map</a>
+    <a class="chip" href="#flow">3 One flow</a>
+    <a class="chip" href="#inquiries">4 Inquiries</a>
+    <a class="chip" href="#directions">5 Directions</a>
+    <a class="chip" href="#proposed">6 Proposed map</a>
+    <a class="chip" href="#gaps">7 Gaps</a>
+    <a class="chip" href="#order">8 Order</a>
+    <a class="chip" href="#decide">9 Your decisions</a>
+    <a class="chip" href="#evidence">10 Evidence</a>
+  </nav>
+</header>
+
+<!-- 1 SUMMARY -->
+<section id="summary">
+  <div class="sec-head"><span class="num">1</span><h2>Summary</h2></div>
+  <p class="sec-intro">The review of 2026-08-04 audited code quality and security of the repo tree. This page adds what that audit did not cover: the packaging flow itself, which is what a user installs.</p>
+  <div class="grid-4 mb-24">
+    <div class="stat"><div class="n">2</div><div class="l">Flow inquiries</div></div>
+    <div class="stat"><div class="n">2</div><div class="l">Technology inquiries</div></div>
+    <div class="stat"><div class="n">2</div><div class="l">Gaps</div></div>
+    <div class="stat"><div class="n">0</div><div class="l">Files changed</div></div>
+  </div>
+  <div class="callout good">
+    <span class="k">Answer in three lines</span>
+    <ol class="tight">
+      <li>Keep the five-plugin split and the bundle seam. ADR-0016 and ADR-0017 still hold, and the packaging tests now enforce them.</li>
+      <li>One fact bends everything: skill prose calls skills by ID across a plugin boundary and across the shared directory, and nothing mechanical checks that those IDs resolve. Every call leans on a hand-written fallback.</li>
+      <li>Cheap checks first: one version-consistency test, one skill-ID resolution test, and one name-collision test. None needs a redesign.</li>
+    </ol>
+  </div>
+  <div class="callout info">
+    <span class="k">One change to the plan</span>
+    <p>I could not read the plan directories in this run, so I state no plan interaction. See section 10.</p>
+  </div>
+</section>
+
+<!-- 2 CURRENT MAP -->
+<section id="current">
+  <div class="sec-head"><span class="num">2</span><h2>Current component map</h2></div>
+  <p class="sec-intro">This map answers one question: which part of the marketplace repository owns which piece of the architect install surface today? Section 4 attaches badges to the parts each inquiry touches.</p>
+  <div class="diagram">
+  <svg id="fig-current" viewBox="0 0 1100 360" width="100%" role="img" aria-labelledby="t-cur">
+    <title id="t-cur">Current install surface of the architect plugin</title>
+    <defs>
+      <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--gray-500)"/></marker>
+    </defs>
+    <rect class="zone" x="10" y="28" width="780" height="300" rx="12"/>
+    <text class="zl" x="26" y="48">MARKETPLACE REPO (THIS SESSION REPO)</text>
+    <rect class="zone" x="806" y="28" width="284" height="300" rx="12"/>
+    <text class="zl" x="822" y="48">SIBLING PLUGIN</text>
+
+    <g id="n-market">
+      <title>Marketplace manifest</title>
+      <rect class="node" x="40" y="70" width="200" height="64" rx="8"/>
+      <text class="t" x="140" y="96" text-anchor="middle">marketplace.json</text>
+      <text class="s" x="140" y="114" text-anchor="middle">5 plugins · own version each</text>
+    </g>
+    <g id="n-manifest">
+      <title>Architect plugin manifest</title>
+      <rect class="node hot" x="290" y="70" width="220" height="64" rx="8"/>
+      <text class="t" x="400" y="96" text-anchor="middle">architect plugin.json</text>
+      <text class="s" x="400" y="114" text-anchor="middle">7 modes · its own version</text>
+    </g>
+    <g id="n-comm">
+      <title>Architect commands</title>
+      <rect class="node" x="40" y="170" width="200" height="64" rx="8"/>
+      <text class="t" x="140" y="196" text-anchor="middle">commands/ · 7 files</text>
+      <text class="s" x="140" y="214" text-anchor="middle">thin dispatchers only</text>
+    </g>
+    <g id="n-skill">
+      <title>Architecture skill</title>
+      <rect class="node hot" x="290" y="170" width="220" height="64" rx="8"/>
+      <text class="t" x="400" y="196" text-anchor="middle">skills/architecture</text>
+      <text class="s" x="400" y="214" text-anchor="middle">corpus + stacks + modes</text>
+    </g>
+    <g id="n-scripts">
+      <title>Architect scripts</title>
+      <rect class="node" x="560" y="170" width="200" height="64" rx="8"/>
+      <text class="t" x="660" y="196" text-anchor="middle">scripts/ · 3 files</text>
+      <text class="s" x="660" y="214" text-anchor="middle">validator, scores, PDF</text>
+    </g>
+    <g id="n-shared">
+      <title>Shared directory</title>
+      <rect class="node" x="290" y="266" width="220" height="48" rx="8"/>
+      <text class="t" x="400" y="288" text-anchor="middle">shared/ (root)</text>
+      <text class="s" x="400" y="304" text-anchor="middle">modules + 2 skills</text>
+    </g>
+    <g id="n-asymlink">
+      <title>Shared symlink in architect</title>
+      <rect class="node" x="590" y="266" width="170" height="48" rx="8"/>
+      <text class="t" x="675" y="288" text-anchor="middle">shared → link</text>
+      <text class="s" x="675" y="304" text-anchor="middle">dereferenced at install</text>
+    </g>
+
+    <g id="n-artifact">
+      <title>Artifact plugin</title>
+      <rect class="node" x="840" y="170" width="220" height="80" rx="8"/>
+      <text class="t" x="950" y="198" text-anchor="middle">artifact plugin</text>
+      <text class="s" x="950" y="216" text-anchor="middle">own cache</text>
+      <text class="s" x="950" y="232" text-anchor="middle">ships cobuilder-artifacts skill</text>
+    </g>
+
+    <path class="edge" d="M240 102 H290" marker-end="url(#a1)"/>
+    <text class="s" x="242" y="95">lists</text>
+    <path class="edge" d="M140 134 V170" marker-end="url(#a1)"/>
+    <path class="edge" d="M400 134 V170" marker-end="url(#a1)"/>
+    <text class="s" x="258" y="158">dispatches</text>
+    <path class="edge" d="M510 202 H560" marker-end="url(#a1)"/>
+    <path class="edge dash" d="M400 266 V234" marker-end="url(#a1)"/>
+    <text class="s" x="406" y="252">needed by</text>
+    <path class="edge dash" d="M500 290 H806" marker-end="url(#a1)"/>
+    <text class="s" x="600" y="283">same dir, install cache</text>
+    <path class="edge hot" d="M580 102 Q700 120 760 170 T840 196" marker-end="url(#a1)" fill="none"/>
+    <text class="s halo" x="648" y="120">dependencies = co-install</text>
+
+    <g class="bdg"><rect x="498" y="62" width="30" height="18" rx="9"/><text x="513" y="75">T1</text></g>
+    <g class="bdg"><rect x="730" y="150" width="30" height="18" rx="9"/><text x="745" y="163">F2</text></g>
+    <g class="bdg"><rect x="318" y="158" width="30" height="18" rx="9"/><text x="333" y="171">F1</text></g>
+    <g class="bdg"><rect x="496" y="240" width="30" height="18" rx="9"/><text x="511" y="253">G2</text></g>
+    <g class="bdg"><rect x="748" y="27" width="30" height="18" rx="9"/><text x="763" y="40">F1</text></g>
+  </svg>
+  </div>
+  <div class="legend">
+    <span><span class="sw" style="background:var(--clay)"></span>Badge: an inquiry ID at the part it touches</span>
+    <span><span class="sw" style="border:2px solid var(--clay)"></span>Clay border: the parts that carry the most weight</span>
+    <span><span class="sw" style="border:1.5px dashed var(--gray-500)"></span>Dashed edge: a copy relationship, not a call</span>
+  </div>
+  <p class="caption">Sources: .claude-plugin/marketplace.json, plugins/architect/.claude-plugin/plugin.json, plugins/architect/commands/ and skills/ listings, tests/test_plugin_manifests.py:158-164, shared/skills/ listing, ADR-0016, ADR-0017.</p>
+</section>
+
+<!-- 3 ONE FLOW -->
+<section id="flow">
+  <div class="sec-head"><span class="num">3</span><h2>Data flow of one dispatch of /architect:options</h2></div>
+  <p class="sec-intro">This diagram answers one question: what must be present, and where, for a dispatch from a command file to reach the code that runs? The clay band marks the step where the call leaves the calling skill's own directory and leans on a prose fallback.</p>
+  <div class="diagram">
+  <svg id="fig-flow" viewBox="0 0 1100 300" width="100%" role="img" aria-labelledby="t-flow">
+    <title id="t-flow">Dispatch flow from a command to the code that runs</title>
+    <defs>
+      <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--gray-500)"/></marker>
+    </defs>
+    <rect class="band" x="330" y="120" width="740" height="150" rx="10"/>
+    <text class="zl halo" x="344" y="138">CALLS THAT LEAVE THE CALLING SKILL'S OWN DIRECTORY</text>
+    <g id="l-user">
+      <title>The reader of the report</title>
+      <line class="life" x1="110" y1="52" x2="110" y2="290"/>
+      <rect class="node" x="50" y="14" width="120" height="36" rx="8"/>
+      <text class="c" x="110" y="36" text-anchor="middle">Session</text>
+    </g>
+    <g id="l-cmd">
+      <title>The command dispatcher</title>
+      <line class="life" x1="300" y1="52" x2="300" y2="290"/>
+      <rect class="node" x="240" y="14" width="120" height="36" rx="8"/>
+      <text class="c" x="300" y="36" text-anchor="middle">command.md</text>
+    </g>
+    <g id="l-skill">
+      <title>The architecture skill</title>
+      <line class="life" x1="520" y1="52" x2="520" y2="290"/>
+      <rect class="node hot" x="460" y="14" width="120" height="36" rx="8"/>
+      <text class="c" x="520" y="36" text-anchor="middle">skill SKILL.md</text>
+    </g>
+    <g id="l-shared">
+      <title>Shared skills directory</title>
+      <line class="life" x1="750" y1="52" x2="750" y2="290"/>
+      <rect class="node" x="690" y="14" width="120" height="36" rx="8"/>
+      <text class="c" x="750" y="36" text-anchor="middle">shared skill</text>
+    </g>
+    <g id="l-artifact">
+      <title>The sibling artifact plugin</title>
+      <line class="life" x1="980" y1="52" x2="980" y2="290"/>
+      <rect class="node" x="920" y="14" width="120" height="36" rx="8"/>
+      <text class="c" x="980" y="36" text-anchor="middle">artifact plugin</text>
+    </g>
+    <path class="edge" d="M110 90 H240" marker-end="url(#a2)"/>
+    <text class="c" x="175" y="83" text-anchor="middle">1 user runs /architect:options</text>
+    <path class="edge" d="M300 125 H460" marker-end="url(#a2)"/>
+    <text class="c" x="380" y="118" text-anchor="middle">2 Skill(architecture, options)</text>
+    <path class="edge" d="M520 160 V196 H690" marker-end="url(#a2)"/>
+    <text class="c" x="600" y="189" text-anchor="middle">3 Skill(architect:ste-writing)</text>
+    <path class="edge hot" d="M690 232 H520" marker-end="url(#a2)"/>
+    <text class="c halo" x="600" y="225" text-anchor="middle">4 fallback: read SKILL.md by path</text>
+    <path class="edge" d="M560 262 H920" marker-end="url(#a2)"/>
+    <text class="c halo" x="740" y="278" text-anchor="middle">5 Skill(cobuilder-artifacts, view)</text>
+  </svg>
+  </div>
+  <div class="grid-3" style="margin-top:20px">
+    <div class="card"><span class="eyebrow">Steps 1 to 2</span><h3>Resolution inside one plugin works</h3><p>A command is a thin dispatcher into the skill of its own plugin. The vocabulary names this contract, and the seven command files are about 25 lines each.</p></div>
+    <div class="card"><span class="eyebrow">Steps 3 to 4</span><h3>The shared-skill call leans on prose</h3><p>The skill prose first calls the skill by ID, and then states a manual fallback: read the file by path. Nothing mechanical checks that the ID resolves.</p></div>
+    <div class="card"><span class="eyebrow">Result</span><h3>The flow completes on a promise</h3><p>Step 5 crosses a plugin boundary and depends on the manifest dependencies field, which guarantees co-installation. It grants no file path.</p></div>
+  </div>
+  <p class="caption">Verified in plugins/architect/commands/options.md:18-22, plugins/architect/skills/architecture/SKILL.md:198-205 and 282-298, shared/skills/mermaid/SKILL.md:1-5, shared/skills/ste-writing/SKILL.md:1-3, ADR-0016, ADR-0017:63-67.</p>
+</section>
+
+<!-- 4 INQUIRIES -->
+<section id="inquiries">
+  <div class="sec-head"><span class="num">4</span><h2>Inquiries at a glance</h2></div>
+  <p class="sec-intro">Six inquiries. The confidence tag shows how much I checked. Verified means I read the code or the docs. ADR only means I read the ADR text and did not trace the code. Hypothesis means I did not check it.</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>ID</th><th>Question</th><th>Evidence</th><th>Impact</th><th>Confidence</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr id="row-F1"><td class="mono">F1</td><td>Do the skill IDs that the skill prose calls resolve on every install combination, or only when a hand-written fallback saves them?</td><td>SKILL.md:200 and 217 call Skill("architect:ste-writing") and Skill("architect:mermaid"). Both skills ship only under shared/skills/, not under plugins/architect/skills/. Each call states a manual read-by-path fallback.</td><td><span class="tag critical">High</span></td><td data-confidence><span class="tag safe">Verified</span></td><td>Whether the host resolves a shared skill ID is a Hypothesis. See F1 below.</td></tr>
+      <tr id="row-F2"><td class="mono">F2</td><td>What happens to the shared bundle when five co-installed plugins drift in version?</td><td>architect plugin.json depends on artifact@cobuilder-plugin. ADR-0016 accepted four versions on one machine. The runtime gate require_compatible() at shared/_bundle_meta.py:78 is the only guard.</td><td><span class="tag medium">Medium</span></td><td data-confidence><span class="tag safe">Verified</span></td><td>Design mode also runs migrate_bundle.py first.</td></tr>
+      <tr id="row-T1"><td class="mono">T1</td><td>Should the version of one plugin live in two declarative fields?</td><td>marketplace.json:13 gives architect 0.6.0. Architect plugin.json:3 gives 0.7.0. The same drift holds for artifact and implement. No test compares the two fields.</td><td><span class="tag medium">Medium</span></td><td data-confidence><span class="tag safe">Verified</span></td><td>Drift measured today on three of five plugins.</td></tr>
+      <tr id="row-T2"><td class="mono">T2</td><td>Do the forces that justified one install surface per mode family still hold, now that architect carries 273 files?</td><td>git ls-files counts: the architect plugin holds 273 files, 196 of them corpus cards and 41 book excerpts, about 3.4 MB. ADR-0021 caps read cost at run time, not install size.</td><td><span class="tag medium">Medium</span></td><td data-confidence><span class="tag risk">Hypothesis</span></td><td>I verified the counts. The judgment is mine.</td></tr>
+      <tr id="row-G1"><td class="mono">G1</td><td>Does an automated check cover the name-collision invariant that ADR-0016 created?</td><td>ADR-0016:276-279 asks for a cheap test in tests/test_plugin_manifests.py. That file (158 test lines read) covers manifests, agents, hooks, MCP, dependencies, and the symlink. It has no collision test.</td><td><span class="tag medium">Medium</span></td><td data-confidence><span class="tag safe">Verified</span></td><td>The invariant is real: two plugins were broken by the 2026-08 rename.</td></tr>
+      <tr id="row-G2"><td class="mono">G2</td><td>Do the manifest repository URLs name the repository a user actually looks at?</td><td>All five plugin.json files give https://github.com/bjornslib/cobuilder-architect. marketplace.json:5-6 names cobuilder-plugin. architect plugin.json:8 holds the stale string.</td><td><span class="tag safe">Low</span></td><td data-confidence><span class="tag safe">Verified</span></td><td>One-line fix in five files.</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- 5 DIRECTIONS -->
+<section id="directions">
+  <div class="sec-head"><span class="num">5</span><h2>Directions and alternatives</h2></div>
+  <p class="sec-intro">Each direction shows the current shape, a proposed shape, the options, and my recommendation. ADR-0016, ADR-0017, and ADR-0025 ran their own option work on this surface. This page does not repeat their decisions. It tests the edges they left open. Every proposal below is a draft.</p>
+
+  <div class="dir" id="dir-F1">
+    <div class="dir-head"><span class="tag critical">High</span><h3>F1 · Do the cross-boundary skill IDs resolve, or does the prose fallback carry them?</h3></div>
+    <div class="dir-body">
+      <div class="grid-2">
+        <div class="card"><span class="eyebrow">Current</span>
+          <ol class="tight">
+            <li>The skill prose calls shared skills by ID: Skill("architect:ste-writing") at SKILL.md:200 and Skill("architect:mermaid") at SKILL.md:217.</li>
+            <li>Neither skill ships under plugins/architect/skills/. Both live under shared/skills/, which install rewrites only as copied content.</li>
+            <li>The same prose states a manual fallback for each call: if the call gives "Unknown skill", read the file by path. SKILL.md:282 also calls Skill("cobuilder-artifacts") into the sibling artifact plugin.</li>
+          </ol>
+          <p><strong>Effect:</strong> A call that fails costs a wasted agent turn, and a fallback read by path silently assumes the file is inside this plugin's own cache.</p>
+        </div>
+        <div class="card"><span class="eyebrow">Proposed direction (draft)</span>
+          <ol class="tight">
+            <li>Write one test that scans the skill prose of each plugin.</li>
+            <li>The test collects every Skill("X") ID the prose names.</li>
+            <li>It asserts each ID maps to a shipped skill folder or a shared skill file under the calling plugin's own surface.</li>
+            <li>It keeps the prose fallback as the escape hatch, but makes a new unresolvable ID fail the test suite, not a user's session.</li>
+          </ol>
+          <p><strong>Effect:</strong> The failure moves from a live session to a test run.</p>
+        </div>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Option</th><th>What it needs</th><th>Cost</th><th>Status in the ADRs</th></tr></thead>
+        <tbody>
+          <tr><td><strong>A</strong> A resolution test over skill prose</td><td>One test file. It walks skills/ and shared/skills/.</td><td class="good">Low</td><td>New. ADR-0016:276-279 already records this test pattern as the cheap follow-up for G1.</td></tr>
+          <tr><td><strong>B</strong> Move shared skills into every plugin's real skills/ directory</td><td>Copy the two skills per plugin. Keep the symlinks.</td><td class="mid">Medium</td><td>Duplicates them. ADR-0017 chose vendoring instead.</td></tr>
+          <tr><td><strong>C</strong> Keep today and patch each fallback by hand</td><td>Nothing new.</td><td class="good">Low</td><td>The current state. Each edit to a skill name needs a human to find the stale ID.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout good"><span class="k">Recommendation</span>
+        <p>Option A. Cheap check first: in one session, run the Skill("architect:ste-writing") call in a disposable session and record whether it resolves. That result alone decides whether the test asserts success or the fallback.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="dir" id="dir-F2">
+    <div class="dir-head"><span class="tag medium">Medium</span><h3>F2 · What guard exists when five co-installed plugins drift in version?</h3></div>
+    <div class="dir-body">
+      <div class="grid-2">
+        <div class="card"><span class="eyebrow">Current</span>
+          <ol class="tight">
+            <li>Any user can install or upgrade one plugin and not the others. ADR-0016 accepts four versions on one machine.</li>
+            <li>The manifest dependencies field guarantees that a dependency plugin is installed. It carries no version floor.</li>
+            <li>The shared bundle is the only contact surface, and shared/_bundle_meta.py:78 require_compatible() refuses a write against a newer bundle format.</li>
+          </ol>
+          <p><strong>Effect:</strong> A drifted install fails loudly, but only at write time, and only for code that calls the gate.</p>
+        </div>
+        <div class="card"><span class="eyebrow">Proposed direction (draft)</span>
+          <ol class="tight">
+            <li>Keep the runtime gate. It is the contract ADR-0017 chose.</li>
+            <li>Add one test: for each dependencies entry, assert the name resolves to a plugin the marketplace ships today.</li>
+            <li>Do not try to pin cross-plugin version floors until the host documents support for them.</li>
+          </ol>
+          <p><strong>Effect:</strong> A typo or rename in a dependencies entry fails in tests, not in a user's install.</p>
+        </div>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Option</th><th>What it needs</th><th>Cost</th><th>Status in the ADRs</th></tr></thead>
+        <tbody>
+          <tr><td><strong>A</strong> Keep the gate, add a dependencies-name test</td><td>One small test function.</td><td class="good">Low</td><td>Extends tests/test_plugin_manifests.py:147.</td></tr>
+          <tr><td><strong>B</strong> Version-floor pins in dependencies entries</td><td>Host support to be checked first.</td><td class="bad">High</td><td>Nothing records it today. Check the platform docs before any design.</td></tr>
+          <tr><td><strong>C</strong> Keep today, no test</td><td>Nothing.</td><td class="good">Low</td><td>The current state.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout good"><span class="k">Recommendation</span>
+        <p>Option A. Option B is real but blocked on a platform fact nobody checked. Record that check as the cheap first step.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="dir" id="dir-T1">
+    <div class="dir-head"><span class="tag medium">Medium</span><h3>T1 · Should the version of one plugin live in two fields?</h3></div>
+    <div class="dir-body">
+      <div class="grid-2">
+        <div class="card"><span class="eyebrow">Current</span>
+          <ol class="tight">
+            <li>Each plugin states a version in its plugin.json, and again in its marketplace.json entry.</li>
+            <li>Three of five plugins hold two different numbers today: architect 0.6.0 versus 0.7.0, artifact 0.6.0 versus 0.6.2, implement 0.3.0 versus 0.3.1.</li>
+            <li>No test compares the two fields for one plugin.</li>
+          </ol>
+          <p><strong>Effect:</strong> A release note or a changelog that reads one field and not the other reports the wrong version.</p>
+        </div>
+        <div class="card"><span class="eyebrow">Proposed direction (draft)</span>
+          <ol class="tight">
+            <li>Decide which field is the source of truth.</li>
+            <li>Add one test that reads both fields and fails on inequality.</li>
+            <li>Update the stale field in the same commit as any bump.</li>
+          </ol>
+          <p><strong>Effect:</strong> The two fields can no longer drift silently.</p>
+        </div>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Option</th><th>What it needs</th><th>Cost</th><th>Status in the ADRs</th></tr></thead>
+        <tbody>
+          <tr><td><strong>A</strong> Equality test, plugin.json as truth</td><td>One test. Set the marketplace entries to match.</td><td class="good">Low</td><td>New. No record covers it.</td></tr>
+          <tr><td><strong>B</strong> Drop the version key from marketplace entries</td><td>First check whether the platform requires the key.</td><td class="bad">High</td><td>Nothing checked it yet.</td></tr>
+          <tr><td><strong>C</strong> Keep today and patch each drift when seen</td><td>Nothing.</td><td class="mid">Medium</td><td>Current state. The drift is already visible.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout good"><span class="k">Recommendation</span>
+        <p>Option A. Cheap check first: grep the test suite and the docs for any consumer of the marketplace version field before you touch the manifest.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="dir" id="dir-T2">
+    <div class="dir-head"><span class="tag medium">Medium</span><h3>T2 · Do one-job-one-install forces still hold for a 273-file plugin?</h3></div>
+    <div class="dir-body">
+      <div class="grid-2">
+        <div class="card"><span class="eyebrow">Current</span>
+          <ol class="tight">
+            <li>The architect plugin ships 273 tracked files, about 3.4 MB: 196 corpus cards and 41 book excerpts among them.</li>
+            <li>ADR-0021 caps what a session reads from that corpus. It does not cap what the user installs.</li>
+            <li>ADR-0016 rejected any split finer than one plugin per mode family, because a directory is not installable.</li>
+          </ol>
+          <p><strong>Effect:</strong> A user who wants only /architect:options carries the whole audit corpus and the debug engine.</p>
+        </div>
+        <div class="card"><span class="eyebrow">Proposed direction (draft)</span>
+          <ol class="tight">
+            <li>Measure before deciding: what share of the install size is corpus rather than code.</li>
+            <li>If the share is large, raise one gap for design mode: split-by-skill is not installable today, so a slim install needs a different unit.</li>
+            <li>If it is small, record the force as solved and close the inquiry.</li>
+          </ol>
+          <p><strong>Effect:</strong> The judgment becomes a number. No redesign yet.</p>
+        </div>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Option</th><th>What it needs</th><th>Cost</th><th>Status in the ADRs</th></tr></thead>
+        <tbody>
+          <tr><td><strong>A</strong> Measure corpus share, then decide</td><td>One du and one count command.</td><td class="good">Low</td><td>Extension of the ADR-0021 read-cost work.</td></tr>
+          <tr><td><strong>B</strong> Split architect into mode-level plugins</td><td>A redesign and a new ADR. The platform installs plugins, not skills.</td><td class="bad">High</td><td>Contradicts ADR-0016 unless the unit changes first.</td></tr>
+          <tr><td><strong>C</strong> Keep today and patch nothing</td><td>Nothing.</td><td class="good">Low</td><td>Current state. The install holds 3.4 MB with no recorded cost.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout"><span class="k">Recommendation</span>
+        <p>Option A, and stop there for now. The measure is a number, not a redesign. Only a measured cost justifies reopening ADR-0016.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="dir" id="dir-G1">
+    <div class="dir-head"><span class="tag medium">Medium</span><h3>G1 · The name-collision invariant has no automated test</h3></div>
+    <div class="dir-body">
+      <div class="grid-2">
+        <div class="card"><span class="eyebrow">Current</span>
+          <ol class="tight">
+            <li>ADR-0016's addendum states the invariant: no plugin's own name may equal a skill folder or command basename it ships.</li>
+            <li>The addendum ends by asking for a cheap test in tests/test_plugin_manifests.py.</li>
+            <li>That file today covers manifests, agents, hooks, MCP, dependencies, and the shared symlink. It has no collision test.</li>
+          </ol>
+          <p><strong>Effect:</strong> A future rename can reintroduce the exact break the addendum reproduced, and no test run stops it.</p>
+        </div>
+        <div class="card"><span class="eyebrow">Proposed direction (draft)</span>
+          <ol class="tight">
+            <li>Add one test: for each plugin, compare its manifest name against its skills/ folder names and commands/ basenames.</li>
+            <li>Fail on equality.</li>
+            <li>Cover F1's skill-ID check in the same test file while it is open.</li>
+          </ol>
+          <p><strong>Effect:</strong> The promised cheap fix lands. Two invariants get one home.</p>
+        </div>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Option</th><th>What it needs</th><th>Cost</th><th>Status in the ADRs</th></tr></thead>
+        <tbody>
+          <tr><td><strong>A</strong> Write the collision test now</td><td>About 15 lines next to tests/test_plugin_manifests.py:35.</td><td class="good">Low</td><td>Promised in ADR-0016:276-279.</td></tr>
+          <tr><td><strong>B</strong> Fold it into a broader packaging-test slice with F1 and T1</td><td>A design session and a slice plan.</td><td class="mid">Medium</td><td>Delays a promised check for no gain in coverage.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout good"><span class="k">Recommendation</span>
+        <p>Option A. The record already names the file and the invariant, so no design is needed to write the test.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="dir" id="dir-G2">
+    <div class="dir-head"><span class="tag safe">Low</span><h3>G2 · Manifest repository URLs name the old repository</h3></div>
+    <div class="dir-body">
+      <div class="grid-2">
+        <div class="card"><span class="eyebrow">Current</span>
+          <ol class="tight">
+            <li>All five plugin.json files set repository to github.com/bjornslib/cobuilder-architect.</li>
+            <li>The marketplace manifest names the real home: bjornslib/cobuilder-plugin.</li>
+          </ol>
+          <p><strong>Effect:</strong> A user who follows the manifest link lands on the pre-rename repository name.</p>
+        </div>
+        <div class="card"><span class="eyebrow">Proposed direction (draft)</span>
+          <ol class="tight">
+            <li>Set the repository field of all five manifests to the repository the marketplace names.</li>
+            <li>Or drop the field, if the platform fills it from the marketplace entry.</li>
+          </ol>
+          <p><strong>Effect:</strong> Links point at the repository a user actually looks at.</p>
+        </div>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Option</th><th>What it needs</th><th>Cost</th><th>Status in the ADRs</th></tr></thead>
+        <tbody>
+          <tr><td><strong>A</strong> Fix the five strings</td><td>One edit per manifest.</td><td class="good">Low</td><td>New. No record covers it.</td></tr>
+          <tr><td><strong>B</strong> Leave it. GitHub may still redirect</td><td>Nothing.</td><td class="good">Low</td><td>Current state. The redirect is unverified.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout good"><span class="k">Recommendation</span>
+        <p>Option A. The fix is five one-line edits, and the redirect is an assumption nobody checked.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 PROPOSED MAP -->
+<section id="proposed">
+  <div class="sec-head"><span class="num">6</span><h2>Proposed component map (draft)</h2></div>
+  <p class="sec-intro">This map shows the directions from section 5 together. It is a draft. No divergent run has tested it, and each change needs a decision from you. Green tags mark new parts. Clay borders mark changed parts.</p>
+  <div class="diagram">
+  <svg id="fig-proposed" viewBox="0 0 1100 320" width="100%" role="img" aria-labelledby="t-prop">
+    <title id="t-prop">Proposed install surface, draft</title>
+    <defs>
+      <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--gray-500)"/></marker>
+    </defs>
+    <rect class="zone" x="10" y="28" width="780" height="260" rx="12"/>
+    <text class="zl" x="26" y="48">TESTS AND MANIFESTS (CHANGED)</text>
+    <rect class="zone" x="806" y="28" width="284" height="260" rx="12"/>
+    <text class="zl" x="822" y="48">UNCHANGED</text>
+    <g id="p-tests">
+      <title>New packaging test file</title>
+      <rect class="node hot" x="40" y="70" width="240" height="72" rx="8"/>
+      <text class="t" x="160" y="96" text-anchor="middle">one test file</text>
+      <text class="s" x="160" y="114" text-anchor="middle">skills IDs · versions · names</text>
+      <text class="s" x="160" y="130" text-anchor="middle">dependencies</text>
+    </g>
+    <g id="p-manifest">
+      <title>Architect plugin manifest, changed</title>
+      <rect class="node hot" x="340" y="70" width="220" height="72" rx="8"/>
+      <text class="t" x="450" y="96" text-anchor="middle">plugin.json · CHG</text>
+      <text class="s" x="450" y="114" text-anchor="middle">repository URL</text>
+      <text class="s" x="450" y="130" text-anchor="middle">one version source</text>
+    </g>
+    <g id="p-market">
+      <title>Marketplace manifest, changed</title>
+      <rect class="node hot" x="620" y="70" width="140" height="72" rx="8"/>
+      <text class="t" x="690" y="96" text-anchor="middle">marketplace</text>
+      <text class="s" x="690" y="114" text-anchor="middle">versions match</text>
+    </g>
+    <g id="p-shared">
+      <title>Shared skills, unchanged</title>
+      <rect class="node" x="340" y="200" width="220" height="60" rx="8"/>
+      <text class="t" x="450" y="224" text-anchor="middle">shared/ skills</text>
+      <text class="s" x="450" y="240" text-anchor="middle">fallback stays as written</text>
+    </g>
+    <g id="p-artifact">
+      <title>Bundle gate, unchanged</title>
+      <rect class="node" x="840" y="70" width="220" height="60" rx="8"/>
+      <text class="t" x="950" y="94" text-anchor="middle">require_compatible()</text>
+      <text class="s" x="950" y="110" text-anchor="middle">stays the version guard</text>
+    </g>
+    <g id="p-split">
+      <title>Slim install unit, decided later</title>
+      <rect class="node dash" x="840" y="160" width="220" height="60" rx="8"/>
+      <text class="t" x="950" y="184" text-anchor="middle">slim corpus install</text>
+      <text class="s" x="950" y="200" text-anchor="middle">measure first, decide after</text>
+    </g>
+    <path class="edge hot" d="M280 106 H340" marker-end="url(#a3)"/>
+    <text class="s" x="284" y="99">keeps honest</text>
+    <path class="edge hot" d="M560 106 H620" marker-end="url(#a3)"/>
+    <path class="edge" d="M160 142 V200 H340" marker-end="url(#a3)"/>
+    <path class="edge" d="M560 230 Q700 250 840 110" marker-end="url(#a3)"/>
+    <path class="edge dash" d="M690 142 Q800 200 840 190" marker-end="url(#a3)"/>
+    <g class="newtag"><rect x="288" y="62" width="52" height="18" rx="9"/><text x="314" y="75">NEW</text></g>
+    <g class="bdg"><rect x="452" y="62" width="30" height="18" rx="9"/><text x="467" y="75">T1</text></g>
+    <g class="bdg"><rect x="728" y="62" width="30" height="18" rx="9"/><text x="743" y="75">T1</text></g>
+    <g class="bdg"><rect x="50" y="150" width="60" height="18" rx="9"/><text x="80" y="163">MULTI</text></g>
+    <g class="bdg"><rect x="906" y="228" width="52" height="18" rx="9"/><text x="932" y="241">T2</text></g>
+  </svg>
+  </div>
+  <div class="legend">
+    <span><span class="sw" style="background:var(--olive)"></span>NEW part</span>
+    <span><span class="sw" style="background:var(--clay)"></span>CHG: changed part</span>
+    <span><span class="sw" style="border:2px solid var(--clay)"></span>Clay border: touched by a proposal</span>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Change</th><th>Depends on</th><th>Record needed</th><th>State</th></tr></thead>
+    <tbody>
+      <tr><td><strong>F1</strong> Skill-ID resolution test</td><td>The cheap check in the F1 recommendation.</td><td>Amend ADR-0016's addendum, which already names this test pattern.</td><td><span class="tag medium">Draft</span></td></tr>
+      <tr><td><strong>F2</strong> Dependencies-name test</td><td>Nothing.</td><td>Extend ADR-0017's consequence list.</td><td><span class="tag medium">Draft</span></td></tr>
+      <tr><td><strong>T1</strong> One version source plus an equality test</td><td>A check of what the plugin platform accepts in a marketplace entry.</td><td>New short record, or a line in the packaging section of README.md.</td><td><span class="tag medium">Draft</span></td></tr>
+      <tr><td><strong>T2</strong> Corpus-share measurement</td><td>Nothing.</td><td>None. It is a number in the evidence of the next design.</td><td><span class="tag medium">Draft</span></td></tr>
+      <tr><td><strong>G1</strong> Name-collision test</td><td>Nothing.</td><td>None. ADR-0016's addendum already records it as a follow-up.</td><td><span class="tag medium">Draft</span></td></tr>
+      <tr><td><strong>G2</strong> Repository URL fix</td><td>Nothing.</td><td>None.</td><td><span class="tag medium">Draft</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 7 GAPS -->
+<section id="gaps">
+  <div class="sec-head"><span class="num">7</span><h2>Gaps beyond the earlier review</h2></div>
+  <p class="sec-intro">Two items that the review of 2026-08-04 did not cover. The third column shows whether a plan carries them.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>ID</th><th>Gap</th><th>In the plan?</th><th>Suggested action</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">G1</td><td>No automated test covers the name-collision invariant of ADR-0016's addendum, which broke two plugins once and broke them by reproduction.</td><td><span class="tag risk">No</span></td><td>Write one test next to test_plugin_manifests.py.</td></tr>
+      <tr><td class="mono">G2</td><td>The repository field of all five manifests names the pre-rename repository, cobuilder-architect.</td><td><span class="tag risk">No</span></td><td>Five one-line edits, or one check of the redirect first.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 8 ORDER -->
+<section id="order">
+  <div class="sec-head"><span class="num">8</span><h2>Recommended order</h2></div>
+  <p class="sec-intro">The test track and the manifest track share one session. Neither needs a design.</p>
+  <div class="grid-3">
+    <div class="card"><span class="eyebrow">Now</span>
+      <ol class="tight"><li>Run the F1 cheap check: does Skill("architect:ste-writing") resolve in a disposable session?</li><li>Run the T2 measurement: corpus share of the architect install.</li></ol>
+    </div>
+    <div class="card"><span class="eyebrow">Next · decide</span>
+      <ol class="tight" start="3"><li>Decide T1: which version field is the source of truth.</li><li>Write one ADR line per adopted change, if any.</li></ol>
+    </div>
+    <div class="card"><span class="eyebrow">Later · build</span>
+      <ol class="tight" start="5"><li>Land the two tests: F1 plus G1, and F2 plus T1.</li><li>Fix the five repository URLs.</li></ol>
+    </div>
+  </div>
+</section>
+
+<!-- 9 DECISIONS -->
+<section id="decide">
+  <div class="sec-head"><span class="num">9</span><h2>Your decisions</h2></div>
+  <p class="sec-intro">Pick your answers. Press Copy this answer on one form, or press Copy all answers. Then paste the text into the chat.</p>
+
+  <form class="q" id="q-explore" data-question="Explore these inquiries next">
+    <fieldset>
+      <legend>Which inquiries should /architect:design explore? Tick the ones you want.</legend>
+      <label><input type="checkbox" name="explore" value="F1 cross-boundary skill IDs — design, run"> <span><strong>F1</strong> Cross-boundary skill IDs</span></label>
+      <label><input type="checkbox" name="explore" value="F2 co-installed version drift — check-only, recommended" checked> <span><strong>F2</strong> Co-installed version drift (check-only, recommended)</span></label>
+      <label><input type="checkbox" name="explore" value="T1 version source decision — design, run"> <span><strong>T1</strong> One version source</span></label>
+      <label><input type="checkbox" name="explore" value="T2 install weight measurement — check-only, recommended" checked> <span><strong>T2</strong> Install weight (check-only, recommended)</span></label>
+      <label><input type="checkbox" name="explore" value="G1 name-collision test — design, run" checked> <span><strong>G1</strong> Name-collision test (recommended)</span></label>
+      <label><input type="checkbox" name="explore" value="G2 repository URLs — design, run"> <span><strong>G2</strong> Repository URL fix</span></label>
+      <label><textarea name="note" aria-label="Optional note"></textarea></label>
+    </fieldset>
+    <button class="ghost copy-one" type="button">Copy this answer</button><span class="status" role="status"></span>
+  </form>
+
+  <form class="q" id="q-version" data-question="Which version field is the source of truth?">
+    <fieldset>
+      <legend>Which version field should be the source of truth for a plugin release?</legend>
+      <label><input type="radio" name="version" value="The plugin manifest, plugin.json. The marketplace entry mirrors it."> <span>The plugin manifest, plugin.json. The marketplace entry mirrors it.</span></label>
+      <label><input type="radio" name="version" value="The marketplace entry. The plugin manifest mirrors it."> <span>The marketplace entry. The plugin manifest mirrors it.</span></label>
+      <label><input type="radio" name="version" value="Not decided"> <span>Show me the options first.</span></label>
+      <label><textarea name="note" aria-label="Optional note"></textarea></label>
+    </fieldset>
+    <button class="ghost copy-one" type="button">Copy this answer</button><span class="status" role="status"></span>
+  </form>
+
+  <form class="q" id="q-notes" data-question="Anything I got wrong or missed?">
+    <fieldset>
+      <legend>Anything I got wrong or missed?</legend>
+      <label><textarea name="note" aria-label="Anything I got wrong or missed"></textarea></label>
+    </fieldset>
+    <button class="ghost copy-one" type="button">Copy this answer</button><span class="status" role="status"></span>
+  </form>
+
+  <div class="callout info">
+    <span class="k">All answers</span>
+    <p>This button copies every answer as one text block. Paste it into the chat.</p>
+    <button class="primary" type="button" id="copy-all">Copy all answers</button><span class="status" id="copy-all-status" role="status"></span>
+  </div>
+</section>
+
+<!-- 10 EVIDENCE -->
+<section id="evidence">
+  <div class="sec-head"><span class="num">10</span><h2>Evidence and limits</h2></div>
+  <details open>
+    <summary>What I verified</summary>
+    <ul class="tight">
+      <li><span class="mono">.claude-plugin/marketplace.json:9-14</span> The architect entry gives version 0.6.0. The artifact and implement entries give 0.6.0 and 0.3.0.</li>
+      <li><span class="mono">plugins/architect/.claude-plugin/plugin.json:3</span> Version 0.7.0. The sibling manifests give 0.6.2 and 0.3.1. Three of five plugins drift.</li>
+      <li><span class="mono">git ls-files</span> The architect plugin holds 273 tracked files. 196 are corpus cards and 41 are book excerpts. du gives about 3.4 MB.</li>
+      <li><span class="mono">tests/test_plugin_manifests.py:35-165</span> check_install_surface() and its tests: manifest fields, agents and hooks barred except implement, MCP barred everywhere, dependency names of the umbrella, and the shared symlink.</li>
+      <li><span class="mono">shared/_bundle_meta.py:78</span> require_compatible() is the runtime version gate of ADR-0017.</li>
+      <li><span class="mono">plugins/implement/hooks/hooks.json</span> One PostToolUse hook on Write|Edit, and four agent files under plugins/implement/agents/, the only agent and hook surface in the family.</li>
+      <li><span class="mono">plugins/architect/skills/architecture/SKILL.md:200, 217, 282</span> The three Skill() calls that cross a skill or plugin boundary, each with a manual fallback.</li>
+      <li><span class="mono">shared/skills/mermaid/SKILL.md and shared/skills/ste-writing/SKILL.md</span> Their frontmatter names are mermaid and ste-writing. The architect plugin ships only skills/architecture.</li>
+      <li><span class="mono">docs/architecture/adr/ADR-00*.md</span> State fields of all 35 records, read with one grep pass. It read the problems and decisions of ADR-0015, ADR-0016, ADR-0017, ADR-0025, and ADR-0035, read in the file.</li>
+      <li><span class="mono">docs/architecture/review/architecture-review-2026-08-04-technical.html</span> Finding IDs only, read as anchors: SEC, ARC, CQ, DEP, MNT, SCA, TD, TST. No packaging finding among them.</li>
+    </ul>
+  </details>
+  <details>
+    <summary>What I read but did not trace in code</summary>
+    <ul class="tight">
+      <li>ADR-0016, ADR-0017, ADR-0025: I read the text and the frontmatter. I did not run the mechanisms they claim, such as a symlink dereference in a real installed cache. tests/test_plugin_manifests.py:164 also marks that check as outside pytest.</li>
+      <li>ADR-0021: I read the summary in SKILL.md and the report section. I did not read the record in full.</li>
+    </ul>
+  </details>
+  <details>
+    <summary>What I did not read</summary>
+    <ul class="tight">
+      <li>The run rules put docs/plans/, docs/architecture/designs/options-mode/, and .cobuilder/ out of scope. So the section 1 note about plan interaction says nothing: I could not check whether a plan slice already covers G1 or G2.</li>
+      <li>The plugin platform documentation. Whether a marketplace entry requires a version key, and how a shared skill resolves by ID after install, both stay unchecked. This is why F1 and T1 carry cheap checks in their recommendations.</li>
+      <li>I did not install any plugin, and I did not run a live session against an installed cache. The install-cache behaviour is unmeasured.</li>
+      <li>I did not render the report in a normal browsing workflow. I did open it from a file:// address in the session's Chrome at 1280 px and at 390 px, and measured: no horizontal page scroll, no clipped SVG text, no console messages. The visual clarity check was a geometry check, not a human look. No network request happens inside the page, and the validator bars external sources.</li>
+      <li>I read none of the corpus book excerpts and only five stack and principle cards. The corpus chain matched the packaging scope, not the viewer code.</li>
+    </ul>
+  </details>
+  <details>
+    <summary>Skill and design sources</summary>
+    <ul class="tight">
+      <li>plugins/architect/skills/architecture/SKILL.md in full, and references/options-mode.md in full. The run read them from the repository path, because the installed plugin holds no options mode.</li>
+      <li>references/stacks/README.md, the react-typescript card, and the generic card. The generic card matches the Python parts of the repo. python-fastapi does not match, because pyproject.toml carries no fastapi dependency.</li>
+      <li>references/corpus-index.md Section 1, and two principle cards: 007_architectural_boundaries.yaml and 008_component_cohesion_coupling.yaml.</li>
+      <li>references/reports/options-report-TEMPLATE.html, the template this report starts from. scripts/check_options_report.py, the form validator.</li>
+      <li>DDD-VOCABULARY.md, which names an inquiry as the report raises it.</li>
+    </ul>
+  </details>
+</section>
+
+</div>
+
+<script>
+(function () {
+  function fallbackCopy(text) {
+    var area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+    var done = false;
+    try { done = document.execCommand('copy'); } catch (err) { done = false; }
+    document.body.removeChild(area);
+    return done;
+  }
+
+  function copyText(text, status) {
+    var ok = 'Copied. Paste it into the chat.';
+    var fail = 'Copy failed. Select the text and copy it by hand.';
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(
+          function () { status.textContent = ok; },
+          function () { status.textContent = fallbackCopy(text) ? ok : fail; }
+        );
+        return;
+      }
+    } catch (err) { /* use the fallback below */ }
+    status.textContent = fallbackCopy(text) ? ok : fail;
+  }
+
+  function formText(form) {
+    var lines = [];
+    var fields = form.querySelectorAll('input, textarea');
+    for (var i = 0; i < fields.length; i++) {
+      var el = fields[i];
+      var isChoice = el.type === 'checkbox' || el.type === 'radio';
+      if (isChoice && !el.checked) { continue; }
+      var value = isChoice ? el.value : el.value.trim();
+      if (value) { lines.push('  ' + value); }
+    }
+    if (!lines.length) { return ''; }
+    return form.getAttribute('data-question') + ':\n' + lines.join('\n');
+  }
+
+  var forms = document.querySelectorAll('form.q');
+  Array.prototype.forEach.call(forms, function (form) {
+    form.addEventListener('submit', function (e) { e.preventDefault(); });
+    var button = form.querySelector('.copy-one');
+    if (!button) { return; }
+    button.addEventListener('click', function () {
+      var status = form.querySelector('.status');
+      var text = formText(form);
+      if (!text) { status.textContent = 'No answer yet.'; return; }
+      copyText(text, status);
+    });
+  });
+
+  document.getElementById('copy-all').addEventListener('click', function () {
+    var status = document.getElementById('copy-all-status');
+    var parts = [];
+    Array.prototype.forEach.call(forms, function (form) {
+      var text = formText(form);
+      if (text) { parts.push(text); }
+    });
+    if (!parts.length) { status.textContent = 'No answers yet.'; return; }
+    copyText(parts.join('\n\n'), status);
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "31320fbc732db88fd174f2fc9dd5546285baff30",
+    "git_head": "47b13d232c0d7b43be8591087ad998dbe8b776a5",
     "trees": {
       "docs/architecture/adr": "sha256:95c050980f35dd5b9365f0fbdfe0b00b0bc4db1cd6fed77f39a6c42c065de4e4",
-      "docs/architecture/designs": "sha256:44ba77e3bb607f65ee65d3dd8c26862b005b2916d94904818705168851486087",
+      "docs/architecture/designs": "sha256:8b46e1937aa784b1011a6c45a0032f46a1b3da6a5684f677cb09bfa200c67080",
       "docs/architecture/contexts": "sha256:2f1cde1db74ea6f95b55152c3de109c6e281619cc3beae3fb939d8650a4005c8",
-      "docs/plans": "sha256:97e91ecc399bcfa1184e62d09be3709f3457f3aaa15df77a26f970ffe4d8d95e",
-      ".cobuilder/rubrics": "sha256:143c6a02013b8656c06e00a366f615d9196acb07d797649d88402721d46939fa"
+      "docs/plans": "sha256:561a4d83e51a7a76db38406319512bd1ac43caa1a832deb83c58dcb748cd3b1e",
+      ".cobuilder/rubrics": "sha256:90523da1890d59a358dae32f4965c5410f4d3dc8a34170b1ba0bcd8cae407d78"
     }
   },
   "entities": {
@@ -271,7 +271,7 @@
         "id": "options-mode",
         "name": "options-mode",
         "outcome": "An engineer runs /architect:options and gets one self-contained HTML report of inquiries about the flow, the technology, and the gaps of the whole system, with alternatives and diagrams. The engineer pastes the decisions text into /architect:design.",
-        "stage": "drafted"
+        "stage": "implemented"
       },
       {
         "id": "plugin-split",
@@ -792,7 +792,7 @@
         "epic_id": "E1",
         "branch": "design/options-mode",
         "pr": null,
-        "state": "planned",
+        "state": "implemented",
         "note": "One epic. Four slices: the mode and its command, the report template and validator, the manifests and glossary and counts, and one real run of the mode.",
         "design_doc": "options-mode/E1"
       },
@@ -2058,9 +2058,9 @@
         "n": 1,
         "title": "Tracer bullet: the command and the skill declare a seventh mode",
         "ends_with": "`plugins/architect/commands/options.md` dispatches `Skill(\"architecture\", args=\"options $ARGUMENTS\")`. `SKILL.md` carries `### Options Mode` and `references/options-mode.md` holds the seven-stage procedure. `tests/test_commands.py` asserts seven modes and that the architect command files equal them, and it passes",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "options-mode/2",
@@ -2068,9 +2068,9 @@
         "n": 2,
         "title": "The report template and the validator",
         "ends_with": "`references/reports/options-report-TEMPLATE.html` exists. `uv run plugins/architect/scripts/check_options_report.py <template>` exits 0. Each broken fixture under `tests/fixtures/options_report/` exits 1 for its own check. A long SVG text only warns. `tests/test_options_report.py` passes",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "options-mode/3",
@@ -2078,9 +2078,9 @@
         "n": 3,
         "title": "Manifests, glossary, and mode counts",
         "ends_with": "`DDD-VOCABULARY.md` has an `Inquiry` entry. `plugin.json` reads `0.7.0`. Both manifests and the docs name seven modes and list `/architect:options`. `uv run --with pytest pytest tests/ -q` passes with no new failure",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "options-mode/4",
@@ -2088,9 +2088,9 @@
         "n": 4,
         "title": "One real run of the mode",
         "ends_with": "A fresh agent follows `SKILL.md` and `options-mode.md` with `--non-interactive` on this repo. It writes one report under `docs/architecture/options/<name>/`. The validator exits 0 on it. The run edits nothing outside that folder",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "review-link/1",
@@ -3986,33 +3986,37 @@
         {
           "n": "1",
           "name": "Product",
-          "state": "pending",
+          "state": "APPROVED 2026-10-01",
+          "view": "#/options-mode/build/plan/product",
           "doc": "options-mode",
           "doc_kind": "product"
         },
         {
           "n": "2",
           "name": "Architecture",
-          "state": "pending",
+          "state": "APPROVED 2026-10-01",
+          "view": "#/options-mode/build/plan/architecture",
           "doc": "options-mode",
           "doc_kind": "architecture"
         },
         {
           "n": "2b",
           "name": "Interaction design",
-          "state": "pending"
+          "state": "n/a (no UI) — Screens: \"No UI app. The deliverable is one generated HTML report.\""
         },
         {
           "n": "3",
           "name": "Program Design",
-          "state": "pending",
+          "state": "APPROVED 2026-10-01",
+          "view": "#/options-mode/build/plan/program",
           "doc": "options-mode",
           "doc_kind": "program"
         },
         {
           "n": "4",
           "name": "Slice plan, epic designs, and rubrics",
-          "state": "pending"
+          "state": "APPROVED 2026-10-01",
+          "view": "#/options-mode/build/epics"
         }
       ],
       "review-link": [
