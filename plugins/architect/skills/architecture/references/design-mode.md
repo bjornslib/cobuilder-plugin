@@ -81,7 +81,14 @@ earlier timeline entries in the same districts.
 
 If the bundle has no baseline, `SKILL.md` instructs you to run `baseline`
 and continue. Say that it will run, then report the elapsed time. Do not
-run it in silence. If the corpus leaves the topic under-covered, escalate to
+run it in silence. If `DDD-VOCABULARY.md` is absent, at the target repo root
+or in the bundle dir for a foreign target, run the vocabulary bootstrap per
+`references/vocabulary-bootstrap.md` before you draft the hypothesis. Declare
+that run to the engineer the same way the baseline run is declared: say that
+it will run, then report what it wrote. The grill and its write happen with
+the engineer's answers. A refusal ends the bootstrap without writing.
+
+If the corpus leaves the topic under-covered, escalate to
 `references/book-index.md`'s Tier 2 rule (ADR-0021): load a minimum of
 three nano-tier book excerpts for the candidate books, then escalate any
 one of them to mini or full only when its principles are judged to matter
@@ -257,6 +264,18 @@ result to the engineer per step 5 below.
    `build_diagrams.py`. That script keys on a PR number. The subagent
    uses the same mermaid dual-path guard as §6.
 
+   The diagrams also include the named slot
+   `diagrams/runtime-architecture.svg`: an authored inline SVG per
+   `references/runtime-architecture-diagram.md`, validated by
+   `uv run plugins/architect/scripts/check_design_svg.py`, and compiled by
+   `build_index.py` to `record["diagrams"]["runtime"]`. The viewer renders
+   it as the lead tile inside the architecture level, ahead of the level-3
+   class diagram. The level-1 overview stays the design's leading diagram.
+   The runtime diagram is never a numbered level. It never enters the shared
+   mermaid pipeline: `build_diagrams.py` does not see it, and `--strict`
+   mermaid-cli testing does not apply. Show it with the other artifacts,
+   and narrate it as a prediction, never a check.
+
 3. **Envisioned pull request.** Write
    `docs/architecture/designs/<name>/pr-draft.md` from
    the odyssey skill's `references/pr-description-template.md`.
@@ -275,6 +294,14 @@ result to the engineer per step 5 below.
 5. **Intent and assessment.** Write `intent.json` and a
    `stage: "design"` assessment into `docs/architecture/designs/<name>/`.
    Show both to the engineer before you write them to disk.
+
+`contracts.md` is an optional artifact beside those five. Write it when and
+only when the design touches a public interface or durable state. It carries
+`## Endpoints` and `## Data models`, one section each. Every entry is a
+prediction grounded in the ADR draft, not a check. Show the file with the
+other artifacts before you write it to disk. When the design touches neither,
+skip the file and state the skip with its reason, out loud, the way a Gate 2b
+n/a line states a gate does not apply. A silent skip is a defect.
 
 After the five artifacts above are written, update the glossary. This is a
 separate step, not a sixth artifact: it updates an existing repository-wide
@@ -295,6 +322,27 @@ holds before you write anything, and record the losing usage under
 Before the engineer reads the draft, follow Present for review in
 `Skill("cobuilder-artifacts")` with the route `#/<work>/intent`. Give the
 engineer the link.
+
+Before the engineer reads, the session also spawns a draft review. Use the
+ADR-0005 dual-path pattern: invoke the reviewer as a named agent where the
+harness resolves one, and when that call errors, paste the instructions of
+this block into a session-spawned subagent on `glm-5.3-flash:cloud`. They
+are the reviewer's own brief. No new agent file ships. The reviewer reads
+`goal.json` and `intent.json` and derives a blind rubric from those two
+files only, before it opens the ADR draft, the diagrams, or the runtime SVG.
+It runs two passes. First, validation: score the draft against that rubric,
+and cite every finding, either an ADR id, a district id, or a boundary rule,
+with every finding kind set to `"prediction"`. Second, re-exploration: seed
+exploration with the final draft and return survivor options that beat
+`intent.approach` on the goal's criteria, each with a reason, or an argued
+`none-found`. The findings enter this stage as classified challenges the
+engineer adjudicates, under the citation rule of §7.3. The reviewer never
+writes `intent.json`. An endorsed survivor reaches `intent.alternatives` only
+through the stage-4 record, because stage 4 alone fills that field (ADR-0035).
+The session records the round by setting `goal.min_work.draft_review_run` to
+true only after a reviewer round returns. The reviewer is advisory. It cannot
+block approval on its own. The churn detection below and the round limits
+govern any retry.
 
 The engineer reads the draft and answers in the session. Material
 feedback returns to stage 3. A real objection usually invalidates an
@@ -354,7 +402,8 @@ Do not keep `branch` as a scalar. The join lives on `epics`.
     "derived_from": "3 districts, 2 colliding ADRs, 1 boundary rule",
     "alternatives_explored": 3,
     "boundary_rules_checked": true,
-    "challenge_stage_run": true
+    "challenge_stage_run": true,
+    "draft_review_run": true
   },
   "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
   "epics": [
@@ -376,7 +425,8 @@ Do not keep `branch` as a scalar. The join lives on `epics`.
 Derive `min_work` and `limits`. Do not ask for them. Derive `min_work`
 from the districts the outcome touches, the ADRs it collides with, and
 whether it crosses a boundary rule. Set `challenge_stage_run` only after
-stage 4 ran and recorded its outcomes.
+stage 4 ran and recorded its outcomes. Set `draft_review_run` beside it only
+after a stage-6 reviewer round returned, not when the spawn was skipped.
 
 Design mode writes epic slugs at stage 7. It does not write testable
 criteria. A later factory pass may fill `epics[].outcome`.
