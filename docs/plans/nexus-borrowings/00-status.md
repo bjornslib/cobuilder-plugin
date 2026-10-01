@@ -17,10 +17,23 @@ Design mode: nexus-borrowings
 Hindsight: yes
 
 ## Slices
-- Gate 4 not yet approved; the slice plan (04-slices.md), per-epic designs, and blind rubrics are the next work after this status snapshot.
+- 2026-10-01: eight slices built across four epics on this branch, ending
+  with the marketplace bumps and a full-suite run. E1-S1..S3 and E4-S8 are
+  test-scored (tests/test_design_svg.py · 12, viewer suite · 198 vitest +
+  tsc, tests/test_build_index.py · 35, full pytest 701 passed with only the
+  6 pre-existing test_board_pr_alone failures that fail identically on
+  master). E2-S4, E4-S6, E4-S7 are prose-verified; their behavioral criteria
+  score on the first real design runs (see 04-slices.md's rubric note).
 
 ## Escalated
-<none>
+- Pre-existing on master, not this branch's slices: six
+  `tests/test_board_pr_alone.py` failures (they name a missing
+  `plugins/artifact/viewer/src/shell/Board.tsx`) and
+  `test_viewer_modes.py::test_viewer_contains_all_five_mode_buttons`'s
+  minified-literal anchors, which a fresh viewer build on master also trips
+  (the committed artifact was built by an older toolchain that inlined
+  `tooltip:"Work"`). The viewer conformance case was rewritten against
+  stable anchors in this branch; the board failures need their own slice.
 
 ## Notes for a fresh session
 - Round 2 (2026-10-01): reconciled with merged PR-26 — ADR renumbered 0035 →

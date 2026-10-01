@@ -11,7 +11,7 @@
     "Marketplace manifest versions for architect, implement, and artifact are bumped so installed users auto-update"
   ],
   "abort_if": [
-    "The named diagram slot breaks an existing designs record consumer — build_index.py designs projections or the viewer's design route",
+    "The named diagram slot breaks an existing designs record consumer \u2014 build_index.py designs projections or the viewer's design route",
     "The runtime-architecture contract cannot express clustered boundaries and protocol-labeled boundary edges in hand-authored SVG within the single-page 8-to-30-node constraint",
     "The vocabulary bootstrap's grilling interview would propose terms not grounded in baseline-verified districts and real code symbols"
   ],
@@ -20,20 +20,60 @@
     "alternatives_explored": 5,
     "boundary_rules_checked": true,
     "challenge_stage_run": true,
-    "draft_review_run": false
+    "draft_review_run": true,
+    "note": "Round 2 (PR-26 reconciliation) ran the review inline with the engineer in chat; the built mode now spawns the reviewer itself. See the design's note."
   },
-  "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
+  "limits": {
+    "warn_after_rounds": 3,
+    "cutoff_rounds": 6
+  },
   "epics": [
-    { "id": "E1", "slug": "runtime-arch-diagram", "branch": "design/nexus-borrowings/runtime-arch-diagram", "pr": null, "state": "planned" },
-    { "id": "E2", "slug": "draft-reviewer", "branch": "design/nexus-borrowings/runtime-arch-diagram", "pr": null, "state": "planned" },
-    { "id": "E3", "slug": "contracts-doc", "branch": "design/nexus-borrowings/runtime-arch-diagram", "pr": null, "state": "planned" },
-    { "id": "E4", "slug": "vocabulary-bootstrap", "branch": "design/nexus-borrowings/runtime-arch-diagram", "pr": null, "state": "planned" }
+    {
+      "id": "E1",
+      "slug": "runtime-arch-diagram",
+      "branch": "design/nexus-borrowings/runtime-arch-diagram",
+      "pr": null,
+      "state": "implemented",
+      "note": "All eight slices built in one pass on design/nexus-borrowings/runtime-arch-diagram (2026-10-01): contract, validator, build_index projections, viewer tile + contracts section, stage-6 spawn, contracts artifact, vocabulary bootstrap + mode surfaces, implement guards + bumps. Behavioral rubrics score on the first real design runs."
+    },
+    {
+      "id": "E2",
+      "slug": "draft-reviewer",
+      "branch": "design/nexus-borrowings/runtime-arch-diagram",
+      "pr": null,
+      "state": "implemented",
+      "note": "All eight slices built in one pass on design/nexus-borrowings/runtime-arch-diagram (2026-10-01): contract, validator, build_index projections, viewer tile + contracts section, stage-6 spawn, contracts artifact, vocabulary bootstrap + mode surfaces, implement guards + bumps. Behavioral rubrics score on the first real design runs."
+    },
+    {
+      "id": "E3",
+      "slug": "contracts-doc",
+      "branch": "design/nexus-borrowings/runtime-arch-diagram",
+      "pr": null,
+      "state": "implemented",
+      "note": "All eight slices built in one pass on design/nexus-borrowings/runtime-arch-diagram (2026-10-01): contract, validator, build_index projections, viewer tile + contracts section, stage-6 spawn, contracts artifact, vocabulary bootstrap + mode surfaces, implement guards + bumps. Behavioral rubrics score on the first real design runs."
+    },
+    {
+      "id": "E4",
+      "slug": "vocabulary-bootstrap",
+      "branch": "design/nexus-borrowings/runtime-arch-diagram",
+      "pr": null,
+      "state": "implemented",
+      "note": "All eight slices built in one pass on design/nexus-borrowings/runtime-arch-diagram (2026-10-01): contract, validator, build_index projections, viewer tile + contracts section, stage-6 spawn, contracts artifact, vocabulary bootstrap + mode surfaces, implement guards + bumps. Behavioral rubrics score on the first real design runs."
+    }
   ],
-  "stage": "review",
+  "stage": "implemented",
   "supersedes": null,
   "rounds": [
-    { "n": 1, "changed": true, "feedback_class": "material" },
-    { "n": 2, "changed": true, "feedback_class": "material" }
+    {
+      "n": 1,
+      "changed": true,
+      "feedback_class": "material"
+    },
+    {
+      "n": 2,
+      "changed": true,
+      "feedback_class": "material"
+    }
   ],
   "approved_by": "Bjorn Schliebitz",
   "approved_at": "2026-09-29"
