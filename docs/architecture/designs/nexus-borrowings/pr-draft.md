@@ -39,4 +39,4 @@ Design-stage checks, all predictions: the record index compiled with the self bu
 
 The record-index shape: does record["diagrams"]["runtime"] break any call site that filters or reads the diagrams dict. The blind rubric derivation: does the reviewer read goal.json and intent.json before the draft and never the ADR. The contracts skip rule: a design with no public surface states its skip rather than going silent.
 
-The author flagged these parts as not fully understood: whether mermaid C4 System_Boundary renders clusters acceptably across viewer themes, and whether one reviewer spawn per round is enough or the round budget needs a configurable k before the reviewer epic ships.
+The author flagged these parts as not fully understood: whether the viewer's inline-SVG tile renders acceptably across themes, and whether one reviewer spawn per round is enough or the round budget needs a configurable k before the reviewer epic ships.

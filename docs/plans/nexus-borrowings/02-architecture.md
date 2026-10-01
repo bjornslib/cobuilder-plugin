@@ -1,7 +1,7 @@
 # Architecture: Nexus borrowings — runtime diagram, draft reviewer, contracts doc
 
 Read before authoring: `docs/architecture/designs/nexus-borrowings/` (goal,
-intent, narrative, assessment, contracts) and ADR-0035. This document grounds
+intent, narrative, assessment, contracts) and ADR-0036. This document grounds
 Gate 2 in that design's `intent.json` per the design-mode join (ADR-0013).
 
 ## Fit
@@ -12,8 +12,9 @@ Gate 2 in that design's `intent.json` per the design-mode join (ADR-0013).
   design lifecycle.
 - `plugins/architect/skills/architecture/SKILL.md` — Design Mode run order gains
   the stage-5 additions and the stage-6 spawn with the dual-path guard.
-- `shared/skills/mermaid/references/architecture-diagram.md` — new contract,
-  vendored by symlink wherever the mermaid skill is vendored (ADR-0017). Its
+- `plugins/architect/skills/architecture/references/runtime-architecture-diagram.md` — new SVG contract
+  (architect-owned; ADR-0035 accepted inline SVG as the exception to the shared
+  mermaid pipeline). Its
   role: the runtime rules Nexus's `_ARCH_SYSTEM` translated.
 - `shared/build_index.py` — projections: one named read for the runtime slot,
   the contracts attach beside pr_draft. Its role: the only writer of the
@@ -35,7 +36,7 @@ Gate 2 in that design's `intent.json` per the design-mode join (ADR-0013).
 ## Data
 
 - `designs` entity in `index.json`: gains optional `diagrams["runtime"]`
-  (string, compiled from the named .mmd file) and optional `contracts` (string).
+  (string, compiled from the authored SVG file) and optional `contracts` (string).
   Both additive; absence stays an omission, not an error.
 - `goal.json`: `min_work` gains `draft_review_run: bool`, derived.
 - `.claude-plugin/marketplace.json`: `architect` 0.6.0 → 0.7.0,

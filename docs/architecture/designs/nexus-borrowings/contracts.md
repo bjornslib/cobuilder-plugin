@@ -2,7 +2,7 @@
 
 Authored during design mode stage 5 under the (pending) contracts rule: this
 design touches public interfaces, so it carries its own contracts. Everything
-below is a prediction grounded in the ADR-0035 draft, not a check.
+below is a prediction grounded in the ADR-0036 draft, not a check.
 
 ## Endpoints
 

@@ -33,5 +33,5 @@
       "mitigation": "Mirror the pr-draft compile block for contracts and add its absence to the skip-with-reason convention already used by Gate 2b."
     }
   ],
-  "regret_risk": "If the runtime diagram proves noisy in mermaid's C4 renderer, teams will add it anyway because the contract demands it, and designs will carry tiles that render poorly. The escape is the contract's own 8-to-30-node cap and the option to fall back to flowchart subgraphs, both written into the reference before E1 ships."
+  "regret_risk": "If the runtime diagram proves noisy in hand-authored SVG, teams will add it anyway because the contract demands it, and designs will carry tiles that render poorly. The escape is the contract's own 8-to-30-node cap, the structural validator, and the options-report SVG conventions the contract cites, all written into the reference before E1 ships."
 }

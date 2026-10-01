@@ -57,13 +57,23 @@ _Avoid_: ADR (a design also produces one, but the ADR outlives it under docs/arc
 
 <a id="runtime-architecture-diagram"></a>
 **Runtime architecture diagram** (`architect`):
-The named diagram slot `designs/<name>/diagrams/runtime-architecture.mmd`, a prediction-grounded picture of services, libraries, data stores, and external systems with clustered boundaries and protocol-labeled boundary edges. Rendered as the lead tile of the design's architecture level; never a numbered level. See "architecture-diagram contract" in the mermaid skill.
-_Avoid_: level-4 diagram (that slot belongs to the per-PR contract and has no diagram there)
+The named diagram slot `designs/<name>/diagrams/runtime-architecture.svg`, authored inline SVG — ADR-0035 accepted the format as the exception to the shared mermaid pipeline — a prediction-grounded picture of services, libraries, data stores, and external systems with clustered boundaries and protocol-labeled boundary edges. Rendered as the lead tile of the design's architecture level; never a numbered level. The runtime-architecture-diagram.md reference in the architect plugin owns the contract; check_design_svg.py validates the file.
+_Avoid_: level-4 diagram (that slot belongs to the per-PR contract and has no diagram there), architecture-diagram contract in the mermaid skill (the pre-rebase draft's mermaid contract, deleted)
 
 <a id="contracts-doc"></a>
 **contracts doc** (`architect`):
 Optional `contracts.md` in a design directory carrying the envisioned API endpoints and data models. Written only when the design touches a public interface or durable state; the skip is stated, never silent.
 _Avoid_: data-types (the class diagram's members are types, not envisioned contracts)
+
+<a id="vocabulary-bootstrap"></a>
+**Vocabulary bootstrap** (`architect`):
+The step that creates `DDD-VOCABULARY.md` when a repo never made one. Design stage 1 runs it: propose terms from baseline-verified districts and real code symbols, grill the engineer with the ubiquitous-language scenario bank, write the glossary at the target root or the bundle dir. Options mode offers it at hand-off; review reports its absence as a P1 finding; implement modes only surface a notice.
+_Avoid_: glossary update (stage 5 adds to an existing file; the bootstrap creates the first one)
+
+<a id="draft-review"></a>
+**Draft review** (`architect`):
+Design stage 6's pre-review: a session-spawned subagent validates the draft against a blind rubric from goal.json and intent.json, then re-explores alternatives seeded with the final draft. Findings are predictions the engineer adjudicates; endorsed survivors reach intent.alternatives only through the stage-4 record (ADR-0035).
+_Avoid_: options run (whole-system, once, before design; never re-explores a draft), VALIDATE (the implement slice scorer)
 
 <a id="backlog-design"></a>
 **backlog design** (`architect`):
