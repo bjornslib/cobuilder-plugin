@@ -461,25 +461,30 @@ def test_a_failed_render_shows_the_authored_source_in_the_dialog() -> None:
     assert_has(text, "The render failed, so the source is here", claim)
 
 
-def test_a_failed_load_fails_every_tile_of_the_section() -> None:
-    """No runtime means no drawing for any level, and each tile says so.
+def test_a_failed_load_fails_every_mermaid_tile_of_the_section() -> None:
+    """No runtime means no drawing for any mermaid level, and each tile says so.
 
     The runtime loads once for the whole section, so a load that failed is a fact about
-    every tile rather than about the first one only.
+    every mermaid tile rather than about the first one only. The named runtime slot
+    (ADR-0036) is exempt: it is authored inline SVG that never enters the mermaid
+    pipeline, so it settles before the load and a failed CDN load never blanks it.
     """
     claim = "the failed runtime"
     text = tiles_text(claim)
 
     assert_has(text, "api = await loadMermaid(theme);", claim)
-    assert_any(
+    assert_has(
         text,
-        (
-            'settle(level, { state: "failed", message: reason(error) });\n        }\n        return;',
-            "for (const level of levels) settle(level, { state: \"failed\",",
-        ),
+        'settle(level, { state: "failed", message: reason(error) });',
         claim,
     )
-    assert_has(text, "securityLevel: \"strict\"", claim)
+    assert_has(text, 'if (level === "runtime") continue;', claim)
+    assert_has(
+        text,
+        '? { state: "failed", message: "authored SVG carries a <script> element" }',
+        claim,
+    )
+    assert_has(text, 'securityLevel: "strict"', claim)
 
 
 # --------------------------------------------------------- where the tiles reach

@@ -1,0 +1,20 @@
+feature: nexus-borrowings
+test_command: "uv run --with pytest pytest tests/ -q"
+thresholds:
+  accept: 0.90
+  investigate: 0.70
+max_attempts: 3
+epics:
+  - { id: "nexus-borrowings/E1", name: "the runtime SVG diagram", slices: [1, 2, 3] }
+  - { id: "nexus-borrowings/E2", name: "the draft reviewer", slices: [4] }
+  - { id: "nexus-borrowings/E3", name: "the contracts doc", slices: [5] }
+  - { id: "nexus-borrowings/E4", name: "the vocabulary bootstrap", slices: [6, 7, 8] }
+slices:
+  - { id: 1, name: "the SVG contract and its validator",                        epic: "nexus-borrowings/E1", weight: 0.15 }
+  - { id: 2, name: "build_index compiles the named slot and the contracts file", epic: "nexus-borrowings/E1", weight: 0.15 }
+  - { id: 3, name: "viewer renders the runtime tile and the contracts section",  epic: "nexus-borrowings/E1", weight: 0.15 }
+  - { id: 4, name: "stage 6 spawns the validate-and-re-explore reviewer",        epic: "nexus-borrowings/E2", weight: 0.15, behavioral: true }
+  - { id: 5, name: "contracts.md becomes a stage-5 artifact with a stated skip rule", epic: "nexus-borrowings/E3", weight: 0.10 }
+  - { id: 6, name: "the bootstrap reference and the design stage-1 fallback",    epic: "nexus-borrowings/E4", weight: 0.10, behavioral: true }
+  - { id: 7, name: "options and review surface the check",                       epic: "nexus-borrowings/E4", weight: 0.10, behavioral: true }
+  - { id: 8, name: "implement notices, the vocabulary agent guard, and the bumps", epic: "nexus-borrowings/E4", weight: 0.10 }

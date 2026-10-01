@@ -136,6 +136,11 @@ that join here.
       mini or full only when its principles are judged to matter for this
       design (ADR-0021). Full-tier loading is never automatic.
 
+   Vocabulary fallback: when `DDD-VOCABULARY.md` is absent, stage 1
+   runs the vocabulary bootstrap (`references/vocabulary-bootstrap.md`)
+   before drafting, declared to the engineer like the baseline run
+   above. `references/design-mode.md` holds the full procedure.
+
    Draft a private hypothesis and a gap list from this grounding. Keep
    both hidden until stage 2 asks the problem and the approach. The
    divergent-exploration pre-flight gate runs later, at stage 3.
@@ -379,9 +384,14 @@ hand-off.
 6a. If the corpus above leaves a finding's topic under-covered, escalate to `references/book-index.md`'s Tier 2 rule (ADR-0021): load a minimum of 3 nano-tier excerpts for the candidate books, then escalate any one of them to mini or full only when its principles are judged to matter for the finding. Full-tier loading is never automatic. This step is separate from, and does not replace, the mandatory 14-file security corpus load in step 4.
 
 7. Load `references/corpus/reviews/*` for worked audit examples.
-8. **Load the SaaS checklist:** `references/saas-checklist.md` -- the detection method for SaaS-specific security, architecture, and quality issues.
+8. **Load the SaaS checklist:** `references/saas-checklist.md` -- the detection method for SaaS-specific security, architecture, and quality issues. Run its individual detection commands from the repo toplevel. Do not run its 5-phase pipeline (Section 10). That pipeline writes scratch files outside the repo.
 
 9. Blind-spot hunt: run divergent exploration per `references/divergent-exploration.md` using the **review frame set** (§3), after the checklist above finishes. Tell hunters what the checklist already found, and instruct them to look elsewhere. This is what makes it a blind-spot hunt rather than a duplicate scan.
+
+10. Vocabulary check (ubiquitous language), after step 9. This step writes no glossary file. It adds findings and a proposal to the Technical Report.
+    - **Glossary absent** (`DDD-VOCABULARY.md` not at the repo root): report a `P1` finding. An absent glossary means no name to check against. The generic-technical-name row in `references/corpus-index.md` is the finding template.
+    - **Glossary present:** load it. Report each code name that the glossary lists under `_Avoid_`. Report each generic name (`Manager`, `Processor`, `Handler`, `Data`, `Info`) where the glossary holds a domain term for that thing. Report each term the code uses with a meaning that differs from its glossary entry. Rate each finding with the severity rules below. Count these findings under Maintainability.
+    - **Propose a vocabulary** in both cases, as a "Proposed vocabulary" section of the Technical Report. Work from your understanding of the codebase's components (real directories, classes, events, and routes) and of its business outcomes and context (README, `CLAUDE.md`, ADRs, and design docs). For each component, list the candidate terms with their DDD kind and the evidence for each. Then check whether each current name is sensible: does it say what the thing does for the business, and would a domain expert recognise it? Take terms from the code and the project's own documents, never from the corpus. When the glossary is present, propose only terms it lacks, or terms it holds in a form that the evidence contradicts.
 
 Survivors enter the normal P0/P1/P2 severity flow below. The scoring rubric, impact taxonomy, size categorisation, and both report templates need no changes.
 
@@ -390,15 +400,21 @@ Survivors enter the normal P0/P1/P2 severity flow below. The scoring rubric, imp
 
 2. **Founder Report (A)** -- Second. It translates the Technical Report findings into plain language. It carries a health score (0-100), a letter grade, and 8 category breakdown bars.
 
-Findings are business-impact-first, with right-aligned severity badges (`Blocking` / `Warning` / `Plan` / `Pass`). It also carries a phased remediation plan, AI prompt packs with copy buttons, and a comparison with the previous scan. Uses `references/reports/architecture-review-FOUNDER-TEMPLATE.html` as the design reference.
+Findings are business-impact-first, with right-aligned severity badges (`Blocking` / `Warning` / `Plan` / `Pass`). It also carries a phased remediation plan, AI prompt packs with copy buttons, and a comparison with the previous scan. Find the previous scan with the Prior scan detection rule under Historical Trending. If it finds none, state: "This is the first scan. Future audits will compare against this baseline." Uses `references/reports/architecture-review-FOUNDER-TEMPLATE.html` as the design reference.
 
 **Always generate both reports.** No toggle to skip either.
+
+**Vocabulary offer:** The offer to run the vocabulary bootstrap
+(`references/vocabulary-bootstrap.md`) comes AFTER the reports are written,
+at the run's end -- never mid-run. It waits for a yes. Before it asks, the
+offer states its evidence source: the baseline districts in `inventory.yaml`
+when the bundle has them, and verified code symbols otherwise.
 
 ### Maintenance Mode
 
 **Scope:** Trend analysis and net-new finding detection. Reuses the review corpus chain.
 
-**Prior scan detection:** Scan `docs/architecture/review/` for existing `architecture-review-YYYY-MM-DD-technical.html` files. Sort them by the date in the filename. Never scan the repo unbounded. Scan only that one directory.
+**Prior scan detection:** Follow the Prior scan detection rule under Historical Trending.
 
 If a prior scan exists:
 - Compare the current findings with the prior scan.
@@ -408,6 +424,10 @@ If a prior scan exists:
 If no prior report exists, state: "This is the first scan. Future audits will compare against this baseline."
 
 **Corpus chain:** Same as Review mode.
+
+**Vocabulary check:** When `DDD-VOCABULARY.md` exists at the repo root,
+load it where the mode names districts or terms. When it is absent,
+state the absence in the run's output. This mode writes no glossary.
 
 **Refactoring invocation:** When diagnostics flag a specific smell (god class, duplicated code, long function, and so on), load the matching `references/corpus/refactorings/<smell>.yaml` on demand. Do not pre-load all refactoring files.
 
@@ -439,6 +459,10 @@ If no prior report exists, state: "This is the first scan. Future audits will co
    in `Skill("cobuilder-artifacts")`. Use the page of the record, or
    `#/<work>/intent`. Give the engineer the link.
 
+**Vocabulary check:** When `DDD-VOCABULARY.md` exists at the repo root,
+load it where the mode names districts or terms. When it is absent,
+state the absence in the run's output. This mode writes no glossary.
+
 **Output:** ADR file(s) plus updated viewpoint indexes, under `{doc_root}`. Canonical standard: `references/standard.md` §5.4.
 
 ### Describe Mode (Architecture Description)
@@ -465,6 +489,14 @@ If no prior report exists, state: "This is the first scan. Future audits will co
    in `Skill("cobuilder-artifacts")`. Use the page of the record, or
    `#/<work>/intent`. Give the engineer the link.
 
+**Vocabulary check:** When `DDD-VOCABULARY.md` exists at the repo root,
+load it where the mode names districts or terms. For a foreign target
+the vocabulary lands in the bundle, at `<bundle-dir>/DDD-VOCABULARY.md`,
+matching the odyssey skill's `references/baseline-derivation.md`
+discipline. When it
+is absent, state the absence in the run's output. This mode writes no
+glossary.
+
 **Output:** `canvas.md` plus `boundary.yaml` for the context, an updated INVENTORY, and a list of surfaced ADR candidates, under `{doc_root}`. Minimum bar: `references/standard.md` §8.
 
 ### Debug Mode
@@ -479,13 +511,17 @@ If no prior report exists, state: "This is the first scan. Future audits will co
 4. Run that test, inside the repo.
 5. Converge on a root cause, or re-diverge on the surviving hypotheses if the test does not resolve it.
 
+**Vocabulary check:** When `DDD-VOCABULARY.md` exists at the repo root,
+load it where the mode names districts or terms. When it is absent,
+state the absence in the run's output. This mode writes no glossary.
+
 **Output:** A root-cause statement, the evidence, the specific discriminating observation that confirmed it, a recommended fix, and a regression test that would have caught it. This mode delivers diagnosis and a recommended fix, not the fix itself. It writes no report directory.
 
 ## Report Generation
 
 When you produce human-consumable deliverables, follow these rules:
 
-1. **Default to HTML.** Use the Report category (Category 8) and Data-Rich Document (Category 10) patterns.
+1. **Default to HTML.** Follow the structure of the templates in `references/reports/`.
 2. **Copy the design system:** Use the ivory/slate/clay palette from `assets/design-system.css`. Keep it self-contained, with no external dependencies.
 3. **Include a `.prompt-box`** in the page header. Document the scan parameters and the command that generated the report.
 
@@ -541,6 +577,44 @@ Render the size category as a `.tag` next to the severity badge.
 
 Do not fabricate health scores. Compute category scores from the actual findings counts.
 
+### Severity and Category Mapping
+
+The saas checklist (`references/saas-checklist.md`) rates a finding with its own scale and category names. Map each finding before you count it. Apply the checklist's escalation rules (its Section 12) first, then map the result.
+
+| Checklist severity | Counts as |
+|---|---|
+| Critical | `P0` |
+| High | `P1` |
+| Medium, Low | `P2` |
+| Informational | Not counted. List it as a note. |
+
+The Founder Report shows each level as a badge. The badge changes no score.
+
+| Level | Founder badge |
+|---|---|
+| `P0` | `Blocking` |
+| `P1` | `Warning` |
+| `P2` | `Plan` |
+| No finding in a category | `Pass` |
+
+| Checklist `category` | Scoring category |
+|---|---|
+| `security`, `cloud_platform` | Security |
+| `architecture` | Architecture |
+| `quality` | Code Quality |
+| `performance` | Scaling |
+| `observability` | Maintainability |
+| `business_risk` | Technical Debt |
+| `testing` | Testing |
+
+Four findings go to another category than their row:
+- A `security` finding about dependencies or supply chain counts under Dependency Health.
+- A `quality` finding about documentation or onboarding counts under Maintainability.
+- A `business_risk` finding about a single point of failure counts under Architecture.
+- A vocabulary finding from step 10 counts under Maintainability.
+
+The checklist's Phase 4 scorer belongs to its 5-phase pipeline (Section 10), which review mode does not run. It uses 14 categories and its own weights. If a run uses the pipeline anyway, do not report its score. The reported score comes only from the P0/P1/P2 counts and `compute_scores.py`, below.
+
 ### Category Score Formula
 
 ```
@@ -577,8 +651,12 @@ In the Founder Report, each category bar must carry a `title` or tooltip that sh
 Instead of asking the LLM to compute scores, emit a JSON snippet of P0/P1/P2 counts and pipe it through the scoring script below:
 
 ```bash
-cat scores.json | uv run "${CLAUDE_PLUGIN_ROOT}/scripts/compute_scores.py"
+uv run "${CLAUDE_PLUGIN_ROOT}/scripts/compute_scores.py" <<'EOF'
+{"Security": {"P0": 0, "P1": 1, "P2": 0}}
+EOF
 ```
+
+Pipe the JSON on stdin. Do not write a `scores.json` file into the repo.
 
 `${CLAUDE_PLUGIN_ROOT}/scripts/html_to_pdf.py` converts a finished HTML report to an A4 PDF and requires playwright.
 
@@ -605,17 +683,23 @@ If the script is unavailable, fall back to manual computation.
 
 In Review and Maintenance modes, run a lightweight DDD boundary check in the Architecture section:
 
-1. **Scan import graphs.** Flag a `PLAN`-severity architecture finding if any module is both imported by 8+ domain subdirectories and imports back from 8+ subdirectories. This is bidirectional coupling, or a god class.
-2. **Scan term overloading.** Flag a `PLAN`-severity architecture finding if the same symbol (for example, `Bank`, `Entity`, `User`) appears in more than 100 cross-module references. It must also show 2 or more semantically distinct usage patterns, for example aggregate root versus database row versus configuration namespace.
+1. **Scan import graphs.** Flag a `P2` architecture finding if any module is both imported by 8+ domain subdirectories and imports back from 8+ subdirectories. This is bidirectional coupling, or a god class.
+2. **Scan term overloading.** Flag a `P2` architecture finding if the same symbol (for example, `Bank`, `Entity`, `User`) appears in more than 100 cross-module references. It must also show 2 or more semantically distinct usage patterns, for example aggregate root versus database row versus configuration namespace.
 
-3. **Scan schema leakage.** Flag a `PLAN`-severity architecture finding if a domain package imports the `storage`, `models`, or `schema` module of another domain directly. This bypasses an explicit contract or domain event.
-4. **Scan for anti-corruption layers.** Flag a `PLAN`-severity architecture finding if subdomains communicate through a shared database schema. The finding applies whenever domain events, messages, or explicit adapter interfaces are absent.
+3. **Scan schema leakage.** Flag a `P2` architecture finding if a domain package imports the `storage`, `models`, or `schema` module of another domain directly. This bypasses an explicit contract or domain event.
+4. **Scan for anti-corruption layers.** Flag a `P2` architecture finding if subdomains communicate through a shared database schema. The finding applies whenever domain events, messages, or explicit adapter interfaces are absent.
 
 If any of checks 1-4 trigger, surface a dedicated DDD finding. Recommended remediation: produce a bounded-context glossary and a context map before you decompose god classes or extract services.
 
 ## Historical Trending
 
-For Maintenance mode, scan only `docs/architecture/review/` for prior `architecture-review-YYYY-MM-DD-*.html` files. Never scan the repo unbounded. See the Prior scan detection rule under Maintenance Mode above. Sort the files by the date in the filename. Compare with the most recent prior scan:
+**Prior scan detection** (Review and Maintenance modes). Look in these two directories only, and never scan the repo unbounded:
+1. `docs/architecture/review/`, the current location.
+2. `docs/architecture-reviews/`, a legacy location that older versions of this skill wrote to.
+
+Match the technical report of each earlier scan. Its name is `architecture-review-YYYY-MM-DD-technical.html`. A repo slug before the date is allowed, as in `architecture-review-<slug>-YYYY-MM-DD-technical.html`. Ignore a report that has today's date, because this run overwrites it. Sort the matches by the date in the filename. The newest date wins across both directories. On a tie, `docs/architecture/review/` wins. Say which file you compared against, and where it was.
+
+Compare with that prior scan:
 
 - **NEW** -- a finding not present in the prior scan
 - **ESCALATED** -- severity increased since the prior scan

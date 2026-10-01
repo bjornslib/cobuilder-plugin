@@ -1,0 +1,33 @@
+%% Data flow for nexus-borrowings.
+%% Level 2 = problem & solution. The stage-5 draft and the stage-6
+%% draft review, including the new reviewer spawn.
+sequenceDiagram
+    participant Eng as Engineer
+    participant Mode as design-mode.md (session)
+    participant Spawn as Reviewer spawn (glm-5.3-flash:cloud)
+    participant Build as shared/build_index.py
+    participant Viewer as artifact viewer
+    participant G1 as Gate 1 product doc
+
+    Eng->>Mode: Stage 0: outcome + name (before any file read)
+    Mode->>Mode: Stage 1: ground (districts, ADRs, stack card)
+    Mode->>Eng: Stage 2: five interview topics
+    Mode->>Mode: Stage 3: divergent exploration (design frame)
+    Mode->>Eng: Stage 4: challenge gate (risks, survivors)
+    Mode->>Mode: Stage 5: draft five artifacts + runtime-architecture.svg + contracts.md
+    Mode->>Spawn: blind rubric from goal.json + intent.json (draft withheld)
+    Spawn-->>Mode: findings (kind: prediction, each cited)
+    Mode->>Spawn: re-explore alternatives seeded with final draft
+    Spawn-->>Mode: survivor options + reasons
+    Mode->>Eng: stage 6 challenges, classified material / cosmetic
+
+    alt material feedback
+        Eng->>Mode: re-open stage 3 or 5
+        Mode->>Mode: revise; churn check (warn 3, cutoff 6)
+    else approve
+        Eng->>Mode: stage 7 branch (first epic only)
+        Mode->>Build: uv run build_index.py
+        Build-->>Viewer: index.json: diagrams.runtime + contracts
+        Viewer-->>Eng: intent page with runtime tile lead
+        Eng->>G1: implement:start reads intent.json + contracts.md
+    end

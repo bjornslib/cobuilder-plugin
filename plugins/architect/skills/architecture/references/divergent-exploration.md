@@ -24,7 +24,7 @@ This gate is the primary cost control. Without it, every trivial ADR or every ro
 |---|---|
 | The question has one canonical answer, such as which serializer to use once the stack card prescribes it | No genuine option space to diverge over |
 | The detected stack card (`references/stacks/`) already prescribes the pattern | The card is the converged answer, so re-deriving it wastes agents |
-| A `saas-checklist.md` grep or a `references/mechanical-enforcement.md` rule already catches the issue | A deterministic check costs less and works better than 4-6 agents |
+| A `saas-checklist.md` grep or a `references/mechanical-enforcement.md` rule already catches the issue | A deterministic check costs less and works better than 6 agents |
 | The user asked for "standard" / "quick" / "textbook" | Explicit signal that breadth is not wanted |
 
 State the gate result explicitly before proceeding either way: "Pre-flight: proceeding linearly, [condition] applies" or "Pre-flight: no abort condition met, diverging across N frames."
@@ -45,7 +45,7 @@ Isolation is mechanical, not requested. It comes from launching N separate `Agen
 ```
 Agent({
   description: "Diverge: remove load-bearing assumption",
-  subagent_type: "solution-architect",
+  subagent_type: "general-purpose",
   prompt: "PROBLEM: [paste problem statement]\n\nCONTEXT: [identical context block — same for all N branches]\n\nFRAME — Remove the load-bearing assumption:\nAssume the piece of infrastructure this design currently treats as fixed \
 is gone: the framework, the database, the network between services — pick \
 whichever the current thinking leans on hardest. What is still possible? \
@@ -58,6 +58,8 @@ concrete option with a 2-3 sentence sketch. No preamble."
 ```
 
 Repeat with a different `frame` value per call. Issue all N calls in the same message.
+
+`general-purpose` is an agent type that every session has. Any agent type works, as long as each frame runs as its own call.
 
 ## 3. Frame catalogue
 
@@ -164,9 +166,9 @@ Field notes:
 | Mode | Diverge-phase agent count | Focus-phase agent count |
 |---|---|---|
 | Design | 6 (one per design frame) | 1 critic |
-| Review | 4-6 (skip frames that duplicate ground already covered by a loaded stack card or checklist section for this codebase) | 1 critic |
+| Review | 6 (one per review frame) | 1 critic |
 | Debug | 6 (one per debug frame) | 1 critic |
 
-Total: 5-7 agent calls per divergence run. The gate in §1 is the primary cost control. It decides whether this run happens at all.
+Total: 7 agent calls per divergence run. The gate in §1 is the primary cost control. It decides whether this run happens at all.
 
 Once past the gate, do not trim the frame count as a cost-saving measure. A partial frame set reintroduces the anchoring and blind-spot risk the full catalogue exists to cover. Trim by skipping the whole exercise (§1), not by running fewer frames within it.

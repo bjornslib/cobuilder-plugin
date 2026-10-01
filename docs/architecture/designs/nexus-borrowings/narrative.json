@@ -1,0 +1,27 @@
+{
+  "intent": {
+    "tagline": "The design drafts the runtime, the contracts, and its own review.",
+    "narration": "Design mode interviews well and grounds well. What it never drafts is how the system will hold together at runtime, what surface it will expose, and whether an independent reader would challenge the choice the engineer made. Three borrowings from Nexus's pipeline close those gaps without changing what the mode is: a diagram, a file, and a review."
+  },
+  "problem_solution": {
+    "problem": "A design's diagram set ends where the runtime begins. The overview shows containers, the sequence shows messages, the class diagram shows types. Nothing shows the boundaries the system will defend, the protocol crossing each one, or the data stores and external systems the design will add. Nothing validates the draft before the only reader is the session that wrote it. And an endpoint surface or an entity model lives scattered across prose and diagrams, reviewable nowhere as a whole.",
+    "solution": "Three named additions, none of them a new mode. The runtime architecture diagram joins the design directory under its own name and renders as the lead tile of the architecture level. The stage-6 reviewer validates the draft against a blind rubric and re-explores alternatives before the engineer reads, as advisory challenges. contracts.md carries the envisioned endpoints and data models when a public surface exists, and states its own skip when none does.",
+    "narration": "Each borrowing keeps a rule the family already holds. The named slot keeps the level keys load-bearing and the overview leading. The reviewer stays session-spawned, so no plugin grows an install surface ADR-0025 forbids. The contracts file follows the path pr-draft.md already walks, so the record index gains a field without gaining a join.",
+    "beats": [
+      { "kind": "background", "text": "Nexus generates its architecture from a PRD and plan, versions every refinement, and gates execution on three independent evaluations. Cobuilder's design mode generates ADRs and diagrams and hands the rest to the engineer's judgment. The comparison found the same generate-review-approve shape under both." },
+      { "kind": "turn", "text": "The runtime diagram is the piece worth copying whole. Clustered boundaries, shape semantics, protocol-labeled edges, 8 to 30 nodes. As a named slot it needs no renumbering and no fourth narrative level, which keeps the viewer's record tiles and the readiness check untouched." },
+      { "kind": "turn", "text": "The review is the piece worth adapting. Nexus's pass-cube gate blocks on executed work; pre-code, Cobuilder's findings are predictions. So the reviewer is advisory: one validation against a blind rubric derived before it reads the draft, plus one re-exploration seeded with the final draft, its output classified by the engineer as stage 6 already classifies feedback." },
+      { "kind": "turn", "text": "The contracts file is the piece worth adding. Endpoints and data models do not belong in the interview record, and prose in the ADR hides them. A separate artifact, shown before write, skipped with a stated reason when no public surface is touched, compiles into the record exactly as pr-draft.md already does." },
+      { "kind": "discovery", "text": "Nexus's architecture prompt is a contract, not a wish. The runtime-architecture reference borrows its hard rules verbatim: clusters for client, api, data, infra, external; rounded services, cylinder data stores, component libraries, dashed external systems; every boundary edge labeled with its protocol; one page, 8 to 30 nodes." }
+    ]
+  },
+  "architecture": {
+    "narration": "The change touches four layers of the plugin family and none of them's public contracts beyond the manifest. Design mode's reference prose gains the contract and the reviewer step. The shared build script gains one named read and one record field. The viewer gains one tile. The marketplace manifest gains versions. Nothing else moves.",
+    "beats": [
+      { "kind": "background", "text": "The design record already flows authored files to the bundle to the viewer. goal, intent, assessment, narrative, and the three diagrams are projected by build_index.py; pr-draft.md rides along when non-empty. A design without a file simply omits the key." },
+      { "kind": "turn", "text": "The runtime slot rides the same dict. build_index reads diagrams/runtime-architecture.svg into the runtime key, and the design's architecture level renders the run tile ahead of its class tile. The diagrams dict keeps its numeric keys for the three levels and gains one named key." },
+      { "kind": "turn", "text": "The reviewer is a spawn, not a component. The session runs it once per review round, before the engineer reads, under the same dual-path guard the diagram authoring subagent already uses. Its findings land as classified challenges; if the engineer takes a finding, material feedback re-opens stage 3, cosmetic re-opens stage 5." },
+      { "kind": "discovery", "text": "The contracts projection is a copy of the pr-draft block. An authored file, a non-empty check, a record field, a viewer section, and a skip line in the design's goal so the absence is stated rather than silent." }
+    ]
+  }
+}

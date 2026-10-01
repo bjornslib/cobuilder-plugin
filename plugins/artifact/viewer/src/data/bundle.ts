@@ -287,9 +287,12 @@ export interface DesignRecord {
   intent?: DesignIntent;
   assessment?: DesignAssessment;
   narrative?: DesignNarrative;
-  /** Mermaid source, keyed by level number as a string: `"1"`, `"2"`, `"3"`. */
+  /** Drawing source, keyed by level: `"1"`, `"2"`, `"3"` as mermaid source, plus
+   *  the named `"runtime"` slot as authored inline SVG (ADR-0036). */
   diagrams?: Record<string, string>;
   pr_draft?: string;
+  /** Authored markdown, from the design's `contracts.md` (ADR-0036). Absence is silence, not an error. */
+  contracts?: string;
 }
 
 /** Every design, keyed by the id the index's design entity carries. */

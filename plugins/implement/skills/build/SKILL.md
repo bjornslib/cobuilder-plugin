@@ -333,6 +333,9 @@ Rules:
 
 ## Gate 2 — Architecture
 
+If a design record exists (see the design mode record section above), ground
+this document in its `contracts.md` as well as its `intent.json` (ADR-0036).
+
 Read existing code before authoring `02-architecture.md`:
 
 ```markdown
@@ -407,6 +410,9 @@ the reason.
 ---
 
 ## Gate 3 — Program Design (feature level)
+
+If a design record exists, ground this document in its `contracts.md` as
+well as its `intent.json` (ADR-0036).
 
 Define code structures in `03-program-design.md`:
 

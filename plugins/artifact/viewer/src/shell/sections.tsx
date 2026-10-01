@@ -26,6 +26,7 @@ import { useEffect, useMemo } from "react";
 
 import type { LucideIcon } from "lucide-react";
 import {
+  Boxes,
   ChevronRight,
   ClipboardCheck,
   Compass,
@@ -601,6 +602,25 @@ export function PullRequestsSection({
           lead="The pull request that the design planned before the code existed. This pull request is not open."
         >
           <Box label="Draft">{excerpt(work.record.pr_draft, 260)}</Box>
+        </Panel>
+      ) : null}
+
+      {/*
+        THE CONTRACTS SECTION RIDES THE ENVISIONED PULL REQUEST (ADR-0036). The
+        contracts.md file states the endpoints and data models this work will
+        create, so a reader of the pull-request level sees what the surface will
+        be next to the draft that describes it. A design that touched no public
+        surface omits the key, and this section renders nothing — absence, not
+        an error.
+      */}
+      {work.record?.contracts ? (
+        <Panel
+          span="band"
+          title="The contracts this work will create"
+          icon={Boxes}
+          lead="The endpoints and data models the design envisioned, written before the code existed. These are predictions grounded in the design's ADR, not checks."
+        >
+          <Box label="Contracts">{excerpt(work.record.contracts, 260)}</Box>
         </Panel>
       ) : null}
 

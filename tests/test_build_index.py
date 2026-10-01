@@ -787,3 +787,66 @@ def test_project_string_list_rejects_bad_shapes_directly():
     )
     assert build_index.project_string_list(None, "done_when") == ([], None)
     assert build_index.project_string_list([], "abort_if") == ([], None)
+
+
+# --- ADR-0036: the named runtime slot and the contracts file ---
+
+
+def write_design_artifacts(repo: Path, design_id: str, with_files: set[str]) -> None:
+    """Author a minimal-but-complete design directory; `with_files` selects
+    which of pr-draft.md / contracts.md / diagrams/runtime-architecture.svg
+    exist."""
+    design_dir = repo / "docs" / "architecture" / "designs" / design_id
+    design_dir.mkdir(parents=True, exist_ok=True)
+    goal = {
+        "name": design_id,
+        "outcome": "An outcome.",
+        "epics": [{"id": "E1", "state": "pending"}],
+        "stage": "design",
+    }
+    (design_dir / "goal.json").write_text(json.dumps(goal))
+    if "pr-draft" in with_files:
+        (design_dir / "pr-draft.md").write_text("## Problem\n\nA draft.\n")
+    if "contracts" in with_files:
+        (design_dir / "contracts.md").write_text("## Endpoints\n\n- `GET /x`\n")
+    if "runtime" in with_files:
+        diagrams = design_dir / "diagrams"
+        diagrams.mkdir(parents=True, exist_ok=True)
+        (diagrams / "runtime-architecture.svg").write_text(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+            '<title>runtime</title></svg>\n'
+        )
+
+
+def test_design_runtime_diagram_compiles(repo, bundle_dir):
+    write_design_artifacts(repo, "with-runtime", {"runtime"})
+    write_design_artifacts(repo, "without-runtime", set())
+
+    index, adr_records, design_records, failures = build_index.build_index(repo, bundle_dir)
+    assert failures == []
+
+    assert 'runtime' in design_records["with-runtime"]["diagrams"]
+    assert "viewBox" in design_records["with-runtime"]["diagrams"]["runtime"]
+    assert "1" not in design_records["with-runtime"]["diagrams"]
+    assert "diagrams" not in design_records["without-runtime"]
+
+
+def test_design_contracts_projection(repo, bundle_dir):
+    write_design_artifacts(repo, "with-contracts", {"pr-draft", "contracts"})
+    write_design_artifacts(repo, "without-contracts", {"pr-draft"})
+
+    index, adr_records, design_records, failures = build_index.build_index(repo, bundle_dir)
+    assert failures == []
+
+    assert "contracts" in design_records["with-contracts"]
+    assert "GET /x" in design_records["with-contracts"]["contracts"]
+    assert "pr_draft" in design_records["with-contracts"]
+    assert "contracts" not in design_records["without-contracts"]
+    assert "pr_draft" in design_records["without-contracts"]
+
+    # An empty contracts file yields no key, not a placeholder.
+    design_dir = repo / "docs" / "architecture" / "designs" / "without-contracts"
+    (design_dir / "contracts.md").write_text("\n")
+    index, adr_records, design_records, failures = build_index.build_index(repo, bundle_dir)
+    assert failures == []
+    assert "contracts" not in design_records["without-contracts"]

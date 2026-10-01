@@ -1,0 +1,55 @@
+%% Data types for nexus-borrowings.
+%% Level 3 = architecture. Types the record index and viewer gain; solid
+%% members exist today, members marked "pending" are predictions.
+classDiagram
+    class DesignRecord {
+        +goal: Goal
+        +intent: Intent
+        +assessment: Assessment
+        +narrative: Narrative
+        +prDraft: string
+        +contracts: string
+        +diagrams: dict_string_string
+    }
+    note for DesignRecord "contracts and diagrams['runtime'] are new in ADR-0036"
+
+    class DiagramsSlot {
+        +level_1: string (C4Container)
+        +level_2: string (sequenceDiagram)
+        +level_3: string (classDiagram)
+        +runtime: string (C4Container, named slot)
+    }
+    DesignRecord *-- DiagramsSlot : diagrams
+
+    class ContractFile {
+        +endpoints: list of EndpointContract
+        +dataModels: list of EntityContract
+        +skipReason: string or None
+    }
+    DesignRecord *-- ContractFile : attached when non-empty
+
+    class EndpointContract {
+        +method: string
+        +path: string
+        +purpose: string
+    }
+    class EntityContract {
+        +name: string
+        +fields: list of FieldSpec
+        +relations: list of string
+    }
+    ContractFile *-- EndpointContract
+    ContractFile *-- EntityContract
+
+    class StageFlow {
+        +draftReviewRun: bool
+        +reviewerFindings: list of Challenge
+        +classification: material or cosmetic
+    }
+    note for StageFlow "min_work.draft_review_run is new in ADR-0036;"
+    note for StageFlow "reviewer is advisory, never a numeric blocker"
+
+    class GateDoc {
+        +readContracts(): Contracts-first grounding for Gate 2 and Gate 3
+    }
+    note for GateDoc "implement build gates ground in contracts.md alongside intent.json"

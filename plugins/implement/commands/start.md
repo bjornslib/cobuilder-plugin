@@ -23,6 +23,13 @@ Skill("build", args="implement $ARGUMENTS")
 Run `/implement:install` first, if this repo has not run it yet. It sets up
 habit-hooks, which the red-green-validate loop below relies on.
 
+With the initial checks, before the first gate runs, check whether
+`DDD-VOCABULARY.md` exists at the repository root, and state the result.
+When it is absent, say that vocabulary checking will run against no
+glossary, and that one is created with the vocabulary bootstrap in
+`/architect:design` stage 1 (ADR-0036). Start never runs the bootstrap
+itself, and it never interviews the engineer about terms mid-feature.
+
 ## What this writes
 
 This command writes plan documents and blind rubrics to disk:

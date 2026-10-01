@@ -1,0 +1,80 @@
+{
+  "name": "nexus-borrowings",
+  "title": "Design mode drafts the runtime structure, the contracts, and the draft review",
+  "created": "2026-09-29",
+  "outcome": "A design drafted in design mode carries its runtime structure. The design directory holds a runtime architecture diagram as a named diagram slot beside the three narrative levels, a contracts file when the design touches a public interface, and stage 6 runs a draft review subagent that validates against a blind rubric and re-explores alternatives before the engineer reads.",
+  "done_when": [
+    "A design drafted in the updated design mode contains docs/architecture/designs/<name>/diagrams/runtime-architecture.svg, build_index.py compiles it to record[\"diagrams\"][\"runtime\"], check_design_svg.py passes it, and the viewer renders it as the lead tile of the design's architecture level with the level-1 overview untouched",
+    "A design whose design mode detects a public interface or durable state carries contracts.md compiled into its record index entity; a design that touches none carries none, and the skip is stated",
+    "Stage 6 runs the validate-and-re-explore reviewer before the engineer reads, its findings enter the review as classified challenges, and goal.min_work.draft_review_run records that it ran",
+    "Every architect and implement mode checks DDD-VOCABULARY.md; a repo without one gets it bootstrapped from the baseline districts and a grilling interview in design stage 1, options mode offers the bootstrap at hand-off, review reports the absence as a P1 finding, implement's vocabulary agent never returns a silent CLEAN from a missing file",
+    "Marketplace manifest versions for architect, implement, and artifact are bumped so installed users auto-update"
+  ],
+  "abort_if": [
+    "The named diagram slot breaks an existing designs record consumer \u2014 build_index.py designs projections or the viewer's design route",
+    "The runtime-architecture contract cannot express clustered boundaries and protocol-labeled boundary edges in hand-authored SVG within the single-page 8-to-30-node constraint",
+    "The vocabulary bootstrap's grilling interview would propose terms not grounded in baseline-verified districts and real code symbols"
+  ],
+  "min_work": {
+    "derived_from": "3 districts (cobuilder-packaging, architect, artifact), colliding ADRs 0005, 0018, 0025, 0035, 1 boundary rule (ADR-0020 build-free viewer)",
+    "alternatives_explored": 5,
+    "boundary_rules_checked": true,
+    "challenge_stage_run": true,
+    "draft_review_run": true,
+    "note": "Round 2 (PR-26 reconciliation) ran the review inline with the engineer in chat; the built mode now spawns the reviewer itself. See the design's note."
+  },
+  "limits": {
+    "warn_after_rounds": 3,
+    "cutoff_rounds": 6
+  },
+  "epics": [
+    {
+      "id": "E1",
+      "slug": "runtime-arch-diagram",
+      "branch": "design/nexus-borrowings/runtime-arch-diagram",
+      "pr": null,
+      "state": "implemented",
+      "note": "All eight slices built in one pass on design/nexus-borrowings/runtime-arch-diagram (2026-10-01): contract, validator, build_index projections, viewer tile + contracts section, stage-6 spawn, contracts artifact, vocabulary bootstrap + mode surfaces, implement guards + bumps. Behavioral rubrics score on the first real design runs."
+    },
+    {
+      "id": "E2",
+      "slug": "draft-reviewer",
+      "branch": "design/nexus-borrowings/runtime-arch-diagram",
+      "pr": null,
+      "state": "implemented",
+      "note": "All eight slices built in one pass on design/nexus-borrowings/runtime-arch-diagram (2026-10-01): contract, validator, build_index projections, viewer tile + contracts section, stage-6 spawn, contracts artifact, vocabulary bootstrap + mode surfaces, implement guards + bumps. Behavioral rubrics score on the first real design runs."
+    },
+    {
+      "id": "E3",
+      "slug": "contracts-doc",
+      "branch": "design/nexus-borrowings/runtime-arch-diagram",
+      "pr": null,
+      "state": "implemented",
+      "note": "All eight slices built in one pass on design/nexus-borrowings/runtime-arch-diagram (2026-10-01): contract, validator, build_index projections, viewer tile + contracts section, stage-6 spawn, contracts artifact, vocabulary bootstrap + mode surfaces, implement guards + bumps. Behavioral rubrics score on the first real design runs."
+    },
+    {
+      "id": "E4",
+      "slug": "vocabulary-bootstrap",
+      "branch": "design/nexus-borrowings/runtime-arch-diagram",
+      "pr": null,
+      "state": "implemented",
+      "note": "All eight slices built in one pass on design/nexus-borrowings/runtime-arch-diagram (2026-10-01): contract, validator, build_index projections, viewer tile + contracts section, stage-6 spawn, contracts artifact, vocabulary bootstrap + mode surfaces, implement guards + bumps. Behavioral rubrics score on the first real design runs."
+    }
+  ],
+  "stage": "implemented",
+  "supersedes": null,
+  "rounds": [
+    {
+      "n": 1,
+      "changed": true,
+      "feedback_class": "material"
+    },
+    {
+      "n": 2,
+      "changed": true,
+      "feedback_class": "material"
+    }
+  ],
+  "approved_by": "Bjorn Schliebitz",
+  "approved_at": "2026-09-29"
+}

@@ -39,3 +39,6 @@ plugins/artifact/viewer/.vitest/
 .cobuilder-architect/digital-curator-80f83abb/docs/
 
 .venv/
+
+# TypeScript incremental build state, from the artifact viewer.
+plugins/artifact/viewer/tsconfig.tsbuildinfo

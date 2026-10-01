@@ -144,6 +144,21 @@ def test_marketplace_lists_all_five_plugins() -> None:
     }
 
 
+@pytest.mark.parametrize("plugin_dir", plugin_dirs(), ids=lambda p: p.name)
+def test_plugin_version_matches_marketplace_entry(plugin_dir: Path) -> None:
+    """A version bump must land in plugin.json and marketplace.json together.
+    A mismatch leaves installed copies on the old version, or lists a version
+    the plugin does not declare."""
+    marketplace = json.loads((REPO_ROOT / ".claude-plugin" / "marketplace.json").read_text())
+    entries = {p["name"]: p for p in marketplace["plugins"]}
+    assert plugin_dir.name in entries, f"marketplace.json has no entry for {plugin_dir.name}"
+    declared = json.loads(manifest_path(plugin_dir).read_text())["version"]
+    listed = entries[plugin_dir.name]["version"]
+    assert declared == listed, (
+        f"{plugin_dir.name}: plugin.json says {declared}, marketplace.json says {listed}"
+    )
+
+
 def test_umbrella_plugin_depends_on_the_other_four() -> None:
     data = json.loads(manifest_path(PLUGINS_DIR / "cobuilder-full-lifecycle").read_text())
     deps = {d.split("@")[0] for d in data.get("dependencies", [])}
