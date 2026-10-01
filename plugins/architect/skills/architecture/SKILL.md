@@ -384,7 +384,7 @@ hand-off.
 6a. If the corpus above leaves a finding's topic under-covered, escalate to `references/book-index.md`'s Tier 2 rule (ADR-0021): load a minimum of 3 nano-tier excerpts for the candidate books, then escalate any one of them to mini or full only when its principles are judged to matter for the finding. Full-tier loading is never automatic. This step is separate from, and does not replace, the mandatory 14-file security corpus load in step 4.
 
 7. Load `references/corpus/reviews/*` for worked audit examples.
-8. **Load the SaaS checklist:** `references/saas-checklist.md` -- the detection method for SaaS-specific security, architecture, and quality issues.
+8. **Load the SaaS checklist:** `references/saas-checklist.md` -- the detection method for SaaS-specific security, architecture, and quality issues. Run its individual detection commands from the repo toplevel. Do not run its 5-phase pipeline (Section 10). That pipeline writes scratch files outside the repo.
 
 9. Blind-spot hunt: run divergent exploration per `references/divergent-exploration.md` using the **review frame set** (§3), after the checklist above finishes. Tell hunters what the checklist already found, and instruct them to look elsewhere. This is what makes it a blind-spot hunt rather than a duplicate scan.
 
@@ -400,7 +400,7 @@ Survivors enter the normal P0/P1/P2 severity flow below. The scoring rubric, imp
 
 2. **Founder Report (A)** -- Second. It translates the Technical Report findings into plain language. It carries a health score (0-100), a letter grade, and 8 category breakdown bars.
 
-Findings are business-impact-first, with right-aligned severity badges (`Blocking` / `Warning` / `Plan` / `Pass`). It also carries a phased remediation plan, AI prompt packs with copy buttons, and a comparison with the previous scan. Uses `references/reports/architecture-review-FOUNDER-TEMPLATE.html` as the design reference.
+Findings are business-impact-first, with right-aligned severity badges (`Blocking` / `Warning` / `Plan` / `Pass`). It also carries a phased remediation plan, AI prompt packs with copy buttons, and a comparison with the previous scan. Find the previous scan with the Prior scan detection rule under Historical Trending. If it finds none, state: "This is the first scan. Future audits will compare against this baseline." Uses `references/reports/architecture-review-FOUNDER-TEMPLATE.html` as the design reference.
 
 **Always generate both reports.** No toggle to skip either.
 
@@ -414,7 +414,7 @@ when the bundle has them, and verified code symbols otherwise.
 
 **Scope:** Trend analysis and net-new finding detection. Reuses the review corpus chain.
 
-**Prior scan detection:** Scan `docs/architecture/review/` for existing `architecture-review-YYYY-MM-DD-technical.html` files. Sort them by the date in the filename. Never scan the repo unbounded. Scan only that one directory.
+**Prior scan detection:** Follow the Prior scan detection rule under Historical Trending.
 
 If a prior scan exists:
 - Compare the current findings with the prior scan.
@@ -588,6 +588,15 @@ The saas checklist (`references/saas-checklist.md`) rates a finding with its own
 | Medium, Low | `P2` |
 | Informational | Not counted. List it as a note. |
 
+The Founder Report shows each level as a badge. The badge changes no score.
+
+| Level | Founder badge |
+|---|---|
+| `P0` | `Blocking` |
+| `P1` | `Warning` |
+| `P2` | `Plan` |
+| No finding in a category | `Pass` |
+
 | Checklist `category` | Scoring category |
 |---|---|
 | `security`, `cloud_platform` | Security |
@@ -604,7 +613,7 @@ Four findings go to another category than their row:
 - A `business_risk` finding about a single point of failure counts under Architecture.
 - A vocabulary finding from step 10 counts under Maintainability.
 
-The checklist's Phase 4 scorer runs on its own, from the same findings data. It is a scan-time diagnostic with 14 categories and its own weights. Do not report its score. The reported score comes only from the P0/P1/P2 counts and `compute_scores.py`, below.
+The checklist's Phase 4 scorer belongs to its 5-phase pipeline (Section 10), which review mode does not run. It uses 14 categories and its own weights. If a run uses the pipeline anyway, do not report its score. The reported score comes only from the P0/P1/P2 counts and `compute_scores.py`, below.
 
 ### Category Score Formula
 
@@ -642,8 +651,12 @@ In the Founder Report, each category bar must carry a `title` or tooltip that sh
 Instead of asking the LLM to compute scores, emit a JSON snippet of P0/P1/P2 counts and pipe it through the scoring script below:
 
 ```bash
-cat scores.json | uv run "${CLAUDE_PLUGIN_ROOT}/scripts/compute_scores.py"
+uv run "${CLAUDE_PLUGIN_ROOT}/scripts/compute_scores.py" <<'EOF'
+{"Security": {"P0": 0, "P1": 1, "P2": 0}}
+EOF
 ```
+
+Pipe the JSON on stdin. Do not write a `scores.json` file into the repo.
 
 `${CLAUDE_PLUGIN_ROOT}/scripts/html_to_pdf.py` converts a finished HTML report to an A4 PDF and requires playwright.
 
@@ -670,17 +683,23 @@ If the script is unavailable, fall back to manual computation.
 
 In Review and Maintenance modes, run a lightweight DDD boundary check in the Architecture section:
 
-1. **Scan import graphs.** Flag a `PLAN`-severity architecture finding if any module is both imported by 8+ domain subdirectories and imports back from 8+ subdirectories. This is bidirectional coupling, or a god class.
-2. **Scan term overloading.** Flag a `PLAN`-severity architecture finding if the same symbol (for example, `Bank`, `Entity`, `User`) appears in more than 100 cross-module references. It must also show 2 or more semantically distinct usage patterns, for example aggregate root versus database row versus configuration namespace.
+1. **Scan import graphs.** Flag a `P2` architecture finding if any module is both imported by 8+ domain subdirectories and imports back from 8+ subdirectories. This is bidirectional coupling, or a god class.
+2. **Scan term overloading.** Flag a `P2` architecture finding if the same symbol (for example, `Bank`, `Entity`, `User`) appears in more than 100 cross-module references. It must also show 2 or more semantically distinct usage patterns, for example aggregate root versus database row versus configuration namespace.
 
-3. **Scan schema leakage.** Flag a `PLAN`-severity architecture finding if a domain package imports the `storage`, `models`, or `schema` module of another domain directly. This bypasses an explicit contract or domain event.
-4. **Scan for anti-corruption layers.** Flag a `PLAN`-severity architecture finding if subdomains communicate through a shared database schema. The finding applies whenever domain events, messages, or explicit adapter interfaces are absent.
+3. **Scan schema leakage.** Flag a `P2` architecture finding if a domain package imports the `storage`, `models`, or `schema` module of another domain directly. This bypasses an explicit contract or domain event.
+4. **Scan for anti-corruption layers.** Flag a `P2` architecture finding if subdomains communicate through a shared database schema. The finding applies whenever domain events, messages, or explicit adapter interfaces are absent.
 
 If any of checks 1-4 trigger, surface a dedicated DDD finding. Recommended remediation: produce a bounded-context glossary and a context map before you decompose god classes or extract services.
 
 ## Historical Trending
 
-For Maintenance mode, scan only `docs/architecture/review/` for prior `architecture-review-YYYY-MM-DD-*.html` files. Never scan the repo unbounded. See the Prior scan detection rule under Maintenance Mode above. Sort the files by the date in the filename. Compare with the most recent prior scan:
+**Prior scan detection** (Review and Maintenance modes). Look in these two directories only, and never scan the repo unbounded:
+1. `docs/architecture/review/`, the current location.
+2. `docs/architecture-reviews/`, a legacy location that older versions of this skill wrote to.
+
+Match the technical report of each earlier scan. Its name is `architecture-review-YYYY-MM-DD-technical.html`. A repo slug before the date is allowed, as in `architecture-review-<slug>-YYYY-MM-DD-technical.html`. Ignore a report that has today's date, because this run overwrites it. Sort the matches by the date in the filename. The newest date wins across both directories. On a tie, `docs/architecture/review/` wins. Say which file you compared against, and where it was.
+
+Compare with that prior scan:
 
 - **NEW** -- a finding not present in the prior scan
 - **ESCALATED** -- severity increased since the prior scan

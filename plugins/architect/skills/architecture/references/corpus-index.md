@@ -144,7 +144,7 @@ guidance for future authoring.
 
 | Symptom / situation | Files to consult | Escalate to Book? |
 |---|---|---|
-| React component mixes presentation and business logic | corpus/principles/react_typescript/001_component_archictecure.yaml, corpus/principles/react_typescript/005_ddd_frontend.yaml | None |
+| React component mixes presentation and business logic | corpus/principles/react_typescript/001_component_architecture.yaml, corpus/principles/react_typescript/005_ddd_frontend.yaml | None |
 | Hooks have hidden dependencies or stale closures | corpus/principles/react_typescript/004_react_hooks.yaml | None |
 | TypeScript types are too permissive or any-heavy | corpus/principles/react_typescript/002_typescript_idioms.yaml | None |
 | Need a style guide reference for a React/TS codebase | corpus/principles/react_typescript/003_airbnb_style.yaml | None |
