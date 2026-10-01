@@ -21,7 +21,8 @@ stage; the offers never start without consent.
 
 Work from the baseline districts in `inventory.yaml` in the bundle, and from
 verified code symbols. Real directories, real classes, real methods, real
-events. The baseline discipline rules a boundary without verification as a
+events. Code symbols are the start. When the bundle has no baseline, they
+are the only source, and the offer or run says so before it asks. The baseline discipline rules a boundary without verification as a
 defect; a term with the same weakness is a defect too. List term candidates
 per district, and annotate each candidate with its DDD kind.
 
@@ -32,7 +33,15 @@ cards under the existing corpus load cap, by the same rule the ground stage
 uses: choose from the districts' symptoms. Load the card a district's
 symptom maps to, not every card in the directory.
 
-The terms come from the code and the baseline only, never from the corpus.
+Then check that each name is sensible. Read the project's own documents
+(README, `CLAUDE.md`, ADRs, design docs) for its business outcomes and
+context. For each candidate, ask whether the name says what the thing does
+for that business, and whether a domain expert would recognise it. A name
+that fails the check stays a candidate, and carries a proposed replacement
+and the evidence for it. The grill in step 2 settles which name holds.
+
+The terms come from the code, the baseline, and the project's own documents,
+never from the corpus.
 The corpus supplies the questions and the entry discipline. It never
 supplies the words. A term that appears in a corpus card but nowhere in the
 districts is not a candidate.

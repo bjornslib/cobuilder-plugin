@@ -10,7 +10,7 @@ Stack-adapted for **Python / FastAPI**, **Next.js / TypeScript**, and **Supabase
 
 ## How to Use This Checklist
 
-Run each detection command against your codebase. For every finding, follow the remediation pattern. Use the 5-phase scanner pipeline (Section 11) for automated analysis.
+Run each detection command against your codebase. For every finding, follow the remediation pattern. Use the 5-phase scanner pipeline (Section 10) for automated analysis.
 
 ### Core Principles
 

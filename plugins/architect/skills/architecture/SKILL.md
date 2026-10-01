@@ -388,6 +388,11 @@ hand-off.
 
 9. Blind-spot hunt: run divergent exploration per `references/divergent-exploration.md` using the **review frame set** (§3), after the checklist above finishes. Tell hunters what the checklist already found, and instruct them to look elsewhere. This is what makes it a blind-spot hunt rather than a duplicate scan.
 
+10. Vocabulary check (ubiquitous language), after step 9. This step writes no glossary file. It adds findings and a proposal to the Technical Report.
+    - **Glossary absent** (`DDD-VOCABULARY.md` not at the repo root): report a `P1` finding. An absent glossary means no name to check against. The generic-technical-name row in `references/corpus-index.md` is the finding template.
+    - **Glossary present:** load it. Report each code name that the glossary lists under `_Avoid_`. Report each generic name (`Manager`, `Processor`, `Handler`, `Data`, `Info`) where the glossary holds a domain term for that thing. Report each term the code uses with a meaning that differs from its glossary entry. Rate each finding with the severity rules below. Count these findings under Maintainability.
+    - **Propose a vocabulary** in both cases, as a "Proposed vocabulary" section of the Technical Report. Work from your understanding of the codebase's components (real directories, classes, events, and routes) and of its business outcomes and context (README, `CLAUDE.md`, ADRs, and design docs). For each component, list the candidate terms with their DDD kind and the evidence for each. Then check whether each current name is sensible: does it say what the thing does for the business, and would a domain expert recognise it? Take terms from the code and the project's own documents, never from the corpus. When the glossary is present, propose only terms it lacks, or terms it holds in a form that the evidence contradicts.
+
 Survivors enter the normal P0/P1/P2 severity flow below. The scoring rubric, impact taxonomy, size categorisation, and both report templates need no changes.
 
 **Output:** Two linked HTML artifacts, written to `docs/architecture/review/`:
@@ -399,12 +404,11 @@ Findings are business-impact-first, with right-aligned severity badges (`Blockin
 
 **Always generate both reports.** No toggle to skip either.
 
-**Vocabulary check:** When `DDD-VOCABULARY.md` is absent, the
-ubiquitous-language check reports a `P1` finding -- an absent glossary
-means no name to check against. The generic-technical-name row in
-`references/corpus-index.md` is the finding template. The offer to run
-the vocabulary bootstrap (`references/vocabulary-bootstrap.md`) comes
-AFTER the reports are written, at the run's end -- never mid-run.
+**Vocabulary offer:** The offer to run the vocabulary bootstrap
+(`references/vocabulary-bootstrap.md`) comes AFTER the reports are written,
+at the run's end -- never mid-run. It waits for a yes. Before it asks, the
+offer states its evidence source: the baseline districts in `inventory.yaml`
+when the bundle has them, and verified code symbols otherwise.
 
 ### Maintenance Mode
 
@@ -517,7 +521,7 @@ state the absence in the run's output. This mode writes no glossary.
 
 When you produce human-consumable deliverables, follow these rules:
 
-1. **Default to HTML.** Use the Report category (Category 8) and Data-Rich Document (Category 10) patterns.
+1. **Default to HTML.** Follow the structure of the templates in `references/reports/`.
 2. **Copy the design system:** Use the ivory/slate/clay palette from `assets/design-system.css`. Keep it self-contained, with no external dependencies.
 3. **Include a `.prompt-box`** in the page header. Document the scan parameters and the command that generated the report.
 

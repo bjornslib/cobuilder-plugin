@@ -6,7 +6,7 @@ status: active
 
 # Book Reference Index
 
-Read this file **first** to pick a book. Do not Read any `books/<name>.md` (or its `.nano.md`/`.mini.md` sibling) until a row below clearly fits the task — except when a Self-load default fires (see next section).
+Read this file **first** to pick a book. Do not Read any `books/<name>.md` (or its `.nano.md`/`.mini.md` sibling) until a row below clearly fits the task.
 
 Per ADR-0021, each book below is vendored in three tiers: `<name>.nano.md`
 (about 20-40 lines), `<name>.mini.md` (about 80-150 lines), and `<name>.md`
@@ -20,7 +20,6 @@ Books are loaded ONLY after the corpus (Tier 1) has been consulted and found ins
 ### Escalation triggers
 - The corpus YAML covers the topic but at a level too shallow for the specific question (e.g., corpus has DDD intro but you need strategic context mapping).
 - The question spans multiple corpus categories and needs a synthesized treatment.
-- A full architecture audit requires cross-cutting canonical depth (use `unified-software-engineering.md`).
 
 ### Tier 2 escalation: nano first, mini or full only when it matters
 
@@ -29,7 +28,7 @@ Once Tier 1 has narrowed the candidate books for the task:
 1. **Load a minimum of three `nano`-tier excerpts** for the candidate books — never fewer, and never zero. This is the mandatory first read of Tier 2, cheap enough to happen even when the topic turns out not to matter.
 2. **Escalate any one of those three books to `mini` or `full` only when you judge that book's principles matter for the specific problem at hand.** A book that does not clear that judgment stays at the nano tier for the rest of the task. Do not escalate all three. Do not escalate none when one clearly matters.
 3. **Full-tier loading is never automatic.** Reading `<name>.md` in full is the expensive step in this ladder, and it is conditional on what the nano (and, where escalated, mini) tier already showed — not a default that follows the nano read on every task.
-4. `unified-software-engineering.md` never enters this ladder. It has no nano/mini tier upstream, and it stays load-alone per the existing rule below (a full architecture audit still loads it directly, with nothing else).
+4. `unified-software-engineering.md` never enters this ladder. It has no nano/mini tier upstream, and it stays load-alone per the existing rule below. No task loads it by default.
 
 ### Anti-match: when NOT to escalate
 - If a corpus YAML file already covers the pattern with before/after examples and heuristics, use it instead of a book.
@@ -54,8 +53,7 @@ Once Tier 1 has narrowed the candidate books for the task:
 | `working-effectively-with-legacy-code.md` | seams, characterization-tests, legacy | 331 | Untested or fragile legacy — seams, characterization tests, dependency breaking. |
 | `release-it.md` | resilience, circuit-breakers, bulkheads, retries | 343 | Production-resilience patterns — timeouts, retries, bulkheads, observability. |
 | `designing-data-intensive-applications.md` | replication, partitioning, streams, schema | 307 | Data systems — replication, partitioning, transactions, streams, schema evolution. |
-| `unified-software-engineering.md` | synthesis, defaults, **load-alone** | 1023 | Cross-cutting tasks spanning 3+ rows above. **Load alone — never alongside another book.** |
-| `unified-software-engineering.md` (audit default) | full-audit, multi-seam, architecture-review | 1023 | **Full architecture audit / cross-cutting codebase review** — the default for any review that touches multiple seams (engine + observability + boundaries, etc.). **Load alone.** |
+| `unified-software-engineering.md` | synthesis, **load-alone** | 1023 | Cross-cutting tasks spanning 3+ rows above. **Load alone — never alongside another book.** |
 
 ## Anti-match: when NOT to load a book
 
@@ -63,9 +61,9 @@ Once Tier 1 has narrowed the candidate books for the task:
 - Adding/checking grep antipatterns (bare `except`, in-function imports, missing types, manual singletons) → `../mechanical-enforcement.md`, not a book.
 - SaaS security checks (tenant isolation, rate limiting, webhook validation) → `../saas-checklist.md`, not a book.
 - LLM-harness security (prompt injection, MCP trust, hook shell, signal atomicity) → `../harness-security.md`, not a book.
-- **Per-method assignment** for a god-class decomposition (deciding which method belongs in which extracted collaborator) → SKILL.md's Domain-Driven Design Assessment guidance, not `clean-architecture.md`. NOTE: this anti-match is narrow. A *full architecture audit* that includes the runner is broader and does NOT trigger this row — use the audit default in *Self-load defaults* above.
+- **Per-method assignment** for a god-class decomposition (deciding which method belongs in which extracted collaborator) → SKILL.md's Domain-Driven Design Assessment guidance, not `clean-architecture.md`.
 - Trivial edits (typos, single-line tweaks, doc comments) → no book.
-- Already loaded one book this task → only consider the *one* companion the SKILL.md decision table whitelists.
+- Already escalated one book this task → do not escalate all the candidates. See *Tier 2 escalation* above.
 - If a corpus YAML file already covers the pattern with examples, use it instead of a book.
 - For DDD questions, try `corpus/principles/ddd/` before loading `domain-driven-design-distilled.md`.
 - For refactoring questions, try `corpus/refactorings/` before loading `refactoring.md`.
