@@ -1,12 +1,12 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "a3027a471330cb3510a08e3c08c9d9046fccecf0",
+    "git_head": "ad2e162946690393525241b8d83fa3ce9372d80d",
     "trees": {
       "docs/architecture/adr": "sha256:bdecb42c2252d69139e95f297c4c6abeb31d4b24afc6c38fdd25c05c7cf7286d",
-      "docs/architecture/designs": "sha256:0a52671a9868d6dcb2d168744d5d58c33df73f0e448a8188a9686a169d19150c",
+      "docs/architecture/designs": "sha256:33f32130f50d8a2a68c027883bf4795d716562038d4232985187da53012cb849",
       "docs/architecture/contexts": "sha256:2f1cde1db74ea6f95b55152c3de109c6e281619cc3beae3fb939d8650a4005c8",
-      "docs/plans": "sha256:8d45707b45ec3a30a9ce5b10ac0532c9ffdf0edd999faba47f4d60e718041dd7",
+      "docs/plans": "sha256:ce9abe52e7f71ef55c0b14fa080ef5343ad58a98e0a867ec0a0db52831cedf8a",
       ".cobuilder/rubrics": "sha256:01b80e032b67675f13650b339b3f45cb82620d36204ed74b05f0b868799ea21c"
     }
   },
@@ -276,7 +276,7 @@
         "id": "nexus-borrowings",
         "name": "nexus-borrowings",
         "outcome": "A design drafted in design mode carries its runtime structure. The design directory holds a runtime architecture diagram as a named diagram slot beside the three narrative levels, a contracts file when the design touches a public interface, and stage 6 runs a draft review subagent that validates against a blind rubric and re-explores alternatives before the engineer reads.",
-        "stage": "review"
+        "stage": "implemented"
       },
       {
         "id": "options-mode",
@@ -803,8 +803,8 @@
         "epic_id": "E1",
         "branch": "design/nexus-borrowings/runtime-arch-diagram",
         "pr": null,
-        "state": "planned",
-        "note": null,
+        "state": "implemented",
+        "note": "All eight slices built in one pass on design/nexus-borrowings/runtime-arch-diagram (2026-10-01): contract, validator, build_index projections, viewer tile + contracts section, stage-6 spawn, contracts artifact, vocabulary bootstrap + mode surfaces, implement guards + bumps. Behavioral rubrics score on the first real design runs.",
         "design_doc": "nexus-borrowings/E1"
       },
       {
@@ -813,8 +813,8 @@
         "epic_id": "E2",
         "branch": "design/nexus-borrowings/runtime-arch-diagram",
         "pr": null,
-        "state": "planned",
-        "note": null,
+        "state": "implemented",
+        "note": "All eight slices built in one pass on design/nexus-borrowings/runtime-arch-diagram (2026-10-01): contract, validator, build_index projections, viewer tile + contracts section, stage-6 spawn, contracts artifact, vocabulary bootstrap + mode surfaces, implement guards + bumps. Behavioral rubrics score on the first real design runs.",
         "design_doc": "nexus-borrowings/E2"
       },
       {
@@ -823,8 +823,8 @@
         "epic_id": "E3",
         "branch": "design/nexus-borrowings/runtime-arch-diagram",
         "pr": null,
-        "state": "planned",
-        "note": null,
+        "state": "implemented",
+        "note": "All eight slices built in one pass on design/nexus-borrowings/runtime-arch-diagram (2026-10-01): contract, validator, build_index projections, viewer tile + contracts section, stage-6 spawn, contracts artifact, vocabulary bootstrap + mode surfaces, implement guards + bumps. Behavioral rubrics score on the first real design runs.",
         "design_doc": "nexus-borrowings/E3"
       },
       {
@@ -833,8 +833,8 @@
         "epic_id": "E4",
         "branch": "design/nexus-borrowings/runtime-arch-diagram",
         "pr": null,
-        "state": "planned",
-        "note": null,
+        "state": "implemented",
+        "note": "All eight slices built in one pass on design/nexus-borrowings/runtime-arch-diagram (2026-10-01): contract, validator, build_index projections, viewer tile + contracts section, stage-6 spawn, contracts artifact, vocabulary bootstrap + mode surfaces, implement guards + bumps. Behavioral rubrics score on the first real design runs.",
         "design_doc": "nexus-borrowings/E4"
       },
       {
