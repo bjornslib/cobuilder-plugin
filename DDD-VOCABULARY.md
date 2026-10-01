@@ -68,6 +68,11 @@ _Avoid_: code review
 **Bounded context** (`architect`):
 A `docs/architecture/contexts/<context-id>/` bundle of `canvas.md` and `boundary.yaml`, produced by the self-only Describe mode, with every claim grep-verified against real import edges. See "District" for the lightweight, unverified version used for a foreign repo.
 
+<a id="inquiry"></a>
+**Inquiry** (`architect`):
+One question that `/architect:options` raises about the flow, the technology, or a gap of the whole system, with evidence, a confidence tag, and alternatives (IDs F1, T1, G1). It is not a finding in `assessment.json` and not a question in the three-question PR assessment.
+_Avoid_: finding (an `assessment.json` entry), question (one of the three PR-assessment questions)
+
 ## pr
 
 <a id="district"></a>
@@ -113,7 +118,7 @@ _Avoid_: Gate 2 (Gate 2b is not a sub-step of Gate 2. It has its own status line
 
 <a id="self"></a>
 **Self** (`cross-cutting`):
-The session's own checkout, the only target the six Architecture modes accept. See "foreign" for a `--repo`-targeted checkout, reachable only through Odyssey.
+The session's own checkout, the only target the seven Architecture modes accept. See "foreign" for a `--repo`-targeted checkout, reachable only through Odyssey.
 
 <a id="foreign"></a>
 **foreign** (`cross-cutting`):
