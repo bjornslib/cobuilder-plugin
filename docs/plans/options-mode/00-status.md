@@ -18,7 +18,7 @@ Hindsight: yes
 
 ## Slices
 - [x] Slice 1 — tracer bullet: the command and the skill declare a seventh mode   score: 1.00
-- [ ] Slice 2 — the report template and the validator                              score: —
+- [x] Slice 2 — the report template and the validator                              score: 1.00
 - [ ] Slice 3 — manifests, glossary, and mode counts                               score: —
 - [ ] Slice 4 — one real run of the mode                                           score: —
 

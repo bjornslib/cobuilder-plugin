@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>[Options report: the question in plain words]</title>
+<style>
+/*
+ * HTML Document Design System
+ * Copy this entire file into the <style> block of every document.
+ * Then extend with category-specific components as needed.
+ */
+
+:root {
+  --ivory:    #FAF9F5;
+  --slate:    #141413;
+  --clay:     #D97757;
+  --oat:      #E3DACC;
+  --olive:    #788C5D;
+  --rust:     #B04A3F;
+  --sky:      #6A8CAF;
+  --gray-150: #F0EEE6;
+  --gray-300: #D1CFC5;
+  --gray-500: #87867F;
+  --gray-700: #3D3D3A;
+  --white:    #FFFFFF;
+
+  --serif: ui-serif, Georgia, 'Times New Roman', serif;
+  --sans:  system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono:  ui-monospace, 'SF Mono', Menlo, Monaco, monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--sans);
+  background: var(--ivory);
+  color: var(--gray-700);
+  line-height: 1.55;
+  padding: 56px 32px 120px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+/* Typography */
+
+h1 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 38px;
+  line-height: 1.15;
+  color: var(--slate);
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 26px;
+  color: var(--slate);
+  letter-spacing: -0.01em;
+}
+
+h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 19px;
+  color: var(--slate);
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+}
+
+.lead {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--gray-700);
+  max-width: 640px;
+}
+
+p {
+  font-size: 15px;
+  margin-bottom: 12px;
+  max-width: 720px;
+}
+
+/* Header with Prompt Box */
+
+header.page-head {
+  margin-bottom: 48px;
+  max-width: 820px;
+}
+
+.prompt-box {
+  background: var(--gray-150);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-size: 14.5px;
+  color: var(--gray-700);
+}
+
+.prompt-box .label {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray-500);
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* Cards / Panels */
+
+.card {
+  background: var(--white);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.card-head {
+  padding: 16px 20px;
+  border-bottom: 1.5px solid var(--gray-300);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Chips / Pills / Tags */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--gray-300);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--slate);
+  background: var(--white);
+}
+
+.tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1.5px solid var(--gray-300);
+  background: var(--gray-150);
+}
+
+.tag.safe   { background: rgba(120,140,93,0.12); border-color: rgba(120,140,93,0.4); color: var(--olive); }
+.tag.medium { background: var(--oat); color: #7A6A4F; }
+.tag.risk   { background: rgba(217,119,87,0.12); border-color: rgba(217,119,87,0.45); color: var(--clay); }
+.tag.critical { background: rgba(176,74,63,0.12); border-color: rgba(176,74,63,0.4); color: var(--rust); }
+
+.risk-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.risk-dot.safe   { background: var(--olive); }
+.risk-dot.medium { background: #B89B6E; }
+.risk-dot.risk   { background: var(--clay); }
+.risk-dot.critical { background: var(--rust); }
+
+/* Tables */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+thead th {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray-500);
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1.5px solid var(--gray-300);
+}
+
+tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--gray-150);
+  color: var(--gray-700);
+}
+
+tbody tr:hover { background: var(--gray-150); }
+
+/* Code Blocks */
+
+code {
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.code-block {
+  background: var(--slate);
+  color: #E8E6DC;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.7;
+  padding: 18px 20px;
+  border-radius: 10px;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.code-block .comment { color: #8A98A0; }
+.code-block .keyword { color: #C792EA; }
+.code-block .string  { color: var(--olive); }
+
+/* Diff Blocks */
+
+.diff {
+  background: var(--slate);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+  overflow-x: auto;
+  border-radius: 10px;
+}
+
+.diff-row {
+  display: grid;
+  grid-template-columns: 48px 18px 1fr;
+  align-items: baseline;
+  padding: 0 14px 0 0;
+  white-space: pre;
+}
+
+.diff-row .ln   { text-align: right; padding-right: 14px; color: var(--gray-500); user-select: none; }
+.diff-row .mark { text-align: center; color: var(--gray-500); }
+.diff-row .code { color: #E8E6DC; }
+.diff-row.ctx .code { color: #B8B6AC; }
+.diff-row.add       { background: rgba(120,140,93,0.15); }
+.diff-row.add .mark { color: var(--olive); }
+.diff-row.del       { background: rgba(176,74,63,0.15); }
+.diff-row.del .mark { color: var(--rust); }
+.diff-row.hunk .code { color: var(--gray-500); }
+
+/* Buttons */
+
+button.primary {
+  background: var(--slate);
+  color: var(--ivory);
+  border: 1.5px solid var(--slate);
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 9px 20px;
+  cursor: pointer;
+}
+button.primary:hover { background: var(--gray-700); }
+button.primary.copied { background: var(--olive); border-color: var(--olive); }
+
+button.ghost {
+  background: transparent;
+  color: var(--gray-700);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 9px 20px;
+  cursor: pointer;
+}
+button.ghost:hover { border-color: var(--gray-500); }
+
+/* Section Structure */
+
+section { margin-bottom: 64px; }
+
+.sec-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+.sec-head .num {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--oat);
+  color: var(--slate);
+  padding: 3px 9px;
+  border-radius: 8px;
+}
+
+.sec-intro {
+  font-size: 14.5px;
+  color: var(--gray-500);
+  max-width: 720px;
+  margin-bottom: 28px;
+}
+
+/* Comment Bubbles (for code review) */
+
+.bubble {
+  position: relative;
+  background: var(--white);
+  border: 1.5px solid var(--gray-300);
+  border-left-width: 4px;
+  border-radius: 8px;
+  padding: 12px 14px 12px 16px;
+}
+
+.bubble.blocking { border-left-color: var(--clay); }
+.bubble.nit      { border-left-color: var(--gray-300); }
+
+.bubble .author {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--slate);
+  margin-bottom: 4px;
+}
+
+.bubble .text {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--gray-700);
+}
+
+/* SVG Diagrams */
+
+.diagram {
+  background: var(--white);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 12px;
+  padding: 28px;
+  overflow-x: auto;
+}
+
+.diagram svg { display: block; min-width: 760px; }
+
+.diagram text {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.caption {
+  font-size: 13px;
+  color: var(--gray-500);
+  margin-top: 12px;
+}
+
+/* Responsive Breakpoints */
+
+@media (max-width: 900px) {
+  .grid-2    { grid-template-columns: 1fr; }
+  .grid-3    { grid-template-columns: 1fr 1fr; }
+  .grid-4    { grid-template-columns: 1fr 1fr; }
+  body       { padding: 32px 20px 80px; }
+  h1         { font-size: 28px; }
+}
+
+@media (max-width: 600px) {
+  .grid-3    { grid-template-columns: 1fr; }
+  .grid-4    { grid-template-columns: 1fr; }
+}
+
+/* Utility Classes */
+
+.text-mono   { font-family: var(--mono); }
+.text-small  { font-size: 12px; color: var(--gray-500); }
+.color-safe  { color: var(--olive); }
+.color-risk  { color: var(--clay); }
+.color-crit  { color: var(--rust); }
+.color-info  { color: var(--sky); }
+.flex        { display: flex; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.gap-8       { gap: 8px; }
+.gap-12      { gap: 12px; }
+.gap-16      { gap: 16px; }
+.gap-24      { gap: 24px; }
+.mb-8        { margin-bottom: 8px; }
+.mb-16       { margin-bottom: 16px; }
+.mb-24       { margin-bottom: 24px; }
+.mb-48       { margin-bottom: 48px; }
+/* ---- extensions for the options report ---- */
+*, *::before, *::after { box-sizing: border-box; }
+:where(.grid-2, .grid-3, .grid-4, .flex) > * { min-width: 0; }
+:where(p, h1, h2, h3, h4, li, dd, td, th) { overflow-wrap: anywhere; }
+.tag, .nav .chip, td.mono, td[data-confidence] { white-space: nowrap; overflow-wrap: normal; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 0; }
+.nav a { text-decoration: none; }
+.stat { background: var(--white); border: 1.5px solid var(--gray-300); border-radius: 12px; padding: 16px 18px; }
+.stat .n { font-family: var(--serif); font-size: 34px; color: var(--slate); line-height: 1.1; }
+.stat .l { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--gray-500); margin-top: 4px; }
+.callout { border: 1.5px solid var(--gray-300); border-left: 5px solid var(--clay); background: var(--white); border-radius: 10px; padding: 14px 18px; margin: 16px 0; }
+.callout.good { border-left-color: var(--olive); }
+.callout.info { border-left-color: var(--sky); }
+.callout p:last-child, .card p:last-child { margin-bottom: 0; }
+.callout .k { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--gray-500); display: block; margin-bottom: 4px; }
+.tag.info { background: rgba(106,140,175,.14); border-color: rgba(106,140,175,.45); color: var(--sky); }
+ul.tight, ol.tight { margin: 0 0 12px 20px; font-size: 14.5px; max-width: 720px; }
+ul.tight li, ol.tight li { margin-bottom: 6px; }
+.card h3 { margin-bottom: 8px; }
+.card .eyebrow { margin-bottom: 6px; display: block; }
+.dir { margin-bottom: 40px; }
+.dir-body { border: 1.5px solid var(--gray-300); border-top: 0; border-radius: 0 0 12px 12px; padding: 20px; background: var(--white); }
+.dir-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border: 1.5px solid var(--gray-300); border-radius: 12px 12px 0 0; background: var(--gray-150); padding: 14px 20px; }
+.dir-head h3 { margin: 0; }
+.table-wrap { overflow-x: auto; border: 1.5px solid var(--gray-300); border-radius: 12px; background: var(--white); margin: 12px 0 16px; }
+.table-wrap table { min-width: 640px; }
+td.good { background: rgba(120,140,93,.14); }
+td.mid  { background: var(--oat); }
+td.bad  { background: rgba(176,74,63,.12); }
+.mono { font-family: var(--mono); font-size: 12.5px; }
+.diagram svg { min-width: 0; width: 100%; height: auto; }
+.diagram { padding: 16px; }
+svg .zone { fill: var(--gray-150); fill-opacity: .55; stroke: var(--gray-300); stroke-dasharray: 5 4; stroke-width: 1.2; }
+svg .zl { font: 600 10.5px var(--mono); fill: var(--gray-500); letter-spacing: .06em; }
+svg .node { fill: var(--white); stroke: var(--gray-300); stroke-width: 1.5; }
+svg .node.hot { stroke: var(--clay); stroke-width: 2; }
+svg .node.dash { stroke-dasharray: 5 4; }
+svg .chip { fill: var(--gray-150); stroke: var(--gray-300); stroke-width: 1.2; }
+svg .chip.hot { fill: rgba(217,119,87,.12); stroke: var(--clay); stroke-width: 1.6; }
+svg .t  { font: 600 12.5px var(--mono); fill: var(--slate); }
+svg .s  { font: 400 10.5px var(--mono); fill: var(--gray-500); }
+svg .c  { font: 400 10.5px var(--mono); fill: var(--slate); }
+svg .edge { stroke: var(--gray-500); stroke-width: 1.5; fill: none; }
+svg .edge.hot { stroke: var(--clay); stroke-width: 2; }
+svg .edge.dash { stroke-dasharray: 5 4; }
+svg .life { stroke: var(--gray-300); stroke-width: 1.2; stroke-dasharray: 3 5; }
+svg .band { fill: rgba(217,119,87,.08); stroke: var(--clay); stroke-dasharray: 6 4; stroke-width: 1.2; }
+svg .halo { paint-order: stroke; stroke: var(--ivory); stroke-width: 4px; stroke-linejoin: round; }
+svg .bdg rect { fill: var(--clay); }
+svg .bdg text { font: 600 10px var(--mono); fill: var(--white); text-anchor: middle; }
+svg .newtag rect { fill: var(--olive); }
+svg .newtag text { font: 600 9px var(--mono); fill: var(--white); text-anchor: middle; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--gray-700); margin-top: 12px; }
+.legend span.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+form.q { border: 1.5px solid var(--gray-300); border-radius: 12px; background: var(--white); padding: 18px 20px; margin-bottom: 20px; }
+form.q fieldset { border: 0; margin: 0 0 12px; }
+form.q legend { font-family: var(--serif); font-size: 18px; color: var(--slate); margin-bottom: 10px; }
+form.q label { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; font-size: 14.5px; border-bottom: 1px solid var(--gray-150); cursor: pointer; }
+form.q label:last-child { border-bottom: 0; }
+form.q input[type=checkbox], form.q input[type=radio] { margin-top: 4px; }
+form.q textarea { width: 100%; min-height: 80px; font: 14px var(--sans); padding: 10px; border: 1.5px solid var(--gray-300); border-radius: 8px; background: var(--ivory); }
+.status { font-family: var(--mono); font-size: 12px; color: var(--gray-500); margin-left: 12px; }
+details { border: 1.5px solid var(--gray-300); border-radius: 10px; background: var(--white); padding: 12px 16px; margin-bottom: 12px; }
+details summary { cursor: pointer; font-family: var(--serif); font-size: 17px; color: var(--slate); }
+details[open] summary { margin-bottom: 10px; }
+@media (max-width: 900px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+thead th:first-child { white-space: nowrap; overflow-wrap: normal; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="page-head">
+  <div class="eyebrow">Options report · [date]</div>
+  <h1>[The question, in the words of the user]</h1>
+  <p class="lead">[Two sentences. What this page holds, and what it did not change.]</p>
+  <div class="prompt-box">
+    <span class="label">Prompt</span>
+    [The exact prompt of the user, copied without change.]
+  </div>
+  <nav class="nav" aria-label="Sections">
+    <a class="chip" href="#summary">1 Summary</a>
+    <a class="chip" href="#current">2 Current map</a>
+    <a class="chip" href="#flow">3 One flow</a>
+    <a class="chip" href="#inquiries">4 Inquiries</a>
+    <a class="chip" href="#directions">5 Directions</a>
+    <a class="chip" href="#proposed">6 Proposed map</a>
+    <a class="chip" href="#gaps">7 Gaps</a>
+    <a class="chip" href="#order">8 Order</a>
+    <a class="chip" href="#decide">9 Your decisions</a>
+    <a class="chip" href="#evidence">10 Evidence</a>
+  </nav>
+</header>
+
+<!-- 1 SUMMARY -->
+<section id="summary">
+  <div class="sec-head"><span class="num">1</span><h2>Summary</h2></div>
+  <p class="sec-intro">[One sentence. What the prior review covered, and what this page adds.]</p>
+  <div class="grid-4 mb-24">
+    <div class="stat"><div class="n">[0]</div><div class="l">Flow inquiries</div></div>
+    <div class="stat"><div class="n">[0]</div><div class="l">Technology inquiries</div></div>
+    <div class="stat"><div class="n">[0]</div><div class="l">Gaps</div></div>
+    <div class="stat"><div class="n">0</div><div class="l">Files changed</div></div>
+  </div>
+  <div class="callout good">
+    <span class="k">Answer in three lines</span>
+    <ol class="tight">
+      <li>[Line one. The main recommendation.]</li>
+      <li>[Line two. The one fact the design bends around.]</li>
+      <li>[Line three. The cheap checks that come before any redesign.]</li>
+    </ol>
+  </div>
+</section>
+
+<!-- 2 CURRENT MAP -->
+<section id="current">
+  <div class="sec-head"><span class="num">2</span><h2>Current component map</h2></div>
+  <p class="sec-intro">[One question this map answers. Say where each badge in section 4 attaches.]</p>
+  <div class="diagram">
+  <svg id="fig-current" viewBox="0 0 1100 300" width="100%" role="img" aria-labelledby="t-cur">
+    <title id="t-cur">[Current component map of the system]</title>
+    <defs>
+      <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--gray-500)"/></marker>
+    </defs>
+    <rect class="zone" x="10" y="30" width="1080" height="250" rx="12"/>
+    <text class="zl" x="24" y="50">[ZONE NAME]</text>
+    <g id="n-first">
+      <title>[First component]</title>
+      <rect class="node hot" x="60" y="100" width="300" height="100" rx="8"/>
+      <text class="t" x="210" y="135" text-anchor="middle">[First component]</text>
+      <text class="s" x="210" y="155" text-anchor="middle">[Its job in a few words]</text>
+    </g>
+    <g id="n-second">
+      <title>[Second component]</title>
+      <rect class="node" x="740" y="100" width="300" height="100" rx="8"/>
+      <text class="t" x="890" y="135" text-anchor="middle">[Second component]</text>
+      <text class="s" x="890" y="155" text-anchor="middle">[Its job in a few words]</text>
+    </g>
+    <path class="edge" d="M360 150 H740" marker-end="url(#a1)"/>
+    <text class="s" x="460" y="142">[edge label]</text>
+    <g class="bdg"><rect x="335" y="92" width="30" height="18" rx="9"/><text x="350" y="105">F1</text></g>
+  </svg>
+  </div>
+  <div class="legend">
+    <span><span class="sw" style="background:var(--clay)"></span>Badge: F is a flow inquiry, T is a technology inquiry</span>
+    <span><span class="sw" style="border:2px solid var(--clay)"></span>Clay border: the part that carries the most weight</span>
+    <span><span class="sw" style="border:1.5px dashed var(--gray-500)"></span>Dashed line: a stream, or a plan not built</span>
+  </div>
+  <p class="caption">Sources: [files and ADRs that support this map].</p>
+</section>
+
+<!-- 3 ONE FLOW -->
+<section id="flow">
+  <div class="sec-head"><span class="num">3</span><h2>Data flow of one [turn, request, or job]</h2></div>
+  <p class="sec-intro">[One question this diagram answers. Say what the clay band marks.]</p>
+  <div class="diagram">
+  <svg id="fig-flow" viewBox="0 0 1100 260" width="100%" role="img" aria-labelledby="t-flow">
+    <title id="t-flow">[Sequence of one flow]</title>
+    <defs>
+      <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--gray-500)"/></marker>
+    </defs>
+    <rect class="band" x="14" y="130" width="1076" height="110" rx="10"/>
+    <text class="zl halo" x="26" y="150">[WHAT THE BAND MARKS]</text>
+    <g id="l-first">
+      <title>[First actor]</title>
+      <line class="life" x1="200" y1="52" x2="200" y2="250"/>
+      <rect class="node" x="140" y="14" width="120" height="36" rx="8"/>
+      <text class="c" x="200" y="36" text-anchor="middle">[Actor A]</text>
+    </g>
+    <g id="l-second">
+      <title>[Second actor]</title>
+      <line class="life" x1="800" y1="52" x2="800" y2="250"/>
+      <rect class="node hot" x="740" y="14" width="120" height="36" rx="8"/>
+      <text class="c" x="800" y="36" text-anchor="middle">[Actor B]</text>
+    </g>
+    <path class="edge" d="M200 95 H800" marker-end="url(#a2)"/>
+    <text class="c" x="500" y="88" text-anchor="middle">1 [message]</text>
+    <path class="edge hot" d="M800 190 H200" marker-end="url(#a2)"/>
+    <text class="c" x="500" y="183" text-anchor="middle">2 [reply]</text>
+  </svg>
+  </div>
+  <div class="grid-3" style="margin-top:20px">
+    <div class="card"><span class="eyebrow">[Steps 1 to N]</span><h3>[A short claim]</h3><p>[One or two sentences.]</p></div>
+    <div class="card"><span class="eyebrow">[Steps N to M]</span><h3>[A short claim]</h3><p>[One or two sentences.]</p></div>
+    <div class="card"><span class="eyebrow">Result</span><h3>[A short claim]</h3><p>[One or two sentences.]</p></div>
+  </div>
+  <p class="caption">Verified in [files, line ranges, and ADRs].</p>
+</section>
+
+<!-- 4 INQUIRIES -->
+<section id="inquiries">
+  <div class="sec-head"><span class="num">4</span><h2>Inquiries at a glance</h2></div>
+  <p class="sec-intro">[N] design questions. The confidence tag shows how much I checked. Verified means I read the code or the docs. ADR only means I read the ADR text and did not trace the code. Hypothesis means I did not check it.</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>ID</th><th>Question</th><th>Evidence</th><th>Impact</th><th>Confidence</th><th>Note</th></tr></thead>
+    <tbody>
+      <!-- One row for each inquiry. IDs: F1 for flow, T1 for technology. Keep one value in the confidence cell. -->
+      <tr id="row-F1"><td class="mono">F1</td><td>[The question as a question.]</td><td>[The facts that raise it, with file or ADR names.]</td><td><span class="tag critical">High</span></td><td data-confidence><span class="tag safe">Verified</span></td><td>[A note, or a dash.]</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- 5 DIRECTIONS -->
+<section id="directions">
+  <div class="sec-head"><span class="num">5</span><h2>Directions and alternatives</h2></div>
+  <p class="sec-intro">Each direction shows the current shape, a proposed shape, the options, and my recommendation. Earlier ADRs may have run divergent explorations. Say which ones, and do not repeat them.</p>
+
+  <!-- One block for each inquiry. For a second inquiry in a shared block, add an empty span: <span id="dir-F3"></span> -->
+  <div class="dir" id="dir-F1">
+    <div class="dir-head"><span class="tag critical">High</span><h3>F1 · [The question as a short title]</h3></div>
+    <div class="dir-body">
+      <div class="grid-2">
+        <div class="card"><span class="eyebrow">Current</span>
+          <ol class="tight">
+            <li>[Step one of today's shape.]</li>
+            <li>[Step two of today's shape.]</li>
+          </ol>
+          <p><strong>Effect:</strong> [What goes wrong today.]</p>
+        </div>
+        <div class="card"><span class="eyebrow">Proposed direction (draft)</span>
+          <ol class="tight">
+            <li>[Step one of the proposed shape.]</li>
+            <li>[Step two of the proposed shape.]</li>
+          </ol>
+          <p><strong>Effect:</strong> [What gets better.]</p>
+        </div>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Option</th><th>What it needs</th><th>Cost</th><th>Status in the ADRs</th></tr></thead>
+        <tbody>
+          <tr><td><strong>A</strong> [Option name]</td><td>[What it needs.]</td><td class="bad">High</td><td>[Status, or a dash.]</td></tr>
+          <tr><td><strong>B</strong> [Option name]</td><td>[What it needs.]</td><td class="mid">Medium</td><td>[Status, or a dash.]</td></tr>
+          <tr><td><strong>C</strong> [Keep today and patch each symptom]</td><td>Nothing new.</td><td class="good">Low</td><td>[Status, or a dash.]</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout good"><span class="k">Recommendation</span>
+        <p>[One recommendation. Name the cheap check that comes first.]</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 PROPOSED MAP -->
+<section id="proposed">
+  <div class="sec-head"><span class="num">6</span><h2>Proposed component map (draft)</h2></div>
+  <p class="sec-intro">This map shows the directions from section 5 together. It is a draft. No divergent run has tested it, and each change needs a decision from you. Green tags mark new parts. Clay borders mark changed parts.</p>
+  <div class="diagram">
+  <svg id="fig-proposed" viewBox="0 0 1100 300" width="100%" role="img" aria-labelledby="t-prop">
+    <title id="t-prop">[Proposed component map, draft]</title>
+    <defs>
+      <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--gray-500)"/></marker>
+    </defs>
+    <rect class="zone" x="10" y="30" width="1080" height="250" rx="12"/>
+    <text class="zl" x="24" y="50">[ZONE NAME]</text>
+    <g id="p-first">
+      <title>[Changed component]</title>
+      <rect class="node hot" x="60" y="100" width="300" height="100" rx="8"/>
+      <text class="t" x="210" y="135" text-anchor="middle">[Changed component]</text>
+      <text class="s" x="210" y="155" text-anchor="middle">[Its new job in a few words]</text>
+      <g class="bdg"><rect x="305" y="92" width="60" height="18" rx="9"/><text x="335" y="105">F1 CHG</text></g>
+    </g>
+    <g id="p-second">
+      <title>[New component]</title>
+      <rect class="node hot" x="740" y="100" width="300" height="100" rx="8"/>
+      <text class="t" x="890" y="135" text-anchor="middle">[New component]</text>
+      <text class="s" x="890" y="155" text-anchor="middle">[Its job in a few words]</text>
+      <g class="newtag"><rect x="985" y="92" width="60" height="18" rx="9"/><text x="1015" y="105">F1 NEW</text></g>
+    </g>
+    <path class="edge hot" d="M360 150 H740" marker-end="url(#a3)"/>
+    <text class="s" x="460" y="142">[edge label]</text>
+  </svg>
+  </div>
+  <div class="legend">
+    <span><span class="sw" style="background:var(--olive)"></span>NEW part</span>
+    <span><span class="sw" style="background:var(--clay)"></span>CHG: changed part</span>
+    <span><span class="sw" style="border:2px solid var(--clay)"></span>Clay border: touched by a proposal</span>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Change</th><th>Depends on</th><th>Record needed</th><th>State</th></tr></thead>
+    <tbody>
+      <tr><td><strong>F1</strong> [The change]</td><td>[What must happen first.]</td><td>[Amend an ADR, or write a new one.]</td><td><span class="tag medium">Draft</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 7 GAPS -->
+<section id="gaps">
+  <div class="sec-head"><span class="num">7</span><h2>Gaps beyond the earlier review</h2></div>
+  <p class="sec-intro">[N] items that the earlier review did not cover. The last column shows the suggested action.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>ID</th><th>Gap</th><th>In the plan?</th><th>Suggested action</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">G1</td><td>[The gap in one sentence.]</td><td><span class="tag risk">No</span></td><td>[The action.]</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 8 ORDER -->
+<section id="order">
+  <div class="sec-head"><span class="num">8</span><h2>Recommended order</h2></div>
+  <p class="sec-intro">[One sentence about how the tracks relate.]</p>
+  <div class="grid-3">
+    <div class="card"><span class="eyebrow">Now</span>
+      <ol class="tight"><li>[A cheap check.]</li><li>[A question for the user.]</li></ol>
+    </div>
+    <div class="card"><span class="eyebrow">Next · decide</span>
+      <ol class="tight" start="3"><li>[A divergent exploration.]</li><li>[An ADR to record.]</li></ol>
+    </div>
+    <div class="card"><span class="eyebrow">Later · build</span>
+      <ol class="tight" start="5"><li>[A slice to build.]</li><li>[A document to refresh.]</li></ol>
+    </div>
+  </div>
+</section>
+
+<!-- 9 DECISIONS -->
+<section id="decide">
+  <div class="sec-head"><span class="num">9</span><h2>Your decisions</h2></div>
+  <p class="sec-intro">Pick your answers. Press Copy this answer on one form, or press Copy all answers. Then paste the text into the chat.</p>
+
+  <form class="q" id="q-first" data-question="[short-key]">
+    <fieldset>
+      <legend>[The question for the user, as a question?]</legend>
+      <label><input type="radio" name="first" value="[Answer one]"> <span>[Answer one, in a sentence.]</span></label>
+      <label><input type="radio" name="first" value="[Answer two]"> <span>[Answer two, in a sentence.]</span></label>
+      <label><input type="radio" name="first" value="Not decided"> <span>I have not decided. Show me the options.</span></label>
+      <label><textarea name="note" aria-label="Optional note"></textarea></label>
+    </fieldset>
+    <button class="ghost copy-one" type="button">Copy this answer</button><span class="status" role="status"></span>
+  </form>
+
+  <div class="callout info">
+    <span class="k">All answers</span>
+    <p>This button copies every answer as one text block. Paste it into the chat.</p>
+    <button class="primary" type="button" id="copy-all">Copy all answers</button><span class="status" id="copy-all-status" role="status"></span>
+  </div>
+</section>
+
+<!-- 10 EVIDENCE -->
+<section id="evidence">
+  <div class="sec-head"><span class="num">10</span><h2>Evidence and limits</h2></div>
+  <details open>
+    <summary>What I verified</summary>
+    <ul class="tight">
+      <li><span class="mono">[path/to/file]</span> [lines]: [what the code does].</li>
+    </ul>
+  </details>
+  <details>
+    <summary>What I read but did not trace in code</summary>
+    <ul class="tight">
+      <li>[The ADRs and reports I read, and which parts.]</li>
+    </ul>
+  </details>
+  <details>
+    <summary>What I did not read</summary>
+    <ul class="tight">
+      <li>[The files I skipped.]</li>
+      <li>[What I did not measure or run.]</li>
+    </ul>
+  </details>
+  <details>
+    <summary>Skill and design sources</summary>
+    <ul class="tight">
+      <li>[The skills and corpus cards I used.]</li>
+    </ul>
+  </details>
+</section>
+
+</div>
+
+<script>
+(function () {
+  function fallbackCopy(text) {
+    var area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+    var done = false;
+    try { done = document.execCommand('copy'); } catch (err) { done = false; }
+    document.body.removeChild(area);
+    return done;
+  }
+
+  function copyText(text, status) {
+    var ok = 'Copied. Paste it into the chat.';
+    var fail = 'Copy failed. Select the text and copy it by hand.';
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(
+          function () { status.textContent = ok; },
+          function () { status.textContent = fallbackCopy(text) ? ok : fail; }
+        );
+        return;
+      }
+    } catch (err) { /* use the fallback below */ }
+    status.textContent = fallbackCopy(text) ? ok : fail;
+  }
+
+  function formText(form) {
+    var lines = [];
+    var fields = form.querySelectorAll('input, textarea');
+    for (var i = 0; i < fields.length; i++) {
+      var el = fields[i];
+      var isChoice = el.type === 'checkbox' || el.type === 'radio';
+      if (isChoice && !el.checked) { continue; }
+      var value = isChoice ? el.value : el.value.trim();
+      if (value) { lines.push('  ' + value); }
+    }
+    if (!lines.length) { return ''; }
+    return form.getAttribute('data-question') + ':\n' + lines.join('\n');
+  }
+
+  var forms = document.querySelectorAll('form.q');
+  Array.prototype.forEach.call(forms, function (form) {
+    form.addEventListener('submit', function (e) { e.preventDefault(); });
+    var button = form.querySelector('.copy-one');
+    if (!button) { return; }
+    button.addEventListener('click', function () {
+      var status = form.querySelector('.status');
+      var text = formText(form);
+      if (!text) { status.textContent = 'No answer yet.'; return; }
+      copyText(text, status);
+    });
+  });
+
+  document.getElementById('copy-all').addEventListener('click', function () {
+    var status = document.getElementById('copy-all-status');
+    var parts = [];
+    Array.prototype.forEach.call(forms, function (form) {
+      var text = formText(form);
+      if (text) { parts.push(text); }
+    });
+    if (!parts.length) { status.textContent = 'No answers yet.'; return; }
+    copyText(parts.join('\n\n'), status);
+  });
+})();
+</script>
+
+</body>
+</html>
