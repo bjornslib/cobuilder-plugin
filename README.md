@@ -1,585 +1,257 @@
 # CoBuilder
 
-CoBuilder is a Claude Code plugin family for design, generate, and review
-(the architecture lifecycle except build), plus narrated history. Odyssey
-turns a merged pull request into a four-level narrated story: PR Landscape,
-Problem and Solution, Architecture, and File Changes. The story includes
-voice narration and extracted architecture decision records. For levels 1
-through 3, Odyssey also adds a visual: Gemini-generated scene art, an
-authored Mermaid diagram, or both. The `--art` flag below picks the form.
-The plugin runs inside your own Claude Code session, against your own
-checkout. Your repo never leaves your machine, and your API keys pay only
-for what you generate. This branch extends the plugin to capture intent
-before code exists.
+CoBuilder is a family of Claude Code plugins that covers the life of a change. It helps you decide what to build, design it, build it in checked slices, open the pull request, and tell the story of the merge afterward.
+
+Everything runs in your own Claude Code session, against your own checkout. Your repo stays on your machine.
+
+| Stage | Command | What you get |
+|---|---|---|
+| Explore | `/architect:options` | One HTML report of questions and alternatives for the whole system |
+| Design | `/architect:design` | A design record: intent, challenge, draft PR, runtime diagram |
+| Build | `/implement:start` | Four approval gates, then one tested slice at a time |
+| Open | `/pr:generate` | An author interview, an assessment, and the pull request |
+| Narrate | `/pr:review` | A four-level story of each merged PR, with art and voice |
+| Read | `/artifact:view` | One viewer for designs, decisions, builds, and PRs |
 
 ---
 
-## Install
+## Quick start
 
-The plugin family lives in one repository, `bjornslib/cobuilder-plugin`,
-as a marketplace of five sibling plugins. Add the marketplace once, then
-install the plugin or plugins you need:
+1. Add the marketplace.
 
-```
-/plugin marketplace add bjornslib/cobuilder-plugin
-/plugin install architect@cobuilder-plugin
-```
+   ```
+   /plugin marketplace add bjornslib/cobuilder-plugin
+   ```
 
-`architect` covers design, review, maintenance, decisions,
-describe, debug, and options. Install `pr` for narrated history and
-generate mode, `artifact` to view or publish a bundle, and
-`implement` to build a design's epics. Install
-`cobuilder-full-lifecycle` instead to get all four in one step:
+2. Install every plugin at once.
 
-```
-/plugin install cobuilder-full-lifecycle@cobuilder-plugin
-```
+   ```
+   /plugin install cobuilder-full-lifecycle@cobuilder-plugin
+   ```
 
-`architect` and `pr` both hand off to
-`artifact`'s view and publish modes, so each declares
-`artifact` as a dependency. Installing either one also installs
-`artifact`. Only `implement` adds agents and a hook. See ADR-0025.
-No plugin adds an MCP server. The install surface stays `/plugin
-install` alone.
+3. Restart the session, or enable the plugins from `/plugin`.
+4. Open the repo you want to work on, and run a command from the table above.
 
-GitHub redirects a renamed repository, so an existing
-`/plugin marketplace add bjornslib/prodyssey` install should keep resolving.
+To start with one job, install one plugin. For example, `/plugin install architect@cobuilder-plugin` gives you the design and review modes.
 
-Restart the session, or enable the plugin from `/plugin`. After that, the
-installed plugins' commands are available in every project.
+### Which plugin do I need?
+
+| Plugin | Install it to | Commands |
+|---|---|---|
+| `architect` | Design, review, and govern the architecture of the repo you are in | `/architect:design`, `review`, `maintenance`, `decisions`, `describe`, `debug`, `options` |
+| `implement` | Build a design one slice at a time | `/implement:start`, `debug`, `install` |
+| `pr` | Open a pull request with intent, and narrate merged PRs | `/pr:generate`, `review`, `baseline` |
+| `artifact` | Read the results in the viewer, or publish a PR as a Claude Artifact | `/artifact:view`, `publish` |
+| `cobuilder-full-lifecycle` | Get all four, plus a routing guide | none of its own |
+
+`architect` and `pr` need `artifact`, so installing either one also installs `artifact`. `implement` needs `architect`, because `/implement:debug` hands off to it.
 
 ### Prerequisites
 
-| Requirement | Why | Checked when |
+| Need | For | Notes |
 |---|---|---|
-| `GEMINI_API_KEY` (env or `.env` in your own repo, never the target repo) | Generates TTS narration, always. Also generates level 1 through 3 scene art, under `--art both` (the default) or `--art image`. Not needed for scene art under `--art diagram` | Checked on every invocation. If the key is absent, the skill stops and prints a message that tells you what to do (AC G2) |
-| A git checkout of the target repo | All analysis runs locally: `git log`, grep, and file reads | Checked on invocation |
-| `python3` version 3.10 or later, with `uv` | Bundled scripts run through [PEP 723](https://peps.python.org/pep-0723/) inline metadata. `uv run` resolves `google-genai`, `pillow`, and `python-dotenv` for each script, with no venv setup needed | Checked at the first script call |
+| A git checkout | Every command | All analysis runs locally |
+| `uv` and Python 3.10 or later | Every script | Scripts declare their own packages. No venv needed |
+| `GEMINI_API_KEY` | `pr` narration: voice always, scene art unless `--art diagram` | Set it in your shell or in your own repo's `.env`. The tool never reads the target repo's `.env` |
+| `habit-hooks` | `/implement:start` | Run `/implement:install` once. It asks before it installs |
+| The `Artifact` tool | `/artifact:publish` | Needs a `/login` session on a paid plan |
 
-The plugin needs no GitHub token, no server, and no database. If you can open
-the repo in Claude Code, you can generate its story.
-
----
-
-## Usage
-
-### One command, full sweep
-
-```
-/pr:review --prs 73,75
-```
-
-For each PR, Odyssey runs these steps in order: it writes the story
-narrative (4 levels plus voice scripts), extracts ADRs in retrospect, and
-merges the result into `story.json`. It then produces the level 1 through 3
-visuals and generates TTS narration. If no baseline exists yet, the skill
-runs `baseline` first, on its own (AC G3). You do not need to know that this
-is a separate step.
-
-```
-/pr:review --latest        # the most recent merged PR
-/pr:review --prs 12..18   # a range
-```
-
-### Visual form: `--art`
-
-`--art both|diagram|image` picks the level 1 through 3 visual form. Default:
-`both`.
-
-- `both` — authors a Mermaid diagram for each level and generates a Gemini
-  scene-art image for each level. The viewer shows the image by default and
-  lets you toggle to the diagram.
-- `diagram` — authors Mermaid diagrams only. Odyssey skips the Gemini
-  image calls, so this mode needs no image generation cost and works even
-  without a scene-art budget.
-- `image` — generates Gemini scene art only, the behavior before diagrams
-  existed.
-
-```
-/pr:review --prs 79 --art diagram
-```
-
-### Baseline (explicit)
-
-```
-/pr:baseline
-```
-
-This command derives the architecture baseline of the repo into
-`.cobuilder-architect/self/`:
-
-1. **Stack detection** — matches the repo against bundled stack cards
-   (`nextjs`, `react-typescript`, `python-fastapi`, `swift`, `swiftui-app`,
-   `vapor`, with `generic` as the fallback).
-2. **District map** — groups the repo with heuristic clustering. The
-   clustering weighs top-level directories by file count and size, adds
-   commit-frequency heat from `git log`, and merges by import edge. Claude
-   names the resulting districts. The map degrades in a clear, predictable
-   way. A monorepo clusters at its package manifests (12 districts or
-   fewer). A repo under 20 files becomes a single district. A docs-only
-   repo falls back to file-type buckets flagged `map_quality: low`.
-3. **Context inventory** — for each district, records `{name, root_paths,
-   purpose}`. Odyssey verifies each entry against real import edges, using
-   grep in both directions, and flags the entry `provenance: inferred`. ADR
-   extraction anchors its `maps_to` field to this inventory when the repo
-   has no architecture docs of its own.
-
-Run the command again at any time to refresh the baseline in place. The
-`review` command warns when the baseline falls more than 200 commits
-behind `HEAD`.
-
-### Targeting another local checkout
-
-You do not need to open a session inside the target repo. The `--repo` flag
-points the whole sweep at any local checkout:
-
-```
-/pr:review --repo ~/code/other-project --prs 42,43
-/pr:baseline --repo ~/code/other-project
-```
-
-Odyssey looks up `GEMINI_API_KEY` in your environment, or in your own
-repo's `.env` file. It never reads `.env` from the target repo — that repo
-is untrusted, and its `.env` must never load into this process. If Claude
-lacks read access to the path, grant it once with
-`/add-dir ~/code/other-project`. The bundle itself does not land inside that
-repo. See [Multiple repos](#multiple-repos) below for where it goes.
+The `architect`, `implement`, and `artifact view` commands need no API key. The prerequisite check runs first on every `pr` command, so a missing key stops the run before it spends anything.
 
 ---
 
-## Generating and opening a PR
+## The lifecycle, step by step
 
-The four commands above narrate history. This one runs before the history
-exists.
+### 1. Explore: `/architect:options`
+
+Run it when you ask whether the whole system is still shaped right. It writes one self-contained HTML report to `docs/architecture/options/<name>/`. The report lists inquiries, the alternatives for each, and a confidence tag on every claim.
+
+The mode proposes and never decides. Paste the decisions text into `/architect:design`, which records the choice.
+
+### 2. Design: `/architect:design`
+
+Run it before you write code. The mode reads your repo, interviews you, explores alternatives, and challenges the approach. It cites evidence for each challenge.
+
+The result is a design directory at `docs/architecture/designs/<name>/`:
+
+- `goal.json`, `intent.json`, `narrative.json`, and `assessment.json`
+- `pr-draft.md`, the pull request you plan to open
+- a runtime architecture diagram in SVG
+- an optional `contracts.md` for a public interface
+
+A reviewer subagent checks the draft against a blind rubric before you read it. If `DDD-VOCABULARY.md` does not exist, design mode helps you create it.
+
+### 3. Build: `/implement:start`
+
+Run `/implement:install` once. Then run `/implement:start` on a design.
+
+Four gates come before any code. You approve each one.
+
+1. Product.
+2. Architecture, plus interaction design when the change has a screen.
+3. Program design.
+4. Slice plan, epic designs, and blind acceptance rubrics.
+
+Each slice then runs a red, green, and validate loop. The `red` agent writes failing tests. The `green` agent writes the minimum code. The `validate` agent scores the result against a rubric that `green` never saw. A slice is done at a score of 0.90 or higher. A `vocabulary` agent also checks each slice against the glossary, and its notes never change the score.
+
+Check a plan at any time:
 
 ```
-/pr:generate
+uv run plugins/implement/scripts/verify_gate.py --plan docs/plans/<slug>
 ```
 
-Run it on a branch that has no pull request. Odyssey reads the diff, the
-district map, and every architecture decision the repo already recorded. It
-then asks you only what that evidence cannot answer, usually four to six
-questions. It writes your answers down, assesses the change, and opens the
-pull request with a description built from what you said.
+### 4. Open the PR: `/pr:generate`
 
-The assessment answers three questions that a diff cannot:
+Run it on a branch with no pull request. It reads the diff, the district map, and the recorded decisions. It then asks only what that evidence cannot answer, usually four to six questions.
 
-1. **Is this sensible?** Does the change solve the problem you state, and does
-   that problem belong here?
-2. **Does it help or hurt maintainability?** It names the invariant the change
-   establishes, in the same words an ADR uses.
-3. **New pattern, duplicate, or reinvention?** This is the question the bundle
-   exists to answer. A `duplicate` or `reinvention` verdict must cite the ADR
-   or the district it duplicates. Without a citation, there is no verdict.
+The assessment asks four things a diff cannot show:
 
-Then it answers the one a senior reviewer actually asks: **will we regret
-this?**
+1. Is the change sensible?
+2. Does it help or hurt maintainability?
+3. Is it a new pattern, a duplicate, or a reinvention? A duplicate verdict cites the decision or district it duplicates.
+4. Will the team regret it?
 
-The verdict is `sound`, `concerns`, or `rework`. **It never blocks a merge.**
-A `rework` verdict gives you three options. Open the PR, open it as a draft,
-or fix the change first. You choose.
+The verdict is `sound`, `concerns`, or `rework`. It never blocks a merge. The command also records whether the change is `human`, `agent-assisted`, or `agent-generated`, and which parts the author cannot explain.
 
-### It asks who wrote the code
-
-Odyssey records whether the change is `human`, `agent-assisted`, or
-`agent-generated`. It also records the parts you cannot explain. "The agent
-wrote that, and I am not sure why" is a useful answer, not a failed interview.
-Those notes raise the risk tier and go in the PR description where a reviewer
-reads them. Code that nobody can explain costs a team more than the same code
-with an author who can.
-
-### What it writes, and what it opens
-
-The PR description and the assessment go to
-`docs/pull-requests/` as markdown. The two structured blocks go onto the
-PR's timeline entry in `story.json`. The viewer shows the assessment on level
-3, behind a badge next to the ADR chips.
-
-Opening the pull request is the only thing Odyssey does outside
-`.cobuilder-architect/`. It shows you the description and asks first. It does nothing
-else on GitHub. Use `--no-create` to stop before that and keep the files.
+Opening the pull request is the only GitHub action. The command shows you the description and asks first.
 
 ```
 /pr:generate --no-create          # write the files, open nothing
-/pr:generate --draft              # open it as a draft
-/pr:generate --base develop       # a base branch other than the default
-/pr:generate --prs 73             # assess an open PR instead of creating one
-/pr:generate --prs 73 --stage post
+/pr:generate --draft              # open a draft
+/pr:generate --base develop       # choose the base branch
+/pr:generate --prs 73             # assess an open PR
+/pr:generate --prs 73 --stage post  # after the merge, compare what shipped to what you said
 ```
 
-`--stage post` runs after the merge. It compares what shipped against what
-you said before it shipped. Scope you declared out of bounds and touched
-anyway. Risks that never got a guard. Options you rejected that the code
-adopted. It never rewrites what you said earlier.
+### 5. Narrate: `/pr:review`
 
-### It makes the story better
-
-The intent captured here stays in the bundle. When `/pr:review` runs
-on that PR later, it reads your stated problem and your rejected alternatives
-instead of inferring them from the diff. The ADR it extracts is marked
-`provenance: authored`, not `inferred`.
-
-## Viewing the result
-
-- **Bundled viewer**: `/artifact:view` starts one long-lived `python3 -m
-  http.server` per hub in the background, and prints a URL. The session
-  keeps running while the server runs. The command finds every bundle you
-  generated (see [Multiple repos](#multiple-repos)) and points an internal
-  `active` symlink at the one you view. Because of this, switching bundles
-  never restarts the server or changes the port. Refresh the browser tab
-  instead. `/artifact:view --stop` shuts down the server.
-  (Manual equivalent for a single bundle: run `cd .cobuilder-architect/self &&
-  python3 -m http.server`, then open `http://localhost:8000/viewer/`. Root
-  the server at the bundle root, the parent of `viewer/`, not at `viewer/`
-  itself. `viewer/index.html` requests sibling files such as
-  `../data/story.js`. A server rooted inside `viewer/` returns a 404 error
-  for every data file.)
-- **Image and diagram views**: on a level with both a scene-art image and a
-  Mermaid diagram, the viewer shows the image first and adds a toggle to
-  switch to the diagram. A level with only one form shows it directly, with
-  no toggle. The diagram view supports wheel-to-zoom about the cursor and
-  drag-to-pan. If the Mermaid CDN script cannot load, the viewer falls back
-  to showing the plain diagram source, and the rest of the page still works.
-- **Production app** (future): sign in, then use *Import bundle* to upload
-  `.cobuilder-architect/` or paste the raw GitHub URL of a committed bundle. The
-  review workflow, with approve, request changes, and per-level comments,
-  works on imported stories.
-
-## Publishing the result
+Run it on merged PRs. Each PR becomes a story of four levels: Intent, Problem and Solution, Architecture, and File Changes. The story includes voice narration and architecture decisions that the command extracts in retrospect.
 
 ```
-/artifact:publish --prs 73
+/pr:review --prs 73,75
+/pr:review --latest
+/pr:review --prs 12..18
 ```
 
-This command flattens PR #73 into one self-contained HTML file. The file
-inlines the story, the ADRs, the diff, and whichever level 1 through 3
-visuals the PR has: scene art, Mermaid diagrams, or both. Odyssey
-recompresses the result to fit under the 16 MiB cap of Claude Artifacts.
-Mermaid diagrams render natively on the Artifact platform, so a published
-diagram needs no bundled runtime. A PR published with `--art diagram`
-carries no image data, so it stays well under the cap.
+If no baseline exists, the command runs `/pr:baseline` first. A killed run resumes where it stopped, and `--force` regenerates.
 
-Odyssey publishes the file as an Artifact and prints the URL. It also
-rebuilds and publishes a small index artifact. That artifact links to every
-PR published so far for this bundle, not only the PRs in the current run.
-The index always shows the full set. If a PR has not changed since its last
-publish, a re-run reports "already up to date" instead of publishing again.
-The `--force` flag overrides this check.
+Levels 1 to 3 carry a visual. `--art` picks its form:
 
-```
-/artifact:publish --prs 73,75
-/artifact:publish --prs 73 --force
-```
-
-`--format artifact` is the default, and the only target Odyssey
-implements today. `--format notion` is reserved for later use. Publishing
-needs the `Artifact` tool, available in a `/login` session on a paid plan.
-Without it, Odyssey still writes the flattened files to
-`<bundle-dir>/exports/` for manual use.
-
-An older bundle needs no manual fix. Every command upgrades the bundle it
-touches first. A bundle generated before diagram support gets a current
-viewer copy the first time any bundle-touching command runs against it.
-
-## Multiple repos
-
-Analyzing your own repo, with no `--repo` flag, works as before. The bundle
-still lands at `.cobuilder-architect/self/`, portable and ready to commit. Point
-`--repo <path>` at a different local checkout, and by default Odyssey
-writes nothing into that repo. Instead, it caches the bundle locally, under
-the hub's `.cobuilder-architect/<repo-slug>/` directory. The hub is the repo you run
-Claude Code from. This scoping makes it safe to narrate stories for a repo
-you do not own or do not want to change. Use `--store local` to opt into
-writing the bundle into the foreign repo instead, at
-`<target>/.cobuilder-architect/self/`. Use `--store central` to force the hub-cached
-location even when the automatic choice would pick local.
-
-```
-/pr:review --repo ~/code/other-project --prs 42,43
-```
-
-`/artifact:view` finds every bundle a hub holds under its `.cobuilder-architect/`
-directory: its own `self/` bundle, plus anything cached for a foreign repo.
-When more than one bundle exists, the command lists them and asks which to
-view. `/artifact:view --list` shows what is stored. Switching between
-bundles does not restart the server. It only repoints what the server
-serves.
-
----
-
-## Output: the bundle
-
-For self-analysis, everything lands in `.cobuilder-architect/self/` in that repo.
-This is the common case, with no `--repo` flag or with `--repo` pointing at
-the repo you are already in. The result is a portable, versioned bundle
-that any Odyssey viewer renders. Analyzing a different repo through
-`--repo` stores the same tree elsewhere instead. See [Multiple
-repos](#multiple-repos) below.
-
-```
-<target>/.cobuilder-architect/self/
-  bundle.json         # format and schema version, checked and refreshed on every run
-  data/{story.json, story.js, adrs.json, adrs.js, manifest.js, diffs-pr{N}.js…,
-        audio/pr{N}_{level}.wav, diagrams/pr{N}-level{1,2,3}.mmd, diagrams.js}
-  assets/pr-{N}/level-{1..3}.png
-  inventory.yaml
-  viewer/index.html
-  exports/{publish-manifest.json, pr-{N}.html…, index.html}   # written by /artifact:publish
-  exports/branch-{slug}/diff.json                             # generate-mode diff cache, gitignored
-
-<repo>/
-  docs/architecture/designs/<name>/{goal,intent,narrative,assessment}.json, pr-draft.md
-  docs/pull-requests/pr-<N>/{description,assessment}.md
-  docs/pull-requests/branch-<slug>/{intent,assessment}.json, {description,assessment}.md
-```
-
-The `diagrams/` and `assets/` entries depend on the `--art` mode that
-generated the PR. `--art diagram` writes only `.mmd` files and no PNGs.
-`--art image` writes only PNGs. `--art both`, the default, writes both.
-
-`/pr:generate` also writes two blocks onto the PR's own timeline entry
-in `story.json`: `intent`, which holds what the author said, and
-`assessment`, which holds the judgment written against it. They live there,
-and not in a file of their own, so the migration guard protects them the way
-it protects the narrative.
-
-A `branch-{slug}/` directory is the staging area for a branch that has no
-pull request yet. Once the PR opens, the same content moves into
-`story.json` under the real PR number, and the staging directory is a
-leftover you can delete.
-
-Commit the bundle, and a share link is only the raw GitHub URL. You can
-also import the bundle into the viewer directly, by upload or by local
-path. The `schema_version` field gates compatibility (AC G5). A bundle
-from an older plugin version is not a dead end, though. Every command
-upgrades the layout and the data shape of the bundle it touches, in place,
-before doing anything else. An older bundle catches up to the current
-format on its first use. It never needs a fresh `/pr:baseline` run
-just to modernize.
-
----
-
-## Plugin structure
-
-The marketplace ships five sibling plugins under one repository. Each has
-its own `.claude-plugin/plugin.json`, its own `skills/` and `commands/`
-(both auto-discovered, so no manifest declares them), and its own
-`scripts/`. A `shared/` directory at the repository root holds the code
-more than one plugin needs — vendored in as a `shared/` symlink inside
-each plugin that uses it, so a script resolves it at
-`${CLAUDE_PLUGIN_ROOT}/shared/<script>.py` regardless of which plugin runs it.
-
-```
-.claude-plugin/marketplace.json   the one marketplace manifest, listing all five plugins
-shared/                            vendored into every plugin as plugins/<name>/shared/
-                                    _bundle_meta.py, _manifest.py, build_index.py, ledger.py,
-                                    migrate_bundle.py, slice_table.py, validate_decision_state.py,
-                                    verify_bundle.py, skills/{mermaid,ste-writing}/
-plugins/
-  architect/              design, review, maintenance, decisions, describe, debug, options. Self-only
-    commands/             design.md, review.md, maintenance.md, decisions.md, describe.md, debug.md, options.md
-    skills/architecture/  the seven self-only modes, plus corpus and books
-    scripts/              compute_scores.py, html_to_pdf.py, check_options_report.py
-  pr/                     the five Odyssey history modes, and generate mode
-    commands/             baseline.md, generate.md, review.md
-    skills/odyssey/       SKILL.md, references/{story-mode, decision-records-lite,
-                           baseline-derivation, review-mode, interview-guide,
-                           adr-template, pr-description-template, stacks/*}
-    scripts/              extract_story.py, extract_diffs.py, build_diagrams.py,
-                           generate_prompts.py, generate_audio.py, render_review.py
-  artifact/               serve the bundle locally, publish a level as an Artifact
-    commands/             view.md, publish.md
-    skills/cobuilder-artifacts/
-    scripts/              export_artifact.py, export_index.py, record_publish.py, serve_bundle.py,
-                           build_builds_view.py
-    viewer/index.html     the portable bundle viewer, one file
-  implement/              build a design's epics, one vertical slice at a time
-    commands/             start.md, debug.md
-    skills/build/
-    scripts/              verify_gate.py
-  cobuilder-full-lifecycle/   umbrella plugin, depends on the other four
-    skills/cobuilder-full/
-```
-
-`architect` and `pr` each declare `artifact`
-as a `dependencies` entry in their manifest, because each hands off to
-`artifact`'s view or publish mode. Installing either plugin
-installs `artifact` with it. `implement` declares `architect` the same
-way, because `/implement:debug` dispatches straight into `architect`'s
-debug mode.
-
-Key manifest fields, one per plugin (`plugins/<name>/.claude-plugin/plugin.json`):
-
-```json
-{
-  "name": "architect",
-  "version": "0.5.0"
-}
-```
-
-Only `implement` ships agents and a hook. `architect`, `pr`,
-`artifact`, and `cobuilder-full-lifecycle` ship none of the three, and no
-plugin ships an MCP server or an output style. See ADR-0025. This is
-deliberate: a plugin adds agents or a hook only where a role in its own
-skill needs one, and every plugin still avoids an MCP server.
-
-`implement` requires the habit-hooks command-line tool for `/implement:start`.
-Run `/implement:install` first to set it up, including its TypeScript
-detector support. A `PostToolUse` hook coaches the GREEN agent with its
-output. See `plugins/implement/NOTICE.md` for the credit.
-
-`mermaid` and `ste-writing` are shared skills, vendored the same way
-`shared/`'s scripts are. `mermaid` holds authoring rules for the level 1
-through 3 diagrams that the `--art` flag can generate (see Visual form
-above). The per-PR diagram-authoring subagent invokes `mermaid` for
-itself. You never invoke it directly. `ste-writing` holds the writing
-rules and `ste-lint.py`.
-
----
-
-## Using these skills outside Claude Code
-
-Every plugin's `commands/` directory is a slash-command shim: a thin file
-that calls `Skill("<name>", args="<mode> $ARGUMENTS")`. Other coding
-harnesses have no `Skill()` tool and no slash-command mechanism, so
-`commands/` carries nothing for them. The `skills/*/SKILL.md` files are the
-real content, and each one already documents its modes in plain prose.
-
-`scripts/export-agent-skills.sh` copies each plugin's `skills/` directory,
-as-is, to a target folder, and skips `commands/`. It stamps the source
-plugin, its version, and the current commit into each copy's frontmatter,
-so a later export makes a stale copy visible instead of leaving it to
-silently drift. It also flags, without rewriting, any leftover
-`CLAUDE_PLUGIN_ROOT` or `mcp__` reference, since those resolve only inside
-Claude Code.
-
-```
-scripts/export-agent-skills.sh --target <dir> [--plugin <name>]...
-```
-
-Run it against another repo's skill folder, for example a repo that
-follows the `.agents/skills/<name>/SKILL.md` convention:
-
-```
-scripts/export-agent-skills.sh --target /path/to/other-repo/.agents/skills
-```
-
-Pass `--plugin` one or more times to export a subset:
-
-```
-scripts/export-agent-skills.sh --target /path/to/other-repo/.agents/skills --plugin architect
-```
-
-The script refuses to overwrite a copy that lacks its `source:` stamp, so
-a hand-edited file in the target directory stops the export for that skill
-instead of getting silently replaced. Delete the file, or move it aside,
-then re-run. Re-run the script whenever a plugin's skill changes; the
-stamped version and commit are how a consuming repo tells a fresh copy
-from a stale one.
-
----
-
-## Extraction manifest — what we took from the larger `architecture-review-design-maintenance` skill
-
-The original skill was a six-mode instrument for architecture governance.
-Contact the author for more information.
-
-### Extracted (adapted)
-
-| Source (cobuilder-harness) | Becomes | Adaptation |
-|---|---|---|
-| `references/story-mode.md` | `references/story-mode.md` | Keeps the framework, the four-level mapping, and the register and style rules verbatim. Rewires the output target to `<bundle-dir>/story.json` instead of `docs/prototypes/.../story.json`. When no ADR carries a matching `source_pr`, the process falls back to ADRs extracted in the same sweep. §3 now splits into two registers, selected with `--style kleppmann\|ste` (default `kleppmann`). The `ste` register defers to the `ste-writing` skill |
-| `references/decision-records.md` | `references/decision-records-lite.md` | Short Odyssey path onto the full 42010 schema in the architecture skill. Not a second record shape. |
-| `references/architecture-documentation.md` | `references/baseline-derivation.md` | Keeps describe-mode's verification discipline as the inventory procedure: enumerate modules, grep import edges in both directions, and never assert a boundary that is not verified. Drops the 8-section canvas, `boundary.yaml` authoring, and INVENTORY.md bookkeeping, replaced by one flat `inventory.yaml` file |
-| `references/stacks/*` (4 cards + README) | `references/stacks/*` | Kept verbatim. Detection precedence and ADR-topic checklists drive stack detection and extraction prompts. The `swift`, `swiftui-app`, and `vapor` cards were authored in this repo, not extracted |
-| `references/templates/adr-template.md` | `references/adr-template.md` | Pointer to the architecture template. |
-| `references/stacks/*`'s `## Boundary Rules` and `## Review Checks` | `references/review-mode.md` | Generate mode runs the grep commands in `Boundary Rules`. It never reads `## Corpus Load`. Review mode loads those paths from the architecture skill. |
-| `docs/prototypes/codebase-evolution/data/extract_story.py` | `scripts/extract_story.py` | Generalized. Takes a repo path as a parameter, selects a PR by number through merge-commit lookup, writes to `<bundle-dir>/`, and never overwrites an authored or generated narrative field |
-| `docs/prototypes/codebase-evolution/nanobanana/generate_prompts.py` | `scripts/generate_prompts.py` | Reads district and world data from the bundle instead of hand-authored `story.json` fields |
-| `utils/generate_audio.py` | `scripts/generate_audio.py` | Keeps the same flow: voice scripts feed Gemini TTS. The output path changes to `<bundle-dir>/data/audio/` |
-
-### Excluded from Odyssey. Now in this plugin as the architecture skill
-
-| Not extracted into Odyssey | Where it lives now |
+| Value | Result |
 |---|---|
-| **review** and **maintenance** modes, `saas-checklist.md`, `harness-security.md`, report templates, `compute_scores.py`, `html_to_pdf.py` | `/architect:review` and `/architect:maintenance`. Self-only. Generate mode already reversed part of this exclusion. The full audit (scores, checklists, dual HTML reports) ships as `/architect:review`. |
-| **corpus/** (~170 principle YAMLs) + **books/** (14 vendored volumes) | `skills/architecture/references/{corpus,books}/` |
-| **decisions-mode governance** (state machine, viewpoints, ADR numbering) | The architecture skill. `decision-records-lite.md` is a short Odyssey path onto that schema. |
-| **describe-mode full canvas** | `/architect:describe`. Self-only. Odyssey still uses the flat inventory. |
-| `sync-books.sh`, `sync-corpus.sh` | Still excluded. |
+| `both` (default) | Scene art and a Mermaid diagram. The viewer shows the art and lets you toggle to the diagram |
+| `diagram` | Mermaid only. No image cost |
+| `image` | Scene art only |
+
+If the author ran `/pr:generate` first, `/pr:review` reads the stated intent and rejected options, and it marks the extracted decision `provenance: authored`.
+
+`/pr:baseline` maps the repo into districts and records an inventory. Run it again to refresh. Both commands accept `--repo <path>` to target another local checkout. See [Multiple repos](#multiple-repos).
+
+### 6. Read and share: `/artifact:view` and `/artifact:publish`
+
+`/artifact:view` serves your bundles on `http://127.0.0.1:62583` and prints the URL. The port is fixed, so a saved review link works after a restart. `--list` shows the bundles, and `--stop` stops the server.
+
+The viewer shows each design, decision, build, and PR on one surface. A Work drawer lists every design by state, with search. A comment ledger anchors review notes to the page.
+
+`/artifact:publish --prs 73` flattens one PR into a single HTML file under the 16 MiB Artifact limit. The command lowers compression, and drops audio if it must. It also publishes an index page that links every PR you published. An unchanged PR reports "already up to date". Use `--force` to publish anyway.
 
 ---
 
-## Upgrading a bundle from an older version
+## The other architect modes
 
-A bundle keeps its own copy of the viewer, and it records the layout and the
-data shape it was written with. A newer plugin can therefore find an older
-bundle on disk. You do not upgrade it by hand.
+| Command | Use it to |
+|---|---|
+| `/architect:review` | Audit the repo for security, architecture, and quality. You get scores and HTML reports |
+| `/architect:maintenance` | Track trends and keep an incremental backlog |
+| `/architect:decisions` | Record and govern architecture decision records |
+| `/architect:describe` | Document bounded contexts and the architecture as it exists |
+| `/architect:debug` | Find the root cause of a failure |
 
-`shared/migrate_bundle.py` does the work, and every bundle-touching command
-runs it against the bundle before it does anything else. An older bundle
-catches up on its first use. The script does three things, in this order:
+These seven modes work on the repo you are in. They refuse a `--repo` target.
 
-1. It refreshes `viewer/index.html` from the plugin. This is unconditional,
-   because the viewer is a build artifact with no authored content in it.
-2. It steps the directory layout forward, tracked by `bundle_format`.
-3. It steps the data shape forward, tracked by `schema_version`.
+---
 
-Step 3 never rewrites your content. Each data migration declares the fields
-it changes. The script collects every authored value before and after the
-migration, and it compares the two sets. If a value changed that the
-migration did not declare, the script writes nothing and stops with the
-field name. It also copies `story.json` to `<bundle-dir>/.migration-backup/`
-before it writes. Add that path to `.gitignore`, because the backup is
-disposable.
+## Where output goes
 
-Run the script directly to inspect an upgrade before it happens:
+| Location | Holds | Written by |
+|---|---|---|
+| `docs/architecture/{adr,designs,contexts,review,options}/` | Authored records | Architect modes |
+| `docs/plans/<slug>/` | Gates, slice plan, status, rubrics | `implement` |
+| `docs/pull-requests/` | PR descriptions and assessments | `pr:generate` |
+| `.cobuilder-architect/self/` | The bundle: derived data, art, audio, viewer copy | `pr` and `artifact` |
+| `DDD-VOCABULARY.md` | The one glossary | Design mode |
+
+The bundle holds `story.json`, the record index `data/index.json`, diagrams, scene art, audio, and a copy of the viewer. Commit it. A share link is then the raw GitHub URL.
+
+Authored files live in `docs/`. The bundle holds only derived data. The scripts rebuild the bundle's index from `docs/` with `uv run shared/build_index.py`.
+
+### Multiple repos
+
+With no `--repo`, the bundle lands in `<repo>/.cobuilder-architect/self/`. With `--repo <path>`, the tool writes nothing into that repo. It caches the bundle in your current repo at `.cobuilder-architect/<repo-slug>/`.
+
+Use `--store local` to write into the target repo. Use `--store central` to force the cache.
+
+### Upgrading a bundle
+
+A newer plugin upgrades an older bundle on first use. You do nothing. The upgrade refreshes the viewer, steps the folder layout, and steps the data shape. It never rewrites your authored text. If a step would change an authored field, it writes nothing and names the field. It also backs up `story.json` to `.migration-backup/`, which you should add to `.gitignore`.
+
+Preview an upgrade:
 
 ```
 uv run plugins/pr/shared/migrate_bundle.py --bundle-dir .cobuilder-architect/self --dry-run
 ```
 
-`--dry-run` reports the three phases and prints a diff of `story.json`. It
-writes nothing.
-
-Two limits are worth knowing. An upgrade is one way. An older plugin reports
-`unknown-schema-version` for a bundle that a newer plugin migrated. Update
-the plugin on every machine that reads the bundle. The script also refuses a
-bundle from a plugin newer than itself. It tells you to update the plugin
-rather than guess the format.
+An upgrade goes one way. An older plugin reports `unknown-schema-version` for a newer bundle, so update the plugin on every machine that reads it.
 
 ---
 
-## Generation Cost
+## Cost
 
-You pay your own way. Narrative, ADR extraction, and diagram authoring run
-on your Claude Code subscription. Scene art and TTS narration run on your
-`GEMINI_API_KEY`. A typical PR generates 3 narration clips under every
-`--art` mode. It also generates 3 images under `--art both`, the default,
-or under `--art image`, and no images under `--art diagram`. Cost runs from
-single-digit cents to low single-digit dollars, and depends on the Gemini
-tier. `--art diagram` costs less. The prerequisite gate exists so that you
-never discover a missing key three stages into a sweep.
+Design, review, build, and the narrative text run on your Claude Code subscription. Voice narration and scene art run on your `GEMINI_API_KEY`. A typical PR makes three voice clips, and three images unless you pass `--art diagram`. The cost runs from a few cents to a few dollars, depending on your Gemini tier.
+
+---
+
+## Work on CoBuilder itself
+
+```
+uv run pytest tests -q                         # Python suite
+cd plugins/artifact/viewer && npm run build    # compile the viewer into index.html
+cd plugins/artifact/viewer && npm run test     # viewer tests
+```
+
+The viewer source lives in `plugins/artifact/viewer/src/`. It uses React, TypeScript, Vite, and Tailwind. The build writes the committed `plugins/artifact/viewer/index.html`, and a test fails if a build does not reproduce those bytes.
+
+`CLAUDE.md` holds the repo layout and the rules for a coding agent. `DDD-VOCABULARY.md` defines every term. `docs/architecture/adr/` holds the decisions. Start with ADR-0016, ADR-0017, and ADR-0025.
+
+### Plugin layout
+
+```
+.claude-plugin/marketplace.json    the one marketplace manifest
+shared/                            code shared by every plugin, vendored as plugins/<name>/shared
+plugins/
+  architect/                       seven modes, corpus, and report scripts
+  pr/                              generate, review, baseline, and the story scripts
+  artifact/                        view, publish, and the viewer
+  implement/                       start, debug, install, and the slice agents and hook
+  cobuilder-full-lifecycle/        the umbrella plugin
+```
+
+Only `implement` ships agents and a hook (ADR-0025). No plugin ships an MCP server. The commands in each plugin are thin. The skills hold the procedures.
+
+### Use the skills in another harness
+
+`scripts/export-agent-skills.sh` copies the plugins' skills into another tool's skill folder. It stamps each copy with its source version and commit, so you can see a stale copy. It refuses to overwrite a file that lacks the stamp.
+
+```
+scripts/export-agent-skills.sh --target /path/to/other-repo/.agents/skills --plugin architect
+```
 
 ---
 
 ## Credits
 
-**habit-hooks.** MIT license, copyright Ivett Ördög and contributors.
-https://github.com/habit-hooks/habit-hooks. `plugins/implement/scripts/habit_coach.py`
-calls the habit-hooks command-line tool through the `PostToolUse` hook in
-`plugins/implement/hooks/hooks.json`, after each file the `implement:green`
-agent writes. We vendor none of its code. Its study,
-https://github.com/LiinaSuoniemi/prompt-vs-metric-eval by Liina Suoniemi, is
-the evidence behind coaching an agent instead of showing it a bare metric.
+**habit-hooks.** MIT license, copyright Ivett Ördög and contributors. https://github.com/habit-hooks/habit-hooks. The `PostToolUse` hook in `plugins/implement/hooks/hooks.json` calls its command-line tool after each file the `green` agent writes. We vendor none of its code. Its study, https://github.com/LiinaSuoniemi/prompt-vs-metric-eval by Liina Suoniemi, is the evidence for coaching an agent instead of showing it a bare metric.
 
-**Matt Pocock's skills.** MIT license, copyright Matt Pocock.
-https://github.com/mattpocock/skills. We borrowed two ideas, not code or
-prose. The `domain-modeling` skill's glossary entry format (term, short
-definition, an `_Avoid_` list of rejected synonyms, one file per context)
-shaped how `DDD-VOCABULARY.md` merges with this repo's bounded-context
-canvases. The `code-review` skill's separate review axis, standards and
-spec reviewed in separate subagents and never merged, shaped the
-`implement:vocabulary` agent. That agent reports beside VALIDATE and never
-changes its score. We did not adopt `improve-codebase-architecture`,
-`wayfinder`, or `to-spec` from that repository.
+**Matt Pocock's skills.** MIT license, copyright Matt Pocock. https://github.com/mattpocock/skills. We borrowed two ideas and no code. The glossary entry format of `domain-modeling` shaped `DDD-VOCABULARY.md`. The separate review axis of `code-review` shaped the `vocabulary` agent.
+
+See `plugins/implement/NOTICE.md` for the full notice.
