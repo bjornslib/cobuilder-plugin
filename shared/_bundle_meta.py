@@ -28,6 +28,12 @@ SCHEMA_VERSION = "1.3"
 SCHEMA_VERSION_KNOWN = {"1.0", "1.1", "1.2", "1.3"}
 CURRENT_BUNDLE_FORMAT = 4
 
+# The stages a design's goal.json may carry. The Work board's lanes read exactly
+# these values (plugins/artifact/viewer/src/shell/workDeck.ts), so a design with
+# any other stage sits in no lane. build_index.py rejects such a goal and
+# verify_bundle.py rejects such an index. A test keeps this tuple and the lanes equal.
+DESIGN_STAGES = ("backlog", "decided", "approved", "review", "implemented", "superseded")
+
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 
 

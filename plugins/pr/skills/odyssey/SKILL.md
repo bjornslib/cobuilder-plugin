@@ -601,7 +601,7 @@ tiers.
 
    After the lookup above finds a design, do not stop there. Collect
    every design whose `epics[].branch` matches the current branch. Add
-   any design whose `goal.stage` is not `delivered` and whose declared
+   any design whose `goal.stage` is not `implemented` and whose declared
    modules the diff touches. This gives the full candidate set.
 
    If exactly one design results, behave exactly as today. Nothing
@@ -772,8 +772,8 @@ This stage runs after the PR merges. Run the same steps 1 through 4, then:
    design.
 
    If this merge completes the last epic, roll `goal.stage` to
-   `delivered`. If some epics remain, set `goal.stage` to
-   `partially-delivered`. Fill that epic's `state` to `merged`.
+   `implemented`. If some epics remain, set `goal.stage` to
+   `approved`. Fill that epic's `state` to `merged`.
 
    Stamp `approved_by` on the ADR this design wrote (the proposed record
    in `docs/architecture/adr/`), now that a human has merged it. An agent

@@ -115,7 +115,7 @@ tests/                            pytest suite for packaging, scripts, and gates
 - **Review, maintenance, decisions, describe, debug**: scored audit against the corpus, ADR governance, bounded-context canvases, root-cause diagnosis.
 - **Implement** (`/implement:start`): four approval gates (product, architecture, program design, slice plan with epic designs and blind rubrics), then a RED, GREEN, VALIDATE loop per slice. `verify_gate.py` checks the gates. A `PostToolUse` hook coaches GREEN through habit-hooks. `implement:vocabulary` checks each slice against the glossary.
 - **Odyssey** (`pr`): a four-level story per merged PR with scene art, Mermaid diagrams, voice narration, and retro-extracted ADRs. `generate` interviews first and assesses the change before the PR opens.
-- **Viewer** (`artifact`): one surface for designs, ADRs, builds, and PRs, that `data/index.json` joins. The Work board is a drawer over the shell (ADR-0034). `view_server.py` serves on fixed port 62583. Review links and an anchored-comments ledger are built in (ADR-0019, ADR-0032).
+- **Viewer** (`artifact`): one surface for designs, ADRs, builds, and PRs, that `data/index.json` joins. The Work board is a drawer over the shell (ADR-0034). `view_server.py` serves on fixed port 62583. Review links and an anchored-comments ledger are built in (ADR-0019, ADR-0032). A work item and a PR page the same way: a rail row is a paged level, and a section is one panel (ADR-0028).
 - **Publish** (`/artifact:publish`): flatten one PR into a single HTML file under the 16 MiB Artifact cap.
 - **Bundle migration** (`shared/migrate_bundle.py`): runs first in every bundle-touching mode. It refreshes the viewer unconditionally, steps the layout (`bundle_format`), then steps the data shape (`schema_version`).
 
@@ -140,6 +140,7 @@ Plugin scripts are PEP 723. `uv run <script>` resolves their own dependencies.
 - **Count a mode number in every top-level document.** When a mode count changes, grep `README.md`, `CLAUDE.md`, `DDD-VOCABULARY.md`, and `plugins/` for the old number.
 - **Do not root a server inside `viewer/`.** The viewer requests `../data/*`. Root at `.cobuilder-architect/`.
 - **Bump the plugin version** in both `plugin.json` and `marketplace.json` for a change that must reach installed copies. A test checks that the two match.
+- **`goal.stage` must be one of `_bundle_meta.DESIGN_STAGES`.** The Work board shows no design with another stage, and `build_index.py` rejects it. `design` is an `assessment.json` stage, not a design stage.
 - **`goal.json` list fields must be lists.** `build_index.py` hard-fails when `done_when` or `abort_if` is not a list.
 - **The PR number comes from opening the PR.** Content for a branch with no PR stays in `docs/pull-requests/branch-<slug>/`. Do not invent a branch key.
 - **Add a migration, do not rebuild.** Bump `SCHEMA_VERSION` or `CURRENT_BUNDLE_FORMAT` in `shared/_bundle_meta.py` and append to the matching ladder. Never call `extract_story.py` from a migration.
@@ -164,9 +165,12 @@ If a future term collides with one already in `DDD-VOCABULARY.md` across
 the two skill families, resolve the collision there before it ships — do
 not let two modes silently mean different things by the same word.
 
+### A superseded gazetteer
+
 `.cobuilder-architect/self/pages/cobuilder-vocabulary.html` is a historical
 session gazetteer from 2026-08-20. Several of its proposals shipped
-differently. Treat it as a record, not a specification. Do not edit it.
+differently. Treat it as a record, not a specification. `DDD-VOCABULARY.md`
+is the current source of truth. Do not edit the gazetteer.
 
 ## Writing standard
 

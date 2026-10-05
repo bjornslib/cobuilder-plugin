@@ -11,11 +11,12 @@
  * levels. That repetition is what makes a same-named jump across the two accounts
  * possible, so the names are fixed once in `CHANGE_LABEL` and read from there.
  *
- * ONE ROW IS ONE PANEL, AND THE ROW'S OWN NAME HEADS IT. The shell's paged level reads its
- * section strip from the panel headings on the page and its box count from the list this
- * module returns. A row that rendered two panels would put two links on the strip and one
- * step on the pager. So each row is one `Panel`, and every part inside it is a heading, a
- * box, or a statement rather than a second panel.
+ * ONE ROW IS ONE PAGED LEVEL, AND ONE SECTION IS ONE PANEL. The shell's paged level reads
+ * its section strip from the panel headings on the page and its box count from the list
+ * this module returns. So `changeSections` returns the sections of one row, each a `Panel`,
+ * and every part inside a section is a heading, a box, or a statement rather than a second
+ * panel. This is the program account's own structure, so a level reads the same way in
+ * both accounts. The sections of each row are named where `changeSections` builds them.
  *
  * EVERY PART A ROW CANNOT REACH IS STATED IN PLACE. An open pull request carries fewer
  * records than a merged one, a level the bundle never voiced carries no audio, and a
@@ -57,7 +58,7 @@ import type { SheetSubject } from "@/shell/Sheet";
 import { ChangeDiff } from "./Diff";
 import { ChangeFrame } from "./Frame";
 import type { ArtMode } from "./Frame";
-import { ChangeAssessmentBody, ChangeIntentBody } from "./Sheets";
+import { ChangeAssessmentPart, ChangeIntentPart } from "./Sheets";
 import { diffFiles } from "./levels";
 import type { ChangeLevel, LevelKey } from "./levels";
 
@@ -101,12 +102,6 @@ export const CHANGE_LABEL: Record<ChangeKey, string> = {
   "file-diffs": "File Diffs",
 };
 
-/** One line per row: whose record it is, and what the row holds. Not every row has one. */
-export const CHANGE_LEAD: Partial<Record<ChangeKey, string>> = {
-  "problem-and-solution":
-    "The problem that the diff solves, the solution, and the assessment of the merged diff.",
-};
-
 /** What each row reads, and the callbacks its controls raise. */
 export interface ChangeBodyProps {
   /** The pull request's own timeline entry, or null when the bundle holds none. */
@@ -140,215 +135,214 @@ export interface ChangeBodyProps {
 }
 
 /**
- * The four rows, one element per panel, in the order the reader walks them.
+ * One row's sections, one element per panel, in the order the reader walks them.
  *
- * THE ENTRY'S ABSENCE IS FOUR STATED ROWS, AND NOT AN EMPTY LIST. A route can name a
- * change the bundle holds no story entry for, and the reader who asked for that change
- * wants the four rows they asked for with each one saying what it could not read. An
- * empty list would leave the pane with no strip, no boxes, and no statement at all.
+ * EACH ROW IS A PAGED LEVEL OF ITS OWN, AS IN THE PROGRAM'S ACCOUNT. The rail's four rows
+ * open four levels, and the section strip of a level names that level's own sections. A
+ * row used to be one long panel and the strip repeated the rail's four names, so the
+ * strip told the reader nothing the rail had not told them.
+ *
+ * THE ENTRY'S ABSENCE IS ONE STATED SECTION, AND NOT AN EMPTY LIST. A route can name a
+ * change the bundle holds no story entry for, and the reader who asked for that row wants
+ * the row they asked for, saying what it could not read. An empty list would leave the
+ * pane with no strip, no boxes, and no statement at all.
  */
-export function changeSections(props: ChangeBodyProps): ReactNode[] {
+export function changeSections(props: ChangeBodyProps, row: ChangeKey): ReactNode[] {
   const { entry, levels } = props;
-
-  /** The level one row reads, through the one table that maps a row's word to a key. */
-  const levelOf = (row: ChangeKey): ChangeLevel | null =>
-    levels.find((level) => level.key === CHANGE_LEVEL_KEY[row]) ?? null;
+  const icon = ROW_ICON[row];
+  const level = levels.find((candidate) => candidate.key === CHANGE_LEVEL_KEY[row]) ?? null;
 
   if (entry === null) {
-    return CHANGE_KEYS.map((row) => (
-      <Panel key={row} title={CHANGE_LABEL[row]} icon={ROW_ICON[row]} lead={CHANGE_LEAD[row]} absent>
+    return [
+      <Panel key={row} title={CHANGE_LABEL[row]} icon={icon} absent>
         <Missing>
           The bundle holds no story entry for this pull request, so this row has no record
           to read.
         </Missing>
-      </Panel>
-    ));
+      </Panel>,
+    ];
   }
+
+  /** The level's narration and its picture or drawing, which lead the row's first section. */
+  const narration = (
+    <>
+      <Narration level={level} servedAudio={props.servedAudio} />
+      <ChangeFrame
+        level={level ?? EMPTY_LEVEL}
+        theme={props.theme}
+        artMode={props.artMode}
+        onArtMode={props.onArtMode}
+        failedArt={props.failedArt}
+        onArtFailed={props.onArtFailed}
+      />
+    </>
+  );
 
   const intent = entry.intent;
   const assessment = entry.assessment;
-  const gap = entry.levels?.[CHANGE_LEVEL_KEY["problem-and-solution"]];
-  const beats = gap?.beats ?? [];
-  /*
-   * THE DECISIONS COME FROM THE INDEX'S JOIN, AND FROM NOWHERE ELSE. `entry.adrs` is the
-   * story entry's own list, and it and `data/index.json` already disagree about which
-   * decisions a change landed. One fact has one source, so this row reads the join the
-   * index computed and derives none of it. A null join is the index not loaded, which is
-   * stated in place rather than answered from the second list.
-   */
-  const landed = props.joins === null ? [] : props.joins.adrIdsForPullRequest(entry.pr);
+
+  if (row === "intent") {
+    return [
+      <Panel key="why" title="Why" icon={icon} absent={level === null && intent === undefined}>
+        {narration}
+        <ChangeIntentPart intent={intent} part="why" />
+      </Panel>,
+      <Panel key="approach" title="Approach" icon={icon} absent={intent === undefined}>
+        <ChangeIntentPart intent={intent} part="approach" />
+      </Panel>,
+      <Panel key="scope" title="Scope and risk" icon={icon} absent={intent === undefined}>
+        <ChangeIntentPart intent={intent} part="scope" />
+      </Panel>,
+      <Panel key="where" title="Where it sits" icon={icon}>
+        <ChangeFacts entry={entry} />
+        <SubHead>Districts touched</SubHead>
+        <Touched entry={entry} />
+      </Panel>,
+    ];
+  }
+
+  if (row === "problem-and-solution") {
+    const gap = entry.levels?.[CHANGE_LEVEL_KEY["problem-and-solution"]];
+    const beats = gap?.beats ?? [];
+    const stated = Boolean(gap?.problem || gap?.solution) || beats.length > 0;
+    return [
+      <Panel
+        key="problem"
+        title="Problem and solution"
+        icon={icon}
+        absent={level === null && !stated}
+      >
+        {narration}
+        {stated ? (
+          <div className="flex min-w-0 flex-col gap-3">
+            {gap?.problem ? (
+              <Box label="Problem" tone="problem">
+                {gap.problem}
+              </Box>
+            ) : null}
+            {gap?.solution ? (
+              <Box label="Solution" tone="solution">
+                {gap.solution}
+              </Box>
+            ) : null}
+            {beats.length === 0 ? null : (
+              <ul className="m-0 flex min-w-0 list-none flex-col gap-2 p-0">
+                {beats.map((beat, index) => (
+                  <li
+                    key={`${index}-${beat.kind ?? ""}`}
+                    className="min-w-0 rounded-lg border border-line-soft bg-surface-2/50 px-3.5 py-2.5"
+                  >
+                    <span className="font-mono text-[11.5px] font-bold tracking-[0.08em] text-ink-faint uppercase">
+                      {beat.kind ?? "beat"}
+                    </span>
+                    <p className="mt-1 mb-0 min-w-0 font-serif text-[15.5px] leading-[1.6] text-foreground">
+                      {beat.text}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : (
+          <Missing>
+            This pull request states no problem and no solution for this level. The bundle
+            records neither the two prose fields nor a beat.
+          </Missing>
+        )}
+      </Panel>,
+      <Panel key="assessment" title="Assessment" icon={icon} absent={assessment === undefined}>
+        <ChangeAssessmentPart assessment={assessment} part="assessment" />
+      </Panel>,
+      <Panel
+        key="findings"
+        title="Findings and checks"
+        icon={icon}
+        absent={assessment === undefined}
+      >
+        <ChangeAssessmentPart assessment={assessment} part="findings" />
+      </Panel>,
+      <Panel
+        key="risk"
+        title="Regret risk and drift"
+        icon={icon}
+        absent={assessment === undefined}
+      >
+        <ChangeAssessmentPart assessment={assessment} part="risk" />
+      </Panel>,
+    ];
+  }
+
+  if (row === "architecture") {
+    /*
+     * THE DECISIONS COME FROM THE INDEX'S JOIN, AND FROM NOWHERE ELSE. `entry.adrs` is the
+     * story entry's own list, and it and `data/index.json` already disagree about which
+     * decisions a change landed. One fact has one source, so this row reads the join the
+     * index computed and derives none of it. A null join is the index not loaded, which is
+     * stated in place rather than answered from the second list.
+     */
+    const landed = props.joins === null ? [] : props.joins.adrIdsForPullRequest(entry.pr);
+    return [
+      <Panel key="mechanism" title="Mechanism" icon={icon} absent={level === null}>
+        {narration}
+      </Panel>,
+      <Panel key="decisions" title="Decisions landed" icon={icon} absent={landed.length === 0}>
+        {props.joins === null ? (
+          <Missing>
+            The index did not load, so this row cannot read the decisions this change landed.
+            The join that names them lives in the index.
+          </Missing>
+        ) : landed.length === 0 ? (
+          <Missing>This pull request landed no decision record.</Missing>
+        ) : (
+          <ul className="m-0 flex min-w-0 list-none flex-col gap-2 p-0">
+            {landed.map((id) => {
+              const record: AdrRecord | undefined = props.adrs[id];
+              return (
+                <li key={id} className="min-w-0 list-none">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      props.openSheet({
+                        kind: "adr",
+                        record,
+                        title: record?.title ?? id,
+                        state: record?.state ?? "unknown",
+                      })
+                    }
+                    className={cn(
+                      "flex min-h-9 w-full min-w-0 cursor-pointer items-center gap-2 rounded-lg border border-line-soft bg-card px-3 py-2 text-left",
+                      "transition-colors duration-150 ease-house hover:bg-surface-2",
+                      "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                    )}
+                  >
+                    <ScrollText className="size-3.5 shrink-0 text-ink-faint" aria-hidden="true" />
+                    <span className="min-w-0 flex-1 truncate font-mono text-[12.5px] text-ink-mid">
+                      {id} · {record?.title ?? "no record in this bundle"}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Panel>,
+    ];
+  }
+
   const groups = entry.levels?.[CHANGE_LEVEL_KEY["file-diffs"]]?.groups ?? [];
   const files = props.diff === null ? [] : diffFiles(props.diff);
-
-  const intentLevel = levelOf("intent");
-  const gapLevel = levelOf("problem-and-solution");
-  const archLevel = levelOf("architecture");
-  const diffLevel = levelOf("file-diffs");
-
   return [
-    /* --------------------------------------------------------------- intent */
     <Panel
-      key="intent"
-      title={CHANGE_LABEL.intent}
-      icon={ROW_ICON.intent}
-      lead={CHANGE_LEAD.intent}
-      absent={intentLevel === null && intent === undefined}
+      key="groups"
+      title="Change groups"
+      icon={icon}
+      absent={level === null && groups.length === 0}
     >
-      <Narration level={intentLevel} servedAudio={props.servedAudio} />
-      <ChangeFrame
-        level={intentLevel ?? EMPTY_LEVEL}
-        theme={props.theme}
-        artMode={props.artMode}
-        onArtMode={props.onArtMode}
-        failedArt={props.failedArt}
-        onArtFailed={props.onArtFailed}
-      />
-
-      <SubHead>What was captured before the code existed</SubHead>
-      <ChangeIntentBody intent={intent} />
-
-      <SubHead>Where this pull request sits</SubHead>
-      <ChangeFacts entry={entry} />
-
-      <SubHead>Districts touched</SubHead>
-      <Touched entry={entry} />
-    </Panel>,
-
-    /* -------------------------------------------------- problem and solution */
-    <Panel
-      key="problem-and-solution"
-      title={CHANGE_LABEL["problem-and-solution"]}
-      icon={ROW_ICON["problem-and-solution"]}
-      lead={CHANGE_LEAD["problem-and-solution"]}
-      absent={gapLevel === null && assessment === undefined && beats.length === 0}
-    >
-      <Narration level={gapLevel} servedAudio={props.servedAudio} />
-      <ChangeFrame
-        level={gapLevel ?? EMPTY_LEVEL}
-        theme={props.theme}
-        artMode={props.artMode}
-        onArtMode={props.onArtMode}
-        failedArt={props.failedArt}
-        onArtFailed={props.onArtFailed}
-      />
-
-      <SubHead>The gap and the shape</SubHead>
-      {gap?.problem || gap?.solution || beats.length > 0 ? (
-        <div className="flex min-w-0 flex-col gap-3">
-          {gap?.problem ? (
-            <Box label="Problem" tone="problem">
-              {gap.problem}
-            </Box>
-          ) : null}
-          {gap?.solution ? (
-            <Box label="Solution" tone="solution">
-              {gap.solution}
-            </Box>
-          ) : null}
-          {beats.length === 0 ? null : (
-            <ul className="m-0 flex min-w-0 list-none flex-col gap-2 p-0">
-              {beats.map((beat, index) => (
-                <li
-                  key={`${index}-${beat.kind ?? ""}`}
-                  className="min-w-0 rounded-lg border border-line-soft bg-surface-2/50 px-3.5 py-2.5"
-                >
-                  <span className="font-mono text-[11.5px] font-bold tracking-[0.08em] text-ink-faint uppercase">
-                    {beat.kind ?? "beat"}
-                  </span>
-                  <p className="mt-1 mb-0 min-w-0 font-serif text-[15.5px] leading-[1.6] text-foreground">
-                    {beat.text}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      ) : (
-        <Missing>
-          This pull request states no problem and no solution for this level. The bundle
-          records neither the two prose fields nor a beat.
-        </Missing>
-      )}
-
-      <SubHead>The reading written against the merged diff</SubHead>
-      <ChangeAssessmentBody assessment={assessment} />
-    </Panel>,
-
-    /* ----------------------------------------------------------- architecture */
-    <Panel
-      key="architecture"
-      title={CHANGE_LABEL.architecture}
-      icon={ROW_ICON.architecture}
-      lead={CHANGE_LEAD.architecture}
-      absent={archLevel === null && landed.length === 0}
-    >
-      <Narration level={archLevel} servedAudio={props.servedAudio} />
-      <ChangeFrame
-        level={archLevel ?? EMPTY_LEVEL}
-        theme={props.theme}
-        artMode={props.artMode}
-        onArtMode={props.onArtMode}
-        failedArt={props.failedArt}
-        onArtFailed={props.onArtFailed}
-      />
-
-      <SubHead count={landed.length}>Decisions this change landed</SubHead>
-      {props.joins === null ? (
-        <Missing>
-          The index did not load, so this row cannot read the decisions this change landed.
-          The join that names them lives in the index.
-        </Missing>
-      ) : landed.length === 0 ? (
-        <Missing>This pull request landed no decision record.</Missing>
-      ) : (
-        <ul className="m-0 flex min-w-0 list-none flex-col gap-2 p-0">
-          {landed.map((id) => {
-            const record: AdrRecord | undefined = props.adrs[id];
-            return (
-              <li key={id} className="min-w-0 list-none">
-                <button
-                  type="button"
-                  onClick={() =>
-                    props.openSheet({
-                      kind: "adr",
-                      record,
-                      title: record?.title ?? id,
-                      state: record?.state ?? "unknown",
-                    })
-                  }
-                  className={cn(
-                    "flex min-h-9 w-full min-w-0 cursor-pointer items-center gap-2 rounded-lg border border-line-soft bg-card px-3 py-2 text-left",
-                    "transition-colors duration-150 ease-house hover:bg-surface-2",
-                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                  )}
-                >
-                  <ScrollText className="size-3.5 shrink-0 text-ink-faint" aria-hidden="true" />
-                  <span className="min-w-0 flex-1 truncate font-mono text-[12.5px] text-ink-mid">
-                    {id} · {record?.title ?? "no record in this bundle"}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </Panel>,
-
-    /* ----------------------------------------------------------- file diffs */
-    <Panel
-      key="file-diffs"
-      title={CHANGE_LABEL["file-diffs"]}
-      icon={ROW_ICON["file-diffs"]}
-      lead={CHANGE_LEAD["file-diffs"]}
-      absent={diffLevel === null && props.diff === null && groups.length === 0}
-    >
-      <Narration level={diffLevel} servedAudio={props.servedAudio} />
-
-      <SubHead count={groups.length}>The diff, in the change's own words</SubHead>
+      <Narration level={level} servedAudio={props.servedAudio} />
       {groups.length === 0 ? (
         <Missing>
-          This pull request's fourth level groups no file. The diff below is the whole of
-          the record.
+          This pull request's fourth level groups no file. The diff is the whole of the
+          record.
         </Missing>
       ) : (
         <ul className="m-0 flex min-w-0 list-none flex-col gap-3 p-0">
@@ -374,7 +368,8 @@ export function changeSections(props: ChangeBodyProps): ReactNode[] {
           ))}
         </ul>
       )}
-
+    </Panel>,
+    <Panel key="diff" title="The diff" icon={icon} absent={props.diff === null}>
       {props.diffMessage === null ? null : <Missing>{props.diffMessage}</Missing>}
       <ChangeDiff files={files} selected={props.diffFile} onSelect={props.onDiffFile} />
     </Panel>,
@@ -417,11 +412,10 @@ const EMPTY_LEVEL: ChangeLevel = {
  * levels when it merged and fewer when it has not, and a reader who asks for this row wants
  * to know which of the two they have.
  *
- * THE AUDIO HAS THREE STATES, AND EACH ONE IS STATED. A level with no voice script was
- * never voiced. A level whose script the bundle holds and whose file it does not serve
- * says so. A level the bundle answers draws the control. The middle state is the one this
- * bundle's pull requests are in: the record kept the script and the audio did not travel
- * with it, and a control that cannot play is worse than a sentence that says so.
+ * THE AUDIO DRAWS A CONTROL OR NOTHING. A level the bundle answers draws the control. A
+ * level with no voice script, and a level whose script the bundle holds but whose file it
+ * does not serve, draw nothing: a sentence about missing audio adds nothing the reader can
+ * act on. Only the moment of asking is stated, because the answer is not in yet.
  */
 function Narration({
   level,
@@ -453,21 +447,13 @@ function Narration({
         </p>
       )}
 
-      {level.audio === null ? (
-        <AbsentRecordLine>
-          This level carries no voice script, so the bundle holds no narration audio for it.
-        </AbsentRecordLine>
-      ) : served === true ? (
+      {level.audio === null ? null : served === true ? (
         <div className="flex min-w-0 flex-col gap-1.5">
           {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
           <audio controls preload="metadata" src={level.audio} className="w-full max-w-[42rem]" />
           <span className="font-mono text-[12px] text-ink-faint">{level.audio}</span>
         </div>
-      ) : served === false ? (
-        <Missing>
-          {`This level carries a voice script and the bundle holds no audio file at ${level.audio}.`}
-        </Missing>
-      ) : (
+      ) : served === false ? null : (
         <AbsentRecordLine>Asking the bundle whether this level's audio is served.</AbsentRecordLine>
       )}
     </div>

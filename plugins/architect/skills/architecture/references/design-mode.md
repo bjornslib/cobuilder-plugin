@@ -414,7 +414,7 @@ Do not keep `branch` as a scalar. The join lives on `epics`.
     {"id": "E2", "slug": "saved-cards",
      "outcome": "<...>", "branch": null, "pr": null, "state": "planned"}
   ],
-  "stage": "partially-delivered",
+  "stage": "approved",
   "supersedes": null,
   "rounds": [
     { "n": 1, "changed": true, "feedback_class": "material" }
@@ -431,17 +431,22 @@ after a stage-6 reviewer round returned, not when the spawn was skipped.
 Design mode writes epic slugs at stage 7. It does not write testable
 criteria. A later factory pass may fill `epics[].outcome`.
 
-`goal.stage` values include at least:
+`goal.stage` takes one of six values. The Work board reads exactly these
+(`_bundle_meta.DESIGN_STAGES`). `build_index.py` rejects a goal with any other
+value or none, because a design with another stage shows in no lane.
 
 | Value | Meaning |
 |---|---|
-| `design` | Stages 0 to 5 are in progress. |
+| `backlog` | Stages 0 to 5 are in progress, or design mode stopped before the engineer approved the draft. |
+| `decided` | A decision record exists, and no approved design follows it. |
 | `review` | Stage 6 is in progress, or stage 7 just created the branch. |
-| `partially-delivered` | At least one epic has a merged pull request, and at least one does not. |
-| `delivered` | Every epic has a merged pull request. |
+| `approved` | The reviewed design is approved, and at least one epic has no merged pull request. |
+| `implemented` | Every epic has a merged pull request. |
 | `superseded` | Stage 0 replaced this design with a newer one. |
 
-A design reaches `delivered` when every epic has a merged pull request.
+`design` is a stage of `assessment.json`, not of `goal.json`. Do not write it
+into `goal.stage`. A design reaches `implemented` when every epic has a merged
+pull request.
 
 ## 13. What this mode does not do
 

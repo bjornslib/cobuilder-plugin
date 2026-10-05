@@ -10,25 +10,20 @@
  * has never carried a picture or a drawing. The block says so rather than drawing an empty
  * frame, so a reader meets a stated absence and not a blank box.
  *
- * THIS BLOCK IS NOT A PANEL, AND THAT IS A LAYOUT RULE RATHER THAN A STYLE CHOICE. The
- * change's four rows each render one `Panel`, and the shell's section strip reads one link
- * per panel heading on the page. A frame that were a panel of its own would put a second
- * link on the strip for one step of the pager, so this block carries a sub-heading and no
- * jump target. ADR-0028 states the rule for the whole section model.
+ * THIS BLOCK IS NOT A PANEL, AND IT CARRIES NO HEADING. The picture and the drawing need no
+ * caption, because the level's own row names them. The change's four rows each render one
+ * `Panel`, and the shell's section strip reads one link per panel heading on the page, so a
+ * frame heading would also add a second link to the strip. ADR-0028 states the rule for
+ * the whole section model.
  *
  * A PICTURE THE BROWSER FAILED ON IS A PICTURE THAT IS NOT THERE. `failedArt` carries the
  * address that did not load, so the frame counts the parts it can draw rather than the
- * parts its record promised. The count beside the heading and the line above it read the
- * same condition, so the two cannot disagree.
- *
- * THE LINE ABOVE THE BODY IS DERIVED FROM THE PARTS THE FRAME HOLDS, so it cannot promise a
- * part the count beside it denies. A frame with a picture and a drawing says the reader
- * picks between them; a frame with one says which one is missing; a frame with neither says
- * that neither exists.
+ * parts its record promised. The toggle and the body read the same condition, so the two
+ * cannot disagree.
  */
 
 import { cn } from "@/lib/utils";
-import { Missing, NotPresentPill, SubHead } from "@/shell/atoms";
+import { Missing, NotPresentPill } from "@/shell/atoms";
 import { DiagramTiles } from "@/shell/DiagramTiles";
 import type { Theme } from "@/shell/DiagramTiles";
 
@@ -36,9 +31,6 @@ import type { ChangeLevel } from "./levels";
 
 /** Which of the frame's two parts the reader is looking at. */
 export type ArtMode = "image" | "diagram";
-
-/** The frame's own heading. One name for one thing, read by every row that draws it. */
-export const FRAME_HEADING = "The picture";
 
 export interface ChangeFrameProps {
   level: ChangeLevel;
@@ -70,29 +62,26 @@ export function ChangeFrame({
 
   return (
     <div className="mb-4 flex min-w-0 flex-col gap-3">
-      <span className="flex min-w-0 flex-wrap items-center gap-2">
-        <SubHead count={parts}>{FRAME_HEADING}</SubHead>
-        {hasImage && hasDiagram ? (
-          <span className="flex items-center gap-1" role="group" aria-label="Frame mode">
-            {(["image", "diagram"] as const).map((value) => (
-              <button
-                key={value}
-                type="button"
-                aria-current={mode === value ? "true" : undefined}
-                onClick={() => onArtMode(value)}
-                className={cn(
-                  "cursor-pointer rounded-full border px-2.5 py-1 font-mono text-[11.5px] font-bold tracking-[0.04em] uppercase transition-colors",
-                  mode === value
-                    ? "border-primary bg-accent-wash text-accent-deep"
-                    : "border-line text-ink-dim hover:border-primary/40 hover:text-ink",
-                )}
-              >
-                {value}
-              </button>
-            ))}
-          </span>
-        ) : null}
-      </span>
+      {hasImage && hasDiagram ? (
+        <span className="flex items-center gap-1" role="group" aria-label="Frame mode">
+          {(["image", "diagram"] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              aria-current={mode === value ? "true" : undefined}
+              onClick={() => onArtMode(value)}
+              className={cn(
+                "cursor-pointer rounded-full border px-2.5 py-1 font-mono text-[11.5px] font-bold tracking-[0.04em] uppercase transition-colors",
+                mode === value
+                  ? "border-primary bg-accent-wash text-accent-deep"
+                  : "border-line text-ink-dim hover:border-primary/40 hover:text-ink",
+              )}
+            >
+              {value}
+            </button>
+          ))}
+        </span>
+      ) : null}
 
       {parts === 0 ? (
         <div className="flex min-w-0 flex-col gap-2">
