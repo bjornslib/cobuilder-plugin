@@ -111,7 +111,7 @@ const PRE_RENAME_LEVEL_KEY: Record<string, string> = { intent: "landscape" };
  * the top level. Both shapes are read, because a rule that saw only the flat one reported
  * that design's three levels missing while the text sat one key away.
  */
-function narrativeLevel(
+export function narrativeLevel(
   record: DesignRecord,
   key: string,
 ): { narration?: string } | null {

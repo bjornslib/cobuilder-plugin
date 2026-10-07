@@ -97,9 +97,12 @@ import { cn } from "@/lib/utils";
 import { PanelActionContext, SectionHeading } from "./atoms";
 import type { PanelAction } from "./atoms";
 import { diffFiles, useChangeBundle, useServedAudio } from "./change/levels";
+import type { ChangeLevel } from "./change/levels";
 import type { ArtMode } from "./change/Frame";
-import { CHANGE_KEYS, changeSections } from "./change/sections";
+import { CHANGE_KEYS, CHANGE_LEVEL_KEY, changeSections } from "./change/sections";
 import type { AdrRecord } from "./records";
+import { InShort } from "./InShort";
+import { narrativeLevel } from "./readiness";
 import { JumpBar, useJumpTargets } from "./jump";
 import type { JumpTarget } from "./jump";
 import {
@@ -977,6 +980,7 @@ export default function ShellApp() {
                     />
 
                     <PagedLevel
+                      inShort={changeInShort(change.levels, changeRow, servedAudio)}
                       targets={jumpTargets}
                       routeKey={routeKey}
                       carried={null}
@@ -1111,6 +1115,7 @@ export default function ShellApp() {
                     {paged ? (
                       programPaged ? (
                         <PagedLevel
+                          inShort={workInShort(work, section)}
                           targets={jumpTargets}
                           routeKey={routeKey}
                           carried={carriedHere}
@@ -1128,6 +1133,7 @@ export default function ShellApp() {
                         />
                       ) : (
                         <PagedLevel
+                          inShort={changeInShort(change.levels, changeRow, servedAudio)}
                           targets={jumpTargets}
                           routeKey={routeKey}
                           carried={carriedHere}
@@ -1254,6 +1260,32 @@ function LevelHeading({
 }
 
 /**
+ * The In Short strip of a pull request row, or null.
+ *
+ * The text is the level's `narration`. Listen shows only when the bundle serves the
+ * level's audio file. File Diffs has no strip.
+ */
+function changeInShort(
+  levels: ChangeLevel[],
+  row: (typeof CHANGE_KEYS)[number],
+  servedAudio: Record<string, boolean>,
+): ReactNode {
+  if (row === "file-diffs") return null;
+  const level = levels.find((candidate) => candidate.key === CHANGE_LEVEL_KEY[row]);
+  if (level === undefined) return null;
+  const audio = level.audio !== null && servedAudio[level.audio] === true ? level.audio : null;
+  return <InShort key={`${level.key}`} text={level.narration} audio={audio} />;
+}
+
+/** The In Short strip of a work item level: the design's narration, with no audio. */
+function workInShort(work: WorkItem, level: PagedLevelKey): ReactNode {
+  if (level === "build") return null;
+  const key = level === "problem-and-solution" ? "problem_solution" : level;
+  const text = work.record ? narrativeLevel(work.record, key)?.narration : undefined;
+  return typeof text === "string" ? <InShort text={text} /> : null;
+}
+
+/**
  * A level as a horizontal section pager.
  *
  * One box on screen at a time. The strip moves the reader, the arrows move the reader,
@@ -1278,7 +1310,10 @@ function PagedLevel({
   routeKey,
   carried,
   start = 0,
+  inShort = null,
 }: {
+  /** The In Short strip, drawn above the section tabs, or null when the level has none. */
+  inShort?: ReactNode;
   /** The sections, in the order Next walks them. The length is the level's count. */
   sections: ReactNode[];
   targets: JumpTarget[];
@@ -1301,6 +1336,7 @@ function PagedLevel({
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      {inShort}
       <SectionStrip targets={targets} activeIndex={index} onSelect={select} />
 
       {/*

@@ -42,11 +42,9 @@ import type { StoryEntry } from "@/data/bundle";
 import type { ResolvedJoins } from "@/data/joins";
 import { cn } from "@/lib/utils";
 import {
-  AbsentRecordLine,
   Box,
   Chip,
   Missing,
-  NotPresentPill,
   Panel,
   StateBadge,
   SubHead,
@@ -163,10 +161,9 @@ export function changeSections(props: ChangeBodyProps, row: ChangeKey): ReactNod
     ];
   }
 
-  /** The level's narration and its picture or drawing, which lead the row's first section. */
+  /** The level's picture or drawing, which leads the row's first section. */
   const narration = (
     <>
-      <Narration level={level} servedAudio={props.servedAudio} />
       <ChangeFrame
         level={level ?? EMPTY_LEVEL}
         theme={props.theme}
@@ -338,7 +335,6 @@ export function changeSections(props: ChangeBodyProps, row: ChangeKey): ReactNod
       icon={icon}
       absent={level === null && groups.length === 0}
     >
-      <Narration level={level} servedAudio={props.servedAudio} />
       {groups.length === 0 ? (
         <Missing>
           This pull request's fourth level groups no file. The diff is the whole of the
@@ -401,64 +397,6 @@ const EMPTY_LEVEL: ChangeLevel = {
   audio: null,
   diagram: null,
 };
-
-/**
- * The level's narration, and its audio when the bundle serves one.
- *
- * THE DRAWING IS NOT HERE. Every row draws its level's picture and drawing through
- * `ChangeFrame`, so one block answers for both parts and no row draws a drawing twice.
- *
- * A LEVEL THE BUNDLE DOES NOT HOLD IS STATED, NOT DROPPED. A pull request carries four
- * levels when it merged and fewer when it has not, and a reader who asks for this row wants
- * to know which of the two they have.
- *
- * THE AUDIO DRAWS A CONTROL OR NOTHING. A level the bundle answers draws the control. A
- * level with no voice script, and a level whose script the bundle holds but whose file it
- * does not serve, draw nothing: a sentence about missing audio adds nothing the reader can
- * act on. Only the moment of asking is stated, because the answer is not in yet.
- */
-function Narration({
-  level,
-  servedAudio,
-}: {
-  level: ChangeLevel | null;
-  servedAudio: Record<string, boolean>;
-}) {
-  if (level === null) {
-    return (
-      <div className="mb-4 min-w-0">
-        <NotPresentPill className="mb-2" />
-        <Missing>
-          The bundle holds no narration record for this level of this pull request.
-        </Missing>
-      </div>
-    );
-  }
-
-  const served = level.audio === null ? null : servedAudio[level.audio];
-
-  return (
-    <div className="mb-4 flex min-w-0 flex-col gap-3">
-      {level.narration.length === 0 ? (
-        <Missing>This level carries no narration text.</Missing>
-      ) : (
-        <p className="m-0 max-w-[92ch] font-serif text-[16.5px] leading-[1.65] text-foreground">
-          {level.narration}
-        </p>
-      )}
-
-      {level.audio === null ? null : served === true ? (
-        <div className="flex min-w-0 flex-col gap-1.5">
-          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-          <audio controls preload="metadata" src={level.audio} className="w-full max-w-[42rem]" />
-          <span className="font-mono text-[12px] text-ink-faint">{level.audio}</span>
-        </div>
-      ) : served === false ? null : (
-        <AbsentRecordLine>Asking the bundle whether this level's audio is served.</AbsentRecordLine>
-      )}
-    </div>
-  );
-}
 
 /** The change's own facts: what it is, when it merged, and how big it is. */
 function ChangeFacts({ entry }: { entry: StoryEntry }) {

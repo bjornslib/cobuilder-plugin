@@ -112,9 +112,15 @@ describe("what a section does not say", () => {
     expect(said).not.toMatch(/no voice script/);
   });
 
-  it("draws the audio control when the bundle serves the file", () => {
-    text("intent", { servedAudio: { [LEVEL.audio as string]: true } });
-    expect(document.querySelector("audio")).not.toBeNull();
+  it("leaves the audio control and the narration to the In Short strip", () => {
+    const said = text("intent", { servedAudio: { [LEVEL.audio as string]: true } });
+    expect(document.querySelector("audio")).toBeNull();
+    expect(said).not.toContain(LEVEL.narration);
+  });
+
+  it("states no missing-narration sentence", () => {
+    const said = text("intent", { levels: [] });
+    expect(said).not.toMatch(/narration record|no narration text/);
   });
 
   it("carries no picture heading and no count beside a heading", () => {
