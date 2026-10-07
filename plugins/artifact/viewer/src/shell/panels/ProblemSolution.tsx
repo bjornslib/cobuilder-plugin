@@ -70,23 +70,14 @@ export function ProblemSolutionSection({
           title="Problem"
           lead={intent?.problem ? excerpt(intent.problem, 320) : undefined}
           points={beats.problem.map((beat) => ({ text: beat.text, kind: beat.kind }))}
-          empty="No beat of kind problem or constraint is recorded, and no authored problem statement."
         />
         <PointCard
           title="Solution"
           lead={intent?.approach ? excerpt(intent.approach, 320) : undefined}
           points={beats.solution.map((beat) => ({ text: beat.text, kind: beat.kind }))}
-          empty="No beat of kind decision or risk is recorded, and no authored approach statement."
         />
       </div>
 
-      {beats.other.length > 0 ? (
-        <p className="m-0 mt-3 min-w-0 font-mono text-[12px] text-ink-faint">
-          {beats.other.length} beat
-          {beats.other.length === 1 ? "" : "s"} carry a kind outside the four the split
-          names: {[...new Set(beats.other.map((beat) => beat.kind))].join(", ")}.
-        </p>
-      ) : null}
     </Panel>
   );
 }

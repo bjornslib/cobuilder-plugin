@@ -1500,6 +1500,23 @@ def is_stale(index: dict, repo: Path) -> bool:
 # --------------------------------------------------------------------------
 
 
+def record_gap_warnings(design_id: str, narrative: dict | None) -> list[str]:
+    """Name each part of the record that a design lacks. The viewer states none."""
+    known = {"problem", "constraint", "decision", "risk"}
+    problem_solution = (narrative or {}).get("problem_solution")
+    beats = problem_solution.get("beats") if isinstance(problem_solution, dict) else None
+    kinds = [beat.get("kind") for beat in beats or [] if isinstance(beat, dict)]
+    warnings: list[str] = []
+    if not {"problem", "constraint"} & set(kinds):
+        warnings.append(f"{design_id}: no beat of kind problem or constraint is recorded")
+    if not {"decision", "risk"} & set(kinds):
+        warnings.append(f"{design_id}: no beat of kind decision or risk is recorded")
+    unknown = sorted({str(kind) for kind in kinds if kind not in known})
+    if unknown:
+        warnings.append(f"{design_id}: beats carry a kind outside the four the split names: {', '.join(unknown)}")
+    return warnings
+
+
 def build_index(repo: Path, bundle_dir: Path) -> tuple[dict, dict, dict, list[str]]:
     """Full rebuild. Reads docs/ plus the bundle. Never merges, never authors.
 
@@ -1553,6 +1570,10 @@ def build_index(repo: Path, bundle_dir: Path) -> tuple[dict, dict, dict, list[st
     joins, join_warnings = resolve_joins(repo, adrs_viewer, designs_viewer, entities)
     for warning in join_warnings:
         print(f"warning: {warning}", file=sys.stderr)
+
+    for design_id, record in designs_viewer.items():
+        for warning in record_gap_warnings(design_id, record.get("narrative")):
+            print(f"warning: {warning}", file=sys.stderr)
 
     # This step needs the slice_to_epic join, so it runs after resolve_joins().
     link_epic_design_docs(

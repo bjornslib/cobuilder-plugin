@@ -770,14 +770,11 @@ export function PointCard({
   title,
   lead,
   points,
-  empty,
   className,
 }: {
   title: string;
   lead?: string;
   points: Point[];
-  /** What the card says when it holds no point. */
-  empty: string;
   className?: string;
 }) {
   return (
@@ -815,12 +812,7 @@ export function PointCard({
               </li>
             ))}
           </ol>
-        ) : (
-          <p className="m-0 flex min-w-0 items-start gap-2 px-4 py-3 font-mono text-[12.5px] leading-[1.6] text-ink-faint">
-            <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-warn" aria-hidden="true" />
-            <span>{empty}</span>
-          </p>
-        )}
+        ) : null}
       </CardContent>
     </Card>
   );
