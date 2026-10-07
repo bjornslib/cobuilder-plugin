@@ -78,7 +78,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
-import { Database, GitBranch, RotateCcw } from "lucide-react";
+import { Database, RotateCcw } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 import ScrollProgress from "@/components/smoothui/scroll-progress";
@@ -96,7 +96,7 @@ import { cn } from "@/lib/utils";
 
 import { AccountRule } from "./AccountMark";
 import type { JumpTargetLink } from "./AccountMark";
-import { Chip, SectionHeading } from "./atoms";
+import { SectionHeading } from "./atoms";
 import { diffFiles, useChangeBundle, useServedAudio } from "./change/levels";
 import type { ArtMode } from "./change/Frame";
 import { CHANGE_KEYS, changeSections } from "./change/sections";
@@ -676,6 +676,9 @@ export default function ShellApp() {
             workName={route.workId}
             stage={null}
             supersededBy={null}
+            branch={null}
+            branches={[]}
+            supersedes={[]}
             ready={false}
             /*
               The badge stays here. This state is the index failing to resolve, which is
@@ -801,6 +804,11 @@ export default function ShellApp() {
         }`
       : change.message;
 
+  /* The distinct branches of the work item's epics. A workless route has no work item. */
+  const topBarBranches = [
+    ...new Set((work?.epics ?? []).map((epic) => epic.branch).filter((b): b is string => !!b)),
+  ];
+
   return (
     <TooltipProvider delayDuration={150}>
       <Frame reduce={reduce} open={railOpen} onOpenChange={setRailOpen}>
@@ -818,6 +826,9 @@ export default function ShellApp() {
           }
           stage={work?.design.stage ?? null}
           supersededBy={work?.record?.goal?.superseded_by ?? null}
+          branch={topBarBranches[0] ?? null}
+          branches={topBarBranches}
+          supersedes={work?.record?.goal?.supersedes ?? []}
           ready={load.state === "ready"}
           /*
             A WORKLESS CHANGE NAMES NO WORK ITEM EITHER. The top bar drops the stage badge
@@ -884,8 +895,8 @@ export default function ShellApp() {
                 source holds reaches the error below.
 
                 THE ACCOUNT IS THE CHANGE'S OWN, AND NOTHING ELSE. A pull request with no
-                design has no branch, no epic figure, and no supersedes list, so the top line
-                panel is absent rather than empty. The rail's two groups read a work item and
+                design has no branch, no epic figure, and no supersedes list, so the top bar
+                shows no branch. The rail's two groups read a work item and
                 are therefore absent too, and the account's own four rows are the section
                 strip and the two pager arrows below. So a reader still reaches all four.
 
@@ -1033,8 +1044,6 @@ export default function ShellApp() {
                         : "px-6 py-6 pb-12",
                     )}
                   >
-                    <TopLinePanel work={work} />
-
                     {redirectedFrom !== null ? (
                       <p className="mb-4 min-w-0 rounded-lg border border-dashed border-line bg-surface-2 px-3.5 py-2 font-mono text-[12.5px] text-ink-dim">
                         The route named {redirectedFrom}, and this work cannot fill it. The shell
@@ -1184,82 +1193,6 @@ export default function ShellApp() {
         />
       </Frame>
     </TooltipProvider>
-  );
-}
-
-/**
- * The work item's own facts, on the top line of the content.
- *
- * The Intent level used to open with an Identity box holding the work id, the stage,
- * the branch, the epic count, and what the work supersedes. The engineer dissolved
- * that box. The work item's own name and stage already live in the top bar, so only
- * three facts needed a home: the branch, the epic count, and what this work
- * supersedes. They read on one line, at the top of the content and above every
- * section, so a reader never has to open Intent to learn what branch they are on.
- *
- * The panel states three values and marks no absence as a readiness state. A branch
- * the bundle does not carry reads `no branch recorded`, and a work that supersedes
- * nothing reads `nothing`, which is a value and not a missing record.
- */
-function TopLinePanel({ work }: { work: WorkItem }) {
-  const branches = [...new Set(work.epics.map((epic) => epic.branch).filter(Boolean))];
-  const done = work.epics.filter((epic) => {
-    const state = work.epicState(epic);
-    return state === "completed" || state === "merged";
-  }).length;
-  const supersedes = work.record?.goal?.supersedes ?? [];
-
-  return (
-    <section
-      aria-label="This work item"
-      className="mb-5 flex min-w-0 flex-wrap items-center gap-x-6 gap-y-2 rounded-xl border border-line bg-card px-4 py-2.5"
-    >
-      <Fact label="branch">
-        {branches.length === 0 ? (
-          <span className="min-w-0 font-mono text-[13px] text-ink-dim">no branch recorded</span>
-        ) : (
-          branches.map((branch) => (
-            <span key={branch} className="flex min-w-0 items-center gap-1.5">
-              <GitBranch className="size-3.5 shrink-0 text-ink-faint" aria-hidden="true" />
-              <span className="min-w-0 font-mono text-[13px] break-words text-ink-mid">
-                {branch}
-              </span>
-            </span>
-          ))
-        )}
-      </Fact>
-
-      <Fact label="epics">
-        <span className="font-mono text-[13px] text-ink-mid tabular-nums">
-          {work.epics.length}
-          <span className="text-ink-faint"> · {done} done</span>
-        </span>
-      </Fact>
-
-      <Fact label="supersedes">
-        {supersedes.length === 0 ? (
-          <span className="min-w-0 font-mono text-[13px] text-ink-dim">nothing</span>
-        ) : (
-          supersedes.map((id) => (
-            <Chip key={id} tone="warn">
-              {id}
-            </Chip>
-          ))
-        )}
-      </Fact>
-    </section>
-  );
-}
-
-/** One labelled fact of the top line. The label names the value and nothing else. */
-function Fact({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <span className="flex min-w-0 items-center gap-2">
-      <span className="shrink-0 font-mono text-[12px] tracking-[0.05em] text-ink-faint uppercase">
-        {label}
-      </span>
-      {children}
-    </span>
   );
 }
 

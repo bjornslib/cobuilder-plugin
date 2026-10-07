@@ -9,9 +9,9 @@ Test command: `cd plugins/artifact/viewer && npm run typecheck && npm run test`
 
 ### C1 — The top line bar is gone [CRITICAL]
 
-**Must be true:** No element labelled "This work item" and no text "no branch recorded", "supersedes nothing", or "epics … done" renders above the section tabs of any level. The source has no `TopLinePanel` or `Fact` component left.
+**Must be true:** No element labelled "This work item" and no text "no branch recorded", "supersedes nothing", or "epics … done" renders above the section tabs of any level. The source under `plugins/artifact/viewer/src/shell/` has no `TopLinePanel` or `Fact` component left. `src/variations/` is out of scope, by the engineer's ruling after VALIDATE attempt 1.
 
-**Evidence to check:** Render `Shell` at a work-item level address (the existing tests do this). Search the DOM for those texts and the `aria-label`. Grep the source.
+**Evidence to check:** Render `Shell` at a work-item level address (the existing tests do this). Search the DOM for those texts and the `aria-label`. Grep `src/shell/`.
 
 **Scoring:** 1.0 = absent in DOM and source. 0.5 = hidden by CSS only, or component left unused. 0.0 = still renders.
 

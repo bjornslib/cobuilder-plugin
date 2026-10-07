@@ -47,3 +47,7 @@ None.
 - Existing tests that assert removed UI may be updated by GREEN. Each change is listed in the GREEN report, and VALIDATE checks that no test was weakened.
 - This work is on branch `level-page-restructure`, which stacks on PR 30 (`fix/stage-guard-and-intent-pr`). The viewer files it changes are the ones PR 30 changed.
 - Do not bump plugin versions. The engineer will ask for that at the end.
+
+## Build log
+
+- Slice 1, attempt 1: VALIDATE scored 0.917 and returned FAIL, because critical C1 held 0.5. `TopLinePanel` and `Fact` remain in `src/variations/sections-e/`, a frozen prototype the Shell does not import. The engineer ruled `src/variations/` out of scope. The rubric grep now covers `src/shell/`, and a fresh VALIDATE re-scores.
