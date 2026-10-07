@@ -865,3 +865,80 @@ describe("The rail's arrow keys", () => {
     await waitFor(() => expect(screen.getByText(/Section 2 of \d+/)).toBeTruthy());
   });
 });
+
+function sectionTabs(): HTMLElement[] {
+  const nav = screen.getByRole("navigation", { name: "Sections of this level" });
+  return Array.from(nav.querySelectorAll<HTMLElement>("a"));
+}
+function currentSectionTab(): string | null {
+  return sectionTabs().find((a) => a.getAttribute("aria-current") === "step")?.textContent ?? null;
+}
+function firstSectionTab(): string | null {
+  return sectionTabs()[0]?.textContent ?? null;
+}
+
+describe("the link on a section heading", () => {
+  it("reads in PR 11 and lands on the first section when no name matches", async () => {
+    at("#/cobuilder-viewer/intent");
+    render(<Shell />);
+    await waitFor(() => expect(levelHeading()).toBe("Intent"));
+
+    const links = await screen.findAllByRole("link", { name: "Read in PR 11 ›" });
+    expect(links.length).toBeGreaterThan(0);
+    expect(links[0].closest("header")?.querySelector("h2")).not.toBeNull();
+    expect(links[0].getAttribute("href")).toBe("#/cobuilder-viewer/pull-requests/11");
+
+    fireEvent.click(links[0]);
+    await waitFor(() => expect(window.location.hash).toBe("#/cobuilder-viewer/pull-requests/11"));
+    const back = await screen.findAllByRole("link", { name: "Read in the work item ›" });
+    expect(back[0].getAttribute("href")).toBe("#/cobuilder-viewer/intent");
+    expect(currentSectionTab()).toBe(firstSectionTab());
+  });
+
+  it("drops the carried name once the reader leaves the address", async () => {
+    at("#/cobuilder-viewer/architecture");
+    render(<Shell />);
+    await waitFor(() => expect(levelHeading()).toBe("Architecture"));
+    await screen.findAllByRole("link", { name: "Read in PR 11 ›" });
+    press("ArrowRight");
+    press("ArrowRight");
+    await waitFor(() => expect(screen.getByText("Section 3 of 4")).toBeTruthy());
+    fireEvent.click(screen.getAllByRole("link", { name: "Read in PR 11 ›" })[0]);
+    await waitFor(() => expect(screen.getByText("Section 3 of 4")).toBeTruthy());
+
+    at("#/cobuilder-viewer/intent");
+    await waitFor(() => expect(levelHeading()).toBe("Intent"));
+    at("#/cobuilder-viewer/pull-requests/11/architecture");
+    await waitFor(() => expect(screen.getByText("Section 1 of 4")).toBeTruthy());
+    expect(currentSectionTab()).toBe(firstSectionTab());
+  });
+
+  it("carries the section name to the same-named section", async () => {
+    at("#/cobuilder-viewer/architecture");
+    render(<Shell />);
+    await waitFor(() => expect(levelHeading()).toBe("Architecture"));
+    await screen.findAllByRole("link", { name: "Read in PR 11 ›" });
+
+    /* A new route starts on the first section, so landing on the third one is the carry. */
+    press("ArrowRight");
+    press("ArrowRight");
+    await waitFor(() => expect(screen.getByText("Section 3 of 4")).toBeTruthy());
+    fireEvent.click(screen.getAllByRole("link", { name: "Read in PR 11 ›" })[0]);
+    await waitFor(() =>
+      expect(window.location.hash).toBe("#/cobuilder-viewer/pull-requests/11/architecture"),
+    );
+    await waitFor(() => expect(screen.getByText("Section 3 of 4")).toBeTruthy());
+  });
+
+  it("draws no link on the Plan, Epics, or File Diffs levels", async () => {
+    at("#/cobuilder-viewer/build/epics");
+    render(<Shell />);
+    await waitFor(() => expect(levelHeading()).toBe("Build"));
+    expect(screen.queryAllByRole("link", { name: /^Read in / })).toHaveLength(0);
+    cleanup();
+    at("#/cobuilder-viewer/pull-requests/11/file-diffs");
+    render(<Shell />);
+    await waitFor(() => expect(levelHeading()).toBe("Pull request 11"));
+    expect(screen.queryAllByRole("link", { name: /^Read in / })).toHaveLength(0);
+  });
+});

@@ -94,9 +94,8 @@ import type { DesignRow } from "@/data/types";
 import { resolvedJoinsOf } from "@/data/joins";
 import { cn } from "@/lib/utils";
 
-import { AccountRule } from "./AccountMark";
-import type { JumpTargetLink } from "./AccountMark";
-import { SectionHeading } from "./atoms";
+import { PanelActionContext, SectionHeading } from "./atoms";
+import type { PanelAction } from "./atoms";
 import { diffFiles, useChangeBundle, useServedAudio } from "./change/levels";
 import type { ArtMode } from "./change/Frame";
 import { CHANGE_KEYS, changeSections } from "./change/sections";
@@ -140,15 +139,16 @@ import {
 import type { Theme } from "./DiagramTiles";
 import {
   buildWorkItems,
+  carriedSectionIndex,
   changeRowIndex,
   counterpartHref,
   epicGroups,
   gatesOf,
   levelsOf,
   railGroups,
+  readInLabel,
   rowsOf,
   routeHref,
-  SECTION_LABEL,
   switcherList,
   worklessPullRequest,
 } from "./model";
@@ -646,24 +646,37 @@ export default function ShellApp() {
   }, []);
 
   /*
-   * THE JUMP CROSSES ONLY WHERE BOTH ACCOUNTS CARRY THE SAME SECTION NAME. The row's own
-   * `shared` field holds that name or null, and it is the field the jump reads: a jump
-   * decided from a row's label would be offered on the change's File Diffs row, and on the
-   * program's Epics and Rubrics rows, which share no section name with the other account.
+   * THE LINK ON A SECTION HEADING CROSSES ONLY WHERE BOTH ACCOUNTS CARRY THE SAME SECTION
+   * NAME. The row's own `shared` field holds that name or null, so the change's File Diffs
+   * row and the program's Epics, Rubrics, and Plan rows get no link. A work whose own epics
+   * carry no pull request has no change account to cross to, and `readInLabel` gives null.
    *
    * THE ADDRESS COMES FROM `counterpartHref`, the one builder that calls both of the
-   * account builders, so the jump and the rail cannot hold two address schemes. A work
-   * whose own epics carry no pull request has no change's account to cross to, so a
-   * program row's shared sections have no jump there and say so in place.
+   * account builders. THE SECTION NAME RIDES VIEW STATE AND NOT THE ROUTE (ADR-0028). A
+   * press stores the name with the address it opens, and the level that opens there reads
+   * the name only while the address still matches. The effect below clears it as soon as
+   * the hash is another address, so a later arrival at the same address starts clean.
    */
-  const jump: JumpTargetLink | null =
-    row === null || row.shared === null || railChangePr === null
+  const [carried, setCarried] = useState<{ href: string; section: string } | null>(null);
+  const crossLabel =
+    row === null || row.shared === null
+      ? null
+      : readInLabel(row.account, row.account === "program" ? railChangePr : null);
+  const panelAction: PanelAction | null =
+    row === null || row.shared === null || crossLabel === null || railChangePr === null
       ? null
       : {
+          label: crossLabel,
           href: counterpartHref(work?.id ?? "", railChangePr, row.account, row.shared),
-          account: row.account === "program" ? "change" : "program",
-          section: SECTION_LABEL[row.shared],
+          onGo: (href, sectionName) => {
+            setCarried({ href, section: sectionName });
+            go(href);
+          },
         };
+  useEffect(() => {
+    if (carried !== null && carried.href !== here) setCarried(null);
+  }, [carried, here]);
+  const carriedHere = carried !== null && carried.href === here ? carried.section : null;
 
   /* ---------------------------------------------------------------- states */
 
@@ -965,6 +978,7 @@ export default function ShellApp() {
                     <PagedLevel
                       targets={jumpTargets}
                       routeKey={routeKey}
+                      carried={null}
                       sections={changeSections({
                         entry: change.entry,
                         levels: change.levels,
@@ -1072,25 +1086,6 @@ export default function ShellApp() {
                       the document still needs its one `h1`. A screen reader therefore
                       still hears the level name, and no reader loses the text.
                     */}
-                    {/*
-                      THE ACCOUNT'S MARK STANDS ABOVE THE SECTION, AND ONE RENDER PATH
-                      SERVES BOTH ACCOUNTS. The rule reads the row the reader arrived on, so
-                      it names that section's own account and that section's own name, and a
-                      deep link carries its own section's mark rather than the account's
-                      first row's. The jump is drawn only where the two accounts carry the
-                      same section name, and the rule states the absence in place where they
-                      do not.
-                    */}
-                    {row === null ? null : (
-                      <AccountRule
-                        account={row.account}
-                        whose={row.account === "change" ? `Pull request ${railChangePr}` : work.id}
-                        section={row.label}
-                        jump={jump}
-                        onGo={go}
-                      />
-                    )}
-
                     <LevelHeading
                       section={section}
                       work={work}
@@ -1111,11 +1106,13 @@ export default function ShellApp() {
                       THE CHANGE'S FOUR ROWS USE THE SAME TRACK. One element per panel, so
                       the strip's links and the boxes' count come from one list.
                     */}
+                    <PanelActionContext.Provider value={panelAction}>
                     {paged ? (
                       programPaged ? (
                         <PagedLevel
                           targets={jumpTargets}
                           routeKey={routeKey}
+                          carried={carriedHere}
                           start={epicStartIndex(work, focusEpic)}
                           sections={pagedSections({
                             section,
@@ -1132,6 +1129,7 @@ export default function ShellApp() {
                         <PagedLevel
                           targets={jumpTargets}
                           routeKey={routeKey}
+                          carried={carriedHere}
                           sections={changeSections({
                             entry: change.entry,
                             levels: change.levels,
@@ -1152,6 +1150,7 @@ export default function ShellApp() {
                         />
                       )
                     ) : null}
+                    </PanelActionContext.Provider>
                     {section === "build" && route.sub === "rubrics" ? (
                       <RubricsSection
                         work={work}
@@ -1276,17 +1275,27 @@ function PagedLevel({
   sections,
   targets,
   routeKey,
+  carried,
   start = 0,
 }: {
   /** The sections, in the order Next walks them. The length is the level's count. */
   sections: ReactNode[];
   targets: JumpTarget[];
   routeKey: string;
+  /** The section name the reader carried across from the other account, or null. */
+  carried: string | null;
   /** The section a new route lands on. 0 unless the route names a section's record. */
   start?: number;
 }) {
   const count = sections.length;
-  const { index, select, previous, next } = useSectionPaging(count, routeKey, start);
+  const landing =
+    carried === null
+      ? start
+      : carriedSectionIndex(
+          targets.map((target) => target.label),
+          carried,
+        );
+  const { index, select, previous, next } = useSectionPaging(count, routeKey, landing);
   const boxRef = useRef<HTMLDivElement | null>(null);
 
   return (

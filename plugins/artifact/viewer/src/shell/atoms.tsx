@@ -28,7 +28,7 @@
  * `goal.outcome`.
  */
 
-import { useId, useState } from "react";
+import { createContext, useContext, useId, useState } from "react";
 import type { ReactNode, Ref } from "react";
 
 import type { LucideIcon } from "lucide-react";
@@ -293,6 +293,19 @@ export function StateBadge({
  * excerpt rather than the whole record. Where the whole record matters, the panel
  * carries a control that opens it in a Sheet.
  */
+/**
+ * The link a level hands its section panels, so a panel's heading can lead to the same
+ * section on the other account. A level with no counterpart provides null, and a panel
+ * then draws no link. `onGo` receives the address and the name of the section pressed.
+ */
+export interface PanelAction {
+  label: string;
+  href: string;
+  onGo: (href: string, section: string) => void;
+}
+
+export const PanelActionContext = createContext<PanelAction | null>(null);
+
 export function Panel({
   title,
   lead,
@@ -326,6 +339,7 @@ export function Panel({
   className?: string;
 }) {
   const reduce = useReducedMotion();
+  const counterpart = useContext(PanelActionContext);
   const [open, setOpen] = useState(defaultOpen);
   const bodyId = useId();
   /* An absent record is always shown, so the reader never has to open a panel to learn
@@ -402,6 +416,24 @@ export function Panel({
           heading
         )}
         {absent ? <NotPresentPill className="ml-auto" /> : <span className="ml-auto" />}
+        {counterpart ? (
+          <a
+            href={counterpart.href}
+            onClick={(event) => {
+              /* A press with a modifier belongs to the browser, so a new tab still opens. */
+              if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+              event.preventDefault();
+              counterpart.onGo(counterpart.href, title);
+            }}
+            className={cn(
+              "shrink-0 cursor-pointer rounded-sm font-mono text-[12.5px] font-bold text-band-ink",
+              "underline-offset-4 hover:underline",
+              BAND_FOCUS,
+            )}
+          >
+            {counterpart.label}
+          </a>
+        ) : null}
         {action ? <div className="flex min-w-0 flex-wrap items-center gap-2">{action}</div> : null}
       </header>
       <motion.div
