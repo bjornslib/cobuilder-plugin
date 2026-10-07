@@ -651,6 +651,27 @@ describe("The rail's arrow keys", () => {
     expect(tagOf(rows[0])).not.toMatch(/\bwork\b|\bPR\b/);
   });
 
+  it("lays the tag and the count out as flex-none siblings of the label, never over it", async () => {
+    at("#/cobuilder-viewer/intent");
+    render(<Shell />);
+    await waitFor(() => expect(levelHeading()).toBe("Intent"));
+
+    const row = railRows()[3];
+    const tag = row.querySelector("[data-rail-tag]");
+    const label = row.querySelector(".truncate");
+    expect(tag).not.toBeNull();
+    expect(label).toBeDefined();
+    expect(tag?.parentElement).toBe(label?.parentElement);
+    expect(tag?.className).toContain("flex-none");
+    expect(tag?.className).not.toContain("absolute");
+    expect(label?.className).toContain("flex-1");
+    for (const count of Array.from(row.querySelectorAll("[data-rail-count]"))) {
+      expect(count.parentElement).toBe(label?.parentElement);
+      expect(count.className).toContain("flex-none");
+      expect(count.className).not.toContain("absolute");
+    }
+  });
+
   it("opens an Also row of the other account when pressed", async () => {
     at("#/cobuilder-viewer/intent");
     render(<Shell />);

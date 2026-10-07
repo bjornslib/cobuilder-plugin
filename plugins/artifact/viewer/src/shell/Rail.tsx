@@ -55,7 +55,6 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail as SidebarCollapseHandle,
@@ -258,10 +257,12 @@ function RailRowItem({
    * than one row at once, because the two groups repeat three section names.
    */
   const current = row.href === here;
+  /* The tag is a flex-none sibling of the label, so it takes its own width and never overlaps. */
   const tag = tagged && !icons ? (
     <span
+      data-rail-tag=""
       aria-hidden="true"
-      className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-line px-1 font-mono text-[10px] leading-4 text-ink-faint"
+      className="flex-none rounded border border-line px-1 font-mono text-[10px] leading-4 text-ink-faint"
     >
       {" "}
       {row.account === "change" ? "PR" : "work"}{" "}
@@ -279,7 +280,6 @@ function RailRowItem({
      */
     return (
       <SidebarMenuItem className="min-w-0">
-        {tag}
         <Tooltip>
           <TooltipTrigger asChild>
             <a
@@ -296,20 +296,21 @@ function RailRowItem({
                 "group-data-[collapsible=icon]:flex-row group-data-[collapsible=icon]:items-center",
               )}
             >
-              <span className="flex min-w-0 items-center gap-2">
+              <span className="flex w-full min-w-0 items-center gap-2">
                 <Icon className="size-4 shrink-0 text-ink-faint" aria-hidden="true" />
                 <span
                   className={cn(
-                    "min-w-0 font-mono text-[13.5px] text-ink-mid",
+                    "min-w-0 flex-1 truncate font-mono text-[13.5px] text-ink-mid",
                     icons && "hidden",
                   )}
                 >
                   {row.label}
                 </span>
+                {tag}
               </span>
               <span
                 className={cn(
-                  "pl-6 font-mono text-[12px] leading-[1.35] text-ink-faint",
+                  "min-w-0 pl-6 font-mono text-[12px] leading-[1.35] break-words text-ink-faint",
                   icons && "hidden",
                 )}
               >
@@ -331,7 +332,6 @@ function RailRowItem({
 
   return (
     <SidebarMenuItem className="min-w-0">
-      {tag}
       <SidebarMenuButton
         asChild
         isActive={current}
@@ -355,19 +355,19 @@ function RailRowItem({
         >
           <Icon className="size-4 shrink-0" aria-hidden="true" />
           <span className={cn("min-w-0 flex-1 truncate", icons && "hidden")}>{row.label}</span>
+          {/* Tag, then count: two flex-none siblings of the label, never positioned over it. */}
+          {tag}
+          {row.count === "" || icons ? null : (
+            <span
+              data-rail-count=""
+              aria-hidden="true"
+              className="flex-none text-xs font-medium tabular-nums text-ink-faint"
+            >
+              {row.count.replace(/ .*$/, "")}
+            </span>
+          )}
         </a>
       </SidebarMenuButton>
-      {/*
-        THE BADGE CARRIES THE COUNT'S FIRST WORD, AND THE ROW'S NAME CARRIES THE REST. The
-        rail is fifteen and a half rem wide, and the sidebar's badge is absolutely
-        positioned over the row. A full count such as `7 of 7 fields` covered the last two
-        words of `Problem & Solution`, which is what the reviewed prototype's own note about
-        a row-level chip records. The number is decoration, so it is `aria-hidden`, and the
-        whole count travels in the row's accessible name and its tooltip.
-      */}
-      {row.count === "" || icons ? null : (
-        <SidebarMenuBadge aria-hidden="true">{row.count.replace(/ .*$/, "")}</SidebarMenuBadge>
-      )}
     </SidebarMenuItem>
   );
 }
