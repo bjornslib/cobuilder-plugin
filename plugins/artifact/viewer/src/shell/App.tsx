@@ -607,6 +607,7 @@ export default function ShellApp() {
     work,
     gates,
     levels,
+    account: section === "pull-requests" ? "change" : "program",
     changePr: railChangePr,
     changeLevels: change.levels,
     diffFiles: change.diff === null ? null : diffFiles(change.diff).length,

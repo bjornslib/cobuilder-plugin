@@ -69,7 +69,7 @@ import type { ChangeLevel, LevelKey } from "./levels";
  *
  * The order is the bundle's own level order, so the row a reader is on and the level they
  * are reading are the same position. Three of the four names also stand in the program's
- * Build group.
+ * Levels group.
  */
 export type ChangeKey = "intent" | "problem-and-solution" | "architecture" | "file-diffs";
 

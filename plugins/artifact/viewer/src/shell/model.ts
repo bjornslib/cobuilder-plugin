@@ -353,8 +353,8 @@ export function boardHref(): string {
  */
 export type AccountId = "program" | "change";
 
-/** The rail's two groups. The engineer named them on 2026-09-25, and there are two. */
-export type GroupKey = "build" | "review";
+/** The rail's two groups: each level once, then the rows of the work. */
+export type GroupKey = "levels" | "also";
 
 /**
  * The three section names both accounts carry.
@@ -393,7 +393,7 @@ export type ProgramKey = (typeof PROGRAM_KEYS)[number] | typeof PLAN_KEY;
  * One name for one row, so the rail and the section it opens read the same word.
  *
  * The three shared names come from `SECTION_LABEL`, which is the shell's one name for one
- * section. Epics and Rubrics are rows of the Build group and not sections of a level, so
+ * section. Epics and Rubrics are rows of the Also group and not sections of a level, so
  * their names live only here.
  */
 const PROGRAM_LABEL: Record<ProgramKey, string> = {
@@ -575,7 +575,7 @@ export function changeRowIndex(subId: string | null): number {
  *
  * This is the whole input to `railGroups`. The rail takes it as its own props and the
  * arrow-key traversal takes the same object, so both read one derivation. The change's own
- * records join it so that the Review group's rows can state what each one holds; they are
+ * records join it so that the change's rows can state what each one holds; they are
  * absent while no change is read, and the rows then state no count rather than a number
  * nobody read.
  */
@@ -584,9 +584,14 @@ export interface RailSource {
   gates: Gates | null;
   levels: Record<string, LevelState> | null;
   /**
-   * The change the Review group addresses: the pull request the route names, or the one
-   * this work's own epics carry. Absent when the work carries none, and then the Review
-   * group states that absence rather than showing four rows that open nothing.
+   * The account the Levels group reads. It defaults to `program`, and `change` with no
+   * change to read is treated as `program`.
+   */
+  account?: AccountId;
+  /**
+   * The change the rail addresses: the pull request the route names, or the one
+   * this work's own epics carry. Absent when the work carries none, and then the Also
+   * group keeps one disabled File Diffs row that states the absence.
    */
   changePr?: number | null;
   /** The change's four narration levels, or absent while no change is read. */
@@ -600,18 +605,13 @@ export interface RailSource {
 /**
  * The rail's two groups, in the order a reader reads down them.
  *
- * TWO ACCOUNTS, ONE ROW LIST. Build reads the program's account, and its five rows are
- * that account's sections in reading order. Review reads the change's account, and its
- * four rows are the change's own four. One function returns both, and the rail and the
- * arrow walk read the same answer, so the two cannot drift.
+ * LEVELS LISTS EACH LEVEL ONCE, for the active account. ALSO LISTS THE ROWS NO LEVEL
+ * OWNS: Plan, Epics, and Rubrics of the program, then File Diffs of the change. Each row
+ * carries its own account, so a press on an Also row of the other account opens it.
+ * One function returns both groups, so the rail and the arrow walk cannot drift.
  *
- * THE REVIEW GROUP IS RETURNED EVEN WHEN THE WORK'S OWN EPICS CARRY NO PULL REQUEST. The
- * change's absence is then a state the reader sees, stated in place by `Rail.tsx`, rather
- * than a group that is simply missing. A row a reader cannot fill is worse than a group
- * that says why.
- *
- * THE BOARD IS NOT ONE OF THE TWO GROUPS. It reads no account, so it is not a row of
- * either one, and `Rail.tsx` draws its own row above the groups from `boardHref()`.
+ * File Diffs always shows. With no change it is one disabled row that states why. The board is not a row of either group, and
+ * `Rail.tsx` draws its own row above them from `boardHref()`.
  */
 export function railGroups(source: RailSource): RailGroup[] {
   const { work, gates, levels, changePr = null, changeLevels = [], servedAudio = {} } = source;
@@ -669,7 +669,19 @@ export function railGroups(source: RailSource): RailGroup[] {
 
   const changeRows: RailRow[] =
     changePr === null
-      ? []
+      ? [
+          /* No change to read: File Diffs stays as one disabled row that says why. */
+          {
+            key: "change-file-diffs",
+            label: CHANGE_LABEL["file-diffs"],
+            href: "#",
+            account: "change",
+            shared: null,
+            count: "",
+            available: false,
+            absent: ["no pull request carried by the work's epics"],
+          },
+        ]
       : CHANGE_KEYS.map((section) => ({
           key: `change-${section}`,
           label: CHANGE_LABEL[section],
@@ -687,9 +699,19 @@ export function railGroups(source: RailSource): RailGroup[] {
           available: true,
         }));
 
+  /* The three level rows of the active account, once each. */
+  const active: AccountId = source.account === "change" && changePr !== null ? "change" : "program";
+  const levelRows = (active === "change" ? changeRows : programRows).filter(
+    (row) => row.shared !== null,
+  );
+  const alsoRows = [
+    ...programRows.filter((row) => row.shared === null),
+    ...changeRows.filter((row) => row.shared === null),
+  ];
+
   return [
-    { key: "build", label: "Build", account: "program", rows: programRows, entries: reached(programRows) },
-    { key: "review", label: "Review", account: "change", rows: changeRows, entries: reached(changeRows) },
+    { key: "levels", label: "Levels", account: active, rows: levelRows, entries: reached(levelRows) },
+    { key: "also", label: "Also", account: "program", rows: alsoRows, entries: reached(alsoRows) },
   ];
 }
 

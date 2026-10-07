@@ -272,7 +272,7 @@ function railRows(): HTMLElement[] {
 
 /** One rail row's own label. A disabled row writes the label inside a longer sentence. */
 function labelOf(row: HTMLElement): string {
-  return (row.getAttribute("aria-label") ?? "").replace(/ is disabled.*$/, "").trim();
+  return (row.getAttribute("aria-label") ?? "").replace(/,? is disabled.*$/, "").trim();
 }
 
 /** One rail row's address. A disabled row carries `#` and no route. */
@@ -344,9 +344,8 @@ interface RailStep {
  * spelling rather than adding a second copy of the rail's own order.
  */
 function nameOf(row: RailStep): string {
-  return row.count === ""
-    ? `${row.label}, the ${row.account} account`
-    : `${row.label}, the ${row.account} account · ${row.count}`;
+  const who = row.account === "change" ? "the pull request" : "the work item";
+  return row.count === "" ? `${row.label}, ${who}` : `${row.label}, ${who}, ${row.count}`;
 }
 
 /** One arrow press, at the reader's own focus: the body of the document. */
@@ -597,27 +596,23 @@ describe("Shell", () => {
  * else. The pager's own two keys keep working beside these two.
  */
 describe("The rail's arrow keys", () => {
-  it("renders the ten rows in the rail's own order", async () => {
+  it("renders the seven rows in the rail's own order: the levels, then Also", async () => {
     at("#/cobuilder-viewer/intent");
     render(<Shell />);
     await waitFor(() => expect(levelHeading()).toBe("Intent"));
 
     /*
-      The order the browser reading found, the name the rail gives each row, and the
-      address each row opens. The two accounts repeat three names, so a name carries its
-      account and the count the row holds.
+      Each level shows once, for the active account. The Also group follows with Plan,
+      Epics, Rubrics, and the change's File Diffs.
     */
     expect(railRows().map(labelOf)).toEqual([
-      "Intent, the program account · 6 records",
-      "Problem & Solution, the program account · 5 of 7 fields",
-      "Architecture, the program account · 3 records",
-      "Plan",
-      "Epics, the program account · 1 epics",
-      "Rubrics, the program account · none",
-      "Intent, the change account",
-      "Problem & Solution, the change account",
-      "Architecture, the change account",
-      "File Diffs, the change account",
+      "Intent, the work item, 6 records",
+      "Problem & Solution, the work item, 5 of 7 fields",
+      "Architecture, the work item, 3 records",
+      "Plan, the work item",
+      "Epics, the work item, 1 epics",
+      "Rubrics, the work item, none",
+      "File Diffs, the pull request",
     ]);
     expect(railRows().map(hrefOf)).toEqual([
       "#/cobuilder-viewer/intent",
@@ -626,11 +621,49 @@ describe("The rail's arrow keys", () => {
       "#",
       "#/cobuilder-viewer/build/epics",
       "#/cobuilder-viewer/build/rubrics",
-      "#/cobuilder-viewer/pull-requests/11",
-      "#/cobuilder-viewer/pull-requests/11/problem-and-solution",
-      "#/cobuilder-viewer/pull-requests/11/architecture",
       "#/cobuilder-viewer/pull-requests/11/file-diffs",
     ]);
+  });
+
+  it("groups the rail as Levels and Also, with no Build or Review group", async () => {
+    at("#/cobuilder-viewer/intent");
+    render(<Shell />);
+    await waitFor(() => expect(levelHeading()).toBe("Intent"));
+
+    const labels = within(rail())
+      .getAllByRole("button", { expanded: true })
+      .map((button) => (button.textContent ?? "").trim());
+    expect(labels).toEqual(["Levels", "Also"]);
+  });
+
+  it("tags each Also row with its account: work for Plan, Epics, Rubrics, and PR for File Diffs", async () => {
+    at("#/cobuilder-viewer/intent");
+    render(<Shell />);
+    await waitFor(() => expect(levelHeading()).toBe("Intent"));
+
+    const tagOf = (row: HTMLElement): string =>
+      (row.closest("li")?.textContent ?? "").replace(/\s+/g, " ");
+    const rows = railRows();
+    const [plan, epics, rubrics, diffs] = rows.slice(3);
+    for (const row of [plan, epics, rubrics]) expect(tagOf(row)).toMatch(/\bwork\b/);
+    expect(tagOf(diffs)).toMatch(/\bPR\b/);
+    /* A Levels row carries no tag. */
+    expect(tagOf(rows[0])).not.toMatch(/\bwork\b|\bPR\b/);
+  });
+
+  it("opens an Also row of the other account when pressed", async () => {
+    at("#/cobuilder-viewer/intent");
+    render(<Shell />);
+    await waitFor(() => expect(levelHeading()).toBe("Intent"));
+
+    fireEvent.click(rowNamed("File Diffs, the pull request"));
+    await waitFor(() =>
+      expect(window.location.hash).toBe("#/cobuilder-viewer/pull-requests/11/file-diffs"),
+    );
+
+    /* From the change account, a work row opens the program account's row. */
+    fireEvent.click(rowNamed("Epics, the work item, 1 epics"));
+    await waitFor(() => expect(window.location.hash).toBe("#/cobuilder-viewer/build/epics"));
   });
 
   it("holds one row list, and the rail renders it whole", async () => {
@@ -684,11 +717,22 @@ describe("The rail's arrow keys", () => {
     render(<Shell />);
     await waitFor(() => expect(levelHeading()).toBe("Pull request 11"));
 
-    const rows = railRows().filter((one) => !disabledOf(one));
-    /* The last row is the change's File Diffs, so this walks back to the first program row. */
-    for (const row of rows.slice(0, rows.length - 1).reverse()) {
+    /*
+      The walk steps one flat list: Levels of the active account, then Also. Once it
+      lands on a work-item row the account is the program, so the Levels group holds
+      the work item's own rows. The account is not sticky. This fixture has no plan
+      directory, so the Plan row is disabled and the walk skips it.
+    */
+    const walk = [
+      "#/cobuilder-viewer/build/rubrics",
+      "#/cobuilder-viewer/build/epics",
+      "#/cobuilder-viewer/architecture",
+      "#/cobuilder-viewer/problem-and-solution",
+      "#/cobuilder-viewer/intent",
+    ];
+    for (const address of walk) {
       press("ArrowUp");
-      await waitFor(() => expect(window.location.hash).toBe(hrefOf(row)));
+      await waitFor(() => expect(window.location.hash).toBe(address));
     }
   });
 
@@ -750,11 +794,11 @@ describe("The rail's arrow keys", () => {
       Epics and Rubrics both name the Build section, so the reader's own row is the row
       they arrived on and not the section they share. A match on the section alone would
       find Epics below Rubrics, and the press would step onto the row the reader is
-      already on. The row below Rubrics is the change's own Intent row.
+      already on. The row below Rubrics is the change's File Diffs row.
     */
     press("ArrowDown");
     await waitFor(() => {
-      expect(window.location.hash).toBe(hrefOf(rowNamed("Intent, the change account")));
+      expect(window.location.hash).toBe(hrefOf(rowNamed("File Diffs, the pull request")));
     });
   });
 
@@ -767,7 +811,7 @@ describe("The rail's arrow keys", () => {
     press("ArrowUp");
     await waitFor(() => {
       expect(window.location.hash).toBe(
-        hrefOf(rowNamed("Epics, the program account · 1 epics")),
+        hrefOf(rowNamed("Epics, the work item, 1 epics")),
       );
     });
   });
@@ -779,11 +823,21 @@ describe("The rail's arrow keys", () => {
 
     /*
       This design holds `goal.json` alone, so two level rows read disabled. It holds no plan
-      document either, so the Plan row reads disabled too.
+      document either, so the Plan row reads disabled too. It carries no pull request, so
+      the File Diffs row reads disabled.
     */
     const disabled = railRows().filter(disabledOf);
-    expect(disabled.map(labelOf)).toEqual(["Problem & Solution", "Architecture", "Plan"]);
-    expect(disabled.map(hrefOf)).toEqual(["#", "#", "#"]);
+    expect(disabled.map(labelOf)).toEqual([
+      "Problem & Solution, the work item",
+      "Architecture, the work item",
+      "Plan, the work item",
+      "File Diffs, the pull request",
+    ]);
+    expect(disabled.map(hrefOf)).toEqual(["#", "#", "#", "#"]);
+    /* A disabled row names its account, then its reason. */
+    for (const row of disabled) {
+      expect(row.getAttribute("aria-label") ?? "").toMatch(/, the (work item|pull request)/);
+    }
 
     /*
       The next row a press can reach is Epics, two rows below. Architecture is not a step:
@@ -791,12 +845,12 @@ describe("The rail's arrow keys", () => {
     */
     press("ArrowDown");
     await waitFor(() =>
-      expect(window.location.hash).toBe(hrefOf(rowNamed("Epics, the program account · 1 epics"))),
+      expect(window.location.hash).toBe(hrefOf(rowNamed("Epics, the work item, 1 epics"))),
     );
 
     press("ArrowUp");
     await waitFor(() => {
-      expect(window.location.hash).toBe(hrefOf(rowNamed("Intent, the program account · 1 records")));
+      expect(window.location.hash).toBe(hrefOf(rowNamed("Intent, the work item, 1 records")));
     });
   });
 
