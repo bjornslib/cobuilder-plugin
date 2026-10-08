@@ -1,11 +1,11 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "d086be981401779ba4691faed31a6f64598df589",
+    "git_head": "92631d335dbc81b43af788850ece608b71a7974b",
     "trees": {
       "docs/architecture/adr": "sha256:ee55c7b8235fa910b57f238752fa72a42004cd2d27bdedfd950ee9092b2f2233",
       "docs/architecture/designs": "sha256:33f32130f50d8a2a68c027883bf4795d716562038d4232985187da53012cb849",
-      "docs/architecture/contexts": "sha256:23c3761818b59326245e77a64cfa1c04dce08a71b50332d5e9898d12048e4e55",
+      "docs/architecture/contexts": "sha256:c1348c14415278bd53e24947a192db40c14adccfcf6ad84878a61a18a0513f8a",
       "docs/plans": "sha256:f42babf81b3a8f1dec666cd9bed436e495d7a54399c19a7746318d9c78c552ba",
       ".cobuilder/rubrics": "sha256:e10cb32f81a1082473c2afb0ed05f69d19fc61240dd35ee0ed4f6e7b7fa5e8a0"
     }
@@ -1208,7 +1208,7 @@
       {
         "id": "cobuilder-packaging",
         "name": "Plugin packaging and dispatch",
-        "path": ".",
+        "path": ".claude-plugin",
         "verifies": [
           "commands",
           "skills",
