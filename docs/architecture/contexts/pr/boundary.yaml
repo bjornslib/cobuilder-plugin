@@ -1,0 +1,103 @@
+# Boundary record for the pr bounded context.
+# Machine-diffable architecture baseline — ../../standard.md §5.2.
+# Authoring procedure: plugins/architect/skills/architecture/references/architecture-documentation.md.
+# Every edge below was checked against code (grep of imports, Skill calls, and path strings).
+# Grounded in code as of 2026-10-08.
+
+id: pr
+path: plugins/pr
+name: "Odyssey: narrate merged PRs and assess a change before the PR opens"
+verified_at: d086be981401779ba4691faed31a6f64598df589
+
+public_interface:
+  - commands/baseline.md
+  - commands/review.md
+  - commands/generate.md
+  - "Skill(\"pr:odyssey\", args=\"<mode> ...\")"
+  - "Skill(\"pr:mermaid\") and Skill(\"pr:ste-writing\") (vendored from shared)"
+  - "bundle files it writes: data/story.json, data/diffs, assets, assessment.json for a PR"
+
+allowed_dependencies:
+  - shared
+  - architect
+
+context_map:
+  - with: shared
+    pattern: shared-kernel
+    shared: [_bundle_meta.read_plugin_version, _bundle_meta.require_compatible, _bundle_meta.stamp_generator, _bundle_meta.SCHEMA_VERSION, _manifest.rewrite_manifest]
+    note: "Five scripts add the plugin's shared symlink to sys.path and import these symbols. It also runs shared/migrate_bundle.py, build_index.py, and verify_bundle.py by shell."
+  - with: architect
+    pattern: open-host-service
+    note: "Calls Skill(\"architect:architecture\") for the decisions mode and for 'describe <district>'. SMELL: it also cites architect files (see forbidden_dependencies)."
+  - with: artifact
+    pattern: open-host-service
+    note: "Hands the engineer to /artifact:view and /artifact:publish by mode name in prose. No Skill call and no import. The artifact scripts name /pr:baseline and /pr:generate in error text in return."
+
+forbidden_dependencies:
+  - target: "plugins/architect/**, plugins/artifact/**"
+    why: "ADR-0016: a plugin never names another plugin's path. Grep found no 'plugins/<other>' string in plugins/pr."
+
+  - target: "architect skill architecture: references/decision-records.md, SKILL.md, templates/adr-template.md"
+    from: plugins/pr/skills/odyssey
+    why: "SMELL: references/decision-records-lite.md (lines 11, 20, 24, 55), references/adr-template.md (lines 11, 15), and SKILL.md (line 31) tell Claude to read files inside the architecture skill of the architect plugin. The text at decision-records-lite.md:24 admits the path resolves only to odyssey's own cache. ADR candidate: move the ADR schema and template into shared."
+
+  - target: "architect@cobuilder-plugin in plugin.json dependencies"
+    why: "SMELL: plugins/pr/.claude-plugin/plugin.json lists only artifact@cobuilder-plugin, but skills/odyssey/SKILL.md calls Skill(\"architect:architecture\") at line 337 and decision-records-lite.md:17. A pr install without architect fails at that call. ADR candidate: declare the dependency, or stop the call."
+
+  - target: "Python import of another plugin's scripts"
+    why: "Rule holding, not a smell: grep of 'from'/'import' lines in plugins/pr/scripts shows only the standard library, dotenv, google.genai, shared _bundle_meta, and shared _manifest."
+
+  - target: "agents/ and hooks/"
+    why: "CLAUDE.md principle 5 and ADR-0025: only implement ships agents and a hook. Verified: plugins/pr has neither directory."
+
+modules:
+  - id: plugin-manifest
+    path: plugins/pr/.claude-plugin
+    public_interface: [plugin.json]
+    allowed_inbound: []
+    allowed_outbound: []
+    rule: "Static JSON. Version 0.9.0 must match marketplace.json. See the SMELL on missing architect dependency."
+
+  - id: commands
+    path: plugins/pr/commands
+    members: [baseline.md, review.md, generate.md]
+    public_interface: []
+    allowed_inbound: []
+    allowed_outbound: [skill-odyssey]
+    rule: "Each command makes Skill(\"odyssey\", ...) calls into its own plugin. Verified: 3 Skill(\"odyssey\" calls."
+
+  - id: skill-odyssey
+    path: plugins/pr/skills/odyssey
+    public_interface: ["Skill(\"pr:odyssey\")"]
+    allowed_inbound: [commands]
+    allowed_outbound: [scripts, shared-skills, shared-scripts]
+    rule: "SMELL: also reads architect files by name and calls Skill(\"architect:architecture\") (see forbidden_dependencies). Judgment lives in references/*.md (8 files and a stacks/ folder)."
+
+  - id: scripts
+    path: plugins/pr/scripts
+    members: [extract_story.py, extract_diffs.py, generate_prompts.py, generate_audio.py, build_diagrams.py, render_review.py]
+    public_interface: []
+    allowed_inbound: [skill-odyssey]
+    allowed_outbound: [shared-scripts]
+    rule: "PEP 723 scripts run by 'uv run'. They import only _bundle_meta and _manifest from shared. A script fetches and compiles data and never authors narrative."
+
+  - id: shared-skills
+    path: plugins/pr/shared/skills
+    members: [mermaid, ste-writing]
+    public_interface: ["Skill(\"pr:mermaid\")", "Skill(\"pr:ste-writing\")"]
+    allowed_inbound: [skill-odyssey]
+    allowed_outbound: []
+    rule: "A symlink into shared/. The pr context owns none of this text."
+
+  - id: shared-scripts
+    path: plugins/pr/shared
+    public_interface: []
+    allowed_inbound: [scripts, skill-odyssey]
+    allowed_outbound: []
+    rule: "A symlink to ../../shared. The five scripts that import shared code call sys.path.insert on parent.parent/shared."
+
+verifies:
+  - skills
+  - scripts
+
+governed_by: []

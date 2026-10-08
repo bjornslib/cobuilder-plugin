@@ -1,0 +1,104 @@
+# Boundary record for the artifact bounded context.
+# Machine-diffable architecture baseline — ../../standard.md §5.2.
+# Authoring procedure: plugins/architect/skills/architecture/references/architecture-documentation.md.
+# Every edge below was checked against code (grep of imports, Skill calls, and path strings).
+# Grounded in code as of 2026-10-08.
+
+id: artifact
+path: plugins/artifact
+name: "Artifact: the viewer, the local server, and the publish step"
+verified_at: d086be981401779ba4691faed31a6f64598df589
+
+public_interface:
+  - commands/view.md
+  - commands/publish.md
+  - commands/canvas.md
+  - "Skill(\"cobuilder-artifacts\", args=\"view|publish|canvas ...\")"
+  - "viewer/index.html, the committed build, copied into each bundle by shared/migrate_bundle.py"
+  - "scripts/view_server.py on fixed port 62583"
+  - "scripts/review_link.py"
+
+allowed_dependencies:
+  - shared
+
+context_map:
+  - with: shared
+    pattern: shared-kernel
+    shared: [_bundle_meta.read_plugin_version, _bundle_meta.require_compatible, _bundle_meta.stamp_generator, ledger.LedgerPaths, ledger.append_comment, gate_status, slice_table]
+    note: "Five scripts add the plugin's shared symlink to sys.path and import these modules. The skill also runs shared/build_index.py and migrate_bundle.py by shell."
+  - with: bundle-directory
+    pattern: open-host-service
+    note: "The viewer reads sibling ../data/* files at runtime. It never reads a plugin's source. The bundle is versioned by bundle.json and story.json meta.schema_version."
+  - with: pr
+    pattern: conformist
+    note: "Error text and prose name /pr:baseline, /pr:review, and /pr:generate as the remedy for a missing bundle. This is a mode name, not a path."
+
+forbidden_dependencies:
+  - target: "plugins/architect/**, plugins/pr/**, plugins/implement/**"
+    why: "ADR-0016: a plugin never names another plugin's path. Grep found no 'plugins/<other>' string in plugins/artifact."
+
+  - target: "Skill calls into architect, pr, or implement"
+    why: "Rule holding, not a smell: artifact is the leaf plugin. Grep found only Skill(\"cobuilder-artifacts\" calls (4) in plugins/artifact, all to its own skill."
+
+  - target: "scripts/*.py"
+    from: viewer/src
+    why: "Rule holding, not a smell: grep of viewer/src for 'scripts/' and 'plugins/' finds no live reference. The viewer reads ../data/*, ../assets/*, and ../data/audio/* only."
+
+  - target: "docs/architecture/designs/ and docs/plans/ as authored source"
+    from: scripts (canvas_preflight.py, build_builds_view.py)
+    why: "Not a violation: these scripts read the authored docs of the session's repo, which is the shared seam named in ADR-0016. Recorded so a later reader does not mistake it for a smell."
+
+  - target: "agents/ and hooks/"
+    why: "CLAUDE.md principle 5 and ADR-0025: only implement ships agents and a hook. Verified: plugins/artifact has neither directory."
+
+modules:
+  - id: plugin-manifest
+    path: plugins/artifact/.claude-plugin
+    public_interface: [plugin.json]
+    allowed_inbound: []
+    allowed_outbound: []
+    rule: "Static JSON, no dependencies. Version 0.10.0 must match marketplace.json."
+
+  - id: commands
+    path: plugins/artifact/commands
+    members: [view.md, publish.md, canvas.md]
+    public_interface: []
+    allowed_inbound: []
+    allowed_outbound: [skill-cobuilder-artifacts]
+    rule: "Each command is a thin dispatcher into the plugin's own skill."
+
+  - id: skill-cobuilder-artifacts
+    path: plugins/artifact/skills/cobuilder-artifacts
+    public_interface: ["Skill(\"cobuilder-artifacts\")"]
+    allowed_inbound: [commands]
+    allowed_outbound: [scripts, viewer, shared-scripts]
+    rule: "Owns Present for review, the review route table, view, publish, and canvas. Calls no other plugin's skill."
+
+  - id: scripts
+    path: plugins/artifact/scripts
+    members: [view_server.py, serve_bundle.py, review_link.py, export_artifact.py, export_index.py, record_publish.py, render_diagrams.py, build_builds_view.py, build_canvas.py, canvas_preflight.py]
+    public_interface: ["view_server.py", "review_link.py", "export_artifact.py"]
+    allowed_inbound: [skill-cobuilder-artifacts]
+    allowed_outbound: [shared-scripts]
+    rule: "Import only shared modules. No import of another plugin's scripts. Verified by grep of local imports."
+
+  - id: viewer
+    path: plugins/artifact/viewer
+    members: [src, index.html, package.json, vite.config.ts]
+    public_interface: ["index.html (built, committed)"]
+    allowed_inbound: [skill-cobuilder-artifacts]
+    allowed_outbound: []
+    rule: "Leaf. Source is React, TypeScript, Vite, Tailwind, and Vitest in src (174 ts and tsx files). It reads the bundle over HTTP, root at .cobuilder-architect/. Build, then commit index.html."
+
+  - id: shared-scripts
+    path: plugins/artifact/shared
+    public_interface: []
+    allowed_inbound: [scripts, skill-cobuilder-artifacts]
+    allowed_outbound: []
+    rule: "A symlink to ../../shared."
+
+verifies:
+  - viewer
+  - scripts
+
+governed_by: []

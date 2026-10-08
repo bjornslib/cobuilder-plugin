@@ -1,0 +1,116 @@
+# Boundary record for the shared bounded context.
+# Machine-diffable architecture baseline — ../../standard.md §5.2.
+# Authoring procedure: plugins/architect/skills/architecture/references/architecture-documentation.md.
+# Every edge below was checked against code (grep of imports and path strings).
+# Grounded in code as of 2026-10-08.
+
+id: shared
+path: shared
+name: "Shared kernel vendored into each plugin by symlink"
+verified_at: d086be981401779ba4691faed31a6f64598df589
+
+public_interface:
+  - _bundle_meta.SCHEMA_VERSION
+  - _bundle_meta.SCHEMA_VERSION_KNOWN
+  - _bundle_meta.CURRENT_BUNDLE_FORMAT
+  - _bundle_meta.DESIGN_STAGES
+  - _bundle_meta.read_plugin_version
+  - _bundle_meta.require_compatible
+  - _bundle_meta.stamp_generator
+  - _manifest.rewrite_manifest
+  - ledger.LedgerPaths
+  - ledger.append_comment
+  - ledger.watch_feedback
+  - gate_status
+  - slice_table
+  - "scripts run by shell: build_index.py, migrate_bundle.py, verify_bundle.py, boundary_check.py, prose_budget.py, validate_decision_state.py, migrate_png_assets_to_webp.py"
+  - "skills/mermaid and skills/ste-writing"
+
+# Shared is the base layer. It depends on no other context.
+allowed_dependencies: []
+
+context_map:
+  - with: architect
+    pattern: shared-kernel
+    note: "Consumed by shell only: build_index, migrate_bundle, prose_budget, boundary_check, validate_decision_state."
+  - with: pr
+    pattern: shared-kernel
+    note: "Consumed by import (_bundle_meta, _manifest) and by shell (migrate_bundle, build_index, verify_bundle)."
+  - with: artifact
+    pattern: shared-kernel
+    note: "Consumed by import (_bundle_meta, ledger, gate_status, slice_table) and by shell (build_index, migrate_bundle)."
+  - with: implement
+    pattern: shared-kernel
+    note: "Consumed by import (slice_table) and by shell (build_index)."
+  - with: cobuilder-packaging
+    pattern: shared-kernel
+    note: "The umbrella plugin cobuilder-full-lifecycle imports ledger in watch_feedback.py."
+
+forbidden_dependencies:
+  - target: "plugins/<name>/ as Python import"
+    why: "Shared is the base layer. Grep of every 'from' and 'import' line in shared/*.py finds only the standard library, PyYAML, ulid, and sibling shared modules. This rule holds."
+
+  - target: "plugins/artifact/viewer/index.html and the sibling artifact install cache"
+    from: shared/migrate_bundle.py
+    why: "SMELL: find_viewer_source (lines 309-340) probes PLUGIN_ROOT/plugins/artifact/viewer/index.html and the sibling 'artifact/<version>/viewer/index.html' cache, and the warning text at line 582 names 'plugins/artifact/'. Shared code reaches into a plugin's files, which inverts the base layer. ADR candidate: pass the viewer path in as an argument, or ship the built viewer through shared."
+
+  - target: "plugins/artifact/viewer/src/shell/workDeck.ts and plugin script paths"
+    from: shared (_bundle_meta.py:32, slice_table.py:23-24)
+    why: "SMELL (comment only): a comment in _bundle_meta.py names the viewer file workDeck.ts, and the slice_table.py docstring lists plugins/implement/scripts/verify_gate.py and plugins/artifact/scripts/build_builds_view.py. Nothing runs from these names, but they name paths in plugins. Replace them with plugin names. A test keeps DESIGN_STAGES equal to the lanes."
+
+  - target: "authored content"
+    why: "CLAUDE.md principle 2: a script moves data and never authors judgment. build_index.py is the only writer of data/adrs.json and data/index.json."
+
+modules:
+  - id: bundle-meta
+    path: shared
+    members: [_bundle_meta.py, _manifest.py]
+    public_interface: ["_bundle_meta.SCHEMA_VERSION", "_bundle_meta.CURRENT_BUNDLE_FORMAT", "_bundle_meta.require_compatible", "_manifest.rewrite_manifest"]
+    allowed_inbound: [index-and-verify, migration, ledger-and-gates]
+    allowed_outbound: []
+    rule: "_bundle_meta.py is a leaf: standard library only. _manifest.py imports only _bundle_meta."
+
+  - id: index-and-verify
+    path: shared
+    members: [build_index.py, verify_bundle.py, validate_decision_state.py, boundary_check.py, prose_budget.py]
+    public_interface: []
+    allowed_inbound: []
+    allowed_outbound: [bundle-meta, gate-parsers]
+    rule: "Run by shell, not imported by plugins. build_index.py imports _bundle_meta, prose_budget, slice_table, and gate_status. verify_bundle.py imports prose_budget and _bundle_meta. build_index.py needs PyYAML."
+
+  - id: migration
+    path: shared
+    members: [migrate_bundle.py, migrate_png_assets_to_webp.py]
+    public_interface: []
+    allowed_inbound: []
+    allowed_outbound: [bundle-meta]
+    rule: "SMELL: migrate_bundle.py probes the artifact plugin's viewer path (see forbidden_dependencies). Append a ladder step to change data or layout, and never call extract_story.py."
+
+  - id: ledger-and-gates
+    path: shared
+    members: [ledger.py]
+    public_interface: ["ledger.LedgerPaths", "ledger.append_comment", "ledger.watch_feedback"]
+    allowed_inbound: []
+    allowed_outbound: []
+    rule: "Leaf: standard library, and ulid when present. Imported by artifact serve_bundle.py and by the umbrella watch_feedback.py."
+
+  - id: gate-parsers
+    path: shared
+    members: [gate_status.py, slice_table.py]
+    public_interface: [gate_status, slice_table]
+    allowed_inbound: [index-and-verify]
+    allowed_outbound: []
+    rule: "One parser for the gate block and the slice table, shared by build_index.py, verify_gate.py, and build_builds_view.py."
+
+  - id: shared-skills
+    path: shared/skills
+    members: [mermaid, ste-writing]
+    public_interface: ["Skill(\"<plugin>:mermaid\")", "Skill(\"<plugin>:ste-writing\")"]
+    allowed_inbound: []
+    allowed_outbound: []
+    rule: "Leaf text. Reached through each plugin's shared symlink."
+
+verifies:
+  - scripts
+
+governed_by: []

@@ -1,11 +1,11 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "1edd2d79d82601f5c4d245fbdd6d24ce88390f5c",
+    "git_head": "d086be981401779ba4691faed31a6f64598df589",
     "trees": {
       "docs/architecture/adr": "sha256:ee55c7b8235fa910b57f238752fa72a42004cd2d27bdedfd950ee9092b2f2233",
       "docs/architecture/designs": "sha256:33f32130f50d8a2a68c027883bf4795d716562038d4232985187da53012cb849",
-      "docs/architecture/contexts": "sha256:2f1cde1db74ea6f95b55152c3de109c6e281619cc3beae3fb939d8650a4005c8",
+      "docs/architecture/contexts": "sha256:23c3761818b59326245e77a64cfa1c04dce08a71b50332d5e9898d12048e4e55",
       "docs/plans": "sha256:f42babf81b3a8f1dec666cd9bed436e495d7a54399c19a7746318d9c78c552ba",
       ".cobuilder/rubrics": "sha256:e10cb32f81a1082473c2afb0ed05f69d19fc61240dd35ee0ed4f6e7b7fa5e8a0"
     }
@@ -1188,6 +1188,24 @@
     ],
     "context": [
       {
+        "id": "architect",
+        "name": "Architect plugin: design, review, maintenance, decisions, describe, debug, options",
+        "path": "plugins/architect",
+        "verifies": [
+          "skills",
+          "commands"
+        ]
+      },
+      {
+        "id": "artifact",
+        "name": "Artifact: the viewer, the local server, and the publish step",
+        "path": "plugins/artifact",
+        "verifies": [
+          "viewer",
+          "scripts"
+        ]
+      },
+      {
         "id": "cobuilder-packaging",
         "name": "Plugin packaging and dispatch",
         "path": ".",
@@ -1197,6 +1215,32 @@
           "scripts",
           "viewer",
           "docs"
+        ]
+      },
+      {
+        "id": "implement",
+        "name": "Implement: four gates and a RED, GREEN, VALIDATE loop per slice",
+        "path": "plugins/implement",
+        "verifies": [
+          "skills",
+          "scripts"
+        ]
+      },
+      {
+        "id": "pr",
+        "name": "Odyssey: narrate merged PRs and assess a change before the PR opens",
+        "path": "plugins/pr",
+        "verifies": [
+          "skills",
+          "scripts"
+        ]
+      },
+      {
+        "id": "shared",
+        "name": "Shared kernel vendored into each plugin by symlink",
+        "path": "shared",
+        "verifies": [
+          "scripts"
         ]
       }
     ],
@@ -1246,12 +1290,419 @@
     ],
     "boundary_rule": [
       {
+        "id": "architect/forbidden-dependency/1",
+        "context": "architect",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "plugins/pr/**",
+          "why": "ADR-0016: a plugin never names another plugin's path. Grep found no 'plugins/pr' string in plugins/architect."
+        }
+      },
+      {
+        "id": "architect/forbidden-dependency/2",
+        "context": "architect",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "plugins/artifact/**",
+          "why": "ADR-0016: reach the viewer through Skill(\"cobuilder-artifacts\"), never through its path or its viewer/index.html. Grep found no such string in plugins/architect."
+        }
+      },
+      {
+        "id": "architect/forbidden-dependency/3",
+        "context": "architect",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "pr skill odyssey: SKILL.md, references/interview-guide.md, references/review-mode.md, references/pr-description-template.md, references/decision-records-lite.md",
+          "from": "plugins/architect/skills/architecture",
+          "why": "SMELL: design mode tells Claude to read files inside the odyssey skill of the pr plugin. Grep counts 10 mentions of 'odyssey' in references/design-mode.md, 8 in SKILL.md (Hub resolution at line 85, odyssey Review mode step 4 at line 163), and 1 in references/decision-records.md. A name in prose is not an import, but the file path inside another plugin's cache cannot resolve when pr is not installed. The pr plugin is not in architect's manifest dependencies. ADR candidate: copy the interview, assessment, and PR-template text into architect or into shared."
+        }
+      },
+      {
+        "id": "architect/forbidden-dependency/4",
+        "context": "architect",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "scripts of shared imported as Python",
+          "from": "plugins/architect/scripts",
+          "why": "Rule holding, not a smell: the four architect scripts (check_design_svg, check_options_report, compute_scores, html_to_pdf) import no sibling plugin and no shared module. Grep of their imports shows only the standard library and playwright."
+        }
+      },
+      {
+        "id": "architect/forbidden-dependency/5",
+        "context": "architect",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "agents/ and hooks/",
+          "why": "CLAUDE.md principle 5 and ADR-0025: only implement ships agents and a hook. Verified: plugins/architect has no agents/ or hooks/ directory."
+        }
+      },
+      {
+        "id": "architect/module-invariant/1",
+        "context": "architect",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "plugin-manifest",
+          "path": "plugins/architect/.claude-plugin",
+          "public_interface": [
+            "plugin.json"
+          ],
+          "allowed_inbound": [],
+          "allowed_outbound": [],
+          "rule": "Static JSON. Declares dependency artifact@cobuilder-plugin only. Version 0.11.0 must match marketplace.json."
+        }
+      },
+      {
+        "id": "architect/module-invariant/2",
+        "context": "architect",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "commands",
+          "path": "plugins/architect/commands",
+          "members": [
+            "design.md",
+            "review.md",
+            "maintenance.md",
+            "debug.md",
+            "options.md"
+          ],
+          "public_interface": [],
+          "allowed_inbound": [],
+          "allowed_outbound": [
+            "skill-architecture"
+          ],
+          "rule": "Each command makes one Skill(\"architecture\", args=\"<mode> $ARGUMENTS\") call. Verified by grep: five files, five calls. Describe and decisions have no command file."
+        }
+      },
+      {
+        "id": "architect/module-invariant/3",
+        "context": "architect",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "skill-architecture",
+          "path": "plugins/architect/skills/architecture",
+          "public_interface": [
+            "Skill(\"architect:architecture\")"
+          ],
+          "allowed_inbound": [
+            "commands"
+          ],
+          "allowed_outbound": [
+            "scripts",
+            "shared-skills",
+            "shared-scripts"
+          ],
+          "rule": "SMELL: also reads the odyssey skill of pr by name and file (see forbidden_dependencies). Calls Skill(\"cobuilder-artifacts\") by name for the viewer. Judgment lives in references/*.md (19 files)."
+        }
+      },
+      {
+        "id": "architect/module-invariant/4",
+        "context": "architect",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "scripts",
+          "path": "plugins/architect/scripts",
+          "members": [
+            "check_design_svg.py",
+            "check_options_report.py",
+            "compute_scores.py",
+            "html_to_pdf.py"
+          ],
+          "public_interface": [],
+          "allowed_inbound": [
+            "skill-architecture"
+          ],
+          "allowed_outbound": [],
+          "rule": "Leaf. Invoked by 'uv run' from the skill. No import of shared or of a sibling plugin. Verified by grep."
+        }
+      },
+      {
+        "id": "architect/module-invariant/5",
+        "context": "architect",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "shared-skills",
+          "path": "plugins/architect/shared/skills",
+          "members": [
+            "mermaid",
+            "ste-writing"
+          ],
+          "public_interface": [
+            "Skill(\"architect:mermaid\")",
+            "Skill(\"architect:ste-writing\")"
+          ],
+          "allowed_inbound": [
+            "skill-architecture"
+          ],
+          "allowed_outbound": [],
+          "rule": "A symlink into shared/. The architect context owns none of this text."
+        }
+      },
+      {
+        "id": "architect/module-invariant/6",
+        "context": "architect",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "shared-scripts",
+          "path": "plugins/architect/shared",
+          "public_interface": [],
+          "allowed_inbound": [
+            "skill-architecture"
+          ],
+          "allowed_outbound": [],
+          "rule": "A symlink to ../../shared. The skill runs build_index, migrate_bundle, prose_budget, boundary_check, and validate_decision_state from here, by shell."
+        }
+      },
+      {
+        "id": "architect/context-map/1",
+        "context": "architect",
+        "kind": "context-map",
+        "detail": {
+          "with": "shared",
+          "pattern": "conformist",
+          "note": "Runs shared/build_index.py, migrate_bundle.py, prose_budget.py, boundary_check.py, and validate_decision_state.py by 'uv run' through the plugin's shared symlink. It imports none of them as Python."
+        }
+      },
+      {
+        "id": "architect/context-map/2",
+        "context": "architect",
+        "kind": "context-map",
+        "detail": {
+          "with": "artifact",
+          "pattern": "open-host-service",
+          "note": "Calls Skill(\"cobuilder-artifacts\", args=\"view\") to serve the bundle and to give the engineer a review link. It never opens artifact files."
+        }
+      },
+      {
+        "id": "architect/context-map/3",
+        "context": "architect",
+        "kind": "context-map",
+        "detail": {
+          "with": "pr",
+          "pattern": "partnership",
+          "note": "pr:generate and pr:review call the decisions and describe modes by Skill name. SMELL: design mode also reads the odyssey skill's files (see forbidden_dependencies)."
+        }
+      },
+      {
+        "id": "artifact/forbidden-dependency/1",
+        "context": "artifact",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "plugins/architect/**, plugins/pr/**, plugins/implement/**",
+          "why": "ADR-0016: a plugin never names another plugin's path. Grep found no 'plugins/<other>' string in plugins/artifact."
+        }
+      },
+      {
+        "id": "artifact/forbidden-dependency/2",
+        "context": "artifact",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "Skill calls into architect, pr, or implement",
+          "why": "Rule holding, not a smell: artifact is the leaf plugin. Grep found only Skill(\"cobuilder-artifacts\" calls (4) in plugins/artifact, all to its own skill."
+        }
+      },
+      {
+        "id": "artifact/forbidden-dependency/3",
+        "context": "artifact",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "scripts/*.py",
+          "from": "viewer/src",
+          "why": "Rule holding, not a smell: grep of viewer/src for 'scripts/' and 'plugins/' finds no live reference. The viewer reads ../data/*, ../assets/*, and ../data/audio/* only."
+        }
+      },
+      {
+        "id": "artifact/forbidden-dependency/4",
+        "context": "artifact",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "docs/architecture/designs/ and docs/plans/ as authored source",
+          "from": "scripts (canvas_preflight.py, build_builds_view.py)",
+          "why": "Not a violation: these scripts read the authored docs of the session's repo, which is the shared seam named in ADR-0016. Recorded so a later reader does not mistake it for a smell."
+        }
+      },
+      {
+        "id": "artifact/forbidden-dependency/5",
+        "context": "artifact",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "agents/ and hooks/",
+          "why": "CLAUDE.md principle 5 and ADR-0025: only implement ships agents and a hook. Verified: plugins/artifact has neither directory."
+        }
+      },
+      {
+        "id": "artifact/module-invariant/1",
+        "context": "artifact",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "plugin-manifest",
+          "path": "plugins/artifact/.claude-plugin",
+          "public_interface": [
+            "plugin.json"
+          ],
+          "allowed_inbound": [],
+          "allowed_outbound": [],
+          "rule": "Static JSON, no dependencies. Version 0.10.0 must match marketplace.json."
+        }
+      },
+      {
+        "id": "artifact/module-invariant/2",
+        "context": "artifact",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "commands",
+          "path": "plugins/artifact/commands",
+          "members": [
+            "view.md",
+            "publish.md",
+            "canvas.md"
+          ],
+          "public_interface": [],
+          "allowed_inbound": [],
+          "allowed_outbound": [
+            "skill-cobuilder-artifacts"
+          ],
+          "rule": "Each command is a thin dispatcher into the plugin's own skill."
+        }
+      },
+      {
+        "id": "artifact/module-invariant/3",
+        "context": "artifact",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "skill-cobuilder-artifacts",
+          "path": "plugins/artifact/skills/cobuilder-artifacts",
+          "public_interface": [
+            "Skill(\"cobuilder-artifacts\")"
+          ],
+          "allowed_inbound": [
+            "commands"
+          ],
+          "allowed_outbound": [
+            "scripts",
+            "viewer",
+            "shared-scripts"
+          ],
+          "rule": "Owns Present for review, the review route table, view, publish, and canvas. Calls no other plugin's skill."
+        }
+      },
+      {
+        "id": "artifact/module-invariant/4",
+        "context": "artifact",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "scripts",
+          "path": "plugins/artifact/scripts",
+          "members": [
+            "view_server.py",
+            "serve_bundle.py",
+            "review_link.py",
+            "export_artifact.py",
+            "export_index.py",
+            "record_publish.py",
+            "render_diagrams.py",
+            "build_builds_view.py",
+            "build_canvas.py",
+            "canvas_preflight.py"
+          ],
+          "public_interface": [
+            "view_server.py",
+            "review_link.py",
+            "export_artifact.py"
+          ],
+          "allowed_inbound": [
+            "skill-cobuilder-artifacts"
+          ],
+          "allowed_outbound": [
+            "shared-scripts"
+          ],
+          "rule": "Import only shared modules. No import of another plugin's scripts. Verified by grep of local imports."
+        }
+      },
+      {
+        "id": "artifact/module-invariant/5",
+        "context": "artifact",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "viewer",
+          "path": "plugins/artifact/viewer",
+          "members": [
+            "src",
+            "index.html",
+            "package.json",
+            "vite.config.ts"
+          ],
+          "public_interface": [
+            "index.html (built, committed)"
+          ],
+          "allowed_inbound": [
+            "skill-cobuilder-artifacts"
+          ],
+          "allowed_outbound": [],
+          "rule": "Leaf. Source is React, TypeScript, Vite, Tailwind, and Vitest in src (174 ts and tsx files). It reads the bundle over HTTP, root at .cobuilder-architect/. Build, then commit index.html."
+        }
+      },
+      {
+        "id": "artifact/module-invariant/6",
+        "context": "artifact",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "shared-scripts",
+          "path": "plugins/artifact/shared",
+          "public_interface": [],
+          "allowed_inbound": [
+            "scripts",
+            "skill-cobuilder-artifacts"
+          ],
+          "allowed_outbound": [],
+          "rule": "A symlink to ../../shared."
+        }
+      },
+      {
+        "id": "artifact/context-map/1",
+        "context": "artifact",
+        "kind": "context-map",
+        "detail": {
+          "with": "shared",
+          "pattern": "shared-kernel",
+          "shared": [
+            "_bundle_meta.read_plugin_version",
+            "_bundle_meta.require_compatible",
+            "_bundle_meta.stamp_generator",
+            "ledger.LedgerPaths",
+            "ledger.append_comment",
+            "gate_status",
+            "slice_table"
+          ],
+          "note": "Five scripts add the plugin's shared symlink to sys.path and import these modules. The skill also runs shared/build_index.py and migrate_bundle.py by shell."
+        }
+      },
+      {
+        "id": "artifact/context-map/2",
+        "context": "artifact",
+        "kind": "context-map",
+        "detail": {
+          "with": "bundle-directory",
+          "pattern": "open-host-service",
+          "note": "The viewer reads sibling ../data/* files at runtime. It never reads a plugin's source. The bundle is versioned by bundle.json and story.json meta.schema_version."
+        }
+      },
+      {
+        "id": "artifact/context-map/3",
+        "context": "artifact",
+        "kind": "context-map",
+        "detail": {
+          "with": "pr",
+          "pattern": "conformist",
+          "note": "Error text and prose name /pr:baseline, /pr:review, and /pr:generate as the remedy for a missing bundle. This is a mode name, not a path."
+        }
+      },
+      {
         "id": "cobuilder-packaging/forbidden-dependency/1",
         "context": "cobuilder-packaging",
         "kind": "forbidden-dependency",
         "detail": {
-          "target": "another plugin's files (post-ADR-0016 split)",
-          "why": "ADR-0016: 'No plugin reads or imports another plugin's files. A plugin may hand off to another plugin's mode by name, and the state that crosses the handoff travels in the bundle and in docs/.' Not yet enforceable -- only one plugin (cobuilder-architect) exists today, so there is no sibling to violate this against. Recorded now so the rule is in place before the split lands."
+          "target": "another plugin's files",
+          "why": "ADR-0016: 'No plugin reads or imports another plugin's files. A plugin may hand off to another plugin's mode by name, and the state that crosses the handoff travels in the bundle and in docs/.' Re-verified on 2026-10-08. Grep of Python imports found no cross-plugin import. Grep of path strings found one plugin path in a comment (see the implement and shared records). Grep of prose found architect and pr citing each other's reference files (see those records)."
         }
       },
       {
@@ -1259,9 +1710,9 @@
         "context": "cobuilder-packaging",
         "kind": "forbidden-dependency",
         "detail": {
-          "target": "skills/odyssey/SKILL.md",
-          "from": "skills/architecture",
-          "why": "SMELL: skills/architecture/SKILL.md lines 83-84 hardcode the path 'skills/odyssey/SKILL.md' inside Design mode's Hub-resolution step. Verified by grep. Harmless today (both skills ship in one plugin), but this is exactly the edge ADR-0016 forbids once architecture and odyssey become separate plugins (cobuilder-architect and cobuilder-pr). Needs an ADR-sanctioned fix (e.g. duplicate the Hub-resolution text, or move it to a shared vendored module) before the split, or it becomes real drift the day the split ships."
+          "target": "duplicate plugin entry",
+          "from": ".claude-plugin/marketplace.json",
+          "why": "SMELL: the plugins array lists 'artifact' twice (the second entry repeats the first, source ./plugins/artifact, version 0.10.0). A duplicate name can make the install pick either entry, and a version bump must change both. Remove one entry. ADR candidate only if the duplicate is deliberate."
         }
       },
       {
@@ -1269,9 +1720,9 @@
         "context": "cobuilder-packaging",
         "kind": "forbidden-dependency",
         "detail": {
-          "target": "skills/architecture/SKILL.md",
-          "from": "skills/odyssey",
-          "why": "SMELL: skills/odyssey/SKILL.md lines 32-33 name and point at 'skills/architecture/SKILL.md' when describing where Design mode lives. Same coupling as the entry above, reversed direction. Verified by grep."
+          "target": "stale maps_to anchor in ADRs",
+          "from": "docs/architecture/adr",
+          "why": "SMELL: ADR-0016 maps_to.modules is [.claude-plugin/, commands/, skills/, scripts/, viewer/]. Those root paths no longer exist after the split, and 20 other ADRs anchor to context cobuilder-packaging instead of the plugin context they changed. ADR candidate: re-anchor ADRs to architect, pr, artifact, implement, or shared."
         }
       },
       {
@@ -1279,9 +1730,8 @@
         "context": "cobuilder-packaging",
         "kind": "forbidden-dependency",
         "detail": {
-          "target": "skills/architecture/references/*",
-          "from": "scripts (build_designs.py, build_adrs.py, validate_decision_state.py)",
-          "why": "SMELL: three scripts embed a literal 'skills/architecture/references/...' path inside a validation-failure error message (build_designs.py:299, build_adrs.py:217, validate_decision_state.py:433). Text, not an import, so it does not execute a cross-plugin call today. Still a coupling a post-split remediation hint cannot resolve, because the reading plugin (e.g. cobuilder-pr) cannot open a path inside cobuilder-architect's cache."
+          "target": "shared/ imported as a Python package from the root",
+          "why": "Rule holding, not a smell: each plugin reaches shared through its own symlink plugins/<name>/shared -> ../../shared (5 symlinks, verified with ls -la). Scripts use sys.path.insert on parent.parent/shared."
         }
       },
       {
@@ -1289,19 +1739,8 @@
         "context": "cobuilder-packaging",
         "kind": "forbidden-dependency",
         "detail": {
-          "target": "skills/odyssey/references/*",
-          "from": "scripts (build_diagrams.py, render_review.py, verify_bundle.py)",
-          "why": "SMELL: same pattern, reversed. build_diagrams.py:9 and :273, render_review.py:9, and verify_bundle.py:86 embed 'skills/odyssey/references/...' in comments or error text. Verified by grep."
-        }
-      },
-      {
-        "id": "cobuilder-packaging/forbidden-dependency/6",
-        "context": "cobuilder-packaging",
-        "kind": "forbidden-dependency",
-        "detail": {
-          "target": "scripts/*.py (as a Python import, not a shell invocation)",
-          "from": "viewer/index.html",
-          "why": "The viewer never imports or executes anything under scripts/. Its one mention of 'scripts/' (line 854) is a code comment naming the script that produces data/diagrams.js, not a reference the browser resolves. Recorded as a confirmed absence, not a smell -- this is the rule holding, not breaking."
+          "target": "agents/ and hooks/ outside plugins/implement",
+          "why": "CLAUDE.md principle 5 and ADR-0025. Verified: only plugins/implement has agents/ and hooks/. No plugin ships an MCP server."
         }
       },
       {
@@ -1309,15 +1748,14 @@
         "context": "cobuilder-packaging",
         "kind": "module-invariant",
         "detail": {
-          "id": "plugin-manifest",
-          "path": ".claude-plugin/",
+          "id": "marketplace-manifest",
+          "path": ".claude-plugin",
           "public_interface": [
-            "plugin.json",
             "marketplace.json"
           ],
           "allowed_inbound": [],
           "allowed_outbound": [],
-          "rule": "Static JSON only. No module in this repo reads or writes it at runtime."
+          "rule": "Static JSON read by the Claude Code harness. Each plugin version must equal its plugin.json version (a test checks it). SMELL: artifact appears twice."
         }
       },
       {
@@ -1325,29 +1763,19 @@
         "context": "cobuilder-packaging",
         "kind": "module-invariant",
         "detail": {
-          "id": "commands",
-          "path": "commands/",
-          "members": [
-            "baseline.md",
-            "generate.md",
-            "view.md",
-            "publish.md",
-            "submit.md",
-            "design.md",
-            "review.md",
-            "maintenance.md",
-            "decisions.md",
-            "describe.md",
-            "debug.md",
-            "explore-design.md"
+          "id": "plugin-architect",
+          "path": "plugins/architect",
+          "public_interface": [
+            "context architect"
           ],
-          "public_interface": [],
-          "allowed_inbound": [],
+          "allowed_inbound": [
+            "plugin-cobuilder-full-lifecycle"
+          ],
           "allowed_outbound": [
-            "skills-architecture",
-            "skills-odyssey"
+            "plugin-artifact",
+            "shared-symlinks"
           ],
-          "rule": "Each command file makes exactly one Skill(...) dispatch call and nothing else. Verified: every commands/*.md greps to exactly one Skill(\"architecture\"|\"odyssey\", ...) line."
+          "rule": "Documented in the architect context. Its manifest depends on artifact."
         }
       },
       {
@@ -1355,20 +1783,20 @@
         "context": "cobuilder-packaging",
         "kind": "module-invariant",
         "detail": {
-          "id": "skills-architecture",
-          "path": "skills/architecture/",
+          "id": "plugin-pr",
+          "path": "plugins/pr",
           "public_interface": [
-            "Skill(\"architecture\", args=...)"
+            "context pr"
           ],
           "allowed_inbound": [
-            "commands"
+            "plugin-cobuilder-full-lifecycle"
           ],
           "allowed_outbound": [
-            "scripts",
-            "skills-mermaid",
-            "skills-ste-writing"
+            "plugin-architect",
+            "plugin-artifact",
+            "shared-symlinks"
           ],
-          "rule": "SMELL: also reaches skills-odyssey via a hardcoded SKILL.md path reference (see forbidden_dependencies). Should be [] toward skills-odyssey once ADR-0016 lands."
+          "rule": "Documented in the pr context. SMELL: calls architect but declares only artifact in its manifest."
         }
       },
       {
@@ -1376,20 +1804,21 @@
         "context": "cobuilder-packaging",
         "kind": "module-invariant",
         "detail": {
-          "id": "skills-odyssey",
-          "path": "skills/odyssey/",
+          "id": "plugin-artifact",
+          "path": "plugins/artifact",
           "public_interface": [
-            "Skill(\"odyssey\", args=...)"
+            "context artifact"
           ],
           "allowed_inbound": [
-            "commands"
+            "plugin-cobuilder-full-lifecycle",
+            "plugin-architect",
+            "plugin-pr",
+            "plugin-implement"
           ],
           "allowed_outbound": [
-            "scripts",
-            "skills-mermaid",
-            "skills-ste-writing"
+            "shared-symlinks"
           ],
-          "rule": "SMELL: also reaches skills-architecture via a hardcoded SKILL.md path reference (see forbidden_dependencies). Should be [] toward skills-architecture once ADR-0016 lands."
+          "rule": "Documented in the artifact context. The leaf plugin: it calls no other plugin."
         }
       },
       {
@@ -1397,18 +1826,20 @@
         "context": "cobuilder-packaging",
         "kind": "module-invariant",
         "detail": {
-          "id": "skills-mermaid",
-          "path": "skills/mermaid/",
+          "id": "plugin-implement",
+          "path": "plugins/implement",
           "public_interface": [
-            "Skill(\"mermaid\")",
-            "Skill(\"cobuilder-architect:mermaid\")"
+            "context implement"
           ],
           "allowed_inbound": [
-            "skills-architecture",
-            "skills-odyssey"
+            "plugin-cobuilder-full-lifecycle"
           ],
-          "allowed_outbound": [],
-          "rule": "Diagram-authoring rules only. Invoked by a per-PR/per-design subagent, never by the orchestrating Claude directly, per CLAUDE.md."
+          "allowed_outbound": [
+            "plugin-architect",
+            "plugin-artifact",
+            "shared-symlinks"
+          ],
+          "rule": "Documented in the implement context. The only plugin with agents and a hook."
         }
       },
       {
@@ -1416,19 +1847,26 @@
         "context": "cobuilder-packaging",
         "kind": "module-invariant",
         "detail": {
-          "id": "skills-ste-writing",
-          "path": "skills/ste-writing/",
+          "id": "plugin-cobuilder-full-lifecycle",
+          "path": "plugins/cobuilder-full-lifecycle",
+          "members": [
+            ".claude-plugin/plugin.json",
+            "skills/cobuilder-full/SKILL.md",
+            "scripts/watch_feedback.py"
+          ],
           "public_interface": [
-            "Skill(\"ste-writing\")",
-            "Skill(\"cobuilder-architect:ste-writing\")",
-            "ste-lint.py"
+            "Skill(\"cobuilder-full\")",
+            "watch_feedback.py"
           ],
-          "allowed_inbound": [
-            "skills-architecture",
-            "skills-odyssey"
+          "allowed_inbound": [],
+          "allowed_outbound": [
+            "plugin-architect",
+            "plugin-pr",
+            "plugin-artifact",
+            "plugin-implement",
+            "shared-symlinks"
           ],
-          "allowed_outbound": [],
-          "rule": "Writing-style rules and a rules-only linter. No dependency on any other module verified."
+          "rule": "The umbrella. Its manifest lists the four other plugins as dependencies. The skill routes by mode name and runs no procedure. watch_feedback.py sits here by decision (CLAUDE.md known gaps)."
         }
       },
       {
@@ -1436,14 +1874,25 @@
         "context": "cobuilder-packaging",
         "kind": "module-invariant",
         "detail": {
-          "id": "skills-collaborate-with-user",
-          "path": "skills/collaborate-with-user/",
-          "public_interface": [
-            "Skill(\"collaborate-with-user\")"
+          "id": "shared-symlinks",
+          "path": "plugins",
+          "members": [
+            "architect/shared",
+            "pr/shared",
+            "artifact/shared",
+            "implement/shared",
+            "cobuilder-full-lifecycle/shared"
           ],
-          "allowed_inbound": [],
+          "public_interface": [],
+          "allowed_inbound": [
+            "plugin-architect",
+            "plugin-pr",
+            "plugin-artifact",
+            "plugin-implement",
+            "plugin-cobuilder-full-lifecycle"
+          ],
           "allowed_outbound": [],
-          "rule": "References skills/architecture/SKILL.md's 'Report Generation' section in prose (line 95) to say it does not duplicate that convention. This is documentation cross-talk, not a code or Skill-dispatch edge -- no forbidden_dependencies entry warranted."
+          "rule": "Five symlinks to ../../shared (ADR-0017). Code in shared is documented in the shared context."
         }
       },
       {
@@ -1451,58 +1900,18 @@
         "context": "cobuilder-packaging",
         "kind": "module-invariant",
         "detail": {
-          "id": "scripts",
-          "path": "scripts/",
-          "members": [
-            "_bundle_meta.py",
-            "_manifest.py",
-            "build_adrs.py",
-            "build_designs.py",
-            "build_diagrams.py",
-            "compute_scores.py",
-            "export_artifact.py",
-            "export_index.py",
-            "extract_diffs.py",
-            "extract_story.py",
-            "generate_audio.py",
-            "generate_prompts.py",
-            "html_to_pdf.py",
-            "migrate_bundle.py",
-            "record_publish.py",
-            "render_review.py",
-            "validate_decision_state.py",
-            "verify_bundle.py"
-          ],
-          "public_interface": [
-            "_bundle_meta.SCHEMA_VERSION",
-            "_bundle_meta.SCHEMA_VERSION_KNOWN",
-            "_bundle_meta.CURRENT_BUNDLE_FORMAT",
-            "_manifest.rewrite_manifest"
-          ],
-          "allowed_inbound": [
-            "skills-architecture",
-            "skills-odyssey"
-          ],
-          "allowed_outbound": [],
-          "rule": "Every script that reads or writes bundle data imports _bundle_meta.SCHEMA_VERSION for its own version stamp. _bundle_meta.py itself is a leaf: stdlib-only, no imports beyond __future__. ADR-0017's require_compatible() gate does not exist in this file yet -- verified absent."
-        }
-      },
-      {
-        "id": "cobuilder-packaging/module-invariant/9",
-        "context": "cobuilder-packaging",
-        "kind": "module-invariant",
-        "detail": {
-          "id": "viewer",
-          "path": "viewer/",
-          "members": [
-            "index.html"
-          ],
-          "public_interface": [
-            "window.STORY, window.ODYSSEY, window.DIFFS, window.ADRS, window.DIAGRAMS, window.DESIGNS (populated by sibling <script src> tags)"
-          ],
+          "id": "tests",
+          "path": "tests",
+          "public_interface": [],
           "allowed_inbound": [],
-          "allowed_outbound": [],
-          "rule": "viewer/index.html never reaches into scripts/ (grep-verified: the one 'scripts/' mention is a code comment, not a live reference). It is not self-contained -- see CLAUDE.md 'The viewer is not self-contained' -- and depends on being served from the bundle root, a sibling of viewer/."
+          "allowed_outbound": [
+            "plugin-architect",
+            "plugin-pr",
+            "plugin-artifact",
+            "plugin-implement",
+            "shared-symlinks"
+          ],
+          "rule": "The pytest suite reads every plugin to check packaging, scripts, and gates. It is the only place allowed to name plugin paths."
         }
       },
       {
@@ -1510,9 +1919,713 @@
         "context": "cobuilder-packaging",
         "kind": "context-map",
         "detail": {
+          "with": "architect",
+          "pattern": "open-host-service",
+          "note": "Lists and versions the plugin in marketplace.json. Never reads its files."
+        }
+      },
+      {
+        "id": "cobuilder-packaging/context-map/2",
+        "context": "cobuilder-packaging",
+        "kind": "context-map",
+        "detail": {
+          "with": "pr",
+          "pattern": "open-host-service",
+          "note": "Same as architect."
+        }
+      },
+      {
+        "id": "cobuilder-packaging/context-map/3",
+        "context": "cobuilder-packaging",
+        "kind": "context-map",
+        "detail": {
+          "with": "artifact",
+          "pattern": "open-host-service",
+          "note": "Same as architect. SMELL: marketplace.json lists it twice."
+        }
+      },
+      {
+        "id": "cobuilder-packaging/context-map/4",
+        "context": "cobuilder-packaging",
+        "kind": "context-map",
+        "detail": {
+          "with": "implement",
+          "pattern": "open-host-service",
+          "note": "Same as architect."
+        }
+      },
+      {
+        "id": "cobuilder-packaging/context-map/5",
+        "context": "cobuilder-packaging",
+        "kind": "context-map",
+        "detail": {
+          "with": "shared",
+          "pattern": "shared-kernel",
+          "shared": [
+            "ledger.LedgerPaths",
+            "ledger.watch_feedback"
+          ],
+          "note": "plugins/cobuilder-full-lifecycle/scripts/watch_feedback.py imports ledger through its shared symlink."
+        }
+      },
+      {
+        "id": "cobuilder-packaging/context-map/6",
+        "context": "cobuilder-packaging",
+        "kind": "context-map",
+        "detail": {
           "with": "bundle-directory",
           "pattern": "open-host-service",
-          "note": "Not yet a documented bounded context. Scripts write it, the viewer reads it; neither reads the other's source. Data-only, versioned by bundle.json / story.json meta.schema_version."
+          "note": "Not a documented context. Scripts write the bundle and the viewer reads it. Versioned by bundle.json and story.json meta.schema_version."
+        }
+      },
+      {
+        "id": "implement/forbidden-dependency/1",
+        "context": "implement",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "plugins/architect/**, plugins/pr/**",
+          "why": "ADR-0016: a plugin never names another plugin's path. Grep found no such string in plugins/implement."
+        }
+      },
+      {
+        "id": "implement/forbidden-dependency/2",
+        "context": "implement",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "plugins/artifact/scripts/build_builds_view.py",
+          "from": "plugins/implement/scripts/verify_gate.py",
+          "why": "SMELL: a comment at verify_gate.py:98-100 names the path plugins/artifact/scripts/build_builds_view.py. It is a comment, not an import, so nothing breaks. It still names another plugin's path, which ADR-0016 forbids. Name shared/slice_table.py as the shared parser and drop the artifact path."
+        }
+      },
+      {
+        "id": "implement/forbidden-dependency/3",
+        "context": "implement",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "bare Skill name 'architecture' in commands/debug.md",
+          "from": "plugins/implement/commands",
+          "why": "SMELL (minor): line 26 calls Skill(\"architecture\") with no plugin prefix, while pr uses Skill(\"architect:architecture\"). An unprefixed name can bind to the wrong plugin or to none. Use the architect: prefix."
+        }
+      },
+      {
+        "id": "implement/forbidden-dependency/4",
+        "context": "implement",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "agents and hook of another plugin",
+          "why": "CLAUDE.md principle 5 and ADR-0025: only implement ships agents and a hook. Verified: this plugin owns all four agents (green, red, validate, vocabulary) and the one hooks.json, and no other plugin has either."
+        }
+      },
+      {
+        "id": "implement/module-invariant/1",
+        "context": "implement",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "plugin-manifest",
+          "path": "plugins/implement/.claude-plugin",
+          "public_interface": [
+            "plugin.json"
+          ],
+          "allowed_inbound": [],
+          "allowed_outbound": [],
+          "rule": "Static JSON. Declares architect and artifact as dependencies. Version 0.6.0 must match marketplace.json."
+        }
+      },
+      {
+        "id": "implement/module-invariant/2",
+        "context": "implement",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "commands",
+          "path": "plugins/implement/commands",
+          "members": [
+            "start.md",
+            "debug.md",
+            "install.md"
+          ],
+          "public_interface": [],
+          "allowed_inbound": [],
+          "allowed_outbound": [
+            "skill-build"
+          ],
+          "rule": "start and install call Skill(\"build\"). debug calls the architect plugin's debug mode by name (see SMELL)."
+        }
+      },
+      {
+        "id": "implement/module-invariant/3",
+        "context": "implement",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "skill-build",
+          "path": "plugins/implement/skills/build",
+          "public_interface": [
+            "Skill(\"implement:build\")"
+          ],
+          "allowed_inbound": [
+            "commands"
+          ],
+          "allowed_outbound": [
+            "agents",
+            "scripts",
+            "shared-scripts"
+          ],
+          "rule": "Owns the four gates and the slice loop. Calls Skill(\"cobuilder-artifacts\") by name. 12 reference files plus workflows/."
+        }
+      },
+      {
+        "id": "implement/module-invariant/4",
+        "context": "implement",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "skill-design-to-code",
+          "path": "plugins/implement/skills/design-to-code",
+          "public_interface": [
+            "Skill(\"implement:design-to-code\")"
+          ],
+          "allowed_inbound": [
+            "skill-build"
+          ],
+          "allowed_outbound": [],
+          "rule": "Vendored per ADR-0024. Runs only when Gate 2b applies."
+        }
+      },
+      {
+        "id": "implement/module-invariant/5",
+        "context": "implement",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "agents",
+          "path": "plugins/implement/agents",
+          "members": [
+            "red.md",
+            "green.md",
+            "validate.md",
+            "vocabulary.md"
+          ],
+          "public_interface": [
+            "implement:red",
+            "implement:green",
+            "implement:validate",
+            "implement:vocabulary"
+          ],
+          "allowed_inbound": [
+            "skill-build"
+          ],
+          "allowed_outbound": [],
+          "rule": "Leaf. The only agents in the family (ADR-0025). VALIDATE scores blind against a rubric and needs 0.90."
+        }
+      },
+      {
+        "id": "implement/module-invariant/6",
+        "context": "implement",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "hook",
+          "path": "plugins/implement/hooks",
+          "members": [
+            "hooks.json"
+          ],
+          "public_interface": [
+            "PostToolUse on Write|Edit"
+          ],
+          "allowed_inbound": [],
+          "allowed_outbound": [
+            "scripts"
+          ],
+          "rule": "Runs scripts/habit_coach.py through uv. The only hook in the family."
+        }
+      },
+      {
+        "id": "implement/module-invariant/7",
+        "context": "implement",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "scripts",
+          "path": "plugins/implement/scripts",
+          "members": [
+            "habit_coach.py",
+            "verify_gate.py"
+          ],
+          "public_interface": [
+            "verify_gate.py"
+          ],
+          "allowed_inbound": [
+            "skill-build",
+            "hook"
+          ],
+          "allowed_outbound": [
+            "shared-scripts"
+          ],
+          "rule": "habit_coach.py is stdlib only. verify_gate.py imports only slice_table from shared."
+        }
+      },
+      {
+        "id": "implement/module-invariant/8",
+        "context": "implement",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "shared-scripts",
+          "path": "plugins/implement/shared",
+          "public_interface": [],
+          "allowed_inbound": [
+            "scripts",
+            "skill-build"
+          ],
+          "allowed_outbound": [],
+          "rule": "A symlink to ../../shared."
+        }
+      },
+      {
+        "id": "implement/context-map/1",
+        "context": "implement",
+        "kind": "context-map",
+        "detail": {
+          "with": "shared",
+          "pattern": "shared-kernel",
+          "shared": [
+            "slice_table"
+          ],
+          "note": "verify_gate.py adds the plugin's shared symlink to sys.path and imports slice_table. The skill also runs shared/build_index.py by shell."
+        }
+      },
+      {
+        "id": "implement/context-map/2",
+        "context": "implement",
+        "kind": "context-map",
+        "detail": {
+          "with": "architect",
+          "pattern": "open-host-service",
+          "note": "commands/debug.md calls Skill(\"architecture\", args=\"debug ...\"). The skill reads a design record from docs/ when one exists. It names /architect:design by mode only."
+        }
+      },
+      {
+        "id": "implement/context-map/3",
+        "context": "implement",
+        "kind": "context-map",
+        "detail": {
+          "with": "artifact",
+          "pattern": "open-host-service",
+          "note": "The skill calls Skill(\"cobuilder-artifacts\") three times to show a gate and the epics route. No import and no path."
+        }
+      },
+      {
+        "id": "pr/forbidden-dependency/1",
+        "context": "pr",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "plugins/architect/**, plugins/artifact/**",
+          "why": "ADR-0016: a plugin never names another plugin's path. Grep found no 'plugins/<other>' string in plugins/pr."
+        }
+      },
+      {
+        "id": "pr/forbidden-dependency/2",
+        "context": "pr",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "architect skill architecture: references/decision-records.md, SKILL.md, templates/adr-template.md",
+          "from": "plugins/pr/skills/odyssey",
+          "why": "SMELL: references/decision-records-lite.md (lines 11, 20, 24, 55), references/adr-template.md (lines 11, 15), and SKILL.md (line 31) tell Claude to read files inside the architecture skill of the architect plugin. The text at decision-records-lite.md:24 admits the path resolves only to odyssey's own cache. ADR candidate: move the ADR schema and template into shared."
+        }
+      },
+      {
+        "id": "pr/forbidden-dependency/3",
+        "context": "pr",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "architect@cobuilder-plugin in plugin.json dependencies",
+          "why": "SMELL: plugins/pr/.claude-plugin/plugin.json lists only artifact@cobuilder-plugin, but skills/odyssey/SKILL.md calls Skill(\"architect:architecture\") at line 337 and decision-records-lite.md:17. A pr install without architect fails at that call. ADR candidate: declare the dependency, or stop the call."
+        }
+      },
+      {
+        "id": "pr/forbidden-dependency/4",
+        "context": "pr",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "Python import of another plugin's scripts",
+          "why": "Rule holding, not a smell: grep of 'from'/'import' lines in plugins/pr/scripts shows only the standard library, dotenv, google.genai, shared _bundle_meta, and shared _manifest."
+        }
+      },
+      {
+        "id": "pr/forbidden-dependency/5",
+        "context": "pr",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "agents/ and hooks/",
+          "why": "CLAUDE.md principle 5 and ADR-0025: only implement ships agents and a hook. Verified: plugins/pr has neither directory."
+        }
+      },
+      {
+        "id": "pr/module-invariant/1",
+        "context": "pr",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "plugin-manifest",
+          "path": "plugins/pr/.claude-plugin",
+          "public_interface": [
+            "plugin.json"
+          ],
+          "allowed_inbound": [],
+          "allowed_outbound": [],
+          "rule": "Static JSON. Version 0.9.0 must match marketplace.json. See the SMELL on missing architect dependency."
+        }
+      },
+      {
+        "id": "pr/module-invariant/2",
+        "context": "pr",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "commands",
+          "path": "plugins/pr/commands",
+          "members": [
+            "baseline.md",
+            "review.md",
+            "generate.md"
+          ],
+          "public_interface": [],
+          "allowed_inbound": [],
+          "allowed_outbound": [
+            "skill-odyssey"
+          ],
+          "rule": "Each command makes Skill(\"odyssey\", ...) calls into its own plugin. Verified: 3 Skill(\"odyssey\" calls."
+        }
+      },
+      {
+        "id": "pr/module-invariant/3",
+        "context": "pr",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "skill-odyssey",
+          "path": "plugins/pr/skills/odyssey",
+          "public_interface": [
+            "Skill(\"pr:odyssey\")"
+          ],
+          "allowed_inbound": [
+            "commands"
+          ],
+          "allowed_outbound": [
+            "scripts",
+            "shared-skills",
+            "shared-scripts"
+          ],
+          "rule": "SMELL: also reads architect files by name and calls Skill(\"architect:architecture\") (see forbidden_dependencies). Judgment lives in references/*.md (8 files and a stacks/ folder)."
+        }
+      },
+      {
+        "id": "pr/module-invariant/4",
+        "context": "pr",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "scripts",
+          "path": "plugins/pr/scripts",
+          "members": [
+            "extract_story.py",
+            "extract_diffs.py",
+            "generate_prompts.py",
+            "generate_audio.py",
+            "build_diagrams.py",
+            "render_review.py"
+          ],
+          "public_interface": [],
+          "allowed_inbound": [
+            "skill-odyssey"
+          ],
+          "allowed_outbound": [
+            "shared-scripts"
+          ],
+          "rule": "PEP 723 scripts run by 'uv run'. They import only _bundle_meta and _manifest from shared. A script fetches and compiles data and never authors narrative."
+        }
+      },
+      {
+        "id": "pr/module-invariant/5",
+        "context": "pr",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "shared-skills",
+          "path": "plugins/pr/shared/skills",
+          "members": [
+            "mermaid",
+            "ste-writing"
+          ],
+          "public_interface": [
+            "Skill(\"pr:mermaid\")",
+            "Skill(\"pr:ste-writing\")"
+          ],
+          "allowed_inbound": [
+            "skill-odyssey"
+          ],
+          "allowed_outbound": [],
+          "rule": "A symlink into shared/. The pr context owns none of this text."
+        }
+      },
+      {
+        "id": "pr/module-invariant/6",
+        "context": "pr",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "shared-scripts",
+          "path": "plugins/pr/shared",
+          "public_interface": [],
+          "allowed_inbound": [
+            "scripts",
+            "skill-odyssey"
+          ],
+          "allowed_outbound": [],
+          "rule": "A symlink to ../../shared. The five scripts that import shared code call sys.path.insert on parent.parent/shared."
+        }
+      },
+      {
+        "id": "pr/context-map/1",
+        "context": "pr",
+        "kind": "context-map",
+        "detail": {
+          "with": "shared",
+          "pattern": "shared-kernel",
+          "shared": [
+            "_bundle_meta.read_plugin_version",
+            "_bundle_meta.require_compatible",
+            "_bundle_meta.stamp_generator",
+            "_bundle_meta.SCHEMA_VERSION",
+            "_manifest.rewrite_manifest"
+          ],
+          "note": "Five scripts add the plugin's shared symlink to sys.path and import these symbols. It also runs shared/migrate_bundle.py, build_index.py, and verify_bundle.py by shell."
+        }
+      },
+      {
+        "id": "pr/context-map/2",
+        "context": "pr",
+        "kind": "context-map",
+        "detail": {
+          "with": "architect",
+          "pattern": "open-host-service",
+          "note": "Calls Skill(\"architect:architecture\") for the decisions mode and for 'describe <district>'. SMELL: it also cites architect files (see forbidden_dependencies)."
+        }
+      },
+      {
+        "id": "pr/context-map/3",
+        "context": "pr",
+        "kind": "context-map",
+        "detail": {
+          "with": "artifact",
+          "pattern": "open-host-service",
+          "note": "Hands the engineer to /artifact:view and /artifact:publish by mode name in prose. No Skill call and no import. The artifact scripts name /pr:baseline and /pr:generate in error text in return."
+        }
+      },
+      {
+        "id": "shared/forbidden-dependency/1",
+        "context": "shared",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "plugins/<name>/ as Python import",
+          "why": "Shared is the base layer. Grep of every 'from' and 'import' line in shared/*.py finds only the standard library, PyYAML, ulid, and sibling shared modules. This rule holds."
+        }
+      },
+      {
+        "id": "shared/forbidden-dependency/2",
+        "context": "shared",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "plugins/artifact/viewer/index.html and the sibling artifact install cache",
+          "from": "shared/migrate_bundle.py",
+          "why": "SMELL: find_viewer_source (lines 309-340) probes PLUGIN_ROOT/plugins/artifact/viewer/index.html and the sibling 'artifact/<version>/viewer/index.html' cache, and the warning text at line 582 names 'plugins/artifact/'. Shared code reaches into a plugin's files, which inverts the base layer. ADR candidate: pass the viewer path in as an argument, or ship the built viewer through shared."
+        }
+      },
+      {
+        "id": "shared/forbidden-dependency/3",
+        "context": "shared",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "plugins/artifact/viewer/src/shell/workDeck.ts and plugin script paths",
+          "from": "shared (_bundle_meta.py:32, slice_table.py:23-24)",
+          "why": "SMELL (comment only): a comment in _bundle_meta.py names the viewer file workDeck.ts, and the slice_table.py docstring lists plugins/implement/scripts/verify_gate.py and plugins/artifact/scripts/build_builds_view.py. Nothing runs from these names, but they name paths in plugins. Replace them with plugin names. A test keeps DESIGN_STAGES equal to the lanes."
+        }
+      },
+      {
+        "id": "shared/forbidden-dependency/4",
+        "context": "shared",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "authored content",
+          "why": "CLAUDE.md principle 2: a script moves data and never authors judgment. build_index.py is the only writer of data/adrs.json and data/index.json."
+        }
+      },
+      {
+        "id": "shared/module-invariant/1",
+        "context": "shared",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "bundle-meta",
+          "path": "shared",
+          "members": [
+            "_bundle_meta.py",
+            "_manifest.py"
+          ],
+          "public_interface": [
+            "_bundle_meta.SCHEMA_VERSION",
+            "_bundle_meta.CURRENT_BUNDLE_FORMAT",
+            "_bundle_meta.require_compatible",
+            "_manifest.rewrite_manifest"
+          ],
+          "allowed_inbound": [
+            "index-and-verify",
+            "migration",
+            "ledger-and-gates"
+          ],
+          "allowed_outbound": [],
+          "rule": "_bundle_meta.py is a leaf: standard library only. _manifest.py imports only _bundle_meta."
+        }
+      },
+      {
+        "id": "shared/module-invariant/2",
+        "context": "shared",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "index-and-verify",
+          "path": "shared",
+          "members": [
+            "build_index.py",
+            "verify_bundle.py",
+            "validate_decision_state.py",
+            "boundary_check.py",
+            "prose_budget.py"
+          ],
+          "public_interface": [],
+          "allowed_inbound": [],
+          "allowed_outbound": [
+            "bundle-meta",
+            "gate-parsers"
+          ],
+          "rule": "Run by shell, not imported by plugins. build_index.py imports _bundle_meta, prose_budget, slice_table, and gate_status. verify_bundle.py imports prose_budget and _bundle_meta. build_index.py needs PyYAML."
+        }
+      },
+      {
+        "id": "shared/module-invariant/3",
+        "context": "shared",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "migration",
+          "path": "shared",
+          "members": [
+            "migrate_bundle.py",
+            "migrate_png_assets_to_webp.py"
+          ],
+          "public_interface": [],
+          "allowed_inbound": [],
+          "allowed_outbound": [
+            "bundle-meta"
+          ],
+          "rule": "SMELL: migrate_bundle.py probes the artifact plugin's viewer path (see forbidden_dependencies). Append a ladder step to change data or layout, and never call extract_story.py."
+        }
+      },
+      {
+        "id": "shared/module-invariant/4",
+        "context": "shared",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "ledger-and-gates",
+          "path": "shared",
+          "members": [
+            "ledger.py"
+          ],
+          "public_interface": [
+            "ledger.LedgerPaths",
+            "ledger.append_comment",
+            "ledger.watch_feedback"
+          ],
+          "allowed_inbound": [],
+          "allowed_outbound": [],
+          "rule": "Leaf: standard library, and ulid when present. Imported by artifact serve_bundle.py and by the umbrella watch_feedback.py."
+        }
+      },
+      {
+        "id": "shared/module-invariant/5",
+        "context": "shared",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "gate-parsers",
+          "path": "shared",
+          "members": [
+            "gate_status.py",
+            "slice_table.py"
+          ],
+          "public_interface": [
+            "gate_status",
+            "slice_table"
+          ],
+          "allowed_inbound": [
+            "index-and-verify"
+          ],
+          "allowed_outbound": [],
+          "rule": "One parser for the gate block and the slice table, shared by build_index.py, verify_gate.py, and build_builds_view.py."
+        }
+      },
+      {
+        "id": "shared/module-invariant/6",
+        "context": "shared",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "shared-skills",
+          "path": "shared/skills",
+          "members": [
+            "mermaid",
+            "ste-writing"
+          ],
+          "public_interface": [
+            "Skill(\"<plugin>:mermaid\")",
+            "Skill(\"<plugin>:ste-writing\")"
+          ],
+          "allowed_inbound": [],
+          "allowed_outbound": [],
+          "rule": "Leaf text. Reached through each plugin's shared symlink."
+        }
+      },
+      {
+        "id": "shared/context-map/1",
+        "context": "shared",
+        "kind": "context-map",
+        "detail": {
+          "with": "architect",
+          "pattern": "shared-kernel",
+          "note": "Consumed by shell only: build_index, migrate_bundle, prose_budget, boundary_check, validate_decision_state."
+        }
+      },
+      {
+        "id": "shared/context-map/2",
+        "context": "shared",
+        "kind": "context-map",
+        "detail": {
+          "with": "pr",
+          "pattern": "shared-kernel",
+          "note": "Consumed by import (_bundle_meta, _manifest) and by shell (migrate_bundle, build_index, verify_bundle)."
+        }
+      },
+      {
+        "id": "shared/context-map/3",
+        "context": "shared",
+        "kind": "context-map",
+        "detail": {
+          "with": "artifact",
+          "pattern": "shared-kernel",
+          "note": "Consumed by import (_bundle_meta, ledger, gate_status, slice_table) and by shell (build_index, migrate_bundle)."
+        }
+      },
+      {
+        "id": "shared/context-map/4",
+        "context": "shared",
+        "kind": "context-map",
+        "detail": {
+          "with": "implement",
+          "pattern": "shared-kernel",
+          "note": "Consumed by import (slice_table) and by shell (build_index)."
+        }
+      },
+      {
+        "id": "shared/context-map/5",
+        "context": "shared",
+        "kind": "context-map",
+        "detail": {
+          "with": "cobuilder-packaging",
+          "pattern": "shared-kernel",
+          "note": "The umbrella plugin cobuilder-full-lifecycle imports ledger in watch_feedback.py."
         }
       }
     ],
@@ -4292,12 +5405,31 @@
       "level-page-restructure/5": "epic header names 'level-page-restructure/E3', which no design declares."
     },
     "context_verifies_district": {
+      "architect": [
+        "skills",
+        "commands"
+      ],
+      "artifact": [
+        "viewer",
+        "scripts"
+      ],
       "cobuilder-packaging": [
         "commands",
         "skills",
         "scripts",
         "viewer",
         "docs"
+      ],
+      "implement": [
+        "skills",
+        "scripts"
+      ],
+      "pr": [
+        "skills",
+        "scripts"
+      ],
+      "shared": [
+        "scripts"
       ]
     },
     "district_uncovered": [

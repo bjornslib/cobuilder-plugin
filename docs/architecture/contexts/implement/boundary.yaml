@@ -1,0 +1,119 @@
+# Boundary record for the implement bounded context.
+# Machine-diffable architecture baseline — ../../standard.md §5.2.
+# Authoring procedure: plugins/architect/skills/architecture/references/architecture-documentation.md.
+# Every edge below was checked against code (grep of imports, Skill calls, and path strings).
+# Grounded in code as of 2026-10-08.
+
+id: implement
+path: plugins/implement
+name: "Implement: four gates and a RED, GREEN, VALIDATE loop per slice"
+verified_at: d086be981401779ba4691faed31a6f64598df589
+
+public_interface:
+  - commands/start.md
+  - commands/debug.md
+  - commands/install.md
+  - "Skill(\"implement:build\", args=\"implement|install ...\")"
+  - "Skill(\"implement:design-to-code\")"
+  - "agents implement:red, implement:green, implement:validate, implement:vocabulary"
+  - scripts/verify_gate.py
+  - "hooks/hooks.json PostToolUse hook, run through scripts/habit_coach.py"
+
+allowed_dependencies:
+  - shared
+  - architect
+  - artifact
+
+context_map:
+  - with: shared
+    pattern: shared-kernel
+    shared: [slice_table]
+    note: "verify_gate.py adds the plugin's shared symlink to sys.path and imports slice_table. The skill also runs shared/build_index.py by shell."
+  - with: architect
+    pattern: open-host-service
+    note: "commands/debug.md calls Skill(\"architecture\", args=\"debug ...\"). The skill reads a design record from docs/ when one exists. It names /architect:design by mode only."
+  - with: artifact
+    pattern: open-host-service
+    note: "The skill calls Skill(\"cobuilder-artifacts\") three times to show a gate and the epics route. No import and no path."
+
+forbidden_dependencies:
+  - target: "plugins/architect/**, plugins/pr/**"
+    why: "ADR-0016: a plugin never names another plugin's path. Grep found no such string in plugins/implement."
+
+  - target: "plugins/artifact/scripts/build_builds_view.py"
+    from: plugins/implement/scripts/verify_gate.py
+    why: "SMELL: a comment at verify_gate.py:98-100 names the path plugins/artifact/scripts/build_builds_view.py. It is a comment, not an import, so nothing breaks. It still names another plugin's path, which ADR-0016 forbids. Name shared/slice_table.py as the shared parser and drop the artifact path."
+
+  - target: "bare Skill name 'architecture' in commands/debug.md"
+    from: plugins/implement/commands
+    why: "SMELL (minor): line 26 calls Skill(\"architecture\") with no plugin prefix, while pr uses Skill(\"architect:architecture\"). An unprefixed name can bind to the wrong plugin or to none. Use the architect: prefix."
+
+  - target: "agents and hook of another plugin"
+    why: "CLAUDE.md principle 5 and ADR-0025: only implement ships agents and a hook. Verified: this plugin owns all four agents (green, red, validate, vocabulary) and the one hooks.json, and no other plugin has either."
+
+modules:
+  - id: plugin-manifest
+    path: plugins/implement/.claude-plugin
+    public_interface: [plugin.json]
+    allowed_inbound: []
+    allowed_outbound: []
+    rule: "Static JSON. Declares architect and artifact as dependencies. Version 0.6.0 must match marketplace.json."
+
+  - id: commands
+    path: plugins/implement/commands
+    members: [start.md, debug.md, install.md]
+    public_interface: []
+    allowed_inbound: []
+    allowed_outbound: [skill-build]
+    rule: "start and install call Skill(\"build\"). debug calls the architect plugin's debug mode by name (see SMELL)."
+
+  - id: skill-build
+    path: plugins/implement/skills/build
+    public_interface: ["Skill(\"implement:build\")"]
+    allowed_inbound: [commands]
+    allowed_outbound: [agents, scripts, shared-scripts]
+    rule: "Owns the four gates and the slice loop. Calls Skill(\"cobuilder-artifacts\") by name. 12 reference files plus workflows/."
+
+  - id: skill-design-to-code
+    path: plugins/implement/skills/design-to-code
+    public_interface: ["Skill(\"implement:design-to-code\")"]
+    allowed_inbound: [skill-build]
+    allowed_outbound: []
+    rule: "Vendored per ADR-0024. Runs only when Gate 2b applies."
+
+  - id: agents
+    path: plugins/implement/agents
+    members: [red.md, green.md, validate.md, vocabulary.md]
+    public_interface: ["implement:red", "implement:green", "implement:validate", "implement:vocabulary"]
+    allowed_inbound: [skill-build]
+    allowed_outbound: []
+    rule: "Leaf. The only agents in the family (ADR-0025). VALIDATE scores blind against a rubric and needs 0.90."
+
+  - id: hook
+    path: plugins/implement/hooks
+    members: [hooks.json]
+    public_interface: ["PostToolUse on Write|Edit"]
+    allowed_inbound: []
+    allowed_outbound: [scripts]
+    rule: "Runs scripts/habit_coach.py through uv. The only hook in the family."
+
+  - id: scripts
+    path: plugins/implement/scripts
+    members: [habit_coach.py, verify_gate.py]
+    public_interface: [verify_gate.py]
+    allowed_inbound: [skill-build, hook]
+    allowed_outbound: [shared-scripts]
+    rule: "habit_coach.py is stdlib only. verify_gate.py imports only slice_table from shared."
+
+  - id: shared-scripts
+    path: plugins/implement/shared
+    public_interface: []
+    allowed_inbound: [scripts, skill-build]
+    allowed_outbound: []
+    rule: "A symlink to ../../shared."
+
+verifies:
+  - skills
+  - scripts
+
+governed_by: []
