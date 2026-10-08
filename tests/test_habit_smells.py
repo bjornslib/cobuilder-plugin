@@ -194,6 +194,20 @@ def test_duplicated_code_counts_issue_locations_across_clusters(tmp_path):
         "duplicated-code did not sum the member issue-locations across clusters"
 
 
+def test_a_group_without_a_smell_name_is_not_counted(tmp_path):
+    # A group with no `smell` string has no name to count under. It must not
+    # write a null key into the record, and it must not stop the run.
+    payload = fake_payload(no_incomplete=True)
+    payload.append({"details": {}, "issues": [{"key": "x.py", "details": {"file": "x.py"}}]})
+    payload.append({"smell": 7, "issues": [{"key": "y.py", "details": {"file": "y.py"}}]})
+    proc, report = run_smells(tmp_path, payload)
+    assert proc.returncode == 0, f"exit {proc.returncode}: {proc.stderr}"
+    data = json.loads(report.read_text())
+    assert all(isinstance(name, str) and name != "null" for name in data["smells"]), \
+        f"a group without a smell name was counted: {data['smells']}"
+    assert "7" not in data["smells"]
+
+
 def test_incomplete_run_records_the_flag_and_the_tool(tmp_path):
     proc, report = run_smells(tmp_path, fake_payload())  # payload carries incomplete-run
     assert proc.returncode == 0, f"exit {proc.returncode}: {proc.stderr}"

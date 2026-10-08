@@ -152,6 +152,8 @@ def collect(repo: Path, branch: str) -> dict:
         if smell == SENTINEL_SMELL:
             complete = False
             continue
+        if not isinstance(smell, str):
+            continue
         smells[smell] = smells.get(smell, 0) + len(group.get("issues", []))
     record["run_complete"] = complete
     record["smells"] = smells
@@ -169,7 +171,7 @@ def group_findings(payload: list) -> dict:
         if not isinstance(group, dict):
             continue
         smell = group.get("smell")
-        if smell == SENTINEL_SMELL:
+        if smell == SENTINEL_SMELL or not isinstance(smell, str):
             continue
         smells[smell] = smells.get(smell, 0) + len(group.get("issues", []))
     return smells
