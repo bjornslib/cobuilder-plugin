@@ -23,8 +23,8 @@ Accept a mode argument if the user supplies one at invocation. Prompt for one if
 - `/architect:review` -- Review mode
 - `/architect:maintenance` -- Maintenance mode
 
-- `/architect:decisions` -- Decision Records mode
-- `/architect:describe` -- Architecture Description mode
+- `/architect:decisions` -- Decision Records mode. Internal: `pr:generate` and `pr:review` call it. It has no command file.
+- `/architect:describe` -- Architecture Description mode. Called by design mode and by `pr:baseline` for self-analysis only. It has no command file.
 - `/architect:debug` -- Debug mode
 - `/architect:options` -- Options mode
 
@@ -200,6 +200,11 @@ that join here.
    every finding `kind: "prediction"`). Follow
    `references/design-mode.md` §8. Show `intent` and `assessment` to the
    engineer before you write them to disk.
+
+   Every prose field obeys `${CLAUDE_PLUGIN_ROOT}/shared/prose-budget.md`. You may
+   draft the thirty-second voice script first. Then write each field by the writing rules there. Run
+   `prose_budget.py check` on `goal.json`, `intent.json`, and `assessment.json`, and fix every
+   ceiling line. A cap is soft, so keep a point rather than cut it.
 
    Then write five artifacts. Run each prose pass through
    `Skill("architect:ste-writing")` in flavored mode. If that
@@ -466,6 +471,8 @@ state the absence in the run's output. This mode writes no glossary.
 **Output:** ADR file(s) plus updated viewpoint indexes, under `{doc_root}`. Canonical standard: `references/standard.md` §5.4.
 
 ### Describe Mode (Architecture Description)
+
+**Called by design mode.** Design mode (self-only) calls describe from stage 1 for stale, missing, or uncovered contexts. `pr:baseline` also calls describe, for self-analysis only. Describe has no command file.
 
 **Scope:** Document a bounded context to the Architecture Documentation Standard of the project: a ddd-crew canvas, C4 diagrams, and the machine-diffable boundary record that makes drift detectable.
 

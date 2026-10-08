@@ -1,5 +1,6 @@
 ---
 title: "architect: Maintenance"
+description: "Run the audit again and show what is new, worse, unchanged, or fixed since the last report. Keep an incremental backlog."
 status: active
 type: command
 last_verified: 2026-08-04

@@ -1,11 +1,12 @@
 ---
-title: "Artifact: Draw a Design Canvas"
+title: "artifact: Canvas"
+description: "Draw one design as a tldraw canvas, with its two diagrams beside five zones."
 status: active
 type: command
 last_verified: 2026-10-08
 ---
 
-# Artifact: Draw a Design Canvas
+# artifact: Canvas
 
 Draws one design as a tldraw canvas. The canvas has five zones: Why (with a
 before/after picture), Landscape, Flow, Structure, and Contract. The two

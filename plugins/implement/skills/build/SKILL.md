@@ -1,5 +1,6 @@
 ---
 name: build
+user-invocable: false
 title: "CoBuilder Implement"
 version: 1.0.0
 status: active
@@ -71,9 +72,33 @@ language.
    - java → `pmd`.
    - ruby → `rubocop`.
 
+   habit-hooks looks for a detector in `node_modules/.bin` of the repo root,
+   and then on `PATH`. Run every `npm install` at the repo root. When the root
+   has no `package.json`, as in a repo whose only `package.json` sits in a
+   sub-folder, show the user a tools-only `package.json` first: a `private`
+   package with a name and a one-line description, and no code. Create it
+   only after the user confirms. Check that `node_modules/` is in
+   `.gitignore`, and tell the user to commit `package.json` and
+   `package-lock.json`.
+
+   `jscpd` reads `src` by default. When the repo has no `src` folder, show the
+   user a root `.jscpd.json` that lists the real source folders. Make it ignore
+   symlinked folders, lock files, generated files, and `node_modules`. Create
+   it after the user confirms.
+
+   When the repo has both python and typescript, habit-hooks hands every
+   TypeScript file to ruff, and ruff reports each one as a parse error. Show
+   the user a `[tool.ruff]` table in `pyproject.toml` with
+   `force-exclude = true` and `extend-exclude` for `**/*.ts` and `**/*.tsx`.
+   Add it after the user confirms.
+
 5. **Run `habit-hooks init`.** It detects languages on its own, writes
    `.habit-hooks/config.toml`, and lists any detector it still cannot find.
-   Running it again is safe.
+   Running it again is safe. Run it again after step 4 until it reports
+   `Nothing missing`. Then run `habit-hooks --branch <base>` once, where
+   `<base>` is the default branch. An `incomplete-run` group in the output
+   means a tool broke. Fix that tool before you report success, because a
+   clean result cannot be trusted until then.
 
 6. **Offer the backlog snooze. Never run it without explicit approval.**
    Explain that `habit-sensors --all | habit-snooze --snooze` snoozes every

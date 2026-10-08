@@ -1,11 +1,12 @@
 ---
-title: "Odyssey: Derive Baseline"
+title: "pr: Baseline"
+description: "Map the repo into districts and an inventory. Run it again to refresh. Narration and assessment read this map."
 status: active
 type: command
 last_verified: 2026-07-20
 ---
 
-# Odyssey: Derive Baseline
+# pr: Baseline
 
 Derives (or refreshes) the current repo's architecture baseline into its
 `.cobuilder-architect/` bundle: stack detection, district map, and `inventory.yaml`.

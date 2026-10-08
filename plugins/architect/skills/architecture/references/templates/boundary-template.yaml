@@ -6,6 +6,7 @@
 id: <context-id>                      # stable kebab-case; never renamed without an ADR
 path: <repo/path/to/context>
 name: "<human name>"
+verified_at: <commit sha>             # output of `git rev-parse HEAD` when you last verified this record
 
 # Symbols other bounded contexts (or operators) may import — the published language.
 public_interface:

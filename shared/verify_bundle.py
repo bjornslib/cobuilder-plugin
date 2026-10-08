@@ -25,6 +25,10 @@ Artifact key names (stable, used in --json output):
                  _bundle_meta.DESIGN_STAGES. "invalid:<id>=<stage>,..." names
                  the designs that no Work board lane shows. Absent when
                  index.json is absent. Required, never optional.
+    prose.budget - no authored field in data/designs.js or data/story.json is over
+                 twice its word cap in prose_budget.py (the ceiling). "over:<n> <first
+                 three>" names the fields. Required.
+    prose.soft   - the fields over a cap but under the ceiling. Optional: a warning.
   per PR (nested under "prs"."<N>"):
     timeline               - timeline entry for this PR exists
     narrative.<level>      - non-empty `narration` for each of the 4 levels
@@ -82,6 +86,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import boundary_check
+import prose_budget
 from _bundle_meta import CURRENT_BUNDLE_FORMAT, DESIGN_STAGES, SCHEMA_VERSION, SCHEMA_VERSION_KNOWN
 
 LEVEL_KEYS = ["intent", "problem_solution", "architecture", "file_changes"]
@@ -166,6 +172,12 @@ def check_bundle_json(bundle_dir: Path, story: dict | None) -> dict[str, str]:
     return results
 
 
+def check_boundary_stale(bundle_dir: Path) -> str:
+    repo = bundle_dir.parent.parent
+    stale = [i for i, s in boundary_check.check(repo, [])[0] if s != "ok"]
+    return "ok" if not stale else "stale:" + ",".join(stale)
+
+
 def check_baseline(bundle_dir: Path) -> tuple[dict[str, str], dict | None]:
     results: dict[str, str] = {}
 
@@ -198,6 +210,8 @@ def check_baseline(bundle_dir: Path) -> tuple[dict[str, str], dict | None]:
     design_stage = check_design_stages(bundle_dir)
     if design_stage is not None:
         results["design.stage"] = design_stage
+    results["prose.budget"], results["prose.soft"] = check_prose_budget(bundle_dir, story)
+    results["boundary.stale"] = check_boundary_stale(bundle_dir)
 
     return results, story
 
@@ -246,6 +260,31 @@ def check_design_stages(bundle_dir: Path) -> str | None:
         return None
     bad = [f"{d.get('id')}={d.get('stage')}" for d in designs if d.get("stage") not in DESIGN_STAGES]
     return "ok" if not bad else "invalid:" + ",".join(bad)
+
+
+def check_prose_budget(bundle_dir: Path, story: dict | None) -> tuple[str, str]:
+    """Return (ceiling, soft). The ceiling key is "ok" when no authored field is over
+    twice its word cap, and "over:<n> <first three>" names the count and the first
+    fields over. It is required. The soft key reports the fields over a cap but under
+    the ceiling, and it is optional: a cap warns, because the fix is sometimes to keep
+    a point. The records read are the designs in data/designs.js and every timeline
+    entry in story.json. The caps are in `prose_budget.py`."""
+    over: list[str] = []
+    path = bundle_dir / "data" / "designs.js"
+    if path.exists():
+        try:
+            designs = parse_window_object(path.read_text(), "DESIGNS") or {}
+        except OSError:
+            designs = {}
+        for name, record in sorted(designs.items()):
+            over += prose_budget.design_overages(record, f"{name}.")
+    over += prose_budget.story_overages(story)
+    soft, hard = prose_budget.split_overages(over)
+
+    def report(lines: list[str]) -> str:
+        return "ok" if not lines else f"over:{len(lines)} " + "; ".join(lines[:3])
+
+    return report(hard), report(soft)
 
 
 def load_adrs(bundle_dir: Path) -> dict | None:
@@ -401,7 +440,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    optional_prefixes = optional_prefixes_for_art(args.art)
+    optional_prefixes = optional_prefixes_for_art(args.art) + ("prose.soft", "boundary.stale")
     if not args.require_review:
         optional_prefixes += REVIEW_PREFIXES
 

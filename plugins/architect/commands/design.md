@@ -1,5 +1,6 @@
 ---
 title: "architect: Design"
+description: "Design one change before you build it. Interview, explore options, challenge the approach, then write a design record with a draft ADR and a runtime diagram."
 status: active
 type: command
 last_verified: 2026-08-20

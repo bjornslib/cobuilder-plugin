@@ -1,5 +1,6 @@
 ---
 title: "implement: Install"
+description: "Set up habit-hooks for this repo. Run it once before /implement:start."
 status: active
 type: command
 last_verified: 2026-09-27

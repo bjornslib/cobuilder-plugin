@@ -68,7 +68,7 @@ A Claude Code marketplace (`.claude-plugin/marketplace.json`) that ships five si
 
 | Plugin | Job |
 |---|---|
-| `architect` | Seven self-only modes: design, review, maintenance, decisions, describe, debug, options |
+| `architect` | Seven self-only modes. Five have a command: design, review, maintenance, debug, options. `decisions` and `describe` are internal |
 | `pr` | Odyssey: narrate merged PRs (`baseline`, `review`) and interview an author before a PR opens (`generate`) |
 | `artifact` | Serve a bundle locally (`view`), publish a level as a Claude Artifact (`publish`), and draw a design as a tldraw canvas (`canvas`). Holds the viewer |
 | `implement` | Build a design one vertical slice at a time (`start`, `debug`, `install`) |
@@ -141,6 +141,7 @@ Plugin scripts are PEP 723. `uv run <script>` resolves their own dependencies.
 - **Count a mode number in every top-level document.** When a mode count changes, grep `README.md`, `CLAUDE.md`, `DDD-VOCABULARY.md`, and `plugins/` for the old number.
 - **Do not root a server inside `viewer/`.** The viewer requests `../data/*`. Root at `.cobuilder-architect/`.
 - **Bump the plugin version** in both `plugin.json` and `marketplace.json` for a change that must reach installed copies. A test checks that the two match.
+- **Write authored prose by the prose-budget rules.** Use the ste-writing skill on every field. Drafting the thirty-second voice script first is suggested, not required. Run `uv run shared/prose_budget.py check <file>`. A cap is soft and warns. A field over twice its cap is a ceiling breach, and `verify_bundle.py` fails the bundle on it (`prose.budget`).
 - **`goal.stage` must be one of `_bundle_meta.DESIGN_STAGES`.** The Work board shows no design with another stage, and `build_index.py` rejects it. `design` is an `assessment.json` stage, not a design stage.
 - **`goal.json` list fields must be lists.** `build_index.py` hard-fails when `done_when` or `abort_if` is not a list.
 - **The PR number comes from opening the PR.** Content for a branch with no PR stays in `docs/pull-requests/branch-<slug>/`. Do not invent a branch key.
@@ -208,17 +209,10 @@ field".
 One topic per paragraph, six sentences or fewer. State a condition before
 its command.
 
-**Marketing and copy — reduced strictness, not exempt.** The `kleppmann`
-narrative register, `story.json`'s default (`plugins/pr/skills/odyssey/references/story-mode.md`
-§3), and README's own pitch language both need room for a voice that
-controlled language strips out. They follow a lighter pass of the rules
-above instead of the full set: active voice, plain verbs, no marketing
-adjectives, one topic per paragraph. They are not held to the
-sentence-length cap, the noun-cluster limit, or STE's restricted word
-list. A passive sentence with a known actor, or a claim the diff does not
-support, is still a defect there. The `--style ste` register
-(`story-mode.md` §3) already opts a PR's narrative into the full,
-unrelaxed rules, and this section changes nothing about that choice.
+**No prose is exempt.** The story's `narration`, `voice`, `problem`, and `solution`, the README's
+pitch language, and every authored field of a design all follow the full rules above. There is no
+looser register. Each authored field also has a word cap. `shared/prose-budget.md` explains how
+to write inside the caps, and `shared/prose_budget.py` holds them.
 
 ### Response structure
 

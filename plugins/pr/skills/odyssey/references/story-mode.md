@@ -13,10 +13,11 @@ How to write a per-PR narrative for the Odyssey bundle viewer
 `narration` and gets the plot. A developer reads `detail`/`problem`/`solution`
 and gets the mechanism.
 
-**Open PRs (`timeline[].status == "open"`).** Everything below assumes a
-merged, settled PR. Write past tense, and treat it as safe to assert what
-the codebase now does. For an open PR, switch to present/future framing:
-"this PR proposes to," "would move," "is adding," not "moved" or "added."
+**Tense: present, always.** Describe what the code does, in the simple present: "the
+transcriber sends only new segments," not "sent" or "now sends." A merged, settled PR states
+what the codebase does now, so it is safe to assert. For an open PR, keep the simple present
+for the proposal and mark it as one: "this PR proposes to," "would move," "adds," not "moved"
+or "added."
 Do not state as fact anything that is only true once the PR merges. For
 example, do not say a downstream module "now reads from X" when that is
 this PR's proposed change, not the codebase's current state. This applies
@@ -152,48 +153,41 @@ Register: `beats` text is developer-precise (the `detail`-register rules in
 
 ## 3. Style rules (mandatory)
 
-Which register applies is set by `--style kleppmann|ste`, default
-`kleppmann`.
+Three rules apply together to every field this mode writes (`narration`, `problem`, `solution`,
+`beats`, and `voice`). The method decides what to explain. STE decides how each sentence reads.
+The prose budget decides how long each field may run.
 
-### kleppmann (default)
+1. **STE, always.** Use the ste-writing skill (`Skill("pr:ste-writing")`). If that call gives
+   `Unknown skill`, read `${CLAUDE_PLUGIN_ROOT}/shared/skills/ste-writing/SKILL.md` directly and
+   obey that file instead. This section does not restate the rules, to keep one source of truth.
+   PR #79 in the cobuilder-harness bundle (`.cobuilder-architect/cobuilder-harness-a103a550/`) is
+   the worked example of this register.
+2. **The prose budget.** `${CLAUDE_PLUGIN_ROOT}/shared/prose-budget.md` sets the word cap of each
+   field and the order of work. You may write the thirty-second `voice` script of the level first. Cut
+   words and never meaning. Run `prose_budget.py check <bundle-dir>/data/story.json` until it
+   prints `ok`.
+3. **The Kleppmann method** (the old default register, kept as the way to explain):
 
-- Write with the clarity and flow of Martin Kleppmann: short declarative
-  sentences building to a compound one, technical precision without jargon
-  for its own sake, one idea per paragraph.
-- **Background starts deep, narrows to the change.** Open with enough of how
-  the system actually works that a newcomer is not lost, then close in on the
-  specific defect or gap this PR addresses. Ground every claim in the real
-  modules touched. Read the surrounding code, and do not infer behavior from
-  the diff alone.
-- **Intuition needs one concrete toy example with real numbers and names
-  from the PR** — not an abstract description. E.g. "a 60 KB validator
-  report truncated at 16 KB" beats "the report could be too large." Pull the
-  numbers from the actual diff, logs, or code constants.
-- **Explain who runs which computation and why.** When a design shifts work
-  from one side of a boundary to another (client vs. server, writer vs.
-  reader), say explicitly which side now does the work and what forced that
-  choice.
-- **Never enumerate files as narrative.** File lists belong only in level 4
-  groups. Levels 1-3 describe behavior and decisions, not paths.
-- **Smooth transitions.** Each section should read as continuous prose, not
-  disconnected bullet fragments stitched together.
-- **Narrative arc across PRs.** When a later PR deliberately reuses a PR's
-  foundation, say so — "this PR's plumbing contract is next PR's
-  foundation." Check `related_decisions` (`depends-on`) in the ADRs to find
-  these threads. Render them as `related_decisions`/cross-references in
-  level 3, not as speculation.
-
-### ste
-
-Defer to the `ste-writing` skill (`Skill("pr:ste-writing")`)
-for the rules. If that call gives `Unknown skill`, read
-`${CLAUDE_PLUGIN_ROOT}/shared/skills/ste-writing/SKILL.md` directly and obey that
-file instead. This section does not restate the rules, to keep one source
-of truth. Author the
-same four levels and `beats` structure as the `kleppmann` register above.
-Only the sentence/word/voice rules change. PR #79 in the cobuilder-harness
-bundle (`.cobuilder-architect/cobuilder-harness-a103a550/`) is the worked example of
-this register.
+- Write with the clarity and flow of Martin Kleppmann: short declarative sentences building to a
+  compound one, technical precision without jargon for its own sake, one idea per paragraph.
+- **Background starts deep, narrows to the change.** Open with enough of how the system actually
+  works that a newcomer is not lost, then close in on the specific defect or gap this PR
+  addresses. Ground every claim in the real modules touched. Read the surrounding code, and do
+  not infer behavior from the diff alone.
+- **Intuition needs one concrete toy example with real numbers and names from the PR**, not an
+  abstract description. "A 60 KB validator report truncated at 16 KB" beats "the report could be
+  too large." Pull the numbers from the actual diff, logs, or code constants.
+- **Explain who runs which computation and why.** When a design shifts work from one side of a
+  boundary to another (client and server, writer and reader), say which side now does the work
+  and what forced that choice.
+- **Never enumerate files as narrative.** File lists belong only in level 4 groups. Levels 1-3
+  describe behavior and decisions, not paths.
+- **Smooth transitions.** Each section reads as connected statements, not disconnected fragments
+  stitched together.
+- **Narrative arc across PRs.** When a later PR deliberately reuses a PR's foundation, say so:
+  "this PR's plumbing contract is the next PR's foundation." Check `related_decisions`
+  (`depends-on`) in the ADRs to find these threads. Render them as `related_decisions` in level 3,
+  not as speculation.
 
 ## 4. Registers
 
@@ -262,10 +256,7 @@ per-PR and optional — most PRs will have none.
 
 ## 7. Worked example
 
-There is no bundled worked example in this plugin — the parent skill's
-exemplar (`narratives-pr68-pr70.md`) lived in the harness repo this was
-extracted from and does not travel with the plugin. Calibrate length and
-tone from the register rules above. A full four-level PR entry runs
-roughly the density of two solid paragraphs per level for
-`problem_solution` and `architecture`, one sentence plus numbers for
-`intent`, and 3-6 grouped file notes for `file_changes`.
+The worked example is PR #79 in the cobuilder-harness bundle. Calibrate length from the prose
+budget (`prose_budget.py show`): a level's `narration` is a short summary, `problem` and `solution`
+hold the explanation, and `beats` carry the depth, one idea each. A `file_changes` level holds 3-6
+grouped file notes, each one sentence.

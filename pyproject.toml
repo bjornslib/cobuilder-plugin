@@ -19,3 +19,14 @@ dev = [
 [tool.uv]
 package = false
 python-preference = "only-managed"
+
+# For habit-hooks, not for the test suite. habit-hooks runs every language
+# sensor over its whole file scope, so the python sensor hands each .ts and
+# .tsx file to ruff. Ruff has no TypeScript config to read, and parses the
+# file as Python. That wrote 174,458 false parse errors over this repo, one
+# run, and buried the real findings. These two lines keep ruff on Python
+# files. force-exclude makes ruff skip an excluded file even when a caller
+# names it directly, which is exactly what the hooks run does.
+[tool.ruff]
+force-exclude = true
+extend-exclude = ["**/*.ts", "**/*.tsx"]

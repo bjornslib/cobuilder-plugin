@@ -90,6 +90,10 @@ _Avoid_: code review
 **Bounded context** (`architect`):
 A `docs/architecture/contexts/<context-id>/` bundle of `canvas.md` and `boundary.yaml`, produced by the self-only Describe mode, with every claim grep-verified against real import edges. See "District" for the lightweight, unverified version used for a foreign repo.
 
+<a id="stale-boundary"></a>
+**Stale boundary** (`architect`):
+A bounded context whose `boundary.yaml` has no resolvable `verified_at` commit, or whose `path` has a later commit. `shared/boundary_check.py` lists it, and `verify_bundle.py` reports it as the optional `boundary.stale` key.
+
 <a id="inquiry"></a>
 **Inquiry** (`architect`):
 One question that `/architect:options` raises about the flow, the technology, or a gap of the whole system, with evidence, a confidence tag, and alternatives (IDs F1, T1, G1). It is not a finding in `assessment.json` and not a question in the three-question PR assessment.
@@ -140,9 +144,14 @@ _Avoid_: Gate 2 (Gate 2b is not a sub-step of Gate 2. It has its own status line
 
 <a id="self"></a>
 **Self** (`cross-cutting`):
-The session's own checkout, the only target the seven Architecture modes accept. See "foreign" for a `--repo`-targeted checkout, reachable only through Odyssey.
+The session's own checkout, the only target the Architecture modes accept. See "foreign" for a `--repo`-targeted checkout, reachable only through Odyssey.
 
 <a id="foreign"></a>
 **foreign** (`cross-cutting`):
 A `--repo`-targeted checkout, reachable only through Odyssey. Its bundle always lands under the session's own repo as `<hub>`, never inside the foreign repo itself.
 _Avoid_: hub
+
+<a id="prose-budget"></a>
+**Prose budget** (`cross-cutting`):
+The word cap on each authored field, held in `shared/prose_budget.py` and explained in `shared/prose-budget.md`: a field that retells what the ADR, the plan, or the diff already holds hides the high-level view. `build_index.py` warns on a design over a cap, and `verify_bundle.py` fails the bundle (`prose.budget`).
+_Avoid_: length limit, style guide (ste-writing is the style rule, and the budget bounds the total length that STE does not)

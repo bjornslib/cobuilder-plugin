@@ -1,11 +1,12 @@
 ---
-title: "Odyssey: View Bundle"
+title: "artifact: View"
+description: "Open the viewer for designs, decisions, builds, and PRs on a local server."
 status: active
 type: command
 last_verified: 2026-07-20
 ---
 
-# Odyssey: View Bundle
+# artifact: View
 
 Serves the bundled viewer in the background and prints the URL to open — the
 session keeps going while the server runs.

@@ -1,5 +1,6 @@
 ---
 title: "architect: Review"
+description: "Audit the repo for security, architecture, and quality. Write a technical report and a founder report, each with a 0-100 score."
 status: active
 type: command
 last_verified: 2026-08-04

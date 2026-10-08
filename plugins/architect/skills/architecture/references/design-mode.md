@@ -88,6 +88,16 @@ that run to the engineer the same way the baseline run is declared: say that
 it will run, then report what it wrote. The grill and its write happen with
 the engineer's answers. A refusal ends the bootstrap without writing.
 
+After you load the districts and ADRs, list the paths the change touches.
+Keep the list in the session. Stage 6 uses it again. Run
+`uv run "${CLAUDE_PLUGIN_ROOT}/shared/boundary_check.py" --paths <paths>`.
+For each context the check reports as stale, missing, or uncovered, invoke
+`Skill("architect:architecture", args="describe <context-or-path>")`. Run
+describe only for stale, missing, or uncovered areas. Never run it for an ok
+context. Say to the engineer that describe will run, then report what it
+wrote, the same way the baseline run is declared. Rerun the check until the
+result is clean.
+
 If the corpus leaves the topic under-covered, escalate to
 `references/book-index.md`'s Tier 2 rule (ADR-0021): load a minimum of
 three nano-tier book excerpts for the candidate books, then escalate any
@@ -216,8 +226,12 @@ written. `verdict` uses the same values as the odyssey skill's `references/revie
 
 ## 9. Stage 5 — Draft
 
-Write five artifacts. Run each prose pass through
-`Skill("architect:ste-writing")` in flavored mode. If that call
+Write five artifacts. Every prose field obeys `${CLAUDE_PLUGIN_ROOT}/shared/prose-budget.md`. You may
+draft the thirty-second voice script first. Then write each field by the writing rules there. Run
+`prose_budget.py check` on `goal.json`, `intent.json`, and `assessment.json`, and fix every ceiling
+line. A cap is soft, so keep a point rather than cut it. STE is not optional, and a cap does not
+replace it. Run each
+prose pass through `Skill("architect:ste-writing")` in flavored mode. If that call
 gives `Unknown skill`, read `${CLAUDE_PLUGIN_ROOT}/shared/skills/ste-writing/SKILL.md`
 directly and obey that file instead. Use strict mode for ADR procedural
 text: the constraint introduced, and the boundary rules.
@@ -322,6 +336,13 @@ holds before you write anything, and record the losing usage under
 Before the engineer reads the draft, follow Present for review in
 `Skill("cobuilder-artifacts")` with the route `#/<work>/intent`. Give the
 engineer the link.
+
+Before the reviewer round, restate the touched paths from stage 1 for the
+design. Run
+`uv run "${CLAUDE_PLUGIN_ROOT}/shared/boundary_check.py" --paths <paths> --require`.
+A non-zero exit is a FAIL finding. The finding cites the context id or the
+path that failed. Pass it to the reviewer round. The reviewer stays advisory,
+but the FAIL finding goes to the engineer with the other findings.
 
 Before the engineer reads, the session also spawns a draft review. Use the
 ADR-0005 dual-path pattern: invoke the reviewer as a named agent where the

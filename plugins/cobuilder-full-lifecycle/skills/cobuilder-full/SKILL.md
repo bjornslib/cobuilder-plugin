@@ -24,7 +24,7 @@ the table below.
 ### 1. architect (self-only architecture governance)
 
 Use for architecture analysis and design within the current repository checkout.
-These seven modes accept no foreign repository targets:
+These five commands accept no foreign repository targets. The `decisions` and `describe` modes have no command. Other commands call them:
 
 - **design** (`/architect:design`): Use before writing code to
   explore architectural options, challenge trade-offs, draft an ADR, and create
@@ -35,11 +35,6 @@ These seven modes accept no foreign repository targets:
 - **maintenance** (`/architect:maintenance`): Use to detect
   architectural drift and assess component health relative to prior review
   audits.
-- **decisions** (`/architect:decisions`): Use to query, validate, and
-  manage architecture decision records (ADRs) in `docs/architecture/adr/`.
-- **describe** (`/architect:describe`): Use to map verified bounded
-  contexts, dependency edges, and boundary enforcement rules in
-  `docs/architecture/contexts/`.
 - **debug** (`/architect:debug`): Use for architectural root-cause
   investigation when defects span multiple component boundaries.
 - **options** (`/architect:options`): Use to question the flow, the
@@ -90,8 +85,6 @@ Use to build features from design into verified code:
 | Design a feature before writing code | `architect` | `/architect:design` |
 | Audit security and code quality | `architect` | `/architect:review` |
 | Track architectural health drift | `architect` | `/architect:maintenance` |
-| Query or list ADRs | `architect` | `/architect:decisions` |
-| Map bounded contexts and imports | `architect` | `/architect:describe` |
 | Investigate multi-module defects | `architect` | `/architect:debug` |
 | Question the flow, the technology, or the gaps | `architect` | `/architect:options` |
 | Initialize bundle for a repository | `pr` | `/pr:baseline` |

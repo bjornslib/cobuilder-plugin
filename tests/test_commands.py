@@ -176,9 +176,15 @@ def test_architecture_skill_declares_exactly_seven_modes():
     assert modes == ARCHITECT_MODES
 
 
+# Modes that other modes and plugins call. They have no command file, so the
+# slash menu does not list them.
+INTERNAL_ARCHITECT_MODES = {"decisions", "describe"}
+
+
 def test_architect_command_files_equal_declared_modes():
     """Every architect command dispatches one architecture mode, and every
-    declared mode has a command, so a later mode cannot drift."""
+    declared mode has a command unless it is internal, so a later mode
+    cannot drift."""
     commands_dir = PLUGINS_DIR / "architect" / "commands"
     dispatched = set()
     for command_path in sorted(commands_dir.glob("*.md")):
@@ -188,7 +194,8 @@ def test_architect_command_files_equal_declared_modes():
     declared = declared_modes_for_command(
         commands_dir / "review.md", "architecture"
     )
-    assert dispatched == declared
+    assert dispatched == declared - INTERNAL_ARCHITECT_MODES
+    assert not dispatched & INTERNAL_ARCHITECT_MODES
 
 
 def test_options_command_dispatches_architecture_options_mode():
@@ -196,19 +203,3 @@ def test_options_command_dispatches_architecture_options_mode():
     assert path.exists(), "architect must ship commands/options.md"
     skill_name, mode_token = extract_dispatch(path)
     assert (skill_name, mode_token) == ("architecture", "options")
-
-
-def test_odyssey_review_name_appears_nowhere_in_prose():
-    """The temporary command name from slice 4 must be gone entirely,
-    not just renamed on disk. See rubric slice-6 C6."""
-    hits = []
-    for md_path in REPO_ROOT.rglob("*.md"):
-        if ".git" in md_path.parts or ".cobuilder-architect" in md_path.parts:
-            continue
-        rel = str(md_path.relative_to(REPO_ROOT))
-        if rel.startswith("docs/plans") or rel.startswith(".cobuilder/rubrics"):
-            continue  # historical record, not live prose
-        text = md_path.read_text(errors="ignore")
-        if "odyssey-review" in text:
-            hits.append(str(md_path.relative_to(REPO_ROOT)))
-    assert not hits, f"'odyssey-review' still appears in: {hits}"

@@ -1,5 +1,6 @@
 ---
 title: "architect: Debug"
+description: "Find the root cause of a failure. Rank the hypotheses by the cheapest test. Recommend a fix and do not apply it."
 status: active
 type: command
 last_verified: 2026-08-04

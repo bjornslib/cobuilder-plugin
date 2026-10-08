@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "2277af9f873a96b2a5b744c120700f9cf1dbe4fb",
+    "git_head": "92631d335dbc81b43af788850ece608b71a7974b",
     "trees": {
       "docs/architecture/adr": "sha256:ee55c7b8235fa910b57f238752fa72a42004cd2d27bdedfd950ee9092b2f2233",
       "docs/architecture/designs": "sha256:33f32130f50d8a2a68c027883bf4795d716562038d4232985187da53012cb849",
-      "docs/architecture/contexts": "sha256:2f1cde1db74ea6f95b55152c3de109c6e281619cc3beae3fb939d8650a4005c8",
-      "docs/plans": "sha256:92a5cd6eaea26c30f88fad32f88b185ef42627682ab22f57eb67b0585796766a",
-      ".cobuilder/rubrics": "sha256:23bbec315a1c78eeddacbc951e4a46a69f6cf7497d3ac13ed8a039f39b678b30"
+      "docs/architecture/contexts": "sha256:c1348c14415278bd53e24947a192db40c14adccfcf6ad84878a61a18a0513f8a",
+      "docs/plans": "sha256:f42babf81b3a8f1dec666cd9bed436e495d7a54399c19a7746318d9c78c552ba",
+      ".cobuilder/rubrics": "sha256:e10cb32f81a1082473c2afb0ed05f69d19fc61240dd35ee0ed4f6e7b7fa5e8a0"
     }
   },
   "entities": {
@@ -1188,15 +1188,59 @@
     ],
     "context": [
       {
+        "id": "architect",
+        "name": "Architect plugin: design, review, maintenance, decisions, describe, debug, options",
+        "path": "plugins/architect",
+        "verifies": [
+          "skills",
+          "commands"
+        ]
+      },
+      {
+        "id": "artifact",
+        "name": "Artifact: the viewer, the local server, and the publish step",
+        "path": "plugins/artifact",
+        "verifies": [
+          "viewer",
+          "scripts"
+        ]
+      },
+      {
         "id": "cobuilder-packaging",
         "name": "Plugin packaging and dispatch",
-        "path": ".",
+        "path": ".claude-plugin",
         "verifies": [
           "commands",
           "skills",
           "scripts",
           "viewer",
           "docs"
+        ]
+      },
+      {
+        "id": "implement",
+        "name": "Implement: four gates and a RED, GREEN, VALIDATE loop per slice",
+        "path": "plugins/implement",
+        "verifies": [
+          "skills",
+          "scripts"
+        ]
+      },
+      {
+        "id": "pr",
+        "name": "Odyssey: narrate merged PRs and assess a change before the PR opens",
+        "path": "plugins/pr",
+        "verifies": [
+          "skills",
+          "scripts"
+        ]
+      },
+      {
+        "id": "shared",
+        "name": "Shared kernel vendored into each plugin by symlink",
+        "path": "shared",
+        "verifies": [
+          "scripts"
         ]
       }
     ],
@@ -1246,12 +1290,419 @@
     ],
     "boundary_rule": [
       {
+        "id": "architect/forbidden-dependency/1",
+        "context": "architect",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "plugins/pr/**",
+          "why": "ADR-0016: a plugin never names another plugin's path. Grep found no 'plugins/pr' string in plugins/architect."
+        }
+      },
+      {
+        "id": "architect/forbidden-dependency/2",
+        "context": "architect",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "plugins/artifact/**",
+          "why": "ADR-0016: reach the viewer through Skill(\"cobuilder-artifacts\"), never through its path or its viewer/index.html. Grep found no such string in plugins/architect."
+        }
+      },
+      {
+        "id": "architect/forbidden-dependency/3",
+        "context": "architect",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "pr skill odyssey: SKILL.md, references/interview-guide.md, references/review-mode.md, references/pr-description-template.md, references/decision-records-lite.md",
+          "from": "plugins/architect/skills/architecture",
+          "why": "SMELL: design mode tells Claude to read files inside the odyssey skill of the pr plugin. Grep counts 10 mentions of 'odyssey' in references/design-mode.md, 8 in SKILL.md (Hub resolution at line 85, odyssey Review mode step 4 at line 163), and 1 in references/decision-records.md. A name in prose is not an import, but the file path inside another plugin's cache cannot resolve when pr is not installed. The pr plugin is not in architect's manifest dependencies. ADR candidate: copy the interview, assessment, and PR-template text into architect or into shared."
+        }
+      },
+      {
+        "id": "architect/forbidden-dependency/4",
+        "context": "architect",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "scripts of shared imported as Python",
+          "from": "plugins/architect/scripts",
+          "why": "Rule holding, not a smell: the four architect scripts (check_design_svg, check_options_report, compute_scores, html_to_pdf) import no sibling plugin and no shared module. Grep of their imports shows only the standard library and playwright."
+        }
+      },
+      {
+        "id": "architect/forbidden-dependency/5",
+        "context": "architect",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "agents/ and hooks/",
+          "why": "CLAUDE.md principle 5 and ADR-0025: only implement ships agents and a hook. Verified: plugins/architect has no agents/ or hooks/ directory."
+        }
+      },
+      {
+        "id": "architect/module-invariant/1",
+        "context": "architect",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "plugin-manifest",
+          "path": "plugins/architect/.claude-plugin",
+          "public_interface": [
+            "plugin.json"
+          ],
+          "allowed_inbound": [],
+          "allowed_outbound": [],
+          "rule": "Static JSON. Declares dependency artifact@cobuilder-plugin only. Version 0.11.0 must match marketplace.json."
+        }
+      },
+      {
+        "id": "architect/module-invariant/2",
+        "context": "architect",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "commands",
+          "path": "plugins/architect/commands",
+          "members": [
+            "design.md",
+            "review.md",
+            "maintenance.md",
+            "debug.md",
+            "options.md"
+          ],
+          "public_interface": [],
+          "allowed_inbound": [],
+          "allowed_outbound": [
+            "skill-architecture"
+          ],
+          "rule": "Each command makes one Skill(\"architecture\", args=\"<mode> $ARGUMENTS\") call. Verified by grep: five files, five calls. Describe and decisions have no command file."
+        }
+      },
+      {
+        "id": "architect/module-invariant/3",
+        "context": "architect",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "skill-architecture",
+          "path": "plugins/architect/skills/architecture",
+          "public_interface": [
+            "Skill(\"architect:architecture\")"
+          ],
+          "allowed_inbound": [
+            "commands"
+          ],
+          "allowed_outbound": [
+            "scripts",
+            "shared-skills",
+            "shared-scripts"
+          ],
+          "rule": "SMELL: also reads the odyssey skill of pr by name and file (see forbidden_dependencies). Calls Skill(\"cobuilder-artifacts\") by name for the viewer. Judgment lives in references/*.md (19 files)."
+        }
+      },
+      {
+        "id": "architect/module-invariant/4",
+        "context": "architect",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "scripts",
+          "path": "plugins/architect/scripts",
+          "members": [
+            "check_design_svg.py",
+            "check_options_report.py",
+            "compute_scores.py",
+            "html_to_pdf.py"
+          ],
+          "public_interface": [],
+          "allowed_inbound": [
+            "skill-architecture"
+          ],
+          "allowed_outbound": [],
+          "rule": "Leaf. Invoked by 'uv run' from the skill. No import of shared or of a sibling plugin. Verified by grep."
+        }
+      },
+      {
+        "id": "architect/module-invariant/5",
+        "context": "architect",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "shared-skills",
+          "path": "plugins/architect/shared/skills",
+          "members": [
+            "mermaid",
+            "ste-writing"
+          ],
+          "public_interface": [
+            "Skill(\"architect:mermaid\")",
+            "Skill(\"architect:ste-writing\")"
+          ],
+          "allowed_inbound": [
+            "skill-architecture"
+          ],
+          "allowed_outbound": [],
+          "rule": "A symlink into shared/. The architect context owns none of this text."
+        }
+      },
+      {
+        "id": "architect/module-invariant/6",
+        "context": "architect",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "shared-scripts",
+          "path": "plugins/architect/shared",
+          "public_interface": [],
+          "allowed_inbound": [
+            "skill-architecture"
+          ],
+          "allowed_outbound": [],
+          "rule": "A symlink to ../../shared. The skill runs build_index, migrate_bundle, prose_budget, boundary_check, and validate_decision_state from here, by shell."
+        }
+      },
+      {
+        "id": "architect/context-map/1",
+        "context": "architect",
+        "kind": "context-map",
+        "detail": {
+          "with": "shared",
+          "pattern": "conformist",
+          "note": "Runs shared/build_index.py, migrate_bundle.py, prose_budget.py, boundary_check.py, and validate_decision_state.py by 'uv run' through the plugin's shared symlink. It imports none of them as Python."
+        }
+      },
+      {
+        "id": "architect/context-map/2",
+        "context": "architect",
+        "kind": "context-map",
+        "detail": {
+          "with": "artifact",
+          "pattern": "open-host-service",
+          "note": "Calls Skill(\"cobuilder-artifacts\", args=\"view\") to serve the bundle and to give the engineer a review link. It never opens artifact files."
+        }
+      },
+      {
+        "id": "architect/context-map/3",
+        "context": "architect",
+        "kind": "context-map",
+        "detail": {
+          "with": "pr",
+          "pattern": "partnership",
+          "note": "pr:generate and pr:review call the decisions and describe modes by Skill name. SMELL: design mode also reads the odyssey skill's files (see forbidden_dependencies)."
+        }
+      },
+      {
+        "id": "artifact/forbidden-dependency/1",
+        "context": "artifact",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "plugins/architect/**, plugins/pr/**, plugins/implement/**",
+          "why": "ADR-0016: a plugin never names another plugin's path. Grep found no 'plugins/<other>' string in plugins/artifact."
+        }
+      },
+      {
+        "id": "artifact/forbidden-dependency/2",
+        "context": "artifact",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "Skill calls into architect, pr, or implement",
+          "why": "Rule holding, not a smell: artifact is the leaf plugin. Grep found only Skill(\"cobuilder-artifacts\" calls (4) in plugins/artifact, all to its own skill."
+        }
+      },
+      {
+        "id": "artifact/forbidden-dependency/3",
+        "context": "artifact",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "scripts/*.py",
+          "from": "viewer/src",
+          "why": "Rule holding, not a smell: grep of viewer/src for 'scripts/' and 'plugins/' finds no live reference. The viewer reads ../data/*, ../assets/*, and ../data/audio/* only."
+        }
+      },
+      {
+        "id": "artifact/forbidden-dependency/4",
+        "context": "artifact",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "docs/architecture/designs/ and docs/plans/ as authored source",
+          "from": "scripts (canvas_preflight.py, build_builds_view.py)",
+          "why": "Not a violation: these scripts read the authored docs of the session's repo, which is the shared seam named in ADR-0016. Recorded so a later reader does not mistake it for a smell."
+        }
+      },
+      {
+        "id": "artifact/forbidden-dependency/5",
+        "context": "artifact",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "agents/ and hooks/",
+          "why": "CLAUDE.md principle 5 and ADR-0025: only implement ships agents and a hook. Verified: plugins/artifact has neither directory."
+        }
+      },
+      {
+        "id": "artifact/module-invariant/1",
+        "context": "artifact",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "plugin-manifest",
+          "path": "plugins/artifact/.claude-plugin",
+          "public_interface": [
+            "plugin.json"
+          ],
+          "allowed_inbound": [],
+          "allowed_outbound": [],
+          "rule": "Static JSON, no dependencies. Version 0.10.0 must match marketplace.json."
+        }
+      },
+      {
+        "id": "artifact/module-invariant/2",
+        "context": "artifact",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "commands",
+          "path": "plugins/artifact/commands",
+          "members": [
+            "view.md",
+            "publish.md",
+            "canvas.md"
+          ],
+          "public_interface": [],
+          "allowed_inbound": [],
+          "allowed_outbound": [
+            "skill-cobuilder-artifacts"
+          ],
+          "rule": "Each command is a thin dispatcher into the plugin's own skill."
+        }
+      },
+      {
+        "id": "artifact/module-invariant/3",
+        "context": "artifact",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "skill-cobuilder-artifacts",
+          "path": "plugins/artifact/skills/cobuilder-artifacts",
+          "public_interface": [
+            "Skill(\"cobuilder-artifacts\")"
+          ],
+          "allowed_inbound": [
+            "commands"
+          ],
+          "allowed_outbound": [
+            "scripts",
+            "viewer",
+            "shared-scripts"
+          ],
+          "rule": "Owns Present for review, the review route table, view, publish, and canvas. Calls no other plugin's skill."
+        }
+      },
+      {
+        "id": "artifact/module-invariant/4",
+        "context": "artifact",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "scripts",
+          "path": "plugins/artifact/scripts",
+          "members": [
+            "view_server.py",
+            "serve_bundle.py",
+            "review_link.py",
+            "export_artifact.py",
+            "export_index.py",
+            "record_publish.py",
+            "render_diagrams.py",
+            "build_builds_view.py",
+            "build_canvas.py",
+            "canvas_preflight.py"
+          ],
+          "public_interface": [
+            "view_server.py",
+            "review_link.py",
+            "export_artifact.py"
+          ],
+          "allowed_inbound": [
+            "skill-cobuilder-artifacts"
+          ],
+          "allowed_outbound": [
+            "shared-scripts"
+          ],
+          "rule": "Import only shared modules. No import of another plugin's scripts. Verified by grep of local imports."
+        }
+      },
+      {
+        "id": "artifact/module-invariant/5",
+        "context": "artifact",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "viewer",
+          "path": "plugins/artifact/viewer",
+          "members": [
+            "src",
+            "index.html",
+            "package.json",
+            "vite.config.ts"
+          ],
+          "public_interface": [
+            "index.html (built, committed)"
+          ],
+          "allowed_inbound": [
+            "skill-cobuilder-artifacts"
+          ],
+          "allowed_outbound": [],
+          "rule": "Leaf. Source is React, TypeScript, Vite, Tailwind, and Vitest in src (174 ts and tsx files). It reads the bundle over HTTP, root at .cobuilder-architect/. Build, then commit index.html."
+        }
+      },
+      {
+        "id": "artifact/module-invariant/6",
+        "context": "artifact",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "shared-scripts",
+          "path": "plugins/artifact/shared",
+          "public_interface": [],
+          "allowed_inbound": [
+            "scripts",
+            "skill-cobuilder-artifacts"
+          ],
+          "allowed_outbound": [],
+          "rule": "A symlink to ../../shared."
+        }
+      },
+      {
+        "id": "artifact/context-map/1",
+        "context": "artifact",
+        "kind": "context-map",
+        "detail": {
+          "with": "shared",
+          "pattern": "shared-kernel",
+          "shared": [
+            "_bundle_meta.read_plugin_version",
+            "_bundle_meta.require_compatible",
+            "_bundle_meta.stamp_generator",
+            "ledger.LedgerPaths",
+            "ledger.append_comment",
+            "gate_status",
+            "slice_table"
+          ],
+          "note": "Five scripts add the plugin's shared symlink to sys.path and import these modules. The skill also runs shared/build_index.py and migrate_bundle.py by shell."
+        }
+      },
+      {
+        "id": "artifact/context-map/2",
+        "context": "artifact",
+        "kind": "context-map",
+        "detail": {
+          "with": "bundle-directory",
+          "pattern": "open-host-service",
+          "note": "The viewer reads sibling ../data/* files at runtime. It never reads a plugin's source. The bundle is versioned by bundle.json and story.json meta.schema_version."
+        }
+      },
+      {
+        "id": "artifact/context-map/3",
+        "context": "artifact",
+        "kind": "context-map",
+        "detail": {
+          "with": "pr",
+          "pattern": "conformist",
+          "note": "Error text and prose name /pr:baseline, /pr:review, and /pr:generate as the remedy for a missing bundle. This is a mode name, not a path."
+        }
+      },
+      {
         "id": "cobuilder-packaging/forbidden-dependency/1",
         "context": "cobuilder-packaging",
         "kind": "forbidden-dependency",
         "detail": {
-          "target": "another plugin's files (post-ADR-0016 split)",
-          "why": "ADR-0016: 'No plugin reads or imports another plugin's files. A plugin may hand off to another plugin's mode by name, and the state that crosses the handoff travels in the bundle and in docs/.' Not yet enforceable -- only one plugin (cobuilder-architect) exists today, so there is no sibling to violate this against. Recorded now so the rule is in place before the split lands."
+          "target": "another plugin's files",
+          "why": "ADR-0016: 'No plugin reads or imports another plugin's files. A plugin may hand off to another plugin's mode by name, and the state that crosses the handoff travels in the bundle and in docs/.' Re-verified on 2026-10-08. Grep of Python imports found no cross-plugin import. Grep of path strings found one plugin path in a comment (see the implement and shared records). Grep of prose found architect and pr citing each other's reference files (see those records)."
         }
       },
       {
@@ -1259,9 +1710,9 @@
         "context": "cobuilder-packaging",
         "kind": "forbidden-dependency",
         "detail": {
-          "target": "skills/odyssey/SKILL.md",
-          "from": "skills/architecture",
-          "why": "SMELL: skills/architecture/SKILL.md lines 83-84 hardcode the path 'skills/odyssey/SKILL.md' inside Design mode's Hub-resolution step. Verified by grep. Harmless today (both skills ship in one plugin), but this is exactly the edge ADR-0016 forbids once architecture and odyssey become separate plugins (cobuilder-architect and cobuilder-pr). Needs an ADR-sanctioned fix (e.g. duplicate the Hub-resolution text, or move it to a shared vendored module) before the split, or it becomes real drift the day the split ships."
+          "target": "duplicate plugin entry",
+          "from": ".claude-plugin/marketplace.json",
+          "why": "SMELL: the plugins array lists 'artifact' twice (the second entry repeats the first, source ./plugins/artifact, version 0.10.0). A duplicate name can make the install pick either entry, and a version bump must change both. Remove one entry. ADR candidate only if the duplicate is deliberate."
         }
       },
       {
@@ -1269,9 +1720,9 @@
         "context": "cobuilder-packaging",
         "kind": "forbidden-dependency",
         "detail": {
-          "target": "skills/architecture/SKILL.md",
-          "from": "skills/odyssey",
-          "why": "SMELL: skills/odyssey/SKILL.md lines 32-33 name and point at 'skills/architecture/SKILL.md' when describing where Design mode lives. Same coupling as the entry above, reversed direction. Verified by grep."
+          "target": "stale maps_to anchor in ADRs",
+          "from": "docs/architecture/adr",
+          "why": "SMELL: ADR-0016 maps_to.modules is [.claude-plugin/, commands/, skills/, scripts/, viewer/]. Those root paths no longer exist after the split, and 20 other ADRs anchor to context cobuilder-packaging instead of the plugin context they changed. ADR candidate: re-anchor ADRs to architect, pr, artifact, implement, or shared."
         }
       },
       {
@@ -1279,9 +1730,8 @@
         "context": "cobuilder-packaging",
         "kind": "forbidden-dependency",
         "detail": {
-          "target": "skills/architecture/references/*",
-          "from": "scripts (build_designs.py, build_adrs.py, validate_decision_state.py)",
-          "why": "SMELL: three scripts embed a literal 'skills/architecture/references/...' path inside a validation-failure error message (build_designs.py:299, build_adrs.py:217, validate_decision_state.py:433). Text, not an import, so it does not execute a cross-plugin call today. Still a coupling a post-split remediation hint cannot resolve, because the reading plugin (e.g. cobuilder-pr) cannot open a path inside cobuilder-architect's cache."
+          "target": "shared/ imported as a Python package from the root",
+          "why": "Rule holding, not a smell: each plugin reaches shared through its own symlink plugins/<name>/shared -> ../../shared (5 symlinks, verified with ls -la). Scripts use sys.path.insert on parent.parent/shared."
         }
       },
       {
@@ -1289,19 +1739,8 @@
         "context": "cobuilder-packaging",
         "kind": "forbidden-dependency",
         "detail": {
-          "target": "skills/odyssey/references/*",
-          "from": "scripts (build_diagrams.py, render_review.py, verify_bundle.py)",
-          "why": "SMELL: same pattern, reversed. build_diagrams.py:9 and :273, render_review.py:9, and verify_bundle.py:86 embed 'skills/odyssey/references/...' in comments or error text. Verified by grep."
-        }
-      },
-      {
-        "id": "cobuilder-packaging/forbidden-dependency/6",
-        "context": "cobuilder-packaging",
-        "kind": "forbidden-dependency",
-        "detail": {
-          "target": "scripts/*.py (as a Python import, not a shell invocation)",
-          "from": "viewer/index.html",
-          "why": "The viewer never imports or executes anything under scripts/. Its one mention of 'scripts/' (line 854) is a code comment naming the script that produces data/diagrams.js, not a reference the browser resolves. Recorded as a confirmed absence, not a smell -- this is the rule holding, not breaking."
+          "target": "agents/ and hooks/ outside plugins/implement",
+          "why": "CLAUDE.md principle 5 and ADR-0025. Verified: only plugins/implement has agents/ and hooks/. No plugin ships an MCP server."
         }
       },
       {
@@ -1309,15 +1748,14 @@
         "context": "cobuilder-packaging",
         "kind": "module-invariant",
         "detail": {
-          "id": "plugin-manifest",
-          "path": ".claude-plugin/",
+          "id": "marketplace-manifest",
+          "path": ".claude-plugin",
           "public_interface": [
-            "plugin.json",
             "marketplace.json"
           ],
           "allowed_inbound": [],
           "allowed_outbound": [],
-          "rule": "Static JSON only. No module in this repo reads or writes it at runtime."
+          "rule": "Static JSON read by the Claude Code harness. Each plugin version must equal its plugin.json version (a test checks it). SMELL: artifact appears twice."
         }
       },
       {
@@ -1325,29 +1763,19 @@
         "context": "cobuilder-packaging",
         "kind": "module-invariant",
         "detail": {
-          "id": "commands",
-          "path": "commands/",
-          "members": [
-            "baseline.md",
-            "generate.md",
-            "view.md",
-            "publish.md",
-            "submit.md",
-            "design.md",
-            "review.md",
-            "maintenance.md",
-            "decisions.md",
-            "describe.md",
-            "debug.md",
-            "explore-design.md"
+          "id": "plugin-architect",
+          "path": "plugins/architect",
+          "public_interface": [
+            "context architect"
           ],
-          "public_interface": [],
-          "allowed_inbound": [],
+          "allowed_inbound": [
+            "plugin-cobuilder-full-lifecycle"
+          ],
           "allowed_outbound": [
-            "skills-architecture",
-            "skills-odyssey"
+            "plugin-artifact",
+            "shared-symlinks"
           ],
-          "rule": "Each command file makes exactly one Skill(...) dispatch call and nothing else. Verified: every commands/*.md greps to exactly one Skill(\"architecture\"|\"odyssey\", ...) line."
+          "rule": "Documented in the architect context. Its manifest depends on artifact."
         }
       },
       {
@@ -1355,20 +1783,20 @@
         "context": "cobuilder-packaging",
         "kind": "module-invariant",
         "detail": {
-          "id": "skills-architecture",
-          "path": "skills/architecture/",
+          "id": "plugin-pr",
+          "path": "plugins/pr",
           "public_interface": [
-            "Skill(\"architecture\", args=...)"
+            "context pr"
           ],
           "allowed_inbound": [
-            "commands"
+            "plugin-cobuilder-full-lifecycle"
           ],
           "allowed_outbound": [
-            "scripts",
-            "skills-mermaid",
-            "skills-ste-writing"
+            "plugin-architect",
+            "plugin-artifact",
+            "shared-symlinks"
           ],
-          "rule": "SMELL: also reaches skills-odyssey via a hardcoded SKILL.md path reference (see forbidden_dependencies). Should be [] toward skills-odyssey once ADR-0016 lands."
+          "rule": "Documented in the pr context. SMELL: calls architect but declares only artifact in its manifest."
         }
       },
       {
@@ -1376,20 +1804,21 @@
         "context": "cobuilder-packaging",
         "kind": "module-invariant",
         "detail": {
-          "id": "skills-odyssey",
-          "path": "skills/odyssey/",
+          "id": "plugin-artifact",
+          "path": "plugins/artifact",
           "public_interface": [
-            "Skill(\"odyssey\", args=...)"
+            "context artifact"
           ],
           "allowed_inbound": [
-            "commands"
+            "plugin-cobuilder-full-lifecycle",
+            "plugin-architect",
+            "plugin-pr",
+            "plugin-implement"
           ],
           "allowed_outbound": [
-            "scripts",
-            "skills-mermaid",
-            "skills-ste-writing"
+            "shared-symlinks"
           ],
-          "rule": "SMELL: also reaches skills-architecture via a hardcoded SKILL.md path reference (see forbidden_dependencies). Should be [] toward skills-architecture once ADR-0016 lands."
+          "rule": "Documented in the artifact context. The leaf plugin: it calls no other plugin."
         }
       },
       {
@@ -1397,18 +1826,20 @@
         "context": "cobuilder-packaging",
         "kind": "module-invariant",
         "detail": {
-          "id": "skills-mermaid",
-          "path": "skills/mermaid/",
+          "id": "plugin-implement",
+          "path": "plugins/implement",
           "public_interface": [
-            "Skill(\"mermaid\")",
-            "Skill(\"cobuilder-architect:mermaid\")"
+            "context implement"
           ],
           "allowed_inbound": [
-            "skills-architecture",
-            "skills-odyssey"
+            "plugin-cobuilder-full-lifecycle"
           ],
-          "allowed_outbound": [],
-          "rule": "Diagram-authoring rules only. Invoked by a per-PR/per-design subagent, never by the orchestrating Claude directly, per CLAUDE.md."
+          "allowed_outbound": [
+            "plugin-architect",
+            "plugin-artifact",
+            "shared-symlinks"
+          ],
+          "rule": "Documented in the implement context. The only plugin with agents and a hook."
         }
       },
       {
@@ -1416,19 +1847,26 @@
         "context": "cobuilder-packaging",
         "kind": "module-invariant",
         "detail": {
-          "id": "skills-ste-writing",
-          "path": "skills/ste-writing/",
+          "id": "plugin-cobuilder-full-lifecycle",
+          "path": "plugins/cobuilder-full-lifecycle",
+          "members": [
+            ".claude-plugin/plugin.json",
+            "skills/cobuilder-full/SKILL.md",
+            "scripts/watch_feedback.py"
+          ],
           "public_interface": [
-            "Skill(\"ste-writing\")",
-            "Skill(\"cobuilder-architect:ste-writing\")",
-            "ste-lint.py"
+            "Skill(\"cobuilder-full\")",
+            "watch_feedback.py"
           ],
-          "allowed_inbound": [
-            "skills-architecture",
-            "skills-odyssey"
+          "allowed_inbound": [],
+          "allowed_outbound": [
+            "plugin-architect",
+            "plugin-pr",
+            "plugin-artifact",
+            "plugin-implement",
+            "shared-symlinks"
           ],
-          "allowed_outbound": [],
-          "rule": "Writing-style rules and a rules-only linter. No dependency on any other module verified."
+          "rule": "The umbrella. Its manifest lists the four other plugins as dependencies. The skill routes by mode name and runs no procedure. watch_feedback.py sits here by decision (CLAUDE.md known gaps)."
         }
       },
       {
@@ -1436,14 +1874,25 @@
         "context": "cobuilder-packaging",
         "kind": "module-invariant",
         "detail": {
-          "id": "skills-collaborate-with-user",
-          "path": "skills/collaborate-with-user/",
-          "public_interface": [
-            "Skill(\"collaborate-with-user\")"
+          "id": "shared-symlinks",
+          "path": "plugins",
+          "members": [
+            "architect/shared",
+            "pr/shared",
+            "artifact/shared",
+            "implement/shared",
+            "cobuilder-full-lifecycle/shared"
           ],
-          "allowed_inbound": [],
+          "public_interface": [],
+          "allowed_inbound": [
+            "plugin-architect",
+            "plugin-pr",
+            "plugin-artifact",
+            "plugin-implement",
+            "plugin-cobuilder-full-lifecycle"
+          ],
           "allowed_outbound": [],
-          "rule": "References skills/architecture/SKILL.md's 'Report Generation' section in prose (line 95) to say it does not duplicate that convention. This is documentation cross-talk, not a code or Skill-dispatch edge -- no forbidden_dependencies entry warranted."
+          "rule": "Five symlinks to ../../shared (ADR-0017). Code in shared is documented in the shared context."
         }
       },
       {
@@ -1451,58 +1900,18 @@
         "context": "cobuilder-packaging",
         "kind": "module-invariant",
         "detail": {
-          "id": "scripts",
-          "path": "scripts/",
-          "members": [
-            "_bundle_meta.py",
-            "_manifest.py",
-            "build_adrs.py",
-            "build_designs.py",
-            "build_diagrams.py",
-            "compute_scores.py",
-            "export_artifact.py",
-            "export_index.py",
-            "extract_diffs.py",
-            "extract_story.py",
-            "generate_audio.py",
-            "generate_prompts.py",
-            "html_to_pdf.py",
-            "migrate_bundle.py",
-            "record_publish.py",
-            "render_review.py",
-            "validate_decision_state.py",
-            "verify_bundle.py"
-          ],
-          "public_interface": [
-            "_bundle_meta.SCHEMA_VERSION",
-            "_bundle_meta.SCHEMA_VERSION_KNOWN",
-            "_bundle_meta.CURRENT_BUNDLE_FORMAT",
-            "_manifest.rewrite_manifest"
-          ],
-          "allowed_inbound": [
-            "skills-architecture",
-            "skills-odyssey"
-          ],
-          "allowed_outbound": [],
-          "rule": "Every script that reads or writes bundle data imports _bundle_meta.SCHEMA_VERSION for its own version stamp. _bundle_meta.py itself is a leaf: stdlib-only, no imports beyond __future__. ADR-0017's require_compatible() gate does not exist in this file yet -- verified absent."
-        }
-      },
-      {
-        "id": "cobuilder-packaging/module-invariant/9",
-        "context": "cobuilder-packaging",
-        "kind": "module-invariant",
-        "detail": {
-          "id": "viewer",
-          "path": "viewer/",
-          "members": [
-            "index.html"
-          ],
-          "public_interface": [
-            "window.STORY, window.ODYSSEY, window.DIFFS, window.ADRS, window.DIAGRAMS, window.DESIGNS (populated by sibling <script src> tags)"
-          ],
+          "id": "tests",
+          "path": "tests",
+          "public_interface": [],
           "allowed_inbound": [],
-          "allowed_outbound": [],
-          "rule": "viewer/index.html never reaches into scripts/ (grep-verified: the one 'scripts/' mention is a code comment, not a live reference). It is not self-contained -- see CLAUDE.md 'The viewer is not self-contained' -- and depends on being served from the bundle root, a sibling of viewer/."
+          "allowed_outbound": [
+            "plugin-architect",
+            "plugin-pr",
+            "plugin-artifact",
+            "plugin-implement",
+            "shared-symlinks"
+          ],
+          "rule": "The pytest suite reads every plugin to check packaging, scripts, and gates. It is the only place allowed to name plugin paths."
         }
       },
       {
@@ -1510,9 +1919,713 @@
         "context": "cobuilder-packaging",
         "kind": "context-map",
         "detail": {
+          "with": "architect",
+          "pattern": "open-host-service",
+          "note": "Lists and versions the plugin in marketplace.json. Never reads its files."
+        }
+      },
+      {
+        "id": "cobuilder-packaging/context-map/2",
+        "context": "cobuilder-packaging",
+        "kind": "context-map",
+        "detail": {
+          "with": "pr",
+          "pattern": "open-host-service",
+          "note": "Same as architect."
+        }
+      },
+      {
+        "id": "cobuilder-packaging/context-map/3",
+        "context": "cobuilder-packaging",
+        "kind": "context-map",
+        "detail": {
+          "with": "artifact",
+          "pattern": "open-host-service",
+          "note": "Same as architect. SMELL: marketplace.json lists it twice."
+        }
+      },
+      {
+        "id": "cobuilder-packaging/context-map/4",
+        "context": "cobuilder-packaging",
+        "kind": "context-map",
+        "detail": {
+          "with": "implement",
+          "pattern": "open-host-service",
+          "note": "Same as architect."
+        }
+      },
+      {
+        "id": "cobuilder-packaging/context-map/5",
+        "context": "cobuilder-packaging",
+        "kind": "context-map",
+        "detail": {
+          "with": "shared",
+          "pattern": "shared-kernel",
+          "shared": [
+            "ledger.LedgerPaths",
+            "ledger.watch_feedback"
+          ],
+          "note": "plugins/cobuilder-full-lifecycle/scripts/watch_feedback.py imports ledger through its shared symlink."
+        }
+      },
+      {
+        "id": "cobuilder-packaging/context-map/6",
+        "context": "cobuilder-packaging",
+        "kind": "context-map",
+        "detail": {
           "with": "bundle-directory",
           "pattern": "open-host-service",
-          "note": "Not yet a documented bounded context. Scripts write it, the viewer reads it; neither reads the other's source. Data-only, versioned by bundle.json / story.json meta.schema_version."
+          "note": "Not a documented context. Scripts write the bundle and the viewer reads it. Versioned by bundle.json and story.json meta.schema_version."
+        }
+      },
+      {
+        "id": "implement/forbidden-dependency/1",
+        "context": "implement",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "plugins/architect/**, plugins/pr/**",
+          "why": "ADR-0016: a plugin never names another plugin's path. Grep found no such string in plugins/implement."
+        }
+      },
+      {
+        "id": "implement/forbidden-dependency/2",
+        "context": "implement",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "plugins/artifact/scripts/build_builds_view.py",
+          "from": "plugins/implement/scripts/verify_gate.py",
+          "why": "SMELL: a comment at verify_gate.py:98-100 names the path plugins/artifact/scripts/build_builds_view.py. It is a comment, not an import, so nothing breaks. It still names another plugin's path, which ADR-0016 forbids. Name shared/slice_table.py as the shared parser and drop the artifact path."
+        }
+      },
+      {
+        "id": "implement/forbidden-dependency/3",
+        "context": "implement",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "bare Skill name 'architecture' in commands/debug.md",
+          "from": "plugins/implement/commands",
+          "why": "SMELL (minor): line 26 calls Skill(\"architecture\") with no plugin prefix, while pr uses Skill(\"architect:architecture\"). An unprefixed name can bind to the wrong plugin or to none. Use the architect: prefix."
+        }
+      },
+      {
+        "id": "implement/forbidden-dependency/4",
+        "context": "implement",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "agents and hook of another plugin",
+          "why": "CLAUDE.md principle 5 and ADR-0025: only implement ships agents and a hook. Verified: this plugin owns all four agents (green, red, validate, vocabulary) and the one hooks.json, and no other plugin has either."
+        }
+      },
+      {
+        "id": "implement/module-invariant/1",
+        "context": "implement",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "plugin-manifest",
+          "path": "plugins/implement/.claude-plugin",
+          "public_interface": [
+            "plugin.json"
+          ],
+          "allowed_inbound": [],
+          "allowed_outbound": [],
+          "rule": "Static JSON. Declares architect and artifact as dependencies. Version 0.6.0 must match marketplace.json."
+        }
+      },
+      {
+        "id": "implement/module-invariant/2",
+        "context": "implement",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "commands",
+          "path": "plugins/implement/commands",
+          "members": [
+            "start.md",
+            "debug.md",
+            "install.md"
+          ],
+          "public_interface": [],
+          "allowed_inbound": [],
+          "allowed_outbound": [
+            "skill-build"
+          ],
+          "rule": "start and install call Skill(\"build\"). debug calls the architect plugin's debug mode by name (see SMELL)."
+        }
+      },
+      {
+        "id": "implement/module-invariant/3",
+        "context": "implement",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "skill-build",
+          "path": "plugins/implement/skills/build",
+          "public_interface": [
+            "Skill(\"implement:build\")"
+          ],
+          "allowed_inbound": [
+            "commands"
+          ],
+          "allowed_outbound": [
+            "agents",
+            "scripts",
+            "shared-scripts"
+          ],
+          "rule": "Owns the four gates and the slice loop. Calls Skill(\"cobuilder-artifacts\") by name. 12 reference files plus workflows/."
+        }
+      },
+      {
+        "id": "implement/module-invariant/4",
+        "context": "implement",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "skill-design-to-code",
+          "path": "plugins/implement/skills/design-to-code",
+          "public_interface": [
+            "Skill(\"implement:design-to-code\")"
+          ],
+          "allowed_inbound": [
+            "skill-build"
+          ],
+          "allowed_outbound": [],
+          "rule": "Vendored per ADR-0024. Runs only when Gate 2b applies."
+        }
+      },
+      {
+        "id": "implement/module-invariant/5",
+        "context": "implement",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "agents",
+          "path": "plugins/implement/agents",
+          "members": [
+            "red.md",
+            "green.md",
+            "validate.md",
+            "vocabulary.md"
+          ],
+          "public_interface": [
+            "implement:red",
+            "implement:green",
+            "implement:validate",
+            "implement:vocabulary"
+          ],
+          "allowed_inbound": [
+            "skill-build"
+          ],
+          "allowed_outbound": [],
+          "rule": "Leaf. The only agents in the family (ADR-0025). VALIDATE scores blind against a rubric and needs 0.90."
+        }
+      },
+      {
+        "id": "implement/module-invariant/6",
+        "context": "implement",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "hook",
+          "path": "plugins/implement/hooks",
+          "members": [
+            "hooks.json"
+          ],
+          "public_interface": [
+            "PostToolUse on Write|Edit"
+          ],
+          "allowed_inbound": [],
+          "allowed_outbound": [
+            "scripts"
+          ],
+          "rule": "Runs scripts/habit_coach.py through uv. The only hook in the family."
+        }
+      },
+      {
+        "id": "implement/module-invariant/7",
+        "context": "implement",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "scripts",
+          "path": "plugins/implement/scripts",
+          "members": [
+            "habit_coach.py",
+            "verify_gate.py"
+          ],
+          "public_interface": [
+            "verify_gate.py"
+          ],
+          "allowed_inbound": [
+            "skill-build",
+            "hook"
+          ],
+          "allowed_outbound": [
+            "shared-scripts"
+          ],
+          "rule": "habit_coach.py is stdlib only. verify_gate.py imports only slice_table from shared."
+        }
+      },
+      {
+        "id": "implement/module-invariant/8",
+        "context": "implement",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "shared-scripts",
+          "path": "plugins/implement/shared",
+          "public_interface": [],
+          "allowed_inbound": [
+            "scripts",
+            "skill-build"
+          ],
+          "allowed_outbound": [],
+          "rule": "A symlink to ../../shared."
+        }
+      },
+      {
+        "id": "implement/context-map/1",
+        "context": "implement",
+        "kind": "context-map",
+        "detail": {
+          "with": "shared",
+          "pattern": "shared-kernel",
+          "shared": [
+            "slice_table"
+          ],
+          "note": "verify_gate.py adds the plugin's shared symlink to sys.path and imports slice_table. The skill also runs shared/build_index.py by shell."
+        }
+      },
+      {
+        "id": "implement/context-map/2",
+        "context": "implement",
+        "kind": "context-map",
+        "detail": {
+          "with": "architect",
+          "pattern": "open-host-service",
+          "note": "commands/debug.md calls Skill(\"architecture\", args=\"debug ...\"). The skill reads a design record from docs/ when one exists. It names /architect:design by mode only."
+        }
+      },
+      {
+        "id": "implement/context-map/3",
+        "context": "implement",
+        "kind": "context-map",
+        "detail": {
+          "with": "artifact",
+          "pattern": "open-host-service",
+          "note": "The skill calls Skill(\"cobuilder-artifacts\") three times to show a gate and the epics route. No import and no path."
+        }
+      },
+      {
+        "id": "pr/forbidden-dependency/1",
+        "context": "pr",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "plugins/architect/**, plugins/artifact/**",
+          "why": "ADR-0016: a plugin never names another plugin's path. Grep found no 'plugins/<other>' string in plugins/pr."
+        }
+      },
+      {
+        "id": "pr/forbidden-dependency/2",
+        "context": "pr",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "architect skill architecture: references/decision-records.md, SKILL.md, templates/adr-template.md",
+          "from": "plugins/pr/skills/odyssey",
+          "why": "SMELL: references/decision-records-lite.md (lines 11, 20, 24, 55), references/adr-template.md (lines 11, 15), and SKILL.md (line 31) tell Claude to read files inside the architecture skill of the architect plugin. The text at decision-records-lite.md:24 admits the path resolves only to odyssey's own cache. ADR candidate: move the ADR schema and template into shared."
+        }
+      },
+      {
+        "id": "pr/forbidden-dependency/3",
+        "context": "pr",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "architect@cobuilder-plugin in plugin.json dependencies",
+          "why": "SMELL: plugins/pr/.claude-plugin/plugin.json lists only artifact@cobuilder-plugin, but skills/odyssey/SKILL.md calls Skill(\"architect:architecture\") at line 337 and decision-records-lite.md:17. A pr install without architect fails at that call. ADR candidate: declare the dependency, or stop the call."
+        }
+      },
+      {
+        "id": "pr/forbidden-dependency/4",
+        "context": "pr",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "Python import of another plugin's scripts",
+          "why": "Rule holding, not a smell: grep of 'from'/'import' lines in plugins/pr/scripts shows only the standard library, dotenv, google.genai, shared _bundle_meta, and shared _manifest."
+        }
+      },
+      {
+        "id": "pr/forbidden-dependency/5",
+        "context": "pr",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "agents/ and hooks/",
+          "why": "CLAUDE.md principle 5 and ADR-0025: only implement ships agents and a hook. Verified: plugins/pr has neither directory."
+        }
+      },
+      {
+        "id": "pr/module-invariant/1",
+        "context": "pr",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "plugin-manifest",
+          "path": "plugins/pr/.claude-plugin",
+          "public_interface": [
+            "plugin.json"
+          ],
+          "allowed_inbound": [],
+          "allowed_outbound": [],
+          "rule": "Static JSON. Version 0.9.0 must match marketplace.json. See the SMELL on missing architect dependency."
+        }
+      },
+      {
+        "id": "pr/module-invariant/2",
+        "context": "pr",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "commands",
+          "path": "plugins/pr/commands",
+          "members": [
+            "baseline.md",
+            "review.md",
+            "generate.md"
+          ],
+          "public_interface": [],
+          "allowed_inbound": [],
+          "allowed_outbound": [
+            "skill-odyssey"
+          ],
+          "rule": "Each command makes Skill(\"odyssey\", ...) calls into its own plugin. Verified: 3 Skill(\"odyssey\" calls."
+        }
+      },
+      {
+        "id": "pr/module-invariant/3",
+        "context": "pr",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "skill-odyssey",
+          "path": "plugins/pr/skills/odyssey",
+          "public_interface": [
+            "Skill(\"pr:odyssey\")"
+          ],
+          "allowed_inbound": [
+            "commands"
+          ],
+          "allowed_outbound": [
+            "scripts",
+            "shared-skills",
+            "shared-scripts"
+          ],
+          "rule": "SMELL: also reads architect files by name and calls Skill(\"architect:architecture\") (see forbidden_dependencies). Judgment lives in references/*.md (8 files and a stacks/ folder)."
+        }
+      },
+      {
+        "id": "pr/module-invariant/4",
+        "context": "pr",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "scripts",
+          "path": "plugins/pr/scripts",
+          "members": [
+            "extract_story.py",
+            "extract_diffs.py",
+            "generate_prompts.py",
+            "generate_audio.py",
+            "build_diagrams.py",
+            "render_review.py"
+          ],
+          "public_interface": [],
+          "allowed_inbound": [
+            "skill-odyssey"
+          ],
+          "allowed_outbound": [
+            "shared-scripts"
+          ],
+          "rule": "PEP 723 scripts run by 'uv run'. They import only _bundle_meta and _manifest from shared. A script fetches and compiles data and never authors narrative."
+        }
+      },
+      {
+        "id": "pr/module-invariant/5",
+        "context": "pr",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "shared-skills",
+          "path": "plugins/pr/shared/skills",
+          "members": [
+            "mermaid",
+            "ste-writing"
+          ],
+          "public_interface": [
+            "Skill(\"pr:mermaid\")",
+            "Skill(\"pr:ste-writing\")"
+          ],
+          "allowed_inbound": [
+            "skill-odyssey"
+          ],
+          "allowed_outbound": [],
+          "rule": "A symlink into shared/. The pr context owns none of this text."
+        }
+      },
+      {
+        "id": "pr/module-invariant/6",
+        "context": "pr",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "shared-scripts",
+          "path": "plugins/pr/shared",
+          "public_interface": [],
+          "allowed_inbound": [
+            "scripts",
+            "skill-odyssey"
+          ],
+          "allowed_outbound": [],
+          "rule": "A symlink to ../../shared. The five scripts that import shared code call sys.path.insert on parent.parent/shared."
+        }
+      },
+      {
+        "id": "pr/context-map/1",
+        "context": "pr",
+        "kind": "context-map",
+        "detail": {
+          "with": "shared",
+          "pattern": "shared-kernel",
+          "shared": [
+            "_bundle_meta.read_plugin_version",
+            "_bundle_meta.require_compatible",
+            "_bundle_meta.stamp_generator",
+            "_bundle_meta.SCHEMA_VERSION",
+            "_manifest.rewrite_manifest"
+          ],
+          "note": "Five scripts add the plugin's shared symlink to sys.path and import these symbols. It also runs shared/migrate_bundle.py, build_index.py, and verify_bundle.py by shell."
+        }
+      },
+      {
+        "id": "pr/context-map/2",
+        "context": "pr",
+        "kind": "context-map",
+        "detail": {
+          "with": "architect",
+          "pattern": "open-host-service",
+          "note": "Calls Skill(\"architect:architecture\") for the decisions mode and for 'describe <district>'. SMELL: it also cites architect files (see forbidden_dependencies)."
+        }
+      },
+      {
+        "id": "pr/context-map/3",
+        "context": "pr",
+        "kind": "context-map",
+        "detail": {
+          "with": "artifact",
+          "pattern": "open-host-service",
+          "note": "Hands the engineer to /artifact:view and /artifact:publish by mode name in prose. No Skill call and no import. The artifact scripts name /pr:baseline and /pr:generate in error text in return."
+        }
+      },
+      {
+        "id": "shared/forbidden-dependency/1",
+        "context": "shared",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "plugins/<name>/ as Python import",
+          "why": "Shared is the base layer. Grep of every 'from' and 'import' line in shared/*.py finds only the standard library, PyYAML, ulid, and sibling shared modules. This rule holds."
+        }
+      },
+      {
+        "id": "shared/forbidden-dependency/2",
+        "context": "shared",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "plugins/artifact/viewer/index.html and the sibling artifact install cache",
+          "from": "shared/migrate_bundle.py",
+          "why": "SMELL: find_viewer_source (lines 309-340) probes PLUGIN_ROOT/plugins/artifact/viewer/index.html and the sibling 'artifact/<version>/viewer/index.html' cache, and the warning text at line 582 names 'plugins/artifact/'. Shared code reaches into a plugin's files, which inverts the base layer. ADR candidate: pass the viewer path in as an argument, or ship the built viewer through shared."
+        }
+      },
+      {
+        "id": "shared/forbidden-dependency/3",
+        "context": "shared",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "plugins/artifact/viewer/src/shell/workDeck.ts and plugin script paths",
+          "from": "shared (_bundle_meta.py:32, slice_table.py:23-24)",
+          "why": "SMELL (comment only): a comment in _bundle_meta.py names the viewer file workDeck.ts, and the slice_table.py docstring lists plugins/implement/scripts/verify_gate.py and plugins/artifact/scripts/build_builds_view.py. Nothing runs from these names, but they name paths in plugins. Replace them with plugin names. A test keeps DESIGN_STAGES equal to the lanes."
+        }
+      },
+      {
+        "id": "shared/forbidden-dependency/4",
+        "context": "shared",
+        "kind": "forbidden-dependency",
+        "detail": {
+          "target": "authored content",
+          "why": "CLAUDE.md principle 2: a script moves data and never authors judgment. build_index.py is the only writer of data/adrs.json and data/index.json."
+        }
+      },
+      {
+        "id": "shared/module-invariant/1",
+        "context": "shared",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "bundle-meta",
+          "path": "shared",
+          "members": [
+            "_bundle_meta.py",
+            "_manifest.py"
+          ],
+          "public_interface": [
+            "_bundle_meta.SCHEMA_VERSION",
+            "_bundle_meta.CURRENT_BUNDLE_FORMAT",
+            "_bundle_meta.require_compatible",
+            "_manifest.rewrite_manifest"
+          ],
+          "allowed_inbound": [
+            "index-and-verify",
+            "migration",
+            "ledger-and-gates"
+          ],
+          "allowed_outbound": [],
+          "rule": "_bundle_meta.py is a leaf: standard library only. _manifest.py imports only _bundle_meta."
+        }
+      },
+      {
+        "id": "shared/module-invariant/2",
+        "context": "shared",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "index-and-verify",
+          "path": "shared",
+          "members": [
+            "build_index.py",
+            "verify_bundle.py",
+            "validate_decision_state.py",
+            "boundary_check.py",
+            "prose_budget.py"
+          ],
+          "public_interface": [],
+          "allowed_inbound": [],
+          "allowed_outbound": [
+            "bundle-meta",
+            "gate-parsers"
+          ],
+          "rule": "Run by shell, not imported by plugins. build_index.py imports _bundle_meta, prose_budget, slice_table, and gate_status. verify_bundle.py imports prose_budget and _bundle_meta. build_index.py needs PyYAML."
+        }
+      },
+      {
+        "id": "shared/module-invariant/3",
+        "context": "shared",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "migration",
+          "path": "shared",
+          "members": [
+            "migrate_bundle.py",
+            "migrate_png_assets_to_webp.py"
+          ],
+          "public_interface": [],
+          "allowed_inbound": [],
+          "allowed_outbound": [
+            "bundle-meta"
+          ],
+          "rule": "SMELL: migrate_bundle.py probes the artifact plugin's viewer path (see forbidden_dependencies). Append a ladder step to change data or layout, and never call extract_story.py."
+        }
+      },
+      {
+        "id": "shared/module-invariant/4",
+        "context": "shared",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "ledger-and-gates",
+          "path": "shared",
+          "members": [
+            "ledger.py"
+          ],
+          "public_interface": [
+            "ledger.LedgerPaths",
+            "ledger.append_comment",
+            "ledger.watch_feedback"
+          ],
+          "allowed_inbound": [],
+          "allowed_outbound": [],
+          "rule": "Leaf: standard library, and ulid when present. Imported by artifact serve_bundle.py and by the umbrella watch_feedback.py."
+        }
+      },
+      {
+        "id": "shared/module-invariant/5",
+        "context": "shared",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "gate-parsers",
+          "path": "shared",
+          "members": [
+            "gate_status.py",
+            "slice_table.py"
+          ],
+          "public_interface": [
+            "gate_status",
+            "slice_table"
+          ],
+          "allowed_inbound": [
+            "index-and-verify"
+          ],
+          "allowed_outbound": [],
+          "rule": "One parser for the gate block and the slice table, shared by build_index.py, verify_gate.py, and build_builds_view.py."
+        }
+      },
+      {
+        "id": "shared/module-invariant/6",
+        "context": "shared",
+        "kind": "module-invariant",
+        "detail": {
+          "id": "shared-skills",
+          "path": "shared/skills",
+          "members": [
+            "mermaid",
+            "ste-writing"
+          ],
+          "public_interface": [
+            "Skill(\"<plugin>:mermaid\")",
+            "Skill(\"<plugin>:ste-writing\")"
+          ],
+          "allowed_inbound": [],
+          "allowed_outbound": [],
+          "rule": "Leaf text. Reached through each plugin's shared symlink."
+        }
+      },
+      {
+        "id": "shared/context-map/1",
+        "context": "shared",
+        "kind": "context-map",
+        "detail": {
+          "with": "architect",
+          "pattern": "shared-kernel",
+          "note": "Consumed by shell only: build_index, migrate_bundle, prose_budget, boundary_check, validate_decision_state."
+        }
+      },
+      {
+        "id": "shared/context-map/2",
+        "context": "shared",
+        "kind": "context-map",
+        "detail": {
+          "with": "pr",
+          "pattern": "shared-kernel",
+          "note": "Consumed by import (_bundle_meta, _manifest) and by shell (migrate_bundle, build_index, verify_bundle)."
+        }
+      },
+      {
+        "id": "shared/context-map/3",
+        "context": "shared",
+        "kind": "context-map",
+        "detail": {
+          "with": "artifact",
+          "pattern": "shared-kernel",
+          "note": "Consumed by import (_bundle_meta, ledger, gate_status, slice_table) and by shell (build_index, migrate_bundle)."
+        }
+      },
+      {
+        "id": "shared/context-map/4",
+        "context": "shared",
+        "kind": "context-map",
+        "detail": {
+          "with": "implement",
+          "pattern": "shared-kernel",
+          "note": "Consumed by import (slice_table) and by shell (build_index)."
+        }
+      },
+      {
+        "id": "shared/context-map/5",
+        "context": "shared",
+        "kind": "context-map",
+        "detail": {
+          "with": "cobuilder-packaging",
+          "pattern": "shared-kernel",
+          "note": "The umbrella plugin cobuilder-full-lifecycle imports ledger in watch_feedback.py."
         }
       }
     ],
@@ -1955,6 +3068,36 @@
         "title": "A pull request with no design is a row of its own",
         "ends_with": "A pull request with no design reads as a row of its own, its status is its own state, and the tabs filter by status",
         "score": "0.90",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "describe-boundaries/1",
+        "feature": "describe-boundaries",
+        "n": 1,
+        "title": "Tracer bullet and whole epic: `boundary_check.py`, the `verified_at` field, and the bundle warning",
+        "ends_with": "The script prints `ok`, `stale`, and `uncovered` for a temporary git repo and exits 1 under `--require`. The template and the describe procedure carry `verified_at`. `verify_bundle.py` warns `boundary.stale`.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "describe-boundaries/2",
+        "feature": "describe-boundaries",
+        "n": 2,
+        "title": "Tracer bullet and whole epic: design stage 1 and stage 6",
+        "ends_with": "`design-mode.md` runs the check and describe in stage 1, and the stage 6 reviewer fails a design when `--require` exits non-zero. A blind agent given the file follows the order.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "describe-boundaries/3",
+        "feature": "describe-boundaries",
+        "n": 3,
+        "title": "Tracer bullet and whole epic: self-only describe in baseline, and the docs",
+        "ends_with": "`baseline-derivation.md` and `SKILL.md` run describe per district for self-analysis only, and keep describe-lite for `--repo`. A blind agent given a `--repo` run does not call describe. `SKILL.md` marks describe internal and names its two callers.",
+        "score": "1.00",
         "attempts": 1,
         "state": "completed"
       },
@@ -2446,6 +3589,15 @@
         "source_path": "docs/plans/cobuilder-family/01-product.md"
       },
       {
+        "id": "describe-boundaries",
+        "feature_slug": "describe-boundaries",
+        "gate": 1,
+        "title": "Product: Verified boundaries in design and baseline",
+        "body_md": "# Product: Verified boundaries in design and baseline\n\n## Problem\nA design that cites no verified boundary can only guess. Today `describe` is a command that an engineer must remember to run. Most repos have no `boundary.yaml`, so the design challenge and the PR assessment work without the facts they need.\n\n## Success metric\nAfter a `/architect:design` run, every context the change touches has a `boundary.yaml` that is current. Measure it with `boundary_check.py --require`. It exits 0.\n\n## Announcement — the blog post before the feature\nCoBuilder now checks the boundaries of your code before it designs a change. When a design touches a part of the repo with no boundary record, or with a stale one, design mode describes that part first. The challenge step then cites real import rules, not guesses. `/pr:baseline` does the same for each district of your own repo. A repo you read with `--repo` keeps the lighter baseline. The `describe` command leaves the menu, because the workflow now runs it for you.\n\n## Screens\nno UI\n",
+        "approved_date": null,
+        "source_path": "docs/plans/describe-boundaries/01-product.md"
+      },
+      {
         "id": "gate-doc-surfacing",
         "feature_slug": "gate-doc-surfacing",
         "gate": 1,
@@ -2538,6 +3690,15 @@
         "source_path": "docs/plans/cobuilder-family/02-architecture.md"
       },
       {
+        "id": "describe-boundaries",
+        "feature_slug": "describe-boundaries",
+        "gate": 2,
+        "title": "Architecture: Verified boundaries in design and baseline",
+        "body_md": "# Architecture: Verified boundaries in design and baseline\n\n## Fit\n- `shared/` gets one new script, `boundary_check.py`. Plugins reach it through their `shared/` symlink (ADR-0017).\n- `architect` design mode (`references/design-mode.md`) calls the check in stage 1 and stage 6.\n- `pr` baseline mode (`baseline-derivation.md`, `odyssey/SKILL.md`) calls `Skill(\"architect:architecture\", args=\"describe ...\")` for self-analysis only. It names the mode and never a path (principle 4).\n- `boundary-template.yaml` gets a `verified_at` field. Describe mode stamps it.\n- `shared/verify_bundle.py` warns on a stale context.\n\n## Endpoints\nnone\n\n## Data\nOne new field in `boundary.yaml`: `verified_at: <git commit sha>`. No schema version change. `build_index.py` ignores unknown fields.\n\n## Flow\n1. Design stage 1 lists the paths the change touches.\n2. `boundary_check.py --paths ...` prints, per context, `ok`, `stale`, or `missing`, and lists `uncovered` paths.\n3. For each stale, missing, or uncovered area, design runs describe, which writes `canvas.md` and `boundary.yaml` and stamps `verified_at`.\n4. Design runs the check again. Stage 6 runs `--require`. A non-zero exit fails the review.\n5. Baseline, self-analysis only: after the district map, run describe for each district with no current `boundary.yaml`.\n\n## External\nnone. A stale context is one whose `path` has a commit after `verified_at`.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/describe-boundaries/02-architecture.md"
+      },
+      {
         "id": "gate-doc-surfacing",
         "feature_slug": "gate-doc-surfacing",
         "gate": 2,
@@ -2628,6 +3789,15 @@
         "body_md": "# Program Design: cobuilder-viewer\n\nGate 3. The decisions an agent would otherwise make silently while implementing\nGate 2. Every one of them is cheap to change here and expensive to change once a\nslice has landed.\n\nThis design builds one program with three surfaces. Work reads a design. FlightDeck\nreads a pull request, or the whole open set. Reference reads the decisions and the\nmap coverage. A Vite build compiles all three into the committed viewer file.\n\n**The scope narrowed on 2026-09-22.** The engineer cut this program to two surfaces:\nthe Work surface, and the current pull request viewer renamed to FlightDeck at parity.\nEleven epics deferred on that date, E8 to E18, and their material stays in this\ndocument rather than leaving it. That material is the Reference surface, the describe\npath, the whole multi-pull-request mode and its simulator, the path runner, the\nledger's three state subtypes, publish parity, and the feedback path. None of it is\npart of the build. The live ladder is `04-slices.md`: eighteen slices across E1, E2,\nE3, E4, E5, E6, E7, and E19. Read every section below that serves a deferred epic as\ndesign on the shelf, ready for the epic that returns.\n\nFive ADRs govern it. ADR-0023 holds the build. ADR-0027 holds one FlightDeck surface\nwith two modes. ADR-0028 holds a level as sections on a track. ADR-0018 holds the\nrecord index, and ADR-0019 holds the ledger. Where this document and an ADR\ndisagree, the ADR wins and this document is wrong.\n\n**Corrected 2026-09-25, against the two-account model.** ADR-0029's 2026-09-25 amendment\nrecords the shape. The engineer read a prototype of one work item as two accounts. The\nchange's account is a space of its own, and not a mode behind a switch. A reader jumps\nbetween the two accounts on a section of the same name. ADR-0027's two-mode decision\nstands for the deferred multi-pull-request work. The change's account carries no mode\nswitch.\n\nThe line above that reads \"ADR-0027 holds one FlightDeck surface with two modes\" is\ntherefore too narrow for the live program.\n\n## Files\n\n### The build, and the file it produces\n\n```\nplugins/artifact/viewer/\n  package.json                     scripts: dev, build, typecheck. React 19, Vite 7,\n                                   @vitejs/plugin-react, vite-plugin-singlefile\n  vite.config.ts                   root src/, the single-file plugin, outDir today\n                                   ../dist, alias @ -> src/, port 5273\n  tsconfig.json                    strict, noUnusedLocals, noUnusedParameters\n  src/index.html                   the dev entry\n  src/main.tsx                     mounts the shell\n  src/index.css                    the token set: ground, surface, ink, band, tint\n  index.html                       THE COMMITTED OUTPUT. The build writes here once\n                                   E2 lands, and a test rebuilds and compares\n  dist/                            today's scratch output. Deleted once index.html\n                                   is the build's target\n```\n\n**Why `vite.config.ts` changes.** It builds to `../dist` today, and its own comment\nsays ADR-0023's output rule is under revision while the shipped file keeps working.\nE2 settles that: the build writes `plugins/artifact/viewer/index.html`, and the\ncommitted file becomes a build artifact rather than a hand-maintained one.\n\n**Why the markers exist.** `export_artifact.py` rewrites the viewer by verbatim\nstring replacement and hard-errors when a literal moves. E1 gives the build's output a small set\nof named markers. The exporter then matches those names, rather than whatever\nliteral happens to sit between them. That is the seam, and it is the first slice.\n\n### The typed data layer\n\n```\nsrc/data/\n  global.d.ts                 the six window globals the bundle's script tags define:\n                              STORY, ODYSSEY, DIFFS, ADRS, DESIGNS, DIAGRAMS\n  types.ts                    every record type, the index shape, and the join results.\n                              Declares PullRequest here, and OpenPullRequest as its\n                              branded extension. ADR-0027 requires exactly one\n                              declaration of each\n  bundle.ts                   loads data/index.json, reads the globals, and resolves\n                              every join in one place. Exposes entitiesOf, joinsOf,\n                              and loadIndex\n  designs.ts / adrs.ts        record bodies, keyed by design and by decision id\n```\n\n**Why one module resolves the joins.** ADR-0018 built the joins into\n`data/index.json`. The shell reads them and derives none of them. A second\nderivation in the viewer would be a second source for the same fact.\n\n### The shell, and the section model\n\n```\nsrc/shell/\n  App.tsx                     the boot: index load, route, theme, the rail and the top\n                              bar, and the pane\n  model.ts                    buildWorkItems, gatesOf, levelsOf, readRoute, routeHref,\n                              the section lists per level\n  hooks.ts                    useIndexLoad, useHashRoute, useDocumentNoScroll,\n                              useVisibleWidthCap, useCollapsedRail, useFocusOnChange,\n                              useScrollResetOnRoute, useSectionAvailability\n  Pager.tsx                   SectionStrip, SectionStage, SectionPager, LevelProgress,\n                              useSectionPaging, withinOf. ADR-0028 owns this shape\n  panels/                     the sections each level pages, one file per level\n    Intent.tsx                Why, Done when, Abort if, Out of scope\n    ProblemSolution.tsx       Problem and solution, Risks, Assessment, Unknowns\n    Architecture.tsx          Diagrams, Architecture Decisions, Boundaries, Districts\n                              and alternatives considered\n    Build.tsx                 the epic runs, the slices, the rubrics\n  atoms.tsx                   Panel, Box, Chip, TextList, and the band and tint classes\n  DiagramTiles.tsx            the diagram tiles, the dialog, the zoom, and the offline\n                              source fallback\n  Sheet.tsx                   the record sheet, and its jumplink row\n  Rail.tsx / TopBar.tsx       the traverse and the work item\n  Board.tsx                   the board E19 adds: one row per design, its stage,\n                              and its six record marks\n```\n\n**Two rows left the rail, and this file map dropped them. Corrected 2026-09-25.** The\nDeploy group is gone. The engineer removed it, and the Pull requests row and the\nShipped row left the rail with it. The two files that held those rows,\n`panels/PullRequests.tsx` and `panels/Shipped.tsx`, no longer belong to this map.\n\nThe engineer decided where that content goes on 2026-09-25. The envisioned pull request\nlives on the program's Intent row, beside the change that opened. This work's own\npull-request list stays unbuilt, because the Epics row already states each epic, its\nstate, and its pull request. The open set stays deferred with E11 to E13. The release\nstatus stays out of the build, and the prototype alone keeps it.\n\n**Why the section model lives in `Pager.tsx` and not in each level.** One index\ndrives the strip, the pager bar, and the two arrow keys, and one function computes\nthe level's progress. A level states its sections and nothing else.\n\n**Why the prototypes are separate directories.** `src/variations/sections-e/` and\n`src/variations/app-shell/` hold the built prototype and its comparison. They are\nscaffolding for the design decision, they are not the shipped surface, and the\nslices below port what they proved into `src/shell/`.\n\n### The change's account, and the deferred open set\n\n**Corrected 2026-09-25, against the two-account model.** ADR-0029's 2026-09-25 amendment\nrecords the shape. `src/flightdeck/` is not the shape the build takes. The change's\naccount renders inside the shipped shell, at `src/shell/change/`, in four rows that share\nthree names with the program's rows. It carries no mode switch. The joins rail is gone\nwith the re-cut.\n\nThe mode switch, the joins rail, and every multi-pull-request module stay deferred with\nE11 to E13. This document therefore fixes no path for them. `src/variations/flightdeck/`\nholds the prototype the engineer read. It is evidence for the shape, and not the shape\nitself.\n\n```\nsrc/shell/change/\n  sections.tsx                the change's four rows, one element per panel\n  levels.ts                   the four narration levels, the scene art, the audio, the\n                              drawings, and the diff files\n  Frame.tsx                   the level's picture, its drawing, and the art-or-diagram\n                              toggle\n  Diff.tsx                    the diff view, ported as it stands\n  Sheets.tsx                  the change's intent body and its assessment body\n  model.ts                    the change's address, and its named-section segment\n```\n\n### Reference\n\n```\nsrc/reference/\n  Decisions.tsx               every decision, with its rule and its anchors\n  Coverage.tsx                the contexts, the districts, and the uncovered ones\n```\n\n**Why the five record-type tabs go.** E9 removes them. Reference is the surface those tabs\npointed at. A tab per record type also grows with the corpus, which section 2.1 of\nthe interaction design forbids.\n\n### Outside the browser\n\n```\nplugins/pr/scripts/\n  simulate_merge_order.py     reads the selected open set, simulates at least three\n                              paths against the common ancestor, replays the best one\n                              or two on a scratch worktree, and writes\n                              <bundle-dir>/data/merge-plan.json\n  execute_path.py             the runner: one integration branch per bundle, chained\n                              from the common ancestor, never the default branch\nshared/ledger.py              gains the merge-order proposal, the acceptance, and the\n                              post-merge actual as subtypes of the existing state line\nplugins/artifact/scripts/\n  export_artifact.py          matches the build's named markers, and drops or\n                              transcodes audio when a level exceeds the 16 MiB budget\n```\n\n### Tests\n\n```\ntests/test_viewer_build.py          new. Runs the viewer build and compares the result\n                                    against the committed index.html, byte for byte\ntests/test_sections.py              new. The section model's own claims, against the\n                                    served viewer\ntests/test_simulate_merge_order.py  new. The simulator, against a fixture repository\ntests/test_execute_path.py          new. The runner, against a fixture repository\ntests/test_ledger.py                extended. The three new state subtypes\ntests/test_export_artifact_budget.py new. The budget, and the degradation order\n```\n\n## Types & signatures\n\n```ts\n/* src/data/types.ts — the record types the index carries. */\n\nexport type DesignStage =\n  | \"backlog\" | \"design\" | \"review\" | \"approved\" | \"implemented\" | \"superseded\";\n\nexport interface DesignEntity {\n  id: string;\n  name: string;\n  outcome: string;\n  stage: DesignStage;\n}\n\nexport interface EpicEntity {\n  id: string;            // \"<design>/<epic-id>\"\n  design: string;\n  epic_id: string;       // \"E5\"\n  branch: string | null;\n  pr: number | null;\n  state: string;         // the ENTITY's own state, not the refined one\n  note: string | null;\n}\n\nexport interface SliceEntity {\n  id: string; n: number; title: string; ends_with: string | null;\n  score: number | null; state: string; attempts: number; feature: string;\n}\n\nexport interface PullRequest {\n  id: number;\n  title: string;\n  state: \"open\" | \"merged\" | \"closed\";\n  /** The head branch. Present on an open pull request, absent on a merged one. */\n  head: string | null;\n}\n\n/**\n * ADR-0027 fixes this shape, and E3 declares it once.\n * A field renamed on PullRequest and not here fails the build.\n */\nexport type OpenPullRequest = PullRequest & { status: \"open\" };\n\n/* The index, as data/index.json holds it. */\nexport interface RecordIndex {\n  entities: {\n    design: DesignEntity[]; epic: EpicEntity[]; slice: SliceEntity[];\n    adr: AdrEntity[]; boundary_rule: BoundaryRule[]; district: DistrictEntity[];\n    context: ContextEntity[]; pull_request: PullRequest[]; publication: Publication[];\n    epic_design: EpicDesignEntity[]; interaction_design: InteractionDesignEntity[];\n  };\n  joins: {\n    epic_status: Record<string, string>;\n    epic_to_pull_request: Record<string, number[]>;\n    slice_to_epic: Record<string, string>;\n    slice_to_epic_unresolved: string[];\n    adr_to_pull_request: Record<string, number[]>;\n    adr_to_context: Record<string, string[]>;\n    adr_to_district: Record<string, string[]>;\n    context_verifies_district: Record<string, string[]>;\n    district_uncovered: string[];\n    feature_gates: Record<string, GateStep[]>;\n  };\n}\n\nexport function loadIndex(): Promise<RecordIndex>;\nexport function entitiesOf(index: RecordIndex): RecordIndex[\"entities\"];\nexport function joinsOf(index: RecordIndex): RecordIndex[\"joins\"];\n\n/* src/shell/model.ts — the shell's own derivations. It computes no join. */\nexport function buildWorkItems(index: RecordIndex, designs: DesignRecords): Map<string, WorkItem>;\nexport function gatesOf(work: WorkItem): Gates;\nexport function levelsOf(work: WorkItem): Record<LevelKey, LevelState>;\nexport function readRoute(): Route;\nexport function routeHref(workId: string, section: SectionKey, tail?: string): string;\nexport function epicGroups(work: WorkItem): EpicEntity[][];\n\n/* src/shell/Pager.tsx — ADR-0028's shape. */\nexport interface Paging {\n  index: number; count: number;\n  select(index: number): void; previous(): void; next(): void;\n}\n\n/** The active section, clamped, and reset to `start` on a route change. */\nexport function useSectionPaging(count: number, routeKey: string, start?: number): Paging;\n\n/** How far through one box the reader is, from 0 to 1. A box with no range is 1. */\nexport function withinOf(box: HTMLElement | null): number;\n\n/** (index + within) / count, as a motion value the progress strip reads. */\nexport function useLevelProgress(index: number, count: number, boxRef: RefObject<HTMLElement | null>): MotionValue<number>;\n\nexport function SectionStrip(props: { targets: JumpTarget[]; activeIndex: number; onSelect(index: number): void }): JSX.Element;\nexport function SectionStage(props: { index: number; activeBoxRef?: RefObject<HTMLDivElement | null>; children: ReactNode }): JSX.Element;\nexport function SectionPager(props: { index: number; count: number; onPrevious(): void; onNext(): void }): JSX.Element;\n\n/* src/shell/DiagramTiles.tsx */\nexport function DiagramTiles(props: { levels: string[]; sources: Record<string, string>; theme: Theme }): JSX.Element;\nexport function loadMermaid(theme: Theme): Promise<MermaidApi>;\nexport function uncap(svg: string): string;\n\n/* src/shell/Sheet.tsx */\nexport function useSheetHeadings(scroll: HTMLElement | null, keys: readonly unknown[]): SheetHeading[];\n\n/* Off the browser. Python, in plugins/pr/scripts/. */\ndef simulate(selected: list[OpenPullRequest], ancestor: str, scratch: Path) -> MergePlan: ...\ndef replay(candidates: list[CandidatePath], scratch: Path) -> list[ReplayResult]: ...\ndef execute(path: MergePlan, pace: Literal[\"one-at-a-time\", \"all-at-once\"]) -> ExecutionRecord: ...\n```\n\n**The section model's own types are three, and nothing else needs one.** A section\nis a rendered element plus the text its own heading carries. The shell reads the\ntext from the DOM rather than storing it, so a label cannot disagree with the\nheading it names.\n\n## Call stack\n\n### Booting the shell and loading the index\n\n```\nmain.tsx\n  → createRoot(#root).render(<App />)\n  → App()\n       useIndexLoad()            → loadIndex() + loadDesigns() + loadAdrs()\n                                     fetch data/index.json\n                                     read the six window globals\n                                     resolve the joins once\n       useHashRoute()            → readRoute() from window.location.hash\n       readRoute()               → ROUTE_PREFIX, the four fields\n       useDocumentNoScroll()     → html and body carry no overflow\n       useVisibleWidthCap()      → cap the shell to the screen, never the window\n       useSectionAvailability()  → the nearest section this work can fill\n       buildWorkItems(index, designs) → one WorkItem per design\n       <Frame>                   → SidebarProvider, the shell's own token block\n            <TopBar />           → the work item, the stage, the theme\n            <Rail />             → the levels and the gated groups\n            <pane>               → the only scrolling region, on a stacking section\n```\n\nEvery count, state, and join on that path comes from the index. The shell renders.\n\n### A level rendering its sections\n\n```\npane\n  → SECTION_TITLE / SECTION_LEAD   the level's own words\n  → paged ? drop the band, keep <h1 id=\"work-section-heading\" class=\"sr-only\">\n  → pagedSections({ section, work, levelState, … })   the ordered array\n       intent              → Why, Done when, Abort if, Out of scope\n       problem-and-solution→ Problem and solution, Risks, Assessment, Unknowns\n       architecture        → Diagrams, Architecture Decisions, Boundaries,\n                             Districts and alternatives considered\n       build               → epicGroups(work) → one run per six epics\n  → <PagedLevel sections targets routeKey start>\n       useSectionPaging(count, routeKey, start)\n       <SectionStrip targets activeIndex onSelect>      the headings\n       <SectionStage index activeBoxRef>                the track\n            one <SectionBox> per section, inert off screen\n       <LevelProgress index count boxRef>               the 4 px strip\n       <SectionPager index count onPrevious onNext>\n```\n\n`useJumpTargets(paneId, keys)` reads the panels the boxes rendered. So the strip's\nlabels come from the headings on the page, and its count comes from the same array\nthe boxes come from.\n\n### A section change, and the progress strip\n\n```\nreader presses Next, a heading, or ArrowRight\n  → useSectionPaging() step or select\n       setState(clamp(next, count))\n       a route change resets to `start`, which is the run holding an epic deep link\n  → re-render\n       SectionStage      animate x: -index * 100%     (150 ms reduced-motion aware)\n       SectionStrip      aria-current=\"step\" moves\n       SectionPager      \"Section N of M\" moves; Previous and Next disable at the ends\n       LevelProgress     useScroll({ container: boxRef })  → scrollYProgress\n                         useTransform(within => (index + within) / count)\n                         ScrollProgress value={progress}\n       one box becomes active; the others carry inert\n```\n\nThe index is view state. Nothing on that path writes the route. The progress strip\nmeasures the box, so a box that cannot scroll reads as fully read, and the value\nnever resets on a section change.\n\n### A diagram tile opening its dialog\n\n```\n<DiagramsSection levels sources theme>\n  → useEffect on mount          loadMermaid(theme)        one runtime, shared\n       api.render(id, source) per level, sequentially      uncap(result.svg)\n  → <DiagramTile>               scale = tileWidth / drawing.offsetWidth\n  → reader presses the tile     setOpen(level)\n  → <DiagramDialog>             createPortal(document.body)\n       zoom steps 50…400 % of fit\n       the drawing's box is sized in pixels, so the body's own scroll grows\n       Escape, the backdrop, and Close all close it\n       a failed render shows the authored source as text\n```\n\n### A record opening its Sheet\n\n```\nreader presses a control inside a panel\n  → openSheet(subject)          the subject: a decision, a boundary rule, or an\n                                epic's technical solution design\n  → <RecordSheet subject open>  the registry's Sheet, portal, Escape, 44 px close\n       <SheetJumpLinks headings scroll>\n            useSheetHeadings(scroll, keys)   reads [data-sheet-heading] in the record\n            the callback ref puts the scroll container in state when it mounts\n       reader presses a part link\n            scroll.scrollTo(top + delta, behavior: reduce ? instant : smooth)\n            heading.setAttribute(\"tabindex\", \"-1\"); heading.focus({ preventScroll: true })\n```\n\n## Test plan\n\nThe repository's own suite is Python: `tests/`, run with\n`uv run --with pytest pytest tests/ -v`. The viewer is TypeScript and React, so the\nplan splits into three kinds of case, and each kind names its runner.\n\n### The byte-equal rebuild test (E2, pytest)\n\n`tests/test_viewer_build.py`:\n\n1. `test_build_reproduces_the_committed_viewer` — run `npm run build` in\n   `plugins/artifact/viewer/` and compare its output against\n   `plugins/artifact/viewer/index.html`, byte for byte. Skips when `npm` or\n   `node_modules` is absent, so the suite still runs on a checkout with no Node.\n2. `test_editing_the_output_fails_the_test` — write one byte into a temporary copy\n   of the committed file and assert the comparison fails. A rebuild test that cannot\n   fail proves nothing.\n3. `test_every_named_marker_survives_a_build` — assert `export_artifact.py`'s marker\n   names all appear in the built output. That is E1's seam, and it is the assertion\n   that keeps the exporter working.\n\n### The section model's claims (pytest against the served viewer)\n\n`tests/test_sections.py`. Each case asserts one claim ADR-0028 makes, and the Gate 4c\nrubrics score the same claims on the built surface. The harness serves the bundle\nrooted at `.cobuilder-architect/self/` and measures the DOM, which is how the\nprototype's numbers in this document were taken. Eight designs hold a `goal.json` and\nnothing else, and the last case renders one of them. The eighth design,\n`implementation-conformance`, landed on 2026-09-25, after this plan.\n\n1. `test_paged_level_pane_does_not_scroll` — on each of the four paged levels, the\n   pane's `scrollHeight - clientHeight` is zero.\n2. `test_one_box_is_in_view` — one box's rect sits inside the pane's, and no other's.\n3. `test_strip_count_matches_box_count` — the strip's headings equal the boxes, and\n   the pager reads `Section 1 of N` for that N.\n4. `test_next_moves_exactly_one_box` — the track's transform moves by exactly one\n   box width, forward and back.\n5. `test_progress_is_level_progress` — the reading is 0 at the first section's top,\n   one count's share higher mid-box, and the full walk never decreases.\n6. `test_a_box_with_no_range_reads_as_read` — a section that fits one screen\n   contributes its whole share.\n7. `test_arrow_keys_step_and_are_guarded` — `ArrowLeft` and `ArrowRight` step, and a\n   press inside an `input`, a `textarea`, or a `select`, or with a modifier, does not.\n8. `test_paged_level_drops_the_band_and_keeps_the_id` — no band element, and\n   `#work-section-heading` exists as an `sr-only` `h1` carrying the level's title.\n9. `test_a_section_that_stacks_keeps_the_pane_scroll` — Rubrics scrolls its pane and\n   has no strip.\n10. `test_sparse_design_renders` — one of the eight `goal.json`-only designs renders\n    every level it can fill, and the rail gates what it cannot.\n\n### The rest of the program (pytest)\n\n11. `test_export_artifact_marker_seam` — a publish survives a marker rename.\n12. `test_open_pull_request_drift_fails_the_build` — renaming a field on\n    `PullRequest` and not on `OpenPullRequest` fails `npm run typecheck`.\n13. `test_simulate_writes_a_plan_against_the_ancestor` — a fixture repository gives a\n    plan whose recorded ancestor is the common ancestor, never the default head.\n14. `test_replay_counts_real_conflicts` — a fixture with a known conflict reports it.\n15. `test_execute_never_touches_the_default_branch` — the runner's merges land on\n    `flightdeck/<path>/<n>-<slug>` and the default branch keeps its head.\n16. `test_ledger_three_subtypes_fold` — a proposal, an acceptance, and an actual\n    append as `state` subtypes, and `fold_threads` keeps all three.\n17. `test_audit_reports_a_hash_mismatch` — a mismatched tree hash is a stated state.\n18. `test_publish_holds_the_budget` — the exporter drops or transcodes over-budget\naudio in the documented order, and the published file is under 16 MiB.\n19. `test_describe_leaves_a_described_pull_request_alone` — the body stays identical.\n20. `test_anchor_survives_a_rerender` — an anchor taken before a re-render still\n    resolves to its sentence after it.\n\n### Cases the rubrics score, not pytest\n\nTwo claims need a human or a scripted browser, and the repository's suite holds\nneither today. This document states each one as a case for Gate 4c to score:\n\n- **The tile dialog's zoom reads whole percentages and the drawing stays reachable**\n  at 50 %, 100 %, and 400 %, measured in the browser.\n- **The published Artifact renders every surface** under the platform's CSP, which\n  only the platform can answer.\n\n## Least confident decisions\n\n1. **E4, E6, and E8 ask for a \"detailed static HTML prototype\". The Work prototype\n   shipped as a React application instead.** `variations/sections-e/` is\n   the artifact the engineer reviewed. Either the three prototype epics accept the\n   React prototype as their deliverable, or the static-HTML wording stands and each\n   prototype is a second artifact built beside the real one. This document assumes\n   the React prototype satisfies E4 and that E6 and E8 follow it, and it could be\n   wrong about all three.\n2. **The two prototype epics E6 and E8 may collapse into their build epics.** A\n   prototype whose only job is approval is cheap work, if the build epic already\n   exists to hang it on. This document keeps them separate because E7 and E9 measure\n   their own parity against an approved prototype, and that approval is the gate.\n3. **The diagram runtime loads when the Diagrams section mounts.** It used to load\n   on the reader's press, because the runtime is large. A tile cannot wait for a\n   press, so the rule changed. The cost is that a reader who opens Architecture to\n   read decisions pays for a runtime they never use. A lazy per-tile load is the\n   obvious alternative, and this document does not take it.\n4. **`ui-spec.jsonc` has no validator.** `verify_gate.py` checks that the file\n   exists and reads nothing inside it. So the component specification is a document\n   two people can disagree about with no test to settle it. Writing a schema check\n   is real work, and nothing in this program owns it.\n5. **The build's output path moves from `dist/` to the committed `index.html`.**\n   `vite.config.ts` says ADR-0023's output rule is under revision. E2 needs the move,\n   and every `export_artifact.py` run after it rewrites a build artifact. A stale\n   committed file is a real risk here, and the byte-equal test is the only guard.\n6. **The byte-equal test depends on a pinned toolchain.** Two machines with the same\n   lockfile and the same Node version should produce the same bytes. Nobody has\n   proven that yet. If it fails, the guard test fails for a reason nobody can act on. The spike\n   in E2 is where that gets answered.\n7. **The design settles where the runner's merges come from. It does not settle who\n   deletes the integration branches.** E15 leaves N branches per path behind, and no\n   epic owns their removal. It is out of scope in `intent.json`, and it stays out of scope here.\n8. **The 16 MiB budget assumes audio is the thing that breaks first.** That is what\n   the earlier artifact experiment measured. A pull request carrying four levels of\n   scene art and inlined React could break it with no audio at all. No epic measures\n   the degradation order this document implies on a real bundle.\n",
         "approved_date": null,
         "source_path": "docs/plans/cobuilder-viewer/03-program-design.md"
+      },
+      {
+        "id": "describe-boundaries",
+        "feature_slug": "describe-boundaries",
+        "gate": 3,
+        "title": "Program Design: Verified boundaries in design and baseline",
+        "body_md": "# Program Design: Verified boundaries in design and baseline\n\n## Files\n- `shared/boundary_check.py` (new): reads `boundary.yaml` files and git history, prints JSON.\n- `tests/test_boundary_check.py` (new): builds temporary git repos.\n- `plugins/architect/skills/architecture/references/templates/boundary-template.yaml`: add `verified_at`.\n- `plugins/architect/skills/architecture/references/architecture-documentation.md`: stamp step.\n- `plugins/architect/skills/architecture/references/design-mode.md`: stage 1 and stage 6.\n- `plugins/architect/skills/architecture/SKILL.md`: describe mode note.\n- `plugins/pr/skills/odyssey/references/baseline-derivation.md` and `plugins/pr/skills/odyssey/SKILL.md`: self-only describe step.\n- `shared/verify_bundle.py`: `boundary.stale` warning.\n- `tests/test_describe_integration.py` (new): prose and wiring assertions.\n\n## Types & signatures\n```python\ndef load_contexts(repo: Path) -> list[Context]            # id, path, verified_at\ndef context_status(repo: Path, ctx: Context) -> str       # \"ok\" | \"stale\"\ndef classify(repo: Path, paths: list[str]) -> Report      # contexts touched, uncovered paths\ndef main(argv: list[str]) -> int                           # 0, or 1 under --require when stale or uncovered\n```\nCLI: `uv run shared/boundary_check.py --repo . [--paths P ...] [--require]`. With no `--paths`, it checks every context.\n\n## Call stack\n`main` → `load_contexts` → `classify` → `context_status` → `git log <sha>..HEAD -- <path>`.\n\n## Test plan\nTemporary git repos cover: a current context, a stale context after a later commit, a missing `verified_at`, an uncovered path, an ignored path, `--require` exit codes, and a bad `verified_at` sha. Wiring tests read the prose files for the call and for the self-only rule.\n\n## Least confident decisions\n- Baseline describes every district. A large repo makes that costly. A later change may cap it.\n- Staleness means any commit under `path`. It may over-report on a formatting commit.\n- The ignore list for uncovered paths is fixed: `docs/`, `tests/`, `.cobuilder*`.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/describe-boundaries/03-program-design.md"
       },
       {
         "id": "gate-doc-surfacing",
@@ -3244,6 +4414,30 @@
         "title": "Slice 18 — a pull request with no design is a row of its own",
         "body_md": "# Rubric: Slice 18 — a pull request with no design is a row of its own\n\nFeature: cobuilder-viewer\nEpic: cobuilder-viewer/E19\nSlice goal: The Work board lists a pull request that belongs to no design as a row of its own, beside the design rows, with that pull request's own state as its status, and a tab strip filters the board by status\nTest command: `uv run --with pytest pytest tests/ -v`\n\nServe the bundle before any browser check: `python3 -m http.server` rooted at\n`.cobuilder-architect/self/`. The component cases run with `npm test` in\n`plugins/artifact/viewer/`.\n\nThe evidence is the board as a reader meets it, and the records it draws from. Measured\non 2026-09-25, this bundle holds seventeen pull requests, and twelve of them belong to no\ndesign: 1 to 10, 17, and 22. Ten of those twelve are `merged`, and two are `open`. So the\nboard carries a real PR-alone set, and one pull request of each state.\n\n## Criteria\n\n### C1 — A pull request that belongs to no design is a row of its own [CRITICAL]\n**Must be true:** The board lists every design in the bundle, and it also lists every pull request the record index holds that no design's epics point at. Each such pull request reads as one row of its own, beside the design rows and never inside one. A pull request a design's epics do point at is not a second row.\n**Evidence to check:**\n- Read `data/index.json`. Note every pull request it holds, and the set its `joins.epic_to_pull_request` resolves through the designs. The difference is the PR-alone set.\n- With the ChromeDevTools MCP tools, open the bare route and take a snapshot. Read the row count and every row's title.\n- Match each PR-alone pull request to exactly one row, and each design to exactly one row.\n- Read a design row that carries a pull request of its own. The board renders no second row for that pull request.\n**Scoring:**\n- 1.0 — every PR-alone pull request reads as exactly one row beside the design rows, and no design's own pull request repeats.\n- 0.5 — one PR-alone pull request is missing, or one repeats as a second row.\n- 0.0 — no PR-alone pull request appears, or a PR-alone entry renders inside a design's row.\n\n### C2 — A PR-alone row states its own state, and PR names its kind [CRITICAL]\n**Must be true:** A PR-alone row states the state the index records for that pull request, `open` or `merged`. The word PR names the row's kind and never its status, so no row states `PR` where a state belongs. A design row's status reading stays the design's stage.\n**Evidence to check:**\n- With the ChromeDevTools MCP tools, open the bare route. Read the state on each PR-alone row.\n- Compare each one against that id's `state` in `data/index.json`'s `entities.pull_request` list. Two of this bundle's PR-alone rows read `open`, and ten read `merged`.\n- Read the two states against each other. `open` and `merged` read as two different words.\n- Read a design row. Its kind reads as a design, and its stage is not a pull request state.\n**Scoring:**\n- 1.0 — every PR-alone row states the index's own state for it, both states render differently, and no row states a kind where a state belongs.\n- 0.5 — one row's state disagrees with the index, or the two states render identically.\n- 0.0 — the rows carry no state, or every PR-alone row reads `PR` in place of its state.\n\n### C3 — The tabs filter the board by status [CRITICAL]\n**Must be true:** The board carries a tab strip. Each tab selects by status, and `All` selects every row. A tab never selects a row whose status it does not name, and a status tab reads the same whether the row it selects is a design or a pull request.\n**Evidence to check:**\n- With the ChromeDevTools MCP tools, press each tab in turn and take a snapshot after each press.\n- Read the row count on each tab against the status each remaining row states. Every row under a tab carries that tab's status, and no row that carries it is absent.\n- Read the `All` tab. It holds every row, and its count equals the sum of the status tabs' counts.\n- Read the tab labels. Each one names a status, and none names a record type.\n**Scoring:**\n- 1.0 — every tab filters by status, `All` holds every row, the counts add up, and no row is misfiled.\n- 0.5 — the tabs filter and one row sits under a tab whose status it does not carry.\n- 0.0 — no tab strip exists, or a tab filters by something other than status.\n\n### C4 — A PR-alone row is a destination, and it carries one link\n**Must be true:** A PR-alone row opens that pull request's own records. The row is one link or one control, so a reader reaches the pull request without a second press. Nothing interactive sits inside the row.\n**Evidence to check:**\n- With the ChromeDevTools MCP tools, open the bare route and take a snapshot of a PR-alone row.\n- Read the row's target. It names that pull request, and a press opens that pull request's own records.\n- Read the row for a second control inside it. None exists.\n- Press the row. The address line names the pull request the row stated.\n**Scoring:**\n- 1.0 — one press opens that pull request's own records, and the row holds one control.\n- 0.5 — the row opens the right pull request behind a second press, or it holds a second control.\n- 0.0 — the row is not a destination, or it opens a surface that belongs to another work item.\n\n### C5 — A status reading and a kind reading are two different filters\n**Must be true:** A reader can narrow the board to one row kind, and the status tabs keep working inside that set. A kind control never states a status, and a status tab never states a kind.\n**Evidence to check:**\n- Find the control that narrows the board to the PR-alone rows. Press it and read the rows.\n- Press a status tab while the kind filter holds. Read the rows and the tab count. The status tab narrows the kind-filtered set.\n- Release the kind filter and read the rows. Every row returns.\n- Read each control group's label. One names kinds, and the other names statuses.\n**Scoring:**\n- 1.0 — a reader reaches the PR-alone rows alone, the status tabs still filter them, and each control group names one thing.\n- 0.5 — the two readings exist and one control does both jobs, so changing one clears the other.\n- 0.0 — no reading separates the two, so a reader cannot tell a row's kind from its status.\n\n## Regression check\n- All tests that passed before this slice must still pass, including `src/shell/Board.test.tsx` and `src/shell/readiness.test.ts`.\n- Files outside the slice scope must remain unchanged: `plugins/artifact/viewer/src/data/`, `shared/build_index.py`, and the bundle's data files.\n- The design rows still render, still state their stage and their six record marks, and still open a work item.\n- The board still draws no section strip, no pager bar, and no level progress bar.\n- The board still reads its data from the index, and it authors no record of its own.\n\n## Out of scope — do not penalise\n- The change's account, the rail's two groups, the change's own address, and the account mark. E7's slices 15, 16, and 17 own all four.\n- The design rows' own content, order, and address. Slices 6 and 7 own them.\n- The reference surface and its record-type tabs. E9 owns it, and it is deferred.\n- What the generation scripts write into the bundle. This slice reads the index and does not reshape it.\n- The design mode's stage vocabulary and the pull request's state vocabulary. The board reads both and invents neither.\n",
         "source_path": ".cobuilder/rubrics/cobuilder-viewer/slice-18.md"
+      },
+      {
+        "id": "describe-boundaries/1",
+        "feature_slug": "describe-boundaries",
+        "n": 1,
+        "title": "Slice 1 — E1: boundary_check.py, verified_at, bundle warning",
+        "body_md": "# Rubric: Slice 1 — E1: boundary_check.py, verified_at, bundle warning\n\nFeature: describe-boundaries\nEpic: E1\nSlice goal: The script prints ok, stale, and uncovered for a temporary git repo and exits 1 under `--require`. The template and the describe procedure carry `verified_at`. `verify_bundle.py` warns `boundary.stale`.\nTest command: uv run pytest tests -q --deselect tests/test_commands.py::test_odyssey_review_name_appears_nowhere_in_prose\n\n## Criteria\n\n### C1 — a current context reports ok [CRITICAL]\n**Must be true:** In a temporary git repo, a context whose `boundary.yaml` has `verified_at` equal to a commit, and with no later commit under its `path`, prints status `ok`.\n**Evidence to check:** run `uv run shared/boundary_check.py --repo <tmp>` on a repo you build yourself. Read the JSON.\n**Scoring:** 1.0 `ok`. 0.5 `ok` only when `--paths` is given. 0.0 any other status.\n\n### C2 — a later commit under the path makes it stale [CRITICAL]\n**Must be true:** After one more commit that changes a file under the context `path`, the status is `stale`. A commit outside the `path` leaves it `ok`. A missing, empty, or unknown `verified_at` is `stale`, and the script does not crash.\n**Evidence to check:** build the repo cases above and run the script. Pass a made-up sha.\n**Scoring:** 1.0 all four cases. 0.5 stale works but a bad sha crashes. 0.0 stale is not detected.\n\n### C3 — uncovered paths and the ignore list\n**Must be true:** With `--paths`, a code path under no context `path` appears under `uncovered`. Paths under `docs/`, `tests/`, `.cobuilder/`, and `.cobuilder-architect/` never appear there. `--paths` also lists the contexts touched.\n**Evidence to check:** run with `--paths src/new/x.py docs/a.md tests/t.py`.\n**Scoring:** 1.0 correct. 0.5 uncovered works but an ignored path leaks. 0.0 no uncovered output.\n\n### C4 — `--require` sets the exit code [CRITICAL]\n**Must be true:** Without `--require` the script exits 0 and only reports. With `--require` it exits 1 when any touched context is stale or any path is uncovered, and 0 otherwise.\n**Evidence to check:** run all four combinations and read `$?`.\n**Scoring:** 1.0 all four. 0.5 one wrong. 0.0 no non-zero exit.\n\n### C5 — `verified_at` is in the template and the describe procedure\n**Must be true:** `boundary-template.yaml` has a `verified_at` field with a comment. `architecture-documentation.md` has a step that stamps it with `git rev-parse HEAD` after verification.\n**Evidence to check:** `grep -n verified_at` in both files.\n**Scoring:** 1.0 both. 0.5 one. 0.0 neither.\n\n### C6 — verify_bundle warns on a stale context\n**Must be true:** `shared/verify_bundle.py` emits a warning finding with id `boundary.stale` for a stale context. It does not turn a passing bundle into a failing one. A test covers it.\n**Evidence to check:** run the new test. Run `uv run shared/verify_bundle.py --bundle-dir .cobuilder-architect/self` and compare the exit code with `git stash`-free baseline from the manifest.\n**Scoring:** 1.0 warning, no failure, tested. 0.5 warning but no test. 0.0 absent, or the self bundle now fails.\n\n### C7 — tests and the writing standard\n**Must be true:** `tests/test_boundary_check.py` exists and passes. The full suite passes apart from the one deselected test. New prose uses no contractions and no semicolons.\n**Evidence to check:** the test command. `uv run shared/skills/ste-writing/ste-lint.py` on the changed `.md` files.\n**Scoring:** 1.0 all. 0.5 lint violations. 0.0 failing tests.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope must remain unchanged: design-mode.md, the odyssey files, the README.\n\n## Out of scope — do not penalise\n- Design mode and baseline calling the script. Slices 2 and 3 do that.\n- A cap on how many districts baseline describes.\n",
+        "source_path": ".cobuilder/rubrics/describe-boundaries/slice-1.md"
+      },
+      {
+        "id": "describe-boundaries/2",
+        "feature_slug": "describe-boundaries",
+        "n": 2,
+        "title": "Slice 2 — E2: design stage 1 and stage 6",
+        "body_md": "# Rubric: Slice 2 — E2: design stage 1 and stage 6\n\nFeature: describe-boundaries\nEpic: E2\nSlice goal: `design-mode.md` runs the check and describe in stage 1, and the stage 6 reviewer fails a design when `--require` exits non-zero. A blind agent given the file follows the order.\nTest command: uv run pytest tests -q --deselect tests/test_commands.py::test_odyssey_review_name_appears_nowhere_in_prose\n\nThis slice edits a file that governs another mode's procedure. Score behavior, not wording. Evidence is a transcript of one fresh subagent.\n\n## Criteria\n\n### C1 — stage 1 lists touched paths, then runs the check [CRITICAL]\n**Must be true:** A fresh agent given only `design-mode.md` and a realistic task (\"design a change to the `shared/` index builder\") writes down the paths the change touches before it runs `boundary_check.py --paths`. It runs the check before it reads the challenge stage.\n**Evidence to check:** the blind agent's tool-call transcript, in order.\n**Scoring:** 1.0 paths first, check second. 0.5 check runs with no path list. 0.0 no check.\n\n### C2 — describe runs for stale, missing, and uncovered areas only [CRITICAL]\n**Must be true:** In the transcript, the agent invokes describe through `Skill(\"architect:architecture\", args=\"describe ...\")` or states it would, for a context reported `stale`, `missing`, or `uncovered`. It does not invoke describe for a context reported `ok`.\n**Evidence to check:** the transcript with a check output that mixes `ok` and `stale`.\n**Scoring:** 1.0 describes only the non-ok areas. 0.5 describes all. 0.0 never describes.\n\n### C3 — the check runs again after describe\n**Must be true:** After describe, the agent reruns the check and proceeds only when it is clean.\n**Evidence to check:** the transcript.\n**Scoring:** 1.0 reruns. 0.5 states it but does not run it. 0.0 no rerun.\n\n### C4 — stage 6 fails a design on a non-zero exit [CRITICAL]\n**Must be true:** `design-mode.md` stage 6 tells the reviewer to run `boundary_check.py --require` for the design's touched paths. It makes a non-zero exit a FAIL finding that cites the context id or path. A fresh agent playing the reviewer, given a repo with a stale context, reports FAIL.\n**Evidence to check:** read stage 6. Read the second blind transcript.\n**Scoring:** 1.0 written and followed. 0.5 written, not followed. 0.0 absent.\n\n### C5 — wiring test and standard\n**Must be true:** `tests/test_describe_integration.py` has cases that fail when `design-mode.md` drops the stage 1 call or the stage 6 rule. `SKILL.md` says design calls describe. Prose passes the writing standard.\n**Evidence to check:** run the new tests. Remove the stage 6 sentence in a scratch copy and confirm a test fails. Run `ste-lint.py`.\n**Scoring:** 1.0 all. 0.5 tests exist but pass without the sentence. 0.0 no tests.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope must remain unchanged: baseline files, the script, the README.\n\n## Out of scope — do not penalise\n- Baseline calling describe. Slice 3 does that.\n- Changing the design stage order, or adding a stage.\n",
+        "source_path": ".cobuilder/rubrics/describe-boundaries/slice-2.md"
+      },
+      {
+        "id": "describe-boundaries/3",
+        "feature_slug": "describe-boundaries",
+        "n": 3,
+        "title": "Slice 3 — E3: self-only describe in baseline, and the docs",
+        "body_md": "# Rubric: Slice 3 — E3: self-only describe in baseline, and the docs\n\nFeature: describe-boundaries\nEpic: E3\nSlice goal: `baseline-derivation.md` and `SKILL.md` run describe per district for self-analysis only, and keep describe-lite for `--repo`. A blind agent given a `--repo` run does not call describe. `SKILL.md` marks describe internal and names its two callers.\nTest command: uv run pytest tests -q --deselect tests/test_commands.py::test_odyssey_review_name_appears_nowhere_in_prose\n\nThis slice edits files that govern a mode's procedure. Score behavior from blind transcripts.\n\n## Criteria\n\n### C1 — self-analysis baseline describes districts without a current record [CRITICAL]\n**Must be true:** A fresh agent given the baseline files and the task \"baseline this repo (no `--repo`)\" derives the district map first. It then runs `boundary_check.py` and invokes describe through `Skill(\"architect:architecture\", args=\"describe ...\")` for each district whose record is missing or stale. It skips a district that is `ok`.\n**Evidence to check:** the blind transcript.\n**Scoring:** 1.0 as written. 0.5 describes every district without the check. 0.0 never describes.\n\n### C2 — a `--repo` baseline never calls describe [CRITICAL]\n**Must be true:** A second fresh agent given the task \"baseline `--repo ~/code/other`\" derives the district map and the inventory only. It does not invoke describe and does not write `docs/architecture/contexts/` in any repo.\n**Evidence to check:** the second transcript. Grep it for `describe`.\n**Scoring:** 1.0 no describe. 0.0 any describe call.\n\n### C3 — baseline names the mode and not a plugin path\n**Must be true:** The baseline files call describe by `Skill(\"architect:architecture\", ...)`. They contain no `plugins/architect/` path.\n**Evidence to check:** `grep -rn \"plugins/architect\" plugins/pr`.\n**Scoring:** 1.0 none. 0.0 a path appears.\n\n### C4 — SKILL.md marks describe internal and names the callers\n**Must be true:** The `architecture` `SKILL.md` line for describe says it is internal, has no command file, and is called by design mode and by `pr:baseline` for self-analysis. The README and the umbrella routing guide do not list `/architect:describe` as a command.\n**Evidence to check:** read the line. `grep -rn \"architect:describe\" README.md plugins/cobuilder-full-lifecycle`.\n**Scoring:** 1.0 all. 0.5 SKILL.md only. 0.0 not updated.\n\n### C5 — wiring tests and the writing standard\n**Must be true:** `tests/test_describe_integration.py` has cases that fail when the baseline files drop the self-only rule or the call. Prose passes the writing standard. The architect version in `plugin.json` and `marketplace.json` match.\n**Evidence to check:** run the tests. Break the rule in a scratch copy. Run `ste-lint.py`.\n**Scoring:** 1.0 all. 0.5 tests do not catch the break. 0.0 no tests.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope must remain unchanged: the script, design-mode.md.\n\n## Out of scope — do not penalise\n- A cap on district count, or a skip flag.\n- Foreign-repo describe.\n",
+        "source_path": ".cobuilder/rubrics/describe-boundaries/slice-3.md"
       },
       {
         "id": "gate-doc-surfacing/1",
@@ -4201,6 +5395,9 @@
       "work-drawer/2": "work-drawer/E2"
     },
     "slice_to_epic_unresolved": {
+      "describe-boundaries/1": "epic header names 'describe-boundaries/E1', which no design declares.",
+      "describe-boundaries/2": "epic header names 'describe-boundaries/E2', which no design declares.",
+      "describe-boundaries/3": "epic header names 'describe-boundaries/E3', which no design declares.",
       "level-page-restructure/1": "epic header names 'level-page-restructure/E1', which no design declares.",
       "level-page-restructure/2": "epic header names 'level-page-restructure/E1', which no design declares.",
       "level-page-restructure/3": "epic header names 'level-page-restructure/E1', which no design declares.",
@@ -4208,12 +5405,31 @@
       "level-page-restructure/5": "epic header names 'level-page-restructure/E3', which no design declares."
     },
     "context_verifies_district": {
+      "architect": [
+        "skills",
+        "commands"
+      ],
+      "artifact": [
+        "viewer",
+        "scripts"
+      ],
       "cobuilder-packaging": [
         "commands",
         "skills",
         "scripts",
         "viewer",
         "docs"
+      ],
+      "implement": [
+        "skills",
+        "scripts"
+      ],
+      "pr": [
+        "skills",
+        "scripts"
+      ],
+      "shared": [
+        "scripts"
       ]
     },
     "district_uncovered": [
@@ -4318,6 +5534,43 @@
           "n": "4",
           "name": "Slice plan, epic designs, and rubrics",
           "state": "APPROVED 2026-09-25"
+        }
+      ],
+      "describe-boundaries": [
+        {
+          "n": "1",
+          "name": "Product",
+          "state": "APPROVED 2026-10-08 (delegated by user)",
+          "view": "#/describe-boundaries/build/plan/product",
+          "doc": "describe-boundaries",
+          "doc_kind": "product"
+        },
+        {
+          "n": "2",
+          "name": "Architecture",
+          "state": "APPROVED 2026-10-08 (delegated by user)",
+          "view": "#/describe-boundaries/build/plan/architecture",
+          "doc": "describe-boundaries",
+          "doc_kind": "architecture"
+        },
+        {
+          "n": "2b",
+          "name": "Interaction design",
+          "state": "n/a (no UI) — Screens: \"no UI\""
+        },
+        {
+          "n": "3",
+          "name": "Program Design",
+          "state": "APPROVED 2026-10-08 (delegated by user)",
+          "view": "#/describe-boundaries/build/plan/program",
+          "doc": "describe-boundaries",
+          "doc_kind": "program"
+        },
+        {
+          "n": "4",
+          "name": "Slice plan, epic designs, and rubrics",
+          "state": "APPROVED 2026-10-08 (delegated by user)",
+          "view": "#/describe-boundaries/build/epics"
         }
       ],
       "gate-doc-surfacing": [

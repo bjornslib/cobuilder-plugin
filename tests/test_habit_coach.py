@@ -476,6 +476,26 @@ def test_skill_md_has_prerequisite_habit_hooks_section_before_building_a_slice()
     assert "optional" not in section_body.lower()
 
 
+def test_install_mode_covers_root_package_json_jscpd_config_and_complete_run():
+    """Install mode handles a repo with no root package.json or no src folder,
+    and it does not report success while habit-hooks reports a broken tool."""
+    text = (
+        REPO_ROOT / "plugins" / "implement" / "skills" / "build" / "SKILL.md"
+    ).read_text()
+    start = text.index("## Install mode")
+    end = text.index("## Implement mode")
+    section = text[start:end]
+
+    assert "node_modules/.bin" in section
+    assert "no `package.json`" in section
+    assert "tools-only" in section
+    assert ".jscpd.json" in section
+    assert "Nothing missing" in section
+    assert "habit-hooks --branch" in section
+    assert "incomplete-run" in section
+    assert "force-exclude" in section
+
+
 # ---------------------------------------------------------------------------
 # NOTICE.md
 # ---------------------------------------------------------------------------

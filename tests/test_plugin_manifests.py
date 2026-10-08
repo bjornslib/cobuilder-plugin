@@ -134,7 +134,9 @@ def test_check_install_surface_still_rejects_mcp_server_for_implement(
 
 def test_marketplace_lists_all_five_plugins() -> None:
     marketplace = json.loads((REPO_ROOT / ".claude-plugin" / "marketplace.json").read_text())
-    names = {p["name"] for p in marketplace["plugins"]}
+    listed = [p["name"] for p in marketplace["plugins"]]
+    assert len(listed) == len(set(listed)), f"a plugin is listed twice: {listed}"
+    names = set(listed)
     assert names == {
         "architect",
         "pr",

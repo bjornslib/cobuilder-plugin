@@ -1,18 +1,21 @@
 # CoBuilder
 
-CoBuilder is a family of Claude Code plugins that covers the life of a change. It helps you decide what to build, design it, build it in checked slices, open the pull request, and tell the story of the merge afterward.
+CoBuilder is a family of Claude Code plugins that keeps engineers in charge of what their coding agents do. People design, review, and approve each change to the code. Agents work with them at every stage.
 
 Everything runs in your own Claude Code session, against your own checkout. Your repo stays on your machine.
 
-| Stage | Command | What you get |
+| Area | Command | What you get |
 |---|---|---|
-| Explore | `/architect:options` | One HTML report of questions and alternatives for the whole system |
-| Design | `/architect:design` | A design record: intent, challenge, draft PR, runtime diagram |
-| Build | `/implement:start` | Four approval gates, then one tested slice at a time |
-| Open | `/pr:generate` | An author interview, an assessment, and the pull request |
-| Narrate | `/pr:review` | A four-level story of each merged PR, with art and voice |
-| Read | `/artifact:view` | One viewer for designs, decisions, builds, and PRs |
-| Draw | `/artifact:canvas` | One design as a tldraw canvas with its two diagrams |
+| Architecture | `/architect:design` | A design record: intent, challenge, draft PR, runtime diagram |
+| Implementation | `/implement:start` | Four approval gates, then one tested slice at a time |
+| Review | `/pr:generate` | An author interview, an assessment, and the pull request |
+| Review | `/pr:review` | A four-level story of each merged PR, with art and voice |
+| Review | `/artifact:view` | One viewer for designs, decisions, builds, and PRs |
+| Maintenance | `/architect:review` | A scored audit of security, architecture, and quality |
+| Maintenance | `/architect:maintenance` | The trend since the last audit, and a backlog |
+| Maintenance | `/architect:options` | One HTML report of questions and alternatives for the whole system |
+| Maintenance | `/architect:debug` | The root cause of a failure, and a recommended fix |
+| Architecture | `/artifact:canvas` | One design as a tldraw canvas with its two diagrams |
 
 ---
 
@@ -39,9 +42,9 @@ To start with one job, install one plugin. For example, `/plugin install archite
 
 | Plugin | Install it to | Commands |
 |---|---|---|
-| `architect` | Design, review, and govern the architecture of the repo you are in | `/architect:design`, `review`, `maintenance`, `decisions`, `describe`, `debug`, `options` |
+| `architect` | Design changes, audit the repo, and diagnose failures | `/architect:design`, `review`, `maintenance`, `options`, `debug` |
 | `implement` | Build a design one slice at a time | `/implement:start`, `debug`, `install` |
-| `pr` | Open a pull request with intent, and narrate merged PRs | `/pr:generate`, `review`, `baseline` |
+| `pr` | Open a pull request with intent before the merge, and narrate it after | `/pr:generate`, `review`, `baseline` |
 | `artifact` | Read the results in the viewer, publish a PR as a Claude Artifact, or draw a design as a tldraw canvas | `/artifact:view`, `publish`, `canvas` |
 | `cobuilder-full-lifecycle` | Get all four, plus a routing guide | none of its own |
 
@@ -62,15 +65,9 @@ The `architect`, `implement`, and `artifact view` commands need no API key. The 
 
 ---
 
-## The lifecycle, step by step
+## The CoBuilder method, by area
 
-### 1. Explore: `/architect:options`
-
-Run it when you ask whether the whole system is still shaped right. It writes one self-contained HTML report to `docs/architecture/options/<name>/`. The report lists inquiries, the alternatives for each, and a confidence tag on every claim.
-
-The mode proposes and never decides. Paste the decisions text into `/architect:design`, which records the choice.
-
-### 2. Design: `/architect:design`
+### Architecture: `/architect:design`
 
 Run it before you write code. The mode reads your repo, interviews you, explores alternatives, and challenges the approach. It cites evidence for each challenge.
 
@@ -81,9 +78,12 @@ The result is a design directory at `docs/architecture/designs/<name>/`:
 - a runtime architecture diagram in SVG
 - an optional `contracts.md` for a public interface
 
+Before it challenges your approach, design mode checks the boundary records of the code the change touches. It describes any context whose record is missing or out of date. The reviewer round fails a design that cites an unchecked boundary.
+
 A reviewer subagent checks the draft against a blind rubric before you read it. If `DDD-VOCABULARY.md` does not exist, design mode helps you create it.
 
-### 3. Build: `/implement:start`
+
+### Implementation: `/implement:start`
 
 Run `/implement:install` once. Then run `/implement:start` on a design.
 
@@ -102,7 +102,12 @@ Check a plan at any time:
 uv run plugins/implement/scripts/verify_gate.py --plan docs/plans/<slug>
 ```
 
-### 4. Open the PR: `/pr:generate`
+
+### Review: `/pr:generate`, `/pr:review`, and the viewer
+
+Review has two moments. `generate` runs before the pull request opens. `review` runs after the merge. Each is useful alone, and they work best together.
+
+#### Before the merge: `/pr:generate`
 
 Run it on a branch with no pull request. It reads the diff, the district map, and the recorded decisions. It then asks only what that evidence cannot answer, usually four to six questions.
 
@@ -125,7 +130,7 @@ Opening the pull request is the only GitHub action. The command shows you the de
 /pr:generate --prs 73 --stage post  # after the merge, compare what shipped to what you said
 ```
 
-### 5. Narrate: `/pr:review`
+#### After the merge: `/pr:review`
 
 Run it on merged PRs. Each PR becomes a story of four levels: Intent, Problem and Solution, Architecture, and File Changes. The story includes voice narration and architecture decisions that the command extracts in retrospect.
 
@@ -147,9 +152,9 @@ Levels 1 to 3 carry a visual. `--art` picks its form:
 
 If the author ran `/pr:generate` first, `/pr:review` reads the stated intent and rejected options, and it marks the extracted decision `provenance: authored`.
 
-`/pr:baseline` maps the repo into districts and records an inventory. Run it again to refresh. Both commands accept `--repo <path>` to target another local checkout. See [Multiple repos](#multiple-repos).
+`/pr:baseline` maps the repo into districts and records an inventory. Run it again to refresh. For your own repo, it also writes a verified boundary record for each district. A repo you read with `--repo` gets the lighter map only. Both commands accept `--repo <path>` to target another local checkout. See [Multiple repos](#multiple-repos).
 
-### 6. Read and share: `/artifact:view`, `/artifact:publish` and `/artifact:canvas`
+#### Read, share, and draw: `/artifact:view`, `/artifact:publish`, and `/artifact:canvas`
 
 `/artifact:view` serves your bundles on `http://127.0.0.1:62583` and prints the URL. The port is fixed, so a saved review link works after a restart. `--list` shows the bundles, and `--stop` stops the server.
 
@@ -161,17 +166,27 @@ The viewer shows each design, decision, build, and PR on one surface. A Work dra
 
 ---
 
-## The other architect modes
+### Maintenance: `/architect:review`, `maintenance`, `options`, and `debug`
 
-| Command | Use it to |
-|---|---|
-| `/architect:review` | Audit the repo for security, architecture, and quality. You get scores and HTML reports |
-| `/architect:maintenance` | Track trends and keep an incremental backlog |
-| `/architect:decisions` | Record and govern architecture decision records |
-| `/architect:describe` | Document bounded contexts and the architecture as it exists |
-| `/architect:debug` | Find the root cause of a failure |
+A system drifts after it ships. These four commands keep it honest. All four work on the repo you are in and refuse a `--repo` target.
 
-These seven modes work on the repo you are in. They refuse a `--repo` target.
+#### Scan: `/architect:review`
+
+Run it to audit the repo for security, architecture, code quality, scaling, maintainability, dependency health, and testing. It writes two linked HTML reports to `docs/architecture/review/`. The technical report lists findings as P0, P1, or P2, with file evidence and a remediation prompt for each. The founder report puts business impact first. Each report carries a 0-100 health score and a letter grade.
+
+#### Track: `/architect:maintenance`
+
+Run it on a schedule. It repeats the audit and compares the result with the last report. Each finding is `NEW`, `ESCALATED`, `STABLE`, or `RESOLVED`. It also keeps an incremental backlog. With no earlier report, the run sets the baseline.
+
+#### Improve: `/architect:options`
+
+Run it when you ask whether the whole system is still shaped right. It writes one self-contained HTML report to `docs/architecture/options/<name>/`. The report holds three diagrams, a list of inquiries, the alternatives for each, and a confidence tag on every claim.
+
+The mode proposes and never decides. Paste the decisions text into `/architect:design`, which records the choice.
+
+#### Diagnose: `/architect:debug`
+
+Run it when a test, a build, or a feature fails and the cause is unclear. It reproduces the failure first. It then lists competing hypotheses and ranks them by the cheapest test that tells them apart. You get a root cause and a recommended fix. The mode never applies the fix. `/implement:debug` runs the same mode from inside a build.
 
 ---
 
@@ -233,7 +248,7 @@ The viewer source lives in `plugins/artifact/viewer/src/`. It uses React, TypeSc
 .claude-plugin/marketplace.json    the one marketplace manifest
 shared/                            code shared by every plugin, vendored as plugins/<name>/shared
 plugins/
-  architect/                       seven modes, corpus, and report scripts
+  architect/                       design, review, maintenance, options, debug, and the corpus
   pr/                              generate, review, baseline, and the story scripts
   artifact/                        view, publish, and the viewer
   implement/                       start, debug, install, and the slice agents and hook

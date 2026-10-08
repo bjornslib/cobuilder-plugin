@@ -1,5 +1,6 @@
 ---
 name: odyssey
+user-invocable: false
 title: "Codebase Odyssey Generator"
 status: active
 version: 0.3.0
@@ -297,7 +298,7 @@ Only after all three checks pass does mode dispatch begin.
 The invoking command passes a mode (`baseline`, `review`, `view`,
 `publish`, or `generate`) plus forwarded args (`--repo`, `--store`,
 `--prs`, `--force`, `--voice`, `--art`, `--dry-run`, `--port`, `--stop`,
-`--list`, `--format`, `--style`, `--stage`, `--branch`, `--base`,
+`--list`, `--format`, `--stage`, `--branch`, `--base`,
 `--draft`, `--no-create`, `--non-interactive`).
 If invoked with no mode, ask the user whether they want `baseline`,
 `review`, `view`, `publish`, or `generate`. `design` dispatches to the
@@ -326,7 +327,19 @@ This mode derives the architecture baseline of the repo into `<bundle-dir>`
    directly into `world.districts` in `story.json`, and write
    `<bundle-dir>/inventory.yaml`.
 
-4. Migrate the bundle. This refreshes the viewer copy, and it steps the
+4. Describe the districts. This step is for self-analysis only: no
+   `--repo`, or `--repo` pointing at the session's own repo. Run the
+   check:
+   ```bash
+   uv run "${CLAUDE_PLUGIN_ROOT}/shared/boundary_check.py"
+   ```
+   For each district whose record is stale or missing, call
+   `Skill("architect:architecture", args="describe <district>")`. Never
+   call it for a district that is ok. Rerun the check until it is clean.
+   A foreign `--repo` run keeps describe-lite. It never calls describe,
+   and it writes nothing under `docs/architecture/contexts/`.
+
+5. Migrate the bundle. This refreshes the viewer copy, and it steps the
    layout and the data shape forward when the plugin defines a newer
    version of either:
    ```bash
@@ -335,7 +348,7 @@ This mode derives the architecture baseline of the repo into `<bundle-dir>`
    This replaces the old bare `cp` of `viewer/index.html`. Migration owns
    the viewer refresh now, so there is one mechanism, not two.
 
-5. Verify:
+6. Verify:
    ```bash
    uv run "${CLAUDE_PLUGIN_ROOT}/shared/verify_bundle.py" --bundle-dir <bundle-dir> --json
    ```
@@ -387,9 +400,8 @@ This mode runs the per-PR narrative, ADR, art, and audio sweep. Steps:
    `"missing"`. Execute only the missing stages, **in this order**:
 
    1. **Narrative authoring** (Claude work, not a script). Follow
-      `references/story-mode.md`. The register comes from `--style
-      kleppmann|ste` (default `kleppmann`). See `references/story-mode.md`
-      §3 for both. Ground every claim in three sources: the diff, the
+      `references/story-mode.md`. The register is STE, always, inside the
+      prose budget. See `references/story-mode.md` §3. Ground every claim in three sources: the diff, the
       touched files in `<target>`, and `<bundle-dir>/inventory.yaml`. Get
       the diff from `extract_diffs.py`'s output. Run that script first if
       the diff is not extracted yet.
