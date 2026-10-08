@@ -178,6 +178,30 @@ def check_boundary_stale(bundle_dir: Path) -> str:
     return "ok" if not stale else "stale:" + ",".join(stale)
 
 
+# Commits a recorded scan base may sit behind HEAD before the scan is stale.
+STALE_HABIT_COMMITS = 200
+
+
+def check_habit_smells(bundle_dir: Path) -> str | None:
+    """habit.smells — the mechanical-smells scan in the repo's review dir.
+
+    "ok" when the report exists, its run completed, and its branch base is at
+    most 200 commits behind HEAD. "stale" past 200. "incomplete" when the
+    recorded run did not finish. None when the report is not there, so a repo
+    that has never run the scan keeps passing. Optional, never gating."""
+    path = bundle_dir.parent.parent / "docs" / "architecture" / "review" / "habit-smells.json"
+    try:
+        data = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not data.get("run_complete"):
+        return "incomplete"
+    behind = data.get("commits_behind", 0)
+    if not isinstance(behind, int) or behind < 0:
+        return "incomplete"
+    return "ok" if behind <= STALE_HABIT_COMMITS else f"stale:{behind}"
+
+
 def check_baseline(bundle_dir: Path) -> tuple[dict[str, str], dict | None]:
     results: dict[str, str] = {}
 
@@ -212,6 +236,9 @@ def check_baseline(bundle_dir: Path) -> tuple[dict[str, str], dict | None]:
         results["design.stage"] = design_stage
     results["prose.budget"], results["prose.soft"] = check_prose_budget(bundle_dir, story)
     results["boundary.stale"] = check_boundary_stale(bundle_dir)
+    habit = check_habit_smells(bundle_dir)
+    if habit is not None:
+        results["habit.smells"] = habit
 
     return results, story
 
@@ -440,7 +467,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    optional_prefixes = optional_prefixes_for_art(args.art) + ("prose.soft", "boundary.stale")
+    optional_prefixes = optional_prefixes_for_art(args.art) + ("prose.soft", "boundary.stale", "habit.smells")
     if not args.require_review:
         optional_prefixes += REVIEW_PREFIXES
 

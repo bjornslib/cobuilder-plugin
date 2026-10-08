@@ -17,9 +17,9 @@ Design mode: habit-smells
 Hindsight: no
 
 ## Slices
-- [ ] Slice 1 — E1 whole epic: `habit_smells.py`, the `habit.smells` gate key, and the scan tests   score: —
-- [ ] Slice 2 — E2 whole epic: the review mode Mechanical smells section and its wiring tests       score: —
-- [ ] Slice 3 — E3 whole epic: the maintenance mode pair diff, its wiring tests, and the commands   score: —
+- [x] Slice 1 — E1 whole epic: `habit_smells.py`, the `habit.smells` gate key, and the scan tests   score: 1.00
+- [x] Slice 2 — E2 whole epic: the review mode Mechanical smells section and its wiring tests       score: 1.00 (accepted; a summary-key defect found by the blind pass is being fixed under E1)
+- [x] Slice 3 — E3 whole epic: the maintenance mode pair diff, its wiring tests, and the commands   score: 0.90 (attempt 2; C3 0.5: first scan tags every pair NEW and sets the baseline)
 
 ## Escalated
 none
