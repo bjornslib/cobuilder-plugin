@@ -15,7 +15,10 @@
     "**/package-lock.json",
     "**/*.html",
     "plugins/architect/skills/architecture/references/corpus/**",
-    "**/*.json"
+    "**/*.json",
+    "shared/skills/mermaid/**",
+    "plugins/artifact/viewer/src/index.css",
+    "plugins/implement/skills/design-to-code/examples/**"
   ],
   "threshold": 0,
   "minLines": 5,
