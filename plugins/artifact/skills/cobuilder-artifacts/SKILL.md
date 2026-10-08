@@ -6,11 +6,12 @@ version: 0.1.0
 description: >
   Serve a generated codebase-odyssey bundle locally, publish a PR level or a
   diagram as a self-contained Claude Artifact, or author a collaborative HTML
-  presentation for a decision or gate. Use when the user asks to "view the
-  odyssey bundle", "serve the bundle", "open the viewer", "start the odyssey
-  server", "stop the odyssey server", "publish the odyssey", "present a
-  decision", "show a gate as a page", or invokes `/artifact:view`
-  or `/artifact:publish`.
+  presentation for a decision or gate, or draw a design as a tldraw canvas.
+  Use when the user asks to "view the odyssey bundle", "serve the bundle",
+  "open the viewer", "start the odyssey server", "stop the odyssey server",
+  "publish the odyssey", "present a decision", "show a gate as a page",
+  "draw a design on tldraw", "make a canvas from a design", or invokes
+  `/artifact:view`, `/artifact:publish` or `/artifact:canvas`.
 ---
 
 # Bundle Viewer and Publisher
@@ -286,6 +287,15 @@ cloud-provider-credential sessions cannot publish. Even then, the export
 files this mode produces stay valid deliverables. Tell the user where
 they landed (`<bundle-dir>/exports/`), so they can open or share them
 another way, instead of letting the run look like a silent failure.
+
+## Canvas mode
+
+This mode draws one design folder as a tldraw canvas: a `.tldraw` file with
+five zones (Why, Landscape, Flow, Structure, Contract) and the rendered level-2
+and level-3 diagrams beside them. It needs the `tldraw-offline` skill and
+subagent, and the tldraw Desktop app. Load `references/canvas-mode.md` and
+follow it. Do not improvise the steps. Arguments: `--design <name|path>`,
+`--repo <path>`, `--redraw`, `--no-images`, `--no-review`.
 
 ## Present for review
 
