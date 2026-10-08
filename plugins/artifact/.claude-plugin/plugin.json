@@ -1,7 +1,7 @@
 {
   "name": "artifact",
-  "version": "0.8.0",
-  "description": "Serve a codebase-odyssey bundle locally and publish a level as a self-contained Claude Artifact.",
+  "version": "0.9.0",
+  "description": "Serve a codebase-odyssey bundle locally, publish a level as a self-contained Claude Artifact, and draw a design as a tldraw canvas.",
   "author": {
     "name": "bjornslib"
   },

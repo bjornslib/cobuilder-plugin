@@ -300,7 +300,7 @@ function railRows(): HTMLElement[] {
  */
 function labelOf(row: HTMLElement): string {
   const name = row.getAttribute("aria-label") ?? "";
-  return name.replace(/ is disabled.*$/, "").split(", the ")[0].trim();
+  return name.replace(/,? is disabled.*$/, "").split(", the ")[0].trim();
 }
 
 /** One rail row, by the label it carries, or a failure naming it. */
@@ -328,9 +328,8 @@ function saidOn(row: HTMLElement): string {
 
 /** The rail's own name for an available row, read the way `Rail.tsx` writes it. */
 function accessibleNameOf(row: RailRow): string {
-  return row.count === ""
-    ? `${row.label}, the ${row.account} account`
-    : `${row.label}, the ${row.account} account · ${row.count}`;
+  const who = row.account === "change" ? "the pull request" : "the work item";
+  return row.count === "" ? `${row.label}, ${who}` : `${row.label}, ${who}, ${row.count}`;
 }
 
 /* ------------------------------------------------------------------ the promise */
@@ -356,6 +355,10 @@ function promised(
   design: SparseDesign,
   record: DesignRecord,
 ): { available: boolean; absent: string[] } {
+  /* The change's File Diffs row is disabled when no pull request is carried. The reason is
+     asserted apart, in the no-change test, so no fixed words are promised here. */
+  if (row.label === "File Diffs") return { available: false, absent: [] };
+
   const section = row.key.replace(/^program-/, "");
 
   if (section === "intent") {
@@ -547,18 +550,35 @@ describe("a goal.json-only design's Work surface", () => {
     });
   }
 
-  it("states on the rail that a sparse design's work carries no change account", async () => {
+  it("holds a disabled File Diffs row and no change level row for a sparse design's work", async () => {
     const design = SPARSE[0];
     await openAt(design, "intent");
 
-    /* The change's account holds no row for these designs: no epic names a pull request. */
-    const review = railGroups(sourceOf(design)).find((group) => group.key === "review");
-    expect(review?.rows, "the fixture carries no pull request for a sparse design").toEqual([]);
+    /* No epic names a pull request, so the File Diffs row is disabled, with a reason. */
+    const groups = railGroups(sourceOf(design));
+    expect(groups.map((group) => group.key)).toEqual(["levels", "also"]);
+    const changeRows = groups.flatMap((group) => group.rows).filter((row) => row.account === "change");
+    expect(changeRows.map((row) => row.label)).toEqual(["File Diffs"]);
+    const [diffs] = changeRows;
+    expect(diffs.available).toBe(false);
+    expect(diffs.href).toBe("#");
+    expect(diffs.shared).toBeNull();
+    expect(Array.isArray(diffs.absent) && diffs.absent.length > 0).toBe(true);
 
-    /* An empty group states why, rather than leaving a reader to guess. */
-    expect(saidOn(rail())).toContain(
-      "no pull request this work's own epics carry, so the change has no account to read.",
+    /* It is a row, and not an entry. */
+    const entries = groups.flatMap((group) => group.entries);
+    expect(entries.map((entry) => entry.label)).not.toContain("File Diffs");
+
+    /* It is drawn disabled, names its account, then states its reason. */
+    const rendered = railRows().find((row) =>
+      (row.getAttribute("aria-label") ?? "").startsWith("File Diffs, the pull request"),
     );
+    expect(rendered, "the rail draws a File Diffs row for the pull request").toBeTruthy();
+    expect(disabledOf(rendered as HTMLElement)).toBe(true);
+    expect(hrefOf(rendered as HTMLElement)).toBe("#");
+    for (const reason of diffs.absent ?? []) {
+      expect(saidOn(rendered as HTMLElement)).toContain(reason.toLowerCase());
+    }
   });
 
   it("sends a route that names a gated level to one the design fills, and says so", async () => {

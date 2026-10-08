@@ -8,8 +8,8 @@ address each row opens.
 THE SLICE'S END, IN FIVE PARTS. `04-slices.md` writes them, and every case below
 holds one:
 
-  1. The rail groups its rows under Build and Review. Build reads the program's
-     account, and Review reads the change's.
+  1. The rail groups its rows under Levels and Also (ADR-0037). Levels holds the three
+     level rows of the account the reader is on, and Also holds the rows no level owns.
   2. `#/<work>/pull-requests/<pr>` opens the change's Intent section.
   3. One appended segment selects a named section, so
      `#/<work>/pull-requests/<pr>/architecture` opens the change's Architecture.
@@ -178,12 +178,12 @@ def test_the_shell_declares_two_accounts():
 def test_the_shell_declares_two_groups():
     """The rail's group keys, and there are two.
 
-    The engineer approved the grouping on 2026-09-25: Build and Review. A third
-    group was named, given no rows, and removed, so `GroupKey` carries two values.
+    The engineer reshaped the grouping (ADR-0037): Levels and Also replace Build and
+    Review. `GroupKey` carries two values.
     """
-    claim = "the shell names the rail's two groups, Build and Review"
+    claim = "the shell names the rail's two groups, Levels and Also"
     assert_any(
-        quote_forms('"build" | "review"'),
+        quote_forms('"levels" | "also"'),
         compact(shell_text()),
         claim,
     )
@@ -288,15 +288,15 @@ def test_the_rail_row_type_carries_its_account_its_shared_name_and_a_count():
     )
 
 
-def test_rail_groups_returns_a_build_group_and_a_review_group():
+def test_rail_groups_returns_a_levels_group_and_an_also_group():
     """The one builder returns both groups, in reading order.
 
     `railGroups` is the rail's whole row list and the arrow walk's whole row list.
-    It returns Build first and Review second, and it returns Review even when the
-    work's own epics carry no pull request, so the change's absence is a state the
-    reader sees rather than a missing group.
+    It returns Levels first and Also second. Also keeps File Diffs as one disabled row
+    when the work's own epics carry no pull request, so the absence is a state the
+    reader sees rather than a missing row.
     """
-    claim = "railGroups returns a Build group and a Review group"
+    claim = "railGroups returns a Levels group and an Also group"
     model = compact(read(MODEL, claim))
     assert_any(
         ("function railGroups",),
@@ -304,18 +304,18 @@ def test_rail_groups_returns_a_build_group_and_a_review_group():
         f"{claim}: `{MODEL.name}` declares no `railGroups`, so no one builder holds "
         "the rail's order.",
     )
-    for key in ("build", "review"):
+    for key, label in (("levels", "Levels"), ("also", "Also")):
         assert_any(
-            quote_forms(f'key: "{key}"'),
+            quote_forms(f'key: "{key}", label: "{label}"'),
             model,
-            f"{claim}: `railGroups` builds no group whose key reads {key!r}",
+            f"{claim}: `railGroups` builds no group whose key reads {key!r} and "
+            f"whose label reads {label!r}",
         )
-    for label in ("Build", "Review"):
-        assert_any(
-            quote_forms(f'label: "{label}"'),
-            model,
-            f"{claim}: `railGroups` builds no group whose label reads {label!r}",
-        )
+    assert_any(
+        ("href: \"#\"", 'href:"#"'),
+        model,
+        f"{claim}: `railGroups` builds no disabled File Diffs row for a work with no pull request",
+    )
 
 
 # ---------------------------------------------------------------- the addresses
@@ -537,22 +537,23 @@ def test_the_fold_control_states_why_it_refuses():
 # --------------------------------------------------------- the shipped viewer
 
 
-def test_the_shipped_viewer_carries_the_review_group():
+def test_the_shipped_viewer_carries_the_levels_and_also_groups():
     """The built viewer carries the grouping.
 
     Since slice 3, `plugins/artifact/viewer/index.html` is the build's own output
-    and the file that ships. The Review group is part of the shipped surface only
-    when this file carries its label. No standalone `Review` label stands in the
-    shell's sources today, so its absence is the grouped rail missing.
+    and the file that ships. The two groups are part of the shipped surface only when
+    this file carries their keys and labels, and it no longer carries the Review group.
     """
-    claim = "the shipped viewer carries the Review group"
+    claim = "the shipped viewer carries the Levels and Also groups"
     assert SHIPPED_VIEWER.is_file(), (
         f"{claim}: {SHIPPED_VIEWER.relative_to(REPO_ROOT).as_posix()} does not exist"
     )
     text = SHIPPED_VIEWER.read_text(encoding="utf-8", errors="replace")
-    assert '"Review"' in text, (
-        f"{claim}: the built viewer carries no \"Review\" label.\n"
-        "  The Review group holds the change's four rows, and the build writes this "
-        "file. Run `npm run build` in plugins/artifact/viewer/ once the rail reads "
-        "both accounts."
+    for needle in ('key:"levels",label:"Levels"', 'key:"also",label:"Also"'):
+        assert needle in text, (
+            f"{claim}: the built viewer carries no {needle!r}. "
+            "Run `npm run build` in plugins/artifact/viewer/."
+        )
+    assert '"Review"' not in text, (
+        f"{claim}: the built viewer still carries the removed Review group label"
     )

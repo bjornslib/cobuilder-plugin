@@ -42,3 +42,6 @@ plugins/artifact/viewer/.vitest/
 
 # TypeScript incremental build state, from the artifact viewer.
 plugins/artifact/viewer/tsconfig.tsbuildinfo
+
+# tldraw canvases are drawn on demand and are not committed
+*.tldraw

@@ -17,7 +17,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import type { LucideIcon } from "lucide-react";
-import { Check, ChevronDown, Layers, LayoutGrid, Moon, Search, Sun } from "lucide-react";
+import { Check, ChevronDown, GitBranch, Layers, LayoutGrid, Moon, Search, Sun } from "lucide-react";
 import { Popover as PopoverPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
@@ -33,6 +33,12 @@ export interface TopBarProps {
   workName: string | null;
   stage: string | null;
   supersededBy: string | null;
+  /** The first branch the work item's epics carry, or null. Null draws nothing. */
+  branch: string | null;
+  /** Every distinct branch, in order. More than one adds a "+N" mark and a full title. */
+  branches: string[];
+  /** The designs this work item supersedes. An empty list draws nothing. */
+  supersedes: string[];
   ready: boolean;
   /**
    * True while the route names no work item, which is the board and a workless change.
@@ -90,6 +96,9 @@ export function TopBar({
   workName,
   stage,
   supersededBy,
+  branch,
+  branches,
+  supersedes,
   ready,
   board,
   designs,
@@ -340,6 +349,28 @@ export function TopBar({
           <Chip tone="warn" title="A later design closed this one.">
             superseded by {supersededBy}
           </Chip>
+        ) : null}
+        {supersedes.length > 0 ? (
+          <Chip tone="warn" title={`This work supersedes ${supersedes.join(", ")}.`}>
+            supersedes
+          </Chip>
+        ) : null}
+        {/*
+          The branch is quiet text. It truncates and never wraps the bar, and it hides on a
+          phone width where it would crowd the bar. Several branches show the first, with a
+          "+N" mark, and the title lists them all.
+        */}
+        {branch ? (
+          <span
+            title={branches.join("\n")}
+            className="hidden min-w-0 items-center gap-1.5 font-mono text-[12.5px] text-ink-dim sm:flex"
+          >
+            <GitBranch className="size-3.5 shrink-0 text-ink-faint" aria-hidden="true" />
+            <span className="max-w-[32ch] min-w-0 truncate">{branch}</span>
+            {branches.length > 1 ? (
+              <span className="shrink-0 text-ink-faint">+{branches.length - 1}</span>
+            ) : null}
+          </span>
         ) : null}
       </div>
 

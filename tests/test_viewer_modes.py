@@ -193,10 +193,11 @@ def test_viewer_contains_all_five_mode_buttons():
     the same five families through two structures, and this case holds both to
     the build:
 
-    1. the rail's row list, which is the two groups `src/shell/model.ts` builds.
-       It carries the designs (the board the rail draws its own row for), the
-       builds (Build's Epics and Rubrics rows), and the pull requests (Review's
-       four rows, the last of which is the diff itself); and
+    1. the rail's row list, which is the two groups `src/shell/model.ts` builds
+       (Levels and Also, ADR-0037). It carries the designs (the board the rail draws
+       its own row for), the builds (the Epics, Rubrics, and Plan rows of Also), and
+       the pull requests (the change's four rows, the last of which is the diff
+       itself, a disabled row when no pull request exists); and
     2. the Architecture level's section list, which carries the decisions (the
        Architecture Decisions section) and the contexts (the Boundaries section,
        which states the rules the touched contexts declare).
@@ -204,19 +205,18 @@ def test_viewer_contains_all_five_mode_buttons():
     Both are read from `plugins/artifact/viewer/index.html`, which since slice 3
     is the build's own output.
 
-    THE RAIL RENDERS TEN ROWS AND OWNS NO MORE. The board's own row is drawn
-    above the two groups from `boardHref()`, the address `ROUTE_PREFIX` holds.
-    Build reads the program's account and carries five rows. Review reads the
-    change's account and carries four. Three rows the earlier rail carried are
-    gone with the slice that removed them: this work's pull request list, the
-    FlightDeck row, and the release status row.
+    THE BOARD'S OWN ROW IS DRAWN ABOVE THE TWO GROUPS from `boardHref()`, the
+    address `ROUTE_PREFIX` holds. Levels holds the three level rows of the account
+    the reader is on. Also holds the rows no level owns, each with a "work" or
+    "PR" tag. The Build and Review groups, and the account rule bar, are gone.
     """
     text = viewer_text()
     claim = "the navigation reaches designs, pull requests, decisions, contexts, and builds"
 
     # The board's own row, which the rail draws above the two groups: the rail's
     # row renderer, one tooltip with the count conditional, and the row link's
-    # own aria-label. Property names (`tooltip`, `count`, `label`, `account`)
+    # own aria-label, which names the row and the record it opens ("<label>, the
+    # work item" or "<label>, the pull request"), with the count after a comma. Property names (`tooltip`, `count`, `label`, `account`)
     # survive the minifier; the local names do not, so each is a wildcard. No
     # literal is pinned: an older build inlined `tooltip:"Work"`, and a newer
     # minifier holds the row's label in a shared constant, so a literal anchor
@@ -228,10 +228,11 @@ def test_viewer_contains_all_five_mode_buttons():
         "the structure that carried the board's own row is gone from the shipped viewer."
     )
     assert re.search(
-        r'"aria-label":\w+\.count===""\?`\$\{\w+\.label\}, the \$\{\w+\.account\} account`',
+        r'"aria-label":\w+\.count===""\?`\$\{\w+\.label\}, the \$\{\w+\}`:'
+        r'`\$\{\w+\.label\}, the \$\{\w+\}, \$\{\w+\.count\}`',
         text,
     ) is not None, (
-        f"{claim}: the build carries no rail-row aria-label with the label-and-account "
+        f"{claim}: the build carries no rail-row aria-label with the label-and-record "
         "template, so the row that reads as its own link is gone from the shipped viewer."
     )
 
@@ -265,17 +266,16 @@ def test_viewer_contains_all_five_mode_buttons():
     assert_ordered(
         [
             prefix_binding.group(0),            # "#/", the board's own address
-            '["intent","problem-and-solution","architecture","epics","rubrics"]',
             'epics:"Epics",rubrics:"Rubrics"',  # builds
-            '{key:"build",label:"Build",account:"program"',
-            '{key:"review",label:"Review",account:"change"',
+            '{key:"levels",label:"Levels",account:',
+            '{key:"also",label:"Also",account:"program"',
             row_list_tail.group(0),
         ],
         rail,
         claim,
     )
 
-    # Review's four rows, which are the change's own account. The last of them is
+    # The change's four rows, which are the change's own account. The last of them is
     # the diff itself, so the pull requests stay reachable from the rail.
     change_rows = bounded_region(
         text,

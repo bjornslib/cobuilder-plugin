@@ -1,0 +1,22 @@
+feature: level-page-restructure
+test_command: "cd plugins/artifact/viewer && npm run typecheck && npm run test && cd ../../.. && uv run pytest tests -q"
+thresholds:
+  accept: 0.90
+  investigate: 0.70
+max_attempts: 3
+slices:
+  - id: 1
+    name: "E1 the branch in the top bar, and the bar gone"
+    weight: 0.15
+  - id: 2
+    name: "E1 the account link in the section heading"
+    weight: 0.25
+  - id: 3
+    name: "E1 one rail"
+    weight: 0.25
+  - id: 4
+    name: "E2 the In Short strip"
+    weight: 0.25
+  - id: 5
+    name: "E3 record gaps in the build"
+    weight: 0.10

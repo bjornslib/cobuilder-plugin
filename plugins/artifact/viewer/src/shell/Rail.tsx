@@ -12,14 +12,13 @@
  * `model.ts` states the rules. This file decides appearance alone: the frame, the icons,
  * the current row, the fold, and the tooltip.
  *
- * TWO ACCOUNTS, GROUPED UNDER BUILD AND REVIEW. Build reads the program's account and
- * Review reads the change's, and three section names stand in both groups. So a reader
- * who cannot tell the groups apart cannot tell the accounts apart either, and each group
- * states the account it reads.
+ * TWO GROUPS: LEVELS AND ALSO. Levels holds each level once, for the active account.
+ * Also holds the rows of either account that no level owns, and each one carries a tag,
+ * "work" or "PR", that names its account.
  *
  * THE CURRENT ROW IS THE ROW THE READER ARRIVED ON. A row is current when its address is
- * the reader's address, never when it merely names the reader's section. The two groups
- * repeat Intent, Problem & Solution, and Architecture, so a section match would light more
+ * the reader's address, never when it merely names the reader's section. The two accounts
+ * can repeat a section name, so a section match would light more
  * than one row at once.
  *
  * THE FOLD AND THE WALK OBEY ONE CONVENTION, and the rail keeps both halves of it.
@@ -34,7 +33,7 @@
  *
  * THE WORK BOARD IS NOT IN THE RAIL, and it is not a row of either account. ADR-0034
  * makes the board a drawer over the shell, and the top bar's Work icon is the one
- * control that opens it from any level, so the rail renders the two accounts alone.
+ * control that opens it from any level, so the rail renders the two groups alone.
  *
  * An available row is a `SidebarMenuButton`, so it takes the sidebar's hover, focus, and
  * active treatment. A row whose record is absent is a plain anchor inside the same
@@ -56,7 +55,6 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail as SidebarCollapseHandle,
@@ -199,24 +197,17 @@ export function Rail(props: RailProps) {
                     }
                     className="overflow-hidden"
                   >
-                    {group.rows.length === 0 ? (
-                      /*
-                        AN EMPTY GROUP STATES THE ABSENCE. A work whose own epics carry no
-                        pull request has no change account, and four rows that open nothing
-                        are worse than one sentence that says why.
-                      */
-                      <p className="m-0 px-3 py-1.5 font-mono text-[12px] leading-[1.45] text-ink-faint">
-                        {group.account === "change"
-                          ? "No pull request this work's own epics carry, so the change has no account to read."
-                          : "This group holds no row for this work item."}
-                      </p>
-                    ) : (
-                      <SidebarMenu className="min-w-0 gap-0.5">
-                        {group.rows.map((row) => (
-                          <RailRowItem key={row.key} row={row} here={here} icons={icons} />
-                        ))}
-                      </SidebarMenu>
-                    )}
+                    <SidebarMenu className="min-w-0 gap-0.5">
+                      {group.rows.map((row) => (
+                        <RailRowItem
+                          key={row.key}
+                          row={row}
+                          here={here}
+                          icons={icons}
+                          tagged={group.key === "also"}
+                        />
+                      ))}
+                    </SidebarMenu>
                   </motion.div>
                 </SidebarGroupContent>
               </SidebarGroup>
@@ -251,8 +242,11 @@ function RailRowItem({
   row,
   here,
   icons,
+  tagged,
 }: {
   row: RailRow;
+  /** True for an Also row, which carries a tag naming its account. */
+  tagged: boolean;
   /** The reader's own address. The row that opens it is the current row. */
   here: string;
   icons: boolean;
@@ -263,6 +257,19 @@ function RailRowItem({
    * than one row at once, because the two groups repeat three section names.
    */
   const current = row.href === here;
+  /* The tag is a flex-none sibling of the label, so it takes its own width and never overlaps. */
+  const tag = tagged && !icons ? (
+    <span
+      data-rail-tag=""
+      aria-hidden="true"
+      className="flex-none rounded border border-line px-1 font-mono text-[10px] leading-4 text-ink-faint"
+    >
+      {" "}
+      {row.account === "change" ? "PR" : "work"}{" "}
+    </span>
+  ) : null;
+
+  const who = row.account === "change" ? "pull request" : "work item";
 
   if (!row.available) {
     const gone = absentLine(row.absent ?? []);
@@ -278,7 +285,7 @@ function RailRowItem({
             <a
               role="link"
               aria-disabled="true"
-              aria-label={`${row.label} is disabled. Absent: ${gone}`}
+              aria-label={`${row.label}, the ${who} is disabled. Absent: ${gone}`}
               tabIndex={0}
               href="#"
               onClick={(event) => event.preventDefault()}
@@ -289,20 +296,21 @@ function RailRowItem({
                 "group-data-[collapsible=icon]:flex-row group-data-[collapsible=icon]:items-center",
               )}
             >
-              <span className="flex min-w-0 items-center gap-2">
+              <span className="flex w-full min-w-0 items-center gap-2">
                 <Icon className="size-4 shrink-0 text-ink-faint" aria-hidden="true" />
                 <span
                   className={cn(
-                    "min-w-0 font-mono text-[13.5px] text-ink-mid",
+                    "min-w-0 flex-1 truncate font-mono text-[13.5px] text-ink-mid",
                     icons && "hidden",
                   )}
                 >
                   {row.label}
                 </span>
+                {tag}
               </span>
               <span
                 className={cn(
-                  "pl-6 font-mono text-[12px] leading-[1.35] text-ink-faint",
+                  "min-w-0 pl-6 font-mono text-[12px] leading-[1.35] break-words text-ink-faint",
                   icons && "hidden",
                 )}
               >
@@ -335,8 +343,8 @@ function RailRowItem({
           aria-current={current ? "page" : undefined}
           aria-label={
             row.count === ""
-              ? `${row.label}, the ${row.account} account`
-              : `${row.label}, the ${row.account} account · ${row.count}`
+              ? `${row.label}, the ${who}`
+              : `${row.label}, the ${who}, ${row.count}`
           }
           className={cn(
             "flex items-center",
@@ -347,19 +355,19 @@ function RailRowItem({
         >
           <Icon className="size-4 shrink-0" aria-hidden="true" />
           <span className={cn("min-w-0 flex-1 truncate", icons && "hidden")}>{row.label}</span>
+          {/* Tag, then count: two flex-none siblings of the label, never positioned over it. */}
+          {tag}
+          {row.count === "" || icons ? null : (
+            <span
+              data-rail-count=""
+              aria-hidden="true"
+              className="flex-none text-xs font-medium tabular-nums text-ink-faint"
+            >
+              {row.count.replace(/ .*$/, "")}
+            </span>
+          )}
         </a>
       </SidebarMenuButton>
-      {/*
-        THE BADGE CARRIES THE COUNT'S FIRST WORD, AND THE ROW'S NAME CARRIES THE REST. The
-        rail is fifteen and a half rem wide, and the sidebar's badge is absolutely
-        positioned over the row. A full count such as `7 of 7 fields` covered the last two
-        words of `Problem & Solution`, which is what the reviewed prototype's own note about
-        a row-level chip records. The number is decoration, so it is `aria-hidden`, and the
-        whole count travels in the row's accessible name and its tooltip.
-      */}
-      {row.count === "" || icons ? null : (
-        <SidebarMenuBadge aria-hidden="true">{row.count.replace(/ .*$/, "")}</SidebarMenuBadge>
-      )}
     </SidebarMenuItem>
   );
 }

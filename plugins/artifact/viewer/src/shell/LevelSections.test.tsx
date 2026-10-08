@@ -598,6 +598,29 @@ describe("Slice 10 · every section of every level renders its own records", () 
     expect(holds(panelNamed("Unknowns"), UNKNOWNS[0])).toBe(true);
   });
 
+  it("states no record gap on the Problem and solution cards", async () => {
+    /*
+      The build reports a missing record part (record_gap_warnings in build_index.py).
+      The viewer states none. A record with no beats, and a record with a beat of an
+      unknown kind, both leave the cards free of gap sentences.
+    */
+    const narrative = RICH.narrative;
+    const original = narrative?.problem_solution?.beats;
+    try {
+      for (const beats of [[], [{ kind: "mystery", text: "A beat of an unknown kind." }]]) {
+        cleanup();
+        if (narrative?.problem_solution) narrative.problem_solution.beats = beats;
+        await openPaged(`#/${DESIGN}/problem-and-solution`, "Problem and solution");
+        const text = panelNamed("Problem and solution").textContent ?? "";
+        expect(text, "no missing-beat sentence").not.toMatch(/No beat of kind/);
+        expect(text, "no unknown-kind sentence").not.toMatch(/carry a kind outside/);
+        expect(text, "no unknown-kind sentence").not.toMatch(/carries? a kind outside/);
+      }
+    } finally {
+      if (narrative?.problem_solution) narrative.problem_solution.beats = original;
+    }
+  });
+
   it("renders the Architecture level's four sections, each from the record", async () => {
     /*
       C1's third level. The level draws the mechanism drawings, so its Diagrams panel holds

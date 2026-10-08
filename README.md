@@ -12,6 +12,7 @@ Everything runs in your own Claude Code session, against your own checkout. Your
 | Open | `/pr:generate` | An author interview, an assessment, and the pull request |
 | Narrate | `/pr:review` | A four-level story of each merged PR, with art and voice |
 | Read | `/artifact:view` | One viewer for designs, decisions, builds, and PRs |
+| Draw | `/artifact:canvas` | One design as a tldraw canvas with its two diagrams |
 
 ---
 
@@ -41,7 +42,7 @@ To start with one job, install one plugin. For example, `/plugin install archite
 | `architect` | Design, review, and govern the architecture of the repo you are in | `/architect:design`, `review`, `maintenance`, `decisions`, `describe`, `debug`, `options` |
 | `implement` | Build a design one slice at a time | `/implement:start`, `debug`, `install` |
 | `pr` | Open a pull request with intent, and narrate merged PRs | `/pr:generate`, `review`, `baseline` |
-| `artifact` | Read the results in the viewer, or publish a PR as a Claude Artifact | `/artifact:view`, `publish` |
+| `artifact` | Read the results in the viewer, publish a PR as a Claude Artifact, or draw a design as a tldraw canvas | `/artifact:view`, `publish`, `canvas` |
 | `cobuilder-full-lifecycle` | Get all four, plus a routing guide | none of its own |
 
 `architect` and `pr` need `artifact`, so installing either one also installs `artifact`. `implement` needs `architect`, because `/implement:debug` hands off to it.
@@ -55,6 +56,7 @@ To start with one job, install one plugin. For example, `/plugin install archite
 | `GEMINI_API_KEY` | `pr` narration: voice always, scene art unless `--art diagram` | Set it in your shell or in your own repo's `.env`. The tool never reads the target repo's `.env` |
 | `habit-hooks` | `/implement:start` | Run `/implement:install` once. It asks before it installs |
 | The `Artifact` tool | `/artifact:publish` | Needs a `/login` session on a paid plan |
+| The `tldraw-offline` skill and the tldraw Desktop app | `/artifact:canvas` | Install the skill yourself. The command stops with a message if either is missing. The diagram images also need `npx` and Google Chrome |
 
 The `architect`, `implement`, and `artifact view` commands need no API key. The prerequisite check runs first on every `pr` command, so a missing key stops the run before it spends anything.
 
@@ -147,13 +149,15 @@ If the author ran `/pr:generate` first, `/pr:review` reads the stated intent and
 
 `/pr:baseline` maps the repo into districts and records an inventory. Run it again to refresh. Both commands accept `--repo <path>` to target another local checkout. See [Multiple repos](#multiple-repos).
 
-### 6. Read and share: `/artifact:view` and `/artifact:publish`
+### 6. Read and share: `/artifact:view`, `/artifact:publish` and `/artifact:canvas`
 
 `/artifact:view` serves your bundles on `http://127.0.0.1:62583` and prints the URL. The port is fixed, so a saved review link works after a restart. `--list` shows the bundles, and `--stop` stops the server.
 
-The viewer shows each design, decision, build, and PR on one surface. A Work drawer lists every design by state, with search. A comment ledger anchors review notes to the page.
+The viewer shows each design, decision, build, and PR on one surface. A Work drawer lists every design by state, with search. A comment ledger anchors review notes to the page. Each level opens with an In Short strip, the level's one-paragraph summary, with a Listen control when audio exists. A link in each section heading, "Read in PR 12 ›", moves between a work item and its PR on the section of the same name.
 
 `/artifact:publish --prs 73` flattens one PR into a single HTML file under the 16 MiB Artifact limit. The command lowers compression, and drops audio if it must. It also publishes an index page that links every PR you published. An unchanged PR reports "already up to date". Use `--force` to publish anyway.
+
+`/artifact:canvas --design <name>` draws one design as a tldraw canvas. It writes `<name>.tldraw` into the design folder. The canvas has five zones: Why (with a before/after picture), Landscape, Flow, Structure, and Contract. The rendered level-2 and level-3 diagrams sit beside them. A language review then shortens the card text. Use `--redraw` to replace an existing canvas, `--no-images` to skip the diagrams, and `--no-review` to skip the language review. Git ignores `.tldraw` files, so a canvas stays on your machine.
 
 ---
 

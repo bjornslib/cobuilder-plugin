@@ -1,0 +1,31 @@
+// ui-spec: level-page-restructure
+// The controls the plan's slices own. Comments carry the why.
+{
+  "surface": "level-page",
+  "topBar": {
+    "showsBranch": true,
+    "branchWhenNone": "nothing is drawn",
+    "supersedesMarkWhenEmpty": "nothing is drawn"
+  },
+  "inShort": {
+    "label": "In Short",
+    "source": { "change": "ChangeLevel.narration", "program": "narrative.<level>.narration" },
+    "collapsible": false,
+    "levels": ["intent", "problem-and-solution", "architecture"],
+    "absentWhenNoNarration": true,
+    "listen": { "visibleOnlyWhenAudioServed": true, "audioForProgram": false }
+  },
+  "accountLink": {
+    "placement": "section heading, right edge",
+    "labels": { "program": "Read in PR {n} ›", "change": "Read in the work item ›" },
+    "sectionMatch": "same name on the other side; otherwise the first section",
+    "carry": "view state only, never a route"
+  },
+  "rail": {
+    "groups": [
+      { "label": "Levels", "rows": ["Intent", "Problem & Solution", "Architecture"], "account": "active" },
+      { "label": "Also", "rows": ["Plan", "Epics", "Rubrics", "File Diffs"], "tags": { "Plan": "work", "Epics": "work", "Rubrics": "work", "File Diffs": "PR" } }
+    ]
+  },
+  "removed": ["top line panel (branch, epics, supersedes)", "account rule bar", "record-gap lines in Problem and Solution"]
+}
