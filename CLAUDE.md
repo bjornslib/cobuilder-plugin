@@ -68,7 +68,7 @@ A Claude Code marketplace (`.claude-plugin/marketplace.json`) that ships five si
 
 | Plugin | Job |
 |---|---|
-| `architect` | Seven self-only modes: design, review, maintenance, decisions, describe, debug, options |
+| `architect` | Seven self-only modes. Five have a command: design, review, maintenance, debug, options. `decisions` and `describe` are internal |
 | `pr` | Odyssey: narrate merged PRs (`baseline`, `review`) and interview an author before a PR opens (`generate`) |
 | `artifact` | Serve a bundle locally (`view`), publish a level as a Claude Artifact (`publish`), and draw a design as a tldraw canvas (`canvas`). Holds the viewer |
 | `implement` | Build a design one vertical slice at a time (`start`, `debug`, `install`) |

@@ -1,7 +1,7 @@
 {
   "name": "architect",
-  "version": "0.10.0",
-  "description": "Seven modes for a local git repo: design, review, maintenance, decisions, describe, debug, and options. Self-only architecture governance.",
+  "version": "0.11.0",
+  "description": "Design a change, audit the repo, track drift, explore options, and diagnose failures. Five self-only commands for a local git repo.",
   "author": {
     "name": "bjornslib"
   },

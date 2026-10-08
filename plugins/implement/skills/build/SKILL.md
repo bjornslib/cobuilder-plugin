@@ -1,5 +1,6 @@
 ---
 name: build
+user-invocable: false
 title: "CoBuilder Implement"
 version: 1.0.0
 status: active

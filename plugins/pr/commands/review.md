@@ -1,11 +1,12 @@
 ---
-title: "Odyssey: Review PR Stories"
+title: "pr: Review"
+description: "After the merge: turn each merged PR into a four-level story with diagrams, art, and voice."
 status: active
 type: command
 last_verified: 2026-08-21
 ---
 
-# Odyssey: Review PR Stories
+# pr: Review
 
 Runs the full per-PR sweep — narrative, ADR retro-extraction, scene art, and
 voice narration — into the `.cobuilder-architect/` bundle. If no baseline exists yet,
@@ -18,7 +19,7 @@ mode name.
 
 Invoke the `odyssey` skill in review mode, forwarding any arguments the user
 supplied after `/pr:review` (`--repo`, `--prs`, `--latest`, `--force`,
-`--voice`, `--art`, `--style`). `--repo <path>` targets any local checkout —
+`--voice`, `--art`). `--repo <path>` targets any local checkout —
 not just the repo this session is running in (the skill will ask for
 `/add-dir` if it lacks read access there):
 
@@ -61,6 +62,5 @@ levels 1 through 3 (level 4 has neither). Default: `both`.
 /pr:review --prs 12..18
 /pr:review --force
 /pr:review --repo ~/code/other-project --prs 42
-/pr:review --prs 79 --style ste
 /pr:review --prs 79 --art diagram
 ```

@@ -1,6 +1,6 @@
 {
   "name": "cobuilder-plugin",
-  "description": "Plugins that narrate the pull requests of a git repo, review its architecture, and build a design one slice at a time.",
+  "description": "Plugins that keep engineers in charge of their coding agents: design, build, review, and maintain a system.",
   "owner": {
     "name": "bjornslib",
     "url": "https://github.com/bjornslib/cobuilder-plugin"
@@ -8,33 +8,39 @@
   "plugins": [
     {
       "name": "architect",
-      "description": "Seven modes for a local git repo: design, review, maintenance, decisions, describe, debug, and options.",
+      "description": "Design a change, audit the repo, track drift, explore options, and diagnose failures. Five self-only commands for a local git repo.",
       "source": "./plugins/architect",
-      "version": "0.10.0"
+      "version": "0.11.0"
     },
     {
       "name": "pr",
-      "description": "Narrated PR history and submit-mode review. Output is a portable .cobuilder-architect/ bundle.",
+      "description": "Interview an author and open a PR with intent, then narrate it after the merge. Output is a portable .cobuilder-architect/ bundle.",
       "source": "./plugins/pr",
-      "version": "0.8.0"
-    },
-    {
-      "name": "artifact",
-      "description": "Serve a bundle locally, publish a level as a self-contained Claude Artifact, and draw a design as a tldraw canvas.",
-      "source": "./plugins/artifact",
       "version": "0.9.0"
     },
     {
+      "name": "artifact",
+      "description": "Open a local viewer for designs, decisions, builds, and PRs. Publish one PR as a Claude Artifact. Draw a design as a tldraw canvas.",
+      "source": "./plugins/artifact",
+      "version": "0.10.0"
+    },
+    {
+      "name": "artifact",
+      "description": "Open a local viewer for designs, decisions, builds, and PRs. Publish one PR as a Claude Artifact. Draw a design as a tldraw canvas.",
+      "source": "./plugins/artifact",
+      "version": "0.10.0"
+    },
+    {
       "name": "implement",
-      "description": "Build a feature one vertical slice at a time with four approval gates, blind rubrics, and independent validation.",
+      "description": "Build a design one tested slice at a time, with four approval gates, blind rubrics, and independent validation.",
       "source": "./plugins/implement",
-      "version": "0.5.0"
+      "version": "0.6.0"
     },
     {
       "name": "cobuilder-full-lifecycle",
-      "description": "Umbrella plugin for the CoBuilder family.",
+      "description": "Install all of CoBuilder: architecture, implementation, review, and maintenance, with the engineer in charge at each stage.",
       "source": "./plugins/cobuilder-full-lifecycle",
-      "version": "0.2.0"
+      "version": "0.3.0"
     }
   ]
 }

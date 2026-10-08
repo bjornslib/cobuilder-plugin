@@ -1,5 +1,6 @@
 ---
 title: "implement: Debug"
+description: "Find the root cause of a failure during a build. This command runs /architect:debug."
 status: active
 type: command
 last_verified: 2026-08-26

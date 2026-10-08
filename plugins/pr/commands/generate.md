@@ -1,11 +1,12 @@
 ---
-title: "Odyssey: Generate PR with Review"
+title: "pr: Generate"
+description: "Before the PR opens: interview the author, assess the change, and open the pull request."
 status: active
 type: command
 last_verified: 2026-08-21
 ---
 
-# Odyssey: Generate PR with Review
+# pr: Generate
 
 Interviews the author of a change, assesses the change against the bundle, and
 opens the pull request with the generated description as its body. Answers three

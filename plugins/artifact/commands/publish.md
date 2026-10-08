@@ -1,11 +1,12 @@
 ---
-title: "Odyssey: Publish PR Stories"
+title: "artifact: Publish"
+description: "Publish one PR as a single-file Claude Artifact."
 status: active
 type: command
 last_verified: 2026-07-22
 ---
 
-# Odyssey: Publish PR Stories
+# artifact: Publish
 
 Flattens already-generated PRs into self-contained Claude Artifacts — one per
 PR, plus an auto-updating index artifact linking to every PR published so far

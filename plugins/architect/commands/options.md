@@ -1,5 +1,6 @@
 ---
 title: "architect: Options"
+description: "Ask if the flow and the technology choices of the system are still right. Write one HTML report of inquiries and alternatives. It proposes and design decides."
 status: active
 type: command
 last_verified: 2026-10-01

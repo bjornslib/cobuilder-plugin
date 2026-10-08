@@ -1,7 +1,7 @@
 {
   "name": "pr",
-  "version": "0.8.0",
-  "description": "Narrated PR history, per-PR sweeps, and submit-mode review for a local git repo. Output is a portable .cobuilder-architect/ bundle.",
+  "version": "0.9.0",
+  "description": "Interview an author and open a PR with intent, then narrate it after the merge. Output is a portable .cobuilder-architect/ bundle.",
   "author": { "name": "bjornslib" },
   "repository": "https://github.com/bjornslib/cobuilder-architect",
   "license": "MIT",

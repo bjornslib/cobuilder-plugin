@@ -1,5 +1,6 @@
 ---
 title: "implement: Start"
+description: "Build a design one tested slice at a time. Four approval gates come first. Then each slice runs red, green, and validate against a blind rubric."
 status: active
 type: command
 last_verified: 2026-08-22
