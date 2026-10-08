@@ -6,9 +6,9 @@
 # That shape is gone. This record describes the marketplace and its five plugins.
 
 id: cobuilder-packaging
-path: .
+path: .claude-plugin
 name: "Plugin packaging and dispatch"
-verified_at: d086be981401779ba4691faed31a6f64598df589
+verified_at: 1f34d98c5eaf563a499dfa33c12e678d21a1c23b
 
 # What other contexts and operators may use: the install surface.
 public_interface:
