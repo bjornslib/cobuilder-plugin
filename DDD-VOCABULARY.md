@@ -135,6 +135,11 @@ One unit inside a design's `goal.json.epics[]`, owned and decomposed by `impleme
 One vertical unit of an epic's build in `implement`. It is a row in `04-slices.md`, it runs through the RED, GREEN, and VALIDATE loop, and it is complete when VALIDATE scores it 0.90 or higher against its blind rubric.
 _Avoid_: epic (a slice belongs to an epic, and an epic that carries one slice needs no Gate 4b design), task (a slice ends in a state a reader can see, and a task need not)
 
+<a id="coach"></a>
+**Coach** (`implement`):
+The `PostToolUse` hook, `plugins/implement/scripts/habit_coach.py`, that runs habit-hooks from the git root after each file the GREEN agent writes and passes the findings back as advice. It never blocks a write, and `habit_coach.py --check` proves it works by running one tracked source file through the same path.
+_Avoid_: linter (a linter fails a build, and the coach only advises), reviewer (the architect draft review judges a design, and the coach checks one written file)
+
 <a id="gate-4a-4b-4c"></a>
 **Gate 4a / 4b / 4c** (`implement`):
 The three sub-steps of Gate 4 in `implement`, each with its own line in `00-status.md`: 4a is the slice plan, 4b is a technical solution design required only for a multi-slice epic and marked `n/a`, not pending, for a single-slice epic, and 4c is the blind rubrics. `verify_gate.py` checks all three.

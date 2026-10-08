@@ -11,11 +11,15 @@ Run with: uv run --with pytest --with requests --with pyyaml --with pillow pytes
 from __future__ import annotations
 
 import importlib.util
+import inspect
 import io
 import json
 import os
+import re
 import shlex
+import shutil
 import subprocess
+import sys
 from pathlib import Path
 from types import ModuleType
 
@@ -58,15 +62,6 @@ class FakeRunner:
     def __call__(self, path: str) -> tuple[int, str]:
         self.calls.append(path)
         return self.result
-
-
-class _FakeCompleted:
-    """Stands in for subprocess.CompletedProcess in tests."""
-
-    def __init__(self, returncode: int, stdout: str, stderr: str):
-        self.returncode = returncode
-        self.stdout = stdout
-        self.stderr = stderr
 
 
 # ---------------------------------------------------------------------------
@@ -325,7 +320,7 @@ def test_main_green_exit_one_context_has_path_header_then_newline_then_runner_te
 
 
 # ---------------------------------------------------------------------------
-# Slice E1: run from the git root, fail on "nothing scanned", no self-install
+# Epic E1: run from the git root, fail on "nothing scanned", no self-install
 # ---------------------------------------------------------------------------
 
 UNSCANNED_OUTPUTS = [
@@ -610,3 +605,454 @@ def test_implement_plugin_json_version_matches_marketplace():
         p for p in json.loads(marketplace_path.read_text())["plugins"] if p["name"] == "implement"
     )
     assert data["version"] == entry["version"]
+
+
+# ---------------------------------------------------------------------------
+# Epic E2: habit_coach.py --check and the install proof step
+# ---------------------------------------------------------------------------
+
+SOURCE_EXTENSIONS = [".py", ".ts", ".tsx", ".js", ".jsx", ".php", ".java", ".rb"]
+
+
+def _require_param(func, name: str) -> None:
+    params = inspect.signature(func).parameters
+    assert name in params, f"habit_coach.main is missing the {name!r} parameter"
+
+
+def _git(repo: Path, *args: str) -> None:
+    subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True)
+
+
+def _init_repo(tmp_path: Path, name: str = "repo") -> Path:
+    repo = tmp_path / name
+    repo.mkdir()
+    _git(repo, "init", "-q")
+    return repo
+
+
+def _track(repo: Path, rel: str, content: str = "x = 1\n") -> Path:
+    """Write a file under repo and stage it, so git ls-files lists it."""
+    target = repo / rel
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(content)
+    _git(repo, "add", rel)
+    return target
+
+
+def _resolved(result: str, root: Path) -> Path:
+    path = Path(result)
+    if not path.is_absolute():
+        path = root / path
+    return path.resolve()
+
+
+def _single_line(out: io.StringIO) -> str:
+    lines = out.getvalue().splitlines()
+    assert len(lines) == 1, f"expected exactly one line on stdout, got: {lines!r}"
+    return lines[0]
+
+
+# ---------------------------------------------------------------------------
+# pick_probe_file(root)
+# ---------------------------------------------------------------------------
+
+
+def test_pick_probe_file_returns_tracked_python_file(habit_coach, tmp_path):
+    _require(habit_coach, "pick_probe_file")
+    repo = _init_repo(tmp_path)
+    target = _track(repo, "app.py")
+
+    result = habit_coach.pick_probe_file(str(repo))
+
+    assert result is not None, "expected the tracked app.py as the probe file"
+    assert _resolved(result, repo) == target.resolve()
+
+
+@pytest.mark.parametrize("ext", SOURCE_EXTENSIONS)
+def test_pick_probe_file_accepts_each_source_extension(habit_coach, tmp_path, ext):
+    _require(habit_coach, "pick_probe_file")
+    repo = _init_repo(tmp_path)
+    target = _track(repo, f"probe{ext}")
+
+    result = habit_coach.pick_probe_file(str(repo))
+
+    assert result is not None, f"expected a probe file for a tracked {ext} file"
+    assert _resolved(result, repo) == target.resolve()
+
+
+def test_pick_probe_file_ignores_untracked_source_file(habit_coach, tmp_path):
+    _require(habit_coach, "pick_probe_file")
+    repo = _init_repo(tmp_path)
+    (repo / "loose.py").write_text("x = 1\n")
+
+    assert habit_coach.pick_probe_file(str(repo)) is None
+
+
+def test_pick_probe_file_ignores_tracked_non_source_files(habit_coach, tmp_path):
+    _require(habit_coach, "pick_probe_file")
+    repo = _init_repo(tmp_path)
+    _track(repo, "README.md", "# notes\n")
+    _track(repo, "config.json", "{}\n")
+    _track(repo, "notes.txt", "text\n")
+
+    assert habit_coach.pick_probe_file(str(repo)) is None
+
+
+def test_pick_probe_file_searches_only_under_root(habit_coach, tmp_path):
+    _require(habit_coach, "pick_probe_file")
+    repo = _init_repo(tmp_path)
+    _track(repo, "lib/outside.py")
+    _track(repo, "app/inside.py")
+
+    result = habit_coach.pick_probe_file(str(repo / "app"))
+
+    assert result is not None, "expected the tracked file under the root folder"
+    assert Path(result).name == "inside.py", f"expected inside.py, got {result!r}"
+
+
+# ---------------------------------------------------------------------------
+# check(root, runner, stdout) -> int
+# ---------------------------------------------------------------------------
+
+
+def test_check_returns_zero_and_prints_coaching_works_when_coached(habit_coach, tmp_path):
+    _require(habit_coach, "check")
+    repo = _init_repo(tmp_path)
+    _track(repo, "app.py")
+    runner = FakeRunner((1, "too-many-parameters: coaching text"))
+    out = io.StringIO()
+
+    rc = habit_coach.check(str(repo), runner=runner, stdout=out)
+
+    assert rc == 0
+    assert len(runner.calls) == 1
+    assert _single_line(out).startswith("coaching works")
+
+
+def test_check_returns_zero_for_clean_scan_of_scanned_file(habit_coach, tmp_path):
+    _require(habit_coach, "check")
+    repo = _init_repo(tmp_path)
+    _track(repo, "app.py")
+    runner = FakeRunner((0, "app.py: 1 file scanned, 0 findings"))
+    out = io.StringIO()
+
+    rc = habit_coach.check(str(repo), runner=runner, stdout=out)
+
+    assert rc == 0
+    assert _single_line(out).startswith("coaching works")
+
+
+def test_check_fails_when_runner_exits_zero_but_says_nothing_scanned(habit_coach, tmp_path):
+    _require(habit_coach, "check")
+    repo = _init_repo(tmp_path)
+    _track(repo, "app.py")
+    runner = FakeRunner((0, "habit-hooks: nothing scanned"))
+    out = io.StringIO()
+
+    rc = habit_coach.check(str(repo), runner=runner, stdout=out)
+
+    assert rc == 1
+    assert _single_line(out).startswith("coaching check failed")
+
+
+def test_check_fails_when_runner_returns_two(habit_coach, tmp_path):
+    _require(habit_coach, "check")
+    repo = _init_repo(tmp_path)
+    _track(repo, "app.py")
+    runner = FakeRunner((2, "bad config key"))
+    out = io.StringIO()
+
+    rc = habit_coach.check(str(repo), runner=runner, stdout=out)
+
+    assert rc == 1
+    assert _single_line(out).startswith("coaching check failed")
+
+
+def test_check_fails_when_habit_hooks_is_missing_and_names_install(habit_coach, tmp_path):
+    _require(habit_coach, "check")
+    repo = _init_repo(tmp_path)
+    _track(repo, "app.py")
+    runner = FakeRunner((127, "habit-hooks is not installed."))
+    out = io.StringIO()
+
+    rc = habit_coach.check(str(repo), runner=runner, stdout=out)
+
+    assert rc == 1
+    line = _single_line(out)
+    assert line.startswith("coaching check failed")
+    assert "/implement:install" in line
+
+
+def test_check_fails_when_repo_has_no_probe_file_and_runs_no_scan(habit_coach, tmp_path):
+    _require(habit_coach, "check")
+    repo = _init_repo(tmp_path)
+    _track(repo, "README.md", "# notes\n")
+    runner = FakeRunner((0, "app.py: 1 file scanned, 0 findings"))
+    out = io.StringIO()
+
+    rc = habit_coach.check(str(repo), runner=runner, stdout=out)
+
+    assert rc == 1
+    assert _single_line(out).startswith("coaching check failed")
+    assert runner.calls == [], "no probe file means the runner must not run"
+
+
+def test_check_failure_reasons_are_distinct(habit_coach, tmp_path):
+    _require(habit_coach, "check")
+    repo_with_source = _init_repo(tmp_path, "with-source")
+    _track(repo_with_source, "app.py")
+    repo_without_source = _init_repo(tmp_path, "without-source")
+    _track(repo_without_source, "README.md", "# notes\n")
+
+    cases = [
+        (repo_with_source, FakeRunner((2, "bad config key"))),
+        (repo_with_source, FakeRunner((127, "habit-hooks is not installed."))),
+        (repo_without_source, FakeRunner((0, "app.py: 1 file scanned, 0 findings"))),
+    ]
+    lines = []
+    for repo, runner in cases:
+        out = io.StringIO()
+        rc = habit_coach.check(str(repo), runner=runner, stdout=out)
+        assert rc == 1
+        lines.append(_single_line(out))
+
+    assert len(set(lines)) == 3, f"expected three distinct failure reasons, got: {lines!r}"
+
+
+def test_check_passes_the_probe_file_to_the_runner(habit_coach, tmp_path):
+    _require(habit_coach, "check")
+    repo = _init_repo(tmp_path)
+    target = _track(repo, "src/app.py")
+    runner = FakeRunner((1, "coached"))
+
+    habit_coach.check(str(repo), runner=runner, stdout=io.StringIO())
+
+    assert len(runner.calls) == 1, f"expected one runner call, got {runner.calls!r}"
+    assert _resolved(runner.calls[0], repo) == target.resolve()
+
+
+# ---------------------------------------------------------------------------
+# main(stdin, stdout, runner, argv) with --check
+# ---------------------------------------------------------------------------
+
+
+def test_main_check_ignores_stdin_and_checks_the_probe_file(habit_coach, tmp_path, monkeypatch):
+    _require_param(habit_coach.main, "argv")
+    repo = _init_repo(tmp_path)
+    target = _track(repo, "src/app.py")
+    monkeypatch.chdir(repo)
+    runner = FakeRunner((1, "coached"))
+    stdin = io.StringIO(json.dumps(_green_payload("/x/other.py")))
+    stdout = io.StringIO()
+
+    rc = habit_coach.main(stdin, stdout, runner=runner, argv=["--check"])
+
+    assert rc == 0
+    assert len(runner.calls) == 1, f"expected one runner call, got {runner.calls!r}"
+    assert _resolved(runner.calls[0], repo) == target.resolve()
+    assert "coaching works" in stdout.getvalue()
+
+
+def test_main_check_uses_git_root_of_current_folder(habit_coach, tmp_path, monkeypatch):
+    _require_param(habit_coach.main, "argv")
+    repo = _init_repo(tmp_path)
+    target = _track(repo, "src/app.py")
+    docs = repo / "docs"
+    docs.mkdir()
+    monkeypatch.chdir(docs)
+    runner = FakeRunner((0, "app.py: 1 file scanned, 0 findings"))
+
+    rc = habit_coach.main(io.StringIO(""), io.StringIO(), runner=runner, argv=["--check"])
+
+    assert rc == 0, "a sub-folder with no tracked files must still find the repo probe file"
+    assert len(runner.calls) == 1, f"expected one runner call, got {runner.calls!r}"
+    assert _resolved(runner.calls[0], repo) == target.resolve()
+
+
+def test_main_check_returns_check_code_for_missing_habit_hooks(habit_coach, tmp_path, monkeypatch):
+    _require_param(habit_coach.main, "argv")
+    repo = _init_repo(tmp_path)
+    _track(repo, "src/app.py")
+    monkeypatch.chdir(repo)
+    runner = FakeRunner((127, "habit-hooks is not installed."))
+    stdout = io.StringIO()
+
+    rc = habit_coach.main(io.StringIO(""), stdout, runner=runner, argv=["--check"])
+
+    assert rc == 1
+    assert stdout.getvalue().startswith("coaching check failed")
+    assert "/implement:install" in stdout.getvalue()
+
+
+def test_main_check_outside_a_git_repo_fails_without_raising(habit_coach, tmp_path, monkeypatch):
+    _require_param(habit_coach.main, "argv")
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path))
+    loose = tmp_path / "loose"
+    loose.mkdir()
+    monkeypatch.chdir(loose)
+    runner = FakeRunner((0, "app.py: 1 file scanned, 0 findings"))
+    stdout = io.StringIO()
+
+    rc = habit_coach.main(io.StringIO(""), stdout, runner=runner, argv=["--check"])
+
+    assert rc == 1
+    assert stdout.getvalue().startswith("coaching check failed")
+    assert runner.calls == []
+
+
+def test_main_without_check_flag_still_coaches_green_payload(habit_coach):
+    _require_param(habit_coach.main, "argv")
+    runner = FakeRunner((1, "coached"))
+    stdin = io.StringIO(json.dumps(_green_payload("/x/a.py")))
+    stdout = io.StringIO()
+
+    rc = habit_coach.main(stdin, stdout, runner=runner, argv=[])
+
+    assert rc == 0
+    assert runner.calls == ["/x/a.py"]
+    context = json.loads(stdout.getvalue().strip())["hookSpecificOutput"]["additionalContext"]
+    assert "/x/a.py" in context
+
+
+# ---------------------------------------------------------------------------
+# End to end: the script run as a subprocess with --check
+# ---------------------------------------------------------------------------
+
+
+def _e2e_repo(tmp_path: Path) -> Path:
+    repo = _init_repo(tmp_path)
+    _track(repo, "app.py")
+    return repo
+
+
+def _stub_bin(tmp_path: Path, name: str, output: str, code: int) -> Path:
+    """Return a folder holding a habit-hooks stub that prints output and exits code."""
+    bin_dir = tmp_path / name
+    bin_dir.mkdir()
+    stub = bin_dir / "habit-hooks"
+    stub.write_text(
+        "#!/bin/sh\n"
+        f"printf '%s\\n' {shlex.quote(output)}\n"
+        f"exit {code}\n"
+    )
+    stub.chmod(0o755)
+    return bin_dir
+
+
+def _run_check(repo: Path, path_value: str) -> subprocess.CompletedProcess:
+    env = dict(os.environ)
+    env["PATH"] = path_value
+    return subprocess.run(
+        [sys.executable, str(HABIT_COACH_PATH), "--check"],
+        cwd=str(repo),
+        env=env,
+        input="",
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+
+
+def test_e2e_check_with_coaching_stub_prints_coaching_works(tmp_path):
+    repo = _e2e_repo(tmp_path)
+    stub = _stub_bin(tmp_path, "coach-bin", "too-many-parameters: coaching text", 1)
+    path_value = f"{stub}{os.pathsep}{os.environ.get('PATH', '')}"
+
+    proc = _run_check(repo, path_value)
+
+    assert proc.returncode == 0, f"stdout={proc.stdout!r} stderr={proc.stderr!r}"
+    assert proc.stdout.strip().startswith("coaching works")
+
+
+def test_e2e_check_with_passing_scanned_stub_prints_coaching_works(tmp_path):
+    repo = _e2e_repo(tmp_path)
+    stub = _stub_bin(tmp_path, "pass-bin", "app.py: 1 file scanned, 0 findings", 0)
+    path_value = f"{stub}{os.pathsep}{os.environ.get('PATH', '')}"
+
+    proc = _run_check(repo, path_value)
+
+    assert proc.returncode == 0, f"stdout={proc.stdout!r} stderr={proc.stderr!r}"
+    assert proc.stdout.strip().startswith("coaching works")
+
+
+def test_e2e_check_with_nothing_scanned_stub_fails(tmp_path):
+    repo = _e2e_repo(tmp_path)
+    stub = _stub_bin(tmp_path, "unscanned-bin", "habit-hooks: nothing scanned", 0)
+    path_value = f"{stub}{os.pathsep}{os.environ.get('PATH', '')}"
+
+    proc = _run_check(repo, path_value)
+
+    assert proc.returncode == 1, f"stdout={proc.stdout!r} stderr={proc.stderr!r}"
+    assert proc.stdout.strip().startswith("coaching check failed")
+
+
+def test_e2e_check_with_no_habit_hooks_on_path_names_install(tmp_path):
+    repo = _e2e_repo(tmp_path)
+    # git must stay reachable so the probe file is found. Only habit-hooks is absent.
+    git_path = shutil.which("git")
+    assert git_path is not None, "git must be installed to run this test"
+    git_only = tmp_path / "git-only-bin"
+    git_only.mkdir()
+    (git_only / "git").symlink_to(git_path)
+
+    proc = _run_check(repo, str(git_only))
+
+    assert proc.returncode == 1, f"stdout={proc.stdout!r} stderr={proc.stderr!r}"
+    assert "/implement:install" in proc.stdout
+
+
+# ---------------------------------------------------------------------------
+# SKILL.md: Install mode proof step
+# ---------------------------------------------------------------------------
+
+
+def _install_mode_section() -> str:
+    text = SKILL_MD_PATH.read_text()
+    start = text.index("## Install mode")
+    match = re.search(r"^---$", text[start:], re.MULTILINE)
+    assert match is not None, "Install mode has no closing '---' line"
+    return text[start:start + match.start()]
+
+
+def _proof_step(section: str) -> str:
+    assert "Prove the coach" in section, "Install mode has no 'Prove the coach' step"
+    return section[section.index("Prove the coach"):]
+
+
+def test_install_mode_names_habit_coach_check():
+    section = _install_mode_section()
+    assert "habit_coach.py\" --check" in section
+
+
+def test_install_mode_runs_habit_coach_check_after_habit_hooks_init():
+    section = _install_mode_section()
+    assert "habit-hooks init" in section
+    assert "habit_coach.py\" --check" in section
+    init_index = section.index("habit-hooks init")
+    check_index = section.index("habit_coach.py\" --check")
+    assert check_index > init_index, "the proof must come after the habit-hooks init step"
+
+
+def test_install_mode_proof_step_is_the_last_step_after_report():
+    section = _install_mode_section()
+    _proof_step(section)
+    report_index = section.index("Report the result")
+    assert section.index("Prove the coach") > report_index, (
+        "the proof step must come after the report step"
+    )
+    assert not re.search(r"^9\. ", section, re.MULTILINE), "the proof must be the last step"
+
+
+def test_install_mode_proof_step_runs_after_every_install():
+    step = _proof_step(_install_mode_section())
+    assert "after every install" in step.lower()
+
+
+def test_install_mode_proof_step_reports_success_only_on_coaching_works():
+    step = _proof_step(_install_mode_section())
+    sentences = re.split(r"[.\n]", step)
+    matching = [
+        s for s in sentences
+        if "report" in s.lower() and "only" in s.lower() and "coaching works" in s
+    ]
+    assert matching, "expected a sentence saying to report success only when the output reads 'coaching works'"
