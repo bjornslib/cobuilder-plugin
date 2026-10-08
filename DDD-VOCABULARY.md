@@ -145,10 +145,20 @@ _Avoid_: Gate 4 as a whole (00-status.md tracks three lines, and the whole gate 
 The conditional interaction-design gate in `implement`, running only when the feature has a front end, with its own line in `docs/plans/<feature-slug>/00-status.md`. It writes `interaction-design.md` and `ui-spec.jsonc`, a feature with no front end writes one `n/a (no UI)` line instead, and Gate 3 must not start until this gate reads APPROVED or n/a.
 _Avoid_: Gate 2 (Gate 2b is not a sub-step of Gate 2. It has its own status line), Gate 4c (Gate 4c reads interaction-design.md for its eight required headings, after the document exists)
 
+<a id="red"></a>
+**RED** (`implement`):
+The first role of the slice loop in `implement`: the `implement:red` agent writes failing tests that pin the slice contract, and it never edits the code under test. It is done when every new test fails on an assertion.
+_Avoid_: tester (the generic word, and RED is the named role that owns the immutable contract)
+
 <a id="green"></a>
 **GREEN** (`implement`):
 The second role of the slice loop in `implement`: the `implement:green` agent writes the minimal code that makes RED's failing tests pass, and it never reads the blind rubric. The `PostToolUse` hook coaches it with habit-hooks after each file it writes.
 _Avoid_: implementer (the generic word, and GREEN is the named role with its own scope contract)
+
+<a id="validate"></a>
+**VALIDATE** (`implement`):
+The third role of the slice loop in `implement`: the `implement:validate` agent, a fresh subagent that saw neither RED nor GREEN, scores the slice against the blind rubric. It is the only role that reads the rubric, and a score of 0.90 or higher accepts the slice.
+_Avoid_: draft review (the architect stage 6 pre-review, which proposes survivors and never scores a slice), auditor (the generic word)
 
 ## Cross-cutting
 
