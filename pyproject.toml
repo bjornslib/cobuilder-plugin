@@ -19,3 +19,10 @@ dev = [
 [tool.uv]
 package = false
 python-preference = "only-managed"
+
+# habit-hooks hands its whole scope, TypeScript files included, to ruff. Ruff
+# would read each .ts and .tsx file as Python and report a parse error.
+# force-exclude makes ruff skip excluded files even when they are named.
+[tool.ruff]
+force-exclude = true
+extend-exclude = ["**/*.ts", "**/*.tsx"]

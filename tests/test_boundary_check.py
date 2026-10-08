@@ -315,3 +315,19 @@ def test_non_root_path_commit_after_record_is_stale(tmp_path):
     commit(repo, "docs/architecture/contexts/alpha/canvas.md")
     commit(repo, "src/alpha/b.py")
     assert "alpha: stale" in run(repo, "--paths", "src/alpha/x.py").stdout
+
+
+def test_root_non_source_files_are_not_uncovered(tmp_path):
+    repo = make_repo(tmp_path)
+    paths = ["README.md", "CLAUDE.md", "pyproject.toml", ".habit-hooks/config.toml", "scripts/x.sh"]
+    r = run(repo, "--paths", *paths, "--require")
+    assert "uncovered" not in r.stdout, r.stdout
+    assert r.returncode == 0, r.stdout
+
+
+def test_source_paths_outside_contexts_stay_uncovered(tmp_path):
+    repo = make_repo(tmp_path)
+    r = run(repo, "--paths", "plugins/x/y.py", "shared/z.py", "--require")
+    assert "uncovered: plugins/x/y.py" in r.stdout
+    assert "uncovered: shared/z.py" in r.stdout
+    assert r.returncode == 1

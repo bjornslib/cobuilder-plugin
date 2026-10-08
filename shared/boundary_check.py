@@ -18,7 +18,23 @@ import subprocess
 import sys
 from pathlib import Path
 
-IGNORED_PREFIXES = ("docs/", "tests/", ".cobuilder/", ".cobuilder-architect/")
+IGNORED_PREFIXES = (
+    "docs/",
+    "tests/",
+    ".cobuilder/",
+    ".cobuilder-architect/",
+    "README.md",
+    "CLAUDE.md",
+    "DDD-VOCABULARY.md",
+    "pyproject.toml",
+    "package.json",
+    "package-lock.json",
+    ".jscpd.json",
+    ".gitignore",
+    ".habit-hooks/",
+    ".claude/",
+    "scripts/",
+)
 
 
 def read_field(text: str, key: str) -> str:

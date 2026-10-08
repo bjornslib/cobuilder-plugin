@@ -493,6 +493,7 @@ def test_install_mode_covers_root_package_json_jscpd_config_and_complete_run():
     assert "Nothing missing" in section
     assert "habit-hooks --branch" in section
     assert "incomplete-run" in section
+    assert "force-exclude" in section
 
 
 # ---------------------------------------------------------------------------
