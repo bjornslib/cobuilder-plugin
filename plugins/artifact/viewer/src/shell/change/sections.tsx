@@ -106,8 +106,6 @@ export interface ChangeBodyProps {
   entry: StoryEntry | null;
   /** The four narration levels, derived once by `./levels`. */
   levels: ChangeLevel[];
-  /** The audio addresses the bundle answered, keyed by address. */
-  servedAudio: Record<string, boolean>;
   /** The diff hunks, keyed by path, or null when the bundle holds no diff. */
   diff: Record<string, string> | null;
   /** Why the diff is absent, or null when the bundle holds one. */

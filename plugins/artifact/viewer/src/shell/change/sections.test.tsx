@@ -36,7 +36,6 @@ function props(over: Partial<ChangeBodyProps> = {}): ChangeBodyProps {
   return {
     entry: ENTRY,
     levels: [LEVEL],
-    servedAudio: {},
     diff: null,
     diffMessage: null,
     theme: "light",
@@ -101,7 +100,7 @@ describe("what a section does not say", () => {
   }
 
   it("never states that the WAV file is missing", () => {
-    const said = text("intent", { servedAudio: { [LEVEL.audio as string]: false } });
+    const said = text("intent");
     expect(said).not.toMatch(/holds no audio file/);
     expect(screen.queryByText(/voice script/i)).toBeNull();
     expect(document.querySelector("audio")).toBeNull();
@@ -113,7 +112,7 @@ describe("what a section does not say", () => {
   });
 
   it("leaves the audio control and the narration to the In Short strip", () => {
-    const said = text("intent", { servedAudio: { [LEVEL.audio as string]: true } });
+    const said = text("intent");
     expect(document.querySelector("audio")).toBeNull();
     expect(said).not.toContain(LEVEL.narration);
   });

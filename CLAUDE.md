@@ -70,11 +70,11 @@ A Claude Code marketplace (`.claude-plugin/marketplace.json`) that ships five si
 |---|---|
 | `architect` | Seven self-only modes: design, review, maintenance, decisions, describe, debug, options |
 | `pr` | Odyssey: narrate merged PRs (`baseline`, `review`) and interview an author before a PR opens (`generate`) |
-| `artifact` | Serve a bundle locally (`view`) and publish a level as a Claude Artifact (`publish`). Holds the viewer |
+| `artifact` | Serve a bundle locally (`view`), publish a level as a Claude Artifact (`publish`), and draw a design as a tldraw canvas (`canvas`). Holds the viewer |
 | `implement` | Build a design one vertical slice at a time (`start`, `debug`, `install`) |
 | `cobuilder-full-lifecycle` | Umbrella. Depends on the other four |
 
-The lifecycle has six steps. `options` explores the whole system. `design` decides one change. `implement` builds it. `pr:generate` assesses it and opens the PR. `pr:review` narrates it after the merge. `artifact` shows the result.
+The lifecycle has six steps. `options` explores the whole system. `design` decides one change. `implement` builds it. `pr:generate` assesses it and opens the PR. `pr:review` narrates it after the merge. `artifact` shows the result, and draws a design as a canvas.
 
 ## Layout
 
@@ -115,8 +115,9 @@ tests/                            pytest suite for packaging, scripts, and gates
 - **Review, maintenance, decisions, describe, debug**: scored audit against the corpus, ADR governance, bounded-context canvases, root-cause diagnosis.
 - **Implement** (`/implement:start`): four approval gates (product, architecture, program design, slice plan with epic designs and blind rubrics), then a RED, GREEN, VALIDATE loop per slice. `verify_gate.py` checks the gates. A `PostToolUse` hook coaches GREEN through habit-hooks. `implement:vocabulary` checks each slice against the glossary.
 - **Odyssey** (`pr`): a four-level story per merged PR with scene art, Mermaid diagrams, voice narration, and retro-extracted ADRs. `generate` interviews first and assesses the change before the PR opens.
-- **Viewer** (`artifact`): one surface for designs, ADRs, builds, and PRs, that `data/index.json` joins. The Work board is a drawer over the shell (ADR-0034). `view_server.py` serves on fixed port 62583. Review links and an anchored-comments ledger are built in (ADR-0019, ADR-0032). A work item and a PR page the same way: a rail row is a paged level, and a section is one panel (ADR-0028).
+- **Viewer** (`artifact`): one surface for designs, ADRs, builds, and PRs, that `data/index.json` joins. The Work board is a drawer over the shell (ADR-0034). `view_server.py` serves on fixed port 62583. Review links and an anchored-comments ledger are built in (ADR-0019, ADR-0032). A work item and a PR page the same way: a rail row is a paged level, and a section is one panel (ADR-0028). Each level opens with an In Short strip that holds its `narration`. The rail lists the three levels once, then an Also group. One text link in each section heading, "Read in PR 12 ›", moves to the other account on the section of the same name (ADR-0037). The viewer states no record gap. `build_index.py` warns about a design that lacks a problem, decision, or risk beat.
 - **Publish** (`/artifact:publish`): flatten one PR into a single HTML file under the 16 MiB Artifact cap.
+- **Canvas** (`/artifact:canvas`): draw one design folder as a `.tldraw` file with five zones (Why, Landscape, Flow, Structure, Contract) and the rendered level-2 and level-3 diagrams. `canvas_preflight.py` stops the mode when `goal.json`, the `tldraw-offline` skill, or the running tldraw Desktop app is missing. No plugin ships the skill. A missing `npx` or Chrome only turns off the diagram images.
 - **Bundle migration** (`shared/migrate_bundle.py`): runs first in every bundle-touching mode. It refreshes the viewer unconditionally, steps the layout (`bundle_format`), then steps the data shape (`schema_version`).
 
 ## Commands

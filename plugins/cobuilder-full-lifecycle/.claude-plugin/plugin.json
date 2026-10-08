@@ -1,6 +1,6 @@
 {
   "name": "cobuilder-full-lifecycle",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Umbrella plugin for the CoBuilder family. Installs design, review, PR narration, and artifact publishing together.",
   "author": { "name": "bjornslib" },
   "repository": "https://github.com/bjornslib/cobuilder-architect",

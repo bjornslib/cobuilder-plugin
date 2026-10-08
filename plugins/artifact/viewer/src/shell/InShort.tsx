@@ -29,7 +29,7 @@ export function InShort({ text, audio }: { text: string; audio?: string | null }
   return (
     <section
       aria-label="In Short"
-      className="flex min-w-0 shrink-0 flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-line px-6 py-2"
+      className="flex min-w-0 shrink-0 flex-col gap-y-1 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-4 border-b border-line px-6 py-2"
     >
       <span className="shrink-0 font-mono text-[11px] tracking-[0.08em] text-ink-faint uppercase">
         In Short

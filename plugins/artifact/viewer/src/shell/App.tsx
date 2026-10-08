@@ -987,7 +987,6 @@ export default function ShellApp() {
                       sections={changeSections({
                         entry: change.entry,
                         levels: change.levels,
-                        servedAudio,
                         diff: change.diff,
                         diffMessage: change.diffMessage,
                         theme,
@@ -1140,7 +1139,6 @@ export default function ShellApp() {
                           sections={changeSections({
                             entry: change.entry,
                             levels: change.levels,
-                            servedAudio,
                             diff: change.diff,
                             diffMessage: change.diffMessage,
                             theme,

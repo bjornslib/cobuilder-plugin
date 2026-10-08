@@ -1,9 +1,9 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "81f305aa7aac72cfce3f9bb2cc9b1d1dbbc009fd",
+    "git_head": "2277af9f873a96b2a5b744c120700f9cf1dbe4fb",
     "trees": {
-      "docs/architecture/adr": "sha256:e9d7df820ca7844aeefb408608f44df4622081ac88ed166133ac6c36f3b9a2ad",
+      "docs/architecture/adr": "sha256:ee55c7b8235fa910b57f238752fa72a42004cd2d27bdedfd950ee9092b2f2233",
       "docs/architecture/designs": "sha256:33f32130f50d8a2a68c027883bf4795d716562038d4232985187da53012cb849",
       "docs/architecture/contexts": "sha256:2f1cde1db74ea6f95b55152c3de109c6e281619cc3beae3fb939d8650a4005c8",
       "docs/plans": "sha256:92a5cd6eaea26c30f88fad32f88b185ef42627682ab22f57eb67b0585796766a",
@@ -195,7 +195,7 @@
       {
         "id": "ADR-0037",
         "title": "A level opens with an In Short strip, and the other account is one link in the heading",
-        "state": "tentative"
+        "state": "decided"
       }
     ],
     "design": [
