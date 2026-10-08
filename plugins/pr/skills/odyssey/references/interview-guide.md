@@ -49,6 +49,14 @@ fallback in §6. `authorship` is `human`, `agent-assisted`, or
 here moves into an ADR with no rewrite, and it answers
 `decision-records-lite.md` §3.4 without archaeology.
 
+Write every field of the block under `${CLAUDE_PLUGIN_ROOT}/shared/prose-budget.md`. Use the
+ste-writing skill. You may draft the thirty-second voice script first. Cut words and never meaning:
+record every decision, risk, alternative, and out-of-scope item the author states, and shorten each
+one. If a point does not fit its field, make another list item. Run `prose_budget.py check` on
+`data/story.json` and fix every ceiling line. A cap is soft, so keep a point rather than cut it.
+`unknowns` is the one place to keep an author's exact words, and each item stays inside the item
+cap.
+
 ## 2. Read the evidence before you ask anything
 
 **Never ask a question that the evidence already answers.** An author who

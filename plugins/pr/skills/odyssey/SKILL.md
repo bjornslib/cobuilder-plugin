@@ -297,7 +297,7 @@ Only after all three checks pass does mode dispatch begin.
 The invoking command passes a mode (`baseline`, `review`, `view`,
 `publish`, or `generate`) plus forwarded args (`--repo`, `--store`,
 `--prs`, `--force`, `--voice`, `--art`, `--dry-run`, `--port`, `--stop`,
-`--list`, `--format`, `--style`, `--stage`, `--branch`, `--base`,
+`--list`, `--format`, `--stage`, `--branch`, `--base`,
 `--draft`, `--no-create`, `--non-interactive`).
 If invoked with no mode, ask the user whether they want `baseline`,
 `review`, `view`, `publish`, or `generate`. `design` dispatches to the
@@ -387,9 +387,8 @@ This mode runs the per-PR narrative, ADR, art, and audio sweep. Steps:
    `"missing"`. Execute only the missing stages, **in this order**:
 
    1. **Narrative authoring** (Claude work, not a script). Follow
-      `references/story-mode.md`. The register comes from `--style
-      kleppmann|ste` (default `kleppmann`). See `references/story-mode.md`
-      §3 for both. Ground every claim in three sources: the diff, the
+      `references/story-mode.md`. The register is STE, always, inside the
+      prose budget. See `references/story-mode.md` §3. Ground every claim in three sources: the diff, the
       touched files in `<target>`, and `<bundle-dir>/inventory.yaml`. Get
       the diff from `extract_diffs.py`'s output. Run that script first if
       the diff is not extracted yet.

@@ -57,6 +57,7 @@ from _bundle_meta import (  # noqa: E402
     require_compatible,
     stamp_generator,
 )
+import prose_budget  # noqa: E402
 import slice_table  # noqa: E402
 import gate_status  # noqa: E402
 
@@ -1570,6 +1571,14 @@ def build_index(repo: Path, bundle_dir: Path) -> tuple[dict, dict, dict, list[st
     joins, join_warnings = resolve_joins(repo, adrs_viewer, designs_viewer, entities)
     for warning in join_warnings:
         print(f"warning: {warning}", file=sys.stderr)
+    for name, record in sorted(designs_viewer.items()):
+        soft, hard = prose_budget.split_overages(
+            prose_budget.design_overages(record, f"docs/architecture/designs/{name}/")
+        )
+        for over in soft:
+            print(f"warning: over the prose budget: {over}", file=sys.stderr)
+        for over in hard:
+            print(f"warning: over the prose ceiling: {over}", file=sys.stderr)
 
     for design_id, record in designs_viewer.items():
         for warning in record_gap_warnings(design_id, record.get("narrative")):

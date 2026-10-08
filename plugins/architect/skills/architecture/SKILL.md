@@ -201,6 +201,11 @@ that join here.
    `references/design-mode.md` §8. Show `intent` and `assessment` to the
    engineer before you write them to disk.
 
+   Every prose field obeys `${CLAUDE_PLUGIN_ROOT}/shared/prose-budget.md`. You may
+   draft the thirty-second voice script first. Then write each field by the writing rules there. Run
+   `prose_budget.py check` on `goal.json`, `intent.json`, and `assessment.json`, and fix every
+   ceiling line. A cap is soft, so keep a point rather than cut it.
+
    Then write five artifacts. Run each prose pass through
    `Skill("architect:ste-writing")` in flavored mode. If that
    call gives `Unknown skill`, read

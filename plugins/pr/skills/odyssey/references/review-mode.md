@@ -30,7 +30,7 @@ One JSON object on this PR's timeline entry:
   "generated": "2026-08-04",
   "verdict": "concerns",
   "risk_tier": "architectural",
-  "summary": "<two or three sentences a reviewer can read first>",
+  "summary": "<two sentences a reviewer can read first, inside the word cap>",
   "sensible": {
     "answer": "<...>", "evidence": ["<path:line or ADR id>"]
   },
@@ -76,6 +76,10 @@ already-shipped decision record — for example, an ADR whose `maps_to`
 field points at a path the repo no longer has. `decision-records.md` §5
 governs that second meaning. Neither name changes. Read the section a
 finding cites before you act on it.
+
+Write the assessment under `${CLAUDE_PLUGIN_ROOT}/shared/prose-budget.md`. Use the ste-writing
+skill. Run `prose_budget.py check` on `data/story.json` and fix every ceiling line. A cap is soft,
+so keep a point rather than cut it. Evidence belongs in `evidence`, not in the answer.
 
 ## 2. Evidence discipline
 

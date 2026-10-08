@@ -140,9 +140,14 @@ _Avoid_: Gate 2 (Gate 2b is not a sub-step of Gate 2. It has its own status line
 
 <a id="self"></a>
 **Self** (`cross-cutting`):
-The session's own checkout, the only target the seven Architecture modes accept. See "foreign" for a `--repo`-targeted checkout, reachable only through Odyssey.
+The session's own checkout, the only target the Architecture modes accept. See "foreign" for a `--repo`-targeted checkout, reachable only through Odyssey.
 
 <a id="foreign"></a>
 **foreign** (`cross-cutting`):
 A `--repo`-targeted checkout, reachable only through Odyssey. Its bundle always lands under the session's own repo as `<hub>`, never inside the foreign repo itself.
 _Avoid_: hub
+
+<a id="prose-budget"></a>
+**Prose budget** (`cross-cutting`):
+The word cap on each authored field, held in `shared/prose_budget.py` and explained in `shared/prose-budget.md`: a field that retells what the ADR, the plan, or the diff already holds hides the high-level view. `build_index.py` warns on a design over a cap, and `verify_bundle.py` fails the bundle (`prose.budget`).
+_Avoid_: length limit, style guide (ste-writing is the style rule, and the budget bounds the total length that STE does not)
