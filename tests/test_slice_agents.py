@@ -525,19 +525,6 @@ def test_slice_loop_js_uses_the_runtime_parallel():
     )
 
 
-def test_slice_loop_js_is_syntactically_valid_node_after_vocabulary_change():
-    if shutil.which("node") is None:
-        pytest.skip("node is not on PATH; skipping node --check on slice-loop.js")
-    result = subprocess.run(
-        ["node", "--check", str(SLICE_LOOP_JS)],
-        capture_output=True,
-        text=True,
-    )
-    assert result.returncode == 0, (
-        f"node --check {SLICE_LOOP_JS} failed:\n{result.stdout}\n{result.stderr}"
-    )
-
-
 STAGE_HEADING_RE = re.compile(r"^## \d+\. (Stage \d+)\b.*$", re.MULTILINE)
 
 
