@@ -1,0 +1,22 @@
+{
+  "path": [
+    "shared",
+    "plugins",
+    "tests"
+  ],
+  "ignore": [
+    "plugins/*/shared/**",
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/viewer/index.html",
+    "**/*.min.js",
+    "plugins/artifact/viewer/src/**/*.test.tsx",
+    "tests/fixtures/**",
+    "**/package-lock.json",
+    "**/*.html",
+    "**/*.json"
+  ],
+  "threshold": 0,
+  "minLines": 5,
+  "minTokens": 50
+}
