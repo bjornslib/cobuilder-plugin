@@ -9,8 +9,7 @@
  * `shadow` did exactly that, from a comment in LevelProgress.test.tsx.
  *
  * A test never needs a style, so no test file contributes a candidate. The
- * exclusion is by file name and stops there: `src/variations/` keeps contributing,
- * because those prototypes share this stylesheet through the dev server.
+ * exclusion is by file name and stops there.
  */
 @source not "./**/*.test.ts";
 @source not "./**/*.test.tsx";

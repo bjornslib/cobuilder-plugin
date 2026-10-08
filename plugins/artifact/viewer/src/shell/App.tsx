@@ -8,9 +8,8 @@
  * route is the bare `#/` because the shell is no longer one variation among several, the
  * THE FILE IS NOW THE ONLY ENTRY THE SHIPPED GRAPH HAS. The comparison harness that
  * rendered the prototype arrangements used to sit beside it, and this file handed that
- * harness its own addresses back. The harness is gone: each prototype under
- * `src/variations/` carries a dev-only entry of its own, and no file the shell can reach
- * imports one. So the shell answers every address the bundle's own designs answer, and
+ * harness its own addresses back. The harness is gone, and the prototypes it compared
+ * were removed from `src/variations/` on 2026-10-08. No file the shell can reach imports one. So the shell answers every address the bundle's own designs answer, and
  * an address that names no design says so.
  *
  * Three fixed regions and one scrolling region. The document does not scroll at all,

@@ -18,7 +18,7 @@
  *
  * WHICH GLOBALS THE SCAN NAMES. The criterion's list says `window.DIFFS`, and the bundle
  * does not write that name. `data/diffs-pr{N}.js` writes `window.DIFFS_BY_PR[N]`, and
- * `src/variations/flightdeck/model.ts` records the difference. So the scan reads the six
+ * the flightdeck prototype's model, since removed, recorded the difference. So the scan reads the six
  * names the bundle actually defines:
  *
  *   STORY  ODYSSEY  DIFFS_BY_PR  ADRS  DESIGNS  DIAGRAMS
@@ -29,15 +29,14 @@
  *
  * WHICH FILES THE SCAN COVERS. Every `.ts` and `.tsx` under `src/`, apart from two sets:
  * the test files and `src/data/` itself, which is the one module the criteria name. No
- * path under `src/` is excluded. `src/variations/` is covered along with `src/shell/`,
- * `src/components/`, `src/hooks/`, `src/lib/`, and the two files at the top of `src/`,
+ * path under `src/` is excluded. `src/shell/`, `src/components/`, `src/hooks/`, `src/lib/`, and the two files at the top of `src/`,
  * `App.tsx` and `main.tsx`.
  *
  * WHY NOTHING IS EXCLUDED NOW. A scope that once left `src/variations/` out did so for a
  * reason that is gone. `src/Variations.tsx` imported every prototype statically, so the
  * build carried each prototype's code and its duplicate Sheet, panel, atoms, and markdown
  * copies. That harness is deleted, the shell's variations route with it, and each
- * prototype has its own dev entry, so no prototype enters the built file.
+ * prototype was removed from `src/variations/` on 2026-10-08, so none enters the built file.
  *
  * WHAT THE WIDENED SCOPE FINDS TODAY. Both cases pass, and both read every file under
  * `src/` with no `src/variations/` exclusion. Neither needs one.
@@ -157,7 +156,7 @@ function literalRanges(file: SourceFile): Array<[number, number]> {
  * THE ORDER MATTERS, AND IT IS THE WHOLE FIX. The TypeScript scanner decides what a `/`
  * is from the tokens around it, and it does not re-scan a slash as the start of a regular
  * expression on its own. A regex holding a backtick, such as the markdown-fence matcher in
- * `src/variations/record-mosaic/records.ts`, therefore ends the scanner's string state
+ * the record-mosaic prototype's `records.ts`, since removed, therefore ends the scanner's string state
  * early, and every comment after it in that file is read as code. Blanking the literals
  * first removes the characters that could mislead it, and blanking changes no offset, so
  * the ranges still name the right lines. A comment cannot sit inside a literal, so no real
@@ -226,8 +225,8 @@ interface Projections {
  * comments with a hand-rolled scanner that entered a string state on any quote character
  * and left it on the matching one. A regular-expression literal holding a backtick ends
  * that state early, and from there on the scanner reads comments as code and code as
- * comments. Files such as `src/variations/record-mosaic/records.ts` and
- * `src/variations/flightdeck/model.ts` contain exactly that, and the defect went unseen
+ * comments. The record-mosaic and flightdeck prototypes, since removed from
+ * `src/variations/`, held files that contain exactly that, and the defect went unseen
  * because the criteria were passing or failing for reasons other than the ones they state.
  * The parser answers the question the scanner was guessing at: it has already decided which
  * characters are literal text by the time it reports a comment.
@@ -471,8 +470,7 @@ describe("the typed data layer", () => {
       and every literal's text, and keeps an element-access key so that `joins["KEY"]` is
       still a read. See the projection block above.
 
-      The scope is every file under `src/` outside `src/data/`, so `src/variations/` is
-      scanned too. Every join resolves under `src/data/` today, in `works.ts` and `joins.ts`,
+      The scope is every file under `src/` outside `src/data/`. Every join resolves under `src/data/` today, in `works.ts` and `joins.ts`,
       so this list is empty over the whole of `src/`. See this file's header.
     */
     const found = [
@@ -531,9 +529,8 @@ describe("the typed data layer", () => {
       The six script-tag globals the bundle defines, by the names the bundle writes. One
       module reads them all, so a surface never asks which reader a bundle came from.
 
-      The scope is every file under `src/` outside `src/data/`, so `src/variations/` is
-      scanned too. Every prototype hands its global read to the data module, so the case
-      passes over the whole of `src/` rather than over the shipped surface alone.
+      The scope is every file under `src/` outside `src/data/`, so the case passes over the
+      whole of `src/` rather than over one surface.
     */
     const unread = SHIPPED_GLOBALS.filter(
       (name) => hitsByLine(readsGlobal(name), DATA_SOURCES, "withStrings").length === 0,

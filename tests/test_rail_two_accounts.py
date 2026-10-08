@@ -28,7 +28,7 @@ under `src/shell/`, as text, and the built viewer at
 The names every case reads are fixed by `epic-E7-design.md`'s Types & Signatures
 (`GroupKey`, `AccountId`, `RailRow`, `RailGroup`, `railGroups`, `rowsOf`,
 `changeHref`, `programHref`, `ChangeKey`, `ProgramKey`) and by the reviewed
-prototype at `src/variations/flightdeck/accountModel.ts`, which the engineer
+flightdeck prototype's `accountModel.ts`, since removed, which the engineer
 approved as slice 14. A case reads its needles with every run of space removed and
 with a trailing comma dropped, so a reformat alone never fails one.
 
