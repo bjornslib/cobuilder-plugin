@@ -1,0 +1,39 @@
+{
+  "name": "habit-smells",
+  "title": "Review and maintenance read habit-hooks smells as a findings source",
+  "adr": "ADR-0038",
+  "adrs": ["ADR-0038", "ADR-0025", "ADR-0016"],
+  "created": "2026-10-08",
+  "outcome": "Review and maintenance reports carry a classified Mechanical smells section from habit-sensors, maintenance trends the pairs of smell and file against the previous report, and verify_bundle warns when the last scan is missing or stale.",
+  "done_when": [
+    "shared/habit_smells.py writes habit-smells.json from habit-sensors and states an incomplete run or a missing tool",
+    "review and maintenance write the Mechanical smells section and name the tool and branch base",
+    "verify_bundle reports habit.smells as ok, stale, or nothing, and a test covers it"
+  ],
+  "abort_if": [
+    "the script needs a new dependency or vendors the habit-hooks sensors",
+    "review must read the sensors' rendered coaching text instead of the JSON findings"
+  ],
+  "min_work": {
+    "challenge_stage_run": true,
+    "note": "Decided in chat on 2026-10-08 (ADR-0038). The script shells out to the installed habit-sensors through its JSON surface, and tests use a stub on PATH."
+  },
+  "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
+  "epics": [
+    {
+      "id": "E1",
+      "title": "The scan: shared/habit_smells.py writes habit-smells.json, and verify_bundle reports habit.smells"
+    },
+    {
+      "id": "E2",
+      "title": "Review mode: the Mechanical smells section in both reports, with classification rules"
+    },
+    {
+      "id": "E3",
+      "title": "Maintenance mode: the pair diff against the previous report, and the command files"
+    }
+  ],
+  "stage": "decided",
+  "supersedes": null,
+  "rounds": 0
+}

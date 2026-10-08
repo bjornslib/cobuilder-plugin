@@ -12,6 +12,24 @@ name: "Review and maintenance mode read habit-hooks smells"
 state: decided
 groups: [workflow, architect]
 approved_by: ""
+alternatives:
+  - option: "Review runs habit-hooks --branch and pastes its rendered output"
+    rejected_because: "The rendered text coaches an agent in session. It is not a findings record a report can carry, diff, or trend."
+  - option: "Only review mode reads the smells; maintenance keeps its corpus read"
+    rejected_because: "Maintenance trends the repo's health. A smell group that no scan recorded before the first maintenance run has no baseline, so the trend must start at the same scan that review writes."
+  - option: "Vendor the sensors into shared/ and call them directly"
+    rejected_because: "ADR-0025 already decided that habit-hooks stays an external CLI. Vendoring forks its release cycle."
+forces:
+  - "habit-hooks is already a dependency of the family, and it stays an external CLI (ADR-0025)."
+  - "Review reports tool output next to judged findings, and names the source of each."
+  - "A step with no mechanical consumer gets skipped, so the wiring prose needs tests and the scan needs a gate key in verify_bundle."
+  - "A duplicate-code group can hold hundreds of findings, so a report section must cap per-file detail."
+delivers:
+  capability: "Review and maintenance reports count the mechanical smells habit-sensors finds, beside the corpus findings they already carry."
+  benefit: "The reader sees tool output and judgment apart, and maintenance can trend a smell group over time with a recorded baseline."
+  beneficiary: [developer, validator-agent]
+history:
+  - { state: decided, date: 2026-10-08, by: bjornslib, note: "Decided in chat on 2026-10-08. The design record for the habit-smells plan holds the details of the slices." }
 maps_to:
   rule: "Review and maintenance name a mechanical source, and report it as tool output next to judged findings."
   modules: [shared/habit_smells.py, review mode Mechanical smells section, maintenance mode trend pairs]

@@ -1,0 +1,23 @@
+{
+  "intent": {
+    "tagline": "The tool counts. The judgment names the plan.",
+    "narration": "A review read the whole corpus and still could not see a smell a command one line of code can count. This design gives the two audit modes one mechanical source and keeps tool output apart from judgment.",
+    "beats": []
+  },
+  "problem_solution": {
+    "problem": "Review and maintenance audit a repo with reading and judgment. They run no linter. A smell a tool can count, such as a duplicated block, is invisible to a reading pass.",
+    "solution": "One script runs habit-sensors through its JSON surface and writes habit-smells.json. Review and maintenance add a Mechanical smells section that names the tool and the branch base, and maintenance trends each pair of smell and file against the previous report.",
+    "narration": "The script moves data. It never judges. Review classifies the groups and may re-classify with evidence, and it states the unavailable case instead of claiming a clean scan.",
+    "beats": [
+      { "kind": "problem", "text": "No report carries a count a tool can name, so a review can miss 930 duplicated-code hits a command prints in one line." },
+      { "kind": "constraint", "text": "habit-hooks stays an external CLI under ADR-0025, and the script gets no new dependency." },
+      { "kind": "decision", "text": "The script records the JSON findings, not the rendered coaching text, so a report can carry and diff them." },
+      { "kind": "risk", "text": "A broken tool run can read as a clean scan. An incomplete run is a P1 finding that names the tool." }
+    ],
+    "alternatives": [
+      { "option": "Paste the rendered output", "why_not": "It is session coaching, not a findings record." },
+      { "option": "Review only trends the smells", "why_not": "Maintenance needs the first scan as its baseline." },
+      { "option": "Vendor the sensors", "why_not": "ADR-0025 keeps habit-hooks external." }
+    ]
+  }
+}
