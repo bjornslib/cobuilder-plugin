@@ -19,7 +19,7 @@ Hindsight: unavailable
 ## Slices
 - [x] Slice 1 — E1 whole epic: the hook scans from the git root, fails on "nothing scanned", and no longer installs   score: 0.917 (attempt 1)
 - [x] Slice 2 — E2 whole epic: `habit_coach.py --check` and the install proof step                                    score: 1.00 (attempt 1)
-- [ ] Slice 3 — E3 whole epic: implement 0.7.0 in both manifests                                                     score: —
+- [x] Slice 3 — E3 whole epic: implement 0.7.0 in both manifests                                                     score: 1.00 (attempt 1)
 
 ## Escalated
 none

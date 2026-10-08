@@ -7,4 +7,4 @@
 | | **`coach-reaches-green/E2` — A proof after install.** Install mode shows the coach works. | | | | |
 | 2 | `coach-reaches-green/E2` | Tracer bullet and whole epic: `habit_coach.py --check` and the install proof step | `--check` prints "coaching works" for a coached file and for a scanned clean file. It exits 1 for unscanned output, a missing command, and a repo with no probe file. Install mode ends with a step that runs it after every install. A blind agent given Install mode runs the proof last. | 1.00 (attempt 1) | accepted |
 | | **`coach-reaches-green/E3` — A release.** Installed copies get the change. | | | | |
-| 3 | `coach-reaches-green/E3` | Tracer bullet and whole epic: implement 0.7.0 in both manifests | `plugin.json` and `marketplace.json` both read 0.7.0 for `implement`, and the version-match test passes. | — | pending |
+| 3 | `coach-reaches-green/E3` | Tracer bullet and whole epic: implement 0.7.0 in both manifests | `plugin.json` and `marketplace.json` both read 0.7.0 for `implement`, and the version-match test passes. | 1.00 (attempt 1) | accepted |
