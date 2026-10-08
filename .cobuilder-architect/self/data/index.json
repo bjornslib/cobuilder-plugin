@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "4a71ff4b48a66d4a339594340bf4615f35ccd1f7",
+    "git_head": "7af52a5f8fafeb62e887fd9e51894f1e58d20b8f",
     "trees": {
-      "docs/architecture/adr": "sha256:e2d74a6cec5ae0ce95aa93684544df3b9e14ec18a83065b71056ea17ac5f48be",
+      "docs/architecture/adr": "sha256:32c04ae4806ad745daa8c69f4a076006c72b94605faab50fe68810ed0ad97fa7",
       "docs/architecture/designs": "sha256:06e3eefdca8976895e10b50e6c573c69405be6bce9df0c3c7918f49908841d86",
       "docs/architecture/contexts": "sha256:c1348c14415278bd53e24947a192db40c14adccfcf6ad84878a61a18a0513f8a",
-      "docs/plans": "sha256:d1f4ad8b25896109d0921f8239c3643fc942d76ee59c248ef23698810bcf831c",
-      ".cobuilder/rubrics": "sha256:419746feda33f6416a60820fd05ce9ed62473da6dd17fbf39847c3a044f5e55d"
+      "docs/plans": "sha256:6a2710dae6ff9d7ddfd166b81087232f68ee448b5aca27eba1d04ce696a6bce4",
+      ".cobuilder/rubrics": "sha256:ef2ccbe210cc67b5c8e78e660bdda6f3b61de735f4be46b30d0c18584a28d090"
     }
   },
   "entities": {
@@ -3225,9 +3225,9 @@
         "n": 1,
         "title": "Tracer bullet and whole epic: `habit_smells.py`, the `habit.smells` gate key, and the scan tests",
         "ends_with": "The script writes `habit-smells.json` from a stub `habit-sensors`, records an incomplete run and a missing tool, and prints a summary. `verify_bundle.py` reports `habit.smells` as `ok`, `stale`, or nothing. `tests/test_habit_smells.py` covers it.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "habit-smells/2",
@@ -3235,9 +3235,9 @@
         "n": 2,
         "title": "Tracer bullet and whole epic: the review mode section and the wiring tests",
         "ends_with": "`SKILL.md` \"### Review Mode\" puts a habit-hooks step before the reports. A blind agent given the file runs the script, then writes `## Mechanical smells` into both reports with the P1 rules, the top-10 cap, the incomplete-run rule, and the unavailable rule, and names the tool and the branch base. A wiring test fails when the prose drops the call or a rule.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "habit-smells/3",
@@ -3245,9 +3245,9 @@
         "n": 3,
         "title": "Tracer bullet and whole epic: the maintenance mode pair diff, its wiring tests, and the commands",
         "ends_with": "`SKILL.md` \"### Maintenance Mode\" runs the same script, tags each pair NEW, ESCALATED, STABLE, or RESOLVED against the prior report's Mechanical smells section, and feeds the pairs into the trend report. A wiring test fails when the prose drops the tags, the diff, or the step. `commands/review.md` and `commands/maintenance.md` name the step. A blind agent follows the order.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "interaction-design-gate/1",

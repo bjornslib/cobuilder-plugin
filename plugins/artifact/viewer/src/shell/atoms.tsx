@@ -17,10 +17,9 @@
  *      only state that paints a pill. The present and partial pills are gone.
  *
  * The card, box, and absence vocabulary below is the record-mosaic's, and the copy is now
- * the shipped one. The prototype at `src/variations/sections-e/atoms.tsx` holds the same
- * text, because every directory under `variations/` stayed independently removable while
- * the arrangement was under review. The shell is the chosen arrangement, so this file is
- * where the vocabulary lands and the variation keeps its own copy as the comparison.
+ * the shipped one. The prototype at `src/variations/sections-e/atoms.tsx` held the same
+ * text while the arrangement was under review. The shell is the chosen arrangement, so this
+ * file is where the vocabulary landed. The prototypes were removed on 2026-10-08.
  *
  * No component here quotes where a value came from. A panel never prints a field path,
  * a file name, or a join name. The rule is the engineer's, and the reason is simple: a

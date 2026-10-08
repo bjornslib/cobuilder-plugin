@@ -14,7 +14,11 @@
     "tests/fixtures/**",
     "**/package-lock.json",
     "**/*.html",
-    "**/*.json"
+    "plugins/architect/skills/architecture/references/corpus/**",
+    "**/*.json",
+    "shared/skills/mermaid/**",
+    "plugins/artifact/viewer/src/index.css",
+    "plugins/implement/skills/design-to-code/examples/**"
   ],
   "threshold": 0,
   "minLines": 5,

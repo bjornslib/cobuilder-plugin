@@ -10,9 +10,8 @@
  * had to gain. `Board.test.tsx` fixes the row's own claims and takes its data as props.
  * This file fixes the route decisions around it: the bare route lands on the board, the
  * board draws no strip and no pager, an unknown id keeps its own error, the rail's `Work`
- * entry returns to the board, and the comparison harness answers no address at all. Each
- * prototype under `src/variations/` carries its own dev-only entry, and none of them
- * reaches this file.
+ * entry returns to the board, and the comparison harness answers no address at all. The
+ * prototypes it compared were removed from `src/variations/` on 2026-10-08.
  *
  * The last two cases are slice 7's, and they fix the address in motion: a press on a
  * row's link lands on that design's Work surface at the level the row named, and one
@@ -513,8 +512,8 @@ describe("Shell", () => {
       The harness used to answer `#/variations` and one address per variation, and the
       shell handed those addresses back whole. Slice 4 of cobuilder-viewer removes the
       harness from the shipped graph, so `#/variations` is an id the bundle lacks and
-      nothing else: the shell states that, and it draws no variation switcher. Each
-      prototype under `src/variations/` carries a dev-only entry of its own instead.
+      nothing else: the shell states that, and it draws no variation switcher. The
+      prototypes were removed from `src/variations/` on 2026-10-08.
     */
     at("#/variations");
     render(<Shell />);

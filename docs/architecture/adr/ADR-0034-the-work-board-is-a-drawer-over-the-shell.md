@@ -37,13 +37,13 @@ history:
   - { state: decided, date: 2026-09-28, by: bjornslib, note: "Decided against prototype B (the day deck) after prototype A (five kanban columns) was built and compared. Ported into the shipped shell the same day under docs/plans/work-drawer, and the bare route now opens the drawer over an empty landing." }
 maps_to:
   context: cobuilder-packaging
-  modules: [plugins/artifact/viewer/src/shell/WorkDrawer.tsx, plugins/artifact/viewer/src/shell/workDeck.ts, plugins/artifact/viewer/src/shell/App.tsx, plugins/artifact/viewer/src/shell/TopBar.tsx, plugins/artifact/viewer/src/variations/work-drawer-deck]
+  modules: [plugins/artifact/viewer/src/shell/WorkDrawer.tsx, plugins/artifact/viewer/src/shell/workDeck.ts, plugins/artifact/viewer/src/shell/App.tsx, plugins/artifact/viewer/src/shell/TopBar.tsx]
   rule: "A surface's read state stays where it is when the board is consulted; the drawer overlays it and the bare route opens the drawer over an empty landing, so no full-page board route remains."
 delivers:
   capability: "A reader surveys every design in the bundle, filters by state, and searches as they type, over whatever surface they were reading — and one tap takes them into the record."
   benefit: "Surveying the work costs no navigation round trip, so review and build keep their place; every exclusion is stated with counts rather than silently dropped."
   beneficiary: [developer, operator]
-notes: "The two prototypes at plugins/artifact/viewer/src/variations/work-drawer (A) and work-drawer-deck (B, the arrangement this record takes forward) are this record's evidence, built against the real bundle on 2026-09-28 and refined twice under the engineer's review the same day."
+notes: "The two prototypes at plugins/artifact/viewer/src/variations/work-drawer (A) and work-drawer-deck (B, the arrangement this record takes forward) are this record's evidence, built against the real bundle on 2026-09-28 and refined twice under the engineer's review the same day. Both prototypes were removed from the viewer source on 2026-10-08. Git history holds them."
 related:
   - "docs/architecture/designs/work-drawer/goal.json"
   - "docs/plans/work-drawer/00-status.md"
