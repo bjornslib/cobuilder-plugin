@@ -1,0 +1,11 @@
+feature: describe-boundaries
+test_command: "uv run pytest tests -q --deselect tests/test_commands.py::test_odyssey_review_name_appears_nowhere_in_prose"
+baseline: "739 passed, 1 skipped; test_odyssey_review_name_appears_nowhere_in_prose fails before this work (scans .kilo/worktrees)"
+thresholds:
+  accept: 0.90
+  investigate: 0.70
+max_attempts: 3
+slices:
+  - {id: 1, name: "E1 whole epic: boundary_check.py, verified_at, bundle warning", weight: 0.40}
+  - {id: 2, name: "E2 whole epic: design stage 1 and stage 6", weight: 0.30}
+  - {id: 3, name: "E3 whole epic: self-only describe in baseline, and the docs", weight: 0.30}

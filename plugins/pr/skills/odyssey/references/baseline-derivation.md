@@ -11,9 +11,11 @@ owner: bjoerns
 How to derive an architecture baseline for a foreign repo with zero existing
 architecture docs: a district map plus a flat `inventory.yaml`, written into
 `<bundle-dir>/`. This is the *describe-lite* mode. It keeps the parent
-skill's verification discipline (never assert an unverified boundary). It
-drops the full per-context artifact set (`canvas.md`, `boundary.yaml`,
-governed ADRs), because that set assumes you maintain the target repo.
+skill's verification discipline (never assert an unverified boundary). For a
+foreign repo, it drops the full per-context artifact set (`canvas.md`,
+`boundary.yaml`, governed ADRs), because that set assumes you maintain the
+target repo. Self-analysis gets that set from describe, in
+`docs/architecture/contexts`.
 
 ## 1. Verification discipline — ground every claim in code
 
@@ -156,10 +158,11 @@ While verifying imports (§1), you may find real problems — circular
 dependencies, or a district that clearly should not import something. Do not
 silently fold these into a clean-looking district blurb. Note them in the
 district's `blurb`, or as a short aside when authoring PR-level architecture
-narrative (`story-mode.md` level 3), if a PR touches the smell. Do not build
-a `boundary.yaml`, a forbidden-dependency list, or a SMELL-tagged rule
-registry. That is full describe-mode machinery, and this lite mode does not
-carry it.
+narrative (`story-mode.md` level 3), if a PR touches the smell. For a
+foreign repo, do not build a `boundary.yaml`, a forbidden-dependency list, or
+a SMELL-tagged rule registry. That is full describe-mode machinery, and this
+lite mode does not carry it. For self-analysis, `boundary.yaml` comes from describe
+(`docs/architecture/contexts`).
 
 ## 6. When to re-run
 

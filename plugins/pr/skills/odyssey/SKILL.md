@@ -1,5 +1,6 @@
 ---
 name: odyssey
+user-invocable: false
 title: "Codebase Odyssey Generator"
 status: active
 version: 0.3.0
@@ -326,7 +327,19 @@ This mode derives the architecture baseline of the repo into `<bundle-dir>`
    directly into `world.districts` in `story.json`, and write
    `<bundle-dir>/inventory.yaml`.
 
-4. Migrate the bundle. This refreshes the viewer copy, and it steps the
+4. Describe the districts. This step is for self-analysis only: no
+   `--repo`, or `--repo` pointing at the session's own repo. Run the
+   check:
+   ```bash
+   uv run "${CLAUDE_PLUGIN_ROOT}/shared/boundary_check.py"
+   ```
+   For each district whose record is stale or missing, call
+   `Skill("architect:architecture", args="describe <district>")`. Never
+   call it for a district that is ok. Rerun the check until it is clean.
+   A foreign `--repo` run keeps describe-lite. It never calls describe,
+   and it writes nothing under `docs/architecture/contexts/`.
+
+5. Migrate the bundle. This refreshes the viewer copy, and it steps the
    layout and the data shape forward when the plugin defines a newer
    version of either:
    ```bash
@@ -335,7 +348,7 @@ This mode derives the architecture baseline of the repo into `<bundle-dir>`
    This replaces the old bare `cp` of `viewer/index.html`. Migration owns
    the viewer refresh now, so there is one mechanism, not two.
 
-5. Verify:
+6. Verify:
    ```bash
    uv run "${CLAUDE_PLUGIN_ROOT}/shared/verify_bundle.py" --bundle-dir <bundle-dir> --json
    ```

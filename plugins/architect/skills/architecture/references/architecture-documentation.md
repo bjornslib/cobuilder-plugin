@@ -67,6 +67,10 @@ From `templates/boundary-template.yaml`. The load-bearing fields:
   (`[]` = leaf), and a one-line `rule`. Leaf ports and ACLs are the rules drift detection cares
   about most.
 - `governed_by` — the ADRs anchored to this context (may start empty).
+- `verified_at` — the commit where you last verified the record against code.
+
+After you verify every edge, stamp `verified_at` with the output of `git rev-parse HEAD`.
+Run `shared/boundary_check.py` to list each context that a later commit made stale.
 
 ## 5. Surfacing smells is a primary output
 

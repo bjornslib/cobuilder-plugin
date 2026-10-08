@@ -90,6 +90,10 @@ _Avoid_: code review
 **Bounded context** (`architect`):
 A `docs/architecture/contexts/<context-id>/` bundle of `canvas.md` and `boundary.yaml`, produced by the self-only Describe mode, with every claim grep-verified against real import edges. See "District" for the lightweight, unverified version used for a foreign repo.
 
+<a id="stale-boundary"></a>
+**Stale boundary** (`architect`):
+A bounded context whose `boundary.yaml` has no resolvable `verified_at` commit, or whose `path` has a later commit. `shared/boundary_check.py` lists it, and `verify_bundle.py` reports it as the optional `boundary.stale` key.
+
 <a id="inquiry"></a>
 **Inquiry** (`architect`):
 One question that `/architect:options` raises about the flow, the technology, or a gap of the whole system, with evidence, a confidence tag, and alternatives (IDs F1, T1, G1). It is not a finding in `assessment.json` and not a question in the three-question PR assessment.

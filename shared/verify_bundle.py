@@ -86,6 +86,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import boundary_check
+import prose_budget
 from _bundle_meta import CURRENT_BUNDLE_FORMAT, DESIGN_STAGES, SCHEMA_VERSION, SCHEMA_VERSION_KNOWN
 
 LEVEL_KEYS = ["intent", "problem_solution", "architecture", "file_changes"]
@@ -170,6 +172,12 @@ def check_bundle_json(bundle_dir: Path, story: dict | None) -> dict[str, str]:
     return results
 
 
+def check_boundary_stale(bundle_dir: Path) -> str:
+    repo = bundle_dir.parent.parent
+    stale = [i for i, s in boundary_check.check(repo, [])[0] if s != "ok"]
+    return "ok" if not stale else "stale:" + ",".join(stale)
+
+
 def check_baseline(bundle_dir: Path) -> tuple[dict[str, str], dict | None]:
     results: dict[str, str] = {}
 
@@ -202,6 +210,8 @@ def check_baseline(bundle_dir: Path) -> tuple[dict[str, str], dict | None]:
     design_stage = check_design_stages(bundle_dir)
     if design_stage is not None:
         results["design.stage"] = design_stage
+    results["prose.budget"], results["prose.soft"] = check_prose_budget(bundle_dir, story)
+    results["boundary.stale"] = check_boundary_stale(bundle_dir)
 
     return results, story
 
@@ -430,7 +440,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    optional_prefixes = optional_prefixes_for_art(args.art)
+    optional_prefixes = optional_prefixes_for_art(args.art) + ("prose.soft", "boundary.stale")
     if not args.require_review:
         optional_prefixes += REVIEW_PREFIXES
 
