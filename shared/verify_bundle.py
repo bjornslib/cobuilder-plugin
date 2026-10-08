@@ -211,12 +211,12 @@ def check_baseline(bundle_dir: Path) -> tuple[dict[str, str], dict | None]:
         results["story"] = "missing"
     else:
         try:
-            story = json.loads(story_path.read_text())
+            parsed = json.loads(story_path.read_text())
         except json.JSONDecodeError:
             results["story"] = "invalid-json"
-            story = None
         else:
-            version = story.get("meta", {}).get("schema_version")
+            story = parsed
+            version = parsed.get("meta", {}).get("schema_version")
             results["story"] = "ok" if version in SCHEMA_VERSION_KNOWN else f"unknown-schema-version:{version}"
 
     results.update(check_bundle_json(bundle_dir, story))
@@ -504,7 +504,7 @@ def main() -> None:
         return sorted(k for k in results if k.startswith(optional_prefixes))
 
     if args.json:
-        baseline_out = dict(baseline)
+        baseline_out: dict[str, object] = dict(baseline)
         baseline_out["_optional"] = optional_keys(baseline)
         prs_out = {
             pr_num: {**results, "_optional": optional_keys(results)}
