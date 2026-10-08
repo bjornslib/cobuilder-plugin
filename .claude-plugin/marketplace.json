@@ -25,12 +25,6 @@
       "version": "0.10.0"
     },
     {
-      "name": "artifact",
-      "description": "Open a local viewer for designs, decisions, builds, and PRs. Publish one PR as a Claude Artifact. Draw a design as a tldraw canvas.",
-      "source": "./plugins/artifact",
-      "version": "0.10.0"
-    },
-    {
       "name": "implement",
       "description": "Build a design one tested slice at a time, with four approval gates, blind rubrics, and independent validation.",
       "source": "./plugins/implement",
