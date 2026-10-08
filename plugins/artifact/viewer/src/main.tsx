@@ -11,8 +11,9 @@ if (!container) {
 
 /*
  * The shell is the shipped surface. It answers `#/` with the Work board and every work
- * item the bundle holds. The comparison harness stays reachable at `#/variations`, so
- * the prototype can still be read beside the arrangement it argued for.
+ * item the bundle holds. The prototypes under `src/variations/` are not part of this
+ * entry point. Each one has its own `dev.html` for the Vite dev server, and none of
+ * them reaches the built file.
  */
 createRoot(container).render(
   <StrictMode>
