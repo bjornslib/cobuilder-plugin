@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "564b32fe37efab492b59d65ee3b20ed03e443b66",
+    "git_head": "7af52a5f8fafeb62e887fd9e51894f1e58d20b8f",
     "trees": {
-      "docs/architecture/adr": "sha256:aa5b3c18eaebbbba70aae8c0d3a33c998d14bba732d33afcad2ff72c3712d7bd",
-      "docs/architecture/designs": "sha256:33f32130f50d8a2a68c027883bf4795d716562038d4232985187da53012cb849",
+      "docs/architecture/adr": "sha256:32c04ae4806ad745daa8c69f4a076006c72b94605faab50fe68810ed0ad97fa7",
+      "docs/architecture/designs": "sha256:06e3eefdca8976895e10b50e6c573c69405be6bce9df0c3c7918f49908841d86",
       "docs/architecture/contexts": "sha256:c1348c14415278bd53e24947a192db40c14adccfcf6ad84878a61a18a0513f8a",
-      "docs/plans": "sha256:f42babf81b3a8f1dec666cd9bed436e495d7a54399c19a7746318d9c78c552ba",
-      ".cobuilder/rubrics": "sha256:5a657c2a679d371f53666c3f8826c79450da294127af01414de2aa9cb983a554"
+      "docs/plans": "sha256:6a2710dae6ff9d7ddfd166b81087232f68ee448b5aca27eba1d04ce696a6bce4",
+      ".cobuilder/rubrics": "sha256:ef2ccbe210cc67b5c8e78e660bdda6f3b61de735f4be46b30d0c18584a28d090"
     }
   },
   "entities": {
@@ -196,6 +196,11 @@
         "id": "ADR-0037",
         "title": "A level opens with an In Short strip, and the other account is one link in the heading",
         "state": "decided"
+      },
+      {
+        "id": "ADR-0038",
+        "title": "Review and maintenance mode read habit-hooks smells",
+        "state": "decided"
       }
     ],
     "design": [
@@ -246,6 +251,12 @@
         "name": "gate-state-resolution",
         "outcome": "A gate line reads as approved, as not applicable, or as open in both Builds views, and a view opens only a document that the plan holds.",
         "stage": "approved"
+      },
+      {
+        "id": "habit-smells",
+        "name": "habit-smells",
+        "outcome": "Review and maintenance reports carry a classified Mechanical smells section from habit-sensors, maintenance trends the pairs of smell and file against the previous report, and verify_bundle warns when the last scan is missing or stale.",
+        "stage": "decided"
       },
       {
         "id": "implementation-conformance",
@@ -636,6 +647,33 @@
         "state": "planned",
         "note": "Teach both Builds views the three meanings of a gate state. `is_resolved(state)` in `plugins/artifact/scripts/build_builds_view.py` holds the test, and `current_doc()` receives the document map filtered to the files the plan holds, so a returned document always exists. The static page gains the `na` treatment and stops printing the text `undefined` for a Gate 2b document. The viewer rail gains the `is-na` card class, the `na` pill class, the words \"Not applicable\", and a header count of approved gates. Slices 1 and 2.",
         "design_doc": "gate-state-resolution/E1"
+      },
+      {
+        "id": "habit-smells/E1",
+        "design": "habit-smells",
+        "epic_id": "E1",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
+      },
+      {
+        "id": "habit-smells/E2",
+        "design": "habit-smells",
+        "epic_id": "E2",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
+      },
+      {
+        "id": "habit-smells/E3",
+        "design": "habit-smells",
+        "epic_id": "E3",
+        "branch": null,
+        "pr": null,
+        "state": null,
+        "note": null
       },
       {
         "id": "implementation-conformance/E1",
@@ -3182,6 +3220,36 @@
         "state": "completed"
       },
       {
+        "id": "habit-smells/1",
+        "feature": "habit-smells",
+        "n": 1,
+        "title": "Tracer bullet and whole epic: `habit_smells.py`, the `habit.smells` gate key, and the scan tests",
+        "ends_with": "The script writes `habit-smells.json` from a stub `habit-sensors`, records an incomplete run and a missing tool, and prints a summary. `verify_bundle.py` reports `habit.smells` as `ok`, `stale`, or nothing. `tests/test_habit_smells.py` covers it.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "habit-smells/2",
+        "feature": "habit-smells",
+        "n": 2,
+        "title": "Tracer bullet and whole epic: the review mode section and the wiring tests",
+        "ends_with": "`SKILL.md` \"### Review Mode\" puts a habit-hooks step before the reports. A blind agent given the file runs the script, then writes `## Mechanical smells` into both reports with the P1 rules, the top-10 cap, the incomplete-run rule, and the unavailable rule, and names the tool and the branch base. A wiring test fails when the prose drops the call or a rule.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "habit-smells/3",
+        "feature": "habit-smells",
+        "n": 3,
+        "title": "Tracer bullet and whole epic: the maintenance mode pair diff, its wiring tests, and the commands",
+        "ends_with": "`SKILL.md` \"### Maintenance Mode\" runs the same script, tags each pair NEW, ESCALATED, STABLE, or RESOLVED against the prior report's Mechanical smells section, and feeds the pairs into the trend report. A wiring test fails when the prose drops the tags, the diff, or the step. `commands/review.md` and `commands/maintenance.md` name the step. A blind agent follows the order.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
         "id": "interaction-design-gate/1",
         "feature": "interaction-design-gate",
         "n": 1,
@@ -3616,6 +3684,15 @@
         "source_path": "docs/plans/gate-state-resolution/01-product.md"
       },
       {
+        "id": "habit-smells",
+        "feature_slug": "habit-smells",
+        "gate": 1,
+        "title": "Product: Mechanical smells in review and maintenance (habit-smells)",
+        "body_md": "# Product: Mechanical smells in review and maintenance (habit-smells)\n\n## Problem\nA review runs on reading and judgment. It runs no linter. A smell a tool can count stays invisible. On this repo, habit-hooks reports 930 duplicated-code hits, 21 high-complexity functions, and 148 oversized files that a corpus read does not name. A report that carries the counts names the source, so the reader can trust tool output as tool output.\n\n## Success metric\nA `/architect:review` run writes a Mechanical smells section into both reports, with a classification for each smell group and the tool name. A `/architect:maintenance` run tags each pair of smell and file NEW, ESCALATED, STABLE, or RESOLVED against the prior report. `verify_bundle.py` reports `habit.smells` as `ok` when the last scan is current.\n\n## Announcement — the blog post before the feature\nCoBuilder reviews now come with the numbers. Every review names the smells the habit-hooks sensors count, sorts and classifies them, and marks an incomplete scan instead of hiding it. The maintenance mode then tells you which smell group grew since the last report and which you fixed. The bundle check warns you when the last scan is stale, so you never act on a months-old count.\n\n## Screens\nno UI",
+        "approved_date": null,
+        "source_path": "docs/plans/habit-smells/01-product.md"
+      },
+      {
         "id": "interaction-design-gate",
         "feature_slug": "interaction-design-gate",
         "gate": 1,
@@ -3717,6 +3794,15 @@
         "source_path": "docs/plans/gate-state-resolution/02-architecture.md"
       },
       {
+        "id": "habit-smells",
+        "feature_slug": "habit-smells",
+        "gate": 2,
+        "title": "Architecture: Mechanical smells in review and maintenance (habit-smells)",
+        "body_md": "# Architecture: Mechanical smells in review and maintenance (habit-smells)\n\n## Fit\n- `shared/` gets one new script, `habit_smells.py`. Architect reaches it through its `shared/` symlink (ADR-0017).\n- Review and maintenance modes (`SKILL.md`) call the script and read its output file. No plugin ships the sensors (ADR-0025): the script shells out to the installed `habit-sensors`.\n- `shared/verify_bundle.py` gains optional key `habit.smells`.\n- No plugins/pr file mentions habit-hooks. The family meets at the script, not the tool (principle 4).\n\n## Endpoints\nnone. The script calls one external tool, `habit-sensors --branch <base> --json`, on this machine.\n\n## Data\nOne new artifact next to the reports: `habit-smells.json`. It holds the branch base, the run state, and the findings grouped per smell and per file. No schema version change. `build_index.py` reads it never.\n\n## Flow\n1. The mode runs `uv run shared/habit_smells.py --out docs/architecture/review/<run>/ --branch <base> --repo .`.\n2. The script reads the JSON findings, groups them per smell and per file, and writes `habit-smells.json`.\n3. Review reads the file and writes a `## Mechanical smells` section into the technical report and the founder report, before they are finalized. The section names the tool and the branch base, applies the P1 and P2 rules, and caps a large group at one count plus the top 10 files.\n4. Maintenance reads the same file and the prior report's Mechanical smells section, tags each pair, and feeds the pairs into the trend report next to the corpus findings.\n5. `verify_bundle.py` reports `habit.smells` as `ok`, `stale`, or nothing, from the file beside the reports.\n\n## External\nThe states the script records when the tool fails: `run_complete: false` with the tool name on an incomplete run, and `available: false` with the reason when `habit-sensors` is missing. A mode shows both as stated facts and claims no clean scan.",
+        "approved_date": null,
+        "source_path": "docs/plans/habit-smells/02-architecture.md"
+      },
+      {
         "id": "interaction-design-gate",
         "feature_slug": "interaction-design-gate",
         "gate": 2,
@@ -3816,6 +3902,15 @@
         "body_md": "# Program design: Gate state resolution\n\n## Files\n\n| File | Change |\n|---|---|\n| `plugins/artifact/scripts/build_builds_view.py` | Add `is_resolved()`. Give `current_doc()` the filtered document map, and let it return no document. Name a title and an ask note for the Gate 2b document. |\n| `.cobuilder-architect/self/pages/builds-view.html` | Add the `na` gate treatment. Guard the crumb against a missing document. Key the approval prompt on the gate, and state when a gate holds no document. Emit an empty ask gate when nothing waits. |\n| `plugins/artifact/viewer/index.html` | Give an `n/a` gate its own card class, its own pill class, and the words \"Not applicable\". Count approved gates in the header. |\n| `tests/test_build_builds_view.py` | Cover the four shapes of `current_doc()`, the `is_resolved()` predicate, and the summary line. |\n| `tests/test_viewer_modes.py` | Cover the `n/a` treatment and the header count. |\n\n`shared/build_index.py` needs no change. It already projects the state, the\ndocument, and the document kind, and slice 7 of `interaction-design-gate`\nalready added the `interaction` kind.\n\n## Types & signatures\n\n```python\n# plugins/artifact/scripts/build_builds_view.py\n\nTITLES = {\n    # Was: no entry. GATE_DOCS named \"interaction-design.md\" for gate 2b\n    # without a title, so the rail printed the text \"undefined\".\n    \"interaction-design.md\": \"Interaction design\",\n    # ...the existing entries...\n}\n\nASK_NOTES = {\n    # Was: no entry. A page that opened on a pending Gate 2b printed an\n    # empty approval prompt.\n    \"2b\": \"Approval moves to Gate 3 — program design — where the files, \"\n          \"the type signatures, and the test plan are written before any \"\n          \"implementation exists.\",\n    # ...the existing entries...\n}\n\n\ndef is_resolved(state: str) -> bool:\n    \"\"\"A resolved gate needs no answer: it reads APPROVED or n/a.\n\n    One name for the test, because two call sites asked the same question\n    and one of them asked it inline.\n    \"\"\"\n    return state.startswith(\"APPROVED\") or state.startswith(\"n/a\")\n\n\ndef current_doc(\n    gates: list[dict], present: dict[str, list[str]]\n) -> tuple[str, str | None, bool]:\n    \"\"\"The gate the page opens on, and the document to show with it.\n\n    An open gate is the first gate that still needs an answer. The page\n    shows that gate's first document when the plan holds it, and no\n    document when it does not.\n\n    Every gate resolved means nothing waits. The page then shows the last\n    gate that holds a document.\n\n    `present` is the document map filtered to the files the plan holds, so\n    a returned document always exists on disk.\n\n    Returns the gate, its document or None, and whether the gate waits for\n    an answer.\n    \"\"\"\n    for g in gates:\n        if not is_resolved(g[\"state\"]):\n            docs = present.get(g[\"n\"], [])\n            return g[\"n\"], (docs[0] if docs else None), True\n    for g in reversed(gates):\n        docs = present.get(g[\"n\"], [])\n        if docs:\n            return g[\"n\"], docs[0], False\n    return (gates[-1][\"n\"] if gates else \"1\"), None, False\n```\n\n```python\n# render(), inside the fence rewrite loop.\n\ngate, doc, pending = current_doc(payload[\"gates\"], present)\n\n# Was: titles = {k: v for k, v in TITLES.items() if k in payload[\"docs\"]}\n# An unlisted document vanished from the map, so the rail printed the\n# text \"undefined\" for it. Every held document now carries a title.\ntitles = {k: TITLES.get(k, k) for k in payload[\"docs\"]}\n\n# Was: f'var cur={{gate:\"{gate}\",doc:\"{doc}\"}};'\n# A missing document must be null, not the text \"None\".\nlines[i] = f\"var cur={{gate:{json.dumps(gate)},doc:{json.dumps(doc)}}};\"\n\n# Was: json.dumps(gate). The ask block keys on the gate, so an empty ask\n# gate is what tells the page that nothing waits.\nlines[i] = f\"var ASKGATE={json.dumps(gate if pending else '')};\"\n\n# Was: doc if pending else \"\". A missing document must not fire the\n# \"rendered from the markdown\" note, which names a path.\nlines[i] = f\"var ASKDOC={json.dumps(doc if (pending and doc) else '')};\"\n\n# Was: f'buildRail(); go(\"{gate}\",\"{doc}\");'\nlines[i] = f\"buildRail(); go({json.dumps(gate)}, {json.dumps(doc)});\"\n\n# Was: \"'awaiting approval' if pending else 'all gates approved'\".\n# An n/a gate is not an approved gate, and the word \"approved\" claimed\n# something the plan had not said.\nf\"{'awaiting approval' if pending else 'no gate awaiting an answer'}\"\n```\n\n```javascript\n// .cobuilder-architect/self/pages/builds-view.html\n\n/* Was: return s.indexOf('approved')===0?'done'\n                     :s.indexOf('in progress')===0?'now':'todo';\n   An \"n/a\" gate fell to 'todo', which drew it as not started. */\nfunction cls(g){var s=g.state.toLowerCase();\n  return s.indexOf('approved')===0?'done'\n       :s.indexOf('n/a')===0?'na'\n       :s.indexOf('in progress')===0?'now':'todo';}\n\n/* go(): a missing document must read as a name, not as the text \"null\". */\nvar path=doc?((PATHS&&PATHS[doc])||doc):('Gate '+gate);\n\n/* go(): the prompt answers a gate, and a gate with no document has\n   nothing to approve. */\nvar have=!!(doc&&D[doc]);\nif(ASKGATE&&gate===ASKGATE&&have) ask='<div class=\"ask\">...';\nif(ASKGATE&&gate===ASKGATE&&!have) note+='<div class=\"note\">This gate holds no document yet...</div>';\n```\n\n```css\n/* .cobuilder-architect/self/pages/builds-view.html — the closed treatment. */\n.gate.na .dot{background:var(--sunk);border-color:var(--line);color:var(--ink3)}\n.gate.na .stt{color:var(--ink3)}\n.pill.na{background:var(--sunk);color:var(--ink3)}\n```\n\n```javascript\n// plugins/artifact/viewer/index.html\n\n/* Was: const statusClass = isApproved ? 'is-approved'\n                         : (isCurrent ? 'is-current' : 'is-planned');\n   An \"n/a\" gate fell to 'is-planned' and read as not started. */\nconst isNa = /^n\\/a/i.test((g.state || '').trim());\nconst statusClass = isApproved ? 'is-approved'\n                  : isNa ? 'is-na'\n                  : (isCurrent ? 'is-current' : 'is-planned');\n\n/* Was: isApproved ? 'ok' : (isCurrent ? 'now' : 'wait') */\nconst pillClass = isApproved ? 'ok' : isNa ? 'na' : (isCurrent ? 'now' : 'wait');\n\n/* Was: isApproved ? `Approved on ...` : 'In progress' */\nconst gateDesc = isApproved ? `Approved on ${...}` : isNa ? 'Not applicable' : 'In progress';\n\n/* Was: const totalGates = gateRails.reduce((sum, r) => sum + r.gates.length, 0);\n   The label then read \"N Gates Approved\" over a count of every gate. */\nconst totalGates = gateRails.reduce((sum, r) => sum + r.gates.length, 0);\nconst approvedGates = gateRails.reduce((sum, r) =>\n  sum + r.gates.filter(g => (g.state || '').trim().toUpperCase().startsWith('APPROVED')).length, 0);\n// label: `${approvedGates} of ${totalGates} Gates Approved`\n```\n",
         "approved_date": null,
         "source_path": "docs/plans/gate-state-resolution/03-program-design.md"
+      },
+      {
+        "id": "habit-smells",
+        "feature_slug": "habit-smells",
+        "gate": 3,
+        "title": "Program Design: Mechanical smells in review and maintenance (habit-smells)",
+        "body_md": "# Program Design: Mechanical smells in review and maintenance (habit-smells)\n\n## Files\n- `shared/habit_smells.py` (new): shells out to `habit-sensors --branch <base> --json`, groups findings per smell and per file, writes `habit-smells.json` into `--out`, prints a summary. Flags: `--out`, `--branch`, `--repo`. PEP 723.\n- `shared/verify_bundle.py`: optional warning key `habit.smells`.\n- `plugins/architect/skills/architecture/SKILL.md`: the habit-hooks step in \"### Review Mode\" and \"### Maintenance Mode\".\n- `plugins/architect/commands/review.md` and `plugins/architect/commands/maintenance.md`: one paragraph each about the step.\n- `tests/test_habit_smells.py` (new): the script and the gate key, against a stub `habit-sensors` on PATH.\n- `tests/test_habit_smells_integration.py` (new): pins the prose in both files and both commands, and pins that no `plugins/pr` file mentions habit-hooks.\n\n## Types & signatures\n```python\ndef collect(repo: Path, branch: str) -> dict        # shelles out; records run_complete / available\ndef group_findings(raw: dict) -> dict                # pairs of smell and file, with counts\ndef write_report(data: dict, out_dir: Path) -> Path  # habit-smells.json\ndef main(argv: list[str]) -> int                     # prints a summary, exits 0\n```\nThe gate key in `verify_bundle.py`: `check_habit_smells(bundle_dir) -> str`, `ok` when `habit-smells.json` exists with `run_complete` true and its branch base at most 200 commits behind HEAD, `stale` past 200, nothing when the file is missing. Join the optional prefixes with `prose.soft` and `boundary.stale`.\n\n## Call stack\n`main` → `collect` (subprocess `habit-sensors --branch ... --json`) → `group_findings` → `write_report`. Verifier: `verify_bundle` → `check_habit_smells` → reads the file.\n\n## Test plan\nThe tests build a fixture repo with a stub `habit-sensors` on PATH. Fake output covers: a full run with findings, an incomplete run (`run_complete` false, tool named), a missing tool (`available` false with the reason), grouping, the summary print, and the gate key at `ok`, `stale` past 200 commits, and missing. The integration tests read the prose files for the call, the P1 rules, the top-10 cap, the four tags, the prior-report diff, and the commands. They grep `plugins/pr` for the tool name.\n\n## Least confident decisions\n- The stale threshold is 200 commits. It is a first cut, not a measured number.\n- Classification starts P1 for swallowed exceptions and for any group over 100 findings, and P2 otherwise. Review may re-classify with evidence. A group a tool finds heavily can still deserve a lower plan.\n- The branch base argument is mandatory. A run with no base fails loud rather than guessing a default.",
+        "approved_date": null,
+        "source_path": "docs/plans/habit-smells/03-program-design.md"
       },
       {
         "id": "interaction-design-gate",
@@ -4504,6 +4599,30 @@
         "source_path": ".cobuilder/rubrics/gate-state-resolution/slice-2.md"
       },
       {
+        "id": "habit-smells/1",
+        "feature_slug": "habit-smells",
+        "n": 1,
+        "title": "Slice 1 — E1: `habit_smells.py`, the `habit.smells` gate key, and the scan tests",
+        "body_md": "# Rubric: Slice 1 — E1: `habit_smells.py`, the `habit.smells` gate key, and the scan tests\n\nFeature: habit-smells\nEpic: E1\nSlice goal: The script writes `habit-smells.json` from a stub `habit-sensors`, records an incomplete run and a missing tool, and prints a summary. `verify_bundle.py` reports `habit.smells` as `ok`, `stale`, or nothing.\nTest command: uv run pytest tests -q\n\n## Criteria\n\n### C1 — a full run writes grouped findings [CRITICAL]\n**Must be true:** In a temporary fixture repo with a stub `habit-sensors` on PATH, `uv run shared/habit_smells.py --out <dir> --branch <base> --repo <fixture>` writes a `habit-smells.json` that groups the stub's findings per smell and per file, records the branch base, and marks the run complete. The stub receives `--branch <base>` and `--json` on its command line.\n**Evidence to check:** run the script against a fixture repo you build yourself. Read `habit-smells.json` and the stub argv your harness captured.\n**Scoring:** 1.0 file, grouping, branch, and argv all correct. 0.5 file present but grouping or the branch is wrong. 0.0 no file.\n\n### C2 — incomplete run and missing tool are recorded [CRITICAL]\n**Must be true:** When the stub prints an incomplete-run notice, the file holds `run_complete: false` and the tool name. When no `habit-sensors` is on PATH, the file holds `available: false` with a reason. The script does not crash in either case.\n**Evidence to check:** run both cases against fixture repos and read the JSON.\n**Scoring:** 1.0 both. 0.5 one. 0.0 neither, or a crash.\n\n### C3 — the summary prints\n**Must be true:** The script prints a per-group summary to stdout. The file stays the machine record.\n**Evidence to check:** read stdout.\n**Scoring:** 1.0 readable summary. 0.5 prints the whole record. 0.0 nothing.\n\n### C4 — the `habit.smells` gate key [CRITICAL]\n**Must be true:** `shared/verify_bundle.py` reports `habit.smells` as `ok` when `habit-smells.json` exists with `run_complete` true and the branch base within 200 commits of HEAD, as `stale` past 200, and as nothing when the file is missing. It joins the optional prefixes, so it never turns a passing bundle into a failing one.\n**Evidence to check:** run the three cases. Run `uv run shared/verify_bundle.py --bundle-dir .cobuilder-architect/self` and confirm the overall result matches the pre-slice baseline.\n**Scoring:** 1.0 all three states and no failure. 0.5 states work but a missing file reports something, or the key is required. 0.0 missing.\n\n### C5 — tests and the writing standard [CRITICAL]\n**Must be true:** `tests/test_habit_smells.py` exists and passes. The fixture uses a stub on PATH, never the real tool. `uv run pytest tests -q` passes.\n**Evidence to check:** the test command. `uv run shared/skills/ste-writing/ste-lint.py` on the changed files.\n**Scoring:** 1.0 all. 0.5 lint violations. 0.0 failing tests.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope must remain unchanged: the SKILL.md mode sections, the commands, and `plugins/pr`.\n\n## Out of scope — do not penalise\n- Review and maintenance prose. Slices 2 and 3 do that.\n- Trending and tagging. That is E3.",
+        "source_path": ".cobuilder/rubrics/habit-smells/slice-1.md"
+      },
+      {
+        "id": "habit-smells/2",
+        "feature_slug": "habit-smells",
+        "n": 2,
+        "title": "Slice 2 — E2: the review mode Mechanical smells section and its wiring tests",
+        "body_md": "# Rubric: Slice 2 — E2: the review mode Mechanical smells section and its wiring tests\n\nFeature: habit-smells\nEpic: E2\nSlice goal: `SKILL.md` \"### Review Mode\" puts a habit-hooks step before the reports. A blind agent given the file runs the script, then writes `## Mechanical smells` into both reports with the classification rules.\nTest command: uv run pytest tests -q\n\nThis slice edits a file that governs another mode's procedure. Score behavior, not wording. Evidence is a transcript of one fresh subagent.\n\n## Criteria\n\n### C1 — the script runs before the reports [CRITICAL]\n**Must be true:** A fresh agent given only `SKILL.md` review mode and a realistic task runs the script through the documented call before it writes either report. The call in its transcript names `habit_smells.py` and passes `--branch` with the branch base.\n**Evidence to check:** the blind agent's tool-call transcript, in order.\n**Scoring:** 1.0 script first, reports after, `--branch` present. 0.5 script runs with no branch base. 0.0 no script call.\n\n### C2 — both reports carry the section [CRITICAL]\n**Must be true:** The transcript shows a `## Mechanical smells` section written into the technical report and into the founder report. The section names the tool as habit-hooks and states the branch base.\n**Evidence to check:** the transcripts and the report texts.\n**Scoring:** 1.0 both reports name both facts. 0.5 one report, or a fact missing. 0.0 no section.\n\n### C3 — the classification rules hold [CRITICAL]\n**Must be true:** A swallowed-exception group starts at P1, citing the harness-security rule. A group with more than 100 findings starts at P1 and reports one count plus the top 10 files, never the full list. Other groups start at P2. The agent may re-classify a group only with evidence, and states it.\n**Evidence to check:** the transcript with input that mixes a swallowed-exception group of 3 findings, a duplicated-code group over 100, and a small group.\n**Scoring:** 1.0 all three rules and the evidence bar for a re-classify. 0.5 the large group caps but the P1 starts mislabeled. 0.0 no classification.\n\n### C4 — incomplete and unavailable states are shown [CRITICAL]\n**Must be true:** When `habit-smells.json` records an incomplete run, the section reports it as a P1 finding that names the tool. When the tool is unavailable, the section states the reason and claims no clean scan.\n**Evidence to check:** the transcript with each degraded record.\n**Scoring:** 1.0 both. 0.5 one. 0.0 the degraded run reads as clean.\n\n### C5 — the wiring tests and the standard\n**Must be true:** `tests/test_habit_smells_integration.py` has cases that fail when `SKILL.md` drops the script call, a P1 rule, the top-10 cap, the incomplete-run rule, or the unavailable rule. Prose passes the writing standard. No `plugins/pr` file mentions habit-hooks, and `commands/review.md` names the step.\n**Evidence to check:** run the new tests. Remove one rule in a scratch copy and confirm a test fails. Run `ste-lint.py`.\n**Scoring:** 1.0 all. 0.5 tests exist but pass without the prose. 0.0 no tests.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope must remain unchanged: the script, the gate key, and `commands/maintenance.md`.\n\n## Out of scope — do not penalise\n- The maintenance diff and the tags. Slice 3 does that.\n- A fix for any finding the section reports.",
+        "source_path": ".cobuilder/rubrics/habit-smells/slice-2.md"
+      },
+      {
+        "id": "habit-smells/3",
+        "feature_slug": "habit-smells",
+        "n": 3,
+        "title": "Slice 3 — E3: the maintenance mode pair diff, its wiring tests, and the commands",
+        "body_md": "# Rubric: Slice 3 — E3: the maintenance mode pair diff, its wiring tests, and the commands\n\nFeature: habit-smells\nEpic: E3\nSlice goal: `SKILL.md` \"### Maintenance Mode\" runs the same script, tags each pair against the prior report's Mechanical smells section, and feeds the pairs into the trend report. Both command files name the step.\nTest command: uv run pytest tests -q\n\nThis slice edits a file that governs another mode's procedure. Score behavior, not wording. Evidence is a transcript of one fresh subagent.\n\n## Criteria\n\n### C1 — the same script runs, then the pair diff [CRITICAL]\n**Must be true:** A fresh agent given only `SKILL.md` maintenance mode and a realistic task runs the script through the documented call before it reads the prior report. It diffs each pair of smell and file between `habit-smells.json` and the prior report's Mechanical smells section.\n**Evidence to check:** the blind agent's tool-call transcript, in order, with a prior `habit-smells.json` record and a prior report provided.\n**Scoring:** 1.0 script first, prior report second, diff third. 0.5 it compares against a report but skips the prior reads in some order, or no prior-record read. 0.0 no diff.\n\n### C2 — the four tags [CRITICAL]\n**Must be true:** A pair in the prior report and not now is RESOLVED. A pair not in the prior report is NEW. A pair whose count rose is ESCALATED. An unchanged pair is STABLE. The trend report states each tag.\n**Evidence to check:** the transcript with input that carries one pair per case.\n**Scoring:** 1.0 all four correct. 0.5 three or fewer correct, or a missing tag for an existing pair. 0.0 no tags.\n\n### C3 — no prior scan\n**Must be true:** When no prior report or prior habit-smells record exists, the run states the first-scan case instead of tagging pairs against nothing.\n**Evidence to check:** the transcript with no prior artifact.\n**Scoring:** 1.0 first-scan statement, no tags. 0.5 it proceeds but the tags name no baseline. 0.0 it invents a baseline.\n\n### C4 — the commands name the step\n**Must be true:** `commands/review.md` and `commands/maintenance.md` each carry text about the habit-hooks step. A fresh agent reading `commands/maintenance.md` expects the step in its run.\n**Evidence to check:** read both files. Read the second blind transcript for the expectation.\n**Scoring:** 1.0 both files and the behavior. 0.5 one file. 0.0 neither.\n\n### C5 — the wiring tests and the standard [CRITICAL]\n**Must be true:** `tests/test_habit_smells_integration.py` has cases that fail when `SKILL.md` drops the script call, the four tags, the prior-report diff, or when `commands/maintenance.md` drops its text. Prose passes the writing standard.\n**Evidence to check:** run the new tests. Remove one rule in a scratch copy and confirm a test fails. Run `ste-lint.py`.\n**Scoring:** 1.0 all. 0.5 tests exist but pass without the prose. 0.0 no tests.\n\n## Regression check\n- All tests that passed before this slice must still pass.\n- Files outside the slice scope must remain unchanged: the script, the gate key, the review mode section, `commands/review.md`, and `plugins/pr`.\n\n## Out of scope — do not penalise\n- Review mode's classification rules. Slice 2 does that.\n- A change to the script's flags or output file. Slice 1 did that.",
+        "source_path": ".cobuilder/rubrics/habit-smells/slice-3.md"
+      },
+      {
         "id": "interaction-design-gate/1",
         "feature_slug": "interaction-design-gate",
         "n": 1,
@@ -5015,6 +5134,9 @@
         "pr": null,
         "via": "epic",
         "path": [
+          "habit-smells/E1",
+          "habit-smells/E2",
+          "habit-smells/E3",
           "slice-agents-and-vocabulary/E1",
           "slice-agents-and-vocabulary/E2",
           "slice-agents-and-vocabulary/E3",
@@ -5183,6 +5305,15 @@
         "pr": null,
         "via": "none",
         "path": []
+      },
+      "ADR-0038": {
+        "pr": null,
+        "via": "epic",
+        "path": [
+          "habit-smells/E1",
+          "habit-smells/E2",
+          "habit-smells/E3"
+        ]
       }
     },
     "epic_to_pull_request": {
@@ -5260,6 +5391,9 @@
       "gate-doc-surfacing/E1": "open",
       "gate-doc-surfacing/E2": "open",
       "gate-state-resolution/E1": "unstarted",
+      "habit-smells/E1": "unstarted",
+      "habit-smells/E2": "unstarted",
+      "habit-smells/E3": "unstarted",
       "implementation-conformance/E1": "unstarted",
       "implementation-conformance/E2": "unstarted",
       "implementation-conformance/E3": "unstarted",
@@ -5361,6 +5495,9 @@
       "gate-doc-surfacing/6": "gate-doc-surfacing/E2",
       "gate-state-resolution/1": "gate-state-resolution/E1",
       "gate-state-resolution/2": "gate-state-resolution/E1",
+      "habit-smells/1": "habit-smells/E1",
+      "habit-smells/2": "habit-smells/E2",
+      "habit-smells/3": "habit-smells/E3",
       "interaction-design-gate/1": "interaction-design-gate/E1",
       "interaction-design-gate/2": "interaction-design-gate/E1",
       "interaction-design-gate/3": "interaction-design-gate/E2",
@@ -5456,7 +5593,8 @@
       "ADR-0034": "cobuilder-packaging",
       "ADR-0035": "cobuilder-packaging",
       "ADR-0036": "cobuilder-packaging",
-      "ADR-0037": "cobuilder-packaging"
+      "ADR-0037": "cobuilder-packaging",
+      "ADR-0038": "cobuilder-packaging"
     },
     "adr_to_district": {
       "ADR-0001": "scripts",
@@ -5632,6 +5770,43 @@
           "n": "4",
           "name": "Slice plan, epic designs, and rubrics",
           "state": "APPROVED 2026-09-14"
+        }
+      ],
+      "habit-smells": [
+        {
+          "n": "1",
+          "name": "Product",
+          "state": "APPROVED 2026-10-08 (delegated by user)",
+          "view": "#/habit-smells/build/plan/product",
+          "doc": "habit-smells",
+          "doc_kind": "product"
+        },
+        {
+          "n": "2",
+          "name": "Architecture",
+          "state": "APPROVED 2026-10-08 (delegated by user)",
+          "view": "#/habit-smells/build/plan/architecture",
+          "doc": "habit-smells",
+          "doc_kind": "architecture"
+        },
+        {
+          "n": "2b",
+          "name": "Interaction design",
+          "state": "n/a (no UI) — Screens: \"no UI\""
+        },
+        {
+          "n": "3",
+          "name": "Program Design",
+          "state": "APPROVED 2026-10-08 (delegated by user)",
+          "view": "#/habit-smells/build/plan/program",
+          "doc": "habit-smells",
+          "doc_kind": "program"
+        },
+        {
+          "n": "4",
+          "name": "Slice plan, epic designs, and rubrics",
+          "state": "APPROVED 2026-10-08 (delegated by user)",
+          "view": "#/habit-smells/build/epics"
         }
       ],
       "interaction-design-gate": [

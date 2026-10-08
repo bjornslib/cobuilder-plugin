@@ -20,6 +20,9 @@ This mode is self-only. It analyses the session's own repo. Reports land in
 `docs/architecture/review/`. If the user asks to analyse a different local
 checkout, or to override where output lands, the skill will refuse.
 
+The run ends with one habit-hooks step: it executes `shared/habit_smells.py`
+against the default branch and writes `habit-smells.json` beside the reports.
+
 Invoke the `architecture` skill in review mode, forwarding any arguments the
 user supplied after `/architect:review`:
 

@@ -398,6 +398,15 @@ hand-off.
     - **Glossary present:** load it. Report each code name that the glossary lists under `_Avoid_`. Report each generic name (`Manager`, `Processor`, `Handler`, `Data`, `Info`) where the glossary holds a domain term for that thing. Report each term the code uses with a meaning that differs from its glossary entry. Rate each finding with the severity rules below. Count these findings under Maintainability.
     - **Propose a vocabulary** in both cases, as a "Proposed vocabulary" section of the Technical Report. Work from your understanding of the codebase's components (real directories, classes, events, and routes) and of its business outcomes and context (README, `CLAUDE.md`, ADRs, and design docs). For each component, list the candidate terms with their DDD kind and the evidence for each. Then check whether each current name is sensible: does it say what the thing does for the business, and would a domain expert recognise it? Take terms from the code and the project's own documents, never from the corpus. When the glossary is present, propose only terms it lacks, or terms it holds in a form that the evidence contradicts.
 
+11. Habit-hooks scan, after the vocabulary check (step 10) and before the
+    reports. Run `uv run "${CLAUDE_PLUGIN_ROOT}/shared/habit_smells.py" --repo . --branch <base>`, where `<base>` is the default branch. The script writes `habit-smells.json` beside the reports in `docs/architecture/review/<run>/`. Name the tool habit-hooks and the branch base in a one-line report to the engineer. Read the record, then write a `## Mechanical smells` section into both HTML reports:
+    - A group with more than 100 findings is one count plus the top 10 files. A group with 100 or fewer findings lists its files. Never list a large group in full.
+    - Classification: a swallowed-exception group starts at P1 (cite `references/harness-security.md`). A group over 100 findings starts at P1. Every other group starts at P2. Change a group's class only with evidence, and state the evidence.
+    - When the record says `run_complete: false`, add a P1 finding for the incomplete-run state. Name the tool habit-sensors and say the run is incomplete. Write the section on a complete run. When the run is incomplete, rest no pair on an incomplete result.
+    - When the record says `available: false`, the section states the reason the scan is unavailable and claims no clean scan.
+    - The count for a smell group is issue locations, which the record names in count_basis.
+    - The `habit.smells` key in `shared/verify_bundle.py` reads the same record file.
+
 Survivors enter the normal P0/P1/P2 severity flow below. The scoring rubric, impact taxonomy, size categorisation, and both report templates need no changes.
 
 **Output:** Two linked HTML artifacts, written to `docs/architecture/review/`:
@@ -429,6 +438,21 @@ If a prior scan exists:
 If no prior report exists, state: "This is the first scan. Future audits will compare against this baseline."
 
 **Corpus chain:** Same as Review mode.
+
+**Habit-hooks trend, after the corpus re-audit and before the trend
+report.** Run the same scan review mode runs:
+`uv run "${CLAUDE_PLUGIN_ROOT}/shared/habit_smells.py" --repo . --branch <base>`. The
+script writes `habit-smells.json` beside the reports. Read the record, then
+diff each (smell, file) pair against the previous report's
+`## Mechanical smells` section. Tag each pair NEW, ESCALATED (the count rose), STABLE, or
+RESOLVED (it is gone). Feed the pairs into the trend report beside the
+corpus findings, in the same NEW/ESCALATED/STABLE/RESOLVED language the
+corpus findings already use.
+When the previous report holds no `## Mechanical smells` section, every pair is NEW. This scan sets the baseline for later trends.
+When the record says `run_complete: false`, diff no pair and tag nothing. The trend waits for a complete run.
+Carry the degraded rules of review mode: when the record says `run_complete: false`, that is a P1 finding naming the tool habit-sensors. When the record says `available: false`, the section states
+the reason and claims no clean scan. Name the tool habit-hooks and the
+branch base in the report.
 
 **Vocabulary check:** When `DDD-VOCABULARY.md` exists at the repo root,
 load it where the mode names districts or terms. When it is absent,

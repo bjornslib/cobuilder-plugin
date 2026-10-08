@@ -99,6 +99,26 @@ A bounded context whose `boundary.yaml` has no resolvable `verified_at` commit, 
 One question that `/architect:options` raises about the flow, the technology, or a gap of the whole system, with evidence, a confidence tag, and alternatives (IDs F1, T1, G1). It is not a finding in `assessment.json` and not a question in the three-question PR assessment.
 _Avoid_: finding (an `assessment.json` entry), question (one of the three PR-assessment questions)
 
+<a id="mechanical-smell"></a>
+**Mechanical smell** (`architect`):
+A problem pattern habit-sensors counts mechanically, reported as a count next to judged findings. See "Findings source" for how a report row names its origin.
+_Avoid_: finding (an `assessment.json` entry, judged by a curator)
+
+<a id="smell-group"></a>
+**Smell group** (`architect`):
+All findings of one smell kind in one scan. A large group counts once and caps at the top 10 files.
+_Avoid_: mechanical smell (one kind's pattern, not the collected group)
+
+<a id="findings-source"></a>
+**Findings source** (`architect`):
+The named provenance of a review-report row: tool output versus curator judgment. Every row states which side produced it.
+_Avoid_: finding (an `assessment.json` entry with a different provenance)
+
+<a id="habit-smells-record"></a>
+**Habit-smells record** (`architect`):
+The JSON file `habit_smells.py` writes beside the review reports. `verify_bundle.py` reads it as the optional `habit.smells` key.
+_Avoid_: habit-sensors (the external tool the script calls, not the file)
+
 ## pr
 
 <a id="district"></a>
