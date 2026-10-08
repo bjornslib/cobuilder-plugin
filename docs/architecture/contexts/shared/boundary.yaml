@@ -7,7 +7,7 @@
 id: shared
 path: shared
 name: "Shared kernel vendored into each plugin by symlink"
-verified_at: d086be981401779ba4691faed31a6f64598df589
+verified_at: a9f71efcf2311baccf87a6ab8d0fe1285c9f4deb
 
 public_interface:
   - _bundle_meta.SCHEMA_VERSION

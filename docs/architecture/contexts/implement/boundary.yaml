@@ -7,7 +7,7 @@
 id: implement
 path: plugins/implement
 name: "Implement: four gates and a RED, GREEN, VALIDATE loop per slice"
-verified_at: d086be981401779ba4691faed31a6f64598df589
+verified_at: a9f71efcf2311baccf87a6ab8d0fe1285c9f4deb
 
 public_interface:
   - commands/start.md
