@@ -13,6 +13,9 @@ from __future__ import annotations
 import importlib.util
 import io
 import json
+import os
+import shlex
+import subprocess
 from pathlib import Path
 from types import ModuleType
 
@@ -268,7 +271,7 @@ def test_main_green_exit_127_reports_install_command(habit_coach):
     parsed = json.loads(out_text)
     context = parsed["hookSpecificOutput"]["additionalContext"]
     lines = [line for line in context.splitlines() if line.strip()]
-    matching = [line for line in lines if 'uv tool install "habit-hooks[python]"' in line]
+    matching = [line for line in lines if "/implement:install" in line]
     assert len(matching) == 1, f"expected exactly one matching line, got: {lines!r}"
 
 
@@ -322,121 +325,189 @@ def test_main_green_exit_one_context_has_path_header_then_newline_then_runner_te
 
 
 # ---------------------------------------------------------------------------
-# habit_coach.py: automatic install of habit-hooks
+# Slice E1: run from the git root, fail on "nothing scanned", no self-install
 # ---------------------------------------------------------------------------
 
+UNSCANNED_OUTPUTS = [
+    "habit-hooks: nothing scanned",
+    "a.py is not a file in this project",
+]
 
-def test_main_green_exit_127_with_fake_runner_does_not_attempt_install(habit_coach, monkeypatch):
-    calls: list[tuple] = []
 
-    def fake_install() -> tuple[int, str]:
-        calls.append(())
-        return 0, "installed"
+def _require(module: ModuleType, name: str) -> None:
+    assert hasattr(module, name), f"habit_coach.{name} is missing"
 
-    monkeypatch.setattr(habit_coach, "install_habit_hooks", fake_install)
-    runner = FakeRunner((127, "habit-hooks is not installed."))
-    stdin = io.StringIO(json.dumps(_green_payload("/x/a.py")))
+
+def _make_repo(tmp_path: Path) -> tuple[Path, Path]:
+    """Create a git repo and return (repo root, a file in a sub-folder of it)."""
+    repo = tmp_path / "repo"
+    sub = repo / "src" / "pkg"
+    sub.mkdir(parents=True)
+    subprocess.run(["git", "init", "-q", str(repo)], check=True, capture_output=True)
+    target = sub / "a.py"
+    target.write_text("x = 1\n")
+    return repo, target
+
+
+def _install_stub(tmp_path: Path, monkeypatch, output: str, code: int) -> Path:
+    """Put a habit-hooks stub first on PATH and return the file it writes its cwd to.
+
+    The stub prints output and exits with code. It never reads its arguments.
+    """
+    bin_dir = tmp_path / "stub-bin"
+    bin_dir.mkdir()
+    record = tmp_path / "stub-cwd.txt"
+    stub = bin_dir / "habit-hooks"
+    stub.write_text(
+        "#!/bin/sh\n"
+        f"pwd > {shlex.quote(str(record))}\n"
+        f"printf '%s\\n' {shlex.quote(output)}\n"
+        f"exit {code}\n"
+    )
+    stub.chmod(0o755)
+    monkeypatch.setenv("PATH", f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}")
+    return record
+
+
+def _empty_path(tmp_path: Path, monkeypatch) -> None:
+    empty_bin_dir = tmp_path / "empty-bin"
+    empty_bin_dir.mkdir()
+    monkeypatch.setenv("PATH", str(empty_bin_dir))
+
+
+def test_git_root_returns_repo_top_for_file_in_subfolder(habit_coach, tmp_path):
+    _require(habit_coach, "git_root")
+    repo, target = _make_repo(tmp_path)
+
+    result = habit_coach.git_root(str(target))
+
+    assert result is not None, "expected the repo top for a file in a sub-folder"
+    assert Path(result).resolve() == repo.resolve()
+
+
+def test_git_root_none_outside_a_repo(habit_coach, tmp_path, monkeypatch):
+    _require(habit_coach, "git_root")
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path))
+    loose = tmp_path / "loose"
+    loose.mkdir()
+    target = loose / "a.py"
+    target.write_text("x = 1\n")
+
+    assert habit_coach.git_root(str(target)) is None
+
+
+@pytest.mark.parametrize("text", UNSCANNED_OUTPUTS)
+def test_is_unscanned_true_for_each_marker_text(habit_coach, text):
+    _require(habit_coach, "is_unscanned")
+    assert habit_coach.is_unscanned(text) is True
+
+
+def test_is_unscanned_false_for_normal_pass(habit_coach):
+    _require(habit_coach, "is_unscanned")
+    assert habit_coach.is_unscanned("a.py: 1 file scanned, 0 findings") is False
+
+
+@pytest.mark.parametrize("text", UNSCANNED_OUTPUTS)
+def test_run_habit_hooks_returns_two_when_stub_reports_unscanned_with_exit_zero(
+    habit_coach, tmp_path, monkeypatch, text
+):
+    _, target = _make_repo(tmp_path)
+    _install_stub(tmp_path, monkeypatch, text, 0)
+
+    code, output = habit_coach.run_habit_hooks(str(target))
+
+    assert code == 2
+    assert text in output
+
+
+def test_main_green_runs_habit_hooks_from_git_root_when_cwd_is_elsewhere(
+    habit_coach, tmp_path, monkeypatch
+):
+    repo, target = _make_repo(tmp_path)
+    record = _install_stub(tmp_path, monkeypatch, "", 0)
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    monkeypatch.chdir(elsewhere)
+    stdin = io.StringIO(json.dumps(_green_payload(str(target))))
     stdout = io.StringIO()
 
-    rc = habit_coach.main(stdin, stdout, runner=runner)
+    rc = habit_coach.main(stdin, stdout)
 
     assert rc == 0
-    assert calls == [], "runner seam must bypass the installer entirely"
-    context = json.loads(stdout.getvalue().strip())["hookSpecificOutput"]["additionalContext"]
-    assert 'uv tool install "habit-hooks[python]"' in context
+    assert record.exists(), "the habit-hooks stub never ran"
+    assert Path(record.read_text().strip()).resolve() == repo.resolve()
 
 
-def test_install_habit_hooks_runs_uv_tool_install(habit_coach, monkeypatch):
-    recorded: list[list[str]] = []
-
-    def fake_run(*args, **kwargs):
-        recorded.append(list(args[0]))
-        return _FakeCompleted(0, "Installed 1 package", "")
-
-    monkeypatch.setattr(habit_coach.subprocess, "run", fake_run)
-
-    code, text = habit_coach.install_habit_hooks()
-
-    assert (code, text) == (0, "Installed 1 package")
-    assert recorded == [["uv", "tool", "install", "habit-hooks[python]"]]
-
-
-def test_install_habit_hooks_returns_output_and_code(habit_coach, monkeypatch):
-    def fake_run(*args, **kwargs):
-        return _FakeCompleted(1, "stdout line", "stderr line")
-
-    monkeypatch.setattr(habit_coach.subprocess, "run", fake_run)
-
-    code, text = habit_coach.install_habit_hooks()
-
-    assert code == 1
-    assert "stdout line" in text
-    assert "stderr line" in text
-
-
-def test_install_habit_hooks_returns_127_when_uv_is_absent(habit_coach, monkeypatch):
-    def fake_run(*args, **kwargs):
-        raise FileNotFoundError("uv")
-
-    monkeypatch.setattr(habit_coach.subprocess, "run", fake_run)
-
-    code, text = habit_coach.install_habit_hooks()
-
-    assert code == 127
-    assert text == "uv is not installed."
-
-
-def test_run_habit_hooks_installs_and_retries_on_missing_binary(habit_coach, monkeypatch):
-    runs: list[list[str]] = []
-
-    def fake_run(*args, **kwargs):
-        runs.append(list(args[0]))
-        if runs and runs[0][0] == "habit-hooks" and len(runs) == 1:
-            raise FileNotFoundError("habit-hooks")
-        if runs[-1][0] == "uv":
-            raise AssertionError("installer should be monkeypatched, not real uv")
-        return _FakeCompleted(0, "clean write", "")
-
-    monkeypatch.setattr(habit_coach.subprocess, "run", fake_run)
-    monkeypatch.setattr(habit_coach, "install_habit_hooks", lambda: (0, "installed"))
-
-    code, text = habit_coach.run_habit_hooks("/x/a.py")
-
-    assert code == 0
-    assert text == "clean write"
-    assert [r[0] for r in runs] == ["habit-hooks", "habit-hooks"]
-
-
-def test_run_habit_hooks_returns_127_when_install_fails(habit_coach, monkeypatch):
-    install_calls: list[int] = []
-
-    def fake_run(*args, **kwargs):
-        raise FileNotFoundError("habit-hooks")
-
-    def fake_install():
-        install_calls.append(1)
-        return 1, "boom"
-
-    monkeypatch.setattr(habit_coach.subprocess, "run", fake_run)
-    monkeypatch.setattr(habit_coach, "install_habit_hooks", fake_install)
-
-    code, text = habit_coach.run_habit_hooks("/x/a.py")
-
-    assert code == 127
-    assert text == "habit-hooks is not installed."
-    assert install_calls == [1]
-
-
-def test_run_habit_hooks_returns_127_when_install_succeeds_but_binary_still_missing(
-    habit_coach, monkeypatch
+def test_main_green_reports_failure_notice_when_stub_says_nothing_scanned(
+    habit_coach, tmp_path, monkeypatch
 ):
-    monkeypatch.setattr(habit_coach.subprocess, "run", lambda *a, **k: (_ for _ in ()).throw(FileNotFoundError()))
-    monkeypatch.setattr(habit_coach, "install_habit_hooks", lambda: (0, "installed"))
+    _, target = _make_repo(tmp_path)
+    _install_stub(tmp_path, monkeypatch, "nothing scanned in this project", 0)
+    stdin = io.StringIO(json.dumps(_green_payload(str(target))))
+    stdout = io.StringIO()
 
-    code, text = habit_coach.run_habit_hooks("/x/a.py")
+    rc = habit_coach.main(stdin, stdout)
+
+    assert rc == 0
+    out_text = stdout.getvalue().strip()
+    assert out_text, "expected a failure notice on stdout, got nothing"
+    context = json.loads(out_text)["hookSpecificOutput"]["additionalContext"]
+    assert f"habit-hooks failed to run on {target}" in context
+    assert "GREEN report" in context
+
+
+def test_run_habit_hooks_returns_127_with_empty_path_and_runs_no_uv(
+    habit_coach, tmp_path, monkeypatch
+):
+    _, target = _make_repo(tmp_path)
+    _empty_path(tmp_path, monkeypatch)
+    argvs: list[list[str]] = []
+    real_run = subprocess.run
+
+    def recording_run(*args, **kwargs):
+        argvs.append(list(args[0]))
+        return real_run(*args, **kwargs)
+
+    monkeypatch.setattr(habit_coach.subprocess, "run", recording_run)
+
+    code, _text = habit_coach.run_habit_hooks(str(target))
 
     assert code == 127
-    assert text == "habit-hooks is not installed."
+    uv_calls = [argv for argv in argvs if argv and argv[0] == "uv"]
+    assert uv_calls == [], f"the hook must not run uv, but it ran: {argvs!r}"
+
+
+def test_main_green_with_empty_path_names_install_slash_command_and_runs_no_uv(
+    habit_coach, tmp_path, monkeypatch
+):
+    _, target = _make_repo(tmp_path)
+    _empty_path(tmp_path, monkeypatch)
+    argvs: list[list[str]] = []
+    real_run = subprocess.run
+
+    def recording_run(*args, **kwargs):
+        argvs.append(list(args[0]))
+        return real_run(*args, **kwargs)
+
+    monkeypatch.setattr(habit_coach.subprocess, "run", recording_run)
+    stdin = io.StringIO(json.dumps(_green_payload(str(target))))
+    stdout = io.StringIO()
+
+    rc = habit_coach.main(stdin, stdout)
+
+    assert rc == 0
+    out_text = stdout.getvalue().strip()
+    assert out_text, "expected the install notice on stdout, got nothing"
+    context = json.loads(out_text)["hookSpecificOutput"]["additionalContext"]
+    assert "/implement:install" in context
+    uv_calls = [argv for argv in argvs if argv and argv[0] == "uv"]
+    assert uv_calls == [], f"the hook must not run uv, but it ran: {argvs!r}"
+
+
+def test_install_habit_hooks_is_removed(habit_coach):
+    assert not hasattr(habit_coach, "install_habit_hooks"), (
+        "the hook must not self-install habit-hooks"
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -7,15 +7,15 @@
 This script runs after every Write or Edit tool call in the implement
 plugin. It checks the call, and it does nothing unless the call came from
 the implement:green agent and named a file path. For a GREEN write, it
-runs habit-hooks against that file and reports the result as additional
-context for the agent. It never blocks a write, because PostToolUse cannot
-block, and a coaching tool must not stop a write anyway.
+runs habit-hooks from the git root of that file and reports the result as
+additional context for the agent. It never blocks a write, because
+PostToolUse cannot block, and a coaching tool must not stop a write anyway.
 
-When the habit-hooks binary is missing, the script attempts a one-time
-install with `uv tool install "habit-hooks[python]"`. A successful install
-is not recorded anywhere. The next hook invocation simply finds the binary
-on PATH. A failed install does not block anything: the hook still reports
-exit code 127 with the install notice.
+The script never installs habit-hooks. When the habit-hooks binary is
+missing, the script reports exit code 127 and names the /implement:install
+command. Output that says "nothing scanned" or "is not a file in this
+project" means the coach did not read the file. The script reports that
+as exit code 2.
 
 habit-hooks is MIT licensed, by Ivett Ordog and contributors.
 See https://github.com/habit-hooks/habit-hooks.
@@ -23,11 +23,14 @@ See https://github.com/habit-hooks/habit-hooks.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from typing import IO
 
 GREEN_AGENT_TYPES = frozenset({"implement:green"})
+
+UNSCANNED_MARKERS = ("nothing scanned", "is not a file in this project")
 
 
 def is_green(payload: dict) -> bool:
@@ -41,15 +44,44 @@ def target_path(payload: dict) -> str | None:
     return tool_input.get("file_path")
 
 
-def _run_habit_hooks_once(path: str) -> tuple[int, str]:
-    """Run habit-hooks against path once and return its exit code and output.
+def git_root(path: str) -> str | None:
+    """Return the git root that holds path, or None when there is none.
 
-    A missing habit-hooks binary raises FileNotFoundError, which the caller
-    handles. A timeout returns exit code 2.
+    A missing git binary also returns None, so the hook still runs.
+    """
+    folder = os.path.dirname(os.path.abspath(path))
+    try:
+        result = subprocess.run(
+            ["git", "-C", folder, "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except FileNotFoundError:
+        return None
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip() or None
+
+
+def is_unscanned(text: str) -> bool:
+    """Return True when habit-hooks output says it did not scan the file."""
+    lowered = text.lower()
+    return any(marker in lowered for marker in UNSCANNED_MARKERS)
+
+
+def _run_habit_hooks_once(path: str) -> tuple[int, str]:
+    """Run habit-hooks against path once from the git root and return its result.
+
+    The working directory is the git root of path. When path is in no git
+    repository, habit-hooks runs in the current directory. A missing
+    habit-hooks binary raises FileNotFoundError, which the caller handles.
+    A timeout returns exit code 2.
     """
     try:
         result = subprocess.run(
-            ["habit-hooks", "--file", path],
+            ["habit-hooks", "--file", os.path.abspath(path)],
+            cwd=git_root(path),
             capture_output=True,
             text=True,
             timeout=30,
@@ -59,42 +91,21 @@ def _run_habit_hooks_once(path: str) -> tuple[int, str]:
         return 2, "habit-hooks timed out."
 
 
-def install_habit_hooks() -> tuple[int, str]:
-    """Install habit-hooks with uv tool and return the exit code and output."""
-    try:
-        result = subprocess.run(
-            ["uv", "tool", "install", "habit-hooks[python]"],
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
-        return result.returncode, result.stdout + result.stderr
-    except FileNotFoundError:
-        return 127, "uv is not installed."
-
-
 def run_habit_hooks(path: str) -> tuple[int, str]:
     """Run habit-hooks against path and return its exit code and output.
 
-    A missing habit-hooks binary triggers one attempt to install it with
-    `uv tool install "habit-hooks[python]"`. When the install succeeds, the
-    hook runs habit-hooks again against the same path. When the install
-    fails, the function returns exit code 127 with a short message, so the
-    install notice in main() still fires.
+    A missing habit-hooks binary returns exit code 127. Output that says
+    the file was not scanned returns exit code 2, even when habit-hooks
+    exits with code 0.
     """
     try:
-        return _run_habit_hooks_once(path)
+        code, text = _run_habit_hooks_once(path)
     except FileNotFoundError:
-        pass
+        return 127, "habit-hooks is not installed."
 
-    install_code, _install_text = install_habit_hooks()
-    if install_code == 0:
-        try:
-            return _run_habit_hooks_once(path)
-        except FileNotFoundError:
-            return 127, "habit-hooks is not installed."
-
-    return 127, "habit-hooks is not installed."
+    if is_unscanned(text):
+        return 2, text
+    return code, text
 
 
 def render(code: int, text: str) -> dict | None:
@@ -135,9 +146,8 @@ def main(stdin: IO[str], stdout: IO[str], runner=run_habit_hooks) -> int:
         message = f"habit-hooks coaching for {path}:\n{text}"
     elif code == 127:
         message = (
-            'habit-hooks is not installed, install it with '
-            '`uv tool install "habit-hooks[python]"` and name every '
-            "language in one install command."
+            "habit-hooks is not installed. Run /implement:install, "
+            "which installs every language in one command."
         )
     elif code == 2:
         message = (
