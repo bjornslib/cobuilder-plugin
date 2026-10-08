@@ -1,6 +1,6 @@
 {
   "name": "pr",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Narrated PR history, per-PR sweeps, and submit-mode review for a local git repo. Output is a portable .cobuilder-architect/ bundle.",
   "author": { "name": "bjornslib" },
   "repository": "https://github.com/bjornslib/cobuilder-architect",

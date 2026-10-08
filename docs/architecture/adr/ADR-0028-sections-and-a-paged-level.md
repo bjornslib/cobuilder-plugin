@@ -160,6 +160,12 @@ The envisioned pull request moved to the Pull requests level. That level now
 fills when a work has a drafted pull request, so a design with no merged pull
 request can still reach the level that names the one it will open.
 
+**Amendment, 2026-10-05.** The change's account pages the same way. Each of its four
+rows (Intent, Problem & Solution, Architecture, File Diffs) is a paged level, and the
+section strip names that row's own sections. A row was one long panel before, and the
+strip repeated the rail's four names. The sections of each row are named where
+`plugins/artifact/viewer/src/shell/change/sections.tsx` builds them.
+
 ## Consequences
 
 - **Positive:** a reader always knows how much of a level remains.

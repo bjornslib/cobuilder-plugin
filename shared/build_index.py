@@ -51,6 +51,7 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import validate_decision_state as vds  # noqa: E402
 from _bundle_meta import (  # noqa: E402
+    DESIGN_STAGES,
     read_plugin_name,
     read_plugin_version,
     require_compatible,
@@ -331,6 +332,12 @@ def project_goal(raw: object, rel: Path) -> tuple[dict | None, list[str]]:
             value, error = project_string_list(raw[key], key)
             if error:
                 failures.append(f"{rel}: {error}")
+    stage = raw.get("stage")
+    if stage not in DESIGN_STAGES:
+        failures.append(
+            f"{rel}: `stage` must be one of {', '.join(DESIGN_STAGES)} (got {stage!r}). "
+            "The Work board shows no design with any other stage."
+        )
     epics, epic_error = project_epics(raw.get("epics"))
     if epic_error:
         failures.append(f"{rel}: {epic_error}")
@@ -1148,6 +1155,12 @@ def resolve_epic_pull_requests(
             epic_status[epic["id"]] = "unknown"
             continue
         number = gh_pr_for_branch(branch, warnings, gh_state)
+        if number is None and isinstance(epic.get("pr"), int):
+            # gh found no pull request or could not answer. The epic's own authored
+            # `pr` still names one, so the join keeps it. Without this fallback a
+            # build that ran with gh unavailable drops the pull request from every
+            # design page, with no warning beyond the gh one.
+            number = epic["pr"]
         if number is None:
             epic_status[epic["id"]] = "unknown" if gh_state.get("unavailable") else "no-pull-request"
             continue

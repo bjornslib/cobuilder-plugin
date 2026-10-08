@@ -157,6 +157,13 @@ requests under one. Drift is measured per epic, against that epic's slice of
 the design. `goal.stage` gains `partially-delivered` and `delivered`, and a
 design is delivered when every epic has a merged pull request.
 
+**Amendment, 2026-10-05.** The stage names `partially-delivered` and `delivered`
+are superseded. The Work board (ADR-0034) reads six stages, and
+`_bundle_meta.DESIGN_STAGES` holds them: `backlog`, `decided`, `approved`,
+`review`, `implemented`, `superseded`. A design with some merged epics stays
+`approved`. A design with every epic merged is `implemented`. The rule that
+a design is complete when every epic has a merged pull request stands.
+
 ## Consequences
 
 - **Positive.** Neither tool duplicates the other. Design mode keeps its corpus

@@ -88,8 +88,17 @@ function AnswerBlock({
   );
 }
 
-/** The author's own statement of the change, with every part it holds. */
-export function ChangeIntentBody({ intent }: { intent: StoryIntent | undefined }) {
+/** The three sections the author's statement splits into, one per section of the Intent level. */
+export type IntentPart = "why" | "approach" | "scope";
+
+/** One section of the author's own statement of the change. */
+export function ChangeIntentPart({
+  intent,
+  part,
+}: {
+  intent: StoryIntent | undefined;
+  part: IntentPart;
+}) {
   if (!intent) {
     return (
       <Missing>
@@ -101,6 +110,8 @@ export function ChangeIntentBody({ intent }: { intent: StoryIntent | undefined }
   const inferred = intent.source === "inferred";
   return (
     <div className="flex min-w-0 flex-col gap-4">
+      {part === "why" ? (
+        <>
       <span className="flex min-w-0 flex-wrap items-center gap-2">
         {intent.source ? (
           <Chip
@@ -135,6 +146,10 @@ export function ChangeIntentBody({ intent }: { intent: StoryIntent | undefined }
           {intent.why_now}
         </Box>
       ) : null}
+        </>
+      ) : null}
+      {part === "approach" ? (
+        <>
       {intent.approach ? (
         <Box label="Approach" tone="solution" anchor>
           {intent.approach}
@@ -143,7 +158,7 @@ export function ChangeIntentBody({ intent }: { intent: StoryIntent | undefined }
 
       {(intent.alternatives ?? []).length > 0 ? (
         <div className="flex min-w-0 flex-col gap-2">
-          <SubHead count={(intent.alternatives ?? []).length} anchor>
+          <SubHead anchor>
             Rejected alternatives
           </SubHead>
           <ul className="m-0 flex min-w-0 list-none flex-col gap-2 p-0">
@@ -164,7 +179,9 @@ export function ChangeIntentBody({ intent }: { intent: StoryIntent | undefined }
         </div>
       ) : null}
 
-      {[
+        </>
+      ) : null}
+      {part !== "scope" ? null : [
         ["Out of scope", intent.out_of_scope],
         ["Risks", intent.risks],
         ["Testing", intent.testing],
@@ -175,7 +192,7 @@ export function ChangeIntentBody({ intent }: { intent: StoryIntent | undefined }
         if (items.length === 0) return null;
         return (
           <div key={label as string} className="flex min-w-0 flex-col gap-2">
-            <SubHead count={items.length} anchor>
+            <SubHead anchor>
               {label as string}
             </SubHead>
             <TextList items={items} />
@@ -186,11 +203,16 @@ export function ChangeIntentBody({ intent }: { intent: StoryIntent | undefined }
   );
 }
 
-/** The reading written against the merged diff, with the evidence each answer stands on. */
-export function ChangeAssessmentBody({
+/** The three sections the reading against the diff splits into, one per section of the level. */
+export type AssessmentPart = "assessment" | "findings" | "risk";
+
+/** One section of the reading written against the merged diff. */
+export function ChangeAssessmentPart({
   assessment,
+  part,
 }: {
   assessment: StoryAssessment | undefined;
+  part: AssessmentPart;
 }) {
   if (!assessment) {
     return (
@@ -205,6 +227,8 @@ export function ChangeAssessmentBody({
   const checks = assessment.boundary_checks ?? [];
   return (
     <div className="flex min-w-0 flex-col gap-4">
+      {part === "assessment" ? (
+        <>
       <span className="flex min-w-0 flex-wrap items-center gap-2">
         {assessment.verdict ? (
           <StateBadge
@@ -235,8 +259,12 @@ export function ChangeAssessmentBody({
       <AnswerBlock title="Maintainability and constraints" answer={assessment.maintainability} />
       <AnswerBlock title="Patterns and duplicates" answer={assessment.pattern} />
 
+        </>
+      ) : null}
+      {part === "findings" ? (
+        <>
       <div className="flex min-w-0 flex-col gap-2">
-        <SubHead count={findings.length} anchor>
+        <SubHead anchor>
           Findings
         </SubHead>
         {findings.length === 0 ? (
@@ -269,7 +297,7 @@ export function ChangeAssessmentBody({
 
       {checks.length > 0 ? (
         <div className="flex min-w-0 flex-col gap-2">
-          <SubHead count={checks.length} anchor>
+          <SubHead anchor>
             Boundary checks
           </SubHead>
           <ul className="m-0 flex min-w-0 list-none flex-col gap-2 p-0">
@@ -293,6 +321,10 @@ export function ChangeAssessmentBody({
         </div>
       ) : null}
 
+        </>
+      ) : null}
+      {part === "risk" ? (
+        <>
       {assessment.regret_risk ? (
         <Box label="Regret risk" tone="problem" anchor>
           {assessment.regret_risk}
@@ -300,7 +332,7 @@ export function ChangeAssessmentBody({
       ) : null}
 
       <div className="flex min-w-0 flex-col gap-2">
-        <SubHead count={drift.length} anchor>
+        <SubHead anchor>
           Drift
         </SubHead>
         {drift.length === 0 ? (
@@ -312,6 +344,8 @@ export function ChangeAssessmentBody({
           <TextList items={asLines(drift.map((entry) => entry.claim ?? entry.title ?? ""))} />
         )}
       </div>
+        </>
+      ) : null}
     </div>
   );
 }

@@ -95,6 +95,7 @@ def write_design(
     goal = {
         "name": design_id,
         "outcome": "An outcome.",
+        "stage": "backlog",
         "epics": [
             {"id": e, "branch": branches.get(e), "state": "pending", "note": notes.get(e, "")}
             for e in epic_ids
@@ -608,10 +609,11 @@ def test_slice_8_entities_still_present_alongside_joins(repo, bundle_dir):
 
 
 def write_raw_goal(repo: Path, design_id: str, goal: dict) -> None:
-    """Write a goal.json verbatim, for entries the helpers never produce."""
+    """Write a goal.json for entries the helpers never produce. It gets a valid
+    stage unless the caller names one, so a test sees only the failure it targets."""
     design_dir = repo / "docs" / "architecture" / "designs" / design_id
     design_dir.mkdir(parents=True, exist_ok=True)
-    (design_dir / "goal.json").write_text(json.dumps(goal))
+    (design_dir / "goal.json").write_text(json.dumps({"stage": "backlog", **goal}))
 
 
 def test_an_epics_entry_without_an_id_fails_the_goal(repo, bundle_dir):
@@ -802,7 +804,7 @@ def write_design_artifacts(repo: Path, design_id: str, with_files: set[str]) -> 
         "name": design_id,
         "outcome": "An outcome.",
         "epics": [{"id": "E1", "state": "pending"}],
-        "stage": "design",
+        "stage": "approved",
     }
     (design_dir / "goal.json").write_text(json.dumps(goal))
     if "pr-draft" in with_files:
@@ -850,3 +852,88 @@ def test_design_contracts_projection(repo, bundle_dir):
     index, adr_records, design_records, failures = build_index.build_index(repo, bundle_dir)
     assert failures == []
     assert "contracts" not in design_records["without-contracts"]
+
+
+# --- A design's stage must be one a Work board lane reads ---
+
+
+def test_a_stage_no_lane_reads_fails_the_goal_and_writes_nothing(repo, bundle_dir):
+    # "design" is an assessment.json stage, not a design stage. Before the guard,
+    # eleven designs carried it and the Work board showed none of them.
+    write_raw_goal(repo, "design-a", {"name": "design-a", "outcome": "An outcome.", "stage": "design"})
+
+    _, _, _, failures = build_index.build_index(repo, bundle_dir)
+    assert len(failures) == 1
+    assert failures[0].startswith(
+        "docs/architecture/designs/design-a/goal.json: `stage` must be one of "
+        "backlog, decided, approved, review, implemented, superseded (got 'design')"
+    )
+    assert not (bundle_dir / "data" / "index.json").exists()
+
+
+def test_a_missing_stage_fails_the_goal(repo, bundle_dir):
+    design_dir = repo / "docs" / "architecture" / "designs" / "design-a"
+    design_dir.mkdir(parents=True)
+    (design_dir / "goal.json").write_text(json.dumps({"name": "design-a", "outcome": "An outcome."}))
+
+    _, _, _, failures = build_index.build_index(repo, bundle_dir)
+    assert len(failures) == 1
+    assert "(got None)" in failures[0]
+
+
+@pytest.mark.parametrize("stage", ["backlog", "decided", "approved", "review", "implemented", "superseded"])
+def test_every_lane_stage_passes_the_goal(repo, bundle_dir, stage):
+    write_raw_goal(repo, "design-a", {"name": "design-a", "outcome": "An outcome.", "stage": stage})
+
+    index, _, _, failures = build_index.build_index(repo, bundle_dir)
+    assert failures == []
+    assert index["entities"]["design"][0]["stage"] == stage
+
+
+# --- An epic's authored `pr` keeps the join when gh cannot resolve the branch ---
+
+
+def write_epic_with_authored_pr(repo: Path, branch: str, pr: int) -> None:
+    write_raw_goal(
+        repo,
+        "design-d",
+        {
+            "name": "design-d",
+            "outcome": "An outcome.",
+            "epics": [{"id": "E1", "branch": branch, "pr": pr, "state": "open"}],
+        },
+    )
+
+
+def test_authored_pr_keeps_the_join_when_gh_is_unavailable(repo, bundle_dir, monkeypatch):
+    write_epic_with_authored_pr(repo, "feature/e1", 12)
+
+    def gh_down(branch, warnings, gh_state):
+        gh_state["unavailable"] = True
+        return None
+
+    monkeypatch.setattr(build_index, "gh_pr_for_branch", gh_down)
+
+    index, _, _, failures = build_index.build_index(repo, bundle_dir)
+    assert failures == []
+    assert index["joins"]["epic_to_pull_request"]["design-d/E1"] == 12
+    assert index["joins"]["epic_status"]["design-d/E1"] == "open"
+
+
+def test_authored_pr_keeps_the_join_when_gh_finds_none(repo, bundle_dir, monkeypatch):
+    write_epic_with_authored_pr(repo, "feature/e1", 12)
+    monkeypatch.setattr(build_index, "gh_pr_for_branch", lambda branch, warnings, gh_state: None)
+
+    index, _, _, failures = build_index.build_index(repo, bundle_dir)
+    assert failures == []
+    assert index["joins"]["epic_to_pull_request"]["design-d/E1"] == 12
+
+
+def test_gh_answer_wins_over_the_authored_pr(repo, bundle_dir, monkeypatch):
+    # plugin-split/E8 is the real case: the record says 17, the branch resolves to 18.
+    write_epic_with_authored_pr(repo, "feature/e1", 17)
+    monkeypatch.setattr(build_index, "gh_pr_for_branch", lambda branch, warnings, gh_state: 18)
+
+    index, _, _, failures = build_index.build_index(repo, bundle_dir)
+    assert failures == []
+    assert index["joins"]["epic_to_pull_request"]["design-d/E1"] == 18

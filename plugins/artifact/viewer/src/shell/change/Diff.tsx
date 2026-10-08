@@ -14,7 +14,7 @@
  */
 
 import { cn } from "@/lib/utils";
-import { EmptyNote, KeyValue, Missing, SubHead } from "@/shell/atoms";
+import { EmptyNote, KeyValue, Missing } from "@/shell/atoms";
 
 import type { DiffFile } from "./levels";
 
@@ -42,7 +42,6 @@ export function ChangeDiff({ files, selected, onSelect }: ChangeDiffProps) {
   */
   return (
     <div className="flex min-w-0 flex-col gap-3">
-      <SubHead count={files.length}>The diff</SubHead>
       {files.length === 0 ? (
         <Missing>The bundle carries no diff for this pull request.</Missing>
       ) : (

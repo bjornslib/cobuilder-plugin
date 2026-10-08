@@ -21,6 +21,10 @@ Artifact key names (stable, used in --json output):
                  absent, "mismatch:<a>!=<b>" when they disagree,
                  "stale:<N>"/"too-new:<N>" when they agree but differ from
                  current. Run migrate_bundle.py to fix "missing"/"stale".
+    design.stage - every design in data/index.json carries a stage in
+                 _bundle_meta.DESIGN_STAGES. "invalid:<id>=<stage>,..." names
+                 the designs that no Work board lane shows. Absent when
+                 index.json is absent. Required, never optional.
   per PR (nested under "prs"."<N>"):
     timeline               - timeline entry for this PR exists
     narrative.<level>      - non-empty `narration` for each of the 4 levels
@@ -78,7 +82,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _bundle_meta import CURRENT_BUNDLE_FORMAT, SCHEMA_VERSION, SCHEMA_VERSION_KNOWN
+from _bundle_meta import CURRENT_BUNDLE_FORMAT, DESIGN_STAGES, SCHEMA_VERSION, SCHEMA_VERSION_KNOWN
 
 LEVEL_KEYS = ["intent", "problem_solution", "architecture", "file_changes"]
 MIN_ASSET_BYTES = 1024
@@ -191,6 +195,9 @@ def check_baseline(bundle_dir: Path) -> tuple[dict[str, str], dict | None]:
     viewer_path = bundle_dir / "viewer" / "index.html"
     results["viewer"] = "ok" if viewer_path.exists() else "missing"
     results["designs"] = check_designs(bundle_dir)
+    design_stage = check_design_stages(bundle_dir)
+    if design_stage is not None:
+        results["design.stage"] = design_stage
 
     return results, story
 
@@ -224,6 +231,21 @@ def check_designs(bundle_dir: Path) -> str:
     except OSError:
         return "invalid"
     return "ok" if parse_window_object(text, "DESIGNS") is not None else "invalid"
+
+
+def check_design_stages(bundle_dir: Path) -> str | None:
+    """"ok" when every design in data/index.json carries a stage that a Work board
+    lane reads. "invalid:<id>=<stage>,..." names each design that does not, because
+    such a design appears in no lane. None when index.json is absent or unreadable,
+    so a fixture without an index keeps passing. Unlike `designs`, this key is
+    required: a hidden design is a defect, not a missing optional projection."""
+    path = bundle_dir / "data" / "index.json"
+    try:
+        designs = json.loads(path.read_text())["entities"]["design"]
+    except (OSError, json.JSONDecodeError, KeyError, TypeError):
+        return None
+    bad = [f"{d.get('id')}={d.get('stage')}" for d in designs if d.get("stage") not in DESIGN_STAGES]
+    return "ok" if not bad else "invalid:" + ",".join(bad)
 
 
 def load_adrs(bundle_dir: Path) -> dict | None:

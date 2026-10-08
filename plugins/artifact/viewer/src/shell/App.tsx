@@ -99,7 +99,7 @@ import type { JumpTargetLink } from "./AccountMark";
 import { Chip, SectionHeading } from "./atoms";
 import { diffFiles, useChangeBundle, useServedAudio } from "./change/levels";
 import type { ArtMode } from "./change/Frame";
-import { changeSections } from "./change/sections";
+import { CHANGE_KEYS, changeSections } from "./change/sections";
 import type { AdrRecord } from "./records";
 import { JumpBar, useJumpTargets } from "./jump";
 import type { JumpTarget } from "./jump";
@@ -774,6 +774,13 @@ export default function ShellApp() {
    * narrows the section to a level of the program's own records.
    */
   const changeAccount = changePr !== null;
+  /*
+   * THE APPENDED SEGMENT DECIDES WHICH ROW OPENS. The address
+   * `#/<work>/pull-requests/<pr>/architecture` names the change's Architecture row, and each
+   * row is a paged level of its own. A segment that names no row of the change opens the
+   * first, which is the row the bare address opens.
+   */
+  const changeRow = CHANGE_KEYS[changeRowIndex(route.subId)];
   const paged = programPaged || changeAccount;
   const pagedLevel = programPaged && section !== "build" ? (levels?.[section] ?? null) : null;
   const focusEpic = section === "build" && route.sub === "epics" ? route.subId : null;
@@ -947,7 +954,6 @@ export default function ShellApp() {
                     <PagedLevel
                       targets={jumpTargets}
                       routeKey={routeKey}
-                      start={changeRowIndex(route.subId)}
                       sections={changeSections({
                         entry: change.entry,
                         levels: change.levels,
@@ -964,7 +970,7 @@ export default function ShellApp() {
                         joins: resolvedJoins,
                         adrs,
                         openSheet,
-                      })}
+                      }, changeRow)}
                     />
                   </motion.div>
                 </AnimatePresence>
@@ -1117,14 +1123,6 @@ export default function ShellApp() {
                         <PagedLevel
                           targets={jumpTargets}
                           routeKey={routeKey}
-                          /*
-                            THE APPENDED SEGMENT DECIDES WHICH ROW OPENS. The address
-                            `#/<work>/pull-requests/<pr>/architecture` names the change's
-                            Architecture row, so a deep link lands on that row rather than
-                            on the first one. A segment that names no row of the change
-                            lands on the first, which is the row the bare address opens.
-                          */
-                          start={changeRowIndex(route.subId)}
                           sections={changeSections({
                             entry: change.entry,
                             levels: change.levels,
@@ -1141,7 +1139,7 @@ export default function ShellApp() {
                             joins: resolvedJoins,
                             adrs,
                             openSheet,
-                          })}
+                          }, changeRow)}
                         />
                       )
                     ) : null}
