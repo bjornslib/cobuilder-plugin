@@ -29,7 +29,7 @@ space as their name, because tldraw shows "Frame" for a blank name and the label
 cannot be resized. After filling, the agent shrinks each frame to its content.
 
 Epic colour tracks `state`: grey is planned, blue is open, orange is
-in-progress, green is completed or done.
+in-progress, green is completed, implemented, merged, or done.
 
 ## Procedure
 

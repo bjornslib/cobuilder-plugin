@@ -157,7 +157,7 @@ The viewer shows each design, decision, build, and PR on one surface. A Work dra
 
 `/artifact:publish --prs 73` flattens one PR into a single HTML file under the 16 MiB Artifact limit. The command lowers compression, and drops audio if it must. It also publishes an index page that links every PR you published. An unchanged PR reports "already up to date". Use `--force` to publish anyway.
 
-`/artifact:canvas --design <name>` draws one design as a tldraw canvas. It writes `<name>.tldraw` into the design folder. The canvas has five zones: Why (with a before/after picture), Landscape, Flow, Structure, and Contract. The rendered level-2 and level-3 diagrams sit beside them. A language review then shortens the card text. Use `--redraw` to replace an existing canvas, `--no-images` to skip the diagrams, and `--no-review` to skip the language review.
+`/artifact:canvas --design <name>` draws one design as a tldraw canvas. It writes `<name>.tldraw` into the design folder. The canvas has five zones: Why (with a before/after picture), Landscape, Flow, Structure, and Contract. The rendered level-2 and level-3 diagrams sit beside them. A language review then shortens the card text. Use `--redraw` to replace an existing canvas, `--no-images` to skip the diagrams, and `--no-review` to skip the language review. Git ignores `.tldraw` files, so a canvas stays on your machine.
 
 ---
 

@@ -17,7 +17,8 @@ import sys
 from pathlib import Path
 
 STATE_COLOUR = {"planned": "grey", "open": "blue", "in-progress": "orange",
-                "done": "green", "completed": "green", "accepted": "green"}
+                "done": "green", "completed": "green", "accepted": "green",
+                "implemented": "green", "merged": "green"}
 LEVELS = [("landscape", "level-1", "Landscape: who are the parts"),
           ("flow", "level-2", "Flow: what happens, in order"),
           ("structure", "level-3", "Structure: the central thing")]
@@ -173,7 +174,7 @@ const heading = (key, text, x, y) =>
 heading('h-why', 'Why: ' + S.tagline, 0, 0)
 ;[['landscape', 0], ['flow', 1], ['structure', 2]].forEach(([k, i]) =>
 	heading('h-' + k, S.diagrams[k].title, i * (D.frame_w + D.gap), D.y_diag))
-heading('h-contract', 'Contract: ' + S.epics.length + ' epics. Colour = state (grey planned, blue open, orange in-progress, green completed)', 0, D.y_contract)
+heading('h-contract', 'Contract: ' + S.epics.length + ' epics. Colour = state (grey planned, blue open, orange in-progress, green completed or implemented)', 0, D.y_contract)
 await helpers.saveDoc()
 return { frames: ['zone-why', 'why-beforeafter', 'zone-landscape', 'zone-flow', 'zone-structure', 'zone-contract'], epics: D.placed.length }
 """
