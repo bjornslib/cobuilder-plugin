@@ -25,3 +25,7 @@ the user supplied after `/architect:maintenance`:
 ```
 Skill("architecture", args="maintenance $ARGUMENTS")
 ```
+
+The maintenance trend includes a habit-hooks step. The skill runs
+`shared/habit_smells.py` and diffs each (smell, file) pair against the
+previous report before it writes the trend report.

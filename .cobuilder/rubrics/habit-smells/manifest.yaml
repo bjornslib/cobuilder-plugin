@@ -1,0 +1,11 @@
+feature: habit-smells
+test_command: "uv run pytest tests -q"
+baseline: "809 passed, 1 skipped"
+thresholds:
+  accept: 0.90
+  investigate: 0.70
+max_attempts: 3
+slices:
+  - {id: 1, name: "E1 whole epic: habit_smells.py, the habit.smells gate key, and the scan tests", weight: 0.34}
+  - {id: 2, name: "E2 whole epic: the review mode Mechanical smells section and its wiring tests", weight: 0.33}
+  - {id: 3, name: "E3 whole epic: the maintenance mode pair diff, its wiring tests, and the commands", weight: 0.33}

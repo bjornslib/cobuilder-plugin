@@ -1,0 +1,29 @@
+{
+  "problem": "Review and maintenance audit a repo by reading a curated corpus and by judgment. They run no linter. A smell a tool can count, such as a duplicated block, is invisible to a reading pass.",
+  "approach": "One script, shared/habit_smells.py, shells out to habit-sensors --branch <base> --json, groups the findings per smell and per file, and writes habit-smells.json into a --out directory. It records run_complete false with the broken tool name, and available false with a reason. Review mode adds a Mechanical smells section to both reports. Maintenance mode diffs each pair against the previous report and tags it NEW, ESCALATED, STABLE, or RESOLVED. verify_bundle gains an optional habit.smells warning.",
+  "alternatives": [
+    {
+      "option": "Paste the rendered habit-hooks output into the reports",
+      "why_not": "The rendered text is session coaching, not a findings record a report can diff."
+    },
+    {
+      "option": "Let only review mode read the smells",
+      "why_not": "Maintenance needs the same scan as its baseline, or the first trend has no pair."
+    },
+    {
+      "option": "Vendor the sensors into shared/",
+      "why_not": "ADR-0025 keeps habit-hooks an external CLI. Vendoring forks its release."
+    }
+  ],
+  "risks": [
+    {
+      "risk": "A duplicate-code group holds hundreds of findings, so the section can flood a report.",
+      "mitigation": "A group over 100 findings reports one count and its top 10 files."
+    },
+    {
+      "risk": "A broken tool run reads as a clean scan.",
+      "mitigation": "An incomplete run is a P1 finding that names the tool."
+    }
+  ],
+  "testing": "Tests use a stub habit-sensors on PATH with a fixture repo. Integration tests pin the mode prose and the command files."
+}
