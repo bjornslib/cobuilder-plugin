@@ -7,9 +7,8 @@
  * dumped as plain text.
  *
  * The reader is the record mosaic's, and the copy is now the shipped one. The prototype
- * at `src/variations/sections-e/markdown.tsx` holds the same text, because every
- * directory under `variations/` stayed independently removable while the arrangement was
- * under review. It covers the six shapes the corpus uses: headings, paragraphs,
+ * at `src/variations/sections-e/markdown.tsx` held the same text while the arrangement
+ * was under review. The prototypes were removed on 2026-10-08, so this is the only copy. It covers the six shapes the corpus uses: headings, paragraphs,
  * list items, fenced code, tables, and inline code and bold. It is not a general
  * markdown engine and it does not try to be one.
  *

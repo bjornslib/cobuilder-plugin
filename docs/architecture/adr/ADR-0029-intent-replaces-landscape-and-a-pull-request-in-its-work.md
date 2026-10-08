@@ -313,9 +313,10 @@ survives, because a tool reads that field.
    key. The table is a read of an older record, and it is never a second name for the
    level. A later session may drop the read once no bundle in service predates the rename.
 
-**The prototype is the evidence.** It sits at
-`plugins/artifact/viewer/src/variations/flightdeck/`. The engineer read it at
-`http://localhost:5273/variations/flightdeck/dev.html`. The prototype shows the
+**The prototype is the evidence.** It sat at
+`plugins/artifact/viewer/src/variations/flightdeck/` until 2026-10-08, when the
+prototypes were removed from the viewer source. Git history holds it. The engineer
+read it at `http://localhost:5273/variations/flightdeck/dev.html`. The prototype shows the
 word Intent on the screen and reads the bundle's own `intent` key, because the
 rename has landed and the bundle now writes that key. The prototype was evidence
 for the shape before the rename; after it, the prototype reads the same key the

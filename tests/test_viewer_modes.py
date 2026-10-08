@@ -99,7 +99,7 @@ def section_region(
     """The first region from `opener` to `closer` that holds `fragments` in order.
 
     Some openers occur more than once in the build, because the comparison
-    harness under `src/variations/` ships its own copies of a surface. `limit`
+    harness that once sat under `src/variations/` shipped its own copies of a surface. `limit`
     is what tells the surfaces apart: one level's section list is a few
     kilobytes, and four panels a quarter of a megabyte apart are four different
     surfaces. A region that holds the fragments in order, inside that limit, is
@@ -536,8 +536,9 @@ def test_builds_mode_resolves_n_a_gate_and_counts_approved_gates():
     else. So an `APPROVED 2026-09-22` step reads exactly as a `pending` one, and
     the section counts nothing. The one place in the build that resolves an
     `n/a` state and sums an approved count is
-    `src/variations/epic-first-mosaic/LensTiles.tsx`, which is a prototype in
-    the comparison harness and is not the shipped Work surface.
+    `src/variations/epic-first-mosaic/LensTiles.tsx`, which was a prototype in
+    the comparison harness and was not the shipped Work surface. The prototypes
+    were removed on 2026-10-08.
 
     cobuilder-viewer slice 10 owns the surface this claim renders on: its rubric
     requires the Build level to show its rubrics, and its Build level's sections

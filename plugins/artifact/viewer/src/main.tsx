@@ -11,9 +11,8 @@ if (!container) {
 
 /*
  * The shell is the shipped surface. It answers `#/` with the Work board and every work
- * item the bundle holds. The prototypes under `src/variations/` are not part of this
- * entry point. Each one has its own `dev.html` for the Vite dev server, and none of
- * them reaches the built file.
+ * item the bundle holds. The prototypes that once sat under `src/variations/` were
+ * removed on 2026-10-08. None of them reached the built file.
  */
 createRoot(container).render(
   <StrictMode>

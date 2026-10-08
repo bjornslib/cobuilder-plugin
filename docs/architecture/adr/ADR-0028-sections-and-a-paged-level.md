@@ -58,7 +58,6 @@ delivers:
 related:
   - "docs/architecture/designs/cobuilder-viewer/goal.json"
   - "docs/plans/cobuilder-viewer/interaction-design.md"
-  - "plugins/artifact/viewer/src/variations/sections-e/"
 ---
 
 # ADR-0028 — A level is sections on a track, and the box owns the scroll
@@ -213,3 +212,7 @@ The rule this record establishes is the one the boundary record carries for the
 viewer. A level is a sequence of sections. The box owns the scroll. One index
 drives the strip, the pager, and the arrow keys, and the progress strip reports a
 position in the level.
+
+The sections-e prototype that this record measured sat at
+`plugins/artifact/viewer/src/variations/sections-e/` until 2026-10-08, when the
+prototypes were removed from the viewer source. Git history holds it.
