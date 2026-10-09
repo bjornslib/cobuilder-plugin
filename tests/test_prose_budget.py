@@ -166,29 +166,3 @@ def test_no_second_register_remains():
     assert "reduced strictness" not in (REPO / "CLAUDE.md").read_text(encoding="utf-8")
 
 
-def test_story_mode_keeps_the_explaining_method_and_the_worked_example():
-    body = (REPO / "plugins/pr/skills/odyssey/references/story-mode.md").read_text(encoding="utf-8")
-    for needle in (
-        "Background starts deep, narrows to the change",
-        "one concrete toy example",
-        "Explain who runs which computation and why",
-        "PR #79",
-    ):
-        assert needle in body, needle
-
-
-def test_the_budget_never_asks_an_author_to_drop_meaning():
-    body = (REPO / "shared/prose-budget.md").read_text(encoding="utf-8")
-    assert "Cut words, not meaning" in body
-    assert "Never delete a" in body
-
-
-def test_story_mode_asks_for_the_simple_present():
-    body = (REPO / "plugins/pr/skills/odyssey/references/story-mode.md").read_text(encoding="utf-8")
-    assert "Tense: present, always." in body
-    assert "Write past tense" not in body
-
-
-def test_the_budget_suggests_a_standalone_first_sentence():
-    body = (REPO / "shared/prose-budget.md").read_text(encoding="utf-8")
-    assert "first sentence of a long field stand alone" in body

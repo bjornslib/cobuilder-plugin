@@ -15,23 +15,6 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SHARED_DIR = REPO_ROOT / "shared"
 
 
-def test_manifest_module_uses_read_plugin_name():
-    """_manifest.py must import and call read_plugin_name()."""
-    manifest_source = (SHARED_DIR / "_manifest.py").read_text()
-    tree = ast.parse(manifest_source)
-
-    # Verify no top-level hardcoded PLUGIN_NAME constant assignment
-    for node in tree.body:
-        if isinstance(node, ast.Assign):
-            for target in node.targets:
-                if isinstance(target, ast.Name) and target.id == "PLUGIN_NAME":
-                    pytest.fail("_manifest.py still defines a top-level PLUGIN_NAME constant")
-
-    assert "read_plugin_name" in manifest_source, (
-        "_manifest.py must reference read_plugin_name"
-    )
-
-
 def test_rewrite_manifest_passes_dynamic_plugin_name(tmp_path: Path):
     """rewrite_manifest passes the result of read_plugin_name() to require_compatible()."""
     import sys

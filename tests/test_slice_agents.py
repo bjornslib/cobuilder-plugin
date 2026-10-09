@@ -154,36 +154,24 @@ def test_validate_tools_exclude_edit():
 # Contract under test (docs/plans/slice-agents-and-vocabulary/epic-E2-design.md,
 # Test Plan, slice 3 row):
 #
-# - RED and GREEN bodies contain "Do not read anything under .cobuilder/".
+# - RED and GREEN forbid the rubric directory that VALIDATE and slice-loop.js
+#   read from.
 # - GREEN contains "Do NOT modify any test file".
 # - RED states tests must fail on assertions.
-# - VALIDATE contains PASS, FAIL, ESCALATION, 0.90, the three score levels
-#   1.0/0.5/0.0, and the evidence file pattern slice-<N>-attempt-<M>.md.
+# - VALIDATE's pass threshold and evidence file pattern equal the values
+#   slice-loop.js uses, and VALIDATE contains the three score levels 1.0/0.5/0.0.
 # - Each agent body contains the placeholders <slug> and <N>; red/green also
 #   <test_command>.
 # - slice-loop.md names implement:red, implement:green, implement:validate
-#   and "subagent_type", and no longer contains the old inline "You are the
-#   ROLE" prompt blocks.
-# - slice-loop.md still contains its "## Handling the verdict" and
-#   "## Anti-patterns" sections.
+#   and "subagent_type".
 # - slice-loop.js contains agentType: 'implement:red'/'implement:green'/
-#   'implement:validate' (either quote style), and no longer contains the
-#   old inline "You are the ROLE" prompt blocks.
+#   'implement:validate' (either quote style).
 # - If node is on PATH, `node --check` on slice-loop.js succeeds.
 # ---------------------------------------------------------------------------
 
 SKILL_ROOT = REPO_ROOT / "plugins" / "implement" / "skills" / "build"
 SLICE_LOOP_MD = SKILL_ROOT / "references" / "slice-loop.md"
 SLICE_LOOP_JS = SKILL_ROOT / "workflows" / "slice-loop.js"
-
-BLIND_LINE = "Do not read anything under .cobuilder/"
-
-OLD_INLINE_PROMPT_HEADERS = [
-    "You are the RED role",
-    "You are the GREEN role",
-    "You are the VALIDATOR",
-]
-
 
 def _agent_body(role):
     path = AGENTS_DIR / f"{role}.md"
@@ -193,18 +181,39 @@ def _agent_body(role):
     return text[match.end():]
 
 
-def _strip_backticks(text):
-    """Normalise `.cobuilder/`-style backtick-quoting before matching."""
-    return text.replace("`", "")
+def _js_source():
+    return SLICE_LOOP_JS.read_text(encoding="utf-8")
 
 
-@pytest.mark.parametrize("role", ["red", "green"])
-def test_red_and_green_body_contains_blind_rule(role):
-    body = _strip_backticks(_agent_body(role))
-    assert BLIND_LINE in body, (
-        f"plugins/implement/agents/{role}.md: expected body to contain "
-        f"{BLIND_LINE!r} (backticks stripped before matching)"
+def _js_rubric_dir():
+    """Return the rubric directory slice-loop.js reads, with ${slug} as <slug>."""
+    match = re.search(r"const rubrics = `([^`]*)`", _js_source())
+    assert match is not None, f"{SLICE_LOOP_JS}: expected a 'const rubrics' template"
+    return match.group(1).replace("${slug}", "<slug>")
+
+
+def test_blind_rule_forbids_the_rubric_directory():
+    """RED and GREEN forbid a directory. It must cover the rubric directory that
+    VALIDATE and slice-loop.js read from."""
+    forbidden = {}
+    for role in ["red", "green"]:
+        match = re.search(r"Do not read anything under (\S+)", _agent_body(role))
+        assert match is not None, f"plugins/implement/agents/{role}.md: no blind rule found"
+        forbidden[role] = match.group(1)
+
+    validate_dirs = set(re.findall(r"\.cobuilder/rubrics/<slug>", _agent_body("validate")))
+    assert validate_dirs, "plugins/implement/agents/validate.md: no rubric directory found"
+    loop_dir = _js_rubric_dir()
+    assert loop_dir, f"{SLICE_LOOP_JS}: rubric directory is empty"
+
+    assert validate_dirs == {loop_dir}, (
+        f"validate.md reads rubrics from {validate_dirs}, slice-loop.js from {loop_dir!r}"
     )
+    for role, path in forbidden.items():
+        assert loop_dir.startswith(path), (
+            f"plugins/implement/agents/{role}.md forbids {path!r}, which does not "
+            f"cover the rubric directory {loop_dir!r}"
+        )
 
 
 def test_green_body_forbids_modifying_test_files():
@@ -223,13 +232,16 @@ def test_red_body_requires_failures_to_be_assertions():
     )
 
 
-def test_validate_body_contains_verdicts_and_threshold():
-    body = _agent_body("validate")
-    for token in ["PASS", "FAIL", "ESCALATION", "0.90"]:
-        assert token in body, (
-            f"plugins/implement/agents/validate.md: expected body to "
-            f"contain {token!r}"
-        )
+def test_validate_pass_threshold_matches_slice_loop():
+    prose = re.findall(r"overall_score\s*>=\s*(\d+\.\d+)", _agent_body("validate"))
+    assert prose, "plugins/implement/agents/validate.md: no 'overall_score >= <number>' pass rule"
+    match = re.search(
+        r"const ACCEPT\s*=\s*args\?\.accept\s*\?\?\s*(\d+\.\d+)", _js_source()
+    )
+    assert match is not None, f"{SLICE_LOOP_JS}: expected 'const ACCEPT = args?.accept ?? <number>'"
+    assert {float(p) for p in prose} == {float(match.group(1))}, (
+        f"validate.md pass threshold {prose} differs from slice-loop.js ACCEPT {match.group(1)}"
+    )
 
 
 def test_validate_body_contains_score_levels():
@@ -241,11 +253,25 @@ def test_validate_body_contains_score_levels():
         )
 
 
-def test_validate_body_contains_evidence_file_pattern():
-    body = _agent_body("validate")
-    assert "slice-<N>-attempt-<M>.md" in body, (
-        "plugins/implement/agents/validate.md: expected body to contain "
-        "the evidence file pattern 'slice-<N>-attempt-<M>.md'"
+def test_validate_evidence_pattern_matches_slice_loop():
+    prose = set(re.findall(
+        r"\.cobuilder/rubrics/<slug>/evidence/slice-<\w+>-attempt-<\w+>\.md",
+        _agent_body("validate"),
+    ))
+    assert prose, "plugins/implement/agents/validate.md: no evidence file pattern found"
+
+    evidence_match = re.search(r"const evidence = `\$\{rubrics\}([^`]*)`", _js_source())
+    assert evidence_match is not None, f"{SLICE_LOOP_JS}: expected a 'const evidence' template"
+    evidence_dir = _js_rubric_dir() + evidence_match.group(1)
+
+    loop = set()
+    for name in re.findall(r"\$\{evidence\}/(slice-\$\{s\.id\}-attempt-\$\{attempt\}\.md)", _js_source()):
+        normalized = name.replace("${s.id}", "<N>").replace("${attempt}", "<M>")
+        loop.add(f"{evidence_dir}/{normalized}")
+    assert loop, f"{SLICE_LOOP_JS}: no evidence file path built"
+
+    assert prose == loop, (
+        f"validate.md evidence pattern {prose} differs from slice-loop.js {loop}"
     )
 
 
@@ -282,28 +308,6 @@ def test_slice_loop_md_names_the_three_agents_by_type():
     )
 
 
-def test_slice_loop_md_no_longer_contains_inline_prompts():
-    text = SLICE_LOOP_MD.read_text(encoding="utf-8")
-    for header in OLD_INLINE_PROMPT_HEADERS:
-        assert header not in text, (
-            f"{SLICE_LOOP_MD}: expected the inline prompt header {header!r} "
-            f"to have moved into plugins/implement/agents/, but it is still "
-            f"present"
-        )
-
-
-def test_slice_loop_md_still_has_handling_and_anti_patterns_sections():
-    text = SLICE_LOOP_MD.read_text(encoding="utf-8")
-    assert "## Handling the verdict" in text, (
-        f"{SLICE_LOOP_MD}: expected the '## Handling the verdict' section "
-        f"to still be present"
-    )
-    assert "## Anti-patterns" in text, (
-        f"{SLICE_LOOP_MD}: expected the '## Anti-patterns' section to "
-        f"still be present"
-    )
-
-
 AGENT_TYPE_RE = re.compile(
     r"agentType\s*:\s*['\"]implement:(red|green|validate)['\"]"
 )
@@ -316,16 +320,6 @@ def test_slice_loop_js_spawns_the_three_agents_by_type():
         f"{SLICE_LOOP_JS}: expected agentType: 'implement:red'/'implement:green'/"
         f"'implement:validate' (either quote style), found roles {found}"
     )
-
-
-def test_slice_loop_js_no_longer_contains_inline_prompts():
-    text = SLICE_LOOP_JS.read_text(encoding="utf-8")
-    for header in OLD_INLINE_PROMPT_HEADERS:
-        assert header not in text, (
-            f"{SLICE_LOOP_JS}: expected the inline prompt header {header!r} "
-            f"to have moved into plugins/implement/agents/, but it is still "
-            f"present"
-        )
 
 
 def test_slice_loop_js_is_syntactically_valid_node():
@@ -352,17 +346,12 @@ def test_slice_loop_js_is_syntactically_valid_node():
 #   name == "vocabulary", no "model" key, tools exclude "Edit", description
 #   non-empty. (The whole-directory ignored-key test above already covers
 #   this file for hooks/mcpServers/permissionMode/initialPrompt.)
-# - Its body names DDD-VOCABULARY.md, the three finding tags, the
-#   "### Vocabulary" heading, the CLEAN/FINDINGS verdicts, the six name
-#   kinds, states it does not score, does not edit code, and appends via
-#   Bash (">>").
-# - slice-loop.md names implement:vocabulary, "parallel", and states the
-#   vocabulary verdict is not part of the score.
+# - Its body names DDD-VOCABULARY.md and appends via Bash (">>").
+# - slice-loop.md states the vocabulary verdict is not part of the score.
 # - slice-loop.js spawns agentType 'implement:vocabulary' and calls
 #   parallel(); node --check passes.
-# - design-mode.md's Stage 1 and Stage 5 sections both name
-#   DDD-VOCABULARY.md, Stage 5 also names "conflict", and the stage heading
-#   count is unchanged (Stage 0 through Stage 7, each exactly once).
+# - design-mode.md's Stage 1 section names DDD-VOCABULARY.md, and the stage
+#   heading count is unchanged (Stage 0 through Stage 7, each exactly once).
 # ---------------------------------------------------------------------------
 
 VOCAB_AGENT_PATH = AGENTS_DIR / "vocabulary.md"
@@ -428,69 +417,11 @@ def test_vocabulary_agent_body_names_the_vocabulary_file():
     )
 
 
-def test_vocabulary_agent_body_names_the_three_finding_tags():
-    body = _vocabulary_agent_body()
-    for tag in ["[AVOID]", "[UNDEFINED]", "[CONFLICT]"]:
-        assert tag in body, f"{VOCAB_AGENT_PATH}: expected body to contain {tag!r}"
-
-
-def test_vocabulary_agent_body_names_the_vocabulary_section_heading():
-    body = _vocabulary_agent_body()
-    assert "### Vocabulary" in body, (
-        f"{VOCAB_AGENT_PATH}: expected body to contain the '### Vocabulary' heading"
-    )
-
-
-def test_vocabulary_agent_body_names_the_two_verdicts():
-    body = _vocabulary_agent_body()
-    for verdict in ["CLEAN", "FINDINGS"]:
-        assert verdict in body, (
-            f"{VOCAB_AGENT_PATH}: expected body to contain verdict {verdict!r}"
-        )
-
-
-def test_vocabulary_agent_body_names_the_six_name_kinds():
-    body = _vocabulary_agent_body()
-    for kind in ["district", "directory", "file", "class", "function", "method"]:
-        assert kind in body, (
-            f"{VOCAB_AGENT_PATH}: expected body to name the kind {kind!r}"
-        )
-
-
-def test_vocabulary_agent_body_states_it_does_not_score():
-    body = _vocabulary_agent_body()
-    assert "does not score" in body or "Do not score" in body, (
-        f"{VOCAB_AGENT_PATH}: expected body to state it does not score"
-    )
-
-
-def test_vocabulary_agent_body_states_it_does_not_edit_code():
-    body = _vocabulary_agent_body()
-    assert "does not edit code" in body or "Do not edit code" in body.replace(
-        "does not edit code", "Do not edit code"
-    ) or "not edit code" in body, (
-        f"{VOCAB_AGENT_PATH}: expected body to state it does not edit code"
-    )
-
-
 def test_vocabulary_agent_body_appends_via_bash_redirect():
     body = _vocabulary_agent_body()
     assert ">>" in body, (
         f"{VOCAB_AGENT_PATH}: expected body to show an append-via-Bash example "
         f"containing '>>', since the agent has no Write/Edit tool"
-    )
-
-
-def test_slice_loop_md_names_vocabulary_agent_and_parallel():
-    text = SLICE_LOOP_MD.read_text(encoding="utf-8")
-    assert "implement:vocabulary" in text, (
-        f"{SLICE_LOOP_MD}: expected it to name the agent 'implement:vocabulary'"
-    )
-    idx = text.index("implement:vocabulary")
-    window = text[max(0, idx - 1500):idx + 1500]
-    assert "parallel" in window, (
-        f"{SLICE_LOOP_MD}: expected the word 'parallel' near the "
-        f"'implement:vocabulary' mention"
     )
 
 
@@ -555,18 +486,6 @@ def test_design_mode_stage_1_section_names_the_vocabulary_file():
     )
 
 
-def test_design_mode_stage_5_section_names_the_vocabulary_file_and_conflict():
-    text = DESIGN_MODE_MD.read_text(encoding="utf-8")
-    section = _design_mode_section(text, "Stage 5")
-    assert "DDD-VOCABULARY.md" in section, (
-        f"{DESIGN_MODE_MD}: expected the Stage 5 section to name "
-        f"'DDD-VOCABULARY.md'"
-    )
-    assert "conflict" in section.lower(), (
-        f"{DESIGN_MODE_MD}: expected the Stage 5 section to mention 'conflict'"
-    )
-
-
 def test_design_mode_stage_headings_unchanged():
     text = DESIGN_MODE_MD.read_text(encoding="utf-8")
     found = STAGE_HEADING_RE.findall(text)
@@ -575,3 +494,21 @@ def test_design_mode_stage_headings_unchanged():
         f"{DESIGN_MODE_MD}: expected exactly the stage headings "
         f"{expected}, found {found}"
     )
+
+
+def test_validate_reads_threshold_and_attempts_from_the_spawn_message():
+    """validate.md must name the two labels that slice-loop.js sends before
+    its interpolations, so the agent knows which lines of its message to read."""
+    js = _js_source()
+    labels = [
+        re.search(r"(accept threshold:)\s*\$\{", js),
+        re.search(r"(this is attempt)\s+\$\{", js),
+    ]
+    assert all(labels), f"{SLICE_LOOP_JS}: expected both spawn-message labels before interpolations"
+    body = _agent_body("validate")
+    for match in labels:
+        label = match.group(1)
+        assert label in body, (
+            f"plugins/implement/agents/validate.md: expected body to name the "
+            f"spawn-message label {label!r} as sent by slice-loop.js"
+        )

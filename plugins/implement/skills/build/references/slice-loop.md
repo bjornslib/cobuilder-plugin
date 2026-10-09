@@ -23,6 +23,8 @@ score <  0.90, attempt >= 3  → escalate: accept with reservations, record
                                the gap, move on
 ```
 
+The loop passes its accept threshold and attempt limit to VALIDATE, and the values above are the defaults.
+
 The escalation branch keeps the loop finite. Without this rule, a stuck slice
 blocks all following work.
 

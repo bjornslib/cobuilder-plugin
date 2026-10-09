@@ -111,6 +111,20 @@ language.
    their detector installed, and which detector is still missing for which
    language.
 
+8. **Prove the coach.** Run this check after every install and after every
+   re-run of Install mode. Run it from the target repo, because the check
+   reads the git root of the current folder:
+
+   ```bash
+   uv run "${CLAUDE_PLUGIN_ROOT}/scripts/habit_coach.py" --check
+   ```
+
+   Report success only when the output starts with "coaching works". The
+   check prints one line. Show that line to the user. When the output starts
+   with "coaching check failed", show the reason to the user, fix it, and run
+   the check again. Do not report success until the output starts with
+   "coaching works".
+
 `ste-writing` needs no install step. It ships in every plugin through
 `shared/`, so it is already present once the plugin is installed.
 

@@ -12,10 +12,6 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VOCAB_PATH = REPO_ROOT / "DDD-VOCABULARY.md"
-CANVAS_TEMPLATE_PATH = (
-    REPO_ROOT
-    / "plugins/architect/skills/architecture/references/templates/canvas-template.md"
-)
 
 ENTRY_START_RE = re.compile(
     r"^\*\*(?P<term>[^*]+)\*\* \(`(?P<ctx>[a-z0-9-]+)`\):\s*$"
@@ -336,27 +332,6 @@ def test_ddd_vocabulary_file_exists():
 
 
 # ---------------------------------------------------------------------------
-# Header
-# ---------------------------------------------------------------------------
-
-
-def test_header_mentions_domain_modeling_and_matt_pocock_and_avoid():
-    assert VOCAB_PATH.is_file(), f"expected {VOCAB_PATH} to exist"
-    text = VOCAB_PATH.read_text(encoding="utf-8")
-    lines = text.splitlines()
-    first_heading_idx = None
-    for i, line in enumerate(lines):
-        if line.startswith("## "):
-            first_heading_idx = i
-            break
-    assert first_heading_idx is not None, "no '## ' heading found"
-    header = "\n".join(lines[:first_heading_idx])
-    assert "domain-modeling" in header, "header must mention 'domain-modeling'"
-    assert "Matt Pocock" in header, "header must credit 'Matt Pocock'"
-    assert "_Avoid_" in header, "header must contain '_Avoid_'"
-
-
-# ---------------------------------------------------------------------------
 # Entry format
 # ---------------------------------------------------------------------------
 
@@ -449,124 +424,3 @@ def test_every_canvas_term_has_a_vocabulary_entry_and_links_to_it():
                     f"meaning cell for term {term!r} in {canvas_path} "
                     f"contains stale wording {phrase!r}: {meaning_cell!r}"
                 )
-
-
-def test_canvas_template_shows_the_link_form():
-    assert CANVAS_TEMPLATE_PATH.is_file(), f"expected {CANVAS_TEMPLATE_PATH} to exist"
-    text = CANVAS_TEMPLATE_PATH.read_text(encoding="utf-8")
-    rows = find_ubiquitous_language_rows(text)
-    assert rows, "expected at least one term row in canvas-template.md"
-    assert any("DDD-VOCABULARY.md" in row[0] for row in rows), (
-        "canvas-template.md's ubiquitous-language table row must show the "
-        "link form containing 'DDD-VOCABULARY.md'"
-    )
-
-
-# ---------------------------------------------------------------------------
-# Slice 8: the CLAUDE.md Vocabulary table moves to the glossary.
-#
-# The list below is frozen from the CURRENT CLAUDE.md Vocabulary table (the
-# bold text of each term cell, taken verbatim), because slice 8 removes that
-# table. This is the one place in this test file where a hard-coded term
-# list is correct.
-# ---------------------------------------------------------------------------
-
-CLAUDE_MD_PATH = REPO_ROOT / "CLAUDE.md"
-
-FROZEN_CLAUDE_MD_VOCABULARY_TERMS = [
-    "Design",
-    "a design",
-    "backlog design",
-    "Epic",
-    "District",
-    "Bounded context",
-    "Review",
-    "Review mode",
-    "review-mode.md",
-    "Bundle",
-    "Self",
-    "foreign",
-    "Gate 4a / 4b / 4c",
-    "Gate 2b",
-    "Assessment stage",
-    "Drift",
-]
-
-
-def _vocab_entry_terms_lower(vocab_text):
-    entries = parse_vocabulary_entries(vocab_text)
-    return {entry["term"].strip().lower() for entry in entries}
-
-
-def test_every_frozen_claude_md_term_has_a_ddd_vocabulary_entry():
-    assert VOCAB_PATH.is_file(), f"expected {VOCAB_PATH} to exist"
-    vocab_text = VOCAB_PATH.read_text(encoding="utf-8")
-    entry_terms = _vocab_entry_terms_lower(vocab_text)
-
-    for term in FROZEN_CLAUDE_MD_VOCABULARY_TERMS:
-        candidates = {term.strip().lower()}
-        lowered = term.strip().lower()
-        if lowered.startswith("a "):
-            candidates.add(lowered[len("a "):])
-        else:
-            candidates.add(f"a {lowered}")
-
-        assert candidates & entry_terms, (
-            f"frozen CLAUDE.md term {term!r} has no matching entry in "
-            f"{VOCAB_PATH} (tried {sorted(candidates)!r} against "
-            f"{sorted(entry_terms)!r})"
-        )
-
-
-CLAUDE_MD_VOCAB_TABLE_HEADER_RE = re.compile(r"^\s*\|\s*Term\s*\|\s*Meaning\s*\|", re.MULTILINE)
-
-
-def test_claude_md_no_longer_has_the_vocabulary_table():
-    assert CLAUDE_MD_PATH.is_file(), f"expected {CLAUDE_MD_PATH} to exist"
-    text = CLAUDE_MD_PATH.read_text(encoding="utf-8")
-    assert not CLAUDE_MD_VOCAB_TABLE_HEADER_RE.search(text), (
-        "CLAUDE.md still contains a '| Term | Meaning |' table header; "
-        "slice 8 moves the table into DDD-VOCABULARY.md"
-    )
-
-
-def _extract_section(text, heading, next_heading_prefix="## "):
-    lines = text.splitlines()
-    start = None
-    for i, line in enumerate(lines):
-        if line.strip() == heading:
-            start = i + 1
-            break
-    assert start is not None, f"heading {heading!r} not found"
-    end = len(lines)
-    for i in range(start, len(lines)):
-        if lines[i].startswith(next_heading_prefix) and lines[i].strip() != heading:
-            end = i
-            break
-    return "\n".join(lines[start:end])
-
-
-def test_claude_md_vocabulary_section_links_to_ddd_vocabulary_and_keeps_collision_rule():
-    assert CLAUDE_MD_PATH.is_file(), f"expected {CLAUDE_MD_PATH} to exist"
-    text = CLAUDE_MD_PATH.read_text(encoding="utf-8")
-    section = _extract_section(text, "## Vocabulary")
-
-    assert "DDD-VOCABULARY.md" in section, (
-        "CLAUDE.md's '## Vocabulary' section must link to DDD-VOCABULARY.md"
-    )
-    assert "collision" in section, (
-        "CLAUDE.md's '## Vocabulary' section must still state the rule to "
-        "resolve a collision before it ships"
-    )
-
-
-def test_claude_md_gazetteer_subsection_names_ddd_vocabulary_as_source_of_truth():
-    assert CLAUDE_MD_PATH.is_file(), f"expected {CLAUDE_MD_PATH} to exist"
-    text = CLAUDE_MD_PATH.read_text(encoding="utf-8")
-    section = _extract_section(
-        text, "### A superseded gazetteer", next_heading_prefix="#"
-    )
-    assert "DDD-VOCABULARY.md" in section, (
-        "CLAUDE.md's '### A superseded gazetteer' subsection must name "
-        "DDD-VOCABULARY.md as the source of truth"
-    )

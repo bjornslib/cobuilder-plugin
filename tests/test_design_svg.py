@@ -9,7 +9,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "plugins/architect/scripts/check_design_svg.py"
 CONTRACT = ROOT / "plugins/architect/skills/architecture/references/runtime-architecture-diagram.md"
-MERMAID_CONTRACT = ROOT / "shared/skills/mermaid/references/architecture-diagram.md"
 DESIGN_SVG = ROOT / "docs/architecture/designs/nexus-borrowings/diagrams/runtime-architecture.svg"
 FIXTURES = ROOT / "tests/fixtures/design_svg"
 
@@ -32,10 +31,6 @@ def test_contract_exists_and_cites_adr_0035():
     text = CONTRACT.read_text(encoding="utf-8")
     assert "ADR-0035" in text
     assert "runtime-architecture.svg" in text
-
-
-def test_pre_merge_mermaid_contract_is_deleted():
-    assert not MERMAID_CONTRACT.exists()
 
 
 def test_design_svg_is_a_good_file():

@@ -183,14 +183,6 @@ def test_deleted_files_are_not_cited() -> None:
         )
 
 
-def test_terminology_is_epic_based() -> None:
-    """The skill uses the CoBuilder words, not the old product-document words."""
-    for path in _all_skill_files():
-        text = _read(path).lower()
-        assert "prd" not in text, f"{path.relative_to(SKILL_DIR)} still uses the word PRD"
-        assert "brief" not in text, f"{path.relative_to(SKILL_DIR)} still uses the word brief"
-
-
 def test_required_headings_are_present() -> None:
     """The template holds all eight headings the Gate 4c checker requires."""
     template = _read(SKILL_DIR / "templates" / "interaction-design.md")

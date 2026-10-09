@@ -150,6 +150,16 @@ _Avoid_: bug
 **Epic** (`implement`):
 One unit inside a design's `goal.json.epics[]`, owned and decomposed by `implement`, mapped to zero or one pull request through `epics[].branch`. It is the join key between a design and a PR, not an ADR, a design, or a PR itself.
 
+<a id="slice"></a>
+**Slice** (`implement`):
+One vertical unit of an epic's build in `implement`. It is a row in `04-slices.md`, it runs through the RED, GREEN, and VALIDATE loop, and it is complete when VALIDATE scores it 0.90 or higher against its blind rubric.
+_Avoid_: epic (a slice belongs to an epic, and an epic that carries one slice needs no Gate 4b design), task (a slice ends in a state a reader can see, and a task need not)
+
+<a id="coach"></a>
+**Coach** (`implement`):
+The `PostToolUse` hook, `plugins/implement/scripts/habit_coach.py`, that runs habit-hooks from the git root after each file the GREEN agent writes and passes the findings back as advice. It never blocks a write, and `habit_coach.py --check` proves it works by running one tracked source file through the same path.
+_Avoid_: linter (a linter fails a build, and the coach only advises), reviewer (the architect draft review judges a design, and the coach checks one written file)
+
 <a id="gate-4a-4b-4c"></a>
 **Gate 4a / 4b / 4c** (`implement`):
 The three sub-steps of Gate 4 in `implement`, each with its own line in `00-status.md`: 4a is the slice plan, 4b is a technical solution design required only for a multi-slice epic and marked `n/a`, not pending, for a single-slice epic, and 4c is the blind rubrics. `verify_gate.py` checks all three.
@@ -159,6 +169,21 @@ _Avoid_: Gate 4 as a whole (00-status.md tracks three lines, and the whole gate 
 **Gate 2b** (`implement`):
 The conditional interaction-design gate in `implement`, running only when the feature has a front end, with its own line in `docs/plans/<feature-slug>/00-status.md`. It writes `interaction-design.md` and `ui-spec.jsonc`, a feature with no front end writes one `n/a (no UI)` line instead, and Gate 3 must not start until this gate reads APPROVED or n/a.
 _Avoid_: Gate 2 (Gate 2b is not a sub-step of Gate 2. It has its own status line), Gate 4c (Gate 4c reads interaction-design.md for its eight required headings, after the document exists)
+
+<a id="red"></a>
+**RED** (`implement`):
+The first role of the slice loop in `implement`: the `implement:red` agent writes failing tests that pin the slice contract, and it never edits the code under test. It is done when every new test fails on an assertion.
+_Avoid_: tester (the generic word, and RED is the named role that owns the immutable contract)
+
+<a id="green"></a>
+**GREEN** (`implement`):
+The second role of the slice loop in `implement`: the `implement:green` agent writes the minimal code that makes RED's failing tests pass, and it never reads the blind rubric. The `PostToolUse` hook coaches it with habit-hooks after each file it writes.
+_Avoid_: implementer (the generic word, and GREEN is the named role with its own scope contract)
+
+<a id="validate"></a>
+**VALIDATE** (`implement`):
+The third role of the slice loop in `implement`: the `implement:validate` agent, a fresh subagent that saw neither RED nor GREEN, scores the slice against the blind rubric. It is the only role that reads the rubric, and a score of 0.90 or higher accepts the slice.
+_Avoid_: draft review (the architect stage 6 pre-review, which proposes survivors and never scores a slice), auditor (the generic word)
 
 ## Cross-cutting
 

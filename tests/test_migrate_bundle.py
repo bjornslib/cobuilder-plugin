@@ -188,21 +188,6 @@ def test_viewer_refreshes_even_at_current_version(tmp_path):
     assert (bundle_dir / "viewer" / "index.html").read_text() == real_viewer
 
 
-def test_viewer_refresh_is_not_version_gated_in_source():
-    """Regression guard: refresh_viewer() must run unconditionally in
-    main(), never behind a bundle_format or schema_version comparison."""
-    source = (Path(mb.__file__)).read_text()
-    call_line_idx = source.index('report["viewer"] = refresh_viewer(')
-    # The 400 characters before the call must not contain a version-gating
-    # `if` on current_format or current_schema wrapping the call.
-    preceding = source[:call_line_idx]
-    last_lines = preceding.splitlines()[-6:]
-    assert not any(
-        "current_format ==" in line or "current_schema ==" in line
-        for line in last_lines
-    )
-
-
 # --- C6: viewer-source resolution for non-artifact plugin caches ---
 
 

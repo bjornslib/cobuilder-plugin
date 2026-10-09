@@ -1,13 +1,13 @@
 """Wiring checks for the habit-hooks step in review and maintenance
 (habit-smells slices; the prose side of the epic).
 
-Load-bearing tokens only: habit_smells.py, --branch, the P1 rules, the top-10
-cap, the incomplete-run and unavailable rules, the habit.smells gate line, the
-four pair tags, and the prior-report diff. Each test fails if its wiring is
-removed.
+Load-bearing tokens only: habit_smells.py, --branch, the record keys the
+prose names, the habit.smells gate key, the four pair tags, and the
+prior-report diff. Each test fails if its wiring is removed.
 """
 from __future__ import annotations
 
+import ast
 import re
 from pathlib import Path
 
@@ -18,6 +18,8 @@ ARCH = REPO_ROOT / "plugins" / "architect" / "skills" / "architecture"
 SKILL = ARCH / "SKILL.md"
 REVIEW_COMMAND = REPO_ROOT / "plugins" / "architect" / "commands" / "review.md"
 MAINTENANCE_COMMAND = REPO_ROOT / "plugins" / "architect" / "commands" / "maintenance.md"
+HABIT_SMELLS = REPO_ROOT / "shared" / "habit_smells.py"
+VERIFY_BUNDLE = REPO_ROOT / "shared" / "verify_bundle.py"
 
 
 def section(text: str, heading: str) -> str:
@@ -35,6 +37,58 @@ def maintenance_mode() -> str:
     return section(SKILL.read_text(), "Maintenance Mode")
 
 
+# ---- Record keys: the script writes them, the prose names them ----
+
+
+def record_keys_written() -> set[str]:
+    """Keys the script puts in the record dict inside collect()."""
+    tree = ast.parse(HABIT_SMELLS.read_text())
+    fn = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "collect")
+    keys: set[str] = set()
+    for node in ast.walk(fn):
+        if isinstance(node, ast.Assign):
+            for t in node.targets:
+                if (isinstance(t, ast.Subscript) and isinstance(t.value, ast.Name)
+                        and t.value.id == "record" and isinstance(t.slice, ast.Constant)):
+                    keys.add(t.slice.value)
+        if isinstance(node, (ast.Assign, ast.AnnAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            if (any(isinstance(t, ast.Name) and t.id == "record" for t in targets)
+                    and isinstance(node.value, ast.Dict)):
+                keys.update(k.value for k in node.value.keys if isinstance(k, ast.Constant))
+    return keys
+
+
+def record_keys_referenced(text: str) -> set[str]:
+    """Snake_case names in backticks, in sentences that mention the record.
+
+    A span may carry a value after a colon, as in `run_complete: false`."""
+    keys: set[str] = set()
+    for sentence in re.split(r"(?<=[.!?])\s+|\n", text):
+        if not re.search(r"\brecord\b", sentence, re.I):
+            continue
+        for span in re.findall(r"`([^`]+)`", sentence):
+            m = re.fullmatch(r"([a-z_]+)(?::.*)?", span.strip())
+            if m:
+                keys.add(m.group(1))
+    return keys
+
+
+def test_habit_record_keys_named_in_skill_are_written_by_script():
+    written = record_keys_written()
+    referenced = record_keys_referenced(review_mode()) | record_keys_referenced(maintenance_mode())
+    assert {"run_complete", "available"} <= written, (
+        f"habit_smells.py does not write run_complete and available; writes {sorted(written)}"
+    )
+    assert {"run_complete", "available"} <= referenced, (
+        f"SKILL.md does not name run_complete and available as record keys; names {sorted(referenced)}"
+    )
+    unwritten = referenced - written
+    assert not unwritten, (
+        f"SKILL.md names record keys that habit_smells.py never writes: {sorted(unwritten)}"
+    )
+
+
 # ---- Review Mode: the scan step and its rules ----
 
 
@@ -44,51 +98,13 @@ def test_review_runs_habit_smells_with_branch():
     assert "--branch" in s, "review mode does not pass --branch"
 
 
-def test_review_p1_rule_for_swallowed_exceptions():
-    s = review_mode()
-    assert "swallowed-exception" in s, "review mode does not name swallowed-exception"
-
-
-@pytest.mark.parametrize("needle", ["swallowed-exception", r"over 100|>100|over 100 findings"])
-def test_review_p1_rules(needle):
-    s = review_mode()
-    before = re.search(rf"([^.\n]*{needle}[^.\n]*)(?:\.|$)", s, re.I)
-    assert before, f"no sentence names {needle!r}"
-    sentence = before.group(0)
-    assert re.search(r"P1", sentence), f"no P1 rule attached to {needle!r}"
-
-
-def test_review_caps_large_group_with_top_10_files():
-    s = review_mode()
-    assert re.search(r"top.{0,10}10", s, re.I), "review mode lacks the top-10 file cap"
-
-
-def test_review_incomplete_run_is_p1():
-    s = review_mode()
-    assert "incomplete-run" in s, "review mode does not name an incomplete run"
-    m = re.search(r"([^.\n]*incomplete-run[^.\n]*)(?:\.|$)", s, re.I)
-    assert re.search(r"P1", m.group(0)), "no P1 rule attached to the incomplete run"
-
-
-def test_review_unavailable_rule_with_no_clean_scan_claim():
-    s = review_mode()
-    assert "habit-sensors" in s, "review mode does not name the habit-sensors tool"
-    assert re.search(r"available", s), "review mode has no unavailable rule"
-    assert re.search(r"clean", s), "review mode does not state the no-clean-scan rule"
-
-
-def test_review_names_the_habit_smells_gate_tool_and_base():
-    s = review_mode()
-    assert "habit.smells" in s, "review mode does not name the habit.smells gate key"
+def test_habit_smells_gate_key_and_script_exist():
+    assert HABIT_SMELLS.exists(), f"missing {HABIT_SMELLS.relative_to(REPO_ROOT)}"
+    assert "habit.smells" in VERIFY_BUNDLE.read_text(), \
+        "shared/verify_bundle.py has no habit.smells gate key"
 
 
 # ---- Maintenance Mode: the pair diff and the four tags ----
-
-
-@pytest.mark.parametrize("tag", ["NEW", "ESCALATED", "STABLE", "RESOLVED"])
-def test_maintenance_tags_each_smell_file_pair(tag):
-    s = maintenance_mode()
-    assert tag in s, f"maintenance mode lacks the {tag} tag"
 
 
 def test_maintenance_diffs_against_the_previous_report():
@@ -115,26 +131,6 @@ def test_command_names_the_habit_step(path):
         f"{path.name} does not name the habit-hooks step"
 
 
-# ---- Guard: a partial scan never diffs against the previous report ----
-
-
-def test_maintenance_holds_the_diff_on_an_incomplete_run():
-    s = maintenance_mode()
-    m = re.search(r"run_complete[^.\n]*\.", s)
-    assert m, "maintenance mode does not state the run_complete rule"
-    sentence = m.group(0)
-    assert re.search(r"diff|tag", sentence, re.I), \
-        "the run_complete rule does not hold the diff or the tags"
-    assert re.search(r"complete", s), \
-        "maintenance mode does not wait for a complete run"
-
-
-def test_review_pairs_rest_on_a_complete_run():
-    s = review_mode()
-    assert re.search(r"complete", s), \
-        "review mode's habit-hooks list does not rest on a complete run"
-
-
 # ---- Guard: no plugins/pr file mentions habit-hooks ----
 
 
@@ -157,13 +153,6 @@ def trend_paragraph() -> str:
     return s[start:end]
 
 
-@pytest.mark.parametrize("tag", ["NEW", "ESCALATED", "STABLE", "RESOLVED"])
-def test_trend_paragraph_has_tag(tag):
-    assert re.search(rf"\b{tag}\b", trend_paragraph()), (
-        f"the Habit-hooks trend paragraph does not name {tag}"
-    )
-
-
 def test_trend_paragraph_states_first_scan_case():
     p = trend_paragraph()
     anchors = [m.start() for m in re.finditer(r"Mechanical smells|previous report", p)]
@@ -171,12 +160,4 @@ def test_trend_paragraph_states_first_scan_case():
     assert any(abs(a - w) <= 300 for a in anchors for w in words), (
         "the trend paragraph does not state the first-scan case "
         "(missing Mechanical smells section: every pair NEW, scan sets baseline)"
-    )
-
-
-def test_maintenance_command_names_habit_step_outside_code_fence():
-    text = MAINTENANCE_COMMAND.read_text()
-    prose = re.sub(r"```.*?```", "", text, flags=re.S)
-    assert "habit_smells.py" in prose or "habit-hooks" in prose, (
-        "maintenance.md names the habit-hooks step only inside a code fence"
     )

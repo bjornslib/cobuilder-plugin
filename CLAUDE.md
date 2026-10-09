@@ -1,6 +1,86 @@
 # CLAUDE.md
 
-**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+# WRITING STANDARD
+
+Prose and documentation in this repo follows plain-English rules distilled from ASD-STE100
+Issue 9 Simplified Technical English (STE). It applies to every content
+type produced here: `README.md`, this file, `plugins/pr/skills/odyssey/references/*.md`,
+commit and PR bodies, code comments, error messages, ADRs, and the story
+the plugin writes into `story.json`. `Skill("architect:ste-writing")`
+holds the full rule set and its two modes (`strict` for procedures and
+safety text, `flavored` for general prose). If that call gives `Unknown
+skill`, read `${CLAUDE_PLUGIN_ROOT}/shared/skills/ste-writing/SKILL.md` directly
+and obey that file instead. The condensed version below is what to hold in
+mind without invoking it.
+
+You must also use it in all of your responses interacting with the user.
+
+**Words.** One name for one thing — do not call the same item by two
+names. Pick the short common word: start, not begin or commence; use, not
+utilize or leverage; help, not facilitate; show, not demonstrate; about,
+not regarding. One meaning per word. Drop marketing adjectives — seamless,
+robust, powerful, cutting-edge, effortless, world-class, next-generation,
+revolutionary. Cap a noun cluster at three words; split a longer one with
+"of" or a hyphen. Put an article (a, an, the) before every countable
+singular noun.
+
+**Verbs.** Active voice: "the script reads the file", not "the file is
+read by the script". A verb for an action, not a noun for it: "verify the
+bundle", not "perform verification of the bundle". Simple tenses: "the
+migration found a stale field", not "the migration has found a stale
+field".
+
+**Sentences and structure.** One instruction per sentence, capped at
+20-25 words. No contractions. No semicolons — write two sentences instead.
+One topic per paragraph, six sentences or fewer. State a condition before
+its command.
+
+**No prose is exempt.** The story's `narration`, `voice`, `problem`, and `solution`, the README's
+pitch language, and every authored field of a design all follow the full rules above. There is no
+looser register. Each authored field also has a word cap. `shared/prose-budget.md` explains how
+to write inside the caps, and `shared/prose_budget.py` holds them.
+
+## Response structure
+
+Label every part of a response to the reader, so the reader knows at a glance
+which parts need them and which do not. Use these four labels, in this order, and
+use only the ones that hold content. An empty label is worse than no label,
+because it teaches the reader to skip it.
+
+**FYI** — a fact the reader needs and does not need to act on. A finding, a
+constraint, or a thing the code does that surprised you. FYI holds no question. A
+fact that needs an answer belongs under Decisions and questions.
+
+**Summary** — what happened. State what changed, what was verified, and the
+evidence for each. Name the count, the reading, or the command. State a failure, a
+skipped step, and a gap. No claim of success stands without its evidence.
+
+**Next steps** — what you will do next without the reader. Name the work and the
+actor. A step that waits on the reader is not a next step. It is a decision.
+
+**Decisions and questions** — what needs the reader. Put each one on its own line.
+Give the options and your recommendation, so a one-word answer settles it. State
+what happens when the reader answers nothing.
+
+A short response may carry one label or two. The rule is the label, not the length.
+Do not pad a response to reach four labels. The reader must be able to stop after
+FYI when nothing needs them.
+
+Group the labels logically, and keep one topic to a paragraph. Use a bullet, a
+numbered list, or a table where it carries the meaning better than a sentence.
+
+**Run the skill on the draft.** Invoke `Skill("architect:ste-writing")` on the
+response before you send it, and correct what it flags. If the call answers
+`Unknown skill`, read `${CLAUDE_PLUGIN_ROOT}/shared/skills/ste-writing/SKILL.md`
+and obey that file. This section's own rules above are what to hold in mind
+without invoking it.
+
+Judge a draft by rereading it against the rules above. `ste-writing` also
+ships `shared/skills/ste-writing/ste-lint.py`, a rules-only linter that scores
+violations per 100 words, for a quick optional check. The linter checks
+rules only. It does not certify ASD-STE100 dictionary compliance.
+
+**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment. Section 5 sets when to act without asking.
 
 # CODING AND THINKING GUIDELINES
 
@@ -60,6 +140,18 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
+## 5. Work Proactively
+
+**Finish what your own work exposes. Ask only when the action cannot be undone.**
+
+Sections 1 and 3 still apply to the request itself. This section covers what your own work leaves behind.
+
+- Finish what your own changes and explorations expose as clear gaps and issues. When your change leaves something open or creates a gap or issue, such as a dead line, or a broken check, fix it in the same turn. Do not ask for approval.
+- Act on your own recommendation when the action is local, can be undone, and results in a clear and immediate improvement. Edit a file, run a test, or commit on a feature branch.
+- Ask first when the action leaves the machine, such as a push, a pull request, or a merge. Ask first when the action changes behavior clearly outside the request, or when two answers cost differently.
+- A question may end "With no answer, I do nothing" only for an ask-first action. For a local action, do it and report it.
+- Report every action you took without being asked. Put one line for each under Summary, so the reader can request you to undo it.
+
 # THIS REPOSITORY
 
 ## What this repo is
@@ -100,7 +192,7 @@ tests/                            pytest suite for packaging, scripts, and gates
 
 1. **Authored source in `docs/`, derived output in the bundle.** `.cobuilder-architect/` is not a document store. Never write `data/adrs.json` or `data/index.json` by hand. Run `shared/build_index.py`.
 2. **Claude writes judgment, scripts move data.** Narrative, ADRs, assessments, and diagram sources are Claude's work. Scripts fetch diffs, compile, convert, and verify. A script never authors content.
-3. **A step with no mechanical consumer gets skipped.** Give every documented step a script, a test, or a gate that reads it. Gate 4b ran for zero of five epics until `verify_gate.py` enforced it.
+3. **A step with no observable effect gets skipped.** Give each documented step an effect that a script, a gate, or a blind pass can check. Test the effect, the structure that code reads, or the reference that must resolve. Never test the wording of the prose that describes the step. Gate 4b ran for zero of five epics until `verify_gate.py` enforced it.
 4. **Plugins meet at the bundle.** A plugin names another plugin's mode and lets that plugin resolve its own path. It never names `plugins/<other>/...`. Shared code goes in `shared/`.
 5. **Narrow install surface.** Only `implement` ships agents and a hook (ADR-0025). No plugin ships an MCP server.
 6. **Never overwrite authored content.** `extract_story.py` keeps authored narrative fields. A data migration declares the fields it touches. The guard stops the run before any write if it changes another authored field.
@@ -136,6 +228,7 @@ Plugin scripts are PEP 723. `uv run <script>` resolves their own dependencies.
 
 ## Rules that break easily
 
+- **Test effects, structure, and references. Do not test wording.** A test may run code, parse a format that code reads, or check that a name in one file exists in another. A test must not assert that prose contains a phrase, a heading, or an order of sentences. For prose that steers an agent, score a blind pass and keep the transcript in the slice evidence.
 - **Build the viewer, then commit it.** Edit `viewer/src/`, run `npm run build`, and commit the new `index.html`. `tests/test_viewer_build.py` fails if the build does not reproduce the committed bytes.
 - **Run `migrate_bundle.py` from the repo, not from the installed plugin cache.** The cache copy refreshes `.cobuilder-architect/self/viewer/index.html` with its own older viewer. That reverts an uncommitted local build.
 - **Count a mode number in every top-level document.** When a mode count changes, grep `README.md`, `CLAUDE.md`, `DDD-VOCABULARY.md`, and `plugins/` for the old number.
@@ -173,83 +266,3 @@ not let two modes silently mean different things by the same word.
 session gazetteer from 2026-08-20. Several of its proposals shipped
 differently. Treat it as a record, not a specification. `DDD-VOCABULARY.md`
 is the current source of truth. Do not edit the gazetteer.
-
-## Writing standard
-
-Prose and documentation in this repo follows plain-English rules distilled from ASD-STE100
-Issue 9 Simplified Technical English (STE). It applies to every content
-type produced here: `README.md`, this file, `plugins/pr/skills/odyssey/references/*.md`,
-commit and PR bodies, code comments, error messages, ADRs, and the story
-the plugin writes into `story.json`. `Skill("architect:ste-writing")`
-holds the full rule set and its two modes (`strict` for procedures and
-safety text, `flavored` for general prose). If that call gives `Unknown
-skill`, read `${CLAUDE_PLUGIN_ROOT}/shared/skills/ste-writing/SKILL.md` directly
-and obey that file instead. The condensed version below is what to hold in
-mind without invoking it.
-
-You must also use it in all of your responses interacting with the user.
-
-**Words.** One name for one thing — do not call the same item by two
-names. Pick the short common word: start, not begin or commence; use, not
-utilize or leverage; help, not facilitate; show, not demonstrate; about,
-not regarding. One meaning per word. Drop marketing adjectives — seamless,
-robust, powerful, cutting-edge, effortless, world-class, next-generation,
-revolutionary. Cap a noun cluster at three words; split a longer one with
-"of" or a hyphen. Put an article (a, an, the) before every countable
-singular noun.
-
-**Verbs.** Active voice: "the script reads the file", not "the file is
-read by the script". A verb for an action, not a noun for it: "verify the
-bundle", not "perform verification of the bundle". Simple tenses: "the
-migration found a stale field", not "the migration has found a stale
-field".
-
-**Sentences and structure.** One instruction per sentence, capped at
-20-25 words. No contractions. No semicolons — write two sentences instead.
-One topic per paragraph, six sentences or fewer. State a condition before
-its command.
-
-**No prose is exempt.** The story's `narration`, `voice`, `problem`, and `solution`, the README's
-pitch language, and every authored field of a design all follow the full rules above. There is no
-looser register. Each authored field also has a word cap. `shared/prose-budget.md` explains how
-to write inside the caps, and `shared/prose_budget.py` holds them.
-
-### Response structure
-
-Label every part of a response to the reader, so the reader knows at a glance
-which parts need them and which do not. Use these four labels, in this order, and
-use only the ones that hold content. An empty label is worse than no label,
-because it teaches the reader to skip it.
-
-**FYI** — a fact the reader needs and does not need to act on. A finding, a
-constraint, or a thing the code does that surprised you. FYI holds no question. A
-fact that needs an answer belongs under Decisions and questions.
-
-**Summary** — what happened. State what changed, what was verified, and the
-evidence for each. Name the count, the reading, or the command. State a failure, a
-skipped step, and a gap. No claim of success stands without its evidence.
-
-**Next steps** — what you will do next without the reader. Name the work and the
-actor. A step that waits on the reader is not a next step. It is a decision.
-
-**Decisions and questions** — what needs the reader. Put each one on its own line.
-Give the options and your recommendation, so a one-word answer settles it. State
-what happens when the reader answers nothing.
-
-A short response may carry one label or two. The rule is the label, not the length.
-Do not pad a response to reach four labels. The reader must be able to stop after
-FYI when nothing needs them.
-
-Group the labels logically, and keep one topic to a paragraph. Use a bullet, a
-numbered list, or a table where it carries the meaning better than a sentence.
-
-**Run the skill on the draft.** Invoke `Skill("architect:ste-writing")` on the
-response before you send it, and correct what it flags. If the call answers
-`Unknown skill`, read `${CLAUDE_PLUGIN_ROOT}/shared/skills/ste-writing/SKILL.md`
-and obey that file. This section's own rules above are what to hold in mind
-without invoking it.
-
-Judge a draft by rereading it against the rules above. `ste-writing` also
-ships `shared/skills/ste-writing/ste-lint.py`, a rules-only linter that scores
-violations per 100 words, for a quick optional check. The linter checks
-rules only. It does not certify ASD-STE100 dictionary compliance.

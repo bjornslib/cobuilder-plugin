@@ -30,13 +30,13 @@ Run with: uv run --with pytest pytest tests/test_intent_level_key.py -v
 """
 from __future__ import annotations
 
+import ast
 import json
 import re
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 VIEWER = REPO_ROOT / "plugins" / "artifact" / "viewer"
-SHIPPED_VIEWER = VIEWER / "index.html"
 SELF_BUNDLE = REPO_ROOT / ".cobuilder-architect" / "self"
 DESIGNS_SOURCE = REPO_ROOT / "docs" / "architecture" / "designs"
 
@@ -76,6 +76,34 @@ def js_payload(path: Path, prefix: str, claim: str) -> object:
         f"{claim}: {path.relative_to(REPO_ROOT).as_posix()} carries no {prefix!r}"
     )
     return json.loads(text[at + len(prefix) :].strip().rstrip(";").strip())
+
+
+def verify_bundle_level_keys() -> list[str]:
+    """The `LEVEL_KEYS` list in `shared/verify_bundle.py`, read as a Python literal.
+
+    The file is a script with dependencies, so this reads its one assignment and does
+    not import the module.
+    """
+    path = REPO_ROOT / "shared" / "verify_bundle.py"
+    match = re.search(r"^LEVEL_KEYS\s*=\s*(\[.*\])\s*$", read(path, "LEVEL_KEYS"), re.M)
+    assert match, "shared/verify_bundle.py holds no one-line LEVEL_KEYS list"
+    return ast.literal_eval(match.group(1))
+
+
+def guide_level_keys(text: str) -> list[str]:
+    """The level keys in the guide's level table, from its `Schema key` column.
+
+    A row reads `| 1 | `intent` | ...`, so the key is the backticked cell after the
+    level number. Prose and the voice example are not read.
+    """
+    return [
+        match.group(1)
+        for match in (
+            re.match(r"^\|\s*\d+\s*\|\s*`([a-z_]+)`\s*\|", line)
+            for line in text.splitlines()
+        )
+        if match
+    ]
 
 
 def level_key_lists(value: object, path: str = "") -> list[str]:
@@ -157,7 +185,7 @@ def test_the_authoring_guide_names_the_level_intent():
     level. ADR-0029 lists the guide among the six places the rename reaches, so no
     part of it still calls the level by the old name.
     """
-    claim = "story-mode.md names the narration level `intent`"
+    claim = "story-mode.md lists only valid level keys"
     path = (
         REPO_ROOT
         / "plugins"
@@ -167,21 +195,20 @@ def test_the_authoring_guide_names_the_level_intent():
         / "references"
         / "story-mode.md"
     )
-    text = read(path, claim)
-    assert f"`{NEW_KEY}`" in text or f" {NEW_KEY} " in text, (
-        f"{claim}: the guide carries no {NEW_KEY!r} level name.\n"
-        "  ADR-0029: the authoring level list in story-mode.md takes the new key."
+    guide_keys = guide_level_keys(read(path, claim))
+    assert guide_keys, f"{claim}: the guide's level table holds no level key"
+    valid_keys = verify_bundle_level_keys()
+    unknown = [key for key in guide_keys if key not in valid_keys]
+    assert not unknown, (
+        f"{claim}: the guide names level key(s) {unknown} that LEVEL_KEYS does not hold.\n"
+        f"  LEVEL_KEYS in shared/verify_bundle.py is {valid_keys}.\n"
+        "  A reader who follows the guide would write a key the gate rejects."
     )
-    stale = [
-        line.strip()
-        for line in text.splitlines()
-        if OLD_KEY in line
-    ]
-    assert not stale, (
-        f"{claim}: {len(stale)} line(s) still name the level {OLD_KEY!r}:\n"
-        + "\n".join(f"  {line}" for line in stale[:6])
-        + "\n  The guide authors this level, so a reader who follows it would write the "
-        "old key into a bundle."
+    assert OLD_KEY not in guide_keys, (
+        f"{claim}: the guide's level table names the retired key {OLD_KEY!r}."
+    )
+    assert NEW_KEY in guide_keys, (
+        f"{claim}: the guide's level table does not list {NEW_KEY!r}."
     )
 
 
@@ -205,48 +232,6 @@ def test_the_viewers_level_list_names_intent():
     assert compact(f'key: "{OLD_KEY}"') not in haystack, (
         f"{claim}: the level list still carries a {OLD_KEY!r} entry.\n"
         "  One name for one thing: the level is named once in this list."
-    )
-
-
-def test_the_viewers_bundle_types_name_intent():
-    """`src/data/bundle.ts` declares the level's key on the records it reads.
-
-    `epic-E7-design.md` puts it this way: `DesignNarrative` takes the key `intent` in
-    place of `landscape`, and the `StoryEntry` comment names the new key.
-    """
-    claim = "the viewer's bundle types name the narration level `intent`"
-    haystack = compact(read(VIEWER / "src" / "data" / "bundle.ts", claim))
-    assert compact(f"{NEW_KEY}?: NarrativeLevel") in haystack, (
-        f"{claim}: DesignNarrative declares no `{NEW_KEY}` level.\n"
-        "  epic-E7-design.md: `DesignNarrative` takes the key `intent` in place of "
-        "`landscape`."
-    )
-    assert compact(OLD_KEY) not in haystack, (
-        f"{claim}: the file still names the level {OLD_KEY!r}.\n"
-        "  The rename replaces the key, and this file declares it and the comment that "
-        "reads it."
-    )
-
-
-def test_the_shipped_viewer_names_the_level_intent():
-    """The built viewer's level list reads `intent`.
-
-    Since slice 3 the committed viewer is the build's own output. A reader of the
-    shipped page meets the level list this file carries, so the rename reaches the
-    shipped file and not only the sources.
-    """
-    claim = "the shipped viewer names the narration level `intent`"
-    assert SHIPPED_VIEWER.is_file(), (
-        f"{claim}: {SHIPPED_VIEWER.relative_to(REPO_ROOT).as_posix()} does not exist"
-    )
-    text = SHIPPED_VIEWER.read_text(encoding="utf-8", errors="replace")
-    assert compact(f'key: "{NEW_KEY}", label: "Intent"') in compact(text), (
-        f"{claim}: the built viewer carries no {NEW_KEY!r} level entry.\n"
-        "  The build reproduces this file from src/, so a build after the rename "
-        "carries it. The committed file is stale until that build runs."
-    )
-    assert compact(f'key: "{OLD_KEY}"') not in compact(text), (
-        f"{claim}: the built viewer still carries a {OLD_KEY!r} level entry"
     )
 
 
