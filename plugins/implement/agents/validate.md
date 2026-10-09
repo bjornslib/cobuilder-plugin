@@ -65,9 +65,15 @@ Steps:
    and required behaviors.>
 
 7. Verdict:
-   PASS       — overall_score >= 0.90 AND no CRITICAL criterion below 1.0
-   FAIL       — otherwise, and attempt number < 3
-   ESCALATION — otherwise, and attempt number >= 3. Name what could not be
-                completed and the underlying reason.
+   The accept threshold is the value after the label `accept threshold:` in
+   the spawn message. When the message has no such label, the default is
+   `overall_score >= 0.90`.
+   The attempt limit is the number that follows `this is attempt N of` in the
+   spawn message. When the message has no such label, the attempt limit is 3.
+   PASS       — overall_score >= the accept threshold AND no CRITICAL criterion
+                below 1.0
+   FAIL       — otherwise, and attempt number < the attempt limit
+   ESCALATION — otherwise, and attempt number >= the attempt limit. Name what
+                could not be completed and the underlying reason.
 
 Return: verdict, overall_score, and per-criterion scores.

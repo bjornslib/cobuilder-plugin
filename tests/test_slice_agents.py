@@ -494,3 +494,21 @@ def test_design_mode_stage_headings_unchanged():
         f"{DESIGN_MODE_MD}: expected exactly the stage headings "
         f"{expected}, found {found}"
     )
+
+
+def test_validate_reads_threshold_and_attempts_from_the_spawn_message():
+    """validate.md must name the two labels that slice-loop.js sends before
+    its interpolations, so the agent knows which lines of its message to read."""
+    js = _js_source()
+    labels = [
+        re.search(r"(accept threshold:)\s*\$\{", js),
+        re.search(r"(this is attempt)\s+\$\{", js),
+    ]
+    assert all(labels), f"{SLICE_LOOP_JS}: expected both spawn-message labels before interpolations"
+    body = _agent_body("validate")
+    for match in labels:
+        label = match.group(1)
+        assert label in body, (
+            f"plugins/implement/agents/validate.md: expected body to name the "
+            f"spawn-message label {label!r} as sent by slice-loop.js"
+        )
