@@ -10,6 +10,7 @@ Run with: uv run --with pytest --with requests --with pyyaml --with pillow pytes
 """
 from __future__ import annotations
 
+import ast
 import importlib.util
 import inspect
 import io
@@ -1008,21 +1009,32 @@ def _install_mode_section() -> str:
     return text[start:start + match.start()]
 
 
-def _proof_step(section: str) -> str:
-    assert "Prove the coach" in section, "Install mode has no 'Prove the coach' step"
-    return section[section.index("Prove the coach"):]
-
-
 def test_install_mode_names_habit_coach_check():
     section = _install_mode_section()
     assert "habit_coach.py\" --check" in section
 
 
-def test_install_mode_proof_step_reports_success_only_on_coaching_works():
-    step = _proof_step(_install_mode_section())
-    sentences = re.split(r"[.\n]", step)
-    matching = [
-        s for s in sentences
-        if "report" in s.lower() and "only" in s.lower() and "coaching works" in s
-    ]
-    assert matching, "expected a sentence saying to report success only when the output reads 'coaching works'"
+def _check_prefixes() -> set[str]:
+    """The output prefixes check() prints, read from the script's source.
+
+    A prefix is the text before the first colon of each string that starts
+    with "coaching" in check()."""
+    tree = ast.parse(HABIT_COACH_PATH.read_text())
+    fn = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "check")
+    prefixes: set[str] = set()
+    for node in ast.walk(fn):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str) and node.value.startswith("coaching"):
+            prefixes.add(node.value.split(":", 1)[0].strip())
+    return prefixes
+
+
+def test_install_mode_proof_step_names_the_check_output_prefixes():
+    prefixes = _check_prefixes()
+    assert {"coaching works", "coaching check failed"} <= prefixes, (
+        f"habit_coach.py check() prints prefixes {sorted(prefixes)}"
+    )
+    section = _install_mode_section()
+    for prefix in ("coaching works", "coaching check failed"):
+        assert f'"{prefix}"' in section, (
+            f"Install mode does not quote the check() output prefix {prefix!r}"
+        )

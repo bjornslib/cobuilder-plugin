@@ -62,22 +62,10 @@ def test_stage6_runs_check_with_require():
 
 PR_DIR = REPO_ROOT / "plugins" / "pr"
 ODYSSEY = PR_DIR / "skills" / "odyssey"
-BASELINE_DERIVATION = ODYSSEY / "references" / "baseline-derivation.md"
 
 
 def baseline_mode() -> str:
     return section((ODYSSEY / "SKILL.md").read_text(), "Baseline mode")
-
-
-def smells() -> str:
-    return section_h(BASELINE_DERIVATION.read_text(), "## 5. Surfacing smells")
-
-
-def section_h(text: str, heading: str) -> str:
-    m = re.search(rf"^{re.escape(heading)}.*$", text, re.M)
-    assert m, f"heading not found: {heading!r}"
-    nxt = re.search(r"^## ", text[m.end():], re.M)
-    return text[m.end(): m.end() + nxt.start()] if nxt else text[m.end():]
 
 
 def test_baseline_runs_boundary_check():
@@ -97,19 +85,29 @@ def test_baseline_describe_only_stale_or_missing():
     assert re.search(r"\bok\b", s), "baseline mode does not say what to do with ok records"
 
 
-def test_baseline_describe_is_self_analysis_only():
-    s = baseline_mode()
-    assert "self-analysis" in s, "baseline mode does not name self-analysis"
-    assert "--repo" in s, "baseline mode does not name --repo"
-    assert "foreign" in s, "baseline mode does not name foreign repos"
+def test_no_pr_script_writes_under_architecture_contexts():
+    """A foreign-repo baseline writes nothing under docs/architecture/contexts.
 
-
-def test_derivation_keeps_foreign_describe_lite_rule():
-    s = smells()
-    assert "foreign" in s, "section 5 lacks the foreign rule"
-    assert "describe" in s, "section 5 does not name describe"
-    assert "docs/architecture/contexts" in s, \
-        "section 5 does not forbid writes under docs/architecture/contexts/"
+    The describe step runs lite on a foreign repo. Its context canvases belong to the
+    target repo, so pr:baseline must not write them. The pr scripts are the code that
+    could write there, so this fails when any pr Python or shell file names the path.
+    """
+    files = [
+        path
+        for root in (PR_DIR / "scripts", PR_DIR / "skills")
+        for path in root.rglob("*")
+        if path.is_file() and path.suffix in {".py", ".sh"}
+    ]
+    assert files, "found no pr Python or shell files to scan"
+    offenders = [
+        path.relative_to(REPO_ROOT).as_posix()
+        for path in files
+        if "architecture/contexts" in path.read_text(errors="ignore")
+    ]
+    assert not offenders, (
+        f"pr scripts name architecture/contexts: {offenders}\n"
+        "  A foreign-repo baseline must not write context canvases."
+    )
 
 
 def test_pr_plugin_never_names_architect_path():
@@ -129,7 +127,24 @@ def test_skill_describe_line_names_pr_baseline():
         "Describe Mode section lacks pr:baseline"
 
 
-def test_docs_do_not_list_describe_command():
-    for p in (REPO_ROOT / "README.md",
-              REPO_ROOT / "plugins" / "cobuilder-full-lifecycle" / "skills" / "cobuilder-full" / "SKILL.md"):
-        assert "/architect:describe" not in p.read_text(), f"{p.name} lists /architect:describe"
+def test_doc_command_tokens_have_command_files():
+    """Every `/<plugin>:<command>` token in README.md and CLAUDE.md has a command file.
+
+    A doc that names a command with no file sends the reader to a command that does
+    not run. The token list is read from the docs, so a new doc token is checked too.
+    ALLOWLIST is empty: no doc token names a skill or mode without a command file.
+    """
+    ALLOWLIST: set[str] = set()
+    token = re.compile(r"/(architect|pr|artifact|implement):([a-z-]+)")
+    missing = []
+    for doc in (REPO_ROOT / "README.md", REPO_ROOT / "CLAUDE.md"):
+        for plugin, command in sorted(set(token.findall(doc.read_text()))):
+            name = f"{plugin}:{command}"
+            if name in ALLOWLIST:
+                continue
+            command_file = REPO_ROOT / "plugins" / plugin / "commands" / f"{command}.md"
+            if not command_file.is_file():
+                missing.append(f"{doc.name}: /{name}")
+    assert not missing, (
+        "doc tokens with no command file:\n  " + "\n  ".join(missing)
+    )

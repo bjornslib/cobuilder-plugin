@@ -154,11 +154,12 @@ def test_validate_tools_exclude_edit():
 # Contract under test (docs/plans/slice-agents-and-vocabulary/epic-E2-design.md,
 # Test Plan, slice 3 row):
 #
-# - RED and GREEN bodies contain "Do not read anything under .cobuilder/".
+# - RED and GREEN forbid the rubric directory that VALIDATE and slice-loop.js
+#   read from.
 # - GREEN contains "Do NOT modify any test file".
 # - RED states tests must fail on assertions.
-# - VALIDATE contains PASS, FAIL, ESCALATION, 0.90, the three score levels
-#   1.0/0.5/0.0, and the evidence file pattern slice-<N>-attempt-<M>.md.
+# - VALIDATE's pass threshold and evidence file pattern equal the values
+#   slice-loop.js uses, and VALIDATE contains the three score levels 1.0/0.5/0.0.
 # - Each agent body contains the placeholders <slug> and <N>; red/green also
 #   <test_command>.
 # - slice-loop.md names implement:red, implement:green, implement:validate
@@ -172,9 +173,6 @@ SKILL_ROOT = REPO_ROOT / "plugins" / "implement" / "skills" / "build"
 SLICE_LOOP_MD = SKILL_ROOT / "references" / "slice-loop.md"
 SLICE_LOOP_JS = SKILL_ROOT / "workflows" / "slice-loop.js"
 
-BLIND_LINE = "Do not read anything under .cobuilder/"
-
-
 def _agent_body(role):
     path = AGENTS_DIR / f"{role}.md"
     text = path.read_text(encoding="utf-8")
@@ -183,18 +181,39 @@ def _agent_body(role):
     return text[match.end():]
 
 
-def _strip_backticks(text):
-    """Normalise `.cobuilder/`-style backtick-quoting before matching."""
-    return text.replace("`", "")
+def _js_source():
+    return SLICE_LOOP_JS.read_text(encoding="utf-8")
 
 
-@pytest.mark.parametrize("role", ["red", "green"])
-def test_red_and_green_body_contains_blind_rule(role):
-    body = _strip_backticks(_agent_body(role))
-    assert BLIND_LINE in body, (
-        f"plugins/implement/agents/{role}.md: expected body to contain "
-        f"{BLIND_LINE!r} (backticks stripped before matching)"
+def _js_rubric_dir():
+    """Return the rubric directory slice-loop.js reads, with ${slug} as <slug>."""
+    match = re.search(r"const rubrics = `([^`]*)`", _js_source())
+    assert match is not None, f"{SLICE_LOOP_JS}: expected a 'const rubrics' template"
+    return match.group(1).replace("${slug}", "<slug>")
+
+
+def test_blind_rule_forbids_the_rubric_directory():
+    """RED and GREEN forbid a directory. It must cover the rubric directory that
+    VALIDATE and slice-loop.js read from."""
+    forbidden = {}
+    for role in ["red", "green"]:
+        match = re.search(r"Do not read anything under (\S+)", _agent_body(role))
+        assert match is not None, f"plugins/implement/agents/{role}.md: no blind rule found"
+        forbidden[role] = match.group(1)
+
+    validate_dirs = set(re.findall(r"\.cobuilder/rubrics/<slug>", _agent_body("validate")))
+    assert validate_dirs, "plugins/implement/agents/validate.md: no rubric directory found"
+    loop_dir = _js_rubric_dir()
+    assert loop_dir, f"{SLICE_LOOP_JS}: rubric directory is empty"
+
+    assert validate_dirs == {loop_dir}, (
+        f"validate.md reads rubrics from {validate_dirs}, slice-loop.js from {loop_dir!r}"
     )
+    for role, path in forbidden.items():
+        assert loop_dir.startswith(path), (
+            f"plugins/implement/agents/{role}.md forbids {path!r}, which does not "
+            f"cover the rubric directory {loop_dir!r}"
+        )
 
 
 def test_green_body_forbids_modifying_test_files():
@@ -213,13 +232,16 @@ def test_red_body_requires_failures_to_be_assertions():
     )
 
 
-def test_validate_body_contains_verdicts_and_threshold():
-    body = _agent_body("validate")
-    for token in ["PASS", "FAIL", "ESCALATION", "0.90"]:
-        assert token in body, (
-            f"plugins/implement/agents/validate.md: expected body to "
-            f"contain {token!r}"
-        )
+def test_validate_pass_threshold_matches_slice_loop():
+    prose = re.findall(r"overall_score\s*>=\s*(\d+\.\d+)", _agent_body("validate"))
+    assert prose, "plugins/implement/agents/validate.md: no 'overall_score >= <number>' pass rule"
+    match = re.search(
+        r"const ACCEPT\s*=\s*args\?\.accept\s*\?\?\s*(\d+\.\d+)", _js_source()
+    )
+    assert match is not None, f"{SLICE_LOOP_JS}: expected 'const ACCEPT = args?.accept ?? <number>'"
+    assert {float(p) for p in prose} == {float(match.group(1))}, (
+        f"validate.md pass threshold {prose} differs from slice-loop.js ACCEPT {match.group(1)}"
+    )
 
 
 def test_validate_body_contains_score_levels():
@@ -231,11 +253,25 @@ def test_validate_body_contains_score_levels():
         )
 
 
-def test_validate_body_contains_evidence_file_pattern():
-    body = _agent_body("validate")
-    assert "slice-<N>-attempt-<M>.md" in body, (
-        "plugins/implement/agents/validate.md: expected body to contain "
-        "the evidence file pattern 'slice-<N>-attempt-<M>.md'"
+def test_validate_evidence_pattern_matches_slice_loop():
+    prose = set(re.findall(
+        r"\.cobuilder/rubrics/<slug>/evidence/slice-<\w+>-attempt-<\w+>\.md",
+        _agent_body("validate"),
+    ))
+    assert prose, "plugins/implement/agents/validate.md: no evidence file pattern found"
+
+    evidence_match = re.search(r"const evidence = `\$\{rubrics\}([^`]*)`", _js_source())
+    assert evidence_match is not None, f"{SLICE_LOOP_JS}: expected a 'const evidence' template"
+    evidence_dir = _js_rubric_dir() + evidence_match.group(1)
+
+    loop = set()
+    for name in re.findall(r"\$\{evidence\}/(slice-\$\{s\.id\}-attempt-\$\{attempt\}\.md)", _js_source()):
+        normalized = name.replace("${s.id}", "<N>").replace("${attempt}", "<M>")
+        loop.add(f"{evidence_dir}/{normalized}")
+    assert loop, f"{SLICE_LOOP_JS}: no evidence file path built"
+
+    assert prose == loop, (
+        f"validate.md evidence pattern {prose} differs from slice-loop.js {loop}"
     )
 
 

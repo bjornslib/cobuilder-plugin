@@ -30,6 +30,7 @@ Run with: uv run --with pytest pytest tests/test_intent_level_key.py -v
 """
 from __future__ import annotations
 
+import ast
 import json
 import re
 from pathlib import Path
@@ -75,6 +76,34 @@ def js_payload(path: Path, prefix: str, claim: str) -> object:
         f"{claim}: {path.relative_to(REPO_ROOT).as_posix()} carries no {prefix!r}"
     )
     return json.loads(text[at + len(prefix) :].strip().rstrip(";").strip())
+
+
+def verify_bundle_level_keys() -> list[str]:
+    """The `LEVEL_KEYS` list in `shared/verify_bundle.py`, read as a Python literal.
+
+    The file is a script with dependencies, so this reads its one assignment and does
+    not import the module.
+    """
+    path = REPO_ROOT / "shared" / "verify_bundle.py"
+    match = re.search(r"^LEVEL_KEYS\s*=\s*(\[.*\])\s*$", read(path, "LEVEL_KEYS"), re.M)
+    assert match, "shared/verify_bundle.py holds no one-line LEVEL_KEYS list"
+    return ast.literal_eval(match.group(1))
+
+
+def guide_level_keys(text: str) -> list[str]:
+    """The level keys in the guide's level table, from its `Schema key` column.
+
+    A row reads `| 1 | `intent` | ...`, so the key is the backticked cell after the
+    level number. Prose and the voice example are not read.
+    """
+    return [
+        match.group(1)
+        for match in (
+            re.match(r"^\|\s*\d+\s*\|\s*`([a-z_]+)`\s*\|", line)
+            for line in text.splitlines()
+        )
+        if match
+    ]
 
 
 def level_key_lists(value: object, path: str = "") -> list[str]:
@@ -156,7 +185,7 @@ def test_the_authoring_guide_names_the_level_intent():
     level. ADR-0029 lists the guide among the six places the rename reaches, so no
     part of it still calls the level by the old name.
     """
-    claim = "story-mode.md names the narration level `intent`"
+    claim = "story-mode.md lists only valid level keys"
     path = (
         REPO_ROOT
         / "plugins"
@@ -166,21 +195,20 @@ def test_the_authoring_guide_names_the_level_intent():
         / "references"
         / "story-mode.md"
     )
-    text = read(path, claim)
-    assert f"`{NEW_KEY}`" in text or f" {NEW_KEY} " in text, (
-        f"{claim}: the guide carries no {NEW_KEY!r} level name.\n"
-        "  ADR-0029: the authoring level list in story-mode.md takes the new key."
+    guide_keys = guide_level_keys(read(path, claim))
+    assert guide_keys, f"{claim}: the guide's level table holds no level key"
+    valid_keys = verify_bundle_level_keys()
+    unknown = [key for key in guide_keys if key not in valid_keys]
+    assert not unknown, (
+        f"{claim}: the guide names level key(s) {unknown} that LEVEL_KEYS does not hold.\n"
+        f"  LEVEL_KEYS in shared/verify_bundle.py is {valid_keys}.\n"
+        "  A reader who follows the guide would write a key the gate rejects."
     )
-    stale = [
-        line.strip()
-        for line in text.splitlines()
-        if OLD_KEY in line
-    ]
-    assert not stale, (
-        f"{claim}: {len(stale)} line(s) still name the level {OLD_KEY!r}:\n"
-        + "\n".join(f"  {line}" for line in stale[:6])
-        + "\n  The guide authors this level, so a reader who follows it would write the "
-        "old key into a bundle."
+    assert OLD_KEY not in guide_keys, (
+        f"{claim}: the guide's level table names the retired key {OLD_KEY!r}."
+    )
+    assert NEW_KEY in guide_keys, (
+        f"{claim}: the guide's level table does not list {NEW_KEY!r}."
     )
 
 
