@@ -44,25 +44,6 @@ def test_review_runs_habit_smells_with_branch():
     assert "--branch" in s, "review mode does not pass --branch"
 
 
-def test_review_p1_rule_for_swallowed_exceptions():
-    s = review_mode()
-    assert "swallowed-exception" in s, "review mode does not name swallowed-exception"
-
-
-@pytest.mark.parametrize("needle", ["swallowed-exception", r"over 100|>100|over 100 findings"])
-def test_review_p1_rules(needle):
-    s = review_mode()
-    before = re.search(rf"([^.\n]*{needle}[^.\n]*)(?:\.|$)", s, re.I)
-    assert before, f"no sentence names {needle!r}"
-    sentence = before.group(0)
-    assert re.search(r"P1", sentence), f"no P1 rule attached to {needle!r}"
-
-
-def test_review_caps_large_group_with_top_10_files():
-    s = review_mode()
-    assert re.search(r"top.{0,10}10", s, re.I), "review mode lacks the top-10 file cap"
-
-
 def test_review_incomplete_run_is_p1():
     s = review_mode()
     assert "incomplete-run" in s, "review mode does not name an incomplete run"
@@ -83,12 +64,6 @@ def test_review_names_the_habit_smells_gate_tool_and_base():
 
 
 # ---- Maintenance Mode: the pair diff and the four tags ----
-
-
-@pytest.mark.parametrize("tag", ["NEW", "ESCALATED", "STABLE", "RESOLVED"])
-def test_maintenance_tags_each_smell_file_pair(tag):
-    s = maintenance_mode()
-    assert tag in s, f"maintenance mode lacks the {tag} tag"
 
 
 def test_maintenance_diffs_against_the_previous_report():
@@ -129,12 +104,6 @@ def test_maintenance_holds_the_diff_on_an_incomplete_run():
         "maintenance mode does not wait for a complete run"
 
 
-def test_review_pairs_rest_on_a_complete_run():
-    s = review_mode()
-    assert re.search(r"complete", s), \
-        "review mode's habit-hooks list does not rest on a complete run"
-
-
 # ---- Guard: no plugins/pr file mentions habit-hooks ----
 
 
@@ -157,13 +126,6 @@ def trend_paragraph() -> str:
     return s[start:end]
 
 
-@pytest.mark.parametrize("tag", ["NEW", "ESCALATED", "STABLE", "RESOLVED"])
-def test_trend_paragraph_has_tag(tag):
-    assert re.search(rf"\b{tag}\b", trend_paragraph()), (
-        f"the Habit-hooks trend paragraph does not name {tag}"
-    )
-
-
 def test_trend_paragraph_states_first_scan_case():
     p = trend_paragraph()
     anchors = [m.start() for m in re.finditer(r"Mechanical smells|previous report", p)]
@@ -171,12 +133,4 @@ def test_trend_paragraph_states_first_scan_case():
     assert any(abs(a - w) <= 300 for a in anchors for w in words), (
         "the trend paragraph does not state the first-scan case "
         "(missing Mechanical smells section: every pair NEW, scan sets baseline)"
-    )
-
-
-def test_maintenance_command_names_habit_step_outside_code_fence():
-    text = MAINTENANCE_COMMAND.read_text()
-    prose = re.sub(r"```.*?```", "", text, flags=re.S)
-    assert "habit_smells.py" in prose or "habit-hooks" in prose, (
-        "maintenance.md names the habit-hooks step only inside a code fence"
     )

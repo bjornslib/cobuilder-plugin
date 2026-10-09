@@ -87,10 +87,6 @@ def _run(hub: Path, route: str) -> subprocess.CompletedProcess:
     )
 
 
-def test_script_exists():
-    assert SCRIPT.is_file(), f"missing {SCRIPT}"
-
-
 def test_prints_checked_deep_link(served_hub):
     hub, port = served_hub
     result = _run(hub, ROUTE)

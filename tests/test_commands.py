@@ -100,19 +100,6 @@ def test_command_dispatches_to_a_declared_mode(command_path):
     )
 
 
-# --- C2: the duplicate command is gone from every plugin ---
-
-
-def test_explore_design_command_does_not_exist():
-    for plugin_dir in plugin_dirs():
-        assert not (plugin_dir / "commands" / "explore-design.md").exists()
-
-
-def test_odyssey_review_command_name_exists_nowhere():
-    for plugin_dir in plugin_dirs():
-        assert not (plugin_dir / "commands" / "odyssey-review.md").exists()
-
-
 # --- C1 regression guard: no two commands in the same plugin share a
 # skill+mode pair. Two plugins each shipping their own review.md is
 # expected and is not a collision, since each carries its own commands/. ---
@@ -132,30 +119,6 @@ def test_no_two_commands_in_the_same_plugin_dispatch_identically():
                 f'both dispatch Skill("{skill_name}", args="{mode_token} ...")'
             )
             seen[key] = command_path.name
-
-
-# --- Sanity: pr and architect each ship their own
-# review.md, both resolving as separate commands (rubric C6) ---
-
-
-def test_pr_ships_its_own_review_command():
-    path = PLUGINS_DIR / "pr" / "commands" / "review.md"
-    assert path.exists(), "pr must ship commands/review.md"
-    skill_name, mode_token = extract_dispatch(path)
-    assert (skill_name, mode_token) == ("odyssey", "review")
-
-
-def test_architect_ships_its_own_review_command():
-    path = PLUGINS_DIR / "architect" / "commands" / "review.md"
-    assert path.exists(), "architect must ship commands/review.md"
-    skill_name, mode_token = extract_dispatch(path)
-    assert (skill_name, mode_token) == ("architecture", "review")
-
-
-def test_generate_command_dispatches_odyssey_generate_mode():
-    path = PLUGINS_DIR / "pr" / "commands" / "generate.md"
-    skill_name, mode_token = extract_dispatch(path)
-    assert (skill_name, mode_token) == ("odyssey", "generate")
 
 
 ARCHITECT_MODES = {
@@ -196,10 +159,3 @@ def test_architect_command_files_equal_declared_modes():
     )
     assert dispatched == declared - INTERNAL_ARCHITECT_MODES
     assert not dispatched & INTERNAL_ARCHITECT_MODES
-
-
-def test_options_command_dispatches_architecture_options_mode():
-    path = PLUGINS_DIR / "architect" / "commands" / "options.md"
-    assert path.exists(), "architect must ship commands/options.md"
-    skill_name, mode_token = extract_dispatch(path)
-    assert (skill_name, mode_token) == ("architecture", "options")

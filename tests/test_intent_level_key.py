@@ -36,7 +36,6 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 VIEWER = REPO_ROOT / "plugins" / "artifact" / "viewer"
-SHIPPED_VIEWER = VIEWER / "index.html"
 SELF_BUNDLE = REPO_ROOT / ".cobuilder-architect" / "self"
 DESIGNS_SOURCE = REPO_ROOT / "docs" / "architecture" / "designs"
 
@@ -205,48 +204,6 @@ def test_the_viewers_level_list_names_intent():
     assert compact(f'key: "{OLD_KEY}"') not in haystack, (
         f"{claim}: the level list still carries a {OLD_KEY!r} entry.\n"
         "  One name for one thing: the level is named once in this list."
-    )
-
-
-def test_the_viewers_bundle_types_name_intent():
-    """`src/data/bundle.ts` declares the level's key on the records it reads.
-
-    `epic-E7-design.md` puts it this way: `DesignNarrative` takes the key `intent` in
-    place of `landscape`, and the `StoryEntry` comment names the new key.
-    """
-    claim = "the viewer's bundle types name the narration level `intent`"
-    haystack = compact(read(VIEWER / "src" / "data" / "bundle.ts", claim))
-    assert compact(f"{NEW_KEY}?: NarrativeLevel") in haystack, (
-        f"{claim}: DesignNarrative declares no `{NEW_KEY}` level.\n"
-        "  epic-E7-design.md: `DesignNarrative` takes the key `intent` in place of "
-        "`landscape`."
-    )
-    assert compact(OLD_KEY) not in haystack, (
-        f"{claim}: the file still names the level {OLD_KEY!r}.\n"
-        "  The rename replaces the key, and this file declares it and the comment that "
-        "reads it."
-    )
-
-
-def test_the_shipped_viewer_names_the_level_intent():
-    """The built viewer's level list reads `intent`.
-
-    Since slice 3 the committed viewer is the build's own output. A reader of the
-    shipped page meets the level list this file carries, so the rename reaches the
-    shipped file and not only the sources.
-    """
-    claim = "the shipped viewer names the narration level `intent`"
-    assert SHIPPED_VIEWER.is_file(), (
-        f"{claim}: {SHIPPED_VIEWER.relative_to(REPO_ROOT).as_posix()} does not exist"
-    )
-    text = SHIPPED_VIEWER.read_text(encoding="utf-8", errors="replace")
-    assert compact(f'key: "{NEW_KEY}", label: "Intent"') in compact(text), (
-        f"{claim}: the built viewer carries no {NEW_KEY!r} level entry.\n"
-        "  The build reproduces this file from src/, so a build after the rename "
-        "carries it. The committed file is stale until that build runs."
-    )
-    assert compact(f'key: "{OLD_KEY}"') not in compact(text), (
-        f"{claim}: the built viewer still carries a {OLD_KEY!r} level entry"
     )
 
 

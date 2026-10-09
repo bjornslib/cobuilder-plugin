@@ -584,12 +584,6 @@ def test_notice_md_exists_and_credits_habit_hooks():
 # ---------------------------------------------------------------------------
 
 
-def test_readme_credits_habit_hooks():
-    readme_path = REPO_ROOT / "README.md"
-    assert readme_path.exists(), f"missing {readme_path}"
-    assert "habit-hooks" in readme_path.read_text()
-
-
 # ---------------------------------------------------------------------------
 # plugin.json version bump
 # ---------------------------------------------------------------------------
@@ -1022,30 +1016,6 @@ def _proof_step(section: str) -> str:
 def test_install_mode_names_habit_coach_check():
     section = _install_mode_section()
     assert "habit_coach.py\" --check" in section
-
-
-def test_install_mode_runs_habit_coach_check_after_habit_hooks_init():
-    section = _install_mode_section()
-    assert "habit-hooks init" in section
-    assert "habit_coach.py\" --check" in section
-    init_index = section.index("habit-hooks init")
-    check_index = section.index("habit_coach.py\" --check")
-    assert check_index > init_index, "the proof must come after the habit-hooks init step"
-
-
-def test_install_mode_proof_step_is_the_last_step_after_report():
-    section = _install_mode_section()
-    _proof_step(section)
-    report_index = section.index("Report the result")
-    assert section.index("Prove the coach") > report_index, (
-        "the proof step must come after the report step"
-    )
-    assert not re.search(r"^9\. ", section, re.MULTILINE), "the proof must be the last step"
-
-
-def test_install_mode_proof_step_runs_after_every_install():
-    step = _proof_step(_install_mode_section())
-    assert "after every install" in step.lower()
 
 
 def test_install_mode_proof_step_reports_success_only_on_coaching_works():

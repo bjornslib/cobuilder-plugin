@@ -192,7 +192,7 @@ tests/                            pytest suite for packaging, scripts, and gates
 
 1. **Authored source in `docs/`, derived output in the bundle.** `.cobuilder-architect/` is not a document store. Never write `data/adrs.json` or `data/index.json` by hand. Run `shared/build_index.py`.
 2. **Claude writes judgment, scripts move data.** Narrative, ADRs, assessments, and diagram sources are Claude's work. Scripts fetch diffs, compile, convert, and verify. A script never authors content.
-3. **A step with no mechanical consumer gets skipped.** Give every documented step a script, a test, or a gate that reads it. Gate 4b ran for zero of five epics until `verify_gate.py` enforced it.
+3. **A step with no observable effect gets skipped.** Give each documented step an effect that a script, a gate, or a blind pass can check. Test the effect, the structure that code reads, or the reference that must resolve. Never test the wording of the prose that describes the step. Gate 4b ran for zero of five epics until `verify_gate.py` enforced it.
 4. **Plugins meet at the bundle.** A plugin names another plugin's mode and lets that plugin resolve its own path. It never names `plugins/<other>/...`. Shared code goes in `shared/`.
 5. **Narrow install surface.** Only `implement` ships agents and a hook (ADR-0025). No plugin ships an MCP server.
 6. **Never overwrite authored content.** `extract_story.py` keeps authored narrative fields. A data migration declares the fields it touches. The guard stops the run before any write if it changes another authored field.
@@ -228,6 +228,7 @@ Plugin scripts are PEP 723. `uv run <script>` resolves their own dependencies.
 
 ## Rules that break easily
 
+- **Test effects, structure, and references. Do not test wording.** A test may run code, parse a format that code reads, or check that a name in one file exists in another. A test must not assert that prose contains a phrase, a heading, or an order of sentences. For prose that steers an agent, score a blind pass and keep the transcript in the slice evidence.
 - **Build the viewer, then commit it.** Edit `viewer/src/`, run `npm run build`, and commit the new `index.html`. `tests/test_viewer_build.py` fails if the build does not reproduce the committed bytes.
 - **Run `migrate_bundle.py` from the repo, not from the installed plugin cache.** The cache copy refreshes `.cobuilder-architect/self/viewer/index.html` with its own older viewer. That reverts an uncommitted local build.
 - **Count a mode number in every top-level document.** When a mode count changes, grep `README.md`, `CLAUDE.md`, `DDD-VOCABULARY.md`, and `plugins/` for the old number.

@@ -51,42 +51,11 @@ def test_stage1_describe_only_for_stale_missing_uncovered():
         "stage 1 lacks the 'only stale, missing, or uncovered' rule"
 
 
-def test_stage1_reruns_check_until_clean():
-    s = stage1()
-    assert re.search(r"re-?run", s, re.I), "stage 1 does not rerun the check"
-    assert re.search(r"clean", s, re.I), "stage 1 does not rerun until clean"
-
-
 def test_stage6_runs_check_with_require():
     s = stage6()
     assert "boundary_check.py" in s, "stage 6 does not run boundary_check.py"
     assert "--require" in s, "stage 6 does not pass --require"
     assert "--paths" in s, "stage 6 does not pass --paths"
-
-
-def test_stage6_check_precedes_reviewer_round():
-    s = stage6()
-    i = s.find("--require")
-    assert i >= 0, "stage 6 has no --require"
-    j = re.search(r"reviewer", s[i:], re.I)
-    assert j, "stage 6 names no reviewer round after the check"
-
-
-def test_stage6_nonzero_exit_is_fail_finding_citing_id_or_path():
-    s = stage6()
-    assert re.search(r"non-?zero", s, re.I), "stage 6 does not name a non-zero exit"
-    assert "FAIL" in s, "stage 6 does not turn the exit into a FAIL finding"
-    assert re.search(r"context id|path", s, re.I), "stage 6 FAIL does not cite id or path"
-
-
-def test_skill_says_describe_is_called_by_design_mode():
-    text = SKILL.read_text()
-    m = re.search(r"^### Describe Mode.*$", text, re.M)
-    assert m, "Describe Mode section not found"
-    nxt = re.search(r"^### ", text[m.end():], re.M)
-    body = text[m.end(): m.end() + nxt.start()]
-    assert re.search(r"called by[^.\n]*design", body, re.I), \
-        "Describe Mode does not say design mode calls it"
 
 
 # ---- Slice 3: self-only describe in baseline, and the docs ----
@@ -128,25 +97,11 @@ def test_baseline_describe_only_stale_or_missing():
     assert re.search(r"\bok\b", s), "baseline mode does not say what to do with ok records"
 
 
-def test_baseline_reruns_check():
-    s = baseline_mode()
-    i = s.find("boundary_check.py")
-    assert i >= 0, "baseline mode has no boundary_check.py"
-    assert re.search(r"re-?run", s[i:], re.I), "baseline mode does not rerun the check"
-
-
 def test_baseline_describe_is_self_analysis_only():
     s = baseline_mode()
     assert "self-analysis" in s, "baseline mode does not name self-analysis"
     assert "--repo" in s, "baseline mode does not name --repo"
     assert "foreign" in s, "baseline mode does not name foreign repos"
-
-
-def test_derivation_smells_no_longer_forbids_boundary_for_self():
-    s = smells()
-    assert "self-analysis" in s, "section 5 does not name self-analysis"
-    assert not re.search(r"Do not build\s+a `boundary\.yaml`", s), \
-        "section 5 still forbids boundary.yaml unconditionally"
 
 
 def test_derivation_keeps_foreign_describe_lite_rule():

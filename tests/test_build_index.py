@@ -267,13 +267,6 @@ def test_calls_compatibility_gate_before_first_write(repo, bundle_dir, monkeypat
     assert not index_json.exists()
 
 
-def test_gate_source_scan():
-    """A crude source scan matching test_gate_hardening.py's convention."""
-    source = (SHARED_DIR / "build_index.py").read_text()
-    assert "require_compatible(" in source
-    assert "stamp_generator(" in source
-
-
 # --------------------------------------------------------------------------
 # Slice 9: joins, and freshness. See ADR-0018 and 03-program-design.md.
 # --------------------------------------------------------------------------

@@ -162,13 +162,9 @@ def test_validate_tools_exclude_edit():
 # - Each agent body contains the placeholders <slug> and <N>; red/green also
 #   <test_command>.
 # - slice-loop.md names implement:red, implement:green, implement:validate
-#   and "subagent_type", and no longer contains the old inline "You are the
-#   ROLE" prompt blocks.
-# - slice-loop.md still contains its "## Handling the verdict" and
-#   "## Anti-patterns" sections.
+#   and "subagent_type".
 # - slice-loop.js contains agentType: 'implement:red'/'implement:green'/
-#   'implement:validate' (either quote style), and no longer contains the
-#   old inline "You are the ROLE" prompt blocks.
+#   'implement:validate' (either quote style).
 # - If node is on PATH, `node --check` on slice-loop.js succeeds.
 # ---------------------------------------------------------------------------
 
@@ -177,12 +173,6 @@ SLICE_LOOP_MD = SKILL_ROOT / "references" / "slice-loop.md"
 SLICE_LOOP_JS = SKILL_ROOT / "workflows" / "slice-loop.js"
 
 BLIND_LINE = "Do not read anything under .cobuilder/"
-
-OLD_INLINE_PROMPT_HEADERS = [
-    "You are the RED role",
-    "You are the GREEN role",
-    "You are the VALIDATOR",
-]
 
 
 def _agent_body(role):
@@ -282,28 +272,6 @@ def test_slice_loop_md_names_the_three_agents_by_type():
     )
 
 
-def test_slice_loop_md_no_longer_contains_inline_prompts():
-    text = SLICE_LOOP_MD.read_text(encoding="utf-8")
-    for header in OLD_INLINE_PROMPT_HEADERS:
-        assert header not in text, (
-            f"{SLICE_LOOP_MD}: expected the inline prompt header {header!r} "
-            f"to have moved into plugins/implement/agents/, but it is still "
-            f"present"
-        )
-
-
-def test_slice_loop_md_still_has_handling_and_anti_patterns_sections():
-    text = SLICE_LOOP_MD.read_text(encoding="utf-8")
-    assert "## Handling the verdict" in text, (
-        f"{SLICE_LOOP_MD}: expected the '## Handling the verdict' section "
-        f"to still be present"
-    )
-    assert "## Anti-patterns" in text, (
-        f"{SLICE_LOOP_MD}: expected the '## Anti-patterns' section to "
-        f"still be present"
-    )
-
-
 AGENT_TYPE_RE = re.compile(
     r"agentType\s*:\s*['\"]implement:(red|green|validate)['\"]"
 )
@@ -316,16 +284,6 @@ def test_slice_loop_js_spawns_the_three_agents_by_type():
         f"{SLICE_LOOP_JS}: expected agentType: 'implement:red'/'implement:green'/"
         f"'implement:validate' (either quote style), found roles {found}"
     )
-
-
-def test_slice_loop_js_no_longer_contains_inline_prompts():
-    text = SLICE_LOOP_JS.read_text(encoding="utf-8")
-    for header in OLD_INLINE_PROMPT_HEADERS:
-        assert header not in text, (
-            f"{SLICE_LOOP_JS}: expected the inline prompt header {header!r} "
-            f"to have moved into plugins/implement/agents/, but it is still "
-            f"present"
-        )
 
 
 def test_slice_loop_js_is_syntactically_valid_node():
@@ -352,17 +310,12 @@ def test_slice_loop_js_is_syntactically_valid_node():
 #   name == "vocabulary", no "model" key, tools exclude "Edit", description
 #   non-empty. (The whole-directory ignored-key test above already covers
 #   this file for hooks/mcpServers/permissionMode/initialPrompt.)
-# - Its body names DDD-VOCABULARY.md, the three finding tags, the
-#   "### Vocabulary" heading, the CLEAN/FINDINGS verdicts, the six name
-#   kinds, states it does not score, does not edit code, and appends via
-#   Bash (">>").
-# - slice-loop.md names implement:vocabulary, "parallel", and states the
-#   vocabulary verdict is not part of the score.
+# - Its body names DDD-VOCABULARY.md and appends via Bash (">>").
+# - slice-loop.md states the vocabulary verdict is not part of the score.
 # - slice-loop.js spawns agentType 'implement:vocabulary' and calls
 #   parallel(); node --check passes.
-# - design-mode.md's Stage 1 and Stage 5 sections both name
-#   DDD-VOCABULARY.md, Stage 5 also names "conflict", and the stage heading
-#   count is unchanged (Stage 0 through Stage 7, each exactly once).
+# - design-mode.md's Stage 1 section names DDD-VOCABULARY.md, and the stage
+#   heading count is unchanged (Stage 0 through Stage 7, each exactly once).
 # ---------------------------------------------------------------------------
 
 VOCAB_AGENT_PATH = AGENTS_DIR / "vocabulary.md"
@@ -428,69 +381,11 @@ def test_vocabulary_agent_body_names_the_vocabulary_file():
     )
 
 
-def test_vocabulary_agent_body_names_the_three_finding_tags():
-    body = _vocabulary_agent_body()
-    for tag in ["[AVOID]", "[UNDEFINED]", "[CONFLICT]"]:
-        assert tag in body, f"{VOCAB_AGENT_PATH}: expected body to contain {tag!r}"
-
-
-def test_vocabulary_agent_body_names_the_vocabulary_section_heading():
-    body = _vocabulary_agent_body()
-    assert "### Vocabulary" in body, (
-        f"{VOCAB_AGENT_PATH}: expected body to contain the '### Vocabulary' heading"
-    )
-
-
-def test_vocabulary_agent_body_names_the_two_verdicts():
-    body = _vocabulary_agent_body()
-    for verdict in ["CLEAN", "FINDINGS"]:
-        assert verdict in body, (
-            f"{VOCAB_AGENT_PATH}: expected body to contain verdict {verdict!r}"
-        )
-
-
-def test_vocabulary_agent_body_names_the_six_name_kinds():
-    body = _vocabulary_agent_body()
-    for kind in ["district", "directory", "file", "class", "function", "method"]:
-        assert kind in body, (
-            f"{VOCAB_AGENT_PATH}: expected body to name the kind {kind!r}"
-        )
-
-
-def test_vocabulary_agent_body_states_it_does_not_score():
-    body = _vocabulary_agent_body()
-    assert "does not score" in body or "Do not score" in body, (
-        f"{VOCAB_AGENT_PATH}: expected body to state it does not score"
-    )
-
-
-def test_vocabulary_agent_body_states_it_does_not_edit_code():
-    body = _vocabulary_agent_body()
-    assert "does not edit code" in body or "Do not edit code" in body.replace(
-        "does not edit code", "Do not edit code"
-    ) or "not edit code" in body, (
-        f"{VOCAB_AGENT_PATH}: expected body to state it does not edit code"
-    )
-
-
 def test_vocabulary_agent_body_appends_via_bash_redirect():
     body = _vocabulary_agent_body()
     assert ">>" in body, (
         f"{VOCAB_AGENT_PATH}: expected body to show an append-via-Bash example "
         f"containing '>>', since the agent has no Write/Edit tool"
-    )
-
-
-def test_slice_loop_md_names_vocabulary_agent_and_parallel():
-    text = SLICE_LOOP_MD.read_text(encoding="utf-8")
-    assert "implement:vocabulary" in text, (
-        f"{SLICE_LOOP_MD}: expected it to name the agent 'implement:vocabulary'"
-    )
-    idx = text.index("implement:vocabulary")
-    window = text[max(0, idx - 1500):idx + 1500]
-    assert "parallel" in window, (
-        f"{SLICE_LOOP_MD}: expected the word 'parallel' near the "
-        f"'implement:vocabulary' mention"
     )
 
 
@@ -552,18 +447,6 @@ def test_design_mode_stage_1_section_names_the_vocabulary_file():
     assert "DDD-VOCABULARY.md" in section, (
         f"{DESIGN_MODE_MD}: expected the Stage 1 section to name "
         f"'DDD-VOCABULARY.md'"
-    )
-
-
-def test_design_mode_stage_5_section_names_the_vocabulary_file_and_conflict():
-    text = DESIGN_MODE_MD.read_text(encoding="utf-8")
-    section = _design_mode_section(text, "Stage 5")
-    assert "DDD-VOCABULARY.md" in section, (
-        f"{DESIGN_MODE_MD}: expected the Stage 5 section to name "
-        f"'DDD-VOCABULARY.md'"
-    )
-    assert "conflict" in section.lower(), (
-        f"{DESIGN_MODE_MD}: expected the Stage 5 section to mention 'conflict'"
     )
 
 
