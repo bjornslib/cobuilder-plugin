@@ -824,6 +824,17 @@ describe("Slice 10 · every section of every level renders its own records", () 
   });
 });
 
+describe("A decision named on an epic", () => {
+  it("links to the work that owns the epic", () => {
+    const records = structuredClone(DESIGNS);
+    const goal = records[DESIGN].goal!;
+    goal.adrs = [];
+    goal.epics = [{ ...goal.epics![0], adr: "ADR-0029" }];
+    const work = buildWorkItems(INDEX, records).get(DESIGN);
+    expect(work?.linkedAdrs.map((adr) => adr.id)).toEqual(["ADR-0029"]);
+  });
+});
+
 /* -------------------------------------------------------------------- C2 */
 
 describe("Slice 10 · the envisioned pull request leads its level", () => {

@@ -1,9 +1,9 @@
 /**
  * The rail's row list: each level once, then the "Also" group (slice 3).
  *
- * `railGroups` returns two groups. "Levels" holds Intent, Problem & Solution, and
- * Architecture of the active account. "Also" holds Plan, Epics, Rubrics, and File Diffs,
- * each with its own account. `rowsOf` flattens them in reading order.
+ * `railGroups` returns three groups. "Levels" holds Intent, Problem & Solution, and
+ * Architecture of the work. "Also" holds Plan, Epics, and Rubrics. "Review" holds the pull
+ * request's three levels and File Diffs. `rowsOf` flattens them in reading order.
  */
 
 import { describe, expect, it } from "vitest";
@@ -50,20 +50,20 @@ function source(extra: Partial<RailSource> & { account?: AccountId } = {}): Rail
 const LEVEL_LABELS = ["Intent", "Problem & Solution", "Architecture"];
 const SHARED = ["intent", "problem-and-solution", "architecture"] as const;
 
-describe("railGroups: the two groups", () => {
+describe("railGroups: the three groups", () => {
   it("returns no group when no work is open", () => {
     expect(railGroups(source({ work: null }))).toEqual([]);
   });
 
-  it("returns the Levels group, then the Also group", () => {
+  it("returns the Levels, Also, then Review group", () => {
     const groups = railGroups(source());
-    expect(groups.map((group) => group.key)).toEqual(["levels", "also"]);
-    expect(groups.map((group) => group.label)).toEqual(["Levels", "Also"]);
+    expect(groups.map((group) => group.key)).toEqual(["levels", "also", "review"]);
+    expect(groups.map((group) => group.label)).toEqual(["Levels", "Also", "Pull request 7"]);
   });
 });
 
 describe("railGroups: the Levels group", () => {
-  it("holds the three level rows of the program account by default", () => {
+  it("holds the three level rows of the work", () => {
     const levels = railGroups(source()).find((group) => group.key === "levels");
     expect(levels?.account).toBe("program");
     expect(levels?.rows.map((row) => row.label)).toEqual(LEVEL_LABELS);
@@ -73,85 +73,14 @@ describe("railGroups: the Levels group", () => {
     );
     expect(levels?.rows.map((row) => row.shared)).toEqual([...SHARED]);
   });
-
-  it("reads the program account when account is program", () => {
-    const levels = railGroups(source({ account: "program" })).find((g) => g.key === "levels");
-    expect(levels?.account).toBe("program");
-    expect(levels?.rows.map((row) => row.href)).toEqual(
-      SHARED.map((key) => programHref("demo", key)),
-    );
-  });
-
-  it("holds the three level rows of the change account when account is change", () => {
-    const levels = railGroups(source({ account: "change" })).find((g) => g.key === "levels");
-    expect(levels?.account).toBe("change");
-    expect(levels?.rows.map((row) => row.label)).toEqual(LEVEL_LABELS);
-    expect(levels?.rows.map((row) => row.account)).toEqual(["change", "change", "change"]);
-    expect(levels?.rows.map((row) => row.href)).toEqual(
-      SHARED.map((key) => changeHref("demo", 7, key)),
-    );
-    expect(levels?.rows.map((row) => row.shared)).toEqual([...SHARED]);
-  });
-
-  it("falls back to the program account when account is change and no change exists", () => {
-    const levels = railGroups(source({ account: "change", changePr: null })).find(
-      (g) => g.key === "levels",
-    );
-    expect(levels?.account).toBe("program");
-    expect(levels?.rows.map((row) => row.account)).toEqual(["program", "program", "program"]);
-    expect(levels?.rows.map((row) => row.href)).toEqual(
-      SHARED.map((key) => programHref("demo", key)),
-    );
-  });
 });
 
 describe("railGroups: the Also group", () => {
-  it("holds Plan, Epics, Rubrics, then File Diffs, each with its own account", () => {
+  it("holds Plan, Epics, and Rubrics of the work", () => {
     const also = railGroups(source()).find((group) => group.key === "also");
-    expect(also?.rows.map((row) => row.label)).toEqual([
-      "Plan",
-      "Epics",
-      "Rubrics",
-      "File Diffs",
-    ]);
-    expect(also?.rows.map((row) => row.account)).toEqual([
-      "program",
-      "program",
-      "program",
-      "change",
-    ]);
-    expect(also?.rows.map((row) => row.shared)).toEqual([null, null, null, null]);
-  });
-
-  it("keeps the same Also rows when the active account is change", () => {
-    const also = railGroups(source({ account: "change" })).find((group) => group.key === "also");
-    expect(also?.rows.map((row) => row.label)).toEqual([
-      "Plan",
-      "Epics",
-      "Rubrics",
-      "File Diffs",
-    ]);
-    expect(also?.rows.map((row) => row.account)).toEqual([
-      "program",
-      "program",
-      "program",
-      "change",
-    ]);
-  });
-
-  it("holds a disabled File Diffs row when no change exists", () => {
-    const groups = railGroups(source({ changePr: null }));
-    const also = groups.find((group) => group.key === "also");
-    expect(also?.rows.map((row) => row.label)).toEqual(["Plan", "Epics", "Rubrics", "File Diffs"]);
-    const diffs = also?.rows.find((row) => row.label === "File Diffs");
-    expect(diffs?.available).toBe(false);
-    expect(diffs?.href).toBe("#");
-    expect(diffs?.account).toBe("change");
-    expect(diffs?.shared).toBeNull();
-    expect(Array.isArray(diffs?.absent) && (diffs?.absent?.length ?? 0) > 0).toBe(true);
-    /* The row is not a step, and the walk skips it. */
-    expect(also?.entries.map((entry) => entry.label)).not.toContain("File Diffs");
-    expect(rowsOfShellLabels(groups)).not.toContain("File Diffs");
+    expect(also?.rows.map((row) => row.label)).toEqual(["Plan", "Epics", "Rubrics"]);
+    expect(also?.rows.map((row) => row.account)).toEqual(["program", "program", "program"]);
+    expect(also?.rows.map((row) => row.shared)).toEqual([null, null, null]);
   });
 
   it("keeps the disabled rules of Plan and Epics", () => {
@@ -164,11 +93,33 @@ describe("railGroups: the Also group", () => {
     expect(byLabel("Epics")?.available).toBe(false);
     expect(byLabel("Rubrics")?.available).toBe(true);
   });
+});
 
-  it("never returns a build or a review group", () => {
-    const keys = railGroups(source()).map((group) => group.key as string);
-    expect(keys).not.toContain("build");
-    expect(keys).not.toContain("review");
+describe("railGroups: the Review group", () => {
+  it("holds the pull request's three levels, then File Diffs", () => {
+    const review = railGroups(source()).find((group) => group.key === "review");
+    expect(review?.account).toBe("change");
+    expect(review?.rows.map((row) => row.label)).toEqual([...LEVEL_LABELS, "File Diffs"]);
+    expect(review?.rows.map((row) => row.account)).toEqual(["change", "change", "change", "change"]);
+    expect(review?.rows.map((row) => row.href).slice(0, 3)).toEqual(
+      SHARED.map((key) => changeHref("demo", 7, key)),
+    );
+    expect(review?.rows.every((row) => row.available)).toBe(true);
+  });
+
+  it("holds a disabled File Diffs row when no change exists", () => {
+    const groups = railGroups(source({ changePr: null }));
+    const review = groups.find((group) => group.key === "review");
+    expect(review?.label).toBe("Pull request");
+    expect(review?.rows.map((row) => row.label)).toEqual(["File Diffs"]);
+    const diffs = review?.rows[0];
+    expect(diffs?.available).toBe(false);
+    expect(diffs?.href).toBe("#");
+    expect(diffs?.account).toBe("change");
+    expect(Array.isArray(diffs?.absent) && (diffs?.absent?.length ?? 0) > 0).toBe(true);
+    /* The row is not a step, and the walk skips it. */
+    expect(review?.entries).toEqual([]);
+    expect(rowsOfShellLabels(groups)).not.toContain("File Diffs");
   });
 });
 
@@ -177,7 +128,7 @@ function rowsOfShellLabels(groups: ReturnType<typeof railGroups>): string[] {
 }
 
 describe("rowsOf: the walk order", () => {
-  it("reads the levels, then the Also rows", () => {
+  it("reads the levels, the Also rows, then the Review rows", () => {
     const rows = rowsOf(railGroups(source()));
     expect(rows.map((row) => row.label)).toEqual([
       "Intent",
@@ -186,6 +137,9 @@ describe("rowsOf: the walk order", () => {
       "Plan",
       "Epics",
       "Rubrics",
+      "Intent",
+      "Problem & Solution",
+      "Architecture",
       "File Diffs",
     ]);
   });

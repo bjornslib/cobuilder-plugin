@@ -163,6 +163,8 @@ export interface PlanEpicRow {
   state: string;
   outcome?: string;
   note?: string | null;
+  /** The decision this epic carries, by ADR id. */
+  adr?: string | null;
 }
 
 /** Design mode's stage-0 and stage-1 grounding, as `goal.json` records it. */

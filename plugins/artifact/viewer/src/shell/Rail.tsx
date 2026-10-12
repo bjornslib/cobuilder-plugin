@@ -12,9 +12,8 @@
  * `model.ts` states the rules. This file decides appearance alone: the frame, the icons,
  * the current row, the fold, and the tooltip.
  *
- * TWO GROUPS: LEVELS AND ALSO. Levels holds each level once, for the active account.
- * Also holds the rows of either account that no level owns, and each one carries a tag,
- * "work" or "PR", that names its account.
+ * THREE GROUPS: LEVELS, ALSO, AND REVIEW. Levels holds the three levels of the work.
+ * Also holds Plan, Epics, and Rubrics. Review holds the four rows of the pull request.
  *
  * THE CURRENT ROW IS THE ROW THE READER ARRIVED ON. A row is current when its address is
  * the reader's address, never when it merely names the reader's section. The two accounts
@@ -204,7 +203,6 @@ export function Rail(props: RailProps) {
                           row={row}
                           here={here}
                           icons={icons}
-                          tagged={group.key === "also"}
                         />
                       ))}
                     </SidebarMenu>
@@ -242,11 +240,8 @@ function RailRowItem({
   row,
   here,
   icons,
-  tagged,
 }: {
   row: RailRow;
-  /** True for an Also row, which carries a tag naming its account. */
-  tagged: boolean;
   /** The reader's own address. The row that opens it is the current row. */
   here: string;
   icons: boolean;
@@ -257,18 +252,6 @@ function RailRowItem({
    * than one row at once, because the two groups repeat three section names.
    */
   const current = row.href === here;
-  /* The tag is a flex-none sibling of the label, so it takes its own width and never overlaps. */
-  const tag = tagged && !icons ? (
-    <span
-      data-rail-tag=""
-      aria-hidden="true"
-      className="flex-none rounded border border-line px-1 font-mono text-[10px] leading-4 text-ink-faint"
-    >
-      {" "}
-      {row.account === "change" ? "PR" : "work"}{" "}
-    </span>
-  ) : null;
-
   const who = row.account === "change" ? "pull request" : "work item";
 
   if (!row.available) {
@@ -306,7 +289,6 @@ function RailRowItem({
                 >
                   {row.label}
                 </span>
-                {tag}
               </span>
               <span
                 className={cn(
@@ -355,8 +337,7 @@ function RailRowItem({
         >
           <Icon className="size-4 shrink-0" aria-hidden="true" />
           <span className={cn("min-w-0 flex-1 truncate", icons && "hidden")}>{row.label}</span>
-          {/* Tag, then count: two flex-none siblings of the label, never positioned over it. */}
-          {tag}
+          {/* The count is a flex-none sibling of the label, never positioned over it. */}
           {row.count === "" || icons ? null : (
             <span
               data-rail-count=""

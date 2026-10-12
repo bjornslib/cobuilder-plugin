@@ -595,14 +595,14 @@ describe("Shell", () => {
  * else. The pager's own two keys keep working beside these two.
  */
 describe("The rail's arrow keys", () => {
-  it("renders the seven rows in the rail's own order: the levels, then Also", async () => {
+  it("renders the ten rows in the rail's own order: Levels, Also, then Review", async () => {
     at("#/cobuilder-viewer/intent");
     render(<Shell />);
     await waitFor(() => expect(levelHeading()).toBe("Intent"));
 
     /*
-      Each level shows once, for the active account. The Also group follows with Plan,
-      Epics, Rubrics, and the change's File Diffs.
+      The Levels group holds the work's three levels. The Also group follows with Plan,
+      Epics, and Rubrics. The Review group holds the pull request's four rows.
     */
     expect(railRows().map(labelOf)).toEqual([
       "Intent, the work item, 6 records",
@@ -611,6 +611,9 @@ describe("The rail's arrow keys", () => {
       "Plan, the work item",
       "Epics, the work item, 1 epics",
       "Rubrics, the work item, none",
+      "Intent, the pull request",
+      "Problem & Solution, the pull request",
+      "Architecture, the pull request",
       "File Diffs, the pull request",
     ]);
     expect(railRows().map(hrefOf)).toEqual([
@@ -620,11 +623,14 @@ describe("The rail's arrow keys", () => {
       "#",
       "#/cobuilder-viewer/build/epics",
       "#/cobuilder-viewer/build/rubrics",
+      "#/cobuilder-viewer/pull-requests/11",
+      "#/cobuilder-viewer/pull-requests/11/problem-and-solution",
+      "#/cobuilder-viewer/pull-requests/11/architecture",
       "#/cobuilder-viewer/pull-requests/11/file-diffs",
     ]);
   });
 
-  it("groups the rail as Levels and Also, with no Build or Review group", async () => {
+  it("groups the rail as Levels, Also, and the pull request", async () => {
     at("#/cobuilder-viewer/intent");
     render(<Shell />);
     await waitFor(() => expect(levelHeading()).toBe("Intent"));
@@ -632,43 +638,7 @@ describe("The rail's arrow keys", () => {
     const labels = within(rail())
       .getAllByRole("button", { expanded: true })
       .map((button) => (button.textContent ?? "").trim());
-    expect(labels).toEqual(["Levels", "Also"]);
-  });
-
-  it("tags each Also row with its account: work for Plan, Epics, Rubrics, and PR for File Diffs", async () => {
-    at("#/cobuilder-viewer/intent");
-    render(<Shell />);
-    await waitFor(() => expect(levelHeading()).toBe("Intent"));
-
-    const tagOf = (row: HTMLElement): string =>
-      (row.closest("li")?.textContent ?? "").replace(/\s+/g, " ");
-    const rows = railRows();
-    const [plan, epics, rubrics, diffs] = rows.slice(3);
-    for (const row of [plan, epics, rubrics]) expect(tagOf(row)).toMatch(/\bwork\b/);
-    expect(tagOf(diffs)).toMatch(/\bPR\b/);
-    /* A Levels row carries no tag. */
-    expect(tagOf(rows[0])).not.toMatch(/\bwork\b|\bPR\b/);
-  });
-
-  it("lays the tag and the count out as flex-none siblings of the label, never over it", async () => {
-    at("#/cobuilder-viewer/intent");
-    render(<Shell />);
-    await waitFor(() => expect(levelHeading()).toBe("Intent"));
-
-    const row = railRows()[3];
-    const tag = row.querySelector("[data-rail-tag]");
-    const label = row.querySelector(".truncate");
-    expect(tag).not.toBeNull();
-    expect(label).toBeDefined();
-    expect(tag?.parentElement).toBe(label?.parentElement);
-    expect(tag?.className).toContain("flex-none");
-    expect(tag?.className).not.toContain("absolute");
-    expect(label?.className).toContain("flex-1");
-    for (const count of Array.from(row.querySelectorAll("[data-rail-count]"))) {
-      expect(count.parentElement).toBe(label?.parentElement);
-      expect(count.className).toContain("flex-none");
-      expect(count.className).not.toContain("absolute");
-    }
+    expect(labels).toEqual(["Levels", "Also", "Pull request 11"]);
   });
 
   it("opens an Also row of the other account when pressed", async () => {
@@ -738,12 +708,13 @@ describe("The rail's arrow keys", () => {
     await waitFor(() => expect(levelHeading()).toBe("Pull request 11"));
 
     /*
-      The walk steps one flat list: Levels of the active account, then Also. Once it
-      lands on a work-item row the account is the program, so the Levels group holds
-      the work item's own rows. The account is not sticky. This fixture has no plan
-      directory, so the Plan row is disabled and the walk skips it.
+      The walk steps one flat list: Levels, Also, then the pull request's rows. This
+      fixture has no plan directory, so the Plan row is disabled and the walk skips it.
     */
     const walk = [
+      "#/cobuilder-viewer/pull-requests/11/architecture",
+      "#/cobuilder-viewer/pull-requests/11/problem-and-solution",
+      "#/cobuilder-viewer/pull-requests/11",
       "#/cobuilder-viewer/build/rubrics",
       "#/cobuilder-viewer/build/epics",
       "#/cobuilder-viewer/architecture",
@@ -814,11 +785,11 @@ describe("The rail's arrow keys", () => {
       Epics and Rubrics both name the Build section, so the reader's own row is the row
       they arrived on and not the section they share. A match on the section alone would
       find Epics below Rubrics, and the press would step onto the row the reader is
-      already on. The row below Rubrics is the change's File Diffs row.
+      already on. The row below Rubrics is the pull request's Intent row.
     */
     press("ArrowDown");
     await waitFor(() => {
-      expect(window.location.hash).toBe(hrefOf(rowNamed("File Diffs, the pull request")));
+      expect(window.location.hash).toBe(hrefOf(rowNamed("Intent, the pull request")));
     });
   });
 
