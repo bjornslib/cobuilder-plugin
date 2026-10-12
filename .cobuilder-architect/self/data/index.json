@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "7af52a5f8fafeb62e887fd9e51894f1e58d20b8f",
+    "git_head": "d397e1317323d1ab64591e808d92382434f930d3",
     "trees": {
-      "docs/architecture/adr": "sha256:32c04ae4806ad745daa8c69f4a076006c72b94605faab50fe68810ed0ad97fa7",
+      "docs/architecture/adr": "sha256:35758bbe513de2b412142c596d39e8d9de2c6f72e7675a649a51fcc703383386",
       "docs/architecture/designs": "sha256:06e3eefdca8976895e10b50e6c573c69405be6bce9df0c3c7918f49908841d86",
-      "docs/architecture/contexts": "sha256:c1348c14415278bd53e24947a192db40c14adccfcf6ad84878a61a18a0513f8a",
-      "docs/plans": "sha256:6a2710dae6ff9d7ddfd166b81087232f68ee448b5aca27eba1d04ce696a6bce4",
-      ".cobuilder/rubrics": "sha256:ef2ccbe210cc67b5c8e78e660bdda6f3b61de735f4be46b30d0c18584a28d090"
+      "docs/architecture/contexts": "sha256:8c7a96dd54e2aa91d2e733c63aaf4e55cf6dec7479da6be2277d7abfdef6a6e0",
+      "docs/plans": "sha256:a1f1ee26e2d3fae4c0a576cb26d7af43b14de1b0c6fe99ec3e7b8cd92bda1b06",
+      ".cobuilder/rubrics": "sha256:19779693304d4b7309a3dd7f0c56c6b54c47a3c4834c4ed3d7fb09fc402cec6d"
     }
   },
   "entities": {
@@ -1386,7 +1386,7 @@
           ],
           "allowed_inbound": [],
           "allowed_outbound": [],
-          "rule": "Static JSON. Declares dependency artifact@cobuilder-plugin only. Version 0.11.0 must match marketplace.json."
+          "rule": "Static JSON. Declares dependency artifact@cobuilder-plugin only. Version 0.12.0 must match marketplace.json."
         }
       },
       {
@@ -1487,7 +1487,7 @@
             "skill-architecture"
           ],
           "allowed_outbound": [],
-          "rule": "A symlink to ../../shared. The skill runs build_index, migrate_bundle, prose_budget, boundary_check, and validate_decision_state from here, by shell."
+          "rule": "A symlink to ../../shared. The skill runs build_index, migrate_bundle, prose_budget, boundary_check, validate_decision_state, and habit_smells from here, by shell."
         }
       },
       {
@@ -1497,7 +1497,7 @@
         "detail": {
           "with": "shared",
           "pattern": "conformist",
-          "note": "Runs shared/build_index.py, migrate_bundle.py, prose_budget.py, boundary_check.py, and validate_decision_state.py by 'uv run' through the plugin's shared symlink. It imports none of them as Python."
+          "note": "Runs shared/build_index.py, migrate_bundle.py, prose_budget.py, boundary_check.py, validate_decision_state.py, and habit_smells.py by 'uv run' through the plugin's shared symlink. It imports none of them as Python."
         }
       },
       {
@@ -2066,7 +2066,7 @@
           ],
           "allowed_inbound": [],
           "allowed_outbound": [],
-          "rule": "Static JSON. Declares architect and artifact as dependencies. Version 0.6.0 must match marketplace.json."
+          "rule": "Static JSON. Declares architect and artifact as dependencies. Version 0.7.0 must match marketplace.json."
         }
       },
       {
@@ -2789,6 +2789,36 @@
       }
     ],
     "slice": [
+      {
+        "id": "coach-reaches-green/1",
+        "feature": "coach-reaches-green",
+        "n": 1,
+        "title": "Tracer bullet and whole epic: scan from the git root, fail on \"nothing scanned\", no self-install",
+        "ends_with": "A GREEN payload for a file in a sub-folder of a temporary git repo reaches the stub with the repo root as its working directory. Output that says \"nothing scanned\" becomes a failure notice. A missing command gives a notice that names `/implement:install` and installs nothing.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "coach-reaches-green/2",
+        "feature": "coach-reaches-green",
+        "n": 2,
+        "title": "Tracer bullet and whole epic: `habit_coach.py --check` and the install proof step",
+        "ends_with": "`--check` prints \"coaching works\" for a coached file and for a scanned clean file. It exits 1 for unscanned output, a missing command, and a repo with no probe file. Install mode ends with a step that runs it after every install. A blind agent given Install mode runs the proof last.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "coach-reaches-green/3",
+        "feature": "coach-reaches-green",
+        "n": 3,
+        "title": "Tracer bullet and whole epic: implement 0.7.0 in both manifests",
+        "ends_with": "`plugin.json` and `marketplace.json` both read 0.7.0 for `implement`, and the version-match test passes.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
       {
         "id": "cobuilder-family/4",
         "feature": "cobuilder-family",
@@ -3648,6 +3678,15 @@
     ],
     "product_doc": [
       {
+        "id": "coach-reaches-green",
+        "feature_slug": "coach-reaches-green",
+        "gate": 1,
+        "title": "Product: The habit-hooks coach reaches the GREEN agent",
+        "body_md": "# Product: The habit-hooks coach reaches the GREEN agent\n\n## Problem\nThe coach is a hook that runs habit-hooks after each file the GREEN agent writes. It can fail without a sign. If the hook starts in a sub-folder, habit-hooks says \"nothing scanned\", prints a pass, and exits 0. GREEN is told nothing and believes its code is clean. If habit-hooks is missing, the hook installs a Python-only copy and drops the TypeScript checks. Install mode never tests the hook, so nobody sees either fault.\n\n## Success metric\nAfter `/implement:install`, a synthetic GREEN edit through the hook returns real findings or a clean scan of a file that was scanned. Measure it with `habit_coach.py --check`. It exits 0 and prints \"coaching works\".\n\n## Announcement — the blog post before the feature\nThe coach now tells GREEN the truth. It runs habit-hooks from the root of your repo, whatever folder the session started in. A scan that checked nothing is now a failure that GREEN reports, not a pass. The hook no longer installs its own Python-only copy. It tells GREEN to run `/implement:install`, which names every language in one command. That command now ends by proving the coach works.\n\n## Screens\nno UI\n",
+        "approved_date": null,
+        "source_path": "docs/plans/coach-reaches-green/01-product.md"
+      },
+      {
         "id": "cobuilder-family",
         "feature_slug": "cobuilder-family",
         "gate": 1,
@@ -3758,6 +3797,15 @@
     ],
     "architecture_doc": [
       {
+        "id": "coach-reaches-green",
+        "feature_slug": "coach-reaches-green",
+        "gate": 2,
+        "title": "Architecture: The habit-hooks coach reaches the GREEN agent",
+        "body_md": "# Architecture: The habit-hooks coach reaches the GREEN agent\n\n## Fit\n- `plugins/implement/scripts/habit_coach.py` is the only code that changes. The `PostToolUse` hook in `hooks/hooks.json` stays as it is.\n- `plugins/implement/skills/build/SKILL.md` gets one new Install mode step, which runs the proof.\n- The `implement` version rises from 0.6.0 to 0.7.0 in `plugin.json` and `marketplace.json`.\n- The hook reaches habit-hooks through the `habit-hooks` command only. It never reads the habit-hooks package.\n\n## Endpoints\nnone\n\n## Data\nnone. The proof reads one tracked source file from the repo and writes nothing.\n\n## Flow\n1. The hook gets a GREEN payload with a file path.\n2. It finds the git root of that file and runs `habit-hooks --file <path>` there.\n3. Output that says \"nothing scanned\" or \"is not a file in this project\" is a failure, exit code 2. GREEN reads \"habit-hooks failed to run\" and reports it.\n4. A missing `habit-hooks` command gives exit code 127. GREEN reads a notice to run `/implement:install`. The hook installs nothing.\n5. Install mode ends with `habit_coach.py --check`. It picks a tracked source file, runs the same path, and prints \"coaching works\" or the reason it does not.\n\n## External\n`habit-hooks`, installed by `/implement:install`. No new dependency.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/coach-reaches-green/02-architecture.md"
+      },
+      {
         "id": "cobuilder-family",
         "feature_slug": "cobuilder-family",
         "gate": 2,
@@ -3858,6 +3906,15 @@
       }
     ],
     "program_design": [
+      {
+        "id": "coach-reaches-green",
+        "feature_slug": "coach-reaches-green",
+        "gate": 3,
+        "title": "Program Design: The habit-hooks coach reaches the GREEN agent",
+        "body_md": "# Program Design: The habit-hooks coach reaches the GREEN agent\n\n## Files\n- `plugins/implement/scripts/habit_coach.py` — change. Run from the git root, fail on \"nothing scanned\", remove the self-install, add `--check`.\n- `plugins/implement/skills/build/SKILL.md` — change. Add Install mode step 8, \"Prove the coach\". Update the Prerequisite section, which names the old install behavior.\n- `tests/test_habit_coach.py` — change. RED writes the new contract and deletes the seven tests that pin the self-install.\n- `plugins/implement/.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` — change. Version 0.7.0.\n\n## Types & signatures\n```python\nUNSCANNED_MARKERS = (\"nothing scanned\", \"is not a file in this project\")\n\ndef git_root(path: str) -> str | None: ...\ndef is_unscanned(text: str) -> bool: ...\ndef _run_habit_hooks_once(path: str) -> tuple[int, str]: ...   # cwd = git_root(path)\ndef run_habit_hooks(path: str) -> tuple[int, str]: ...         # no install; 127 when missing; 2 when unscanned\ndef pick_probe_file(root: str) -> str | None: ...              # first tracked source file\ndef check(root: str, runner=run_habit_hooks, stdout=sys.stdout) -> int: ...\ndef main(stdin, stdout, runner=run_habit_hooks) -> int: ...    # also reads --check from argv\n```\n`install_habit_hooks` is removed.\n\n## Call stack\n- Hook: `main` → `run_habit_hooks` → `git_root` → `_run_habit_hooks_once` → `is_unscanned`.\n- Proof: `main` (with `--check`) → `check` → `pick_probe_file` → `run_habit_hooks`.\n\n## Test plan\n- Unit: `git_root` returns the repo top for a file in a sub-folder. `is_unscanned` is true for both marker texts and false for a normal pass.\n- Hook: a stub `habit-hooks` on PATH that prints \"nothing scanned\" with exit 0 makes `run_habit_hooks` return 2. A missing command returns 127 and `main` names `/implement:install`.\n- Hook, subfolder: with `cwd` set to a sub-folder of a temporary git repo, the stub still receives the repo root as its working directory.\n- Proof: `check` prints \"coaching works\" and returns 0 for a stub that coaches and for one that passes a scanned file. It returns 1 for unscanned output and for a missing command.\n- Prose: `SKILL.md` Install mode names `--check` as a final step, and the Prerequisite section no longer says the hook installs anything.\n- Regression: the full suite stays green.\n\n## Least confident decisions\n- A probe file for `--check` is the first tracked file with a source extension. A repo with none gets a clear \"no probe file\" failure. This is a first cut.\n- The text markers for \"nothing scanned\" come from the current habit-hooks wording. A wording change in habit-hooks would hide the failure again. The proof step catches it, because its clean-scan check needs real scan evidence.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/coach-reaches-green/03-program-design.md"
+      },
       {
         "id": "cobuilder-family",
         "feature_slug": "cobuilder-family",
@@ -4253,6 +4310,30 @@
         "title": "Slice 2 — security corpus applicability read (ADR-0021 addendum)",
         "body_md": "# Rubric: Slice 2 — security corpus applicability read (ADR-0021 addendum)\n\nFeature: book-index-tiering\nEpic: E1\nSlice goal: Review mode's rewritten security-corpus step (SKILL.md \"Security\nin Review and Maintenance\") is actually followed by a fresh agent doing a\nrealistic review task, with the correct default-to-full bias on ambiguity.\nTest command: none — behavioral rubric, same class of change as slice-1.\n\nWritten before the blind pass ran. Not shown to the blind agent.\n\n## Criteria\n\n### C1 — All 14 files get at least a partial read [CRITICAL]\n**Must be true:** the agent's Read tool calls include all 14\n`references/corpus/principles/security/*.yaml` files, each with either a\ntruncated read (limit ~30 lines) or a full read. No category is silently\nskipped entirely.\n**Score:** 1.0 if all 14 appear at least once. 0.0 if any is missing.\n\n### C2 — The truncated-read files stop near the summary boundary\n**Must be true:** for a file read with a limit (not full), the limit is\nin the neighborhood of the file's actual metadata+summary boundary (17-24\nlines across the real files).\n**Score:** 1.0 if all truncated reads land within roughly 20-40 lines.\n\n### C3 — At least one file is read in full and at least one stays truncated\n**Must be true:** given a realistic review task, the agent discriminates —\nnot all 14 full, not all 14 truncated.\n**Score:** 1.0 if both counts are >=1.\n\n### C4 — Escalation reasoning is stated per file, not silent\n**Must be true:** for each file's disposition (full or truncated), the\nagent's output states why, tied to the actual codebase.\n**Score:** 1.0 if stated for all 14. 0.5 if stated for most.\n\n### C5 — Ambiguity defaults to full, not to skipping [CRITICAL]\n**Must be true:** any category the agent itself describes as ambiguous\ngets escalated to a full read, not left truncated.\n**Score:** 1.0 if every hedged case was escalated to full. 0.0 if any\nhedged case was left truncated.\n\n**Pass threshold:** C1 and C5 are CRITICAL.\n\n## Scores — attempt 1\n\n| Criterion | Score | Note |\n|---|---|---|\n| C1 | 1.0 | All 14 files read with `limit=30` in pass 1, none skipped. |\n| C2 | 1.0 | Uniform `limit=30`, comfortably covering the real 17-24 line boundary. |\n| C3 | 1.0 | 7 files escalated to full (`frontend_security`, `xss_csrf_csp`, `secrets_management`, `input_validation`, `layer_boundaries`, `supply_chain`, `audit_logging`); 7 stayed truncated (`api_security`, `cloud_platform`, `crypto_key_management`, `file_upload_api_hardening`, `rbac_abac`, `ssrf_deserialization`, `tenant_isolation`). |\n| C4 | 1.0 | One sentence per file, all 14, each grounded in a specific grep/find check against this repo rather than assumption. |\n| C5 | 1.0 | `input_validation.yaml` explicitly called \"ambiguous enough to escalate,\" and was escalated to full — the exact case this criterion tests. |\n\n**Result: 5/5, both CRITICAL criteria pass on attempt 1.** No re-run needed.\nThe agent's applicability calls were independently well-evidenced (e.g.\nruling out `tenant_isolation` on \"no multi-tenant data store,\" ruling out\n`ssrf_deserialization` on a `grep` finding no `yaml.load`/`pickle.load` and\nno server-side fetch of user-supplied URLs), which exceeds what the rubric\nrequired but is a strong positive signal about the rule's followability.\nSee `evidence/slice-2-attempt-1.md` for the full transcript.\n",
         "source_path": ".cobuilder/rubrics/book-index-tiering/slice-2.md"
+      },
+      {
+        "id": "coach-reaches-green/1",
+        "feature_slug": "coach-reaches-green",
+        "n": 1,
+        "title": "Slice 1 — E1: scan from the git root, fail on nothing scanned, no self-install",
+        "body_md": "# Rubric: Slice 1 — E1: scan from the git root, fail on nothing scanned, no self-install\n\nFeature: coach-reaches-green\nEpic: E1\nSlice goal: A GREEN payload for a file in a sub-folder of a temporary git repo reaches the stub with the repo root as its working directory. Output that says \"nothing scanned\" becomes a failure notice. A missing command gives a notice that names `/implement:install` and installs nothing.\nTest command: uv run pytest tests -q\n\n## Criteria\n\n### C1 — the hook runs from the git root [CRITICAL]\n**Must be true:** For a file inside a sub-folder of a git repo, `habit-hooks` runs with its working directory set to the repo top, whatever the hook's own working directory is.\n**Evidence to check:** build a temporary git repo with `sub/x.py`. Put a stub `habit-hooks` on PATH that writes its `pwd` to a file. Run `habit_coach.py` with a GREEN payload for `sub/x.py` while the shell sits in `sub/`. Read the file.\n**Scoring:** 1.0 the stub saw the repo root from a sub-folder and from an unrelated directory. 0.5 only from the root. 0.0 the stub saw the hook's own directory.\n\n### C2 — \"nothing scanned\" is a failure, never a pass [CRITICAL]\n**Must be true:** Habit-hooks output that contains \"nothing scanned\" or \"is not a file in this project\" gives exit code 2 inside the hook and a GREEN message that says habit-hooks failed to run and to report it. This holds when habit-hooks itself exits 0.\n**Evidence to check:** stub that prints `habit-sensors: --file 'x' is not a file in this project; nothing scanned` and a pass line, exit 0. Read the hook's JSON output.\n**Scoring:** 1.0 both marker texts give the failure notice. 0.5 one text. 0.0 the hook stays silent.\n\n### C3 — the hook no longer installs anything [CRITICAL]\n**Must be true:** `install_habit_hooks` is gone. With no `habit-hooks` on PATH, the hook runs no `uv` command, returns exit code 127, and tells GREEN to run `/implement:install`, which names every language in one command.\n**Evidence to check:** `grep -n \"install_habit_hooks\\|uv tool install\" plugins/implement/scripts/habit_coach.py`. Run the hook with an empty PATH and read the output.\n**Scoring:** 1.0 no install code and the notice names `/implement:install`. 0.5 the install code is gone but the notice still says `habit-hooks[python]` only. 0.0 any install code remains.\n\n### C4 — a real run works\n**Must be true:** With the real `habit-hooks` on this machine, a GREEN payload for `shared/build_index.py` returns coaching when started from `plugins/architect`, the same as from the repo root.\n**Evidence to check:** run the hook twice and compare the first 200 characters of each output.\n**Scoring:** 1.0 same coaching from both. 0.5 coaching from the root only. 0.0 silent from the sub-folder.\n\n### C5 — tests are the new contract, and the deletion is justified\n**Must be true:** `tests/test_habit_coach.py` holds tests for C1, C2, and C3 that fail on the old code. The seven tests that pinned the self-install are gone, and nothing else is deleted or weakened. A test run on the old script fails these new tests.\n**Evidence to check:** `git diff master -- tests/test_habit_coach.py`. List removed test names. Run the new tests against `git show master:plugins/implement/scripts/habit_coach.py`.\n**Scoring:** 1.0 new tests fail on old code and only the seven self-install tests are removed. 0.5 an extra test is removed or weakened. 0.0 a test is edited to force a pass.\n\n### C6 — the writing standard\n**Must be true:** New comments, docstrings, and messages use no contractions and no semicolons. No TODO, FIXME, HACK, or XXX marker.\n**Evidence to check:** `grep` the changed lines. `uv run shared/skills/ste-writing/ste-lint.py plugins/implement/scripts/habit_coach.py`.\n**Scoring:** 1.0 clean. 0.5 lint findings only. 0.0 a marker.\n\n## Regression check\nRun the test command. The result must be at least the 808 baseline passes, minus the seven deleted tests, plus the new ones.\n",
+        "source_path": ".cobuilder/rubrics/coach-reaches-green/slice-1.md"
+      },
+      {
+        "id": "coach-reaches-green/2",
+        "feature_slug": "coach-reaches-green",
+        "n": 2,
+        "title": "Slice 2 — E2: habit_coach.py --check and the install proof step",
+        "body_md": "# Rubric: Slice 2 — E2: habit_coach.py --check and the install proof step\n\nFeature: coach-reaches-green\nEpic: E2\nSlice goal: `--check` prints \"coaching works\" for a coached file and for a scanned clean file. It exits 1 for unscanned output, a missing command, and a repo with no probe file. Install mode ends with a step that runs it after every install. A blind agent given Install mode runs the proof last.\nTest command: uv run pytest tests -q\n\n## Criteria\n\n### C1 — `--check` passes for a coached file and a scanned clean file [CRITICAL]\n**Must be true:** `habit_coach.py --check` in a git repo picks a tracked source file, runs the hook path, and prints \"coaching works\" with exit 0 when habit-hooks reports findings, and also when it reports a clean scan of that file.\n**Evidence to check:** two stubs on PATH, one that exits 1 with coaching text and one that passes with no \"nothing scanned\" text. Run `uv run plugins/implement/scripts/habit_coach.py --check` in a temporary git repo with one tracked `.py` file.\n**Scoring:** 1.0 both cases print \"coaching works\", exit 0. 0.5 one case. 0.0 neither.\n\n### C2 — `--check` fails honestly [CRITICAL]\n**Must be true:** It exits 1 and prints the reason in these cases: the stub says \"nothing scanned\"; `habit-hooks` is missing; the repo has no tracked source file.\n**Evidence to check:** run the three cases and read the exit code and text.\n**Scoring:** 1.0 all three exit 1 with a distinct reason. 0.5 two. 0.0 any prints \"coaching works\" for a failing case.\n\n### C3 — a real run on this repo\n**Must be true:** With the real `habit-hooks`, `--check` run at the repo root and from `plugins/architect` both print \"coaching works\" and exit 0.\n**Evidence to check:** run both. Compare the exit codes.\n**Scoring:** 1.0 both. 0.5 root only. 0.0 fails.\n\n### C4 — Install mode ends with the proof [CRITICAL]\n**Must be true:** `plugins/implement/skills/build/SKILL.md` Install mode has a step after the `habit-hooks init` step and the snooze offer that runs `${CLAUDE_PLUGIN_ROOT}/scripts/habit_coach.py --check`. It says to run the step after every install and to report success only on \"coaching works\". The Prerequisite section no longer says the hook installs habit-hooks.\n**Evidence to check:** read Install mode and the Prerequisite section. A blind agent follows them: give a fresh subagent only `SKILL.md` Install mode and a description of a repo that finished the init step. Ask it to list the commands it would run next, in order. Do not mention the proof.\n**Scoring:** 1.0 the agent names the `--check` command as its last command and says it reports success only on \"coaching works\". 0.5 the agent runs it but not last, or reports success without reading the output. 0.0 the agent skips it.\n\n### C5 — tests and the writing standard\n**Must be true:** `tests/test_habit_coach.py` holds tests for C1, C2, and C4 that fail on the code from before this slice. The full suite passes. New prose uses no contractions and no semicolons.\n**Evidence to check:** the test command. `uv run shared/skills/ste-writing/ste-lint.py` on `SKILL.md`.\n**Scoring:** 1.0 all. 0.5 lint findings only. 0.0 failing tests.\n\n## Regression check\nThe full suite must pass. Slice 1 tests must still pass.\n",
+        "source_path": ".cobuilder/rubrics/coach-reaches-green/slice-2.md"
+      },
+      {
+        "id": "coach-reaches-green/3",
+        "feature_slug": "coach-reaches-green",
+        "n": 3,
+        "title": "Slice 3 — E3: implement 0.7.0 in both manifests",
+        "body_md": "# Rubric: Slice 3 — E3: implement 0.7.0 in both manifests\n\nFeature: coach-reaches-green\nEpic: E3\nSlice goal: `plugin.json` and `marketplace.json` both read 0.7.0 for `implement`, and the version-match test passes.\nTest command: uv run pytest tests -q\n\n## Criteria\n\n### C1 — both manifests read 0.7.0 [CRITICAL]\n**Must be true:** `plugins/implement/.claude-plugin/plugin.json` has `\"version\": \"0.7.0\"`. The `implement` entry in `.claude-plugin/marketplace.json` has `\"version\": \"0.7.0\"`.\n**Evidence to check:** `grep -n '\"version\"' plugins/implement/.claude-plugin/plugin.json` and read the marketplace entry.\n**Scoring:** 1.0 both. 0.5 one. 0.0 neither.\n\n### C2 — nothing else changed [CRITICAL]\n**Must be true:** The diff for this slice touches those two files only. No other plugin version moves.\n**Evidence to check:** `git diff --name-only` for the slice commit, and `git diff` of both files.\n**Scoring:** 1.0 two files, two lines. 0.5 an extra file. 0.0 another version changed.\n\n### C3 — the suite passes\n**Must be true:** The version-match test passes and the full suite stays green.\n**Evidence to check:** the test command.\n**Scoring:** 1.0 green. 0.0 any failure.\n\n## Regression check\nThe full suite must pass.\n",
+        "source_path": ".cobuilder/rubrics/coach-reaches-green/slice-3.md"
       },
       {
         "id": "cobuilder-family/1",
@@ -5532,6 +5613,9 @@
       "work-drawer/2": "work-drawer/E2"
     },
     "slice_to_epic_unresolved": {
+      "coach-reaches-green/1": "epic header names 'coach-reaches-green/E1', which no design declares.",
+      "coach-reaches-green/2": "epic header names 'coach-reaches-green/E2', which no design declares.",
+      "coach-reaches-green/3": "epic header names 'coach-reaches-green/E3', which no design declares.",
       "describe-boundaries/1": "epic header names 'describe-boundaries/E1', which no design declares.",
       "describe-boundaries/2": "epic header names 'describe-boundaries/E2', which no design declares.",
       "describe-boundaries/3": "epic header names 'describe-boundaries/E3', which no design declares.",
@@ -5615,6 +5699,43 @@
       "ADR-0021": "skills"
     },
     "feature_gates": {
+      "coach-reaches-green": [
+        {
+          "n": "1",
+          "name": "Product",
+          "state": "APPROVED 2026-10-09 (delegated by user)",
+          "view": "#/coach-reaches-green/build/plan/product",
+          "doc": "coach-reaches-green",
+          "doc_kind": "product"
+        },
+        {
+          "n": "2",
+          "name": "Architecture",
+          "state": "APPROVED 2026-10-09 (delegated by user)",
+          "view": "#/coach-reaches-green/build/plan/architecture",
+          "doc": "coach-reaches-green",
+          "doc_kind": "architecture"
+        },
+        {
+          "n": "2b",
+          "name": "Interaction design",
+          "state": "n/a (no UI) — Screens: \"no UI\""
+        },
+        {
+          "n": "3",
+          "name": "Program Design",
+          "state": "APPROVED 2026-10-09 (delegated by user)",
+          "view": "#/coach-reaches-green/build/plan/program",
+          "doc": "coach-reaches-green",
+          "doc_kind": "program"
+        },
+        {
+          "n": "4",
+          "name": "Slice plan, epic designs, and rubrics",
+          "state": "APPROVED 2026-10-09 (delegated by user)",
+          "view": "#/coach-reaches-green/build/epics"
+        }
+      ],
       "cobuilder-family": [
         {
           "n": "1",

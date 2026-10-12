@@ -556,7 +556,7 @@ describe("a goal.json-only design's Work surface", () => {
 
     /* No epic names a pull request, so the File Diffs row is disabled, with a reason. */
     const groups = railGroups(sourceOf(design));
-    expect(groups.map((group) => group.key)).toEqual(["levels", "also"]);
+    expect(groups.map((group) => group.key)).toEqual(["levels", "also", "review"]);
     const changeRows = groups.flatMap((group) => group.rows).filter((row) => row.account === "change");
     expect(changeRows.map((row) => row.label)).toEqual(["File Diffs"]);
     const [diffs] = changeRows;

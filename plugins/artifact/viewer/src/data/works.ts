@@ -75,7 +75,7 @@ export interface WorkItem {
   slicesByEpic: Map<string, SliceEntity[]>;
   /** Refined epic state, read from the join and never from the entity. */
   epicState: (epic: EpicEntity) => string;
-  /** The decisions this work names. `goal.adrs[]` is the source, and the shell says so. */
+  /** The decisions this work names. `goal.adrs[]`, `goal.adr`, and each `goal.epics[].adr` are the source, and the shell says so. */
   linkedAdrs: AdrEntity[];
   /** Where the linked-decision list came from. */
   adrSource: "record" | "index" | "none";
@@ -227,13 +227,18 @@ export function buildWorkItems(index: RecordIndex, records: Record<string, Desig
      * The goal is optional on the shipped record type, because a derived record file may
      * omit it. The corpus always writes one, so the chain below changes no corpus read.
      */
-    const named = record?.goal?.adrs ?? [];
-    const linkedIds = named.length > 0 ? named : record?.goal?.adr ? [record.goal.adr] : [];
+    const goal = record?.goal;
+    const linkedIds = [
+      ...new Set([
+        ...(goal?.adrs ?? []),
+        ...(goal?.adr ? [goal.adr] : []),
+        ...(goal?.epics ?? []).flatMap((row) => (row.adr ? [row.adr] : [])),
+      ]),
+    ];
     const linkedAdrs = linkedIds
       .map((id) => adrById.get(id))
       .filter((adr): adr is AdrEntity => adr !== undefined);
-    const adrSource: WorkItem["adrSource"] =
-      named.length > 0 ? "record" : linkedIds.length > 0 ? "record" : "none";
+    const adrSource: WorkItem["adrSource"] = linkedIds.length > 0 ? "record" : "none";
 
     /*
      * The work's own pull-request set. Section 3.3 states the rule: this reads

@@ -353,8 +353,8 @@ export function boardHref(): string {
  */
 export type AccountId = "program" | "change";
 
-/** The rail's two groups: each level once, then the rows of the work. */
-export type GroupKey = "levels" | "also";
+/** The rail's three groups: the work's levels, its other rows, then the pull request. */
+export type GroupKey = "levels" | "also" | "review";
 
 /**
  * The three section names both accounts carry.
@@ -584,11 +584,6 @@ export interface RailSource {
   gates: Gates | null;
   levels: Record<string, LevelState> | null;
   /**
-   * The account the Levels group reads. It defaults to `program`, and `change` with no
-   * change to read is treated as `program`.
-   */
-  account?: AccountId;
-  /**
    * The change the rail addresses: the pull request the route names, or the one
    * this work's own epics carry. Absent when the work carries none, and then the Also
    * group keeps one disabled File Diffs row that states the absence.
@@ -603,15 +598,16 @@ export interface RailSource {
 }
 
 /**
- * The rail's two groups, in the order a reader reads down them.
+ * The rail's three groups, in the order a reader reads down them.
  *
- * LEVELS LISTS EACH LEVEL ONCE, for the active account. ALSO LISTS THE ROWS NO LEVEL
- * OWNS: Plan, Epics, and Rubrics of the program, then File Diffs of the change. Each row
- * carries its own account, so a press on an Also row of the other account opens it.
- * One function returns both groups, so the rail and the arrow walk cannot drift.
+ * LEVELS LISTS THE WORK'S THREE LEVELS. ALSO LISTS THE ROWS OF THE WORK NO LEVEL OWNS:
+ * Plan, Epics, and Rubrics. REVIEW LISTS THE PULL REQUEST'S FOUR ROWS: its three levels
+ * and File Diffs. A row of the Review group opens the pull request's account, so a reader
+ * reaches it from any address. One function returns all three groups, so the rail and the
+ * arrow walk cannot drift.
  *
- * File Diffs always shows. With no change it is one disabled row that states why. The board is not a row of either group, and
- * `Rail.tsx` draws its own row above them from `boardHref()`.
+ * With no change the Review group keeps one disabled File Diffs row that states why. The
+ * board is not a row of any group, and `Rail.tsx` draws no row for it.
  */
 export function railGroups(source: RailSource): RailGroup[] {
   const { work, gates, levels, changePr = null, changeLevels = [], servedAudio = {} } = source;
@@ -699,19 +695,14 @@ export function railGroups(source: RailSource): RailGroup[] {
           available: true,
         }));
 
-  /* The three level rows of the active account, once each. */
-  const active: AccountId = source.account === "change" && changePr !== null ? "change" : "program";
-  const levelRows = (active === "change" ? changeRows : programRows).filter(
-    (row) => row.shared !== null,
-  );
-  const alsoRows = [
-    ...programRows.filter((row) => row.shared === null),
-    ...changeRows.filter((row) => row.shared === null),
-  ];
+  const levelRows = programRows.filter((row) => row.shared !== null);
+  const alsoRows = programRows.filter((row) => row.shared === null);
+  const reviewLabel = changePr === null ? "Pull request" : `Pull request ${changePr}`;
 
   return [
-    { key: "levels", label: "Levels", account: active, rows: levelRows, entries: reached(levelRows) },
+    { key: "levels", label: "Levels", account: "program", rows: levelRows, entries: reached(levelRows) },
     { key: "also", label: "Also", account: "program", rows: alsoRows, entries: reached(alsoRows) },
+    { key: "review", label: reviewLabel, account: "change", rows: changeRows, entries: reached(changeRows) },
   ];
 }
 

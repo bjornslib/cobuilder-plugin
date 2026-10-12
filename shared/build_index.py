@@ -1180,13 +1180,14 @@ def refine_epic_status(epic_status: dict[str, str], epic_to_pr: dict[str, int], 
 
 
 def adrs_reaching_design(adr_id: str, adr_record: dict, design_records: dict[str, dict]) -> list[str]:
-    """Return the design ids an ADR reaches: named in goal.adrs, or via a
-    ``related`` path into that design's own directory."""
+    """Return the design ids an ADR reaches: named in goal.adrs, goal.adr, or
+    an epic's ``adr``, or via a ``related`` path into that design's own directory."""
     reached: list[str] = []
     related = adr_record.get("related") or []
     for design_id, record in design_records.items():
         goal = record.get("goal") or {}
-        adrs_named = goal.get("adrs") or ([goal["adr"]] if goal.get("adr") else [])
+        adrs_named = list(goal.get("adrs") or ([goal["adr"]] if goal.get("adr") else []))
+        adrs_named += [e["adr"] for e in goal.get("epics") or [] if isinstance(e, dict) and e.get("adr")]
         if adr_id in adrs_named:
             reached.append(design_id)
             continue
