@@ -43,7 +43,9 @@ Artifact key names (stable, used in --json output):
                               classDiagram)
     audio.<level>           - wav exists; only checked for levels with a non-empty
                               `voice` script in story.json
-    diffs                   - data/diffs-pr{N}.js exists
+    diffs                   - data/diffs-pr{N}.js exists. Reported but optional:
+                              the diff dumps are reproducible from git and no
+                              longer committed (see .gitignore)
     intent                  - submit mode's captured author intent: a dict with a
                               non-empty `problem`. "empty" when the dict is there
                               but `problem` is not.
@@ -467,7 +469,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    optional_prefixes = optional_prefixes_for_art(args.art) + ("prose.soft", "boundary.stale", "habit.smells")
+    optional_prefixes = optional_prefixes_for_art(args.art) + ("diffs", "prose.soft", "boundary.stale", "habit.smells")
     if not args.require_review:
         optional_prefixes += REVIEW_PREFIXES
 
