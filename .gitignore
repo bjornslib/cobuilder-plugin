@@ -17,6 +17,19 @@ __pycache__/
 # branch it diffs rewrites it on every commit, and each version would then
 # contain the last one. The authored intent/assessment beside it ARE committed.
 .cobuilder-architect/*/exports/branch-*/diff.json
+# extract_diffs.py's per-PR diff dumps, for the self bundle. Each one is
+# reproducible at any time from `git diff <merge-base>..<head>`, and committing
+# them grew the clone by ~16 MB; diffs-pr11.js alone was 6.2 MB over the
+# Claude Plugin directory's 5 MiB per-file cap. The viewer asks for a diffs
+# file only when data/manifest.js names that PR (shared/_manifest.py derives
+# the list from the data dir), so a bundle that does not hold a file also
+# stops naming it. Regenerate one on demand with extract_diffs.py.
+.cobuilder-architect/self/data/diffs-pr*.js
+# artifact:publish's exported single-page HTML. The published copy lives on
+# claude.ai at the URL exports/publish-manifest.json records, and any export
+# regenerates on demand from the bundle. exports/pr-1.html in the fixture
+# bundle was 8.8 MB and exports/pr-11.html was 7.2 MB, both over the same cap.
+.cobuilder-architect/*/exports/pr-*.html
 
 .mcp.json
 .serena/
