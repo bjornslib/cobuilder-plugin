@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "f71aa2f77c1c4adff3dad7ea019e36a2d826c0ae",
+    "git_head": "05edff048ca99e16f6b2df22241cc40b8c514a99",
     "trees": {
-      "docs/architecture/adr": "sha256:35758bbe513de2b412142c596d39e8d9de2c6f72e7675a649a51fcc703383386",
-      "docs/architecture/designs": "sha256:5cceef94f1dd15418dd67de4683d8542dd858255b84c0104b710a64a6f7b7c75",
-      "docs/architecture/contexts": "sha256:c1348c14415278bd53e24947a192db40c14adccfcf6ad84878a61a18a0513f8a",
-      "docs/plans": "sha256:046822d3cc4bbb41cb6c49bcfbbc8a59c1689867a5bd39fbaa3cfad7f9d166e6",
-      ".cobuilder/rubrics": "sha256:f205e6d327fc9728002b086a728492a8391e36efe9194ded119bc7f2014287ac"
+      "docs/architecture/adr": "sha256:9cd0f2aac5d29d8f64570fa3b21b34d30ddb89458d65872329aee935cc7e9cc4",
+      "docs/architecture/designs": "sha256:e9809e5aef23f15e91ee92cc50d392d5fd7aaf0a4ea9dd0522710a3c7ecf07c0",
+      "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
+      "docs/plans": "sha256:a1f1ee26e2d3fae4c0a576cb26d7af43b14de1b0c6fe99ec3e7b8cd92bda1b06",
+      ".cobuilder/rubrics": "sha256:19779693304d4b7309a3dd7f0c56c6b54c47a3c4834c4ed3d7fb09fc402cec6d"
     }
   },
   "entities": {
@@ -201,6 +201,11 @@
         "id": "ADR-0038",
         "title": "Review and maintenance mode read habit-hooks smells",
         "state": "decided"
+      },
+      {
+        "id": "ADR-0039",
+        "title": "cobuilder-memory ships a hooks module that manages Hindsight memory",
+        "state": "decided"
       }
     ],
     "design": [
@@ -226,6 +231,12 @@
         "id": "cobuilder-implement",
         "name": "cobuilder-implement",
         "outcome": "The architecture design produced by cobuilder-architect carries directly into implementation: its intent is decomposed into testable epics, and each epic ships as vertical slices that an independent validator scores at 0.90 or better before the next one starts.",
+        "stage": "approved"
+      },
+      {
+        "id": "cobuilder-memory",
+        "name": "cobuilder-memory",
+        "outcome": "A session that installs cobuilder-memory reads and writes Hindsight memory at the moments that need it. A router decides at each prompt and each stop. The design and build workflows call the plugin at fixed moments. Each run leaves a receipt.",
         "stage": "approved"
       },
       {
@@ -433,6 +444,15 @@
         "pr": 12,
         "state": "open",
         "note": "Gate 4b is enforced instead of merely specified. The per-epic technical solution design already exists in SKILL.md section 4b, with a six-section template, and five downstream files reference the artifact. Nothing checks that it was written. Checked on 2026-08-24: zero epic-<id>-design.md files exist, and six epics shipped without one. Four failures allow that. Gate 4's only exit check counts rubrics, so a Gate 4 that skips 4b still passes. slice-loop.js builds the epic-design path and never checks the file exists, so the red and green agents are told to read a file that is absent and quietly fall back to 03-program-design.md. rubric-authoring.md tells the author to update the technical design first, and nobody checks that either. No test asserts the artifact. The root cause is that 4b is the only Gate 4 sub-step whose output nothing downstream mechanically requires: the loop cannot score without rubrics or iterate without a slice plan, but it can read an absent design. This epic adds the exit check, the existence guard in the workflow, a test, and sub-step tracking in 00-status.md so an approved Gate 4 cannot hide a missing 4b. Raised 2026-08-22, re-scoped 2026-08-24 from 'write the process' to 'enforce the process' after reading the skill."
+      },
+      {
+        "id": "cobuilder-memory/E1",
+        "design": "cobuilder-memory",
+        "epic_id": "E1",
+        "branch": "design/cobuilder-memory",
+        "pr": null,
+        "state": "planned",
+        "note": null
       },
       {
         "id": "cobuilder-viewer/E1",
@@ -1386,7 +1406,7 @@
           ],
           "allowed_inbound": [],
           "allowed_outbound": [],
-          "rule": "Static JSON. Declares dependency artifact@cobuilder-plugin only. Version 0.11.0 must match marketplace.json."
+          "rule": "Static JSON. Declares dependency artifact@cobuilder-plugin only. Version 0.12.0 must match marketplace.json."
         }
       },
       {
@@ -1487,7 +1507,7 @@
             "skill-architecture"
           ],
           "allowed_outbound": [],
-          "rule": "A symlink to ../../shared. The skill runs build_index, migrate_bundle, prose_budget, boundary_check, and validate_decision_state from here, by shell."
+          "rule": "A symlink to ../../shared. The skill runs build_index, migrate_bundle, prose_budget, boundary_check, validate_decision_state, and habit_smells from here, by shell."
         }
       },
       {
@@ -1497,7 +1517,7 @@
         "detail": {
           "with": "shared",
           "pattern": "conformist",
-          "note": "Runs shared/build_index.py, migrate_bundle.py, prose_budget.py, boundary_check.py, and validate_decision_state.py by 'uv run' through the plugin's shared symlink. It imports none of them as Python."
+          "note": "Runs shared/build_index.py, migrate_bundle.py, prose_budget.py, boundary_check.py, validate_decision_state.py, and habit_smells.py by 'uv run' through the plugin's shared symlink. It imports none of them as Python."
         }
       },
       {
@@ -1750,7 +1770,7 @@
         "detail": {
           "target": "duplicate plugin entry",
           "from": ".claude-plugin/marketplace.json",
-          "why": "SMELL: the plugins array lists 'artifact' twice (the second entry repeats the first, source ./plugins/artifact, version 0.10.0). A duplicate name can make the install pick either entry, and a version bump must change both. Remove one entry. ADR candidate only if the duplicate is deliberate."
+          "why": "Rule holding, not a smell: the plugins array lists each plugin once. Commit f4f9508 removed the duplicate artifact entry and added a test for it. Re-verified on 2026-10-13."
         }
       },
       {
@@ -1793,7 +1813,7 @@
           ],
           "allowed_inbound": [],
           "allowed_outbound": [],
-          "rule": "Static JSON read by the Claude Code harness. Each plugin version must equal its plugin.json version (a test checks it). SMELL: artifact appears twice."
+          "rule": "Static JSON read by the Claude Code harness. Each plugin version must equal its plugin.json version (a test checks it). Each plugin appears once."
         }
       },
       {
@@ -1979,7 +1999,7 @@
         "detail": {
           "with": "artifact",
           "pattern": "open-host-service",
-          "note": "Same as architect. SMELL: marketplace.json lists it twice."
+          "note": "Same as architect."
         }
       },
       {
@@ -2066,7 +2086,7 @@
           ],
           "allowed_inbound": [],
           "allowed_outbound": [],
-          "rule": "Static JSON. Declares architect and artifact as dependencies. Version 0.6.0 must match marketplace.json."
+          "rule": "Static JSON. Declares architect and artifact as dependencies. Version 0.7.0 must match marketplace.json."
         }
       },
       {
@@ -5395,6 +5415,11 @@
           "habit-smells/E2",
           "habit-smells/E3"
         ]
+      },
+      "ADR-0039": {
+        "pr": null,
+        "via": "none",
+        "path": []
       }
     },
     "epic_to_pull_request": {
@@ -5449,6 +5474,7 @@
       "build-workflow-polish/E4": "unstarted",
       "cobuilder-implement/E1": "merged",
       "cobuilder-implement/E2": "merged",
+      "cobuilder-memory/E1": "no-pull-request",
       "cobuilder-viewer/E1": "open",
       "cobuilder-viewer/E2": "open",
       "cobuilder-viewer/E3": "open",
@@ -5678,7 +5704,8 @@
       "ADR-0035": "cobuilder-packaging",
       "ADR-0036": "cobuilder-packaging",
       "ADR-0037": "cobuilder-packaging",
-      "ADR-0038": "cobuilder-packaging"
+      "ADR-0038": "cobuilder-packaging",
+      "ADR-0039": "cobuilder-packaging"
     },
     "adr_to_district": {
       "ADR-0001": "scripts",

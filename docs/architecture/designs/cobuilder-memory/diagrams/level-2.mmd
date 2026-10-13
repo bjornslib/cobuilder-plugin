@@ -1,0 +1,64 @@
+%% Data flow for cobuilder-memory.
+%% Level 2 = problem and solution. Flow a: the router sends a person prompt
+%% to a quick run. Flow b: design stage 0 calls the moment tool, which starts
+%% a deep run. Every step is a prediction that ADR-0039 carries.
+sequenceDiagram
+    actor Person
+    participant Session as Claude Code session
+    participant Design as architect design mode
+    box transparent cobuilder-memory hooks module, proposed
+    participant Writer as Note and receipt writer
+    participant Queue as Queue and timer
+    participant Router
+    participant Quick as Quick run
+    participant Moment as moment tool
+    participant Guard as tool.call guard
+    end
+    participant Haiku as Haiku model
+    participant Fork as Plan fork
+    participant Agent as Deep run fork agent
+    participant Hindsight as Hindsight MCP server
+
+    rect rgba(120, 140, 93, 0.12)
+    Note over Person,Hindsight: Flow a. The router sends a person prompt to a quick run.
+    Person->>Session: Submits a prompt
+    Session->>Queue: Prompt hook, for a person prompt in the main loop only, puts one job on the queue and returns at once
+    Queue->>Router: Timer drains the queue and starts the router
+    Router->>Haiku: $.model.complete with references/router.md, the last 1,500 characters, and the prompt
+    Haiku-->>Router: {"read": "recall", "write": "none"}
+    Router->>Quick: The recall label starts a quick run
+    Quick->>Fork: $.model.fork with references/plan.md, the trigger, the labels, and the newest prompt
+    Fork-->>Quick: JSON plan with six recall queries at most
+    loop Each recall query in the plan
+        Quick->>Hindsight: $.mcp.call recall, types world and experience, budget mid
+        Hindsight-->>Quick: Results with memory ids and document ids
+    end
+    Quick->>Quick: Drops each result from this session's transcript and keeps 12 at most
+    Quick->>Writer: Kept results
+    Writer->>Session: $.session.append, one memory note in a hindsight_memories tag pair
+    Writer->>Writer: Writes one receipt under .cobuilder-memory/runs/
+    end
+
+    rect rgba(106, 155, 204, 0.12)
+    Note over Person,Hindsight: Flow b. Design stage 0 calls the moment tool, which starts a deep run.
+    Design->>Moment: mcp__cobuilder-memory__moment with design-start, the name, the outcome, and the scope
+    Moment->>Agent: $.agent.spawn, subagentType fork, references/deep-run.md and the moment input
+    Moment-->>Design: run_id, kind deep, status started
+    Note over Design: The tool returns at once. The memory note arrives later.
+    Agent->>Guard: recall, with the fork's agent id
+    Guard-->>Agent: Allowed. The tool is on the allow-list.
+    Agent->>Hindsight: recall
+    Hindsight-->>Agent: Memories with ids and dates
+    Agent->>Guard: Read, with the fork's agent id
+    Guard-->>Agent: Allowed. The tool is on the allow-list.
+    Agent->>Agent: Reads the cited file and marks the claim
+    opt A call outside the allow-list, such as Edit
+        Agent->>Guard: Edit, with the fork's agent id
+        Guard-->>Agent: Denied
+    end
+    Note over Guard,Agent: The spike tests that the guard sees each call of the fork.
+    Agent-->>Writer: Checks JSON. Each claim is confirmed, contradicted, not applied, or cannot check.
+    Note over Writer,Agent: Open fact: the module may have to append the fork's answer itself.
+    Writer->>Session: $.session.append, one memory note
+    Writer->>Writer: Writes one receipt with each tool call and its allowed flag
+    end

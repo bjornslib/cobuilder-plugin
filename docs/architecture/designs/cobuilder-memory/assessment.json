@@ -1,0 +1,134 @@
+{
+  "stage": "design",
+  "generated": "2026-10-13",
+  "verdict": "concerns",
+  "risk_tier": "sensitive",
+  "summary": "The plugin closes a real gap: memory runs only when the model chooses to call it, and design mode never does. The approach adds a second hook surface, so ADR-0039 must amend ADR-0025 before any code ships. Each memory write and each check stays visible in a receipt. Every finding is a prediction, and a spike tests eleven open facts first.",
+  "sensible": {
+    "answer": "Yes. The problem sits at the harness level, where only a hook sees every prompt and every stop. A skill cannot act at a stop it does not own. The workflow moments stay in the skills that own them, so design and build each decide when a step needs memory. The plugin belongs in this repo, because the workflows it serves live here. It stays opt-in, because it adds model calls and memory writes to each session that installs it.",
+    "evidence": [
+      "ADR-0016",
+      "ADR-0025",
+      "district:skills"
+    ]
+  },
+  "maintainability": {
+    "answer": "It helps, with one cost. Judgment lives in three reference files that the module reads at session start, so a prompt change needs no code change. Each engine call sits in one adapter module, so an API change touches one file. The cost is a second hook surface that fires at every prompt and every stop. ADR-0039 bounds it to the main loop and the person's own prompts, and to sessions where Hindsight answers.",
+    "constraint_introduced": "A plugin hook that fires at every prompt or every stop acts only on the main loop and on the person's own prompts. It does nothing while its backing service is unavailable.",
+    "evidence": [
+      "ADR-0025",
+      "generic stack card: the dependency rule",
+      "generic stack card: configuration in one place"
+    ]
+  },
+  "pattern": {
+    "verdict": "new-valuable",
+    "answer": "New and valuable. No district or ADR owns memory today. The implement hook is the nearest pattern: a plugin-level hook that filters on its caller. This plugin reuses that filter with an agent id and a prompt origin. It adds a pattern the family lacks: a small model call that decides whether to act before any costly step runs.",
+    "duplicates": [],
+    "evidence": [
+      "ADR-0025",
+      "district:scripts"
+    ]
+  },
+  "findings": [
+    {
+      "kind": "prediction",
+      "severity": "concern",
+      "claim": "The install-surface rule forbids a hooks/ folder outside implement. The packaging test fails until the engineer approves ADR-0039 and the test reads the amended rule.",
+      "evidence": "ADR-0025",
+      "district": "scripts",
+      "suggestion": "Approve ADR-0039 before the first epic. Change the test in the same slice that adds the plugin folder."
+    },
+    {
+      "kind": "prediction",
+      "severity": "concern",
+      "claim": "The router makes two Haiku calls per exchange in each session that installs the plugin. Without a review of its labels, that cost grows unseen.",
+      "evidence": "ADR-0025",
+      "district": "scripts",
+      "suggestion": "Record each label and its token use in the receipt. Review the first 20 router labels and the first three deep runs (D4)."
+    },
+    {
+      "kind": "prediction",
+      "severity": "concern",
+      "claim": "A fork agent inherits the session's write tools. A guard that misses one tool lets a memory run edit the repo.",
+      "evidence": "ADR-0025",
+      "district": "scripts",
+      "suggestion": "Deny by default for the fork's agent id. Allow a fixed list: Read and the Hindsight read tools."
+    },
+    {
+      "kind": "prediction",
+      "severity": "note",
+      "claim": "The skills name the plugin's tool, not its path, so the handoff follows the named-handoff rule. A skill works without the plugin and records that memory did not run.",
+      "evidence": "ADR-0016",
+      "district": "skills",
+      "suggestion": "Make the tool's absence an explicit gap line, never a silent skip."
+    },
+    {
+      "kind": "prediction",
+      "severity": "note",
+      "claim": "The hooks API is early access. One adapter module for every engine call keeps an API change to one file.",
+      "evidence": "generic stack card: the dependency rule",
+      "district": "scripts",
+      "suggestion": "Name the Claude Code build in the plugin README, and run claude plugin validate on each new build."
+    },
+    {
+      "kind": "prediction",
+      "severity": "note",
+      "claim": "D2 widens the stage-4 evidence rule. A memory claim that a deep run marked confirmed may back a challenge. The challenge cites the memory id and the file that the deep run checked.",
+      "evidence": "ADR-0035",
+      "district": "skills",
+      "suggestion": "Amend design-mode.md section 7.3 in the same epic that adds the design moment."
+    },
+    {
+      "kind": "prediction",
+      "severity": "note",
+      "claim": "The name cobuilder-memory keeps the prefix that the ADR-0016 addendum drops for every plugin but the umbrella. ADR-0039 records a named exception.",
+      "evidence": "ADR-0016",
+      "district": "docs",
+      "suggestion": "Keep the exception in ADR-0039, and check the name against the plugin's own skill and command names before the build."
+    }
+  ],
+  "boundary_checks": [
+    {
+      "rule": "Only implement may ship agents/ and hooks/. No plugin ships an MCP server.",
+      "source": "ADR-0025",
+      "result": "violation",
+      "evidence": "The design adds hooks/ to cobuilder-memory. ADR-0039 amends the rule before the build, and the plugin ships no agents/ and no MCP server."
+    },
+    {
+      "rule": "The dependency rule: inner layers never import outer layers.",
+      "source": "stacks/generic.md",
+      "result": "pass",
+      "evidence": "Predicted. The router, plan, and note logic import no engine call. Two adapter modules hold every $ call."
+    },
+    {
+      "rule": "Configuration crosses into code in one place.",
+      "source": "stacks/generic.md",
+      "result": "pass",
+      "evidence": "Predicted. The bank id and the server name come from userConfig and the Hindsight config file, read once at session start."
+    },
+    {
+      "rule": "No plugin reads or imports another plugin's files.",
+      "source": "ADR-0016",
+      "result": "pass",
+      "evidence": "Predicted. The skills name the tool mcp__cobuilder-memory__moment. The module reads no file of another plugin."
+    }
+  ],
+  "delta": {
+    "districts_added": [],
+    "districts_changed": [
+      "skills",
+      "scripts",
+      "docs"
+    ],
+    "edges_added": [
+      "skills -> cobuilder-memory (tool by name)",
+      "cobuilder-memory -> Hindsight MCP server"
+    ],
+    "edges_removed": [
+      "implement build skill -> Hindsight tools (H1 to H5)"
+    ]
+  },
+  "regret_risk": "If this ships as written, each session that installs the plugin pays two small model calls per exchange. The team also watches a hook surface that follows an early-access API. The value rests on the router labeling well, and only the receipts show whether it does. If nobody reads the receipts, the cost stays and the value stays unproven. Three steps limit that risk: the spike before the build, the receipt review after the first runs, and an opt-in install. A person removes the plugin in one step.",
+  "drift": []
+}

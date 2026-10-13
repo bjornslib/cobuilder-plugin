@@ -1,0 +1,44 @@
+%% Overview: what cobuilder-memory adds.
+%% Level 1 = intent. Every container in the plugin boundary is a prediction
+%% that ADR-0039 carries. No code exists yet.
+C4Container
+    title cobuilder-memory adds a hooks module that reads and writes Hindsight memory
+
+    Person(person, "Person", "Submits each prompt and runs /memory")
+    System_Ext(session, "Claude Code session", "2.1.296. Fires the function hooks and<br> reads each memory note.")
+    System_Ext(haiku, "Haiku model", "Answers the router call")
+    ContainerDb(automem, "Automatic memory folder", "files", "Claude Code keeps it. The engine's<br> memory writer adds files.")
+
+    Container_Boundary(plugin, "cobuilder-memory hooks module and its receipts, proposed in ADR-0039") {
+        Container(router, "Router", "$.model.complete, references/router.md", "Labels each person prompt and each stop.<br> Read: none, recall, or reflect. Write:<br> none or retain.")
+        Container(mirror, "cc-memory-mirror", "$.store, sha256", "Scans at each stop and after /memory.<br> Keeps one Hindsight document for each<br> memory file.")
+        Container(writer, "Note and receipt writer", "$.session.append, fs write", "Appends one memory note and writes one<br> receipt for each run")
+        Container(quick, "Quick run", "$.model.fork, references/plan.md", "A fork writes a JSON plan. The module<br> makes each Hindsight call and drops this<br> session's own results.")
+        ContainerDb(receipts, "Receipts folder", ".cobuilder-memory/runs/", "One JSON receipt for each run. Git<br> ignores the folder.")
+        Container(deep, "Deep run and its tool.call guard", "$.agent.spawn, references/deep-run.md", "A fork agent recalls, reads the repo,<br> and marks each claim. The guard allows<br> Read and the Hindsight read tools only.")
+        Container(moment, "moment tool", "mcp__cobuilder-memory__moment", "A read moment starts a deep run. A write<br> moment starts a quick run with retain<br> set.")
+    }
+
+    Container_Boundary(hindsightsys, "Hindsight") {
+        System_Ext(hindsight, "Hindsight MCP server", "Bank coding-agent-{repo}")
+    }
+
+    Container_Boundary(skills, "Skills that call the moment tool") {
+        Container(design, "architect design mode", "skill", "Stage 0 calls design-start. An approved<br> design calls design-approved.")
+        Container(build, "implement build skill", "skill", "Calls implement-start, epic-design, and<br> slice-accepted. Retires H1 to H5.")
+    }
+
+    Rel(person, session, "Prompt or /memory")
+    Rel(session, router, "Each prompt and stop, queued", "function hook, timer drains the queue")
+    Rel(router, haiku, "One call per prompt and per stop", "$.model.complete")
+    Rel(router, quick, "A label starts a quick run")
+    Rel(mirror, automem, "Scans and hashes each file", "fs read")
+    Rel(mirror, hindsight, "retain or delete_document", "$.mcp.call")
+    Rel(writer, session, "One memory note for each run", "$.session.append")
+    Rel(writer, receipts, "One receipt for each run", "fs write")
+    Rel(quick, hindsight, "recall, reflect, retain", "$.mcp.call")
+    Rel(deep, hindsight, "Guarded recall and reflect", "MCP tool call")
+    Rel(moment, deep, "A read moment")
+    Rel(moment, quick, "A write moment starts a retain")
+    Rel(design, moment, "design-start, design-approved", "tool call")
+    Rel(build, moment, "implement-start, epic-design, slice-accepted", "tool call")

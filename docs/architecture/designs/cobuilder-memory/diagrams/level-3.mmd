@@ -1,0 +1,132 @@
+%% Data types for cobuilder-memory.
+%% Level 3 = architecture. Each class is a shape from contracts.md. Every
+%% member is a prediction that ADR-0039 carries. No code exists yet.
+classDiagram
+    class MomentInput {
+        +moment Moment
+        +name string
+        +outcome string
+        +scope files, adrs, and districts
+    }
+
+    class Moment {
+        <<enumeration>>
+        design-start
+        implement-start
+        epic-design
+        slice-accepted
+        design-approved
+    }
+
+    class MomentResult {
+        +run_id string
+        +kind deep or quick
+        +status started, unavailable, or refused
+        +message string
+    }
+
+    class RouterLabels {
+        +read none, recall, or reflect
+        +write none or retain
+    }
+
+    class Plan {
+        +recall list of id and text
+        +reflect list of id and text
+        +retain list of content, date, and about
+        +skip string
+    }
+
+    class DeepRunAnswer {
+        +checks List~DeepRunCheck~
+        +nothing_kept List~string~
+    }
+
+    class DeepRunCheck {
+        +memory_id string
+        +document_id string
+        +date YYYY-MM-DD
+        +query_ids List~string~
+        +quote 25 words or fewer
+        +summary one plain sentence
+        +check Check
+        +evidence path:line, or empty
+    }
+
+    class Check {
+        <<enumeration>>
+        confirmed
+        contradicted
+        not applied
+        cannot check
+    }
+
+    class Receipt {
+        +run_id string
+        +session_id string
+        +trigger Trigger
+        +moment Moment, or null
+        +router RouterLabels and usage, or null
+        +plan recall, reflect, and retain_count, or null
+        +fork reason and usage, or null
+        +reflect_calls_this_session int
+        +deep_run agent_id, mode, tool_calls, and usage, or null
+        +bank string
+        +bank_counts facts, observations, and pending
+        +calls id, tool, returned, dropped_self, and kept
+        +checks memory_id, state, and evidence
+        +retained List~string~
+        +cc_memory_mirror changed and deleted file names
+        +note_appended bool
+        +status complete, partial, failed, or unavailable
+        +started_at ISO-8601 time
+        +ended_at ISO-8601 time
+    }
+
+    class Trigger {
+        <<enumeration>>
+        prompt
+        stop
+        moment
+        memory-command
+        cc-memory-mirror
+    }
+
+    class MemoryNote {
+        +run id and trigger
+        +one Q line for each query
+        +kept memory: id, date, document id, check, quote
+        +R line: 120 words or fewer
+        +Retained: document ids
+    }
+
+    class CcMemoryMirrorState {
+        +key cobuilder-memory:cc-memory-mirror: and the bank id
+        +hashes file name to sha256
+    }
+
+    class PluginOptions {
+        +bank string
+        +server string
+    }
+
+    MomentInput --> Moment : moment
+    MomentInput ..> MomentResult : the tool returns at once
+    MomentResult ..> Receipt : run_id
+    RouterLabels ..> Plan : a label starts a quick run
+    DeepRunAnswer *-- DeepRunCheck : checks
+    DeepRunCheck --> Check : check
+    Receipt --> Trigger : trigger
+    Receipt --> Moment : moment
+    Receipt o-- RouterLabels : router
+    Receipt ..> Plan : plan
+    Receipt ..> DeepRunCheck : checks
+    MemoryNote --> Trigger : trigger
+    MemoryNote ..> Receipt : same run id
+    MemoryNote ..> DeepRunCheck : kept memory
+    CcMemoryMirrorState ..> PluginOptions : bank
+
+    note for Plan "Six recall queries at most.<br>One reflect, on a reflect label only.<br>Three retain records, on a retain label only."
+    note for Receipt "One JSON file for each run under .cobuilder-memory/runs/.<br>It holds memory ids, counts, and query text, never memory text."
+    note for MemoryNote "The note sits in a hindsight_memories tag pair.<br>The engine stores the row as isMeta."
+    note for PluginOptions "bank defaults to coding-agent-{repo}.<br>server defaults to hindsight."

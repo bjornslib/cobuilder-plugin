@@ -1,0 +1,62 @@
+{
+  "name": "cobuilder-memory",
+  "title": "A memory plugin reads and writes Hindsight at the moments that need it",
+  "created": "2026-10-13",
+  "outcome": "A session that installs cobuilder-memory reads and writes Hindsight memory at the moments that need it. A router decides at each prompt and each stop. The design and build workflows call the plugin at fixed moments. Each run leaves a receipt.",
+  "done_when": [
+    "A spike on Claude Code 2.1.296 passes the eleven checks in spike.md on their pass branches before any epic starts. S3 may pass through its chosen fallback.",
+    "`claude plugin validate` accepts plugins/cobuilder-memory, and `claude plugin test` passes its tests.",
+    "`uv run pytest tests -q` passes with the install-surface rule that ADR-0039 amends.",
+    "A prompt that the router labels recall gets a memory note before the person's next prompt, and a receipt records the run.",
+    "Every stop of the main loop, a /goal iteration included, runs the router once while Hindsight answers, and the receipt records its labels.",
+    "A change to a file in the automatic memory folder reaches Hindsight as one document per file by the next stop.",
+    "Design stage 0 and implement Gate 1 call the moment tool, and the build skill holds no H1 to H5 checkpoint.",
+    "Design stage 4, the Gate 1 approval, and each epic-design approval read their deep-run note, or write a gap line from contracts.md.",
+    "In the first three read-moment runs, at least one reading step cites a note, not the pending line.",
+    "Design-mode section 7.3 accepts a confirmed memory claim, and each decision that uses a memory claim carries a memory citation.",
+    "A recall after a run finds no text of a memory note in the bank.",
+    "The engineer marks the router labels in the first 20 receipts right or wrong. The router stays when 16 or more are right."
+  ],
+  "abort_if": [
+    "The spike shows that $.model.fork or $.mcp.call cannot run from a timer that session.start started. The quick run then has no place to run.",
+    "The hooks API changes shape before the shipping build, so a call that this design names no longer exists. Spike S10 checks it at each build epic.",
+    "Hindsight writes a memory note back into the bank, and no guard can stop it."
+  ],
+  "min_work": {
+    "derived_from": "3 districts (skills, scripts, docs), colliding ADRs 0016, 0017, 0025, 0035, 2 boundary rules (ADR-0025 install surface, generic stack card dependency rule)",
+    "alternatives_explored": 15,
+    "boundary_rules_checked": true,
+    "challenge_stage_run": true,
+    "draft_review_run": true,
+    "note": "A failed spike check returns the design to stage 3 before any epic starts."
+  },
+  "limits": {
+    "warn_after_rounds": 3,
+    "cutoff_rounds": 6
+  },
+  "epics": [
+    {
+      "id": "E1",
+      "slug": "cobuilder-memory",
+      "branch": "design/cobuilder-memory",
+      "pr": null,
+      "state": "planned"
+    }
+  ],
+  "stage": "approved",
+  "supersedes": null,
+  "rounds": [
+    {
+      "n": 1,
+      "changed": true,
+      "feedback_class": "material",
+      "note": "Reviewer round on Haiku. The engineer chose N1 a, N2 a, N3 a, N4 a, and the 14 cosmetic fixes."
+    },
+    {
+      "n": 2,
+      "changed": true,
+      "feedback_class": "material",
+      "note": "Reviewer round 2 on Haiku. The engineer kept M3 a (R2-1 a), chose the tool-less deep run as the S3 fallback (R2-2 a), and the 21 fixes."
+    }
+  ]
+}

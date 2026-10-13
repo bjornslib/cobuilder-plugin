@@ -185,6 +185,63 @@ _Avoid_: implementer (the generic word, and GREEN is the named role with its own
 The third role of the slice loop in `implement`: the `implement:validate` agent, a fresh subagent that saw neither RED nor GREEN, scores the slice against the blind rubric. It is the only role that reads the rubric, and a score of 0.90 or higher accepts the slice.
 _Avoid_: draft review (the architect stage 6 pre-review, which proposes survivors and never scores a slice), auditor (the generic word)
 
+## cobuilder-memory
+
+These terms come from the `cobuilder-memory` design (ADR-0039). The plugin does not exist yet.
+
+<a id="memory-router"></a>
+**Memory router** (`cobuilder-memory`):
+The Haiku call that labels one prompt or one stop with a read label (none, recall, or reflect) and a write label (none or retain). It decides whether a run starts, and it never calls Hindsight itself.
+_Avoid_: gate (Gate names an implement approval step)
+
+<a id="stop"></a>
+**Stop** (`cobuilder-memory`):
+The point where Claude finishes a response and the Stop hooks run. With a `/goal` set, a stop does not end the turn, and the router still runs once per stop.
+_Avoid_: turn end (a `/goal` iteration is a stop inside one turn)
+
+<a id="memory-moment"></a>
+**Memory moment** (`cobuilder-memory`):
+A fixed workflow step where a skill calls the plugin's `moment` tool, such as design stage 0 or the start of a build. A read moment starts a deep run, and a write moment starts a quick run that retains.
+_Avoid_: checkpoint (H1 to H5 named the retired fixed-text steps)
+
+<a id="quick-run"></a>
+**Quick run** (`cobuilder-memory`):
+One memory run in which a conversation fork writes a recall plan and the hooks module makes each Hindsight call. The fork has no tools, so a quick run never checks a claim.
+
+<a id="recall-plan"></a>
+**Recall plan** (`cobuilder-memory`):
+The JSON answer of a quick run's fork: its recall queries, at most one reflect, and its retain records. The receipt keeps its query text and no memory text.
+_Avoid_: plan (an implement plan lives under `docs/plans/<slug>/`)
+
+<a id="deep-run"></a>
+**Deep run** (`cobuilder-memory`):
+One memory run at a read moment, in which a read-only fork agent recalls from Hindsight and checks each claim in the repo. If the guard cannot hold that agent, a deep run holds no tools, and one model call judges each claim.
+_Avoid_: helper, sub-agent (both named the general-purpose agent of the superseded hindsight-subagent design), findings for its output (a finding is an `assessment.json` entry, so the deep run returns checks)
+
+<a id="memory-note"></a>
+**Memory note** (`cobuilder-memory`):
+The row that the hooks module appends to the conversation after a run. The model reads it, and it lists past claims with their memory ids and checks, never as facts.
+_Avoid_: brief (the superseded design's name for a file that its agent wrote)
+
+<a id="receipt"></a>
+**Receipt** (`cobuilder-memory`):
+The JSON record of one memory run: its trigger, labels, queries, counts, kept memory ids, and token use. It holds no memory text, and git ignores it.
+
+<a id="memory-citation"></a>
+**Memory citation** (`cobuilder-memory`):
+The committed line, in a design record or a plan, that names a memory claim with its memory id, date, evidence, and run id. The run id opens a receipt only in the checkout that made it.
+_Avoid_: gate line (the status line of an implement gate in `00-status.md`)
+
+<a id="gap-line"></a>
+**Gap line** (`cobuilder-memory`):
+The line that a skill or a memory note writes when memory did not reach a decision, such as `Memory: run <run id> pending.` The contracts of ADR-0039 list each one.
+_Avoid_: gate line (the status line of an implement gate in `00-status.md`)
+
+<a id="cc-memory-mirror"></a>
+**cc-memory-mirror** (`cobuilder-memory`):
+The step that copies each file of Claude Code's automatic memory folder into Hindsight as one document, and deletes the document when the file goes. It runs one way, at each stop and after `/memory`.
+_Avoid_: mirror (alone, the word does not say which memory it copies), sync (nothing flows back to the folder)
+
 ## Cross-cutting
 
 <a id="self"></a>

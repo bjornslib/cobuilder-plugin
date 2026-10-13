@@ -1,0 +1,80 @@
+{
+  "intent": {
+    "tagline": "Memory takes part in the session, not only when the model asks.",
+    "narration": "Hindsight holds what past sessions decided. Today a session reaches it only when the model chooses to ask, and design mode never asks. This plugin makes memory part of each session. A small router decides when, and fixed workflow moments always ask."
+  },
+  "problem_solution": {
+    "problem": "The workflows reach Hindsight through one optional build step, and three of 15 plans opted in. Design mode makes no memory call. The Hindsight Stop hook writes each transcript back as chat, so recall returns mostly raw chat. In one test, five of six kept results came from the running session's own transcript. The automatic memory folder never reaches Hindsight.",
+    "solution": "A new opt-in plugin, cobuilder-memory, runs one hooks module. A Haiku router labels each prompt and each stop. A label starts a quick run, where a conversation fork plans and the module calls Hindsight. The design and build skills call a moment tool, which starts a deep run that checks each claim. The module runs the cc-memory-mirror and leaves a receipt for each run.",
+    "narration": "The plugin splits the work by cost. A cheap router runs often. A one-request fork plans the common run. A fork agent with read-only tools runs only at workflow moments, where a claim feeds a decision.",
+    "beats": [
+      {
+        "kind": "problem",
+        "text": "Memory runs only when the model chooses to call it. The build skill asks first, and three of 15 plans said yes. Design mode never asks, so a settled decision can return as a new proposal."
+      },
+      {
+        "kind": "constraint",
+        "text": "ADR-0025 lets only implement ship a hook, and the packaging test enforces it. ADR-0039 amends the rule for this plugin. It still forbids agent files outside implement, and it forbids every MCP server."
+      },
+      {
+        "kind": "constraint",
+        "text": "A fork from $.model.fork sees the whole session but has no tools. A fork agent keeps its tools, but each step reads the cached session again. A hook may spend 10 seconds of its own time, so it cannot wait for a background agent."
+      },
+      {
+        "kind": "decision",
+        "text": "The quick run uses the cheap fork for prompts and stops. The deep run uses the fork agent at workflow moments, where a design decision needs a checked claim (D2). A guard holds the fork agent to read-only tools."
+      },
+      {
+        "kind": "decision",
+        "text": "The Haiku step is the router, not a gate, because Gate already names the implement approval steps. Receipts stay out of git. A committed memory citation carries the memory id and the run id."
+      },
+      {
+        "kind": "risk",
+        "text": "Each exchange costs two Haiku calls, and the hooks API is early access. A spike tests eleven open facts first, and the first receipts decide whether the router stays."
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "Fixed moments and the cc-memory-mirror only, with no router",
+        "rejected_because": "The engineer wants memory at ordinary prompts and at every stop. Without a router, a prompt between two workflow moments gets no memory."
+      },
+      {
+        "option": "A deep run for every trigger",
+        "rejected_because": "Each step of a fork agent reads the cached session again. A run at every prompt multiplies that cost."
+      },
+      {
+        "option": "A quick run for every trigger, workflow moments included",
+        "rejected_because": "A fork from $.model.fork has no tools. It cannot check a claim in the repo or ask a follow-up query, and workflow moments feed design decisions (D2)."
+      },
+      {
+        "option": "A quick run with no fork, and the trimmed prompt as the query",
+        "rejected_because": "The queries lose the session context. It is faster and cheaper, and the engineer chose context."
+      },
+      {
+        "option": "The prompt and stop hooks wait for the quick run",
+        "rejected_because": "The person's prompt would wait. The engineer chose that a note never waits (M3 a)."
+      }
+    ]
+  },
+  "architecture": {
+    "narration": "The plugin sits beside the session as one hooks module with two adapters. One adapter holds every engine call, and the other holds every Hindsight call. Judgment lives in three reference files that the module reads at start.",
+    "beats": [
+      {
+        "kind": "constraint",
+        "text": "Plugins meet at the bundle and by name (ADR-0016). The skills name the tool mcp__cobuilder-memory__moment, never a plugin path. A skill without the plugin writes a gap line and goes on."
+      },
+      {
+        "kind": "decision",
+        "text": "Five triggers feed one queue: a person prompt, a stop, a workflow moment, the /memory command, and a change in the memory folder. A timer that session.start starts drains the queue, so no hook waits on a model."
+      },
+      {
+        "kind": "decision",
+        "text": "Each run appends one memory note that the model reads, stored as isMeta. The Hindsight Stop hook skips isMeta rows and strips the note's tag, so a note never flows back into the bank."
+      },
+      {
+        "kind": "risk",
+        "text": "The deep run's fork inherits write tools. The guard denies by default for that agent id. The spike tests that the guard sees and stops an Edit before any epic starts. If it cannot, the deep run holds no tools."
+      }
+    ]
+  }
+}
