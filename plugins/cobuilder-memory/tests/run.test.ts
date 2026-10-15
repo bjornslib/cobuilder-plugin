@@ -2,6 +2,9 @@ import { expect, test } from 'claude-code/testing'
 import { HOW_TO_JUDGE } from '../hooks/result'
 import { mcpBody, rawHit, settle, stubHaiku, stubHaikuSteps, stubRepo, stubSession, stubStore, USAGE } from './fakes'
 
+// Haiku's reply is awaited through the engine's timers, so the global setTimeout is declared here
+declare const setTimeout: (fn: (...args: any[]) => void, ms: number) => unknown
+
 test('the consult tool returns the judging rules, the bank, the Need line, and the old record only', async ($, on) => {
   stubRepo(on)
   stubStore(on)
@@ -125,7 +128,7 @@ test('Haiku step 2 reads the Need line, the recall query, the kept records, and 
   const { error } = await consult($)
   expect(error).toBe('')
   expect(prompts.length).toBeGreaterThanOrEqual(2)
-  const second = prompts[1]
+  const second = String(prompts[1] ?? '')
   expect(second.includes('NEED-MARK')).toBe(true)
   expect(second.includes('recall-query-xyz')).toBe(true)
   expect(second.includes(KEPT)).toBe(true)
@@ -306,7 +309,7 @@ function reflectCalls(calls: any[]): any[] {
   return calls.filter((c) => c.tool === 'reflect')
 }
 
-test('each Reflect line becomes one reflect call, with the Context line and the contract arguments', async ($, on) => {
+test('a Reflect line becomes one reflect call, for the first question, with the Context line and the contract arguments', async ($, on) => {
   stubRepo(on)
   stubStore(on)
   stubSession(on)
@@ -318,9 +321,9 @@ test('each Reflect line becomes one reflect call, with the Context line and the 
   expect(error).toBe('')
 
   const reflects = reflectCalls(calls)
-  expect(reflects.length).toBe(2)
-  for (const c of reflects) expect(c.server).toBe('hindsight')
-  // The plugin adds no text to the question or the context. Each call carries exactly its own question.
+  expect(reflects.length).toBe(1)
+  expect(reflects[0].server).toBe('hindsight')
+  // The plugin adds no text to the question or the context. The one call carries the first question.
   expect(reflects[0].args).toEqual({
     query: 'why was the router cut',
     context: 'the moment decision',
@@ -328,16 +331,9 @@ test('each Reflect line becomes one reflect call, with the Context line and the 
     budget: 'low',
     max_tokens: 1500,
   })
-  expect(reflects[1].args).toEqual({
-    query: 'what failed with the subagent',
-    context: 'the moment decision',
-    bank_id: BANK,
-    budget: 'low',
-    max_tokens: 1500,
-  })
 })
 
-test('five Reflect lines make only three reflect calls, the first three in order', async ($, on) => {
+test('five Reflect lines make one reflect call, for the first question', async ($, on) => {
   stubRepo(on)
   stubStore(on)
   stubSession(on)
@@ -352,7 +348,7 @@ test('five Reflect lines make only three reflect calls, the first three in order
   expect(error).toBe('')
 
   const queries = reflectCalls(calls).map((c) => c.args.query)
-  expect(queries).toEqual(['question one', 'question two', 'question three'])
+  expect(queries).toEqual(['question one'])
 })
 
 test('zero Reflect lines make no reflect call, and the result still shows the recall section', async ($, on) => {
@@ -370,7 +366,7 @@ test('zero Reflect lines make no reflect call, and the result still shows the re
   expect(text.includes('1 recall, 0 reflects')).toBe(true)
 })
 
-test('the page read and each reflect call all start before any of them ends', async ($, on) => {
+test('the page read and the one reflect call all start before either ends', async ($, on) => {
   stubRepo(on)
   stubStore(on)
   stubSession(on)
@@ -395,18 +391,18 @@ test('the page read and each reflect call all start before any of them ends', as
 
   const { error } = await consult($)
   expect(error).toBe('')
-  expect(reflectCalls(calls).length).toBe(2)
+  expect(reflectCalls(calls).length).toBe(1)
   expect(calls.some((c) => c.tool === 'get_knowledge_page')).toBe(true)
 
   const firstEnd = events.findIndex((ev) => ev.startsWith('end:'))
   expect(firstEnd > -1).toBe(true)
   expect(events.indexOf('start:page') > -1 && events.indexOf('start:page') < firstEnd).toBe(true)
-  expect(events.filter((ev) => ev === 'start:reflect').length).toBe(2)
+  expect(events.filter((ev) => ev === 'start:reflect').length).toBe(1)
   const reflectStarts = events.map((ev, i) => (ev === 'start:reflect' ? i : -1)).filter((i) => i > -1)
   for (const at of reflectStarts) expect(at < firstEnd).toBe(true)
 })
 
-test('the result lists the Context line, then each question followed by its answer, in question order', async ($, on) => {
+test('the result lists the Context line, then the one question followed by its answer, and no second question', async ($, on) => {
   stubRepo(on)
   stubStore(on)
   stubSession(on)
@@ -423,50 +419,38 @@ test('the result lists the Context line, then each question followed by its answ
 
   const { text, error } = await consult($)
   expect(error).toBe('')
-  expect(text.includes('1 recall, 2 reflects')).toBe(true)
+  expect(text.includes('1 recall, 1 reflect. ')).toBe(true)
+  // The second Reflect line is never asked, so its question never shows
+  expect(text.includes('QUESTION-TWO-MARK')).toBe(false)
 
-  // The page section comes first, then the context, then each question with its answer
+  // The page section comes first, then the context, then the one question with its answer
   const pageAt = text.indexOf('PAGE BODY MARK')
   const contextAt = text.indexOf('CONTEXT-MARK')
   const q1 = text.indexOf('QUESTION-ONE-MARK')
   const a1 = text.indexOf('ANSWER-ONE-MARK')
-  const q2 = text.indexOf('QUESTION-TWO-MARK')
-  const a2 = text.indexOf('ANSWER-TWO-MARK')
   expect(pageAt > -1).toBe(true)
   expect(contextAt > pageAt).toBe(true)
   expect(q1 > contextAt).toBe(true)
   expect(a1 > q1).toBe(true)
-  expect(q2 > a1).toBe(true)
-  expect(a2 > q2).toBe(true)
 })
 
-test('a reflect call that fails shows its reason in place of its answer, and the other answer and the other sections still show', async ($, on) => {
+test('a reflect call that fails shows its reason in place of its answer, and the recall and page sections still show', async ($, on) => {
   stubRepo(on)
   stubStore(on)
   stubSession(on)
-  stubHaikuSteps(on, [STEP1, 'Page: page-1\nContext: c\nReflect: QUESTION-FAILS-MARK\nReflect: QUESTION-OK-MARK'])
+  stubHaikuSteps(on, [STEP1, 'Page: page-1\nContext: c\nReflect: QUESTION-FAILS-MARK'])
   const calls: any[] = []
-  stubHindsight(
-    on,
-    calls,
-    defaults({
-      reflect: (e: any) =>
-        e.args.query === 'QUESTION-FAILS-MARK'
-          ? { deny: 'MCP error -32001: Request timed out' }
-          : mcpBody({ text: 'ANSWER-OK-MARK' }),
-    }),
-  )
+  stubHindsight(on, calls, defaults({ reflect: () => ({ deny: 'MCP error -32001: Request timed out' }) }))
 
   const { text, error } = await consult($)
   expect(error).toBe('')
+  expect(reflectCalls(calls).length).toBe(1)
+  expect(text.includes('1 recall, 1 reflect. ')).toBe(true)
   expect(text.includes('MCP error -32001: Request timed out')).toBe(true)
-  expect(text.includes('ANSWER-OK-MARK')).toBe(true)
-  // The reason sits between its own question and the next question
+  // The reason sits after its own question
   const failAt = text.indexOf('QUESTION-FAILS-MARK')
   const reasonAt = text.indexOf('MCP error -32001: Request timed out')
-  const okQuestionAt = text.indexOf('QUESTION-OK-MARK')
-  expect(reasonAt > failAt).toBe(true)
-  expect(reasonAt < okQuestionAt).toBe(true)
+  expect(failAt > -1 && reasonAt > failAt).toBe(true)
   // The recall and page sections still show
   expect(text.includes(KEPT)).toBe(true)
   expect(text.includes('PAGE BODY MARK')).toBe(true)
@@ -482,36 +466,46 @@ test("Haiku's second-call prompt names the kept records' text and the recall que
   const { error } = await consult($)
   expect(error).toBe('')
   expect(prompts.length).toBeGreaterThanOrEqual(2)
-  const second = prompts[1]
+  const second = String(prompts[1] ?? '')
   expect(second.includes(KEPT)).toBe(true)
   expect(second.includes('recall-query-xyz')).toBe(true)
 })
 
-test('a reflect that answers with an error body shows the error in place of its answer, and the other answer and the count still show', async ($, on) => {
+test('a reflect that answers with an error body shows the error in place of its answer, and the count still shows', async ($, on) => {
   stubRepo(on)
   stubStore(on)
   stubSession(on)
-  stubHaikuSteps(on, [STEP1, 'Page: page-1\nContext: c\nReflect: QUESTION-QUOTA-MARK\nReflect: QUESTION-GOOD-MARK'])
+  stubHaikuSteps(on, [STEP1, 'Page: page-1\nContext: c\nReflect: QUESTION-QUOTA-MARK'])
+  stubHindsight(on, [], defaults({ reflect: () => mcpBody({ error: 'Error code: 429 - quota used', text: '' }) }))
+
+  const { text, error } = await consult($)
+  expect(error).toBe('')
+  // The reason sits after its own question, in place of its answer
+  const questionAt = text.indexOf('QUESTION-QUOTA-MARK')
+  const reasonAt = text.indexOf('Error code: 429 - quota used')
+  expect(questionAt > -1 && reasonAt > questionAt).toBe(true)
+  expect(text.includes('1 recall, 1 reflect. ')).toBe(true)
+})
+
+test('a reflect reply that is plain text shows that text as its reason, and no JSON parse error', async ($, on) => {
+  stubRepo(on)
+  stubStore(on)
+  stubSession(on)
+  stubHaikuSteps(on, [STEP1, 'Page: none\nContext: c\nReflect: QUESTION-PLAIN-MARK'])
   stubHindsight(
     on,
     [],
     defaults({
-      reflect: (e: any) =>
-        e.args.query === 'QUESTION-QUOTA-MARK'
-          ? mcpBody({ error: 'Error code: 429 - quota used', text: '' })
-          : mcpBody({ text: 'an answer' }),
+      reflect: () => ({ value: { content: [{ type: 'text', text: 'MCP error -32001: Request timed out' }], isError: false } }),
     }),
   )
 
   const { text, error } = await consult($)
   expect(error).toBe('')
-  // The reason sits between its own question and the next question, in place of its answer
-  const questionAt = text.indexOf('QUESTION-QUOTA-MARK')
-  const reasonAt = text.indexOf('Error code: 429 - quota used')
-  const goodAt = text.indexOf('QUESTION-GOOD-MARK')
-  expect(reasonAt > questionAt).toBe(true)
-  expect(reasonAt < goodAt).toBe(true)
-  // The other answer still shows, and the header counts both reflects
-  expect(text.indexOf('an answer') > goodAt).toBe(true)
-  expect(text.includes('1 recall, 2 reflects')).toBe(true)
+  expect(text.includes('MCP error -32001: Request timed out')).toBe(true)
+  expect(text.includes('JSON Parse error')).toBe(false)
+  // The text is the reason of its own question, so it follows the question
+  const questionAt = text.indexOf('QUESTION-PLAIN-MARK')
+  const reasonAt = text.indexOf('MCP error -32001: Request timed out')
+  expect(questionAt > -1 && reasonAt > questionAt).toBe(true)
 })

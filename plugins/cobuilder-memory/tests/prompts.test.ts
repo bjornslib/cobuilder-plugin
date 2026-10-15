@@ -45,9 +45,9 @@ test('the store keeps the newest 100 prompts, each cut to 2,000 characters', asy
   const kept = data.get('prompts:S1') as { at: string; text: string }[]
   expect(Array.isArray(kept)).toBe(true)
   expect(kept.length).toBe(100)
-  expect(kept[0].text).toBe('p5')
-  expect(kept[kept.length - 1].text).toBe('x'.repeat(2000))
-  expect(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(kept[0].at)).toBe(true)
+  expect(kept[0]?.text).toBe('p5')
+  expect(kept[kept.length - 1]?.text).toBe('x'.repeat(2000))
+  expect(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(kept[0]?.at ?? '')).toBe(true)
 })
 
 test('the prompt block holds the newest prompts within 8,000 characters', () => {

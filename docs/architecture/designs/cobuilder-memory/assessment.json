@@ -55,7 +55,7 @@
     {
       "kind": "prediction",
       "severity": "note",
-      "claim": "Each run costs two Haiku calls and up to three reflects of about 95,000 input tokens each on the Hindsight model.",
+      "claim": "Each run costs two Haiku calls and one reflect of about 95,000 input tokens on the Hindsight model.",
       "evidence": "ADR-0039",
       "district": "skills",
       "suggestion": "Keep the plugin opt-in and outside the umbrella."

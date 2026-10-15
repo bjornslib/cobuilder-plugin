@@ -1,4 +1,4 @@
-import type { Engine } from 'claude-code'
+import type { EngineInterface } from 'claude-code'
 import { resolveBank } from './bank'
 import { writeRecallQuery, writeReflectPlan } from './haiku'
 import { dropEmptyPages, dropOwnSession, getPage, type Outcome, recall, reflect, searchPages, setUpMessage } from './hindsight'
@@ -16,7 +16,7 @@ const CHECK_QUERY = 'memory check'
 const CHECK_QUESTION = 'What does this project remember most often?'
 
 // The memory run: the pane opens first, the run goes on without it, and the tick runs until the run ends
-export async function runMemory($: Engine, _origin: RunOrigin): Promise<string> {
+export async function runMemory($: EngineInterface, _origin: RunOrigin): Promise<string> {
   await setRun($, () => newRun(clockTime()))
   void openPane($)
   const stop = startTick($)
@@ -32,7 +32,7 @@ export async function runMemory($: Engine, _origin: RunOrigin): Promise<string> 
 
 // The memory run, slices 1 to 3: Haiku writes the recall query, recall and the page search
 // run side by side, Haiku picks a page and the reflect questions, then the page read and the reflect calls run side by side
-async function memoryRun($: Engine): Promise<string> {
+async function memoryRun($: EngineInterface): Promise<string> {
   const target = await resolveBank($)
   if ('error' in target) return fail($, target.error)
   await setRun($, s => ({ ...s, bank: target.bank }))
@@ -107,14 +107,14 @@ async function memoryRun($: Engine): Promise<string> {
 }
 
 // Marks the run failed with its reason, and returns the reason as the tool result
-async function fail($: Engine, reason: string): Promise<string> {
+async function fail($: EngineInterface, reason: string): Promise<string> {
   await setRun($, s => ({ ...s, step: 'failed', error: reason }))
   return reason
 }
 
 // Adds one Hindsight call to the pane: running when it starts, then its count or its reason
 async function trackCall<T>(
-  $: Engine,
+  $: EngineInterface,
   name: string,
   ask: () => Promise<Outcome<T>>,
   count: (value: T) => string,
@@ -136,7 +136,7 @@ function endCall<T>(c: CallState, out: Outcome<T>, count: (value: T) => string):
 }
 
 // One reflect call, shown as its own question row and as a call
-async function answerReflect($: Engine, index: number, ask: () => Promise<Outcome<string>>): Promise<Outcome<string>> {
+async function answerReflect($: EngineInterface, index: number, ask: () => Promise<Outcome<string>>): Promise<Outcome<string>> {
   const out = await trackCall($, 'reflect', ask, () => 'answered')
   await setRun($, s => ({ ...s, reflects: s.reflects.map((r, i) => (i === index ? endReflect(r, out) : r)) }))
   return out
@@ -160,8 +160,8 @@ function clockTime(): string {
 function toReflects(questions: string[], answers: Outcome<string>[]): RunReport['reflects'] {
   return answers.map((a, i) =>
     a.ok
-      ? { question: questions[i], answer: a.value, reason: null }
-      : { question: questions[i], answer: null, reason: a.reason },
+      ? { question: questions[i] ?? '', answer: a.value, reason: null }
+      : { question: questions[i] ?? '', answer: null, reason: a.reason },
   )
 }
 
@@ -171,7 +171,7 @@ function recallFound(query: string, hits: Parameters<typeof dropOwnSession>[0], 
 }
 
 // /memory-check: each Hindsight tool once, with fixed inputs and no model call
-export async function runCheck($: Engine): Promise<string> {
+export async function runCheck($: EngineInterface): Promise<string> {
   const target = await resolveBank($)
   if ('error' in target) return target.error
 

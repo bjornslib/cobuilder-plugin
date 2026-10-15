@@ -8,11 +8,11 @@ test('session start registers the consult tool with no input and both commands',
   // Bottom handlers stand in for the engine and answer each registration
   on('tool.register', (_$: any, e: any) => {
     tools.push(e)
-    return { value: undefined }
+    return { value: { tool: e.name } }
   })
   on('command.register', (_$: any, e: any) => {
     commands.push(e)
-    return { value: undefined }
+    return { value: { command: e.name } }
   })
   // The bottom handler answers session.start with the echoed cwd, as the engine does
   on('session.start', (_$: any, e: any) => ({ cwd: e.cwd }))

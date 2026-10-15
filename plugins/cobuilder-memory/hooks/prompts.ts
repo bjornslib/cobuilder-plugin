@@ -1,4 +1,4 @@
-import type { Engine, PromptSubmitInput, SessionMessage } from 'claude-code'
+import type { EngineInterface, PromptSubmitInput, SessionMessage } from 'claude-code'
 
 export type StoredPrompt = { at: string; text: string }
 
@@ -22,14 +22,14 @@ export function shouldStore(e: PromptSubmitInput): boolean {
 }
 
 // Keeps the newest prompts of this session, each cut to PROMPT_CHARS
-export async function storePrompt($: Engine, text: string): Promise<void> {
+export async function storePrompt($: EngineInterface, text: string): Promise<void> {
   const key = 'prompts:' + (await $.session.id())
   const existing = ((await $.store.get(key)) as StoredPrompt[] | undefined) ?? []
   const entry = { at: new Date().toISOString().slice(0, 16), text: text.trim().slice(0, PROMPT_CHARS) }
   await $.store.set(key, [...existing, entry].slice(-KEEP_PROMPTS))
 }
 
-export async function readPrompts($: Engine): Promise<StoredPrompt[]> {
+export async function readPrompts($: EngineInterface): Promise<StoredPrompt[]> {
   const key = 'prompts:' + (await $.session.id())
   return ((await $.store.get(key)) as StoredPrompt[] | undefined) ?? []
 }

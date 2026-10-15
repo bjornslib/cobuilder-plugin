@@ -2,6 +2,9 @@ import { expect, mock, test } from 'claude-code/testing'
 import { HOW_TO_JUDGE } from '../hooks/result'
 import { mcpBody, rawHit, settle, stubRepo, stubSession, stubStore, USAGE } from './fakes'
 
+// Haiku's reply is awaited through the engine's timers, so the global setTimeout is declared here
+declare const setTimeout: (fn: (...args: any[]) => void, ms: number) => unknown
+
 // Slice 4 cases: the memory pane. Each run opens the pane, the pane draws the run's state,
 // and a refused open never stops the run. Every case fails on an assertion until pane.tsx exists.
 
@@ -15,7 +18,7 @@ const Q_OK = 'QUESTION-OK-MARK'
 const Q_FAIL = 'QUESTION-FAIL-MARK'
 const REASON = 'MCP error -32001: Request timed out'
 const STEP1 = 'Need: ' + NEED + '\nRecall: recall-query-xyz'
-const PLAN = 'Page: page-1\nContext: c\nReflect: ' + Q_OK + '\nReflect: ' + Q_FAIL
+const PLAN = 'Page: page-1\nContext: c\nReflect: ' + Q_OK
 const SEARCH_HIT = { id: 'page-1', name: 'ADR index', snippet: 'the ADR list', updated_at: '2026-09-20T08:00:00Z' }
 const PAGE = { id: 'page-1', name: 'ADR index', markdown: '---\nid: page-1\n---\n\nPAGE BODY\n', timestamp: '2026-09-20T08:00:00Z' }
 const VIEWPORT = { columns: 120, rows: 40 }
@@ -248,19 +251,14 @@ test('while a run is held, the elapsed time changes when the clock advances', as
   }
 })
 
-test('after a full run, the pane shows the query, the page, each reflect row, and the last line', async ($, on) => {
+test('after a full run, the pane shows the query, the page, the one reflect row, and the last line', async ($, on) => {
   stubRepo(on)
   stubStore(on)
   stubSession(on)
   const order: string[] = []
   stubOpen(on, order, [])
   stubModel(on, order, [STEP1, PLAN])
-  stubHindsight(
-    on,
-    defaults({
-      reflect: (e: any) => (e.args.query === Q_FAIL ? { deny: REASON } : mcpBody({ text: 'ANSWER-OK-MARK' })),
-    }),
-  )
+  stubHindsight(on, defaults())
 
   const { error } = await consult($)
   expect(error).toBe('')
@@ -270,18 +268,30 @@ test('after a full run, the pane shows the query, the page, each reflect row, an
   expect(await hasText(ui, 'ADR index')).toBe(true)
   expect(await hasText(ui, '2026-09-20')).toBe(true)
 
-  // One row per question: the answered row holds the check mark, the failed row holds the cross and the reason
-  const tree = await ui.drawn()
-  const okRow = rowOf(tree, Q_OK, [Q_FAIL])
-  expect(okRow === undefined).toBe(false)
-  expect(leaves(okRow).join('\n').includes('✓')).toBe(true)
-  expect(leaves(okRow).join('\n').includes('✗')).toBe(false)
-  const failRow = rowOf(tree, Q_FAIL, [Q_OK])
-  expect(failRow === undefined).toBe(false)
-  expect(leaves(failRow).join('\n').includes('✗')).toBe(true)
-  expect(leaves(failRow).join('\n').includes(REASON)).toBe(true)
+  // The one question shows, and no cross marks an answered reflect
+  const all = leaves(await ui.drawn()).join('\n')
+  expect(all.includes(Q_OK)).toBe(true)
+  expect(all.includes('✗')).toBe(false)
 
   expect(await hasText(ui, LAST_LINE)).toBe(true)
+})
+
+test('after a run whose reflect fails, the pane shows the cross and the reason', async ($, on) => {
+  stubRepo(on)
+  stubStore(on)
+  stubSession(on)
+  const order: string[] = []
+  stubOpen(on, order, [])
+  stubModel(on, order, [STEP1, 'Page: page-1\nContext: c\nReflect: ' + Q_FAIL])
+  stubHindsight(on, defaults({ reflect: () => ({ deny: REASON }) }))
+
+  const { error } = await consult($)
+  expect(error).toBe('')
+  const ui = await mountPane($)
+  const all = leaves(await ui.drawn()).join('\n')
+  expect(all.includes(Q_FAIL)).toBe(true)
+  expect(all.includes('✗')).toBe(true)
+  expect(all.includes(REASON)).toBe(true)
 })
 
 test('a run outside a git repo leaves the pane in the failed state, with the reason', async ($, on) => {
@@ -315,7 +325,7 @@ test('the tool result is unchanged by the pane: it starts with the judging rules
   expect(opens.length).toBe(1)
   const text = String(value?.result ?? '')
   expect(text.startsWith(HOW_TO_JUDGE)).toBe(true)
-  expect(text).toContain('Hindsight memory on coding-agent-think-with-ai: 1 recall, 2 reflects. Haiku read 0 stored prompts.')
+  expect(text).toContain('Hindsight memory on coding-agent-think-with-ai: 1 recall, 1 reflect. Haiku read 0 stored prompts.')
   expect(text).toContain('Need: ' + NEED)
   expect(text).toContain(KEPT)
   expect(text.includes(LAST_LINE)).toBe(false)
@@ -439,4 +449,62 @@ test('after a run ends, the elapsed time stops: advancing the clock leaves the p
   await clock.advance(5000)
   expect(JSON.stringify(await ui.drawn())).toBe(before)
   expect(await hasText(ui, '1:10')).toBe(false)
+})
+
+// The title row is drawn in every state, so each state mounts the pane and looks for the title
+test('the memory pane draws its title row when no run has started', async ($, on) => {
+  stubStore(on)
+  const ui = await mountPane($)
+  expect(await hasText(ui, PANE_TITLE)).toBe(true)
+})
+
+test('the memory pane draws its title row while a run works', async ($, on) => {
+  stubRepo(on)
+  stubStore(on)
+  stubSession(on)
+  const order: string[] = []
+  stubOpen(on, order, [])
+  stubModel(on, order, [STEP1, PLAN])
+  const hold = holdReflect()
+  stubHindsight(on, defaults({ reflect: hold.reply }))
+
+  const pending = consult($)
+  try {
+    await waitOr(hold.startedP, 5000)
+    const ui = await mountPane($)
+    expect(await hasText(ui, PANE_TITLE)).toBe(true)
+  } finally {
+    hold.release()
+    await pending
+  }
+})
+
+test('the memory pane draws its title row after a run is done', async ($, on) => {
+  stubRepo(on)
+  stubStore(on)
+  stubSession(on)
+  const order: string[] = []
+  stubOpen(on, order, [])
+  stubModel(on, order, [STEP1, PLAN])
+  stubHindsight(on, defaults())
+
+  const { error } = await consult($)
+  expect(error).toBe('')
+  const ui = await mountPane($)
+  expect(await hasText(ui, PANE_TITLE)).toBe(true)
+})
+
+test('the memory pane draws its title row when the run has failed', async ($, on) => {
+  stubRepo(on, { exitCode: 128 })
+  stubStore(on)
+  stubSession(on)
+  const order: string[] = []
+  stubOpen(on, order, [])
+  stubModel(on, order, [STEP1, PLAN])
+  stubHindsight(on, defaults())
+
+  const { error } = await consult($)
+  expect(error).toBe('')
+  const ui = await mountPane($)
+  expect(await hasText(ui, PANE_TITLE)).toBe(true)
 })

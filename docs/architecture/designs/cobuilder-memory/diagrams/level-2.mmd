@@ -26,15 +26,15 @@ sequenceDiagram
     Run->>Run: Drops this session records and Generating content pages
     Run->>Pane: Step questions, counts shown
     Run->>Haiku: Records and page snippets, 600 tokens
-    Haiku-->>Run: Page id, Context line, 1 to 3 Reflect lines
-    Run->>Pane: Step reflect, each question running
+    Haiku-->>Run: Page id, Context line, one Reflect line
+    Run->>Pane: Step reflect, question running
 
     par Page read
         Run->>HS: $.mcp.call get_knowledge_page, picked page id
         HS-->>Run: Body up to 6000 characters, timestamp
     and Reflect
-        Run->>HS: $.mcp.call reflect, one per question
-        HS-->>Run: Answer for each question
+        Run->>HS: $.mcp.call reflect, one call
+        HS-->>Run: Answer for the question
     end
 
     Run->>Pane: Step done, answers shown

@@ -1,5 +1,5 @@
 import { expect, test } from 'claude-code/testing'
-import { dropOwnSession, recall, type Hit } from '../hooks/hindsight'
+import { dropOwnSession, type Hit } from '../hooks/hindsight'
 import { mcpBody, settle, stubHaiku, stubRepo, stubSession, stubStore } from './fakes'
 
 const SETUP_MESSAGE =
@@ -31,11 +31,27 @@ test('recall calls the hindsight server with the bank and the contract arguments
   })
 })
 
-test('a recall that the server denies reports a reason, not an empty result', async ($, on) => {
-  on('mcp.call', () => ({ deny: 'no connected MCP tool' }))
-  const out: any = await recall($, 'coding-agent-think-with-ai', 'q')
-  expect(out.ok).toBe(false)
-  expect(String(out.reason ?? '').length).toBeGreaterThan(0)
+test('a recall the server refuses shows the refusal in the recall section, and no JSON parse text', async ($, on) => {
+  stubRepo(on)
+  stubStore(on)
+  stubSession(on)
+  stubHaiku(on, 'Need: n\nRecall: q')
+  const REFUSAL = 'Blocked by the auto mode classifier: no rule allows this tool call'
+  on('mcp.call', (_$: any, e: any) => {
+    if (e.tool === 'recall') return { deny: REFUSAL }
+    return mcpBody({ results: [] })
+  })
+  const { value, error } = await settle(async () => $.tool.call({ tool: 'mcp__cobuilder-memory__consult' } as any))
+  expect(error).toBe('')
+  const text = String(value?.result ?? '')
+  expect(text.includes(REFUSAL)).toBe(true)
+  expect(text.includes('Add "mcp__hindsight__recall" to permissions.allow in your settings.')).toBe(true)
+  expect(text.includes('JSON Parse error')).toBe(false)
+  // The refusal sits in the recall section, after the recall query and before the page section
+  const queryAt = text.indexOf('Recall: q')
+  const refusalAt = text.indexOf(REFUSAL)
+  expect(queryAt > -1 && refusalAt > queryAt).toBe(true)
+  expect(refusalAt < text.indexOf('Knowledge page:')).toBe(true)
 })
 
 test('the current session transcript is dropped from the recall hits', () => {

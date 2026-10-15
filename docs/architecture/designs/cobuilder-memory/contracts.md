@@ -128,10 +128,11 @@ One memory run has four steps. The tool and the command both start it.
    date, and snippet. Haiku replies with these lines:
    - `Page: <one page id, or none>`
    - `Context: <the context for reflect>`
-   - one to three `Reflect: <question>` lines, each on one topic, naming
-     the ADR ids and terms that the records use.
+   - one `Reflect: <question>` line on one topic, naming the ADR ids and
+     terms that the records use.
 
-   The module keeps at most three questions. It accepts a page id only
+   The module keeps the first question only. One reflect keeps the run
+   short, because a reflect is the slowest call (engineer, 2026-10-15). It accepts a page id only
    when the id is one of the search results.
 4. **The page read and reflect,** side by side.
    - `get_knowledge_page` with the picked id. The module keeps the body,
@@ -174,6 +175,7 @@ title `🧠 Hindsight: CoBuilder Memory Run`. The approved mockup is
 - **State.** One atom, `{ plugin: "cobuilder-memory", key: "run" }`, holds the newest run: its start time, the bank, the step it is on (`query`, `search`, `questions`, `reflect`, `done`, or `failed`), the Need line, the recall query and its counts and records, the picked page, and each reflect question with its answer, `running`, or its failure. Each step updates the atom, and so does each Hindsight call when it starts and when it ends, so the pane shows the calls in flight. While the run works, a one-second `$.clock` tick updates the elapsed time. Each update redraws the pane.
 - **While a run works.** The pane shows the bank, the start time, the Need line, and one line per step with its state (done, running, or failed) and its counts.
 - **When a run ends.** The pane shows the run time, the recall query and the first records, the picked page with its date, and each reflect question marked answered or failed. A last line says that the full result went to the agent.
+- **Title row.** The pane draws `🧠 Hindsight: CoBuilder Memory Run` as its first row in every state. The engine draws a pane's title only as a tab, when more than one pane is open, so a lone pane would show no title.
 - **Drawing.** A `ui.render` hook on `{ component: "Pane", requestId: "memory-run" }` draws the atom, fitted to the viewport rows. With no run yet, the pane says so.
 
 The pane shows the same facts as the result. It adds no fact of its own.
@@ -202,7 +204,7 @@ mappings are not read.
 | Recall records shown | 8 |
 | Page search results | 5 |
 | Page body shown | 6,000 characters |
-| Reflect questions per run | 3 |
+| Reflect questions per run | 1 |
 | Reflect `max_tokens` | 1,500 |
 | Reflect `budget` | `low` |
 

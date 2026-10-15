@@ -137,6 +137,9 @@ its own row, and the run goes on.
 
 ### 6.1 Memory pane
 
+- Title row, in every state: `🧠 Hindsight: CoBuilder Memory Run` in bold.
+  The engine shows a pane title only as a tab when two or more panes are
+  open, so the pane draws its own.
 - Header row: the bank in dim text, then `·`, the start time, and in the
   Done state `·` and the run time.
 - A blank row, then `Need:` and its text, wrapped to the pane width with a
@@ -157,7 +160,7 @@ reaches the agent.
 
 - No `hindsight` MCP server: Failed state with the set-up message.
 - Outside a git repo: Failed state with `No bank: this folder is not in a git repository.`
-- Two of three reflects time out: Done state with one `✓` and two `✗` rows.
+- The reflect times out: Done state with one `✗` reflect row and its reason.
 - A second run while the first runs: the second run replaces the atom.
 
 ## 8. Accessibility

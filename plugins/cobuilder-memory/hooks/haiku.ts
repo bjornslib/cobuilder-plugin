@@ -1,4 +1,4 @@
-import type { Engine } from 'claude-code'
+import type { EngineInterface } from 'claude-code'
 import type { Hit, PageHit } from './hindsight'
 
 export type RecallPlan = { need: string; recall: string }
@@ -39,7 +39,7 @@ const REFLECT_SYSTEM = [
   'Page: <one page id from the pages, or none>',
   'Context: <the context>',
   'Reflect: <one question, in 30 words or fewer>',
-  'Write one to three Reflect lines, each from a different angle.',
+  'Write one Reflect line, on one topic.',
 ].join('\n')
 
 // Every line that starts with the label, with the label removed
@@ -54,7 +54,7 @@ export function parseLines(text: string, label: string): string[] {
 
 // One Haiku call. A refusal, a timeout, or a thrown error comes back as the reason, never as a throw.
 async function complete(
-  $: Engine,
+  $: EngineInterface,
   system: string,
   prompt: string,
   maxTokens: number,
@@ -68,7 +68,7 @@ async function complete(
 }
 
 export async function writeRecallQuery(
-  $: Engine,
+  $: EngineInterface,
   prompts: string,
   tail: string,
 ): Promise<RecallPlan | { error: string }> {
@@ -85,7 +85,7 @@ export async function writeRecallQuery(
 }
 
 export async function writeReflectPlan(
-  $: Engine,
+  $: EngineInterface,
   need: string,
   query: string,
   hits: Hit[],
@@ -104,6 +104,6 @@ export async function writeReflectPlan(
   return {
     pageId: pages.some((p) => p.id === pageId) ? pageId : null,
     context: parseLines(plan.text, 'Context')[0] ?? '',
-    questions: parseLines(plan.text, 'Reflect').slice(0, 3),
+    questions: parseLines(plan.text, 'Reflect').slice(0, 1),
   }
 }

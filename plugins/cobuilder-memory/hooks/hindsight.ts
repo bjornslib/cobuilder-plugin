@@ -1,4 +1,4 @@
-import type { Engine } from 'claude-code'
+import type { EngineInterface } from 'claude-code'
 
 export type Hit = { text: string; date: string; doc: string }
 export type PageHit = { id: string; name: string; snippet: string; updated: string }
@@ -24,7 +24,7 @@ function withPermissionHint(tool: string, reason: string): string {
 
 // One MCP call to Hindsight. A thrown error, or isError, is a failed outcome with its reason.
 async function call(
-  $: Engine,
+  $: EngineInterface,
   tool: string,
   args: Record<string, unknown>,
 ): Promise<Outcome<any>> {
@@ -36,6 +36,10 @@ async function call(
       return { ok: false, reason: withPermissionHint(tool, text || 'Hindsight returned an error'), ms: Date.now() - start }
     }
     const value = unwrap(text)
+    // A reply that is not JSON is the server's plain-text failure, and the text is its reason
+    if (value === undefined) {
+      return { ok: false, reason: withPermissionHint(tool, text || 'Hindsight returned an error'), ms: Date.now() - start }
+    }
     // A successful reply can still carry the server's error in its body
     if (typeof value?.error === 'string' && value.error !== '') {
       return { ok: false, reason: withPermissionHint(tool, value.error), ms: Date.now() - start }
@@ -47,11 +51,15 @@ async function call(
   }
 }
 
-// The reply is JSON. The server may wrap its answer once more as { result: "<json>" }.
+// The reply is JSON. The server may wrap its answer once more as { result: "<json>" }. Undefined when the text is not JSON.
 function unwrap(text: string): any {
-  let data: any = JSON.parse(text)
-  if (typeof data?.result === 'string') data = JSON.parse(data.result)
-  return data
+  try {
+    let data: any = JSON.parse(text)
+    if (typeof data?.result === 'string') data = JSON.parse(data.result)
+    return data
+  } catch {
+    return undefined
+  }
 }
 
 function toHit(r: any): Hit {
@@ -73,7 +81,7 @@ export function setUpMessage(reason: string): string | null {
   return MISSING.test(reason) ? SET_UP_MESSAGE : null
 }
 
-export async function recall($: Engine, bank: string, query: string): Promise<Outcome<Hit[]>> {
+export async function recall($: EngineInterface, bank: string, query: string): Promise<Outcome<Hit[]>> {
   const r = await call($, 'recall', {
     query,
     bank_id: bank,
@@ -85,7 +93,7 @@ export async function recall($: Engine, bank: string, query: string): Promise<Ou
   return { ok: true, value: (r.value?.results ?? []).map(toHit), ms: r.ms }
 }
 
-export async function searchPages($: Engine, bank: string, query: string): Promise<Outcome<PageHit[]>> {
+export async function searchPages($: EngineInterface, bank: string, query: string): Promise<Outcome<PageHit[]>> {
   const r = await call($, 'search_knowledge_base', { query, bank_id: bank, limit: 5 })
   if (!r.ok) return r
   const value = (r.value?.results ?? []).map((p: any) => ({
@@ -97,7 +105,7 @@ export async function searchPages($: Engine, bank: string, query: string): Promi
   return { ok: true, value, ms: r.ms }
 }
 
-export async function getPage($: Engine, bank: string, id: string): Promise<Outcome<Page>> {
+export async function getPage($: EngineInterface, bank: string, id: string): Promise<Outcome<Page>> {
   const r = await call($, 'get_knowledge_page', { page_id: id, bank_id: bank })
   if (!r.ok) return r
   const value: Page = {
@@ -109,7 +117,7 @@ export async function getPage($: Engine, bank: string, id: string): Promise<Outc
   return { ok: true, value, ms: r.ms }
 }
 
-export async function reflect($: Engine, bank: string, query: string, context: string): Promise<Outcome<string>> {
+export async function reflect($: EngineInterface, bank: string, query: string, context: string): Promise<Outcome<string>> {
   const r = await call($, 'reflect', { query, context, bank_id: bank, budget: 'low', max_tokens: 1500 })
   if (!r.ok) return r
   return { ok: true, value: String(r.value?.text ?? ''), ms: r.ms }

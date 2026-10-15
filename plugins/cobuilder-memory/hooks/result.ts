@@ -38,8 +38,8 @@ function pageLines(page: RunReport['page']): string[] {
 }
 
 export function buildResult(r: RunReport): string {
-  const header =
-    'Hindsight memory on ' + r.bank + ': 1 recall, ' + r.reflects.length + ' reflects. Haiku read ' + r.promptsRead + ' stored prompts.'
+  const reflects = r.reflects.length === 1 ? '1 reflect' : r.reflects.length + ' reflects'
+  const header = 'Hindsight memory on ' + r.bank + ': 1 recall, ' + reflects + '. Haiku read ' + r.promptsRead + ' stored prompts.'
   const out = [HOW_TO_JUDGE, '', header, 'Need: ' + r.need, '', ...recallLines(r.recall), '', ...pageLines(r.page)]
   if (r.context) out.push('', 'Reflect context: ' + r.context)
   for (const f of r.reflects) out.push('', 'Reflect: ' + f.question, f.answer ?? f.reason ?? '')

@@ -1,4 +1,4 @@
-import type { Engine } from 'claude-code'
+import type { EngineInterface } from 'claude-code'
 
 export type Bank = { bank: string }
 export type NoBank = { error: string }
@@ -8,7 +8,7 @@ const HINDSIGHT_CONFIG = '/.hindsight/coding-agent.json'
 const DEFAULT_TEMPLATE = 'coding-agent::{gitProject}'
 
 // The bank for this repo. {gitProject} is the base name of the main worktree root.
-export async function resolveBank($: Engine): Promise<Bank | NoBank> {
+export async function resolveBank($: EngineInterface): Promise<Bank | NoBank> {
   let template = DEFAULT_TEMPLATE
   try {
     const cfg = JSON.parse(await $.fs.read((await $.env.get('HOME')) + HINDSIGHT_CONFIG))

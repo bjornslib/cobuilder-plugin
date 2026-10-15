@@ -142,9 +142,9 @@ the query writer.
    the results from the current session's own transcript, and pages that
    have no content yet.
 3. Haiku reads the kept records and the page snippets. It picks at most
-   one page, and it writes one context and one to three reflect questions
-   that name the ADR ids and terms of the records.
-4. The page read and the reflects run side by side.
+   one page, and it writes one context and one reflect question that names
+   the ADR ids and terms of the records.
+4. The page read and the reflect run side by side.
 
 **The Hindsight calls.** Every call goes through
 `$.mcp.call("hindsight", ...)`: `recall`, `search_knowledge_base`,
@@ -183,7 +183,7 @@ uses.
   CLAUDE.md, README.md, and DDD-VOCABULARY.md.
 - The plugin needs an MCP server named `hindsight` with the four tools.
   Without it, the run names what to set up.
-- A run waits on two Haiku calls and up to three reflects, bounded by the
+- A run waits on two Haiku calls and one reflect, bounded by the
   engine's MCP timeout. The pane shows the progress.
 - Each run costs model time on two servers. The plugin stays opt-in for
   this reason.

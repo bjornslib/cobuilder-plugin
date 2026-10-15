@@ -1,4 +1,4 @@
-import { atom, read, update, type Engine } from 'claude-code'
+import { atom, read, update, type EngineInterface } from 'claude-code'
 import type { CallState, RunState, RunStep } from '../types'
 
 export const PANE_ID = 'memory-run'
@@ -17,7 +17,7 @@ const STEPS: RunStep[] = ['query', 'search', 'questions', 'reflect']
 const MARK = { running: '◐', done: '✓', failed: '✗' } as const
 const COLOUR = { running: 'yellow', done: 'green', failed: 'red' } as const
 
-type PaneInput = Parameters<Engine['ui']['resolve']>[0] & { viewport?: { columns: number; rows: number } }
+type PaneInput = Parameters<EngineInterface['ui']['resolve']>[0] & { viewport?: { columns: number; rows: number } }
 type Row = { state?: keyof typeof MARK; text: string; colour?: string }
 
 export function newRun(startedAt: string): RunState {
@@ -36,12 +36,12 @@ export function newRun(startedAt: string): RunState {
 }
 
 // Changes the newest run. Before the first run, the change starts from an empty run.
-export async function setRun($: Engine, change: (s: RunState) => RunState): Promise<void> {
+export async function setRun($: EngineInterface, change: (s: RunState) => RunState): Promise<void> {
   await update($, RUN, s => change(s ?? newRun('')))
 }
 
 // Opens the pane without waiting for its placement. A refused open never stops the run.
-export async function openPane($: Engine): Promise<void> {
+export async function openPane($: EngineInterface): Promise<void> {
   try {
     await $.ui.open({ id: PANE_ID, title: PANE_TITLE })
   } catch {
@@ -52,7 +52,7 @@ export async function openPane($: Engine): Promise<void> {
 let live: (() => void) | null = null
 
 // Adds one second to the elapsed time each second. A new run stops the tick of an earlier run.
-export function startTick($: Engine): () => void {
+export function startTick($: EngineInterface): () => void {
   live?.()
   const timer = $.clock.every(1000, () => {
     void setRun($, s => ({ ...s, elapsedSec: s.elapsedSec + 1 }))
@@ -181,12 +181,15 @@ function rowsOf(s: RunState, width: number): Row[] {
 }
 
 // Draws the newest run: the empty line before any run, else the header and the state rows
-export async function renderPane($: Engine, e: PaneInput) {
+export async function renderPane($: EngineInterface, e: PaneInput) {
   const { Box, Text } = $.ui.resolve(e)
   const s = await read($, RUN)
+  // The engine draws a pane title only as a tab, so the pane draws its own title row first
+  const title = <Text weight="semibold">{PANE_TITLE}</Text>
   if (s === null) {
     return (
       <Box flexDirection="column">
+        {title}
         <Text dimColor>{EMPTY_TEXT}</Text>
       </Box>
     )
@@ -195,6 +198,7 @@ export async function renderPane($: Engine, e: PaneInput) {
   const header = [s.bank, s.startedAt, clock(s.elapsedSec)].filter(Boolean).join(' · ')
   return (
     <Box flexDirection="column">
+      {title}
       <Text dimColor>{cut(header, width)}</Text>
       {rowsOf(s, width).map(row =>
         row.state ? (

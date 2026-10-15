@@ -111,3 +111,25 @@ test('memory-check marks the reflect line failed when reflect answers with an er
   expect(line.includes('Error code: 429 - quota used')).toBe(true)
   expect(line.includes('answered')).toBe(false)
 })
+
+test('memory-check shows a plain-text reflect reply as the reason on its reflect line, and no JSON parse error', async ($, on) => {
+  stubRepo(on)
+  stubStore(on)
+  stubSession(on)
+  on('mcp.call', (_$: any, e: any) => {
+    if (e.tool === 'recall') return mcpBody({ results: [rawHit('a record', 'gitlog:repo')] })
+    if (e.tool === 'search_knowledge_base') {
+      return mcpBody({ results: [{ id: 'page-1', name: 'ADR index', snippet: 'the ADRs', updated_at: '2026-10-01T00:00:00Z' }] })
+    }
+    if (e.tool === 'get_knowledge_page') return mcpBody({ id: 'page-1', name: 'ADR index', markdown: '', timestamp: '' })
+    if (e.tool === 'reflect') {
+      return { value: { content: [{ type: 'text', text: 'MCP error -32001: Request timed out' }], isError: false } }
+    }
+    return { deny: 'unknown tool' }
+  })
+  const text = await runCheck($)
+  const line = lineFor(text, 'reflect')
+  expect(line.includes('failed')).toBe(true)
+  expect(line.includes('MCP error -32001: Request timed out')).toBe(true)
+  expect(line.includes('JSON Parse error')).toBe(false)
+})

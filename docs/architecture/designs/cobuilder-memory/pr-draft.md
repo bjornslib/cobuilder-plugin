@@ -40,7 +40,7 @@ An opt-in plugin, cobuilder-memory, ships one hooks module with one tool, consul
 - The MCP reflect tool has no fact-type filter, so reflect can draw on stale summaries. The judging rules treat reflect as leads.
 - Reflect answers can contradict recall and each other. The judging rules tell the main agent to trust recall and to check each claim.
 - The Hindsight Stop hook keeps reply text. A reply that restates memory returns later with a newer date, so the judging rules say a restatement is not newer evidence.
-- Each run makes two Haiku calls, one recall, one page search, and up to three reflects. One low reflect used about 95,000 input tokens on the Hindsight model.
+- Each run makes two Haiku calls, one recall, one page search, and one reflect. One low reflect used about 95,000 input tokens on the Hindsight model.
 - Consolidation stopped on 2026-09-26 behind a dead worker. In the H1 run, two of three reflects timed out while it caught up.
 - A knowledge page can be stale or empty. The run skips an empty page, and the result shows each page's update date.
 - A pane that the agent's run opens appears only from 144 columns. The transcript still holds the full result.
