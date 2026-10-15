@@ -89,3 +89,25 @@ test('memory-check puts the allow-rule hint on the search line when the permissi
     searchLine.includes('Add "mcp__hindsight__search_knowledge_base" to permissions.allow in your settings.'),
   ).toBe(true)
 })
+
+test('memory-check marks the reflect line failed when reflect answers with an error body', async ($, on) => {
+  stubRepo(on)
+  stubStore(on)
+  stubSession(on)
+  on('mcp.call', (_$: any, e: any) => {
+    if (e.tool === 'recall') return mcpBody({ results: [rawHit('a record', 'gitlog:repo')] })
+    if (e.tool === 'search_knowledge_base') {
+      return mcpBody({ results: [{ id: 'page-1', name: 'ADR index', snippet: 'the ADRs', updated_at: '2026-10-01T00:00:00Z' }] })
+    }
+    if (e.tool === 'get_knowledge_page') {
+      return mcpBody({ id: 'page-1', name: 'ADR index', markdown: '---\nid: page-1\n---\n\nthe page body', timestamp: '2026-10-01T00:00:00Z' })
+    }
+    if (e.tool === 'reflect') return mcpBody({ error: 'Error code: 429 - quota used', text: '' })
+    return { deny: 'unknown tool' }
+  })
+  const text = await runCheck($)
+  const line = lineFor(text, 'reflect')
+  expect(line.includes('failed')).toBe(true)
+  expect(line.includes('Error code: 429 - quota used')).toBe(true)
+  expect(line.includes('answered')).toBe(false)
+})

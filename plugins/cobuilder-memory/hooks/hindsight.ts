@@ -35,7 +35,12 @@ async function call(
     if (r?.isError) {
       return { ok: false, reason: withPermissionHint(tool, text || 'Hindsight returned an error'), ms: Date.now() - start }
     }
-    return { ok: true, value: unwrap(text), ms: Date.now() - start }
+    const value = unwrap(text)
+    // A successful reply can still carry the server's error in its body
+    if (typeof value?.error === 'string' && value.error !== '') {
+      return { ok: false, reason: withPermissionHint(tool, value.error), ms: Date.now() - start }
+    }
+    return { ok: true, value, ms: Date.now() - start }
   } catch (err) {
     const reason = String((err as Error)?.message ?? err)
     return { ok: false, reason: withPermissionHint(tool, reason), ms: Date.now() - start }

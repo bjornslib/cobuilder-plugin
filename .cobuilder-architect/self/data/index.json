@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "2b251cdb21391573fa172619479d873afa47bc35",
+    "git_head": "6187a3d8d5c9b615ca03a4a9dbe63d9258e2c8b2",
     "trees": {
       "docs/architecture/adr": "sha256:63eeb0f927ed1213e27a9a1a2604e89f62f3099d838898889b0edfb6934c2474",
       "docs/architecture/designs": "sha256:49082f03de6fdd0eca1ff2f45a1bc18477f984258bf8161f63a5f426fd7edf73",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:d513b15bef248bceb7e91de4a6b602ef9e76c0bd6ccdea18f9c0517c639b8883",
-      ".cobuilder/rubrics": "sha256:177909aa2e3ccb6c75b8f1f7a453fd03b6e660811ec3a48df5dabf04573e44cf"
+      "docs/plans": "sha256:b7d380bd93a5ac5a2d534eb1f402f482c3ecafbda8ab2af8273d96011d0292df",
+      ".cobuilder/rubrics": "sha256:b09560c495118162290c37236588912f8539478077de612d0f36294303f1fd9b"
     }
   },
   "entities": {
@@ -3024,9 +3024,9 @@
         "n": 3,
         "title": "Reflect questions written from the records",
         "ends_with": "Haiku writes a context and up to three reflect questions. Each names an ADR id or term of the kept records. The page read and the `reflect` calls run side by side through `$.mcp.call`. A reflect that fails or times out writes its reason. The other answers still show.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "cobuilder-memory/4",

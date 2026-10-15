@@ -72,7 +72,7 @@ async function consult($: any): Promise<{ text: string; error: string }> {
   return { text: String(value?.result ?? ''), error }
 }
 
-test('the consult run searches the knowledge base with the Recall line, and recall and search start before either ends', async ($, on) => {
+test('the memory run searches the knowledge base with the Recall line, and recall and search start before either ends', async ($, on) => {
   stubRepo(on)
   stubStore(on)
   stubSession(on)
@@ -294,4 +294,224 @@ test('a failed page search still shows the recall section, and its reason shows 
   expect(pageAt > recallAt).toBe(true)
   expect(reasonAt > pageAt).toBe(true)
   expect(calls.some((c) => c.tool === 'get_knowledge_page')).toBe(false)
+})
+
+// Slice 3 cases. Haiku's second call writes the page pick, the Context line, and up to three Reflect lines.
+// Each reflect call goes through the mcp.call stub, the same as the other Hindsight calls.
+
+const REFLECT_OK = (text: string) => () => mcpBody({ text })
+
+// Runs the consult tool and returns the reflect calls in the order the plugin made them
+function reflectCalls(calls: any[]): any[] {
+  return calls.filter((c) => c.tool === 'reflect')
+}
+
+test('each Reflect line becomes one reflect call, with the Context line and the contract arguments', async ($, on) => {
+  stubRepo(on)
+  stubStore(on)
+  stubSession(on)
+  stubHaikuSteps(on, [STEP1, 'Page: none\nContext: the moment decision\nReflect: why was the router cut\nReflect: what failed with the subagent'])
+  const calls: any[] = []
+  stubHindsight(on, calls, defaults({ reflect: REFLECT_OK('REFLECT-ANSWER') }))
+
+  const { error } = await consult($)
+  expect(error).toBe('')
+
+  const reflects = reflectCalls(calls)
+  expect(reflects.length).toBe(2)
+  for (const c of reflects) expect(c.server).toBe('hindsight')
+  // The plugin adds no text to the question or the context. Each call carries exactly its own question.
+  expect(reflects[0].args).toEqual({
+    query: 'why was the router cut',
+    context: 'the moment decision',
+    bank_id: BANK,
+    budget: 'low',
+    max_tokens: 1500,
+  })
+  expect(reflects[1].args).toEqual({
+    query: 'what failed with the subagent',
+    context: 'the moment decision',
+    bank_id: BANK,
+    budget: 'low',
+    max_tokens: 1500,
+  })
+})
+
+test('five Reflect lines make only three reflect calls, the first three in order', async ($, on) => {
+  stubRepo(on)
+  stubStore(on)
+  stubSession(on)
+  stubHaikuSteps(on, [
+    STEP1,
+    'Page: none\nContext: c\nReflect: question one\nReflect: question two\nReflect: question three\nReflect: question four\nReflect: question five',
+  ])
+  const calls: any[] = []
+  stubHindsight(on, calls, defaults({ reflect: REFLECT_OK('REFLECT-ANSWER') }))
+
+  const { error } = await consult($)
+  expect(error).toBe('')
+
+  const queries = reflectCalls(calls).map((c) => c.args.query)
+  expect(queries).toEqual(['question one', 'question two', 'question three'])
+})
+
+test('zero Reflect lines make no reflect call, and the result still shows the recall section', async ($, on) => {
+  stubRepo(on)
+  stubStore(on)
+  stubSession(on)
+  stubHaikuSteps(on, [STEP1, 'Page: none\nContext: c'])
+  const calls: any[] = []
+  stubHindsight(on, calls, defaults({ reflect: REFLECT_OK('REFLECT-ANSWER') }))
+
+  const { text, error } = await consult($)
+  expect(error).toBe('')
+  expect(reflectCalls(calls).length).toBe(0)
+  expect(text.includes(KEPT)).toBe(true)
+  expect(text.includes('1 recall, 0 reflects')).toBe(true)
+})
+
+test('the page read and each reflect call all start before any of them ends', async ($, on) => {
+  stubRepo(on)
+  stubStore(on)
+  stubSession(on)
+  stubHaikuSteps(on, [STEP1, 'Page: page-1\nContext: c\nReflect: question one\nReflect: question two'])
+  const calls: any[] = []
+  const events: string[] = []
+  // Only the page read and the reflect calls take time, so only they write events
+  const slow = (name: string, reply: Reply) => async (e: any) => {
+    events.push('start:' + name)
+    await new Promise((r) => setTimeout(r, 20))
+    events.push('end:' + name)
+    return reply(e)
+  }
+  stubHindsight(
+    on,
+    calls,
+    defaults({
+      get_knowledge_page: slow('page', () => mcpBody(PAGE)),
+      reflect: slow('reflect', REFLECT_OK('REFLECT-ANSWER')),
+    }),
+  )
+
+  const { error } = await consult($)
+  expect(error).toBe('')
+  expect(reflectCalls(calls).length).toBe(2)
+  expect(calls.some((c) => c.tool === 'get_knowledge_page')).toBe(true)
+
+  const firstEnd = events.findIndex((ev) => ev.startsWith('end:'))
+  expect(firstEnd > -1).toBe(true)
+  expect(events.indexOf('start:page') > -1 && events.indexOf('start:page') < firstEnd).toBe(true)
+  expect(events.filter((ev) => ev === 'start:reflect').length).toBe(2)
+  const reflectStarts = events.map((ev, i) => (ev === 'start:reflect' ? i : -1)).filter((i) => i > -1)
+  for (const at of reflectStarts) expect(at < firstEnd).toBe(true)
+})
+
+test('the result lists the Context line, then each question followed by its answer, in question order', async ($, on) => {
+  stubRepo(on)
+  stubStore(on)
+  stubSession(on)
+  stubHaikuSteps(on, [STEP1, 'Page: page-1\nContext: CONTEXT-MARK\nReflect: QUESTION-ONE-MARK\nReflect: QUESTION-TWO-MARK'])
+  const calls: any[] = []
+  stubHindsight(
+    on,
+    calls,
+    defaults({
+      reflect: (e: any) =>
+        mcpBody({ text: e.args.query === 'QUESTION-ONE-MARK' ? 'ANSWER-ONE-MARK' : 'ANSWER-TWO-MARK' }),
+    }),
+  )
+
+  const { text, error } = await consult($)
+  expect(error).toBe('')
+  expect(text.includes('1 recall, 2 reflects')).toBe(true)
+
+  // The page section comes first, then the context, then each question with its answer
+  const pageAt = text.indexOf('PAGE BODY MARK')
+  const contextAt = text.indexOf('CONTEXT-MARK')
+  const q1 = text.indexOf('QUESTION-ONE-MARK')
+  const a1 = text.indexOf('ANSWER-ONE-MARK')
+  const q2 = text.indexOf('QUESTION-TWO-MARK')
+  const a2 = text.indexOf('ANSWER-TWO-MARK')
+  expect(pageAt > -1).toBe(true)
+  expect(contextAt > pageAt).toBe(true)
+  expect(q1 > contextAt).toBe(true)
+  expect(a1 > q1).toBe(true)
+  expect(q2 > a1).toBe(true)
+  expect(a2 > q2).toBe(true)
+})
+
+test('a reflect call that fails shows its reason in place of its answer, and the other answer and the other sections still show', async ($, on) => {
+  stubRepo(on)
+  stubStore(on)
+  stubSession(on)
+  stubHaikuSteps(on, [STEP1, 'Page: page-1\nContext: c\nReflect: QUESTION-FAILS-MARK\nReflect: QUESTION-OK-MARK'])
+  const calls: any[] = []
+  stubHindsight(
+    on,
+    calls,
+    defaults({
+      reflect: (e: any) =>
+        e.args.query === 'QUESTION-FAILS-MARK'
+          ? { deny: 'MCP error -32001: Request timed out' }
+          : mcpBody({ text: 'ANSWER-OK-MARK' }),
+    }),
+  )
+
+  const { text, error } = await consult($)
+  expect(error).toBe('')
+  expect(text.includes('MCP error -32001: Request timed out')).toBe(true)
+  expect(text.includes('ANSWER-OK-MARK')).toBe(true)
+  // The reason sits between its own question and the next question
+  const failAt = text.indexOf('QUESTION-FAILS-MARK')
+  const reasonAt = text.indexOf('MCP error -32001: Request timed out')
+  const okQuestionAt = text.indexOf('QUESTION-OK-MARK')
+  expect(reasonAt > failAt).toBe(true)
+  expect(reasonAt < okQuestionAt).toBe(true)
+  // The recall and page sections still show
+  expect(text.includes(KEPT)).toBe(true)
+  expect(text.includes('PAGE BODY MARK')).toBe(true)
+})
+
+test("Haiku's second-call prompt names the kept records' text and the recall query", async ($, on) => {
+  stubRepo(on)
+  stubStore(on)
+  stubSession(on)
+  const prompts = stubHaikuSteps(on, [STEP1, 'Page: none\nContext: c\nReflect: q'])
+  stubHindsight(on, [], defaults({ reflect: REFLECT_OK('REFLECT-ANSWER') }))
+
+  const { error } = await consult($)
+  expect(error).toBe('')
+  expect(prompts.length).toBeGreaterThanOrEqual(2)
+  const second = prompts[1]
+  expect(second.includes(KEPT)).toBe(true)
+  expect(second.includes('recall-query-xyz')).toBe(true)
+})
+
+test('a reflect that answers with an error body shows the error in place of its answer, and the other answer and the count still show', async ($, on) => {
+  stubRepo(on)
+  stubStore(on)
+  stubSession(on)
+  stubHaikuSteps(on, [STEP1, 'Page: page-1\nContext: c\nReflect: QUESTION-QUOTA-MARK\nReflect: QUESTION-GOOD-MARK'])
+  stubHindsight(
+    on,
+    [],
+    defaults({
+      reflect: (e: any) =>
+        e.args.query === 'QUESTION-QUOTA-MARK'
+          ? mcpBody({ error: 'Error code: 429 - quota used', text: '' })
+          : mcpBody({ text: 'an answer' }),
+    }),
+  )
+
+  const { text, error } = await consult($)
+  expect(error).toBe('')
+  // The reason sits between its own question and the next question, in place of its answer
+  const questionAt = text.indexOf('QUESTION-QUOTA-MARK')
+  const reasonAt = text.indexOf('Error code: 429 - quota used')
+  const goodAt = text.indexOf('QUESTION-GOOD-MARK')
+  expect(reasonAt > questionAt).toBe(true)
+  expect(reasonAt < goodAt).toBe(true)
+  // The other answer still shows, and the header counts both reflects
+  expect(text.indexOf('an answer') > goodAt).toBe(true)
+  expect(text.includes('1 recall, 2 reflects')).toBe(true)
 })

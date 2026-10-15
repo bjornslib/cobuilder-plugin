@@ -199,6 +199,11 @@ _Avoid_: memory tool, recall_memory (earlier names), moment tool (the superseded
 One call of the consult tool: Haiku writes a recall query, recall and a knowledge-page search run, then Haiku picks at most one page and writes reflect questions from the records. The page read and the reflects follow, and the result opens with the judging rules.
 _Avoid_: quick run, deep run (both named runs of the superseded design)
 
+<a id="knowledge-page"></a>
+**Knowledge page** (`cobuilder-memory`):
+A page that the Hindsight server builds from many records, with a name, an update date, and a markdown body. A memory run searches the pages, Haiku picks at most one to read, and the result shows its body without the frontmatter.
+_Avoid_: mental model (the server's name for the question behind a page)
+
 <a id="prompt-store"></a>
 **Prompt store** (`cobuilder-memory`):
 The list of the person's own prompts, typed in the terminal or sent through Remote Control, that the plugin keeps per session in `$.store`, newest 100. Haiku reads it to write the recall query.
