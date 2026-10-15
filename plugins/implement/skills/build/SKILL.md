@@ -181,34 +181,19 @@ Apply skeptical curiosity to every claim in the workflow:
 
 ---
 
-## Optional: prior-art recall (Hindsight)
+## Prior art from project memory
 
-Hindsight memory stores lessons from past sessions in this repository. Use it
-when available to avoid repeating documented mistakes.
+Gate 1 asks project memory once, before you write `01-product.md`. If the
+session lists the `mcp__cobuilder-memory__consult` tool, call it. It takes no
+input, and it answers with past decisions, rejected options, and limits for
+the feature. Treat a recall record as evidence and a reflect answer as a lead.
+Check each claim you use against the code or the ADR it names. Record the
+result in `00-status.md` as `Memory: consulted <date>`, and name each record
+that you use or reject, with the reason.
 
-**Determine availability first.** Hindsight tools appear in this harness as
-`hindsight_recall`, `hindsight_reflect`, and `hindsight_retain`, or
-MCP-prefixed as `mcp__hindsight__recall`, `mcp__hindsight__reflect`, and
-`mcp__hindsight__retain`. Availability means these tools are registered and
-callable, not merely advertised. A tool that appears in a system prompt list
-but errors or returns nothing when called is unavailable. This repository's
-own `docs/plans/cobuilder-family/00-status.md` records exactly this case:
-`Hindsight: unavailable (tools advertised in this session but not
-registered)`.
-
-**Ask once at the start after the user states their intent:**
-
-> "Should I check Hindsight for prior art before we begin? It adds a short
-> memory checkpoint at each gate."
-
-Record the answer in `00-status.md` (`Hindsight: yes | no | unavailable`). Do
-not ask again for this feature.
-
-If the user opts in and the tools are available, read
-[references/hindsight-routine.md](references/hindsight-routine.md) and
-follow its checkpoints and its retain step. If Hindsight is unavailable, do
-not read that file. Proceed through every gate and every slice with no
-checkpoint and no retain step.
+If the session does not list the tool, record `Memory: absent` and continue.
+Do not ask the engineer first, and do not call Hindsight tools yourself in its
+place.
 
 ---
 
@@ -302,7 +287,7 @@ Template for `00-status.md`:
   - 4c Blind rubrics: pending | APPROVED <date>
 
 Design mode: <design-name> | none | declined
-Hindsight: yes | no | unavailable
+Memory: consulted <date> | absent
 
 ## Slices
 - [ ] Slice 1 — tracer bullet: <one line>   score: —
@@ -343,7 +328,8 @@ Run this protocol at every gate and before implementing an epic:
 
 Before writing, check the design mode answer recorded above. If a design
 record exists, ground this document in its `intent.json` instead of
-starting from a blank interview.
+starting from a blank interview. Then ask project memory, as "Prior art from
+project memory" above describes.
 
 Write `01-product.md` with the user:
 
@@ -712,7 +698,6 @@ Load reference files as needed:
 
 | Reference | Purpose |
 |---|---|
-| [references/hindsight-routine.md](references/hindsight-routine.md) | Hindsight checkpoints and retain steps, read only when Hindsight is available |
 | [references/rubric-authoring.md](references/rubric-authoring.md) | Authoring blind rubrics and manifest files |
 | [references/slice-loop.md](references/slice-loop.md) | Role prompts for RED, GREEN, and VALIDATE |
 | [references/validation-scoring.md](references/validation-scoring.md) | Scoring criteria and gap routing |

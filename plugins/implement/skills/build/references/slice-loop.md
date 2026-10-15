@@ -127,7 +127,7 @@ in the same retry as everything else.
 
 | Verdict | Action |
 |---|---|
-| **PASS** | Delete `slice-<N>-feedback.md`. Record the score in `00-status.md`, check the slice off. **Sync epic status to goal.json** (see `goal-sync.md`). **If Hindsight is available, retain the slice outcome** (see `hindsight-routine.md`, "Retain after every accepted slice"). Prove the slice works to the user with a test or demo. Ask whether to continue or adjust direction. |
+| **PASS** | Delete `slice-<N>-feedback.md`. Record the score in `00-status.md`, check the slice off. **Sync epic status to goal.json** (see `goal-sync.md`). Prove the slice works to the user with a test or demo. Ask whether to continue or adjust direction. |
 | **FAIL** | Re-run GREEN with the feedback file. Do not re-run RED because the contract did not change. |
 | **ESCALATION** | Do not loop again. Record the slice under `## Escalated` in `00-status.md` with the score and reason. Discuss with the user. See the gap decision tree in `validation-scoring.md`. |
 

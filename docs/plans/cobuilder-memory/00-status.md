@@ -21,7 +21,7 @@ Hindsight: yes
 - [x] Slice 2 — a knowledge page joins the run   score: 1.00 (attempt 1)
 - [x] Slice 3 — reflect questions written from the records   score: 1.00 (attempt 1; live reflect answers wait for the Hindsight model switch)
 - [x] Slice 4 — the memory pane shows each run   score: 1.00 (attempt 2; attempt 1 scored 0.75). Gap: the pane does not fit content to the viewport rows beyond its fixed caps
-- [ ] Slice 5 — design and build call the consult tool at fixed steps   score: —
+- [x] Slice 5 — design and build call the consult tool at fixed steps   score: 1.00 (attempt 1, Sonnet). Blind pass on Haiku against a stub consult tool: the call came before the hypothesis. H1 to H5 and hindsight-routine.md removed; the per-slice retain went with them, because the Hindsight Stop hook stores each transcript.
 - [ ] Slice 6 — the value check in two repos   score: —
 - E2 (backlog): slice 7. E3 (backlog, stub): slice 8.
 
