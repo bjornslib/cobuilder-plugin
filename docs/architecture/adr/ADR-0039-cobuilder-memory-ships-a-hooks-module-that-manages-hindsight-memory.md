@@ -162,7 +162,7 @@ consult tool when the session lists it, and state that it is absent when
 it is not. The H1 to H5 checkpoints retire.
 
 **The memory pane.** Each run opens or updates one pane, titled
-`🧠 Hindsight: CoBuilder Memory Run`, that shows the run's steps while it
+`🧠 CoBuilder Memory: Hindsight Run`, that shows the run's steps while it
 works and its result when it ends.
 
 **The bank.** The module reads `bankIdTemplate` from

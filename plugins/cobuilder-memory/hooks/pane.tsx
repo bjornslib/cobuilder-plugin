@@ -2,7 +2,7 @@ import { atom, read, update, type EngineInterface } from 'claude-code'
 import type { CallState, RunState, RunStep } from '../types'
 
 export const PANE_ID = 'memory-run'
-export const PANE_TITLE = '🧠 Hindsight: CoBuilder Memory Run'
+export const PANE_TITLE = '🧠 CoBuilder Memory: Hindsight Run'
 
 // The newest run, shared by the run, its tick, and the render hook
 const RUN = atom({ plugin: 'cobuilder-memory', key: 'run' } as const, null)

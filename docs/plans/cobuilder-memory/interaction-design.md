@@ -24,7 +24,7 @@ as the tool result. The pane only mirrors it.
 
 ### 2.1 Navigation Structure
 
-One pane, id `memory-run`, title `🧠 Hindsight: CoBuilder Memory Run`. It has
+One pane, id `memory-run`, title `🧠 CoBuilder Memory: Hindsight Run`. It has
 no navigation and no second view. Each new run replaces the content of the
 pane.
 
@@ -137,7 +137,7 @@ its own row, and the run goes on.
 
 ### 6.1 Memory pane
 
-- Title row, in every state: `🧠 Hindsight: CoBuilder Memory Run` in bold.
+- Title row, in every state: `🧠 CoBuilder Memory: Hindsight Run` in bold.
   The engine shows a pane title only as a tab when two or more panes are
   open, so the pane draws its own.
 - Header row: the bank in dim text, then `·`, the start time, and in the

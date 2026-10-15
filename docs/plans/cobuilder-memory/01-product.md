@@ -37,7 +37,7 @@ past decisions it used, which it set aside, and why.
 ## Screens
 
 - `mockups/memory-pane.html` — the memory pane, titled
-  `🧠 Hindsight: CoBuilder Memory Run`, in two states: a run in progress,
+  `🧠 CoBuilder Memory: Hindsight Run`, in two states: a run in progress,
   and a finished run. The developer approved this mockup on 2026-10-15.
 
 ## Prior art

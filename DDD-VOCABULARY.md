@@ -214,7 +214,7 @@ The fixed text at the top of a memory run's result that tells the main agent to 
 
 <a id="memory-pane"></a>
 **Memory pane** (`cobuilder-memory`):
-The side pane, id `memory-run` and title `🧠 Hindsight: CoBuilder Memory Run`, that shows the newest memory run's steps while it runs and its result when it is done. It adds no fact that the result lacks.
+The side pane, id `memory-run` and title `🧠 CoBuilder Memory: Hindsight Run`, that shows the newest memory run's steps while it runs and its result when it is done. It adds no fact that the result lacks.
 
 ## Cross-cutting
 

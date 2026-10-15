@@ -16,7 +16,7 @@ C4Container
         ContainerDb(store, "Prompt store", "$.store", "Keeps each composer and bridge<br>prompt of the session, newest 100")
         Container(run, "Memory run", "consult tool and command", "Runs four steps for the tool<br>consult and the command<br>/memory-recall")
         ContainerDb(atom, "Run state atom", "atom", "Holds the newest run<br>and its step")
-        Container(pane, "Memory pane", "ui.render hook, id memory-run", "Titled 🧠 Hindsight: CoBuilder Memory Run.<br>Draws the atom while the run works")
+        Container(pane, "Memory pane", "ui.render hook, id memory-run", "Titled 🧠 CoBuilder Memory: Hindsight Run.<br>Draws the atom while the run works")
     }
 
     Rel(person, session, "Types prompts and commands", "prompt, /memory-recall")

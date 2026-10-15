@@ -57,10 +57,10 @@
     <text x="310" y="173" font-size="10" fill="#5E5D59">reads the tool result</text>
   </g>
   <g id="n-pane">
-    <title>Memory pane: id memory-run, title 🧠 Hindsight: CoBuilder Memory Run, draws the atom</title>
+    <title>Memory pane: id memory-run, title 🧠 CoBuilder Memory: Hindsight Run, draws the atom</title>
     <rect x="1010" y="120" width="240" height="80" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.4"/>
     <text x="1020" y="142" font-size="11" fill="#141413">Memory pane, memory-run</text>
-    <text x="1020" y="158" font-size="10" fill="#5E5D59">🧠 Hindsight: CoBuilder Memory Run</text>
+    <text x="1020" y="158" font-size="10" fill="#5E5D59">🧠 CoBuilder Memory: Hindsight Run</text>
     <text x="1020" y="173" font-size="10" fill="#5E5D59">draws the run state atom</text>
   </g>
   <g id="n-store">

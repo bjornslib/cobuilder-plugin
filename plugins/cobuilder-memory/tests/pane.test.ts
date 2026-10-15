@@ -8,7 +8,7 @@ declare const setTimeout: (fn: (...args: any[]) => void, ms: number) => unknown
 // Slice 4 cases: the memory pane. Each run opens the pane, the pane draws the run's state,
 // and a refused open never stops the run. Every case fails on an assertion until pane.tsx exists.
 
-const PANE_TITLE = '🧠 Hindsight: CoBuilder Memory Run'
+const PANE_TITLE = '🧠 CoBuilder Memory: Hindsight Run'
 const EMPTY = 'No memory run yet. The agent or /memory-recall starts one.'
 const NO_BANK = 'No bank: this folder is not in a git repository.'
 const LAST_LINE = 'The full result went to the agent.'

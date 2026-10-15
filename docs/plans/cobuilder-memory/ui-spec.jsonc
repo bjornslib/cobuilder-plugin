@@ -4,7 +4,7 @@
   "surface": "terminal",
   "pane": {
     "id": "memory-run",
-    "title": "🧠 Hindsight: CoBuilder Memory Run",
+    "title": "🧠 CoBuilder Memory: Hindsight Run",
     "focus": false,
     "renderHook": { "component": "Pane", "requestId": "memory-run" },
     "atom": { "plugin": "cobuilder-memory", "key": "run" }

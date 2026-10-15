@@ -2,7 +2,7 @@
 
 Feature: cobuilder-memory
 Epic: E1
-Slice goal: The pane `memory-run`, titled `🧠 Hindsight: CoBuilder Memory Run`, matches the approved Gate 2b design. It opens before the first Haiku call, shows each step and each Hindsight call with its state and counts and the elapsed time while a run works, and shows the records, the page, and each reflect answer or its failure when the run ends.
+Slice goal: The pane `memory-run`, titled `🧠 CoBuilder Memory: Hindsight Run`, matches the approved Gate 2b design. It opens before the first Haiku call, shows each step and each Hindsight call with its state and counts and the elapsed time while a run works, and shows the records, the page, and each reflect answer or its failure when the run ends.
 Test command: `claude plugin test plugins/cobuilder-memory && uv run pytest tests -q`
 
 ## Criteria

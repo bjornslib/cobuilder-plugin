@@ -105,7 +105,7 @@ export type RunState = {
   reflects: { question: string; state: "running" | "done" | "failed"; note: string }[]; error: string | null
 }
 export const PANE_ID: "memory-run"
-export const PANE_TITLE: "🧠 Hindsight: CoBuilder Memory Run"
+export const PANE_TITLE: "🧠 CoBuilder Memory: Hindsight Run"
 export function openPane($: Engine, asked: boolean): Promise<void>
 export function setRun($: Engine, change: (s: RunState) => RunState): Promise<void>
 export function startTick($: Engine): () => void
