@@ -8,7 +8,7 @@ its slices start.
 | # | Epic | Slice | Ends with | Score | State |
 |---|---|---|---|---|---|
 | | **`cobuilder-memory/E1` — The memory plugin ships for CoBuilder.** An opt-in plugin gives the main agent the consult tool. It shows each run in a pane and joins the design and build workflows. | | | | |
-| 1 | `cobuilder-memory/E1` | Tracer bullet: the installed plugin proves each Hindsight MCP tool and answers consult | `claude plugin install cobuilder-memory@cobuilder-plugin` installs the plugin from this repo's marketplace, and after `/reload-plugins` the session lists `mcp__cobuilder-memory__consult`. From the installed plugin, `$.mcp.call("hindsight", ...)` returns data from `recall`, `search_knowledge_base`, `get_knowledge_page`, and `reflect`. The evidence records one reflect's time and what the engine does past its MCP timeout. A consult call returns the judging rules first, then the header, the Need line, and the recall records, with this session's own transcript dropped. With no `hindsight` server that has these tools, the run names what to set up. `claude plugin validate`, `claude plugin test`, and `uv run pytest tests -q` pass. The tests cover the amended install rule, the marketplace entry, the matching versions, and the `shared` symlink. | — | planned |
+| 1 | `cobuilder-memory/E1` | Tracer bullet: the installed plugin proves each Hindsight MCP tool and answers consult | A session started with `--plugin-dir plugins/cobuilder-memory` lists `mcp__cobuilder-memory__consult`, and `claude plugin validate .` accepts the marketplace with its new entry. From the installed plugin, `$.mcp.call("hindsight", ...)` returns data from `recall`, `search_knowledge_base`, `get_knowledge_page`, and `reflect`. The evidence records one reflect's time and what the engine does past its MCP timeout. A consult call returns the judging rules first, then the header, the Need line, and the recall records, with this session's own transcript dropped. With no `hindsight` server that has these tools, the run names what to set up. `claude plugin validate`, `claude plugin test`, and `uv run pytest tests -q` pass. The tests cover the amended install rule, the marketplace entry, the matching versions, and the `shared` symlink. | — | planned |
 | 2 | `cobuilder-memory/E1` | A knowledge page joins the run | `search_knowledge_base` runs beside recall. Haiku's second call may pick one page, and `get_knowledge_page` reads it. The result shows its name, update date, and body. The run never shows a page whose snippet or body is empty or reads "Generating content...". The module refuses a page id that the search did not return. | — | planned |
 | 3 | `cobuilder-memory/E1` | Reflect questions written from the records | Haiku writes a context and up to three reflect questions. Each names an ADR id or term of the kept records. The page read and the `reflect` calls run side by side through `$.mcp.call`. A reflect that fails or times out writes its reason. The other answers still show. | — | planned |
 | 4 | `cobuilder-memory/E1` | The memory pane shows each run | The pane `memory-run`, titled `🧠 Hindsight: CoBuilder Memory Run`, matches the approved Gate 2b design. While a run works, it shows each step with its state and counts. When the run ends, it shows the records, the page, and each reflect answer or its failure. `/memory-recall` opens it at any width, and a tool run opens it unasked from 144 columns. | — | planned |
@@ -25,11 +25,16 @@ its slices start.
   Slice 4 needs the run's steps, so it follows 3. Slice 5 wires the tool
   into the workflows once it is complete. Slice 6 runs last, because it
   judges the whole plugin.
-- **Slice 1 is an installed plugin, not a `--plugin-dir` load.** A mod is a
-  plugin whose `hooks/hooks.json` names a hooks module. Slice 1 adds the
-  plugin to `.claude-plugin/marketplace.json`, so `claude plugin install`
-  works, and it carries the install-surface amendment and the manifest
-  test (ADR-0039 Consequences). `--plugin-dir` stays a development aid.
+- **Slice 1 loads through `--plugin-dir` (engineer, 2026-10-15, Q-J b).** A
+  marketplace install reads the default branch, `master`, on GitHub, and a
+  local folder marketplace would re-point the `cobuilder-plugin` record for
+  the whole machine. So slice 1 loads the repo folder with `--plugin-dir`
+  and validates the marketplace entry. A mod is a plugin whose
+  `hooks/hooks.json` names a hooks module, so the folder is the shipped
+  layout. Slice 1 also carries the install-surface amendment and the
+  manifest test (ADR-0039 Consequences).
+- **After E1 merges,** run `claude plugin install cobuilder-memory@cobuilder-plugin`
+  once from the GitHub marketplace, and record the result in `00-status.md`.
 - **Hindsight through MCP (engineer, 2026-10-15).** Every Hindsight call
   goes through `$.mcp.call` on the server named `hindsight`: `recall`,
   `search_knowledge_base`, `get_knowledge_page`, and `reflect`. Each call

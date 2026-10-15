@@ -1,12 +1,12 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "de085d4d1cebb8f2c026d2c2dc8853ab3451663b",
+    "git_head": "179a0a698470c11059eb55f447e4e49d41105b49",
     "trees": {
       "docs/architecture/adr": "sha256:f5da466d087baf586b156cb77a6e6259dec204ed4492cea4176bce3681c8ec47",
-      "docs/architecture/designs": "sha256:da3c3ba6aef7640c0616d238440228c4a9338612e41401cfa4d169329f221f79",
+      "docs/architecture/designs": "sha256:72b17ad81164bf8f6f4391b0bc14ac45f137a3be0848ae880080a884f505f284",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:93f18fb377749d78ec3e9bd31f3db31d3567cfba9ba423034cadd6580d413f74",
+      "docs/plans": "sha256:ce97ac8c2a42b42909ea017ffd7f8787a82488a912249453d71b65005fe41690",
       ".cobuilder/rubrics": "sha256:19779693304d4b7309a3dd7f0c56c6b54c47a3c4834c4ed3d7fb09fc402cec6d"
     }
   },
@@ -3002,7 +3002,7 @@
         "feature": "cobuilder-memory",
         "n": 1,
         "title": "Tracer bullet: the installed plugin proves each Hindsight MCP tool and answers consult",
-        "ends_with": "`claude plugin install cobuilder-memory@cobuilder-plugin` installs the plugin from this repo's marketplace, and after `/reload-plugins` the session lists `mcp__cobuilder-memory__consult`. From the installed plugin, `$.mcp.call(\"hindsight\", ...)` returns data from `recall`, `search_knowledge_base`, `get_knowledge_page`, and `reflect`. The evidence records one reflect's time and what the engine does past its MCP timeout. A consult call returns the judging rules first, then the header, the Need line, and the recall records, with this session's own transcript dropped. With no `hindsight` server that has these tools, the run names what to set up. `claude plugin validate`, `claude plugin test`, and `uv run pytest tests -q` pass. The tests cover the amended install rule, the marketplace entry, the matching versions, and the `shared` symlink.",
+        "ends_with": "A session started with `--plugin-dir plugins/cobuilder-memory` lists `mcp__cobuilder-memory__consult`, and `claude plugin validate .` accepts the marketplace with its new entry. From the installed plugin, `$.mcp.call(\"hindsight\", ...)` returns data from `recall`, `search_knowledge_base`, `get_knowledge_page`, and `reflect`. The evidence records one reflect's time and what the engine does past its MCP timeout. A consult call returns the judging rules first, then the header, the Need line, and the recall records, with this session's own transcript dropped. With no `hindsight` server that has these tools, the run names what to set up. `claude plugin validate`, `claude plugin test`, and `uv run pytest tests -q` pass. The tests cover the amended install rule, the marketplace entry, the matching versions, and the `shared` symlink.",
         "score": "—",
         "attempts": 0,
         "state": "planned"

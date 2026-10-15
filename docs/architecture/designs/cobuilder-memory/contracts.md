@@ -186,8 +186,11 @@ mappings are not read.
 
 ## Slice 1 checks
 
-Slice 1 proves the base before any other slice starts. With the plugin
-installed from the marketplace and loaded by `/reload-plugins`:
+Slice 1 proves the base before any other slice starts. A marketplace
+install reads `master` on GitHub, so slice 1 loads the repo folder with
+`--plugin-dir plugins/cobuilder-memory`, and `claude plugin validate .`
+checks the marketplace entry. After E1 merges, one install from the GitHub
+marketplace checks the real install path. With the plugin loaded:
 
 1. The session lists `mcp__cobuilder-memory__consult`.
 2. `$.mcp.call("hindsight", ...)` returns data from each of the four

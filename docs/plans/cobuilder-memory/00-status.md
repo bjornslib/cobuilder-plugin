@@ -25,6 +25,10 @@ Hindsight: yes
 ## Escalated
 
 ## Notes for a fresh session
+- Install path (engineer, 2026-10-15, Q-J b): slice 1 loads the plugin with
+  `--plugin-dir plugins/cobuilder-memory`. A local folder marketplace would
+  re-point the `cobuilder-plugin` record machine-wide, so it was tried and
+  reverted. After E1 merges, install once from the GitHub marketplace.
 - Branch: `design/cobuilder-memory`. One epic, `E1`, from `goal.json.epics[]`.
 - The design was revised and approved on 2026-10-15 (commit de085d4). The
   spike is the working tool in `~/mods/cobuilder-memory`. Epics: E1 (build),

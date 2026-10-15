@@ -4,7 +4,7 @@
   "created": "2026-10-13",
   "outcome": "plugins/cobuilder-memory installs from this marketplace and gives the main agent the consult tool. Haiku writes the recall query, picks a knowledge page, and writes reflect questions, all through the Hindsight MCP tools. Design and build call the tool, and a pane shows each run.",
   "done_when": [
-    "`claude plugin install cobuilder-memory@cobuilder-plugin` installs the plugin, and after `/reload-plugins` the session lists `mcp__cobuilder-memory__consult`.",
+    "A session started with --plugin-dir plugins/cobuilder-memory lists mcp__cobuilder-memory__consult, and claude plugin validate accepts the marketplace entry. After the merge, one install from the GitHub marketplace works.",
     "From the installed plugin, `$.mcp.call` returns data from recall, search_knowledge_base, get_knowledge_page, and reflect, and the MCP timeout is measured.",
     "`claude plugin validate` and `claude plugin test` pass, and `uv run pytest tests -q` passes with the install-surface rule that ADR-0039 amends.",
     "A consult call returns the judging rules first, then recall records with the current session's own transcript dropped.",
