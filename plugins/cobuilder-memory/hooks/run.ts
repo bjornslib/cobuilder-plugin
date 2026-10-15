@@ -1,7 +1,7 @@
 import type { EngineInterface } from 'claude-code'
 import { resolveBank } from './bank'
 import { writeRecallQuery, writeReflectPlan } from './haiku'
-import { dropEmptyPages, dropOwnSession, getPage, type Outcome, recall, reflect, searchPages, setUpMessage } from './hindsight'
+import { dropEmptyPages, dropOwnSession, dropRepeats, getPage, type Outcome, recall, reflect, searchPages, setUpMessage } from './hindsight'
 import { newRun, openPane, setRun, startTick } from './pane'
 import { promptBlock, readPrompts, sessionTail } from './prompts'
 import { buildResult, type RunReport } from './result'
@@ -167,7 +167,14 @@ function toReflects(questions: string[], answers: Outcome<string>[]): RunReport[
 
 function recallFound(query: string, hits: Parameters<typeof dropOwnSession>[0], sessionId: string): RunReport['recall'] {
   const outside = dropOwnSession(hits, sessionId)
-  return { query, total: hits.length, own: hits.length - outside.length, kept: outside.slice(0, MAX_RECORDS) }
+  const distinct = dropRepeats(outside)
+  return {
+    query,
+    total: hits.length,
+    own: hits.length - outside.length,
+    repeats: outside.length - distinct.length,
+    kept: distinct.slice(0, MAX_RECORDS),
+  }
 }
 
 // /memory-check: each Hindsight tool once, with fixed inputs and no model call

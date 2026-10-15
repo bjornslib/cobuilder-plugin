@@ -509,3 +509,33 @@ test('a reflect reply that is plain text shows that text as its reason, and no J
   const reasonAt = text.indexOf('MCP error -32001: Request timed out')
   expect(questionAt > -1 && reasonAt > questionAt).toBe(true)
 })
+
+test('recall records with the same text show once, the first one is kept, and the header counts the repeats', async ($, on) => {
+  stubRepo(on)
+  stubStore(on)
+  stubSession(on, [])
+  stubHaiku(on, 'Need: n\nRecall: q')
+  on('mcp.call', (_$: any, e: any) => {
+    if (e.tool === 'recall') {
+      return mcpBody({
+        results: [
+          rawHit('Slice 6 deletes current_columns.', 'plan:a'),
+          rawHit('ADR-0010 makes the room the source.', 'adr:10'),
+          rawHit('  slice 6   deletes CURRENT_COLUMNS. ', 'plan:b'),
+          rawHit('Slice 6 deletes current_columns.', 'plan:c'),
+        ],
+      })
+    }
+    return mcpBody({ results: [] })
+  })
+
+  const { value, error } = await settle(async () => $.tool.call({ tool: 'mcp__cobuilder-memory__consult' } as any))
+  expect(error).toBe('')
+  const text = String(value?.result ?? '')
+
+  expect(text).toContain('Results: 4, dropped from this session: 0, repeats dropped: 2, shown: 2.')
+  expect(text).toContain('1. [2026-10-01] Slice 6 deletes current_columns. (plan:a)')
+  expect(text).toContain('2. [2026-10-01] ADR-0010 makes the room the source. (adr:10)')
+  expect(text).not.toContain('(plan:b)')
+  expect(text).not.toContain('(plan:c)')
+})

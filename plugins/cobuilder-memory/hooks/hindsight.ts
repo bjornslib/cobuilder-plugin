@@ -128,6 +128,18 @@ export function dropOwnSession(hits: Hit[], sessionId: string): Hit[] {
   return hits.filter((h) => h.doc !== 'conversation:' + sessionId)
 }
 
+// Keeps the first record of each text, so a fact stored twice shows once.
+// Case and spacing do not make two texts different.
+export function dropRepeats(hits: Hit[]): Hit[] {
+  const seen = new Set<string>()
+  return hits.filter((h) => {
+    const key = h.text.trim().replace(/\s+/g, ' ').toLowerCase()
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
 // Drops the pages with no snippet, or with a snippet that the server still writes
 export function dropEmptyPages(pages: PageHit[]): PageHit[] {
   return pages.filter((p) => p.snippet.trim() !== '' && p.snippet !== EMPTY_PAGE_SNIPPET)

@@ -161,7 +161,7 @@ The result is plain text, in this order:
    - Tell the person what you used, what you left out, and why.
 2. A header line: the bank, the count of recalls and reflects, and how many stored prompts Haiku read.
 3. `Need: <line>`.
-4. The recall section: the query, the counts (results, dropped from this session, shown), and each kept record as `<n>. [<date>] <text> (<document id>)`. With no kept record: `Prior art: none found outside this session.`
+4. The recall section: the query, the counts (results, dropped from this session, repeats dropped, shown), and each kept record as `<n>. [<date>] <text> (<document id>)`. With no kept record: `Prior art: none found outside this session.` A record whose text repeats an earlier one, apart from case and spacing, is dropped, and the first one stays.
 5. The knowledge page, when Haiku picked one: its name, its update date, and its body. With no page: `Knowledge page: none picked.`
 6. The reflect context, then each reflect question with its answer.
 

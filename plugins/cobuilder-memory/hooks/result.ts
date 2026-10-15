@@ -14,7 +14,7 @@ export const HOW_TO_JUDGE = [
 
 export type RunReport = {
   bank: string; promptsRead: number; need: string
-  recall: { query: string; total: number; own: number; kept: Hit[] } | { query: string; reason: string }
+  recall: { query: string; total: number; own: number; repeats: number; kept: Hit[] } | { query: string; reason: string }
   page: Page | null | { reason: string }
   context: string
   reflects: { question: string; answer: string | null; reason: string | null }[]
@@ -24,7 +24,7 @@ function recallLines(recall: RunReport['recall']): string[] {
   if ('reason' in recall) return ['Recall: ' + recall.query, recall.reason]
   const head = [
     'Recall: ' + recall.query,
-    'Results: ' + recall.total + ', dropped from this session: ' + recall.own + ', shown: ' + recall.kept.length + '.',
+    'Results: ' + recall.total + ', dropped from this session: ' + recall.own + ', repeats dropped: ' + recall.repeats + ', shown: ' + recall.kept.length + '.',
   ]
   if (recall.kept.length === 0) return [...head, 'Prior art: none found outside this session.']
   return [...head, ...recall.kept.map((h, i) => (i + 1) + '. [' + h.date + '] ' + h.text + ' (' + h.doc + ')')]
