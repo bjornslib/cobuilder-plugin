@@ -1,4 +1,5 @@
 import type { Register } from 'claude-code'
+import { PANE_ID, renderPane } from './pane'
 import { shouldStore, storePrompt } from './prompts'
 import { runCheck, runMemory } from './run'
 
@@ -44,4 +45,6 @@ export const register: Register = (on) => {
   on('command.run', { command: 'memory-check' }, async ($) => {
     return { text: await runCheck($) }
   })
+
+  on('ui.render', { component: 'Pane', requestId: PANE_ID }, ($, e) => renderPane($, e))
 }

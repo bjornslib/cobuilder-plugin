@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "6187a3d8d5c9b615ca03a4a9dbe63d9258e2c8b2",
+    "git_head": "cbe1580cb387d3b58f094e69fdeba04efc32b45c",
     "trees": {
       "docs/architecture/adr": "sha256:63eeb0f927ed1213e27a9a1a2604e89f62f3099d838898889b0edfb6934c2474",
       "docs/architecture/designs": "sha256:49082f03de6fdd0eca1ff2f45a1bc18477f984258bf8161f63a5f426fd7edf73",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:b7d380bd93a5ac5a2d534eb1f402f482c3ecafbda8ab2af8273d96011d0292df",
-      ".cobuilder/rubrics": "sha256:b09560c495118162290c37236588912f8539478077de612d0f36294303f1fd9b"
+      "docs/plans": "sha256:e4a2f82a2a871bb592829681be8cd713c17cba77e986e2cc6fac440754e7ccf1",
+      ".cobuilder/rubrics": "sha256:eab356381d7e098193d6e21f036de770ff19fac084e151c1ec4dc8c0840c03bf"
     }
   },
   "entities": {
@@ -3034,9 +3034,9 @@
         "n": 4,
         "title": "The memory pane shows each run",
         "ends_with": "The pane `memory-run`, titled `🧠 Hindsight: CoBuilder Memory Run`, matches the approved Gate 2b design. It opens before the first Haiku call. While a run works, it shows each step and each Hindsight call with its state and counts, and the elapsed time. When the run ends, it shows the records, the page, and each reflect answer or its failure. `/memory-recall` opens it at any width, and a tool run opens it unasked from 144 columns.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "cobuilder-memory/5",
