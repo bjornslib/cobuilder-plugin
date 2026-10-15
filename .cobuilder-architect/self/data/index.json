@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "b6ddb5cd21ae61353985b4b059efeecf02845487",
+    "git_head": "2b251cdb21391573fa172619479d873afa47bc35",
     "trees": {
       "docs/architecture/adr": "sha256:63eeb0f927ed1213e27a9a1a2604e89f62f3099d838898889b0edfb6934c2474",
-      "docs/architecture/designs": "sha256:d07e945f4a308cfccf8f53c61ca928c296ec096292ec20c82dddffcb343a42f8",
+      "docs/architecture/designs": "sha256:49082f03de6fdd0eca1ff2f45a1bc18477f984258bf8161f63a5f426fd7edf73",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:f69368403adb28daa1f195e8b90faff05c0001cc03c72310016f1d4ebaf5e511",
-      ".cobuilder/rubrics": "sha256:519360bad5f419d0583ed58bce277516416cf027f4c012abbb108d0ba02d52cc"
+      "docs/plans": "sha256:d513b15bef248bceb7e91de4a6b602ef9e76c0bd6ccdea18f9c0517c639b8883",
+      ".cobuilder/rubrics": "sha256:177909aa2e3ccb6c75b8f1f7a453fd03b6e660811ec3a48df5dabf04573e44cf"
     }
   },
   "entities": {
@@ -3014,9 +3014,9 @@
         "n": 2,
         "title": "A knowledge page joins the run",
         "ends_with": "`search_knowledge_base` runs beside recall. Haiku's second call may pick one page, and `get_knowledge_page` reads it. The result shows its name, update date, and body. The run never shows a page whose snippet or body is empty or reads \"Generating content...\". The module refuses a page id that the search did not return.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "cobuilder-memory/3",

@@ -67,3 +67,25 @@ test('a denied reflect makes only the reflect line failed, with its reason', asy
     expect(line.includes('failed')).toBe(false)
   }
 })
+
+// Slice 2: a refused search names the allow rule on its own line
+test('memory-check puts the allow-rule hint on the search line when the permission check refuses the search', async ($, on) => {
+  stubRepo(on)
+  stubStore(on)
+  stubSession(on)
+  on('mcp.call', (_$: any, e: any) => {
+    if (e.tool === 'search_knowledge_base') {
+      return { deny: 'Blocked by the auto mode classifier: no rule allows this tool call' }
+    }
+    if (e.tool === 'recall') return mcpBody({ results: [] })
+    if (e.tool === 'reflect') return mcpBody({ text: 'an answer' })
+    if (e.tool === 'get_knowledge_page') return mcpBody({ id: 'page-1', name: 'ADR index', markdown: '', timestamp: '' })
+    return { deny: 'unknown tool' }
+  })
+  const text = await runCheck($)
+  const searchLine = lineFor(text, 'search_knowledge_base')
+  expect(searchLine.includes('auto mode classifier')).toBe(true)
+  expect(
+    searchLine.includes('Add "mcp__hindsight__search_knowledge_base" to permissions.allow in your settings.'),
+  ).toBe(true)
+})

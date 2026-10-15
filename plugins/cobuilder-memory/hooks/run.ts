@@ -1,7 +1,7 @@
 import type { Engine } from 'claude-code'
 import { resolveBank } from './bank'
-import { writeRecallQuery } from './haiku'
-import { dropOwnSession, getPage, recall, reflect, searchPages, setUpMessage } from './hindsight'
+import { writeRecallQuery, writeReflectPlan } from './haiku'
+import { dropEmptyPages, dropOwnSession, getPage, recall, reflect, searchPages, setUpMessage } from './hindsight'
 import { promptBlock, readPrompts, sessionTail } from './prompts'
 import { buildResult, type RunReport } from './result'
 
@@ -13,8 +13,8 @@ const MAX_RECORDS = 8
 const CHECK_QUERY = 'memory check'
 const CHECK_QUESTION = 'What does this project remember most often?'
 
-// The memory run, slice 1 part: Haiku writes the recall query, recall runs, and the
-// result is built. The page and reflect steps join in slices 2 and 3
+// The memory run, slices 1 and 2: Haiku writes the recall query, recall and the page search
+// run side by side, Haiku picks a page, and the page is read. The reflect step joins in slice 3
 export async function runMemory($: Engine, _origin: RunOrigin): Promise<string> {
   const target = await resolveBank($)
   if ('error' in target) return target.error
@@ -24,21 +24,42 @@ export async function runMemory($: Engine, _origin: RunOrigin): Promise<string> 
   const plan = await writeRecallQuery($, promptBlock(prompts), sessionTail(await $.session.messages()))
   if ('error' in plan) return plan.error
 
-  const found = await recall($, target.bank, plan.recall)
-  if (!found.ok) {
-    const setUp = setUpMessage(found.reason)
+  const [found, searched] = await Promise.all([
+    recall($, target.bank, plan.recall),
+    searchPages($, target.bank, plan.recall),
+  ])
+  for (const o of [found, searched]) {
+    const setUp = o.ok ? null : setUpMessage(o.reason)
     if (setUp !== null) return setUp
   }
   const recalled: RunReport['recall'] = found.ok
     ? recallFound(plan.recall, found.value, sessionId)
     : { query: plan.recall, reason: found.reason }
+  const kept = 'kept' in recalled ? recalled.kept : []
+  const pages = searched.ok ? dropEmptyPages(searched.value) : []
+
+  const picked = await writeReflectPlan($, plan.need, plan.recall, kept, pages)
+
+  let page: RunReport['page'] = null
+  if (!searched.ok) {
+    page = { reason: searched.reason }
+  } else if ('error' in picked) {
+    page = { reason: picked.error }
+  } else if (picked.pageId !== null) {
+    const read = await getPage($, target.bank, picked.pageId)
+    if (!read.ok) {
+      const setUp = setUpMessage(read.reason)
+      if (setUp !== null) return setUp
+    }
+    page = read.ok ? read.value : { reason: read.reason }
+  }
 
   return buildResult({
     bank: target.bank,
     promptsRead: promptBlock(prompts).split('\n').filter((l) => l.startsWith('- [')).length,
     need: plan.need,
     recall: recalled,
-    page: null,
+    page,
     context: '',
     reflects: [],
   })

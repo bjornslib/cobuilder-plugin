@@ -44,6 +44,19 @@ export function stubHaiku(on: any, text: string, calls: { model: string; effort:
   return calls
 }
 
+// Haiku answers in order: call 1 gets texts[0], call 2 gets texts[1], and the last text repeats.
+// Each call's prompt is recorded in order.
+export function stubHaikuSteps(on: any, texts: string[], prompts: string[] = []) {
+  let calls = 0
+  on('model.complete', (_$: any, e: any) => {
+    prompts.push(String(e.prompt ?? ''))
+    const text = texts[Math.min(calls, texts.length - 1)]
+    calls++
+    return { value: { isAnswered: true, text, usage: USAGE } }
+  })
+  return prompts
+}
+
 // Runs a hook call and keeps its error as text, so a missing hook fails an assertion
 export async function settle(call: () => Promise<any>): Promise<{ value: any; error: string }> {
   try {

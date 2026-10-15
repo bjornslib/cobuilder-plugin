@@ -18,7 +18,7 @@ Hindsight: yes
 
 ## Slices
 - [x] Slice 1 — tracer bullet: the installed plugin proves each Hindsight MCP tool and answers consult   score: 1.00 (attempt 2; attempt 1 scored 0.71)
-- [ ] Slice 2 — a knowledge page joins the run   score: —
+- [x] Slice 2 — a knowledge page joins the run   score: 1.00 (attempt 1)
 - [ ] Slice 3 — reflect questions written from the records   score: —
 - [ ] Slice 4 — the memory pane shows each run   score: —
 - [ ] Slice 5 — design and build call the consult tool at fixed steps   score: —

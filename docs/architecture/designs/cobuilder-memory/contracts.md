@@ -140,7 +140,10 @@ One memory run has four steps. The tool and the command both start it.
    - `reflect` once per question, with the Context line.
 
 A call that fails or times out writes its reason in place of its section,
-and the other sections still show. The plugin adds no text of its own to
+and the other sections still show. When the permission check refuses a
+Hindsight call, the reason also names the rule to add:
+`Add "mcp__hindsight__<tool>" to permissions.allow in your settings.`
+`/memory-check` writes the same sentence on that tool's line. The plugin adds no text of its own to
 a Hindsight call. Every query and the context come from Haiku.
 
 ## The result

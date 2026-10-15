@@ -52,20 +52,33 @@ export function parseLines(text: string, label: string): string[] {
     .filter((line) => line)
 }
 
+// One Haiku call. A refusal, a timeout, or a thrown error comes back as the reason, never as a throw.
+async function complete(
+  $: Engine,
+  system: string,
+  prompt: string,
+  maxTokens: number,
+): Promise<{ text: string } | { error: string }> {
+  try {
+    const ask = await $.model.complete({ model: 'haiku', effort: 'medium', system, prompt, maxTokens, timeoutMs: 60000 })
+    return ask.isAnswered ? { text: ask.text } : { error: ask.reason }
+  } catch (err) {
+    return { error: String((err as Error)?.message ?? err) }
+  }
+}
+
 export async function writeRecallQuery(
   $: Engine,
   prompts: string,
   tail: string,
 ): Promise<RecallPlan | { error: string }> {
-  const ask = await $.model.complete({
-    model: 'haiku',
-    effort: 'medium',
-    system: RECALL_SYSTEM,
-    prompt: 'The stored prompts of the person in this session, oldest first:\n' + prompts + '\nSession end:\n' + tail,
-    maxTokens: 400,
-    timeoutMs: 60000,
-  })
-  if (!ask.isAnswered) return { error: 'No query written: ' + ask.reason }
+  const ask = await complete(
+    $,
+    RECALL_SYSTEM,
+    'The stored prompts of the person in this session, oldest first:\n' + prompts + '\nSession end:\n' + tail,
+    400,
+  )
+  if ('error' in ask) return { error: 'No query written: ' + ask.error }
   const recall = parseLines(ask.text, 'Recall')[0]
   if (!recall) return { error: 'Haiku wrote no recall query. Its reply: ' + ask.text.slice(0, 300) }
   return { need: parseLines(ask.text, 'Need')[0] ?? '(not stated)', recall }
@@ -80,15 +93,13 @@ export async function writeReflectPlan(
 ): Promise<ReflectPlan | { error: string }> {
   const records = hits.map((h, i) => (i + 1) + '. [' + h.date + '] ' + h.text).join('\n') || '(the search found nothing outside this session)'
   const pageList = pages.map((p) => '- id ' + p.id + ' [' + p.updated + '] ' + p.name + ': ' + p.snippet).join('\n') || '(the search found no page)'
-  const plan = await $.model.complete({
-    model: 'haiku',
-    effort: 'medium',
-    system: REFLECT_SYSTEM,
-    prompt: 'The decision: ' + need + '\n\nThe search: ' + query + '\n\nThe records it found:\n' + records + '\n\nThe pages it found:\n' + pageList,
-    maxTokens: 600,
-    timeoutMs: 60000,
-  })
-  if (!plan.isAnswered) return { error: 'No reflect questions written: ' + plan.reason }
+  const plan = await complete(
+    $,
+    REFLECT_SYSTEM,
+    'The decision: ' + need + '\n\nThe search: ' + query + '\n\nThe records it found:\n' + records + '\n\nThe pages it found:\n' + pageList,
+    600,
+  )
+  if ('error' in plan) return { error: 'No reflect questions written: ' + plan.error }
   const pageId = parseLines(plan.text, 'Page')[0] ?? ''
   return {
     pageId: pages.some((p) => p.id === pageId) ? pageId : null,

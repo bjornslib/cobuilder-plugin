@@ -11,8 +11,16 @@ const SET_UP_MESSAGE =
   'Hindsight MCP server not found: add the server named "hindsight" with the recall, reflect, search_knowledge_base, and get_knowledge_page tools.'
 // The engine's words for a server that is not connected, or a tool that the server lacks
 const MISSING = /no connected MCP tool|no tool "/
+// The permission check's words for a refused call
+const REFUSED = /auto mode classifier|refused|permission/i
 const PAGE_CHARS = 6000
 const EMPTY_PAGE_SNIPPET = 'Generating content...'
+
+// A refused call names the allow rule for its tool. A missing server or tool keeps its set-up message.
+function withPermissionHint(tool: string, reason: string): string {
+  if (MISSING.test(reason) || !REFUSED.test(reason)) return reason
+  return reason + ' Add "mcp__hindsight__' + tool + '" to permissions.allow in your settings.'
+}
 
 // One MCP call to Hindsight. A thrown error, or isError, is a failed outcome with its reason.
 async function call(
@@ -24,10 +32,13 @@ async function call(
   try {
     const r: any = await $.mcp.call(HINDSIGHT_SERVER, tool, args)
     const text = String(r?.content?.[0]?.text ?? '')
-    if (r?.isError) return { ok: false, reason: text || 'Hindsight returned an error', ms: Date.now() - start }
+    if (r?.isError) {
+      return { ok: false, reason: withPermissionHint(tool, text || 'Hindsight returned an error'), ms: Date.now() - start }
+    }
     return { ok: true, value: unwrap(text), ms: Date.now() - start }
   } catch (err) {
-    return { ok: false, reason: String((err as Error)?.message ?? err), ms: Date.now() - start }
+    const reason = String((err as Error)?.message ?? err)
+    return { ok: false, reason: withPermissionHint(tool, reason), ms: Date.now() - start }
   }
 }
 
