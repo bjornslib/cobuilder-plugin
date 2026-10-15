@@ -42,7 +42,8 @@ Test command: `claude plugin validate plugins/cobuilder-memory && claude plugin 
 ### C4 — Each Hindsight MCP tool answers from the loaded plugin [CRITICAL]
 **Must be true:** from the plugin, `$.mcp.call("hindsight", …)` returns data from `recall`, `search_knowledge_base`, `get_knowledge_page`, and `reflect`, and the evidence records the time of one `reflect` and what the engine does when an MCP call passes its timeout.
 **Evidence to check:**
-- The slice evidence file: one line per tool with its result size or count and its time in ms.
+- Run from the repo root: `claude -p --plugin-dir plugins/cobuilder-memory "/memory-check"`. Each of the four tools reads `ok`, with its time in ms.
+- The slice evidence file holds that output.
 - The evidence names the MCP timeout behaviour: the value or the observed stop, with how it was found.
 **Scoring:**
 - 1.0 — all four tools answered live, and the reflect time and the timeout behaviour are recorded.

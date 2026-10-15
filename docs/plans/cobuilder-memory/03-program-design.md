@@ -94,6 +94,7 @@ export function buildResult(r: RunReport): string
 // run.ts
 export type RunOrigin = "tool" | "command"
 export function runMemory($: Engine, origin: RunOrigin): Promise<string>
+export function runCheck($: Engine): Promise<string>   // /memory-check
 
 // pane.tsx and types/index.d.ts (slice 4)
 export type RunStep = "query" | "search" | "questions" | "reflect" | "done" | "failed"
@@ -141,7 +142,7 @@ register.ts  on('tool.call', { tool: /^mcp__cobuilder-memory__consult$/ })
 ```
 
 `command.run` for `memory-recall` calls `runMemory($, "command")`, which
-opens the pane asked. `prompt.submit` calls `shouldStore`, then
+opens the pane asked. `command.run` for `memory-check` calls `runCheck($)`. `prompt.submit` calls `shouldStore`, then
 `storePrompt`, then `next(e)`. `ui.render` for `{ component: "Pane",
 requestId: "memory-run" }` calls `renderPane`.
 

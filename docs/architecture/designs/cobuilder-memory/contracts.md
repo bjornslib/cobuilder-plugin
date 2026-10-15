@@ -39,6 +39,16 @@ The module registers the command at `session.start`. A `command.run` hook
 runs the same memory run as the tool and returns its result as the
 command text. The command also opens the memory pane, at any width.
 
+### The command `/memory-check`
+
+A diagnostic command for slice 1 and for set-up. A `command.run` hook calls
+each of the four Hindsight tools once on the current bank, with no Haiku
+call, and returns one line per tool: the tool name, `ok` or `failed`, the
+time in ms, and a count or the reason. It searches with the fixed query
+`memory check`, reads the first page that the search returns, and asks
+reflect `What does this project remember most often?`. It also names the
+bank and says whether the session lists the consult tool.
+
 ### The workflow steps
 
 Design stage 1 and implement Gate 1 call the consult tool when the
@@ -148,8 +158,8 @@ Each run opens or updates one pane, the memory pane: id `memory-run`,
 title `🧠 Hindsight: CoBuilder Memory Run`. The approved mockup is
 `docs/plans/cobuilder-memory/mockups/memory-pane.html`.
 
-- **Opening.** A run starts `$.ui.open({ id: "memory-run", title })`. When the agent's tool call starts the run, the open is unasked, so the pane appears only from 144 columns. `/memory-recall` is the person's own command, so its open is asked and the pane appears at any width. The run does not wait for the pane.
-- **State.** One atom, `{ plugin: "cobuilder-memory", key: "run" }`, holds the newest run: its start time, the bank, the step it is on (`query`, `search`, `questions`, `reflect`, `done`, or `failed`), the Need line, the recall query and its counts and records, the picked page, and each reflect question with its answer, `running`, or its failure. Each step updates the atom, and the update redraws the pane.
+- **Opening.** The run opens the pane first, before the first Haiku call, so the person sees it from the start of a slow run (engineer, 2026-10-15). A run starts `$.ui.open({ id: "memory-run", title })`. When the agent's tool call starts the run, the open is unasked, so the pane appears only from 144 columns, or from 110 columns once the person has opened it in this session. `/memory-recall` is the person's own command, so its open is asked and the pane appears at any width. The run does not wait for the pane.
+- **State.** One atom, `{ plugin: "cobuilder-memory", key: "run" }`, holds the newest run: its start time, the bank, the step it is on (`query`, `search`, `questions`, `reflect`, `done`, or `failed`), the Need line, the recall query and its counts and records, the picked page, and each reflect question with its answer, `running`, or its failure. Each step updates the atom, and so does each Hindsight call when it starts and when it ends, so the pane shows the calls in flight. While the run works, a one-second `$.clock` tick updates the elapsed time. Each update redraws the pane.
 - **While a run works.** The pane shows the bank, the start time, the Need line, and one line per step with its state (done, running, or failed) and its counts.
 - **When a run ends.** The pane shows the run time, the recall query and the first records, the picked page with its date, and each reflect question marked answered or failed. A last line says that the full result went to the agent.
 - **Drawing.** A `ui.render` hook on `{ component: "Pane", requestId: "memory-run" }` draws the atom, fitted to the viewport rows. With no run yet, the pane says so.
@@ -193,9 +203,8 @@ checks the marketplace entry. After E1 merges, one install from the GitHub
 marketplace checks the real install path. With the plugin loaded:
 
 1. The session lists `mcp__cobuilder-memory__consult`.
-2. `$.mcp.call("hindsight", ...)` returns data from each of the four
-   tools: `recall`, `search_knowledge_base`, `get_knowledge_page`, and
-   `reflect`.
+2. `/memory-check` returns `ok` for each of the four tools: `recall`,
+   `search_knowledge_base`, `get_knowledge_page`, and `reflect`.
 3. The time of one `reflect` call is recorded, and so is what the engine
    does when an MCP call runs past its timeout.
 4. A consult call returns the judging rules, the header, the Need line,
