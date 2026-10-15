@@ -1,22 +1,22 @@
 {
   "name": "cobuilder-memory",
-  "title": "A memory tool writes the Hindsight queries for the main agent",
+  "title": "A memory plugin consults Hindsight for the main agent",
   "created": "2026-10-13",
-  "outcome": "plugins/cobuilder-memory ships the recall_memory tool. Haiku writes a recall query from the person's prompts and the session, recall and a page search run, and Haiku picks a page and writes reflect questions. The main agent judges the result, and a pane shows each run.",
+  "outcome": "plugins/cobuilder-memory installs from this marketplace and gives the main agent the consult tool. Haiku writes the recall query, picks a knowledge page, and writes reflect questions, all through the Hindsight MCP tools. Design and build call the tool, and a pane shows each run.",
   "done_when": [
-    "`claude plugin validate` accepts plugins/cobuilder-memory, and `claude plugin test` passes its tests.",
-    "`uv run pytest tests -q` passes with the install-surface rule that ADR-0039 amends.",
-    "In a session that installs the plugin, the main agent calls recall_memory with no input and gets one recall and one to three reflect answers.",
+    "`claude plugin install cobuilder-memory@cobuilder-plugin` installs the plugin, and after `/reload-plugins` the session lists `mcp__cobuilder-memory__consult`.",
+    "From the installed plugin, `$.mcp.call` returns data from recall, search_knowledge_base, get_knowledge_page, and reflect, and the MCP timeout is measured.",
+    "`claude plugin validate` and `claude plugin test` pass, and `uv run pytest tests -q` passes with the install-surface rule that ADR-0039 amends.",
+    "A consult call returns the judging rules first, then recall records with the current session's own transcript dropped.",
     "When the page search finds a page with content, Haiku may pick one, and the result shows its body and update date. An empty page is never picked.",
-    "The reflect questions name at least one ADR id or term from the recall records when recall kept a record.",
-    "Recall drops every result from the current session's own transcript.",
+    "The reflect questions name at least one ADR id or term from the recall records when recall kept a record, and a failed reflect leaves the other answers intact.",
     "The bank comes from bankIdTemplate and the main worktree's base name, and outside a git repo the run stops with a reason.",
-    "The result opens with the judging rules, and a Hindsight outage returns a reason, never an empty list.",
-    "Each run opens or updates one pane that shows its steps and its result. A tool run shows it from 144 columns, and /memory-recall at any width.",
+    "Each run opens or updates the memory pane as the approved mockup shows. A tool run shows it from 144 columns, and /memory-recall at any width.",
+    "Design stage 1 and implement Gate 1 call the consult tool when the session lists it, and the implement skill holds no H1 to H5 checkpoint.",
     "Live runs on one design question in this repo and in think-with-ai return a dated record that the main agent uses or rejects with a stated reason."
   ],
   "abort_if": [
-    "The plugin layout under plugins/ fails to load the hooks module that loaded from ~/mods.",
+    "The installed plugin cannot call the hindsight MCP server through $.mcp.call.",
     "The engine stops a tool.call hook before a run finishes."
   ],
   "min_work": {
@@ -38,15 +38,15 @@
       "branch": "design/cobuilder-memory",
       "pr": null,
       "state": "planned",
-      "outcome": "The spike moves into plugins/cobuilder-memory with the pane, the ADR-0025 amendment, and the packaging test."
+      "outcome": "The plugin installs from this marketplace, consults Hindsight through its MCP tools, shows each run in the memory pane, and joins design stage 1 and implement Gate 1. H1 to H5 retire."
     },
     {
       "id": "E2",
-      "slug": "memory-wiring",
+      "slug": "memory-gate",
       "branch": null,
       "pr": null,
       "state": "backlog",
-      "outcome": "Design and build call recall_memory at fixed points, and a Jev gate decides every n tool calls whether a recall would help. H1 to H5 retire."
+      "outcome": "A Jev gate decides every n tool calls whether a consult would help."
     },
     {
       "id": "E3",
@@ -95,6 +95,12 @@
       "changed": false,
       "feedback_class": "cosmetic",
       "note": "Reviewer round on Haiku: 10 cosmetic findings, no survivor. The judging rules come first, the run time is up to about five and a half minutes, empty pages are dropped, and the names are memory run and memory pane."
+    },
+    {
+      "n": 7,
+      "changed": true,
+      "feedback_class": "material",
+      "note": "The engineer chose the Hindsight MCP tools over the HTTP API, moved the workflow steps into E1, named the tool consult, dropped SDK prompts, and approved the pane mockup. Slice 1 proves the installed plugin and each MCP tool."
     }
   ]
 }

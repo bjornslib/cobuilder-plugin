@@ -1,12 +1,12 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "bb02832e9c2eeff2922d5d4981d505cb3a82a8c3",
+    "git_head": "de085d4d1cebb8f2c026d2c2dc8853ab3451663b",
     "trees": {
-      "docs/architecture/adr": "sha256:150e1d84669966064fc2e792d67626167d8886e94fbfe6721aa339c54bb3f79f",
-      "docs/architecture/designs": "sha256:1614073324fb71693a1b99571680a5149620136a390ee1087c6fede490337b9f",
+      "docs/architecture/adr": "sha256:f5da466d087baf586b156cb77a6e6259dec204ed4492cea4176bce3681c8ec47",
+      "docs/architecture/designs": "sha256:da3c3ba6aef7640c0616d238440228c4a9338612e41401cfa4d169329f221f79",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:4df3f43ca27f1a519e780e16389d6eae3b9a5da54075f2e99b0fdb4aabc8d425",
+      "docs/plans": "sha256:93f18fb377749d78ec3e9bd31f3db31d3567cfba9ba423034cadd6580d413f74",
       ".cobuilder/rubrics": "sha256:19779693304d4b7309a3dd7f0c56c6b54c47a3c4834c4ed3d7fb09fc402cec6d"
     }
   },
@@ -204,7 +204,7 @@
       },
       {
         "id": "ADR-0039",
-        "title": "cobuilder-memory ships a memory tool for the main agent",
+        "title": "cobuilder-memory ships a consult tool for the main agent",
         "state": "decided"
       }
     ],
@@ -236,7 +236,7 @@
       {
         "id": "cobuilder-memory",
         "name": "cobuilder-memory",
-        "outcome": "plugins/cobuilder-memory ships the recall_memory tool. Haiku writes a recall query from the person's prompts and the session, recall and a page search run, and Haiku picks a page and writes reflect questions. The main agent judges the result, and a pane shows each run.",
+        "outcome": "plugins/cobuilder-memory installs from this marketplace and gives the main agent the consult tool. Haiku writes the recall query, picks a knowledge page, and writes reflect questions, all through the Hindsight MCP tools. Design and build call the tool, and a pane shows each run.",
         "stage": "approved"
       },
       {
@@ -2998,6 +2998,86 @@
         "state": "completed"
       },
       {
+        "id": "cobuilder-memory/1",
+        "feature": "cobuilder-memory",
+        "n": 1,
+        "title": "Tracer bullet: the installed plugin proves each Hindsight MCP tool and answers consult",
+        "ends_with": "`claude plugin install cobuilder-memory@cobuilder-plugin` installs the plugin from this repo's marketplace, and after `/reload-plugins` the session lists `mcp__cobuilder-memory__consult`. From the installed plugin, `$.mcp.call(\"hindsight\", ...)` returns data from `recall`, `search_knowledge_base`, `get_knowledge_page`, and `reflect`. The evidence records one reflect's time and what the engine does past its MCP timeout. A consult call returns the judging rules first, then the header, the Need line, and the recall records, with this session's own transcript dropped. With no `hindsight` server that has these tools, the run names what to set up. `claude plugin validate`, `claude plugin test`, and `uv run pytest tests -q` pass. The tests cover the amended install rule, the marketplace entry, the matching versions, and the `shared` symlink.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "cobuilder-memory/2",
+        "feature": "cobuilder-memory",
+        "n": 2,
+        "title": "A knowledge page joins the run",
+        "ends_with": "`search_knowledge_base` runs beside recall. Haiku's second call may pick one page, and `get_knowledge_page` reads it. The result shows its name, update date, and body. The run never shows a page whose snippet or body is empty or reads \"Generating content...\". The module refuses a page id that the search did not return.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "cobuilder-memory/3",
+        "feature": "cobuilder-memory",
+        "n": 3,
+        "title": "Reflect questions written from the records",
+        "ends_with": "Haiku writes a context and up to three reflect questions. Each names an ADR id or term of the kept records. The page read and the `reflect` calls run side by side through `$.mcp.call`. A reflect that fails or times out writes its reason. The other answers still show.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "cobuilder-memory/4",
+        "feature": "cobuilder-memory",
+        "n": 4,
+        "title": "The memory pane shows each run",
+        "ends_with": "The pane `memory-run`, titled `🧠 Hindsight: CoBuilder Memory Run`, matches the approved Gate 2b design. While a run works, it shows each step with its state and counts. When the run ends, it shows the records, the page, and each reflect answer or its failure. `/memory-recall` opens it at any width, and a tool run opens it unasked from 144 columns.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "cobuilder-memory/5",
+        "feature": "cobuilder-memory",
+        "n": 5,
+        "title": "Design and build call the consult tool at fixed steps",
+        "ends_with": "Design stage 1 and implement Gate 1 call the consult tool when the session lists it. Otherwise they state that it is absent. The implement skill holds no H1 to H5 checkpoint. A blind agent given design stage 1 calls the consult tool before it drafts the hypothesis.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "cobuilder-memory/6",
+        "feature": "cobuilder-memory",
+        "n": 6,
+        "title": "The value check in two repos",
+        "ends_with": "One design question in this repo and one in think-with-ai each get a run. Each run returns a dated record that the main agent uses or rejects with a reason. The evidence file holds both transcripts. CLAUDE.md, README.md, and DDD-VOCABULARY.md name six plugins, and ADR-0025's history names ADR-0039.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "cobuilder-memory/7",
+        "feature": "cobuilder-memory",
+        "n": 7,
+        "title": "A Jev gate decides every n tool calls",
+        "ends_with": "Every n tool calls, one Jev `noul` question judges whether a consult would help. Above the threshold, the plugin starts a run. A measured sample sets n, the threshold, the latency, and the cost.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
+        "id": "cobuilder-memory/8",
+        "feature": "cobuilder-memory",
+        "n": 8,
+        "title": "Stub: the pane lists every Hindsight call of the session",
+        "ends_with": "The memory pane lists each Hindsight call of the session. It marks the plugin's own runs apart. Sources: the agent's `mcp__hindsight__` calls, `diag.jsonl`, and the audit log.",
+        "score": "—",
+        "attempts": 0,
+        "state": "planned"
+      },
+      {
         "id": "cobuilder-viewer/1",
         "feature": "cobuilder-viewer",
         "n": 1,
@@ -3738,7 +3818,7 @@
         "feature_slug": "cobuilder-memory",
         "gate": 1,
         "title": "Product: cobuilder-memory",
-        "body_md": "# Product: cobuilder-memory\n\nDesign record: `docs/architecture/designs/cobuilder-memory/` (approved\n2026-10-13). This document follows its `intent.json`.\n\n## Problem\n\nA person who builds with CoBuilder already keeps a project memory in\nHindsight. The memory holds past decisions, rejected options, and the reasons\nbehind them. But the work rarely asks it anything.\n\nA design session never asks memory what the project already decided. A build\nasks only when the person says yes to a question at the start, and three of\n15 past builds said yes. So a team argues a settled question again, or a new\ndesign quietly undoes an old decision.\n\nWhat the memory receives is weak too. It gets the whole chat of each session,\nnot the decisions in it. The notes that Claude Code keeps in its own memory\nfolder never reach it at all. So a search returns chat, and the person must\ndig for the decision.\n\nA check that found nothing looks the same as a check that never ran. The\nperson cannot tell which one happened.\n\n## Success metric\n\n**Checked memory reaches real decisions.**\n\nMeasured as: of the first three design or build starts after install, the\ncount whose decision step cites a memory claim that was checked against the\nproject files. The target is at least one. Today the count is zero, because\nno design step asks memory.\n\nStop rule: the person marks the plugin's first 20 decisions about when to ask\nmemory as right or wrong. The plugin stays when 16 or more are right.\n\n## Announcement — the blog post before the feature\n\nCoBuilder now remembers for you. Install the new cobuilder-memory plugin, and\neach time you write a prompt, a small model decides if memory can help. When\nit can, a short note with the past decisions reaches the assistant before your\nnext prompt, and each claim names its source. When a design or a build starts,\nthe plugin also checks each past claim against your files before the decision\nuses it. It saves the decisions you make as decisions, not as chat, and it\ncopies your Claude Code memory notes into Hindsight, so both hold the same\nfacts. Every run leaves a receipt, so you can see what memory said and why.\n\n## Screens\n\nNo UI. The plugin draws no screen. It adds a short text note that the\nassistant reads, and a one-line notice when it saves a decision.\n\n## Prior art\n\n- Hindsight (checkpoint H1, 2026-10-14): no attempt to integrate memory\n  before 2026-10-12 was found. Every point the search returned came from the\n  design session for this feature. Outside that session, the 36 recall results\n  describe only the repo layout and its conventions. Prior art: none found for\n  memory integration.\n",
+        "body_md": "# Product: cobuilder-memory\n\nGrounded in the design record `docs/architecture/designs/cobuilder-memory/`\n(`intent.json`, `goal.json`), approved 2026-10-15, round 7.\n\n## Problem\n\nA developer who designs or builds a change in CoBuilder works with an\nagent that forgets what earlier sessions decided. The project's memory\nholds those decisions, but the agent asks it only when it thinks to, with\nits own guess as the question. Its answers then come back as raw chat from\nthe current session. Design work never asks memory at all, and build work\nasks only when the developer opts in. So the agent argues settled\nquestions again, or it misses a rule that someone already set.\n\n## Success metric\n\nIn live runs on one design question in each of two repos (this repo and\nthink-with-ai), the agent receives a dated past record that it did not have,\nand it uses or rejects that record with a stated reason.\n\nMeasurement: the evidence file of slice 6 holds both run transcripts, and\nthe developer marks each run \"used\", \"rejected with a reason\", or \"no\nvalue\". The metric passes when both runs are \"used\" or \"rejected with a\nreason\".\n\n## Announcement — the blog post before the feature\n\nCoBuilder now has a memory. Install the optional cobuilder-memory plugin,\nand the agent can consult the project's Hindsight memory before it makes a\ndesign or build decision. A small model reads what you asked for in the\nsession and writes the questions, so the agent no longer guesses what to\nsearch for. Design and build consult memory on their own at the start, and\na side pane shows each consultation as it runs. The agent tells you which\npast decisions it used, which it set aside, and why.\n\n## Screens\n\n- `mockups/memory-pane.html` — the memory pane, titled\n  `🧠 Hindsight: CoBuilder Memory Run`, in two states: a run in progress,\n  and a finished run. The developer approved this mockup on 2026-10-15.\n\n## Prior art\n\nH1 ran on 2026-10-15 through the spike's own tool (now named consult).\n\n- Recall returned 26 results, and 19 came from this session. The kept\n  records were mostly repo facts.\n- Two of the three reflects timed out at 170 s while consolidation ran on\n  the same model. A timed-out step must not hide the other answers.\n- One reflect lead: the 2026-09-26 rename to cobuilder-architect needed a\n  version bump and retitled commands. Moving a plugin is not only a file\n  move.\n",
         "approved_date": null,
         "source_path": "docs/plans/cobuilder-memory/01-product.md"
       },
@@ -5627,6 +5707,14 @@
       "cobuilder-family/12": "plugin-split/E6",
       "cobuilder-family/13": "plugin-split/E6",
       "cobuilder-family/14": "plugin-split/E6",
+      "cobuilder-memory/1": "cobuilder-memory/E1",
+      "cobuilder-memory/2": "cobuilder-memory/E1",
+      "cobuilder-memory/3": "cobuilder-memory/E1",
+      "cobuilder-memory/4": "cobuilder-memory/E1",
+      "cobuilder-memory/5": "cobuilder-memory/E1",
+      "cobuilder-memory/6": "cobuilder-memory/E1",
+      "cobuilder-memory/7": "cobuilder-memory/E2",
+      "cobuilder-memory/8": "cobuilder-memory/E3",
       "cobuilder-viewer/1": "cobuilder-viewer/E1",
       "cobuilder-viewer/2": "cobuilder-viewer/E2",
       "cobuilder-viewer/3": "cobuilder-viewer/E2",
@@ -5846,7 +5934,8 @@
         {
           "n": "1",
           "name": "Product",
-          "state": "in progress",
+          "state": "APPROVED 2026-10-15",
+          "view": "#/cobuilder-memory/build/plan/product",
           "doc": "cobuilder-memory",
           "doc_kind": "product"
         },
@@ -5860,7 +5949,7 @@
         {
           "n": "2b",
           "name": "Interaction design",
-          "state": "pending"
+          "state": "pending (the memory pane; the engineer approved the mockup in mockups/memory-pane.html on 2026-10-15, and the line reads APPROVED once Gate 2 is approved)"
         },
         {
           "n": "3",

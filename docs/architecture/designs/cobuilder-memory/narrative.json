@@ -5,7 +5,7 @@
   },
   "problem_solution": {
     "problem": "The CoBuilder workflows reach Hindsight through one optional build step, and design mode never does. When the main agent queries Hindsight itself, it writes the query from its own guess, and recall returns mostly the chat of the current session.",
-    "solution": "An opt-in plugin, cobuilder-memory, adds one tool and one command. Haiku reads the person's prompts and the session, writes a recall query, and then picks a knowledge page and writes reflect questions from what recall found. The result says how far to trust each part, and a pane shows the run to the person.",
+    "solution": "An opt-in plugin, cobuilder-memory, adds the consult tool and one command. Haiku reads the person's prompts and the session, writes a recall query, then picks a knowledge page and writes reflect questions, all through the Hindsight MCP tools. Design and build call the tool, the result says how far to trust each part, and a pane shows the run.",
     "narration": "The plugin does not decide what memory means. It asks better questions and hands the answers to the main agent, which checks them against the code.",
     "beats": [
       {
@@ -22,7 +22,7 @@
       },
       {
         "kind": "decision",
-        "text": "The plugin reaches Hindsight over HTTP, because the MCP server named hindsight differs per repo. Reflect runs through curl, because a fetch stops at 30 seconds."
+        "text": "Every Hindsight call goes through the standard Hindsight MCP tools. Slice 1 proves each one from the installed plugin before any other slice starts."
       },
       {
         "kind": "risk",
@@ -35,8 +35,8 @@
         "rejected_because": "The spike showed that a plugin cannot start its own subagent. The engineer cut the design to what the spike proved (round 4)."
       },
       {
-        "option": "Call Hindsight through $.mcp.call",
-        "rejected_because": "The server named hindsight differs per repo. In think-with-ai it lacked recall and reflect, and one recall result exceeded the MCP result size limit."
+        "option": "Call the Hindsight HTTP API directly, and run reflect through curl",
+        "rejected_because": "The engineer chose the standard Hindsight MCP tools: one interface the session already has. Slice 1 proves each MCP tool from the installed plugin before any other slice."
       },
       {
         "option": "A fixed reflect context in the plugin",
@@ -53,11 +53,11 @@
     ]
   },
   "architecture": {
-    "narration": "The plugin is one hooks module beside the session. It stores prompts, answers one tool and one command, calls Haiku twice, calls Hindsight over HTTP, and draws one pane.",
+    "narration": "The plugin is one hooks module beside the session. It stores prompts, answers one tool and one command, calls Haiku twice, calls Hindsight through its MCP server, and draws one pane. Design and build call the tool by name.",
     "beats": [
       {
         "kind": "constraint",
-        "text": "Plugins meet at the bundle and by name (ADR-0016). Epic E2 names the tool recall_memory, never a plugin path."
+        "text": "Plugins meet at the bundle and by name (ADR-0016). The design and build skills name the consult tool, never a plugin path."
       },
       {
         "kind": "decision",

@@ -3,7 +3,7 @@
   "generated": "2026-10-15",
   "verdict": "concerns",
   "risk_tier": "sensitive",
-  "summary": "The plugin closes a real gap. Memory runs today only when the model writes its own query, and design mode never runs it. The spike showed that a small model writes better queries from the person's prompts, and that the main agent judges the answers well. The concerns are the install-surface amendment, the echo of memory through the agent's replies, the long wait, and the cost of each run.",
+  "summary": "The plugin closes a real gap. Memory runs today only when the model writes its own query, and design mode never runs it. The spike showed that a small model writes better queries from the person's prompts, and that the main agent judges the answers well. The concerns are the install-surface amendment, the MCP timeout, the echo of memory through the agent's replies, and the cost of each run.",
   "sensible": {
     "answer": "Yes. The spike showed value in a second repo: the main agent kept dated records and rejected reflect leads that contradicted them. A hook is the only way to store the prompts, register a tool, and draw a pane, so the plugin needs a hooks module. The scope stops at what the spike proved.",
     "evidence": [
@@ -47,10 +47,10 @@
     {
       "kind": "prediction",
       "severity": "concern",
-      "claim": "A run can take up to about five and a half minutes, and the main agent waits for the tool call.",
+      "claim": "$.mcp.call has no timeout setting, and two of three reflects timed out in the H1 run. A slow reflect could hold the run until the engine's MCP timeout.",
       "evidence": "ADR-0039",
       "district": "skills",
-      "suggestion": "The pane shows each step while it runs. The tool description says the call is slow."
+      "suggestion": "Slice 1 measures the MCP timeout. A timed-out call writes its reason, and the other answers still show."
     },
     {
       "kind": "prediction",
@@ -75,6 +75,14 @@
       "evidence": "ADR-0039",
       "district": "skills",
       "suggestion": "Name this limit in the plugin README."
+    },
+    {
+      "kind": "prediction",
+      "severity": "concern",
+      "claim": "The plugin depends on an MCP server named hindsight with four tools. A session without it gets no memory.",
+      "evidence": "ADR-0039",
+      "district": "skills",
+      "suggestion": "The run names what to set up, and the plugin README says so."
     }
   ],
   "boundary_checks": [
@@ -88,7 +96,7 @@
       "rule": "Plugins meet only at the bundle and by name.",
       "source": "ADR-0016",
       "result": "pass",
-      "evidence": "No other plugin names the plugin's path. Epic E2 names the tool by its name."
+      "evidence": "The design and build skills name the consult tool by name. No other plugin names the plugin's path."
     },
     {
       "rule": "Every plugin folder holds a shared symlink.",
@@ -102,12 +110,17 @@
       "cobuilder-memory"
     ],
     "districts_changed": [
-      "scripts"
+      "scripts",
+      "skills"
     ],
     "edges_added": [
-      "cobuilder-memory -> Hindsight HTTP API"
+      "cobuilder-memory -> Hindsight MCP server",
+      "architect design skill -> consult tool (by name)",
+      "implement build skill -> consult tool (by name)"
     ],
-    "edges_removed": []
+    "edges_removed": [
+      "implement build skill -> Hindsight tools (H1 to H5)"
+    ]
   },
   "regret_risk": "If this ships as written, a session that calls the tool waits for minutes and pays model time on two servers. The value rests on the main agent judging well, which two live runs showed but no test measures.",
   "drift": []

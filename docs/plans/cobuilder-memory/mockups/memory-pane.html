@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Memory pane mockup</title>
+<style>body{font-family:ui-monospace,Menlo,monospace;background:#1e1e1e;color:#ddd;padding:24px}
+.pane{border:1px solid #666;width:72ch;padding:4px 8px;white-space:pre;line-height:1.35}
+.dim{color:#888}.ok{color:#7cc47c}.run{color:#e0b050}.err{color:#e07070}h1{font-size:14px;color:#aaa}</style></head>
+<body>
+<h1>Memory pane, id memory-run. Left: while the run works. Right: when it is done.</h1>
+<div style="display:flex;gap:24px">
+<div class="pane">─ 🧠 Hindsight: CoBuilder Memory Run ───────
+<span class="dim">bank coding-agent-cobuilder-plugin · 00:58</span>
+Need: Before E1 moves the spike, find past
+      failures of the move and its tests.
+
+<span class="ok">✓</span> query     Haiku wrote 1 recall query
+<span class="ok">✓</span> search    recall 26 · this session 19 · kept 7
+            pages 3 · empty 1
+<span class="ok">✓</span> questions page "Key decisions" · 3 reflects
+<span class="run">◐</span> reflect   1 of 3 done · 1:42
+</div>
+<div class="pane">─ 🧠 Hindsight: CoBuilder Memory Run ───────
+<span class="dim">bank coding-agent-cobuilder-plugin · 00:58 · 3:05</span>
+Need: Before E1 moves the spike, find past
+      failures of the move and its tests.
+
+Recall  "spike move plugins/cobuilder-memory …"
+ 1 [2026-10-14] The moment call failed with…
+ 2 [2026-09-26] Rename to cobuilder-architect…
+   … 5 more
+Page    Key decisions and rationale [2026-08-25]
+Reflect
+ <span class="ok">✓</span> What did the 2026-09-26 rename require…
+ <span class="err">✗</span> Why did the guard fail… timed out
+ <span class="err">✗</span> Do records mention reflect timeouts… timed out
+<span class="dim">The full result went to the agent.</span>
+</div>
+</div>
+</body></html>

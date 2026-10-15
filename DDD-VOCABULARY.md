@@ -189,19 +189,19 @@ _Avoid_: draft review (the architect stage 6 pre-review, which proposes survivor
 
 These terms come from the `cobuilder-memory` design (ADR-0039). The plugin lives as a spike in `~/mods/cobuilder-memory` until epic E1 moves it into `plugins/`.
 
-<a id="memory-tool"></a>
-**Memory tool** (`cobuilder-memory`):
-The tool `recall_memory` that the main agent calls with no input to ask Hindsight about the work at hand. The person runs the same memory run with `/memory-recall`.
-_Avoid_: moment tool (the superseded 2026-10-13 design's tool for fixed workflow steps)
+<a id="consult-tool"></a>
+**Consult tool** (`cobuilder-memory`):
+The tool `consult` that the main agent calls with no input to ask Hindsight about the work at hand; Claude Code lists it as `mcp__cobuilder-memory__consult`. The person runs the same memory run with `/memory-recall`.
+_Avoid_: memory tool, recall_memory (earlier names), moment tool (the superseded 2026-10-13 design's tool)
 
 <a id="memory-run"></a>
 **Memory run** (`cobuilder-memory`):
-One call of the memory tool: Haiku writes a recall query, recall and a knowledge-page search run, then Haiku picks at most one page and writes reflect questions from the records. The page read and the reflects follow, and the result opens with the judging rules.
+One call of the consult tool: Haiku writes a recall query, recall and a knowledge-page search run, then Haiku picks at most one page and writes reflect questions from the records. The page read and the reflects follow, and the result opens with the judging rules.
 _Avoid_: quick run, deep run (both named runs of the superseded design)
 
 <a id="prompt-store"></a>
 **Prompt store** (`cobuilder-memory`):
-The list of the person's own prompts, from the composer, remote control, or the SDK, that the plugin keeps per session in `$.store`, newest 100. Haiku reads it to write the recall query.
+The list of the person's own prompts, typed in the terminal or sent through Remote Control, that the plugin keeps per session in `$.store`, newest 100. Haiku reads it to write the recall query.
 
 <a id="judging-rules"></a>
 **Judging rules** (`cobuilder-memory`):
@@ -209,7 +209,7 @@ The fixed text at the top of a memory run's result that tells the main agent to 
 
 <a id="memory-pane"></a>
 **Memory pane** (`cobuilder-memory`):
-The side pane, id `memory-run` and title `Memory run`, that shows the newest memory run's steps while it runs and its result when it is done. It adds no fact that the result lacks.
+The side pane, id `memory-run` and title `🧠 Hindsight: CoBuilder Memory Run`, that shows the newest memory run's steps while it runs and its result when it is done. It adds no fact that the result lacks.
 
 ## Cross-cutting
 

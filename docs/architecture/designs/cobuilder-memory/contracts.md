@@ -2,28 +2,33 @@
 
 These contracts describe epic E1. They come from the working spike in
 `~/mods/cobuilder-memory`, which ran on 2026-10-14 in this repo and in
-think-with-ai. Epic E2 (the workflow wiring and the Jev gate) has no
-contract yet.
+think-with-ai, and from the engineer's choices of 2026-10-15. Epic E2 (a
+Jev gate) and epic E3 (a list of every Hindsight call) have no contract
+yet.
 
-The plugin ships `hooks/hooks.json`, which names one hooks module,
-`hooks/register.ts`. It also ships the module's tests, the manifest, and
-the `shared` symlink. It ships no `agents/`, no MCP server,
-and no reference file.
+The plugin is a mod: a plugin whose `hooks/hooks.json` names one hooks
+module, `hooks/register.ts`. It also ships the module's tests, the
+manifest, and the `shared` symlink. It ships no `agents/`, no MCP server,
+and no reference file. A person installs it from this repo's marketplace
+with `claude plugin install cobuilder-memory@cobuilder-plugin`, and
+`--plugin-dir` stays a development aid.
 
 ## Endpoints
 
-### The tool `recall_memory`
+### The consult tool
 
-The module registers the tool at `session.start` with `$.tool.register`.
-Its full name is `mcp__cobuilder-memory__recall_memory`. A `tool.call` hook
-answers it.
+The module registers the tool `consult` at `session.start` with
+`$.tool.register`. Claude Code lists every tool that a plugin registers
+under the prefix `mcp__<plugin>__`, so the main agent sees it as
+`mcp__cobuilder-memory__consult`. The prefix comes from Claude Code. The
+tool itself speaks no MCP. A `tool.call` hook answers it.
 
 | Field | Value |
 |---|---|
 | Input | none (`{ "type": "object", "properties": {} }`) |
 | Loading | `isDeferred: false`, so the main agent sees it from the start |
 | Output | one text result, in the format under "The result" |
-| Time | up to about five and a half minutes: two Haiku calls of up to 60 s each, recall and page search side by side of up to 30 s, then the page read and up to three reflects side by side of up to 170 s |
+| Time | two Haiku calls of up to 60 s each, then the Hindsight calls. Slice 1 measures the engine's MCP timeout, which bounds each Hindsight call |
 
 The tool takes no input on purpose. Haiku writes every query, so nothing
 that the agent types reaches Hindsight unchanged.
@@ -31,8 +36,16 @@ that the agent types reaches Hindsight unchanged.
 ### The command `/memory-recall`
 
 The module registers the command at `session.start`. A `command.run` hook
-runs the same run as the tool and returns its result as the command text.
-The command also opens the pane, at any width.
+runs the same memory run as the tool and returns its result as the
+command text. The command also opens the memory pane, at any width.
+
+### The workflow steps
+
+Design stage 1 and implement Gate 1 call the consult tool when the
+session lists `mcp__cobuilder-memory__consult`. When the session does not
+list it, the skill states that the tool is absent and goes on. A skill
+names the tool, never a plugin path (ADR-0016). The implement skill holds
+no H1 to H5 checkpoint after this change.
 
 ### The prompt store
 
@@ -40,16 +53,41 @@ A `prompt.submit` hook stores a prompt when all of these hold:
 
 - `e.command` is empty, so a slash command is not stored.
 - `e.isMeta` is false.
-- `e.origin.kind` is `composer`, `bridge`, or `sdk`. A prompt from a plugin, a peer, or a notification is not stored.
+- `e.origin.kind` is `composer` (typed in the terminal) or `bridge` (sent
+  through Remote Control). A prompt from the SDK, a plugin, a peer, or a
+  notification is not stored, because a person did not write it.
 - The text is not empty.
 
 The store key is `prompts:<session id>` in `$.store`. Each entry is
 `{ at: "YYYY-MM-DDTHH:MM", text }`, with the text cut to 2,000 characters.
 The store keeps the newest 100 entries.
 
-## The run
+## The Hindsight calls
 
-One run has four steps. The tool and the command both call it.
+Every Hindsight call goes through `$.mcp.call("hindsight", <tool>, args)`
+on the MCP server named `hindsight`, the full Hindsight API server. Each
+call passes `bank_id`. `$.mcp.call` needs no permission prompt, and it has
+no timeout setting of its own.
+
+| Tool | Arguments |
+|---|---|
+| `recall` | `query`, `bank_id`, `types: ["world", "experience"]`, `budget: "mid"`, `max_tokens: 2500` |
+| `search_knowledge_base` | `query`, `bank_id`, `limit: 5` |
+| `get_knowledge_page` | `page_id`, `bank_id` |
+| `reflect` | `query`, `context`, `bank_id`, `budget: "low"`, `max_tokens: 1500` |
+
+When the session has no MCP server named `hindsight`, or the server lacks
+one of these tools, the run stops and names what to set up:
+`Hindsight MCP server not found: add the server named "hindsight" with the
+recall, reflect, search_knowledge_base, and get_knowledge_page tools.`
+
+The MCP `reflect` tool takes no fact-type filter and no switch for mental
+models. Reflect can therefore draw on consolidated observations and
+knowledge pages, which can be stale.
+
+## The memory run
+
+One memory run has four steps. The tool and the command both start it.
 
 1. **The recall query.** `$.model.complete` with `model: "haiku"`,
    `effort: "medium"`, `maxTokens: 400`, and `timeoutMs: 60000`. The prompt
@@ -59,18 +97,12 @@ One run has four steps. The tool and the command both call it.
    revised capability. Haiku replies with two lines:
    - `Need: <the decision, and the prior knowledge that would change it>`
    - `Recall: <one search query on one topic>`
-2. **Recall and page search.** These two calls run side by side through
-   `$.http.fetch`.
-   - Recall: `POST <apiUrl>/v1/default/banks/<bank>/memories/recall`, with this body:
-     ```json
-     { "query": "<Recall line>", "types": ["world", "experience"], "budget": "mid", "max_tokens": 2500 }
-     ```
-     The module drops each result whose `document_id` is
-     `conversation:<current session id>`, then keeps the first 8.
-   - Page search: `GET <apiUrl>/v1/default/banks/<bank>/knowledge-base/search?q=<Recall line>&limit=5`.
-     Each result holds `id`, `name`, `snippet`, `score`, and `updated_at`.
-     The module drops a result whose snippet is empty or reads
-     `Generating content...`.
+2. **Recall and page search,** side by side.
+   - `recall` with the Recall line. The module drops each result whose
+     `document_id` is `conversation:<current session id>`, then keeps the
+     first 8.
+   - `search_knowledge_base` with the Recall line. The module drops a
+     result whose snippet is empty or reads `Generating content...`.
 3. **The page and the reflect questions.** A second `$.model.complete`
    with the same model and effort, `maxTokens: 600`. The prompt holds the
    Need line, the recall query, the kept records, and each page's name,
@@ -82,31 +114,15 @@ One run has four steps. The tool and the command both call it.
 
    The module keeps at most three questions. It accepts a page id only
    when the id is one of the search results.
-4. **The page read and reflect.** These run side by side.
-   - Page read: `GET <apiUrl>/v1/default/banks/<bank>/knowledge-base/pages/<id>`
-     through `$.http.fetch`. The module keeps the `body`, cut to 6,000
-     characters, and `timestamp`. An empty body writes
+4. **The page read and reflect,** side by side.
+   - `get_knowledge_page` with the picked id. The module keeps the body,
+     cut to 6,000 characters, and the timestamp. An empty body writes
      `Knowledge page: <name> is empty.` in place of the page.
-   - Reflect: each question goes to
-     `POST <apiUrl>/v1/default/banks/<bank>/reflect` through `curl` in
-     `$.process.run`, with `--max-time 170`.
-     ```json
-     { "query": "<Reflect line>", "context": "<Context line>", "budget": "low",
-       "max_tokens": 1500, "fact_types": ["world", "experience"], "exclude_mental_models": true }
-     ```
+   - `reflect` once per question, with the Context line.
 
-The plugin adds no text of its own to a Hindsight call. Every query and
-the context come from Haiku.
-
-### Why reflect goes through curl
-
-Recall, the page search, and the page read use `$.http.fetch`. Each one
-answered in a few seconds in the spike. A call that reaches the 30-second
-limit writes its reason in place of its section.
-
-The engine stops every `$.http.fetch` call at 30 seconds. One `low`
-reflect took 17 seconds alone, and parallel reflects took longer than 30.
-`$.process.run` allows up to 10 minutes.
+A call that fails or times out writes its reason in place of its section,
+and the other sections still show. The plugin adds no text of its own to
+a Hindsight call. Every query and the context come from Haiku.
 
 ## The result
 
@@ -126,31 +142,27 @@ The result is plain text, in this order:
 5. The knowledge page, when Haiku picked one: its name, its update date, and its body. With no page: `Knowledge page: none picked.`
 6. The reflect context, then each reflect question with its answer.
 
-A failed step writes its reason in place of its section. A Hindsight
-outage writes `Hindsight is not available: <reason>`, never an empty list.
+## The memory pane
 
-## The pane
+Each run opens or updates one pane, the memory pane: id `memory-run`,
+title `🧠 Hindsight: CoBuilder Memory Run`. The approved mockup is
+`docs/plans/cobuilder-memory/mockups/memory-pane.html`.
 
-Each run opens or updates one pane, the memory pane: id `memory-run`, title `Memory run`.
-
-- **Opening.** A run starts `$.ui.open({ id: "memory-run", title: "Memory run" })`. When the agent's tool call starts the run, the open is unasked, so the pane appears only from 144 columns. `/memory-recall` is the person's own command, so its open is asked and the pane appears at any width. The run does not wait for the pane.
-- **State.** One atom, `{ plugin: "cobuilder-memory", key: "run" }`, holds the newest run: its start time, the bank, the step it is on (`query`, `search`, `questions`, `reflect`, `done`, or `failed`), the Need line, the recall query and its counts and records, the picked page, and each reflect question with its answer or `running`. Each step updates the atom, and the update redraws the pane.
-- **Drawing.** A `ui.render` hook on `{ component: "Pane", requestId: "memory-run" }` draws the atom. The record and answer lines fit the viewport rows, newest step last. With no run yet, the pane says so.
+- **Opening.** A run starts `$.ui.open({ id: "memory-run", title })`. When the agent's tool call starts the run, the open is unasked, so the pane appears only from 144 columns. `/memory-recall` is the person's own command, so its open is asked and the pane appears at any width. The run does not wait for the pane.
+- **State.** One atom, `{ plugin: "cobuilder-memory", key: "run" }`, holds the newest run: its start time, the bank, the step it is on (`query`, `search`, `questions`, `reflect`, `done`, or `failed`), the Need line, the recall query and its counts and records, the picked page, and each reflect question with its answer, `running`, or its failure. Each step updates the atom, and the update redraws the pane.
+- **While a run works.** The pane shows the bank, the start time, the Need line, and one line per step with its state (done, running, or failed) and its counts.
+- **When a run ends.** The pane shows the run time, the recall query and the first records, the picked page with its date, and each reflect question marked answered or failed. A last line says that the full result went to the agent.
+- **Drawing.** A `ui.render` hook on `{ component: "Pane", requestId: "memory-run" }` draws the atom, fitted to the viewport rows. With no run yet, the pane says so.
 
 The pane shows the same facts as the result. It adds no fact of its own.
 
 ## Data models
 
-### Bank and server
+### Bank
 
-The module reads `~/.hindsight/coding-agent.json`:
-
-| Key | Use | Default |
-|---|---|---|
-| `apiUrl` | The Hindsight HTTP API | `http://localhost:8888` |
-| `bankIdTemplate` | The bank name | `coding-agent::{gitProject}` |
-
-`{gitProject}` is the base name of the main worktree's root, from
+The module reads `bankIdTemplate` from `~/.hindsight/coding-agent.json`,
+with the default `coding-agent::{gitProject}`. `{gitProject}` is the base
+name of the main worktree's root, from
 `git rev-parse --path-format=absolute --git-common-dir`. This is the rule
 that the Hindsight coding-agents runtime uses. Outside a git repo, the run
 stops with `No bank: this folder is not in a git repository.` A template
@@ -171,11 +183,17 @@ mappings are not read.
 | Reflect questions per run | 3 |
 | Reflect `max_tokens` | 1,500 |
 | Reflect `budget` | `low` |
-| Reflect time limit | 170 s |
 
-## Permissions
+## Slice 1 checks
 
-The plugin calls no MCP tool, so it needs no MCP allow rule. Under auto
-mode, the person may need to allow the `curl` process and the HTTP call
-to the Hindsight address. The spike in an interactive session needed
-neither rule.
+Slice 1 proves the base before any other slice starts. With the plugin
+installed from the marketplace and loaded by `/reload-plugins`:
+
+1. The session lists `mcp__cobuilder-memory__consult`.
+2. `$.mcp.call("hindsight", ...)` returns data from each of the four
+   tools: `recall`, `search_knowledge_base`, `get_knowledge_page`, and
+   `reflect`.
+3. The time of one `reflect` call is recorded, and so is what the engine
+   does when an MCP call runs past its timeout.
+4. A consult call returns the judging rules, the header, the Need line,
+   and the recall records.

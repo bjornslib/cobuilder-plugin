@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 880" font-family="ui-monospace, Menlo, Monaco, monospace" font-size="11" role="img" aria-labelledby="cmrt-title">
-  <title id="cmrt-title">Runtime architecture of cobuilder-memory epic E1: the person, the Claude Code session, the memory run, the prompt store, the run state atom, the memory pane, Haiku, Hindsight, the bank config file, and git</title>
+  <title id="cmrt-title">Runtime architecture of cobuilder-memory epic E1: the person, the workflow skills, the Claude Code session, the memory run, the prompt store, the run state atom, the memory pane, Haiku, the Hindsight MCP server, the bank config file, and git</title>
   <defs>
     <marker id="cmrt-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#5A5854"/>
@@ -18,9 +18,8 @@
     <text x="262" y="98" font-size="11" fill="#3D3D3A">engine: Claude Code session</text>
   </g>
   <g id="bound-plugin">
-    <title></title>
+    <title>bound-plugin</title>
     <rect x="250" y="280" width="1010" height="350" rx="8" fill="none" stroke="#3D3D3A" stroke-width="1.5"/>
-    <text x="262" y="298" font-size="11" fill="#3D3D3A"></text>
   </g>
   <g id="bound-external">
     <title>external services and files</title>
@@ -38,27 +37,39 @@
     <text x="40" y="160" font-size="10" fill="#5E5D59">types prompts</text>
     <text x="40" y="175" font-size="10" fill="#5E5D59">runs /memory-recall</text>
   </g>
+  <g id="n-design">
+    <title>Architect design skill: stage 1 calls the consult tool</title>
+    <rect x="560" y="100" width="210" height="50" rx="10" fill="#FFFFFF" stroke="#3D3D3A" stroke-width="1.2" stroke-dasharray="5 4"/>
+    <text x="570" y="122" font-size="11" fill="#141413">Architect design skill</text>
+    <text x="570" y="138" font-size="10" fill="#5E5D59">stage 1, calls consult</text>
+  </g>
+  <g id="n-build">
+    <title>Implement build skill: Gate 1 calls the consult tool</title>
+    <rect x="560" y="165" width="210" height="50" rx="10" fill="#FFFFFF" stroke="#3D3D3A" stroke-width="1.2" stroke-dasharray="5 4"/>
+    <text x="570" y="187" font-size="11" fill="#141413">Implement build skill</text>
+    <text x="570" y="203" font-size="10" fill="#5E5D59">Gate 1, calls consult</text>
+  </g>
   <g id="n-session">
     <title>Claude Code session: main agent, fires the hooks, reads the tool result</title>
-    <rect x="300" y="120" width="230" height="80" rx="10" fill="#FFFFFF" stroke="#3D3D3A" stroke-width="1.2" stroke-dasharray="5 4"/>
+    <rect x="300" y="120" width="170" height="80" rx="10" fill="#FFFFFF" stroke="#3D3D3A" stroke-width="1.2" stroke-dasharray="5 4"/>
     <text x="310" y="142" font-size="11" fill="#141413">Claude Code session</text>
     <text x="310" y="158" font-size="10" fill="#5E5D59">main agent, fires hooks</text>
     <text x="310" y="173" font-size="10" fill="#5E5D59">reads the tool result</text>
   </g>
   <g id="n-pane">
-    <title>Memory pane: id memory-run, title Memory run, draws the atom</title>
-    <rect x="1010" y="120" width="220" height="80" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.4"/>
+    <title>Memory pane: id memory-run, title 🧠 Hindsight: CoBuilder Memory Run, draws the atom</title>
+    <rect x="1010" y="120" width="240" height="80" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.4"/>
     <text x="1020" y="142" font-size="11" fill="#141413">Memory pane, memory-run</text>
-    <text x="1020" y="158" font-size="10" fill="#5E5D59">draws the run state atom</text>
-    <text x="1020" y="173" font-size="10" fill="#5E5D59">draws each step while it runs</text>
+    <text x="1020" y="158" font-size="10" fill="#5E5D59">🧠 Hindsight: CoBuilder Memory Run</text>
+    <text x="1020" y="173" font-size="10" fill="#5E5D59">draws the run state atom</text>
   </g>
   <g id="n-store">
-    <title>Prompt store: $.store key prompts:&lt;session id&gt;, keeps the newest 100 prompts</title>
-    <path d="M 300 340 A 100.0 10 0 0 1 500 340 V 410 A 100.0 10 0 0 1 300 410 Z" fill="#788C5D" fill-opacity="0.16" stroke="#788C5D" stroke-width="1.4"/>
-    <ellipse cx="400.0" cy="340" rx="100.0" ry="10" fill="none" stroke="#788C5D" stroke-width="1.4"/>
+    <title>Prompt store: $.store key prompts:&lt;session id&gt;, keeps composer and bridge prompts, newest 100</title>
+    <path d="M 300 340 A 85.0 10 0 0 1 470 340 V 410 A 85.0 10 0 0 1 300 410 Z" fill="#788C5D" fill-opacity="0.16" stroke="#788C5D" stroke-width="1.4"/>
+    <ellipse cx="385.0" cy="340" rx="85.0" ry="10" fill="none" stroke="#788C5D" stroke-width="1.4"/>
     <text x="310" y="366" font-size="11" fill="#141413">Prompt store</text>
-    <text x="310" y="382" font-size="10" fill="#5E5D59">$.store, prompts:&lt;session id&gt;</text>
-    <text x="310" y="397" font-size="10" fill="#5E5D59">newest 100 kept</text>
+    <text x="310" y="382" font-size="10" fill="#5E5D59">prompts:&lt;session id&gt;</text>
+    <text x="310" y="397" font-size="10" fill="#5E5D59">composer, bridge only</text>
   </g>
   <g id="n-atom">
     <title>Run state atom: one atom holding the newest run and its step</title>
@@ -69,22 +80,22 @@
     <text x="1010" y="397" font-size="10" fill="#5E5D59">steps: query to done, failed</text>
   </g>
   <g id="n-run">
-    <title>Memory run: the four steps of one run, started by recall_memory or /memory-recall</title>
+    <title>Memory run: the four steps of one run, started by consult or /memory-recall</title>
     <rect x="300" y="460" width="685" height="140" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.4"/>
-    <text x="310" y="482" font-size="11" fill="#141413">Memory run: recall_memory tool and /memory-recall command</text>
+    <text x="310" y="482" font-size="11" fill="#141413">Memory run: consult tool and /memory-recall command</text>
     <text x="310" y="498" font-size="10" fill="#5E5D59">1  Haiku writes Need and Recall from prompts and session end</text>
-    <text x="310" y="513" font-size="10" fill="#5E5D59">2  recall and page search run side by side through $.http.fetch</text>
+    <text x="310" y="513" font-size="10" fill="#5E5D59">2  recall and page search run side by side through $.mcp.call</text>
     <text x="310" y="528" font-size="10" fill="#5E5D59">3  Haiku picks at most one page, writes Context and Reflect</text>
-    <text x="310" y="543" font-size="10" fill="#5E5D59">4  page read and reflects run side by side, reflect via curl</text>
+    <text x="310" y="543" font-size="10" fill="#5E5D59">4  page read and reflects run side by side, via $.mcp.call</text>
     <text x="310" y="558" font-size="10" fill="#5E5D59">5  result: judging rules, then records, page, and answers</text>
   </g>
   <g id="n-config">
-    <title>Bank config file: ~/.hindsight/coding-agent.json gives apiUrl and bankIdTemplate</title>
+    <title>Bank config file: ~/.hindsight/coding-agent.json gives bankIdTemplate</title>
     <path d="M 270 710 A 107.5 10 0 0 1 485 710 V 770 A 107.5 10 0 0 1 270 770 Z" fill="#788C5D" fill-opacity="0.16" stroke="#788C5D" stroke-width="1.4" stroke-dasharray="5 4"/>
     <ellipse cx="377.5" cy="710" rx="107.5" ry="10" fill="none" stroke="#788C5D" stroke-width="1.4" stroke-dasharray="5 4"/>
     <text x="280" y="736" font-size="11" fill="#141413">Bank config file</text>
     <text x="280" y="752" font-size="10" fill="#5E5D59">~/.hindsight/coding-agent.json</text>
-    <text x="280" y="767" font-size="10" fill="#5E5D59">apiUrl, bankIdTemplate</text>
+    <text x="280" y="767" font-size="10" fill="#5E5D59">bankIdTemplate</text>
   </g>
   <g id="n-git">
     <title>Git worktree: the base name of the main worktree fills the bank name</title>
@@ -101,12 +112,12 @@
     <text x="735" y="753" font-size="10" fill="#5E5D59">writes query, page, context</text>
   </g>
   <g id="n-hindsight">
-    <title>Hindsight HTTP API: memories/recall, knowledge-base search and page read, reflect</title>
+    <title>Hindsight MCP server: named hindsight, tools recall, search_knowledge_base, get_knowledge_page, reflect</title>
     <rect x="945" y="700" width="290" height="80" rx="10" fill="#FFFFFF" stroke="#3D3D3A" stroke-width="1.2" stroke-dasharray="5 4"/>
-    <text x="955" y="722" font-size="11" fill="#141413">Hindsight HTTP API</text>
-    <text x="955" y="738" font-size="10" fill="#5E5D59">bank from bankIdTemplate</text>
-    <text x="955" y="753" font-size="10" fill="#5E5D59">memories/recall, knowledge-base,</text>
-    <text x="955" y="768" font-size="10" fill="#5E5D59">reflect</text>
+    <text x="955" y="722" font-size="11" fill="#141413">Hindsight MCP server</text>
+    <text x="955" y="738" font-size="10" fill="#5E5D59">server named hindsight</text>
+    <text x="955" y="753" font-size="10" fill="#5E5D59">recall, search_knowledge_base,</text>
+    <text x="955" y="768" font-size="10" fill="#5E5D59">get_knowledge_page, reflect</text>
   </g>
   <g id="e-person-session">
     <title>Person to Claude Code session: prompt and /memory-recall typed in the session</title>
@@ -114,25 +125,35 @@
     <text x="222" y="147" font-size="10" fill="#3D3D3A" text-anchor="middle" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">prompt, or</text>
     <text x="222" y="161" font-size="10" fill="#3D3D3A" text-anchor="middle" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">/memory-recall</text>
   </g>
+  <g id="e-design-session">
+    <title>Architect design skill to Claude Code session: consult tool call</title>
+    <path d="M 560 125 H 470" fill="none" stroke="#5A5854" stroke-width="1.4" marker-end="url(#cmrt-arrow)"/>
+    <text x="500" y="118" font-size="10" fill="#3D3D3A" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">consult</text>
+  </g>
+  <g id="e-build-session">
+    <title>Implement build skill to Claude Code session: consult tool call</title>
+    <path d="M 560 190 H 470" fill="none" stroke="#5A5854" stroke-width="1.4" marker-end="url(#cmrt-arrow)"/>
+    <text x="500" y="183" font-size="10" fill="#3D3D3A" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">consult</text>
+  </g>
   <g id="e-session-store">
     <title>Claude Code session to prompt store: prompt.submit hook stores each prompt</title>
     <path d="M 330 200 V 330" fill="none" stroke="#5A5854" stroke-width="1.4" marker-end="url(#cmrt-arrow)"/>
     <text x="338" y="268" font-size="10" fill="#3D3D3A" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">prompt.submit hook</text>
   </g>
   <g id="e-session-run">
-    <title>Claude Code session to memory run: tool.call for recall_memory, command.run for /memory-recall</title>
-    <path d="M 540 200 V 460" fill="none" stroke="#5A5854" stroke-width="1.4" marker-end="url(#cmrt-arrow)"/>
-    <text x="548" y="236" font-size="10" fill="#3D3D3A" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">tool.call, command.run</text>
+    <title>Claude Code session to memory run: tool.call for consult, command.run for /memory-recall</title>
+    <path d="M 462 200 V 230 H 490 V 460" fill="none" stroke="#5A5854" stroke-width="1.4" marker-end="url(#cmrt-arrow)"/>
+    <text x="498" y="250" font-size="10" fill="#3D3D3A" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">tool.call, command.run</text>
   </g>
   <g id="e-run-session">
     <title>Memory run to Claude Code session: the judged result returns as the tool result or command text</title>
-    <path d="M 515 460 V 200" fill="none" stroke="#5A5854" stroke-width="1.4" marker-end="url(#cmrt-arrow)"/>
-    <text x="508" y="236" font-size="10" fill="#3D3D3A" text-anchor="end" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">tool result</text>
+    <path d="M 520 460 V 210 H 455 V 200" fill="none" stroke="#5A5854" stroke-width="1.4" marker-end="url(#cmrt-arrow)"/>
+    <text x="526" y="340" font-size="10" fill="#3D3D3A" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">tool result</text>
   </g>
   <g id="e-store-run">
     <title>Prompt store to memory run: $.store reads the stored prompts</title>
-    <path d="M 400 420 V 460" fill="none" stroke="#5A5854" stroke-width="1.4" marker-end="url(#cmrt-arrow)"/>
-    <text x="408" y="446" font-size="10" fill="#3D3D3A" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">reads prompts</text>
+    <path d="M 385 420 V 460" fill="none" stroke="#5A5854" stroke-width="1.4" marker-end="url(#cmrt-arrow)"/>
+    <text x="393" y="446" font-size="10" fill="#3D3D3A" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">reads prompts</text>
   </g>
   <g id="e-run-atom">
     <title>Memory run to run state atom: each step writes the atom</title>
@@ -165,9 +186,12 @@
     <text x="828" y="655" font-size="10" fill="#3D3D3A" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">$.model.complete</text>
   </g>
   <g id="e-run-hindsight">
-    <title>Memory run to Hindsight HTTP API: HTTP through $.http.fetch, reflect through curl in $.process.run</title>
-    <path d="M 1060 600 V 700" fill="none" stroke="#5A5854" stroke-width="1.4" marker-end="url(#cmrt-arrow)"/>
-    <text x="1068" y="655" font-size="10" fill="#3D3D3A" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">HTTP, $.http.fetch, curl</text>
+    <title>Memory run to Hindsight MCP server: $.mcp.call with recall, search_knowledge_base, get_knowledge_page, reflect</title>
+    <path d="M 1010 600 V 700" fill="none" stroke="#5A5854" stroke-width="1.4" marker-end="url(#cmrt-arrow)"/>
+    <text x="1018" y="614" font-size="10" fill="#3D3D3A" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">$.mcp.call recall</text>
+    <text x="1018" y="628" font-size="10" fill="#3D3D3A" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">$.mcp.call search_knowledge_base</text>
+    <text x="1018" y="642" font-size="10" fill="#3D3D3A" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">$.mcp.call get_knowledge_page</text>
+    <text x="1018" y="656" font-size="10" fill="#3D3D3A" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">$.mcp.call reflect</text>
   </g>
   <g id="legend">
     <title>legend: box, dashed box, cylinder, and edge label meanings</title>

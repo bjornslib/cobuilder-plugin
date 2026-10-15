@@ -7,8 +7,8 @@ classDiagram
     }
 
     class Target {
-        +String apiUrl
         +String bank
+        +String bankIdTemplate
     }
 
     class RunState {
@@ -79,6 +79,6 @@ classDiagram
     Result *-- PageSection : section 5
     Result *-- ReflectSection : section 6
 
-    note for Prompt "Text cut to 2,000 characters.<br>The store keeps the newest 100."
+    note for Prompt "Composer and bridge prompts only.<br>Text cut to 2,000 characters.<br>The store keeps the newest 100."
     note for RunState "step is one of query, search,<br>questions, reflect, done, or failed"
     note for PageSection "Knowledge page: none picked<br>when Haiku picks no page."
