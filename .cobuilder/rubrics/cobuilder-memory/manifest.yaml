@@ -1,0 +1,20 @@
+feature: cobuilder-memory
+test_command: "claude plugin test plugins/cobuilder-memory && uv run pytest tests -q"
+baseline: "761 passed, 1 skipped"
+thresholds:
+  accept: 0.90
+  investigate: 0.70
+max_attempts: 3
+models:
+  red: haiku
+  green: haiku
+  validate: sonnet
+slices:
+  - {id: 1, name: "E1 tracer bullet: the plugin loads, each Hindsight MCP tool answers, consult returns recall records", weight: 0.30}
+  - {id: 2, name: "E1 a knowledge page joins the run", weight: 0.15}
+  - {id: 3, name: "E1 reflect questions written from the records", weight: 0.15}
+  - {id: 4, name: "E1 the memory pane shows each run", weight: 0.20}
+  - {id: 5, name: "E1 design and build call the consult tool at fixed steps", weight: 0.10}
+  - {id: 6, name: "E1 the value check in two repos", weight: 0.10}
+  - {id: 7, name: "E2 backlog stub: a Jev gate", weight: 0.00}
+  - {id: 8, name: "E3 backlog stub: every Hindsight call in the pane", weight: 0.00}

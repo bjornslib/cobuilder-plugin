@@ -2,13 +2,16 @@
 
 - Gate 1 — Product: APPROVED 2026-10-15
   view: http://127.0.0.1:62584/active/viewer/index.html#/cobuilder-memory/build/plan/product
-- Gate 2 — Architecture: pending
-- Gate 2b — Interaction design: pending (the memory pane; the engineer approved the mockup in mockups/memory-pane.html on 2026-10-15, and the line reads APPROVED once Gate 2 is approved)
-- Gate 3 — Program Design: pending
-- Gate 4 — Slice plan, epic designs, and rubrics: pending
-  - 4a Slice plan: pending
-  - 4b Epic technical solution designs: pending
-  - 4c Blind rubrics: pending
+- Gate 2 — Architecture: APPROVED 2026-10-15
+  view: http://127.0.0.1:62584/active/viewer/index.html#/cobuilder-memory/build/plan/architecture
+- Gate 2b — Interaction design: APPROVED 2026-10-15 — the engineer approved the pane mockup, mockups/memory-pane.html
+- Gate 3 — Program Design: APPROVED 2026-10-15 — the engineer's goal: complete the gates, then build slices 1 to 4
+  view: http://127.0.0.1:62584/active/viewer/index.html#/cobuilder-memory/build/plan/program
+- Gate 4 — Slice plan, epic designs, and rubrics: APPROVED 2026-10-15 — the engineer's goal, as for Gate 3
+  view: http://127.0.0.1:62584/active/viewer/index.html#/cobuilder-memory/build/epics
+  - 4a Slice plan: APPROVED 2026-10-15
+  - 4b Epic technical solution designs: APPROVED 2026-10-15 (E1). E2 and E3 are backlog
+  - 4c Blind rubrics: APPROVED 2026-10-15 (8 rubric files; slices 7 and 8 are stubs)
 
 Design mode: cobuilder-memory
 Hindsight: yes
@@ -37,6 +40,6 @@ Hindsight: yes
   approval.
 - Subagent models (engineer, 2026-10-14): RED and GREEN run on Haiku. VALIDATE
   runs on Sonnet. Every other subagent runs on Haiku.
-- The engineer set a /goal to implement this end to end.
+- Goal (engineer, 2026-10-15): complete the design, then build with Haiku for RED and GREEN and Sonnet for VALIDATE. Stop after slice 4, for a test in think-with-ai.
 - H1 ran again on 2026-10-15 through `recall_memory` (now `consult`). Two of three
   reflects timed out at 170 s while consolidation ran.
