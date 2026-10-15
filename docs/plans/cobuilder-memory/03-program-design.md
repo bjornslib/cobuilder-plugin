@@ -153,17 +153,17 @@ the model, MCP, process, and session answers stubbed. Packaging runs with
 
 | Slice | Test | Asserts |
 |---|---|---|
-| 1 | `tests/bank.test.ts` | the template filled from the main worktree's name; outside git, the reason; an unknown placeholder, the reason |
-| 1 | `tests/prompts.test.ts` | composer and bridge prompts stored; sdk, plugin, meta, and command prompts not stored; 100 kept, 2,000 characters each |
-| 1 | `tests/hindsight.test.ts` | each call passes `bank_id` and the contract's arguments to server `hindsight`; a missing server or tool gives the set-up message; this session's transcript dropped |
-| 1 | `tests/run.test.ts` | the consult tool returns the judging rules first, then the header, the Need line, and the recall records |
-| 1 | `tests/test_plugin_manifests.py` | `cobuilder-memory` may ship `hooks/`, not `agents/` or an MCP server; versions match; `shared` is a symlink |
-| 1 | live: `claude --plugin-dir plugins/cobuilder-memory` | the session lists the tool; each of the four MCP tools returns data; one reflect's time and the MCP timeout behaviour, recorded in the evidence |
-| 2 | `tests/hindsight.test.ts`, `tests/haiku.test.ts`, `tests/run.test.ts` | empty and "Generating content..." pages dropped; a page id outside the search refused; the page body, name, and date in the result |
-| 3 | `tests/haiku.test.ts`, `tests/run.test.ts` | one to three questions kept; the page read and the reflects run side by side; a failed reflect writes its reason and the others still show |
-| 4 | `tests/pane.test.ts` | the pane opens before the first model call; each step and call updates the state; the tick moves the elapsed time; the Done and Failed states draw as `interaction-design.md` says, on the terminal surface |
-| 5 | `tests/test_hindsight_wiring.py` and one blind agent pass | the build skill names no H1 to H5 and no `hindsight-routine.md`; both skills name the consult tool; a blind agent given design stage 1 calls the tool first |
-| 6 | evidence file and `uv run pytest tests -q` | two live runs judged; the plugin count is six where the top-level documents state it |
+| 1 | `tests/bank.test.ts` | The template takes the main worktree's name. Outside git, the run gives the reason. An unknown placeholder gives the reason. |
+| 1 | `tests/prompts.test.ts` | Composer and bridge prompts are stored. SDK, plugin, meta, and command prompts are not. The store keeps 100 prompts of 2,000 characters. |
+| 1 | `tests/hindsight.test.ts` | Each call passes `bank_id` and the contract's arguments to `hindsight`. A missing server or tool gives the set-up message. The current transcript is dropped. |
+| 1 | `tests/run.test.ts` | The consult tool returns the judging rules first. The header, the Need line, and the recall records follow. |
+| 1 | `tests/test_plugin_manifests.py` | `cobuilder-memory` may ship `hooks/`, not `agents/` or an MCP server. The versions match. `shared` is a symlink. |
+| 1 | live: `claude --plugin-dir plugins/cobuilder-memory` | The session lists the tool. Each of the four MCP tools returns data. The evidence records one reflect's time and the MCP timeout. |
+| 2 | `tests/hindsight.test.ts`, `tests/haiku.test.ts`, `tests/run.test.ts` | Empty and still-generating pages are dropped. A page id outside the search is refused. The result shows the page body, name, and date. |
+| 3 | `tests/haiku.test.ts`, `tests/run.test.ts` | One to three questions are kept. The page read and the reflects run side by side. A failed reflect writes its reason, and the others still show. |
+| 4 | `tests/pane.test.ts` | The pane opens before the first model call. Each step and call updates the state. The tick moves the elapsed time. The four states draw as `interaction-design.md` says. |
+| 5 | `tests/test_hindsight_wiring.py` and one blind agent pass | The build skill names no H1 to H5 and no `hindsight-routine.md`. Both skills name the consult tool. A blind agent calls the tool first at design stage 1. |
+| 6 | evidence file and `uv run pytest tests -q` | Two live runs are judged. The top-level documents count six plugins. |
 
 ## Least confident decisions
 
