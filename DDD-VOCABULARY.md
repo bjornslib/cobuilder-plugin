@@ -187,7 +187,7 @@ _Avoid_: draft review (the architect stage 6 pre-review, which proposes survivor
 
 ## cobuilder-memory
 
-These terms come from the `cobuilder-memory` design (ADR-0039). The plugin lives as a spike in `~/mods/cobuilder-memory` until epic E1 moves it into `plugins/`.
+These terms come from the `cobuilder-memory` design (ADR-0039). The plugin lives in `plugins/cobuilder-memory/`.
 
 <a id="consult-tool"></a>
 **Consult tool** (`cobuilder-memory`):

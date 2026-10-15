@@ -41,7 +41,7 @@ alternatives:
 forces:
   - "Only a hook can store each prompt, register a tool, and draw a pane. A skill runs only when the model or the person starts it."
   - "The hooks API is early access. Its declaration file is the authority for each Claude Code build."
-  - "$.mcp.call reuses the engine's own MCP connection with no permission prompt, and it has no timeout setting of its own."
+  - "$.mcp.call reuses the engine's own MCP connection. It goes through the permission check, so auto mode needs an allow rule for each Hindsight tool. It has no timeout setting of its own."
   - "The MCP reflect tool has no fact-type filter."
   - "The Hindsight Stop hook keeps reply text and drops tool results."
   - "ADR-0016 lets plugins meet only at the bundle and by name."

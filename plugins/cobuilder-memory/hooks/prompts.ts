@@ -1,0 +1,58 @@
+import type { Engine, PromptSubmitInput, SessionMessage } from 'claude-code'
+
+export type StoredPrompt = { at: string; text: string }
+
+// Prompts from these origins are typed by the person: in the terminal, or through Remote Control
+export const PERSON_ORIGINS = ['composer', 'bridge'] as const
+
+const KEEP_PROMPTS = 100
+const PROMPT_CHARS = 2000
+const BLOCK_CHARS = 8000
+const TAIL_CHARS = 12000
+
+export function shouldStore(e: PromptSubmitInput): boolean {
+  const text = e.text.trim()
+  return (
+    !e.command &&
+    !e.isMeta &&
+    (PERSON_ORIGINS as readonly string[]).includes(e.origin.kind) &&
+    text !== '' &&
+    !text.startsWith('/')
+  )
+}
+
+// Keeps the newest prompts of this session, each cut to PROMPT_CHARS
+export async function storePrompt($: Engine, text: string): Promise<void> {
+  const key = 'prompts:' + (await $.session.id())
+  const existing = ((await $.store.get(key)) as StoredPrompt[] | undefined) ?? []
+  const entry = { at: new Date().toISOString().slice(0, 16), text: text.trim().slice(0, PROMPT_CHARS) }
+  await $.store.set(key, [...existing, entry].slice(-KEEP_PROMPTS))
+}
+
+export async function readPrompts($: Engine): Promise<StoredPrompt[]> {
+  const key = 'prompts:' + (await $.session.id())
+  return ((await $.store.get(key)) as StoredPrompt[] | undefined) ?? []
+}
+
+// The newest prompts that fit in maxChars, oldest first
+export function promptBlock(prompts: readonly StoredPrompt[], maxChars = BLOCK_CHARS): string {
+  let out = ''
+  for (let i = prompts.length - 1; i >= 0; i--) {
+    const p = prompts[i]
+    if (!p) continue
+    const line = '- [' + p.at + '] ' + p.text + '\n'
+    if (out.length + line.length > maxChars) break
+    out = line + out
+  }
+  return out || '(none stored yet)'
+}
+
+// The end of the session as plain text, newest last
+export function sessionTail(messages: readonly SessionMessage[], maxChars = TAIL_CHARS): string {
+  let out = ''
+  for (let i = messages.length - 1; i >= 0 && out.length < maxChars; i--) {
+    const m = messages[i]
+    if (m && m.text.trim()) out = m.role + ': ' + m.text.trim() + '\n\n' + out
+  }
+  return out.slice(-maxChars)
+}

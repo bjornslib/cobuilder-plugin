@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "47e64127bd1f807744a3063258e1f4575617a77b",
+    "git_head": "b6ddb5cd21ae61353985b4b059efeecf02845487",
     "trees": {
-      "docs/architecture/adr": "sha256:f5da466d087baf586b156cb77a6e6259dec204ed4492cea4176bce3681c8ec47",
-      "docs/architecture/designs": "sha256:4c2064de265f8212865150aa1ab29114707dbb3171dc82e9287f9300531e1f71",
+      "docs/architecture/adr": "sha256:63eeb0f927ed1213e27a9a1a2604e89f62f3099d838898889b0edfb6934c2474",
+      "docs/architecture/designs": "sha256:d07e945f4a308cfccf8f53c61ca928c296ec096292ec20c82dddffcb343a42f8",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:f9a7285eff62639800fd021fe4804d0e9636444b7c8fcf8d3a10a79533695b54",
-      ".cobuilder/rubrics": "sha256:9c11595bafe80f8b4702017118a9553e8e69ed946d20d5eadc80a624a82e7b49"
+      "docs/plans": "sha256:f69368403adb28daa1f195e8b90faff05c0001cc03c72310016f1d4ebaf5e511",
+      ".cobuilder/rubrics": "sha256:519360bad5f419d0583ed58bce277516416cf027f4c012abbb108d0ba02d52cc"
     }
   },
   "entities": {
@@ -3004,9 +3004,9 @@
         "n": 1,
         "title": "Tracer bullet: the installed plugin proves each Hindsight MCP tool and answers consult",
         "ends_with": "A session started with `--plugin-dir plugins/cobuilder-memory` lists `mcp__cobuilder-memory__consult`, and `claude plugin validate .` accepts the marketplace with its new entry. From the loaded plugin, `/memory-check` returns `ok` for `recall`, `search_knowledge_base`, `get_knowledge_page`, and `reflect`. The evidence records one reflect's time and what the engine does past its MCP timeout. A consult call returns the judging rules first, then the header, the Need line, and the recall records, with this session's own transcript dropped. With no `hindsight` server that has these tools, the run names what to set up. `claude plugin validate`, `claude plugin test`, and `uv run pytest tests -q` pass. The tests cover the amended install rule, the marketplace entry, the matching versions, and the `shared` symlink.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "cobuilder-memory/2",

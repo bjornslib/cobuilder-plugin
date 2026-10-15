@@ -35,6 +35,12 @@
       "description": "Install all of CoBuilder: architecture, implementation, review, and maintenance, with the engineer in charge at each stage.",
       "source": "./plugins/cobuilder-full-lifecycle",
       "version": "0.3.2"
+    },
+    {
+      "name": "cobuilder-memory",
+      "description": "Consult the project's Hindsight memory before a design or build decision",
+      "source": "./plugins/cobuilder-memory",
+      "version": "0.1.0"
     }
   ]
 }

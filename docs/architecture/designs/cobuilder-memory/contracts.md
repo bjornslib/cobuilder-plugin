@@ -76,8 +76,17 @@ The store keeps the newest 100 entries.
 
 Every Hindsight call goes through `$.mcp.call("hindsight", <tool>, args)`
 on the MCP server named `hindsight`, the full Hindsight API server. Each
-call passes `bank_id`. `$.mcp.call` needs no permission prompt, and it has
-no timeout setting of its own.
+call passes `bank_id`. `$.mcp.call` goes through the permission check. Under
+auto mode, each of the four tools needs an allow rule, such as
+`mcp__hindsight__search_knowledge_base`. Without the rule, auto mode refuses
+the call, and the run shows that refusal as the reason. The call has no
+timeout setting of its own. The engine's MCP limits apply. `MCP_TOOL_TIMEOUT`
+defaults to 100,000,000 ms. An HTTP MCP server also stops each request
+after 60 seconds, unless the server's `timeout` field or `MCP_TOOL_TIMEOUT`
+is set above 60,000. This repo declares `hindsight` as an HTTP server, so a
+Hindsight call that runs past 60 s fails, and the run shows the reason. The
+live check on 2026-10-15 measured recall at 11.6 s to 13.2 s and reflect at
+16.3 s.
 
 | Tool | Arguments |
 |---|---|

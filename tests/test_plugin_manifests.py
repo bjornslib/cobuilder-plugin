@@ -1,6 +1,6 @@
 """Slice-6 tests: every plugin manifest parses and declares the platform's
-required fields, and no plugin ships an agent, a hook, or an MCP server.
-See rubric slice-6 C1 and C3.
+required fields, and no plugin ships an agent or an MCP server. Only the
+plugins in PLUGINS_ALLOWED_HOOKS may ship hooks/. See rubric slice-6 C1 and C3.
 
 Run with: uv run --with pytest pytest tests/ -v
 """
@@ -19,9 +19,11 @@ REQUIRED_FIELDS = {"name", "version", "description"}
 FORBIDDEN_DIR_NAMES = {"agents", "hooks"}
 FORBIDDEN_MANIFEST_KEYS = {"agents", "hooks", "mcpServers", "mcp"}
 
-# Only this plugin may ship agents/ and hooks/ (ADR-0025). MCP servers stay
-# forbidden for every plugin, including this one.
-PLUGIN_ALLOWED_AGENTS_AND_HOOKS = "implement"
+# Only implement may ship agents/ (ADR-0025). Only implement and the
+# cobuilder-memory mod may ship hooks/. MCP servers stay forbidden for every
+# plugin, including these.
+PLUGINS_ALLOWED_AGENTS = {"implement"}
+PLUGINS_ALLOWED_HOOKS = {"implement", "cobuilder-memory"}
 
 
 def plugin_dirs() -> list[Path]:
@@ -36,13 +38,15 @@ def check_install_surface(plugin_dir: Path, manifest_data: dict) -> list[str]:
     """Return a list of install-surface violations for one plugin directory.
 
     An empty list means the plugin's install surface is compliant. Only
-    ``implement`` may ship ``agents/`` or ``hooks/``. No plugin, including
-    ``implement``, may ship an MCP server declaration or manifest key.
+    ``implement`` may ship ``agents/``. Only ``implement`` and ``cobuilder-memory``
+    may ship ``hooks/``. No plugin may ship an MCP server declaration or manifest key.
     """
     violations: list[str] = []
-    allowed_dirs = (
-        set() if plugin_dir.name != PLUGIN_ALLOWED_AGENTS_AND_HOOKS else FORBIDDEN_DIR_NAMES
-    )
+    allowed_dirs: set[str] = set()
+    if plugin_dir.name in PLUGINS_ALLOWED_AGENTS:
+        allowed_dirs.add("agents")
+    if plugin_dir.name in PLUGINS_ALLOWED_HOOKS:
+        allowed_dirs.add("hooks")
     for forbidden in FORBIDDEN_DIR_NAMES:
         if forbidden in allowed_dirs:
             continue
@@ -56,9 +60,9 @@ def check_install_surface(plugin_dir: Path, manifest_data: dict) -> list[str]:
             violations.append(
                 f"{plugin_dir.name} ships {mcp_name}, an MCP server declaration"
             )
-    manifest_forbidden_keys = {"mcpServers", "mcp"}
-    if plugin_dir.name != PLUGIN_ALLOWED_AGENTS_AND_HOOKS:
-        manifest_forbidden_keys |= {"agents", "hooks"}
+    manifest_forbidden_keys = {"mcpServers", "mcp"} | (
+        {"agents", "hooks"} - allowed_dirs
+    )
     present = manifest_forbidden_keys & set(manifest_data)
     if present:
         violations.append(
@@ -132,7 +136,7 @@ def test_check_install_surface_still_rejects_mcp_server_for_implement(
     assert any("MCP server" in v for v in violations)
 
 
-def test_marketplace_lists_all_five_plugins() -> None:
+def test_marketplace_lists_all_six_plugins() -> None:
     marketplace = json.loads((REPO_ROOT / ".claude-plugin" / "marketplace.json").read_text())
     listed = [p["name"] for p in marketplace["plugins"]]
     assert len(listed) == len(set(listed)), f"a plugin is listed twice: {listed}"
@@ -143,7 +147,18 @@ def test_marketplace_lists_all_five_plugins() -> None:
         "artifact",
         "implement",
         "cobuilder-full-lifecycle",
+        "cobuilder-memory",
     }
+
+
+def test_marketplace_entry_for_cobuilder_memory_matches_its_manifest_version() -> None:
+    marketplace = json.loads((REPO_ROOT / ".claude-plugin" / "marketplace.json").read_text())
+    entries = {p["name"]: p for p in marketplace["plugins"]}
+    assert "cobuilder-memory" in entries, "marketplace.json has no cobuilder-memory entry"
+    declared = json.loads(
+        manifest_path(PLUGINS_DIR / "cobuilder-memory").read_text()
+    )["version"]
+    assert entries["cobuilder-memory"]["version"] == declared
 
 
 @pytest.mark.parametrize("plugin_dir", plugin_dirs(), ids=lambda p: p.name)
@@ -180,3 +195,40 @@ def test_shared_is_a_symlink_in_the_source_tree() -> None:
         link = plugin_dir / "shared"
         assert link.is_symlink(), f"{plugin_dir.name}/shared must be a symlink in source"
         assert link.resolve() == (REPO_ROOT / "shared").resolve()
+
+
+def test_cobuilder_memory_shared_is_a_symlink() -> None:
+    link = PLUGINS_DIR / "cobuilder-memory" / "shared"
+    assert link.is_symlink(), "cobuilder-memory/shared must be a symlink in source"
+    assert link.resolve() == (REPO_ROOT / "shared").resolve()
+
+
+def test_cobuilder_memory_with_hooks_passes_install_surface(tmp_path: Path) -> None:
+    fake_plugin = tmp_path / "cobuilder-memory"
+    (fake_plugin / "hooks").mkdir(parents=True)
+    violations = check_install_surface(fake_plugin, {"name": "cobuilder-memory"})
+    assert not violations, f"cobuilder-memory with hooks/ should pass, got: {violations}"
+
+
+def test_cobuilder_memory_with_agents_is_flagged(tmp_path: Path) -> None:
+    fake_plugin = tmp_path / "cobuilder-memory"
+    (fake_plugin / "agents").mkdir(parents=True)
+    violations = check_install_surface(fake_plugin, {"name": "cobuilder-memory"})
+    assert any("agents/" in v for v in violations), f"agents/ must be flagged, got: {violations}"
+
+
+def test_cobuilder_memory_with_mcp_server_file_is_flagged(tmp_path: Path) -> None:
+    fake_plugin = tmp_path / "cobuilder-memory"
+    fake_plugin.mkdir(parents=True)
+    (fake_plugin / ".mcp.json").write_text("{}")
+    violations = check_install_surface(fake_plugin, {"name": "cobuilder-memory"})
+    assert any("MCP server" in v for v in violations), f".mcp.json must be flagged, got: {violations}"
+
+
+def test_cobuilder_memory_with_mcp_servers_key_is_flagged(tmp_path: Path) -> None:
+    fake_plugin = tmp_path / "cobuilder-memory"
+    fake_plugin.mkdir(parents=True)
+    violations = check_install_surface(
+        fake_plugin, {"name": "cobuilder-memory", "mcpServers": {}}
+    )
+    assert violations, f"an mcpServers manifest key must be flagged, got: {violations}"
