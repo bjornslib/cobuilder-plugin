@@ -28,7 +28,7 @@
       "name": "implement",
       "description": "Build a design one tested slice at a time, with four approval gates, blind rubrics, and independent validation.",
       "source": "./plugins/implement",
-      "version": "0.8.0"
+      "version": "0.8.1"
     },
     {
       "name": "cobuilder-full-lifecycle",

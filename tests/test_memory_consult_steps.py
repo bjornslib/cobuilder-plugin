@@ -32,3 +32,11 @@ def test_the_h1_to_h5_routine_is_removed_and_nothing_links_to_it():
     for path in BUILD_DIR.rglob("*"):
         if path.is_file() and path.suffix in {".md", ".js"}:
             assert "hindsight-routine" not in path.read_text(), f"{path} still links to hindsight-routine.md"
+
+
+def test_the_pass_step_stores_a_slice_note_through_the_hindsight_retain_tool():
+    slice_loop = (BUILD_DIR / "references/slice-loop.md").read_text()
+    assert "mcp__hindsight__retain" in slice_loop
+    # The status rows carry the note mark that the PASS step writes
+    rows = [l for l in BUILD_SKILL.read_text().splitlines() if l.startswith("- [ ] Slice ")]
+    assert rows and all("note:" in r for r in rows)

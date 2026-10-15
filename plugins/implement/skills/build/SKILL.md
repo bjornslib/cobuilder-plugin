@@ -290,8 +290,8 @@ Design mode: <design-name> | none | declined
 Memory: consulted <date> | absent
 
 ## Slices
-- [ ] Slice 1 — tracer bullet: <one line>   score: —
-- [ ] Slice 2 — <one line>                  score: —
+- [ ] Slice 1 — tracer bullet: <one line>   score: —   note: —
+- [ ] Slice 2 — <one line>                  score: —   note: —
 
 ## Escalated
 <slices accepted below threshold, with reasons and follow-up plans>

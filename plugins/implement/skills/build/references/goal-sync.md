@@ -74,12 +74,14 @@ Add this to the **PASS** branch of "Handling the verdict" in `slice-loop.md`:
 ```markdown
 | **PASS** | Delete `slice-<N>-feedback.md`. Record the score in `00-status.md`,
            check the slice off. **Sync epic status to goal.json** (see
-           `goal-sync.md`). Prove the slice works to
+           `goal-sync.md`). **Store the slice note** (see "Slice note to
+           project memory"). Prove the slice works to
            the user with a test or demo. Ask whether to continue or adjust
            direction. |
 ```
 
-Run the goal.json sync on every PASS.
+The goal.json sync and the slice note are independent steps. Run both on
+every PASS. A missing Hindsight tool skips the note, never the goal.json sync.
 
 ---
 
