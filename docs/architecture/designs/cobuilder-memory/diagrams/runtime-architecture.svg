@@ -1,289 +1,183 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 880" font-family="ui-monospace, Menlo, Monaco, monospace" font-size="11" role="img" aria-labelledby="cmrt-title">
-  <title id="cmrt-title">Runtime architecture of the cobuilder-memory design: the person, the Claude Code session and its forks, the skills that call the moment tool, the proposed hooks module, Haiku, Hindsight, and the data stores</title>
+  <title id="cmrt-title">Runtime architecture of cobuilder-memory epic E1: the person, the Claude Code session, the memory run, the prompt store, the run state atom, the memory pane, Haiku, Hindsight, the bank config file, and git</title>
   <defs>
     <marker id="cmrt-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#5A5854"/>
     </marker>
   </defs>
   <rect x="0" y="0" width="1280" height="880" rx="12" fill="#FAF9F5"/>
-    <text x="24" y="32" font-size="14" fill="#141413">cobuilder-memory runtime architecture, a prediction from ADR-0039</text>
+    <text x="24" y="30" font-size="14" fill="#141413">cobuilder-memory epic E1 runtime, from ADR-0039</text>
   <g id="bound-client">
-    <title>client boundary: the person who uses the session</title>
-    <rect x="20" y="50" width="190" height="130" rx="8" fill="none" stroke="#3D3D3A" stroke-width="1.5"/>
-    <text x="32" y="68" font-size="11" fill="#3D3D3A">client</text>
-  <g id="n-person">
-    <title>Person: submits each prompt and runs /memory</title>
-    <rect x="35" y="82" width="160" height="70" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.4"/>
-    <text x="45" y="102" font-size="11" fill="#141413">Person</text>
-    <text x="45" y="117" font-size="10" fill="#5E5D59">submits prompts</text>
-    <text x="45" y="131" font-size="10" fill="#5E5D59">and runs /memory</text>
+    <title>client</title>
+    <rect x="20" y="80" width="170" height="130" rx="8" fill="none" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="32" y="98" font-size="11" fill="#3D3D3A">client</text>
   </g>
+  <g id="bound-engine">
+    <title>engine: Claude Code session</title>
+    <rect x="250" y="80" width="1010" height="150" rx="8" fill="none" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="262" y="98" font-size="11" fill="#3D3D3A">engine: Claude Code session</text>
   </g>
-  <g id="bound-infra">
-    <title>infra boundary: Claude Code 2.1.296, an external engine with an early-access mod API</title>
-    <rect x="250" y="50" width="760" height="130" rx="8" fill="none" stroke="#3D3D3A" stroke-width="1.5"/>
-    <text x="262" y="68" font-size="11" fill="#3D3D3A">infra: Claude Code 2.1.296, external</text>
-    <text x="998" y="68" font-size="10" fill="#5E5D59" text-anchor="end">mod API is early access</text>
-  <g id="n-session">
-    <title>Claude Code session: the main loop fires each function hook and reads each memory note</title>
-    <rect x="290" y="82" width="180" height="70" rx="10" fill="#FFFFFF" stroke="#3D3D3A" stroke-width="1.2" stroke-dasharray="5 4"/>
-    <text x="300" y="102" font-size="11" fill="#141413">Claude Code session</text>
-    <text x="300" y="117" font-size="10" fill="#5E5D59">main loop, fires hooks</text>
-    <text x="300" y="131" font-size="10" fill="#5E5D59">reads each memory note</text>
-  </g>
-  <g id="n-planfork">
-    <title>Plan fork: $.model.fork sees the whole session and has no tools</title>
-    <rect x="535" y="82" width="180" height="70" rx="10" fill="#FFFFFF" stroke="#3D3D3A" stroke-width="1.2" stroke-dasharray="5 4"/>
-    <text x="545" y="102" font-size="11" fill="#141413">Plan fork</text>
-    <text x="545" y="117" font-size="10" fill="#5E5D59">$.model.fork</text>
-    <text x="545" y="131" font-size="10" fill="#5E5D59">sees the session, no tools</text>
-  </g>
-  <g id="n-forkagent">
-    <title>Fork agent: $.agent.spawn with subagentType fork keeps the session tools</title>
-    <rect x="780" y="82" width="180" height="70" rx="10" fill="#FFFFFF" stroke="#3D3D3A" stroke-width="1.2" stroke-dasharray="5 4"/>
-    <text x="790" y="102" font-size="11" fill="#141413">Fork agent</text>
-    <text x="790" y="117" font-size="10" fill="#5E5D59">$.agent.spawn, fork</text>
-    <text x="790" y="131" font-size="10" fill="#5E5D59">keeps the session tools</text>
-  </g>
+  <g id="bound-plugin">
+    <title></title>
+    <rect x="250" y="280" width="1010" height="350" rx="8" fill="none" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="262" y="298" font-size="11" fill="#3D3D3A"></text>
   </g>
   <g id="bound-external">
-    <title>external boundary: the Haiku model and the Hindsight MCP server</title>
-    <rect x="1050" y="50" width="210" height="560" rx="8" fill="none" stroke="#3D3D3A" stroke-width="1.5"/>
-    <text x="1062" y="68" font-size="11" fill="#3D3D3A">external</text>
+    <title>external services and files</title>
+    <rect x="250" y="670" width="1010" height="130" rx="8" fill="none" stroke="#3D3D3A" stroke-width="1.5"/>
+    <text x="262" y="688" font-size="11" fill="#3D3D3A">external services and files</text>
+  </g>
+  <g id="bound-plugin-label">
+    <title>label of the cobuilder-memory boundary</title>
+    <text x="560" y="298" font-size="11" fill="#3D3D3A">cobuilder-memory, hooks/register.ts, epic E1</text>
+  </g>
+  <g id="n-person">
+    <title>Person: types prompts, runs /memory-recall</title>
+    <rect x="30" y="122" width="150" height="66" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.4"/>
+    <text x="40" y="144" font-size="11" fill="#141413">Person</text>
+    <text x="40" y="160" font-size="10" fill="#5E5D59">types prompts</text>
+    <text x="40" y="175" font-size="10" fill="#5E5D59">runs /memory-recall</text>
+  </g>
+  <g id="n-session">
+    <title>Claude Code session: main agent, fires the hooks, reads the tool result</title>
+    <rect x="300" y="120" width="230" height="80" rx="10" fill="#FFFFFF" stroke="#3D3D3A" stroke-width="1.2" stroke-dasharray="5 4"/>
+    <text x="310" y="142" font-size="11" fill="#141413">Claude Code session</text>
+    <text x="310" y="158" font-size="10" fill="#5E5D59">main agent, fires hooks</text>
+    <text x="310" y="173" font-size="10" fill="#5E5D59">reads the tool result</text>
+  </g>
+  <g id="n-pane">
+    <title>Memory pane: id memory-run, title Memory run, draws the atom</title>
+    <rect x="1010" y="120" width="220" height="80" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.4"/>
+    <text x="1020" y="142" font-size="11" fill="#141413">Memory pane, memory-run</text>
+    <text x="1020" y="158" font-size="10" fill="#5E5D59">draws the run state atom</text>
+    <text x="1020" y="173" font-size="10" fill="#5E5D59">draws each step while it runs</text>
+  </g>
+  <g id="n-store">
+    <title>Prompt store: $.store key prompts:&lt;session id&gt;, keeps the newest 100 prompts</title>
+    <path d="M 300 340 A 100.0 10 0 0 1 500 340 V 410 A 100.0 10 0 0 1 300 410 Z" fill="#788C5D" fill-opacity="0.16" stroke="#788C5D" stroke-width="1.4"/>
+    <ellipse cx="400.0" cy="340" rx="100.0" ry="10" fill="none" stroke="#788C5D" stroke-width="1.4"/>
+    <text x="310" y="366" font-size="11" fill="#141413">Prompt store</text>
+    <text x="310" y="382" font-size="10" fill="#5E5D59">$.store, prompts:&lt;session id&gt;</text>
+    <text x="310" y="397" font-size="10" fill="#5E5D59">newest 100 kept</text>
+  </g>
+  <g id="n-atom">
+    <title>Run state atom: one atom holding the newest run and its step</title>
+    <path d="M 1000 340 A 122.5 10 0 0 1 1245 340 V 410 A 122.5 10 0 0 1 1000 410 Z" fill="#788C5D" fill-opacity="0.16" stroke="#788C5D" stroke-width="1.4"/>
+    <ellipse cx="1122.5" cy="340" rx="122.5" ry="10" fill="none" stroke="#788C5D" stroke-width="1.4"/>
+    <text x="1010" y="366" font-size="11" fill="#141413">Run state atom</text>
+    <text x="1010" y="382" font-size="10" fill="#5E5D59">newest run, one atom</text>
+    <text x="1010" y="397" font-size="10" fill="#5E5D59">steps: query to done, failed</text>
+  </g>
+  <g id="n-run">
+    <title>Memory run: the four steps of one run, started by recall_memory or /memory-recall</title>
+    <rect x="300" y="460" width="685" height="140" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.4"/>
+    <text x="310" y="482" font-size="11" fill="#141413">Memory run: recall_memory tool and /memory-recall command</text>
+    <text x="310" y="498" font-size="10" fill="#5E5D59">1  Haiku writes Need and Recall from prompts and session end</text>
+    <text x="310" y="513" font-size="10" fill="#5E5D59">2  recall and page search run side by side through $.http.fetch</text>
+    <text x="310" y="528" font-size="10" fill="#5E5D59">3  Haiku picks at most one page, writes Context and Reflect</text>
+    <text x="310" y="543" font-size="10" fill="#5E5D59">4  page read and reflects run side by side, reflect via curl</text>
+    <text x="310" y="558" font-size="10" fill="#5E5D59">5  result: judging rules, then records, page, and answers</text>
+  </g>
+  <g id="n-config">
+    <title>Bank config file: ~/.hindsight/coding-agent.json gives apiUrl and bankIdTemplate</title>
+    <path d="M 270 710 A 107.5 10 0 0 1 485 710 V 770 A 107.5 10 0 0 1 270 770 Z" fill="#788C5D" fill-opacity="0.16" stroke="#788C5D" stroke-width="1.4" stroke-dasharray="5 4"/>
+    <ellipse cx="377.5" cy="710" rx="107.5" ry="10" fill="none" stroke="#788C5D" stroke-width="1.4" stroke-dasharray="5 4"/>
+    <text x="280" y="736" font-size="11" fill="#141413">Bank config file</text>
+    <text x="280" y="752" font-size="10" fill="#5E5D59">~/.hindsight/coding-agent.json</text>
+    <text x="280" y="767" font-size="10" fill="#5E5D59">apiUrl, bankIdTemplate</text>
+  </g>
+  <g id="n-git">
+    <title>Git worktree: the base name of the main worktree fills the bank name</title>
+    <rect x="505" y="700" width="200" height="80" rx="10" fill="#FFFFFF" stroke="#3D3D3A" stroke-width="1.2" stroke-dasharray="5 4"/>
+    <text x="515" y="722" font-size="11" fill="#141413">Git worktree</text>
+    <text x="515" y="738" font-size="10" fill="#5E5D59">base name of main worktree</text>
+    <text x="515" y="753" font-size="10" fill="#5E5D59">git rev-parse, common dir</text>
+  </g>
   <g id="n-haiku">
-    <title>Haiku model: answers the router call, one call per prompt and per stop</title>
-    <rect x="1065" y="82" width="180" height="70" rx="10" fill="#FFFFFF" stroke="#3D3D3A" stroke-width="1.2" stroke-dasharray="5 4"/>
-    <text x="1075" y="102" font-size="11" fill="#141413">Haiku model</text>
-    <text x="1075" y="117" font-size="10" fill="#5E5D59">answers the router</text>
-    <text x="1075" y="131" font-size="10" fill="#5E5D59">one call per prompt</text>
-    <text x="1075" y="145" font-size="10" fill="#5E5D59">and per stop</text>
+    <title>Haiku model: called through $.model.complete for the query, the page pick, and the context</title>
+    <rect x="725" y="700" width="200" height="80" rx="10" fill="#FFFFFF" stroke="#3D3D3A" stroke-width="1.2" stroke-dasharray="5 4"/>
+    <text x="735" y="722" font-size="11" fill="#141413">Haiku model</text>
+    <text x="735" y="738" font-size="10" fill="#5E5D59">$.model.complete, haiku</text>
+    <text x="735" y="753" font-size="10" fill="#5E5D59">writes query, page, context</text>
   </g>
   <g id="n-hindsight">
-    <title>Hindsight MCP server: bank coding-agent-{repo}. Read tools: recall, reflect, get_memory, get_document, list_tags, get_bank_stats. Write tools: retain, delete_document.</title>
-    <rect x="1065" y="262" width="180" height="318" rx="10" fill="#FFFFFF" stroke="#3D3D3A" stroke-width="1.2" stroke-dasharray="5 4"/>
-    <text x="1075" y="282" font-size="11" fill="#141413">Hindsight MCP server</text>
-    <text x="1075" y="297" font-size="10" fill="#5E5D59">bank coding-agent-{repo}</text>
-    <text x="1075" y="311" font-size="10" fill="#5E5D59">server option: hindsight</text>
-    <text x="1075" y="325" font-size="10" fill="#5E5D59"></text>
-    <text x="1075" y="339" font-size="10" fill="#5E5D59">read tools:</text>
-    <text x="1075" y="353" font-size="10" fill="#5E5D59">recall, reflect,</text>
-    <text x="1075" y="367" font-size="10" fill="#5E5D59">get_memory,</text>
-    <text x="1075" y="381" font-size="10" fill="#5E5D59">get_document,</text>
-    <text x="1075" y="395" font-size="10" fill="#5E5D59">list_tags,</text>
-    <text x="1075" y="409" font-size="10" fill="#5E5D59">get_bank_stats</text>
-    <text x="1075" y="423" font-size="10" fill="#5E5D59"></text>
-    <text x="1075" y="437" font-size="10" fill="#5E5D59">write tools:</text>
-    <text x="1075" y="451" font-size="10" fill="#5E5D59">retain,</text>
-    <text x="1075" y="465" font-size="10" fill="#5E5D59">delete_document</text>
+    <title>Hindsight HTTP API: memories/recall, knowledge-base search and page read, reflect</title>
+    <rect x="945" y="700" width="290" height="80" rx="10" fill="#FFFFFF" stroke="#3D3D3A" stroke-width="1.2" stroke-dasharray="5 4"/>
+    <text x="955" y="722" font-size="11" fill="#141413">Hindsight HTTP API</text>
+    <text x="955" y="738" font-size="10" fill="#5E5D59">bank from bankIdTemplate</text>
+    <text x="955" y="753" font-size="10" fill="#5E5D59">memories/recall, knowledge-base,</text>
+    <text x="955" y="768" font-size="10" fill="#5E5D59">reflect</text>
   </g>
+  <g id="e-person-session">
+    <title>Person to Claude Code session: prompt and /memory-recall typed in the session</title>
+    <path d="M 180 155 H 300" fill="none" stroke="#5A5854" stroke-width="1.4" marker-end="url(#cmrt-arrow)"/>
+    <text x="222" y="147" font-size="10" fill="#3D3D3A" text-anchor="middle" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">prompt, or</text>
+    <text x="222" y="161" font-size="10" fill="#3D3D3A" text-anchor="middle" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">/memory-recall</text>
   </g>
-  <g id="bound-skills">
-    <title>skills district boundary: the architect and implement skills that call the moment tool</title>
-    <rect x="20" y="220" width="190" height="390" rx="8" fill="none" stroke="#3D3D3A" stroke-width="1.5"/>
-    <text x="32" y="238" font-size="11" fill="#3D3D3A">skills district</text>
-  <g id="n-design">
-    <title>architect design mode: stage 0 calls design-start, and an approved design calls design-approved</title>
-    <rect x="35" y="300" width="160" height="70" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.4"/>
-    <text x="45" y="320" font-size="11" fill="#141413">architect design mode</text>
-    <text x="45" y="335" font-size="10" fill="#5E5D59">stage 0: design-start</text>
-    <text x="45" y="349" font-size="10" fill="#5E5D59">approved: design-approved</text>
+  <g id="e-session-store">
+    <title>Claude Code session to prompt store: prompt.submit hook stores each prompt</title>
+    <path d="M 330 200 V 330" fill="none" stroke="#5A5854" stroke-width="1.4" marker-end="url(#cmrt-arrow)"/>
+    <text x="338" y="268" font-size="10" fill="#3D3D3A" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">prompt.submit hook</text>
   </g>
-  <g id="n-build">
-    <title>implement build skill: calls implement-start, epic-design, and slice-accepted, and retires H1 to H5</title>
-    <rect x="35" y="410" width="160" height="84" rx="10" fill="#F0EEE6" stroke="#3D3D3A" stroke-width="1.4"/>
-    <text x="45" y="430" font-size="11" fill="#141413">implement build skill</text>
-    <text x="45" y="445" font-size="10" fill="#5E5D59">implement-start,</text>
-    <text x="45" y="459" font-size="10" fill="#5E5D59">epic-design,</text>
-    <text x="45" y="473" font-size="10" fill="#5E5D59">slice-accepted</text>
+  <g id="e-session-run">
+    <title>Claude Code session to memory run: tool.call for recall_memory, command.run for /memory-recall</title>
+    <path d="M 540 200 V 460" fill="none" stroke="#5A5854" stroke-width="1.4" marker-end="url(#cmrt-arrow)"/>
+    <text x="548" y="236" font-size="10" fill="#3D3D3A" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">tool.call, command.run</text>
   </g>
-    <text x="32" y="596" font-size="10" fill="#5E5D59">build retires H1 to H5</text>
+  <g id="e-run-session">
+    <title>Memory run to Claude Code session: the judged result returns as the tool result or command text</title>
+    <path d="M 515 460 V 200" fill="none" stroke="#5A5854" stroke-width="1.4" marker-end="url(#cmrt-arrow)"/>
+    <text x="508" y="236" font-size="10" fill="#3D3D3A" text-anchor="end" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">tool result</text>
   </g>
-  <g id="bound-cobuilder-memory">
-    <title>cobuilder-memory boundary: the proposed plugin and its one function-hooks module (ADR-0039)</title>
-    <rect x="250" y="220" width="760" height="390" rx="8" fill="none" stroke="#3D3D3A" stroke-width="1.5"/>
-    <text x="262" y="238" font-size="11" fill="#3D3D3A">cobuilder-memory plugin, ADR-0039</text>
-    <text x="998" y="238" font-size="10" fill="#5E5D59" text-anchor="end">options: bank, server</text>
-  <g id="n-router">
-    <title>Router: one Haiku call per prompt and per stop through $.model.complete with references/router.md. Read label none, recall, or reflect. Write label none or retain.</title>
-    <rect x="290" y="260" width="180" height="70" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.4"/>
-    <text x="300" y="280" font-size="11" fill="#141413">Router</text>
-    <text x="300" y="295" font-size="10" fill="#5E5D59">$.model.complete</text>
-    <text x="300" y="309" font-size="10" fill="#5E5D59">read and write labels</text>
-    <rect x="420" y="312" width="44" height="13" rx="4" fill="none" stroke="#B04A3F" stroke-width="1"/>
-    <text x="425" y="321.5" font-size="8.5" fill="#B04A3F">pending</text>
+  <g id="e-store-run">
+    <title>Prompt store to memory run: $.store reads the stored prompts</title>
+    <path d="M 400 420 V 460" fill="none" stroke="#5A5854" stroke-width="1.4" marker-end="url(#cmrt-arrow)"/>
+    <text x="408" y="446" font-size="10" fill="#3D3D3A" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">reads prompts</text>
   </g>
-  <g id="n-quick">
-    <title>Quick run: $.model.fork writes a JSON plan, then the module makes each Hindsight call and keeps 12 results at most</title>
-    <rect x="535" y="260" width="180" height="70" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.4"/>
-    <text x="545" y="280" font-size="11" fill="#141413">Quick run</text>
-    <text x="545" y="295" font-size="10" fill="#5E5D59">fork writes a JSON plan</text>
-    <text x="545" y="309" font-size="10" fill="#5E5D59">module calls Hindsight</text>
-    <rect x="665" y="312" width="44" height="13" rx="4" fill="none" stroke="#B04A3F" stroke-width="1"/>
-    <text x="670" y="321.5" font-size="8.5" fill="#B04A3F">pending</text>
+  <g id="e-run-atom">
+    <title>Memory run to run state atom: each step writes the atom</title>
+    <path d="M 985 490 H 1120 V 420" fill="none" stroke="#5A5854" stroke-width="1.4" marker-end="url(#cmrt-arrow)"/>
+    <text x="994" y="484" font-size="10" fill="#3D3D3A" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">atom update</text>
   </g>
-  <g id="n-guard">
-    <title>tool.call guard: allows Read, recall, reflect, get_memory, get_document, list_tags, and get_bank_stats for the fork agent id, and denies every other call</title>
-    <rect x="780" y="260" width="180" height="70" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.4"/>
-    <text x="790" y="280" font-size="11" fill="#141413">tool.call guard</text>
-    <text x="790" y="295" font-size="10" fill="#5E5D59">allows Read and the</text>
-    <text x="790" y="309" font-size="10" fill="#5E5D59">Hindsight read tools</text>
-    <rect x="910" y="312" width="44" height="13" rx="4" fill="none" stroke="#B04A3F" stroke-width="1"/>
-    <text x="915" y="321.5" font-size="8.5" fill="#B04A3F">pending</text>
+  <g id="e-atom-pane">
+    <title>Run state atom to memory pane: ui.render draws the atom</title>
+    <path d="M 1120 330 V 200" fill="none" stroke="#5A5854" stroke-width="1.4" marker-end="url(#cmrt-arrow)"/>
+    <text x="1128" y="268" font-size="10" fill="#3D3D3A" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">ui.render</text>
   </g>
-  <g id="n-moment">
-    <title>moment tool: mcp__cobuilder-memory__moment, registered with $.tool.register. A read moment starts a deep run. A write moment starts a quick run with retain set.</title>
-    <rect x="290" y="370" width="180" height="70" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.4"/>
-    <text x="300" y="390" font-size="11" fill="#141413">moment tool</text>
-    <text x="300" y="405" font-size="9" fill="#5E5D59">mcp__cobuilder-memory__moment</text>
-    <text x="300" y="419" font-size="10" fill="#5E5D59">read: deep, write: quick</text>
-    <rect x="420" y="422" width="44" height="13" rx="4" fill="none" stroke="#B04A3F" stroke-width="1"/>
-    <text x="425" y="431.5" font-size="8.5" fill="#B04A3F">pending</text>
+  <g id="e-pane-person">
+    <title>Memory pane to Person: the pane on screen shows each step</title>
+    <path d="M 1120 120 V 62 H 105 V 122" fill="none" stroke="#5A5854" stroke-width="1.4" marker-end="url(#cmrt-arrow)"/>
+    <text x="480" y="56" font-size="10" fill="#3D3D3A" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">pane on screen</text>
   </g>
-  <g id="n-deep">
-    <title>Deep run: starts the fork agent with references/deep-run.md and marks each claim confirmed, contradicted, not applied, or cannot check</title>
-    <rect x="535" y="370" width="180" height="70" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.4"/>
-    <text x="545" y="390" font-size="11" fill="#141413">Deep run</text>
-    <text x="545" y="405" font-size="10" fill="#5E5D59">starts the fork agent</text>
-    <text x="545" y="419" font-size="10" fill="#5E5D59">checks each claim</text>
-    <rect x="665" y="422" width="44" height="13" rx="4" fill="none" stroke="#B04A3F" stroke-width="1"/>
-    <text x="670" y="431.5" font-size="8.5" fill="#B04A3F">pending</text>
+  <g id="e-run-config">
+    <title>Memory run to bank config file: fs read at the start of each run</title>
+    <path d="M 380 600 V 700" fill="none" stroke="#5A5854" stroke-width="1.4" marker-end="url(#cmrt-arrow)"/>
+    <text x="388" y="655" font-size="10" fill="#3D3D3A" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">fs read</text>
   </g>
-  <g id="n-adapters">
-    <title>adapter modules: each engine call sits behind one adapter module</title>
-    <rect x="780" y="370" width="180" height="70" rx="2" fill="#FFFFFF" stroke="#3D3D3A" stroke-width="1.2"/>
-    <text x="790" y="390" font-size="11" fill="#141413">adapter modules</text>
-    <text x="790" y="405" font-size="10" fill="#5E5D59">each engine call sits</text>
-    <text x="790" y="419" font-size="10" fill="#5E5D59">behind one adapter</text>
-    <rect x="910" y="422" width="44" height="13" rx="4" fill="none" stroke="#B04A3F" stroke-width="1"/>
-    <text x="915" y="431.5" font-size="8.5" fill="#B04A3F">pending</text>
+  <g id="e-run-git">
+    <title>Memory run to git worktree: git rev-parse reads the base name</title>
+    <path d="M 600 600 V 700" fill="none" stroke="#5A5854" stroke-width="1.4" marker-end="url(#cmrt-arrow)"/>
+    <text x="608" y="655" font-size="10" fill="#3D3D3A" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">git rev-parse</text>
   </g>
-  <g id="n-mirror">
-    <title>cc-memory-mirror: one Hindsight document, memory-file:&lt;file name&gt;, for each file of the automatic memory folder</title>
-    <rect x="290" y="480" width="180" height="70" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.4"/>
-    <text x="300" y="500" font-size="11" fill="#141413">cc-memory-mirror</text>
-    <text x="300" y="515" font-size="10" fill="#5E5D59">one document per file</text>
-    <text x="300" y="529" font-size="10" fill="#5E5D59">memory-file:&lt;file name&gt;</text>
-    <rect x="420" y="532" width="44" height="13" rx="4" fill="none" stroke="#B04A3F" stroke-width="1"/>
-    <text x="425" y="541.5" font-size="8.5" fill="#B04A3F">pending</text>
+  <g id="e-run-haiku">
+    <title>Memory run to Haiku model: $.model.complete, two calls per run</title>
+    <path d="M 820 600 V 700" fill="none" stroke="#5A5854" stroke-width="1.4" marker-end="url(#cmrt-arrow)"/>
+    <text x="828" y="655" font-size="10" fill="#3D3D3A" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">$.model.complete</text>
   </g>
-  <g id="n-writer">
-    <title>Note and receipt writer: appends one memory note with $.session.append and writes one receipt for each run</title>
-    <rect x="535" y="480" width="180" height="70" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.4"/>
-    <text x="545" y="500" font-size="11" fill="#141413">Note and receipt writer</text>
-    <text x="545" y="515" font-size="10" fill="#5E5D59">one note, one receipt</text>
-    <text x="545" y="529" font-size="10" fill="#5E5D59">for each run</text>
-    <rect x="665" y="532" width="44" height="13" rx="4" fill="none" stroke="#B04A3F" stroke-width="1"/>
-    <text x="670" y="541.5" font-size="8.5" fill="#B04A3F">pending</text>
-  </g>
-  <g id="n-references">
-    <title>references: router.md, plan.md, and deep-run.md, read at session start from $.plugin.root</title>
-    <rect x="780" y="480" width="180" height="70" rx="2" fill="#FFFFFF" stroke="#3D3D3A" stroke-width="1.2"/>
-    <text x="790" y="500" font-size="11" fill="#141413">references/</text>
-    <text x="790" y="515" font-size="10" fill="#5E5D59">router.md, plan.md,</text>
-    <text x="790" y="529" font-size="10" fill="#5E5D59">deep-run.md, read at start</text>
-    <rect x="910" y="532" width="44" height="13" rx="4" fill="none" stroke="#B04A3F" stroke-width="1"/>
-    <text x="915" y="541.5" font-size="8.5" fill="#B04A3F">pending</text>
-  </g>
-  </g>
-  <g id="bound-data">
-    <title>data boundary: the stores the module reads and writes</title>
-    <rect x="250" y="650" width="1010" height="150" rx="8" fill="none" stroke="#3D3D3A" stroke-width="1.5"/>
-    <text x="262" y="668" font-size="11" fill="#3D3D3A">data</text>
-  <g id="n-mirrorstate">
-    <title>cc-memory-mirror state: the $.store key cobuilder-memory:cc-memory-mirror:&lt;bank&gt; maps each file name to its sha256</title>
-    <path d="M 290 698 A 90.0 10 0 0 1 470 698 V 758 A 90.0 10 0 0 1 290 758 Z" fill="#788C5D" fill-opacity="0.16" stroke="#788C5D" stroke-width="1.4"/>
-    <ellipse cx="380.0" cy="698" rx="90.0" ry="10" fill="none" stroke="#788C5D" stroke-width="1.4"/>
-    <text x="300" y="722" font-size="11" fill="#141413">cc-memory-mirror state</text>
-    <text x="300" y="737" font-size="10" fill="#5E5D59">$.store, one key per bank</text>
-    <text x="300" y="751" font-size="10" fill="#5E5D59">file name to sha256</text>
-    <rect x="420" y="748" width="44" height="13" rx="4" fill="none" stroke="#B04A3F" stroke-width="1"/>
-    <text x="425" y="757.5" font-size="8.5" fill="#B04A3F">pending</text>
-  </g>
-  <g id="n-receipts">
-    <title>Receipts folder: one JSON receipt for each run under .cobuilder-memory/runs/, which git ignores</title>
-    <path d="M 535 698 A 90.0 10 0 0 1 715 698 V 758 A 90.0 10 0 0 1 535 758 Z" fill="#788C5D" fill-opacity="0.16" stroke="#788C5D" stroke-width="1.4"/>
-    <ellipse cx="625.0" cy="698" rx="90.0" ry="10" fill="none" stroke="#788C5D" stroke-width="1.4"/>
-    <text x="545" y="722" font-size="11" fill="#141413">Receipts folder</text>
-    <text x="545" y="737" font-size="10" fill="#5E5D59">.cobuilder-memory/runs/</text>
-    <text x="545" y="751" font-size="10" fill="#5E5D59">git ignores it</text>
-    <rect x="665" y="748" width="44" height="13" rx="4" fill="none" stroke="#B04A3F" stroke-width="1"/>
-    <text x="670" y="757.5" font-size="8.5" fill="#B04A3F">pending</text>
-  </g>
-  <g id="n-automem">
-    <title>Automatic memory folder: Claude Code keeps it, and the engine memory writer adds files</title>
-    <path d="M 780 698 A 90.0 10 0 0 1 960 698 V 758 A 90.0 10 0 0 1 780 758 Z" fill="#788C5D" fill-opacity="0.16" stroke="#788C5D" stroke-width="1.4" stroke-dasharray="5 4"/>
-    <ellipse cx="870.0" cy="698" rx="90.0" ry="10" fill="none" stroke="#788C5D" stroke-width="1.4" stroke-dasharray="5 4"/>
-    <text x="790" y="722" font-size="11" fill="#141413">Automatic memory folder</text>
-    <text x="790" y="737" font-size="10" fill="#5E5D59">Claude Code keeps it</text>
-    <text x="790" y="751" font-size="10" fill="#5E5D59">the engine adds files</text>
-  </g>
-  <g id="n-repo">
-    <title>The repo: the fork agent may Read it, and the guard denies each write</title>
-    <path d="M 1065 698 A 90.0 10 0 0 1 1245 698 V 758 A 90.0 10 0 0 1 1065 758 Z" fill="#788C5D" fill-opacity="0.16" stroke="#788C5D" stroke-width="1.4"/>
-    <ellipse cx="1155.0" cy="698" rx="90.0" ry="10" fill="none" stroke="#788C5D" stroke-width="1.4"/>
-    <text x="1075" y="722" font-size="11" fill="#141413">The repo</text>
-    <text x="1075" y="737" font-size="10" fill="#5E5D59">Read only,</text>
-    <text x="1075" y="751" font-size="10" fill="#5E5D59">through the guard</text>
-  </g>
-  </g>
-  <g id="edges" fill="none" stroke="#5A5854" stroke-width="1.4">
-    <title>edges: each edge names its protocol or its concern</title>
-    <path d="M 195 117 H 288" marker-end="url(#cmrt-arrow)"/>
-    <text x="242" y="110" font-size="10" fill="#3D3D3A" stroke="none" text-anchor="middle">prompt, /memory</text>
-    <path d="M 350 152 V 258" marker-end="url(#cmrt-arrow)"/>
-    <text x="344" y="200" font-size="10" fill="#3D3D3A" stroke="none" text-anchor="end">prompt and</text>
-    <text x="344" y="211" font-size="10" fill="#3D3D3A" stroke="none" text-anchor="end">stop hooks</text>
-    <path d="M 300 152 V 172 H 270 V 515 H 288" marker-end="url(#cmrt-arrow)"/>
-    <text x="264" y="360" font-size="10" fill="#3D3D3A" stroke="none" text-anchor="middle" transform="rotate(-90 264 360)">stop hook, /memory</text>
-    <path d="M 470 285 H 533" marker-end="url(#cmrt-arrow)"/>
-    <text x="474" y="279" font-size="10" fill="#3D3D3A" stroke="none">label</text>
-    <path d="M 440 260 V 196 H 1150 V 154" marker-end="url(#cmrt-arrow)"/>
-    <text x="1156" y="184" font-size="10" fill="#3D3D3A" stroke="none">$.model.complete</text>
-    <path d="M 625 260 V 154" marker-end="url(#cmrt-arrow)"/>
-    <text x="631" y="172" font-size="10" fill="#3D3D3A" stroke="none">$.model.fork</text>
-    <path d="M 690 330 V 350 H 1063" marker-end="url(#cmrt-arrow)"/>
-    <text x="756" y="344" font-size="10" fill="#3D3D3A" stroke="none">$.mcp.call: recall, reflect, retain</text>
-    <path d="M 195 335 H 232 V 395 H 288" marker-end="url(#cmrt-arrow)"/>
-    <path d="M 195 452 H 232 V 415 H 288" marker-end="url(#cmrt-arrow)"/>
-    <text x="226" y="425" font-size="10" fill="#3D3D3A" stroke="none" text-anchor="middle" transform="rotate(-90 226 425)">tool call</text>
-    <path d="M 470 405 H 533" marker-end="url(#cmrt-arrow)"/>
-    <text x="476" y="399" font-size="10" fill="#3D3D3A" stroke="none">read</text>
-    <path d="M 455 370 V 348 H 560 V 332" marker-end="url(#cmrt-arrow)"/>
-    <text x="462" y="343" font-size="10" fill="#3D3D3A" stroke="none">write</text>
-    <path d="M 715 390 H 748 V 117 H 778" marker-end="url(#cmrt-arrow)"/>
-    <text x="742" y="250" font-size="10" fill="#3D3D3A" stroke="none" text-anchor="middle" transform="rotate(-90 742 250)">$.agent.spawn</text>
-    <path d="M 870 152 V 258" marker-end="url(#cmrt-arrow)"/>
-    <text x="876" y="167" font-size="10" fill="#3D3D3A" stroke="none">tool.call hook,</text>
-    <text x="876" y="178" font-size="10" fill="#3D3D3A" stroke="none">with agent id</text>
-    <path d="M 960 280 H 1063" marker-end="url(#cmrt-arrow)"/>
-    <text x="1025" y="274" font-size="10" fill="#3D3D3A" stroke="none" text-anchor="middle">read tools</text>
-    <path d="M 960 312 H 985 V 728 H 1063" marker-end="url(#cmrt-arrow)"/>
-    <text x="1024" y="722" font-size="10" fill="#3D3D3A" stroke="none" text-anchor="middle">Read</text>
-    <path d="M 625 440 V 478" marker-end="url(#cmrt-arrow)"/>
-    <text x="631" y="463" font-size="10" fill="#3D3D3A" stroke="none">checks</text>
-    <path d="M 535 515 H 505 V 170 H 455 V 154" marker-end="url(#cmrt-arrow)"/>
-    <text x="500" y="164" font-size="10" fill="#3D3D3A" stroke="none" text-anchor="end">$.session.append</text>
-    <path d="M 625 550 V 686" marker-end="url(#cmrt-arrow)"/>
-    <text x="631" y="666" font-size="10" fill="#3D3D3A" stroke="none">fs write</text>
-    <path d="M 450 550 V 575 H 1063" marker-end="url(#cmrt-arrow)"/>
-    <text x="700" y="569" font-size="10" fill="#3D3D3A" stroke="none">$.mcp.call: retain, delete_document</text>
-    <path d="M 330 550 V 686" marker-end="url(#cmrt-arrow)"/>
-    <text x="336" y="640" font-size="10" fill="#3D3D3A" stroke="none">$.store</text>
-    <path d="M 400 550 V 630 H 870 V 686" marker-end="url(#cmrt-arrow)"/>
-    <text x="700" y="624" font-size="10" fill="#3D3D3A" stroke="none">fs read, sha256</text>
+  <g id="e-run-hindsight">
+    <title>Memory run to Hindsight HTTP API: HTTP through $.http.fetch, reflect through curl in $.process.run</title>
+    <path d="M 1060 600 V 700" fill="none" stroke="#5A5854" stroke-width="1.4" marker-end="url(#cmrt-arrow)"/>
+    <text x="1068" y="655" font-size="10" fill="#3D3D3A" stroke="#FAF9F5" stroke-width="4" stroke-linejoin="round" paint-order="stroke">HTTP, $.http.fetch, curl</text>
   </g>
   <g id="legend">
-    <title>legend: badge, border, and shape meanings</title>
-    <rect x="24" y="828" width="44" height="13" rx="4" fill="none" stroke="#B04A3F" stroke-width="1"/>
-    <text x="29" y="837.5" font-size="8.5" fill="#B04A3F">pending</text>
-    <text x="74" y="838" font-size="10" fill="#5E5D59">proposed in ADR-0039, a prediction</text>
-    <rect x="300" y="826" width="40" height="16" rx="6" fill="#FFFFFF" stroke="#3D3D3A" stroke-width="1.2" stroke-dasharray="5 4"/>
-    <text x="348" y="838" font-size="10" fill="#5E5D59">external system</text>
-    <rect x="470" y="826" width="40" height="16" rx="2" fill="#FFFFFF" stroke="#3D3D3A" stroke-width="1.2"/>
-    <text x="518" y="838" font-size="10" fill="#5E5D59">library or prompt file</text>
-    <path d="M 690 830 A 20 4 0 0 1 730 830 V 840 A 20 4 0 0 1 690 840 Z" fill="#788C5D" fill-opacity="0.16" stroke="#788C5D" stroke-width="1.2"/>
-    <text x="738" y="838" font-size="10" fill="#5E5D59">data store</text>
-    <rect x="850" y="826" width="40" height="16" rx="6" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.2"/>
-    <text x="898" y="838" font-size="10" fill="#5E5D59">process or service</text>
+    <title>legend: box, dashed box, cylinder, and edge label meanings</title>
+    <rect x="262" y="822" width="40" height="16" rx="6" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.2"/>
+    <text x="310" y="834" font-size="10" fill="#5E5D59">module part</text>
+    <rect x="420" y="822" width="40" height="16" rx="6" fill="#FFFFFF" stroke="#3D3D3A" stroke-width="1.2" stroke-dasharray="5 4"/>
+    <text x="468" y="834" font-size="10" fill="#5E5D59">external system</text>
+    <rect x="600" y="822" width="40" height="16" rx="6" fill="#788C5D" fill-opacity="0.16" stroke="#788C5D" stroke-width="1.2"/>
+    <text x="648" y="834" font-size="10" fill="#5E5D59">store or file</text>
+    <path d="M 760 830 H 800" fill="none" stroke="#5A5854" stroke-width="1.4" marker-end="url(#cmrt-arrow)"/>
+    <text x="810" y="834" font-size="10" fill="#5E5D59">edge label names the protocol</text>
   </g>
 </svg>

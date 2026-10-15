@@ -1,132 +1,84 @@
-%% Data types for cobuilder-memory.
-%% Level 3 = architecture. Each class is a shape from contracts.md. Every
-%% member is a prediction that ADR-0039 carries. No code exists yet.
+%% Classes: the types of epic E1 and the sections of the result.
+%% Names follow contracts.md. They are design names, not code names.
 classDiagram
-    class MomentInput {
-        +moment Moment
-        +name string
-        +outcome string
-        +scope files, adrs, and districts
+    class Prompt {
+        +String at
+        +String text
     }
 
-    class Moment {
-        <<enumeration>>
-        design-start
-        implement-start
-        epic-design
-        slice-accepted
-        design-approved
+    class Target {
+        +String apiUrl
+        +String bank
     }
 
-    class MomentResult {
-        +run_id string
-        +kind deep or quick
-        +status started, unavailable, or refused
-        +message string
+    class RunState {
+        +String startedAt
+        +String need
+        +String recallQuery
+        +String step
+        +List~Hit~ records
+        +PageHit picked
+        +List~ReflectAnswer~ answers
     }
 
-    class RouterLabels {
-        +read none, recall, or reflect
-        +write none or retain
+    class Hit {
+        +String date
+        +String text
+        +String documentId
     }
 
-    class Plan {
-        +recall list of id and text
-        +reflect list of id and text
-        +retain list of content, date, and about
-        +skip string
+    class PageHit {
+        +String id
+        +String name
+        +String snippet
+        +Number score
+        +String updatedAt
     }
 
-    class DeepRunAnswer {
-        +checks List~DeepRunCheck~
-        +nothing_kept List~string~
+    class Page {
+        +String body
+        +String timestamp
     }
 
-    class DeepRunCheck {
-        +memory_id string
-        +document_id string
-        +date YYYY-MM-DD
-        +query_ids List~string~
-        +quote 25 words or fewer
-        +summary one plain sentence
-        +check Check
-        +evidence path:line, or empty
+    class ReflectAnswer {
+        +String question
+        +String answer
     }
 
-    class Check {
-        <<enumeration>>
-        confirmed
-        contradicted
-        not applied
-        cannot check
+    class Result {
+        +String judgingRules
+        +String header
+        +String need
     }
 
-    class Receipt {
-        +run_id string
-        +session_id string
-        +trigger Trigger
-        +moment Moment, or null
-        +router RouterLabels and usage, or null
-        +plan recall, reflect, and retain_count, or null
-        +fork reason and usage, or null
-        +reflect_calls_this_session int
-        +deep_run agent_id, mode, tool_calls, and usage, or null
-        +bank string
-        +bank_counts facts, observations, and pending
-        +calls id, tool, returned, dropped_self, and kept
-        +checks memory_id, state, and evidence
-        +retained List~string~
-        +cc_memory_mirror changed and deleted file names
-        +note_appended bool
-        +status complete, partial, failed, or unavailable
-        +started_at ISO-8601 time
-        +ended_at ISO-8601 time
+    class RecallSection {
+        +String query
+        +Int results
+        +Int droppedThisSession
+        +Int shown
     }
 
-    class Trigger {
-        <<enumeration>>
-        prompt
-        stop
-        moment
-        memory-command
-        cc-memory-mirror
+    class PageSection {
+        +String name
+        +String updatedAt
+        +String body
     }
 
-    class MemoryNote {
-        +run id and trigger
-        +one Q line for each query
-        +kept memory: id, date, document id, check, quote
-        +R line: 120 words or fewer
-        +Retained: document ids
+    class ReflectSection {
+        +String context
     }
 
-    class CcMemoryMirrorState {
-        +key cobuilder-memory:cc-memory-mirror: and the bank id
-        +hashes file name to sha256
-    }
+    Prompt ..> RunState : read by the query writer
+    RunState --> Target : runs against
+    RunState "1" *-- "0..8" Hit : keeps
+    RunState "1" o-- "0..1" PageHit : picks
+    RunState "1" *-- "0..3" ReflectAnswer : asks
+    PageHit --> Page : read as
+    Result ..> RunState : built from
+    Result *-- RecallSection : section 4
+    Result *-- PageSection : section 5
+    Result *-- ReflectSection : section 6
 
-    class PluginOptions {
-        +bank string
-        +server string
-    }
-
-    MomentInput --> Moment : moment
-    MomentInput ..> MomentResult : the tool returns at once
-    MomentResult ..> Receipt : run_id
-    RouterLabels ..> Plan : a label starts a quick run
-    DeepRunAnswer *-- DeepRunCheck : checks
-    DeepRunCheck --> Check : check
-    Receipt --> Trigger : trigger
-    Receipt --> Moment : moment
-    Receipt o-- RouterLabels : router
-    Receipt ..> Plan : plan
-    Receipt ..> DeepRunCheck : checks
-    MemoryNote --> Trigger : trigger
-    MemoryNote ..> Receipt : same run id
-    MemoryNote ..> DeepRunCheck : kept memory
-    CcMemoryMirrorState ..> PluginOptions : bank
-
-    note for Plan "Six recall queries at most.<br>One reflect, on a reflect label only.<br>Three retain records, on a retain label only."
-    note for Receipt "One JSON file for each run under .cobuilder-memory/runs/.<br>It holds memory ids, counts, and query text, never memory text."
-    note for MemoryNote "The note sits in a hindsight_memories tag pair.<br>The engine stores the row as isMeta."
-    note for PluginOptions "bank defaults to coding-agent-{repo}.<br>server defaults to hindsight."
+    note for Prompt "Text cut to 2,000 characters.<br>The store keeps the newest 100."
+    note for RunState "step is one of query, search,<br>questions, reflect, done, or failed"
+    note for PageSection "Knowledge page: none picked<br>when Haiku picks no page."

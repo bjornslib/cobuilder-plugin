@@ -1,34 +1,31 @@
 {
   "name": "cobuilder-memory",
-  "title": "A memory plugin reads and writes Hindsight at the moments that need it",
+  "title": "A memory tool writes the Hindsight queries for the main agent",
   "created": "2026-10-13",
-  "outcome": "A session that installs cobuilder-memory reads and writes Hindsight memory at the moments that need it. A router decides at each prompt and each stop. The design and build workflows call the plugin at fixed moments. Each run leaves a receipt.",
+  "outcome": "plugins/cobuilder-memory ships the recall_memory tool. Haiku writes a recall query from the person's prompts and the session, recall and a page search run, and Haiku picks a page and writes reflect questions. The main agent judges the result, and a pane shows each run.",
   "done_when": [
-    "A spike on Claude Code 2.1.296 passes the eleven checks in spike.md on their pass branches before any epic starts. S3 may pass through its chosen fallback.",
     "`claude plugin validate` accepts plugins/cobuilder-memory, and `claude plugin test` passes its tests.",
     "`uv run pytest tests -q` passes with the install-surface rule that ADR-0039 amends.",
-    "A prompt that the router labels recall gets a memory note before the person's next prompt, and a receipt records the run.",
-    "Every stop of the main loop, a /goal iteration included, runs the router once while Hindsight answers, and the receipt records its labels.",
-    "A change to a file in the automatic memory folder reaches Hindsight as one document per file by the next stop.",
-    "Design stage 0 and implement Gate 1 call the moment tool, and the build skill holds no H1 to H5 checkpoint.",
-    "Design stage 4, the Gate 1 approval, and each epic-design approval read their deep-run note, or write a gap line from contracts.md.",
-    "In the first three read-moment runs, at least one reading step cites a note, not the pending line.",
-    "Design-mode section 7.3 accepts a confirmed memory claim, and each decision that uses a memory claim carries a memory citation.",
-    "A recall after a run finds no text of a memory note in the bank.",
-    "The engineer marks the router labels in the first 20 receipts right or wrong. The router stays when 16 or more are right."
+    "In a session that installs the plugin, the main agent calls recall_memory with no input and gets one recall and one to three reflect answers.",
+    "When the page search finds a page with content, Haiku may pick one, and the result shows its body and update date. An empty page is never picked.",
+    "The reflect questions name at least one ADR id or term from the recall records when recall kept a record.",
+    "Recall drops every result from the current session's own transcript.",
+    "The bank comes from bankIdTemplate and the main worktree's base name, and outside a git repo the run stops with a reason.",
+    "The result opens with the judging rules, and a Hindsight outage returns a reason, never an empty list.",
+    "Each run opens or updates one pane that shows its steps and its result. A tool run shows it from 144 columns, and /memory-recall at any width.",
+    "Live runs on one design question in this repo and in think-with-ai return a dated record that the main agent uses or rejects with a stated reason."
   ],
   "abort_if": [
-    "The spike shows that $.model.fork or $.mcp.call cannot run from a timer that session.start started. The quick run then has no place to run.",
-    "The hooks API changes shape before the shipping build, so a call that this design names no longer exists. Spike S10 checks it at each build epic.",
-    "Hindsight writes a memory note back into the bank, and no guard can stop it."
+    "The plugin layout under plugins/ fails to load the hooks module that loaded from ~/mods.",
+    "The engine stops a tool.call hook before a run finishes."
   ],
   "min_work": {
     "derived_from": "3 districts (skills, scripts, docs), colliding ADRs 0016, 0017, 0025, 0035, 2 boundary rules (ADR-0025 install surface, generic stack card dependency rule)",
-    "alternatives_explored": 15,
+    "alternatives_explored": 12,
     "boundary_rules_checked": true,
     "challenge_stage_run": true,
     "draft_review_run": true,
-    "note": "A failed spike check returns the design to stage 3 before any epic starts."
+    "note": "Revision of 2026-10-15. It rests on the 2026-10-14 tool spike in ~/mods/cobuilder-memory."
   },
   "limits": {
     "warn_after_rounds": 3,
@@ -40,7 +37,24 @@
       "slug": "cobuilder-memory",
       "branch": "design/cobuilder-memory",
       "pr": null,
-      "state": "planned"
+      "state": "planned",
+      "outcome": "The spike moves into plugins/cobuilder-memory with the pane, the ADR-0025 amendment, and the packaging test."
+    },
+    {
+      "id": "E2",
+      "slug": "memory-wiring",
+      "branch": null,
+      "pr": null,
+      "state": "backlog",
+      "outcome": "Design and build call recall_memory at fixed points, and a Jev gate decides every n tool calls whether a recall would help. H1 to H5 retire."
+    },
+    {
+      "id": "E3",
+      "slug": "memory-call-log",
+      "branch": null,
+      "pr": null,
+      "state": "backlog",
+      "outcome": "The memory pane lists every Hindsight call of the session, with the plugin's own runs marked apart. Sources: the agent's mcp__hindsight__ tool calls, the runtime's diag.jsonl, and the Hindsight audit log."
     }
   ],
   "stage": "approved",
@@ -57,6 +71,30 @@
       "changed": true,
       "feedback_class": "material",
       "note": "Reviewer round 2 on Haiku. The engineer kept M3 a (R2-1 a), chose the tool-less deep run as the S3 fallback (R2-2 a), and the 21 fixes."
+    },
+    {
+      "n": 3,
+      "changed": true,
+      "feedback_class": "material",
+      "note": "The engineer cut the receipt, the note format, the check schema, the gap lines, and the memory citation. The Hindsight audit log records each call. Paired runs prove value."
+    },
+    {
+      "n": 4,
+      "changed": true,
+      "feedback_class": "material",
+      "note": "The engineer cut the design to the spike shape plus a pane (stage 0, 2026-10-15) and moved the workflow wiring and a Jev gate to epic E2."
+    },
+    {
+      "n": 5,
+      "changed": true,
+      "feedback_class": "material",
+      "note": "The engineer added knowledge pages as a source in E1 (D-B a) and epic E3, a pane list of every Hindsight call (D-A)."
+    },
+    {
+      "n": 6,
+      "changed": false,
+      "feedback_class": "cosmetic",
+      "note": "Reviewer round on Haiku: 10 cosmetic findings, no survivor. The judging rules come first, the run time is up to about five and a half minutes, empty pages are dropped, and the names are memory run and memory pane."
     }
   ]
 }
