@@ -54,6 +54,7 @@ To start with one job, install one plugin. For example, `/plugin install archite
 | `pr` | Open a pull request with intent before the merge, and narrate it after | `/pr:generate`, `review`, `baseline` |
 | `artifact` | Read the results in the viewer, publish a PR as a Claude Artifact, or draw a design as a tldraw canvas | `/artifact:view`, `publish`, `canvas` |
 | `cobuilder-full-lifecycle` | Get all four, a routing guide, and the one setup command | `/cobuilder-full-lifecycle:install` |
+| `cobuilder-memory` | Opt-in. Ask Hindsight what the project decided before, through the `consult` tool and a side pane | `/memory-recall`, `/memory-check` |
 
 `architect` and `pr` need `artifact`, so installing either one also installs `artifact`. `implement` needs `architect`, because `/implement:debug` hands off to it. `/implement:install` hands over to `/cobuilder-full-lifecycle:install`. Without the umbrella plugin, it tells you how to install it.
 
@@ -261,9 +262,10 @@ plugins/
   artifact/                        view, publish, and the viewer
   implement/                       start, debug, the coach check, the install hand-over, and the slice agents and hook
   cobuilder-full-lifecycle/        the umbrella plugin and the install command
+  cobuilder-memory/                the opt-in memory mod: a TypeScript hooks module and its tests
 ```
 
-Only `implement` ships agents and a hook (ADR-0025). No plugin ships an MCP server. The commands in each plugin are thin. The skills hold the procedures.
+Only `implement` ships agents. Only `implement` and the `cobuilder-memory` mod ship hooks (ADR-0025, ADR-0039). No plugin ships an MCP server. The commands in each plugin are thin. The skills hold the procedures.
 
 ### Use the skills in another harness
 

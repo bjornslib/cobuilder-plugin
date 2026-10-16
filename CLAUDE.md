@@ -156,7 +156,7 @@ Sections 1 and 3 still apply to the request itself. This section covers what you
 
 ## What this repo is
 
-A Claude Code marketplace (`.claude-plugin/marketplace.json`) that ships five sibling plugins under `plugins/`. It is not an app. There is no deploy step and no CI.
+A Claude Code marketplace (`.claude-plugin/marketplace.json`) that ships six plugins under `plugins/`: five siblings and one opt-in mod, `cobuilder-memory`. It is not an app. There is no deploy step and no CI.
 
 | Plugin | Job |
 |---|---|
@@ -165,8 +165,9 @@ A Claude Code marketplace (`.claude-plugin/marketplace.json`) that ships five si
 | `artifact` | Serve a bundle locally (`view`), publish a level as a Claude Artifact (`publish`), and draw a design as a tldraw canvas (`canvas`). Holds the viewer |
 | `implement` | Build a design one vertical slice at a time (`start`, `debug`). Its `install` hands over to the umbrella's install |
 | `cobuilder-full-lifecycle` | Umbrella. Depends on the other four, and holds the one install command (`/cobuilder-full-lifecycle:install`) |
+| `cobuilder-memory` | Opt-in mod, outside the umbrella. Gives the agent the `consult` tool, which asks Hindsight what the project decided before, and shows each run in a side pane |
 
-The lifecycle has six steps. `options` explores the whole system. `design` decides one change. `implement` builds it. `pr:generate` assesses it and opens the PR. `pr:review` narrates it after the merge. `artifact` shows the result, and draws a design as a canvas.
+The lifecycle has six steps. `options` explores the whole system. `design` decides one change. `implement` builds it. `pr:generate` assesses it and opens the PR. `pr:review` narrates it after the merge. `artifact` shows the result, and draws a design as a canvas. Before the first build in a repo, `/cobuilder-full-lifecycle:install` sets it up.
 
 ## Layout
 
@@ -176,7 +177,8 @@ shared/                           vendored into each plugin as plugins/<name>/sh
 plugins/<name>/{commands,skills,scripts}   auto-discovered, never declared in plugin.json
 plugins/artifact/viewer/src/      viewer source: React, TypeScript, Vite, Tailwind, Vitest
 plugins/artifact/viewer/index.html  the built viewer, committed
-plugins/implement/{agents,hooks}  the only agents and hook in the family
+plugins/implement/{agents,hooks}  the only agents in the family, and the coaching hook
+plugins/cobuilder-memory/hooks/   the mod's TypeScript hooks module, with its tests in tests/
 docs/                             authored, git-visible: architecture/{adr,designs,contexts,review,options}, plans/, pull-requests/
 .cobuilder-architect/             derived bundles and binary assets, committed (self/ plus two test fixtures)
 DDD-VOCABULARY.md                 the one glossary
@@ -185,7 +187,7 @@ tests/                            pytest suite for packaging, scripts, and gates
 
 - Commands are thin: each calls `Skill("<name>", args="<mode> $ARGUMENTS")`. The `SKILL.md` files hold the procedure.
 - Judgment lives in `references/*.md`, loaded on demand. Never hardcode it in a script or a skill body.
-- Decisions are in `docs/architecture/adr/`. Read the ADR before you change what it decided. ADR-0016 and ADR-0017 cover the plugin split and `shared/`. ADR-0025 covers the install surface.
+- Decisions are in `docs/architecture/adr/`. Read the ADR before you change what it decided. ADR-0016 and ADR-0017 cover the plugin split and `shared/`. ADR-0025 covers the install surface, and ADR-0039 amends it for the `cobuilder-memory` mod.
 - `.cobuilder-architect/cobuilder-harness-a103a550/` and `.cobuilder-architect/digital-curator-80f83abb/` are fixtures that the repo commits. Do not delete them as stale cache.
 
 ## Principles
@@ -194,7 +196,7 @@ tests/                            pytest suite for packaging, scripts, and gates
 2. **Claude writes judgment, scripts move data.** Narrative, ADRs, assessments, and diagram sources are Claude's work. Scripts fetch diffs, compile, convert, and verify. A script never authors content.
 3. **A step with no observable effect gets skipped.** Give each documented step an effect that a script, a gate, or a blind pass can check. Test the effect, the structure that code reads, or the reference that must resolve. Never test the wording of the prose that describes the step. Gate 4b ran for zero of five epics until `verify_gate.py` enforced it.
 4. **Plugins meet at the bundle.** A plugin names another plugin's mode and lets that plugin resolve its own path. It never names `plugins/<other>/...`. Shared code goes in `shared/`.
-5. **Narrow install surface.** Only `implement` ships agents and a hook (ADR-0025). No plugin ships an MCP server.
+5. **Narrow install surface.** Only `implement` ships agents. Only `implement` and the `cobuilder-memory` mod ship hooks (ADR-0025, ADR-0039). No plugin ships an MCP server.
 6. **Never overwrite authored content.** `extract_story.py` keeps authored narrative fields. A data migration declares the fields it touches. The guard stops the run before any write if it changes another authored field.
 7. **Outside the bundle, only two actions.** `pr:generate` may push and open a PR, after an explicit confirmation. Nothing else on GitHub is in scope.
 8. **Verify before you trust.** An independent validator must score a slice 0.90 or higher against a blind rubric. Then the slice is done. A self-report is not evidence.
@@ -207,6 +209,7 @@ tests/                            pytest suite for packaging, scripts, and gates
 - **Review, maintenance, decisions, describe, debug**: scored audit against the corpus, ADR governance, bounded-context canvases, root-cause diagnosis.
 - **Implement** (`/implement:start`): four approval gates (product, architecture, program design, slice plan with epic designs and blind rubrics), then a RED, GREEN, VALIDATE loop per slice. `verify_gate.py` checks the gates. A `PostToolUse` hook coaches GREEN through habit-hooks. `implement:vocabulary` checks each slice against the glossary.
 - **Install** (`/cobuilder-full-lifecycle:install`): the one setup command, once per repo. The `cobuilder-setup` skill installs habit-hooks and its detectors, then calls `implement`'s coach-check mode, which resolves its own script path. It checks for `DDD-VOCABULARY.md`. It adds the missing Hindsight allow rules to `~/.claude/settings.json` after the engineer says yes. `/implement:install` hands over to it.
+- **Memory** (`cobuilder-memory`, opt-in): the `mcp__cobuilder-memory__consult` tool. Haiku writes a recall query from the stored prompts and the session. Recall and a knowledge-page search run through the `hindsight` MCP server, then one reflect. The result opens with judging rules: recall records are evidence, and reflect answers are leads. Design stage 1 and build Gate 1 call the tool when the session lists it. `/memory-recall` runs it by hand, and `/memory-check` calls each Hindsight tool once.
 - **Odyssey** (`pr`): a four-level story per merged PR with scene art, Mermaid diagrams, voice narration, and retro-extracted ADRs. `generate` interviews first and assesses the change before the PR opens.
 - **Viewer** (`artifact`): one surface for designs, ADRs, builds, and PRs, that `data/index.json` joins. The Work board is a drawer over the shell (ADR-0034). `view_server.py` serves on fixed port 62583. Review links and an anchored-comments ledger are built in (ADR-0019, ADR-0032). A work item and a PR page the same way: a rail row is a paged level, and a section is one panel (ADR-0028). Each level opens with an In Short strip that holds its `narration`. The rail lists the three levels once, then an Also group. One text link in each section heading, "Read in PR 12 ›", moves to the other account on the section of the same name (ADR-0037). The viewer states no record gap. `build_index.py` warns about a design that lacks a problem, decision, or risk beat.
 - **Publish** (`/artifact:publish`): flatten one PR into a single HTML file under the 16 MiB Artifact cap.
@@ -217,6 +220,8 @@ tests/                            pytest suite for packaging, scripts, and gates
 
 ```
 uv run pytest tests -q                         # Python suite, on uv's managed Python 3.11
+claude plugin test plugins/cobuilder-memory    # the mod's hook tests
+npx tsc -p plugins/cobuilder-memory --noEmit   # the mod's type check, with the root tools package
 cd plugins/artifact/viewer && npm run build    # tsc --noEmit, then vite build, writes the committed index.html
 cd plugins/artifact/viewer && npm run test     # Vitest
 uv run shared/build_index.py                   # rebuild the record index after any docs/ change
@@ -242,6 +247,8 @@ Plugin scripts are PEP 723. `uv run <script>` resolves their own dependencies.
 - **Add a migration, do not rebuild.** Bump `SCHEMA_VERSION` or `CURRENT_BUNDLE_FORMAT` in `shared/_bundle_meta.py` and append to the matching ladder. Never call `extract_story.py` from a migration.
 - **Name each new Hindsight tool in the setup skill.** When a plugin calls a new `mcp__hindsight__` tool, add its allow rule to the `cobuilder-setup` skill. `tests/test_install_command.py` reads the names from `hindsight.ts` and `slice-loop.md`, and fails until you do.
 - **Install habit-hooks with every extra at once.** A second `uv tool install` with other extras replaces the first. This repo needs `python` and `typescript`.
+- **Drive the hooks in a mod test.** In `claude plugin test`, the test body's `$` makes no engine calls. Call a hook through the event it handles, such as a command or a tool call. Stub each engine call it makes.
+- **Slice evidence stays local.** Git ignores `.cobuilder/rubrics/*/evidence/`. The rubrics and `manifest.yaml` are committed.
 - **Subagents may not run `git stash`.** `.claude/hooks/deny-git-stash.py` denies it. The hook is local tooling and ships to nobody.
 
 ## Known gaps

@@ -21,7 +21,7 @@ How to use this glossary:
 
 <a id="plugin"></a>
 **Plugin** (`cobuilder-packaging`):
-The single installable unit declared in a `.claude-plugin/plugin.json` manifest. Five plugins exist today under `plugins/`: `architect`, `pr`, `artifact`, `implement`, and the umbrella `cobuilder-full-lifecycle`.
+The single installable unit declared in a `.claude-plugin/plugin.json` manifest. Six plugins exist today under `plugins/`: `architect`, `pr`, `artifact`, `implement`, the umbrella `cobuilder-full-lifecycle`, and the opt-in mod `cobuilder-memory`.
 
 <a id="command"></a>
 **Command** (`cobuilder-packaging`):
@@ -42,7 +42,7 @@ _Avoid_: docs/ (authored source, never derived), story.json (one file inside the
 
 <a id="vendoring"></a>
 **Vendoring** (`cobuilder-packaging`):
-The mechanism, decided in ADR-0017, that shares code between the five plugins: a `shared/` directory at the marketplace root, symlinked into each plugin's own root and dereferenced into that plugin's install cache.
+The mechanism, decided in ADR-0017, that shares code between the six plugins: a `shared/` directory at the marketplace root, symlinked into each plugin's own root and dereferenced into that plugin's install cache.
 
 ## architect
 
