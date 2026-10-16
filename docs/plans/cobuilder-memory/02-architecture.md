@@ -17,8 +17,9 @@ in another plugin (ADR-0016).
 | `.gitignore` | Ignore rules | `plugins/cobuilder-memory/.claude-plugin/types/`, which the engine writes for the editor on each load |
 | `plugins/architect/skills/architecture/references/design-mode.md` | Design mode procedure, §4 Stage 1 | Stage 1 calls the consult tool when the session lists it (slice 5) |
 | `plugins/implement/skills/build/SKILL.md` and `references/hindsight-routine.md` | The build procedure and its H1 to H5 checkpoints | Gate 1 calls the consult tool, and H1 to H5 retire (slice 5) |
-| `CLAUDE.md`, `README.md`, `DDD-VOCABULARY.md` | Top-level documents that count the plugins | Five becomes six, principle 5 names the amended rule (slice 6) |
-| `docs/architecture/adr/ADR-0025-*.md` | The install-surface decision | A history entry that names ADR-0039 (slice 6) |
+| `CLAUDE.md`, `README.md`, `DDD-VOCABULARY.md` | Top-level documents that count the plugins | Five becomes six, principle 5 names the amended rule (slice 7) |
+| `docs/architecture/adr/ADR-0025-*.md` | The install-surface decision | A history entry that names ADR-0039 (slice 7) |
+| `plugins/cobuilder-full-lifecycle/` and `plugins/implement/` install | The one install command | `/cobuilder-full-lifecycle:install` holds the habit-hooks setup and the Hindsight allow rules. `/implement:install` hands over to it (slice 6) |
 
 The plugin does not touch the bundle (`.cobuilder-architect/`), the viewer,
 any script under `shared/`, or the Hindsight runtime.

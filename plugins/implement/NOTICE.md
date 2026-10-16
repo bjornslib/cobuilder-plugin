@@ -15,5 +15,5 @@ See https://github.com/habit-hooks/habit-hooks.
 `plugins/implement/hooks/hooks.json` are the parts of this plugin that
 call habit-hooks.
 
-Run `/implement:install` to set up habit-hooks and its per-project
+Run `/cobuilder-full-lifecycle:install` to set up habit-hooks and its per-project
 detectors for this repo.

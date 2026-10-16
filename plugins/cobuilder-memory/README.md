@@ -31,6 +31,8 @@ entries to `permissions.allow` in your settings:
 - `mcp__hindsight__get_knowledge_page`
 - `mcp__hindsight__reflect`
 
+`/cobuilder-full-lifecycle:install` adds these rules for you after it asks.
+
 Without a rule, auto mode refuses that call, and the result shows the reason.
 
 ## Time limits

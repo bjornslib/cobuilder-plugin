@@ -43,4 +43,4 @@ Test command: `uv run pytest tests -q`
 - All tests that passed before this slice must still pass.
 
 ## Out of scope — do not penalise
-- The plugin count in top-level documents (slice 6).
+- The plugin count in top-level documents (slice 7).

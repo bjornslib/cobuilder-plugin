@@ -19,7 +19,7 @@ In live runs on one design question in each of two repos (this repo and
 think-with-ai), the agent receives a dated past record that it did not have,
 and it uses or rejects that record with a stated reason.
 
-Measurement: the evidence file of slice 6 holds both run transcripts, and
+Measurement: the evidence file of slice 7 holds both run transcripts, and
 the developer marks each run "used", "rejected with a reason", or "no
 value". The metric passes when both runs are "used" or "rejected with a
 reason".

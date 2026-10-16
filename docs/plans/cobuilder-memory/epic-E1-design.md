@@ -54,7 +54,8 @@ The interfaces that join the slices:
 | 3 | Reflect questions come from the records, and a failed reflect leaves the rest | 2, because the questions read the page snippets |
 | 4 | The memory pane shows each run as it works | 3, because it shows every step |
 | 5 | Design stage 1 and Gate 1 call the consult tool, and H1 to H5 retire | 3 |
-| 6 | The value check in two repos, and the six-plugin count | 1 to 5 |
+| 6 | One install command sets up the family, with the Hindsight allow rules | 5 |
+| 7 | The value check in two repos, and the six-plugin count | 1 to 6 |
 
 The engineer stops the build after slice 4 to test the plugin in
 think-with-ai (2026-10-15).

@@ -2,7 +2,7 @@
 
 Grounded in `docs/architecture/designs/cobuilder-memory/contracts.md`,
 `intent.json` (ADR-0036), `02-architecture.md`, and `interaction-design.md`.
-Scope: epic E1, slices 1 to 6. The spike in `~/mods/cobuilder-memory`
+Scope: epic E1, slices 1 to 7. The spike in `~/mods/cobuilder-memory`
 is the starting code, and this design splits it by job.
 
 ## Files
@@ -38,8 +38,13 @@ is the starting code, and this design splits it by job.
 | `plugins/implement/skills/build/SKILL.md` | Gate 1 calls the consult tool when listed. The Hindsight section and its reference row go | 5 |
 | `plugins/implement/skills/build/references/hindsight-routine.md` | Removed | 5 |
 | `plugins/architect` and `plugins/implement` manifests | Version bumps in `plugin.json` and `marketplace.json` | 5 |
-| `CLAUDE.md`, `README.md`, `DDD-VOCABULARY.md` | Six plugins, principle 5, the Layout line | 6 |
-| `docs/architecture/adr/ADR-0025-*.md` | A history entry naming ADR-0039 | 6 |
+| `CLAUDE.md`, `README.md`, `DDD-VOCABULARY.md` | Six plugins, principle 5, the Layout line | 7 |
+| `docs/architecture/adr/ADR-0025-*.md` | A history entry naming ADR-0039 | 7 |
+| `plugins/cobuilder-full-lifecycle/commands/install.md` | New. Calls the `cobuilder-setup` skill | 6 |
+| `plugins/cobuilder-full-lifecycle/skills/cobuilder-setup/SKILL.md` | New. The habit-hooks setup moved from `implement`, the glossary check, and the Hindsight allow rules | 6 |
+| `plugins/implement/commands/install.md` | Hands over to `/cobuilder-full-lifecycle:install` | 6 |
+| `plugins/implement/skills/build/SKILL.md` | Install mode becomes Coach-check mode, which runs only the coach check | 6 |
+| `plugins/implement` and `plugins/cobuilder-full-lifecycle` manifests | Version bumps in `plugin.json` and `marketplace.json` | 6 |
 
 ## Types & signatures
 
@@ -164,7 +169,8 @@ the model, MCP, process, and session answers stubbed. Packaging runs with
 | 3 | `tests/haiku.test.ts`, `tests/run.test.ts` | One to three questions are kept. The page read and the reflects run side by side. A failed reflect writes its reason, and the others still show. |
 | 4 | `tests/pane.test.ts` | The pane opens before the first model call. Each step and call updates the state. The tick moves the elapsed time. The four states draw as `interaction-design.md` says. |
 | 5 | `tests/test_hindsight_wiring.py` and one blind agent pass | The build skill names no H1 to H5 and no `hindsight-routine.md`. Both skills name the consult tool. A blind agent calls the tool first at design stage 1. |
-| 6 | evidence file and `uv run pytest tests -q` | Two live runs are judged. The top-level documents count six plugins. |
+| 6 | `tests/test_install_command.py`, `tests/test_habit_coach.py`, and one blind agent pass | The setup skill names each Hindsight tool that cobuilder-memory calls and the retain tool. The moved install steps live in the setup skill. A blind agent adds only the missing rules after a yes. |
+| 7 | evidence file and `uv run pytest tests -q` | Two live runs are judged. The top-level documents count six plugins. |
 
 ## Least confident decisions
 

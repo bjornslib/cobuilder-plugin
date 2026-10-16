@@ -76,6 +76,12 @@ Use to build features from design into verified code:
   solution design per epic, authors blind acceptance rubrics, and enforces
   independent validator scoring (>= 0.90 threshold).
 
+### 5. cobuilder-full-lifecycle (family setup)
+
+Use once per repo to set up the family. The umbrella holds one command:
+
+- **install** (`/cobuilder-full-lifecycle:install`): Use to set up habit-hooks, check the glossary, and add the Hindsight allow rules. It asks before each change.
+
 ---
 
 ## Routing guide
@@ -93,6 +99,7 @@ Use to build features from design into verified code:
 | View bundle locally in browser | `artifact` | `/artifact:view` |
 | Export story level as Claude Artifact | `artifact` | `/artifact:publish` |
 | Build feature in verified vertical slices | `implement` | `/implement:implement` |
+| Set up habit-hooks, the glossary check, and Hindsight allow rules | `cobuilder-full-lifecycle` | `/cobuilder-full-lifecycle:install` |
 
 Do not execute procedures from this skill. Direct the user to the matching
 plugin.

@@ -49,4 +49,4 @@ Test command: `claude plugin test plugins/cobuilder-memory && uv run pytest test
 
 ## Out of scope — do not penalise
 - The memory pane (slice 4).
-- How good the questions read. The live value check is slice 6.
+- How good the questions read. The live value check is slice 7.

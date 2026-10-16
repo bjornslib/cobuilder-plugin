@@ -28,13 +28,13 @@
       "name": "implement",
       "description": "Build a design one tested slice at a time, with four approval gates, blind rubrics, and independent validation.",
       "source": "./plugins/implement",
-      "version": "0.8.1"
+      "version": "0.9.0"
     },
     {
       "name": "cobuilder-full-lifecycle",
       "description": "Install all of CoBuilder: architecture, implementation, review, and maintenance, with the engineer in charge at each stage.",
       "source": "./plugins/cobuilder-full-lifecycle",
-      "version": "0.3.2"
+      "version": "0.4.0"
     },
     {
       "name": "cobuilder-memory",

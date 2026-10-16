@@ -87,4 +87,4 @@ Test command: `claude plugin validate plugins/cobuilder-memory && claude plugin 
 - Reflect questions in the result, and the reflect failure path (slice 3). Slice 1 only calls `reflect` once in its live check.
 - The memory pane (slice 4).
 - The design and build skill changes (slice 5).
-- The live value check and the plugin count in top-level documents (slice 6).
+- The live value check and the plugin count in top-level documents (slice 7).

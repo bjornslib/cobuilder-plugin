@@ -11,7 +11,7 @@
   view: http://127.0.0.1:62584/active/viewer/index.html#/cobuilder-memory/build/epics
   - 4a Slice plan: APPROVED 2026-10-15
   - 4b Epic technical solution designs: APPROVED 2026-10-15 (E1). E2 and E3 are backlog
-  - 4c Blind rubrics: APPROVED 2026-10-15 (8 rubric files; slices 7 and 8 are stubs)
+  - 4c Blind rubrics: APPROVED 2026-10-15 (9 rubric files; slices 8 and 9 are stubs). Slice 6 added by the engineer on 2026-10-16
 
 Design mode: cobuilder-memory
 Hindsight: yes
@@ -22,8 +22,9 @@ Hindsight: yes
 - [x] Slice 3 — reflect questions written from the records   score: 1.00 (attempt 1; live reflect answers wait for the Hindsight model switch)
 - [x] Slice 4 — the memory pane shows each run   score: 1.00 (attempt 2; attempt 1 scored 0.75). Gap: the pane does not fit content to the viewport rows beyond its fixed caps
 - [x] Slice 5 — design and build call the consult tool at fixed steps   score: 1.00 (attempt 1, Sonnet). Blind pass on Haiku against a stub consult tool: the call came before the hypothesis. H1 to H5 and hindsight-routine.md removed; the per-slice retain went with them. On 2026-10-16 the engineer brought back a short per-slice note at PASS (`slice-loop.md`, "Slice note to project memory"), because a retry cause is hard to find in a transcript.
-- [ ] Slice 6 — the value check in two repos   score: —
-- E2 (backlog): slice 7. E3 (backlog, stub): slice 8.
+- [x] Slice 6 — one install command sets up the family, with the Hindsight allow rules   score: 1.00 (attempt 2; attempt 1 scored 0.875, because auto mode refused the blind agent's write to a scratch settings file. A live run of `/cobuilder-full-lifecycle:install` on the real user file closed C1)   note: retained
+- [ ] Slice 7 — the value check in two repos   score: —
+- E2 (backlog): slice 8. E3 (backlog, stub): slice 9.
 
 ## Escalated
 

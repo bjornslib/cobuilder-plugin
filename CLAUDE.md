@@ -164,7 +164,7 @@ A Claude Code marketplace (`.claude-plugin/marketplace.json`) that ships five si
 | `pr` | Odyssey: narrate merged PRs (`baseline`, `review`) and interview an author before a PR opens (`generate`) |
 | `artifact` | Serve a bundle locally (`view`), publish a level as a Claude Artifact (`publish`), and draw a design as a tldraw canvas (`canvas`). Holds the viewer |
 | `implement` | Build a design one vertical slice at a time (`start`, `debug`, `install`) |
-| `cobuilder-full-lifecycle` | Umbrella. Depends on the other four |
+| `cobuilder-full-lifecycle` | Umbrella. Depends on the other four, and holds the one install command (`/cobuilder-full-lifecycle:install`) |
 
 The lifecycle has six steps. `options` explores the whole system. `design` decides one change. `implement` builds it. `pr:generate` assesses it and opens the PR. `pr:review` narrates it after the merge. `artifact` shows the result, and draws a design as a canvas.
 

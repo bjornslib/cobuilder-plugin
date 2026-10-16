@@ -57,7 +57,7 @@ To start with one job, install one plugin. For example, `/plugin install archite
 | A git checkout | Every command | All analysis runs locally |
 | `uv` and Python 3.10 or later | Every script | Scripts declare their own packages. No venv needed |
 | `GEMINI_API_KEY` | `pr` narration: voice always, scene art unless `--art diagram` | Set it in your shell or in your own repo's `.env`. The tool never reads the target repo's `.env` |
-| `habit-hooks` | `/implement:start` | Run `/implement:install` once. It asks before it installs |
+| `habit-hooks` | `/implement:start` | Run `/cobuilder-full-lifecycle:install` once. It asks before it installs. `/implement:install` hands over to it |
 | The `Artifact` tool | `/artifact:publish` | Needs a `/login` session on a paid plan |
 | The `tldraw-offline` skill and the tldraw Desktop app | `/artifact:canvas` | Install the skill yourself. The command stops with a message if either is missing. The diagram images also need `npx` and Google Chrome |
 
@@ -85,7 +85,7 @@ A reviewer subagent checks the draft against a blind rubric before you read it. 
 
 ### Implementation: `/implement:start`
 
-Run `/implement:install` once. Then run `/implement:start` on a design.
+Run `/cobuilder-full-lifecycle:install` once. `/implement:install` hands over to it. Then run `/implement:start` on a design.
 
 Four gates come before any code. You approve each one.
 

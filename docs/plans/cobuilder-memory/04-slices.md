@@ -13,18 +13,26 @@ its slices start.
 | 3 | `cobuilder-memory/E1` | Reflect questions written from the records | Haiku writes a context and up to three reflect questions. Each names an ADR id or term of the kept records. The page read and the `reflect` calls run side by side through `$.mcp.call`. A reflect that fails or times out writes its reason. The other answers still show. | — | planned |
 | 4 | `cobuilder-memory/E1` | The memory pane shows each run | The pane `memory-run`, titled `🧠 CoBuilder Memory: Hindsight Run`, matches the approved Gate 2b design. It opens before the first Haiku call. While a run works, it shows each step and each Hindsight call with its state and counts, and the elapsed time. When the run ends, it shows the records, the page, and each reflect answer or its failure. `/memory-recall` opens it at any width, and a tool run opens it unasked from 144 columns. | — | planned |
 | 5 | `cobuilder-memory/E1` | Design and build call the consult tool at fixed steps | Design stage 1 and implement Gate 1 call the consult tool when the session lists it. Otherwise they state that it is absent. The implement skill holds no H1 to H5 checkpoint. A blind agent given design stage 1 calls the consult tool before it drafts the hypothesis. | — | planned |
-| 6 | `cobuilder-memory/E1` | The value check in two repos | One design question in this repo and one in think-with-ai each get a run. Each run returns a dated record that the main agent uses or rejects with a reason. The evidence file holds both transcripts. CLAUDE.md, README.md, and DDD-VOCABULARY.md name six plugins, and ADR-0025's history names ADR-0039. | — | planned |
+| 6 | `cobuilder-memory/E1` | One install command sets up the family, with the Hindsight allow rules | `/cobuilder-full-lifecycle:install` runs the habit-hooks setup that `/implement:install` ran, the glossary check, and a new Hindsight step. `/implement:install` hands over to it. The coach check stays in `implement` as its own mode, because only `implement` can resolve its script path. The Hindsight step finds the allow rules that the session needs and `~/.claude/settings.json` lacks. It asks once, and it adds them only after a yes. A test checks that each Hindsight tool that cobuilder-memory calls, and the retain tool of the slice note, appears in the setup skill. A blind agent adds only the missing rules after a yes, and adds none after a no. | — | planned |
+| 7 | `cobuilder-memory/E1` | The value check in two repos | One design question in this repo and one in think-with-ai each get a run. Each run returns a dated record that the main agent uses or rejects with a reason. The evidence file holds both transcripts. CLAUDE.md, README.md, and DDD-VOCABULARY.md name six plugins, and ADR-0025's history names ADR-0039. | — | planned |
 | | **`cobuilder-memory/E2` — A Jev gate.** Light: a classifier decides when else to call the consult tool. | | | | |
-| 7 | `cobuilder-memory/E2` | A Jev gate decides every n tool calls | Every n tool calls, one Jev `noul` question judges whether a consult would help. Above the threshold, the plugin starts a run. A measured sample sets n, the threshold, the latency, and the cost. | — | backlog |
+| 8 | `cobuilder-memory/E2` | A Jev gate decides every n tool calls | Every n tool calls, one Jev `noul` question judges whether a consult would help. Above the threshold, the plugin starts a run. A measured sample sets n, the threshold, the latency, and the cost. | — | backlog |
 | | **`cobuilder-memory/E3` — Every Hindsight call in view.** Stub. | | | | |
-| 8 | `cobuilder-memory/E3` | Stub: the pane lists every Hindsight call of the session | The memory pane lists each Hindsight call of the session. It marks the plugin's own runs apart. Sources: the agent's `mcp__hindsight__` calls, `diag.jsonl`, and the audit log. | — | backlog |
+| 9 | `cobuilder-memory/E3` | Stub: the pane lists every Hindsight call of the session | The memory pane lists each Hindsight call of the session. It marks the plugin's own runs apart. Sources: the agent's `mcp__hindsight__` calls, `diag.jsonl`, and the audit log. | — | backlog |
 
 ## Notes
 
 - **Order.** Slice 1 is the tracer bullet. Slices 2 and 3 extend the run.
   Slice 4 needs the run's steps, so it follows 3. Slice 5 wires the tool
-  into the workflows once it is complete. Slice 6 runs last, because it
-  judges the whole plugin.
+  into the workflows once it is complete. Slice 6 gives the family one
+  install command, so slice 7 can start from a clean setup. Slice 7 runs
+  last, because it judges the whole plugin.
+- **One install command (engineer, 2026-10-16).** The habit-hooks setup
+  moves from `implement` to `/cobuilder-full-lifecycle:install`, and
+  `/implement:install` hands over to it. The setup skill lists the Hindsight
+  allow rules itself, with no extra tool. A test keeps that list in step
+  with the tools that cobuilder-memory calls. The rules go to the user
+  file, `~/.claude/settings.json`.
 - **Slice 1 loads through `--plugin-dir` (engineer, 2026-10-15, Q-J b).** A
   marketplace install reads the default branch, `master`, on GitHub, and a
   local folder marketplace would re-point the `cobuilder-plugin` record for
