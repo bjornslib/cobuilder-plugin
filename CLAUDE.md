@@ -175,52 +175,19 @@ tests/                            pytest suite for packaging, scripts, and gates
 
 ## Key capabilities
 
-- **Install** (`/cobuilder-full-lifecycle:install`): the one setup command, run
-  once for each repo. The `cobuilder-setup` skill installs habit-hooks and its
-  detectors, then calls the coach-check mode of `implement`. It checks for
-  `DDD-VOCABULARY.md`. After the engineer says yes, it adds the missing
-  Hindsight allow rules to `~/.claude/settings.json`.
-- **Design** (`/architect:design`): interview, explore, and challenge. Then
-  write `goal.json`, `intent.json`, `narrative.json`, `assessment.json`,
-  `pr-draft.md`, a runtime diagram in inline SVG, and an optional
-  `contracts.md`. `check_design_svg.py` checks the diagram, and a stage-6
-  reviewer checks the draft (ADR-0036).
-- **Options** (`/architect:options`): one HTML report of inquiries and
-  alternatives for the whole system. Options proposes, and design decides
-  (ADR-0035).
-- **Review, maintenance, decisions, describe, debug**: a scored audit against
-  the corpus, ADR governance, bounded-context canvases, and root-cause
-  diagnosis.
-- **Implement** (`/implement:start`): four approval gates, then a RED, GREEN,
-  VALIDATE loop for each slice. `verify_gate.py` checks the gates. A
-  `PostToolUse` hook coaches GREEN through habit-hooks. `implement:vocabulary`
-  checks each slice against the glossary.
-- **Memory** (`cobuilder-memory`, opt-in): the `mcp__cobuilder-memory__consult`
-  tool. Haiku writes the queries. Recall, a knowledge-page search, and one
-  reflect run through the `hindsight` MCP server. Recall records are evidence,
-  and reflect answers are leads. Design stage 1 and build Gate 1 call the tool
-  when the session lists it. `/memory-recall` runs it by hand, and
-  `/memory-check` calls each Hindsight tool once.
-- **Odyssey** (`pr`): a four-level story for each merged PR, with scene art,
-  Mermaid diagrams, voice narration, and ADRs found after the fact. `generate`
-  interviews the author and assesses the change before the PR opens.
-- **Viewer** (`artifact`): one surface for designs, ADRs, builds, and PRs, which
-  `data/index.json` joins. `view_server.py` serves on fixed port 62583. The
-  Work board is a drawer over the shell (ADR-0034). Review links and anchored
-  comments are built in (ADR-0019, ADR-0032). A work item and a PR page the
-  same way (ADR-0028), and section links cross between them (ADR-0037). The
-  viewer states no record gap. `build_index.py` warns about a design that
-  lacks a problem, decision, or risk beat.
-- **Publish** (`/artifact:publish`): flatten one PR into a single HTML file
-  under the 16 MiB Artifact cap.
-- **Canvas** (`/artifact:canvas`): draw one design folder as a `.tldraw` file
-  with five zones and the level-2 and level-3 diagrams. `canvas_preflight.py`
-  stops the mode when `goal.json`, the `tldraw-offline` skill, or tldraw
-  Desktop is missing. No plugin ships the skill. A missing `npx` or Chrome
-  only turns off the diagram images. Git ignores `*.tldraw`.
-- **Bundle migration** (`shared/migrate_bundle.py`): runs first in every mode
-  that touches a bundle. It always refreshes the viewer. Then it steps the
-  layout (`bundle_format`) and the data shape (`schema_version`).
+`README.md` describes each capability in full. One line each:
+
+- **Install** (`/cobuilder-full-lifecycle:install`): sets up habit-hooks, the coach check, the glossary check, and the Hindsight allow rules.
+- **Design** (`/architect:design`): writes the design record and a runtime diagram, and a stage-6 reviewer checks it (ADR-0036).
+- **Options** (`/architect:options`): one HTML report of alternatives for the whole system. Options proposes, and design decides (ADR-0035).
+- **Review, maintenance, decisions, describe, debug**: audit, ADR governance, bounded-context canvases, and root-cause diagnosis.
+- **Implement** (`/implement:start`): four approval gates, then RED, GREEN, and VALIDATE for each slice, checked by `verify_gate.py`.
+- **Memory** (`cobuilder-memory`, opt-in): the `consult` tool asks Hindsight. Recall records are evidence, and reflect answers are leads.
+- **Odyssey** (`pr`): a four-level story for each merged PR. `generate` assesses a change before its PR opens.
+- **Viewer** (`artifact`): one surface for designs, ADRs, builds, and PRs. `view_server.py` serves on fixed port 62583.
+- **Publish** (`/artifact:publish`): one PR as a single HTML file under the 16 MiB Artifact cap.
+- **Canvas** (`/artifact:canvas`): one design as a `.tldraw` file. Git ignores `*.tldraw`.
+- **Bundle migration** (`shared/migrate_bundle.py`): runs first in every bundle mode, and refreshes the viewer, the layout, and the data shape.
 
 ## Commands
 
