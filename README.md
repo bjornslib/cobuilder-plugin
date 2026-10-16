@@ -34,7 +34,14 @@ Everything runs in your own Claude Code session, against your own checkout. Your
    ```
 
 3. Restart the session, or enable the plugins from `/plugin`.
-4. Open the repo you want to work on, and run a command from the table above.
+4. Open the repo you want to work on, and run the setup once.
+
+   ```
+   /cobuilder-full-lifecycle:install
+   ```
+
+   It installs habit-hooks and its detectors, and proves the coach. It checks for `DDD-VOCABULARY.md`. It adds the Hindsight allow rules to your user settings. It asks before each change.
+5. Run a command from the table above.
 
 To start with one job, install one plugin. For example, `/plugin install architect@cobuilder-plugin` gives you the design and review modes.
 
@@ -43,12 +50,12 @@ To start with one job, install one plugin. For example, `/plugin install archite
 | Plugin | Install it to | Commands |
 |---|---|---|
 | `architect` | Design changes, audit the repo, and diagnose failures | `/architect:design`, `review`, `maintenance`, `options`, `debug` |
-| `implement` | Build a design one slice at a time | `/implement:start`, `debug`, `install` |
+| `implement` | Build a design one slice at a time | `/implement:start`, `debug`, and `install`, which hands over to the umbrella's install |
 | `pr` | Open a pull request with intent before the merge, and narrate it after | `/pr:generate`, `review`, `baseline` |
 | `artifact` | Read the results in the viewer, publish a PR as a Claude Artifact, or draw a design as a tldraw canvas | `/artifact:view`, `publish`, `canvas` |
-| `cobuilder-full-lifecycle` | Get all four, plus a routing guide | none of its own |
+| `cobuilder-full-lifecycle` | Get all four, a routing guide, and the one setup command | `/cobuilder-full-lifecycle:install` |
 
-`architect` and `pr` need `artifact`, so installing either one also installs `artifact`. `implement` needs `architect`, because `/implement:debug` hands off to it.
+`architect` and `pr` need `artifact`, so installing either one also installs `artifact`. `implement` needs `architect`, because `/implement:debug` hands off to it. `/implement:install` hands over to `/cobuilder-full-lifecycle:install`. Without the umbrella plugin, it tells you how to install it.
 
 ### Prerequisites
 
@@ -58,6 +65,7 @@ To start with one job, install one plugin. For example, `/plugin install archite
 | `uv` and Python 3.10 or later | Every script | Scripts declare their own packages. No venv needed |
 | `GEMINI_API_KEY` | `pr` narration: voice always, scene art unless `--art diagram` | Set it in your shell or in your own repo's `.env`. The tool never reads the target repo's `.env` |
 | `habit-hooks` | `/implement:start` | Run `/cobuilder-full-lifecycle:install` once. It asks before it installs. `/implement:install` hands over to it |
+| Hindsight allow rules | The build loop's slice note, and the opt-in `cobuilder-memory` consult tool | A plugin cannot ship allow rules. `/cobuilder-full-lifecycle:install` finds the missing ones, asks once, and adds them to `~/.claude/settings.json` |
 | The `Artifact` tool | `/artifact:publish` | Needs a `/login` session on a paid plan |
 | The `tldraw-offline` skill and the tldraw Desktop app | `/artifact:canvas` | Install the skill yourself. The command stops with a message if either is missing. The diagram images also need `npx` and Google Chrome |
 
@@ -85,7 +93,7 @@ A reviewer subagent checks the draft against a blind rubric before you read it. 
 
 ### Implementation: `/implement:start`
 
-Run `/cobuilder-full-lifecycle:install` once. `/implement:install` hands over to it. Then run `/implement:start` on a design.
+Run `/cobuilder-full-lifecycle:install` once per repo. It installs habit-hooks for the languages it finds, proves that the coach runs, and adds the Hindsight allow rules after it asks. `/implement:install` hands over to it. Then run `/implement:start` on a design.
 
 Four gates come before any code. You approve each one.
 
@@ -251,8 +259,8 @@ plugins/
   architect/                       design, review, maintenance, options, debug, and the corpus
   pr/                              generate, review, baseline, and the story scripts
   artifact/                        view, publish, and the viewer
-  implement/                       start, debug, install, and the slice agents and hook
-  cobuilder-full-lifecycle/        the umbrella plugin
+  implement/                       start, debug, the coach check, the install hand-over, and the slice agents and hook
+  cobuilder-full-lifecycle/        the umbrella plugin and the install command
 ```
 
 Only `implement` ships agents and a hook (ADR-0025). No plugin ships an MCP server. The commands in each plugin are thin. The skills hold the procedures.

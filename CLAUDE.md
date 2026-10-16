@@ -163,7 +163,7 @@ A Claude Code marketplace (`.claude-plugin/marketplace.json`) that ships five si
 | `architect` | Seven self-only modes. Five have a command: design, review, maintenance, debug, options. `decisions` and `describe` are internal |
 | `pr` | Odyssey: narrate merged PRs (`baseline`, `review`) and interview an author before a PR opens (`generate`) |
 | `artifact` | Serve a bundle locally (`view`), publish a level as a Claude Artifact (`publish`), and draw a design as a tldraw canvas (`canvas`). Holds the viewer |
-| `implement` | Build a design one vertical slice at a time (`start`, `debug`, `install`) |
+| `implement` | Build a design one vertical slice at a time (`start`, `debug`). Its `install` hands over to the umbrella's install |
 | `cobuilder-full-lifecycle` | Umbrella. Depends on the other four, and holds the one install command (`/cobuilder-full-lifecycle:install`) |
 
 The lifecycle has six steps. `options` explores the whole system. `design` decides one change. `implement` builds it. `pr:generate` assesses it and opens the PR. `pr:review` narrates it after the merge. `artifact` shows the result, and draws a design as a canvas.
@@ -206,6 +206,7 @@ tests/                            pytest suite for packaging, scripts, and gates
 - **Options** (`/architect:options`): one self-contained HTML report of inquiries and alternatives for the whole system. It proposes. Design decides (ADR-0035).
 - **Review, maintenance, decisions, describe, debug**: scored audit against the corpus, ADR governance, bounded-context canvases, root-cause diagnosis.
 - **Implement** (`/implement:start`): four approval gates (product, architecture, program design, slice plan with epic designs and blind rubrics), then a RED, GREEN, VALIDATE loop per slice. `verify_gate.py` checks the gates. A `PostToolUse` hook coaches GREEN through habit-hooks. `implement:vocabulary` checks each slice against the glossary.
+- **Install** (`/cobuilder-full-lifecycle:install`): the one setup command, once per repo. The `cobuilder-setup` skill installs habit-hooks and its detectors, then calls `implement`'s coach-check mode, which resolves its own script path. It checks for `DDD-VOCABULARY.md`. It adds the missing Hindsight allow rules to `~/.claude/settings.json` after the engineer says yes. `/implement:install` hands over to it.
 - **Odyssey** (`pr`): a four-level story per merged PR with scene art, Mermaid diagrams, voice narration, and retro-extracted ADRs. `generate` interviews first and assesses the change before the PR opens.
 - **Viewer** (`artifact`): one surface for designs, ADRs, builds, and PRs, that `data/index.json` joins. The Work board is a drawer over the shell (ADR-0034). `view_server.py` serves on fixed port 62583. Review links and an anchored-comments ledger are built in (ADR-0019, ADR-0032). A work item and a PR page the same way: a rail row is a paged level, and a section is one panel (ADR-0028). Each level opens with an In Short strip that holds its `narration`. The rail lists the three levels once, then an Also group. One text link in each section heading, "Read in PR 12 ›", moves to the other account on the section of the same name (ADR-0037). The viewer states no record gap. `build_index.py` warns about a design that lacks a problem, decision, or risk beat.
 - **Publish** (`/artifact:publish`): flatten one PR into a single HTML file under the 16 MiB Artifact cap.
@@ -239,6 +240,8 @@ Plugin scripts are PEP 723. `uv run <script>` resolves their own dependencies.
 - **`goal.json` list fields must be lists.** `build_index.py` hard-fails when `done_when` or `abort_if` is not a list.
 - **The PR number comes from opening the PR.** Content for a branch with no PR stays in `docs/pull-requests/branch-<slug>/`. Do not invent a branch key.
 - **Add a migration, do not rebuild.** Bump `SCHEMA_VERSION` or `CURRENT_BUNDLE_FORMAT` in `shared/_bundle_meta.py` and append to the matching ladder. Never call `extract_story.py` from a migration.
+- **Name each new Hindsight tool in the setup skill.** When a plugin calls a new `mcp__hindsight__` tool, add its allow rule to the `cobuilder-setup` skill. `tests/test_install_command.py` reads the names from `hindsight.ts` and `slice-loop.md`, and fails until you do.
+- **Install habit-hooks with every extra at once.** A second `uv tool install` with other extras replaces the first. This repo needs `python` and `typescript`.
 - **Subagents may not run `git stash`.** `.claude/hooks/deny-git-stash.py` denies it. The hook is local tooling and ships to nobody.
 
 ## Known gaps
