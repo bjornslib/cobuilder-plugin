@@ -1,0 +1,42 @@
+%% Sequence: one memory run, started by the consult tool call.
+%% Each step writes the run state atom, and the pane redraws it.
+%% Epic E1 only. The Haiku calls and the Hindsight calls follow contracts.md.
+sequenceDiagram
+    participant Agent as Main agent
+    participant Run as Memory run
+    participant Pane as Memory pane
+    participant Haiku as Haiku model
+    participant HS as Hindsight MCP server
+
+    Note over Agent,Run: The architect design skill (stage 1) and the implement build skill (Gate 1) can also start this run
+    Agent->>Run: Calls consult with no input
+    Run->>Pane: Opens pane memory-run, step query
+    Run->>Haiku: Stored prompts and session end, 400 tokens
+    Haiku-->>Run: Need line and Recall line
+    Run->>Pane: Step search, Need and Recall shown
+
+    par Recall
+        Run->>HS: $.mcp.call recall, budget mid
+        HS-->>Run: Records, 8 kept at most
+    and Page search
+        Run->>HS: $.mcp.call search_knowledge_base, limit 5
+        HS-->>Run: Page hits
+    end
+
+    Run->>Run: Drops this session records and Generating content pages
+    Run->>Pane: Step questions, counts shown
+    Run->>Haiku: Records and page snippets, 600 tokens
+    Haiku-->>Run: Page id, Context line, one Reflect line
+    Run->>Pane: Step reflect, question running
+
+    par Page read
+        Run->>HS: $.mcp.call get_knowledge_page, picked page id
+        HS-->>Run: Body up to 6000 characters, timestamp
+    and Reflect
+        Run->>HS: $.mcp.call reflect, one call
+        HS-->>Run: Answer for the question
+    end
+
+    Run->>Pane: Step done, answers shown
+    Run-->>Agent: Judging rules, Need, records, page, answers
+    Note over Run,Pane: A failed step writes its reason in its section

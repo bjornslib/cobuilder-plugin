@@ -34,99 +34,17 @@ and a score after. A slice is complete when an independent validator scores it a
 This skill requires only a git repository, a test command, and the ability to
 spawn a subagent.
 
-## Install mode
+## Coach-check mode
 
-This mode sets up habit-hooks for the target repo. Run it once, before the
-first `/implement:start` run, or whenever the target repo gains a new
-language.
+This mode runs the habit-hooks coach check for the target repo. The install command in `/cobuilder-full-lifecycle:install` calls it as the last step. It can also run alone after a re-install.
 
-1. **Detect languages from marker files.** Check the repo root for these
-   markers and build the list of detected languages:
-   - `pyproject.toml`, `requirements*.txt`, or `setup.py` → python.
-   - `package.json` with a `typescript` dependency, or `tsconfig.json` →
-     typescript.
-   - `composer.json` → php.
-   - `pom.xml` or `build.gradle` → java.
-   - `Gemfile` → ruby.
+Run the check from the target repo, because the check reads the git root of the current folder:
 
-2. **Show the plan and ask for confirmation.** List the detected languages.
-   Show the one combined install command,
-   `uv tool install "habit-hooks[<extras>]"`, with every detected language
-   as an extra in that single command. Explain that a later
-   `uv tool install` with different extras rebuilds the tool environment and
-   silently replaces this one, so every needed language must appear in one
-   command. Ask the user to confirm before running it.
+```bash
+uv run "${CLAUDE_PLUGIN_ROOT}/scripts/habit_coach.py" --check
+```
 
-3. **Run the confirmed install command.** Then verify it with
-   `habit-hooks --version`.
-
-4. **Install the per-project detectors, after confirmation.** Each detected
-   language needs its own detector package in the target repo, not in
-   habit-hooks itself:
-   - generic (always) → `npm install --save-dev jscpd`.
-   - python → `pip install ruff deptry`, or `uv add --dev ruff deptry`.
-   - typescript → `npm install --save-dev eslint knip ts-morph`, plus
-     `node`. Add `@typescript-eslint/parser @typescript-eslint/eslint-plugin`
-     too when the repo has no eslint config of its own.
-   - php → a PHP runtime.
-   - java → `pmd`.
-   - ruby → `rubocop`.
-
-   habit-hooks looks for a detector in `node_modules/.bin` of the repo root,
-   and then on `PATH`. Run every `npm install` at the repo root. When the root
-   has no `package.json`, as in a repo whose only `package.json` sits in a
-   sub-folder, show the user a tools-only `package.json` first: a `private`
-   package with a name and a one-line description, and no code. Create it
-   only after the user confirms. Check that `node_modules/` is in
-   `.gitignore`, and tell the user to commit `package.json` and
-   `package-lock.json`.
-
-   `jscpd` reads `src` by default. When the repo has no `src` folder, show the
-   user a root `.jscpd.json` that lists the real source folders. Make it ignore
-   symlinked folders, lock files, generated files, and `node_modules`. Create
-   it after the user confirms.
-
-   When the repo has both python and typescript, habit-hooks hands every
-   TypeScript file to ruff, and ruff reports each one as a parse error. Show
-   the user a `[tool.ruff]` table in `pyproject.toml` with
-   `force-exclude = true` and `extend-exclude` for `**/*.ts` and `**/*.tsx`.
-   Add it after the user confirms.
-
-5. **Run `habit-hooks init`.** It detects languages on its own, writes
-   `.habit-hooks/config.toml`, and lists any detector it still cannot find.
-   Running it again is safe. Run it again after step 4 until it reports
-   `Nothing missing`. Then run `habit-hooks --branch <base>` once, where
-   `<base>` is the default branch. An `incomplete-run` group in the output
-   means a tool broke. Fix that tool before you report success, because a
-   clean result cannot be trusted until then.
-
-6. **Offer the backlog snooze. Never run it without explicit approval.**
-   Explain that `habit-sensors --all | habit-snooze --snooze` snoozes every
-   existing finding, so new code is coached but old debt is not flagged.
-   Only run it if the user says yes. Remind the user to commit both
-   `.habit-hooks/config.toml` and `.habit-hooks/snooze.json` after this mode
-   finishes.
-
-7. **Report the result.** State which languages have both habit-hooks and
-   their detector installed, and which detector is still missing for which
-   language.
-
-8. **Prove the coach.** Run this check after every install and after every
-   re-run of Install mode. Run it from the target repo, because the check
-   reads the git root of the current folder:
-
-   ```bash
-   uv run "${CLAUDE_PLUGIN_ROOT}/scripts/habit_coach.py" --check
-   ```
-
-   Report success only when the output starts with "coaching works". The
-   check prints one line. Show that line to the user. When the output starts
-   with "coaching check failed", show the reason to the user, fix it, and run
-   the check again. Do not report success until the output starts with
-   "coaching works".
-
-`ste-writing` needs no install step. It ships in every plugin through
-`shared/`, so it is already present once the plugin is installed.
+Report success only when the output starts with "coaching works". The check prints one line. Show that line to the user. When the output starts with "coaching check failed", show the reason to the user, fix it, and run the check again. Do not report success until the output starts with "coaching works".
 
 ---
 
@@ -181,34 +99,19 @@ Apply skeptical curiosity to every claim in the workflow:
 
 ---
 
-## Optional: prior-art recall (Hindsight)
+## Prior art from project memory
 
-Hindsight memory stores lessons from past sessions in this repository. Use it
-when available to avoid repeating documented mistakes.
+Gate 1 asks project memory once, before you write `01-product.md`. If the
+session lists the `mcp__cobuilder-memory__consult` tool, call it. It takes no
+input, and it answers with past decisions, rejected options, and limits for
+the feature. Treat a recall record as evidence and a reflect answer as a lead.
+Check each claim you use against the code or the ADR it names. Record the
+result in `00-status.md` as `Memory: consulted <date>`, and name each record
+that you use or reject, with the reason.
 
-**Determine availability first.** Hindsight tools appear in this harness as
-`hindsight_recall`, `hindsight_reflect`, and `hindsight_retain`, or
-MCP-prefixed as `mcp__hindsight__recall`, `mcp__hindsight__reflect`, and
-`mcp__hindsight__retain`. Availability means these tools are registered and
-callable, not merely advertised. A tool that appears in a system prompt list
-but errors or returns nothing when called is unavailable. This repository's
-own `docs/plans/cobuilder-family/00-status.md` records exactly this case:
-`Hindsight: unavailable (tools advertised in this session but not
-registered)`.
-
-**Ask once at the start after the user states their intent:**
-
-> "Should I check Hindsight for prior art before we begin? It adds a short
-> memory checkpoint at each gate."
-
-Record the answer in `00-status.md` (`Hindsight: yes | no | unavailable`). Do
-not ask again for this feature.
-
-If the user opts in and the tools are available, read
-[references/hindsight-routine.md](references/hindsight-routine.md) and
-follow its checkpoints and its retain step. If Hindsight is unavailable, do
-not read that file. Proceed through every gate and every slice with no
-checkpoint and no retain step.
+If the session does not list the tool, record `Memory: absent` and continue.
+Do not ask the engineer first, and do not call Hindsight tools yourself in its
+place.
 
 ---
 
@@ -302,11 +205,11 @@ Template for `00-status.md`:
   - 4c Blind rubrics: pending | APPROVED <date>
 
 Design mode: <design-name> | none | declined
-Hindsight: yes | no | unavailable
+Memory: consulted <date> | absent
 
 ## Slices
-- [ ] Slice 1 — tracer bullet: <one line>   score: —
-- [ ] Slice 2 — <one line>                  score: —
+- [ ] Slice 1 — tracer bullet: <one line>   score: —   note: —
+- [ ] Slice 2 — <one line>                  score: —   note: —
 
 ## Escalated
 <slices accepted below threshold, with reasons and follow-up plans>
@@ -343,7 +246,8 @@ Run this protocol at every gate and before implementing an epic:
 
 Before writing, check the design mode answer recorded above. If a design
 record exists, ground this document in its `intent.json` instead of
-starting from a blank interview.
+starting from a blank interview. Then ask project memory, as "Prior art from
+project memory" above describes.
 
 Write `01-product.md` with the user:
 
@@ -618,9 +522,8 @@ each file the GREEN agent writes. The hook coaches GREEN only. It never
 blocks a write.
 
 Before slice 1, run `habit-hooks --version`. If it fails, stop. Tell the
-user to run `/implement:install`, which runs the confirmed
-`uv tool install "habit-hooks[python]"` command for the languages it
-detects, names every language in one install command, and verifies the
+user to run `/cobuilder-full-lifecycle:install`. That command installs habit-hooks
+for the languages the repo uses, in one install command, and verifies the
 result with `habit-hooks --version`. A second install replaces the first.
 
 If `.habit-hooks/config.toml` is missing, run `habit-hooks init`. Then
@@ -712,7 +615,6 @@ Load reference files as needed:
 
 | Reference | Purpose |
 |---|---|
-| [references/hindsight-routine.md](references/hindsight-routine.md) | Hindsight checkpoints and retain steps, read only when Hindsight is available |
 | [references/rubric-authoring.md](references/rubric-authoring.md) | Authoring blind rubrics and manifest files |
 | [references/slice-loop.md](references/slice-loop.md) | Role prompts for RED, GREEN, and VALIDATE |
 | [references/validation-scoring.md](references/validation-scoring.md) | Scoring criteria and gap routing |

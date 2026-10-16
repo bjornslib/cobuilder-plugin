@@ -1,0 +1,127 @@
+{
+  "stage": "design",
+  "generated": "2026-10-15",
+  "verdict": "concerns",
+  "risk_tier": "sensitive",
+  "summary": "The plugin closes a real gap. Memory runs today only when the model writes its own query, and design mode never runs it. The spike showed that a small model writes better queries from the person's prompts, and that the main agent judges the answers well. The concerns are the install-surface amendment, the MCP timeout, the echo of memory through the agent's replies, and the cost of each run.",
+  "sensible": {
+    "answer": "Yes. The spike showed value in a second repo: the main agent kept dated records and rejected reflect leads that contradicted them. A hook is the only way to store the prompts, register a tool, and draw a pane, so the plugin needs a hooks module. The scope stops at what the spike proved.",
+    "evidence": [
+      "ADR-0025",
+      "ADR-0016"
+    ]
+  },
+  "maintainability": {
+    "answer": "It helps. The plugin is one module of about 330 lines with a test file. The engine calls and the Hindsight calls sit in a few named functions, and the tests stub each one. No skill or script in the other plugins changes.",
+    "constraint_introduced": "A plugin may ship hooks/ only when an ADR names it. cobuilder-memory ships hooks/ and no agents/ and no MCP server.",
+    "evidence": [
+      "ADR-0025",
+      "ADR-0017"
+    ]
+  },
+  "pattern": {
+    "verdict": "new-valuable",
+    "answer": "New and valuable. No district or ADR owns memory today. The implement hook is the nearest pattern: a plugin-level hook with a narrow job.",
+    "duplicates": [],
+    "evidence": [
+      "ADR-0025"
+    ]
+  },
+  "findings": [
+    {
+      "kind": "prediction",
+      "severity": "concern",
+      "claim": "The packaging test forbids a hooks/ folder outside implement. It fails until the test reads the rule that ADR-0039 amends.",
+      "evidence": "ADR-0025",
+      "district": "scripts",
+      "suggestion": "Change the test in the slice that adds the plugin folder."
+    },
+    {
+      "kind": "prediction",
+      "severity": "concern",
+      "claim": "The main agent restates memory in its reply. The Hindsight Stop hook stores that text, so a later recall returns the restatement with a newer date than its source.",
+      "evidence": "ADR-0039",
+      "district": "skills",
+      "suggestion": "The judging rules say a restatement in a later chat is not newer evidence."
+    },
+    {
+      "kind": "prediction",
+      "severity": "concern",
+      "claim": "$.mcp.call has no timeout setting, and two of three reflects timed out in the H1 run. A slow reflect could hold the run until the engine's MCP timeout.",
+      "evidence": "ADR-0039",
+      "district": "skills",
+      "suggestion": "Slice 1 measures the MCP timeout. A timed-out call writes its reason, and the other answers still show."
+    },
+    {
+      "kind": "prediction",
+      "severity": "note",
+      "claim": "Each run costs two Haiku calls and one reflect of about 95,000 input tokens on the Hindsight model.",
+      "evidence": "ADR-0039",
+      "district": "skills",
+      "suggestion": "Keep the plugin opt-in and outside the umbrella."
+    },
+    {
+      "kind": "prediction",
+      "severity": "note",
+      "claim": "A pane that the agent's run opens appears only from 144 columns.",
+      "evidence": "ADR-0039",
+      "district": "skills",
+      "suggestion": "The command /memory-recall opens the pane at any width."
+    },
+    {
+      "kind": "prediction",
+      "severity": "note",
+      "claim": "The bank rule fills only {gitProject}. A per-directory mapping in the Hindsight config gives another bank than the runtime uses.",
+      "evidence": "ADR-0039",
+      "district": "skills",
+      "suggestion": "Name this limit in the plugin README."
+    },
+    {
+      "kind": "prediction",
+      "severity": "concern",
+      "claim": "The plugin depends on an MCP server named hindsight with four tools. A session without it gets no memory.",
+      "evidence": "ADR-0039",
+      "district": "skills",
+      "suggestion": "The run names what to set up, and the plugin README says so."
+    }
+  ],
+  "boundary_checks": [
+    {
+      "rule": "Only implement may ship agents/ and hooks/. No plugin ships an MCP server.",
+      "source": "ADR-0025",
+      "result": "violation",
+      "evidence": "The design adds hooks/ to cobuilder-memory. ADR-0039 amends the rule, and the plugin ships no agents/ and no MCP server."
+    },
+    {
+      "rule": "Plugins meet only at the bundle and by name.",
+      "source": "ADR-0016",
+      "result": "pass",
+      "evidence": "The design and build skills name the consult tool by name. No other plugin names the plugin's path."
+    },
+    {
+      "rule": "Every plugin folder holds a shared symlink.",
+      "source": "ADR-0017",
+      "result": "pass",
+      "evidence": "The plugin folder carries the shared symlink that the packaging test requires."
+    }
+  ],
+  "delta": {
+    "districts_added": [
+      "cobuilder-memory"
+    ],
+    "districts_changed": [
+      "scripts",
+      "skills"
+    ],
+    "edges_added": [
+      "cobuilder-memory -> Hindsight MCP server",
+      "architect design skill -> consult tool (by name)",
+      "implement build skill -> consult tool (by name)"
+    ],
+    "edges_removed": [
+      "implement build skill -> Hindsight tools (H1 to H5)"
+    ]
+  },
+  "regret_risk": "If this ships as written, a session that calls the tool waits for minutes and pays model time on two servers. The value rests on the main agent judging well, which two live runs showed but no test measures.",
+  "drift": []
+}

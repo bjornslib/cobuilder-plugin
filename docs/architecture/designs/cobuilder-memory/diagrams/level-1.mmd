@@ -1,0 +1,38 @@
+%% Overview: the containers of cobuilder-memory epic E1 (ADR-0039).
+%% Epic E2 and E3 are backlog. They are not drawn here.
+C4Container
+    title cobuilder-memory epic E1: one memory run for the main agent
+
+    Person(person, "Person", "Types prompts and runs<br>/memory-recall")
+    Container(design, "Architect design skill", "stage 1", "Calls the consult tool<br>before a design decision")
+    Container(build, "Implement build skill", "Gate 1", "Calls the consult tool<br>before a build decision")
+    System_Ext(session, "Claude Code session", "Runs the main agent and fires<br>the prompt, tool, and command hooks")
+    System_Ext(haiku, "Haiku model", "Writes the recall query,<br>the page pick, and the context")
+    System_Ext(hindsight, "Hindsight MCP server", "Server named hindsight:<br>recall, search, page read, reflect")
+    System_Ext(git, "Git worktree", "Gives the base name<br>of the main worktree")
+    ContainerDb(config, "Bank config file", "~/.hindsight/coding-agent.json", "Gives bankIdTemplate")
+
+    Container_Boundary(plugin, "cobuilder-memory hooks module, hooks/register.ts") {
+        ContainerDb(store, "Prompt store", "$.store", "Keeps each composer and bridge<br>prompt of the session, newest 100")
+        Container(run, "Memory run", "consult tool and command", "Runs four steps for the tool<br>consult and the command<br>/memory-recall")
+        ContainerDb(atom, "Run state atom", "atom", "Holds the newest run<br>and its step")
+        Container(pane, "Memory pane", "ui.render hook, id memory-run", "Titled 🧠 CoBuilder Memory: Hindsight Run.<br>Draws the atom while the run works")
+    }
+
+    Rel(person, session, "Types prompts and commands", "prompt, /memory-recall")
+    Rel(design, session, "Calls the consult tool", "mcp__cobuilder-memory__consult")
+    Rel(build, session, "Calls the consult tool", "mcp__cobuilder-memory__consult")
+    Rel(session, store, "Stores each composer and bridge prompt", "prompt.submit hook")
+    Rel(session, run, "Calls consult or runs /memory-recall", "tool.call, command.run")
+    Rel(run, session, "Returns the judged result", "tool result, command text")
+    Rel(store, run, "Gives the stored prompts", "$.store")
+    Rel(run, haiku, "Writes the query, the page pick, and the context", "$.model.complete")
+    Rel(run, hindsight, "Searches the records", "$.mcp.call recall")
+    Rel(run, hindsight, "Searches the pages", "$.mcp.call search_knowledge_base")
+    Rel(run, hindsight, "Reads the picked page", "$.mcp.call get_knowledge_page")
+    Rel(run, hindsight, "Reflects on each question", "$.mcp.call reflect")
+    Rel(run, config, "Reads the bank template", "fs read")
+    Rel(run, git, "Reads the base name", "git rev-parse")
+    Rel(run, atom, "Writes each step", "atom update")
+    Rel(atom, pane, "Feeds the pane", "ui.render")
+    Rel(pane, person, "Shows each step and the newest run", "pane")

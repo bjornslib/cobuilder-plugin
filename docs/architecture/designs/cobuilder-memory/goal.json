@@ -1,0 +1,106 @@
+{
+  "name": "cobuilder-memory",
+  "title": "A memory plugin consults Hindsight for the main agent",
+  "created": "2026-10-13",
+  "outcome": "plugins/cobuilder-memory installs from this marketplace and gives the main agent the consult tool. Haiku writes the recall query, picks a knowledge page, and writes reflect questions, all through the Hindsight MCP tools. Design and build call the tool, and a pane shows each run.",
+  "done_when": [
+    "A session started with --plugin-dir plugins/cobuilder-memory lists mcp__cobuilder-memory__consult, and claude plugin validate accepts the marketplace entry. After the merge, one install from the GitHub marketplace works.",
+    "From the installed plugin, `$.mcp.call` returns data from recall, search_knowledge_base, get_knowledge_page, and reflect, and the MCP timeout is measured.",
+    "`claude plugin validate` and `claude plugin test` pass, and `uv run pytest tests -q` passes with the install-surface rule that ADR-0039 amends.",
+    "A consult call returns the judging rules first, then recall records with the current session's own transcript dropped.",
+    "When the page search finds a page with content, Haiku may pick one, and the result shows its body and update date. An empty page is never picked.",
+    "The reflect questions name at least one ADR id or term from the recall records when recall kept a record, and a failed reflect leaves the other answers intact.",
+    "The bank comes from bankIdTemplate and the main worktree's base name, and outside a git repo the run stops with a reason.",
+    "Each run opens or updates the memory pane as the approved mockup shows. A tool run shows it from 144 columns, and /memory-recall at any width.",
+    "Design stage 1 and implement Gate 1 call the consult tool when the session lists it, and the implement skill holds no H1 to H5 checkpoint.",
+    "Live runs on one design question in this repo and in think-with-ai return a dated record that the main agent uses or rejects with a stated reason."
+  ],
+  "abort_if": [
+    "The installed plugin cannot call the hindsight MCP server through $.mcp.call.",
+    "The engine stops a tool.call hook before a run finishes."
+  ],
+  "min_work": {
+    "derived_from": "3 districts (skills, scripts, docs), colliding ADRs 0016, 0017, 0025, 0035, 2 boundary rules (ADR-0025 install surface, generic stack card dependency rule)",
+    "alternatives_explored": 12,
+    "boundary_rules_checked": true,
+    "challenge_stage_run": true,
+    "draft_review_run": true,
+    "note": "Revision of 2026-10-15. It rests on the 2026-10-14 tool spike in ~/mods/cobuilder-memory."
+  },
+  "limits": {
+    "warn_after_rounds": 3,
+    "cutoff_rounds": 6
+  },
+  "epics": [
+    {
+      "id": "E1",
+      "slug": "cobuilder-memory",
+      "branch": "design/cobuilder-memory",
+      "pr": null,
+      "state": "planned",
+      "outcome": "The plugin installs from this marketplace, consults Hindsight through its MCP tools, shows each run in the memory pane, and joins design stage 1 and implement Gate 1. H1 to H5 retire."
+    },
+    {
+      "id": "E2",
+      "slug": "memory-gate",
+      "branch": null,
+      "pr": null,
+      "state": "backlog",
+      "outcome": "A Jev gate decides every n tool calls whether a consult would help."
+    },
+    {
+      "id": "E3",
+      "slug": "memory-call-log",
+      "branch": null,
+      "pr": null,
+      "state": "backlog",
+      "outcome": "The memory pane lists every Hindsight call of the session, with the plugin's own runs marked apart. Sources: the agent's mcp__hindsight__ tool calls, the runtime's diag.jsonl, and the Hindsight audit log."
+    }
+  ],
+  "stage": "approved",
+  "supersedes": null,
+  "rounds": [
+    {
+      "n": 1,
+      "changed": true,
+      "feedback_class": "material",
+      "note": "Reviewer round on Haiku. The engineer chose N1 a, N2 a, N3 a, N4 a, and the 14 cosmetic fixes."
+    },
+    {
+      "n": 2,
+      "changed": true,
+      "feedback_class": "material",
+      "note": "Reviewer round 2 on Haiku. The engineer kept M3 a (R2-1 a), chose the tool-less deep run as the S3 fallback (R2-2 a), and the 21 fixes."
+    },
+    {
+      "n": 3,
+      "changed": true,
+      "feedback_class": "material",
+      "note": "The engineer cut the receipt, the note format, the check schema, the gap lines, and the memory citation. The Hindsight audit log records each call. Paired runs prove value."
+    },
+    {
+      "n": 4,
+      "changed": true,
+      "feedback_class": "material",
+      "note": "The engineer cut the design to the spike shape plus a pane (stage 0, 2026-10-15) and moved the workflow wiring and a Jev gate to epic E2."
+    },
+    {
+      "n": 5,
+      "changed": true,
+      "feedback_class": "material",
+      "note": "The engineer added knowledge pages as a source in E1 (D-B a) and epic E3, a pane list of every Hindsight call (D-A)."
+    },
+    {
+      "n": 6,
+      "changed": false,
+      "feedback_class": "cosmetic",
+      "note": "Reviewer round on Haiku: 10 cosmetic findings, no survivor. The judging rules come first, the run time is up to about five and a half minutes, empty pages are dropped, and the names are memory run and memory pane."
+    },
+    {
+      "n": 7,
+      "changed": true,
+      "feedback_class": "material",
+      "note": "The engineer chose the Hindsight MCP tools over the HTTP API, moved the workflow steps into E1, named the tool consult, dropped SDK prompts, and approved the pane mockup. Slice 1 proves the installed plugin and each MCP tool."
+    }
+  ]
+}

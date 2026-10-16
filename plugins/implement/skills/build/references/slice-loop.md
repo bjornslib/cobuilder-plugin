@@ -127,9 +127,37 @@ in the same retry as everything else.
 
 | Verdict | Action |
 |---|---|
-| **PASS** | Delete `slice-<N>-feedback.md`. Record the score in `00-status.md`, check the slice off. **Sync epic status to goal.json** (see `goal-sync.md`). **If Hindsight is available, retain the slice outcome** (see `hindsight-routine.md`, "Retain after every accepted slice"). Prove the slice works to the user with a test or demo. Ask whether to continue or adjust direction. |
+| **PASS** | Delete `slice-<N>-feedback.md`. Record the score in `00-status.md`, check the slice off. **Sync epic status to goal.json** (see `goal-sync.md`). **Store the slice note** (see "Slice note to project memory" below). Prove the slice works to the user with a test or demo. Ask whether to continue or adjust direction. |
 | **FAIL** | Re-run GREEN with the feedback file. Do not re-run RED because the contract did not change. |
 | **ESCALATION** | Do not loop again. Record the slice under `## Escalated` in `00-status.md` with the score and reason. Discuss with the user. See the gap decision tree in `validation-scoring.md`. |
+
+## Slice note to project memory
+
+On a PASS, store one short note in project memory while the cause is still
+in view. The Hindsight Stop hook also stores the session transcript when the
+session ends. A retry cause is hard to find in a long transcript.
+
+If the session lists the `mcp__hindsight__retain` tool, call it once with
+these fields:
+
+- `bank_id`: the `bankIdTemplate` in `~/.hindsight/coding-agent.json`, with
+  `{gitProject}` set to the folder name of the main worktree. The main
+  worktree is the parent of `git rev-parse --path-format=absolute --git-common-dir`.
+- `document_id`: `<feature-slug>-slice-<N>`. A second note for the same
+  slice then replaces the first.
+- `context`: `slice accepted`.
+- `content`:
+
+```
+Slice <N> (<slice name>), epic <epic-id>, feature <feature-slug>.
+Score: <overall_score>. Attempts: <attempt count>.
+Retry cause: <cause, or 'none, passed on attempt 1'>.
+Constraint the code does not show: <constraint, or 'none'>.
+```
+
+Then add `note: retained` to the slice row in `00-status.md`. If the session
+does not list the tool, or the call fails, add `note: absent` and continue.
+A failed note never stops the loop.
 
 **Do not lower the threshold to force a pass.** If 0.90 is unreachable, the
 slice is too large, the rubric is flawed, or the design is wrong.

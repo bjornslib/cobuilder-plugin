@@ -21,7 +21,7 @@ user supplied after `/implement:start`:
 Skill("build", args="implement $ARGUMENTS")
 ```
 
-Run `/implement:install` first, if this repo has not run it yet. It sets up
+Run `/cobuilder-full-lifecycle:install` first, if this repo has not run it yet. It sets up
 habit-hooks, which the red-green-validate loop below relies on.
 
 With the initial checks, before the first gate runs, check whether

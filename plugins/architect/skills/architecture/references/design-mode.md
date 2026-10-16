@@ -104,6 +104,14 @@ three nano-tier book excerpts for the candidate books, then escalate any
 one of them to mini or full only when its principles are judged to matter
 for this design. Full-tier loading is never automatic.
 
+Ask project memory next, before the hypothesis. If the session lists the
+`mcp__cobuilder-memory__consult` tool, call it once. It takes no input, and it
+answers with past decisions, rejected options, and limits for this outcome.
+Treat a recall record as evidence and a reflect answer as a lead. Check each
+claim you use against the ADRs and the code you loaded above. Name each record
+that you use or reject, and give the reason. If the session does not list the
+tool, say so in one line and continue from the files alone.
+
 Draft a private hypothesis and a gap list. Keep both
 hidden until §5 asks the problem and the approach. See
 the odyssey skill's `references/interview-guide.md` §2.

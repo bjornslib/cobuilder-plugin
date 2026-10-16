@@ -1,0 +1,84 @@
+%% Classes: the types of epic E1 and the sections of the result.
+%% Names follow contracts.md. They are design names, not code names.
+classDiagram
+    class Prompt {
+        +String at
+        +String text
+    }
+
+    class Target {
+        +String bank
+        +String bankIdTemplate
+    }
+
+    class RunState {
+        +String startedAt
+        +String need
+        +String recallQuery
+        +String step
+        +List~Hit~ records
+        +PageHit picked
+        +List~ReflectAnswer~ answers
+    }
+
+    class Hit {
+        +String date
+        +String text
+        +String documentId
+    }
+
+    class PageHit {
+        +String id
+        +String name
+        +String snippet
+        +Number score
+        +String updatedAt
+    }
+
+    class Page {
+        +String body
+        +String timestamp
+    }
+
+    class ReflectAnswer {
+        +String question
+        +String answer
+    }
+
+    class Result {
+        +String judgingRules
+        +String header
+        +String need
+    }
+
+    class RecallSection {
+        +String query
+        +Int results
+        +Int droppedThisSession
+        +Int shown
+    }
+
+    class PageSection {
+        +String name
+        +String updatedAt
+        +String body
+    }
+
+    class ReflectSection {
+        +String context
+    }
+
+    Prompt ..> RunState : read by the query writer
+    RunState --> Target : runs against
+    RunState "1" *-- "0..8" Hit : keeps
+    RunState "1" o-- "0..1" PageHit : picks
+    RunState "1" *-- "0..3" ReflectAnswer : asks
+    PageHit --> Page : read as
+    Result ..> RunState : built from
+    Result *-- RecallSection : section 4
+    Result *-- PageSection : section 5
+    Result *-- ReflectSection : section 6
+
+    note for Prompt "Composer and bridge prompts only.<br>Text cut to 2,000 characters.<br>The store keeps the newest 100."
+    note for RunState "step is one of query, search,<br>questions, reflect, done, or failed"
+    note for PageSection "Knowledge page: none picked<br>when Haiku picks no page."

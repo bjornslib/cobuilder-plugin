@@ -1,0 +1,38 @@
+// The memory pane: component and interaction specification (Gate 2b).
+// Source: mockups/memory-pane.html and interaction-design.md.
+{
+  "surface": "terminal",
+  "pane": {
+    "id": "memory-run",
+    "title": "🧠 CoBuilder Memory: Hindsight Run",
+    "focus": false,
+    "renderHook": { "component": "Pane", "requestId": "memory-run" },
+    "atom": { "plugin": "cobuilder-memory", "key": "run" }
+  },
+  "elements": ["Box", "Text"],
+  "tokens": {
+    "tick": "1s",
+    "mark.running": "◐",
+    "mark.done": "✓",
+    "mark.failed": "✗",
+    "color.running": "yellow",
+    "color.done": "green",
+    "color.failed": "red",
+    "text.dim": "dimColor",
+    "stepNameWidth": 10,
+    "needIndent": 6,
+    "recordsShownWhenDone": 2
+  },
+  "steps": ["query", "search", "questions", "reflect", "done", "failed"],
+  "text": {
+    "empty": "No memory run yet. The agent or /memory-recall starts one.",
+    "lastLineWhenDone": "The full result went to the agent.",
+    "noPage": "none picked",
+    "more": "… {n} more"
+  },
+  "opening": {
+    "toolRun": "unasked: placed from 144 columns, or from 110 once the person opened it",
+    "command": "asked: placed at any width",
+    "when": "before the first Haiku call"
+  }
+}

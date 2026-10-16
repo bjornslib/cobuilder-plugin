@@ -21,7 +21,7 @@ How to use this glossary:
 
 <a id="plugin"></a>
 **Plugin** (`cobuilder-packaging`):
-The single installable unit declared in a `.claude-plugin/plugin.json` manifest. Five plugins exist today under `plugins/`: `architect`, `pr`, `artifact`, `implement`, and the umbrella `cobuilder-full-lifecycle`.
+The single installable unit declared in a `.claude-plugin/plugin.json` manifest. Six plugins exist today under `plugins/`: `architect`, `pr`, `artifact`, `implement`, the umbrella `cobuilder-full-lifecycle`, and the opt-in mod `cobuilder-memory`.
 
 <a id="command"></a>
 **Command** (`cobuilder-packaging`):
@@ -42,7 +42,7 @@ _Avoid_: docs/ (authored source, never derived), story.json (one file inside the
 
 <a id="vendoring"></a>
 **Vendoring** (`cobuilder-packaging`):
-The mechanism, decided in ADR-0017, that shares code between the five plugins: a `shared/` directory at the marketplace root, symlinked into each plugin's own root and dereferenced into that plugin's install cache.
+The mechanism, decided in ADR-0017, that shares code between the six plugins: a `shared/` directory at the marketplace root, symlinked into each plugin's own root and dereferenced into that plugin's install cache.
 
 ## architect
 
@@ -184,6 +184,37 @@ _Avoid_: implementer (the generic word, and GREEN is the named role with its own
 **VALIDATE** (`implement`):
 The third role of the slice loop in `implement`: the `implement:validate` agent, a fresh subagent that saw neither RED nor GREEN, scores the slice against the blind rubric. It is the only role that reads the rubric, and a score of 0.90 or higher accepts the slice.
 _Avoid_: draft review (the architect stage 6 pre-review, which proposes survivors and never scores a slice), auditor (the generic word)
+
+## cobuilder-memory
+
+These terms come from the `cobuilder-memory` design (ADR-0039). The plugin lives in `plugins/cobuilder-memory/`.
+
+<a id="consult-tool"></a>
+**Consult tool** (`cobuilder-memory`):
+The tool `consult` that the main agent calls with no input to ask Hindsight about the work at hand; Claude Code lists it as `mcp__cobuilder-memory__consult`. The person runs the same memory run with `/memory-recall`.
+_Avoid_: memory tool, recall_memory (earlier names), moment tool (the superseded 2026-10-13 design's tool)
+
+<a id="memory-run"></a>
+**Memory run** (`cobuilder-memory`):
+One call of the consult tool: Haiku writes a recall query, recall and a knowledge-page search run, then Haiku picks at most one page and writes reflect questions from the records. The page read and the reflects follow, and the result opens with the judging rules.
+_Avoid_: quick run, deep run (both named runs of the superseded design)
+
+<a id="knowledge-page"></a>
+**Knowledge page** (`cobuilder-memory`):
+A page that the Hindsight server builds from many records, with a name, an update date, and a markdown body. A memory run searches the pages, Haiku picks at most one to read, and the result shows its body without the frontmatter.
+_Avoid_: mental model (the server's name for the question behind a page)
+
+<a id="prompt-store"></a>
+**Prompt store** (`cobuilder-memory`):
+The list of the person's own prompts, typed in the terminal or sent through Remote Control, that the plugin keeps per session in `$.store`, newest 100. Haiku reads it to write the recall query.
+
+<a id="judging-rules"></a>
+**Judging rules** (`cobuilder-memory`):
+The fixed text at the top of a memory run's result that tells the main agent to treat recall records as evidence, a knowledge page as a dated summary, and reflect answers as leads. They also say that a later chat that restates a record is not a newer source.
+
+<a id="memory-pane"></a>
+**Memory pane** (`cobuilder-memory`):
+The side pane, id `memory-run` and title `🧠 CoBuilder Memory: Hindsight Run`, that shows the newest memory run's steps while it runs and its result when it is done. It adds no fact that the result lacks.
 
 ## Cross-cutting
 

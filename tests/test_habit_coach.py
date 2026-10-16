@@ -511,6 +511,18 @@ def test_install_habit_hooks_is_removed(habit_coach):
 # ---------------------------------------------------------------------------
 
 SKILL_MD_PATH = REPO_ROOT / "plugins" / "implement" / "skills" / "build" / "SKILL.md"
+SETUP_SKILL_PATH = REPO_ROOT / "plugins" / "cobuilder-full-lifecycle" / "skills" / "cobuilder-setup" / "SKILL.md"
+
+
+def _habit_hooks_setup_section() -> str:
+    """The cobuilder-setup skill's Habit-hooks setup section, up to Glossary check."""
+    assert SETUP_SKILL_PATH.exists(), f"missing {SETUP_SKILL_PATH}"
+    text = SETUP_SKILL_PATH.read_text()
+    start = text.find("## Habit-hooks setup")
+    assert start != -1, "cobuilder-setup SKILL.md has no '## Habit-hooks setup' heading"
+    end = text.find("## Glossary check", start)
+    assert end != -1, "cobuilder-setup SKILL.md has no '## Glossary check' heading after Habit-hooks setup"
+    return text[start:end]
 
 
 def test_skill_md_has_prerequisite_habit_hooks_section_before_building_a_slice():
@@ -537,21 +549,23 @@ def test_skill_md_has_prerequisite_habit_hooks_section_before_building_a_slice()
     section_body = rest if next_heading_offset == -1 else rest[:next_heading_offset]
 
     assert "habit-hooks --version" in section_body
-    assert 'uv tool install "habit-hooks[python]"' in section_body
-    assert "habit-hooks init" in section_body
-    assert "snooze" in section_body
     assert "optional" not in section_body.lower()
 
 
-def test_install_mode_covers_root_package_json_jscpd_config_and_complete_run():
-    """Install mode handles a repo with no root package.json or no src folder,
+def test_habit_hooks_setup_runs_the_habit_hooks_install_command():
+    """The install steps moved from the build prerequisite to the cobuilder-setup skill."""
+    section = _habit_hooks_setup_section()
+
+    assert 'uv tool install "habit-hooks[python]"' in section
+    assert "habit-hooks init" in section
+    assert "snooze" in section
+    assert "optional" not in section.lower()
+
+
+def test_habit_hooks_setup_covers_root_package_json_jscpd_config_and_complete_run():
+    """Habit-hooks setup handles a repo with no root package.json or no src folder,
     and it does not report success while habit-hooks reports a broken tool."""
-    text = (
-        REPO_ROOT / "plugins" / "implement" / "skills" / "build" / "SKILL.md"
-    ).read_text()
-    start = text.index("## Install mode")
-    end = text.index("## Implement mode")
-    section = text[start:end]
+    section = _habit_hooks_setup_section()
 
     assert "node_modules/.bin" in section
     assert "no `package.json`" in section
@@ -997,20 +1011,21 @@ def test_e2e_check_with_no_habit_hooks_on_path_names_install(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# SKILL.md: Install mode proof step
+# SKILL.md: Coach-check mode proof step
 # ---------------------------------------------------------------------------
 
 
-def _install_mode_section() -> str:
+def _coach_check_section() -> str:
     text = SKILL_MD_PATH.read_text()
-    start = text.index("## Install mode")
+    start = text.find("## Coach-check mode")
+    assert start != -1, "build SKILL.md has no '## Coach-check mode' heading"
     match = re.search(r"^---$", text[start:], re.MULTILINE)
-    assert match is not None, "Install mode has no closing '---' line"
+    assert match is not None, "Coach-check mode has no closing '---' line"
     return text[start:start + match.start()]
 
 
-def test_install_mode_names_habit_coach_check():
-    section = _install_mode_section()
+def test_coach_check_mode_names_habit_coach_check():
+    section = _coach_check_section()
     assert "habit_coach.py\" --check" in section
 
 
@@ -1028,13 +1043,13 @@ def _check_prefixes() -> set[str]:
     return prefixes
 
 
-def test_install_mode_proof_step_names_the_check_output_prefixes():
+def test_coach_check_mode_proof_step_names_the_check_output_prefixes():
     prefixes = _check_prefixes()
     assert {"coaching works", "coaching check failed"} <= prefixes, (
         f"habit_coach.py check() prints prefixes {sorted(prefixes)}"
     )
-    section = _install_mode_section()
+    section = _coach_check_section()
     for prefix in ("coaching works", "coaching check failed"):
         assert f'"{prefix}"' in section, (
-            f"Install mode does not quote the check() output prefix {prefix!r}"
+            f"Coach-check mode does not quote the check() output prefix {prefix!r}"
         )

@@ -1,0 +1,76 @@
+{
+  "intent": {
+    "tagline": "A small model asks memory the right question for the main agent.",
+    "narration": "Past sessions decided many things that a new design should know. Today the agent asks memory only when it thinks to, with its own guess. This plugin gives it a tool that writes better questions and says how far to trust each answer."
+  },
+  "problem_solution": {
+    "problem": "The CoBuilder workflows reach Hindsight through one optional build step, and design mode never does. When the main agent queries Hindsight itself, it writes the query from its own guess, and recall returns mostly the chat of the current session.",
+    "solution": "An opt-in plugin, cobuilder-memory, adds the consult tool and one command. Haiku reads the person's prompts and the session, writes a recall query, then picks a knowledge page and writes reflect questions, all through the Hindsight MCP tools. Design and build call the tool, the result says how far to trust each part, and a pane shows the run.",
+    "narration": "The plugin does not decide what memory means. It asks better questions and hands the answers to the main agent, which checks them against the code.",
+    "beats": [
+      {
+        "kind": "problem",
+        "text": "The agent queries memory only when it thinks to, from its own guess, and recall returns mostly the current chat."
+      },
+      {
+        "kind": "constraint",
+        "text": "ADR-0025 lets only implement ship hooks. A tool, a prompt store, and a pane all need a hook, so ADR-0039 amends the rule for this plugin."
+      },
+      {
+        "kind": "decision",
+        "text": "Recall and a page search run first. Haiku then picks a page and writes the reflect questions from the records, so each question names the ADR ids that recall found."
+      },
+      {
+        "kind": "decision",
+        "text": "Every Hindsight call goes through the standard Hindsight MCP tools. Slice 1 proves each one from the installed plugin before any other slice starts."
+      },
+      {
+        "kind": "risk",
+        "text": "The agent's replies restate memory, and the Stop hook stores them. The judging rules say a restatement is not newer evidence."
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "The 2026-10-13 design: a router, a deep run, and the cc-memory-mirror",
+        "rejected_because": "The spike showed that a plugin cannot start its own subagent. The engineer cut the design to what the spike proved (round 4)."
+      },
+      {
+        "option": "Call the Hindsight HTTP API directly, and run reflect through curl",
+        "rejected_because": "The engineer chose the standard Hindsight MCP tools: one interface the session already has. Slice 1 proves each MCP tool from the installed plugin before any other slice."
+      },
+      {
+        "option": "A fixed reflect context in the plugin",
+        "rejected_because": "Fixed text asked reflect to say when memory holds nothing, and the small model overused it. Haiku writes the context from the recall records."
+      },
+      {
+        "option": "Run recall and the reflects side by side",
+        "rejected_because": "Reflect questions written before recall cannot name the ADR ids that recall finds. The engineer chose recall first (R1 a)."
+      },
+      {
+        "option": "Recall only, with no reflect",
+        "rejected_because": "Reflect links records that recall returns apart. The engineer keeps it, and the main agent judges each answer."
+      }
+    ]
+  },
+  "architecture": {
+    "narration": "The plugin is one hooks module beside the session. It stores prompts, answers one tool and one command, calls Haiku twice, calls Hindsight through its MCP server, and draws one pane. Design and build call the tool by name.",
+    "beats": [
+      {
+        "kind": "constraint",
+        "text": "Plugins meet at the bundle and by name (ADR-0016). The design and build skills name the consult tool, never a plugin path."
+      },
+      {
+        "kind": "decision",
+        "text": "The bank comes from the Hindsight config and the main worktree's base name, the same rule the Hindsight runtime uses."
+      },
+      {
+        "kind": "decision",
+        "text": "The pane reads one state value that each run step updates, so the person sees the run while the agent waits."
+      },
+      {
+        "kind": "risk",
+        "text": "The hooks API is early access, so the plugin tests pin every engine call it makes."
+      }
+    ]
+  }
+}
