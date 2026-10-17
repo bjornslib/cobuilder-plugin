@@ -3,16 +3,16 @@
 title: "ADR-0039 — cobuilder-memory ships a consult tool for the main agent"
 status: active
 type: architecture
-last_verified: 2026-10-15
+last_verified: 2026-10-17
 owner: bjornslib
 # --- 42010 decision-record index (schema: references/decision-records.md §2) ---
 id: ADR-0039
 name: "cobuilder-memory ships a consult tool for the main agent"
-state: decided
+state: approved
 groups: [workflow, packaging]
-approved_by: ""
+approved_by: bjornslib
 problem: "The CoBuilder workflows reach Hindsight through one optional build step, and design mode never does. When the main agent queries Hindsight itself, it writes the query from its own guess, and recall returns mostly the current chat. ADR-0025 lets only implement ship a hook, and a tool, a prompt store, and a pane all need one."
-decision: "Ship a sixth plugin, cobuilder-memory, as an opt-in install from this marketplace, outside the umbrella. It is a mod: hooks/hooks.json names one hooks module. It ships the shared symlink, no agents/, and no MCP server. This amends ADR-0025: implement and cobuilder-memory may ship hooks/, and only implement may ship agents/. The module registers the consult tool and the /memory-recall command. Haiku writes a recall query from the person's prompts and the session, picks a knowledge page, and writes reflect questions from the records. Every Hindsight call goes through the Hindsight MCP server. The result marks recall as evidence and reflect as leads. Design stage 1 and implement Gate 1 call the tool, and a pane shows each run."
+decision: "Ship a sixth plugin, cobuilder-memory, as an opt-in install from this marketplace, outside the umbrella. It is a mod: hooks/hooks.json names one hooks module. It ships the shared symlink, no agents/, and no MCP server. This amends ADR-0025: implement and cobuilder-memory may ship hooks/, and only implement may ship agents/. The module registers the consult tool and the /memory-recall command. Haiku writes a recall query from the person's prompts and the session, picks a knowledge page, and writes one reflect question from the records. Every Hindsight call goes through the Hindsight MCP server. The result marks recall as evidence and reflect as leads. Design stage 1 and implement Gate 1 call the tool, and a pane shows each run."
 alternatives:
   - option: "The 2026-10-13 design: a router, a deep run, and the cc-memory-mirror"
     rejected_because: "The spike showed that a plugin cannot start its own subagent. The engineer cut the design to what the spike proved (round 4)."
@@ -55,6 +55,8 @@ history:
   - { state: decided, date: 2026-10-13, note: "Drafted by design mode for the cobuilder-memory design. In session, the engineer chose the router at prompts and stops, the /memory moment, and the cc-memory-mirror (M1 b). The engineer also chose retain at once (M2 a), no wait for the note (M3 a), the retired H1 to H5 (D1), and the checked memory claim (D2)." }
   - { state: decided, date: 2026-10-15, note: "Revised by design mode after the 2026-10-14 tool spike. The engineer cut the design to the recall_memory tool, the prompt store, and a pane. The router, the deep run, the cc-memory-mirror, the moment tool, and retain left the design. Epic E2 holds the workflow wiring and a Jev gate. The engineer added a knowledge-page source (D-B a), as the hindsight-memory create-agent skill reads pages first, and epic E3, a pane list of every Hindsight call." }
   - { state: decided, date: 2026-10-15, note: "Round 7. The engineer chose the standard Hindsight MCP tools over the HTTP API, named the tool consult, dropped SDK prompts, approved the pane mockup, and moved the design and build workflow steps into E1. Epic E2 now holds only the Jev gate." }
+  - { state: decided, date: 2026-10-16, note: "Revised before approval. A live run passed 60 s with three parallel reflects, so the engineer cut each run to one reflect question. The decision text now says one." }
+  - { state: approved, date: 2026-10-17, by: bjornslib, source: "PR #40", note: "Approved by the engineer in session, after PR #40 merged on 2026-10-16." }
 maps_to:
   context: cobuilder-packaging
   modules: [plugins/cobuilder-memory, tests/test_plugin_manifests.py, .claude-plugin/marketplace.json]
@@ -65,7 +67,7 @@ delivers:
   beneficiary: [developer]
   enables: ["Epic E2: a Jev gate every n tool calls", "Epic E3: a pane list of every Hindsight call in the session"]
   addresses_problem: P1
-source_pr: null
+source_pr: 40
 related:
   - "docs/architecture/contexts/cobuilder-packaging/boundary.yaml"
   - "docs/architecture/designs/cobuilder-memory/contracts.md"

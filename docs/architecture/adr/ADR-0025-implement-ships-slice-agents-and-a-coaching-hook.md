@@ -3,7 +3,7 @@
 title: "ADR-0025 — implement ships slice agents and a coaching hook"
 status: active
 type: architecture
-last_verified: 2026-09-27
+last_verified: 2026-10-17
 owner: bjornslib
 # --- 42010 decision-record index (schema: references/decision-records.md §2) ---
 id: ADR-0025
@@ -38,9 +38,11 @@ consequences:
 related_decisions:
   - { type: is-related-to, target: ADR-0016 }
   - { type: is-related-to, target: ADR-0017 }
+  - { type: is-related-to, target: ADR-0039 }
 history:
   - { state: decided, date: 2026-09-27, note: "Recorded from the design session. The narrowed install-surface rule, the plugin-level hook placement, and the required habit-hooks dependency were each approved by the human during that session." }
   - { state: approved, date: 2026-09-27, by: bjornslib, note: "Approved by the human in session, before merge." }
+  - { state: approved, date: 2026-10-17, by: bjornslib, note: "ADR-0039 amends the install-surface rule. implement and the cobuilder-memory mod may ship hooks/. Only implement may ship agents/. This record's Decision text stays as chosen on 2026-09-27." }
 maps_to:
   context: cobuilder-packaging
   modules: [plugins/implement/agents, plugins/implement/hooks, tests/test_plugin_manifests.py]

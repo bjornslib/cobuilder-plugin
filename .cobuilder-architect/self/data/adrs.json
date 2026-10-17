@@ -1635,6 +1635,12 @@
         "date": "2026-09-27",
         "by": "bjornslib",
         "note": "Approved by the human in session, before merge."
+      },
+      {
+        "state": "approved",
+        "date": "2026-10-17",
+        "by": "bjornslib",
+        "note": "ADR-0039 amends the install-surface rule. implement and the cobuilder-memory mod may ship hooks/. Only implement may ship agents/. This record's Decision text stays as chosen on 2026-09-27."
       }
     ],
     "related": []
@@ -2700,10 +2706,10 @@
   "ADR-0039": {
     "id": "ADR-0039",
     "title": "cobuilder-memory ships a consult tool for the main agent",
-    "state": "decided",
-    "source_pr": null,
+    "state": "approved",
+    "source_pr": 40,
     "problem": "The CoBuilder workflows reach Hindsight through one optional build step, and design mode never does. When the main agent queries Hindsight itself, it writes the query from its own guess, and recall returns mostly the current chat. ADR-0025 lets only implement ship a hook, and a tool, a prompt store, and a pane all need one.",
-    "decision": "Ship a sixth plugin, cobuilder-memory, as an opt-in install from this marketplace, outside the umbrella. It is a mod: hooks/hooks.json names one hooks module. It ships the shared symlink, no agents/, and no MCP server. This amends ADR-0025: implement and cobuilder-memory may ship hooks/, and only implement may ship agents/. The module registers the consult tool and the /memory-recall command. Haiku writes a recall query from the person's prompts and the session, picks a knowledge page, and writes reflect questions from the records. Every Hindsight call goes through the Hindsight MCP server. The result marks recall as evidence and reflect as leads. Design stage 1 and implement Gate 1 call the tool, and a pane shows each run.",
+    "decision": "Ship a sixth plugin, cobuilder-memory, as an opt-in install from this marketplace, outside the umbrella. It is a mod: hooks/hooks.json names one hooks module. It ships the shared symlink, no agents/, and no MCP server. This amends ADR-0025: implement and cobuilder-memory may ship hooks/, and only implement may ship agents/. The module registers the consult tool and the /memory-recall command. Haiku writes a recall query from the person's prompts and the session, picks a knowledge page, and writes one reflect question from the records. Every Hindsight call goes through the Hindsight MCP server. The result marks recall as evidence and reflect as leads. Design stage 1 and implement Gate 1 call the tool, and a pane shows each run.",
     "alternatives": [
       {
         "option": "The 2026-10-13 design: a router, a deep run, and the cc-memory-mirror",
@@ -2785,6 +2791,7 @@
       ],
       "rule": "implement and cobuilder-memory may ship hooks/. Only implement may ship agents/. No plugin ships an MCP server."
     },
+    "approved_by": "bjornslib",
     "history": [
       {
         "state": "decided",
@@ -2800,6 +2807,18 @@
         "state": "decided",
         "date": "2026-10-15",
         "note": "Round 7. The engineer chose the standard Hindsight MCP tools over the HTTP API, named the tool consult, dropped SDK prompts, approved the pane mockup, and moved the design and build workflow steps into E1. Epic E2 now holds only the Jev gate."
+      },
+      {
+        "state": "decided",
+        "date": "2026-10-16",
+        "note": "Revised before approval. A live run passed 60 s with three parallel reflects, so the engineer cut each run to one reflect question. The decision text now says one."
+      },
+      {
+        "state": "approved",
+        "date": "2026-10-17",
+        "by": "bjornslib",
+        "source": "PR #40",
+        "note": "Approved by the engineer in session, after PR #40 merged on 2026-10-16."
       }
     ],
     "related": [

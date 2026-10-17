@@ -1,10 +1,10 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "d9a02ac45745a4e9a18064530e4a6d767ff3ffca",
+    "git_head": "7a36a47cf2572ae8d0b7196bb3fd25731b6fe092",
     "trees": {
-      "docs/architecture/adr": "sha256:c05ad05872df85160e6c63ad82b37acb0232f9d777bfab72ecd5342f05778e83",
-      "docs/architecture/designs": "sha256:9dac890b4aa075f90e5e459b1d47873f4ca24f83ab45bc903339ec97e056c149",
+      "docs/architecture/adr": "sha256:8b64f189319b095812b8f7015e776e7c78154ee0a6efb13d17a879ea991db236",
+      "docs/architecture/designs": "sha256:5894b700ea642a446f4cdaec0de8cecc0108c2be94761ab680d019c2cfc32d72",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
       "docs/plans": "sha256:1dea807dc3fcc7b55ff8853bcf8cfe0248fe3beb1b2ee5acb0988b111630d959",
       ".cobuilder/rubrics": "sha256:33da6308e395801a1097b5937ab949264a2b687637b9e6cd8033b4f791610216"
@@ -205,7 +205,7 @@
       {
         "id": "ADR-0039",
         "title": "cobuilder-memory ships a consult tool for the main agent",
-        "state": "decided"
+        "state": "approved"
       }
     ],
     "design": [
@@ -237,7 +237,7 @@
         "id": "cobuilder-memory",
         "name": "cobuilder-memory",
         "outcome": "plugins/cobuilder-memory installs from this marketplace and gives the main agent the consult tool. Haiku writes the recall query, picks a knowledge page, and writes reflect questions, all through the Hindsight MCP tools. Design and build call the tool, and a pane shows each run.",
-        "stage": "approved"
+        "stage": "implemented"
       },
       {
         "id": "cobuilder-viewer",
@@ -450,8 +450,8 @@
         "design": "cobuilder-memory",
         "epic_id": "E1",
         "branch": "design/cobuilder-memory",
-        "pr": null,
-        "state": "planned",
+        "pr": 40,
+        "state": "implemented",
         "note": null,
         "design_doc": "cobuilder-memory/E1"
       },
@@ -5643,12 +5643,8 @@
       },
       "ADR-0039": {
         "pr": 40,
-        "via": "epic",
-        "path": [
-          "cobuilder-memory/E1",
-          "cobuilder-memory/E2",
-          "cobuilder-memory/E3"
-        ]
+        "via": "direct",
+        "path": []
       }
     },
     "epic_to_pull_request": {
