@@ -42,11 +42,13 @@ import {
 
 import BasicAccordion from "@/components/smoothui/basic-accordion";
 import type { AccordionItem } from "@/components/smoothui/basic-accordion";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { EpicEntity, PullRequest, SliceEntity } from "@/data/types";
 import { cn } from "@/lib/utils";
 
 import type { WorkItem } from "./model";
 import { STAGE_PUBLICATIONS_DEPLOY_LEAD } from "./model";
+import { splitGateState } from "./gateState";
 import { MarkdownBlock } from "./markdown";
 import { excerpt } from "./records";
 import type { SheetSubject } from "./Sheet";
@@ -61,6 +63,9 @@ import {
   Missing,
   Panel,
   StateBadge,
+  TONE_MARK,
+  TONE_PILL,
+  type Tone,
   SubHead,
   toneForStage,
 } from "./atoms";
@@ -337,6 +342,34 @@ export function UnresolvedSlicesSection({ count }: { count: number }) {
   );
 }
 
+/**
+ * A gate state, as a short pill with the status word and the date only.
+ *
+ * The full state text sits in a tooltip. It opens on hover and on keyboard focus. The pill
+ * does not wrap, so a long note never squeezes the gate name beside it.
+ */
+function GateStatePill({ state, tone }: { state: string; tone: Tone }) {
+  const { short, full } = splitGateState(state);
+  const Mark = TONE_MARK[tone];
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          tabIndex={0}
+          className={cn(
+            "inline-flex min-h-6 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-0.5 font-mono text-[12.5px] font-bold",
+            TONE_PILL[tone],
+          )}
+        >
+          <Mark className="size-3.5 shrink-0" aria-hidden="true" />
+          {short}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-[42ch]">{full}</TooltipContent>
+    </Tooltip>
+  );
+}
+
 export function RubricsSection({
   work,
   gated,
@@ -465,8 +498,8 @@ export function RubricsSection({
                 >
                   <Chip>{step.n}</Chip>
                   <span className="min-w-0 flex-1 font-serif text-[16px]">{step.name}</span>
-                  <StateBadge
-                    word={step.state}
+                  <GateStatePill
+                    state={step.state}
                     tone={step.state === "approved" ? "good" : "neutral"}
                   />
                 </li>
