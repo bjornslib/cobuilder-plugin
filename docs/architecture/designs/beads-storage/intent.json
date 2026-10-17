@@ -3,13 +3,33 @@
   "source": "design",
   "design_name": "beads-storage",
   "authorship": "agent-generated",
-  "problem": "CoBuilder workflow state has no store. Slice states, scores, and attempts sit in the markdown tables of docs/plans/<slug>/04-slices.md, and any session can silently contradict that prose. Epic branches and pull-request numbers sit in hand-maintained index joins. Nothing below the file level answers what is next, what blocks what, or what changed while two sessions worked one ladder.",
-  "why_now": "The implement plugin is about to drive real ladders across sessions, and the beads fork work just landed v1.3.0 with the metadata extension point verified in this workspace. The cost of seeding grows with every slice that lands in prose.",
-  "approach": "One beads tracker per narrated repo. Program, epic, and slice records become beads issues typed, parented, and chained in the slice ladder. Every record keeps its shape under a namespaced metadata envelope, metadata.cb, that beads stores as well-formed JSON. Markdown sources of record stay untouched as documents. build_index.py gains one beads read and writes the same data/index.json, so the viewer stays build-free.",
+  "problem": "CoBuilder workflow state has no store. Slice states, scores, and attempts sit in the markdown tables of docs/plans/<slug>/04-slices.md, and any session can silently contradict that prose. Epic branches and pull-request numbers sit in hand-kept index joins. Nothing answers what is next, what blocks what, or what changed while two sessions worked one ladder.",
+  "why_now": "Work runs locally, in cloud sessions, and with a team, so the backlog and the program states drift apart. The engineer wants no coupling of CoBuilder to beads, because Linear and Jira may follow. A layer between CoBuilder and the task system costs least before any caller exists.",
+  "approach": "A tracker port in shared/tracker/ sits between CoBuilder and the task system. A neutral TrackerRecord and a TrackerPort carry every read and write, including sync, claim, and pull request operations. One projector turns records into data/index.json. Beads is the first adapter and keeps the metadata.cb envelope, with a proposed Dolt-in-git central store. A read-only files adapter and a fake adapter prove the seam, and one contract test runs against every adapter. Agents call one command, shared/tracker.py, and a shared reference teaches it.",
   "alternatives": [
     {
       "option": "Keep markdown tables and hand-edited JSON as the only state",
       "rejected_because": "State in prose races at whole-file grain, readiness is a human judgment, and nothing records who changed what."
+    },
+    {
+      "option": "Sync the CoBuilder JSON and markdown files through git",
+      "rejected_because": "Concurrent sessions edit the same tables, so every sync gives complex merges, and no file records who moved a slice."
+    },
+    {
+      "option": "Use beads only, and reach Jira or Linear through the bd bridges",
+      "rejected_because": "No bridge pushes metadata.cb. A Jira pull replaces the metadata column, and a Linear pull does so for a milestone issue. Beads stays mandatory."
+    },
+    {
+      "option": "Call bd directly now, and extract the port at the second adapter",
+      "rejected_because": "Every caller holds bd calls, so the later extraction rewrites all of them. With no second implementation, the seam is a guess."
+    },
+    {
+      "option": "Run an MCP server for each tracker",
+      "rejected_because": "ADR-0016 says no plugin ships an MCP server. Scripts call a tool the way they call git and gh."
+    },
+    {
+      "option": "Make each attempt its own record that relates to a slice",
+      "rejected_because": "No tracker has a child type for run history, and one issue per attempt clutters boards. The envelope keeps the latest score. Evidence files and comments keep the history."
     },
     {
       "option": "Store the same records in GitHub Issues or Projects",
@@ -17,38 +37,78 @@
     },
     {
       "option": "Write a bespoke JSON or SQLite store for the bundle",
-      "rejected_because": "It rebuilds the engine beads already ships: readiness, dependencies, gates, leases, history, and sync."
+      "rejected_because": "It rebuilds the engine beads already ships: readiness, dependencies, leases, history, and sync."
     },
     {
       "option": "Use beads milestone type for programs and avoid custom types",
       "rejected_because": "Milestone fits the container half but not the stage workflow, and types.custom is the sanctioned path the queries want."
+    },
+    {
+      "option": "Use one beads issue for each gate and each ADR",
+      "rejected_because": "Gates run in order on one program and block no other work. An ADR is a document with its own frontmatter. Scalar fields and a file pointer cost less."
+    },
+    {
+      "option": "Copy the command table into each skill",
+      "rejected_because": "Four copies drift, and each tracker change needs four edits. One shared reference has one link in each skill, and a test checks each command that a document names."
     }
   ],
   "out_of_scope": [
+    "The Linear and Jira adapters. Each is a later program, tracker-linear or tracker-jira, and starts with a live-account smoke test",
     "Moving prose documents, screenshots, or publication history into the tracker",
-    "Storing pull requests as issues; GitHub stays the source of record per ADR-0029",
-    "The gh:pr gate automation; the human gate carries merges until beads phase 3 lands here",
-    "Changing the viewer, the index shape, or any consumer key"
+    "The thread ledger in shared/ledger.py, which logs reply channels and holds no work-item state",
+    "Hindsight initiative pages, which stay separate",
+    "ADR issues. An ADR stays a file, and no decision issue exists",
+    "Options, review, and maintenance records. Every record that is not a program, epic, slice, or pull request stays a file",
+    "The gh:pr automation that closes a pull request issue on merge. A human closes it until that lands",
+    "Changing the viewer, the index shape, or any consumer key",
+    "Running the exported copy in a harness other than Claude Code. The export script copies shared/ and rewrites its paths, and no other harness has run it"
   ],
   "risks": [
-    "bd becomes a system dependency; scripts must detect its absence and fall back to the file flow",
-    "types.custom = program must ship in the tracker config or the seed fails on a fresh clone",
-    "Two sources of state exist during the migration window until the 04-slices.md cutover lands",
-    "Metadata has no query language, so corpus-wide questions stay with the index"
+    "The port may take the shape of beads, because beads is the only real adapter. The capability flags and the contract test guard against it",
+    "Linear metadata takes only a string or a number, so a later adapter must encode a list of paths, for example as a JSON string",
+    "No tracker gives a verified atomic claim. When atomic_claim is false, a claim is a write followed by a read that confirms the claimant",
+    "The bd bridges do not push metadata.cb, and a Jira pull replaces it, so they cannot replace an adapter",
+    "Every state write needs a configured adapter. Without one, scripts read the file sources and refuse state writes",
+    "types.custom = program must ship in the tracker config, or the beads seed fails on a fresh clone",
+    "A cloud session that holds only a git clone may not run bd init and bd sync against refs/dolt/data. This is not verified",
+    "A pull request issue shows in bd ready until a human closes it, so every consumer must filter on metadata.cb.kind",
+    "A hand edit of a stateful line is overwritten from the tracker, and two sources of state exist until the generated file sections land",
+    "A gate that does not apply may store n/a. That is a leaning, not decided. A missing field means a gate not yet reached",
+    "A GitHub login names the claimant. Linear and Jira may resolve a login in a way that the user map cannot cover. This is not verified",
+    "An exported skill copy needs shared/ beside the skills and uv to run tracker.py. No harness other than Claude Code has run it",
+    "The shared reference and the four skills can drift apart. A docs test guards it: each named command must exist, and only the beads notes may name bd"
   ],
   "testing": [
+    "Run one contract test suite against every adapter. It checks that next_ready skips pull request and deferred items, and that it returns the right records for each kind and for under. When atomic_claim is false, it checks that claim_slice reads back the assignee. It also compares envelope values, runs the capability-gated paths, and blocks two epics with one pull request issue",
+    "Load the fake adapter from the checked-in fixtures in tests/fixtures/tracker/. They hold one program with gate scalars, three epics, three slices, and one pull request record. A golden index goes with them, and the projector test compares it value by value. A miniature docs/plans tree feeds the files adapter. No test reads the live repo's plans",
+    "Project a record list from the fake adapter and one from beads, and assert the same index. Project the files adapter alone against the current data/index.json, offline",
     "Seed against a copy of the repo and compare projected counts against data/index.json",
-    "Round-trip one envelope through create, update, export, and list --json and compare keys",
-    "Close slice n and assert bd ready names slice n+1",
-    "Create a gate with --blocks and assert the epic stays out of bd ready until resolve"
+    "Round-trip one envelope through create, update, export, and list --json. Compare every value and every list item, and not only the keys",
+    "Close slice n and assert bd ready names slice n+1. Run next_ready with the file sources removed, and assert one call names the next slice",
+    "Assert that a write with no configured adapter fails, and that no script outside shared/tracker/ calls bd",
+    "Create one pull request issue that blocks two epics, and assert bd ready hides both until bd close",
+    "Write the gate scalars of Gates 1 to 4, 2b, and 4a to 4c on a program issue. Assert that bd show returns them unchanged",
+    "Run bd sync from a second clone and assert it sees the same programs, epics, and slices",
+    "Byte-compare the viewer index.html and assert that no goal.json epics[] carries branch, pr, or state",
+    "Run tracker.py over the fake adapter. Assert that stdout holds JSON, that a write with no adapter exits 2, and that bad arguments exit 4",
+    "Run tests/test_tracker_docs.py. The reference exists and four SKILL.md files name it. Each tracker.py operation in a document is a listed subcommand. Only the beads notes name bd. The reference is in AUTHORING_REFERENCES"
   ],
   "reviewer_focus": [
-    "The state vocabularies table: does every existing value land in a status or in metadata without loss",
-    "The write model: does each command match a moment a session actually performs",
-    "The fallback rule when bd is absent"
+    "The port: does any operation or record field only beads can serve, and could a capability flag replace it",
+    "The state vocabularies table: does every existing value land in a lifecycle or in the envelope without loss",
+    "The write model: does each command match a step that a session takes",
+    "The pull request issue: does its blocks edge match the moment a merge frees the epic"
   ],
   "unknowns": [
-    "Whether bd tree scales acceptably past a few thousand issues; the corpus is two hundred today",
-    "Whether the implement worker claim flow wants leases or plain in_progress status"
+    "Whether a cloud session that holds only a git clone can run bd init and bd sync against refs/dolt/data. The smoke check must pass before E2 closes",
+    "Whether bd claim is atomic. No test covers it",
+    "Jira: the claim race, the property limits, the create-time parent, a repeated issue create, and the rate limits",
+    "Linear: the claim race, a repeated issueCreate with the same id, and the sub-issue depth",
+    "Whether bd tree scales acceptably past a few thousand issues. The corpus is two hundred today",
+    "Whether a gate that does not apply stores the value n/a or leaves the field absent. The lean is the value n/a",
+    "When gh:pr automation closes the pull request issue on merge, in place of the human close",
+    "The name of the adapter config file. The proposal is .cobuilder/tracker.yaml",
+    "How Linear and Jira resolve a GitHub login to a user. The adapter config holds a user map",
+    "Whether a Linear or Jira adapter caches, and how. The later programs decide it"
   ]
 }
