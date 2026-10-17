@@ -23,7 +23,7 @@ Hindsight: yes
 - [x] Slice 4 — the memory pane shows each run   score: 1.00 (attempt 2; attempt 1 scored 0.75). Gap: the pane does not fit content to the viewport rows beyond its fixed caps
 - [x] Slice 5 — design and build call the consult tool at fixed steps   score: 1.00 (attempt 1, Sonnet). Blind pass on Haiku against a stub consult tool: the call came before the hypothesis. H1 to H5 and hindsight-routine.md removed; the per-slice retain went with them. On 2026-10-16 the engineer brought back a short per-slice note at PASS (`slice-loop.md`, "Slice note to project memory"), because a retry cause is hard to find in a transcript.
 - [x] Slice 6 — one install command sets up the family, with the Hindsight allow rules   score: 1.00 (attempt 2; attempt 1 scored 0.875, because auto mode refused the blind agent's write to a scratch settings file. A live run of `/cobuilder-full-lifecycle:install` on the real user file closed C1)   note: retained
-- [ ] Slice 7 — the value check in two repos   score: —
+- [x] Slice 7 — the value check in two repos   score: 1.00 (attempt 1). Two live runs on 2026-10-17, both marked useful by the engineer. Reflect failed in both on an OpenRouter 402, and recall carried the evidence   note: retained
 - E2 (backlog): slice 8. E3 (backlog, stub): slice 9.
 
 ## Escalated
