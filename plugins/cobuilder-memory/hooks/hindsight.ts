@@ -14,10 +14,14 @@ const MISSING = /no connected MCP tool|no tool "/
 // The permission check's words for a refused call
 const REFUSED = /auto mode classifier|refused|permission/i
 const PAGE_CHARS = 6000
+// A server error can run to many kilobytes of repeated text. The start names the cause.
+const REASON_CHARS = 300
 const EMPTY_PAGE_SNIPPET = 'Generating content...'
 
-// A refused call names the allow rule for its tool. A missing server or tool keeps its set-up message.
-function withPermissionHint(tool: string, reason: string): string {
+// The reason is cut to its start. A refused call then names the allow rule for its tool.
+// A missing server or tool keeps its set-up message.
+function withPermissionHint(tool: string, full: string): string {
+  const reason = full.length > REASON_CHARS ? full.slice(0, REASON_CHARS) + ' [cut]' : full
   if (MISSING.test(reason) || !REFUSED.test(reason)) return reason
   return reason + ' Add "mcp__hindsight__' + tool + '" to permissions.allow in your settings.'
 }

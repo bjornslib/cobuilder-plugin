@@ -40,7 +40,7 @@
       "name": "cobuilder-memory",
       "description": "Consult the project's Hindsight memory before a design or build decision",
       "source": "./plugins/cobuilder-memory",
-      "version": "0.1.0"
+      "version": "0.1.1"
     }
   ]
 }
