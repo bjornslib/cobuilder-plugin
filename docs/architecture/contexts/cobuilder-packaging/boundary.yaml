@@ -1,14 +1,14 @@
 # Boundary record for the cobuilder-packaging bounded context.
 # Machine-diffable architecture baseline — ../../standard.md §5.2.
 # Authoring procedure: skills/architecture/references/architecture-documentation.md.
-# Every edge below was checked against code. Re-verified as of 2026-10-08.
+# Every edge below was checked against code. Re-verified as of 2026-10-13.
 # The 2026-08-21 record described one plugin with commands/, skills/, scripts/, viewer/ at the root.
 # That shape is gone. This record describes the marketplace and its five plugins.
 
 id: cobuilder-packaging
 path: .claude-plugin
 name: "Plugin packaging and dispatch"
-verified_at: 1f34d98c5eaf563a499dfa33c12e678d21a1c23b
+verified_at: f71aa2f77c1c4adff3dad7ea019e36a2d826c0ae
 
 # What other contexts and operators may use: the install surface.
 public_interface:
@@ -39,7 +39,7 @@ context_map:
     note: "Same as architect."
   - with: artifact
     pattern: open-host-service
-    note: "Same as architect. SMELL: marketplace.json lists it twice."
+    note: "Same as architect."
   - with: implement
     pattern: open-host-service
     note: "Same as architect."
@@ -57,7 +57,7 @@ forbidden_dependencies:
 
   - target: "duplicate plugin entry"
     from: .claude-plugin/marketplace.json
-    why: "SMELL: the plugins array lists 'artifact' twice (the second entry repeats the first, source ./plugins/artifact, version 0.10.0). A duplicate name can make the install pick either entry, and a version bump must change both. Remove one entry. ADR candidate only if the duplicate is deliberate."
+    why: "Rule holding, not a smell: the plugins array lists each plugin once. Commit f4f9508 removed the duplicate artifact entry and added a test for it. Re-verified on 2026-10-13."
 
   - target: "stale maps_to anchor in ADRs"
     from: docs/architecture/adr
@@ -75,7 +75,7 @@ modules:
     public_interface: [marketplace.json]
     allowed_inbound: []
     allowed_outbound: []
-    rule: "Static JSON read by the Claude Code harness. Each plugin version must equal its plugin.json version (a test checks it). SMELL: artifact appears twice."
+    rule: "Static JSON read by the Claude Code harness. Each plugin version must equal its plugin.json version (a test checks it). Each plugin appears once."
 
   - id: plugin-architect
     path: plugins/architect

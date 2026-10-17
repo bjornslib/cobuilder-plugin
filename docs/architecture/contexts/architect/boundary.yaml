@@ -2,12 +2,12 @@
 # Machine-diffable architecture baseline — ../../standard.md §5.2.
 # Authoring procedure: plugins/architect/skills/architecture/references/architecture-documentation.md.
 # Every edge below was checked against code (grep of imports, Skill calls, and path strings).
-# Grounded in code as of 2026-10-08.
+# Grounded in code as of 2026-10-12.
 
 id: architect
 path: plugins/architect
 name: "Architect plugin: design, review, maintenance, decisions, describe, debug, options"
-verified_at: d086be981401779ba4691faed31a6f64598df589
+verified_at: d397e1317323d1ab64591e808d92382434f930d3
 
 # What other contexts may use. Modes are reached by Skill call and by command.
 public_interface:
@@ -29,7 +29,7 @@ allowed_dependencies:
 context_map:
   - with: shared
     pattern: conformist
-    note: "Runs shared/build_index.py, migrate_bundle.py, prose_budget.py, boundary_check.py, and validate_decision_state.py by 'uv run' through the plugin's shared symlink. It imports none of them as Python."
+    note: "Runs shared/build_index.py, migrate_bundle.py, prose_budget.py, boundary_check.py, validate_decision_state.py, and habit_smells.py by 'uv run' through the plugin's shared symlink. It imports none of them as Python."
   - with: artifact
     pattern: open-host-service
     note: "Calls Skill(\"cobuilder-artifacts\", args=\"view\") to serve the bundle and to give the engineer a review link. It never opens artifact files."
@@ -61,7 +61,7 @@ modules:
     public_interface: [plugin.json]
     allowed_inbound: []
     allowed_outbound: []
-    rule: "Static JSON. Declares dependency artifact@cobuilder-plugin only. Version 0.11.0 must match marketplace.json."
+    rule: "Static JSON. Declares dependency artifact@cobuilder-plugin only. Version 0.12.0 must match marketplace.json."
 
   - id: commands
     path: plugins/architect/commands
@@ -99,7 +99,7 @@ modules:
     public_interface: []
     allowed_inbound: [skill-architecture]
     allowed_outbound: []
-    rule: "A symlink to ../../shared. The skill runs build_index, migrate_bundle, prose_budget, boundary_check, and validate_decision_state from here, by shell."
+    rule: "A symlink to ../../shared. The skill runs build_index, migrate_bundle, prose_budget, boundary_check, validate_decision_state, and habit_smells from here, by shell."
 
 verifies:
   - skills

@@ -2,12 +2,12 @@
 # Machine-diffable architecture baseline — ../../standard.md §5.2.
 # Authoring procedure: plugins/architect/skills/architecture/references/architecture-documentation.md.
 # Every edge below was checked against code (grep of imports, Skill calls, and path strings).
-# Grounded in code as of 2026-10-08.
+# Grounded in code as of 2026-10-12.
 
 id: implement
 path: plugins/implement
 name: "Implement: four gates and a RED, GREEN, VALIDATE loop per slice"
-verified_at: a9f71efcf2311baccf87a6ab8d0fe1285c9f4deb
+verified_at: d397e1317323d1ab64591e808d92382434f930d3
 
 public_interface:
   - commands/start.md
@@ -57,7 +57,7 @@ modules:
     public_interface: [plugin.json]
     allowed_inbound: []
     allowed_outbound: []
-    rule: "Static JSON. Declares architect and artifact as dependencies. Version 0.6.0 must match marketplace.json."
+    rule: "Static JSON. Declares architect and artifact as dependencies. Version 0.7.0 must match marketplace.json."
 
   - id: commands
     path: plugins/implement/commands
