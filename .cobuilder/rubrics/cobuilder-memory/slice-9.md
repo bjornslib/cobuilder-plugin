@@ -1,7 +1,7 @@
 # Rubric: Slice 9 — backlog stub
 
 Feature: cobuilder-memory
-Epic: E3
+Epic: E2
 Slice goal: see `docs/plans/cobuilder-memory/04-slices.md`, slice 9.
 Test command: to be set by the epic design.
 

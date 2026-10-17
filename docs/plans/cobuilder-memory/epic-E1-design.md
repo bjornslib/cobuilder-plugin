@@ -56,9 +56,32 @@ The interfaces that join the slices:
 | 5 | Design stage 1 and Gate 1 call the consult tool, and H1 to H5 retire | 3 |
 | 6 | One install command sets up the family, with the Hindsight allow rules | 5 |
 | 7 | The value check in two repos, and the six-plugin count | 1 to 6 |
+| 8 | The agent's focus steers the recall query | 7, which found that the agent could not steer it |
 
 The engineer stops the build after slice 4 to test the plugin in
 think-with-ai (2026-10-15).
+
+## Amendment: slice 8 (engineer, 2026-10-17)
+
+Slice 7's first run showed that the agent cannot steer the recall query.
+The consult tool took no input, and Haiku chose the person's last prompt
+over the question that the agent stated. Slice 8 adds one input and a
+fixed order of authority:
+
+1. **The agent's focus**, an optional `focus` argument of `consult`. It
+   sets the topic, and the Recall line must search for it.
+2. **The session end**, the last six messages with text, at most 12,000
+   characters, with injected hook blocks removed. It gives the concrete
+   names that make the focus precise. It does not change the topic.
+3. **The person's stored prompts.** They add terms. They do not replace
+   the focus.
+
+With no focus, the session end leads and the prompts add context. The
+result and the pane show the focus, or state that none was given.
+Signatures change in `register.ts` (the input schema), `run.ts`
+(`runMemory($, origin, focus)`), `haiku.ts` (`writeRecallQuery` takes the
+focus first), `prompts.ts` (`sessionTail` takes a message cap), and
+`result.ts`, `types/index.d.ts`, and `pane.tsx` (the focus line).
 
 ## Test Plan
 
