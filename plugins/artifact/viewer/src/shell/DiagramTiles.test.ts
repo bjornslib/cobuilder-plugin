@@ -14,7 +14,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { labelFor } from "./DiagramTiles";
+import { labelFor, sizeFromViewBox } from "./DiagramTiles";
 
 describe("labelFor", () => {
   it("reads the grammar word under a leading comment line", () => {
@@ -57,5 +57,31 @@ describe("labelFor: the named runtime slot", () => {
     expect(labelFor('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">')).toBe(
       "Runtime architecture",
     );
+  });
+});
+
+describe("sizeFromViewBox", () => {
+  it("gives a viewBox-only SVG the pixel size of its viewBox", () => {
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1850 800"><g/></svg>';
+
+    expect(sizeFromViewBox(svg)).toBe(
+      '<svg width="1850" height="800" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1850 800"><g/></svg>',
+    );
+  });
+
+  it("reads the extent after an offset origin", () => {
+    expect(sizeFromViewBox('<svg viewBox="-50 -20 300.5 120"/>')).toContain('width="300.5" height="120"');
+  });
+
+  it("leaves an SVG that already has a size as it is", () => {
+    const svg = '<svg width="640" viewBox="0 0 1850 800"/>';
+
+    expect(sizeFromViewBox(svg)).toBe(svg);
+  });
+
+  it("leaves an SVG with no viewBox as it is", () => {
+    const svg = "<svg><g/></svg>";
+
+    expect(sizeFromViewBox(svg)).toBe(svg);
   });
 });
