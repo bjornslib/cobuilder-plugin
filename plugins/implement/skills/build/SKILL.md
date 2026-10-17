@@ -101,18 +101,29 @@ Apply skeptical curiosity to every claim in the workflow:
 
 ## Prior art from project memory
 
-Gate 1 asks project memory once, before you write `01-product.md`. If the
-session lists the `mcp__cobuilder-memory__consult` tool, call it. Pass a
-`focus` input: the decision at hand and what to look for, in 40 words or
-fewer. The tool answers with past decisions, rejected options, and limits for
-the feature. Treat a recall record as evidence and a reflect answer as a lead.
-Check each claim you use against the code or the ADR it names. Record the
-result in `00-status.md` as `Memory: consulted <date>`, and name each record
-that you use or reject, with the reason.
+The build asks project memory twice. The first call comes at Gate 1,
+before you write `01-product.md`. The second call comes before Gate 3, when
+the build commits to its files, signatures, and test layout. When no design
+record exists, Gate 2 is that commitment, so make the second call before
+Gate 2 instead.
 
-If the session does not list the tool, record `Memory: absent` and continue.
-Do not ask the engineer first, and do not call Hindsight tools yourself in its
-place.
+For each call, if the session lists the `mcp__cobuilder-memory__consult` tool,
+call it. Pass a `focus` input: the decision at hand and what to look for, in
+40 words or fewer. The first focus asks what was decided about the feature,
+which options were rejected, and which limits apply. The second focus asks
+about the chosen approach only: past module splits, test rules, and
+conventions that it must honour. Do not repeat the first focus. Mark a record
+that you judged in the first call as seen.
+
+Treat a recall record as evidence and a reflect answer as a lead. Check each
+claim you use against the code or the ADR it names. Record each result in
+`00-status.md`, and name each record that you use or reject, with the reason.
+Write the test rules and conventions that the second call finds into
+`03-program-design.md`, so RED reads them.
+
+If the session does not list the tool, record `absent` for that call and
+continue. Do not ask the engineer first, and do not call Hindsight tools
+yourself in its place.
 
 ---
 
@@ -206,7 +217,8 @@ Template for `00-status.md`:
   - 4c Blind rubrics: pending | APPROVED <date>
 
 Design mode: <design-name> | none | declined
-Memory: consulted <date> | absent
+Memory (Gate 1): consulted <date> | absent
+Memory (before Gate 3, or Gate 2): consulted <date> | absent
 
 ## Slices
 - [ ] Slice 1 — tracer bullet: <one line>   score: —   note: —
@@ -279,6 +291,8 @@ Rules:
 
 If a design record exists (see the design mode record section above), ground
 this document in its `contracts.md` as well as its `intent.json` (ADR-0036).
+If no design record exists, ask project memory the second time before you
+write, as "Prior art from project memory" above describes.
 
 Read existing code before authoring `02-architecture.md`:
 
@@ -356,7 +370,8 @@ the reason.
 ## Gate 3 — Program Design (feature level)
 
 If a design record exists, ground this document in its `contracts.md` as
-well as its `intent.json` (ADR-0036).
+well as its `intent.json` (ADR-0036). Then ask project memory the second time,
+as "Prior art from project memory" above describes.
 
 Define code structures in `03-program-design.md`:
 

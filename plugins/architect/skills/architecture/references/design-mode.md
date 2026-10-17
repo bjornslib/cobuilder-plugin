@@ -104,8 +104,9 @@ three nano-tier book excerpts for the candidate books, then escalate any
 one of them to mini or full only when its principles are judged to matter
 for this design. Full-tier loading is never automatic.
 
-Ask project memory next, before the hypothesis. If the session lists the
-`mcp__cobuilder-memory__consult` tool, call it once. Pass a `focus` input: the
+Ask project memory next, before the hypothesis. This is the first of two
+calls. Stage 4 makes the second. If the session lists the
+`mcp__cobuilder-memory__consult` tool, call it. Pass a `focus` input: the
 decision at hand and what to look for, in 40 words or fewer. The tool answers
 with past decisions, rejected options, and limits for this outcome.
 Treat a recall record as evidence and a reflect answer as a lead. Check each
@@ -175,6 +176,17 @@ This stage is the product. It is the only producer of
 that records one choice instead of a decision. That is a defect.
 `goal.min_work.challenge_stage_run` must be true before the design can
 complete.
+
+### 7.0 Ask project memory again
+
+Before the first challenge, ask project memory a second time. If the session
+lists the `mcp__cobuilder-memory__consult` tool, call it with a new `focus`
+about the leading approach only. Ask whether that approach, or an option close
+to it, was rejected before. Ask which ADR, limit, or convention it must
+honour. Do not repeat the Stage 1 focus. Mark a record that you judged in
+Stage 1 as seen, and judge only the new records. Use each record that you
+keep as evidence in 7.1 and 7.2, and cite the ADR it names, as 7.3 requires.
+If the session does not list the tool, say so in one line and continue.
 
 ### 7.1 Confront unconsidered risks
 
