@@ -66,7 +66,7 @@ A push never sends the envelope, and a Jira pull replaces it. A Linear pull repl
 
 ### Option A. A port with adapters (CoBuilder owns the seam)
 
-`shared/tracker/` holds a neutral record, a port, one adapter for each tracker, and the one projector.
+`shared/tracker_port/` holds a neutral record, a port, one adapter for each tracker, and the one projector.
 
 ```
 CoBuilder readers and writers

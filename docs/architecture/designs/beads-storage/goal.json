@@ -19,7 +19,7 @@
     "the files adapter alone projects to the current data/index.json offline, with no bd installed",
     "next_ready(kind, under) returns the ready records of one kind, and on beads, closing slice n-1 makes slice n appear in bd ready",
     "a pull request issue blocks each epic it holds until a human closes it. Gates 1 to 4, 2b, and 4a to 4c are scalar fields on the program issue",
-    "tracker.py exits 2 on a write with no configured adapter, and a grep check finds no call to bd outside shared/tracker/",
+    "tracker.py exits 2 on a write with no configured adapter, and a grep check finds no call to bd outside shared/tracker_port/",
     "a second clone runs bd sync and sees the same programs, epics, and slices",
     "a test removes the file sources. Then one list-programs call names a program and its stage, and one next-ready call names the next slice, with zero file reads",
     "an envelope round trip compares every value and every list item, and not only the keys",
@@ -49,26 +49,30 @@
   },
   "epics": [
     {
-      "id": "beads-storage/E1",
-      "title": "The port: shared/tracker/ holds the neutral TrackerRecord and the TrackerPort with its capabilities. It also holds the one projector, the fake adapter, a read-only files adapter, and one contract test. Checked-in fixtures in tests/fixtures/tracker/ feed the fake adapter and the tests. It also holds the tracker CLI shared/tracker.py over the fake and files adapters, and the shared reference shared/tracker-usage.md. E1 ships alone, and its projector matches data/index.json offline.",
+      "id": "E1",
+      "title": "The port: shared/tracker_port/ holds the neutral TrackerRecord and the TrackerPort with its capabilities. It also holds the one projector, the fake adapter, a read-only files adapter, and one contract test. Checked-in fixtures in tests/fixtures/tracker/ feed the fake adapter and the tests. It also holds the tracker CLI shared/tracker.py over the fake and files adapters, and the shared reference shared/tracker-usage.md. E1 ships alone, and its projector matches data/index.json offline.",
+      "outcome": "A caller reads and writes workflow state through one port, and the fake and files adapters pass the contract test.",
       "slug": "tracker-port",
       "branch": "design/beads-storage/tracker-port"
     },
     {
-      "id": "beads-storage/E2",
+      "id": "E2",
       "title": "The beads adapter and the seed: shared/beads_seed.py belongs to shared/ and seeds programs, epics, slices, and pull request issues by external_ref. It only creates, and it covers every plan with a 04-slices.md and the status-only plan skill-collision-fix. It runs bd init with --skip-agents --skip-hooks, writes the gate scalars, and derives its counts at run time. It writes the beads adapter notes. They hold the bd init consent question and its two flags, bd sync, and the claim read-back. The Dolt-in-git clone smoke check gates E2.",
+      "outcome": "Beads holds the state of programs, epics, slices, and pull requests, and a second clone sees the same state.",
       "slug": "beads-adapter",
       "branch": null
     },
     {
-      "id": "beads-storage/E3",
-      "title": "Read model: build_index.py, build_builds_view.py, and verify_gate.py read through the port and the projector. The stateful file sections generate from the tracker. The index keeps its shape, and a test checks that every join scalar comes from the envelope. The readers call next-ready in place of a read of 04-slices.md.",
+      "id": "E3",
+      "title": "Read model: build_index.py, build_builds_view.py, and verify_gate.py read through the port and the projector. The stateful file sections generate from the tracker. The index keeps its shape, and a test checks that every join scalar comes from the envelope. The readers import the port, and they do not read 04-slices.md for state.",
+      "outcome": "The index, the gate check, and the builds view read state through the port, and the viewer needs no change.",
       "slug": "read-model",
       "branch": null
     },
     {
-      "id": "beads-storage/E4",
+      "id": "E4",
       "title": "Write model: the implement and architect procedures and scripts write state only through the port, and every state write needs a configured adapter. Gate approvals become program scalars. A pull request issue opens at the pull request and a human closes it at the merge. The goal.json epics[] shape drops branch, pr, and state. The skill text lands here: a Workflow state section in the SKILL.md of architect, implement, pr, and artifact. The step procedures name the command.",
+      "outcome": "Every state write goes through the port, and the four main skills teach the one command.",
       "slug": "write-model",
       "branch": null
     }

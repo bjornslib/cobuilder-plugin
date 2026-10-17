@@ -74,7 +74,7 @@
   </g>
 
   <g id="bound-shared">
-    <title>shared boundary: shared/tracker.py, shared/tracker/, and the shared scripts</title>
+    <title>shared boundary: shared/tracker.py, shared/tracker_port/, and the shared scripts</title>
     <rect x="540" y="130" width="230" height="640" fill="none" stroke="#3D3D3A" stroke-width="1.5" rx="8"/>
     <text x="552" y="150" fill="#87867F">shared</text>
 

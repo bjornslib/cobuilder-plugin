@@ -46,7 +46,7 @@ The mechanism, decided in ADR-0017, that shares code between the six plugins: a 
 
 <a id="envelope"></a>
 **Envelope** (`cobuilder-packaging`):
-The `envelope` map of a tracker record, versioned by `v` and sorted by `kind`: `program`, `epic`, `slice`, or `pr`. The beads adapter stores it as `metadata.cb` on an issue (ADR-0031). It holds scalars, paths, and lists of paths only.
+The `envelope` map of a tracker record, versioned by `v` and sorted by `kind`: `program`, `epic`, `slice`, or `pr`. It holds scalars, paths, and lists of paths only, and the beads adapter stores it as `metadata.cb` on an issue (ADR-0031).
 _Avoid_: metadata blob (the envelope is one named, versioned key, and it holds no prose)
 
 <a id="pull-request-issue"></a>
@@ -56,12 +56,12 @@ _Avoid_: merge gate (the pull request issue replaces it), gate issue (no `gate` 
 
 <a id="gate-field"></a>
 **Gate field** (`cobuilder-packaging`):
-A flat scalar in the envelope of a program record: `gate1`, `gate2`, `gate2b`, `gate3`, `gate4`, `gate4a`, `gate4b`, or `gate4c`. It holds an approval date or `n/a`. A `gate<n>_view` field holds the view route. See "Gate 4a / 4b / 4c" and "Gate 2b" for the gate steps in `implement`.
+A flat scalar in the envelope of a program record: `gate1`, `gate2`, `gate2b`, `gate3`, `gate4`, `gate4a`, `gate4b`, or `gate4c`. It holds an approval date or `n/a`, and a `gate<n>_view` field holds the view route.
 _Avoid_: gate issue (the approval is a field on the program issue, and no gate issue exists)
 
 <a id="tracker-port"></a>
 **Tracker port** (`cobuilder-packaging`):
-The interface in `shared/tracker/` through which every reader and writer of workflow state talks to the task system (ADR-0040). It reports `capabilities()`, and no caller names a tracker.
+The interface in `shared/tracker_port/` through which every reader and writer of workflow state talks to the task system (ADR-0040). It reports `capabilities()`, and no caller names a tracker.
 _Avoid_: storage layer (ADR-0031 used it for beads, and beads is now one adapter behind the port), bridge (a `bd jira sync` command does not push the envelope)
 
 <a id="tracker-record"></a>
@@ -71,7 +71,7 @@ _Avoid_: issue (an issue is a beads, Linear, or Jira record, and the tracker rec
 
 <a id="tracker-adapter"></a>
 **Tracker adapter** (`cobuilder-packaging`):
-One implementation of the tracker port for one tracker. The `beads` adapter comes first, `files` reads today's files, and `fake` keeps records in memory. The `linear` and `jira` adapters are later programs.
+One implementation of the tracker port for one tracker: `beads` comes first, `files` reads today's files, and `fake` keeps records in memory. The `linear` and `jira` adapters are later programs.
 _Avoid_: connector (a loose word for any tool that moves data, and an adapter must pass the contract test)
 
 <a id="projector"></a>
@@ -188,7 +188,7 @@ _Avoid_: bug
 
 <a id="epic"></a>
 **Epic** (`implement`):
-One unit inside a design's `goal.json.epics[]`, owned and decomposed by `implement`. A pull request issue blocks each epic it holds, and the epic is free when a human closes that issue. It is the join key between a design and a PR, not an ADR, a design, or a PR itself.
+One unit inside a design's `goal.json.epics[]`, owned and decomposed by `implement`. It is the join key between a design and a PR, and a pull request issue blocks each epic it holds until a human closes that issue.
 
 <a id="slice"></a>
 **Slice** (`implement`):

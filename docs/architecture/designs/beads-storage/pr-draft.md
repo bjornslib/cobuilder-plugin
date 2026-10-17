@@ -2,7 +2,7 @@
 
 ## Summary
 
-A tracker port in `shared/tracker/` sits between CoBuilder and the task system (ADR-0040). Beads v1.3.0 is the first adapter and the master of programs, epics, slices, and pull requests (ADR-0031). The proposed central store is Dolt-in-git (`refs/dolt/data`), synced with `bd sync`. The cloud clone case is not verified. Every other record stays a file.
+A tracker port in `shared/tracker_port/` sits between CoBuilder and the task system (ADR-0040). Beads v1.3.0 is the first adapter and the master of programs, epics, slices, and pull requests (ADR-0031). The proposed central store is Dolt-in-git (`refs/dolt/data`), synced with `bd sync`. The cloud clone case is not verified. Every other record stays a file.
 
 ## Motivation
 
@@ -10,7 +10,7 @@ Slice state, scores, and attempts live in markdown tables today, and epic joins 
 
 ## Changes
 
-1. **The port.** `shared/tracker/` holds the neutral `TrackerRecord` (with an `assignee`, a GitHub login) and the `TrackerPort`. The port has `next_ready(kind="slice", under=None)`, `sync`, `claim_slice`, `escalate`, `open_pull_request`, `set_pull_request_state`, and `capabilities()`. The directory also holds the one projector, a `fake` adapter, a read-only `files` adapter, and one contract test for every adapter. The fake adapter loads checked-in fixtures from `tests/fixtures/tracker/`. E1 ships alone, and its projector matches `data/index.json` offline.
+1. **The port.** `shared/tracker_port/` holds the neutral `TrackerRecord` (with an `assignee`, a GitHub login) and the `TrackerPort`. The port has `next_ready(kind="slice", under=None)`, `sync`, `claim_slice`, `escalate`, `open_pull_request`, `set_pull_request_state`, and `capabilities()`. The directory also holds the one projector, a `fake` adapter, a read-only `files` adapter, and one contract test for every adapter. The fake adapter loads checked-in fixtures from `tests/fixtures/tracker/`. E1 ships alone, and its projector matches `data/index.json` offline.
 2. **The beads adapter and the seed.** `shared/beads_seed.py` seeds programs, epics, slices, and pull request issues by `external_ref`, and only creates. It covers every plan with a `04-slices.md` and the status-only plan `skill-collision-fix`. It runs `bd init --skip-agents --skip-hooks`, writes the gate scalars, and derives its counts at run time. The cloud clone smoke check gates E2.
 3. **The read model.** `build_index.py`, `build_builds_view.py`, and `verify_gate.py` read through the port and the projector. The stateful file sections generate from the tracker. The viewer and `data/index.json` keep their shapes.
 4. **The write model.** The implement and architect procedures and scripts write state only through the port, and every state write needs a configured adapter. A pull request is its own issue (`cb.kind = pr`, `external_ref gh-<n>`) that blocks each epic it holds. A human closes it at the merge, until `gh:pr` automation lands. Gates 1 to 4, Gate 2b, and 4a to 4c are flat scalar fields on the program issue. `goal.json` `epics[]` stops carrying `branch`, `pr`, and `state`.
@@ -40,7 +40,7 @@ Slice state, scores, and attempts live in markdown tables today, and epic joins 
 - Seed a repo copy and compare projected counts with the current index.
 - Round-trip one envelope through `bd create`, `bd update`, `bd export`, and `bd list --json`, and compare every value and every list item.
 - Close slice n and assert `bd ready` names slice n+1. Run `next_ready` with the file sources removed, and assert one call names the next slice.
-- Assert that a write with no configured adapter fails, and that no script outside `shared/tracker/` calls `bd`.
+- Assert that a write with no configured adapter fails, and that no script outside `shared/tracker_port/` calls `bd`.
 - Create one pull request issue that blocks two epics, and assert `bd ready` hides both until `bd close`.
 - Write the gate scalars on a program issue and assert `bd show` returns them unchanged.
 - Run `bd sync` from a second clone and assert it sees the same programs, epics, and slices.

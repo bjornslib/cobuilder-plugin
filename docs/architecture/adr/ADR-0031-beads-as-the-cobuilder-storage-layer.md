@@ -83,7 +83,7 @@ Beads v1.3.0 is available in this workspace. The beads fork sync work in this wo
 
 The narrated repo owns one `.beads/` tracker. For this repository the tracker is its own: this repo is also a narrated repo (the `cobuilder-viewer` program narrates this checkout), so the pilot seeds here. Prefix `cb`.
 
-A target repo gets its tracker when a program seeds into it, not at plugin install. ADR-0016 sets the install-surface rule. The plugins ship no agent, no hook, and no MCP server. Only the beads adapter in `shared/tracker/` calls `bd`, the way scripts call `git` and `gh` today.
+A target repo gets its tracker when a program seeds into it, not at plugin install. ADR-0016 sets the install-surface rule. The plugins ship no agent, no hook, and no MCP server. Only the beads adapter in `shared/tracker_port/` calls `bd`, the way scripts call `git` and `gh` today.
 
 Beads v1.3.0 requires `types.custom = program` in the tracker config. Set it once at `bd init`. The custom-type surface is the upstream-sanctioned home for orchestrator types. the beads fork's own tracker already carries `merge-request` this way.
 
@@ -191,7 +191,7 @@ The workflow reads never touch the index. The port operation `next_ready(kind="s
 | A session ends its writes | `sync` | `bd sync` |
 | A design is superseded | `set_program_stage` | `bd close <program>` plus a `supersedes` edge to the successor |
 
-Only the beads adapter runs these commands. It writes the envelope files next to the work and feeds them to `bd` with `--metadata @file`. No plugin code parses beads JSON to write it, and no caller outside `shared/tracker/` calls `bd`.
+Only the beads adapter runs these commands. It writes the envelope files next to the work and feeds them to `bd` with `--metadata @file`. No plugin code parses beads JSON to write it, and no caller outside `shared/tracker_port/` calls `bd`.
 
 Smoke-verified against bd 1.3.0: `--parent` creates the parent-child dependency itself, and adding a second `parent-child` edge by hand is refused as a cycle. The ladder read flips correctly: with slice 1 open, `bd ready` names slice 1. after `bd close`, it names slice 2. `bd export` carries the full envelope, so a plain JSONL interchange stays available to any future consumer. Verified 2026-09-29: `bd export` also carries the comments array inline on each issue. `bd show <id> --json --include-comments` streams one issue's comments.
 
@@ -225,7 +225,7 @@ A review against the sync goal found the ADR silent on four surfaces. This amend
 
 **Epic scope notes.** The four epics match `goal.json`.
 
-E1 builds the port in `shared/tracker/`: the neutral record, the projector, the fake adapter, a read-only files adapter that reuses `slice_table`, and the contract test. E1 ships alone, and its projector matches `data/index.json` offline.
+E1 builds the port in `shared/tracker_port/`: the neutral record, the projector, the fake adapter, a read-only files adapter that reuses `slice_table`, and the contract test. E1 ships alone, and its projector matches `data/index.json` offline.
 
 E2 builds the beads adapter and `shared/beads_seed.py`, which only creates. It also builds a count check that derives its counts from the current index at run time, with no pinned literal. The Dolt-in-git cloud-clone smoke check gates E2.
 
@@ -257,7 +257,7 @@ Not verified: a cloud session that holds only a git clone. A smoke check of that
 
 # Amendment 2026-10-17 (fourth) — beads is the first adapter
 
-**Scope narrows.** ADR-0040 adds a tracker port in `shared/tracker/`. Readers and writers of workflow state call the port, and an adapter calls the tracker. This ADR no longer says that beads is the storage layer for every caller. Beads is the first adapter. This ADR owns the beads-specific parts: the mapping, the `metadata.cb` envelope, `bd init --skip-agents --skip-hooks`, the Dolt-in-git store, and `shared/beads_seed.py`.
+**Scope narrows.** ADR-0040 adds a tracker port in `shared/tracker_port/`. Readers and writers of workflow state call the port, and an adapter calls the tracker. This ADR no longer says that beads is the storage layer for every caller. Beads is the first adapter. This ADR owns the beads-specific parts: the mapping, the `metadata.cb` envelope, `bd init --skip-agents --skip-hooks`, the Dolt-in-git store, and `shared/beads_seed.py`.
 
 **The write rule changes its subject.** "bd is required for every state write" becomes "a configured tracker adapter is required for every state write". With the beads adapter, that means `bd`. Without an adapter, scripts read the file sources and refuse state writes.
 
@@ -266,6 +266,8 @@ Not verified: a cloud session that holds only a git clone. A smoke check of that
 **What stays.** Every row of the mapping, the state vocabularies, and the joins still describe the beads adapter. The write-model table now names the port operation first and the beads command second. The first three amendments stand for beads, except where the third and fourth amendments replace them. ADR-0040 wins on the port.
 
 **Agents call one command.** The write-model commands above run inside the beads adapter. An agent never types them. An agent calls `shared/tracker.py`, and ADR-0040 defines that command and the shared reference that teaches it. The beads notes in that reference hold the `bd init` consent question and its two flags.
+
+**Two statements that the program design overrides.** The deferred state of an epic is the envelope key `deferred`. It is not a blocking edge or a parent status, so the rows of the state-vocabulary table that name a blocking edge for `deferred` no longer apply. Projector parity with the live `docs/plans` tree is a one-off manual run in slice 10 of the build plan. It is not a test, because no test reads the live plans.
 
 ## Not decided
 

@@ -5,7 +5,7 @@
   "authorship": "agent-generated",
   "problem": "CoBuilder workflow state has no store. Slice states, scores, and attempts sit in the markdown tables of docs/plans/<slug>/04-slices.md, and any session can silently contradict that prose. Epic branches and pull-request numbers sit in hand-kept index joins. Nothing answers what is next, what blocks what, or what changed while two sessions worked one ladder.",
   "why_now": "Work runs locally, in cloud sessions, and with a team, so the backlog and the program states drift apart. The engineer wants no coupling of CoBuilder to beads, because Linear and Jira may follow. A layer between CoBuilder and the task system costs least before any caller exists.",
-  "approach": "A tracker port in shared/tracker/ sits between CoBuilder and the task system. A neutral TrackerRecord and a TrackerPort carry every read and write, including sync, claim, and pull request operations. One projector turns records into data/index.json. Beads is the first adapter and keeps the metadata.cb envelope, with a proposed Dolt-in-git central store. A read-only files adapter and a fake adapter prove the seam, and one contract test runs against every adapter. Agents call one command, shared/tracker.py, and a shared reference teaches it.",
+  "approach": "A tracker port in shared/tracker_port/ sits between CoBuilder and the task system. A neutral TrackerRecord and a TrackerPort carry every read and write, including sync, claim, and pull request operations. One projector turns records into data/index.json. Beads is the first adapter and keeps the metadata.cb envelope, with a proposed Dolt-in-git central store. A read-only files adapter and a fake adapter prove the seam, and one contract test runs against every adapter. Agents call one command, shared/tracker.py, and a shared reference teaches it.",
   "alternatives": [
     {
       "option": "Keep markdown tables and hand-edited JSON as the only state",
@@ -85,7 +85,7 @@
     "Seed against a copy of the repo and compare projected counts against data/index.json",
     "Round-trip one envelope through create, update, export, and list --json. Compare every value and every list item, and not only the keys",
     "Close slice n and assert bd ready names slice n+1. Run next_ready with the file sources removed, and assert one call names the next slice",
-    "Assert that a write with no configured adapter fails, and that no script outside shared/tracker/ calls bd",
+    "Assert that a write with no configured adapter fails, and that no script outside shared/tracker_port/ calls bd",
     "Create one pull request issue that blocks two epics, and assert bd ready hides both until bd close",
     "Write the gate scalars of Gates 1 to 4, 2b, and 4a to 4c on a program issue. Assert that bd show returns them unchanged",
     "Run bd sync from a second clone and assert it sees the same programs, epics, and slices",

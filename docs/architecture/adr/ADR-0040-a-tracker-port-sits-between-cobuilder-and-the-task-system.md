@@ -13,7 +13,7 @@ state: decided
 groups: [data-model, implement, architect]
 approved_by: ""
 problem: "ADR-0031 binds CoBuilder to beads. Every reader and writer of workflow state would call bd directly. A team that works in Linear or Jira could not use CoBuilder without beads, and a later adapter would force a rewrite of every caller."
-decision: "CoBuilder gets a tracker port in shared/tracker/. A neutral TrackerRecord and a TrackerPort define every read and write of workflow state. One shared projector turns record lists into entities, joins, and data/index.json. Adapters implement the port: beads first, then files (read only) and fake (in memory). Linear and Jira follow as later programs, and one contract test suite runs against every adapter. One command, shared/tracker.py, is the only entry point for agents, and one shared reference, shared/tracker-usage.md, teaches agents to use it."
+decision: "CoBuilder gets a tracker port in shared/tracker_port/. A neutral TrackerRecord and a TrackerPort define every read and write of workflow state. One shared projector turns record lists into entities, joins, and data/index.json. Adapters implement the port: beads first, then files (read only) and fake (in memory). Linear and Jira follow as later programs, and one contract test suite runs against every adapter. One command, shared/tracker.py, is the only entry point for agents, and one shared reference, shared/tracker-usage.md, teaches agents to use it."
 maps_to:
   context: shared
   modules: [shared/tracker, shared/tracker.py, shared/tracker-usage.md, shared/build_index.py, plugins/implement, plugins/architect]
@@ -70,7 +70,7 @@ The exploration note compares beads, Linear, and Jira on nine points. They are c
 
 ## Decision
 
-`shared/tracker/` holds the port. It has six parts.
+`shared/tracker_port/` holds the port. It has six parts.
 
 - **TrackerRecord.** A neutral record. Its fields are `id`, `kind` (`program`, `epic`, `slice`, `pr`), `parent`, `blocked_by`, `lifecycle` (`open`, `in_progress`, `closed`), `assignee`, `envelope`, and `external_ref`. The `assignee` holds a GitHub login. The envelope follows rule 2 of ADR-0031: scalars, paths, and lists of paths. An adapter whose slot is flat, such as Linear, encodes a list as a JSON string. The beads status `hooked` maps to `in_progress`.
 - **TrackerPort.** The operations are these.
@@ -80,7 +80,7 @@ The exploration note compares beads, Linear, and Jira on nine points. They are c
   - `claim_slice(id, claimant)` sets the assignee to the claimant, a GitHub login. When `atomic_claim` is false, it writes and then reads the assignee back. Beads stores the login as the assignee string. An adapter maps a login to a tracker user through a user map in its config.
   - Set a program stage, a gate value, an epic state, and a slice state with score and attempts. Record an attempt. Add a note.
   - `escalate(slice, score, reason)` marks a slice that failed its attempt limit. It sets the envelope flag `escalated` to true. It records the score and the reason as a dated comment. It stops the slice loop until the engineer decides. It replaces the `## Escalated` section that agents write in `00-status.md` (see `slice-loop.md` lines 129-132 and `validation-scoring.md` lines 105-112 in `plugins/implement`).
-  - `open_pull_request(ref, epic_ids)` creates the pull request record and blocks each epic. `set_pull_request_state(merged)` closes it.
+  - `open_pull_request(ref, epic_ids)` creates the pull request record and blocks each epic. `set_pull_request_state(ref, merged)` closes it.
   - Regenerate the status files. Seed from files.
   - `capabilities()` is a read-only report of four flags: `native_ready`, `atomic_claim`, `rich_envelope`, and `offline_read`. The contract test gates cases on the flags. Callers read `atomic_claim` to know whether a claim needs a read-back. Callers read `offline_read` to know whether the index rebuild can run with no network. With `native_ready` false, the adapter computes ready itself.
 
@@ -99,11 +99,11 @@ One contract test suite runs against every adapter, and a read-only adapter runs
 2. `next_ready` returns the right records for each kind: `program`, `epic`, and `slice`. One case passes `under`.
 3. `claim_slice` leaves the claimant in `assignee`. When `atomic_claim` is true, it writes once. When it is false, it writes and then reads the assignee back.
 4. A value-level envelope round trip: write, read, and compare each value and each list item, not only each key. A list survives the encoding of a flat-slot adapter.
-5. A pull request record from `open_pull_request` blocks two epics, and `next_ready(kind="epic")` shows both only after `set_pull_request_state(merged)`.
+5. A pull request record from `open_pull_request` blocks two epics, and `next_ready(kind="epic")` shows both only after `set_pull_request_state(ref, merged)`.
 6. A write with no configured adapter fails.
 7. The projector gives one index from the records of the fake adapter and from the records of the beads adapter.
 
-A second check, a grep-based test, asserts that no script outside `shared/tracker/` calls `bd`.
+A second check, a grep-based test, asserts that no script outside `shared/tracker_port/` calls `bd`.
 
 A third group of checks guards the documents. They are in a proposed `tests/test_tracker_docs.py`, and they check structure and effect, never wording.
 
@@ -131,6 +131,7 @@ Out of scope: the Linear and Jira adapters, any live-account call, and any MCP s
 Agents follow Markdown, so the port needs a command surface and one document that teaches it. This ADR designs both. It does not write them.
 
 ### The command
+The command is the file `shared/tracker.py`. The adapters, the record, and the projector live in the package `shared/tracker_port/`. The two names differ on purpose. A file `tracker.py` and a package `tracker` in one folder collide on `import tracker`, and `tests/test_script_references.py` needs the top-level file for each `uv run shared/<name>.py` call. The program design of 2026-10-17 found this collision.
 
 - **Call.** `uv run "${CLAUDE_PLUGIN_ROOT}/shared/tracker.py" <operation> [args]`. The script is a PEP 723 script. The path works in every plugin, because ADR-0017 symlinks `shared/` into each plugin.
 - **Subcommands.** One for each port operation, with the same name and hyphens: `next-ready`, `claim-slice`, `set-slice-state`, `record-attempt`, `escalate`, `set-gate-value`, `set-epic-state`, `set-program-stage`, `open-pull-request`, `set-pull-request-state`, `add-note`, `sync`, `regenerate-status-files`, `seed-from-files`, `capabilities`, `list-programs`, `list-epics`, `list-slices`, `list-pull-requests`, and `get-slice`. `set-epic-state` also takes `--branch`, because the branch of an epic is an envelope field.
@@ -168,7 +169,7 @@ The proposed path is `shared/tracker-usage.md`. The contract and the commands li
 | A pull request opens | `open-pull-request` |
 | A human merges the pull request | `set-pull-request-state`, then `set-epic-state` |
 | A program is implemented or superseded | `set-program-stage` |
-| A session ends its writes | `sync`, then `regenerate-status-files` |
+| A slice passes, and a session ends its writes | `regenerate-status-files` after the pass, then `sync` and `regenerate-status-files` at the end |
 
 ### Wiring
 
@@ -185,7 +186,7 @@ The step procedures stay where each moment happens, for example in `slice-loop.m
 
 ### Work by epic
 
-E1 builds `tracker.py` over the fake and files adapters, and the reference. E2 builds the beads adapter notes. E3 switches the readers to `next-ready`, in place of a read of `04-slices.md`. E4 writes the skill text.
+E1 builds `tracker.py` over the fake and files adapters, and the reference. E2 builds the beads adapter notes. E3 switches the readers to the port, in place of a parse of `04-slices.md`. E4 writes the skill text.
 
 ### Export to other harnesses
 
@@ -210,4 +211,4 @@ E1 builds `tracker.py` over the fake and files adapters, and the reference. E2 b
 
 ## Maps to
 
-Context `shared`, modules `shared/tracker`, `shared/tracker.py`, `shared/tracker-usage.md`, `shared/build_index.py`, `plugins/implement`, and `plugins/architect`. ADR-0031 holds the beads mapping, which is the first adapter.
+Context `shared`, modules `shared/tracker_port`, `shared/tracker.py`, `shared/tracker-usage.md`, `shared/build_index.py`, `plugins/implement`, and `plugins/architect`. ADR-0031 holds the beads mapping, which is the first adapter.

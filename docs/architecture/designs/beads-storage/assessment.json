@@ -144,7 +144,7 @@
       "id": "F13",
       "severity": "info",
       "title": "The port keeps the base layer and the install surface intact",
-      "detail": "shared/tracker/ imports no plugin code, and an adapter calls a tool the way scripts call git and gh. No MCP server ships. verify_gate.py keeps importing only slice_table from shared and reaches the tracker through the port. A grep test checks that no script outside shared/tracker/ calls bd. One projector replaces the state parsing spread over twelve readers.",
+      "detail": "shared/tracker_port/ imports no plugin code, and an adapter calls a tool the way scripts call git and gh. No MCP server ships. verify_gate.py keeps importing only slice_table from shared and reaches the tracker through the port. A grep test checks that no script outside shared/tracker_port/ calls bd. One projector replaces the state parsing spread over twelve readers.",
       "cites": [
         "ADR-0016",
         "ADR-0017",
