@@ -6,7 +6,7 @@ and returns the records, with the judging rules for the agent.
 
 ## What it does
 
-- `consult` (shown to the agent as `mcp__cobuilder-memory__consult`) takes no input. Haiku writes the recall query from the session. The plugin then runs recall and returns the records.
+- `consult` (shown to the agent as `mcp__cobuilder-memory__consult`) takes an optional `focus`. With a focus, Haiku searches for it. Without one, Haiku works out the decision from the session. The plugin then runs recall and returns the records.
 - `/memory-recall` runs the same memory run for the person.
 - `/memory-check` calls each Hindsight tool once and prints one line per tool: `ok` or `failed`, the time, and the reason.
 

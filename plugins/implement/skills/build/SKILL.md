@@ -102,8 +102,9 @@ Apply skeptical curiosity to every claim in the workflow:
 ## Prior art from project memory
 
 Gate 1 asks project memory once, before you write `01-product.md`. If the
-session lists the `mcp__cobuilder-memory__consult` tool, call it. It takes no
-input, and it answers with past decisions, rejected options, and limits for
+session lists the `mcp__cobuilder-memory__consult` tool, call it. Pass a
+`focus` input: the decision at hand and what to look for, in 40 words or
+fewer. The tool answers with past decisions, rejected options, and limits for
 the feature. Treat a recall record as evidence and a reflect answer as a lead.
 Check each claim you use against the code or the ADR it names. Record the
 result in `00-status.md` as `Memory: consulted <date>`, and name each record

@@ -61,15 +61,70 @@ test('the prompt block holds the newest prompts within 8,000 characters', () => 
   expect(block).not.toContain('[0]')
 })
 
-test('the session tail holds the last 12,000 characters of the session', () => {
-  const messages = Array.from({ length: 30 }, (_, i) => ({
-    role: 'user',
-    text: `[${i}]` + 'x'.repeat(1000),
-    toolUses: [],
-  }))
+// Slice 8 cases: the session tail keeps the last six real messages, with injected blocks removed,
+// and at most the newest 12,000 characters of them
+
+// A list of user messages, with the text of each one from its index
+function turns(count: number, text: (i: number) => string): any[] {
+  return Array.from({ length: count }, (_, i) => ({ role: 'user', text: text(i), toolUses: [] }))
+}
+
+test('the session tail holds only the last six messages', () => {
+  const messages = turns(30, (i) => `[${i}]` + 'x'.repeat(1000))
   const tail = sessionTail(messages as any)
   expect(tail.length).toBeLessThan(12001)
-  expect(tail.length).toBeGreaterThan(11000)
   expect(tail).toContain('[29]')
-  expect(tail).not.toContain('[0]')
+  expect(tail).toContain('[24]')
+  expect(tail).not.toContain('[23]')
+})
+
+test('the session tail keeps the last six of ten short messages, and the 4th-from-oldest is not one of them', () => {
+  const messages = turns(10, (i) => `MSG-0${i} short text`)
+  const tail = sessionTail(messages as any)
+  expect(tail).toContain('user: MSG-09 short text')
+  expect(tail).toContain('MSG-04 short text')
+  expect(tail).not.toContain('MSG-03 short text')
+  expect(tail).not.toContain('MSG-00 short text')
+})
+
+test('the session tail keeps the newest 12,000 characters of six long messages', () => {
+  const messages = turns(6, (i) => 'M' + i + ':' + 'x'.repeat(2997))
+  const tail = sessionTail(messages as any)
+  expect(tail.length).toBeLessThanOrEqual(12000)
+  expect(tail.trimEnd().endsWith(messages[5].text)).toBe(true)
+})
+
+test('a message that holds only an injected block does not count toward the six', () => {
+  const texts = [
+    'MSG-00 real',
+    '<system-reminder>x</system-reminder>',
+    'MSG-02 real',
+    'MSG-03 real',
+    'MSG-04 real',
+    'MSG-05 real',
+    'MSG-06 real',
+  ]
+  const tail = sessionTail(texts.map((text) => ({ role: 'user', text, toolUses: [] })) as any)
+  expect(tail).toContain('MSG-00 real')
+  expect(tail).toContain('MSG-06 real')
+  expect(tail).not.toContain('system-reminder')
+})
+
+test('the session tail drops each injected block type and keeps the text around it', () => {
+  const text =
+    'KEEP-A <system-reminder>REMIND-MARK</system-reminder> KEEP-B ' +
+    '<local-command-caveat>CAVEAT-MARK</local-command-caveat> KEEP-C ' +
+    '<local-command-stdout>STDOUT-MARK</local-command-stdout> KEEP-D ' +
+    '<task-notification>TASK-MARK</task-notification> KEEP-E'
+  const tail = sessionTail([{ role: 'user', text, toolUses: [] }] as any)
+  for (const kept of ['KEEP-A', 'KEEP-B', 'KEEP-C', 'KEEP-D', 'KEEP-E']) expect(tail).toContain(kept)
+  for (const dropped of ['REMIND-MARK', 'CAVEAT-MARK', 'STDOUT-MARK', 'TASK-MARK']) expect(tail).not.toContain(dropped)
+})
+
+test('a hindsight_ block is dropped and the text of its message is kept', () => {
+  const text = 'KEEP-TEXT-MARK<hindsight_knowledge_refresh>REFRESH-MARK</hindsight_knowledge_refresh>'
+  const tail = sessionTail([{ role: 'assistant', text, toolUses: [] }] as any)
+  expect(tail).toContain('KEEP-TEXT-MARK')
+  expect(tail).not.toContain('REFRESH-MARK')
+  expect(tail).not.toContain('hindsight_knowledge_refresh')
 })

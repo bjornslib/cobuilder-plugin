@@ -14,9 +14,13 @@ const RECALL_SYSTEM = [
   'You write a search query for a project memory bank (Hindsight).',
   WHY,
   'The bank holds facts from earlier sessions and the git log, with their reasons.',
-  'You get the stored prompts of the person in this session and the end of the session.',
+  'You get three inputs, in order of authority.',
+  '(1) The agent focus. It sets the topic. When a focus is given, the Recall line must search for it.',
+  '(2) The session end. It gives context. Take the concrete names from it, such as files, commands, ADR ids, plugin names, and terms, to make the focus precise. It does not change the topic.',
+  '(3) The prompts of the person. They add context and may add terms. They never replace the focus.',
+  'When no focus is given, work out the decision from the session end first, then use the prompts.',
   'Work in three steps:',
-  '1. Name the capability in progress, whether the work is design or build, and the next decision the agent faces.',
+  '1. Name the capability in progress, whether the work is design or build, and the next decision the agent faces. When a focus is given, start from the focus.',
   '2. Name what the project may have settled or learned before that would change that decision.',
   '3. Write one search query for those facts, on one topic. Use the concrete names the session uses: files, commands, ADR ids, plugin names, terms.',
   'Do not ask what this session already decided. Do not restate the prompt.',
@@ -69,15 +73,18 @@ async function complete(
 
 export async function writeRecallQuery(
   $: EngineInterface,
-  prompts: string,
+  focus: string | null,
   tail: string,
+  prompts: string,
 ): Promise<RecallPlan | { error: string }> {
-  const ask = await complete(
-    $,
-    RECALL_SYSTEM,
-    'The stored prompts of the person in this session, oldest first:\n' + prompts + '\nSession end:\n' + tail,
-    400,
-  )
+  const user = [
+    "The agent's focus: " + (focus ?? 'none given'),
+    '',
+    'Session end:\n' + tail,
+    '',
+    "The person's prompts, oldest first:\n" + prompts,
+  ].join('\n')
+  const ask = await complete($, RECALL_SYSTEM, user, 400)
   if ('error' in ask) return { error: 'No query written: ' + ask.error }
   const recall = parseLines(ask.text, 'Recall')[0]
   if (!recall) return { error: 'Haiku wrote no recall query. Its reply: ' + ask.text.slice(0, 300) }

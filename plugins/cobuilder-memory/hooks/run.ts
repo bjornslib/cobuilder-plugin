@@ -16,12 +16,12 @@ const CHECK_QUERY = 'memory check'
 const CHECK_QUESTION = 'What does this project remember most often?'
 
 // The memory run: the pane opens first, the run goes on without it, and the tick runs until the run ends
-export async function runMemory($: EngineInterface, _origin: RunOrigin): Promise<string> {
-  await setRun($, () => newRun(clockTime()))
+export async function runMemory($: EngineInterface, _origin: RunOrigin, focus?: string): Promise<string> {
+  await setRun($, () => ({ ...newRun(clockTime()), focus: focus ?? null }))
   void openPane($)
   const stop = startTick($)
   try {
-    return await memoryRun($)
+    return await memoryRun($, focus)
   } catch (err) {
     await fail($, String((err as Error)?.message ?? err))
     throw err
@@ -32,14 +32,14 @@ export async function runMemory($: EngineInterface, _origin: RunOrigin): Promise
 
 // The memory run, slices 1 to 3: Haiku writes the recall query, recall and the page search
 // run side by side, Haiku picks a page and the reflect questions, then the page read and the reflect calls run side by side
-async function memoryRun($: EngineInterface): Promise<string> {
+async function memoryRun($: EngineInterface, focus?: string): Promise<string> {
   const target = await resolveBank($)
   if ('error' in target) return fail($, target.error)
   await setRun($, s => ({ ...s, bank: target.bank }))
 
   const sessionId = await $.session.id()
   const prompts = await readPrompts($)
-  const plan = await writeRecallQuery($, promptBlock(prompts), sessionTail(await $.session.messages()))
+  const plan = await writeRecallQuery($, focus ?? null, sessionTail(await $.session.messages()), promptBlock(prompts))
   if ('error' in plan) return fail($, plan.error)
   await setRun($, s => ({ ...s, step: 'search', need: plan.need }))
 
@@ -97,6 +97,7 @@ async function memoryRun($: EngineInterface): Promise<string> {
 
   return buildResult({
     bank: target.bank,
+    focus: focus ?? null,
     promptsRead: promptBlock(prompts).split('\n').filter((l) => l.startsWith('- [')).length,
     need: plan.need,
     recall: recalled,

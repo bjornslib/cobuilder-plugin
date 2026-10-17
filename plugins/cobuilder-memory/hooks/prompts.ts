@@ -47,12 +47,21 @@ export function promptBlock(prompts: readonly StoredPrompt[], maxChars = BLOCK_C
   return out || '(none stored yet)'
 }
 
-// The end of the session as plain text, newest last
-export function sessionTail(messages: readonly SessionMessage[], maxChars = TAIL_CHARS): string {
+// Blocks the engine or a plugin injects into a message, which the tail leaves out
+const INJECTED_TAGS = ['system-reminder', 'local-command-caveat', 'local-command-stdout', 'task-notification']
+const INJECTED_BLOCK = new RegExp(`<((?:${INJECTED_TAGS.join('|')}|hindsight_[\\w-]+))\\b[^>]*>[\\s\\S]*?<\\/\\1>`, 'g')
+
+// The end of the session as plain text, newest last. It keeps the last maxMessages messages that hold text after the blocks go.
+export function sessionTail(messages: readonly SessionMessage[], maxMessages = 6, maxChars = TAIL_CHARS): string {
   let out = ''
-  for (let i = messages.length - 1; i >= 0 && out.length < maxChars; i--) {
+  let kept = 0
+  for (let i = messages.length - 1; i >= 0 && kept < maxMessages; i--) {
     const m = messages[i]
-    if (m && m.text.trim()) out = m.role + ': ' + m.text.trim() + '\n\n' + out
+    const text = m ? m.text.replace(INJECTED_BLOCK, '').trim() : ''
+    if (m && text) {
+      out = m.role + ': ' + text + '\n\n' + out
+      kept++
+    }
   }
   return out.slice(-maxChars)
 }

@@ -15,18 +15,19 @@ its slices start.
 | 5 | `cobuilder-memory/E1` | Design and build call the consult tool at fixed steps | Design stage 1 and implement Gate 1 call the consult tool when the session lists it. Otherwise they state that it is absent. The implement skill holds no H1 to H5 checkpoint. A blind agent given design stage 1 calls the consult tool before it drafts the hypothesis. | — | planned |
 | 6 | `cobuilder-memory/E1` | One install command sets up the family, with the Hindsight allow rules | `/cobuilder-full-lifecycle:install` runs the habit-hooks setup that `/implement:install` ran, the glossary check, and a new Hindsight step. `/implement:install` hands over to it. The coach check stays in `implement` as its own mode, because only `implement` can resolve its script path. The Hindsight step finds the allow rules that the session needs and `~/.claude/settings.json` lacks. It asks once, and it adds them only after a yes. A test checks that each Hindsight tool that cobuilder-memory calls, and the retain tool of the slice note, appears in the setup skill. A blind agent adds only the missing rules after a yes, and adds none after a no. | — | planned |
 | 7 | `cobuilder-memory/E1` | The value check in two repos | One design question in this repo and one in think-with-ai each get a run. Each run returns a dated record that the main agent uses or rejects with a reason. The evidence file holds both transcripts. CLAUDE.md, README.md, and DDD-VOCABULARY.md name six plugins, and ADR-0025's history names ADR-0039. | — | planned |
+| 8 | `cobuilder-memory/E1` | The agent's focus steers the recall query | `consult` takes an optional `focus` string. Haiku reads three inputs in a fixed order of authority: the focus sets the topic, the session end gives the concrete names, and the person's stored prompts add context only. The session end is the last six messages with text, after injected hook blocks are removed, and at most 12,000 characters. The result and the pane show the focus, or state that none was given. Design stage 1 and Gate 1 pass a focus. A live run whose focus and last prompt name different topics writes a Recall line on the focus. | — | planned |
 | | **`cobuilder-memory/E2` — A Jev gate.** Light: a classifier decides when else to call the consult tool. | | | | |
-| 8 | `cobuilder-memory/E2` | A Jev gate decides every n tool calls | Every n tool calls, one Jev `noul` question judges whether a consult would help. Above the threshold, the plugin starts a run. A measured sample sets n, the threshold, the latency, and the cost. | — | backlog |
+| 9 | `cobuilder-memory/E2` | A Jev gate decides every n tool calls | Every n tool calls, one Jev `noul` question judges whether a consult would help. Above the threshold, the plugin starts a run. A measured sample sets n, the threshold, the latency, and the cost. | — | backlog |
 | | **`cobuilder-memory/E3` — Every Hindsight call in view.** Stub. | | | | |
-| 9 | `cobuilder-memory/E3` | Stub: the pane lists every Hindsight call of the session | The memory pane lists each Hindsight call of the session. It marks the plugin's own runs apart. Sources: the agent's `mcp__hindsight__` calls, `diag.jsonl`, and the audit log. | — | backlog |
+| 10 | `cobuilder-memory/E3` | Stub: the pane lists every Hindsight call of the session | The memory pane lists each Hindsight call of the session. It marks the plugin's own runs apart. Sources: the agent's `mcp__hindsight__` calls, `diag.jsonl`, and the audit log. | — | backlog |
 
 ## Notes
 
 - **Order.** Slice 1 is the tracer bullet. Slices 2 and 3 extend the run.
   Slice 4 needs the run's steps, so it follows 3. Slice 5 wires the tool
   into the workflows once it is complete. Slice 6 gives the family one
-  install command, so slice 7 can start from a clean setup. Slice 7 runs
-  last, because it judges the whole plugin.
+  install command, so slice 7 can start from a clean setup. Slice 7 judged
+  the whole plugin. Slice 8 follows from what slice 7 found.
 - **One install command (engineer, 2026-10-16).** The habit-hooks setup
   moves from `implement` to `/cobuilder-full-lifecycle:install`, and
   `/implement:install` hands over to it. The setup skill lists the Hindsight
@@ -41,6 +42,12 @@ its slices start.
   `hooks/hooks.json` names a hooks module, so the folder is the shipped
   layout. Slice 1 also carries the install-surface amendment and the
   manifest test (ADR-0039 Consequences).
+- **The agent's focus steers the query (engineer, 2026-10-17).** In the
+  first live run, Haiku wrote its query from the person's last prompt and
+  missed the question that the agent stated. The order of authority is now
+  the agent's focus, then the session end, then the person's prompts. The
+  engineer chose no ADR, and put the change in E1 as slice 8. The session
+  end is the last six messages, at most 12,000 characters.
 - **After E1 merges,** run `claude plugin install cobuilder-memory@cobuilder-plugin`
   once from the GitHub marketplace, and record the result in `00-status.md`.
 - **Hindsight through MCP (engineer, 2026-10-15).** Every Hindsight call

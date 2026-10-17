@@ -13,7 +13,7 @@ export const HOW_TO_JUDGE = [
 ].join('\n')
 
 export type RunReport = {
-  bank: string; promptsRead: number; need: string
+  bank: string; promptsRead: number; focus: string | null; need: string
   recall: { query: string; total: number; own: number; repeats: number; kept: Hit[] } | { query: string; reason: string }
   page: Page | null | { reason: string }
   context: string
@@ -40,7 +40,7 @@ function pageLines(page: RunReport['page']): string[] {
 export function buildResult(r: RunReport): string {
   const reflects = r.reflects.length === 1 ? '1 reflect' : r.reflects.length + ' reflects'
   const header = 'Hindsight memory on ' + r.bank + ': 1 recall, ' + reflects + '. Haiku read ' + r.promptsRead + ' stored prompts.'
-  const out = [HOW_TO_JUDGE, '', header, 'Need: ' + r.need, '', ...recallLines(r.recall), '', ...pageLines(r.page)]
+  const out = [HOW_TO_JUDGE, '', header, 'Focus: ' + (r.focus ?? 'none given'), 'Need: ' + r.need, '', ...recallLines(r.recall), '', ...pageLines(r.page)]
   if (r.context) out.push('', 'Reflect context: ' + r.context)
   for (const f of r.reflects) out.push('', 'Reflect: ' + f.question, f.answer ?? f.reason ?? '')
   return out.join('\n')

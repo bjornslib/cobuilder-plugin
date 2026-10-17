@@ -120,3 +120,39 @@ test('consult with recall missing as a tool returns the set-up message', async (
   expect(error).toBe('')
   expect(String(value?.result ?? '').includes(SETUP_MESSAGE)).toBe(true)
 })
+
+// A server error can run to many kilobytes. The result keeps its start and drops the rest.
+test('a long reflect error shows its first 300 characters, and the rest is cut', async ($, on) => {
+  stubRepo(on)
+  stubStore(on)
+  stubSession(on)
+  stubHaiku(on, 'Need: n\nRecall: q\nPage: none\nContext: c\nReflect: why')
+  const HEAD = 'Error code: 402 - out of credits. '
+  const LONG = HEAD + 'x'.repeat(400) + 'TAIL-MARK' + 'y'.repeat(9000)
+  on('mcp.call', (_$: any, e: any) => {
+    if (e.tool === 'reflect') return { value: { content: [{ type: 'text', text: LONG }], isError: true } }
+    return mcpBody({ results: [] })
+  })
+  const { value, error } = await settle(async () => $.tool.call({ tool: 'mcp__cobuilder-memory__consult' } as any))
+  expect(error).toBe('')
+  const text = String(value?.result ?? '')
+  expect(text.includes(HEAD)).toBe(true)
+  expect(text.includes('TAIL-MARK')).toBe(false)
+  expect(text.length < 4000).toBe(true)
+})
+
+test('a long refusal is cut, and the allow rule hint still shows', async ($, on) => {
+  stubRepo(on)
+  stubStore(on)
+  stubSession(on)
+  stubHaiku(on, 'Need: n\nRecall: q')
+  const REFUSAL = 'Blocked by the auto mode classifier: ' + 'z'.repeat(2000)
+  on('mcp.call', (_$: any, e: any) => {
+    if (e.tool === 'recall') return { deny: REFUSAL }
+    return mcpBody({ results: [] })
+  })
+  const { value } = await settle(async () => $.tool.call({ tool: 'mcp__cobuilder-memory__consult' } as any))
+  const text = String(value?.result ?? '')
+  expect(text.includes('z'.repeat(1000))).toBe(false)
+  expect(text.includes('Add "mcp__hindsight__recall" to permissions.allow in your settings.')).toBe(true)
+})

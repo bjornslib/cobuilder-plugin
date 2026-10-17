@@ -105,8 +105,9 @@ one of them to mini or full only when its principles are judged to matter
 for this design. Full-tier loading is never automatic.
 
 Ask project memory next, before the hypothesis. If the session lists the
-`mcp__cobuilder-memory__consult` tool, call it once. It takes no input, and it
-answers with past decisions, rejected options, and limits for this outcome.
+`mcp__cobuilder-memory__consult` tool, call it once. Pass a `focus` input: the
+decision at hand and what to look for, in 40 words or fewer. The tool answers
+with past decisions, rejected options, and limits for this outcome.
 Treat a recall record as evidence and a reflect answer as a lead. Check each
 claim you use against the ADRs and the code you loaded above. Name each record
 that you use or reject, and give the reason. If the session does not list the

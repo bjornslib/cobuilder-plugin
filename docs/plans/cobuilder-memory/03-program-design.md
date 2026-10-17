@@ -61,7 +61,7 @@ export function shouldStore(e: PromptSubmitInput): boolean
 export function storePrompt($: Engine, text: string): Promise<void>
 export function readPrompts($: Engine): Promise<StoredPrompt[]>
 export function promptBlock(prompts: readonly StoredPrompt[], maxChars?: number): string
-export function sessionTail(messages: readonly SessionMessage[], maxChars?: number): string
+export function sessionTail(messages: readonly SessionMessage[], maxMessages?: number, maxChars?: number): string
 
 // hindsight.ts
 export type Hit = { text: string; date: string; doc: string }
@@ -81,15 +81,15 @@ export function dropEmptyPages(pages: PageHit[]): PageHit[]
 // haiku.ts
 export type RecallPlan = { need: string; recall: string }
 export type ReflectPlan = { pageId: string | null; context: string; questions: string[] }
-export function writeRecallQuery($: Engine, prompts: string, tail: string): Promise<RecallPlan | { error: string }>
+export function writeRecallQuery($: Engine, focus: string | null, tail: string, prompts: string): Promise<RecallPlan | { error: string }>
 export function writeReflectPlan($: Engine, need: string, query: string, hits: Hit[], pages: PageHit[]): Promise<ReflectPlan | { error: string }>
 export function parseLines(text: string, label: string): string[]
 
 // result.ts
 export const HOW_TO_JUDGE: string
 export type RunReport = {
-  bank: string; promptsRead: number; need: string
-  recall: { query: string; total: number; own: number; kept: Hit[] } | { query: string; reason: string }
+  bank: string; promptsRead: number; focus: string | null; need: string   // focus: slice 8
+  recall: { query: string; total: number; own: number; repeats: number; kept: Hit[] } | { query: string; reason: string }
   page: Page | null | { reason: string }
   context: string
   reflects: { question: string; answer: string | null; reason: string | null }[]
@@ -98,14 +98,14 @@ export function buildResult(r: RunReport): string
 
 // run.ts
 export type RunOrigin = "tool" | "command"
-export function runMemory($: Engine, origin: RunOrigin): Promise<string>
+export function runMemory($: Engine, origin: RunOrigin, focus?: string): Promise<string>
 export function runCheck($: Engine): Promise<string>   // /memory-check
 
 // pane.tsx and types/index.d.ts (slice 4)
 export type RunStep = "query" | "search" | "questions" | "reflect" | "done" | "failed"
 export type CallState = { name: string; state: "running" | "done" | "failed"; note: string }
 export type RunState = {
-  startedAt: string; elapsedSec: number; bank: string; step: RunStep; need: string
+  startedAt: string; elapsedSec: number; bank: string; step: RunStep; focus: string | null; need: string
   calls: CallState[]; recall: RunReport["recall"] | null; page: { name: string; updated: string } | null
   reflects: { question: string; state: "running" | "done" | "failed"; note: string }[]; error: string | null
 }
