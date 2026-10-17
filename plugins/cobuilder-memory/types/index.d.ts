@@ -14,6 +14,7 @@ export type RunState = {
   elapsedSec: number
   bank: string
   step: RunStep
+  focus: string | null
   need: string
   calls: CallState[]
   recall: RunRecall | null

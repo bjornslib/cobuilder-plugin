@@ -22,6 +22,7 @@ const PLAN = 'Page: page-1\nContext: c\nReflect: ' + Q_OK
 const SEARCH_HIT = { id: 'page-1', name: 'ADR index', snippet: 'the ADR list', updated_at: '2026-09-20T08:00:00Z' }
 const PAGE = { id: 'page-1', name: 'ADR index', markdown: '---\nid: page-1\n---\n\nPAGE BODY\n', timestamp: '2026-09-20T08:00:00Z' }
 const VIEWPORT = { columns: 120, rows: 40 }
+const FOCUS = 'FOCUS-PANE-MARK allow rules for the install command'
 
 type Reply = (e: any) => any
 
@@ -507,4 +508,22 @@ test('the memory pane draws its title row when the run has failed', async ($, on
   expect(error).toBe('')
   const ui = await mountPane($)
   expect(await hasText(ui, PANE_TITLE)).toBe(true)
+})
+
+// Slice 8: the run keeps the focus that the consult call passes, and the pane draws it
+test('a run with a focus draws the focus text in the pane', async ($, on) => {
+  stubRepo(on)
+  stubStore(on)
+  stubSession(on)
+  const order: string[] = []
+  stubOpen(on, order, [])
+  stubModel(on, order, [STEP1, PLAN])
+  stubHindsight(on, defaults())
+
+  const { error } = await settle(async () =>
+    $.tool.call({ tool: 'mcp__cobuilder-memory__consult', focus: FOCUS } as any),
+  )
+  expect(error).toBe('')
+  const ui = await mountPane($)
+  expect(leaves(await ui.drawn()).join('\n').includes(FOCUS)).toBe(true)
 })

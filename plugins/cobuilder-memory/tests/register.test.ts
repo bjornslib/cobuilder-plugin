@@ -2,7 +2,7 @@ import { expect, test } from 'claude-code/testing'
 import { settle } from './fakes'
 
 // Session start registers the consult tool and the two commands with the engine
-test('session start registers the consult tool with no input and both commands', async ($, on) => {
+test('session start registers the consult tool with an optional focus input and both commands', async ($, on) => {
   const tools: any[] = []
   const commands: any[] = []
   // Bottom handlers stand in for the engine and answer each registration
@@ -25,7 +25,10 @@ test('session start registers the consult tool with no input and both commands',
   expect(consult.length).toBe(1)
   const schema = consult[0]?.inputSchema
   expect(schema?.type).toBe('object')
-  expect(Object.keys(schema?.properties ?? {}).length).toBe(0)
+  // The one input is a string named focus, and no input is required
+  expect(Object.keys(schema?.properties ?? {})).toEqual(['focus'])
+  expect(schema?.properties?.focus?.type).toBe('string')
+  expect(typeof schema?.properties?.focus?.description).toBe('string')
   expect(schema?.required ?? []).toEqual([])
 
   const names = commands.map((c) => c.name)

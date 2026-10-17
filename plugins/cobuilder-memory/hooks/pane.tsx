@@ -26,6 +26,7 @@ export function newRun(startedAt: string): RunState {
     elapsedSec: 0,
     bank: '',
     step: 'query',
+    focus: null,
     need: '',
     calls: [],
     recall: null,
@@ -174,7 +175,13 @@ function doneRows(s: RunState, width: number): Row[] {
   return rows
 }
 
+// The focus row, shown above the state rows when the run has a focus
 function rowsOf(s: RunState, width: number): Row[] {
+  const focus: Row[] = s.focus === null ? [] : [{ text: cut('Focus: ' + s.focus.replace(/\s+/g, ' '), width) }]
+  return [...focus, ...stateRows(s, width)]
+}
+
+function stateRows(s: RunState, width: number): Row[] {
   if (s.step === 'done') return doneRows(s, width)
   if (s.step === 'failed') return [...workingRows(s, width), { colour: 'red', text: cut(s.error ?? '', width) }]
   return workingRows(s, width)

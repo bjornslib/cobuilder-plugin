@@ -11,11 +11,20 @@ export const register: Register = (on) => {
       name: CONSULT,
       description:
         'Ask the project memory (Hindsight) what was decided or learned before about the current work. ' +
-        'Takes no input: a small model reads the person\'s prompts and the recent session, works out the next decision, ' +
-        'and writes one recall query. Slow: the Hindsight calls can take a minute. ' +
+        'Takes an optional focus. With a focus, the focus sets the topic, the session end gives the names, and the person\'s prompts add context. ' +
+        'Without one, a small model works out the decision from the session end and the prompts, and writes one recall query. ' +
+        'Slow: the Hindsight calls can take a minute. ' +
         'Call it before a design or build decision, or when the person asks what the project already knows. ' +
         'Judge what it returns: recall records are evidence, and the other sections are leads to check.',
-      inputSchema: { type: 'object', properties: {} },
+      inputSchema: {
+        type: 'object',
+        properties: {
+          focus: {
+            type: 'string',
+            description: 'The decision at hand and what to look for, in 40 words or fewer. It sets the topic of the recall query.',
+          },
+        },
+      },
       isDeferred: false,
     })
     await $.command.register({
@@ -34,8 +43,10 @@ export const register: Register = (on) => {
     return next(e)
   })
 
-  on('tool.call', { tool: /cobuilder-memory__consult$/ }, async ($) => {
-    return { result: await runMemory($, 'tool') }
+  on('tool.call', { tool: /cobuilder-memory__consult$/ }, async ($, e) => {
+    const focus = (e as { focus?: unknown }).focus
+    const kept = typeof focus === 'string' && focus.trim() !== '' ? focus.trim() : undefined
+    return { result: await runMemory($, 'tool', kept) }
   })
 
   on('command.run', { command: 'memory-recall' }, async ($) => {

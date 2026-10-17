@@ -10,7 +10,7 @@
       "name": "architect",
       "description": "Design a change, audit the repo, track drift, explore options, and diagnose failures. Five self-only commands for a local git repo.",
       "source": "./plugins/architect",
-      "version": "0.13.0"
+      "version": "0.13.1"
     },
     {
       "name": "pr",
@@ -28,7 +28,7 @@
       "name": "implement",
       "description": "Build a design one tested slice at a time, with four approval gates, blind rubrics, and independent validation.",
       "source": "./plugins/implement",
-      "version": "0.9.0"
+      "version": "0.9.1"
     },
     {
       "name": "cobuilder-full-lifecycle",
@@ -40,7 +40,7 @@
       "name": "cobuilder-memory",
       "description": "Consult the project's Hindsight memory before a design or build decision",
       "source": "./plugins/cobuilder-memory",
-      "version": "0.1.1"
+      "version": "0.2.0"
     }
   ]
 }
