@@ -6,6 +6,8 @@ from pathlib import Path
 
 import yaml
 
+from .beads import BeadsAdapter
+from .bd_runner import BdRunner
 from .fake import FakeAdapter
 from .files import FilesAdapter
 from .port import AdapterError, NoAdapterError, TrackerPort
@@ -39,6 +41,11 @@ def load_adapter(config_path: Path, repo_root: Path, state_file: Path | None = N
         return FakeAdapter(_path(config, "corpus", config_path, repo_root), state_file=state_file)
     if kind == "files":
         return FilesAdapter(_path(config, "plans_dir", config_path, repo_root))
+    if kind == "beads":
+        bd = config.get("bd", "bd")
+        if not isinstance(bd, str) or not bd:
+            raise AdapterError(f"tracker config {config_path} needs bd to be a command name")
+        return BeadsAdapter(BdRunner(bd=bd, cwd=repo_root))
     raise AdapterError(f"tracker config {config_path} names an unknown adapter: {kind!r}")
 
 
