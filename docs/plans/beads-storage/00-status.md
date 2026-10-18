@@ -32,15 +32,15 @@ Initial checks, 2026-10-17:
 
 ## Slices
 
-- [ ] Slice 1 — Tracer bullet: fake adapter and golden index   score: —   note: —
-- [ ] Slice 2 — Full contract suite on the fake adapter   score: —   note: —
-- [ ] Slice 3 — Files adapter reads the plans tree and backfill dry run   score: —   note: —
-- [ ] Slice 4 — Command prints JSON and exit codes   score: —   note: —
-- [ ] Slice 5 — Usage reference matches the command   score: —   note: —
-- [ ] Slice 6 — Beads reads match the fake adapter   score: —   note: —
-- [ ] Slice 7 — Beads writes on recorded transcripts   score: —   note: —
-- [ ] Slice 8 — Beads dry run matches the backfill file   score: —   note: —
-- [ ] Slice 9 — Fresh clone initializes, syncs, and seeds   score: —   note: —
+- [x] Slice 1 — Tracer bullet: fake adapter and golden index   score: 1.00   note: absent
+- [x] Slice 2 — Full contract suite on the fake adapter   score: 1.00   note: absent
+- [x] Slice 3 — Files adapter reads the plans tree and backfill dry run   score: 1.00   note: absent
+- [x] Slice 4 — Command prints JSON and exit codes   score: 0.92   note: absent
+- [x] Slice 5 — Usage reference matches the command   score: 1.00   note: absent
+- [x] Slice 6 — Beads reads match the fake adapter   score: 1.00   note: absent
+- [x] Slice 7 — Beads writes on recorded transcripts   score: 0.67 (escalated)   note: absent
+- [x] Slice 8 — Beads dry run matches the backfill file   score: 1.00   note: absent
+- [x] Slice 9 — Fresh clone initializes, syncs, and seeds   score: 1.00   note: absent
 - [ ] Slice 10 — Bundle index unchanged after the port   score: —   note: —
 - [ ] Slice 11 — Gate check and builds view read the port   score: —   note: —
 - [ ] Slice 12 — Status files regenerate from records   score: —   note: —
@@ -51,6 +51,8 @@ Initial checks, 2026-10-17:
 - [ ] Slice 17 — Docs test guards the port and install asks first   score: —   note: —
 
 ## Escalated
+
+- Slice 7 (Beads writes on recorded transcripts), accepted with reservations after three attempts, score 0.67 on the last pass. Criteria C2 (claim read-back) scored 1.0. Gaps: the leftover single-call transcripts `claim_slice.json`, `set_state.json`, and `create_pr.json` are read by tests as data only, so changing one recorded argument there does not fail a test, and the create round trip does not compare every written value with a read-back. The behavior is covered by the `*_steps.json` replays and by the `[beads]` contract cases that run on real bd. Follow-up: delete the unused single-call fixtures and add the read-back comparison.
 
 ## Notes for a fresh session
 
