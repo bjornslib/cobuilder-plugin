@@ -1,7 +1,7 @@
 """The beads adapter. Reads the tracker through `bd list --json --all` and maps each row to a TrackerRecord.
 
 Only this module and bd_runner.py may call bd. Slice 6 implements the reads. Slice 7 adds the writes.
-Seeding stays a stub until slice 8.
+Seeding creates the records that the list does not hold.
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from .bd_runner import BdError
+from .files import FilesAdapter
 from .port import AdapterError, ArgumentError
 from .record import Capabilities, Kind, TrackerRecord
 
@@ -23,7 +24,6 @@ BD_STATUS = {"open": "open", "in_progress": "in_progress", "closed": "closed"}
 BD_TYPE = {"program": "program", "epic": "epic", "slice": "task", "pr": "task"}
 BD_PRIORITY = {"program": "1", "epic": "2", "slice": "2", "pr": "2"}
 LIST_ARGS = ["list", "--json", "--all"]
-NOT_YET = "not implemented yet"
 
 
 def _cb_block(row: dict[str, Any]) -> dict[str, Any]:
@@ -364,4 +364,30 @@ class BeadsAdapter:
         return self._after(rows, row, status=status)
 
     def seed_from_files(self, plans_dir: Path, dry_run: bool = False) -> list[TrackerRecord]:
-        raise AdapterError(NOT_YET)
+        rows = self._rows()
+        held = set(self._cb_ids(rows).values())
+        creates = [
+            record
+            for record in FilesAdapter(plans_dir).all_records()
+            if record.id not in held and record.external_ref not in held
+        ]
+        if dry_run:
+            return creates
+        for record in creates:
+            self._create_seeded(record)
+        return creates
+
+    def _create_seeded(self, record: TrackerRecord) -> TrackerRecord:
+        try:
+            return self.create_record(record)
+        except BdError as error:
+            if "type" not in error.stderr.lower():
+                raise
+        self._allow_program_type()
+        return self.create_record(record)
+
+    def _allow_program_type(self) -> None:
+        current = self.runner.run(["config", "get", "types.custom"]).strip()
+        types = [name for name in current.split(",") if name]
+        if "program" not in types:
+            self.runner.run(["config", "set", "types.custom", ",".join([*types, "program"])])
