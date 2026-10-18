@@ -97,7 +97,7 @@ The mapping keeps every existing consumer key alive. Beads ids (`cb-1j6.1`) are 
 | `EpicEntity` | type `epic` (built-in), `--parent <program>` | `epic_id` ("E5") → `metadata.cb.epic_id`. `branch` → `metadata.cb.branch`. `note` → issue description. The pull request comes from the `pr` issue that blocks the epic |
 | `SliceEntity` | type `task` (built-in), `--parent <epic>`, `--deps blocked-by:<slice n-1>` | `n` → `metadata.cb.n`. `title` → issue title. `ends_with` → `metadata.cb.ends_with`. `score` → `metadata.cb.score`. `attempts` → `metadata.cb.attempts`. `feature` → `metadata.cb.feature` |
 | `AdrEntity` | no issue | The ADR file stays the source. Its frontmatter keeps the districts and the pull request. An index join reads them as today |
-| `PullRequest` | type `task` (built-in), `metadata.cb.kind` = `pr`, `--external-ref gh-<n>`, one `blocks` edge to each epic it holds (`bd dep add <epic> <pr> --type blocks`) | `pr` → `metadata.cb.pr` (the number). The issue holds the pointer and the merged bit (status). GitHub stays the source of every other fact, per ADR-0029 |
+| `PullRequest` | type `task` (built-in), `metadata.cb.kind` = `pr`, title = the ref (`pr-<n>`), `--external-ref gh-<n>`, one dependency edge per epic it holds (`bd dep add <epic> <pr>`) | The number lives in `external_ref`. The issue holds the merged bit (status). GitHub stays the source of every other fact, per ADR-0029 |
 | `GateStep` (Gates 1 to 4, 4a to 4c) | no issue | Scalar fields on the program issue: `metadata.cb.gate1`, `gate2`, `gate2b`, `gate3`, `gate4`, `gate4a`, `gate4b`, `gate4c`. A gate field holds the approval date (YYYY-MM-DD) or `n/a`, and an absent field means the gate is not reached. The `view:` route of a gate is `metadata.cb.gate<n>_view` |
 | `Publication` | no issue | Stays index-derived from the publish step. a publish is an event, not tracked work |
 | `DistrictEntity`, `BoundaryRule`, `ContextEntity` | no issue | Architecture geography stays in `docs/architecture/contexts/`. decisions name districts in metadata |
@@ -163,7 +163,7 @@ The rubric score never maps to priority. Priority stays the tracker's scheduling
 |---|---|
 | `epic_status` | the epic issue's `status` and `metadata.cb.state` |
 | `slice_to_epic` | the parent-child dependency (the hierarchical id encodes it) |
-| `epic_to_pull_request` | the `blocks` edge from the `pr` issue to the epic, and `metadata.cb.pr` on the `pr` issue |
+| `epic_to_pull_request` | the dependency edge that `bd dep add <epic> <pr>` creates, and `external_ref` `gh-<n>` on the `pr` issue |
 | `adr_to_pull_request`, `adr_to_context`, `adr_to_district` | unchanged, derived from the ADR frontmatter |
 | `feature_gates` | the gate scalars on the program issue. `bd show <epic>` returns the `pr` issue that blocks it |
 | `slice_to_epic_unresolved` | a seed-time report: a slice whose epic id has no issue. Unresolvable by construction afterwards |
@@ -186,7 +186,7 @@ The workflow reads never touch the index. The port operation `next_ready(kind="s
 | An attempt fails | `record_attempt` | append the evidence file, then `bd update <slice> --metadata @envelope.json` with `attempts` bumped |
 | A worker claims a slice | `claim_slice` | `bd update <slice> --status in_progress` with the claimant (a GitHub login) as assignee, then a read of the assignee when `atomic_claim` is false |
 | A slice passes its rubric | `set_slice_state` | `bd close <slice> --reason "<ends_with> verified"` |
-| A pull request opens | `open_pull_request` | `bd create "PR <n>" -t task --metadata @envelope.json --external-ref gh-<n>`, then `bd dep add <epic> <pr> --type blocks` for each epic it holds |
+| A pull request opens | `open_pull_request` | `bd create "pr-<n>" -t task --metadata {"cb": {...}} --external-ref gh-<n>`, then `bd dep add <epic> <pr>` for each epic it holds |
 | The pull request merges | `set_pull_request_state`, `set_epic_state` | `bd close <pr> --reason merged`, then `bd close <epic> --reason merged` for each epic it held |
 | A session ends its writes | `sync` | `bd sync` |
 | A design is superseded | `set_program_stage` | `bd close <program>` plus a `supersedes` edge to the successor |
@@ -237,9 +237,9 @@ E4 builds the write model and the authored `goal.json` shape change: `epics[]` s
 
 **The problem.** Work runs on a local machine, in cloud sessions, and with several team members. Without one central store, the backlog and the program states drift apart. A sync of the CoBuilder JSON and markdown files gives complex merges. The success measure has two cases. A fresh session finds a program and its stage with one `list-programs` call and zero file reads. A session that resumes a build finds the next slice with one `next-ready` call and zero file reads. On beads, that second call is `bd ready`.
 
-**The central store is Dolt-in-git. No test verifies it yet.** The tracker database rides in the repo's own git remote as the hidden ref `refs/dolt/data`. A team member runs `git clone`, then `bd init`, then `bd sync`. A session runs the port operation `sync` after its writes, beside the refresh-the-bundle step. On beads, that is `bd sync`. No new service is needed.
+**The central store is Dolt-in-git. The first publish is verified on a local bare remote only.** The tracker database rides in the repo's own git remote as the hidden ref `refs/dolt/data`. The first publish runs `bd sync -y`, then one `bd dolt push`, then `bd sync`. A later clone runs `bd init`, then `bd sync`. A session runs the port operation `sync` after its writes, beside the refresh-the-bundle step. On beads, that is `bd sync`. No new service is needed.
 
-Not verified: a cloud session that holds only a git clone. A smoke check of that case must pass before E2 closes.
+Not verified: a cloud session that holds only a git clone. A real GitHub remote is also not verified. A smoke check of each case must pass before E2 closes.
 
 **Every state write needs a configured adapter.** This replaces the read-only fallback and the degraded-write exception of the first amendment. When no adapter is configured, scripts still read the file sources. They refuse every state write and name the missing adapter. With the beads adapter, the missing tool is `bd`. The install command and `implement:start` check for the adapter.
 
@@ -268,6 +268,12 @@ Not verified: a cloud session that holds only a git clone. A smoke check of that
 **Agents call one command.** The write-model commands above run inside the beads adapter. An agent never types them. An agent calls `shared/tracker.py`, and ADR-0040 defines that command and the shared reference that teaches it. The beads notes in that reference hold the `bd init` consent question and its two flags.
 
 **Two statements that the program design overrides.** The deferred state of an epic is the envelope key `deferred`. It is not a blocking edge or a parent status, so the rows of the state-vocabulary table that name a blocking edge for `deferred` no longer apply. Projector parity with the live `docs/plans` tree is a one-off manual run in slice 10 of the build plan. It is not a test, because no test reads the live plans.
+
+# Amendment 2026-10-18 — first publish and the pull request issue
+
+**The first publish is a fixed sequence.** On an empty remote, the seed runs `git remote add origin`, `bd config set team.enabled true`, and `bd config set team.sync_branch main`. Then it runs `bd sync -y`, which exits 1 once with `no branches found in remote`. One `bd dolt push` publishes `refs/dolt/data`. After that, bare `bd sync` exits 0. This sequence is verified on a local bare remote with bd 1.3.0. A real GitHub remote is not verified.
+
+**The pull request issue takes its title from the ref.** The title is `pr-<n>`, and the number lives in `external_ref` as `gh-<n>`. The envelope holds no `pr` key. Each epic it holds gets `bd dep add <epic> <pr>`, with no `--type`. This replaces the number-as-pointer text of the 2026-10-17 amendment.
 
 ## Not decided
 

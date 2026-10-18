@@ -4,7 +4,7 @@ Kind: test-suite
 
 Feature: beads-storage
 Epic: E2
-Slice goal: In a temp directory, with real `bd` and `git` and no stubs, `bd init --skip-agents --skip-hooks` and `bd sync` against `refs/dolt/data` exit 0 in a fresh clone. The backfill write step seeds the mini plan. A second run of the create step creates nothing.
+Slice goal: In a temp directory, with real `bd` and `git` and no stubs, the seed publishes its first data with `bd sync -y`, one `bd dolt push`, and `bd sync`, which exits 0. A fresh clone then runs `bd init --skip-agents --skip-hooks` and `bd sync` with exit 0. The backfill write step seeds the mini plan. A second run of the create step creates nothing.
 Test command: `uv run pytest tests/test_tracker_beads.py -q -k fresh_clone`
 
 ## Criteria

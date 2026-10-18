@@ -4,7 +4,7 @@ The backfill copies plan records from the plans tree into the tracker. It runs o
 
 Read this file before you run the backfill. Run the steps in order.
 
-1. Inventory the plans. Read each program and its records through the files adapter. Do not call `bd`. The files adapter reads the plans tree and writes nothing.
+1. Inventory the plans. Read each program and its records through the files adapter. Do not call a tracker tool. The files adapter reads the plans tree and writes nothing.
 2. Dry run. Run `tracker.py seed-from-files --dry-run` with the plans directory. The flag prints each planned create and writes nothing. Print the list from the returned result.
 3. Consent. Show the printed list to the engineer. Wait for approval before any write. Stop when the engineer declines.
 4. Create-only write. After approval, run `tracker.py seed-from-files` again. It creates each missing record. A record whose `external_ref` already exists is skipped.

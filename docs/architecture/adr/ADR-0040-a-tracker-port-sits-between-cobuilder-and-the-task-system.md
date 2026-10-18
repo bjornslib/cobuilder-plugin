@@ -215,7 +215,7 @@ E1 builds `tracker.py` over the fake and files adapters, and the reference. E2 b
 - **Negative / accepted:** no tracker gives a verified atomic claim. When `atomic_claim` is false, `claim_slice` writes the claimant and reads the assignee back. Two sessions can still race until that read lands.
 - **Negative / accepted:** the reference and the skills can drift apart. The tests in `tests/test_tracker_docs.py` guard it: each command that a document names must exist, and no document outside the beads notes names `bd`.
 - **Negative / accepted:** an exported copy needs `shared/` beside the skills, and `uv` to run `tracker.py`. No other harness has run it yet.
-- **Not verified:** the Jira claim race, property limits, create-time parent, and repeated issue create. Also the Linear claim race, a repeated `issueCreate`, and the sub-issue depth. Also whether `bd claim` is atomic. Also how Linear and Jira resolve a GitHub login to a user. Each Linear or Jira row needs a live account, so it is a smoke test at the start of its later program.
+- **Not verified:** the Jira claim race, property limits, create-time parent, and repeated issue create. Also the Linear claim race, a repeated `issueCreate`, and the sub-issue depth. Also whether `bd claim` is atomic. Also a real GitHub remote for the beads first publish, which ran on a local bare remote only. Also how Linear and Jira resolve a GitHub login to a user. Each Linear or Jira row needs a live account, so it is a smoke test at the start of its later program.
 
 ## Value delivered
 

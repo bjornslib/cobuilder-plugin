@@ -92,7 +92,7 @@ The stub runner compares `args` with the call. A difference fails the test. The 
 | 6 | Beads reads match the fake adapter | E1 slice 5 | `bd_runner.py`, `beads.py`, `config.py`, fixtures `beads/list.json` and `transcripts/list.json` | `bd list --json` maps to the fake corpus records. Read cases pass. Contract case 7 passes. |
 | 7 | Beads writes on recorded transcripts | Slice 6 | `beads.py`, `transcripts/*.json` | Write cases pass, including the claim read-back and the `metadata.cb` round trip. |
 | 8 | Beads dry run matches the backfill file | Slice 7 | `beads.py`, `tests/fixtures/tracker/backfill/dry_run.txt` (E1 slice 3) | On recorded transcripts, the beads dry run lists the same creates as the checked-in file. |
-| 9 | Fresh clone initializes, syncs, and seeds | Slice 8, E1 slice 5 | `shared/tracker-adapter-beads.md`, `tests/test_tracker_beads.py` | After explicit consent, in a temp directory with real `bd` and `git`: `bd init --skip-agents --skip-hooks` and `bd sync` against `refs/dolt/data` exit 0 in a fresh clone. The backfill write step seeds the mini plan. A second run creates nothing. The `bd list --json` count equals the dry-run count. |
+| 9 | Fresh clone initializes, syncs, and seeds | Slice 8, E1 slice 5 | `shared/tracker-adapter-beads.md`, `tests/test_tracker_beads.py` | After explicit consent, in a temp directory with real `bd` and `git`: the first publish runs `bd sync -y`, one `bd dolt push`, and `bd sync`, which exits 0. A fresh clone runs `bd init --skip-agents --skip-hooks -p demo` and `bd sync`, and sees the state. The backfill write step seeds the mini plan. A second run creates nothing. The `bd list --json` count equals the dry-run count. |
 
 ### Slice 6
 
@@ -133,7 +133,11 @@ The stub runner compares `args` with the call. A difference fails the test. The 
   2. Create `seed/` with `git init`, make one empty commit on `main`, and push it to `origin.git`. The probe failed on a bare remote with no branch.
   3. In `seed/`, run `bd init --skip-agents --skip-hooks -p demo`.
   4. In `seed/`, run the backfill write step for the mini plan, after the explicit consent the procedure requires. Create each record that `BeadsAdapter(BdRunner(cwd=seed)).seed_from_files(mini plan)` returns.
-  5. In `seed/`, run `bd sync`. Then check with `git -C origin.git show-ref refs/dolt/data`.
+  5. In `seed/`, publish the first data:
+     - Run `git remote add origin ../origin.git`, `bd config set team.enabled true`, and `bd config set team.sync_branch main`.
+     - Run `bd sync -y`. On an empty remote it exits 1 once with `no branches found in remote`. That error is expected.
+     - Run `bd dolt push` once.
+     - Run `bd sync`. It exits 0. Then run `git -C origin.git show-ref refs/dolt/data`.
   6. Run `git clone origin.git clone1`. In `clone1`, run `bd init --skip-agents --skip-hooks -p demo`, then `bd sync`, then `bd list --json`.
   7. Run `git clone origin.git clone2`. Repeat step 6 in `clone2`.
 - Pass, observed in the output:
@@ -154,7 +158,7 @@ The stub runner compares `args` with the call. A difference fails the test. The 
 
 ## Risks & Open Questions
 
-1. **The clone check is not verified.** The probe showed that `bd init --remote` fails on an empty bare remote. It also showed that `bd dolt push` publishes `refs/dolt/data`. Slice 9 follows 04-slices: `bd init --skip-agents --skip-hooks`, then `bd sync`. Whether `bd sync` alone publishes the first data is not verified. If slice 9 fails on the first real run, E2 does not close, and the decision returns to the engineer.
+1. **The clone check is verified on a local bare remote only.** The probe showed that `bd init --remote` fails on an empty bare remote. A local bare origin ran the first-publish steps in step 5 above, and a fresh clone then saw the state. A real GitHub remote is not verified. If slice 9 fails on the first real run, E2 does not close, and the decision returns to the engineer.
 2. **`bd init` changes the target repo.** The probe showed that `bd init` makes one git commit. It adds the `.beads/` config files and appends to the root `.gitignore`. The embedded Dolt store is ignored. The consent step in `shared/tracker-adapter-beads.md` must say this before the user confirms.
 3. **Capability values are not verified.** `offline_read` and `native_ready` lack a recorded run. Slice 6 records `bd` output for each. A value that the transcript does not support changes to false.
 4. **The `bd` version is pinned in fixtures.** Transcripts record `bd` 1.3.0 (Homebrew). A different version can change the output. The tests fail on a changed `stdout` shape, not on a changed version.
