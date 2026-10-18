@@ -107,6 +107,7 @@ def _epic_and_slice_records(program: str, text: str) -> list[TrackerRecord]:
 
 
 class FilesAdapter:
+    name = "files"
     capabilities = Capabilities(
         native_ready=False,
         atomic_claim=False,

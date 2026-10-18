@@ -47,6 +47,15 @@ def test_lists_programs_from_plans_tree() -> None:
     assert programs[0].kind == "program"
 
 
+def test_program_envelope_carries_gate_values() -> None:
+    from tracker_port.files import FilesAdapter
+
+    envelope = FilesAdapter(PLANS_DIR).list_programs()[0].envelope
+
+    assert envelope["gate1"] == "passed"
+    assert envelope["gate2"] == "passed"
+
+
 def test_lists_slices_from_04() -> None:
     from tracker_port.files import FilesAdapter
 

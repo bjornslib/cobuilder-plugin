@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = []
+# dependencies = ["pyyaml>=6,<7"]
 # ///
 """Command line port for workflow state. Each subcommand calls the configured tracker adapter.
 
@@ -131,8 +131,9 @@ def _set_pull_request_state_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("state", choices=["merged", "open"])
 
 
-def _plans_dir_args(parser: argparse.ArgumentParser) -> None:
+def _seed_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("plans_dir", type=Path)
+    parser.add_argument("--dry-run", action="store_true", help="print the planned creates and write nothing")
 
 
 # Each operation maps to its builder for arguments and to the port call it makes.
@@ -160,13 +161,16 @@ OPERATIONS: dict[str, tuple[Callable[[argparse.ArgumentParser], None], Callable[
         _set_pull_request_state_args,
         lambda a, n: a.set_pull_request_state(n.ref, merged=n.state == "merged"),
     ),
-    "seed-from-files": (_plans_dir_args, lambda a, n: a.seed_from_files(n.plans_dir)),
+    "seed-from-files": (_seed_args, lambda a, n: a.seed_from_files(n.plans_dir, dry_run=n.dry_run)),
+    "capabilities": (_no_args, lambda a, n: a.capabilities),
+    "doctor": (_no_args, lambda a, n: {"adapter": a.name, "capabilities": a.capabilities}),
 }
 
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = _Parser(prog="tracker.py", description="Read and write workflow state through the tracker port.")
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG, help="path to tracker.yaml")
+    parser.add_argument("--state-file", type=Path, help="state file for the fake adapter; overrides the config")
     subparsers = parser.add_subparsers(dest="operation", required=True, parser_class=_Parser)
     for name, (add_arguments, _call) in OPERATIONS.items():
         add_arguments(subparsers.add_parser(name))
@@ -177,7 +181,7 @@ def main(argv: list[str] | None = None) -> int:
     namespace = _build_parser().parse_args(argv)
     _add_arguments, call = OPERATIONS[namespace.operation]
     try:
-        adapter = require_adapter(namespace.config.resolve(), Path.cwd())
+        adapter = require_adapter(namespace.config.resolve(), Path.cwd(), namespace.state_file)
         result = call(adapter, namespace)
     except NoAdapterError as exc:
         _fail(EXIT_REFUSED, str(exc))

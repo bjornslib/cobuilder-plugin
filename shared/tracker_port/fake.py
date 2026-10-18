@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import replace
+from dataclasses import asdict, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -44,6 +44,16 @@ def _load(corpus_dir: Path, name: str) -> list[TrackerRecord]:
         raise AdapterError(f"cannot read corpus file {name}: {error}") from error
 
 
+def _load_state(path: Path) -> tuple[list[TrackerRecord], dict[str, list[tuple[str, str]]]]:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        records = [_record(row) for row in data["records"]]
+        notes = {key: [tuple(item) for item in items] for key, items in data["notes"].items()}
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        raise AdapterError(f"cannot read state file {path}: {error}") from error
+    return records, notes
+
+
 def _check_lifecycle(state: str) -> None:
     if state not in LIFECYCLES:
         raise ArgumentError(f"state must be one of {', '.join(LIFECYCLES)}, not {state}")
@@ -54,6 +64,7 @@ def _now() -> str:
 
 
 class FakeAdapter:
+    name = "fake"
     capabilities = Capabilities(
         native_ready=False,
         atomic_claim=True,
@@ -61,21 +72,33 @@ class FakeAdapter:
         offline_read=True,
     )
 
-    def __init__(self, corpus_dir: Path) -> None:
+    def __init__(self, corpus_dir: Path, state_file: Path | None = None) -> None:
         if not corpus_dir.is_dir():
             raise AdapterError(f"corpus directory not found: {corpus_dir}")
-        self._records: list[TrackerRecord] = [
-            record for name in CORPUS_FILES for record in _load(corpus_dir, name)
-        ]
-        self._notes: dict[str, list[tuple[str, str]]] = {}
+        self._state_file = state_file
+        if state_file is not None and state_file.is_file():
+            self._records, self._notes = _load_state(state_file)
+        else:
+            self._records = [record for name in CORPUS_FILES for record in _load(corpus_dir, name)]
+            self._notes = {}
 
-    def seed_from_files(self, plans_dir: Path) -> list[TrackerRecord]:
+    def _commit(self) -> None:
+        # Save the whole state after each write, so the next call reads it back.
+        if self._state_file is None:
+            return
+        state = {"records": [asdict(record) for record in self._records], "notes": self._notes}
+        self._state_file.parent.mkdir(parents=True, exist_ok=True)
+        self._state_file.write_text(json.dumps(state, indent=2, sort_keys=True), encoding="utf-8")
+
+    def seed_from_files(self, plans_dir: Path, dry_run: bool = False) -> list[TrackerRecord]:
         # Create only the records the adapter does not hold, keyed by external_ref.
         known = {record.external_ref for record in self._records}
         creates = [
             record for record in FilesAdapter(plans_dir).all_records() if record.external_ref not in known
         ]
-        self._records.extend(creates)
+        if not dry_run:
+            self._records.extend(creates)
+            self._commit()
         return creates
 
     def _of_kind(self, kind: Kind) -> list[TrackerRecord]:
@@ -100,6 +123,7 @@ class FakeAdapter:
             fields["envelope"] = {**current.envelope, **envelope}
         updated = replace(current, **fields)
         self._records = [updated if record is current else record for record in self._records]
+        self._commit()
         return updated
 
     def list_programs(self) -> list[TrackerRecord]:
@@ -171,6 +195,7 @@ class FakeAdapter:
     def add_note(self, id: str, text: str) -> None:
         self._record_of(id)
         self._notes.setdefault(id, []).append((_now(), text))
+        self._commit()
 
     def escalate(self, id: str, score: float, reason: str) -> TrackerRecord:
         record = self._update(id, "slice", envelope={"escalated": True, "score": score})
@@ -196,6 +221,7 @@ class FakeAdapter:
         for epic in epic_ids:
             current = self._record_of(epic, "epic")
             self._update(epic, "epic", blocked_by=current.blocked_by + (ref,))
+        self._commit()
         return pull_request
 
     def set_pull_request_state(self, ref: str, merged: bool) -> TrackerRecord:

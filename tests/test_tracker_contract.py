@@ -184,6 +184,7 @@ class NoAdapter:
     set_pull_request_state = _refuse
     add_note = _refuse
     sync = _refuse
+    seed_from_files = _refuse
 
 
 NO_ADAPTER_WRITES: list[tuple[str, tuple[Any, ...]]] = [
@@ -198,6 +199,7 @@ NO_ADAPTER_WRITES: list[tuple[str, tuple[Any, ...]]] = [
     ("set_pull_request_state", ("pr-101", True)),
     ("add_note", ("demo-E1-s3", "a note")),
     ("sync", ()),
+    ("seed_from_files", (Path("plans"),)),
 ]
 
 
@@ -270,3 +272,17 @@ def test_capabilities_reports_four_flags(adapter: Any) -> None:
 
     for flag in ("native_ready", "atomic_claim", "rich_envelope", "offline_read"):
         assert isinstance(getattr(caps, flag), bool), flag
+
+
+def test_seed_dry_run_returns_creates_and_writes_nothing() -> None:
+    from tracker_port.fake import FakeAdapter
+
+    plans_dir = Path(__file__).resolve().parent / "fixtures" / "tracker" / "plans"
+    adapter = FakeAdapter(CORPUS_DIR)
+    before = _ids(adapter.list_programs()) + _ids(adapter.list_epics()) + _ids(adapter.list_slices())
+    dry = _ids(adapter.seed_from_files(plans_dir, dry_run=True))
+    assert dry, "the dry run returns the records it would create"
+    after_dry = _ids(adapter.list_programs()) + _ids(adapter.list_epics()) + _ids(adapter.list_slices())
+    assert after_dry == before, "a dry run writes nothing"
+    created = _ids(adapter.seed_from_files(plans_dir))
+    assert created == dry, "the real call creates the records the dry run named"

@@ -22,6 +22,7 @@ class ArgumentError(Exception):
 
 class TrackerPort(Protocol):
     capabilities: Capabilities
+    name: str
 
     def list_programs(self) -> list[TrackerRecord]: ...
 
@@ -63,4 +64,4 @@ class TrackerPort(Protocol):
 
     def set_pull_request_state(self, ref: str, merged: bool) -> TrackerRecord: ...
 
-    def seed_from_files(self, plans_dir: Path) -> list[TrackerRecord]: ...
+    def seed_from_files(self, plans_dir: Path, dry_run: bool = False) -> list[TrackerRecord]: ...
