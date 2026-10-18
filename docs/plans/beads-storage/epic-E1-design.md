@@ -153,7 +153,7 @@ in `shared/tracker-usage.md` by hand and compares the output with the text
 of the reference. The evidence is the transcript of those runs.
 
 **Fixtures (named, shared by slices 1 to 4):**
-- `tests/fixtures/tracker/corpus/program.json`: one program `demo`, `stage: "design"`, and an envelope with `gate1: "2026-10-14"` and `gate2b: "n/a"`. The `gate3` key is absent.
+- `tests/fixtures/tracker/corpus/program.json`: one program `demo`, and an envelope with `stage: "design"`, `gate1: "2026-10-14"` and `gate2b: "n/a"`. The `gate3` key is absent.
 - `tests/fixtures/tracker/corpus/epics.json`: `demo-E1` (open, `blocked_by: ["pr-101"]`), `demo-E2` (open, `blocked_by: ["pr-101"]`), `demo-E3` (open, envelope `deferred: "2026-11-01"`, no blockers). All three have parent `demo`.
 - `tests/fixtures/tracker/corpus/prs.json`: `pr-101` (open, `external_ref: "PR#101"`, `blocked_by` empty).
 - `tests/fixtures/tracker/corpus/slices.json`: `demo-E1-s1` (closed, envelope `score: 0.92`), `demo-E1-s2` (in_progress, `assignee: "agent-1"`, `blocked_by: ["demo-E1-s1"]`), `demo-E1-s3` (open, `blocked_by: ["demo-E1-s1"]`). All three have parent `demo-E1`.

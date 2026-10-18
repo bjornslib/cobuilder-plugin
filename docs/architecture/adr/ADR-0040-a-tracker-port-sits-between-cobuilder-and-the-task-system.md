@@ -85,9 +85,9 @@ The exploration note compares beads, Linear, and Jira on nine points. They are c
   - `capabilities()` is a read-only report of four flags: `native_ready`, `atomic_claim`, `rich_envelope`, and `offline_read`. The contract test gates cases on the flags. Callers read `atomic_claim` to know whether a claim needs a read-back. Callers read `offline_read` to know whether the index rebuild can run with no network. With `native_ready` false, the adapter computes ready itself.
 
   A record is ready when its lifecycle is open, every record in its `blocked_by` is closed, and its parent is not deferred. By kind:
-  - A program is ready when its stage is open and it is unblocked.
+  - A program is ready when its lifecycle is open and it is unblocked.
   - An epic is ready when it is open and unblocked, and its program is ready. A pull request record that blocks the epic counts as a blocker. A deferred epic is not ready.
-  - A slice is ready when it is open and unblocked, and its epic is ready.
+  - A slice is ready when it is open and unblocked, and its epic is not deferred. A pull request record that blocks the epic does not block the slice, because a pull request opens after the slices are built.
 - **Projector.** One shared function turns a TrackerRecord list into the entities, the joins, and `data/index.json`. It replaces the projection logic spread over the readers. A reader gets the records from the port, and no reader feeds the projector from another source.
 - **Adapters.** `beads` (the `bd` CLI) comes first. `files` reads today's files through `slice_table` and refuses writes. `fake` keeps records in memory and proves the seam. `linear` and `jira` are later programs and are not built here.
 - **Config.** One file names the adapter. The proposed name is `.cobuilder/tracker.yaml`.
