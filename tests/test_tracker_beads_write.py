@@ -80,7 +80,7 @@ def test_create_slice_is_a_child_of_its_epic() -> None:
 def test_create_pr_carries_external_ref() -> None:
     body = _load("create_pr")
     args = body["args"]
-    assert args[args.index("--external-ref") + 1] == "PR#101"
+    assert args[args.index("--external-ref") + 1] == "gh-101"
     assert _metadata_arg(args)["cb"]["kind"] == "pr"
     assert body["stdout"] == "t-4zf\n"
 
@@ -183,3 +183,66 @@ def test_shown_slice_round_trips_its_cb_envelope() -> None:
     assert shown["id"] == created["id"] == "demo-E1-s1"
     assert shown["kind"] == "slice"
     assert shown["envelope"]["score"] == 0.92
+
+
+def test_open_pull_request_replays_the_recorded_argv() -> None:
+    from tracker_port.beads import BeadsAdapter
+
+    steps = _steps("open_pull_request_steps")
+    runner = SequenceRunner(steps)
+    BeadsAdapter(runner).open_pull_request("pr-101", ["demo-E1", "demo-E2"])
+
+    assert len(runner.calls) == len(steps)
+
+
+def test_sequence_runner_rejects_a_drifted_argument() -> None:
+    # The replay is only evidence if a changed argument fails it.
+    steps = _steps("open_pull_request_steps")
+    runner = SequenceRunner(steps)
+    runner.run(list(steps[0]["args"]))
+    drifted = list(steps[1]["args"])
+    drifted[drifted.index("--external-ref") + 1] = "gh-102"
+    try:
+        runner.run(drifted)
+    except AssertionError:
+        return
+    raise AssertionError("a create argv with a changed external ref must fail the replay")
+
+
+def test_record_attempt_and_gate_round_trip_keep_every_envelope_key() -> None:
+    from tracker_port.beads import BeadsAdapter
+
+    runner = SequenceRunner(_steps("round_trip_steps"))
+    adapter = BeadsAdapter(runner)
+    adapter.record_attempt("demo-E1-s1", 0.92)
+    adapter.set_gate_value("demo", "gate1", "2026-10-14")
+    slice_envelope = dict(adapter.get_slice("demo-E1-s1").envelope)
+    program = next(record for record in adapter.list_programs() if record.id == "demo")
+
+    written = _metadata_arg(runner.calls[1])["cb"]["envelope"]
+    assert "note" not in written
+    assert written == {
+        "run": 3,
+        "flaky": True,
+        "label": "first pass",
+        "ratio": 0.5,
+        "evidence": ["docs/rubrics/a.md", "docs/rubrics/b.md"],
+        "score": 0.92,
+        "attempts": 1,
+    }
+    assert slice_envelope == {
+        "run": 3,
+        "flaky": True,
+        "label": "first pass",
+        "ratio": 0.5,
+        "score": 0.92,
+        "attempts": 1,
+        "evidence": ("docs/rubrics/a.md", "docs/rubrics/b.md"),
+    }
+    assert "note" not in slice_envelope
+    assert type(slice_envelope["run"]) is int
+    assert type(slice_envelope["flaky"]) is bool
+    assert type(slice_envelope["label"]) is str
+    assert type(slice_envelope["ratio"]) is float
+    assert dict(program.envelope) == {"gate1": "2026-10-14"}
+    assert len(runner.calls) == 6

@@ -7,6 +7,7 @@ Seeding stays a stub until slice 8.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -46,6 +47,13 @@ def _envelope(cb: dict[str, Any]) -> dict[str, Any]:
 def _metadata_arg(cb: dict[str, Any]) -> str:
     # bd --metadata merges top-level keys. Send the whole block under "cb", so bd replaces the old block.
     return json.dumps({"cb": cb}, separators=(",", ":"))
+
+
+def _pr_number(ref: str) -> str:
+    match = re.search(r"(\d+)$", ref)
+    if match is None:
+        raise ArgumentError(f"pull request ref {ref!r} must end in its GitHub number, such as pr-101")
+    return match.group(1)
 
 
 def _with_envelope(cb: dict[str, Any], changes: dict[str, Any]) -> dict[str, Any]:
@@ -283,13 +291,28 @@ class BeadsAdapter:
         return self._after(rows, row, block=block)
 
     def open_pull_request(self, ref: str, epic_ids: list[str]) -> TrackerRecord:
+        number = _pr_number(ref)
         rows = self._rows()
         if ref in self._cb_ids(rows).values():
             raise ArgumentError(f"record {ref} already exists")
         epic_rows = [self._find_row(rows, epic, ("epic",)) for epic in epic_ids]
         block = {"v": CB_VERSION, "id": ref, "kind": "pr", "envelope": {}}
+        external_ref = f"gh-{number}"
         pr_bd_id = self.runner.run(
-            ["create", "--silent", "--type", "task", "--title", ref, "--priority", "2", "--metadata", _metadata_arg(block)]
+            [
+                "create",
+                "--silent",
+                "--type",
+                "task",
+                "--title",
+                ref,
+                "--priority",
+                "2",
+                "--external-ref",
+                external_ref,
+                "--metadata",
+                _metadata_arg(block),
+            ]
         ).strip()
         for epic_row in epic_rows:
             # Each epic is blocked by the PR, so the epic is not ready until the PR closes.
@@ -302,7 +325,7 @@ class BeadsAdapter:
             lifecycle="open",
             assignee=None,
             envelope={},
-            external_ref=None,
+            external_ref=external_ref,
         )
 
     def set_pull_request_state(self, ref: str, merged: bool) -> TrackerRecord:

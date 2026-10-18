@@ -3,8 +3,6 @@
   "args": [
     "create",
     "--silent",
-    "--id",
-    "t-4zf",
     "--type",
     "task",
     "--title",
@@ -12,7 +10,7 @@
     "--priority",
     "2",
     "--external-ref",
-    "PR#101",
+    "gh-101",
     "--metadata",
     "{\"cb\":{\"v\":1,\"id\":\"pr-101\",\"kind\":\"pr\",\"envelope\":{}}}"
   ],
