@@ -10,6 +10,8 @@ To open a pull request, use `gh`. Then record the pull request with `open-pull-r
 
 ## Session start
 
+Every example below runs over the fake adapter. Each example runs in a scratch repo that has a config file naming the fake adapter, so a write succeeds. With no config, a write exits with code 2. See the no-config example under Failure and refusal.
+
 Run `doctor` first. It shows the adapter and its capabilities. Then run `list-programs`, and read the stage and gate values in its output. A build session also runs `list-epics --program <program>`.
 
 ```console
