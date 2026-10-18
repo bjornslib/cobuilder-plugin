@@ -19,6 +19,8 @@ SHARED_DIR = Path(__file__).resolve().parent.parent / "shared"
 sys.path.insert(0, str(SHARED_DIR))
 
 CORPUS_DIR = Path(__file__).resolve().parent / "fixtures" / "tracker" / "corpus"
+EXPECTED_INDEX = CORPUS_DIR.parent / "expected-index.json"
+BEADS_TRANSCRIPT = CORPUS_DIR.parent / "beads" / "transcripts" / "list.json"
 
 READY_KINDS = ("program", "epic", "slice")
 
@@ -31,6 +33,30 @@ def _build_fake(corpus_dir: Path) -> Any:
 
 # Each entry builds one adapter over a corpus copy. E2 adds "beads" here.
 ADAPTER_BUILDERS: dict[str, Callable[[Path], Any]] = {"fake": _build_fake}
+
+
+class _ReplayRunner:
+    """Stands in for BdRunner. It answers only the recorded bd call."""
+
+    def __init__(self, args: list[str], stdout: str) -> None:
+        self.expected_args = args
+        self.stdout = stdout
+
+    def run(self, args: list[str]) -> str:
+        assert list(args) == self.expected_args, f"unexpected bd call: {args}"
+        return self.stdout
+
+
+def _build_beads_replay(_corpus_dir: Path) -> Any:
+    # Replays the recorded bd 1.3.0 list call. The corpus is unused: beads reads come from the transcript.
+    from tracker_port.beads import BeadsAdapter
+
+    transcript = json.loads(BEADS_TRANSCRIPT.read_text(encoding="utf-8"))
+    return BeadsAdapter(runner=_ReplayRunner(transcript["args"], transcript["stdout"]))
+
+
+# Case 7 only. Replay adapters need no bd. Slice 7 adds real-bd writes to ADAPTER_BUILDERS.
+READ_ADAPTER_BUILDERS: dict[str, Callable[[Path], Any]] = {"fake": _build_fake, "beads": _build_beads_replay}
 
 
 def test_next_ready_slice_under_epic() -> None:
@@ -286,3 +312,20 @@ def test_seed_dry_run_returns_creates_and_writes_nothing() -> None:
     assert after_dry == before, "a dry run writes nothing"
     created = _ids(adapter.seed_from_files(plans_dir))
     assert created == dry, "the real call creates the records the dry run named"
+
+
+# Case 7: every read adapter projects the same index as the golden file. Beads replays bd output.
+@pytest.mark.parametrize("adapter_id", list(READ_ADAPTER_BUILDERS))
+def test_contract_case_7_projector_parity(adapter_id: str) -> None:
+    from tracker_port.projector import project
+
+    adapter = READ_ADAPTER_BUILDERS[adapter_id](CORPUS_DIR)
+    records = [
+        *adapter.list_programs(),
+        *adapter.list_epics(),
+        *adapter.list_slices(),
+        *adapter.list_pull_requests(),
+    ]
+    expected = json.loads(EXPECTED_INDEX.read_text(encoding="utf-8"))
+
+    assert project(records) == expected

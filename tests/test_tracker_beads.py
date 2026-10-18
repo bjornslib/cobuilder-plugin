@@ -112,11 +112,3 @@ def test_capabilities_flags() -> None:
 
     assert caps.atomic_claim is False
     assert caps.rich_envelope is True
-
-
-def test_contract_case_7_projector_parity() -> None:
-    from tracker_port.projector import project
-
-    expected = json.loads((FIXTURE_DIR / "expected-index.json").read_text(encoding="utf-8"))
-
-    assert project(_all_records(_beads_adapter())) == expected
