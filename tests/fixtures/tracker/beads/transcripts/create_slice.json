@@ -1,0 +1,18 @@
+{
+  "bd": "bd version 1.3.0 (Homebrew)",
+  "args": [
+    "create",
+    "--silent",
+    "--parent",
+    "t-anc.1",
+    "--type",
+    "task",
+    "--title",
+    "demo-E1-s1",
+    "--priority",
+    "2",
+    "--metadata",
+    "{\"cb\":{\"v\":1,\"id\":\"demo-E1-s1\",\"kind\":\"slice\",\"envelope\":{\"score\":0.92}}}"
+  ],
+  "stdout": "t-anc.1.1\n"
+}

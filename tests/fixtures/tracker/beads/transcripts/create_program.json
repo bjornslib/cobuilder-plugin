@@ -1,0 +1,18 @@
+{
+  "bd": "bd version 1.3.0 (Homebrew)",
+  "args": [
+    "create",
+    "--silent",
+    "--id",
+    "t-anc",
+    "--type",
+    "program",
+    "--title",
+    "demo",
+    "--priority",
+    "1",
+    "--metadata",
+    "{\"cb\":{\"v\":1,\"id\":\"demo\",\"kind\":\"program\",\"envelope\":{\"gate1\":\"2026-10-14\",\"stage\":\"design\",\"gate2b\":\"n/a\"}}}"
+  ],
+  "stdout": "t-anc\n"
+}

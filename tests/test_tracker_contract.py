@@ -31,8 +31,53 @@ def _build_fake(corpus_dir: Path) -> Any:
     return FakeAdapter(corpus_dir)
 
 
-# Each entry builds one adapter over a corpus copy. E2 adds "beads" here.
-ADAPTER_BUILDERS: dict[str, Callable[[Path], Any]] = {"fake": _build_fake}
+def _seed_plan(corpus_dir: Path) -> list[tuple[dict[str, Any], str]]:
+    # Parents come first, so each parent id exists when its child is created.
+    def load(name: str) -> Any:
+        return json.loads((corpus_dir / name).read_text(encoding="utf-8"))
+
+    records = [load("program.json"), *load("prs.json"), *load("epics.json"), *load("slices.json")]
+    bd_types = {"program": "program", "pr": "task", "epic": "epic", "slice": "task"}
+    return [(record, bd_types[record["kind"]]) for record in records]
+
+
+def _build_beads_scratch(corpus_dir: Path) -> Any:
+    # Real bd in a scratch tracker, seeded from the corpus copy at build time.
+    # Skips when bd is not on PATH, so the suite runs without bd.
+    if shutil.which("bd") is None:
+        pytest.skip("bd is not on PATH")
+    from tracker_port.bd_runner import BdRunner
+    from tracker_port.beads import BeadsAdapter
+
+    root = corpus_dir.parent / "bd"
+    root.mkdir()
+    runner = BdRunner(cwd=root)
+    runner.run(["init", "--quiet", "--prefix", "t", "--skip-agents", "--skip-hooks", "--non-interactive"])
+    runner.run(["config", "set", "types.custom", "program,pr"])
+    bd_ids: dict[str, str] = {}
+    for record, bd_type in _seed_plan(corpus_dir):
+        args = [
+            "create", "--silent", "--type", bd_type, "--title", record["id"],
+            "--priority", "1" if record["kind"] == "program" else "2",
+            "--metadata", json.dumps({"cb": {"v": 1, "id": record["id"], "kind": record["kind"], "envelope": record["envelope"]}}),
+        ]
+        if record["external_ref"]:
+            args += ["--external-ref", record["external_ref"]]
+        if record["parent"]:
+            args += ["--parent", bd_ids[record["parent"]]]
+        for blocker in record["blocked_by"]:
+            args += ["--deps", f"blocked-by:{bd_ids[blocker]}"]
+        bd_id = runner.run(args).strip()
+        bd_ids[record["id"]] = bd_id
+        if record["lifecycle"] == "closed":
+            runner.run(["update", bd_id, "--status", "closed"])
+        elif record["lifecycle"] == "in_progress":
+            runner.run(["update", bd_id, "--status", "in_progress", "--assignee", record["assignee"]])
+    return BeadsAdapter(runner=runner)
+
+
+# Each entry builds one adapter over a corpus copy.
+ADAPTER_BUILDERS: dict[str, Callable[[Path], Any]] = {"fake": _build_fake, "beads": _build_beads_scratch}
 
 
 class _ReplayRunner:

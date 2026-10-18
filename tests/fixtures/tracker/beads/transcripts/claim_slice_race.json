@@ -1,0 +1,14 @@
+{
+  "bd": "bd version 1.3.0 (Homebrew)",
+  "args": [
+    "update",
+    "t-anc.1.3",
+    "--status",
+    "in_progress",
+    "--assignee",
+    "agent-y"
+  ],
+  "stdout": "",
+  "exit": 1,
+  "stderr": "cannot reassign t-anc.1.3: held by \"agent-x\" (in_progress); coordinate with the holder (bd mail agent-x) \u2014 pass --force only if their claim is abandoned (crashed agent, expired lease), or use bd reclaim\nError: 1 of 1 issues failed to update\n  t-anc.1.3: cannot reassign t-anc.1.3: held by \"agent-x\" (in_progress); coordinate with the holder (bd mail agent-x) \u2014 pass --force only if their claim is abandoned (crashed agent, expired lease), or use bd reclaim\n"
+}
