@@ -131,6 +131,10 @@ def _set_pull_request_state_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("state", choices=["merged", "open"])
 
 
+def _plans_dir_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("plans_dir", type=Path)
+
+
 # Each operation maps to its builder for arguments and to the port call it makes.
 OPERATIONS: dict[str, tuple[Callable[[argparse.ArgumentParser], None], Callable[[Any, argparse.Namespace], Any]]] = {
     "list-programs": (_no_args, lambda a, n: a.list_programs()),
@@ -156,6 +160,7 @@ OPERATIONS: dict[str, tuple[Callable[[argparse.ArgumentParser], None], Callable[
         _set_pull_request_state_args,
         lambda a, n: a.set_pull_request_state(n.ref, merged=n.state == "merged"),
     ),
+    "seed-from-files": (_plans_dir_args, lambda a, n: a.seed_from_files(n.plans_dir)),
 }
 
 

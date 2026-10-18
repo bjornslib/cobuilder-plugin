@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from .files import FilesAdapter
 from .port import AdapterError, ArgumentError
 from .record import Capabilities, Kind, TrackerRecord
 
@@ -67,6 +68,15 @@ class FakeAdapter:
             record for name in CORPUS_FILES for record in _load(corpus_dir, name)
         ]
         self._notes: dict[str, list[tuple[str, str]]] = {}
+
+    def seed_from_files(self, plans_dir: Path) -> list[TrackerRecord]:
+        # Create only the records the adapter does not hold, keyed by external_ref.
+        known = {record.external_ref for record in self._records}
+        creates = [
+            record for record in FilesAdapter(plans_dir).all_records() if record.external_ref not in known
+        ]
+        self._records.extend(creates)
+        return creates
 
     def _of_kind(self, kind: Kind) -> list[TrackerRecord]:
         return [record for record in self._records if record.kind == kind]

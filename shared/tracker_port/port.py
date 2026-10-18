@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Protocol
 
 from .record import Capabilities, TrackerRecord
@@ -61,3 +62,5 @@ class TrackerPort(Protocol):
     def open_pull_request(self, ref: str, epic_ids: list[str]) -> TrackerRecord: ...
 
     def set_pull_request_state(self, ref: str, merged: bool) -> TrackerRecord: ...
+
+    def seed_from_files(self, plans_dir: Path) -> list[TrackerRecord]: ...
