@@ -29,14 +29,14 @@ Test command: `uv run pytest tests -q`
 - 0.5 — one name or code is missing.
 - 0.0 — two or more names or codes are missing.
 
-### C3 — The reference names no write subcommand that E1 does not ship [CRITICAL]
-**Must be true:** the reference marks each write subcommand as "exits 2 with no adapter" in E1. It does not show a write result as a success.
+### C3 — The reference shows a write only with a stated adapter [CRITICAL]
+**Must be true:** a write example either runs with no adapter and shows exit 2 with a message about the missing adapter, or it runs over the fake adapter and the reference says so before the example. No example shows a write as a success on an unnamed adapter.
 **Evidence to check:**
 - Read `shared/tracker-usage.md`. List each write example.
-- Each write example shows exit code 2 and a message about the missing adapter.
+- For each one, find the exit code and the statement of the adapter.
 **Scoring:**
-- 1.0 — every write example shows exit 2.
-- 0.0 — any write example shows success.
+- 1.0 — every write example shows exit 2, or names the fake adapter.
+- 0.0 — any write example shows success with no adapter named.
 
 ### C4 — The reference uses the STE writing rules
 **Must be true:** the reference uses one instruction per sentence, at most 25 words per sentence, active voice, no semicolons, and no contractions.
@@ -48,13 +48,13 @@ Test command: `uv run pytest tests -q`
 - 0.5 — the lint score is high, but no semicolon or contraction appears.
 - 0.0 — a semicolon or a contraction appears in prose.
 
-### C5 — No other file changes in this slice
-**Must be true:** the only new file in this slice is `shared/tracker-usage.md`. No plugin file, no test file, and no `docs/` file changes.
+### C5 — No unrelated file changes in this slice
+**Must be true:** the slice adds `shared/tracker-usage.md` and its doc test `tests/test_tracker_usage_doc.py`. The only other change allowed is a fix to `shared/tracker-backfill.md` that keeps it in line with the command. No plugin file and no `docs/` file changes.
 **Evidence to check:**
-- `git status --porcelain` after the slice lists `shared/tracker-usage.md` and nothing else from this slice.
+- `git show --stat HEAD` lists only those files.
 **Scoring:**
-- 1.0 — only `shared/tracker-usage.md` is new from this slice.
-- 0.0 — any other file from this slice changed.
+- 1.0 — only the allowed files changed.
+- 0.0 — any other file changed.
 
 ## Regression check
 - All tests from slices 1 to 4 still pass (`uv run pytest tests -q`).
