@@ -29,6 +29,7 @@ it. In short:
   It deletes `references/goal-sync.md`.
   It adds the `shared/tracker.py` allow rule to the `cobuilder-setup` skill.
   Locate that skill with glob before the edit.
+  It adds one pointer in `commands/start.md` to `shared/tracker-backfill.md`. The pointer applies when the tracker is empty.
   It adds `tests/test_implement_tracker_state.py` and the fixture tree
   `tests/fixtures/tracker/write-model/`.
 
@@ -50,6 +51,7 @@ it. In short:
 
 - Slice 17 changes: `tests/test_prose_budget.py` (adds the usage reference to
   `AUTHORING_REFERENCES`). It adds `tests/test_tracker_docs.py`.
+  It also changes `plugins/cobuilder-full-lifecycle/commands/install.md`, the `cobuilder-setup` skill (locate it with glob), the cobuilder-full-lifecycle `plugin.json`, and `.claude-plugin/marketplace.json`. It bumps the cobuilder-full-lifecycle version in both JSON files.
 
 Each of the four skills adds one short "Workflow state" section.
 The section links `shared/tracker-usage.md`.
@@ -102,13 +104,13 @@ column.
 | 14 | A fixture program records each gate value and the program stage through `tracker.py`, and the status file shows each approval date | 13, because it reuses the write-model fixture and the regenerate step |
 | 15 | A pr record blocks two fixture epics until its state is merged, and then both epics show as ready | 13, because it reuses the write-model fixture |
 | 16 | `goal.json` holds no `branch`, `pr`, or `state` key after the migration, and the artifact view lists the same epics | 15, because the pr state moves to the port before the goal keys leave |
-| 17 | `tests/test_tracker_docs.py` passes on this repo, and it fails when a `bd` call appears outside `shared/tracker_port/` | 13 to 16, because it scans every file that those slices change |
+| 17 | `tests/test_tracker_docs.py` passes on this repo, and it fails when a `bd` call appears outside `shared/tracker_port/`. Install runs the backfill dry run after adapter config, and it asks consent before any write | 13 to 16, because it scans every file that those slices change |
 
 Slice details:
 
 - **13.** The implement loop replaces every hand write to `00-status.md` score
   and state lines with the CLI calls. `start.md`, `install.md`, and `debug.md`
-  call the CLI only. The PASS branch in `slice-loop.md` calls
+  call the CLI only. The `start.md` pointer names a reference file and calls no `bd` command. The PASS branch in `slice-loop.md` calls
   `set-slice-state`, then `regenerate-status-files`. The ESCALATION branch calls
   `escalate`. It replaces the `## Escalated` write in `00-status.md`.
   Slice 13 deletes `goal-sync.md` and removes its pointers.
@@ -127,6 +129,8 @@ Slice details:
 
 - **17.** The docs test reads the files that the Files Touched list names and
   checks structure and effect. It never checks prose wording.
+
+  The install edits also get a behavioral check. A fresh agent runs `/cobuilder-full-lifecycle:install` on an empty tracker. It must print the backfill dry run and ask for consent before any write.
 
 ## Test Plan
 
@@ -148,6 +152,7 @@ Assertions:
 5. With no `.cobuilder/tracker.yaml`, the same write exits 2, and no file
    changes.
 6. The implement `plugin.json` and `marketplace.json` versions match.
+7. `implement:start` names `shared/tracker-backfill.md` for an empty tracker, and the reference file exists.
 
 Slice 14. File: `tests/test_architect_tracker_state.py`. Fixture: the
 write-model program with gates 1 and 2 absent and gate 2b `n/a`. Assertions:
@@ -193,15 +198,17 @@ Slice 17. File: `tests/test_tracker_docs.py`. Assertions:
    names a `bd` command. The test skips its own file and the fixtures.
 4. `tests/test_prose_budget.py` lists `shared/tracker-usage.md` in
    `AUTHORING_REFERENCES`.
+5. `plugins/cobuilder-full-lifecycle/commands/install.md` and the `cobuilder-setup` skill name `shared/tracker-backfill.md` and its dry-run operation.
+6. The cobuilder-full-lifecycle `plugin.json` and `marketplace.json` versions match.
 
-Behavioral checks (slices 13, 14, 15, and the SKILL.md part of 16) run on a
+Behavioral checks (slices 13, 14, 15, the SKILL.md part of 16, and the install part of 17) run on a
 real transcript. A fresh agent gets only the changed file and the task.
 The slice evidence keeps the transcript. Git ignores `.cobuilder/rubrics/*/evidence/`.
 
 ## Risks & Open Questions
 
 1. **Rubric path (conflict with 04).** `04-slices.md` line 7 names
-   `docs/architecture/designs/beads-storage/rubrics/`. The assignment and the
+   `.cobuilder/rubrics/beads-storage/`. The assignment and the
    verify_gate default use `.cobuilder/rubrics/beads-storage/`. This design
    follows the assignment. Main decides.
 

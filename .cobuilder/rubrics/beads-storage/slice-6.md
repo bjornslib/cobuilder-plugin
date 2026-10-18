@@ -48,6 +48,6 @@ Test command: `uv run pytest tests/test_tracker_beads.py -q`
 ## Out of scope — do not penalise
 
 - Write cases, the claim read-back, and the metadata round trip (slice 7).
-- The seed script (slice 8) and the fresh clone check (slice 9).
+- The `seed-from-files` dry run (slice 8) and the fresh clone check (slice 9).
 - The GitHub and Linear adapters, and the skill migration.
 - The internal structure of `beads.py`, including its helper names.

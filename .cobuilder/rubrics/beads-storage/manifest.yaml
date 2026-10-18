@@ -12,13 +12,13 @@ models:
 slices:
   - {id: 1, name: "E1 tracer bullet: fake adapter and golden index", weight: 0.10}
   - {id: 2, name: "E1 full contract suite on the fake adapter", weight: 0.08}
-  - {id: 3, name: "E1 files adapter reads the plans tree", weight: 0.05}
+  - {id: 3, name: "E1 files adapter reads the plans tree and backfill dry run", weight: 0.05}
   - {id: 4, name: "E1 command prints JSON and exit codes", weight: 0.05}
   - {id: 5, name: "E1 usage reference matches the command", weight: 0.04}
   - {id: 6, name: "E2 beads reads match the fake adapter", weight: 0.06}
   - {id: 7, name: "E2 beads writes on recorded transcripts", weight: 0.08}
-  - {id: 8, name: "E2 seed dry run lists the creates", weight: 0.05}
-  - {id: 9, name: "E2 fresh clone initializes and syncs", weight: 0.07}
+  - {id: 8, name: "E2 beads dry run matches the backfill file", weight: 0.05}
+  - {id: 9, name: "E2 fresh clone initializes, syncs, and seeds", weight: 0.07}
   - {id: 10, name: "E3 bundle index unchanged after the port", weight: 0.06}
   - {id: 11, name: "E3 gate check and builds view read the port", weight: 0.06}
   - {id: 12, name: "E3 status files regenerate from records", weight: 0.05}
@@ -26,4 +26,4 @@ slices:
   - {id: 14, name: "E4 architect writes gate values", weight: 0.05}
   - {id: 15, name: "E4 pull request blocks two epics", weight: 0.04}
   - {id: 16, name: "E4 goal file drops epic state fields", weight: 0.05}
-  - {id: 17, name: "E4 docs test guards the port", weight: 0.05}
+  - {id: 17, name: "E4 docs test guards the port and install asks first", weight: 0.05}

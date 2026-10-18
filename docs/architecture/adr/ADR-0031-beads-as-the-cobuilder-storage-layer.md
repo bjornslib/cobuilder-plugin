@@ -203,7 +203,7 @@ Prose documents, screenshots, pull-request state, district geography, and public
 
 The write path gains a real store. Readiness, blocking, history, and Dolt-backed sync come from beads instead of from human discipline. Two sessions on one ladder get row-level truth and a recorded trail. The index keeps its shape. Every existing consumer key survives in metadata.
 
-The costs are real. With the beads adapter, `bd` becomes a system dependency, and a script that writes state refuses the write when `bd` is absent. Scripts still read the file sources through the files adapter. The tracker config must ship `types.custom = program`. Metadata has no query language, so corpus-wide questions stay with the index, which is where the viewer's questions already live. And two sources of state exist during the migration window, which is why the seed script is idempotent and dry-run first.
+The costs are real. With the beads adapter, `bd` becomes a system dependency, and a script that writes state refuses the write when `bd` is absent. Scripts still read the file sources through the files adapter. The tracker config must ship `types.custom = program`. Metadata has no query language, so corpus-wide questions stay with the index, which is where the viewer's questions already live. And two sources of state exist during the migration window, which is why `seed-from-files` is idempotent and dry-run first.
 
 # Amendment 2026-09-29 — the status file, the write refusal, the closings
 
@@ -213,7 +213,7 @@ A review against the sync goal found the ADR silent on four surfaces. This amend
 
 **The status file maps into beads.** A gate approval line becomes a `gate<n>` scalar on the program issue, and the `view:` route becomes `gate<n>_view`. The dated narrative goes to `bd comment <program>`. A slice PASS line is an envelope update (`score`, `attempts`) plus a dated `bd comment <slice>` line that keeps the narrative. bd 1.3.0 comments are append-only per issue, and rule 2 stands. Metadata stays scalars. Comments are beads's own prose surface, not envelope prose. An escalation is an escalated-true envelope flag plus a comment that carries the score and the reason. The prose sections stay authored documents.
 
-**The seed only creates.** `shared/beads_seed.py` reads a file to create an issue that does not exist yet. After that, the issue is the only source of state. A hand edit of a stateful line is reported and overwritten, as the amendment of 2026-10-17 states.
+**`seed-from-files` only creates.** The operation reads a file to create an issue that does not exist yet. After that, the issue is the only source of state. A hand edit of a stateful line is reported and overwritten, as the amendment of 2026-10-17 states.
 
 **Without an adapter, scripts refuse state writes.** Scripts read the file sources and refuse to write workflow state. Nothing writes file state silently.
 
@@ -227,7 +227,7 @@ A review against the sync goal found the ADR silent on four surfaces. This amend
 
 E1 builds the port in `shared/tracker_port/`: the neutral record, the projector, the fake adapter, a read-only files adapter that reuses `slice_table`, and the contract test. E1 ships alone, and its projector matches `data/index.json` offline.
 
-E2 builds the beads adapter and `shared/beads_seed.py`, which only creates. It also builds a count check that derives its counts from the current index at run time, with no pinned literal. The Dolt-in-git cloud-clone smoke check gates E2.
+E2 builds the beads adapter, which implements `seed-from-files`. That operation only creates. It also builds a count check that derives its counts from the current index at run time, with no pinned literal. The Dolt-in-git cloud-clone smoke check gates E2.
 
 E3 moves the readers to the port: `shared/build_index.py`, `plugins/artifact/scripts/build_builds_view.py` (which reads `04-slices.md` through `slice_table`), and `verify_gate.py` (which keeps its own raw-line link check). The stateful file sections generate from the tracker through `regenerate_status_files`. A guardrail test lands with E3: every join scalar comes from the envelope, never from parsed comment text.
 
@@ -243,11 +243,11 @@ Not verified: a cloud session that holds only a git clone. A smoke check of that
 
 **Every state write needs a configured adapter.** This replaces the read-only fallback and the degraded-write exception of the first amendment. When no adapter is configured, scripts still read the file sources. They refuse every state write and name the missing adapter. With the beads adapter, the missing tool is `bd`. The install command and `implement:start` check for the adapter.
 
-**The beads issue wins.** This replaces the newest-wins reconcile of the first amendment. The seed reads a file only to create an issue that does not exist yet. After that, the issue is the only source of state. The reconcile regenerates the stateful lines of each file from the issue. It reports a hand edit of a stateful line and overwrites it. No file-to-issue update remains, because no state write can happen without `bd`.
+**The beads issue wins.** This replaces the newest-wins reconcile of the first amendment. `seed-from-files` reads a file only to create an issue that does not exist yet. After that, the issue is the only source of state. The reconcile regenerates the stateful lines of each file from the issue. It reports a hand edit of a stateful line and overwrites it. No file-to-issue update remains, because no state write can happen without `bd`.
 
 **Scope.** Beads is the master of programs, epics, slices, and their states. Every other record stays a file, and the issue holds a pointer. The thread ledger and the Hindsight initiative pages stay outside beads.
 
-**Who runs what.** `shared/beads_seed.py` belongs to `shared/`. `bd init` runs with `--skip-agents --skip-hooks`, from `implement:start` at Gate 3 after an explicit consent question, and from the install command.
+**Who runs what.** The beads adapter implements `seed-from-files`, and the agent workflow in `shared/tracker-backfill.md` runs it. `bd init` runs with `--skip-agents --skip-hooks`, from `implement:start` at Gate 3 after an explicit consent question, and from the install command.
 
 **The pull request is its own issue.** One pull request can close several epics. The `pr` issue holds the number as a pointer and blocks each epic it holds. A human closes the issue on merge, until `gh:pr` automation lands. That close frees every epic at once. This replaces the human merge gate and the `gate` type. A scratch tracker smoke test on 2026-10-17 passed. One `task` issue with `cb.kind = pr` blocked two epics, `bd ready` hid both epics until `bd close`, and then it showed both.
 
@@ -257,7 +257,7 @@ Not verified: a cloud session that holds only a git clone. A smoke check of that
 
 # Amendment 2026-10-17 (fourth) — beads is the first adapter
 
-**Scope narrows.** ADR-0040 adds a tracker port in `shared/tracker_port/`. Readers and writers of workflow state call the port, and an adapter calls the tracker. This ADR no longer says that beads is the storage layer for every caller. Beads is the first adapter. This ADR owns the beads-specific parts: the mapping, the `metadata.cb` envelope, `bd init --skip-agents --skip-hooks`, the Dolt-in-git store, and `shared/beads_seed.py`.
+**Scope narrows.** ADR-0040 adds a tracker port in `shared/tracker_port/`. Readers and writers of workflow state call the port, and an adapter calls the tracker. This ADR no longer says that beads is the storage layer for every caller. Beads is the first adapter. This ADR owns the beads-specific parts: the mapping, the `metadata.cb` envelope, `bd init --skip-agents --skip-hooks`, the Dolt-in-git store, and the `seed-from-files` operation of the beads adapter.
 
 **The write rule changes its subject.** "bd is required for every state write" becomes "a configured tracker adapter is required for every state write". With the beads adapter, that means `bd`. Without an adapter, scripts read the file sources and refuse state writes.
 

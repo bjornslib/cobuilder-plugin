@@ -6,8 +6,7 @@ The program adds one seam between the workflow scripts and the task system. ADR-
 
 - `shared/tracker_port/` (new package). It holds the neutral `TrackerRecord`, the `TrackerPort` protocol, the one `Projector`, and three adapters: `fake` and `files` in E1, and `beads` in E2.
 - `shared/tracker.py` (new file). It is the one command that agents call. It parses arguments, calls the port, and prints JSON.
-- `shared/tracker-usage.md` and `shared/tracker-adapter-beads.md` (new reference files). They teach the command and the beads mapping.
-- `shared/beads_seed.py` (new file). It seeds a beads store from the files of `docs/plans`.
+- `shared/tracker-usage.md`, `shared/tracker-adapter-beads.md`, and `shared/tracker-backfill.md` (new reference files). They teach the command, the beads mapping, and the agent-run backfill.
 - The readers that exist today. `shared/build_index.py`, `shared/slice_table.py`, `shared/gate_status.py`, `plugins/implement/scripts/verify_gate.py`, and `plugins/artifact/scripts/build_builds_view.py` read through the port and the projector after E3. `shared/slice_table.py` stays as the parser that the `files` adapter uses.
 
 The four main skills of architect, implement, pr, and artifact gain a "Workflow state" section that names `shared/tracker.py`. The `implement` plugin keeps its existing scripts. This design adds no new plugin and no MCP server, which follows CLAUDE.md principle 5.

@@ -34,13 +34,13 @@ Initial checks, 2026-10-17:
 
 - [ ] Slice 1 — Tracer bullet: fake adapter and golden index   score: —   note: —
 - [ ] Slice 2 — Full contract suite on the fake adapter   score: —   note: —
-- [ ] Slice 3 — Files adapter reads the plans tree   score: —   note: —
+- [ ] Slice 3 — Files adapter reads the plans tree and backfill dry run   score: —   note: —
 - [ ] Slice 4 — Command prints JSON and exit codes   score: —   note: —
 - [ ] Slice 5 — Usage reference matches the command   score: —   note: —
 - [ ] Slice 6 — Beads reads match the fake adapter   score: —   note: —
 - [ ] Slice 7 — Beads writes on recorded transcripts   score: —   note: —
-- [ ] Slice 8 — Seed dry run lists the creates   score: —   note: —
-- [ ] Slice 9 — Fresh clone initializes and syncs   score: —   note: —
+- [ ] Slice 8 — Beads dry run matches the backfill file   score: —   note: —
+- [ ] Slice 9 — Fresh clone initializes, syncs, and seeds   score: —   note: —
 - [ ] Slice 10 — Bundle index unchanged after the port   score: —   note: —
 - [ ] Slice 11 — Gate check and builds view read the port   score: —   note: —
 - [ ] Slice 12 — Status files regenerate from records   score: —   note: —
@@ -48,7 +48,7 @@ Initial checks, 2026-10-17:
 - [ ] Slice 14 — Architect writes gate values   score: —   note: —
 - [ ] Slice 15 — Pull request blocks two epics   score: —   note: —
 - [ ] Slice 16 — Goal file drops epic state fields   score: —   note: —
-- [ ] Slice 17 — Docs test guards the port   score: —   note: —
+- [ ] Slice 17 — Docs test guards the port and install asks first   score: —   note: —
 
 ## Escalated
 
@@ -58,3 +58,5 @@ Initial checks, 2026-10-17:
 - The build plan covers the whole program, E1 to E4, in 17 slices. All gates carry a delegated approval, so the engineer reviews them at hand-over, and a change request reopens the gate it names.
 - Slices 13 to 16 edit prose that steers an agent. The blind pass of Gate 4c runs in each of those slices, once the prose exists.
 - The test baseline before slice 1 is 794 passed and 1 skipped.
+- Plan amended 2026-10-17 by the engineer. Backfill is an agent workflow in `shared/tracker-backfill.md`.
+- The seed script is dropped. The port operation `seed-from-files` replaces it.

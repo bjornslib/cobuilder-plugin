@@ -185,7 +185,7 @@ th{font:600 12px "IBM Plex Mono",monospace;text-transform:uppercase;color:var(--
   <li><b>Pull request:</b> its own issue (type <code>task</code>, <code>cb.kind = pr</code>), blocks every epic it holds. It replaces the merge gate and the <code>gate</code> type.</li>
   <li><b>Gates 1 to 4 and 4a to 4c:</b> flat scalar fields on the program issue.</li>
   <li><b>ADRs:</b> file only, no issue. <b>Hindsight pages:</b> separate. <b>Thread ledger:</b> outside.</li>
-  <li><b>Owners:</b> <code>shared/beads_seed.py</code> in <code>shared/</code>. <code>bd init</code> runs from <code>implement:start</code> at Gate 3 and from the install command, with <code>--skip-agents --skip-hooks</code> (no agent files and no git hooks in the target repo, per ADR-0016).</li>
+  <li><b>Owners:</b> <code>seed-from-files</code> in <code>shared/</code>. <code>bd init</code> runs from <code>implement:start</code> at Gate 3 and from the install command, with <code>--skip-agents --skip-hooks</code> (no agent files and no git hooks in the target repo, per ADR-0016).</li>
   <li><b>Success measure:</b> a fresh session finds the next slice with one <code>bd ready</code> call and zero file reads.</li>
 </ul>
 

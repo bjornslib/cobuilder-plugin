@@ -1,16 +1,16 @@
 Kind: test-suite
 
-# Rubric: Slice 9 — Fresh clone initializes and syncs
+# Rubric: Slice 9 — Fresh clone initializes, syncs, and seeds
 
 Feature: beads-storage
 Epic: E2
-Slice goal: In a temp directory, with real `bd` and `git` and no stubs, a fresh git clone of the seeded origin runs `bd init --remote`, `bd list --json`, and `bd sync` with exit 0. A second fresh clone sees the same records.
+Slice goal: In a temp directory, with real `bd` and `git` and no stubs, `bd init --skip-agents --skip-hooks` and `bd sync` against `refs/dolt/data` exit 0 in a fresh clone. The backfill write step seeds the mini plan. A second run of the create step creates nothing.
 Test command: `uv run pytest tests/test_tracker_beads.py -q -k fresh_clone`
 
 ## Criteria
 
 ### C1 — The first fresh clone initializes, lists, and syncs without error [CRITICAL]
-**Must be true:** in the first fresh clone, `bd init --remote`, `bd list --json`, and `bd sync` each exit 0. No line of their combined output starts with `Error`. The sorted ids from `bd list --json` equal the ids that the seed created.
+**Must be true:** in the first fresh clone, `bd init --skip-agents --skip-hooks`, `bd sync`, and `bd list --json` each exit 0. No line of their combined output starts with `Error`. The sorted ids from `bd list --json` equal the ids that the seed created.
 **Evidence to check:**
 - `uv run pytest tests/test_tracker_beads.py -q -k fresh_clone -s` exits 0. The `-s` flag keeps the printed transcript.
 - The printed transcript shows the exit code of each command.
@@ -21,7 +21,7 @@ Test command: `uv run pytest tests/test_tracker_beads.py -q -k fresh_clone`
 - 0.0 — any command exits non-zero, any error line appears, or the ids differ.
 
 ### C2 — A second fresh clone sees the same programs, epics, and slices [CRITICAL]
-**Must be true:** the second fresh clone, made from the same origin, runs the same three commands with exit 0. Its counts per kind (program, epic, slice, pr) equal the counts in the first clone.
+**Must be true:** the second fresh clone, made from the same origin, runs the same commands with exit 0. Its counts per kind (program, epic, slice, pr) equal the counts in the first clone. A second run of the create step sends no `create` call.
 **Evidence to check:**
 - The transcript shows a second `git clone` and the same three `bd` commands in a second directory.
 - Read the test: it compares the per-kind counts of both clones.

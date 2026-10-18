@@ -57,7 +57,7 @@
     },
     {
       "id": "E2",
-      "title": "The beads adapter and the seed: shared/beads_seed.py belongs to shared/ and seeds programs, epics, slices, and pull request issues by external_ref. It only creates, and it covers every plan with a 04-slices.md and the status-only plan skill-collision-fix. It runs bd init with --skip-agents --skip-hooks, writes the gate scalars, and derives its counts at run time. It writes the beads adapter notes. They hold the bd init consent question and its two flags, bd sync, and the claim read-back. The Dolt-in-git clone smoke check gates E2.",
+      "title": "The beads adapter and seed-from-files. The beads adapter implements the port operation seed-from-files, which creates programs, epics, slices, and pull request issues by external_ref. It only creates, and it covers every plan with a 04-slices.md and the status-only plan skill-collision-fix. It runs bd init with --skip-agents --skip-hooks, writes the gate scalars, and derives its counts at run time. It writes the beads adapter notes. They hold the bd init consent question and its two flags, bd sync, and the claim read-back. The Dolt-in-git clone smoke check gates E2.",
       "outcome": "Beads holds the state of programs, epics, slices, and pull requests, and a second clone sees the same state.",
       "slug": "beads-adapter",
       "branch": null

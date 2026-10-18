@@ -115,10 +115,10 @@
     </g>
 
     <g id="n-seed">
-      <title>shared/beads_seed.py: seeds issues by external_ref, create-only</title>
+      <title>seed-from-files: port operation that creates missing records by external_ref, create-only, after consent</title>
       <rect x="555" y="562" width="200" height="64" rx="10" fill="#E3DACC" stroke="#3D3D3A" stroke-width="1.5"/>
-      <text x="567" y="582" fill="#141413">beads_seed.py</text>
-      <text x="567" y="596" fill="#87867F" font-size="10">create-only seed</text>
+      <text x="567" y="582" fill="#141413">seed-from-files</text>
+      <text x="567" y="596" fill="#87867F" font-size="10">create-only, after consent</text>
       <rect x="703" y="608" width="46" height="14" fill="none" stroke="#B04A3F" stroke-width="1" rx="4"/>
       <text x="708" y="618" fill="#B04A3F" font-size="9">pending</text>
     </g>

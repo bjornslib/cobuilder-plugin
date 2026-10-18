@@ -1,19 +1,19 @@
 Kind: test-suite
 
-# Rubric: Slice 8 — Seed dry run lists the creates
+# Rubric: Slice 8 — Beads dry run matches the backfill file
 
 Feature: beads-storage
 Epic: E2
-Slice goal: The seed script's dry run prints the planned `bd create` records for the mini plan and writes nothing. The output equals the checked-in file. An apply run creates each record once, in dependency order.
+Slice goal: The beads adapter's `seed-from-files` dry run prints the planned creates for the mini plan and writes nothing. The output equals `tests/fixtures/tracker/backfill/dry_run.txt`. An apply run creates each record once, in dependency order.
 Test command: `uv run pytest tests/test_tracker_beads.py -q`
 
 ## Criteria
 
 ### C1 — The dry run prints exactly the checked-in output [CRITICAL]
-**Must be true:** the dry run on the mini plan exits 0 and prints text that equals `tests/fixtures/tracker/beads/seed_dry_run.txt`, byte for byte. It also exits 0 when `bd` is not on `PATH`.
+**Must be true:** the beads dry run on the mini plan prints text that equals `tests/fixtures/tracker/backfill/dry_run.txt`, byte for byte. The dry run makes no `bd` call.
 **Evidence to check:**
 - `uv run pytest tests/test_tracker_beads.py -q -k "dry_run_prints or dry_run_needs_no_bd"` exits 0.
-- Read the test: it compares stdout with the checked-in file, and it sets `PATH` to an empty directory.
+- Read the test: it compares stdout with the checked-in file, and its stub runner fails on any call.
 **Scoring:**
 - 1.0 — both assertions hold and pass.
 - 0.5 — the output matches, but the no-`bd` case is not tested.
@@ -48,4 +48,4 @@ Test command: `uv run pytest tests/test_tracker_beads.py -q`
 
 - The fresh clone check (slice 9). Nothing in this slice runs `bd init` or `bd sync`.
 - The exact wording of the planned command text, as long as the checked-in file and the output agree.
-- The internal structure of `beads_seed.py`, including its helper names.
+- The internal structure of the beads `seed-from-files` code, including its helper names.

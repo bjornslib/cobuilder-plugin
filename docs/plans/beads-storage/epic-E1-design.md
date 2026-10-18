@@ -31,9 +31,11 @@ E1 creates these files. It changes no existing file.
 - `shared/tracker_port/config.py`: `load_adapter(config_path, repo_root)`.
 - `shared/tracker.py`: the PEP 723 command-line entry point.
 - `shared/tracker-usage.md`: the usage reference for the command. Slice 5 writes it.
+- `shared/tracker-backfill.md`: the backfill reference. It runs the create step over `seed-from-files`. Slice 3 creates it.
 - `tests/fixtures/tracker/corpus/program.json`, `epics.json`, `prs.json`, `slices.json`.
 - `tests/fixtures/tracker/expected-index.json`.
 - `tests/fixtures/tracker/plans/beads-storage-mini/00-status.md` and `04-slices.md`.
+- `tests/fixtures/tracker/backfill/dry_run.txt`: the checked-in dry run of the mini plan on the fake adapter. Slice 3 creates it.
 - `tests/test_tracker_contract.py`, `tests/test_tracker_projector.py`, `tests/test_tracker_files.py`, `tests/test_tracker_cli.py`.
 
 ## Types & Signatures
@@ -73,6 +75,7 @@ class TrackerPort(Protocol):
     def list_pull_requests(self) -> list[TrackerRecord]: ...
     def get_slice(self, id: str) -> TrackerRecord: ...
     def next_ready(self, kind: str = "slice", under: str | None = None) -> list[TrackerRecord]: ...
+    def seed_from_files(self, plans_dir: Path) -> list[TrackerRecord]: ...
 
 def project(records: Sequence[TrackerRecord]) -> dict[str, Any]: ...
 def load_adapter(config_path: Path, repo_root: Path) -> TrackerPort | None: ...
@@ -84,7 +87,7 @@ class FilesAdapter:
     def __init__(self, plans_dir: Path) -> None: ...
 ```
 
-The protocol declares the write methods of `TrackerPort` (claim, set-state, notes, pull request, regenerate, seed) as signatures only. `FakeAdapter` implements them as in-memory updates. `FilesAdapter` raises `NoAdapterError` for each one. E2 and E3 give the protocol its full behavior.
+The protocol declares the write methods of `TrackerPort` (claim, set-state, notes, pull request, regenerate) as signatures only. It also declares `seed_from_files(plans_dir)`, which returns the records to create and writes nothing. `FakeAdapter` implements the write methods as in-memory updates. It keeps created records in memory. A second `seed_from_files` call then returns no creates. `FilesAdapter` raises `NoAdapterError` for each write method. E2 and E3 give the protocol its full behavior.
 
 `next_ready` returns open records of the given kind.
 Each record in `blocked_by` must have `lifecycle == "closed"`.
@@ -103,7 +106,7 @@ the top-level keys of `data/index.json`. E3 slice 10 aligns the two shapes.
 |---|---|---|
 | 1 | A test loads the fixture corpus through the fake adapter, matches `expected-index.json`, and one next-ready case passes | none |
 | 2 | Contract cases 1 to 6 of the seven in ADR-0040 pass on the fake adapter. Case 7 needs beads, so slice 1 checks only the fake side. A write with no configured adapter exits 2 | 1 |
-| 3 | The files adapter lists the miniature plans tree, and every write it receives exits 2 | 2, because it reuses the contract tests |
+| 3 | The files adapter lists the miniature plans tree and projects it to the fake index shape. Every state write it receives exits 2. The fake adapter's backfill dry run lists the creates, and the list equals `tests/fixtures/tracker/backfill/dry_run.txt`. A second run creates nothing. `shared/tracker-backfill.md` names each workflow step | 2, because it reuses the contract tests |
 | 4 | `shared/tracker.py list-programs` prints the corpus as JSON, and the CLI test shows exit codes 0, 2, 3, and 4 | 2 and 3, because the command reads both adapters |
 | 5 | A reader runs each example in `shared/tracker-usage.md` and gets the output that the reference shows | 4 |
 
@@ -135,6 +138,9 @@ an adapter factory fixture. The fixture is `fake_adapter`, which builds
 - `test_lists_programs_from_plans_tree`: `FilesAdapter(plans_dir).list_programs()` returns one record `beads-storage-mini`.
 - `test_lists_slices_from_04`: `list_slices()` returns the slice rows of the fixture `04-slices.md`, with `lifecycle` set from the row state.
 - `test_every_write_exits_2`: each write method raises `NoAdapterError`. The test runs them in a loop over the protocol write names.
+- `test_backfill_dry_run_matches_fixture`: `seed_from_files(mini plan)` on `FakeAdapter` returns the creates. The printed lines equal `tests/fixtures/tracker/backfill/dry_run.txt`.
+- `test_second_run_creates_nothing`: after the creates are written in memory, a second `seed_from_files` call returns an empty list.
+- `test_backfill_reference_names_operations`: `shared/tracker-backfill.md` names `seed-from-files` and each `tracker.py` operation that the reference calls. The test checks each name against `tracker.py --help`.
 
 **Slice 4: command.** `tests/test_tracker_cli.py`, which runs `uv run shared/tracker.py` in a subprocess with `--config` set to a temporary path.
 - `test_list_programs_prints_json`: exit 0, and stdout parses as a JSON list of the corpus programs.
@@ -153,6 +159,7 @@ of the reference. The evidence is the transcript of those runs.
 - `tests/fixtures/tracker/corpus/slices.json`: `demo-E1-s1` (closed, envelope `score: 0.92`), `demo-E1-s2` (in_progress, `assignee: "agent-1"`, `blocked_by: ["demo-E1-s1"]`), `demo-E1-s3` (open, `blocked_by: ["demo-E1-s1"]`). All three have parent `demo-E1`.
 - `tests/fixtures/tracker/expected-index.json`: the golden output of `project` over those four files.
 - `tests/fixtures/tracker/plans/beads-storage-mini/00-status.md` and `04-slices.md`: a miniature plan with one gate table and one slice table in the shape that `shared/gate_status.py` and `shared/slice_table.py` read.
+- `tests/fixtures/tracker/backfill/dry_run.txt`: the expected dry run of the mini plan, one JSON line per create. E2 slice 8 reads it too.
 
 ## Risks & Open Questions
 

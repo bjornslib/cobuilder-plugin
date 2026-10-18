@@ -69,7 +69,7 @@
     "No tracker gives a verified atomic claim. When atomic_claim is false, a claim is a write followed by a read that confirms the claimant",
     "The bd bridges do not push metadata.cb, and a Jira pull replaces it, so they cannot replace an adapter",
     "Every state write needs a configured adapter. Without one, scripts read the file sources and refuse state writes",
-    "types.custom = program must ship in the tracker config, or the beads seed fails on a fresh clone",
+    "types.custom = program must ship in the tracker config, or the beads seed-from-files operation fails on a fresh clone",
     "A cloud session that holds only a git clone may not run bd init and bd sync against refs/dolt/data. This is not verified",
     "A pull request issue shows in bd ready until a human closes it, so every consumer must filter on metadata.cb.kind",
     "A hand edit of a stateful line is overwritten from the tracker, and two sources of state exist until the generated file sections land",

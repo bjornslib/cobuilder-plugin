@@ -16,7 +16,7 @@ problem: "ADR-0031 binds CoBuilder to beads. Every reader and writer of workflow
 decision: "CoBuilder gets a tracker port in shared/tracker_port/. A neutral TrackerRecord and a TrackerPort define every read and write of workflow state. One shared projector turns record lists into entities, joins, and data/index.json. Adapters implement the port: beads first, then files (read only) and fake (in memory). Linear and Jira follow as later programs, and one contract test suite runs against every adapter. One command, shared/tracker.py, is the only entry point for agents, and one shared reference, shared/tracker-usage.md, teaches agents to use it."
 maps_to:
   context: shared
-  modules: [shared/tracker, shared/tracker.py, shared/tracker-usage.md, shared/build_index.py, plugins/implement, plugins/architect]
+  modules: [shared/tracker, shared/tracker.py, shared/tracker-usage.md, shared/tracker-backfill.md, shared/build_index.py, plugins/implement, plugins/architect]
   rule: "Readers and writers of workflow state call the tracker port, never a tracker's own CLI or API, such as bd. Agents reach the port through shared/tracker.py. Only an adapter knows a tracker. build_index.py reads TrackerRecord lists through the projector."
 forces:
   - "The engineer wants a layer between CoBuilder and the task system, and Linear and Jira connectors may follow."
@@ -170,6 +170,20 @@ The proposed path is `shared/tracker-usage.md`. The contract and the commands li
 | A human merges the pull request | `set-pull-request-state`, then `set-epic-state` |
 | A program is implemented or superseded | `set-program-stage` |
 | A slice passes, and a session ends its writes | `regenerate-status-files` after the pass, then `sync` and `regenerate-status-files` at the end |
+
+### The backfill
+
+The backfill is an agent workflow in `shared/tracker-backfill.md`. It runs over the port operation `seed-from-files`. It has these steps.
+
+1. Inventory. The agent lists the plans and their records through the files adapter. It does not call `bd`.
+2. Dry run. The agent prints each planned create. It writes nothing.
+3. Consent. The engineer approves the printed list before any write.
+4. Create-only write. The agent creates each missing record through `seed-from-files`. A record whose `external_ref` exists is skipped.
+5. Conflict. A record that exists with a different value is flagged, with both values shown. The agent never overwrites it.
+6. Pull requests. The agent lists them with `gh pr list`, per ADR-0029.
+7. Count check. The agent derives the expected count at run time from the index. It uses no pinned number.
+
+The backfill is idempotent by `external_ref`. A second run creates nothing.
 
 ### Wiring
 

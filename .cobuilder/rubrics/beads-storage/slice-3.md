@@ -1,60 +1,63 @@
 Kind: test-suite
 
-# Rubric: Slice 3 — Files adapter reads the plans tree
+# Rubric: Slice 3 — Files adapter reads the plans tree and backfill dry run
 
 Feature: beads-storage
 Epic: E1
-Slice goal: The files adapter lists the miniature plans tree, and every write it receives exits 2.
+Slice goal: The files adapter lists the miniature plans tree, and every write it receives exits 2. The fake adapter's backfill dry run lists the creates, the list equals the checked-in file, and a second run creates nothing. The backfill reference names each workflow step in the ADR-0040 backfill section.
 Test command: `uv run pytest tests/test_tracker_files.py -q && uv run pytest tests -q`
 
 ## Criteria
 
-### C1 — The files adapter lists the miniature program [CRITICAL]
-**Must be true:** `FilesAdapter(plans_dir).list_programs()` on the miniature plans tree returns one record with id `beads-storage-mini`.
+### C1 — The fake-adapter dry run equals the checked-in file [CRITICAL]
+**Must be true:** `seed_from_files(mini plan)` on `FakeAdapter` returns the creates. The printed lines equal `tests/fixtures/tracker/backfill/dry_run.txt`, byte for byte.
 **Evidence to check:**
-- `uv run pytest tests/test_tracker_files.py::test_lists_programs_from_plans_tree -q` passes.
-- The test asserts the returned ids as a list.
+- `uv run pytest tests/test_tracker_files.py -q -k backfill_dry_run_matches_fixture` passes.
+- Read the test. It compares every printed line with the checked-in file.
 **Scoring:**
-- 1.0 — the test passes and the list is exactly `["beads-storage-mini"]`.
-- 0.5 — the test passes, but it does not assert the full list.
-- 0.0 — the test fails.
+- 1.0 — the test passes, and it compares every line.
+- 0.5 — the test passes, but it compares only part of the output.
+- 0.0 — the output differs, or the test fails.
 
-### C2 — Slices come from the slice table [CRITICAL]
-**Must be true:** `list_slices()` returns one record for each data row of the fixture `04-slices.md`. Each record has a `lifecycle` value that matches the row state.
+### C2 — A second run creates nothing [CRITICAL]
+**Must be true:** after the creates are written in memory, a second `seed_from_files` call on `FakeAdapter` returns an empty list.
 **Evidence to check:**
-- `uv run pytest tests/test_tracker_files.py::test_lists_slices_from_04 -q` passes.
-- Read the fixture `tests/fixtures/tracker/plans/beads-storage-mini/04-slices.md`. Count its data rows. Compare the count with the length of the returned list.
+- `uv run pytest tests/test_tracker_files.py -q -k second_run_creates_nothing` passes.
+- Read the test. It calls `seed_from_files` twice, and it checks that the second result is empty.
 **Scoring:**
-- 1.0 — the test passes, and the count matches the data rows.
-- 0.5 — the test passes, but it does not compare the count.
-- 0.0 — the count differs or the test fails.
+- 1.0 — the test passes, and the second result is checked.
+- 0.5 — the test passes, but the in-memory write step is not part of it.
+- 0.0 — the second result is not empty, or the test fails.
 
 ### C3 — Every write raises the no-adapter error [CRITICAL]
-**Must be true:** every write method of `FilesAdapter` raises `NoAdapterError`. None of them changes a file.
+**Must be true:** every write method of `FilesAdapter` raises `NoAdapterError`. None of them changes a file. The `seed-from-files` write path counts as a write method.
 **Evidence to check:**
-- `uv run pytest tests/test_tracker_files.py::test_every_write_exits_2 -q` passes.
+- `uv run pytest tests/test_tracker_files.py -q -k every_write_exits_2` passes.
 - Hash the fixture plans tree before and after the test run. The hashes match.
 **Scoring:**
 - 1.0 — every write method raises, and the hashes match.
 - 0.0 — any write method returns normally, or any file changed.
 
-### C4 — The files adapter reads the plans tree only
-**Must be true:** `FilesAdapter` reads only files under the plans directory it receives. It does not read `.cobuilder/tracker.yaml` or any file under `docs/plans/`.
+### C4 — The backfill reference names each workflow step
+**Must be true:** `shared/tracker-backfill.md` names each workflow step in the ADR-0040 backfill section. The reference states no step count.
 **Evidence to check:**
+- `uv run pytest tests/test_tracker_files.py -q -k backfill_reference_names_operations` passes.
+- Read `shared/tracker-backfill.md`. Check each step of the ADR-0040 backfill section against it.
+- Grep the reference for a number that counts its steps. The grep finds none.
+**Scoring:**
+- 1.0 — every step is named, and the reference states no count.
+- 0.5 — every step is named, but the reference states a count.
+- 0.0 — a step is missing from the reference.
+
+### C5 — Listing and gate values come from the plans tree
+**Must be true:** `FilesAdapter(plans_dir).list_programs()` returns one record with id `beads-storage-mini`. `list_slices()` returns one record for each data row of the fixture `04-slices.md`. The program envelope holds each gate value that `00-status.md` names. `FilesAdapter` reads only files under `plans_dir`.
+**Evidence to check:**
+- `uv run pytest tests/test_tracker_files.py -q -k "lists_programs or lists_slices"` passes.
 - Read `shared/tracker_port/files.py`. Each `open` or read call takes a path under the `plans_dir` argument.
 **Scoring:**
-- 1.0 — every read stays under `plans_dir`.
-- 0.0 — any read reaches a path outside `plans_dir`.
-
-### C5 — Gate values come from the status file
-**Must be true:** for the fixture `00-status.md`, `list_programs()` returns a record whose envelope holds each gate value that the status file names.
-**Evidence to check:**
-- Read `tests/fixtures/tracker/plans/beads-storage-mini/00-status.md`. List the gate values it names.
-- Print the envelope of the returned program record. Each named gate value appears in it.
-**Scoring:**
-- 1.0 — every named gate value appears in the envelope.
-- 0.5 — some gate values appear.
-- 0.0 — no gate value appears, or the envelope is empty.
+- 1.0 — every property holds, and the tests pass.
+- 0.5 — some properties hold.
+- 0.0 — a read reaches a path outside `plans_dir`, or a test fails.
 
 ## Regression check
 - The fake-adapter tests from slices 1 and 2 still pass (`uv run pytest tests/test_tracker_contract.py tests/test_tracker_projector.py -q`).
@@ -63,5 +66,6 @@ Test command: `uv run pytest tests/test_tracker_files.py -q && uv run pytest tes
 ## Out of scope — do not penalise
 - The command-line entry point (slice 4).
 - The usage reference (slice 5).
-- The beads adapter (E2).
-- The regenerate and seed write methods (E2 and E3). They must still raise `NoAdapterError` here.
+- The beads adapter and its `seed-from-files` method (E2).
+- Any `bd` call, any Dolt clone, and any live-account call.
+- Edits to install and `implement:start` (E4).

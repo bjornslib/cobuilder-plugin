@@ -47,7 +47,7 @@ Test command: `uv run pytest tests/test_tracker_beads.py -q`
 
 ## Out of scope — do not penalise
 
-- The seed script and its dry run (slice 8).
+- The `seed-from-files` dry run (slice 8).
 - The fresh clone check (slice 9).
 - Contract cases 1, 2, and 6. They belong to E1 and the fake adapter.
 - The internal structure of `beads.py`, including its helper names.

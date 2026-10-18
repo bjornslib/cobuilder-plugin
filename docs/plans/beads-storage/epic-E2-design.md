@@ -5,7 +5,7 @@ Epic ID: E2
 
 ## Scope and Intent
 
-E2 adds the beads adapter. The adapter maps `bd` output to the neutral `TrackerRecord`. It writes state through `bd`. A seed script creates the plan records in beads. Slice 9 proves that a fresh git clone starts and syncs.
+E2 adds the beads adapter. The adapter maps `bd` output to the neutral `TrackerRecord`. It writes state through `bd`. The adapter implements `seed-from-files`. The backfill reference in `shared/tracker-backfill.md` then creates the plan records in beads. Slice 9 proves that a fresh git clone starts, syncs, and seeds.
 
 E2 starts after E1 slice 5 closes. E3 starts only after E2 slice 9 closes. Slice 9 gates the epic. If slice 9 fails, E2 does not close, and the decision returns to the engineer (03 Least-confident 1).
 
@@ -16,13 +16,11 @@ Out of scope: the GitHub and Linear adapters, the skill migration, and the `pr:g
 New files:
 
 - `shared/tracker_port/bd_runner.py`. The only subprocess call to `bd`.
-- `shared/tracker_port/beads.py`. The beads adapter.
-- `shared/beads_seed.py`. A PEP 723 script. It dry-runs by default.
+- `shared/tracker_port/beads.py`. The beads adapter. It implements `seed-from-files`.
 - `shared/tracker-adapter-beads.md`. The consent question, the `bd init` flags, the sync step, and the claim read-back.
 - `tests/test_tracker_beads.py`. All E2 assertions.
 - `tests/fixtures/tracker/beads/list.json`. A recorded `bd list --json` array built from the E1 corpus.
 - `tests/fixtures/tracker/beads/transcripts/*.json`. One file per write case. Each file holds `bd` (the version string), `args` (the argument list), and `stdout` (the recorded output).
-- `tests/fixtures/tracker/beads/seed_dry_run.txt`. The expected dry run output for the mini plan.
 
 Modified files:
 
@@ -30,6 +28,8 @@ Modified files:
 - `tests/test_tracker_contract.py`. E1 owns this file. E2 slice 6 adds one parametrized `beads` entry to the adapter list. It changes no other case or assertion. The beads entry skips with a reason string when `bd` is not on `PATH` or no beads workspace exists. A machine without beads keeps the E1 suite green.
 
 No other file changes in E2.
+
+E2 reads `tests/fixtures/tracker/backfill/dry_run.txt`, which E1 slice 3 creates. E2 adds no copy of it.
 
 ## Types & Signatures
 
@@ -71,13 +71,11 @@ The mapping rules:
 - `claim_slice(id, claimant)` runs `bd update <id> --status in_progress --assignee <claimant>`. It then reads `bd show <id> --json` and compares the assignee. A mismatch raises the claim error that E1 defines.
 
 ```python
-# shared/beads_seed.py
-class BeadsSeed:
-    def __init__(self, runner: BdRunner) -> None: ...
+# shared/tracker_port/beads.py, a method of BeadsAdapter
     def seed_from_files(self, plans_dir: Path) -> list[TrackerRecord]: ...
 ```
 
-`seed_from_files` reads the plan files and returns the records to create, in dependency order. It creates only issues that do not yet exist. The class name is this design's choice. 03 gives the method only.
+`seed_from_files` reads the plan files. It returns the records to create, in dependency order, and skips each record whose `external_ref` already exists in beads. It writes nothing. The backfill reference runs the create step through the port.
 
 Transcript format for the stub runner in tests:
 
@@ -93,8 +91,8 @@ The stub runner compares `args` with the call. A difference fails the test. The 
 |---|---|---|---|---|
 | 6 | Beads reads match the fake adapter | E1 slice 5 | `bd_runner.py`, `beads.py`, `config.py`, fixtures `beads/list.json` and `transcripts/list.json` | `bd list --json` maps to the fake corpus records. Read cases pass. Contract case 7 passes. |
 | 7 | Beads writes on recorded transcripts | Slice 6 | `beads.py`, `transcripts/*.json` | Write cases pass, including the claim read-back and the `metadata.cb` round trip. |
-| 8 | Seed dry run lists the creates | Slice 7 | `beads_seed.py`, `seed_dry_run.txt` | The dry run prints the planned creates for the mini plan. The output equals the checked-in file. |
-| 9 | Fresh clone initializes and syncs | Slice 8, E1 slice 5 | `shared/tracker-adapter-beads.md`, `tests/test_tracker_beads.py` | Real `bd` and `git` in a temp directory: `bd init --remote` and `bd sync` exit 0 in a fresh clone. |
+| 8 | Beads dry run matches the backfill file | Slice 7 | `beads.py`, `tests/fixtures/tracker/backfill/dry_run.txt` (E1 slice 3) | On recorded transcripts, the beads dry run lists the same creates as the checked-in file. |
+| 9 | Fresh clone initializes, syncs, and seeds | Slice 8, E1 slice 5 | `shared/tracker-adapter-beads.md`, `tests/test_tracker_beads.py` | After explicit consent, in a temp directory with real `bd` and `git`: `bd init --skip-agents --skip-hooks` and `bd sync` against `refs/dolt/data` exit 0 in a fresh clone. The backfill write step seeds the mini plan. A second run creates nothing. The `bd list --json` count equals the dry-run count. |
 
 ### Slice 6
 
@@ -121,9 +119,9 @@ The stub runner compares `args` with the call. A difference fails the test. The 
 
 - Input: the mini plan `tests/fixtures/tracker/plans/beads-storage-mini/` from E1.
 - Assertions in `tests/test_tracker_beads.py`:
-  - `test_dry_run_prints_planned_creates`: the script runs with `--dry-run --plans-dir tests/fixtures/tracker/plans/beads-storage-mini`. Stdout equals `tests/fixtures/tracker/beads/seed_dry_run.txt`. Exit code 0.
-  - `test_dry_run_needs_no_bd`: the script runs with `PATH` set to an empty directory. Exit code 0 proves that the dry run calls no `bd`.
-  - `test_each_planned_line_is_an_envelope`: every line of stdout parses as a JSON object. Each object holds `title`, `kind`, and `metadata.cb.v` = 1.
+  - `test_dry_run_prints_planned_creates`: `BeadsAdapter.seed_from_files` on the mini plan, with a stub runner, returns the creates. The printed lines equal `tests/fixtures/tracker/backfill/dry_run.txt`.
+  - `test_dry_run_needs_no_bd`: the dry run uses a stub runner that fails on any call. No call reaches it.
+  - `test_each_planned_line_is_an_envelope`: every printed create parses as a JSON object. Each object holds `title`, `kind`, and `metadata.cb.v` = 1.
   - `test_apply_creates_in_dependency_order`: with a stub runner, apply creates each record once. A blocked-by target is created before its dependent.
   - `test_second_apply_creates_nothing`: with `list.json` already holding every id, apply sends no `create` call.
 
@@ -132,17 +130,18 @@ The stub runner compares `args` with the call. A difference fails the test. The 
 - Input: real `bd` and real `git`. Nothing is stubbed.
 - Procedure, run by `test_fresh_clone_inits_and_syncs` in a `tempfile.TemporaryDirectory`:
   1. Create `origin.git` with `git init --bare`.
-  2. Create `seed/` with `git init`, make one empty commit on `main`, and push it to `origin.git`. A bare remote with no branch fails `bd init --remote` (probe).
-  3. In `seed/`, run `bd init --skip-agents --skip-hooks -p demo --remote <origin.git path>`.
-  4. In `seed/`, run `BeadsSeed(BdRunner(cwd=seed)).seed_from_files(mini plan)` in apply mode.
-  5. In `seed/`, run `bd dolt push`. The probe used this command to publish `refs/dolt/data`. Whether `bd sync` alone publishes the first data is not verified.
-  6. Run `git clone origin.git clone1`. In `clone1`, run `bd init --skip-agents --skip-hooks -p demo --remote <origin.git path>`, then `bd list --json`, then `bd sync`.
+  2. Create `seed/` with `git init`, make one empty commit on `main`, and push it to `origin.git`. The probe failed on a bare remote with no branch.
+  3. In `seed/`, run `bd init --skip-agents --skip-hooks -p demo`.
+  4. In `seed/`, run the backfill write step for the mini plan, after the explicit consent the procedure requires. Create each record that `BeadsAdapter(BdRunner(cwd=seed)).seed_from_files(mini plan)` returns.
+  5. In `seed/`, run `bd sync`. Then check with `git -C origin.git show-ref refs/dolt/data`.
+  6. Run `git clone origin.git clone1`. In `clone1`, run `bd init --skip-agents --skip-hooks -p demo`, then `bd sync`, then `bd list --json`.
   7. Run `git clone origin.git clone2`. Repeat step 6 in `clone2`.
 - Pass, observed in the output:
   - The exit code of each `bd` command in `clone1` and `clone2` is 0.
   - No line of combined output starts with `Error`.
   - The sorted ids from `bd list --json` in each clone equal the ids that the seed created.
   - The counts per kind in both clones equal the counts that `project` gives for the seeded records.
+  - A second run of the create step in `seed/` sends no `create` call.
 - The test fails when `bd` is missing. It does not skip.
 - The test prints the transcript of every command. The implementer pastes that transcript into the slice 9 evidence. Evidence stays local, as `.cobuilder/rubrics/*/evidence/` is git-ignored.
 
@@ -155,7 +154,7 @@ The stub runner compares `args` with the call. A difference fails the test. The 
 
 ## Risks & Open Questions
 
-1. **The clone check is not verified.** The probe showed that `bd init --remote` fails on an empty bare remote. It also showed that `bd dolt push` publishes `refs/dolt/data`. Slice 9 must pass on the first real run. If it fails, E2 does not close. The decision returns to the engineer. The "second store per clone" option is not decided (03 Least-confident 1).
+1. **The clone check is not verified.** The probe showed that `bd init --remote` fails on an empty bare remote. It also showed that `bd dolt push` publishes `refs/dolt/data`. Slice 9 follows 04-slices: `bd init --skip-agents --skip-hooks`, then `bd sync`. Whether `bd sync` alone publishes the first data is not verified. If slice 9 fails on the first real run, E2 does not close, and the decision returns to the engineer.
 2. **`bd init` changes the target repo.** The probe showed that `bd init` makes one git commit. It adds the `.beads/` config files and appends to the root `.gitignore`. The embedded Dolt store is ignored. The consent step in `shared/tracker-adapter-beads.md` must say this before the user confirms.
 3. **Capability values are not verified.** `offline_read` and `native_ready` lack a recorded run. Slice 6 records `bd` output for each. A value that the transcript does not support changes to false.
 4. **The `bd` version is pinned in fixtures.** Transcripts record `bd` 1.3.0 (Homebrew). A different version can change the output. The tests fail on a changed `stdout` shape, not on a changed version.

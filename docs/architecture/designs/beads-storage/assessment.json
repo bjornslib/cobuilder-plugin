@@ -122,7 +122,7 @@
       "id": "F11",
       "severity": "medium",
       "title": "The tracker wins, so a hand edit of a stateful line is overwritten",
-      "detail": "The seed reads a file only to create a missing record. After that, the generator rewrites the stateful lines of each file from the tracker and reports a hand edit before it overwrites it. Until E3 and E4 land, the tables and the tracker can disagree. The cutover must flip authority in one commit.",
+      "detail": "seed-from-files reads a file only to create a missing record. After that, the generator rewrites the stateful lines of each file from the tracker and reports a hand edit before it overwrites it. Until E3 and E4 land, the tables and the tracker can disagree. The cutover must flip authority in one commit.",
       "cites": [
         "ADR-0031",
         "ADR-0014"

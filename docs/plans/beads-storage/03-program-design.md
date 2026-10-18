@@ -17,11 +17,14 @@ Created:
 - `shared/tracker_port/config.py`. Reads `.cobuilder/tracker.yaml` and selects one adapter. With no file, it selects no adapter.
 - `shared/tracker.py`. The one agent command. A PEP 723 script that parses subcommands, calls the port, and prints JSON. Rationale: ADR-0040 names this path, and every plugin reaches it through its `shared` symlink.
 - `shared/tracker-usage.md`. The reference that teaches the command (parts a to h of ADR-0040). Rationale: one document, linked from the four main skills in E4.
+- `shared/tracker-backfill.md`. The agent-run backfill. It names six steps: inventory the files, dry run, consent, write, flag each conflict, and check counts. Rationale: the engineer decided that an agent runs the backfill, not a script.
 - `tests/fixtures/tracker/corpus/*.json`, `tests/fixtures/tracker/expected-index.json`, and `tests/fixtures/tracker/plans/`. The checked-in fixtures.
+- `tests/fixtures/tracker/backfill/dry-run.json`. The checked-in list of creates for the miniature plans tree. Slices 3 and 8 compare with it.
 - `tests/test_tracker_contract.py`. The seven contract cases of ADR-0040, run against the fake adapter and the files adapter (read cases only).
 - `tests/test_tracker_projector.py`. The golden comparison of the fake index with `expected-index.json`.
 - `tests/test_tracker_files.py`. The files adapter over `tests/fixtures/tracker/plans/`.
 - `tests/test_tracker_cli.py`. Stdout JSON, exit codes 0, 2, 3, and 4.
+- `tests/test_tracker_backfill.py`. The dry run on the fake adapter equals the checked-in list. A second write run creates nothing.
 
 Modified: none. Plugins do not call the command yet. No plugin version bump in E1.
 
@@ -31,9 +34,8 @@ Created:
 
 - `shared/tracker_port/bd_runner.py`. The one module that runs `bd` as a subprocess. It takes an injectable runner so tests replay recorded transcripts. Rationale: the grep check of ADR-0040 allows `bd` only under `shared/tracker_port/`.
 - `shared/tracker_port/beads.py`. The beads adapter. It maps `bd list --json` rows to `TrackerRecord`, maps `hooked` to `in_progress`, reads and writes `metadata.cb` with the version key `v`, and does the claim read-back.
-- `shared/beads_seed.py`. Seeds a beads store from `docs/plans` through `seed_from_files`. A PEP 723 script. It prints the planned `bd create` calls in dry-run mode.
 - `shared/tracker-adapter-beads.md`. The beads notes: the `bd init` consent question, its two flags, `bd sync`, and the claim read-back.
-- `tests/fixtures/tracker/beads/list.json` and `tests/fixtures/tracker/beads/transcripts/*.json`. Recorded `bd` output for the read and write cases.
+- `tests/fixtures/tracker/beads/list.json` and `tests/fixtures/tracker/beads/transcripts/*.json`. Recorded `bd` output for the read, write, and seed dry-run cases.
 - `tests/test_tracker_beads.py`. Runs the contract suite against the beads adapter with the recorded transcripts.
 
 Modified:
@@ -64,13 +66,13 @@ Viewer: no source change. The bundle rebuild writes `data/index.json`. `tests/te
 Modified:
 
 - `plugins/architect/skills/architecture/SKILL.md` and `references/design-mode.md`. Gains "Workflow state". Design mode writes the program stage, the gate values, and the first branch through the CLI.
-- `plugins/implement/skills/build/SKILL.md`, `references/slice-loop.md`, `references/validation-scoring.md`, and `references/goal-sync.md`. `goal-sync.md` retires. The slice loop writes claims, attempts, scores, and escalations through the CLI. The `start`, `install`, and `debug` commands call the CLI, not a state edit.
+- `plugins/implement/skills/build/SKILL.md`, `references/slice-loop.md`, `references/validation-scoring.md`, and `references/goal-sync.md`. `goal-sync.md` retires. The slice loop writes claims, attempts, scores, and escalations through the CLI. The `start`, `install`, and `debug` commands call the CLI, not a state edit. When the tracker holds no record, `start` names `shared/tracker-backfill.md`. Lands in slice 13.
 - `plugins/pr/skills/odyssey/SKILL.md`, which the `generate` and `review` commands call. Gains "Workflow state". `open-pull-request` runs after `gh pr create`. `set-pull-request-state` runs after the merge.
 - `plugins/artifact/skills/cobuilder-artifacts/SKILL.md`. Gains "Workflow state". It reads through `list-*`.
 - `docs/architecture/designs/beads-storage/goal.json`, and the `epics[]` shape in the bundle schema. Drops `branch`, `pr`, and `state`. Rationale: those fields move to the tracker.
 - `shared/_bundle_meta.py` (bump `CURRENT_BUNDLE_FORMAT`) and `shared/migrate_bundle.py` (add the ladder step). Rationale: CLAUDE.md says add a migration, not a rebuild.
-- `plugins/implement/.claude-plugin/plugin.json`, `plugins/architect/.claude-plugin/plugin.json`, `plugins/pr/.claude-plugin/plugin.json`, `plugins/artifact/.claude-plugin/plugin.json`, and `.claude-plugin/marketplace.json`. Version bump, both files equal. Rationale: an installed copy needs the new skills. The bump lands in each plugin's first E4 slice.
-- `plugins/cobuilder-full-lifecycle` install command. Adds the allow rule for `uv run … shared/tracker.py`.
+- `plugins/implement/.claude-plugin/plugin.json`, `plugins/architect/.claude-plugin/plugin.json`, `plugins/pr/.claude-plugin/plugin.json`, `plugins/artifact/.claude-plugin/plugin.json`, `plugins/cobuilder-full-lifecycle/.claude-plugin/plugin.json`, and `.claude-plugin/marketplace.json`. Version bump, both files equal. Rationale: an installed copy needs the new skills. Each plugin bumps in its first E4 slice. The umbrella bumps in slice 17.
+- `plugins/cobuilder-full-lifecycle` install command. Adds the allow rule for `uv run … shared/tracker.py`. After the adapter config, it points to `shared/tracker-backfill.md`, runs the dry run, and asks for consent before any write. Lands in slice 17.
 - `tests/test_prose_budget.py`. Adds `shared/tracker-usage.md` to `AUTHORING_REFERENCES`.
 - `README.md`, `CLAUDE.md`, and `DDD-VOCABULARY.md`. Count and term updates, if any count changes. The glossary already holds the terms.
 
@@ -133,7 +135,7 @@ class TrackerPort(Protocol):
     def open_pull_request(self, ref: str, epic_ids: list[str]) -> TrackerRecord: ...
     def set_pull_request_state(self, ref: str, merged: bool) -> TrackerRecord: ...
     def regenerate_status_files(self, program: str) -> list[Path]: ...
-    def seed_from_files(self, plans_dir: Path) -> list[TrackerRecord]: ...
+    def seed_from_files(self, plans_dir: Path, dry_run: bool = False) -> list[TrackerRecord]: ...
 ```
 
 ```python
@@ -167,7 +169,7 @@ def project(records: Sequence[TrackerRecord]) -> dict[str, Any]: ...
 | `add-note` | `<id> --text t` | `add_note` |
 | `sync` | none | `sync` |
 | `regenerate-status-files` | `<program>` | `regenerate_status_files` |
-| `seed-from-files` | `<plans_dir>` | `seed_from_files` |
+| `seed-from-files` | `<plans_dir> [--dry-run]` | `seed_from_files` |
 | `capabilities` | none | `capabilities` |
 | `list-programs` | none | `list_programs` |
 | `list-epics` | `[--program id]` | `list_epics` |
@@ -187,6 +189,7 @@ Output: JSON on stdout, one message on stderr. Exit codes: 0 ok, 2 refused (no a
 - `expected-index.json`: `project(load(corpus))`, written once and checked in.
 - `plans/`: the miniature tree, with `00-status.md` and `04-slices.md` in one plan directory.
 - `beads/list.json`: a recorded `bd list --json` array. `beads/transcripts/*.json`: the recorded argument list and stdout for each write case.
+- `backfill/dry-run.json`: a JSON array of the `TrackerRecord` values that the dry run plans to create for the miniature tree. Each value carries its `external_ref`.
 
 ## Call stack
 
@@ -214,10 +217,14 @@ Output: JSON on stdout, one message on stderr. Exit codes: 0 ok, 2 refused (no a
 1. `sync` makes local and central state equal. On beads, it runs `bd sync`.
 2. `regenerate-status-files <program>` reads the records and writes the state lines of `00-status.md` and `04-slices.md`. Prose lines stay as they are.
 
-**seed**
-1. `beads_seed.py` reads `docs/plans` through the files adapter.
-2. In dry-run mode, it prints the planned `bd create` calls as JSON and writes nothing.
-3. With consent, `seed_from_files` runs the creates through `BdRunner`.
+**seed-from-files (backfill, run by the agent)**
+1. `tracker.py seed-from-files docs/plans --dry-run` reads the plans through the files adapter. It maps them to `TrackerRecord` values.
+2. The command compares each record with the configured tracker. It prints the planned creates as JSON and writes nothing.
+3. The agent shows the list and asks the engineer for consent. Without consent, the workflow stops.
+4. With consent, `tracker.py seed-from-files docs/plans` creates each missing record. A record is missing when no record holds its `external_ref`. A second run creates nothing.
+5. The agent flags each record whose file value differs from its tracker value. It shows both values and asks which value wins.
+6. The agent lists open pull requests with `gh pr list` (ADR-0029). It opens each one through `open-pull-request`.
+7. The agent compares the counts of the files adapter with the `list-*` counts. Equal counts pass.
 
 **refusal**
 1. With no `.cobuilder/tracker.yaml`, `load_adapter` returns `None`.
@@ -245,6 +252,7 @@ All tests read checked-in fixtures under `tests/fixtures/tracker/` or recorded t
 9. **Value-level envelope round trip on beads**: the recorded transcripts replay the write and the read, and each list item matches.
 10. **Regenerate golden test**: `regenerate(fake, corpus)` writes files equal to the checked-in golden files.
 11. **Manifest and reference tests**: `tests/test_shared_manifest.py`, `tests/test_script_references.py`, and `tests/test_plugin_manifests.py` pass after each slice that adds a file.
+12. **Backfill dry run**: `seed_from_files(plans/, dry_run=True)` on the fake adapter equals `backfill/dry-run.json`. A second write run creates nothing. The beads adapter repeats the dry run in slice 8.
 
 ## Least confident decisions
 
@@ -269,7 +277,7 @@ All tests read checked-in fixtures under `tests/fixtures/tracker/` or recorded t
 13. **Prose slices and the blind pass.** Slices 13 to 16 edit prose that steers an agent. Their rubrics are behavioral. The blind pass of `SKILL.md` Gate 4c runs inside each of those slices, once the prose exists, because no changed file exists before it.
 14. **A writable adapter for the fixture runs (decided).** The fake adapter keeps records in memory and takes an optional `--state-file <path>`. With that option, each write goes back to the file, and the next call reads it. Slices 4 and 13 to 15 use it, so state persists between CLI calls with no real tracker. The files adapter stays read-only for tracker state.
 15. **Who owns each done_when item.**
-    - Counts of a seeded tracker: slice 9.
+    - Counts of a seeded tracker: slice 9. The backfill dry run equals its checked-in list: slices 3 and 8.
     - Index from the projector, viewer byte equal: slices 10.
     - Ready flip and PR blocking: slices 7 and 15.
     - Refusal with no adapter and no `bd` outside `shared/tracker_port/`: slices 2 and 17.
@@ -278,6 +286,7 @@ All tests read checked-in fixtures under `tests/fixtures/tracker/` or recorded t
     - Fake adapter passes the contract test: slices 2 and 6.
     - Value-level round trip: slices 2 and 7.
     - `goal.json` shape: slice 16.
-    - Docs tests: slice 17.
+    - Docs tests and install consent: slice 17.
     - Files adapter projects with no `bd`: slice 3.
 16. **Two ADR-0031 statements that this plan overrides, and ADR-0031 now says so.** The deferred state of an epic is an envelope key, not a blocking edge. Projector parity with the live plans is a one-off manual run in slice 10, not a test.
+17. **The backfill stays agent-run (engineer decision, 2026-10-17).** No script writes the seed. Each run needs the engineer's consent before any write. The mechanical checks are the dry run and the count check.
