@@ -1,0 +1,98 @@
+"""FakeAdapter: an in-memory tracker that reads a corpus directory of JSON files."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import Any
+
+from .port import AdapterError, ArgumentError
+from .record import Capabilities, Kind, TrackerRecord
+
+CORPUS_FILES = ("program.json", "epics.json", "slices.json", "prs.json")
+READY_KINDS = ("program", "epic", "slice")
+
+
+def _record(row: dict[str, Any]) -> TrackerRecord:
+    # JSON lists become tuples, so each record holds the same types that an adapter returns.
+    envelope = {
+        key: tuple(value) if isinstance(value, list) else value
+        for key, value in row["envelope"].items()
+    }
+    return TrackerRecord(
+        id=row["id"],
+        kind=row["kind"],
+        parent=row["parent"],
+        blocked_by=tuple(row["blocked_by"]),
+        lifecycle=row["lifecycle"],
+        assignee=row["assignee"],
+        envelope=envelope,
+        external_ref=row["external_ref"],
+    )
+
+
+def _load(corpus_dir: Path, name: str) -> list[TrackerRecord]:
+    try:
+        data = json.loads((corpus_dir / name).read_text(encoding="utf-8"))
+        rows = data if isinstance(data, list) else [data]
+        return [_record(row) for row in rows]
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        raise AdapterError(f"cannot read corpus file {name}: {error}") from error
+
+
+class FakeAdapter:
+    capabilities = Capabilities(
+        native_ready=False,
+        atomic_claim=True,
+        rich_envelope=True,
+        offline_read=True,
+    )
+
+    def __init__(self, corpus_dir: Path) -> None:
+        if not corpus_dir.is_dir():
+            raise AdapterError(f"corpus directory not found: {corpus_dir}")
+        self._records: list[TrackerRecord] = [
+            record for name in CORPUS_FILES for record in _load(corpus_dir, name)
+        ]
+
+    def _of_kind(self, kind: Kind) -> list[TrackerRecord]:
+        return [record for record in self._records if record.kind == kind]
+
+    def list_programs(self) -> list[TrackerRecord]:
+        return self._of_kind("program")
+
+    def list_epics(self, program: str | None = None) -> list[TrackerRecord]:
+        return [r for r in self._of_kind("epic") if program is None or r.parent == program]
+
+    def list_slices(self, epic: str | None = None) -> list[TrackerRecord]:
+        return [r for r in self._of_kind("slice") if epic is None or r.parent == epic]
+
+    def list_pull_requests(self) -> list[TrackerRecord]:
+        return self._of_kind("pr")
+
+    def get_slice(self, id: str) -> TrackerRecord:
+        for record in self.list_slices():
+            if record.id == id:
+                return record
+        raise ArgumentError(f"no slice with id {id}")
+
+    def next_ready(self, kind: str = "slice", under: str | None = None) -> list[TrackerRecord]:
+        if kind not in READY_KINDS:
+            raise ArgumentError(f"kind must be one of {', '.join(READY_KINDS)}, not {kind}")
+        by_id = {record.id: record for record in self._records}
+        return [
+            record
+            for record in self._of_kind(kind)
+            if (under is None or record.parent == under) and _is_ready(record, by_id)
+        ]
+
+
+def _is_ready(record: TrackerRecord, by_id: dict[str, TrackerRecord]) -> bool:
+    # ADR-0040 ready rule, as the epic design states it for slice 1: open, not deferred,
+    # and every blocker closed. A missing blocker counts as not closed.
+    if record.lifecycle != "open" or "deferred" in record.envelope:
+        return False
+    return all(
+        blocker in by_id and by_id[blocker].lifecycle == "closed"
+        for blocker in record.blocked_by
+    )

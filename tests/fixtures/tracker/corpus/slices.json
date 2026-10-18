@@ -1,0 +1,32 @@
+[
+  {
+    "id": "demo-E1-s1",
+    "kind": "slice",
+    "parent": "demo-E1",
+    "blocked_by": [],
+    "lifecycle": "closed",
+    "assignee": null,
+    "envelope": {"score": 0.92},
+    "external_ref": null
+  },
+  {
+    "id": "demo-E1-s2",
+    "kind": "slice",
+    "parent": "demo-E1",
+    "blocked_by": ["demo-E1-s1"],
+    "lifecycle": "in_progress",
+    "assignee": "agent-1",
+    "envelope": {},
+    "external_ref": null
+  },
+  {
+    "id": "demo-E1-s3",
+    "kind": "slice",
+    "parent": "demo-E1",
+    "blocked_by": ["demo-E1-s1"],
+    "lifecycle": "open",
+    "assignee": null,
+    "envelope": {},
+    "external_ref": null
+  }
+]
