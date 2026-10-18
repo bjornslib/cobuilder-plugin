@@ -20,6 +20,8 @@ KINDS = ("program", "epic", "slice", "pr")
 READY_KINDS = ("program", "epic", "slice")
 STATUS_MAP = {"open": "open", "in_progress": "in_progress", "hooked": "in_progress", "closed": "closed"}
 BD_STATUS = {"open": "open", "in_progress": "in_progress", "closed": "closed"}
+BD_TYPE = {"program": "program", "epic": "epic", "slice": "task", "pr": "task"}
+BD_PRIORITY = {"program": "1", "epic": "2", "slice": "2", "pr": "2"}
 LIST_ARGS = ["list", "--json", "--all"]
 NOT_YET = "not implemented yet"
 
@@ -47,6 +49,25 @@ def _envelope(cb: dict[str, Any]) -> dict[str, Any]:
 def _metadata_arg(cb: dict[str, Any]) -> str:
     # bd --metadata merges top-level keys. Send the whole block under "cb", so bd replaces the old block.
     return json.dumps({"cb": cb}, separators=(",", ":"))
+
+
+def _create_argv(
+    block: dict[str, Any],
+    title: str,
+    bd_type: str,
+    priority: str,
+    parent: str | None = None,
+    external_ref: str | None = None,
+) -> list[str]:
+    # The flag order matches the recorded bd transcripts. Replays compare the whole argument list.
+    argv = ["create", "--silent"]
+    if parent is not None:
+        argv += ["--parent", parent]
+    argv += ["--type", bd_type, "--title", title, "--priority", priority]
+    if external_ref is not None:
+        argv += ["--external-ref", external_ref]
+    argv += ["--metadata", _metadata_arg(block)]
+    return argv
 
 
 def _pr_number(ref: str) -> str:
@@ -290,6 +311,26 @@ class BeadsAdapter:
         self._update(row, block=block, notes=f"escalated at score {score}: {reason}")
         return self._after(rows, row, block=block)
 
+    def create_record(self, record: TrackerRecord) -> TrackerRecord:
+        # Only parent and blocker lookups need the list. A program create sends no list call.
+        rows = self._rows() if record.parent is not None or record.blocked_by else []
+        parent_bd_id = self._find_row(rows, record.parent, KINDS)["id"] if record.parent is not None else None
+        blocker_bd_ids = [self._find_row(rows, blocker, KINDS)["id"] for blocker in record.blocked_by]
+        block = {"v": CB_VERSION, "id": record.id, "kind": record.kind, "envelope": dict(record.envelope)}
+        argv = _create_argv(
+            block,
+            record.id,
+            BD_TYPE[record.kind],
+            BD_PRIORITY[record.kind],
+            parent=parent_bd_id,
+            external_ref=record.external_ref,
+        )
+        bd_id = self.runner.run(argv).strip()
+        for blocker_bd_id in blocker_bd_ids:
+            # Each blocker edge is one bd dep add, sent in the recorded order.
+            self.runner.run(["dep", "add", bd_id, blocker_bd_id])
+        return record
+
     def open_pull_request(self, ref: str, epic_ids: list[str]) -> TrackerRecord:
         number = _pr_number(ref)
         rows = self._rows()
@@ -299,20 +340,7 @@ class BeadsAdapter:
         block = {"v": CB_VERSION, "id": ref, "kind": "pr", "envelope": {}}
         external_ref = f"gh-{number}"
         pr_bd_id = self.runner.run(
-            [
-                "create",
-                "--silent",
-                "--type",
-                "task",
-                "--title",
-                ref,
-                "--priority",
-                "2",
-                "--external-ref",
-                external_ref,
-                "--metadata",
-                _metadata_arg(block),
-            ]
+            _create_argv(block, ref, BD_TYPE["pr"], BD_PRIORITY["pr"], external_ref=external_ref)
         ).strip()
         for epic_row in epic_rows:
             # Each epic is blocked by the PR, so the epic is not ready until the PR closes.

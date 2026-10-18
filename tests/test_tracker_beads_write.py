@@ -52,29 +52,31 @@ def test_transcripts_record_bd_1_3_0() -> None:
         assert body["bd"].startswith(BD_VERSION_PREFIX), path.name
 
 
+def _create_args(name: str) -> list[str]:
+    return next(step["args"] for step in _steps(name) if step["args"][0] == "create")
+
+
 def test_create_program_sends_program_type_and_cb_kind() -> None:
-    body = _load("create_program")
-    args = body["args"]
+    args = _create_args("create_program")
     assert args[args.index("--type") + 1] == "program"
     assert _metadata_arg(args)["cb"]["kind"] == "program"
-    assert body["stdout"] == "t-anc\n"
+    assert _steps("create_program")[0]["stdout"] == "demo-b64\n"
 
 
 def test_create_epic_is_a_child_blocked_by_its_pr() -> None:
-    body = _load("create_epic")
-    args = body["args"]
-    assert args[args.index("--parent") + 1] == "t-anc"
-    assert args[args.index("--deps") + 1] == "blocked-by:t-4zf"
+    steps = _steps("create_epic")
+    args = _create_args("create_epic")
+    assert args[args.index("--parent") + 1] == "demo-b64"
     assert _metadata_arg(args)["cb"]["kind"] == "epic"
-    assert body["stdout"] == "t-anc.1\n"
+    assert steps[1]["stdout"] == "demo-b64.1\n"
+    assert steps[2]["args"] == ["dep", "add", "demo-b64.1", "demo-uwu"]
 
 
 def test_create_slice_is_a_child_of_its_epic() -> None:
-    body = _load("create_slice")
-    args = body["args"]
-    assert args[args.index("--parent") + 1] == "t-anc.1"
+    args = _create_args("create_slice")
+    assert args[args.index("--parent") + 1] == "demo-b64.1"
     assert _metadata_arg(args)["cb"]["kind"] == "slice"
-    assert body["stdout"] == "t-anc.1.1\n"
+    assert _steps("create_slice")[1]["stdout"] == "demo-b64.1.1\n"
 
 
 def test_create_pr_carries_external_ref() -> None:
@@ -178,7 +180,7 @@ def test_set_slice_state_sends_the_full_cb_block() -> None:
 
 
 def test_shown_slice_round_trips_its_cb_envelope() -> None:
-    created = _metadata_arg(_load("create_slice")["args"])["cb"]
+    created = _metadata_arg(_create_args("create_slice"))["cb"]
     shown = json.loads(_load("show_slice")["stdout"])[0]["metadata"]["cb"]
     assert shown["id"] == created["id"] == "demo-E1-s1"
     assert shown["kind"] == "slice"
@@ -246,3 +248,120 @@ def test_record_attempt_and_gate_round_trip_keep_every_envelope_key() -> None:
     assert type(slice_envelope["ratio"]) is float
     assert dict(program.envelope) == {"gate1": "2026-10-14"}
     assert len(runner.calls) == 6
+
+
+def test_create_record_program_replays_recorded_argv() -> None:
+    from tracker_port.beads import BeadsAdapter
+    from tracker_port.record import TrackerRecord
+
+    steps = _steps("create_program")
+    runner = SequenceRunner(steps)
+    program = TrackerRecord(
+        id="demo",
+        kind="program",
+        parent=None,
+        blocked_by=(),
+        lifecycle="open",
+        assignee=None,
+        envelope={"gate1": "2026-10-14", "stage": "design", "gate2b": "n/a"},
+        external_ref=None,
+    )
+    BeadsAdapter(runner).create_record(program)
+
+    assert len(runner.calls) == len(steps)
+    assert "--external-ref" not in runner.calls[0]
+
+
+def test_create_record_epic_maps_parent_and_blocked_by() -> None:
+    from tracker_port.beads import BeadsAdapter
+    from tracker_port.record import TrackerRecord
+
+    steps = _steps("create_epic")
+    runner = SequenceRunner(steps)
+    epic = TrackerRecord(
+        id="demo-E1",
+        kind="epic",
+        parent="demo",
+        blocked_by=("pr-101",),
+        lifecycle="open",
+        assignee=None,
+        envelope={},
+        external_ref=None,
+    )
+    BeadsAdapter(runner).create_record(epic)
+
+    assert runner.calls[0] == ["list", "--json", "--all"]
+    assert len(runner.calls) == len(steps)
+
+
+def test_create_record_slice_maps_parent_under_its_epic() -> None:
+    from tracker_port.beads import BeadsAdapter
+    from tracker_port.record import TrackerRecord
+
+    steps = _steps("create_slice")
+    runner = SequenceRunner(steps)
+    slice_record = TrackerRecord(
+        id="demo-E1-s1",
+        kind="slice",
+        parent="demo-E1",
+        blocked_by=(),
+        lifecycle="open",
+        assignee=None,
+        envelope={"score": 0.92, "attempts": 2},
+        external_ref=None,
+    )
+    BeadsAdapter(runner).create_record(slice_record)
+
+    assert runner.calls[0] == ["list", "--json", "--all"]
+    assert len(runner.calls) == len(steps)
+
+
+def test_create_record_drifted_argument_fails_replay(tmp_path: Path) -> None:
+    from tracker_port.beads import BeadsAdapter
+    from tracker_port.record import TrackerRecord
+
+    body = _load("create_epic")
+    create = next(step for step in body["steps"] if step["args"][0] == "create")
+    create["args"][create["args"].index("--priority") + 1] = "1"
+    copy = tmp_path / "create_epic.json"
+    copy.write_text(json.dumps(body), encoding="utf-8")
+    steps = json.loads(copy.read_text(encoding="utf-8"))["steps"]
+    epic = TrackerRecord(
+        id="demo-E1",
+        kind="epic",
+        parent="demo",
+        blocked_by=("pr-101",),
+        lifecycle="open",
+        assignee=None,
+        envelope={},
+        external_ref=None,
+    )
+    try:
+        BeadsAdapter(SequenceRunner(steps)).create_record(epic)
+    except AssertionError:
+        return
+    raise AssertionError("a create argv with a changed priority must fail the replay")
+
+
+def test_create_record_round_trip_types() -> None:
+    from tracker_port.beads import BeadsAdapter
+    from tracker_port.record import TrackerRecord
+
+    runner = SequenceRunner(_steps("create_slice"))
+    slice_record = TrackerRecord(
+        id="demo-E1-s1",
+        kind="slice",
+        parent="demo-E1",
+        blocked_by=(),
+        lifecycle="open",
+        assignee=None,
+        envelope={"score": 0.92, "attempts": 2},
+        external_ref=None,
+    )
+    result = BeadsAdapter(runner).create_record(slice_record)
+
+    sent = _metadata_arg(runner.calls[1])["cb"]["envelope"]
+    assert type(sent["score"]) is float
+    assert type(sent["attempts"]) is int
+    assert type(result.envelope["score"]) is float
+    assert type(result.envelope["attempts"]) is int
