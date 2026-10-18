@@ -232,8 +232,11 @@ class BeadsAdapter:
         return sorted((r for r in candidates if _is_ready(r, records)), key=lambda record: record.id)
 
     def sync(self) -> None:
-        # bd writes take effect at once, and reads ask bd directly. The clone step runs `bd sync` in slice 9.
-        return None
+        # Publish and pull the tracker through bd. A failed sync raises, and the message keeps bd's stderr.
+        try:
+            self.runner.run(["sync"])
+        except BdError as error:
+            raise AdapterError(f"bd sync failed: {error.stderr.strip() or error}") from error
 
     def claim_slice(self, id: str, claimant: str) -> TrackerRecord:
         rows = self._rows()

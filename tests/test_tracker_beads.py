@@ -1,14 +1,19 @@
 """Slice 6 of E2: beads reads map to the fake corpus records.
 
 Replays the recorded bd 1.3.0 output in tests/fixtures/tracker/beads through a stub
-runner. No test calls bd.
+runner. The fresh-clone test calls real bd, only in a temp directory.
 
 Run with: uv run pytest tests/test_tracker_beads.py -q
 """
 from __future__ import annotations
 
+from collections import Counter
 import json
+import os
+import shutil
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -112,3 +117,125 @@ def test_capabilities_flags() -> None:
 
     assert caps.atomic_claim is False
     assert caps.rich_envelope is True
+
+
+_FRESH_CLONE_ENV = {
+    "GIT_AUTHOR_NAME": "beads-test",
+    "GIT_AUTHOR_EMAIL": "beads-test@example.invalid",
+    "GIT_COMMITTER_NAME": "beads-test",
+    "GIT_COMMITTER_EMAIL": "beads-test@example.invalid",
+    "BD_NON_INTERACTIVE": "1",
+}
+
+
+class _RecordingRunner:
+    """Wraps a real BdRunner and keeps each argument list it runs."""
+
+    def __init__(self, inner: Any) -> None:
+        self.inner = inner
+        self.calls: list[list[str]] = []
+
+    def run(self, args: list[str]) -> str:
+        self.calls.append(list(args))
+        return self.inner.run(args)
+
+
+def _step(argv: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
+    completed = subprocess.run(
+        argv,
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        env={**os.environ, **_FRESH_CLONE_ENV},
+    )
+    print(f"[{cwd.name}] {' '.join(argv)} -> exit {completed.returncode}")
+    return completed
+
+
+def _run(argv: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
+    completed = _step(argv, cwd)
+    output = completed.stdout + completed.stderr
+    error_lines = [line for line in output.splitlines() if line.startswith("Error")]
+    assert completed.returncode == 0, f"{argv} in {cwd.name} exited {completed.returncode}:\n{output}"
+    assert not error_lines, f"{argv} in {cwd.name} printed error lines: {error_lines}"
+    return completed
+
+
+def test_fresh_clone_inits_and_syncs() -> None:
+    if shutil.which("bd") is None:
+        raise AssertionError("bd is not on PATH. This test needs bd 1.3.0 and fails without it.")
+
+    from tracker_port.beads import BeadsAdapter
+    from tracker_port.bd_runner import BdRunner
+    from tracker_port.files import FilesAdapter
+    from tracker_port.projector import project
+
+    plan_dir = FIXTURE_DIR / "plans"
+    expected = FilesAdapter(plan_dir).all_records()
+    expected_ids = sorted(record.id for record in expected)
+    expected_kinds = Counter(entity["kind"] for entity in project(expected)["entities"].values())
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        origin = root / "origin.git"
+        seed = root / "seed"
+        seed.mkdir()
+        _run(["git", "init", "--bare", "-q", str(origin)], root)
+        _run(["git", "init", "-q", "-b", "main"], seed)
+        _run(["git", "commit", "-q", "--allow-empty", "-m", "seed"], seed)
+        _run(["git", "remote", "add", "origin", str(origin)], seed)
+        _run(["git", "push", "-q", "origin", "main"], seed)
+        _run(["bd", "init", "--skip-agents", "--skip-hooks", "-p", "demo", "--non-interactive"], seed)
+        _run(["bd", "config", "set", "team.enabled", "true"], seed)
+        _run(["bd", "config", "set", "team.sync_branch", "main"], seed)
+
+        seed_runner = _RecordingRunner(BdRunner(bd="bd", cwd=seed))
+        created = BeadsAdapter(seed_runner).seed_from_files(plan_dir)
+        assert sorted(record.id for record in created) == expected_ids
+
+        # Bootstrap: the first sync adopts the remote, then the pull fails on the empty remote.
+        first_sync = _step(["bd", "sync", "-y"], seed)
+        output = first_sync.stdout + first_sync.stderr
+        assert first_sync.returncode == 1, f"bootstrap sync should halt on the empty remote:\n{output}"
+        assert "no branches found in remote" in output, output
+        _run(["bd", "dolt", "push"], seed)
+        BeadsAdapter(seed_runner).sync()
+        _run(["git", "-C", str(origin), "show-ref", "refs/dolt/data"], root)
+
+        second_runner = _RecordingRunner(BdRunner(bd="bd", cwd=seed))
+        assert BeadsAdapter(second_runner).seed_from_files(plan_dir) == []
+        assert not [call for call in second_runner.calls if call[:1] == ["create"]]
+
+        for name in ("clone1", "clone2"):
+            clone = root / name
+            _run(["git", "clone", "-q", str(origin), str(clone)], root)
+            _run(["bd", "init", "--skip-agents", "--skip-hooks", "-p", "demo", "--non-interactive"], clone)
+            _run(["bd", "sync"], clone)
+            listed = _run(["bd", "list", "--json", "--all"], clone)
+            cbs = [row["metadata"]["cb"] for row in json.loads(listed.stdout)]
+            assert sorted(cb["id"] for cb in cbs) == expected_ids
+            assert Counter(cb["kind"] for cb in cbs) == expected_kinds
+
+        from tracker_port.record import TrackerRecord
+
+        template = next(record for record in expected if record.kind == "slice")
+        probe = TrackerRecord(
+            id="demo-sync-probe",
+            kind="slice",
+            parent=template.parent,
+            blocked_by=(),
+            lifecycle="open",
+            assignee=None,
+            envelope={},
+            external_ref=None,
+        )
+        BeadsAdapter(seed_runner).create_record(probe)
+        BeadsAdapter(seed_runner).sync()
+
+        clone3 = root / "clone3"
+        _run(["git", "clone", "-q", str(origin), str(clone3)], root)
+        _run(["bd", "init", "--skip-agents", "--skip-hooks", "-p", "demo", "--non-interactive"], clone3)
+        _run(["bd", "sync"], clone3)
+        listed = _run(["bd", "list", "--json", "--all"], clone3)
+        cbs = [row["metadata"]["cb"] for row in json.loads(listed.stdout)]
+        assert sorted(cb["id"] for cb in cbs) == sorted([*expected_ids, "demo-sync-probe"])

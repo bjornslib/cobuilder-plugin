@@ -365,3 +365,27 @@ def test_create_record_round_trip_types() -> None:
     assert type(sent["attempts"]) is int
     assert type(result.envelope["score"]) is float
     assert type(result.envelope["attempts"]) is int
+
+
+def test_sync_sends_bare_sync_and_returns_none() -> None:
+    from tracker_port.beads import BeadsAdapter
+
+    runner = SequenceRunner([_load("sync_ok")])
+    result = BeadsAdapter(runner).sync()
+
+    assert runner.calls == [["sync"]]
+    assert result is None
+
+
+def test_sync_failure_raises_adapter_error_with_bd_stderr() -> None:
+    from tracker_port.beads import BeadsAdapter
+    from tracker_port.port import AdapterError
+
+    body = _load("sync_failed_empty_remote")
+    runner = SequenceRunner([body])
+    try:
+        BeadsAdapter(runner).sync()
+    except AdapterError as error:
+        assert body["stderr"].strip() in str(error)
+    else:
+        raise AssertionError("sync must raise AdapterError when bd sync exits 1")
