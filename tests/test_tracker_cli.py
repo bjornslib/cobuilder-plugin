@@ -216,3 +216,16 @@ def test_read_path_never_opens_docs_plans(tmp_path: Path, argv: list[str]) -> No
     opens = _spy_opens(tmp_path, _cfg(tmp_path), *argv)
     assert any("corpus" in path for path in opens), "the fake adapter reads the corpus"
     assert [path for path in opens if "docs/plans" in path] == []
+
+
+def test_seed_refresh_flag_is_accepted(tmp_path: Path) -> None:
+    created = _payload(_cli(_cfg(tmp_path), tmp_path, "seed-from-files", str(PLANS_DIR), "--refresh-envelope"))
+    assert created, "the seed with the refresh flag returns the records it creates"
+
+
+def test_seed_refresh_dry_run_writes_nothing(tmp_path: Path) -> None:
+    state = tmp_path / "state.json"
+    config = _cfg(tmp_path, state_file=state)
+    dry = _cli(config, tmp_path, "seed-from-files", str(PLANS_DIR), "--dry-run", "--refresh-envelope")
+    assert dry.returncode == 0, dry.stderr
+    assert not state.exists()

@@ -134,6 +134,11 @@ def _set_pull_request_state_args(parser: argparse.ArgumentParser) -> None:
 def _seed_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("plans_dir", type=Path)
     parser.add_argument("--dry-run", action="store_true", help="print the planned creates and write nothing")
+    parser.add_argument(
+        "--refresh-envelope",
+        action="store_true",
+        help="rewrite the file-derived envelope keys on records the adapter already holds",
+    )
 
 
 # Each operation maps to its builder for arguments and to the port call it makes.
@@ -161,7 +166,10 @@ OPERATIONS: dict[str, tuple[Callable[[argparse.ArgumentParser], None], Callable[
         _set_pull_request_state_args,
         lambda a, n: a.set_pull_request_state(n.ref, merged=n.state == "merged"),
     ),
-    "seed-from-files": (_seed_args, lambda a, n: a.seed_from_files(n.plans_dir, dry_run=n.dry_run)),
+    "seed-from-files": (
+        _seed_args,
+        lambda a, n: a.seed_from_files(n.plans_dir, dry_run=n.dry_run, refresh_envelope=n.refresh_envelope),
+    ),
     "capabilities": (_no_args, lambda a, n: a.capabilities),
     "doctor": (_no_args, lambda a, n: {"adapter": a.name, "capabilities": a.capabilities}),
 }

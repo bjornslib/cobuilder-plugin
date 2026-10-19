@@ -29,3 +29,20 @@ class Capabilities:
     atomic_claim: bool
     rich_envelope: bool
     offline_read: bool
+
+# Envelope keys the file fills only when the held envelope lacks them or holds None.
+# A runtime score or attempt count that is already set is never replaced by the file.
+FILL_WHEN_EMPTY = frozenset({"score", "attempts"})
+
+
+def merge_refresh_envelope(
+    held: Mapping[str, Scalar | tuple[Scalar, ...]],
+    incoming: Mapping[str, Scalar | tuple[Scalar, ...]],
+) -> dict[str, Scalar | tuple[Scalar, ...]]:
+    """Overwrite the file-derived keys; keep runtime keys the file lacks."""
+    fill = {
+        key: value
+        for key, value in incoming.items()
+        if key not in FILL_WHEN_EMPTY or held.get(key) is None
+    }
+    return {**held, **fill}

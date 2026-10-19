@@ -10,7 +10,7 @@ from typing import Any
 
 from .files import seedable_records
 from .port import AdapterError, ArgumentError
-from .record import Capabilities, Kind, TrackerRecord
+from .record import Capabilities, Kind, TrackerRecord, merge_refresh_envelope
 
 CORPUS_FILES = ("program.json", "epics.json", "slices.json", "prs.json")
 READY_KINDS = ("program", "epic", "slice")
@@ -90,15 +90,33 @@ class FakeAdapter:
         self._state_file.parent.mkdir(parents=True, exist_ok=True)
         self._state_file.write_text(json.dumps(state, indent=2, sort_keys=True), encoding="utf-8")
 
-    def seed_from_files(self, plans_dir: Path, dry_run: bool = False) -> list[TrackerRecord]:
+    def seed_from_files(
+        self, plans_dir: Path, dry_run: bool = False, refresh_envelope: bool = False
+    ) -> list[TrackerRecord]:
         # Create only the records the adapter does not hold, keyed by external_ref.
         known = {record.external_ref for record in self._records}
         found, self.seed_conflicts = seedable_records(plans_dir)
         creates = [record for record in found if record.external_ref not in known]
+        refreshed = self._envelope_refreshes(found) if refresh_envelope else {}
         if not dry_run:
-            self._records.extend(creates)
-            self._commit()
-        return creates
+            self._records = [refreshed.get(record.id, record) for record in self._records] + creates
+            # A refresh with nothing to change writes nothing.
+            if creates or refreshed or not refresh_envelope:
+                self._commit()
+        return creates + list(refreshed.values())
+
+    def _envelope_refreshes(self, found: list[TrackerRecord]) -> dict[str, TrackerRecord]:
+        # Merge the file envelope over the held one, so runtime keys the file lacks survive.
+        current = {record.id: record for record in self._records}
+        refreshed: dict[str, TrackerRecord] = {}
+        for record in found:
+            held = current.get(record.id)
+            if held is None:
+                continue
+            envelope = merge_refresh_envelope(held.envelope, record.envelope)
+            if envelope != held.envelope:
+                refreshed[record.id] = replace(held, envelope=envelope)
+        return refreshed
 
     def _of_kind(self, kind: Kind) -> list[TrackerRecord]:
         return [record for record in self._records if record.kind == kind]

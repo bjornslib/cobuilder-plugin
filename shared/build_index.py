@@ -60,6 +60,9 @@ from _bundle_meta import (  # noqa: E402
 import prose_budget  # noqa: E402
 import slice_table  # noqa: E402
 import gate_status  # noqa: E402
+from tracker_port import projector  # noqa: E402
+from tracker_port.files import FilesAdapter  # noqa: E402
+from tracker_port.config import load_adapter  # noqa: E402
 
 # Bumped to 1.4 when the index gained the "rubric" entity kind and the
 # .cobuilder/rubrics tracked subtree. Nothing gates on this value; it names the
@@ -632,71 +635,22 @@ def collect_districts(bundle_dir: Path) -> tuple[list[dict], list[str]]:
 # resolve_feature_gates() and _gate_2b_state() read the block from there.
 
 
-STATUS_SLICE_RE = re.compile(
-    r"^-\s*\[(x| )\]\s*Slice\s*(\d+)\s*[—–-]\s*(.*?)(?:\s+score:\s*([^\s]+)(?:\s+on\s+attempt\s+(\d+))?)?$",
-    re.IGNORECASE,
-)
-
-
-def collect_plans(repo: Path) -> tuple[list[dict], list[str]]:
-    plans_dir = repo / PLANS_SOURCE_SUBDIR
-    if not plans_dir.is_dir():
-        return [], []
-    entities: list[dict] = []
-    failures: list[str] = []
-    for slices_path in sorted(plans_dir.glob("*/04-slices.md")):
-        feature = slices_path.parent.name
-        status_slices: dict[int, dict] = {}
-        status_path = slices_path.parent / "00-status.md"
-        if status_path.is_file():
-            try:
-                for line in status_path.read_text().splitlines():
-                    sm = STATUS_SLICE_RE.search(line.strip())
-                    if sm:
-                        checked = sm.group(1).lower() == "x"
-                        num = int(sm.group(2))
-                        score = sm.group(4) or ("1.00" if checked else "—")
-                        attempts = int(sm.group(5)) if sm.group(5) else (1 if checked else 0)
-                        status_slices[num] = {
-                            "checked": checked,
-                            "score": score,
-                            "attempts": attempts,
-                            "state": "completed" if checked else "planned",
-                        }
-            except OSError as exc:
-                failures.append(f"{status_path}: could not read file: {exc}")
-
-        try:
-            lines = slices_path.read_text().splitlines()
-        except OSError as exc:
-            failures.append(f"{slices_path}: could not read file: {exc}")
-            continue
-        for line in lines:
-            row = slice_table.parse_row(line.strip())
-            if row is None:
-                continue
-            number = row.n
-            slice_cell = row.name
-            ends_with = row.ends_with
-            n = row.n
-            st = status_slices.get(n, {})
-            checked = st.get("checked", False)
-            score = st.get("score", "—")
-            attempts = st.get("attempts", 1 if checked else 0)
-            state = "completed" if checked else "planned"
-            entities.append(
-                {
-                    "id": f"{feature}/{number}",
-                    "feature": feature,
-                    "n": n,
-                    "title": slice_cell,
-                    "ends_with": ends_with,
-                    "score": score,
-                    "attempts": attempts,
-                    "state": state,
-                }
-            )
-    return entities, failures
+# Slice entities come from the tracker adapter that .cobuilder/tracker.yaml names.
+# With no tracker config, the files adapter reads each 04-slices.md table and its
+# 00-status.md checkbox lines. The projector shapes each slice.
+# STATUS_SLICE_RE lives in tracker_port/files.py.
+def collect_slices(repo: Path) -> tuple[list[dict], list[str]]:
+    adapter = load_adapter(repo / ".cobuilder" / "tracker.yaml", repo)
+    if adapter is None:
+        plans_dir = repo / PLANS_SOURCE_SUBDIR
+        if not plans_dir.is_dir():
+            return [], []
+        adapter = FilesAdapter(plans_dir)
+    if isinstance(adapter, FilesAdapter):
+        entities = projector.slice_entities(adapter.all_records())
+        failures = [f"{conflict['plan']}: {conflict['reason']}" for conflict in adapter.conflicts]
+        return entities, failures
+    return projector.slice_entities(adapter.list_slices()), []
 
 
 # --------------------------------------------------------------------------
@@ -1538,7 +1492,7 @@ def build_index(repo: Path, bundle_dir: Path) -> tuple[dict, dict, dict, list[st
     district_entities, district_failures = collect_districts(bundle_dir)
     failures.extend(district_failures)
 
-    slice_entities, plan_failures = collect_plans(repo)
+    slice_entities, plan_failures = collect_slices(repo)
     failures.extend(plan_failures)
 
     pull_request_entities, pr_failures = collect_pull_requests(bundle_dir)

@@ -13,18 +13,21 @@ from pathlib import Path
 from typing import Any, NoReturn
 
 from gate_status import parse_status_gates
-from slice_table import parse_table
+from slice_table import parse_header_epic_id, parse_row, parse_table
 
 from .port import AdapterError, ArgumentError, NoAdapterError
 from .record import Capabilities, TrackerRecord
 
 STATUS_FILE = "00-status.md"
 SLICES_FILE = "04-slices.md"
-DONE_STATES = frozenset({"done", "completed", "accepted"})
-OPEN_STATES = frozenset({"pending", "planned", "backlog"})
-VOID_STATE = "void"
-ATTEMPT_CELL = re.compile(r"^(\d+(?:\.\d+)?)\s*\(attempt\s+(\d+)\)$")
-PARENTHETICAL = re.compile(r"\s*\(.*\)$")
+# The one parser of a slice checkbox line. A slice line that does not match stays open.
+STATUS_SLICE_RE = re.compile(
+    r"^-\s*\[(x| )\]\s*Slice\s*(\d+)\s*[—–-]\s*(.*?)(?:\s+score:\s*([^\s]+)(?:\s+on\s+attempt\s+(\d+))?)?$",
+    re.IGNORECASE,
+)
+
+# A Score cell such as "0.917 (attempt 2)". It reads a number and an optional attempt count.
+SCORE_CELL_RE = re.compile(r"^(\d+(?:\.\d+)?)(?:\s*\(attempt\s+(\d+)\))?$")
 
 
 class PlanError(AdapterError):
@@ -40,32 +43,47 @@ def _refuse(self: object, *args: Any, **kwargs: Any) -> NoReturn:
     raise NoAdapterError("the files adapter reads state and writes none. Configure a tracker adapter to write.")
 
 
-def _score(cell: str | None) -> tuple[float | None, int | None]:
-    # A cell holds a score, a score with its attempt count, or an em dash for no score.
-    if not cell or cell == "\u2014":
-        return None, None
-    match = ATTEMPT_CELL.match(cell)
-    if match:
-        return float(match.group(1)), int(match.group(2))
+def _status_slices(text: str) -> dict[int, dict[str, Any]]:
+    # A checkbox line that STATUS_SLICE_RE matches sets a slice's lifecycle. Its score token and attempt count
+    # win over the table when STATUS_SLICE_RE captures them. A score token of — or none reads as no score.
+    slices: dict[int, dict[str, Any]] = {}
+    for line in text.splitlines():
+        match = STATUS_SLICE_RE.search(line.strip())
+        if not match:
+            continue
+        slices[int(match.group(2))] = {
+            "checked": match.group(1).lower() == "x",
+            "score": match.group(4),
+            "attempts": int(match.group(5)) if match.group(5) else None,
+        }
+    return slices
+
+
+def _status_score(token: str | None) -> float | None:
+    # A score token from the status line. A dash, or text that is not a number, reads as no score.
+    if token is None or token == "—":
+        return None
     try:
-        return float(cell), None
-    except ValueError as exc:
-        raise PlanError(f"score cell is not a number: {cell!r}", cell) from exc
+        return float(token)
+    except ValueError:
+        return None
 
 
-def _lifecycle(cell: str | None) -> tuple[str, bool]:
-    # Return the lifecycle and whether the slice is void. A blank state reads as open.
-    word = PARENTHETICAL.sub("", cell or "").strip().lower()
-    if word in DONE_STATES or word == VOID_STATE:
-        return "closed", word == VOID_STATE
-    if word in OPEN_STATES or not word:
-        return "open", False
-    raise PlanError(f"state cell is not a known state: {cell!r}", cell or "")
+
+def _table_score(cell: str | None) -> tuple[float | None, int | None]:
+    # Reads a Score cell such as "0.917 (attempt 2)". A cell that is not a number, such as — or void, reads as no score.
+    if cell is None:
+        return None, None
+    match = SCORE_CELL_RE.match(cell.strip())
+    if match is None:
+        return None, None
+    attempts = int(match.group(2)) if match.group(2) else None
+    return float(match.group(1)), attempts
 
 
-def _program_record(directory: Path) -> TrackerRecord:
+def _program_record(directory: Path, status_text: str) -> TrackerRecord:
     program = directory.name
-    gates = parse_status_gates((directory / STATUS_FILE).read_text(encoding="utf-8"))
+    gates = parse_status_gates(status_text)
     return TrackerRecord(
         id=program,
         kind="program",
@@ -78,7 +96,22 @@ def _program_record(directory: Path) -> TrackerRecord:
     )
 
 
-def _epic_and_slice_records(program: str, text: str) -> list[TrackerRecord]:
+def _row_epics(text: str) -> dict[str, str]:
+    # A row with a blank Epic cell belongs to the epic header above it. Maps each slice row's raw line to its epic.
+    current = ""
+    epics: dict[str, str] = {}
+    for line in text.splitlines():
+        header_id = parse_header_epic_id(line)
+        if header_id is not None:
+            current = header_id
+            continue
+        row = parse_row(line)
+        if row is not None:
+            epics[row.raw] = row.epic_id or current
+    return epics
+
+
+def _epic_and_slice_records(program: str, text: str, status_text: str) -> list[TrackerRecord]:
     table = parse_table(text)
     if table.unparsed:
         raise PlanError(
@@ -100,41 +133,56 @@ def _epic_and_slice_records(program: str, text: str) -> list[TrackerRecord]:
         for epic_id in table.header_epic_ids
     ]
     # Each slice waits for the slice row above it in the same epic.
+    row_epics = _row_epics(text)
     last_in_epic: dict[str, str] = {}
     slice_ids: set[str] = set()
+    status = _status_slices(status_text)
     for row in table.rows:
-        if row.epic_id not in epic_ids:
-            raise PlanError(f"slice {row.n} names epic {row.epic_id!r}, which has no epic header row", row.raw)
         slice_id = f"{program}/{row.n}"
         if slice_id in slice_ids:
             raise PlanError(f"slice id {slice_id} appears twice", row.raw)
         slice_ids.add(slice_id)
-        blocker = last_in_epic.get(row.epic_id)
-        lifecycle, void = _lifecycle(row.state)
-        score, attempts = _score(row.score)
+        epic_id = row_epics[row.raw]
+        blocker = last_in_epic.get(epic_id)
+        checkbox = status.get(row.n)
+        table_score, table_attempts = _table_score(row.score)
+        if checkbox is None:
+            # No checkbox line: the table State cell sets the lifecycle. The table score counts only for a closed slice.
+            checked = (row.state or "").strip().lower() == "done"
+            score, attempts = (table_score, table_attempts) if checked else (None, None)
+        else:
+            checked = checkbox["checked"]
+            if checkbox["score"] is not None:
+                # The status line's score token wins when STATUS_SLICE_RE captures it.
+                score, attempts = _status_score(checkbox["score"]), checkbox["attempts"]
+            elif checked:
+                # A closed slice whose status line hides its score behind note: reads the table score.
+                score, attempts = table_score, table_attempts
+            else:
+                # An open slice with no captured score reads as no score, as the checkbox reader did.
+                score, attempts = None, None
         envelope: dict[str, Any] = {
             "ends_with": row.ends_with,
             "feature": program,
             "n": row.n,
+            "title": row.name,
             "score": score,
         }
         if attempts is not None:
             envelope["attempts"] = attempts
-        if void:
-            envelope["void"] = True
         records.append(
             TrackerRecord(
                 id=slice_id,
                 kind="slice",
-                parent=row.epic_id,
+                parent=epic_id if epic_id in epic_ids else None,
                 blocked_by=(blocker,) if blocker else (),
-                lifecycle=lifecycle,
+                lifecycle="closed" if checked else "open",
                 assignee=None,
                 envelope=envelope,
                 external_ref=slice_id,
             )
         )
-        last_in_epic[row.epic_id] = slice_id
+        last_in_epic[epic_id] = slice_id
     return records
 
 
@@ -155,17 +203,22 @@ class FilesAdapter:
 
     def all_records(self) -> list[TrackerRecord]:
         # A conflicted plan keeps its program record. Its epic and slice records are dropped.
+        # A plan with no 00-status.md still lists its slices. Its gates and checkboxes read as empty.
         self.conflicts = []
         records: list[TrackerRecord] = []
         for directory in sorted(self._plans_dir.iterdir()):
-            if not (directory / STATUS_FILE).is_file():
-                continue
-            records.append(_program_record(directory))
+            status_path = directory / STATUS_FILE
             slices_path = directory / SLICES_FILE
+            if not status_path.is_file() and not slices_path.is_file():
+                continue
+            status_text = status_path.read_text(encoding="utf-8") if status_path.is_file() else ""
+            records.append(_program_record(directory, status_text))
             if not slices_path.is_file():
                 continue
             try:
-                records.extend(_epic_and_slice_records(directory.name, slices_path.read_text(encoding="utf-8")))
+                records.extend(
+                    _epic_and_slice_records(directory.name, slices_path.read_text(encoding="utf-8"), status_text)
+                )
             except PlanError as error:
                 self.conflicts.append({"plan": directory.name, "reason": error.reason, "text": error.text})
         return records
