@@ -117,6 +117,9 @@ Find the command for each workflow moment in this table.
 | PR merges | `set-pull-request-state <ref> merged`, then `set-epic-state` |
 | Program done | `set-program-stage <program> <stage>` |
 | Session end | `sync` |
+| Status files drift from the tracker | `uv run shared/tracker.py regenerate-status-files <program> --plans-dir <dir>` |
+
+`regenerate-status-files` rewrites only the state lines of `00-status.md` and `04-slices.md`. It keeps every prose line. With no adapter, it exits 2 and writes nothing.
 
 ## Read patterns
 
