@@ -38,7 +38,7 @@ Initial checks, 2026-10-17:
 - [x] Slice 4 — Command prints JSON and exit codes   score: 0.92   note: retained
 - [x] Slice 5 — Usage reference matches the command   score: 1.00   note: retained
 - [x] Slice 6 — Beads reads match the fake adapter   score: 1.00   note: retained
-- [x] Slice 7 — Beads writes on recorded transcripts   score: 0.67 (escalated)   note: retained
+- [x] Slice 7 — Beads writes on recorded transcripts   score: 1.00 (attempt 5, after escalation)   note: retained
 - [x] Slice 8 — Beads dry run matches the backfill file   score: 1.00   note: retained
 - [x] Slice 9 — Fresh clone initializes, syncs, and seeds   score: 1.00   note: retained
 - [ ] Slice 10 — Bundle index unchanged after the port   score: —   note: —
@@ -50,9 +50,15 @@ Initial checks, 2026-10-17:
 - [ ] Slice 16 — Goal file drops epic state fields   score: —   note: —
 - [ ] Slice 17 — Docs test guards the port and install asks first   score: —   note: —
 
+- [ ] Slice 18 — Spike: claim flags, exit codes, lease expiry   score: —   note: —
+- [ ] Slice 19 — Atomic claim   score: —   note: —
+- [ ] Slice 20 — Native ready, with parity   score: —   note: —
+- [ ] Slice 21 — Pull request gate   score: —   note: —
+- [ ] Slice 22 — Slice-loop formula   score: —   note: —
+
 ## Escalated
 
-- Slice 7 (Beads writes on recorded transcripts), accepted with reservations after three attempts, score 0.67 on the last pass. Criteria C2 (claim read-back) scored 1.0. Gaps: the leftover single-call transcripts `claim_slice.json`, `set_state.json`, and `create_pr.json` are read by tests as data only, so changing one recorded argument there does not fail a test, and the create round trip does not compare every written value with a read-back. The behavior is covered by the `*_steps.json` replays and by the `[beads]` contract cases that run on real bd. Follow-up: delete the unused single-call fixtures and add the read-back comparison.
+- Slice 7 (Beads writes on recorded transcripts): failed three attempts (0.67), then the follow-up on 2026-10-19 deleted three unused transcripts and added a real-bd create round trip and a repair test. The rubric then matched the real test names. Attempt 5 scored 1.00. Caveat: the round trip reads back through `list --json`, not `show --json`.
 
 ## Notes for a fresh session
 

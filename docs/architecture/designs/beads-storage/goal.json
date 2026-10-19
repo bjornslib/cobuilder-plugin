@@ -75,6 +75,13 @@
       "outcome": "Every state write goes through the port, and the four main skills teach the one command.",
       "slug": "write-model",
       "branch": null
+    },
+    {
+      "id": "E5",
+      "title": "Beads-native features: the beads adapter uses atomic claim (update --claim --if-assignee), native ready with a parity check, a pull request gate, and a slice-loop formula whose failed attempts are wisps squashed to a digest. E5 starts after E4 and needs the engineer's approval of its design.",
+      "outcome": "The beads adapter claims atomically, answers ready natively, mirrors the pull request block as a gate, and runs the slice loop as a formula.",
+      "slug": "beads-native",
+      "branch": null
     }
   ],
   "stage": "decided",

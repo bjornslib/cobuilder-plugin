@@ -1,6 +1,6 @@
 # Program Design: beads-storage
 
-Source: ADR-0040 (the port, the contract cases, the CLI), ADR-0031 (the envelope and the state vocabulary), and `tracker-port-exploration.md` (the three-tracker table and Option A). Four epics: `beads-storage/E1` to `beads-storage/E4`.
+Source: ADR-0040 (the port, the contract cases, the CLI), ADR-0031 (the envelope and the state vocabulary), and `tracker-port-exploration.md` (the three-tracker table and Option A). Four epics: `beads-storage/E1` to `beads-storage/E4`. Epic `beads-storage/E5` was added later. Its design is `epic-E5-design.md`.
 
 ## Files
 
