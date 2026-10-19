@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.10"
-# dependencies = []
+# dependencies = ["pyyaml>=6,<7"]
 # ///
 """Verify Gate 2b and Gate 4 of an implement plan. Read-only, no side effects.
 
@@ -84,6 +84,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "shared"))
 import slice_table  # noqa: E402
+from tracker_port import reader  # noqa: E402
 
 # The 04-slices.md table format (see plugins/implement/skills/
 # implement/SKILL.md, Gate 4a):
@@ -160,7 +161,55 @@ def check_interaction_sections(text: str) -> str:
     return "ok" if not missing else "incomplete:" + ",".join(missing)
 
 
-def check_2b_status(status_text: str | None) -> str:
+# Shown when the tracker holds no approval for a gate. A store other than
+# docs/plans never reads 00-status.md, so the gate has no text to read.
+NOT_HELD = "not held by the tracker"
+
+
+def status_line_value(status_text: str | None, pattern: re.Pattern[str]) -> str | None:
+    """Return the approval text of the first status line that matches."""
+    if status_text is None:
+        return None
+    for line in status_text.splitlines():
+        match = pattern.match(line)
+        if match:
+            return match.group(1).strip()
+    return None
+
+
+def approval_word(value: str) -> str:
+    """Map an approval text to "ok", "n/a", or "pending"."""
+    if value.upper().startswith("APPROVED"):
+        return "ok"
+    if value.lower().startswith("n/a"):
+        return "n/a"
+    return "pending"
+
+
+def gate_approval(
+    records: reader.PlanRecords | None,
+    status_text: str | None,
+    pattern: re.Pattern[str],
+    key: str,
+    absent: str,
+    unrecorded: str = NOT_HELD,
+) -> str:
+    """Return the approval state of one gate.
+
+    Under a store other than docs/plans, the program envelope holds the state,
+    and `unrecorded` applies when the envelope has no key for the gate.
+    Under docs/plans, the status line holds it, and `absent` applies when no
+    line matches.
+    """
+    if records is not None and not records.from_files:
+        if records.program is None or key not in records.program.envelope:
+            return unrecorded
+        return approval_word(str(records.program.envelope[key]))
+    value = status_line_value(status_text, pattern)
+    return absent if value is None else approval_word(value)
+
+
+def check_2b_status(status_text: str | None, records: reader.PlanRecords | None = None) -> str:
     """Return "ok", "n/a", or "pending" for the 2b line.
 
     No 2b line at all returns "n/a". The gate is newer than those status
@@ -168,28 +217,17 @@ def check_2b_status(status_text: str | None) -> str:
     docs/plans/cobuilder-family and docs/plans/gate-doc-surfacing passing.
     A 2b line that is present and unapproved returns "pending".
     """
-    if status_text is None:
-        return "n/a"
-    for line in status_text.splitlines():
-        match = STATUS_2B_RE.match(line)
-        if match:
-            value = match.group(1).strip()
-            if value.upper().startswith("APPROVED"):
-                return "ok"
-            if value.lower().startswith("n/a"):
-                return "n/a"
-            return "pending"
-    return "n/a"
+    return gate_approval(records, status_text, STATUS_2B_RE, "gate2b", "n/a", unrecorded="n/a")
 
 
-def check_2b(plan_dir: Path, status_text: str | None) -> dict[str, str]:
+def check_2b(plan_dir: Path, status_text: str | None, records: reader.PlanRecords | None = None) -> dict[str, str]:
     """Return the four Gate 2b keys.
 
     When the 2b line is absent or reads n/a, the gate never applied, so
     every key is "n/a" and no artifact is required. Otherwise the three
     artifacts are checked and the approval state is reported.
     """
-    approved = check_2b_status(status_text)
+    approved = check_2b_status(status_text, records)
     if approved == "n/a":
         return {
             "interaction.file": "n/a",
@@ -211,27 +249,39 @@ def check_2b(plan_dir: Path, status_text: str | None) -> dict[str, str]:
     return results
 
 
-def check_4a(plan_dir: Path) -> tuple[dict[str, str], list[dict]]:
-    results: dict[str, str] = {}
+def check_4a(plan_dir: Path, records: reader.PlanRecords | None = None) -> tuple[dict[str, str], list[dict]]:
+    """Return the 4a results and the slice rows, read through the tracker port.
+
+    Rows the port cannot read stop the gate with exit 1, and each reason goes
+    to stderr.
+    """
+    if records is None:
+        records = reader.plan_records(plan_dir.parent.parent.parent, plan_dir.name)
     slices_path = plan_dir / "04-slices.md"
-    if not slices_path.exists():
-        results["slices.file"] = "missing"
-        results["slices.count"] = "zero"
-        return results, []
-
-    results["slices.file"] = "ok"
-    slices, _, unparsed = parse_slices(slices_path.read_text())
-
-    if unparsed:
+    if records.conflicts:
+        lines: list[str] = []
+        for conflict in records.conflicts:
+            lines.append(f"  {conflict['reason']}")
+            lines.extend(f"  {line}" for line in str(conflict["text"]).splitlines())
         print(
             f"error: {slices_path} contains rows that do not match "
             "slice_table.py's expected six-column shape "
             "(#, Epic, Slice, Ends with, Score, State):\n"
-            + "\n".join(f"  {line}" for line in unparsed),
+            + "\n".join(lines),
             file=sys.stderr,
         )
         sys.exit(1)
 
+    if records.from_files:
+        present = slices_path.exists()
+    else:
+        present = bool(records.slices)
+    results: dict[str, str] = {"slices.file": "ok" if present else "missing"}
+    if not present:
+        results["slices.count"] = "zero"
+        return results, []
+
+    slices = [reader.slice_row(r, plan_dir.name, records.from_files) for r in records.slices]
     results["slices.count"] = str(len(slices)) if slices else "zero"
     return results, slices
 
@@ -263,24 +313,13 @@ def check_design_sections(text: str) -> str:
     return "ok" if not missing else "incomplete:" + ",".join(missing)
 
 
-def check_4b_approved(status_text: str | None) -> str:
-    if status_text is None:
-        return "pending"
-    for line in status_text.splitlines():
-        match = STATUS_4B_RE.match(line)
-        if match:
-            value = match.group(1).strip()
-            if value.upper().startswith("APPROVED"):
-                return "ok"
-            if value.lower().startswith("n/a"):
-                return "n/a"
-            return "pending"
-    return "pending"
+def check_4b_approved(status_text: str | None, records: reader.PlanRecords | None = None) -> str:
+    return gate_approval(records, status_text, STATUS_4B_RE, "gate4b", "pending")
 
 
-def check_4b(plan_dir: Path, slices: list[dict], status_text: str | None) -> dict[str, dict[str, str]]:
+def check_4b(plan_dir: Path, slices: list[dict], status_text: str | None, records: reader.PlanRecords | None = None) -> dict[str, dict[str, str]]:
     results: dict[str, dict[str, str]] = {}
-    approved_status = check_4b_approved(status_text)
+    approved_status = check_4b_approved(status_text, records)
     for epic_id in epics_with_multiple_slices(slices):
         design_path = plan_dir / epic_id_to_filename(epic_id)
         entry: dict[str, str] = {}
@@ -334,17 +373,46 @@ STATUS_GATE_RE = re.compile(
 # portable route a projection derives, so it shares no parser with
 # shared/gate_status.py.
 VIEW_LINE_RE = re.compile(r"^\s+view:\s*\S+")
+# The Gate 4 sub-line keys in the program envelope. They are not gate lines.
+GATE4_SUBSTEPS = {"4a", "4b", "4c"}
+# An approved gate state in the envelope. It mirrors STATUS_GATE_RE's approval part.
+ENVELOPE_APPROVED_RE = re.compile(r"^APPROVED\s+(\d{4}-\d{2}-\d{2})", re.IGNORECASE)
 
 
-def check_links(status_text: str | None) -> dict[str, str]:
+def check_links(status_text: str | None, records: reader.PlanRecords | None = None) -> dict[str, str]:
     """Return "gate.<n>" -> "ok" | "n/a" | "missing" for top-level Gate lines.
 
     The link lives on the view line directly under the gate line, so the
     check reads the gate line and then the line after it. Nothing sits
     between the two: a gate line whose following line is not an indented
     `view:` line carries no link, and reads "missing" exactly as before.
+
+    Under a store other than docs/plans, the status file is not read. The
+    envelope decides the result, as files.py writes it. Each approved gate with
+    a date gets a result from its `gate_view_<n>` key. An absent key reads
+    NOT_HELD. Gate 2b has no page, so it reads "n/a".
     """
     results: dict[str, str] = {}
+    if records is not None and not records.from_files:
+        envelope = records.program.envelope if records.program is not None else {}
+        for key, state in envelope.items():
+            if not key.startswith("gate") or key.startswith("gate_view_"):
+                continue
+            raw = key[len("gate"):]
+            if raw in GATE4_SUBSTEPS:
+                continue
+            match = ENVELOPE_APPROVED_RE.match(str(state))
+            if match is None:
+                continue
+            gate, date = raw.lower(), match.group(1)
+            view_key = f"gate_view_{raw}"
+            if gate in GATES_WITHOUT_PAGE or date < LINK_CUTOFF:
+                results[f"gate.{gate}"] = "n/a"
+            elif view_key not in envelope:
+                results[f"gate.{gate}"] = NOT_HELD
+            else:
+                results[f"gate.{gate}"] = "ok" if envelope[view_key] else "missing"
+        return results
     if status_text is None:
         return results
     lines = status_text.splitlines()
@@ -413,14 +481,16 @@ def main() -> None:
     repo_root = plan_dir.parent.parent.parent
     rubrics_dir = Path(args.rubrics_dir).resolve() if args.rubrics_dir else (repo_root / ".cobuilder" / "rubrics" / slug)
 
+    # Under a store other than docs/plans, the gates read the tracker, not 00-status.md.
+    records = reader.plan_records(repo_root, slug)
     status_path = plan_dir / "00-status.md"
-    status_text = status_path.read_text() if status_path.exists() else None
+    status_text = status_path.read_text() if records.from_files and status_path.exists() else None
 
-    a_results, slices = check_4a(plan_dir)
-    b_results = check_4b(plan_dir, slices, status_text)
+    a_results, slices = check_4a(plan_dir, records)
+    b_results = check_4b(plan_dir, slices, status_text, records)
     c_results = check_4c(rubrics_dir, slices)
-    b2_results = check_2b(plan_dir, status_text)
-    link_results = check_links(status_text)
+    b2_results = check_2b(plan_dir, status_text, records)
+    link_results = check_links(status_text, records)
 
     flat = {}
     flat.update(flatten("4a.", a_results))

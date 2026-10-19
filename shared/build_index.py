@@ -60,9 +60,7 @@ from _bundle_meta import (  # noqa: E402
 import prose_budget  # noqa: E402
 import slice_table  # noqa: E402
 import gate_status  # noqa: E402
-from tracker_port import projector  # noqa: E402
-from tracker_port.files import FilesAdapter  # noqa: E402
-from tracker_port.config import load_adapter  # noqa: E402
+from tracker_port import projector, reader  # noqa: E402
 
 # Bumped to 1.4 when the index gained the "rubric" entity kind and the
 # .cobuilder/rubrics tracked subtree. Nothing gates on this value; it names the
@@ -640,17 +638,9 @@ def collect_districts(bundle_dir: Path) -> tuple[list[dict], list[str]]:
 # 00-status.md checkbox lines. The projector shapes each slice.
 # STATUS_SLICE_RE lives in tracker_port/files.py.
 def collect_slices(repo: Path) -> tuple[list[dict], list[str]]:
-    adapter = load_adapter(repo / ".cobuilder" / "tracker.yaml", repo)
-    if adapter is None:
-        plans_dir = repo / PLANS_SOURCE_SUBDIR
-        if not plans_dir.is_dir():
-            return [], []
-        adapter = FilesAdapter(plans_dir)
-    if isinstance(adapter, FilesAdapter):
-        entities = projector.slice_entities(adapter.all_records())
-        failures = [f"{conflict['plan']}: {conflict['reason']}" for conflict in adapter.conflicts]
-        return entities, failures
-    return projector.slice_entities(adapter.list_slices()), []
+    records, conflicts = reader.slice_records(repo)
+    failures = [f"{conflict['plan']}: {conflict['reason']}" for conflict in conflicts]
+    return projector.slice_entities(records), failures
 
 
 # --------------------------------------------------------------------------

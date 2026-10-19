@@ -81,3 +81,29 @@ def parse_status_gates(status_text: str) -> list[dict]:
                 gate["view"] = view_route(view_match.group(1))
         gates.append(gate)
     return gates
+
+
+# An approved gate state carries its date: "APPROVED 2026-09-14 ...".
+APPROVED_DATE_RE = re.compile(r"^APPROVED\s+(\d{4}-\d{2}-\d{2})", re.IGNORECASE)
+
+# The Gate 4 sub-lines, such as "- 4b Epic designs: APPROVED 2026-09-20". They name no gate.
+GATE4_SUBSTEP_RE = re.compile(r"^-\s*(4[abc])\b.*?:\s*(.+)$")
+
+
+def approved_date(state: str) -> str | None:
+    """The ``YYYY-MM-DD`` date of an approved gate state, or None."""
+    match = APPROVED_DATE_RE.match(state.strip())
+    return match.group(1) if match else None
+
+
+def parse_gate4_substeps(status_text: str) -> dict[str, str]:
+    """The state of each Gate 4 sub-line, keyed ``4a``, ``4b``, or ``4c``.
+
+    The first sub-line for a key wins. A key with no sub-line is absent.
+    """
+    steps: dict[str, str] = {}
+    for line in status_text.splitlines():
+        match = GATE4_SUBSTEP_RE.match(line.strip())
+        if match and match.group(1) not in steps:
+            steps[match.group(1)] = match.group(2).strip()
+    return steps
