@@ -1,0 +1,2 @@
+{"name": "family-plan", "outcome": "Decoy keyed by plan folder name.", "stage": "decided",
+ "epics": [{"id": "E1", "branch": "decoy/branch", "pr": 99, "state": "open"}]}

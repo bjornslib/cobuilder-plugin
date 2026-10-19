@@ -52,6 +52,15 @@ def slice_records(repo_root: Path) -> tuple[list[TrackerRecord], list[dict]]:
     return adapter.list_slices(), []
 
 
+def epic_records(repo_root: Path) -> dict[str, TrackerRecord]:
+    """Every epic record in the repo, keyed by its design-qualified epic key."""
+    adapter = open_adapter(repo_root)
+    if adapter is None:
+        return {}
+    records, _ = _all_records(adapter)
+    return {epic_key(r.parent or "", r.id): r for r in records if r.kind == "epic"}
+
+
 def plan_records(repo_root: Path, plan: str) -> PlanRecords:
     """The program, epic, and slice records of one plan, with its conflicts."""
     adapter = open_adapter(repo_root)

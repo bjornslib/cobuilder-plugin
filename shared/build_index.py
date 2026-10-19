@@ -253,7 +253,7 @@ GOAL_FIELDS = (
     "adrs",
     "rounds",
 )
-EPIC_FIELDS = ("id", "slug", "branch", "pr", "state", "outcome")
+EPIC_FIELDS = ("id", "slug", "outcome")
 INTENT_FIELDS = ("problem", "approach", "alternatives")
 ASSESSMENT_FIELDS = ("verdict", "findings")
 PROGRAM_DESIGN_FIELDS = ("id", "feature_slug", "gate", "title", "body_md", "approved_date", "source_path")
@@ -428,6 +428,8 @@ def collect_designs(
     viewer_records: dict[str, dict] = {}
     design_entities: list[dict] = []
     epic_entities: list[dict] = []
+    # An epic's branch, pr, and state live in the tracker. A missing record or key reads as null.
+    tracker_epics = reader.epic_records(repo)
 
     for path in found:
         design_id = path.parent.name
@@ -506,14 +508,16 @@ def collect_designs(
             epic_id = epic.get("id")
             if not epic_id:
                 continue
+            held = tracker_epics.get(f"{design_id}/{epic_id}")
+            held_env = held.envelope if held is not None else {}
             epic_entities.append(
                 {
                     "id": f"{design_id}/{epic_id}",
                     "design": design_id,
                     "epic_id": epic_id,
-                    "branch": epic.get("branch"),
-                    "pr": epic.get("pr"),
-                    "state": epic.get("state"),
+                    "branch": held_env.get("branch"),
+                    "pr": held_env.get("pr"),
+                    "state": held_env.get("state"),
                     "note": epic.get("note"),
                 }
             )

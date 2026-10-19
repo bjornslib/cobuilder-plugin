@@ -8,6 +8,7 @@ calls ``bd``.
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 from typing import Any, NoReturn
@@ -122,7 +123,38 @@ def _row_epics(text: str) -> dict[str, str]:
     return epics
 
 
-def _epic_and_slice_records(program: str, text: str, status_text: str) -> list[TrackerRecord]:
+EPIC_STATE_KEYS = ("branch", "pr", "state")
+
+
+def _goal_epic_state(plans_dir: Path, design: str, local_id: str) -> dict[str, Any] | None:
+    # The design's goal.json epics[] entry may still hold branch, pr, and state. None means the design
+    # has no readable goal.json. A missing entry or key reads as no state. A migration drops the keys.
+    path = plans_dir.parent / "architecture" / "designs" / design / "goal.json"
+    try:
+        goal = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    epics = goal.get("epics") if isinstance(goal, dict) else None
+    for entry in epics if isinstance(epics, list) else []:
+        if isinstance(entry, dict) and entry.get("id") == local_id:
+            return {key: entry[key] for key in EPIC_STATE_KEYS if entry.get(key) is not None}
+    return {}
+
+
+def _epic_state(plans_dir: Path, program: str, epic_id: str) -> dict[str, Any]:
+    # The design is the epic id prefix, as in "plugin-split/E1". The plan folder name is the fallback
+    # when that design has no goal.json.
+    design, _, local_id = epic_id.rpartition("/")
+    for name in dict.fromkeys((design or program, program)):
+        state = _goal_epic_state(plans_dir, name, local_id)
+        if state is not None:
+            return state
+    return {}
+
+
+def _epic_and_slice_records(
+    program: str, text: str, status_text: str, plans_dir: Path | None = None
+) -> list[TrackerRecord]:
     table = parse_table(text)
     if table.unparsed:
         raise PlanError(
@@ -138,7 +170,10 @@ def _epic_and_slice_records(program: str, text: str, status_text: str) -> list[T
             blocked_by=(),
             lifecycle="open",
             assignee=None,
-            envelope={"epic_id": epic_id.rsplit("/", 1)[-1]},
+            envelope={
+                "epic_id": epic_id.rsplit("/", 1)[-1],
+                **(_epic_state(plans_dir, program, epic_id) if plans_dir else {}),
+            },
             external_ref=epic_id,
         )
         for epic_id in table.header_epic_ids
@@ -228,7 +263,12 @@ class FilesAdapter:
                 continue
             try:
                 records.extend(
-                    _epic_and_slice_records(directory.name, slices_path.read_text(encoding="utf-8"), status_text)
+                    _epic_and_slice_records(
+                        directory.name,
+                        slices_path.read_text(encoding="utf-8"),
+                        status_text,
+                        self._plans_dir,
+                    )
                 )
             except PlanError as error:
                 self.conflicts.append({"plan": directory.name, "reason": error.reason, "text": error.text})

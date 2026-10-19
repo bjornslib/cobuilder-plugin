@@ -1,0 +1,26 @@
+[
+  {
+    "id": "estate/E1",
+    "kind": "epic",
+    "parent": "estate",
+    "blocked_by": [],
+    "lifecycle": "open",
+    "assignee": null,
+    "envelope": {
+      "epic_id": "E1"
+    },
+    "external_ref": null
+  },
+  {
+    "id": "estate/E2",
+    "kind": "epic",
+    "parent": "estate",
+    "blocked_by": [],
+    "lifecycle": "open",
+    "assignee": null,
+    "envelope": {
+      "epic_id": "E2"
+    },
+    "external_ref": null
+  }
+]

@@ -432,7 +432,7 @@ Then confirm the first branch name with `AskUserQuestion`. Create the
 - One epic: `design/<name>`
 - Several epics: `design/<name>/<first-epic-slug>`
 
-Record it in `goal.json.epics[].branch`. Then run `tracker.py set-epic-state <epic> <state> --branch <branch>`, and run `tracker.py regenerate-status-files` as section 10.1 says. No push. No `gh pr create`.
+Record it with `tracker.py set-epic-state <epic> <state> --branch <branch>`. The valid states are `open`, `in_progress`, and `closed`. Then run `tracker.py regenerate-status-files` as section 10.1 says. No push. No `gh pr create`.
 No other remote action. This stage is unreachable under
 `--non-interactive`. There is nobody there to confirm.
 

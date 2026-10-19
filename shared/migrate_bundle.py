@@ -221,11 +221,41 @@ def migrate_layout_3_to_4(bundle_dir: Path) -> None:
         ledger_path.touch()
 
 
+EPIC_STATE_KEYS = ("branch", "pr", "state")
+
+
+def migrate_layout_4_to_5(bundle_dir: Path) -> None:
+    """4 -> 5 drops branch, pr, and state from each epics[] entry of every
+    design goal.json. The tracker holds them now. The repo root is two levels
+    above the bundle (<repo>/.cobuilder-architect/<bundle>). No other key
+    changes, and a goal.json with none of the keys is not rewritten."""
+    repo = bundle_dir.parent.parent
+    for path in sorted((repo / "docs" / "architecture" / "designs").glob("*/goal.json")):
+        text = path.read_text(encoding="utf-8")
+        try:
+            goal = json.loads(text)
+        except json.JSONDecodeError:
+            continue
+        epics = goal.get("epics") if isinstance(goal, dict) else None
+        if not isinstance(epics, list):
+            continue
+        changed = False
+        for epic in epics:
+            if isinstance(epic, dict):
+                for key in EPIC_STATE_KEYS:
+                    if key in epic:
+                        del epic[key]
+                        changed = True
+        if changed:
+            path.write_text(json.dumps(goal, indent=2, ensure_ascii=False) + ("\n" if text.endswith("\n") else ""), encoding="utf-8")
+
+
 LAYOUT_MIGRATIONS: list[tuple[int, int, object, str]] = [
     (0, 1, migrate_layout_0_to_1, "stamp bundle_format 1 (no directory changes)"),
     (1, 2, migrate_layout_1_to_2, "stamp bundle_format 2 (empty designs.js if missing)"),
     (2, 3, migrate_layout_2_to_3, "stamp bundle_format 3 (min_reader_schema + generators map)"),
     (3, 4, migrate_layout_3_to_4, "stamp bundle_format 4 (create feedback ledger if missing)"),
+    (4, 5, migrate_layout_4_to_5, "stamp bundle_format 5 (drop branch, pr, state from goal.json epics)"),
 ]
 
 

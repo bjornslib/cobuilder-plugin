@@ -122,6 +122,24 @@ def write_context(repo: Path, context_id: str, verifies: list[str] | None = None
     (context_dir / "boundary.yaml").write_text(yaml.safe_dump(boundary))
 
 
+def write_tracker_epics(repo: Path, design: str, envelopes: dict[str, dict]) -> None:
+    """Name the fake adapter over a tmp corpus whose epic records carry the envelope keys."""
+    corpus = repo / ".cobuilder" / "corpus"
+    corpus.mkdir(parents=True, exist_ok=True)
+    epics = [
+        {
+            "id": f"{design}/{epic_id}", "kind": "epic", "parent": design, "blocked_by": [],
+            "lifecycle": "open", "assignee": None,
+            "envelope": {"epic_id": epic_id, **envelope}, "external_ref": None,
+        }
+        for epic_id, envelope in envelopes.items()
+    ]
+    (corpus / "epics.json").write_text(json.dumps(epics))
+    for name in ("program.json", "slices.json", "prs.json"):
+        (corpus / name).write_text("[]")
+    (repo / ".cobuilder" / "tracker.yaml").write_text("adapter: fake\ncorpus: .cobuilder/corpus\n")
+
+
 def write_slices_md(repo: Path, feature: str, rows: list[str]) -> None:
     """``rows`` is a list of raw markdown table lines, already grouped
     epic-first the way ``04-slices.md`` groups its real table."""
@@ -299,9 +317,8 @@ def test_adr_reaches_pull_request_direct_path(repo, bundle_dir):
 
 def test_adr_reaches_pull_request_through_design_and_epic(repo, bundle_dir, monkeypatch):
     write_adr(repo, "ADR-0002", "Second Decision")
-    write_design(
-        repo, "design-a", ["E1"], branches={"E1": "feature/e1"}, adrs=["ADR-0002"]
-    )
+    write_design(repo, "design-a", ["E1"], adrs=["ADR-0002"])
+    write_tracker_epics(repo, "design-a", {"E1": {"branch": "feature/e1"}})
 
     def fake_gh_lookup(branch, warnings, gh_state):
         assert branch == "feature/e1"
@@ -342,7 +359,8 @@ def test_epic_with_no_branch_is_unstarted(repo, bundle_dir):
 
 
 def test_epic_with_branch_but_no_pull_request_is_reported_not_errored(repo, bundle_dir, monkeypatch):
-    write_design(repo, "design-c", ["E1"], branches={"E1": "feature/not-opened"})
+    write_design(repo, "design-c", ["E1"])
+    write_tracker_epics(repo, "design-c", {"E1": {"branch": "feature/not-opened"}})
     monkeypatch.setattr(build_index, "gh_pr_for_branch", lambda branch, warnings, gh_state: None)
 
     index, _, _, failures = build_index.build_index(repo, bundle_dir)
@@ -890,12 +908,9 @@ def write_epic_with_authored_pr(repo: Path, branch: str, pr: int) -> None:
     write_raw_goal(
         repo,
         "design-d",
-        {
-            "name": "design-d",
-            "outcome": "An outcome.",
-            "epics": [{"id": "E1", "branch": branch, "pr": pr, "state": "open"}],
-        },
+        {"name": "design-d", "outcome": "An outcome.", "epics": [{"id": "E1"}]},
     )
+    write_tracker_epics(repo, "design-d", {"E1": {"branch": branch, "pr": pr, "state": "open"}})
 
 
 def test_authored_pr_keeps_the_join_when_gh_is_unavailable(repo, bundle_dir, monkeypatch):
