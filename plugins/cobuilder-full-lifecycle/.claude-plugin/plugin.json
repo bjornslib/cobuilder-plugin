@@ -1,6 +1,6 @@
 {
   "name": "cobuilder-full-lifecycle",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Install all of CoBuilder: architecture, implementation, review, and maintenance, with the engineer in charge at each stage.",
   "author": { "name": "bjornslib" },
   "repository": "https://github.com/bjornslib/cobuilder-architect",

@@ -1,6 +1,6 @@
 # Tracker usage
 
-This guide tells agents how to read and write workflow state. It follows ADR-0040. Each example output comes from a real run in a scratch repo.
+This guide tells agents how to read and write workflow state. It follows ADR-0040. Each example output comes from a real run in a scratch repo. Write this guide inside the prose budget in `shared/prose-budget.md`, and run `uv run shared/prose_budget.py check shared/tracker-usage.md`.
 
 ## The rule
 

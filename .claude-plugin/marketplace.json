@@ -34,7 +34,7 @@
       "name": "cobuilder-full-lifecycle",
       "description": "Install all of CoBuilder: architecture, implementation, review, and maintenance, with the engineer in charge at each stage.",
       "source": "./plugins/cobuilder-full-lifecycle",
-      "version": "0.4.0"
+      "version": "0.5.0"
     },
     {
       "name": "cobuilder-memory",

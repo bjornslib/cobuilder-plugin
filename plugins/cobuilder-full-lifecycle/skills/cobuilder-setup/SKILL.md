@@ -17,7 +17,7 @@ This skill sets up the CoBuilder family for the target repo. It asks before it i
 
 ## Install mode
 
-This mode runs the four parts below in order: habit-hooks setup, glossary check, Hindsight allow rules, and report. Run it once per repo, and again when the repo gains a language.
+This mode runs the five parts below in order: habit-hooks setup, glossary check, Hindsight allow rules, tracker backfill, and report. Run it once per repo, and again when the repo gains a language.
 
 ## Habit-hooks setup
 
@@ -129,6 +129,17 @@ f. After a yes, add only the missing rules to `permissions.allow`. Keep every ot
 g. After a no, change nothing. List the missing rules as a manual step for the user.
 
 h. State the reason to the user. A plugin cannot ship allow rules, so this skill edits the user file itself, and only after approval.
+
+## Tracker backfill
+
+This part runs after the engineer configures the tracker adapter. It follows `shared/tracker-backfill.md`. It writes nothing until the engineer agrees.
+
+1. **Check the adapter.** When the adapter is beads and the repo has no `.beads` folder, read `shared/tracker-adapter-beads.md`. It holds the approval step for the beads setup. Do not run any beads command from this skill.
+2. **Run the dry run.** Run `tracker.py seed-from-files <plans-dir> --dry-run`. Show the engineer the list of planned creates.
+3. **Ask for consent.** Ask the engineer for explicit consent to write. Do not write on silence or on a vague answer.
+4. **Write, after consent.** Run the same `seed-from-files` operation without `--dry-run`. Then run `tracker.py sync`.
+
+If the engineer declines, stop this part and report that nothing was written.
 
 ## Report
 
