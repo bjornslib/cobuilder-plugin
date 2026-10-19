@@ -59,3 +59,10 @@ plugins/artifact/viewer/tsconfig.tsbuildinfo
 # tldraw canvases are drawn on demand and are not committed
 *.tldraw
 plugins/cobuilder-memory/.claude-plugin/types/
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
+.beads/proxieddb/
+*.gate.lock*
