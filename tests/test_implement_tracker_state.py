@@ -7,16 +7,15 @@ path must resolve, a file must be absent. It never tests the wording of prose.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import re
-import shutil
-import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-TRACKER_CLI = ROOT / "shared" / "tracker.py"
-FIXTURE = ROOT / "tests" / "fixtures" / "tracker" / "write-model"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _tracker_port_support as support  # noqa: E402
+
 PROGRAM = "wm-demo"
 SLICE = "wm-demo/1"
 
@@ -31,61 +30,25 @@ PROSE_FILES = [
     IMPLEMENT / "commands" / "debug.md",
 ]
 SETUP_SKILL = ROOT / "plugins/cobuilder-full-lifecycle/skills/cobuilder-setup/SKILL.md"
-OP_RE = re.compile(r"tracker\.py\s+(?:--[a-z-]+(?:\s+\S+)?\s+)*([a-z][a-z-]+)")
-
-
-def _snapshot(root: Path) -> dict[str, str]:
-    return {
-        p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
-        for p in sorted(root.rglob("*"))
-        if p.is_file()
-    }
+OP_RE = support.OP_RE
+_cli = support.cli
+_ok = support.ok
+_snapshot = support.snapshot
 
 
 def _repo(tmp_path: Path, with_config: bool = True) -> tuple[Path, Path, Path]:
     """Copy the fixture into tmp_path. Return the config path, state file, and plans root."""
-    corpus = tmp_path / "corpus"
-    plans = tmp_path / "plans"
-    shutil.copytree(FIXTURE, corpus, ignore=shutil.ignore_patterns("plans"))
-    shutil.copytree(FIXTURE / "plans", plans)
-    state = tmp_path / "state" / "tracker-state.json"
-    config = tmp_path / ".cobuilder" / "tracker.yaml"
+    corpus, plans = support.copy_write_model(tmp_path)
     if with_config:
-        config.parent.mkdir(parents=True)
-        config.write_text(
-            "adapter: fake\n"
-            f"corpus: {json.dumps(str(corpus))}\n"
-            f"state_file: {json.dumps(str(state))}\n",
-            encoding="utf-8",
-        )
+        config, state = support.write_fake_config(tmp_path, corpus)
+    else:
+        state = tmp_path / "state" / "tracker-state.json"
+        config = tmp_path / ".cobuilder" / "tracker.yaml"
     return config, state, plans
-
-
-def _cli(config: Path, cwd: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        ["uv", "run", str(TRACKER_CLI), "--config", str(config), *args],
-        cwd=cwd, capture_output=True, text=True, timeout=180, check=False,
-    )
-
-
-def _ok(result: subprocess.CompletedProcess[str]) -> object:
-    assert result.returncode == 0, result.stderr + result.stdout
-    body = json.loads(result.stdout)
-    assert body["ok"] is True, result.stdout
-    return body["result"]
 
 
 def _regen(config: Path, tmp_path: Path, plans: Path) -> None:
     _ok(_cli(config, tmp_path, "regenerate-status-files", PROGRAM, "--plans-dir", str(plans)))
-
-
-def _cli_ops() -> set[str]:
-    out = subprocess.run(
-        ["uv", "run", str(TRACKER_CLI), "--help"], capture_output=True, text=True, timeout=180, check=True
-    ).stdout
-    match = re.search(r"\{([a-z,-]+)\}", out)
-    assert match, out
-    return set(match.group(1).split(","))
 
 
 # --- behavior ---------------------------------------------------------------
@@ -148,12 +111,7 @@ def test_implement_manifest_versions_match() -> None:
 
 
 def test_every_tracker_op_named_in_prose_is_a_cli_operation() -> None:
-    ops = _cli_ops()
-    for path in PROSE_FILES:
-        assert path.is_file(), f"missing {path.relative_to(ROOT)}"
-        named = OP_RE.findall(path.read_text(encoding="utf-8"))
-        unknown = sorted(set(named) - ops)
-        assert not unknown, f"{path.relative_to(ROOT)} names unknown operations {unknown}"
+    support.assert_prose_ops_exist(PROSE_FILES)
 
 
 def test_slice_loop_names_the_write_operations() -> None:

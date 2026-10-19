@@ -82,6 +82,21 @@ AUTHORED_META_FIELDS = ("title", "description")
 LEVEL_KEYS = ("intent", "problem_solution", "architecture", "file_changes")
 
 
+def harvest_fields(out: dict[str, object], prefix: str, item: dict, fields: tuple[str, ...]) -> None:
+    """Copy each of `fields` that `item` carries into `out` as `<prefix>.<field>`."""
+    for field in fields:
+        if field in item:
+            out[f"{prefix}.{field}"] = item[field]
+
+
+def harvest_levels(out: dict[str, object], prefix: str, levels: dict) -> None:
+    """Harvest the authored fields of each level dict of one timeline entry."""
+    for level_key in LEVEL_KEYS:
+        level = levels.get(level_key)
+        if isinstance(level, dict):
+            harvest_fields(out, f"{prefix}.levels.{level_key}", level, AUTHORED_LEVEL_FIELDS)
+
+
 def harvest_authored(story: dict) -> dict[str, object]:
     """dotted-path -> value for every authored (irreplaceable) leaf in
     story, per the authored/derived split in the versioning plan. Anything
@@ -89,32 +104,16 @@ def harvest_authored(story: dict) -> dict[str, object]:
     declaring it in `touches`."""
     out: dict[str, object] = {}
 
-    meta = story.get("meta", {}) or {}
-    for field in AUTHORED_META_FIELDS:
-        if field in meta:
-            out[f"meta.{field}"] = meta[field]
+    harvest_fields(out, "meta", story.get("meta", {}) or {}, AUTHORED_META_FIELDS)
 
     districts = (story.get("world", {}) or {}).get("districts", []) or []
     for i, d in enumerate(districts):
-        did = d.get("id", i)
-        for field in AUTHORED_DISTRICT_FIELDS:
-            if field in d:
-                out[f"world.districts[{did}].{field}"] = d[field]
+        harvest_fields(out, f"world.districts[{d.get('id', i)}]", d, AUTHORED_DISTRICT_FIELDS)
 
-    timeline = story.get("timeline", []) or []
-    for entry in timeline:
-        pr = entry.get("pr")
-        for field in AUTHORED_TIMELINE_FIELDS:
-            if field in entry:
-                out[f"timeline[{pr}].{field}"] = entry[field]
-        levels = entry.get("levels", {}) or {}
-        for level_key in LEVEL_KEYS:
-            level = levels.get(level_key)
-            if not isinstance(level, dict):
-                continue
-            for field in AUTHORED_LEVEL_FIELDS:
-                if field in level:
-                    out[f"timeline[{pr}].levels.{level_key}.{field}"] = level[field]
+    for entry in story.get("timeline", []) or []:
+        prefix = f"timeline[{entry.get('pr')}]"
+        harvest_fields(out, prefix, entry, AUTHORED_TIMELINE_FIELDS)
+        harvest_levels(out, prefix, entry.get("levels", {}) or {})
 
     return out
 
@@ -428,7 +427,7 @@ def run_data_ladder(story: dict, current_schema: str) -> tuple[dict, list[str], 
     return result, steps, []
 
 
-def main() -> None:
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--bundle-dir", required=True, help="bundle dir to migrate (e.g. <repo>/.cobuilder-architect/self)")
     parser.add_argument(
@@ -438,16 +437,32 @@ def main() -> None:
         "prints a unified diff of the data-ladder result for story.json",
     )
     parser.add_argument("--json", action="store_true", help="emit machine-readable JSON instead of a report")
-    args = parser.parse_args()
+    return parser.parse_args()
 
-    bundle_dir = Path(args.bundle_dir).resolve()
+
+def fail(message: str) -> None:
+    """Print an error to stderr and exit 1."""
+    print(message, file=sys.stderr)
+    sys.exit(1)
+
+
+UPDATE_REMEDIATION = (
+    "remediation: update this plugin (`/plugin update <plugin-name>@cobuilder-plugin` or "
+    "re-add the marketplace) before migrating this bundle."
+)
+
+
+def read_bundle_state(bundle_dir: Path) -> tuple[dict, int, dict, str, bool]:
+    """Read the bundle and check that this plugin can migrate it.
+
+    Returns (bundle_meta, current_format, story, current_schema,
+    schema_mirror_drift). Exits 1 when the bundle cannot be migrated.
+    """
     if not bundle_dir.exists():
-        print(
+        fail(
             f"error: bundle dir {bundle_dir} does not exist.\n"
-            "remediation: run /pr:baseline against this bundle first.",
-            file=sys.stderr,
+            "remediation: run /pr:baseline against this bundle first."
         )
-        sys.exit(1)
 
     bundle_meta = read_bundle_json(bundle_dir)
     current_format = bundle_meta.get("bundle_format", 0)
@@ -456,12 +471,10 @@ def main() -> None:
 
     story = read_story(bundle_dir)
     if story is None:
-        print(
+        fail(
             f"error: {bundle_dir}/data/story.json not found or not valid JSON.\n"
-            "remediation: run /pr:baseline (and /pr:generate) against this bundle first.",
-            file=sys.stderr,
+            "remediation: run /pr:baseline (and /pr:generate) against this bundle first."
         )
-        sys.exit(1)
 
     # story.json's meta.schema_version is the SOURCE OF TRUTH; bundle.json only
     # mirrors it. Reading bundle.json first would deadlock a bundle whose mirror
@@ -479,27 +492,105 @@ def main() -> None:
 
     known_schemas = {m[0] for m in SCHEMA_MIGRATIONS} | {SCHEMA_VERSION}
     if current_format > CURRENT_BUNDLE_FORMAT:
-        print(
+        fail(
             f"error: bundle_format {current_format} is newer than this plugin knows "
-            f"(CURRENT_BUNDLE_FORMAT={CURRENT_BUNDLE_FORMAT}).\n"
-            "remediation: update this plugin (`/plugin update <plugin-name>@cobuilder-plugin` or "
-            "re-add the marketplace) before migrating this bundle.",
-            file=sys.stderr,
+            f"(CURRENT_BUNDLE_FORMAT={CURRENT_BUNDLE_FORMAT}).\n" + UPDATE_REMEDIATION
         )
-        sys.exit(1)
     if current_schema not in known_schemas:
         # Anything not in the known-schemas set and not reachable by walking
         # the ladder from a known "from" is either newer than this plugin
         # understands, or already at (or ahead of) SCHEMA_VERSION under a
         # name this plugin never produced — either way, refuse to guess.
-        print(
+        fail(
             f"error: schema_version {current_schema!r} is not one this plugin's migrate_bundle.py "
-            f"knows how to read (known: {sorted(known_schemas)}).\n"
-            "remediation: update this plugin (`/plugin update <plugin-name>@cobuilder-plugin` or "
-            "re-add the marketplace) before migrating this bundle.",
-            file=sys.stderr,
+            f"knows how to read (known: {sorted(known_schemas)}).\n" + UPDATE_REMEDIATION
         )
+    return bundle_meta, current_format, story, current_schema, schema_mirror_drift
+
+
+def abort_on_violations(report: dict, violations: list[str], as_json: bool) -> None:
+    """Report undeclared authored-content changes and exit 1."""
+    report["data"]["violations"] = violations
+    report["aborted"] = True
+    if as_json:
+        print(json.dumps(report, indent=2, ensure_ascii=False))
         sys.exit(1)
+    fail(
+        "error: a data migration changed authored content it did not declare in `touches`.\n"
+        f"Offending path(s): {', '.join(violations)}\n"
+        "remediation: this is a bug in migrate_bundle.py's migration function, not in your "
+        "bundle. No files were written; story.json is unchanged."
+    )
+
+
+def print_summary(report: dict, current_format: int, final_format: int, current_schema: str) -> None:
+    """Print the viewer, layout, and data lines of a report."""
+    print(f"viewer: {report['viewer']}")
+    print(f"layout: {current_format} -> {final_format} ({len(report['layout']['steps'])} step(s))")
+    print(f"data:   {current_schema} -> {report['data']['to']} ({len(report['data']['steps'])} step(s))")
+
+
+def report_dry_run(bundle_dir: Path, report: dict, story: dict, result_story: dict, args: argparse.Namespace) -> None:
+    """Print the dry-run report, with a unified diff of story.json."""
+    story_path = bundle_dir / "data" / "story.json"
+    old_json = json.dumps(story, indent=2, ensure_ascii=False)
+    new_json = json.dumps(result_story, indent=2, ensure_ascii=False)
+    diff = "".join(
+        difflib.unified_diff(
+            (old_json + "\n").splitlines(keepends=True),
+            (new_json + "\n").splitlines(keepends=True),
+            fromfile=f"{story_path} (current)",
+            tofile=f"{story_path} (migrated)",
+        )
+    )
+    if args.json:
+        report["data"]["diff"] = diff
+        print(json.dumps(report, indent=2, ensure_ascii=False))
+    else:
+        print_summary(report, report["layout"]["from"], report["layout"]["to"], report["data"]["from"])
+        print()
+        print(diff if diff else "(no story.json changes)")
+
+
+def write_migrated_story(bundle_dir: Path, story: dict, result_story: dict, current_schema: str) -> Path:
+    """Back up story.json, write the migrated story, and return the backup path."""
+    backup_dir = bundle_dir / ".migration-backup"
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    backup_path = backup_dir / f"{date.today().isoformat()}-schema-{current_schema}.json"
+    backup_path.write_text(json.dumps(story, indent=2, ensure_ascii=False) + "\n")
+
+    story_path = bundle_dir / "data" / "story.json"
+    story_js_path = bundle_dir / "data" / "story.js"
+    new_json = json.dumps(result_story, indent=2, ensure_ascii=False)
+    story_path.write_text(new_json + "\n")
+    if story_js_path.exists():
+        story_js_path.write_text(f"window.STORY = {new_json};\n")
+    return backup_path
+
+
+def print_report(report: dict, bundle_json_path: Path, needs_bundle_json: bool) -> None:
+    """Print the human report of a real run."""
+    if report["viewer"] == "missing-source":
+        print(
+            f"WARNING: viewer: missing-source. No viewer/index.html "
+            f"found under {PLUGIN_ROOT} (checked its own root, "
+            "plugins/artifact/, and the sibling artifact plugin cache). "
+            "The bundle's viewer/index.html was NOT refreshed."
+        )
+    if not report["made_changes"]:
+        print("already current: no viewer, layout, or data changes.")
+        return
+    print_summary(report, report["layout"]["from"], report["layout"]["to"], report["data"]["from"])
+    if "backup" in report:
+        print(f"backup: {report['backup']}")
+    if needs_bundle_json:
+        print(f"wrote {bundle_json_path}")
+
+
+def main() -> None:
+    args = parse_args()
+    bundle_dir = Path(args.bundle_dir).resolve()
+    bundle_meta, current_format, story, current_schema, schema_mirror_drift = read_bundle_state(bundle_dir)
 
     report: dict = {"bundle_dir": str(bundle_dir), "dry_run": args.dry_run}
 
@@ -523,63 +614,15 @@ def main() -> None:
     }
 
     if violations:
-        report["data"]["violations"] = violations
-        report["aborted"] = True
-        if args.json:
-            print(json.dumps(report, indent=2, ensure_ascii=False))
-        else:
-            print(
-                "error: a data migration changed authored content it did not declare in `touches`.\n"
-                f"Offending path(s): {', '.join(violations)}\n"
-                "remediation: this is a bug in migrate_bundle.py's migration function, not in your "
-                "bundle. No files were written; story.json is unchanged.",
-                file=sys.stderr,
-            )
-        sys.exit(1)
+        abort_on_violations(report, violations, args.json)
 
     if args.dry_run:
-        story_path = bundle_dir / "data" / "story.json"
-        old_json = json.dumps(story, indent=2, ensure_ascii=False)
-        new_json = json.dumps(result_story, indent=2, ensure_ascii=False)
-        diff = "".join(
-            difflib.unified_diff(
-                (old_json + "\n").splitlines(keepends=True),
-                (new_json + "\n").splitlines(keepends=True),
-                fromfile=f"{story_path} (current)",
-                tofile=f"{story_path} (migrated)",
-            )
-        )
-        if args.json:
-            report["data"]["diff"] = diff
-            print(json.dumps(report, indent=2, ensure_ascii=False))
-        else:
-            print(f"viewer: {report['viewer']}")
-            print(f"layout: {current_format} -> {final_format} ({len(layout_steps)} step(s))")
-            print(f"data:   {current_schema} -> {report['data']['to']} ({len(data_steps)} step(s))")
-            print()
-            print(diff if diff else "(no story.json changes)")
+        report_dry_run(bundle_dir, report, story, result_story, args)
         return
 
     # Real run: back up before any data transform, then write everything.
-    made_changes = (
-        report["viewer"] == "refreshed"
-        or layout_steps
-        or data_steps
-    )
-
     if data_steps:
-        backup_dir = bundle_dir / ".migration-backup"
-        backup_dir.mkdir(parents=True, exist_ok=True)
-        backup_path = backup_dir / f"{date.today().isoformat()}-schema-{current_schema}.json"
-        backup_path.write_text(json.dumps(story, indent=2, ensure_ascii=False) + "\n")
-        report["backup"] = str(backup_path)
-
-        story_path = bundle_dir / "data" / "story.json"
-        story_js_path = bundle_dir / "data" / "story.js"
-        new_json = json.dumps(result_story, indent=2, ensure_ascii=False)
-        story_path.write_text(new_json + "\n")
-        if story_js_path.exists():
-            story_js_path.write_text(f"window.STORY = {new_json};\n")
+        report["backup"] = str(write_migrated_story(bundle_dir, story, result_story, current_schema))
 
     bundle_json_path = bundle_dir / "bundle.json"
     # `schema_mirror_drift` matters even when no ladder step ran: the mirror is
@@ -587,12 +630,13 @@ def main() -> None:
     # A viewer refresh counts too — the plugin just changed something in this
     # bundle, so leaving `generator_version` at the older value makes the stamp
     # claim a version that did not produce what is now on disk.
+    refreshed = report["viewer"] == "refreshed"
     needs_bundle_json = (
         not bundle_json_path.exists()
         or layout_steps
         or data_steps
         or schema_mirror_drift
-        or report["viewer"] == "refreshed"
+        or refreshed
     )
     if needs_bundle_json:
         write_bundle_json(bundle_dir, final_format, report["data"]["to"], bundle_meta)
@@ -600,28 +644,11 @@ def main() -> None:
     else:
         report["bundle_json"] = "unchanged"
 
-    made_changes = made_changes or needs_bundle_json
+    report["made_changes"] = (refreshed or layout_steps or data_steps) or needs_bundle_json
     if args.json:
-        report["made_changes"] = made_changes
         print(json.dumps(report, indent=2, ensure_ascii=False))
     else:
-        if report["viewer"] == "missing-source":
-            print(
-                f"WARNING: viewer: missing-source. No viewer/index.html "
-                f"found under {PLUGIN_ROOT} (checked its own root, "
-                "plugins/artifact/, and the sibling artifact plugin cache). "
-                "The bundle's viewer/index.html was NOT refreshed."
-            )
-        if not made_changes:
-            print("already current: no viewer, layout, or data changes.")
-        else:
-            print(f"viewer: {report['viewer']}")
-            print(f"layout: {current_format} -> {final_format} ({len(layout_steps)} step(s))")
-            print(f"data:   {current_schema} -> {report['data']['to']} ({len(data_steps)} step(s))")
-            if "backup" in report:
-                print(f"backup: {report['backup']}")
-            if needs_bundle_json:
-                print(f"wrote {bundle_json_path}")
+        print_report(report, bundle_json_path, needs_bundle_json)
 
 
 if __name__ == "__main__":

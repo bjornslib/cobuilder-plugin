@@ -9,21 +9,20 @@ from __future__ import annotations
 
 from collections import Counter
 import json
-import os
 import shutil
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
 from typing import Any
 
-SHARED_DIR = Path(__file__).resolve().parent.parent / "shared"
-sys.path.insert(0, str(SHARED_DIR))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _beads_support as support  # noqa: E402
+from _beads_support import BEADS_DIR, FIXTURE_DIR  # noqa: E402
 
-FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "tracker"
 CORPUS_DIR = FIXTURE_DIR / "corpus"
-BEADS_DIR = FIXTURE_DIR / "beads"
 LIST_ARGS = ["list", "--json", "--all"]
+_run = support.run
+_scratch_tracker = support.scratch_tracker
 
 
 class ReplayRunner:
@@ -119,15 +118,6 @@ def test_capabilities_flags() -> None:
     assert caps.rich_envelope is True
 
 
-_FRESH_CLONE_ENV = {
-    "GIT_AUTHOR_NAME": "beads-test",
-    "GIT_AUTHOR_EMAIL": "beads-test@example.invalid",
-    "GIT_COMMITTER_NAME": "beads-test",
-    "GIT_COMMITTER_EMAIL": "beads-test@example.invalid",
-    "BD_NON_INTERACTIVE": "1",
-}
-
-
 class _RecordingRunner:
     """Wraps a real BdRunner and keeps each argument list it runs."""
 
@@ -140,30 +130,18 @@ class _RecordingRunner:
         return self.inner.run(args)
 
 
-def _step(argv: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
-    completed = subprocess.run(
-        argv,
-        cwd=cwd,
-        capture_output=True,
-        text=True,
-        env={**os.environ, **_FRESH_CLONE_ENV},
-    )
-    print(f"[{cwd.name}] {' '.join(argv)} -> exit {completed.returncode}")
-    return completed
-
-
-def _run(argv: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
-    completed = _step(argv, cwd)
-    output = completed.stdout + completed.stderr
-    error_lines = [line for line in output.splitlines() if line.startswith("Error")]
-    assert completed.returncode == 0, f"{argv} in {cwd.name} exited {completed.returncode}:\n{output}"
-    assert not error_lines, f"{argv} in {cwd.name} printed error lines: {error_lines}"
-    return completed
+def _clone_cbs(root: Path, origin: Path, name: str) -> list[dict[str, Any]]:
+    """Clone the origin, sync bd, and return the cb block of every listed row."""
+    clone = root / name
+    _run(["git", "clone", "-q", str(origin), str(clone)], root)
+    _run(["bd", "init", "--skip-agents", "--skip-hooks", "-p", "demo", "--non-interactive"], clone)
+    _run(["bd", "sync"], clone)
+    listed = _run(["bd", "list", "--json", "--all"], clone)
+    return [row["metadata"]["cb"] for row in json.loads(listed.stdout)]
 
 
 def test_fresh_clone_inits_and_syncs() -> None:
-    if shutil.which("bd") is None:
-        raise AssertionError("bd is not on PATH. This test needs bd 1.3.0 and fails without it.")
+    support.require_bd()
 
     from tracker_port.beads import BeadsAdapter
     from tracker_port.bd_runner import BdRunner
@@ -178,16 +156,7 @@ def test_fresh_clone_inits_and_syncs() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         origin = root / "origin.git"
-        seed = root / "seed"
-        seed.mkdir()
-        _run(["git", "init", "--bare", "-q", str(origin)], root)
-        _run(["git", "init", "-q", "-b", "main"], seed)
-        _run(["git", "commit", "-q", "--allow-empty", "-m", "seed"], seed)
-        _run(["git", "remote", "add", "origin", str(origin)], seed)
-        _run(["git", "push", "-q", "origin", "main"], seed)
-        _run(["bd", "init", "--skip-agents", "--skip-hooks", "-p", "demo", "--non-interactive"], seed)
-        _run(["bd", "config", "set", "team.enabled", "true"], seed)
-        _run(["bd", "config", "set", "team.sync_branch", "main"], seed)
+        seed = _scratch_tracker(root)
 
         seed_runner = _RecordingRunner(BdRunner(bd="bd", cwd=seed))
         created = BeadsAdapter(seed_runner).seed_from_files(plan_dir)
@@ -200,12 +169,7 @@ def test_fresh_clone_inits_and_syncs() -> None:
         assert not [call for call in second_runner.calls if call[:1] == ["create"]]
 
         for name in ("clone1", "clone2"):
-            clone = root / name
-            _run(["git", "clone", "-q", str(origin), str(clone)], root)
-            _run(["bd", "init", "--skip-agents", "--skip-hooks", "-p", "demo", "--non-interactive"], clone)
-            _run(["bd", "sync"], clone)
-            listed = _run(["bd", "list", "--json", "--all"], clone)
-            cbs = [row["metadata"]["cb"] for row in json.loads(listed.stdout)]
+            cbs = _clone_cbs(root, origin, name)
             assert sorted(cb["id"] for cb in cbs) == expected_ids
             assert Counter(cb["kind"] for cb in cbs) == expected_kinds
 
@@ -224,38 +188,15 @@ def test_fresh_clone_inits_and_syncs() -> None:
         )
         BeadsAdapter(seed_runner).create_record(probe)
 
-        clone3 = root / "clone3"
-        _run(["git", "clone", "-q", str(origin), str(clone3)], root)
-        _run(["bd", "init", "--skip-agents", "--skip-hooks", "-p", "demo", "--non-interactive"], clone3)
-        _run(["bd", "sync"], clone3)
-        listed = _run(["bd", "list", "--json", "--all"], clone3)
-        cbs = [row["metadata"]["cb"] for row in json.loads(listed.stdout)]
+        cbs = _clone_cbs(root, origin, "clone3")
         assert sorted(cb["id"] for cb in cbs) == sorted([*expected_ids, "demo-sync-probe"])
-
-
-class _Sequence:
-    """Answers bd calls in recorded order. A non-zero exit raises BdError."""
-
-    def __init__(self, steps: list[dict[str, Any]]) -> None:
-        self.steps = steps
-        self.calls: list[list[str]] = []
-
-    def run(self, args: list[str]) -> str:
-        from tracker_port.bd_runner import BdError
-
-        self.calls.append(list(args))
-        step = self.steps[len(self.calls) - 1]
-        assert list(args) == step["args"], f"unexpected bd call: {args}"
-        if step["exit"] != 0:
-            raise BdError(f"bd {' '.join(args)} exited {step['exit']}", step["exit"], step["stderr"])
-        return step["stdout"]
 
 
 def test_sync_first_publish_pushes_dolt_then_syncs_again() -> None:
     from tracker_port.beads import BeadsAdapter
 
     steps = json.loads((BEADS_DIR / "transcripts" / "dolt_push_first_publish_steps.json").read_text(encoding="utf-8"))["steps"]
-    runner = _Sequence(steps)
+    runner = support.SequenceRunner(steps)
     BeadsAdapter(runner).sync()
 
     assert runner.calls == [["sync"], ["dolt", "push"], ["sync"]]
@@ -269,7 +210,7 @@ def test_sync_second_step_failure_raises_adapter_error() -> None:
         {"args": ["sync"], "stdout": "", "stderr": "Error: no branches found in remote 'origin'\n", "exit": 1},
         {"args": ["dolt", "push"], "stdout": "", "stderr": "Error: push rejected\n", "exit": 1},
     ]
-    runner = _Sequence(steps)
+    runner = support.SequenceRunner(steps)
     try:
         BeadsAdapter(runner).sync()
     except AdapterError:
@@ -283,28 +224,13 @@ def test_sync_failure_on_a_non_empty_remote_does_not_push() -> None:
     from tracker_port.port import AdapterError
 
     steps = [{"args": ["sync"], "stdout": "", "stderr": "bd: sync conflict on beads/team-sync\n", "exit": 1}]
-    runner = _Sequence(steps)
+    runner = support.SequenceRunner(steps)
     try:
         BeadsAdapter(runner).sync()
     except AdapterError:
         assert runner.calls == [["sync"]]
         return
     raise AssertionError("a sync failure without the empty-remote message must raise AdapterError")
-
-
-class _Answers:
-    """Answers the bd calls of one create and close. It needs no bd binary."""
-
-    def __init__(self) -> None:
-        self.calls: list[list[str]] = []
-
-    def run(self, args: list[str]) -> str:
-        self.calls.append(list(args))
-        if args[0] == "list":
-            return "[]"
-        if args[0] == "create":
-            return "demo-bxe\n"
-        return ""
 
 
 def _closed_probe(assignee: str | None) -> Any:
@@ -326,7 +252,7 @@ def test_create_record_closes_a_closed_slice_after_create() -> None:
     from tracker_port.beads import BeadsAdapter
 
     steps = json.loads((BEADS_DIR / "transcripts" / "create_closed_slice_steps.json").read_text(encoding="utf-8"))["steps"]
-    runner = _Answers()
+    runner = support.CreateAnswers()
     BeadsAdapter(runner).create_record(_closed_probe(None))
 
     assert steps[0]["args"] in runner.calls, runner.calls
@@ -338,7 +264,7 @@ def test_create_record_closes_a_closed_slice_after_create() -> None:
 def test_create_record_sets_the_assignee_of_a_closed_slice() -> None:
     from tracker_port.beads import BeadsAdapter
 
-    runner = _Answers()
+    runner = support.CreateAnswers()
     BeadsAdapter(runner).create_record(_closed_probe("agent-x"))
 
     create = next(call for call in runner.calls if call[0] == "create")
@@ -349,19 +275,9 @@ def test_create_record_closed_slice_keeps_parent_assignee_blocker_and_envelope()
     from tracker_port.beads import BeadsAdapter
     from tracker_port.record import TrackerRecord
 
-    class _ListThenCreate:
-        def __init__(self) -> None:
-            self.calls: list[list[str]] = []
-
-        def run(self, args: list[str]) -> str:
-            self.calls.append(list(args))
-            if args[0] == "list":
-                return (BEADS_DIR / "list.json").read_text(encoding="utf-8")
-            if args[0] == "create":
-                return "t-new\n"
-            return ""
-
-    runner = _ListThenCreate()
+    runner = support.CreateAnswers(
+        listing=(BEADS_DIR / "list.json").read_text(encoding="utf-8"), created="t-new\n"
+    )
     record = TrackerRecord(
         id="demo-E1-s4",
         kind="slice",
@@ -385,21 +301,6 @@ def test_create_record_closed_slice_keeps_parent_assignee_blocker_and_envelope()
 
 
 
-def _scratch_tracker(root: Path) -> Path:
-    origin = root / "origin.git"
-    seed = root / "seed"
-    seed.mkdir()
-    _run(["git", "init", "--bare", "-q", str(origin)], root)
-    _run(["git", "init", "-q", "-b", "main"], seed)
-    _run(["git", "commit", "-q", "--allow-empty", "-m", "seed"], seed)
-    _run(["git", "remote", "add", "origin", str(origin)], seed)
-    _run(["git", "push", "-q", "origin", "main"], seed)
-    _run(["bd", "init", "--skip-agents", "--skip-hooks", "-p", "demo", "--non-interactive"], seed)
-    _run(["bd", "config", "set", "team.enabled", "true"], seed)
-    _run(["bd", "config", "set", "team.sync_branch", "main"], seed)
-    return seed
-
-
 def _copy_plans(root: Path) -> Path:
     plans = root / "plans"
     plans.mkdir()
@@ -408,8 +309,7 @@ def _copy_plans(root: Path) -> Path:
 
 
 def test_seed_closes_records_whose_files_say_closed() -> None:
-    if shutil.which("bd") is None:
-        raise AssertionError("bd is not on PATH. This test needs bd 1.3.0 and fails without it.")
+    support.require_bd()
 
     from tracker_port.beads import BeadsAdapter
     from tracker_port.bd_runner import BdRunner
@@ -432,8 +332,7 @@ def test_seed_closes_records_whose_files_say_closed() -> None:
 
 
 def test_seed_repairs_an_open_record_whose_files_now_say_closed() -> None:
-    if shutil.which("bd") is None:
-        raise AssertionError("bd is not on PATH. This test needs bd 1.3.0 and fails without it.")
+    support.require_bd()
 
     from tracker_port.beads import BeadsAdapter
     from tracker_port.bd_runner import BdRunner
@@ -470,8 +369,7 @@ def test_seed_repairs_an_open_record_whose_files_now_say_closed() -> None:
 
 
 def test_seed_closes_a_slice_blocked_by_a_completed_slice() -> None:
-    if shutil.which("bd") is None:
-        raise AssertionError("bd is not on PATH. This test needs bd 1.3.0 and fails without it.")
+    support.require_bd()
 
     from tracker_port.beads import BeadsAdapter
     from tracker_port.bd_runner import BdRunner
@@ -500,8 +398,7 @@ def test_seed_closes_a_slice_blocked_by_a_completed_slice() -> None:
 
 
 def test_create_record_round_trip_on_real_bd() -> None:
-    if shutil.which("bd") is None:
-        raise AssertionError("bd is not on PATH. This test needs bd 1.3.0.")
+    support.require_bd()
 
     from tracker_port.beads import BeadsAdapter
     from tracker_port.bd_runner import BdRunner
@@ -547,8 +444,7 @@ def test_create_record_round_trip_on_real_bd() -> None:
 
 
 def test_seed_repair_closes_two_slices_that_turn_completed_on_real_bd() -> None:
-    if shutil.which("bd") is None:
-        raise AssertionError("bd is not on PATH. This test needs bd 1.3.0.")
+    support.require_bd()
 
     from tracker_port.beads import BeadsAdapter
     from tracker_port.bd_runner import BdRunner

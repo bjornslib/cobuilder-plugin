@@ -10,17 +10,15 @@ from __future__ import annotations
 
 import json
 import re
-import shutil
-import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "shared"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _bundle_meta import DESIGN_STAGES  # noqa: E402
+import _tracker_port_support as support  # noqa: E402
 
-TRACKER_CLI = ROOT / "shared" / "tracker.py"
-FIXTURE = ROOT / "tests" / "fixtures" / "tracker" / "write-model"
 PROGRAM = "wm-demo"
 EPIC = "wm-demo/E1"
 
@@ -28,52 +26,20 @@ ARCHITECT = ROOT / "plugins" / "architect"
 SKILL = ARCHITECT / "skills" / "architecture"
 DESIGN_MODE = SKILL / "references" / "design-mode.md"
 PROSE_FILES = [SKILL / "SKILL.md", DESIGN_MODE]
-OP_RE = re.compile(r"tracker\.py\s+(?:--[a-z-]+(?:\s+\S+)?\s+)*([a-z][a-z-]+)")
+OP_RE = support.OP_RE
+_cli = support.cli
+_ok = support.ok
 
 
 def _repo(tmp_path: Path) -> tuple[Path, Path]:
     """Copy the fixture. Gates 1 and 2 are absent and gate 2b is n/a. Return config and plans root."""
-    corpus = tmp_path / "corpus"
-    plans = tmp_path / "plans"
-    shutil.copytree(FIXTURE, corpus, ignore=shutil.ignore_patterns("plans"))
-    shutil.copytree(FIXTURE / "plans", plans)
+    corpus, plans = support.copy_write_model(tmp_path)
     program_file = corpus / "program.json"
     records = json.loads(program_file.read_text(encoding="utf-8"))
     records[0]["envelope"] = {"gate2b": "n/a"}
     program_file.write_text(json.dumps(records), encoding="utf-8")
-    state = tmp_path / "state" / "tracker-state.json"
-    config = tmp_path / ".cobuilder" / "tracker.yaml"
-    config.parent.mkdir(parents=True)
-    config.write_text(
-        "adapter: fake\n"
-        f"corpus: {json.dumps(str(corpus))}\n"
-        f"state_file: {json.dumps(str(state))}\n",
-        encoding="utf-8",
-    )
+    config, _ = support.write_fake_config(tmp_path, corpus)
     return config, plans
-
-
-def _cli(config: Path, cwd: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        ["uv", "run", str(TRACKER_CLI), "--config", str(config), *args],
-        cwd=cwd, capture_output=True, text=True, timeout=180, check=False,
-    )
-
-
-def _ok(result: subprocess.CompletedProcess[str]) -> object:
-    assert result.returncode == 0, result.stderr + result.stdout
-    body = json.loads(result.stdout)
-    assert body["ok"] is True, result.stdout
-    return body["result"]
-
-
-def _cli_ops() -> set[str]:
-    out = subprocess.run(
-        ["uv", "run", str(TRACKER_CLI), "--help"], capture_output=True, text=True, timeout=180, check=True
-    ).stdout
-    match = re.search(r"\{([a-z,-]+)\}", out)
-    assert match, out
-    return set(match.group(1).split(","))
 
 
 # --- behavior ---------------------------------------------------------------
@@ -115,12 +81,7 @@ def test_architect_manifest_versions_match() -> None:
 
 
 def test_every_tracker_op_named_in_prose_is_a_cli_operation() -> None:
-    ops = _cli_ops()
-    for path in PROSE_FILES:
-        assert path.is_file(), f"missing {path.relative_to(ROOT)}"
-        named = OP_RE.findall(path.read_text(encoding="utf-8"))
-        unknown = sorted(set(named) - ops)
-        assert not unknown, f"{path.relative_to(ROOT)} names unknown operations {unknown}"
+    support.assert_prose_ops_exist(PROSE_FILES)
 
 
 def test_design_mode_names_the_write_operations() -> None:

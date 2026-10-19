@@ -12,12 +12,13 @@ import sys
 from pathlib import Path
 from typing import Any
 
-SHARED_DIR = Path(__file__).resolve().parent.parent / "shared"
-sys.path.insert(0, str(SHARED_DIR))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _beads_support as support  # noqa: E402
+from _beads_support import BEADS_DIR  # noqa: E402
 
-FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "tracker"
-TRANSCRIPT_DIR = FIXTURE_DIR / "beads" / "transcripts"
+TRANSCRIPT_DIR = BEADS_DIR / "transcripts"
 BD_VERSION_PREFIX = "bd version 1.3.0"
+SequenceRunner = support.SequenceRunner
 
 
 def _load(name: str) -> dict[str, Any]:
@@ -26,24 +27,6 @@ def _load(name: str) -> dict[str, Any]:
 
 def _metadata_arg(args: list[str]) -> dict[str, Any]:
     return json.loads(args[args.index("--metadata") + 1])
-
-
-class SequenceRunner:
-    """Answers each recorded argument list in order. It fails on any other call."""
-
-    def __init__(self, steps: list[dict[str, Any]]) -> None:
-        self.steps = steps
-        self.calls: list[list[str]] = []
-
-    def run(self, args: list[str]) -> str:
-        self.calls.append(list(args))
-        step = self.steps[len(self.calls) - 1]
-        assert list(args) == step["args"], f"unexpected bd call: {args}"
-        if step.get("exit", 0) != 0:
-            from tracker_port.bd_runner import BdError
-
-            raise BdError("bd failed", step["exit"], step["stderr"])
-        return step["stdout"]
 
 
 def test_transcripts_record_bd_1_3_0() -> None:

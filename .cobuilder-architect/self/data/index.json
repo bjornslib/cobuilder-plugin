@@ -1,7 +1,7 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "9c9cf5112a8e5543afba88b15a994108b775738d",
+    "git_head": "c8e1f1f169edd1b59ef6b0f96e0dfea6f3018a70",
     "trees": {
       "docs/architecture/adr": "sha256:54467e271802fa891e34a4e971d58caebed03734735ab3833cab9cc932105893",
       "docs/architecture/designs": "sha256:cd0a8ef689e2a5fda1361bd5976a491c5e785400f940eaf7429b407986b08a12",
@@ -374,7 +374,7 @@
         "id": "beads-storage/E2",
         "design": "beads-storage",
         "epic_id": "E2",
-        "branch": null,
+        "branch": "design/beads-storage/tracker-port",
         "pr": null,
         "state": null,
         "note": null,
@@ -384,7 +384,7 @@
         "id": "beads-storage/E3",
         "design": "beads-storage",
         "epic_id": "E3",
-        "branch": null,
+        "branch": "design/beads-storage/tracker-port",
         "pr": null,
         "state": null,
         "note": null,
@@ -394,7 +394,7 @@
         "id": "beads-storage/E4",
         "design": "beads-storage",
         "epic_id": "E4",
-        "branch": null,
+        "branch": "design/beads-storage/tracker-port",
         "pr": null,
         "state": null,
         "note": null,
@@ -6220,9 +6220,9 @@
     },
     "epic_status": {
       "beads-storage/E1": "no-pull-request",
-      "beads-storage/E2": "unstarted",
-      "beads-storage/E3": "unstarted",
-      "beads-storage/E4": "unstarted",
+      "beads-storage/E2": "no-pull-request",
+      "beads-storage/E3": "no-pull-request",
+      "beads-storage/E4": "no-pull-request",
       "beads-storage/E5": "unstarted",
       "book-index-tiering/E1": "open",
       "build-workflow-polish/E1": "unstarted",

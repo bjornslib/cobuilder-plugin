@@ -8,12 +8,11 @@ import json
 import sys
 from pathlib import Path
 
-SHARED_DIR = Path(__file__).resolve().parent.parent / "shared"
-sys.path.insert(0, str(SHARED_DIR))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _tracker_port_support as support  # noqa: E402
 
-FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "tracker"
-CORPUS_DIR = FIXTURE_DIR / "corpus"
-EXPECTED_INDEX = FIXTURE_DIR / "expected-index.json"
+CORPUS_DIR = support.CORPUS
+EXPECTED_INDEX = support.EXPECTED_INDEX
 
 
 def test_golden_index() -> None:
@@ -22,12 +21,7 @@ def test_golden_index() -> None:
     from tracker_port.projector import project
 
     adapter = FakeAdapter(CORPUS_DIR)
-    records = [
-        *adapter.list_programs(),
-        *adapter.list_epics(),
-        *adapter.list_slices(),
-        *adapter.list_pull_requests(),
-    ]
+    records = support.all_records(adapter)
     expected = json.loads(EXPECTED_INDEX.read_text(encoding="utf-8"))
 
     assert project(records) == expected

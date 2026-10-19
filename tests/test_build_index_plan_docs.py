@@ -6,22 +6,17 @@ feature gates join Gate 1 and Gate 2 to their documents.
 """
 from __future__ import annotations
 
-import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "shared"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _tracker_port_support as support  # noqa: E402
 
 import build_index  # noqa: E402
 
 
-def init_repo(repo: Path) -> None:
-    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
-    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo, check=True)
-    subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True)
-    (repo / "README.md").write_text("placeholder\n")
-    subprocess.run(["git", "add", "."], cwd=repo, check=True)
-    subprocess.run(["git", "commit", "-q", "-m", "init"], cwd=repo, check=True)
+init_repo = support.init_git_repo
 
 
 def write_doc(repo: Path, slug: str, name: str, title: str) -> Path:

@@ -299,6 +299,12 @@ result to the engineer per step 5 below.
    `build_diagrams.py`. That script keys on a PR number. The subagent
    uses the same mermaid dual-path guard as §6.
 
+   The orchestrating Claude does not write the `.mmd` files itself. Spawn one
+   subagent. Give it the intent, the ADR draft, and
+   `<bundle-dir>/inventory.yaml`, and the three output paths. Require it to
+   return only the paths it wrote. If validation of a source file fails, send
+   the failure back to the same subagent. Do not hand-patch the files.
+
    The diagrams also include the named slot
    `diagrams/runtime-architecture.svg`: an authored inline SVG per
    `references/runtime-architecture-diagram.md`, validated by
@@ -329,6 +335,12 @@ result to the engineer per step 5 below.
 5. **Intent and assessment.** Write `intent.json` and a
    `stage: "design"` assessment into `docs/architecture/designs/<name>/`.
    Show both to the engineer before you write them to disk.
+
+6. **Start the viewer.** Run `uv run "${CLAUDE_PLUGIN_ROOT}/shared/build_index.py"`,
+   then invoke `Skill("cobuilder-artifacts", args="view")`, so the engineer
+   sees the draft before stage 6. View mode reuses a running server. Follow
+   Present for review with the route `#/<work>/intent`, and give the engineer
+   the link.
 
 `contracts.md` is an optional artifact beside those five. Write it when and
 only when the design touches a public interface or durable state. It carries
@@ -412,12 +424,7 @@ Write workflow state only through the tracker script. [shared/tracker-usage.md](
 2. When the engineer decides or approves the design, run `tracker.py set-program-stage <program> <stage>`. The stage is one of the stages in the table in section 12.
 3. Run `tracker.py regenerate-status-files <program> --plans-dir <dir>` to refresh `00-status.md`. Do not edit `00-status.md` by hand.
 
-Each call exits with a code. Branch on the code only, and never parse the message.
-
-- `0`: the call succeeded.
-- `2`: the call is refused because no adapter is set. Stop, and tell the engineer to run `/cobuilder-full-lifecycle:install`.
-- `3`: the adapter failed. Read the message for the cause, and tell the engineer.
-- `4`: the arguments are not valid. Correct the call and run it again.
+Each call exits with a code. Branch on the code only, and never parse the message. [Failure and refusal](../../../../../shared/tracker-usage.md#failure-and-refusal) lists the exit codes.
 
 ## 11. Stage 7 — Branch
 

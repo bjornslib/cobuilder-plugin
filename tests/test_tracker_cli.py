@@ -6,12 +6,16 @@ missing adapter, and changes no file.
 
 from __future__ import annotations
 
-import shutil
-import hashlib
 import json
+import shutil
 import subprocess
+import sys
 from pathlib import Path
+
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _tracker_port_support as support  # noqa: E402
 
 REPO_DIR = Path(__file__).resolve().parent.parent
 TRACKER_CLI = REPO_DIR / "shared" / "tracker.py"
@@ -20,15 +24,7 @@ CORPUS_DIR = FIXTURES_DIR / "corpus"
 PLANS_DIR = FIXTURES_DIR / "plans"
 
 
-def _snapshot(root: Path) -> dict[str, str]:
-    # Map each file's relative path to a digest of its bytes. A missing root is an empty snapshot.
-    if not root.exists():
-        return {}
-    return {
-        str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest()
-        for path in sorted(root.rglob("*"))
-        if path.is_file()
-    }
+_snapshot = support.snapshot
 
 
 def test_write_without_adapter_exits_2_and_changes_no_file(tmp_path: Path) -> None:
@@ -86,23 +82,8 @@ def _cfg(tmp_path: Path, corpus: Path = CORPUS_DIR, state_file: Path | None = No
     return config
 
 
-def _cli(config: Path, cwd: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        ["uv", "run", str(TRACKER_CLI), "--config", str(config), *args],
-        cwd=cwd,
-        capture_output=True,
-        text=True,
-        timeout=180,
-        check=False,
-    )
-
-
-def _payload(result: subprocess.CompletedProcess[str]) -> object:
-    # A success prints {"ok": true, "result": ...} on stdout.
-    assert result.returncode == 0, result.stderr
-    body = json.loads(result.stdout)
-    assert body["ok"] is True, result.stdout
-    return body["result"]
+_cli = support.cli
+_payload = support.ok
 
 
 def test_list_programs_prints_corpus_ids(tmp_path: Path) -> None:

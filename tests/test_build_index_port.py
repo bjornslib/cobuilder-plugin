@@ -16,6 +16,8 @@ from pathlib import Path
 
 SHARED_DIR = Path(__file__).resolve().parent.parent / "shared"
 sys.path.insert(0, str(SHARED_DIR))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _tracker_port_support as support  # noqa: E402
 
 import build_index  # noqa: E402
 from tracker_port import projector  # noqa: E402
@@ -117,13 +119,7 @@ FAKE_EXPECTED = [
 ]
 
 
-def init_repo(repo: Path) -> None:
-    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
-    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo, check=True)
-    subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True)
-    (repo / "README.md").write_text("placeholder\n")
-    subprocess.run(["git", "add", "."], cwd=repo, check=True)
-    subprocess.run(["git", "commit", "-q", "-m", "init"], cwd=repo, check=True)
+init_repo = support.init_git_repo
 
 
 def make_repo(tmp_path: Path, plan_sources: list[Path]) -> Path:

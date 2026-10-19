@@ -16,14 +16,15 @@ from typing import Any
 
 import pytest
 
-REPO = Path(__file__).resolve().parent.parent
-SHARED_DIR = REPO / "shared"
-TESTS_DIR = REPO / "tests"
-sys.path.insert(0, str(SHARED_DIR))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _tracker_port_support as support  # noqa: E402
 
-FIXTURES = TESTS_DIR / "fixtures" / "tracker"
-PLANS_DIR = FIXTURES / "plans"
-CORPUS_DIR = FIXTURES / "corpus"
+REPO = support.REPO_ROOT
+SHARED_DIR = support.SHARED_DIR
+TESTS_DIR = support.TESTS_DIR
+FIXTURES = support.FIXTURES
+PLANS_DIR = support.PLANS_DIR
+CORPUS_DIR = support.CORPUS
 DRY_RUN = FIXTURES / "backfill" / "dry_run.txt"
 BACKFILL_REF = SHARED_DIR / "tracker-backfill.md"
 

@@ -6,8 +6,8 @@ from pathlib import Path
 
 import yaml
 
-from .beads import BeadsAdapter
 from .bd_runner import BdRunner
+from .beads import BeadsAdapter
 from .fake import FakeAdapter
 from .files import FilesAdapter
 from .port import AdapterError, NoAdapterError, TrackerPort

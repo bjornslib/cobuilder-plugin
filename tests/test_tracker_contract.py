@@ -15,11 +15,11 @@ from typing import Any, Callable
 
 import pytest
 
-SHARED_DIR = Path(__file__).resolve().parent.parent / "shared"
-sys.path.insert(0, str(SHARED_DIR))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _tracker_port_support as support  # noqa: E402
 
-CORPUS_DIR = Path(__file__).resolve().parent / "fixtures" / "tracker" / "corpus"
-EXPECTED_INDEX = CORPUS_DIR.parent / "expected-index.json"
+CORPUS_DIR = support.CORPUS
+EXPECTED_INDEX = support.EXPECTED_INDEX
 BEADS_TRANSCRIPT = CORPUS_DIR.parent / "beads" / "transcripts" / "list.json"
 
 READY_KINDS = ("program", "epic", "slice")
@@ -365,12 +365,7 @@ def test_contract_case_7_projector_parity(adapter_id: str) -> None:
     from tracker_port.projector import project
 
     adapter = READ_ADAPTER_BUILDERS[adapter_id](CORPUS_DIR)
-    records = [
-        *adapter.list_programs(),
-        *adapter.list_epics(),
-        *adapter.list_slices(),
-        *adapter.list_pull_requests(),
-    ]
+    records = support.all_records(adapter)
     expected = json.loads(EXPECTED_INDEX.read_text(encoding="utf-8"))
 
     assert project(records) == expected

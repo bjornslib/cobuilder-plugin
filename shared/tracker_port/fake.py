@@ -4,64 +4,23 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, replace
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from .fake_support import (
+    CORPUS_FILES,
+    READY_KINDS,
+    check_lifecycle,
+    envelope_refreshes,
+    is_ready,
+    load_corpus,
+    load_state,
+    now,
+)
 from .files import seedable_records
 from .port import AdapterError, ArgumentError
+from .record import Capabilities, Kind, TrackerRecord
 from .regenerate import regenerate
-from .record import Capabilities, Kind, TrackerRecord, merge_refresh_envelope
-
-CORPUS_FILES = ("program.json", "epics.json", "slices.json", "prs.json")
-READY_KINDS = ("program", "epic", "slice")
-LIFECYCLES = ("open", "in_progress", "closed")
-
-
-def _record(row: dict[str, Any]) -> TrackerRecord:
-    # JSON lists become tuples, so each record holds the same types that an adapter returns.
-    envelope = {
-        key: tuple(value) if isinstance(value, list) else value
-        for key, value in row["envelope"].items()
-    }
-    return TrackerRecord(
-        id=row["id"],
-        kind=row["kind"],
-        parent=row["parent"],
-        blocked_by=tuple(row["blocked_by"]),
-        lifecycle=row["lifecycle"],
-        assignee=row["assignee"],
-        envelope=envelope,
-        external_ref=row["external_ref"],
-    )
-
-
-def _load(corpus_dir: Path, name: str) -> list[TrackerRecord]:
-    try:
-        data = json.loads((corpus_dir / name).read_text(encoding="utf-8"))
-        rows = data if isinstance(data, list) else [data]
-        return [_record(row) for row in rows]
-    except (OSError, ValueError, KeyError, TypeError) as error:
-        raise AdapterError(f"cannot read corpus file {name}: {error}") from error
-
-
-def _load_state(path: Path) -> tuple[list[TrackerRecord], dict[str, list[tuple[str, str]]]]:
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-        records = [_record(row) for row in data["records"]]
-        notes = {key: [tuple(item) for item in items] for key, items in data["notes"].items()}
-    except (OSError, ValueError, KeyError, TypeError) as error:
-        raise AdapterError(f"cannot read state file {path}: {error}") from error
-    return records, notes
-
-
-def _check_lifecycle(state: str) -> None:
-    if state not in LIFECYCLES:
-        raise ArgumentError(f"state must be one of {', '.join(LIFECYCLES)}, not {state}")
-
-
-def _now() -> str:
-    return datetime.now(UTC).isoformat(timespec="seconds")
 
 
 class FakeAdapter:
@@ -78,9 +37,9 @@ class FakeAdapter:
             raise AdapterError(f"corpus directory not found: {corpus_dir}")
         self._state_file = state_file
         if state_file is not None and state_file.is_file():
-            self._records, self._notes = _load_state(state_file)
+            self._records, self._notes = load_state(state_file)
         else:
-            self._records = [record for name in CORPUS_FILES for record in _load(corpus_dir, name)]
+            self._records = [record for name in CORPUS_FILES for record in load_corpus(corpus_dir, name)]
             self._notes = {}
 
     def _commit(self) -> None:
@@ -98,7 +57,7 @@ class FakeAdapter:
         known = {record.external_ref for record in self._records}
         found, self.seed_conflicts = seedable_records(plans_dir)
         creates = [record for record in found if record.external_ref not in known]
-        refreshed = self._envelope_refreshes(found) if refresh_envelope else {}
+        refreshed = envelope_refreshes(self._records, found) if refresh_envelope else {}
         if not dry_run:
             self._records = [refreshed.get(record.id, record) for record in self._records] + creates
             # A refresh with nothing to change writes nothing.
@@ -108,19 +67,6 @@ class FakeAdapter:
 
     def regenerate_status_files(self, program: str, plans_dir: Path) -> list[Path]:
         return regenerate(self, program, plans_dir)
-
-    def _envelope_refreshes(self, found: list[TrackerRecord]) -> dict[str, TrackerRecord]:
-        # Merge the file envelope over the held one, so runtime keys the file lacks survive.
-        current = {record.id: record for record in self._records}
-        refreshed: dict[str, TrackerRecord] = {}
-        for record in found:
-            held = current.get(record.id)
-            if held is None:
-                continue
-            envelope = merge_refresh_envelope(held.envelope, record.envelope)
-            if envelope != held.envelope:
-                refreshed[record.id] = replace(held, envelope=envelope)
-        return refreshed
 
     def _of_kind(self, kind: Kind) -> list[TrackerRecord]:
         return [record for record in self._records if record.kind == kind]
@@ -172,7 +118,7 @@ class FakeAdapter:
         return [
             record
             for record in self._of_kind(kind)
-            if (under is None or record.parent == under) and _is_ready(record, by_id)
+            if (under is None or record.parent == under) and is_ready(record, by_id)
         ]
 
     def sync(self) -> None:
@@ -188,7 +134,7 @@ class FakeAdapter:
         return self._update(program, "program", envelope={gate: value})
 
     def set_epic_state(self, epic: str, state: str, branch: str | None = None) -> TrackerRecord:
-        _check_lifecycle(state)
+        check_lifecycle(state)
         envelope = {} if branch is None else {"branch": branch}
         return self._update(epic, "epic", lifecycle=state, envelope=envelope)
 
@@ -199,7 +145,7 @@ class FakeAdapter:
         score: float | None = None,
         attempts: int | None = None,
     ) -> TrackerRecord:
-        _check_lifecycle(state)
+        check_lifecycle(state)
         envelope: dict[str, Any] = {}
         if score is not None:
             envelope["score"] = score
@@ -215,7 +161,7 @@ class FakeAdapter:
 
     def add_note(self, id: str, text: str) -> None:
         self._record_of(id)
-        self._notes.setdefault(id, []).append((_now(), text))
+        self._notes.setdefault(id, []).append((now(), text))
         self._commit()
 
     def escalate(self, id: str, score: float, reason: str) -> TrackerRecord:
@@ -248,13 +194,3 @@ class FakeAdapter:
     def set_pull_request_state(self, ref: str, merged: bool) -> TrackerRecord:
         return self._update(ref, "pr", lifecycle="closed" if merged else "open")
 
-
-def _is_ready(record: TrackerRecord, by_id: dict[str, TrackerRecord]) -> bool:
-    # ADR-0040 ready rule, as the epic design states it for slice 1: open, not deferred,
-    # and every blocker closed. A missing blocker counts as not closed.
-    if record.lifecycle != "open" or "deferred" in record.envelope:
-        return False
-    return all(
-        blocker in by_id and by_id[blocker].lifecycle == "closed"
-        for blocker in record.blocked_by
-    )

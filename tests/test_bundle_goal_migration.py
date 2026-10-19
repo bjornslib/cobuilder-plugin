@@ -17,6 +17,8 @@ import pytest
 REPO = Path(__file__).resolve().parent.parent
 SHARED_DIR = REPO / "shared"
 sys.path.insert(0, str(SHARED_DIR))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _tracker_port_support as support  # noqa: E402
 
 import _bundle_meta  # noqa: E402
 import migrate_bundle as mb  # noqa: E402
@@ -43,11 +45,7 @@ def make_bundle_repo(tmp_path: Path) -> tuple[Path, Path]:
     (repo / DESIGN / "intent.json").write_text(
         json.dumps({"problem": "Authored problem", "approach": "Authored approach"}), encoding="utf-8"
     )
-    for args in (["init", "-q"], ["config", "user.email", "t@example.com"], ["config", "user.name", "T"]):
-        subprocess.run(["git", *args], cwd=repo, check=True)
-    (repo / "README.md").write_text("placeholder\n")
-    subprocess.run(["git", "add", "."], cwd=repo, check=True)
-    subprocess.run(["git", "commit", "-q", "-m", "init"], cwd=repo, check=True)
+    support.init_git_repo(repo)
     bundle = repo / ".cobuilder-architect" / "self"
     (bundle / "data").mkdir(parents=True)
     (bundle / "data" / "story.json").write_text(json.dumps(STORY, indent=2) + "\n", encoding="utf-8")

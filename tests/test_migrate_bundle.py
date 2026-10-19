@@ -28,6 +28,33 @@ def minimal_story(schema_version: str) -> dict:
     return {"meta": {"schema_version": schema_version}, "world": {"districts": []}, "timeline": []}
 
 
+def make_current_bundle_with_stale_viewer(tmp_path: Path) -> Path:
+    bundle_dir = make_bundle(
+        tmp_path,
+        {
+            "bundle_format": _bundle_meta.CURRENT_BUNDLE_FORMAT,
+            "schema_version": _bundle_meta.SCHEMA_VERSION,
+            "min_reader_schema": _bundle_meta.SCHEMA_VERSION,
+            "generators": {"cobuilder-architect": "9.9.9"},
+        },
+        minimal_story(_bundle_meta.SCHEMA_VERSION),
+    )
+    (bundle_dir / "viewer").mkdir(parents=True)
+    (bundle_dir / "viewer" / "index.html").write_text("this is stale content, not the real viewer")
+    return bundle_dir
+
+
+def make_artifact_cache(tmp_path: Path, versions: tuple[str, ...]) -> Path:
+    """Write a viewer for each version under tmp_path/artifact. Return a plugin root with no viewer."""
+    fake_plugin_root = tmp_path / "someplugin"
+    (fake_plugin_root / "shared").mkdir(parents=True)
+    for version in versions:
+        viewer_dir = tmp_path / "artifact" / version / "viewer"
+        viewer_dir.mkdir(parents=True)
+        (viewer_dir / "index.html").write_text(f"viewer {version}")
+    return fake_plugin_root
+
+
 # --- C3: scalar generator_version becomes a map, old value preserved ---
 
 
@@ -157,18 +184,7 @@ def test_backup_written_before_new_story(tmp_path):
 
 
 def test_viewer_refreshes_even_at_current_version(tmp_path):
-    bundle_dir = make_bundle(
-        tmp_path,
-        {
-            "bundle_format": _bundle_meta.CURRENT_BUNDLE_FORMAT,
-            "schema_version": _bundle_meta.SCHEMA_VERSION,
-            "min_reader_schema": _bundle_meta.SCHEMA_VERSION,
-            "generators": {"cobuilder-architect": "9.9.9"},
-        },
-        minimal_story(_bundle_meta.SCHEMA_VERSION),
-    )
-    (bundle_dir / "viewer").mkdir(parents=True)
-    (bundle_dir / "viewer" / "index.html").write_text("this is stale content, not the real viewer")
+    bundle_dir = make_current_bundle_with_stale_viewer(tmp_path)
 
     # Only artifact ships viewer/index.html. In an installed
     # cache, shared/migrate_bundle.py sits at <plugin>/shared/, so
@@ -203,12 +219,7 @@ def test_find_viewer_source_returns_none_without_any_probe_hit(tmp_path, monkeyp
 def test_find_viewer_source_resolves_marketplace_cache(tmp_path, monkeypatch):
     """A non-artifact plugin's installed cache has no viewer of its own.
     The sibling artifact plugin cache does, and the highest version wins."""
-    fake_plugin_root = tmp_path / "someplugin"
-    (fake_plugin_root / "shared").mkdir(parents=True)
-    for version in ("0.5.0", "0.6.0"):
-        viewer_dir = tmp_path / "artifact" / version / "viewer"
-        viewer_dir.mkdir(parents=True)
-        (viewer_dir / "index.html").write_text(f"viewer {version}")
+    fake_plugin_root = make_artifact_cache(tmp_path, ("0.5.0", "0.6.0"))
 
     monkeypatch.setattr(mb, "PLUGIN_ROOT", fake_plugin_root)
     resolved = mb.find_viewer_source()
@@ -218,12 +229,7 @@ def test_find_viewer_source_resolves_marketplace_cache(tmp_path, monkeypatch):
 def test_find_viewer_source_marketplace_cache_sorts_versions_numerically(tmp_path, monkeypatch):
     """0.10.0 must win over 0.9.0, so the sort key is dotted integers, not
     the lexicographic string order that would put 0.10.0 below 0.9.0."""
-    fake_plugin_root = tmp_path / "someplugin"
-    (fake_plugin_root / "shared").mkdir(parents=True)
-    for version in ("0.9.0", "0.10.0"):
-        viewer_dir = tmp_path / "artifact" / version / "viewer"
-        viewer_dir.mkdir(parents=True)
-        (viewer_dir / "index.html").write_text(f"viewer {version}")
+    fake_plugin_root = make_artifact_cache(tmp_path, ("0.9.0", "0.10.0"))
 
     monkeypatch.setattr(mb, "PLUGIN_ROOT", fake_plugin_root)
     resolved = mb.find_viewer_source()
@@ -233,18 +239,7 @@ def test_find_viewer_source_marketplace_cache_sorts_versions_numerically(tmp_pat
 def test_main_warns_when_no_viewer_source_found(tmp_path, monkeypatch, capsys):
     """A stale bundle viewer with no viewer source anywhere must print a
     loud warning naming missing-source, even when nothing else changes."""
-    bundle_dir = make_bundle(
-        tmp_path,
-        {
-            "bundle_format": _bundle_meta.CURRENT_BUNDLE_FORMAT,
-            "schema_version": _bundle_meta.SCHEMA_VERSION,
-            "min_reader_schema": _bundle_meta.SCHEMA_VERSION,
-            "generators": {"cobuilder-architect": "9.9.9"},
-        },
-        minimal_story(_bundle_meta.SCHEMA_VERSION),
-    )
-    (bundle_dir / "viewer").mkdir(parents=True)
-    (bundle_dir / "viewer" / "index.html").write_text("this is stale content, not the real viewer")
+    bundle_dir = make_current_bundle_with_stale_viewer(tmp_path)
 
     plugin_root = tmp_path / "architect"
     (plugin_root / "shared").mkdir(parents=True)

@@ -135,14 +135,9 @@ tracker.py escalate <id> <score> <reason>
 tracker.py regenerate-status-files <program> --plans-dir <dir>
 ```
 
-Run `record-attempt` after each failed attempt. Run `set-slice-state` and then `regenerate-status-files` after a pass. Run `escalate` after an escalation. Each call exits with a code. Branch on the code only, and never parse the message.
+Run `record-attempt` after each failed attempt. Run `set-slice-state` and then `regenerate-status-files` after a pass. Run `escalate` after an escalation.
 
-- `0`: the call succeeded.
-- `2`: the call is refused because no adapter is set. Stop, and tell the engineer to run `/cobuilder-full-lifecycle:install`.
-- `3`: the adapter failed. Read the message for the cause, and tell the engineer.
-- `4`: the arguments are not valid. Correct the call and run it again.
-
-[shared/tracker-usage.md](../../../../../shared/tracker-usage.md) lists every operation.
+Branch on the exit code only, and never parse the message. [shared/tracker-usage.md](../../../../../shared/tracker-usage.md) lists every operation, and its Failure and refusal section lists the exit codes.
 
 ## Handling the verdict
 

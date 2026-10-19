@@ -8,34 +8,28 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 import yaml
 
 SHARED_DIR = Path(__file__).resolve().parent.parent / "shared"
 sys.path.insert(0, str(SHARED_DIR))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _tracker_port_support as support  # noqa: E402
 
 import build_index  # noqa: E402
 
 
-def init_repo(repo: Path) -> None:
-    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
-    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo, check=True)
-    subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True)
-    (repo / "README.md").write_text("placeholder\n")
-    subprocess.run(["git", "add", "."], cwd=repo, check=True)
-    subprocess.run(["git", "commit", "-q", "-m", "init"], cwd=repo, check=True)
+init_repo = support.init_git_repo
 
 
-def write_adr(
-    repo: Path,
-    adr_id: str,
-    name: str,
-    state: str = "approved",
-    source_pr: int | None = None,
-    district: str | None = None,
-    related: list[str] | None = None,
-) -> None:
+def write_adr(repo: Path, adr_id: str, name: str, **opts: Any) -> None:
+    """Write one ADR. Options: state (approved), source_pr, district, related."""
+    state = opts.get("state", "approved")
+    source_pr = opts.get("source_pr")
+    district = opts.get("district")
+    related = opts.get("related")
     adr_dir = repo / "docs" / "architecture" / "adr"
     adr_dir.mkdir(parents=True, exist_ok=True)
     maps_to_lines = ["maps_to:", "  context: test-context"]
@@ -84,10 +78,11 @@ Some context.
     (adr_dir / f"{adr_id}-{name.lower().replace(' ', '-')}.md").write_text(text)
 
 
-def write_design(
-    repo: Path, design_id: str, epic_ids: list[str], branches: dict[str, str] | None = None,
-    adrs: list[str] | None = None, notes: dict[str, str] | None = None,
-) -> None:
+def write_design(repo: Path, design_id: str, epic_ids: list[str], **opts: Any) -> None:
+    """Write one design. Options: branches and notes (epic id to text), adrs (ADR ids)."""
+    branches = opts.get("branches")
+    adrs = opts.get("adrs")
+    notes = opts.get("notes")
     design_dir = repo / "docs" / "architecture" / "designs" / design_id
     design_dir.mkdir(parents=True, exist_ok=True)
     branches = branches or {}
@@ -434,6 +429,15 @@ def test_every_slice_declares_an_existing_epic(repo, bundle_dir):
 # --- C4b: no join guesses. A bare or unknown epic header is unresolved ---
 
 
+def _unresolved_reason(repo: Path, bundle_dir: Path, slice_id: str) -> str:
+    """Build the index, check the slice did not join an epic, and return its reason."""
+    index, _, _, failures = build_index.build_index(repo, bundle_dir)
+    assert failures == []
+
+    assert slice_id not in index["joins"]["slice_to_epic"]
+    return index["joins"]["slice_to_epic_unresolved"][slice_id]
+
+
 def test_a_bare_epic_header_id_is_unresolved_not_guessed(repo, bundle_dir):
     """Three designs in this repo can each declare epic ``E1``. A slice
     table header that carries the bare id, not the scoped one, must not
@@ -449,12 +453,7 @@ def test_a_bare_epic_header_id_is_unresolved_not_guessed(repo, bundle_dir):
         ],
     )
 
-    index, _, _, failures = build_index.build_index(repo, bundle_dir)
-    assert failures == []
-
-    assert "cobuilder-family/4" not in index["joins"]["slice_to_epic"]
-    reason = index["joins"]["slice_to_epic_unresolved"]["cobuilder-family/4"]
-    assert "bare id" in reason
+    assert "bare id" in _unresolved_reason(repo, bundle_dir, "cobuilder-family/4")
 
 
 def test_an_epic_header_naming_an_undeclared_epic_is_unresolved(repo, bundle_dir):
@@ -468,12 +467,7 @@ def test_an_epic_header_naming_an_undeclared_epic_is_unresolved(repo, bundle_dir
         ],
     )
 
-    index, _, _, failures = build_index.build_index(repo, bundle_dir)
-    assert failures == []
-
-    assert "cobuilder-family/4" not in index["joins"]["slice_to_epic"]
-    reason = index["joins"]["slice_to_epic_unresolved"]["cobuilder-family/4"]
-    assert "plugin-split/E9" in reason
+    assert "plugin-split/E9" in _unresolved_reason(repo, bundle_dir, "cobuilder-family/4")
 
 
 def test_all_fourteen_real_slices_resolve_from_the_scoped_id(repo, bundle_dir):

@@ -25,6 +25,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 SHARED_DIR = REPO / "shared"
 sys.path.insert(0, str(SHARED_DIR))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _tracker_port_support as support  # noqa: E402
 
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "tracker" / "epic-state"
 BUILD_SCRIPT = SHARED_DIR / "build_index.py"
@@ -35,11 +37,7 @@ EPIC_IDS = ["estate/E1", "estate/E2", "estate/E3"]
 def make_repo(tmp_path: Path, corpus: str | None = None) -> Path:
     repo = tmp_path / "repo"
     shutil.copytree(FIXTURE / "repo", repo)
-    for args in (["init", "-q"], ["config", "user.email", "t@example.com"], ["config", "user.name", "T"]):
-        subprocess.run(["git", *args], cwd=repo, check=True)
-    (repo / "README.md").write_text("placeholder\n")
-    subprocess.run(["git", "add", "."], cwd=repo, check=True)
-    subprocess.run(["git", "commit", "-q", "-m", "init"], cwd=repo, check=True)
+    support.init_git_repo(repo)
     if corpus is not None:
         corpus_dir = tmp_path / "corpus"
         shutil.copytree(FIXTURE / corpus, corpus_dir)

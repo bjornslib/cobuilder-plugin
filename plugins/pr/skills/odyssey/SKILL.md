@@ -64,12 +64,7 @@ Write workflow state only through the tracker script. [shared/tracker-usage.md](
 - After a human merges the PR, run `tracker.py set-pull-request-state <ref> merged`. Then run `tracker.py set-epic-state <epic> <state>`. The valid states are `open`, `in_progress`, and `closed`. Then run `tracker.py regenerate-status-files <program> --plans-dir <dir>`.
 - This skill never merges a PR.
 
-Each call exits with a code. Branch on the code only, and never parse the message.
-
-- `0`: the call succeeded.
-- `2`: the call is refused because no adapter is set. Stop, and tell the engineer to run `/cobuilder-full-lifecycle:install`.
-- `3`: the adapter failed. Read the message for the cause, and tell the engineer.
-- `4`: the arguments are not valid. Correct the call and run it again.
+Each call exits with a code. Branch on the code only, and never parse the message. [Failure and refusal](../../../../shared/tracker-usage.md#failure-and-refusal) lists the exit codes.
 
 ## Target resolution
 

@@ -175,18 +175,19 @@ def approval_word(value: str) -> str:
 def gate_approval(
     records: reader.PlanRecords | None,
     status_text: str | None,
-    pattern: re.Pattern[str],
-    key: str,
+    line: tuple[re.Pattern[str], str],
     absent: str,
     unrecorded: str = NOT_HELD,
 ) -> str:
     """Return the approval state of one gate.
 
+    `line` holds the status-line pattern and the envelope key of the gate.
     Under a store other than docs/plans, the program envelope holds the state,
     and `unrecorded` applies when the envelope has no key for the gate.
     Under docs/plans, the status line holds it, and `absent` applies when no
     line matches.
     """
+    pattern, key = line
     if records is not None and not records.from_files:
         if records.program is None or key not in records.program.envelope:
             return unrecorded
@@ -203,7 +204,7 @@ def check_2b_status(status_text: str | None, records: reader.PlanRecords | None 
     docs/plans/cobuilder-family and docs/plans/gate-doc-surfacing passing.
     A 2b line that is present and unapproved returns "pending".
     """
-    return gate_approval(records, status_text, gate_status.STATUS_2B_RE, "gate2b", "n/a", unrecorded="n/a")
+    return gate_approval(records, status_text, (gate_status.STATUS_2B_RE, "gate2b"), "n/a", unrecorded="n/a")
 
 
 def check_2b(plan_dir: Path, status_text: str | None, records: reader.PlanRecords | None = None) -> dict[str, str]:
@@ -306,7 +307,7 @@ def check_design_sections(text: str) -> str:
 
 
 def check_4b_approved(status_text: str | None, records: reader.PlanRecords | None = None) -> str:
-    return gate_approval(records, status_text, gate_status.STATUS_4B_RE, "gate4b", "pending")
+    return gate_approval(records, status_text, (gate_status.STATUS_4B_RE, "gate4b"), "pending")
 
 
 def check_4b(plan_dir: Path, slices: list[dict], status_text: str | None, records: reader.PlanRecords | None = None) -> dict[str, dict[str, str]]:
@@ -371,29 +372,11 @@ def check_links(status_text: str | None, records: reader.PlanRecords | None = No
     a date gets a result from its `gate_view_<n>` key. An absent key reads
     NOT_HELD. Gate 2b has no page, so it reads "n/a".
     """
-    results: dict[str, str] = {}
     if records is not None and not records.from_files:
-        envelope = records.program.envelope if records.program is not None else {}
-        for key, state in envelope.items():
-            if not key.startswith("gate") or key.startswith("gate_view_"):
-                continue
-            raw = key[len("gate"):]
-            if raw in GATE4_SUBSTEPS:
-                continue
-            date = gate_status.approved_date(str(state))
-            if date is None:
-                continue
-            gate = raw.lower()
-            view_key = f"gate_view_{raw}"
-            if gate in GATES_WITHOUT_PAGE or date < LINK_CUTOFF:
-                results[f"gate.{gate}"] = "n/a"
-            elif view_key not in envelope:
-                results[f"gate.{gate}"] = NOT_HELD
-            else:
-                results[f"gate.{gate}"] = "ok" if envelope[view_key] else "missing"
-        return results
+        return envelope_links(records)
     if status_text is None:
-        return results
+        return {}
+    results: dict[str, str] = {}
     for step in gate_status.parse_status_gates(status_text):
         date = gate_status.approved_date(step["state"])
         if date is None:
@@ -401,10 +384,30 @@ def check_links(status_text: str | None, records: reader.PlanRecords | None = No
         gate = step["n"].lower()
         if gate in GATES_WITHOUT_PAGE or date < LINK_CUTOFF:
             results[f"gate.{gate}"] = "n/a"
-        elif step["view"] is not None:
-            results[f"gate.{gate}"] = "ok"
         else:
-            results[f"gate.{gate}"] = "missing"
+            results[f"gate.{gate}"] = "ok" if step["view"] is not None else "missing"
+    return results
+
+
+def envelope_links(records: reader.PlanRecords) -> dict[str, str]:
+    """Return the link results read from the program envelope."""
+    results: dict[str, str] = {}
+    envelope = records.program.envelope if records.program is not None else {}
+    for key, state in envelope.items():
+        if not key.startswith("gate") or key.startswith("gate_view_"):
+            continue
+        raw = key[len("gate"):]
+        date = None if raw in GATE4_SUBSTEPS else gate_status.approved_date(str(state))
+        if date is None:
+            continue
+        gate = raw.lower()
+        view_key = f"gate_view_{raw}"
+        if gate in GATES_WITHOUT_PAGE or date < LINK_CUTOFF:
+            results[f"gate.{gate}"] = "n/a"
+        elif view_key not in envelope:
+            results[f"gate.{gate}"] = NOT_HELD
+        else:
+            results[f"gate.{gate}"] = "ok" if envelope[view_key] else "missing"
     return results
 
 
@@ -432,7 +435,7 @@ def flatten(prefix: str, results: dict) -> dict[str, str]:
     return flat
 
 
-def main() -> None:
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--plan", required=True, help="plan dir to verify, e.g. docs/plans/<slug>")
     parser.add_argument(
@@ -442,7 +445,77 @@ def main() -> None:
         "from the plan dir's basename)",
     )
     parser.add_argument("--json", action="store_true", help="emit machine-readable JSON instead of a table")
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def flatten_results(results: dict[str, dict]) -> dict[str, str]:
+    """Flatten the gate results into one "<gate>.<key>" -> value map."""
+    flat: dict[str, str] = {}
+    flat.update(flatten("4a.", results["4a"]))
+    for epic_id, entry in results["4b"].items():
+        flat.update(flatten(f"4b.{epic_id}.", entry))
+    flat.update(flatten("4c.", results["4c"]))
+    flat.update(flatten("2b.", results["2b"]))
+    flat.update(flatten("links.", results["links"]))
+    return flat
+
+
+def print_rows(entry: dict[str, str], indent: str) -> None:
+    for key, value in entry.items():
+        marker = "(ok)" if is_ok(value) else "(FAIL)"
+        print(f"{indent}{key:<20} {value:<30} {marker}")
+
+
+def print_table(slug: str, results: dict[str, dict], ok: bool) -> None:
+    print(f"Gate 2b and Gate 4 — {slug}")
+    print("--------")
+    print("2b. Interaction design")
+    print_rows(results["2b"], "  ")
+
+    print("\n4a. Slice plan")
+    print_rows(results["4a"], "  ")
+
+    print("\n4b. Epic technical solution designs")
+    if not results["4b"]:
+        print("  no epic carries more than one slice — nothing required")
+    for epic_id, entry in results["4b"].items():
+        print(f"  {epic_id}")
+        print_rows(entry, "    ")
+
+    print("\n4c. Blind rubrics")
+    print_rows(results["4c"], "  ")
+
+    print("\nViewer links (ADR-0032)")
+    print_rows(results["links"], "  ")
+
+    print(f"\nOverall: {'OK' if ok else 'FAIL'}")
+    if not ok:
+        print_remediation(results)
+
+
+def print_remediation(results: dict[str, dict]) -> None:
+    missing_designs = [
+        epic_id
+        for epic_id, entry in results["4b"].items()
+        if not is_ok(entry.get("design.file", "missing")) or not is_ok(entry.get("design.sections", "missing"))
+    ]
+    if missing_designs:
+        print(
+            "\nGate 4b is missing or incomplete for: " + ", ".join(missing_designs) + ".\n"
+            "remediation: write docs/plans/<slug>/epic-<epic-id>-design.md for each, "
+            "get user approval, and record it in 00-status.md."
+        )
+    if not all_ok(flatten("2b.", results["2b"])):
+        print(
+            "\nGate 2b is missing or incomplete.\n"
+            "remediation: run the design-to-code skill, write "
+            "docs/plans/<slug>/interaction-design.md and ui-spec.jsonc, "
+            "get user approval, and record it in 00-status.md."
+        )
+
+
+def main() -> None:
+    args = parse_args()
 
     plan_dir = Path(args.plan).resolve()
     if not plan_dir.exists():
@@ -465,87 +538,22 @@ def main() -> None:
     status_text = status_path.read_text() if records.from_files and status_path.exists() else None
 
     a_results, slices = check_4a(plan_dir, records)
-    b_results = check_4b(plan_dir, slices, status_text, records)
-    c_results = check_4c(rubrics_dir, slices)
-    b2_results = check_2b(plan_dir, status_text, records)
-    link_results = check_links(status_text, records)
-
-    flat = {}
-    flat.update(flatten("4a.", a_results))
-    for epic_id, entry in b_results.items():
-        flat.update(flatten(f"4b.{epic_id}.", entry))
-    flat.update(flatten("4c.", c_results))
-    flat.update(flatten("2b.", b2_results))
-    flat.update(flatten("links.", link_results))
-
-    ok = all_ok(flat)
+    results = {
+        "4a": a_results,
+        "4b": check_4b(plan_dir, slices, status_text, records),
+        "4c": check_4c(rubrics_dir, slices),
+        "2b": check_2b(plan_dir, status_text, records),
+        "links": check_links(status_text, records),
+    }
+    ok = all_ok(flatten_results(results))
 
     if args.json:
-        payload = {
-            "plan": str(plan_dir),
-            "rubrics_dir": str(rubrics_dir),
-            "4a": a_results,
-            "4b": b_results,
-            "4c": c_results,
-            "2b": b2_results,
-            "links": link_results,
-            "ok": ok,
-        }
+        payload = {"plan": str(plan_dir), "rubrics_dir": str(rubrics_dir), **results, "ok": ok}
         print(json.dumps(payload, indent=2, ensure_ascii=False))
     else:
-        print(f"Gate 2b and Gate 4 — {slug}")
-        print("--------")
-        print("2b. Interaction design")
-        for key, value in b2_results.items():
-            marker = "(ok)" if is_ok(value) else "(FAIL)"
-            print(f"  {key:<20} {value:<30} {marker}")
+        print_table(slug, results, ok)
 
-        print("\n4a. Slice plan")
-        for key, value in a_results.items():
-            marker = "(ok)" if is_ok(value) else "(FAIL)"
-            print(f"  {key:<20} {value:<30} {marker}")
-
-        print("\n4b. Epic technical solution designs")
-        if not b_results:
-            print("  no epic carries more than one slice — nothing required")
-        for epic_id, entry in b_results.items():
-            print(f"  {epic_id}")
-            for key, value in entry.items():
-                marker = "(ok)" if is_ok(value) else "(FAIL)"
-                print(f"    {key:<20} {value:<30} {marker}")
-
-        print("\n4c. Blind rubrics")
-        for key, value in c_results.items():
-            marker = "(ok)" if is_ok(value) else "(FAIL)"
-            print(f"  {key:<20} {value:<30} {marker}")
-
-        print("\nViewer links (ADR-0032)")
-        for key, value in link_results.items():
-            marker = "(ok)" if is_ok(value) else "(FAIL)"
-            print(f"  {key:<20} {value:<30} {marker}")
-
-        print(f"\nOverall: {'OK' if ok else 'FAIL'}")
-        if not ok:
-            missing_designs = [
-                epic_id
-                for epic_id, entry in b_results.items()
-                if not is_ok(entry.get("design.file", "missing")) or not is_ok(entry.get("design.sections", "missing"))
-            ]
-            if missing_designs:
-                print(
-                    "\nGate 4b is missing or incomplete for: " + ", ".join(missing_designs) + ".\n"
-                    "remediation: write docs/plans/<slug>/epic-<epic-id>-design.md for each, "
-                    "get user approval, and record it in 00-status.md."
-                )
-            if not all_ok(flatten("2b.", b2_results)):
-                print(
-                    "\nGate 2b is missing or incomplete.\n"
-                    "remediation: run the design-to-code skill, write "
-                    "docs/plans/<slug>/interaction-design.md and ui-spec.jsonc, "
-                    "get user approval, and record it in 00-status.md."
-                )
-
-    missing_links = [k.split(".", 1)[1] for k, v in link_results.items() if v == "missing"]
+    missing_links = [k.split(".", 1)[1] for k, v in results["links"].items() if v == "missing"]
     if missing_links:
         print(
             "\nViewer link missing for: " + ", ".join(f"Gate {g}" for g in missing_links) + ".\n"

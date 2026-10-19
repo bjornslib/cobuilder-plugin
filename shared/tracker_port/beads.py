@@ -1,121 +1,36 @@
 """The beads adapter. Reads the tracker through `bd list --json --all` and maps each row to a TrackerRecord.
 
-Only this module and bd_runner.py may call bd. Slice 6 implements the reads. Slice 7 adds the writes.
-Seeding creates the records that the list does not hold.
+Only this module, its helper modules, and bd_runner.py may call bd. The reads live here. The writes
+live in beads_writes.py, and the seed in beads_seed.py. Seeding creates the records that the list
+does not hold.
 """
 
 from __future__ import annotations
 
 import json
-import re
-from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
 from .bd_runner import BdError
-from .files import seedable_records
+from .beads_rows import (
+    LIST_ARGS,
+    READY_KINDS,
+    STATUS_MAP,
+    _cb_block,
+    _envelope,
+    _is_ready,
+    _metadata_arg,
+)
+from .beads_seed import _SeedMixin
+from .beads_writes import _WriteMixin
 from .port import AdapterError, ArgumentError
+from .record import Capabilities, Kind, TrackerRecord
 from .regenerate import regenerate
-from .record import Capabilities, Kind, TrackerRecord, merge_refresh_envelope
 
-CB_VERSION = 1
-KINDS = ("program", "epic", "slice", "pr")
-READY_KINDS = ("program", "epic", "slice")
-STATUS_MAP = {"open": "open", "in_progress": "in_progress", "hooked": "in_progress", "closed": "closed"}
-BD_STATUS = {"open": "open", "in_progress": "in_progress", "closed": "closed"}
-BD_TYPE = {"program": "program", "epic": "epic", "slice": "task", "pr": "task"}
-BD_PRIORITY = {"program": "1", "epic": "2", "slice": "2", "pr": "2"}
-LIST_ARGS = ["list", "--json", "--all"]
+__all__ = ["LIST_ARGS", "BeadsAdapter", "_cb_block", "_metadata_arg"]
 
 
-def _cb_block(row: dict[str, Any]) -> dict[str, Any]:
-    """Return metadata.cb after it passes the version and kind checks."""
-    issue_id = row.get("id")
-    cb = (row.get("metadata") or {}).get("cb")
-    if not isinstance(cb, dict):
-        raise AdapterError(f"bd issue {issue_id} has no metadata.cb block")
-    if cb.get("v") != CB_VERSION:
-        raise AdapterError(
-            f"bd issue {issue_id} has metadata.cb.v = {cb.get('v')!r}; this adapter reads v{CB_VERSION}"
-        )
-    if cb.get("kind") not in KINDS:
-        raise AdapterError(f"bd issue {issue_id} has unknown metadata.cb.kind {cb.get('kind')!r}")
-    return cb
-
-
-def _envelope(cb: dict[str, Any]) -> dict[str, Any]:
-    # List values become tuples, to match the fake adapter's records.
-    return {key: tuple(value) if isinstance(value, list) else value for key, value in (cb.get("envelope") or {}).items()}
-
-
-def _metadata_arg(cb: dict[str, Any]) -> str:
-    # bd --metadata merges top-level keys. Send the whole block under "cb", so bd replaces the old block.
-    return json.dumps({"cb": cb}, separators=(",", ":"))
-
-
-def _create_argv(
-    block: dict[str, Any],
-    title: str,
-    bd_type: str,
-    priority: str,
-    parent: str | None = None,
-    external_ref: str | None = None,
-    assignee: str | None = None,
-) -> list[str]:
-    # The flag order matches the recorded bd transcripts. Replays compare the whole argument list.
-    argv = ["create", "--silent"]
-    if parent is not None:
-        argv += ["--parent", parent]
-    argv += ["--type", bd_type, "--title", title, "--priority", priority]
-    if external_ref is not None:
-        argv += ["--external-ref", external_ref]
-    if assignee is not None:
-        argv += ["--assignee", assignee]
-    argv += ["--metadata", _metadata_arg(block)]
-    return argv
-
-
-def _pr_number(ref: str) -> str:
-    match = re.search(r"(\d+)$", ref)
-    if match is None:
-        raise ArgumentError(f"pull request ref {ref!r} must end in its GitHub number, such as pr-101")
-    return match.group(1)
-
-
-def _with_envelope(cb: dict[str, Any], changes: dict[str, Any]) -> dict[str, Any]:
-    return {**cb, "envelope": {**(cb.get("envelope") or {}), **changes}}
-
-
-def _bd_status(state: str) -> str:
-    if state not in BD_STATUS:
-        raise ArgumentError(f"state must be one of {tuple(BD_STATUS)}, not {state!r}")
-    return BD_STATUS[state]
-
-
-def _open_unblocked(record: TrackerRecord, records: dict[str, TrackerRecord]) -> bool:
-    if record.lifecycle != "open" or "deferred" in record.envelope:
-        return False
-    for blocker_id in record.blocked_by:
-        blocker = records.get(blocker_id)
-        if blocker is None or blocker.lifecycle != "closed":
-            return False
-    return True
-
-
-def _is_ready(record: TrackerRecord, records: dict[str, TrackerRecord]) -> bool:
-    if not _open_unblocked(record, records):
-        return False
-    parent = records.get(record.parent) if record.parent else None
-    if record.kind == "epic" and parent is not None:
-        # An epic is ready when its program is open and unblocked.
-        return _open_unblocked(parent, records)
-    if record.kind == "slice" and parent is not None:
-        # A slice is ready when its epic is not deferred. A PR never blocks a slice directly.
-        return "deferred" not in parent.envelope
-    return True
-
-
-class BeadsAdapter:
+class BeadsAdapter(_WriteMixin, _SeedMixin):
     name = "beads"
     # Readiness comes from blocked_by, not from bd. bd update has no atomic claim.
     capabilities = Capabilities(native_ready=False, atomic_claim=False, rich_envelope=True, offline_read=True)
@@ -259,216 +174,5 @@ class BeadsAdapter:
         if not self._batching:
             self.sync()
 
-    def claim_slice(self, id: str, claimant: str) -> TrackerRecord:
-        rows = self._rows()
-        row = self._find_row(rows, id, ("slice",))
-        try:
-            self.runner.run(["update", row["id"], "--status", "in_progress", "--assignee", claimant])
-        except BdError as error:
-            raise AdapterError(f"claim of {id} refused: {error.stderr.strip()}") from error
-        shown = json.loads(self.runner.run(["show", row["id"], "--json"]))[0]
-        record = self._record(shown, self._cb_ids(rows))
-        self._publish()
-        if record.assignee != claimant:
-            raise AdapterError(f"claim of {id} read back assignee {record.assignee!r}, not {claimant!r}")
-        return record
-
-    def set_program_stage(self, program: str, stage: str) -> TrackerRecord:
-        rows = self._rows()
-        row = self._find_row(rows, program, ("program",))
-        block = _with_envelope(_cb_block(row), {"stage": stage})
-        self._update(row, block=block)
-        self._publish()
-        return self._after(rows, row, block=block)
-
-    def set_gate_value(self, program: str, gate: str, value: str) -> TrackerRecord:
-        rows = self._rows()
-        row = self._find_row(rows, program, ("program",))
-        block = _with_envelope(_cb_block(row), {gate: value})
-        self._update(row, block=block)
-        self._publish()
-        return self._after(rows, row, block=block)
-
-    def set_epic_state(self, epic: str, state: str, branch: str | None = None) -> TrackerRecord:
-        status = _bd_status(state)
-        rows = self._rows()
-        row = self._find_row(rows, epic, ("epic",))
-        block = _with_envelope(_cb_block(row), {} if branch is None else {"branch": branch})
-        # CoBuilder state words are authoritative, and the tracker mirrors them. bd would refuse a close while children are open.
-        self._update(row, status=status, block=block if branch is not None else None, force=status == "closed")
-        self._publish()
-        return self._after(rows, row, block=block, status=status)
-
-    def set_slice_state(
-        self,
-        id: str,
-        state: str,
-        score: float | None = None,
-        attempts: int | None = None,
-    ) -> TrackerRecord:
-        status = _bd_status(state)
-        rows = self._rows()
-        row = self._find_row(rows, id, ("slice",))
-        changes: dict[str, Any] = {}
-        if score is not None:
-            changes["score"] = score
-        if attempts is not None:
-            changes["attempts"] = attempts
-        block = _with_envelope(_cb_block(row), changes)
-        self._update(row, status=status, block=block if changes else None)
-        self._publish()
-        return self._after(rows, row, block=block, status=status)
-
-    def record_attempt(self, id: str, score: float, note: str | None = None) -> TrackerRecord:
-        rows = self._rows()
-        row = self._find_row(rows, id, ("slice",))
-        cb = _cb_block(row)
-        attempts = (cb.get("envelope") or {}).get("attempts", 0) + 1
-        block = _with_envelope(cb, {"score": score, "attempts": attempts})
-        self._update(row, block=block, notes=note)
-        self._publish()
-        return self._after(rows, row, block=block)
-
-    def add_note(self, id: str, text: str) -> None:
-        rows = self._rows()
-        row = self._find_row(rows, id, KINDS)
-        self._update(row, notes=text)
-        self._publish()
-
-    def escalate(self, id: str, score: float, reason: str) -> TrackerRecord:
-        rows = self._rows()
-        row = self._find_row(rows, id, ("slice",))
-        block = _with_envelope(_cb_block(row), {"escalated": True, "score": score})
-        self._update(row, block=block, notes=f"escalated at score {score}: {reason}")
-        self._publish()
-        return self._after(rows, row, block=block)
-
-    def create_record(self, record: TrackerRecord) -> TrackerRecord:
-        # Only parent and blocker lookups need the list. A program create sends no list call.
-        rows = self._rows() if record.parent is not None or record.blocked_by else []
-        parent_bd_id = self._find_row(rows, record.parent, KINDS)["id"] if record.parent is not None else None
-        blocker_bd_ids = [self._find_row(rows, blocker, KINDS)["id"] for blocker in record.blocked_by]
-        block = {"v": CB_VERSION, "id": record.id, "kind": record.kind, "envelope": dict(record.envelope)}
-        argv = _create_argv(
-            block,
-            record.id,
-            BD_TYPE[record.kind],
-            BD_PRIORITY[record.kind],
-            parent=parent_bd_id,
-            external_ref=record.external_ref,
-            assignee=record.assignee,
-        )
-        bd_id = self.runner.run(argv).strip()
-        for blocker_bd_id in blocker_bd_ids:
-            # Each blocker edge is one bd dep add, sent in the recorded order.
-            self.runner.run(["dep", "add", bd_id, blocker_bd_id])
-        if record.lifecycle == "closed":
-            self.runner.run(["close", bd_id, "--force"])
-        self._publish()
-        return record
-
-    def open_pull_request(self, ref: str, epic_ids: list[str]) -> TrackerRecord:
-        number = _pr_number(ref)
-        rows = self._rows()
-        if ref in self._cb_ids(rows).values():
-            raise ArgumentError(f"record {ref} already exists")
-        epic_rows = [self._find_row(rows, epic, ("epic",)) for epic in epic_ids]
-        block = {"v": CB_VERSION, "id": ref, "kind": "pr", "envelope": {}}
-        external_ref = f"gh-{number}"
-        pr_bd_id = self.runner.run(
-            _create_argv(block, ref, BD_TYPE["pr"], BD_PRIORITY["pr"], external_ref=external_ref)
-        ).strip()
-        for epic_row in epic_rows:
-            # Each epic is blocked by the PR, so the epic is not ready until the PR closes.
-            self.runner.run(["dep", "add", epic_row["id"], pr_bd_id])
-        self._publish()
-        return TrackerRecord(
-            id=ref,
-            kind="pr",
-            parent=None,
-            blocked_by=(),
-            lifecycle="open",
-            assignee=None,
-            envelope={},
-            external_ref=external_ref,
-        )
-
-    def set_pull_request_state(self, ref: str, merged: bool) -> TrackerRecord:
-        rows = self._rows()
-        row = self._find_row(rows, ref, ("pr",))
-        status = "closed" if merged else "open"
-        self._update(row, status=status)
-        self._publish()
-        return self._after(rows, row, status=status)
-
-    def seed_from_files(
-        self, plans_dir: Path, dry_run: bool = False, refresh_envelope: bool = False
-    ) -> list[TrackerRecord]:
-        rows = self._rows()
-        held = set(self._cb_ids(rows).values())
-        found, self.seed_conflicts = seedable_records(plans_dir)
-        creates = [
-            record
-            for record in found
-            if record.id not in held and record.external_ref not in held
-        ]
-        refreshes = self._envelope_refreshes(rows, found) if refresh_envelope else []
-        changed = [record for _, record in refreshes]
-        if dry_run:
-            return creates + changed
-        closes = self._rows_to_close(rows, found)
-        # One sync covers the whole seed. The batch flag stops each write op from syncing on its own.
-        self._batching = True
-        try:
-            for record in creates:
-                self._create_seeded(record)
-            for row in closes:
-                self.runner.run(["close", row["id"], "--force"])
-            for row, record in refreshes:
-                self._update(row, block=_with_envelope(_cb_block(row), record.envelope))
-        finally:
-            self._batching = False
-        if creates or closes or refreshes:
-            self.sync()
-        return creates + changed
-
     def regenerate_status_files(self, program: str, plans_dir: Path) -> list[Path]:
         return regenerate(self, program, plans_dir)
-
-    @staticmethod
-    def _envelope_refreshes(
-        rows: list[dict[str, Any]], found: list[TrackerRecord]
-    ) -> list[tuple[dict[str, Any], TrackerRecord]]:
-        # Merge the file envelope over the held one, so runtime keys the file lacks survive.
-        rows_by_id = {_cb_block(row)["id"]: row for row in rows}
-        refreshes = []
-        for record in found:
-            row = rows_by_id.get(record.id)
-            if row is None:
-                continue
-            held = _envelope(_cb_block(row))
-            envelope = merge_refresh_envelope(held, record.envelope)
-            if envelope != held:
-                refreshes.append((row, replace(record, envelope=envelope)))
-        return refreshes
-
-    def _create_seeded(self, record: TrackerRecord) -> TrackerRecord:
-        try:
-            return self.create_record(record)
-        except BdError as error:
-            if "type" not in error.stderr.lower():
-                raise
-        self._allow_program_type()
-        return self.create_record(record)
-
-    def _allow_program_type(self) -> None:
-        current = self.runner.run(["config", "get", "types.custom"]).strip()
-        types = [name for name in current.split(",") if name]
-        if "program" not in types:
-            self.runner.run(["config", "set", "types.custom", ",".join([*types, "program"])])
-
-    @staticmethod
-    def _rows_to_close(rows: list[dict[str, Any]], found: list[TrackerRecord]) -> list[dict[str, Any]]:
-        # An open record whose files now say closed gets closed. Lifecycle only. A closed record is never reopened.
-        closed_ids = {record.id for record in found if record.lifecycle == "closed"}
-        return [row for row in rows if _cb_block(row)["id"] in closed_ids and STATUS_MAP.get(row.get("status")) != "closed"]

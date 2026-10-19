@@ -7,60 +7,33 @@ path must resolve, a command must be absent. It never tests the wording of prose
 
 from __future__ import annotations
 
-import hashlib
 import json
 import re
 import shutil
-import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-TRACKER_CLI = ROOT / "shared" / "tracker.py"
-FIXTURE = ROOT / "tests" / "fixtures" / "tracker" / "write-model-pr"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _tracker_port_support as support  # noqa: E402
+
+FIXTURE = support.FIXTURES / "write-model-pr"
 EPICS = ["pr-demo/E-a", "pr-demo/E-b"]
 REF = "pr/1"
 
 PR = ROOT / "plugins" / "pr"
 SKILL = PR / "skills" / "odyssey" / "SKILL.md"
 PROSE_FILES = [SKILL, *sorted((PR / "commands").glob("*.md"))]
-OP_RE = re.compile(r"tracker\.py\s+(?:--[a-z-]+(?:\s+\S+)?\s+)*([a-z][a-z-]+)")
-
-
-def _snapshot(root: Path) -> dict[str, str]:
-    return {
-        p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
-        for p in sorted(root.rglob("*"))
-        if p.is_file()
-    }
+OP_RE = support.OP_RE
+_cli = support.cli
+_ok = support.ok
+_snapshot = support.snapshot
 
 
 def _repo(tmp_path: Path) -> tuple[Path, Path]:
     corpus = tmp_path / "corpus"
     shutil.copytree(FIXTURE, corpus)
-    state = tmp_path / "state" / "tracker-state.json"
-    config = tmp_path / ".cobuilder" / "tracker.yaml"
-    config.parent.mkdir(parents=True)
-    config.write_text(
-        "adapter: fake\n"
-        f"corpus: {json.dumps(str(corpus))}\n"
-        f"state_file: {json.dumps(str(state))}\n",
-        encoding="utf-8",
-    )
-    return config, state
-
-
-def _cli(config: Path, cwd: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        ["uv", "run", str(TRACKER_CLI), "--config", str(config), *args],
-        cwd=cwd, capture_output=True, text=True, timeout=180, check=False,
-    )
-
-
-def _ok(result: subprocess.CompletedProcess[str]) -> object:
-    assert result.returncode == 0, result.stderr + result.stdout
-    body = json.loads(result.stdout)
-    assert body["ok"] is True, result.stdout
-    return body["result"]
+    return support.write_fake_config(tmp_path, corpus)
 
 
 def _ready(config: Path, tmp_path: Path, kind: str) -> list[dict]:
@@ -69,15 +42,6 @@ def _ready(config: Path, tmp_path: Path, kind: str) -> list[dict]:
 
 def _ready_epics(config: Path, tmp_path: Path) -> set[str]:
     return {r["id"] for r in _ready(config, tmp_path, "epic")}
-
-
-def _cli_ops() -> set[str]:
-    out = subprocess.run(
-        ["uv", "run", str(TRACKER_CLI), "--help"], capture_output=True, text=True, timeout=180, check=True
-    ).stdout
-    match = re.search(r"\{([a-z,-]+)\}", out)
-    assert match, out
-    return set(match.group(1).split(","))
 
 
 # --- behavior ---------------------------------------------------------------
@@ -138,10 +102,7 @@ def test_pr_versions_match() -> None:
 
 
 def test_every_tracker_op_in_prose_exists() -> None:
-    ops = _cli_ops()
-    for path in PROSE_FILES:
-        for op in OP_RE.findall(path.read_text(encoding="utf-8")):
-            assert op in ops, f"{path.name}: unknown tracker op {op!r}"
+    support.assert_prose_ops_exist(PROSE_FILES)
 
 
 def test_skill_names_write_ops_and_links_usage() -> None:

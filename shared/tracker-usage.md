@@ -256,73 +256,33 @@ $ uv run shared/tracker.py set-slice-state demo-E1-s2 closed --score 0.92 --atte
 Use `--state-file` to read an earlier write in a later call. It is a top-level option, so place it before the subcommand.
 
 ```console
-$ uv run shared/tracker.py --state-file state.json set-slice-state demo-E1-s2 closed --score 0.92 --attempts 2
+$ uv run shared/tracker.py --state-file state.json set-slice-state demo-E1-s3 closed --score 0.88 --attempts 1
 {
   "ok": true,
   "result": {
-    "assignee": "agent-1",
+    "assignee": null,
     "blocked_by": [
       "demo-E1-s1"
     ],
     "envelope": {
-      "attempts": 2,
-      "score": 0.92
+      "attempts": 1,
+      "score": 0.88
     },
     "external_ref": null,
-    "id": "demo-E1-s2",
+    "id": "demo-E1-s3",
     "kind": "slice",
     "lifecycle": "closed",
     "parent": "demo-E1"
   }
 }
-$ uv run shared/tracker.py --state-file state.json list-slices --epic demo-E1
+$ uv run shared/tracker.py --state-file state.json next-ready --kind slice --under demo-E1
 {
   "ok": true,
-  "result": [
-    {
-      "assignee": null,
-      "blocked_by": [],
-      "envelope": {
-        "score": 0.92
-      },
-      "external_ref": null,
-      "id": "demo-E1-s1",
-      "kind": "slice",
-      "lifecycle": "closed",
-      "parent": "demo-E1"
-    },
-    {
-      "assignee": "agent-1",
-      "blocked_by": [
-        "demo-E1-s1"
-      ],
-      "envelope": {
-        "attempts": 2,
-        "score": 0.92
-      },
-      "external_ref": null,
-      "id": "demo-E1-s2",
-      "kind": "slice",
-      "lifecycle": "closed",
-      "parent": "demo-E1"
-    },
-    {
-      "assignee": null,
-      "blocked_by": [
-        "demo-E1-s1"
-      ],
-      "envelope": {},
-      "external_ref": null,
-      "id": "demo-E1-s3",
-      "kind": "slice",
-      "lifecycle": "open",
-      "parent": "demo-E1"
-    }
-  ]
+  "result": []
 }
 ```
 
-The second call lists the slice that the first call closed.
+The second call finds no ready slice, because the first call closed the last one.
 
 ```console
 $ uv run shared/tracker.py set-program-stage demo approved
@@ -463,7 +423,7 @@ $ uv run shared/tracker.py set-pull-request-state pr-101 merged
 Each call exits with one of four codes. A success writes one JSON object to stdout. A failure writes one JSON line to stdout and one message to stderr. Repeated `set-*` calls are idempotent.
 
 - `0`: the call succeeded.
-- `2`: the call is refused. No tracker adapter is configured, and nothing was written. Run `doctor`. Do not edit a status file by hand.
+- `2`: the call is refused. No tracker adapter is configured, and nothing was written. Stop, and tell the engineer to run `/cobuilder-full-lifecycle:install`. Do not edit a status file by hand.
 - `3`: the adapter failed. Read the message on stderr and fix its cause.
 - `4`: the arguments are not valid. Correct the call and run it again.
 
