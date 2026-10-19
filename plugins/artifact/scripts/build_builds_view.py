@@ -135,6 +135,25 @@ def _epics(designs_dir: Path, slices_for) -> list[dict]:
     return epics
 
 
+def attach_plan_keyed_rows(epics: list[dict], rows: dict[str, list[dict]], plan: str) -> None:
+    """Give epics the port rows keyed `<plan>/<id>`, when one epic can claim them.
+
+    The design key always wins, so an epic keeps its own rows. A plan named as
+    a design gets no fallback. A design with rows of its own gets no fallback.
+    A `<plan>/<id>` key attaches only when exactly one design without rows has
+    an epic with that id.
+    """
+    if any(e["design"] == plan for e in epics):
+        return
+    claimed = {e["design"] for e in epics if e["slices"]}
+    open_epics = [e for e in epics if not e["slices"] and e["design"] not in claimed]
+    for epic in open_epics:
+        same_id = [e for e in open_epics if e["id"] == epic["id"]]
+        key = f"{plan}/{epic['id']}"
+        if key in rows and len(same_id) == 1:
+            epic["slices"] = rows[key]
+
+
 def read_epics(designs_dir: Path, slices_md: str) -> list[dict]:
     """Every epic of every design, with the slices that advance it.
 
@@ -211,6 +230,7 @@ def read_plan(plan_dir: Path, designs_dir: Path, rubrics_dir: Path) -> dict:
         epics = read_epics(designs_dir, docs.get("04-slices.md", ""))
     else:
         epics = _epics(designs_dir, lambda key, _epic_id: rows.get(key, []))
+        attach_plan_keyed_rows(epics, rows, plan_dir.name)
     return {"docs": docs, "gates": gates, "epics": epics, "paths": paths}
 
 
