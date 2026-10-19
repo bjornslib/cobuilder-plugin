@@ -32,15 +32,15 @@ Initial checks, 2026-10-17:
 
 ## Slices
 
-- [x] Slice 1 — Tracer bullet: fake adapter and golden index   score: 1.00   note: absent
-- [x] Slice 2 — Full contract suite on the fake adapter   score: 1.00   note: absent
-- [x] Slice 3 — Files adapter reads the plans tree and backfill dry run   score: 1.00   note: absent
-- [x] Slice 4 — Command prints JSON and exit codes   score: 0.92   note: absent
-- [x] Slice 5 — Usage reference matches the command   score: 1.00   note: absent
-- [x] Slice 6 — Beads reads match the fake adapter   score: 1.00   note: absent
-- [x] Slice 7 — Beads writes on recorded transcripts   score: 0.67 (escalated)   note: absent
-- [x] Slice 8 — Beads dry run matches the backfill file   score: 1.00   note: absent
-- [x] Slice 9 — Fresh clone initializes, syncs, and seeds   score: 1.00   note: absent
+- [x] Slice 1 — Tracer bullet: fake adapter and golden index   score: 1.00   note: retained
+- [x] Slice 2 — Full contract suite on the fake adapter   score: 1.00   note: retained
+- [x] Slice 3 — Files adapter reads the plans tree and backfill dry run   score: 1.00   note: retained
+- [x] Slice 4 — Command prints JSON and exit codes   score: 0.92   note: retained
+- [x] Slice 5 — Usage reference matches the command   score: 1.00   note: retained
+- [x] Slice 6 — Beads reads match the fake adapter   score: 1.00   note: retained
+- [x] Slice 7 — Beads writes on recorded transcripts   score: 0.67 (escalated)   note: retained
+- [x] Slice 8 — Beads dry run matches the backfill file   score: 1.00   note: retained
+- [x] Slice 9 — Fresh clone initializes, syncs, and seeds   score: 1.00   note: retained
 - [ ] Slice 10 — Bundle index unchanged after the port   score: —   note: —
 - [ ] Slice 11 — Gate check and builds view read the port   score: —   note: —
 - [ ] Slice 12 — Status files regenerate from records   score: —   note: —

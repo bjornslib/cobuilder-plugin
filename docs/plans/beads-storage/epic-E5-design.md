@@ -22,11 +22,11 @@ Use four Beads features that the E2 adapter does not use yet. The features are a
 
 ### Recommendation
 
-Choose Option A. Run E5-1 first, because its spike answers the questions that E5-2 to E5-4 need. Choose Option B only after E5-1 to E5-4 close, and only if the engineer wants formulas.
+Decided by the engineer: do both Option A and Option B. Run E5-1 first, because its spike answers the questions that E5-2 to E5-4 need. E5-5 follows after E5-1 to E5-4 close, because it uses the claim and gate results. E5-5 is no longer optional.
 
 ### What to drop
 
-- E5-5, the formula. The slice loop works without it. Drop it if the squash behavior needs a custom digest that the team does not want to keep.
+- Nothing in E5-5 drops by default. If squash needs a custom digest, the engineer decides in E5-1 how to keep the attempt history.
 - The `native_ready` change in E5-3. Keep the flag false. The adapter then computes ready, as E1 does. Drop the change if the parity check finds a difference that Beads cannot close.
 - The gate mirror in E5-4. The pull request blocker in ADR-0040 already holds the epics. Drop the gate if it only repeats the blocker.
 
@@ -58,8 +58,8 @@ New files:
 - `tests/test_tracker_beads_claim.py`. The claim race and stale claim cases (E5-2).
 - `tests/test_tracker_beads_ready.py`. The ready parity cases (E5-3).
 - `tests/test_tracker_beads_gate.py`. The pull request gate case (E5-4).
-- `shared/tracker_port/formulas/slice-loop.toml`. The formula (E5-5, optional).
-- `tests/test_tracker_beads_formula.py`. The cook, pour, and squash cases (E5-5, optional).
+- `shared/tracker_port/formulas/slice-loop.toml`. The formula (E5-5).
+- `tests/test_tracker_beads_formula.py`. The cook, pour, and squash cases (E5-5).
 - `tests/fixtures/tracker/beads/transcripts/*.json`. One recorded transcript for each new `bd` case. E2 owns the folder. E5 adds files only, and it changes no existing transcript.
 
 Modified files:
@@ -98,7 +98,7 @@ The numbers E5-1 to E5-5 are local to this epic. The engineer assigns the global
 | E5-2 | Atomic claim | E5-1 | `beads.py`, `bd_runner.py`, `test_tracker_beads_claim.py`, `test_tracker_beads.py` | Contract case 3 passes on beads with one write. Eight concurrent claims give one winner |
 | E5-3 | Native ready, with parity | E5-1 | `beads.py`, `bd_runner.py`, `test_tracker_beads_ready.py` | Ready parity holds for each kind on the recorded corpus, and contract cases 1 and 2 pass on beads |
 | E5-4 | Pull request gate | E5-3 | `beads.py`, `bd_runner.py`, `test_tracker_beads_gate.py`, `test_tracker_beads.py` | The gate resolves when the pull request merges, and the E4 slice 15 test stays green |
-| E5-5 | Slice-loop formula (optional) | E5-4, and E4 slice 13 | formula TOML, `test_tracker_beads_formula.py`, `slice-loop.md` | The formula cooks and pours. A failed attempt adds a wisp. Squash with `--keep-children` keeps the attempt history |
+| E5-5 | Slice-loop formula | E5-4, and E4 slice 13 | formula TOML, `test_tracker_beads_formula.py`, `slice-loop.md` | The formula cooks and pours. A failed attempt adds a wisp. Squash with `--keep-children` keeps the attempt history |
 
 ### Slice E5-1: spike, claim flags, exit codes, lease expiry
 
@@ -132,7 +132,7 @@ Assertions: `open_pull_request` adds a `gh:pr` gate to each blocked epic. The ga
 
 Pass conditions: the gate case passes. The E4 slice 15 test passes without change. A gate that has no stored number stays pending, and the test shows it.
 
-### Slice E5-5: slice-loop formula (optional)
+### Slice E5-5: slice-loop formula
 
 Input: the E4 slice 13 procedure in `slice-loop.md`, and the formula TOML.
 

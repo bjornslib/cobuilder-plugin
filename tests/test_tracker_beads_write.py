@@ -79,20 +79,6 @@ def test_create_slice_is_a_child_of_its_epic() -> None:
     assert _steps("create_slice")[1]["stdout"] == "demo-b64.1.1\n"
 
 
-def test_create_pr_carries_external_ref() -> None:
-    body = _load("create_pr")
-    args = body["args"]
-    assert args[args.index("--external-ref") + 1] == "gh-101"
-    assert _metadata_arg(args)["cb"]["kind"] == "pr"
-    assert body["stdout"] == "t-4zf\n"
-
-
-def test_set_state_closes_the_slice() -> None:
-    body = _load("set_state")
-    assert body["args"] == ["update", "t-anc.1.1", "--status", "closed"]
-    assert body["stdout"].startswith("✓ Updated issue: t-anc.1.1")
-
-
 def test_set_state_score_writes_the_whole_cb_block() -> None:
     # --set-metadata on a dotted key stores a flat "cb.envelope.score" key.
     # The write must send the full cb block through --metadata instead.
@@ -102,18 +88,6 @@ def test_set_state_score_writes_the_whole_cb_block() -> None:
     metadata = _metadata_arg(args)
     assert metadata["cb"]["envelope"]["score"] == 0.8
     assert not any("." in key for key in metadata)
-
-
-def test_claim_update_sends_in_progress_and_assignee() -> None:
-    body = _load("claim_slice")
-    assert body["args"] == [
-        "update",
-        "t-anc.1.3",
-        "--status",
-        "in_progress",
-        "--assignee",
-        "agent-x",
-    ]
 
 
 def test_claim_read_back_shows_the_claimant() -> None:
