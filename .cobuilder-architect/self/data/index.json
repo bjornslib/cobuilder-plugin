@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "1a7379f049b9ec437ba07661d40927c3b80787a0",
+    "git_head": "9c9cf5112a8e5543afba88b15a994108b775738d",
     "trees": {
       "docs/architecture/adr": "sha256:54467e271802fa891e34a4e971d58caebed03734735ab3833cab9cc932105893",
       "docs/architecture/designs": "sha256:cd0a8ef689e2a5fda1361bd5976a491c5e785400f940eaf7429b407986b08a12",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:5304ff6c240ffe9b96b3fd8eac1b990a3a6818ca31837088f1a4c825fa60bd8a",
-      ".cobuilder/rubrics": "sha256:eedcc5bcc1e08d1a8981d1c32177e2459d64646233e0c4d8ee9529d390abaa78"
+      "docs/plans": "sha256:f02bc4b2dac9644543e50f5de4b0a4d9f4c704af36d9c621e44a6405454d676b",
+      ".cobuilder/rubrics": "sha256:e0d61747cc986a672a3244c7a61103e83f05b5f8cdf2fd3ee8af1bc5e91e363a"
     }
   },
   "entities": {
@@ -2952,9 +2952,9 @@
         "n": 10,
         "title": "**Bundle index unchanged after the port**",
         "ends_with": "`build_index.py` writes the same `data/index.json` for this repo as before the change, and the viewer `index.html` is byte equal.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 3,
+        "state": "completed"
       },
       {
         "id": "beads-storage/11",
@@ -2962,9 +2962,9 @@
         "n": 11,
         "title": "**Gate check and builds view read the port**",
         "ends_with": "`verify_gate.py` and `build_builds_view.py` return the same result for every plan under `docs/plans` as before the change.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 3,
+        "state": "completed"
       },
       {
         "id": "beads-storage/12",
@@ -2972,9 +2972,9 @@
         "n": 12,
         "title": "**Status files regenerate from records**",
         "ends_with": "Regenerating the fixture corpus writes `00-status.md` and `04-slices.md` files that equal their golden files.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "beads-storage/13",
@@ -2982,9 +2982,9 @@
         "n": 13,
         "title": "**Implement writes slice state**",
         "ends_with": "A fixture slice run writes its claim, attempts, score, and state through `tracker.py`, and the status file shows the new score.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "0.97",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "beads-storage/14",
@@ -2992,9 +2992,9 @@
         "n": 14,
         "title": "**Architect writes gate values**",
         "ends_with": "A fixture program records each gate value and the program stage through `tracker.py`, and the status file shows each approval date.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "0.95",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "beads-storage/15",
@@ -3002,9 +3002,9 @@
         "n": 15,
         "title": "**Pull request blocks two epics**",
         "ends_with": "A pull request record blocks two fixture epics until its state is set to merged, and then both epics show as ready.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "0.93",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "beads-storage/16",
@@ -3012,9 +3012,9 @@
         "n": 16,
         "title": "**Goal file drops epic state fields**",
         "ends_with": "`goal.json` holds no `branch`, `pr`, or `state` key after the migration, and the artifact view lists the same epics.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "0.97",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "beads-storage/17",
@@ -3022,9 +3022,9 @@
         "n": 17,
         "title": "**Docs test guards the port and install asks first**",
         "ends_with": "`tests/test_tracker_docs.py` passes on this repo, and it fails when a `bd` call appears outside `shared/tracker_port/`. The install command runs the backfill dry run after adapter config and asks for consent before any write.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "0.97",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "beads-storage/18",

@@ -32,23 +32,23 @@ Initial checks, 2026-10-17:
 
 ## Slices
 
-- [x] Slice 1 — Tracer bullet: fake adapter and golden index   score: 1.00   note: retained
-- [x] Slice 2 — Full contract suite on the fake adapter   score: 1.00   note: retained
-- [x] Slice 3 — Files adapter reads the plans tree and backfill dry run   score: 1.00   note: retained
-- [x] Slice 4 — Command prints JSON and exit codes   score: 0.92   note: retained
-- [x] Slice 5 — Usage reference matches the command   score: 1.00   note: retained
-- [x] Slice 6 — Beads reads match the fake adapter   score: 1.00   note: retained
-- [x] Slice 7 — Beads writes on recorded transcripts   score: 1.00 (attempt 5, after escalation)   note: retained
-- [x] Slice 8 — Beads dry run matches the backfill file   score: 1.00   note: retained
-- [x] Slice 9 — Fresh clone initializes, syncs, and seeds   score: 1.00   note: retained
-- [ ] Slice 10 — Bundle index unchanged after the port   score: —   note: —
-- [ ] Slice 11 — Gate check and builds view read the port   score: —   note: —
-- [ ] Slice 12 — Status files regenerate from records   score: —   note: —
-- [ ] Slice 13 — Implement writes slice state   score: —   note: —
-- [ ] Slice 14 — Architect writes gate values   score: —   note: —
-- [ ] Slice 15 — Pull request blocks two epics   score: —   note: —
-- [ ] Slice 16 — Goal file drops epic state fields   score: —   note: —
-- [ ] Slice 17 — Docs test guards the port and install asks first   score: —   note: —
+- [x] Slice 1 — Tracer bullet: fake adapter and golden index   score: 1 on attempt 1   note: retained
+- [x] Slice 2 — Full contract suite on the fake adapter   score: 1 on attempt 2   note: retained
+- [x] Slice 3 — Files adapter reads the plans tree and backfill dry run   score: 1 on attempt 1   note: retained
+- [x] Slice 4 — Command prints JSON and exit codes   score: 0.92 on attempt 1   note: retained
+- [x] Slice 5 — Usage reference matches the command   score: 1 on attempt 3   note: retained
+- [x] Slice 6 — Beads reads match the fake adapter   score: 1 on attempt 2   note: retained
+- [x] Slice 7 — Beads writes on recorded transcripts   score: 1 on attempt 5 (attempt 5, after escalation)   note: retained
+- [x] Slice 8 — Beads dry run matches the backfill file   score: 1 on attempt 2   note: retained
+- [x] Slice 9 — Fresh clone initializes, syncs, and seeds   score: 1 on attempt 1   note: retained
+- [x] Slice 10 — Bundle index unchanged after the port   score: 1 on attempt 3   note: —
+- [x] Slice 11 — Gate check and builds view read the port   score: 1 on attempt 3   note: —
+- [x] Slice 12 — Status files regenerate from records   score: 1 on attempt 1   note: —
+- [x] Slice 13 — Implement writes slice state   score: 0.97 on attempt 1   note: —
+- [x] Slice 14 — Architect writes gate values   score: 0.95 on attempt 1   note: —
+- [x] Slice 15 — Pull request blocks two epics   score: 0.93 on attempt 1   note: —
+- [x] Slice 16 — Goal file drops epic state fields   score: 0.97 on attempt 1   note: —
+- [x] Slice 17 — Docs test guards the port and install asks first   score: 0.97 on attempt 1   note: —
 
 - [ ] Slice 18 — Spike: claim flags, exit codes, lease expiry   score: —   note: —
 - [ ] Slice 19 — Atomic claim   score: —   note: —
