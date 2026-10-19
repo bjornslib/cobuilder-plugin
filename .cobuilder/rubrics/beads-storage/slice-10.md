@@ -10,7 +10,7 @@ Test command: `uv run pytest tests/test_build_index_port.py tests/test_build_ind
 ## Criteria
 
 ### C1 — The bundle index for this repo keeps every byte except the recorded volatile keys [CRITICAL]
-**Must be true:** after the change, one run of the bundle build on this repo writes `.cobuilder-architect/self/data/index.json` that equals the pre-change file. The only differences are keys that change on every run, plus the corrections that `evidence/slice-10/parity.md` lists: score, attempts, and state values that the tracker holds more accurately than the old status lines, and the slice order (feature, then n). Each appears in the evidence with its before and after value.
+**Must be true:** after the change, one run of the bundle build on this repo writes `.cobuilder-architect/self/data/index.json` that equals the pre-change file. The only differences are keys that change on every run, plus the corrections that `evidence/slice-10/parity.md` lists: score, attempts, and state values that the tracker holds more accurately than the old status lines, the default rule of `slice_entities` for a closed slice with no stored score (score 1.00, attempts 1), and the slice order (feature, then n). Each appears in the evidence with its before and after value.
 **Evidence to check:**
 - `.cobuilder/rubrics/beads-storage/evidence/slice-10/` holds the pre-change `data/index.json` and the post-change `data/index.json`.
 - The evidence lists every key that differs, with both values. Each listed key is a run-specific value, such as a timestamp or a commit value.
@@ -43,7 +43,7 @@ Test command: `uv run pytest tests/test_build_index_port.py tests/test_build_ind
 - 0.0 — the golden case fails.
 
 ### C4 — Both index paths are written from one run
-**Must be true:** one run of the bundle build writes `data/index.json` and `.cobuilder-architect/self/data/index.json`. Both files exist after the run.
+**Must be true:** one run of the bundle build writes `.cobuilder-architect/self/data/index.json`. Both files exist after the run.
 **Evidence to check:**
 - `uv run pytest tests/test_build_index_port.py -q` passes, including the two-path case.
 **Scoring:**

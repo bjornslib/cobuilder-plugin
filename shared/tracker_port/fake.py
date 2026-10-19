@@ -10,6 +10,7 @@ from typing import Any
 
 from .files import seedable_records
 from .port import AdapterError, ArgumentError
+from .regenerate import regenerate
 from .record import Capabilities, Kind, TrackerRecord, merge_refresh_envelope
 
 CORPUS_FILES = ("program.json", "epics.json", "slices.json", "prs.json")
@@ -104,6 +105,9 @@ class FakeAdapter:
             if creates or refreshed or not refresh_envelope:
                 self._commit()
         return creates + list(refreshed.values())
+
+    def regenerate_status_files(self, program: str, plans_dir: Path) -> list[Path]:
+        return regenerate(self, program, plans_dir)
 
     def _envelope_refreshes(self, found: list[TrackerRecord]) -> dict[str, TrackerRecord]:
         # Merge the file envelope over the held one, so runtime keys the file lacks survive.

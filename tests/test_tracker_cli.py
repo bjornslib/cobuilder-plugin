@@ -6,6 +6,7 @@ missing adapter, and changes no file.
 
 from __future__ import annotations
 
+import shutil
 import hashlib
 import json
 import subprocess
@@ -229,3 +230,39 @@ def test_seed_refresh_dry_run_writes_nothing(tmp_path: Path) -> None:
     dry = _cli(config, tmp_path, "seed-from-files", str(PLANS_DIR), "--dry-run", "--refresh-envelope")
     assert dry.returncode == 0, dry.stderr
     assert not state.exists()
+
+
+def test_regenerate_status_files_without_adapter_exits_2_and_writes_nothing(
+    tmp_path: Path,
+) -> None:
+    assert TRACKER_CLI.is_file(), "shared/tracker.py does not exist"
+
+    # A copy of the mini plan, and no .cobuilder/tracker.yaml.
+    plans_root = tmp_path / "plans"
+    shutil.copytree(PLANS_DIR, plans_root)
+    missing_config = tmp_path / ".cobuilder" / "tracker.yaml"
+    assert not missing_config.exists()
+
+    before = _snapshot(tmp_path)
+
+    result = subprocess.run(
+        [
+            "uv",
+            "run",
+            str(TRACKER_CLI),
+            "--config",
+            str(missing_config),
+            "regenerate-status-files",
+            "beads-storage-mini",
+            "--plans-dir",
+            str(plans_root),
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        timeout=180,
+        check=False,
+    )
+
+    assert result.returncode == 2, result.stderr + result.stdout
+    assert _snapshot(tmp_path) == before

@@ -15,6 +15,7 @@ from typing import Any
 from .bd_runner import BdError
 from .files import seedable_records
 from .port import AdapterError, ArgumentError
+from .regenerate import regenerate
 from .record import Capabilities, Kind, TrackerRecord, merge_refresh_envelope
 
 CB_VERSION = 1
@@ -430,6 +431,9 @@ class BeadsAdapter:
         if creates or closes or refreshes:
             self.sync()
         return creates + changed
+
+    def regenerate_status_files(self, program: str, plans_dir: Path) -> list[Path]:
+        return regenerate(self, program, plans_dir)
 
     @staticmethod
     def _envelope_refreshes(

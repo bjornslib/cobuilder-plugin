@@ -141,6 +141,11 @@ def _seed_args(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _regenerate_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("program")
+    parser.add_argument("--plans-dir", type=Path, required=True, help="the plans tree that holds the program's status files")
+
+
 # Each operation maps to its builder for arguments and to the port call it makes.
 OPERATIONS: dict[str, tuple[Callable[[argparse.ArgumentParser], None], Callable[[Any, argparse.Namespace], Any]]] = {
     "list-programs": (_no_args, lambda a, n: a.list_programs()),
@@ -169,6 +174,10 @@ OPERATIONS: dict[str, tuple[Callable[[argparse.ArgumentParser], None], Callable[
     "seed-from-files": (
         _seed_args,
         lambda a, n: a.seed_from_files(n.plans_dir, dry_run=n.dry_run, refresh_envelope=n.refresh_envelope),
+    ),
+    "regenerate-status-files": (
+        _regenerate_args,
+        lambda a, n: [str(path) for path in a.regenerate_status_files(n.program, n.plans_dir)],
     ),
     "capabilities": (_no_args, lambda a, n: a.capabilities),
     "doctor": (_no_args, lambda a, n: {"adapter": a.name, "capabilities": a.capabilities}),

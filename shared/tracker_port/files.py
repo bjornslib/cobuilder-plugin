@@ -267,6 +267,7 @@ class FilesAdapter:
     open_pull_request = _refuse
     set_pull_request_state = _refuse
     seed_from_files = _refuse
+    regenerate_status_files = _refuse
 
 
 def seedable_records(plans_dir: Path) -> tuple[list[TrackerRecord], list[dict[str, str]]]:
