@@ -11,6 +11,7 @@ from pathlib import Path
 
 from .config import load_adapter
 from .files import FilesAdapter
+from .projector import _score_text
 from .record import TrackerRecord
 
 
@@ -60,10 +61,11 @@ def plan_records(repo_root: Path, plan: str) -> PlanRecords:
     program = next((r for r in records if r.kind == "program" and r.id == plan), None)
     epics = [r for r in records if r.kind == "epic" and r.parent == plan]
     epic_ids = {r.id for r in epics}
-    slices = [
-        r for r in records
-        if r.kind == "slice" and (r.parent in epic_ids or r.id.startswith(f"{plan}/"))
-    ]
+    slices = sorted(
+        (r for r in records
+         if r.kind == "slice" and (r.parent in epic_ids or r.id.startswith(f"{plan}/"))),
+        key=lambda r: slice_row(r, plan)["n"],
+    )
     return PlanRecords(
         program=program,
         epics=epics,
@@ -78,6 +80,7 @@ def slice_row(record: TrackerRecord, plan: str, from_files: bool = False) -> dic
 
     `n` comes from the envelope, else the trailing number of the id. A
     non-files adapter names epics `<plan>-<local id>`, so the plan prefix goes.
+    The name loses its markdown bold. The score reads as the index reads it.
     """
     env = record.envelope
     number = env.get("n")
@@ -87,10 +90,28 @@ def slice_row(record: TrackerRecord, plan: str, from_files: bool = False) -> dic
     if not from_files and epic_id.startswith(f"{plan}-"):
         epic_id = epic_id[len(plan) + 1:]
     score = env.get("score")
+    attempts = env.get("attempts")
+    score_text = _score_text(score)
+    if score is not None and attempts:
+        score_text += f" (attempt {attempts})"
+    name = env.get("title") or record.id
     return {
         "n": int(number),
         "epic_id": epic_id,
-        "name": env.get("title") or record.id,
-        "score": "" if score is None else str(score),
-        "state": "completed" if record.lifecycle == "closed" else "planned",
+        "name": re.sub(r"\*\*(.+?)\*\*", r"\1", name),
+        "score": score_text,
+        "state": "completed" if record.lifecycle == "closed" else "pending",
     }
+
+
+def epic_key(plan: str, value: str) -> str:
+    """The design-qualified epic key, such as `beads-storage/E1`.
+
+    A parent id with a slash keeps its written form. `<plan>-E1` and a bare
+    `E1` take the plan as their design. The join looks epics up by this key.
+    """
+    if "/" in value:
+        return value
+    if value.startswith(f"{plan}-"):
+        value = value[len(plan) + 1:]
+    return f"{plan}/{value}"

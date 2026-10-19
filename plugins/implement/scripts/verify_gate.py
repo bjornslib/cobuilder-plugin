@@ -85,6 +85,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "shared"))
 import slice_table  # noqa: E402
 from tracker_port import reader  # noqa: E402
+import gate_status  # noqa: E402
 
 # The 04-slices.md table format (see plugins/implement/skills/
 # implement/SKILL.md, Gate 4a):
@@ -128,14 +129,6 @@ REQUIRED_INTERACTION_SECTIONS = [
 #   - 4b Epic technical solution designs: pending | APPROVED 2026-08-24 | n/a
 STATUS_4B_RE = re.compile(
     r"^\s*-\s*4b\b.*?:\s*(APPROVED\b.*|pending|in progress|n/a.*)\s*$",
-    re.IGNORECASE,
-)
-
-# 00-status.md's Gate 2b line, e.g.:
-#   - Gate 2b — Interaction design: APPROVED 2026-09-14
-#   - Gate 2b — Interaction design: n/a (no UI) — Screens: "none"
-STATUS_2B_RE = re.compile(
-    r"^\s*-\s*Gate\s*2b\b.*?:\s*(APPROVED\b.*|pending|in progress|n/a.*)\s*$",
     re.IGNORECASE,
 )
 
@@ -217,7 +210,7 @@ def check_2b_status(status_text: str | None, records: reader.PlanRecords | None 
     docs/plans/cobuilder-family and docs/plans/gate-doc-surfacing passing.
     A 2b line that is present and unapproved returns "pending".
     """
-    return gate_approval(records, status_text, STATUS_2B_RE, "gate2b", "n/a", unrecorded="n/a")
+    return gate_approval(records, status_text, gate_status.STATUS_2B_RE, "gate2b", "n/a", unrecorded="n/a")
 
 
 def check_2b(plan_dir: Path, status_text: str | None, records: reader.PlanRecords | None = None) -> dict[str, str]:
@@ -299,6 +292,12 @@ def epics_with_multiple_slices(slices: list[dict]) -> list[str]:
     return [epic_id for epic_id in order if counts[epic_id] > 1]
 
 
+def _epic_number(epic_id: str) -> float:
+    """The number in the `E<n>` suffix of an epic key. A key without one sorts last."""
+    match = re.search(r"E(\d+)$", epic_id)
+    return int(match.group(1)) if match else float("inf")
+
+
 def epic_id_to_filename(epic_id: str) -> str:
     """`<design>/<epic-id>` -> `epic-<epic-id>-design.md`, matching the
     per-epic filename SKILL.md's Gate 4b names. The scoped prefix (the
@@ -320,7 +319,7 @@ def check_4b_approved(status_text: str | None, records: reader.PlanRecords | Non
 def check_4b(plan_dir: Path, slices: list[dict], status_text: str | None, records: reader.PlanRecords | None = None) -> dict[str, dict[str, str]]:
     results: dict[str, dict[str, str]] = {}
     approved_status = check_4b_approved(status_text, records)
-    for epic_id in epics_with_multiple_slices(slices):
+    for epic_id in sorted(epics_with_multiple_slices(slices), key=_epic_number):
         design_path = plan_dir / epic_id_to_filename(epic_id)
         entry: dict[str, str] = {}
         if not design_path.exists():
@@ -362,21 +361,8 @@ def check_4c(rubrics_dir: Path, slices: list[dict]) -> dict[str, str]:
 LINK_CUTOFF = "2026-09-28"
 # Gates whose document has no viewer page. The user gets the file path.
 GATES_WITHOUT_PAGE = {"2b"}
-STATUS_GATE_RE = re.compile(
-    r"^-\s*Gate\s*(\w+)\b.*?:\s*APPROVED\s+(\d{4}-\d{2}-\d{2})(.*)$",
-    re.IGNORECASE,
-)
-# The view line of a gate block (ADR-0032, amendment of 2026-09-28). It sits
-# directly under the gate line and is indented, so the leading whitespace is
-# what makes it a sub-line of the gate above it. This script keeps its own
-# regex on purpose: check_links() verifies the raw authored URL, not the
-# portable route a projection derives, so it shares no parser with
-# shared/gate_status.py.
-VIEW_LINE_RE = re.compile(r"^\s+view:\s*\S+")
 # The Gate 4 sub-line keys in the program envelope. They are not gate lines.
 GATE4_SUBSTEPS = {"4a", "4b", "4c"}
-# An approved gate state in the envelope. It mirrors STATUS_GATE_RE's approval part.
-ENVELOPE_APPROVED_RE = re.compile(r"^APPROVED\s+(\d{4}-\d{2}-\d{2})", re.IGNORECASE)
 
 
 def check_links(status_text: str | None, records: reader.PlanRecords | None = None) -> dict[str, str]:
@@ -401,10 +387,10 @@ def check_links(status_text: str | None, records: reader.PlanRecords | None = No
             raw = key[len("gate"):]
             if raw in GATE4_SUBSTEPS:
                 continue
-            match = ENVELOPE_APPROVED_RE.match(str(state))
-            if match is None:
+            date = gate_status.approved_date(str(state))
+            if date is None:
                 continue
-            gate, date = raw.lower(), match.group(1)
+            gate = raw.lower()
             view_key = f"gate_view_{raw}"
             if gate in GATES_WITHOUT_PAGE or date < LINK_CUTOFF:
                 results[f"gate.{gate}"] = "n/a"
@@ -415,15 +401,14 @@ def check_links(status_text: str | None, records: reader.PlanRecords | None = No
         return results
     if status_text is None:
         return results
-    lines = status_text.splitlines()
-    for i, line in enumerate(lines):
-        match = STATUS_GATE_RE.match(line)
-        if not match:
+    for step in gate_status.parse_status_gates(status_text):
+        date = gate_status.approved_date(step["state"])
+        if date is None:
             continue
-        gate, date = match.group(1).lower(), match.group(2)
+        gate = step["n"].lower()
         if gate in GATES_WITHOUT_PAGE or date < LINK_CUTOFF:
             results[f"gate.{gate}"] = "n/a"
-        elif i + 1 < len(lines) and VIEW_LINE_RE.match(lines[i + 1]):
+        elif step["view"] is not None:
             results[f"gate.{gate}"] = "ok"
         else:
             results[f"gate.{gate}"] = "missing"

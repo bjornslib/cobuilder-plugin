@@ -23,6 +23,7 @@ for _dir in ("shared", "plugins/implement/scripts", "plugins/artifact/scripts"):
 FIXTURES = REPO_ROOT / "tests" / "fixtures" / "tracker"
 GOLDEN = FIXTURES / "golden"
 CORPUS = FIXTURES / "corpus"
+CORPUS_LIVE = FIXTURES / "corpus-live"
 PLAN_GROUPS = ("plans", "plans-index", "plans-real")
 
 
@@ -63,6 +64,10 @@ def files_tracker() -> str:
 
 def fake_tracker() -> str:
     return f"adapter: fake\ncorpus: {CORPUS}\n"
+
+
+def fake_live_tracker() -> str:
+    return f"adapter: fake\ncorpus: {CORPUS_LIVE}\n"
 
 
 def make_repo(tmp_path: Path, slug: str, plan_src: Path | None, tracker: str | None) -> Path:

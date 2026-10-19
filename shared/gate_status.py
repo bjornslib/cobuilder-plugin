@@ -26,8 +26,8 @@ The projection keeps the portable fact and drops the machine-specific one.
 ``view`` carries the route fragment from the link's first ``#``, such as
 ``#/review-link/build/plan/product``. A link token with no ``#`` is kept
 whole. A gate block with no ``view:`` line yields ``view=None``.
-``verify_gate.py`` reads the raw authored line on purpose, because checking
-the link is that script's own job, and it shares no parser with this module.
+``verify_gate.py`` reads the same blocks through this module. It checks
+only that a link exists, not the URL itself.
 """
 from __future__ import annotations
 
@@ -40,6 +40,14 @@ GATE_LINE_RE = re.compile(r"^-\s*Gate\s*(\d+\w?)\s*[—–-]\s*([^:]+):\s*(.+)$"
 # The view line. The leading whitespace is what makes it a sub-line of the
 # gate line above it: a top-level `view:` word is not a link.
 VIEW_LINE_RE = re.compile(r"^\s+view:\s*(\S+)\s*$")
+
+# 00-status.md's Gate 2b line, e.g.:
+#   - Gate 2b — Interaction design: APPROVED 2026-09-14
+#   - Gate 2b — Interaction design: n/a (no UI) — Screens: "none"
+STATUS_2B_RE = re.compile(
+    r"^\s*-\s*Gate\s*2b\b.*?:\s*(APPROVED\b.*|pending|in progress|n/a.*)\s*$",
+    re.IGNORECASE,
+)
 
 
 def view_route(token: str) -> str:

@@ -150,7 +150,7 @@ def read_epics(designs_dir: Path, slices_md: str) -> list[dict]:
 
 
 def port_slice_rows(plan_dir: Path) -> dict[str, list[dict]] | None:
-    """Slice rows keyed by epic id, read through the tracker port.
+    """Slice rows keyed by epic key, read through the tracker port.
 
     Returns None when the files path applies: no tracker is configured, or
     the configured store is docs/plans. The files path reads 04-slices.md.
@@ -161,7 +161,8 @@ def port_slice_rows(plan_dir: Path) -> dict[str, list[dict]] | None:
     rows: dict[str, list[dict]] = {}
     for record in records.slices:
         row = reader.slice_row(record, plan_dir.name)
-        rows.setdefault(row["epic_id"], []).append(
+        key = reader.epic_key(plan_dir.name, row["epic_id"])
+        rows.setdefault(key, []).append(
             {"n": row["n"], "name": row["name"], "score": row["score"], "state": row["state"]})
     return rows
 
@@ -209,7 +210,7 @@ def read_plan(plan_dir: Path, designs_dir: Path, rubrics_dir: Path) -> dict:
     if rows is None:
         epics = read_epics(designs_dir, docs.get("04-slices.md", ""))
     else:
-        epics = _epics(designs_dir, lambda _key, epic_id: rows.get(epic_id, []))
+        epics = _epics(designs_dir, lambda key, _epic_id: rows.get(key, []))
     return {"docs": docs, "gates": gates, "epics": epics, "paths": paths}
 
 
