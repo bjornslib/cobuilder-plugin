@@ -35,18 +35,12 @@
     {
       "id": "E1",
       "slug": "work-drawer",
-      "branch": "design/work-drawer",
-      "pr": null,
-      "state": "planned",
       "outcome": "the day-deck drawer holds the Work board: five collapsible lanes, a state filter that the arrow keys step, an incremental search that resets the filter and auto-reads a single result, and a detail pane that follows the walk",
       "note": "One pull request. The engineer chose one pull request for the design, so the epic carries the branch alone. The prototypes stay under src/variations/ as the reference arrangement while the drawer is the prototype surface; the port that replaces shell/Board.tsx's full-page board is this design's next epic and is deliberately not in this one, so the shipped board never regresses while the drawer is under review."
     },
     {
       "id": "E2",
       "slug": "work-drawer",
-      "branch": "design/work-drawer",
-      "pr": null,
-      "state": "planned",
       "outcome": "the header and the pane's buttons state themselves, and the state strip's chips step with the arrow keys",
       "note": "The second epic of the same pull request: the renames, the header's counts, and the chip walk."
     }

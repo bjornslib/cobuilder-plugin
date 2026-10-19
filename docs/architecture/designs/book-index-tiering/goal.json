@@ -2,7 +2,9 @@
   "name": "book-index-tiering",
   "title": "book-index.md gains a nano tier, and full-book loading stops being unconditional",
   "adr": "ADR-0021",
-  "adrs": ["ADR-0021"],
+  "adrs": [
+    "ADR-0021"
+  ],
   "created": "2026-08-25",
   "outcome": "book-index.md offers nano, mini, and full tiers for all 14 vendored books, with a 3-nano-minimum judgment-gated escalation rule; Review/Maintenance's mandatory 14-file security corpus load gets the same cheap-signal-before-expensive-read shape, opposite default bias, no vendoring.",
   "done_when": [
@@ -18,21 +20,30 @@
     "boundary_rules_checked": true,
     "challenge_stage_run": true
   },
-  "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
+  "limits": {
+    "warn_after_rounds": 3,
+    "cutoff_rounds": 6
+  },
   "epics": [
     {
       "id": "E1",
       "slug": "book-index-tiering",
-      "outcome": "book-index.md, books/README.md, design-mode.md, and SKILL.md's Review mode security corpus step all reflect ADR-0021's two escalation rules (book tiering, and the security corpus applicability read)",
-      "branch": "design/book-index-tiering",
-      "pr": 16,
-      "state": "open"
+      "outcome": "book-index.md, books/README.md, design-mode.md, and SKILL.md's Review mode security corpus step all reflect ADR-0021's two escalation rules (book tiering, and the security corpus applicability read)"
     }
   ],
   "stage": "review",
   "supersedes": null,
   "rounds": [
-    { "n": 1, "changed": false, "feedback_class": "approved" },
-    { "n": 2, "changed": true, "feedback_class": "material", "note": "Folded in the security corpus applicability read after a live discussion of whether the mandatory 14-file security load deserved the same scrutiny as book loading; resolved with an opposite default bias (full-on-ambiguity, not skip-on-ambiguity)." }
+    {
+      "n": 1,
+      "changed": false,
+      "feedback_class": "approved"
+    },
+    {
+      "n": 2,
+      "changed": true,
+      "feedback_class": "material",
+      "note": "Folded in the security corpus applicability read after a live discussion of whether the mandatory 14-file security load deserved the same scrutiny as book loading; resolved with an opposite default bias (full-on-ambiguity, not skip-on-ambiguity)."
+    }
   ]
 }

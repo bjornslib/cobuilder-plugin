@@ -2,7 +2,9 @@
   "name": "review-link",
   "title": "A document under review carries a viewer link",
   "adr": "ADR-0032",
-  "adrs": ["ADR-0032"],
+  "adrs": [
+    "ADR-0032"
+  ],
   "created": "2026-09-28",
   "outcome": "Each time a workflow asks the user to approve a document, the user gets a checked link to that document's page in the viewer before the question.",
   "done_when": [
@@ -16,13 +18,13 @@
     "challenge_stage_run": false,
     "note": "The user made the seven decisions in ADR-0032 in chat on 2026-09-28, and approved one ADR, one epic, and three slices, built without further questions. Design mode stages 2 to 7 did not run. This design carries a goal.json only."
   },
-  "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
+  "limits": {
+    "warn_after_rounds": 3,
+    "cutoff_rounds": 6
+  },
   "epics": [
     {
       "id": "E1",
-      "branch": "design/review-link/E1",
-      "pr": null,
-      "state": "planned",
       "note": "A viewer link for each document under review. Slice 1 adds review_link.py and a --route argument to View mode. Slice 2 projects the Gate 1 and Gate 2 documents and adds the plan page under the Build level. Slice 3 adds the Present for review procedure to every presentation point, and the link check to verify_gate.py."
     }
   ],
