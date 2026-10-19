@@ -13,7 +13,7 @@ Test command: `uv run pytest tests/test_tracker_read_spy.py tests/test_verify_ga
 **Must be true:** for each directory under `docs/plans`, `verify_gate.py --plan <dir>` gives the same output after the change as before it. For the same plans, `build_builds_view.py` gives the same output as before.
 **Evidence to check:**
 - `.cobuilder/rubrics/beads-storage/evidence/slice-11/` holds one before file and one after file for each plan and each script.
-- Compare each pair. Every pair is equal.
+- Compare each pair. Every pair is equal, except for these differences that the engineer decided on 2026-10-19: the builds view takes the state word from the tracker (completed or pending), shows the tracker score with an attempt suffix, and shows 1.00 for a closed slice with no stored score. The `gate.2b` line may move inside the links block of the gate check. Slice order follows the slice number.
 - The count of plan pairs equals the count of directories under `docs/plans`.
 **Scoring:**
 - 1.0 — every pair is equal, and the count of pairs equals the count of plan directories.
