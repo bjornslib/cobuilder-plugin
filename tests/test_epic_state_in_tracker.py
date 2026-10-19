@@ -22,11 +22,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
-SHARED_DIR = REPO / "shared"
-sys.path.insert(0, str(SHARED_DIR))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _tracker_port_support as support  # noqa: E402
+
+SHARED_DIR = support.SHARED_DIR
 
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "tracker" / "epic-state"
 BUILD_SCRIPT = SHARED_DIR / "build_index.py"

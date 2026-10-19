@@ -1,30 +1,26 @@
 """CLI contract for shared/tracker.py. Slice 2 checks the write refusal with no adapter.
 
 A write with no configured adapter exits 2, prints a message that names the
-missing adapter, and changes no file.
+missing adapter, and changes no file. The read-path spy sits in
+test_tracker_cli_spy.py, and the seed refresh tests sit in test_tracker_cli_seed.py.
 """
-
 from __future__ import annotations
 
 import json
-import shutil
 import subprocess
-import sys
 from pathlib import Path
 
-import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import _tracker_port_support as support  # noqa: E402
+import _tracker_cli_support as support
 
-REPO_DIR = Path(__file__).resolve().parent.parent
-TRACKER_CLI = REPO_DIR / "shared" / "tracker.py"
-FIXTURES_DIR = REPO_DIR / "tests" / "fixtures" / "tracker"
-CORPUS_DIR = FIXTURES_DIR / "corpus"
-PLANS_DIR = FIXTURES_DIR / "plans"
-
-
+TRACKER_CLI = support.TRACKER_CLI
+CORPUS_DIR = support.FIXTURES / "corpus"
+PLANS_DIR = support.FIXTURES / "plans"
+_cfg = support.fake_config
+_cli = support.cli
+_payload = support.ok
 _snapshot = support.snapshot
+FIXTURES_DIR = support.FIXTURES
 
 
 def test_write_without_adapter_exits_2_and_changes_no_file(tmp_path: Path) -> None:
@@ -65,25 +61,6 @@ def test_write_without_adapter_exits_2_and_changes_no_file(tmp_path: Path) -> No
         assert isinstance(json.loads(result.stdout), dict), result.stdout
     assert _snapshot(tmp_path) == before_repo
     assert _snapshot(FIXTURES_DIR) == before_fixtures
-
-
-def _cfg(tmp_path: Path, corpus: Path = CORPUS_DIR, state_file: Path | None = None) -> Path:
-    # The config names the fake adapter and a corpus. The tmp repo holds it, never docs/plans.
-    config = tmp_path / ".cobuilder" / "tracker.yaml"
-    config.parent.mkdir(parents=True, exist_ok=True)
-    lines = [
-        "adapter: fake",
-        f"corpus: {json.dumps(str(corpus))}",
-        f"plans_dir: {json.dumps(str(PLANS_DIR))}",
-    ]
-    if state_file is not None:
-        lines.append(f"state_file: {json.dumps(str(state_file))}")
-    config.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return config
-
-
-_cli = support.cli
-_payload = support.ok
 
 
 def test_list_programs_prints_corpus_ids(tmp_path: Path) -> None:
@@ -148,102 +125,3 @@ def test_seed_dry_run_prints_lines_and_writes_nothing(tmp_path: Path) -> None:
     assert created, "the real seed creates records"
     for row in created:
         assert row["id"] in dry.stdout, row["id"]
-
-
-SPY_SOURCE = '''
-import json
-import runpy
-import sys
-
-opened = []
-sys.addaudithook(lambda event, args: opened.append(str(args[0])) if event == "open" else None)
-cli, out, *rest = sys.argv[1:]
-sys.path.insert(0, cli.rsplit("/", 1)[0])
-sys.argv = [cli, *rest]
-code = 0
-try:
-    runpy.run_path(cli, run_name="__main__")
-except SystemExit as exc:
-    code = exc.code if isinstance(exc.code, int) else 1
-finally:
-    with open(out, "w", encoding="utf-8") as handle:
-        json.dump(opened, handle)
-sys.exit(code)
-'''
-
-
-def _spy_opens(tmp_path: Path, config: Path, *argv: str) -> list[str]:
-    # The spy records every file the CLI opens, then the test reads that list.
-    spy = tmp_path / "spy.py"
-    spy.write_text(SPY_SOURCE, encoding="utf-8")
-    out = tmp_path / "opens.json"
-    result = subprocess.run(
-        ["uv", "run", "python", str(spy), str(TRACKER_CLI), str(out), "--config", str(config), *argv],
-        cwd=tmp_path,
-        capture_output=True,
-        text=True,
-        timeout=180,
-        check=False,
-    )
-    assert result.returncode == 0, result.stderr
-    return json.loads(out.read_text(encoding="utf-8"))
-
-
-@pytest.mark.parametrize(
-    "argv",
-    [["list-programs"], ["next-ready", "--kind", "slice", "--under", "demo-E1"]],
-    ids=["list-programs", "next-ready"],
-)
-def test_read_path_never_opens_docs_plans(tmp_path: Path, argv: list[str]) -> None:
-    opens = _spy_opens(tmp_path, _cfg(tmp_path), *argv)
-    assert any("corpus" in path for path in opens), "the fake adapter reads the corpus"
-    assert [path for path in opens if "docs/plans" in path] == []
-
-
-def test_seed_refresh_flag_is_accepted(tmp_path: Path) -> None:
-    created = _payload(_cli(_cfg(tmp_path), tmp_path, "seed-from-files", str(PLANS_DIR), "--refresh-envelope"))
-    assert created, "the seed with the refresh flag returns the records it creates"
-
-
-def test_seed_refresh_dry_run_writes_nothing(tmp_path: Path) -> None:
-    state = tmp_path / "state.json"
-    config = _cfg(tmp_path, state_file=state)
-    dry = _cli(config, tmp_path, "seed-from-files", str(PLANS_DIR), "--dry-run", "--refresh-envelope")
-    assert dry.returncode == 0, dry.stderr
-    assert not state.exists()
-
-
-def test_regenerate_status_files_without_adapter_exits_2_and_writes_nothing(
-    tmp_path: Path,
-) -> None:
-    assert TRACKER_CLI.is_file(), "shared/tracker.py does not exist"
-
-    # A copy of the mini plan, and no .cobuilder/tracker.yaml.
-    plans_root = tmp_path / "plans"
-    shutil.copytree(PLANS_DIR, plans_root)
-    missing_config = tmp_path / ".cobuilder" / "tracker.yaml"
-    assert not missing_config.exists()
-
-    before = _snapshot(tmp_path)
-
-    result = subprocess.run(
-        [
-            "uv",
-            "run",
-            str(TRACKER_CLI),
-            "--config",
-            str(missing_config),
-            "regenerate-status-files",
-            "beads-storage-mini",
-            "--plans-dir",
-            str(plans_root),
-        ],
-        cwd=tmp_path,
-        capture_output=True,
-        text=True,
-        timeout=180,
-        check=False,
-    )
-
-    assert result.returncode == 2, result.stderr + result.stdout
-    assert _snapshot(tmp_path) == before

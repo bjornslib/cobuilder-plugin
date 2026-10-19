@@ -14,14 +14,13 @@ from pathlib import Path
 
 import pytest
 
-REPO = Path(__file__).resolve().parent.parent
-SHARED_DIR = REPO / "shared"
-sys.path.insert(0, str(SHARED_DIR))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _tracker_port_support as support  # noqa: E402
 
 import _bundle_meta  # noqa: E402
 import migrate_bundle as mb  # noqa: E402
+
+REPO = support.REPO_ROOT
+SHARED_DIR = support.SHARED_DIR
 
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "tracker" / "epic-state"
 STATE_KEYS = ("branch", "pr", "state")

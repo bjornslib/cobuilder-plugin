@@ -5,6 +5,7 @@ a runner that answers one create, and the real-bd scratch tracker.
 """
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import subprocess
@@ -102,3 +103,49 @@ def scratch_tracker(root: Path) -> Path:
     run(["bd", "config", "set", "team.enabled", "true"], seed)
     run(["bd", "config", "set", "team.sync_branch", "main"], seed)
     return seed
+
+
+def all_records(adapter: Any) -> list[Any]:
+    """Return every record of the adapter, sorted by id."""
+    records = adapter.list_programs() + adapter.list_epics() + adapter.list_slices()
+    return sorted(records + adapter.list_pull_requests(), key=lambda record: record.id)
+
+
+READ_VERBS = frozenset({"list", "show", "ready", "blocked", "stats", "comments"})
+
+
+def load_transcript(name: str) -> dict[str, Any]:
+    return json.loads((BEADS_DIR / "transcripts" / f"{name}.json").read_text(encoding="utf-8"))
+
+
+def metadata_arg(args: list[str]) -> dict[str, Any]:
+    return json.loads(args[args.index("--metadata") + 1])
+
+
+def steps(name: str) -> list[dict[str, Any]]:
+    return load_transcript(name)["steps"]
+
+
+def with_syncs(recorded: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Add one recorded `bd sync` at the end of each adapter operation.
+
+    Each adapter operation starts with a `list` read. An operation that
+    writes ends with the one sync, after its read-back.
+    """
+    sync_step = dict(load_transcript("sync_ok"))
+    out: list[dict[str, Any]] = []
+    group: list[dict[str, Any]] = []
+
+    def close_group() -> None:
+        out.extend(group)
+        if any(step["args"][0] not in READ_VERBS for step in group):
+            out.append(dict(sync_step))
+        group.clear()
+
+    for step in recorded:
+        if step["args"][0] == "list" and group:
+            close_group()
+        group.append(step)
+    if group:
+        close_group()
+    return out

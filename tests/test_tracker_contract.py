@@ -1,107 +1,26 @@
 """Contract cases for the tracker port. Slice 1 runs one case on the fake adapter.
 
 Slice 2 runs cases 1 to 6 on every adapter in ADAPTER_BUILDERS. E2 adds the beads
-builder there, so the same cases run on beads. Case 7 (projector parity) is E2 slice 6.
+builder there, so the same cases run on beads. The write effects and case 7
+(projector parity, E2 slice 6) sit in test_tracker_contract_writes.py.
 
 Run with: uv run pytest tests/test_tracker_contract.py -q
 """
 from __future__ import annotations
 
 import json
-import shutil
-import sys
 from pathlib import Path
 from typing import Any, Callable
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import _tracker_port_support as support  # noqa: E402
+from _tracker_contract_support import CORPUS_DIR, assert_same_value, ids
 
-CORPUS_DIR = support.CORPUS
-EXPECTED_INDEX = support.EXPECTED_INDEX
-BEADS_TRANSCRIPT = CORPUS_DIR.parent / "beads" / "transcripts" / "list.json"
+# The module holds the corpus, build, and adapter fixtures.
+pytest_plugins = ["_tracker_contract_support"]
+
 
 READY_KINDS = ("program", "epic", "slice")
-
-
-def _build_fake(corpus_dir: Path) -> Any:
-    from tracker_port.fake import FakeAdapter
-
-    return FakeAdapter(corpus_dir)
-
-
-def _seed_plan(corpus_dir: Path) -> list[tuple[dict[str, Any], str]]:
-    # Parents come first, so each parent id exists when its child is created.
-    def load(name: str) -> Any:
-        return json.loads((corpus_dir / name).read_text(encoding="utf-8"))
-
-    records = [load("program.json"), *load("prs.json"), *load("epics.json"), *load("slices.json")]
-    bd_types = {"program": "program", "pr": "task", "epic": "epic", "slice": "task"}
-    return [(record, bd_types[record["kind"]]) for record in records]
-
-
-def _build_beads_scratch(corpus_dir: Path) -> Any:
-    # Real bd in a scratch tracker, seeded from the corpus copy at build time.
-    # Skips when bd is not on PATH, so the suite runs without bd.
-    if shutil.which("bd") is None:
-        pytest.skip("bd is not on PATH")
-    from tracker_port.bd_runner import BdRunner
-    from tracker_port.beads import BeadsAdapter
-
-    root = corpus_dir.parent / "bd"
-    root.mkdir()
-    runner = BdRunner(cwd=root)
-    runner.run(["init", "--quiet", "--prefix", "t", "--skip-agents", "--skip-hooks", "--non-interactive"])
-    runner.run(["config", "set", "types.custom", "program,pr"])
-    bd_ids: dict[str, str] = {}
-    for record, bd_type in _seed_plan(corpus_dir):
-        args = [
-            "create", "--silent", "--type", bd_type, "--title", record["id"],
-            "--priority", "1" if record["kind"] == "program" else "2",
-            "--metadata", json.dumps({"cb": {"v": 1, "id": record["id"], "kind": record["kind"], "envelope": record["envelope"]}}),
-        ]
-        if record["external_ref"]:
-            args += ["--external-ref", record["external_ref"]]
-        if record["parent"]:
-            args += ["--parent", bd_ids[record["parent"]]]
-        for blocker in record["blocked_by"]:
-            args += ["--deps", f"blocked-by:{bd_ids[blocker]}"]
-        bd_id = runner.run(args).strip()
-        bd_ids[record["id"]] = bd_id
-        if record["lifecycle"] == "closed":
-            runner.run(["update", bd_id, "--status", "closed"])
-        elif record["lifecycle"] == "in_progress":
-            runner.run(["update", bd_id, "--status", "in_progress", "--assignee", record["assignee"]])
-    return BeadsAdapter(runner=runner)
-
-
-# Each entry builds one adapter over a corpus copy.
-ADAPTER_BUILDERS: dict[str, Callable[[Path], Any]] = {"fake": _build_fake, "beads": _build_beads_scratch}
-
-
-class _ReplayRunner:
-    """Stands in for BdRunner. It answers only the recorded bd call."""
-
-    def __init__(self, args: list[str], stdout: str) -> None:
-        self.expected_args = args
-        self.stdout = stdout
-
-    def run(self, args: list[str]) -> str:
-        assert list(args) == self.expected_args, f"unexpected bd call: {args}"
-        return self.stdout
-
-
-def _build_beads_replay(_corpus_dir: Path) -> Any:
-    # Replays the recorded bd 1.3.0 list call. The corpus is unused: beads reads come from the transcript.
-    from tracker_port.beads import BeadsAdapter
-
-    transcript = json.loads(BEADS_TRANSCRIPT.read_text(encoding="utf-8"))
-    return BeadsAdapter(runner=_ReplayRunner(transcript["args"], transcript["stdout"]))
-
-
-# Case 7 only. Replay adapters need no bd. Slice 7 adds real-bd writes to ADAPTER_BUILDERS.
-READ_ADAPTER_BUILDERS: dict[str, Callable[[Path], Any]] = {"fake": _build_fake, "beads": _build_beads_replay}
 
 
 def test_next_ready_slice_under_epic() -> None:
@@ -113,55 +32,22 @@ def test_next_ready_slice_under_epic() -> None:
     assert [record.id for record in ready] == ["demo-E1-s3"]
 
 
-@pytest.fixture
-def corpus(tmp_path: Path) -> Path:
-    # Writes run on a copy, so the checked-in corpus never changes.
-    copy = tmp_path / "corpus"
-    shutil.copytree(CORPUS_DIR, copy)
-    return copy
-
-
-@pytest.fixture(params=list(ADAPTER_BUILDERS))
-def build(request: pytest.FixtureRequest) -> Callable[[Path], Any]:
-    return ADAPTER_BUILDERS[request.param]
-
-
-@pytest.fixture
-def adapter(build: Callable[[Path], Any], corpus: Path) -> Any:
-    return build(corpus)
-
-
-def _ids(records: list[Any]) -> list[str]:
-    return [record.id for record in records]
-
-
-def _assert_same_value(stored: Any, expected: Any, label: str) -> None:
-    # Type first: True == 1 and 1 == 1.0 in Python, so equality alone hides a type change.
-    assert type(stored) is type(expected), label
-    if isinstance(expected, tuple):
-        assert len(stored) == len(expected), label
-        for index, (got, want) in enumerate(zip(stored, expected)):
-            _assert_same_value(got, want, f"{label}[{index}]")
-    else:
-        assert stored == expected, label
-
-
 # Case 1: next_ready never returns a pull request, and never returns a deferred epic.
 def test_next_ready_excludes_pr_and_deferred(adapter: Any) -> None:
     for kind in READY_KINDS:
         for record in adapter.next_ready(kind):
             assert record.kind == kind, record.id
-    assert "demo-E3" not in _ids(adapter.next_ready("epic"))
-    assert "pr-101" not in _ids(adapter.next_ready("slice"))
+    assert "demo-E3" not in ids(adapter.next_ready("epic"))
+    assert "pr-101" not in ids(adapter.next_ready("slice"))
 
 
 # Case 2: next_ready returns the right records for each kind, with and without under.
 def test_next_ready_kinds(adapter: Any) -> None:
-    assert _ids(adapter.next_ready("program")) == ["demo"]
-    assert _ids(adapter.next_ready("slice")) == ["demo-E1-s3"]
-    assert _ids(adapter.next_ready("slice", under="demo-E1")) == ["demo-E1-s3"]
-    assert _ids(adapter.next_ready("slice", under="demo-E2")) == []
-    assert _ids(adapter.next_ready("epic")) == []
+    assert ids(adapter.next_ready("program")) == ["demo"]
+    assert ids(adapter.next_ready("slice")) == ["demo-E1-s3"]
+    assert ids(adapter.next_ready("slice", under="demo-E1")) == ["demo-E1-s3"]
+    assert ids(adapter.next_ready("slice", under="demo-E2")) == []
+    assert ids(adapter.next_ready("epic")) == []
 
 
 # Case 3: claim_slice leaves the claimant in assignee. Read-back covers atomic_claim false.
@@ -195,38 +81,38 @@ def test_envelope_round_trip(build: Callable[[Path], Any], corpus: Path) -> None
         assert key in envelope, key
         # The adapter returns lists as tuples, so the expected list is a tuple.
         expected = tuple(value) if isinstance(value, list) else value
-        _assert_same_value(envelope[key], expected, key)
+        assert_same_value(envelope[key], expected, key)
 
 
 # Case 4b: a string written through the port reads back as the same string.
 def test_gate_value_round_trip(adapter: Any) -> None:
     adapter.set_gate_value("demo", "gate4", "done")
 
-    _assert_same_value(adapter.list_programs()[0].envelope["gate4"], "done", "gate4")
+    assert_same_value(adapter.list_programs()[0].envelope["gate4"], "done", "gate4")
 
 
 # Case 5: a pull request blocks two epics. Both epics show as ready only after the merge.
 def test_pr_blocks_two_epics(adapter: Any) -> None:
     # The corpus has pr-101 blocking demo-E1 and demo-E2.
-    assert _ids(adapter.next_ready("epic")) == []
+    assert ids(adapter.next_ready("epic")) == []
 
     adapter.set_pull_request_state("pr-101", merged=True)
 
-    assert _ids(adapter.next_ready("epic")) == ["demo-E1", "demo-E2"]
+    assert ids(adapter.next_ready("epic")) == ["demo-E1", "demo-E2"]
 
 
 def test_open_pull_request_blocks_two_epics(adapter: Any) -> None:
     adapter.set_pull_request_state("pr-101", merged=True)
-    assert _ids(adapter.next_ready("epic")) == ["demo-E1", "demo-E2"]
+    assert ids(adapter.next_ready("epic")) == ["demo-E1", "demo-E2"]
 
     adapter.open_pull_request("pr-102", ["demo-E1", "demo-E2"])
 
-    assert "pr-102" in _ids(adapter.list_pull_requests())
-    assert _ids(adapter.next_ready("epic")) == []
+    assert "pr-102" in ids(adapter.list_pull_requests())
+    assert ids(adapter.next_ready("epic")) == []
 
     adapter.set_pull_request_state("pr-102", merged=True)
 
-    assert _ids(adapter.next_ready("epic")) == ["demo-E1", "demo-E2"]
+    assert ids(adapter.next_ready("epic")) == ["demo-E1", "demo-E2"]
 
 
 # Case 6: no adapter. load_adapter returns None for a missing config.
@@ -280,92 +166,3 @@ def test_write_without_adapter_raises(method: str, args: tuple[Any, ...]) -> Non
 
     with pytest.raises(NoAdapterError):
         getattr(NoAdapter(), method)(*args)
-
-
-# Write effects that the fake adapter must keep for the other cases.
-def test_set_program_stage_writes_envelope(adapter: Any) -> None:
-    adapter.set_program_stage("demo", "build")
-
-    assert adapter.list_programs()[0].envelope["stage"] == "build"
-
-
-def test_set_epic_state_writes_lifecycle(adapter: Any) -> None:
-    adapter.set_epic_state("demo-E1", "closed")
-
-    assert {r.id: r.lifecycle for r in adapter.list_epics()}["demo-E1"] == "closed"
-
-
-def test_set_slice_state_writes_lifecycle_and_score(adapter: Any) -> None:
-    adapter.set_slice_state("demo-E1-s2", "closed", score=0.8)
-
-    slice_record = adapter.get_slice("demo-E1-s2")
-    assert slice_record.lifecycle == "closed"
-    _assert_same_value(slice_record.envelope["score"], 0.8, "score")
-
-
-def test_record_attempt_writes_score_and_count(adapter: Any) -> None:
-    adapter.record_attempt("demo-E1-s3", 0.6)
-
-    slice_record = adapter.get_slice("demo-E1-s3")
-    _assert_same_value(slice_record.envelope["score"], 0.6, "score")
-    _assert_same_value(slice_record.envelope["attempts"], 1, "attempts")
-
-
-def test_escalate_sets_flag(adapter: Any) -> None:
-    adapter.escalate("demo-E1-s3", 0.4, "attempt limit reached")
-
-    assert adapter.get_slice("demo-E1-s3").envelope["escalated"] is True
-
-
-def test_add_note_keeps_record_fields(adapter: Any) -> None:
-    before = adapter.get_slice("demo-E1-s3")
-
-    adapter.add_note("demo-E1-s3", "a note")
-
-    after = adapter.get_slice("demo-E1-s3")
-    assert (after.lifecycle, after.assignee, dict(after.envelope)) == (
-        before.lifecycle,
-        before.assignee,
-        dict(before.envelope),
-    )
-
-
-def test_sync_keeps_ready_list(adapter: Any) -> None:
-    before = _ids(adapter.next_ready("slice"))
-
-    adapter.sync()
-
-    assert _ids(adapter.next_ready("slice")) == before
-
-
-def test_capabilities_reports_four_flags(adapter: Any) -> None:
-    caps = adapter.capabilities
-
-    for flag in ("native_ready", "atomic_claim", "rich_envelope", "offline_read"):
-        assert isinstance(getattr(caps, flag), bool), flag
-
-
-def test_seed_dry_run_returns_creates_and_writes_nothing() -> None:
-    from tracker_port.fake import FakeAdapter
-
-    plans_dir = Path(__file__).resolve().parent / "fixtures" / "tracker" / "plans"
-    adapter = FakeAdapter(CORPUS_DIR)
-    before = _ids(adapter.list_programs()) + _ids(adapter.list_epics()) + _ids(adapter.list_slices())
-    dry = _ids(adapter.seed_from_files(plans_dir, dry_run=True))
-    assert dry, "the dry run returns the records it would create"
-    after_dry = _ids(adapter.list_programs()) + _ids(adapter.list_epics()) + _ids(adapter.list_slices())
-    assert after_dry == before, "a dry run writes nothing"
-    created = _ids(adapter.seed_from_files(plans_dir))
-    assert created == dry, "the real call creates the records the dry run named"
-
-
-# Case 7: every read adapter projects the same index as the golden file. Beads replays bd output.
-@pytest.mark.parametrize("adapter_id", list(READ_ADAPTER_BUILDERS))
-def test_contract_case_7_projector_parity(adapter_id: str) -> None:
-    from tracker_port.projector import project
-
-    adapter = READ_ADAPTER_BUILDERS[adapter_id](CORPUS_DIR)
-    records = support.all_records(adapter)
-    expected = json.loads(EXPECTED_INDEX.read_text(encoding="utf-8"))
-
-    assert project(records) == expected

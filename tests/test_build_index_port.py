@@ -14,16 +14,14 @@ import subprocess
 import sys
 from pathlib import Path
 
-SHARED_DIR = Path(__file__).resolve().parent.parent / "shared"
-sys.path.insert(0, str(SHARED_DIR))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _tracker_port_support as support  # noqa: E402
 
 import build_index  # noqa: E402
 from tracker_port import projector  # noqa: E402
 from tracker_port.files import FilesAdapter  # noqa: E402
 
-TESTS_DIR = Path(__file__).resolve().parent
+SHARED_DIR = support.SHARED_DIR
+TESTS_DIR = support.TESTS_DIR
 FIXTURES = TESTS_DIR / "fixtures" / "tracker"
 GOLDEN = FIXTURES / "golden" / "build_index_entities.json"
 MINI_PLANS = FIXTURES / "plans" / "beads-storage-mini"

@@ -10,13 +10,10 @@ import importlib.util
 import json
 import re
 import subprocess
-import sys
-from pathlib import Path
 from typing import Any
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _tracker_port_support as support  # noqa: E402
 
 REPO = support.REPO_ROOT

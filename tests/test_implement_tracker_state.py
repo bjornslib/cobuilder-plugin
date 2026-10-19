@@ -14,7 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import _tracker_port_support as support  # noqa: E402
+import _tracker_cli_support as support  # noqa: E402
 
 PROGRAM = "wm-demo"
 SLICE = "wm-demo/1"

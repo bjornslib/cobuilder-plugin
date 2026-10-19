@@ -6,11 +6,8 @@ feature gates join Gate 1 and Gate 2 to their documents.
 """
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "shared"))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _tracker_port_support as support  # noqa: E402
 
 import build_index  # noqa: E402

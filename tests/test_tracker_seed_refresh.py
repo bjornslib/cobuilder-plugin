@@ -16,19 +16,13 @@ import inspect
 import json
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _tracker_port_support as support  # noqa: E402
 
-REPO = support.REPO_ROOT
-SHARED_DIR = support.SHARED_DIR
-TESTS_DIR = support.TESTS_DIR
-FIXTURES = support.FIXTURES
 PLANS_DIR = support.PLANS_DIR
 CORPUS_DIR = support.CORPUS
 

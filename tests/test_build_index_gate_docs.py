@@ -4,11 +4,8 @@ Run with: uv run --with pytest pytest tests/test_build_index_gate_docs.py -v
 """
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "shared"))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _tracker_port_support as support  # noqa: E402
 
 import build_index  # noqa: E402

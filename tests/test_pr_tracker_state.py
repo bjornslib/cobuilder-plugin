@@ -15,9 +15,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import _tracker_port_support as support  # noqa: E402
+import _tracker_cli_support as support  # noqa: E402
+import _tracker_port_support as port_support  # noqa: E402
 
-FIXTURE = support.FIXTURES / "write-model-pr"
+FIXTURE = port_support.FIXTURES / "write-model-pr"
 EPICS = ["pr-demo/E-a", "pr-demo/E-b"]
 REF = "pr/1"
 

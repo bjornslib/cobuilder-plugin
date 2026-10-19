@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "shared"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _bundle_meta import DESIGN_STAGES  # noqa: E402
-import _tracker_port_support as support  # noqa: E402
+import _tracker_cli_support as support  # noqa: E402
 
 PROGRAM = "wm-demo"
 EPIC = "wm-demo/E1"

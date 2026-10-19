@@ -13,9 +13,6 @@ from typing import Any
 import pytest
 import yaml
 
-SHARED_DIR = Path(__file__).resolve().parent.parent / "shared"
-sys.path.insert(0, str(SHARED_DIR))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _tracker_port_support as support  # noqa: E402
 
 import build_index  # noqa: E402
