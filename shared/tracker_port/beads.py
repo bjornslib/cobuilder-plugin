@@ -58,6 +58,7 @@ def _create_argv(
     priority: str,
     parent: str | None = None,
     external_ref: str | None = None,
+    assignee: str | None = None,
 ) -> list[str]:
     # The flag order matches the recorded bd transcripts. Replays compare the whole argument list.
     argv = ["create", "--silent"]
@@ -66,6 +67,8 @@ def _create_argv(
     argv += ["--type", bd_type, "--title", title, "--priority", priority]
     if external_ref is not None:
         argv += ["--external-ref", external_ref]
+    if assignee is not None:
+        argv += ["--assignee", assignee]
     argv += ["--metadata", _metadata_arg(block)]
     return argv
 
@@ -117,6 +120,7 @@ class BeadsAdapter:
 
     def __init__(self, runner: Any) -> None:
         self.runner = runner
+        self._batching = False
 
     def _rows(self) -> list[dict[str, Any]]:
         return json.loads(self.runner.run(LIST_ARGS))
@@ -236,7 +240,22 @@ class BeadsAdapter:
         try:
             self.runner.run(["sync"])
         except BdError as error:
-            raise AdapterError(f"bd sync failed: {error.stderr.strip() or error}") from error
+            if "no branches found in remote" not in error.stderr:
+                raise AdapterError(f"bd sync failed: {error.stderr.strip() or error}") from error
+            # The first publish to an empty remote fails the pull. Push the dolt data, then sync once more.
+            self._run_or_raise(["dolt", "push"])
+            self._run_or_raise(["sync"])
+
+    def _run_or_raise(self, argv: list[str]) -> None:
+        try:
+            self.runner.run(argv)
+        except BdError as error:
+            raise AdapterError(f"bd {' '.join(argv)} failed: {error.stderr.strip() or error}") from error
+
+    def _publish(self) -> None:
+        # Each write op syncs once at its end. A seed batch skips this and syncs once at its end.
+        if not self._batching:
+            self.sync()
 
     def claim_slice(self, id: str, claimant: str) -> TrackerRecord:
         rows = self._rows()
@@ -247,6 +266,7 @@ class BeadsAdapter:
             raise AdapterError(f"claim of {id} refused: {error.stderr.strip()}") from error
         shown = json.loads(self.runner.run(["show", row["id"], "--json"]))[0]
         record = self._record(shown, self._cb_ids(rows))
+        self._publish()
         if record.assignee != claimant:
             raise AdapterError(f"claim of {id} read back assignee {record.assignee!r}, not {claimant!r}")
         return record
@@ -256,6 +276,7 @@ class BeadsAdapter:
         row = self._find_row(rows, program, ("program",))
         block = _with_envelope(_cb_block(row), {"stage": stage})
         self._update(row, block=block)
+        self._publish()
         return self._after(rows, row, block=block)
 
     def set_gate_value(self, program: str, gate: str, value: str) -> TrackerRecord:
@@ -263,6 +284,7 @@ class BeadsAdapter:
         row = self._find_row(rows, program, ("program",))
         block = _with_envelope(_cb_block(row), {gate: value})
         self._update(row, block=block)
+        self._publish()
         return self._after(rows, row, block=block)
 
     def set_epic_state(self, epic: str, state: str, branch: str | None = None) -> TrackerRecord:
@@ -272,6 +294,7 @@ class BeadsAdapter:
         block = _with_envelope(_cb_block(row), {} if branch is None else {"branch": branch})
         # CoBuilder state words are authoritative, and the tracker mirrors them. bd would refuse a close while children are open.
         self._update(row, status=status, block=block if branch is not None else None, force=status == "closed")
+        self._publish()
         return self._after(rows, row, block=block, status=status)
 
     def set_slice_state(
@@ -291,6 +314,7 @@ class BeadsAdapter:
             changes["attempts"] = attempts
         block = _with_envelope(_cb_block(row), changes)
         self._update(row, status=status, block=block if changes else None)
+        self._publish()
         return self._after(rows, row, block=block, status=status)
 
     def record_attempt(self, id: str, score: float, note: str | None = None) -> TrackerRecord:
@@ -300,18 +324,21 @@ class BeadsAdapter:
         attempts = (cb.get("envelope") or {}).get("attempts", 0) + 1
         block = _with_envelope(cb, {"score": score, "attempts": attempts})
         self._update(row, block=block, notes=note)
+        self._publish()
         return self._after(rows, row, block=block)
 
     def add_note(self, id: str, text: str) -> None:
         rows = self._rows()
         row = self._find_row(rows, id, KINDS)
         self._update(row, notes=text)
+        self._publish()
 
     def escalate(self, id: str, score: float, reason: str) -> TrackerRecord:
         rows = self._rows()
         row = self._find_row(rows, id, ("slice",))
         block = _with_envelope(_cb_block(row), {"escalated": True, "score": score})
         self._update(row, block=block, notes=f"escalated at score {score}: {reason}")
+        self._publish()
         return self._after(rows, row, block=block)
 
     def create_record(self, record: TrackerRecord) -> TrackerRecord:
@@ -327,11 +354,15 @@ class BeadsAdapter:
             BD_PRIORITY[record.kind],
             parent=parent_bd_id,
             external_ref=record.external_ref,
+            assignee=record.assignee,
         )
         bd_id = self.runner.run(argv).strip()
         for blocker_bd_id in blocker_bd_ids:
             # Each blocker edge is one bd dep add, sent in the recorded order.
             self.runner.run(["dep", "add", bd_id, blocker_bd_id])
+        if record.lifecycle == "closed":
+            self.runner.run(["close", bd_id])
+        self._publish()
         return record
 
     def open_pull_request(self, ref: str, epic_ids: list[str]) -> TrackerRecord:
@@ -348,6 +379,7 @@ class BeadsAdapter:
         for epic_row in epic_rows:
             # Each epic is blocked by the PR, so the epic is not ready until the PR closes.
             self.runner.run(["dep", "add", epic_row["id"], pr_bd_id])
+        self._publish()
         return TrackerRecord(
             id=ref,
             kind="pr",
@@ -364,6 +396,7 @@ class BeadsAdapter:
         row = self._find_row(rows, ref, ("pr",))
         status = "closed" if merged else "open"
         self._update(row, status=status)
+        self._publish()
         return self._after(rows, row, status=status)
 
     def seed_from_files(self, plans_dir: Path, dry_run: bool = False) -> list[TrackerRecord]:
@@ -377,8 +410,18 @@ class BeadsAdapter:
         ]
         if dry_run:
             return creates
-        for record in creates:
-            self._create_seeded(record)
+        closes = self._rows_to_close(rows, found)
+        # One sync covers the whole seed. The batch flag stops each write op from syncing on its own.
+        self._batching = True
+        try:
+            for record in creates:
+                self._create_seeded(record)
+            for row in closes:
+                self.runner.run(["close", row["id"]])
+        finally:
+            self._batching = False
+        if creates or closes:
+            self.sync()
         return creates
 
     def _create_seeded(self, record: TrackerRecord) -> TrackerRecord:
@@ -395,3 +438,9 @@ class BeadsAdapter:
         types = [name for name in current.split(",") if name]
         if "program" not in types:
             self.runner.run(["config", "set", "types.custom", ",".join([*types, "program"])])
+
+    @staticmethod
+    def _rows_to_close(rows: list[dict[str, Any]], found: list[TrackerRecord]) -> list[dict[str, Any]]:
+        # An open record whose files now say closed gets closed. Lifecycle only. A closed record is never reopened.
+        closed_ids = {record.id for record in found if record.lifecycle == "closed"}
+        return [row for row in rows if _cb_block(row)["id"] in closed_ids and STATUS_MAP.get(row.get("status")) != "closed"]

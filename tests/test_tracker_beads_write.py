@@ -132,23 +132,51 @@ def test_claim_race_is_refused_by_bd() -> None:
 def _steps(name: str) -> list[dict[str, Any]]:
     return _load(name)["steps"]
 
+READ_VERBS = frozenset({"list", "show", "ready", "blocked", "stats", "comments"})
+
+
+def _with_syncs(steps: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Add one recorded `bd sync` at the end of each adapter operation.
+
+    Each adapter operation starts with a `list` read. An operation that
+    writes ends with the one sync, after its read-back.
+    """
+    sync_step = dict(_load("sync_ok"))
+    out: list[dict[str, Any]] = []
+    group: list[dict[str, Any]] = []
+
+    def close_group() -> None:
+        out.extend(group)
+        if any(step["args"][0] not in READ_VERBS for step in group):
+            out.append(dict(sync_step))
+        group.clear()
+
+    for step in steps:
+        if step["args"][0] == "list" and group:
+            close_group()
+        group.append(step)
+    if group:
+        close_group()
+    return out
+
 
 def test_claim_slice_maps_cb_id_then_reads_back_the_claimant() -> None:
     from tracker_port.beads import BeadsAdapter
 
-    runner = SequenceRunner(_steps("claim_slice_steps"))
+    runner = SequenceRunner(_with_syncs(_steps("claim_slice_steps")))
     record = BeadsAdapter(runner).claim_slice("demo-E1-s3", "agent-x")
 
     assert record.assignee == "agent-x"
-    assert [call[0] for call in runner.calls] == ["list", "update", "show"]
+    assert [call[0] for call in runner.calls] == ["list", "update", "show", "sync"]
 
 
 def test_claim_slice_raises_when_read_back_shows_another_claimant() -> None:
     from tracker_port.beads import BeadsAdapter
     from tracker_port.port import AdapterError
 
-    steps = _steps("claim_slice_steps")
-    steps[2]["stdout"] = steps[2]["stdout"].replace('"agent-x"', '"agent-y"')
+    steps = _with_syncs(_steps("claim_slice_steps"))
+    show = next(step for step in steps if step["args"][0] == "show")
+    show["stdout"] = show["stdout"].replace('"agent-x"', '"agent-y"')
     try:
         BeadsAdapter(SequenceRunner(steps)).claim_slice("demo-E1-s3", "agent-x")
     except AdapterError as error:
@@ -172,10 +200,10 @@ def test_claim_slice_raises_when_bd_refuses_the_claim() -> None:
 def test_set_slice_state_sends_the_full_cb_block() -> None:
     from tracker_port.beads import BeadsAdapter
 
-    runner = SequenceRunner(_steps("set_slice_state_steps"))
+    runner = SequenceRunner(_with_syncs(_steps("set_slice_state_steps")))
     BeadsAdapter(runner).set_slice_state("demo-E1-s2", "closed", score=0.8)
 
-    assert len(runner.calls) == 2
+    assert [call[0] for call in runner.calls] == ["list", "update", "sync"]
 
 
 
@@ -190,7 +218,7 @@ def test_shown_slice_round_trips_its_cb_envelope() -> None:
 def test_open_pull_request_replays_the_recorded_argv() -> None:
     from tracker_port.beads import BeadsAdapter
 
-    steps = _steps("open_pull_request_steps")
+    steps = _with_syncs(_steps("open_pull_request_steps"))
     runner = SequenceRunner(steps)
     BeadsAdapter(runner).open_pull_request("pr-101", ["demo-E1", "demo-E2"])
 
@@ -214,7 +242,7 @@ def test_sequence_runner_rejects_a_drifted_argument() -> None:
 def test_record_attempt_and_gate_round_trip_keep_every_envelope_key() -> None:
     from tracker_port.beads import BeadsAdapter
 
-    runner = SequenceRunner(_steps("round_trip_steps"))
+    runner = SequenceRunner(_with_syncs(_steps("round_trip_steps")))
     adapter = BeadsAdapter(runner)
     adapter.record_attempt("demo-E1-s1", 0.92)
     adapter.set_gate_value("demo", "gate1", "2026-10-14")
@@ -247,14 +275,14 @@ def test_record_attempt_and_gate_round_trip_keep_every_envelope_key() -> None:
     assert type(slice_envelope["label"]) is str
     assert type(slice_envelope["ratio"]) is float
     assert dict(program.envelope) == {"gate1": "2026-10-14"}
-    assert len(runner.calls) == 6
+    assert len(runner.calls) == 8
 
 
 def test_create_record_program_replays_recorded_argv() -> None:
     from tracker_port.beads import BeadsAdapter
     from tracker_port.record import TrackerRecord
 
-    steps = _steps("create_program")
+    steps = _with_syncs(_steps("create_program"))
     runner = SequenceRunner(steps)
     program = TrackerRecord(
         id="demo",
@@ -276,7 +304,7 @@ def test_create_record_epic_maps_parent_and_blocked_by() -> None:
     from tracker_port.beads import BeadsAdapter
     from tracker_port.record import TrackerRecord
 
-    steps = _steps("create_epic")
+    steps = _with_syncs(_steps("create_epic"))
     runner = SequenceRunner(steps)
     epic = TrackerRecord(
         id="demo-E1",
@@ -298,7 +326,7 @@ def test_create_record_slice_maps_parent_under_its_epic() -> None:
     from tracker_port.beads import BeadsAdapter
     from tracker_port.record import TrackerRecord
 
-    steps = _steps("create_slice")
+    steps = _with_syncs(_steps("create_slice"))
     runner = SequenceRunner(steps)
     slice_record = TrackerRecord(
         id="demo-E1-s1",
@@ -347,7 +375,7 @@ def test_create_record_round_trip_types() -> None:
     from tracker_port.beads import BeadsAdapter
     from tracker_port.record import TrackerRecord
 
-    runner = SequenceRunner(_steps("create_slice"))
+    runner = SequenceRunner(_with_syncs(_steps("create_slice")))
     slice_record = TrackerRecord(
         id="demo-E1-s1",
         kind="slice",
@@ -381,7 +409,8 @@ def test_sync_failure_raises_adapter_error_with_bd_stderr() -> None:
     from tracker_port.beads import BeadsAdapter
     from tracker_port.port import AdapterError
 
-    body = _load("sync_failed_empty_remote")
+    body = dict(_load("sync_failed_empty_remote"))
+    body["stderr"] = "bd: sync conflict on beads/team-sync\n"
     runner = SequenceRunner([body])
     try:
         BeadsAdapter(runner).sync()

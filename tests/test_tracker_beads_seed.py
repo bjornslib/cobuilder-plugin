@@ -45,10 +45,14 @@ class ReplayRunner:
         self.steps = steps
         self.list_after = list_after
         self.writes: list[list[str]] = []
+        self.syncs = 0
         self.violations: list[str] = []
 
     def run(self, args: list[str]) -> str:
         from tracker_port.beads import LIST_ARGS
+        if list(args) == ["sync"]:
+            self.syncs += 1
+            return "Sync complete.\n"
 
         if list(args) == LIST_ARGS:
             index = len(self.writes)
@@ -129,6 +133,7 @@ def test_apply_replays_creates_and_deps_in_recorded_order() -> None:
     create_titles = [call[call.index("--title") + 1] for call in runner.writes if call[0] == "create"]
     assert create_titles == SEEDED_IDS
     assert [record.id for record in records] == SEEDED_IDS
+    assert runner.syncs == 1, "a run that creates records must sync once, at the end"
 
 
 def test_second_run_over_the_seeded_tracker_creates_nothing() -> None:
@@ -145,3 +150,4 @@ def test_second_run_over_the_seeded_tracker_creates_nothing() -> None:
     assert records == []
     assert runner.writes == []
     assert not runner.violations
+    assert runner.syncs == 0, "a run that creates nothing must not sync"

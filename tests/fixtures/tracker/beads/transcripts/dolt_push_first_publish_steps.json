@@ -1,0 +1,23 @@
+{
+  "bd": "bd version 1.3.0 (Homebrew)",
+  "steps": [
+    {
+      "args": ["sync"],
+      "stdout": "sync: pull (attempt 1/3)\n",
+      "stderr": "Error: sync failed: pull: fetch from origin/main: Error 1105: fetch failed: no branches found in remote 'origin'\n",
+      "exit": 1
+    },
+    {
+      "args": ["dolt", "push"],
+      "stdout": "Pushing to Dolt remote...\nPush complete.\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": ["sync"],
+      "stdout": "sync: pull (attempt 1/3)\nsync: recompute-blocked\nsync: push\nSync complete.\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ]
+}

@@ -193,13 +193,6 @@ def test_fresh_clone_inits_and_syncs() -> None:
         created = BeadsAdapter(seed_runner).seed_from_files(plan_dir)
         assert sorted(record.id for record in created) == expected_ids
 
-        # Bootstrap: the first sync adopts the remote, then the pull fails on the empty remote.
-        first_sync = _step(["bd", "sync", "-y"], seed)
-        output = first_sync.stdout + first_sync.stderr
-        assert first_sync.returncode == 1, f"bootstrap sync should halt on the empty remote:\n{output}"
-        assert "no branches found in remote" in output, output
-        _run(["bd", "dolt", "push"], seed)
-        BeadsAdapter(seed_runner).sync()
         _run(["git", "-C", str(origin), "show-ref", "refs/dolt/data"], root)
 
         second_runner = _RecordingRunner(BdRunner(bd="bd", cwd=seed))
@@ -230,7 +223,6 @@ def test_fresh_clone_inits_and_syncs() -> None:
             external_ref=None,
         )
         BeadsAdapter(seed_runner).create_record(probe)
-        BeadsAdapter(seed_runner).sync()
 
         clone3 = root / "clone3"
         _run(["git", "clone", "-q", str(origin), str(clone3)], root)
@@ -239,3 +231,200 @@ def test_fresh_clone_inits_and_syncs() -> None:
         listed = _run(["bd", "list", "--json", "--all"], clone3)
         cbs = [row["metadata"]["cb"] for row in json.loads(listed.stdout)]
         assert sorted(cb["id"] for cb in cbs) == sorted([*expected_ids, "demo-sync-probe"])
+
+
+class _Sequence:
+    """Answers bd calls in recorded order. A non-zero exit raises BdError."""
+
+    def __init__(self, steps: list[dict[str, Any]]) -> None:
+        self.steps = steps
+        self.calls: list[list[str]] = []
+
+    def run(self, args: list[str]) -> str:
+        from tracker_port.bd_runner import BdError
+
+        self.calls.append(list(args))
+        step = self.steps[len(self.calls) - 1]
+        assert list(args) == step["args"], f"unexpected bd call: {args}"
+        if step["exit"] != 0:
+            raise BdError(f"bd {' '.join(args)} exited {step['exit']}", step["exit"], step["stderr"])
+        return step["stdout"]
+
+
+def test_sync_first_publish_pushes_dolt_then_syncs_again() -> None:
+    from tracker_port.beads import BeadsAdapter
+
+    steps = json.loads((BEADS_DIR / "transcripts" / "dolt_push_first_publish_steps.json").read_text(encoding="utf-8"))["steps"]
+    runner = _Sequence(steps)
+    BeadsAdapter(runner).sync()
+
+    assert runner.calls == [["sync"], ["dolt", "push"], ["sync"]]
+
+
+def test_sync_second_step_failure_raises_adapter_error() -> None:
+    from tracker_port.beads import BeadsAdapter
+    from tracker_port.port import AdapterError
+
+    steps = [
+        {"args": ["sync"], "stdout": "", "stderr": "Error: no branches found in remote 'origin'\n", "exit": 1},
+        {"args": ["dolt", "push"], "stdout": "", "stderr": "Error: push rejected\n", "exit": 1},
+    ]
+    runner = _Sequence(steps)
+    try:
+        BeadsAdapter(runner).sync()
+    except AdapterError:
+        assert runner.calls == [["sync"], ["dolt", "push"]]
+        return
+    raise AssertionError("a failed dolt push must raise AdapterError")
+
+
+def test_sync_failure_on_a_non_empty_remote_does_not_push() -> None:
+    from tracker_port.beads import BeadsAdapter
+    from tracker_port.port import AdapterError
+
+    steps = [{"args": ["sync"], "stdout": "", "stderr": "bd: sync conflict on beads/team-sync\n", "exit": 1}]
+    runner = _Sequence(steps)
+    try:
+        BeadsAdapter(runner).sync()
+    except AdapterError:
+        assert runner.calls == [["sync"]]
+        return
+    raise AssertionError("a sync failure without the empty-remote message must raise AdapterError")
+
+
+class _Answers:
+    """Answers the bd calls of one create and close. It needs no bd binary."""
+
+    def __init__(self) -> None:
+        self.calls: list[list[str]] = []
+
+    def run(self, args: list[str]) -> str:
+        self.calls.append(list(args))
+        if args[0] == "list":
+            return "[]"
+        if args[0] == "create":
+            return "demo-bxe\n"
+        return ""
+
+
+def _closed_probe(assignee: str | None) -> Any:
+    from tracker_port.record import TrackerRecord
+
+    return TrackerRecord(
+        id="demo-closed-probe",
+        kind="slice",
+        parent=None,
+        blocked_by=(),
+        lifecycle="closed",
+        assignee=assignee,
+        envelope={},
+        external_ref=None,
+    )
+
+
+def test_create_record_closes_a_closed_slice_after_create() -> None:
+    from tracker_port.beads import BeadsAdapter
+
+    steps = json.loads((BEADS_DIR / "transcripts" / "create_closed_slice_steps.json").read_text(encoding="utf-8"))["steps"]
+    runner = _Answers()
+    BeadsAdapter(runner).create_record(_closed_probe(None))
+
+    assert steps[0]["args"] in runner.calls, runner.calls
+    assert steps[1]["args"] in runner.calls, runner.calls
+    assert runner.calls.index(steps[0]["args"]) < runner.calls.index(steps[1]["args"]), runner.calls
+    assert runner.calls[-1] == ["sync"], runner.calls
+
+
+def test_create_record_sets_the_assignee_of_a_closed_slice() -> None:
+    from tracker_port.beads import BeadsAdapter
+
+    runner = _Answers()
+    BeadsAdapter(runner).create_record(_closed_probe("agent-x"))
+
+    create = next(call for call in runner.calls if call[0] == "create")
+    assert "--assignee" in create, create
+    assert create[create.index("--assignee") + 1] == "agent-x", create
+
+
+def _scratch_tracker(root: Path) -> Path:
+    origin = root / "origin.git"
+    seed = root / "seed"
+    seed.mkdir()
+    _run(["git", "init", "--bare", "-q", str(origin)], root)
+    _run(["git", "init", "-q", "-b", "main"], seed)
+    _run(["git", "commit", "-q", "--allow-empty", "-m", "seed"], seed)
+    _run(["git", "remote", "add", "origin", str(origin)], seed)
+    _run(["git", "push", "-q", "origin", "main"], seed)
+    _run(["bd", "init", "--skip-agents", "--skip-hooks", "-p", "demo", "--non-interactive"], seed)
+    _run(["bd", "config", "set", "team.enabled", "true"], seed)
+    _run(["bd", "config", "set", "team.sync_branch", "main"], seed)
+    return seed
+
+
+def _copy_plans(root: Path) -> Path:
+    plans = root / "plans"
+    plans.mkdir()
+    shutil.copytree(FIXTURE_DIR / "plans-real" / "score-attempt", plans / "score-attempt")
+    return plans
+
+
+def test_seed_closes_records_whose_files_say_closed() -> None:
+    if shutil.which("bd") is None:
+        raise AssertionError("bd is not on PATH. This test needs bd 1.3.0 and fails without it.")
+
+    from tracker_port.beads import BeadsAdapter
+    from tracker_port.bd_runner import BdRunner
+    from tracker_port.files import FilesAdapter
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        plans = _copy_plans(root)
+        expected = FilesAdapter(plans).all_records()
+        assert any(record.lifecycle == "closed" for record in expected), "the fixture must hold a closed record"
+
+        seed = _scratch_tracker(root)
+        adapter = BeadsAdapter(BdRunner(bd="bd", cwd=seed))
+        adapter.seed_from_files(plans)
+        by_id = {record.id: record for record in _all_records(adapter)}
+
+        for record in expected:
+            assert record.id in by_id, f"{record.id} was not seeded"
+            assert by_id[record.id].lifecycle == record.lifecycle, f"{record.id}: {by_id[record.id].lifecycle}"
+
+
+def test_seed_repairs_an_open_record_whose_files_now_say_closed() -> None:
+    if shutil.which("bd") is None:
+        raise AssertionError("bd is not on PATH. This test needs bd 1.3.0 and fails without it.")
+
+    from tracker_port.beads import BeadsAdapter
+    from tracker_port.bd_runner import BdRunner
+    from tracker_port.files import FilesAdapter
+
+    source = FIXTURE_DIR / "plans-real" / "score-attempt"
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        plans = _copy_plans(root)
+        closed_ids = [record.id for record in FilesAdapter(plans).all_records() if record.lifecycle == "closed"]
+        assert closed_ids, "the fixture must hold a closed record"
+
+        seed = _scratch_tracker(root)
+        slices = plans / "score-attempt" / "04-slices.md"
+        status = plans / "score-attempt" / "00-status.md"
+        slices.write_text(slices.read_text(encoding="utf-8").replace("| done |", "| pending |"), encoding="utf-8")
+        status.write_text(status.read_text(encoding="utf-8").replace("- [x] Slice 1", "- [ ] Slice 1"), encoding="utf-8")
+
+        adapter = BeadsAdapter(BdRunner(bd="bd", cwd=seed))
+        adapter.seed_from_files(plans)
+        before = {record.id: record for record in _all_records(adapter)}
+        for record_id in closed_ids:
+            assert before[record_id].lifecycle == "open", f"{record_id} should start open"
+
+        shutil.copyfile(source / "04-slices.md", slices)
+        shutil.copyfile(source / "00-status.md", status)
+        adapter.seed_from_files(plans)
+        after = {record.id: record for record in _all_records(adapter)}
+
+        for record_id in closed_ids:
+            assert after[record_id].lifecycle == "closed", f"{record_id}: {after[record_id].lifecycle}"
+            assert after[record_id].envelope == before[record_id].envelope, f"{record_id} envelope changed"
