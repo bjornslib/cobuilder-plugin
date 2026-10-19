@@ -27,6 +27,8 @@ not just the repo this session is running in (the skill will ask for
 Skill("odyssey", args="review $ARGUMENTS")
 ```
 
+The skill reads workflow state with `tracker.py list-epics`. After a human merges a PR, it records the merge with `tracker.py set-pull-request-state <ref> merged`, as its Workflow state section says. It never merges a PR.
+
 Where the bundle lands depends on what's being analyzed: self-analysis (no
 `--repo`, or `--repo` pointing at this same repo) stores it at
 `<hub>/.cobuilder-architect/self/`, committed alongside the code it narrates, while a

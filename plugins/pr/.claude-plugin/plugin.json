@@ -1,6 +1,6 @@
 {
   "name": "pr",
-  "version": "0.9.1",
+  "version": "0.10.0",
   "description": "Interview an author and open a PR with intent, then narrate it after the merge. Output is a portable .cobuilder-architect/ bundle.",
   "author": { "name": "bjornslib" },
   "repository": "https://github.com/bjornslib/cobuilder-architect",

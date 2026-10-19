@@ -54,6 +54,22 @@ Reference material lives in `references/` and loads on demand. It is not
 inlined here. Scripts live in `scripts/` and run through `uv run`. The
 skill never edits them.
 
+## Workflow state
+
+Write workflow state only through the tracker script. [shared/tracker-usage.md](../../../../shared/tracker-usage.md) lists every operation and its arguments. The call form is `uv run "${CLAUDE_PLUGIN_ROOT}/shared/tracker.py" <operation> args`. Do not edit tracker state by hand.
+
+- Review mode reads state with `tracker.py list-epics --program <program>`.
+- Generate mode runs `gh pr create`. Then it runs `tracker.py open-pull-request <ref> <epic-id>...`.
+- After a human merges the PR, run `tracker.py set-pull-request-state <ref> merged`. Then run `tracker.py set-epic-state <epic> <state>`. Then run `tracker.py regenerate-status-files <program> --plans-dir <dir>`.
+- This skill never merges a PR.
+
+Each call exits with a code. Branch on the code only, and never parse the message.
+
+- `0`: the call succeeded.
+- `2`: the call is refused because no adapter is set. Stop, and tell the engineer to run `/cobuilder-full-lifecycle:install`.
+- `3`: the adapter failed. Read the message for the cause, and tell the engineer.
+- `4`: the arguments are not valid. Correct the call and run it again.
+
 ## Target resolution
 
 `<target>` is the repo under analysis. Resolve it in this order:
@@ -754,6 +770,8 @@ decision about whether to open the PR at all.
    ```
    Then read the number back with `gh pr view --json number`.
 
+   Then record the PR in the tracker: run `tracker.py open-pull-request <ref> <epic-id>...`, with the PR reference and one epic id for each epic the PR covers. Run it once for each PR.
+
 4. **Continue at pre-stage step 9** with that number.
 
 **Three cases end at the staging directory instead**, and all three are
@@ -795,6 +813,11 @@ This stage runs after the PR merges. Run the same steps 1 through 4, then:
    uv run "${CLAUDE_PLUGIN_ROOT}/shared/build_index.py"
    ```
    once, to rebuild both the design and the ADR projections.
+
+   **Record the merge in the tracker.** Run this only after a human has merged the PR. This skill never merges a PR. Run these calls in order, as the Workflow state section says:
+   1. `tracker.py set-pull-request-state <ref> merged`
+   2. `tracker.py set-epic-state <epic> <state>`, for each epic of the PR
+   3. `tracker.py regenerate-status-files <program> --plans-dir <dir>`
 
 6. Render and verify as in pre-stage steps 9 and 10.
 

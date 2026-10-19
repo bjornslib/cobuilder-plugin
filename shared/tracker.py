@@ -73,7 +73,7 @@ def _list_slices_args(parser: argparse.ArgumentParser) -> None:
 
 
 def _next_ready_args(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--kind", default="slice", choices=["program", "epic", "slice", "pr"])
+    parser.add_argument("--kind", default="slice", choices=["program", "epic", "slice"])
     parser.add_argument("--under")
 
 
