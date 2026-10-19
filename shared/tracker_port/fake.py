@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from .files import FilesAdapter
+from .files import seedable_records
 from .port import AdapterError, ArgumentError
 from .record import Capabilities, Kind, TrackerRecord
 
@@ -93,9 +93,8 @@ class FakeAdapter:
     def seed_from_files(self, plans_dir: Path, dry_run: bool = False) -> list[TrackerRecord]:
         # Create only the records the adapter does not hold, keyed by external_ref.
         known = {record.external_ref for record in self._records}
-        creates = [
-            record for record in FilesAdapter(plans_dir).all_records() if record.external_ref not in known
-        ]
+        found, self.seed_conflicts = seedable_records(plans_dir)
+        creates = [record for record in found if record.external_ref not in known]
         if not dry_run:
             self._records.extend(creates)
             self._commit()

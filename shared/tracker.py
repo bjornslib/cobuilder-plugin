@@ -189,7 +189,12 @@ def main(argv: list[str] | None = None) -> int:
         _fail(EXIT_ARGUMENT, str(exc))
     except AdapterError as exc:
         _fail(EXIT_ADAPTER, str(exc))
-    print(json.dumps({"ok": True, "result": _to_json(result)}, indent=2, sort_keys=True))
+    payload: dict[str, Any] = {"ok": True, "result": _to_json(result)}
+    # A seed reports each plan it could not read. Other operations have no seed conflicts.
+    seed_conflicts = getattr(adapter, "seed_conflicts", None)
+    if seed_conflicts is not None:
+        payload["conflicts"] = seed_conflicts
+    print(json.dumps(payload, indent=2, sort_keys=True))
     return EXIT_OK
 
 

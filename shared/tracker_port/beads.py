@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from .bd_runner import BdError
-from .files import FilesAdapter
+from .files import seedable_records
 from .port import AdapterError, ArgumentError
 from .record import Capabilities, Kind, TrackerRecord
 
@@ -369,9 +369,10 @@ class BeadsAdapter:
     def seed_from_files(self, plans_dir: Path, dry_run: bool = False) -> list[TrackerRecord]:
         rows = self._rows()
         held = set(self._cb_ids(rows).values())
+        found, self.seed_conflicts = seedable_records(plans_dir)
         creates = [
             record
-            for record in FilesAdapter(plans_dir).all_records()
+            for record in found
             if record.id not in held and record.external_ref not in held
         ]
         if dry_run:
