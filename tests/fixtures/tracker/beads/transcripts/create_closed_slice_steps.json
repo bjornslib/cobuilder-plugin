@@ -21,7 +21,8 @@
     {
       "args": [
         "close",
-        "demo-bxe"
+        "demo-bxe",
+        "--force"
       ],
       "stdout": "\u2713 Closed demo-bxe \u2014 demo-closed-probe: Closed\n",
       "stderr": "",

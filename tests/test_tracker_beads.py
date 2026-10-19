@@ -428,3 +428,33 @@ def test_seed_repairs_an_open_record_whose_files_now_say_closed() -> None:
         for record_id in closed_ids:
             assert after[record_id].lifecycle == "closed", f"{record_id}: {after[record_id].lifecycle}"
             assert after[record_id].envelope == before[record_id].envelope, f"{record_id} envelope changed"
+
+
+def test_seed_closes_a_slice_blocked_by_a_completed_slice() -> None:
+    if shutil.which("bd") is None:
+        raise AssertionError("bd is not on PATH. This test needs bd 1.3.0 and fails without it.")
+
+    from tracker_port.beads import BeadsAdapter
+    from tracker_port.bd_runner import BdRunner
+    from tracker_port.files import FilesAdapter
+
+    source = FIXTURE_DIR / "plans-real" / "blocked-close"
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        plans = root / "plans"
+        shutil.copytree(source, plans / "blocked-close")
+        expected = FilesAdapter(plans).all_records()
+        slices = [record for record in expected if record.kind == "slice"]
+        assert len(slices) == 2, "the fixture must hold two slices"
+        assert all(record.lifecycle == "closed" for record in slices), "both slices must be completed"
+        assert any(record.blocked_by for record in slices), "one slice must be blocked by the other"
+
+        seed = _scratch_tracker(root)
+        adapter = BeadsAdapter(BdRunner(bd="bd", cwd=seed))
+        adapter.seed_from_files(plans)
+        by_id = {record.id: record for record in _all_records(adapter)}
+
+        for record in slices:
+            assert record.id in by_id, f"{record.id} was not seeded"
+            assert by_id[record.id].lifecycle == "closed", f"{record.id}: {by_id[record.id].lifecycle}"

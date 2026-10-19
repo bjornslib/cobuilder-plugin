@@ -361,7 +361,7 @@ class BeadsAdapter:
             # Each blocker edge is one bd dep add, sent in the recorded order.
             self.runner.run(["dep", "add", bd_id, blocker_bd_id])
         if record.lifecycle == "closed":
-            self.runner.run(["close", bd_id])
+            self.runner.run(["close", bd_id, "--force"])
         self._publish()
         return record
 
@@ -417,7 +417,7 @@ class BeadsAdapter:
             for record in creates:
                 self._create_seeded(record)
             for row in closes:
-                self.runner.run(["close", row["id"]])
+                self.runner.run(["close", row["id"], "--force"])
         finally:
             self._batching = False
         if creates or closes:
