@@ -125,13 +125,6 @@ REQUIRED_INTERACTION_SECTIONS = [
     "### 11.3 Scroll Ownership",
 ]
 
-# 00-status.md's Gate 4 sub-step line, e.g.:
-#   - 4b Epic technical solution designs: pending | APPROVED 2026-08-24 | n/a
-STATUS_4B_RE = re.compile(
-    r"^\s*-\s*4b\b.*?:\s*(APPROVED\b.*|pending|in progress|n/a.*)\s*$",
-    re.IGNORECASE,
-)
-
 
 def parse_slices(text: str) -> tuple[list[dict], list[str], list[str]]:
     """Return (slice rows, epic ids seen as headers, unparsed lines) from 04-slices.md.
@@ -313,7 +306,7 @@ def check_design_sections(text: str) -> str:
 
 
 def check_4b_approved(status_text: str | None, records: reader.PlanRecords | None = None) -> str:
-    return gate_approval(records, status_text, STATUS_4B_RE, "gate4b", "pending")
+    return gate_approval(records, status_text, gate_status.STATUS_4B_RE, "gate4b", "pending")
 
 
 def check_4b(plan_dir: Path, slices: list[dict], status_text: str | None, records: reader.PlanRecords | None = None) -> dict[str, dict[str, str]]:

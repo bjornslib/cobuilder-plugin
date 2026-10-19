@@ -49,6 +49,13 @@ STATUS_2B_RE = re.compile(
     re.IGNORECASE,
 )
 
+# 00-status.md's Gate 4b sub-line, e.g.:
+#   - 4b Epic technical solution designs: APPROVED 2026-08-24
+STATUS_4B_RE = re.compile(
+    r"^\s*-\s*4b\b.*?:\s*(APPROVED\b.*|pending|in progress|n/a.*)\s*$",
+    re.IGNORECASE,
+)
+
 
 def view_route(token: str) -> str:
     """The portable route fragment of one view link.
