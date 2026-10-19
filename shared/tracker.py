@@ -20,6 +20,7 @@ from typing import Any
 
 from tracker_port.config import require_adapter
 from tracker_port.port import AdapterError, ArgumentError, NoAdapterError
+from _bundle_meta import DESIGN_STAGES
 
 EXIT_OK = 0
 EXIT_REFUSED = 2
@@ -146,6 +147,12 @@ def _regenerate_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--plans-dir", type=Path, required=True, help="the plans tree that holds the program's status files")
 
 
+def _design_stage(stage: str) -> str:
+    if stage not in DESIGN_STAGES:
+        raise ArgumentError(f"stage {stage!r} is not a design stage. Use one of: {', '.join(DESIGN_STAGES)}")
+    return stage
+
+
 # Each operation maps to its builder for arguments and to the port call it makes.
 OPERATIONS: dict[str, tuple[Callable[[argparse.ArgumentParser], None], Callable[[Any, argparse.Namespace], Any]]] = {
     "list-programs": (_no_args, lambda a, n: a.list_programs()),
@@ -156,7 +163,7 @@ OPERATIONS: dict[str, tuple[Callable[[argparse.ArgumentParser], None], Callable[
     "next-ready": (_next_ready_args, lambda a, n: a.next_ready(n.kind, n.under)),
     "sync": (_no_args, lambda a, n: a.sync()),
     "claim-slice": (_claim_slice_args, lambda a, n: a.claim_slice(n.id, n.claimant)),
-    "set-program-stage": (_set_program_stage_args, lambda a, n: a.set_program_stage(n.program, n.stage)),
+    "set-program-stage": (_set_program_stage_args, lambda a, n: a.set_program_stage(n.program, _design_stage(n.stage))),
     "set-gate-value": (_set_gate_value_args, lambda a, n: a.set_gate_value(n.program, n.gate, n.value)),
     "set-epic-state": (_set_epic_state_args, lambda a, n: a.set_epic_state(n.epic, n.state, n.branch)),
     "set-slice-state": (

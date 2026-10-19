@@ -325,7 +325,7 @@ $ uv run shared/tracker.py --state-file state.json list-slices --epic demo-E1
 The second call lists the slice that the first call closed.
 
 ```console
-$ uv run shared/tracker.py set-program-stage demo build
+$ uv run shared/tracker.py set-program-stage demo approved
 {
   "ok": true,
   "result": {
@@ -334,7 +334,7 @@ $ uv run shared/tracker.py set-program-stage demo build
     "envelope": {
       "gate1": "2026-10-14",
       "gate2b": "n/a",
-      "stage": "build"
+      "stage": "approved"
     },
     "external_ref": null,
     "id": "demo",

@@ -60,6 +60,10 @@ Resulting layout:
 {doc_root}/options/<name>/      # options report, one HTML file
 ```
 
+## Workflow state
+
+Design mode writes gate values, the program stage, and the epic branch only through the tracker script. [shared/tracker-usage.md](../../../../shared/tracker-usage.md) lists every operation and its arguments. Design mode names the calls in `references/design-mode.md`.
+
 ## Mode Workflows
 
 ### Design Mode

@@ -404,6 +404,21 @@ The file is the memory. The conversation is not.
 `goal.limits` defaults to warn after three rounds and cut off at six.
 Do not ask for a budget. An engineer who wants different limits says so.
 
+### 10.1 Record the approval in the tracker
+
+Write workflow state only through the tracker script. [shared/tracker-usage.md](../../../../../shared/tracker-usage.md) lists every operation. The call form is `uv run "${CLAUDE_PLUGIN_ROOT}/shared/tracker.py" <operation> args`.
+
+1. When the engineer approves a gate, run `tracker.py set-gate-value <program> <gate> <date>`. Then run `tracker.py add-note <program> <text>`.
+2. When the engineer decides or approves the design, run `tracker.py set-program-stage <program> <stage>`. The stage is one of the stages in the table in section 12.
+3. Run `tracker.py regenerate-status-files <program> --plans-dir <dir>` to refresh `00-status.md`. Do not edit `00-status.md` by hand.
+
+Each call exits with a code. Branch on the code only, and never parse the message.
+
+- `0`: the call succeeded.
+- `2`: the call is refused because no adapter is set. Stop, and tell the engineer to run `/cobuilder-full-lifecycle:install`.
+- `3`: the adapter failed. Read the message for the cause, and tell the engineer.
+- `4`: the arguments are not valid. Correct the call and run it again.
+
 ## 11. Stage 7 — Branch
 
 Ask **one question only**, with `AskUserQuestion`: is this one pull
@@ -417,7 +432,7 @@ Then confirm the first branch name with `AskUserQuestion`. Create the
 - One epic: `design/<name>`
 - Several epics: `design/<name>/<first-epic-slug>`
 
-Record it in `goal.json.epics[].branch`. No push. No `gh pr create`.
+Record it in `goal.json.epics[].branch`. Then run `tracker.py set-epic-state <epic> <state> --branch <branch>`, and run `tracker.py regenerate-status-files` as section 10.1 says. No push. No `gh pr create`.
 No other remote action. This stage is unreachable under
 `--non-interactive`. There is nobody there to confirm.
 
