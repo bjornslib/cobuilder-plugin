@@ -27,3 +27,8 @@ slices:
   - {id: 15, name: "E4 pull request blocks two epics", weight: 0.04}
   - {id: 16, name: "E4 goal file drops epic state fields", weight: 0.05}
   - {id: 17, name: "E4 docs test guards the port and install asks first", weight: 0.05}
+  - {id: 18, name: "E5 spike: claim flags, exit codes, lease expiry", weight: 0.02}
+  - {id: 19, name: "E5 atomic claim on beads", weight: 0.02}
+  - {id: 20, name: "E5 native ready on beads", weight: 0.02}
+  - {id: 21, name: "E5 pull request gate on beads", weight: 0.02}
+  - {id: 22, name: "E5 slice-loop formula on beads", weight: 0.02}
