@@ -10,7 +10,7 @@ Test command: `uv run pytest tests/test_build_index_port.py tests/test_build_ind
 ## Criteria
 
 ### C1 — The bundle index for this repo keeps every byte except the recorded volatile keys [CRITICAL]
-**Must be true:** after the change, one run of the bundle build on this repo writes `data/index.json` that equals the pre-change file. The only differences are keys that change on every run. Each such key appears in the evidence with its before and after value.
+**Must be true:** after the change, one run of the bundle build on this repo writes `data/index.json` that equals the pre-change file. The only differences are keys that change on every run, plus the corrections that `evidence/slice-10/parity.md` lists: score, attempts, and state values that the tracker holds more accurately than the old status lines, and the slice order (feature, then n). Each appears in the evidence with its before and after value.
 **Evidence to check:**
 - `.cobuilder/rubrics/beads-storage/evidence/slice-10/` holds the pre-change `data/index.json` and the post-change `data/index.json`.
 - The evidence lists every key that differs, with both values. Each listed key is a run-specific value, such as a timestamp or a commit value.

@@ -67,4 +67,5 @@ def slice_entities(records: Sequence[TrackerRecord]) -> list[dict[str, Any]]:
                 "state": "completed" if record.lifecycle == "closed" else "planned",
             }
         )
-    return entities
+    # A tracker lists records in its own order. The index lists plan folder, then slice number.
+    return sorted(entities, key=lambda entity: (entity["feature"], entity["n"]))

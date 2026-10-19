@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "5c2b9d200754cbcaab3d8fa576d3922976c4f99b",
+    "git_head": "342ba6be726ccc2bd9c075fcad78d8819034af60",
     "trees": {
       "docs/architecture/adr": "sha256:54467e271802fa891e34a4e971d58caebed03734735ab3833cab9cc932105893",
       "docs/architecture/designs": "sha256:66a2bb5e97ac7285c60aecc1284fc76bdfdb8124bb31338072f3a6262d67e9aa",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
       "docs/plans": "sha256:5304ff6c240ffe9b96b3fd8eac1b990a3a6818ca31837088f1a4c825fa60bd8a",
-      ".cobuilder/rubrics": "sha256:151b52d6eabd4ac3dcc7cf2bf5eab50b4e1cc303f1f5cc9778190442c65f6e89"
+      ".cobuilder/rubrics": "sha256:ef9fcb362d063a4dc773c109c08595a7f5edac324528c147ec0d033b8bcc690f"
     }
   },
   "entities": {
@@ -2873,7 +2873,7 @@
         "title": "**Full contract suite on the fake adapter**",
         "ends_with": "Contract cases 1 to 6 pass on the fake adapter, and a write with no configured adapter exits 2.",
         "score": "1.00",
-        "attempts": 1,
+        "attempts": 2,
         "state": "completed"
       },
       {
@@ -2892,7 +2892,7 @@
         "n": 4,
         "title": "**Command prints JSON and exit codes**",
         "ends_with": "`shared/tracker.py list-programs` prints the corpus as JSON, and the CLI test shows exit codes 0, 2, 3, and 4. A spy shows zero opens of `docs/plans` during `list-programs` and `next-ready`. With `--state-file`, a write in one call shows in the next call.",
-        "score": "1.00",
+        "score": "0.92",
         "attempts": 1,
         "state": "completed"
       },
@@ -2903,7 +2903,7 @@
         "title": "**Usage reference matches the command**",
         "ends_with": "A reader runs each example in `shared/tracker-usage.md` and gets the output that the reference shows.",
         "score": "1.00",
-        "attempts": 1,
+        "attempts": 3,
         "state": "completed"
       },
       {
@@ -2913,7 +2913,7 @@
         "title": "**Beads reads match the fake adapter**",
         "ends_with": "The beads adapter maps the recorded `bd list --json` transcript to the same records as the fake corpus, the read cases pass, and contract case 7 (projector parity) passes.",
         "score": "1.00",
-        "attempts": 1,
+        "attempts": 2,
         "state": "completed"
       },
       {
@@ -2923,7 +2923,7 @@
         "title": "**Beads writes on recorded transcripts**",
         "ends_with": "The beads write cases pass on recorded transcripts, including the claim read-back and the `metadata.cb` value round trip. Closing slice n makes slice n+1 the answer of `next-ready`.",
         "score": "1.00",
-        "attempts": 1,
+        "attempts": 5,
         "state": "completed"
       },
       {
@@ -2933,7 +2933,7 @@
         "title": "**Beads dry run matches the backfill file**",
         "ends_with": "The beads adapter implements `seed-from-files`. On the recorded transcripts, its dry run lists the same creates as the checked-in file of slice 3.",
         "score": "1.00",
-        "attempts": 1,
+        "attempts": 2,
         "state": "completed"
       },
       {
@@ -3082,7 +3082,7 @@
         "n": 1,
         "title": "Tracer bullet and whole epic: scan from the git root, fail on \"nothing scanned\", no self-install",
         "ends_with": "A GREEN payload for a file in a sub-folder of a temporary git repo reaches the stub with the repo root as its working directory. Output that says \"nothing scanned\" becomes a failure notice. A missing command gives a notice that names `/implement:install` and installs nothing.",
-        "score": "1.00",
+        "score": "0.917",
         "attempts": 1,
         "state": "completed"
       },
@@ -3102,6 +3102,36 @@
         "n": 3,
         "title": "Tracer bullet and whole epic: implement 0.7.0 in both manifests",
         "ends_with": "`plugin.json` and `marketplace.json` both read 0.7.0 for `implement`, and the version-match test passes.",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "cobuilder-family/1",
+        "feature": "cobuilder-family",
+        "n": 1,
+        "title": "**Tracer bullet: two plugins, one shared module**",
+        "ends_with": "Two throwaway plugins install from a local marketplace and both resolve the shared module from their own cache",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "cobuilder-family/2",
+        "feature": "cobuilder-family",
+        "n": 2,
+        "title": "The compatibility gate exists",
+        "ends_with": "`require_compatible()` and `stamp_generator()` pass their tests, called by nothing yet",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "cobuilder-family/3",
+        "feature": "cobuilder-family",
+        "n": 3,
+        "title": "The gate is wired and the bundle migrates",
+        "ends_with": "Format 3, `min_reader_schema`, the generators map, every writer gated",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -3142,36 +3172,6 @@
         "n": 7,
         "title": "The two ports land",
         "ends_with": "`cobuilder-implement` renamed and shipped, `collaborate-with-user` folded in, the orientation skill written",
-        "score": "1.00",
-        "attempts": 1,
-        "state": "completed"
-      },
-      {
-        "id": "cobuilder-family/1",
-        "feature": "cobuilder-family",
-        "n": 1,
-        "title": "**Tracer bullet: two plugins, one shared module**",
-        "ends_with": "Two throwaway plugins install from a local marketplace and both resolve the shared module from their own cache",
-        "score": "1.00",
-        "attempts": 1,
-        "state": "completed"
-      },
-      {
-        "id": "cobuilder-family/2",
-        "feature": "cobuilder-family",
-        "n": 2,
-        "title": "The compatibility gate exists",
-        "ends_with": "`require_compatible()` and `stamp_generator()` pass their tests, called by nothing yet",
-        "score": "1.00",
-        "attempts": 1,
-        "state": "completed"
-      },
-      {
-        "id": "cobuilder-family/3",
-        "feature": "cobuilder-family",
-        "n": 3,
-        "title": "The gate is wired and the bundle migrates",
-        "ends_with": "Format 3, `min_reader_schema`, the generators map, every writer gated",
         "score": "1.00",
         "attempts": 1,
         "state": "completed"
@@ -3397,6 +3397,26 @@
         "state": "completed"
       },
       {
+        "id": "cobuilder-viewer/6",
+        "feature": "cobuilder-viewer",
+        "n": 6,
+        "title": "The shell lands on the bundle's designs",
+        "ends_with": "Opening the viewer with no work item named shows every design as a row, each row stating its stage and the records it holds, and no error state",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
+        "id": "cobuilder-viewer/7",
+        "feature": "cobuilder-viewer",
+        "n": 7,
+        "title": "A row opens the item's Work surface",
+        "ends_with": "Pressing a row lands on that item's Work surface at its first level, with the route naming the item",
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
+      },
+      {
         "id": "cobuilder-viewer/8",
         "feature": "cobuilder-viewer",
         "n": 8,
@@ -3432,9 +3452,9 @@
         "n": 11,
         "title": "The diagram tiles open their drawing",
         "ends_with": "A tile shows the drawing's miniature scaled to its box, a press opens it whole with zoom from 50 to 400 percent, Escape and the backdrop close it, and a failed render shows the authored source",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "cobuilder-viewer/12",
@@ -3442,9 +3462,9 @@
         "n": 12,
         "title": "A record opens in the Sheet",
         "ends_with": "Pressing a decision, a boundary rule, or an epic's design opens the whole record, and a part link scrolls the record and moves focus to that heading",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "cobuilder-viewer/13",
@@ -3452,9 +3472,9 @@
         "n": 13,
         "title": "A goal.json-only design renders",
         "ends_with": "One of the eight sparse designs shows every level it can fill, and the rail gates the levels it cannot",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "cobuilder-viewer/14",
@@ -3497,26 +3517,6 @@
         "state": "completed"
       },
       {
-        "id": "cobuilder-viewer/6",
-        "feature": "cobuilder-viewer",
-        "n": 6,
-        "title": "The shell lands on the bundle's designs",
-        "ends_with": "Opening the viewer with no work item named shows every design as a row, each row stating its stage and the records it holds, and no error state",
-        "score": "1.00",
-        "attempts": 1,
-        "state": "completed"
-      },
-      {
-        "id": "cobuilder-viewer/7",
-        "feature": "cobuilder-viewer",
-        "n": 7,
-        "title": "A row opens the item's Work surface",
-        "ends_with": "Pressing a row lands on that item's Work surface at its first level, with the route naming the item",
-        "score": "1.00",
-        "attempts": 1,
-        "state": "completed"
-      },
-      {
         "id": "cobuilder-viewer/18",
         "feature": "cobuilder-viewer",
         "n": 18,
@@ -3532,8 +3532,8 @@
         "n": 1,
         "title": "Tracer bullet and whole epic: `boundary_check.py`, the `verified_at` field, and the bundle warning",
         "ends_with": "The script prints `ok`, `stale`, and `uncovered` for a temporary git repo and exits 1 under `--require`. The template and the describe procedure carry `verified_at`. `verify_bundle.py` warns `boundary.stale`.",
-        "score": "1.00",
-        "attempts": 1,
+        "score": "0.93",
+        "attempts": 2,
         "state": "completed"
       },
       {
@@ -3542,7 +3542,7 @@
         "n": 2,
         "title": "Tracer bullet and whole epic: design stage 1 and stage 6",
         "ends_with": "`design-mode.md` runs the check and describe in stage 1, and the stage 6 reviewer fails a design when `--require` exits non-zero. A blind agent given the file follows the order.",
-        "score": "1.00",
+        "score": "0.95",
         "attempts": 1,
         "state": "completed"
       },
@@ -3552,7 +3552,7 @@
         "n": 3,
         "title": "Tracer bullet and whole epic: self-only describe in baseline, and the docs",
         "ends_with": "`baseline-derivation.md` and `SKILL.md` run describe per district for self-analysis only, and keep describe-lite for `--repo`. A blind agent given a `--repo` run does not call describe. `SKILL.md` marks describe internal and names its two callers.",
-        "score": "1.00",
+        "score": "0.98",
         "attempts": 1,
         "state": "completed"
       },
@@ -3652,8 +3652,8 @@
         "n": 2,
         "title": "Tracer bullet and whole epic: the review mode section and the wiring tests",
         "ends_with": "`SKILL.md` \"### Review Mode\" puts a habit-hooks step before the reports. A blind agent given the file runs the script, then writes `## Mechanical smells` into both reports with the P1 rules, the top-10 cap, the incomplete-run rule, and the unavailable rule, and names the tool and the branch base. A wiring test fails when the prose drops the call or a rule.",
-        "score": "1.00",
-        "attempts": 1,
+        "score": "0.90",
+        "attempts": 2,
         "state": "completed"
       },
       {
@@ -3792,9 +3792,9 @@
         "n": 1,
         "title": "The SVG contract and its validator",
         "ends_with": "`plugins/architect/skills/architecture/references/runtime-architecture-diagram.md` exists and `shared/skills/mermaid/references/architecture-diagram.md` is gone. `uv run plugins/architect/scripts/check_design_svg.py` passes this design's `runtime-architecture.svg` and fails each broken fixture for its own check; a long-text fixture only warns. `tests/test_design_svg.py` passes",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "nexus-borrowings/2",
@@ -3802,9 +3802,9 @@
         "n": 2,
         "title": "build_index compiles the named slot and the contracts file",
         "ends_with": "`compile_design_diagrams` reads `runtime-architecture.svg` → `record[\"diagrams\"][\"runtime\"]` and `attach_authored_file` stamps `contracts`; a fixture design without either file omits both keys with no error. `tests/test_build_index.py` passes",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "nexus-borrowings/3",
@@ -3812,9 +3812,9 @@
         "n": 3,
         "title": "Viewer renders the runtime tile and the contracts section",
         "ends_with": "`architectureTileLevels` returns `[\"runtime\",\"3\"]` when the named key is present; the overview still leads the design. The `runtime` value renders as inline SVG, never through the mermaid renderer. `ContractsSection` hides on absence. Viewer tests pass",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "nexus-borrowings/4",
@@ -3822,9 +3822,9 @@
         "n": 4,
         "title": "Stage 6 spawns the validate-and-re-explore reviewer",
         "ends_with": "`design-mode.md` §6 holds the spawn block: blind rubric derived from `goal.json` + `intent.json` before reading the draft, re-explore seeded with the final draft, findings are classified predictions the engineer adjudicates, endorsed survivors reach `intent.alternatives` only through the stage-4 record (ADR-0035), spawn model `glm-5.3-flash:cloud`, `min_work.draft_review_run` set on a returned round. `build/SKILL.md` Gate 2 grounding line untouched by E2",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "nexus-borrowings/5",
@@ -3832,9 +3832,9 @@
         "n": 5,
         "title": "contracts.md becomes a stage-5 artifact with a stated skip rule",
         "ends_with": "`design-mode.md` §5 carries the authoring + show-before-write rule and the skip rule; the artifacts-before-write list includes it; the viewer's `ContractsSection` is grounded in slice 3. `build/SKILL.md` Gate 2/3 grounds in `contracts.md` when a design record exists",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "nexus-borrowings/6",
@@ -3842,9 +3842,9 @@
         "n": 6,
         "title": "The bootstrap reference and the design stage-1 fallback",
         "ends_with": "`references/vocabulary-bootstrap.md` exists (districts → grill → write; corpus cites only principles/ddd + scenarios/architecture_ddd; scenarios/ddd is README-only and named as such). `design-mode.md` stage 1 carries the symmetric fallback and the consent flow. `DDD-VOCABULARY.md` keeps the new terms",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "nexus-borrowings/7",
@@ -3852,9 +3852,9 @@
         "n": 7,
         "title": "Options and review surface the check",
         "ends_with": "`options-mode.md` stage 1 checks the glossary and the report notes absence; the stage-6 hand-off offers the bootstrap. `SKILL.md` review section reports absence as a `P1` finding and offers the bootstrap at run end",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "nexus-borrowings/8",
@@ -3862,9 +3862,9 @@
         "n": 8,
         "title": "Implement notices, the vocabulary agent guard, and the bumps",
         "ends_with": "`implement:start`/`install`/`debug` surface the existence notice; `implement:vocabulary` step 0 returns `FINDINGS` with one `[UNDEFINED]` bootstrap item on a missing file, never a silent `CLEAN`. Marketplace bumps: architect 0.7.0, implement 0.4.0, artifact 0.7.0. Self-bundle rebuilt: `uv run shared/build_index.py` exits 0 and records `diagrams[\"runtime\"]` + `contracts` for nexus-borrowings; full pytest green",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "options-mode/1",
@@ -3912,7 +3912,7 @@
         "n": 1,
         "title": "Tracer bullet: review_link.py prints a checked deep link",
         "ends_with": "`uv run plugins/artifact/scripts/review_link.py --hub <hub> --route '#/<work>/build/epics'` prints the link after an HTTP 200, and exits 1 for an unknown work id or a dead server. View mode takes `--route`. `tests/test_review_link.py` passes against a real temporary server",
-        "score": "1.00",
+        "score": "0.92",
         "attempts": 1,
         "state": "completed"
       },
@@ -3932,7 +3932,7 @@
         "n": 3,
         "title": "Present for review procedure and the link check",
         "ends_with": "Every presentation point names Present for review before its question. `verify_gate.py` fails an APPROVED line dated on or after 2026-09-28 with no link. This plan's own gate lines carry links",
-        "score": "1.00",
+        "score": "0.92",
         "attempts": 1,
         "state": "completed"
       },
@@ -3993,7 +3993,7 @@
         "title": "Tracer bullet: the glossary file and its format",
         "ends_with": "`DDD-VOCABULARY.md` exists with every canvas term, in the entry shape, and each canvas term links to its entry.",
         "score": "1.00",
-        "attempts": 1,
+        "attempts": 2,
         "state": "completed"
       },
       {
@@ -4003,7 +4003,7 @@
         "title": "Real content: the vocabulary agent and design mode",
         "ends_with": "`implement:vocabulary` exists and runs beside VALIDATE in both loop paths. `design-mode.md` reads the glossary in stage 1 and writes it in stage 5.",
         "score": "1.00",
-        "attempts": 1,
+        "attempts": 2,
         "state": "completed"
       },
       {
@@ -4013,7 +4013,7 @@
         "title": "Move: the CLAUDE.md table goes to the glossary",
         "ends_with": "Every term from the `CLAUDE.md` Vocabulary table is in `DDD-VOCABULARY.md`. `CLAUDE.md` holds a pointer, not the table.",
         "score": "1.00",
-        "attempts": 1,
+        "attempts": 2,
         "state": "completed"
       },
       {
