@@ -233,6 +233,16 @@ Memory (before Gate 3, or Gate 2): consulted <date> | absent
 
 ---
 
+## Workflow state
+
+Read and write slice state only through the tracker script. [shared/tracker-usage.md](../../../../shared/tracker-usage.md) lists every operation and its arguments. The call form is `uv run "${CLAUDE_PLUGIN_ROOT}/shared/tracker.py" <operation> args`.
+
+- `claim-slice <id> <claimant>` before RED starts.
+- `record-attempt <id> <score> --note <text>` after a failed attempt.
+- `set-slice-state <id> closed --score <score> --attempts <n>` after a pass.
+- `escalate <id> <score> <reason>` after an escalation.
+- `regenerate-status-files <program> --plans-dir <dir>` to refresh `00-status.md`.
+
 ## The approval protocol
 
 Run this protocol at every gate and before implementing an epic:
@@ -593,7 +603,7 @@ A harness with no Workflow tool always uses Manual, regardless of scope.
    whether to commit — the only question after a slice completes is step 5
    below, about what happens next. A slice that is still below threshold and
    not yet escalated to three attempts does not commit.
-3. **Record the score** in `00-status.md` and mark the slice complete.
+3. **Record the score** with `set-slice-state`, as the Workflow state section says.
 4. **Route gaps** below 1.0 using the gap decision tree in
    [references/validation-scoring.md](references/validation-scoring.md).
 5. **Present for review.** Refresh the bundle, then follow the Present for
@@ -634,7 +644,6 @@ Load reference files as needed:
 | [references/rubric-authoring.md](references/rubric-authoring.md) | Authoring blind rubrics and manifest files |
 | [references/slice-loop.md](references/slice-loop.md) | Role prompts for RED, GREEN, and VALIDATE |
 | [references/validation-scoring.md](references/validation-scoring.md) | Scoring criteria and gap routing |
-| [references/goal-sync.md](references/goal-sync.md) | Sync epic status to goal.json after slice acceptance |
 | [workflows/slice-loop.js](workflows/slice-loop.js) | Multi-agent workflow automation |
 
 ---

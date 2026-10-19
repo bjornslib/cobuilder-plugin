@@ -116,7 +116,7 @@ a. If the session lists `mcp__cobuilder-memory__consult`, the needed rules are `
 
 b. If the session lists `mcp__hindsight__retain`, add `mcp__hindsight__retain` to the needed rules. The slice note of the build loop calls it.
 
-c. If the session lists neither `mcp__cobuilder-memory__consult` nor `mcp__hindsight__retain`, state that no Hindsight rule is needed. Then skip to the Report section.
+c. Always add `Bash(uv run *shared/tracker.py*)` to the needed rules. The build loop calls the tracker script with this form. If the session lists neither `mcp__cobuilder-memory__consult` nor `mcp__hindsight__retain`, state that no Hindsight rule is needed, and go on to step d.
 
 d. Read `permissions.allow` in the user file `~/.claude/settings.json`. List each needed rule that the file does not hold. If no needed rule is missing, say so. Then skip to the Report section.
 
