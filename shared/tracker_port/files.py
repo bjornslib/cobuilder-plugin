@@ -124,6 +124,7 @@ def _row_epics(text: str) -> dict[str, str]:
 
 
 EPIC_STATE_KEYS = ("branch", "pr", "state")
+CLOSED_EPIC_STATES = frozenset({"completed", "merged", "accepted", "closed", "done"})
 
 
 def _goal_epic_state(plans_dir: Path, design: str, local_id: str) -> dict[str, Any] | None:
@@ -272,6 +273,64 @@ class FilesAdapter:
                 )
             except PlanError as error:
                 self.conflicts.append({"plan": directory.name, "reason": error.reason, "text": error.text})
+        records.extend(self._design_records(records))
+        return records
+
+    def _design_records(self, emitted: list[TrackerRecord]) -> list[TrackerRecord]:
+        # A design with a goal.json epic that holds branch, pr, or state, and that no plan table emitted,
+        # becomes an epic record. A design that no plan produced also gets a program record, first.
+        held = {record.id for record in emitted}
+        programs = {record.id for record in emitted if record.kind == "program"}
+        designs_dir = self._plans_dir.parent / "architecture" / "designs"
+        if not designs_dir.is_dir():
+            return []
+        records: list[TrackerRecord] = []
+        for directory in sorted(designs_dir.iterdir()):
+            design = directory.name
+            if design in programs:
+                continue
+            try:
+                goal = json.loads((directory / "goal.json").read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            entries = goal.get("epics") if isinstance(goal, dict) else None
+            epics: list[TrackerRecord] = []
+            for entry in entries if isinstance(entries, list) else []:
+                if not isinstance(entry, dict) or not isinstance(entry.get("id"), str):
+                    continue
+                state = {key: entry[key] for key in EPIC_STATE_KEYS if entry.get(key) is not None}
+                epic_id = f"{design}/{entry['id']}"
+                if not state or epic_id in held:
+                    continue
+                done = str(state.get("state", "")).lower() in CLOSED_EPIC_STATES
+                epics.append(
+                    TrackerRecord(
+                        id=epic_id,
+                        kind="epic",
+                        parent=design,
+                        blocked_by=(),
+                        lifecycle="closed" if done else "open",
+                        assignee=None,
+                        envelope={"epic_id": entry["id"], **state},
+                        external_ref=epic_id,
+                    )
+                )
+            if not epics:
+                continue
+            stage = goal.get("stage")
+            records.append(
+                TrackerRecord(
+                    id=design,
+                    kind="program",
+                    parent=None,
+                    blocked_by=(),
+                    lifecycle="open",
+                    assignee=None,
+                    envelope={"stage": stage} if isinstance(stage, str) else {},
+                    external_ref=design,
+                )
+            )
+            records.extend(epics)
         return records
 
     def list_programs(self) -> list[TrackerRecord]:
