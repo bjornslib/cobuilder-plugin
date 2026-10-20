@@ -19,6 +19,10 @@ BD_PRIORITY = {"program": "1", "epic": "2", "slice": "2", "pr": "2"}
 LIST_ARGS = ["list", "--json", "--all"]
 
 
+def _is_cb_row(row: dict[str, Any]) -> bool:
+    return isinstance((row.get("metadata") or {}).get("cb"), dict)
+
+
 def _cb_block(row: dict[str, Any]) -> dict[str, Any]:
     """Return metadata.cb after it passes the version and kind checks."""
     issue_id = row.get("id")

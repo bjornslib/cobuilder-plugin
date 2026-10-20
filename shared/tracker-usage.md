@@ -492,6 +492,16 @@ $ uv run shared/tracker.py list-pull-requests
 }
 ```
 
+## Configuration
+
+The file `.cobuilder/tracker.yaml` names the adapter. It holds these keys:
+
+- `adapter`: the adapter to use: `beads`, `files`, or `fake`.
+- `plans_dir`: the plans folder that the `files` adapter reads, such as `docs/plans`.
+- `corpus`: the corpus folder that the `fake` adapter reads.
+- `state_file`: the file where the `fake` adapter keeps its state.
+- `bd`: the bd command that the `beads` adapter runs. It defaults to `bd`.
+
 ## Adapter notes
 
 Each tracker has its own adapter note. The note names the tracker and lists what the adapter supports. Read the note for your tracker before you write state. The notes live at `shared/tracker-adapter-<name>.md`, and this guide does not repeat them.

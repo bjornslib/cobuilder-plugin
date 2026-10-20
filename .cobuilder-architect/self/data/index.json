@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "3c4f5963ea47eda2f0af6c4b8c61ba7abd758bbe",
+    "git_head": "d69236e9d8ef46deb067397ebfe5283615a5246c",
     "trees": {
       "docs/architecture/adr": "sha256:54467e271802fa891e34a4e971d58caebed03734735ab3833cab9cc932105893",
       "docs/architecture/designs": "sha256:cd0a8ef689e2a5fda1361bd5976a491c5e785400f940eaf7429b407986b08a12",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
       "docs/plans": "sha256:f02bc4b2dac9644543e50f5de4b0a4d9f4c704af36d9c621e44a6405454d676b",
-      ".cobuilder/rubrics": "sha256:e0d61747cc986a672a3244c7a61103e83f05b5f8cdf2fd3ee8af1bc5e91e363a"
+      ".cobuilder/rubrics": "sha256:0b3c78d736e3e12d616e41275fb446f15f59b42bbb7b5bbc53d3070ae5456aac"
     }
   },
   "entities": {
@@ -4991,6 +4991,14 @@
         "source_path": ".cobuilder/rubrics/book-index-tiering/slice-2.md"
       },
       {
+        "id": "coach-probe-skips-unscanned-files/1",
+        "feature_slug": "coach-probe-skips-unscanned-files",
+        "n": 1,
+        "title": "Slice 1 — the coach-check probe skips .js and .jsx files",
+        "body_md": "# Rubric: Slice 1 — the coach-check probe skips .js and .jsx files\n\nFeature: coach-probe-skips-unscanned-files\nSlice goal: `pick_probe_file` in `plugins/implement/scripts/habit_coach.py` no longer returns a `.js` or `.jsx` file. The habit-hooks typescript plugin scans only `**/*.ts` and `**/*.tsx`, so a `.js` probe makes habit-hooks print \"outside [files]; nothing scanned\", and `--check` reports a false failure.\nTest command: uv run pytest tests/test_habit_coach.py -q\n\n## Criteria\n\n### C1 — a leading .js file no longer wins [CRITICAL]\n**Must be true:** In a git repo whose `git ls-files` output lists a tracked `.js` file before a tracked `.py` file, `pick_probe_file` returns the `.py` file. The same holds for `.jsx` before `.ts`.\n**Evidence to check:** build a temporary git repo with tracked `a.js` and `z.py`, then call `pick_probe_file`. Repeat with `a.jsx` and `z.ts`.\n**Scoring:** 1.0 both pairs return the later file. 0.5 one pair. 0.0 either returns the `.js` or `.jsx` file.\n\n### C2 — a repo with only .js or .jsx files has no probe [CRITICAL]\n**Must be true:** With only `.js` and `.jsx` files tracked, `pick_probe_file` returns `None`, and `habit_coach.py --check` prints `coaching check failed: no tracked source file to probe in this project.` and exits with 1.\n**Evidence to check:** temporary git repo with `only.js` and `only.jsx`. Call `pick_probe_file`. Then run `--check` from that repo and read the line and the exit code.\n**Scoring:** 1.0 both hold. 0.5 only `pick_probe_file` returns `None`. 0.0 the `.js` file is still picked.\n\n### C3 — the other languages still work\n**Must be true:** `.py`, `.ts`, `.tsx`, `.php`, `.java`, and `.rb` files are each still picked.\n**Evidence to check:** a parametrized test over these six extensions passes. A grep of `SOURCE_EXTENSIONS` in `habit_coach.py` lists all six and neither `.js` nor `.jsx`.\n**Scoring:** 1.0 all six pass. 0.5 five pass. 0.0 fewer.\n\n### C4 — a real run works on this machine\n**Must be true:** `--check` run from `/Users/theb/Documents/Windsurf/think-with-ai` with the real `habit-hooks` prints a line that starts with `coaching works`.\n**Evidence to check:** `cd /Users/theb/Documents/Windsurf/think-with-ai && uv run /Users/theb/Documents/Windsurf/cobuilder-plugin/plugins/implement/scripts/habit_coach.py --check`.\n**Scoring:** 1.0 the line starts with `coaching works`. 0.0 anything else.\n\n### C5 — tests are the contract, and the change is small [CRITICAL]\n**Must be true:** `tests/test_habit_coach.py` holds new tests for C1 and C2 that fail on the old code. The `.js` and `.jsx` cases leave the \"accepts each source extension\" list, and no other test is removed or weakened. This slice changes only `plugins/implement/scripts/habit_coach.py` and `tests/test_habit_coach.py`. Other uncommitted edits already sit in this repo (tracker, install, and marketplace files). Another session made them. Ignore them, and do not touch them. All 72 baseline tests still pass or are accounted for.\n**Evidence to check:** `git diff -- tests/test_habit_coach.py plugins/implement/scripts/habit_coach.py`. Run the new tests against `git show HEAD:plugins/implement/scripts/habit_coach.py`.\n**Scoring:** 1.0 new tests fail on old code, only the two extension cases move, and this slice changed only the two named files. 0.5 an extra test is weakened or this slice changed a third file. 0.0 a test is edited to force a pass.\n\n### C6 — the writing standard\n**Must be true:** The module docstring says why `.js` and `.jsx` are not probe files. New comments and docstrings use no contractions and no semicolons. No TODO, FIXME, HACK, or XXX marker appears.\n**Evidence to check:** read the changed lines. `uv run shared/skills/ste-writing/ste-lint.py plugins/implement/scripts/habit_coach.py`.\n**Scoring:** 1.0 the reason is stated and the lines are clean. 0.5 lint findings only. 0.0 a marker, or no reason stated.\n\n## Regression check\n\n`uv run pytest tests/test_habit_coach.py -q` shows no failure that the baseline did not show.\n",
+        "source_path": ".cobuilder/rubrics/coach-probe-skips-unscanned-files/slice-1.md"
+      },
+      {
         "id": "coach-reaches-green/1",
         "feature_slug": "coach-reaches-green",
         "n": 1,
@@ -6049,7 +6057,7 @@
         ]
       },
       "ADR-0029": {
-        "pr": 21,
+        "pr": 43,
         "via": "epic",
         "path": [
           "beads-storage/E1",
@@ -6093,7 +6101,7 @@
         ]
       },
       "ADR-0031": {
-        "pr": 25,
+        "pr": 43,
         "via": "epic",
         "path": [
           "beads-storage/E1",
@@ -6165,7 +6173,7 @@
         "path": []
       },
       "ADR-0040": {
-        "pr": null,
+        "pr": 43,
         "via": "epic",
         "path": [
           "beads-storage/E1",
@@ -6177,6 +6185,10 @@
       }
     },
     "epic_to_pull_request": {
+      "beads-storage/E1": 43,
+      "beads-storage/E2": 43,
+      "beads-storage/E3": 43,
+      "beads-storage/E4": 43,
       "book-index-tiering/E1": 16,
       "cobuilder-implement/E1": 11,
       "cobuilder-implement/E2": 12,
@@ -6219,10 +6231,10 @@
       "work-drawer/E2": 25
     },
     "epic_status": {
-      "beads-storage/E1": "no-pull-request",
-      "beads-storage/E2": "no-pull-request",
-      "beads-storage/E3": "no-pull-request",
-      "beads-storage/E4": "no-pull-request",
+      "beads-storage/E1": "open",
+      "beads-storage/E2": "open",
+      "beads-storage/E3": "open",
+      "beads-storage/E4": "open",
       "beads-storage/E5": "unstarted",
       "book-index-tiering/E1": "open",
       "build-workflow-polish/E1": "unstarted",

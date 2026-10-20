@@ -12,19 +12,16 @@ final list.
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 from typing import Any
 
-SHARED_DIR = Path(__file__).resolve().parent.parent / "shared"
-sys.path.insert(0, str(SHARED_DIR))
+import _beads_support as support
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "tracker"
 PLANS_DIR = FIXTURES / "plans"
 DRY_RUN = FIXTURES / "backfill" / "dry_run.txt"
 SEED_TRANSCRIPT = FIXTURES / "beads" / "transcripts" / "seed_steps.json"
 BD_VERSION_PREFIX = "bd version 1.3.0"
-EMPTY_LIST = "[]\n"
 SEEDED_IDS = [
     "beads-storage-mini",
     "beads-storage-mini/E1",
@@ -72,21 +69,6 @@ class ReplayRunner:
         raise AssertionError(message)
 
 
-class DryRunRunner:
-    """Answers the list read with an empty tracker. Any other bd call fails."""
-
-    def __init__(self) -> None:
-        self.calls: list[list[str]] = []
-
-    def run(self, args: list[str]) -> str:
-        from tracker_port.beads import LIST_ARGS
-
-        self.calls.append(list(args))
-        if list(args) != LIST_ARGS:
-            raise AssertionError(f"dry run sent a bd call other than the list read: {args}")
-        return EMPTY_LIST
-
-
 def _load_transcript() -> dict[str, Any]:
     return json.loads(SEED_TRANSCRIPT.read_text(encoding="utf-8"))
 
@@ -105,7 +87,7 @@ def test_seed_transcript_records_bd_1_3_0() -> None:
 def test_dry_run_prints_the_creates_in_the_fixture() -> None:
     from tracker_port.beads import BeadsAdapter
 
-    records = BeadsAdapter(DryRunRunner()).seed_from_files(PLANS_DIR, dry_run=True)
+    records = BeadsAdapter(support.ListOnlyRunner([])).seed_from_files(PLANS_DIR, dry_run=True)
 
     assert _projected_lines(records) == DRY_RUN.read_text(encoding="utf-8")
 
@@ -113,7 +95,7 @@ def test_dry_run_prints_the_creates_in_the_fixture() -> None:
 def test_dry_run_sends_only_the_list_read() -> None:
     from tracker_port.beads import LIST_ARGS, BeadsAdapter
 
-    runner = DryRunRunner()
+    runner = support.ListOnlyRunner([])
     BeadsAdapter(runner).seed_from_files(PLANS_DIR, dry_run=True)
 
     assert runner.calls

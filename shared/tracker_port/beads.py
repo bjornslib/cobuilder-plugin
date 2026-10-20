@@ -18,6 +18,7 @@ from .beads_rows import (
     STATUS_MAP,
     _cb_block,
     _envelope,
+    _is_cb_row,
     _is_ready,
     _metadata_arg,
 )
@@ -39,8 +40,15 @@ class BeadsAdapter(_WriteMixin, _SeedMixin):
         self.runner = runner
         self._batching = False
 
-    def _rows(self) -> list[dict[str, Any]]:
+    def _all_rows(self) -> list[dict[str, Any]]:
         return json.loads(self.runner.run(LIST_ARGS))
+
+    def _rows(self) -> list[dict[str, Any]]:
+        # A foreign issue carries no metadata.cb block. Every read and write ignores it.
+        return [row for row in self._all_rows() if _is_cb_row(row)]
+
+    def doctor_details(self) -> dict[str, Any]:
+        return {"foreign_issues": sum(1 for row in self._all_rows() if not _is_cb_row(row))}
 
     def _records(self) -> dict[str, TrackerRecord]:
         rows = self._rows()

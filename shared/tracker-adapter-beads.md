@@ -81,6 +81,8 @@ The adapter sends `--force` on every close. bd refuses to close an epic that has
 
 bd ids differ from cb ids. The adapter reads `bd list --json --all` and maps each bd id to its cb id through the `metadata.cb` envelope.
 
+A bd database may hold issues from other tools. The adapter never reads, changes, or closes an issue that has no `metadata.cb` block.
+
 ## Failure messages
 
 | Message | Cause | Action |
@@ -94,7 +96,7 @@ bd ids differ from cb ids. The adapter reads `bd list --json --all` and maps eac
 | `claim of <id> read back assignee <value>, not <claimant>` | Another session won the claim race | Pick another slice. |
 | `pull request ref <ref> must end in its GitHub number, such as pr-101` | The ref has no GitHub number | Use the form `pr-<n>`. |
 | `record <ref> already exists` | A create used a ref that exists | Read the existing record. Do not create it again. |
-| `bd issue <id> has no metadata.cb block` | The issue has no cb envelope | Fix the record through the adapter. Do not edit bd files by hand. |
+| An issue has no `metadata.cb` block | Another tool made the issue (a foreign issue) | None. The adapter ignores foreign issues, and `doctor` counts them as `foreign_issues`. |
 | `bd issue <id> has unknown metadata.cb.kind <kind>` | The kind is not program, epic, slice, or pr | Fix the kind through the adapter. |
 
 ## Not verified

@@ -149,3 +149,34 @@ def with_syncs(recorded: list[dict[str, Any]]) -> list[dict[str, Any]]:
     if group:
         close_group()
     return out
+
+
+class ListOnlyRunner:
+    """Answers the list read with fixed rows. Any other bd call fails the test."""
+
+    def __init__(self, rows: list[dict[str, Any]]) -> None:
+        self.rows = rows
+        self.calls: list[list[str]] = []
+
+    def run(self, args: list[str]) -> str:
+        from tracker_port.beads import LIST_ARGS
+
+        self.calls.append(list(args))
+        if list(args) != LIST_ARGS:
+            raise AssertionError(f"unexpected bd call {args}: only the list read is allowed here")
+        return json.dumps(self.rows)
+
+
+def foreign_rows_all() -> list[dict[str, Any]]:
+    return json.loads(load_transcript("foreign_issue")["list"])
+
+
+def foreign_only_rows() -> list[dict[str, Any]]:
+    return [row for row in foreign_rows_all() if "cb" not in (row.get("metadata") or {})]
+
+
+def list_adapter(rows: list[dict[str, Any]]) -> tuple[Any, ListOnlyRunner]:
+    from tracker_port.beads import BeadsAdapter
+
+    runner = ListOnlyRunner(rows)
+    return BeadsAdapter(runner), runner

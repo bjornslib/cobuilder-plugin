@@ -134,6 +134,7 @@ h. State the reason to the user. A plugin cannot ship allow rules, so this skill
 
 This part runs after the engineer configures the tracker adapter. It follows `shared/tracker-backfill.md`. It writes nothing until the engineer agrees.
 
+0. **Create the tracker config.** If `.cobuilder/tracker.yaml` is missing, ask the engineer which adapter to use: `beads` or `files`. Do not offer any other adapter. After the answer, write the file. For beads, the file holds `adapter: beads`. For files, it holds `adapter: files` and `plans_dir: docs/plans`. If the file exists, keep it.
 1. **Check the adapter.** When the adapter is beads and the repo has no `.beads` folder, read `shared/tracker-adapter-beads.md`. It holds the approval step for the beads setup. Do not run any beads command from this skill.
 2. **Run the dry run.** Run `tracker.py seed-from-files <plans-dir> --dry-run`. Show the engineer the list of planned creates.
 3. **Ask for consent.** Ask the engineer for explicit consent to write. Do not write on silence or on a vague answer.

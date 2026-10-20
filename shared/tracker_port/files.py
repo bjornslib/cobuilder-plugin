@@ -82,6 +82,15 @@ class FilesAdapter:
                 return record
         raise ArgumentError(f"no slice with id {id}")
 
+    def seed_from_files(
+        self, plans_dir: Path, dry_run: bool = False, refresh_envelope: bool = False
+    ) -> list[TrackerRecord]:
+        # This adapter holds no record, so a dry run plans every record. A real seed refuses.
+        if not dry_run:
+            _refuse(self)
+        records, self.seed_conflicts = seedable_records(plans_dir)
+        return records
+
     def list_pull_requests(self) -> list[TrackerRecord]:
         raise AdapterError("the files adapter reads no pull requests. Read them from gh instead.")
 
@@ -99,7 +108,6 @@ class FilesAdapter:
     escalate = _refuse
     open_pull_request = _refuse
     set_pull_request_state = _refuse
-    seed_from_files = _refuse
     regenerate_status_files = _refuse
 
 

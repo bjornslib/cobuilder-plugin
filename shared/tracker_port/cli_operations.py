@@ -115,6 +115,13 @@ def _design_stage(stage: str) -> str:
 
 
 # Each operation maps to its builder for arguments and to the port call it makes.
+
+def _doctor(adapter: Any, _namespace: argparse.Namespace) -> dict[str, Any]:
+    # An adapter may add keys through doctor_details. Only the beads adapter does.
+    details = getattr(adapter, "doctor_details", None)
+    return {"adapter": adapter.name, "capabilities": adapter.capabilities, **(details() if details else {})}
+
+
 OPERATIONS: dict[str, tuple[Callable[[argparse.ArgumentParser], None], Callable[[Any, argparse.Namespace], Any]]] = {
     "list-programs": (_no_args, lambda a, n: a.list_programs()),
     "list-epics": (_list_epics_args, lambda a, n: a.list_epics(n.program)),
@@ -148,5 +155,5 @@ OPERATIONS: dict[str, tuple[Callable[[argparse.ArgumentParser], None], Callable[
         lambda a, n: [str(path) for path in a.regenerate_status_files(n.program, n.plans_dir)],
     ),
     "capabilities": (_no_args, lambda a, n: a.capabilities),
-    "doctor": (_no_args, lambda a, n: {"adapter": a.name, "capabilities": a.capabilities}),
+    "doctor": (_no_args, _doctor),
 }
