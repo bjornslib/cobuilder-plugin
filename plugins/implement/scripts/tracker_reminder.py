@@ -17,6 +17,8 @@ import json
 import os
 import sys
 
+PLUGIN_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 CONFIGURED = "\n".join([
     "CoBuilder tracker is on for this repo.",
     "Use /architect:design for architecture design.",
@@ -26,6 +28,9 @@ CONFIGURED = "\n".join([
     "Key operations: tracker.py doctor, tracker.py list-programs, "
     "tracker.py next-ready.",
     "Also: tracker.py claim-slice, tracker.py set-slice-state, tracker.py sync.",
+    f"Call it as: uv run {PLUGIN_ROOT}/shared/tracker.py <operation>.",
+    "A passed slice: tracker.py set-slice-state <id> closed --score <s> --attempts <n>.",
+    "Run tracker.py sync at the end of a session.",
     "Read shared/tracker-usage.md for the arguments of each operation.",
 ])
 
