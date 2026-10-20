@@ -227,6 +227,20 @@ $ uv run shared/tracker.py get-slice demo-E1-s2
 }
 ```
 
+## Prepare
+
+`tracker.py prepare` sets up the tracker once, before the first seed. The beads adapter adds `program` to the bd issue type list and keeps the types that are there. It prints `changed: true` only when it set the type. The fake and files adapters print `changed: false`. A second call changes nothing.
+
+```console
+$ uv run shared/tracker.py prepare
+{
+  "ok": true,
+  "result": {
+    "changed": false
+  }
+}
+```
+
 ## Writes
 
 A write returns the record after the change.

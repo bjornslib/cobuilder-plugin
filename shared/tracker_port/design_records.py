@@ -38,6 +38,14 @@ def epic_state(plans_dir: Path, program: str, epic_id: str) -> dict[str, Any]:
     return {}
 
 
+def _epic_lifecycle(state: str) -> str:
+    # The goal.json state word sets the lifecycle. In progress has three spellings.
+    word = "_".join(state.lower().replace("-", " ").replace("_", " ").split())
+    if word in CLOSED_EPIC_STATES:
+        return "closed"
+    return "in_progress" if word == "in_progress" else "open"
+
+
 def design_records(plans_dir: Path, emitted: list[TrackerRecord]) -> list[TrackerRecord]:
     # A design with a goal.json epic that holds branch, pr, or state, and that no plan table emitted,
     # becomes an epic record. A design that no plan produced also gets a program record, first.
@@ -64,14 +72,14 @@ def design_records(plans_dir: Path, emitted: list[TrackerRecord]) -> list[Tracke
             epic_id = f"{design}/{entry['id']}"
             if not state or epic_id in held:
                 continue
-            done = str(state.get("state", "")).lower() in CLOSED_EPIC_STATES
+            lifecycle = _epic_lifecycle(str(state.get("state", "")))
             epics.append(
                 TrackerRecord(
                     id=epic_id,
                     kind="epic",
                     parent=design,
                     blocked_by=(),
-                    lifecycle="closed" if done else "open",
+                    lifecycle=lifecycle,
                     assignee=None,
                     envelope={"epic_id": entry["id"], **state},
                     external_ref=epic_id,

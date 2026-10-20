@@ -115,9 +115,13 @@ class _WriteMixin:
         blocker_bd_ids = [self._find_row(rows, blocker, KINDS)["id"] for blocker in record.blocked_by]
         block = {"v": CB_VERSION, "id": record.id, "kind": record.kind, "envelope": dict(record.envelope)}
         argv = _create_argv(
-            block, parent=parent_bd_id, external_ref=record.external_ref, assignee=record.assignee
+            block,
+            parent=parent_bd_id,
+            external_ref=record.external_ref,
+            assignee=record.assignee,
+            status="in_progress" if record.lifecycle == "in_progress" else None,
         )
-        bd_id = self.runner.run(argv).strip()
+        bd_id = self._create(argv)
         for blocker_bd_id in blocker_bd_ids:
             # Each blocker edge is one bd dep add, sent in the recorded order.
             self.runner.run(["dep", "add", bd_id, blocker_bd_id])
@@ -125,6 +129,25 @@ class _WriteMixin:
             self.runner.run(["close", bd_id, "--force"])
         self._publish()
         return record
+
+    def _create(self, argv: list[str]) -> str:
+        # A bd without the custom type `program` refuses the create. Prepare it and send the create once more.
+        try:
+            return self.runner.run(argv).strip()
+        except BdError as error:
+            if "invalid issue type" not in error.stderr.lower():
+                raise
+        self.prepare()
+        return self.runner.run(argv).strip()
+
+    def prepare(self) -> dict[str, bool]:
+        # Add `program` to the bd custom issue types. The entries that are there stay, and a present type changes nothing.
+        current = self.runner.run(["config", "get", "types.custom"]).strip()
+        types = [] if current.startswith("types.custom (not set)") else [name for name in current.split(",") if name]
+        if "program" in types:
+            return {"changed": False}
+        self.runner.run(["config", "set", "types.custom", ",".join([*types, "program"])])
+        return {"changed": True}
 
     def open_pull_request(self, ref: str, epic_ids: list[str]) -> TrackerRecord:
         number = _pr_number(ref)

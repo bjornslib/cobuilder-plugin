@@ -53,6 +53,7 @@ def _create_argv(
     parent: str | None = None,
     external_ref: str | None = None,
     assignee: str | None = None,
+    status: str | None = None,
 ) -> list[str]:
     # The block id is the title. The block kind sets the bd type and the priority.
     # The flag order matches the recorded bd transcripts. Replays compare the whole argument list.
@@ -61,6 +62,8 @@ def _create_argv(
     if parent is not None:
         argv += ["--parent", parent]
     argv += ["--type", BD_TYPE[kind], "--title", block["id"], "--priority", BD_PRIORITY[kind]]
+    if status is not None:
+        argv += ["--status", status]
     if external_ref is not None:
         argv += ["--external-ref", external_ref]
     if assignee is not None:

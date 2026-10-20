@@ -1,7 +1,7 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "d69236e9d8ef46deb067397ebfe5283615a5246c",
+    "git_head": "433ac7532413f864b221ce94ef997237e99307e1",
     "trees": {
       "docs/architecture/adr": "sha256:54467e271802fa891e34a4e971d58caebed03734735ab3833cab9cc932105893",
       "docs/architecture/designs": "sha256:cd0a8ef689e2a5fda1361bd5976a491c5e785400f940eaf7429b407986b08a12",

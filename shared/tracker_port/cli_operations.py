@@ -130,6 +130,7 @@ OPERATIONS: dict[str, tuple[Callable[[argparse.ArgumentParser], None], Callable[
     "get-slice": (_id, lambda a, n: a.get_slice(n.id)),
     "next-ready": (_next_ready_args, lambda a, n: a.next_ready(n.kind, n.under)),
     "sync": (_no_args, lambda a, n: a.sync()),
+    "prepare": (_no_args, lambda a, n: a.prepare()),
     "claim-slice": (_claim_slice_args, lambda a, n: a.claim_slice(n.id, n.claimant)),
     "set-program-stage": (_set_program_stage_args, lambda a, n: a.set_program_stage(n.program, _design_stage(n.stage))),
     "set-gate-value": (_set_gate_value_args, lambda a, n: a.set_gate_value(n.program, n.gate, n.value)),

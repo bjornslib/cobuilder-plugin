@@ -124,6 +124,10 @@ class FakeAdapter:
     def sync(self) -> None:
         """The fake holds no remote state, so there is nothing to sync."""
 
+    def prepare(self) -> dict[str, bool]:
+        """The fake needs no setup."""
+        return {"changed": False}
+
     def claim_slice(self, id: str, claimant: str) -> TrackerRecord:
         return self._update(id, "slice", assignee=claimant)
 

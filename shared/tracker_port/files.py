@@ -97,6 +97,10 @@ class FilesAdapter:
     def next_ready(self, kind: str = "slice", under: str | None = None) -> list[TrackerRecord]:
         raise AdapterError("the files adapter does not compute ready work.")
 
+    def prepare(self) -> dict[str, bool]:
+        # This adapter writes nothing, so it needs no setup.
+        return {"changed": False}
+
     sync = _refuse
     claim_slice = _refuse
     set_program_stage = _refuse

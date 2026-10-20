@@ -6,7 +6,6 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-from .bd_runner import BdError
 from .beads_rows import STATUS_MAP, _cb_block, _envelope, _with_envelope
 from .files import seedable_records
 from .record import TrackerRecord, merge_refresh_envelope
@@ -34,18 +33,21 @@ class _SeedMixin:
         if dry_run:
             return creates + changed
         closes = self._rows_to_close(rows, found)
+        starts = self._rows_to_start(rows, found)
         # One sync covers the whole seed. The batch flag stops each write op from syncing on its own.
         self._batching = True
         try:
             for record in creates:
-                self._create_seeded(record)
+                self.create_record(record)
             for row in closes:
                 self.runner.run(["close", row["id"], "--force"])
+            for row in starts:
+                self._update(row, status="in_progress")
             for row, record in refreshes:
                 self._update(row, block=_with_envelope(_cb_block(row), record.envelope))
         finally:
             self._batching = False
-        if creates or closes or refreshes:
+        if creates or closes or starts or refreshes:
             self.sync()
         return creates + changed
 
@@ -66,20 +68,11 @@ class _SeedMixin:
                 refreshes.append((row, replace(record, envelope=envelope)))
         return refreshes
 
-    def _create_seeded(self, record: TrackerRecord) -> TrackerRecord:
-        try:
-            return self.create_record(record)
-        except BdError as error:
-            if "type" not in error.stderr.lower():
-                raise
-        self._allow_program_type()
-        return self.create_record(record)
-
-    def _allow_program_type(self) -> None:
-        current = self.runner.run(["config", "get", "types.custom"]).strip()
-        types = [name for name in current.split(",") if name]
-        if "program" not in types:
-            self.runner.run(["config", "set", "types.custom", ",".join([*types, "program"])])
+    @staticmethod
+    def _rows_to_start(rows: list[dict[str, Any]], found: list[TrackerRecord]) -> list[dict[str, Any]]:
+        # An open record whose files now say in progress moves to in progress. Closed and started records stay.
+        started = {record.id for record in found if record.lifecycle == "in_progress"}
+        return [row for row in rows if _cb_block(row)["id"] in started and STATUS_MAP.get(row.get("status")) == "open"]
 
     @staticmethod
     def _rows_to_close(rows: list[dict[str, Any]], found: list[TrackerRecord]) -> list[dict[str, Any]]:

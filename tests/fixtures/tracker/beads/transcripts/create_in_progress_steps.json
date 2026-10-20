@@ -1,0 +1,99 @@
+{
+  "bd": "bd version 1.3.0 (Homebrew)",
+  "steps": [
+    {
+      "args": [
+        "config",
+        "get",
+        "types.custom"
+      ],
+      "stdout": "types.custom (not set)\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "create",
+        "--silent",
+        "--type",
+        "program",
+        "--title",
+        "demo-prog",
+        "--priority",
+        "1",
+        "--metadata",
+        "{\"cb\":{\"v\":1,\"id\":\"demo-prog\",\"kind\":\"program\",\"envelope\":{}}}"
+      ],
+      "stdout": "",
+      "stderr": "Error: validation failed: validation failed for issue : invalid issue type: program\n",
+      "exit": 1
+    },
+    {
+      "args": [
+        "config",
+        "set",
+        "types.custom",
+        "program"
+      ],
+      "stdout": "Set types.custom = program\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "config",
+        "get",
+        "types.custom"
+      ],
+      "stdout": "program\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "create",
+        "--silent",
+        "--type",
+        "program",
+        "--title",
+        "demo-prog",
+        "--priority",
+        "1",
+        "--metadata",
+        "{\"cb\":{\"v\":1,\"id\":\"demo-prog\",\"kind\":\"program\",\"envelope\":{}}}"
+      ],
+      "stdout": "demo-gca\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "create",
+        "--silent",
+        "--type",
+        "task",
+        "--title",
+        "demo-ip-probe",
+        "--priority",
+        "2",
+        "--status",
+        "in_progress",
+        "--metadata",
+        "{\"cb\":{\"v\":1,\"id\":\"demo-ip-probe\",\"kind\":\"slice\",\"envelope\":{}}}"
+      ],
+      "stdout": "demo-n9c\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "list",
+        "--json",
+        "--all"
+      ],
+      "stdout": "[\n  {\n    \"id\": \"demo-gca\",\n    \"title\": \"demo-prog\",\n    \"status\": \"open\",\n    \"priority\": 1,\n    \"issue_type\": \"program\",\n    \"owner\": \"131568482+bjornslib@users.noreply.github.com\",\n    \"created_at\": \"2026-10-20T10:06:47Z\",\n    \"created_by\": \"Bjorn Schliebitz\",\n    \"updated_at\": \"2026-10-20T10:06:47Z\",\n    \"metadata\": {\n      \"cb\": {\n        \"v\": 1,\n        \"id\": \"demo-prog\",\n        \"kind\": \"program\",\n        \"envelope\": {}\n      }\n    },\n    \"dependency_count\": 0,\n    \"dependent_count\": 0,\n    \"comment_count\": 0\n  },\n  {\n    \"id\": \"demo-n9c\",\n    \"title\": \"demo-ip-probe\",\n    \"status\": \"in_progress\",\n    \"priority\": 2,\n    \"issue_type\": \"task\",\n    \"owner\": \"131568482+bjornslib@users.noreply.github.com\",\n    \"created_at\": \"2026-10-20T10:06:48Z\",\n    \"created_by\": \"Bjorn Schliebitz\",\n    \"updated_at\": \"2026-10-20T10:06:48Z\",\n    \"metadata\": {\n      \"cb\": {\n        \"v\": 1,\n        \"id\": \"demo-ip-probe\",\n        \"kind\": \"slice\",\n        \"envelope\": {}\n      }\n    },\n    \"dependency_count\": 0,\n    \"dependent_count\": 0,\n    \"comment_count\": 0\n  }\n]\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ]
+}

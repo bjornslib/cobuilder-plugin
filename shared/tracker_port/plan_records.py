@@ -33,6 +33,13 @@ class PlanError(AdapterError):
 
 
 
+def _slice_lifecycle(checked: bool, state: str | None) -> str:
+    # A checked box closes the slice. Otherwise a table State cell such as "In Progress" starts it.
+    if checked:
+        return "closed"
+    return "in_progress" if re.sub(r"[\s_-]+", "_", (state or "").strip().lower()) == "in_progress" else "open"
+
+
 def _status_slices(text: str) -> dict[int, dict[str, Any]]:
     # A checkbox line that STATUS_SLICE_RE matches sets a slice's lifecycle. Its score token and attempt count
     # win over the table when STATUS_SLICE_RE captures them. A score token of — or none reads as no score.
@@ -182,7 +189,7 @@ def _epic_and_slice_records(
                 kind="slice",
                 parent=epic_id if epic_id in epic_ids else None,
                 blocked_by=(blocker,) if blocker else (),
-                lifecycle="closed" if checked else "open",
+                lifecycle=_slice_lifecycle(checked, row.state),
                 assignee=None,
                 envelope=envelope,
                 external_ref=slice_id,

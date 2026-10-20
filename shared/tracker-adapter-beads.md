@@ -18,12 +18,16 @@ Setup changes the repo. Tell the user these changes before you run any setup com
 
 Ask one question: "Set up beads in this repo? It adds one commit, `.beads/` files, and `.gitignore` lines. Reply yes or no." Recommended answer: yes, when the repo needs one shared backlog. With no answer, do nothing. A second clone needs the same question.
 
+## Custom issue types
+
+`types.custom` is the bd setting that lists the issue types beyond the built-in ones. It holds names that a comma separates. bd has no built-in `program` type, so the list must include it. `tracker.py prepare` adds `program` to the list. The entries that are already in the list stay. It changes nothing when `program` is there. bd prints `types.custom (not set)` when the list is empty.
+
 ## Setup on the first machine
 
 Run these steps in order. Each step needs the step before it.
 
 1. `bd init --skip-agents --skip-hooks -p demo --non-interactive`. The two skip flags skip bd's agent and hook setup. `-p demo` is the id prefix that the verification runs used.
-2. `bd config set types.custom program`. bd has no built-in `program` type. A `program` create fails until this step runs. The adapter runs this step on demand, and you can run it by hand.
+2. `bd config set types.custom program`. bd has no built-in `program` type. A `program` create fails until this step runs. `tracker.py prepare` runs this step and keeps the existing types. The adapter also runs it on demand.
 3. `bd config set team.enabled true`.
 4. `bd config set team.sync_branch main`.
 5. `git remote add origin <url>`. Use a URL that every machine can reach.
