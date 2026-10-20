@@ -1,9 +1,9 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "433ac7532413f864b221ce94ef997237e99307e1",
+    "git_head": "a7e635dcedc770b32c87abb85e9c8dd44fdba0ce",
     "trees": {
-      "docs/architecture/adr": "sha256:54467e271802fa891e34a4e971d58caebed03734735ab3833cab9cc932105893",
+      "docs/architecture/adr": "sha256:c20f50614b285f9488906f31b3f3ce3fe65a88d6cb1f4212766a92f84b1282e1",
       "docs/architecture/designs": "sha256:cd0a8ef689e2a5fda1361bd5976a491c5e785400f940eaf7429b407986b08a12",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
       "docs/plans": "sha256:f02bc4b2dac9644543e50f5de4b0a4d9f4c704af36d9c621e44a6405454d676b",
@@ -210,6 +210,11 @@
       {
         "id": "ADR-0040",
         "title": "A tracker port sits between CoBuilder and the task system",
+        "state": "decided"
+      },
+      {
+        "id": "ADR-0041",
+        "title": "implement ships a tracker reminder hook on SessionStart",
         "state": "decided"
       }
     ],
@@ -6182,6 +6187,11 @@
           "beads-storage/E4",
           "beads-storage/E5"
         ]
+      },
+      "ADR-0041": {
+        "pr": null,
+        "via": "none",
+        "path": []
       }
     },
     "epic_to_pull_request": {
@@ -6509,7 +6519,8 @@
       "ADR-0037": "cobuilder-packaging",
       "ADR-0038": "cobuilder-packaging",
       "ADR-0039": "cobuilder-packaging",
-      "ADR-0040": "shared"
+      "ADR-0040": "shared",
+      "ADR-0041": "cobuilder-packaging"
     },
     "adr_to_district": {
       "ADR-0001": "scripts",
