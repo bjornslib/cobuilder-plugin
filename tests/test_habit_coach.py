@@ -620,7 +620,7 @@ def test_implement_plugin_json_version_matches_marketplace():
 # Epic E2: habit_coach.py --check and the install proof step
 # ---------------------------------------------------------------------------
 
-SOURCE_EXTENSIONS = [".py", ".ts", ".tsx", ".js", ".jsx", ".php", ".java", ".rb"]
+SOURCE_EXTENSIONS = [".py", ".ts", ".tsx", ".php", ".java", ".rb"]
 
 
 def _require_param(func, name: str) -> None:
@@ -717,6 +717,45 @@ def test_pick_probe_file_searches_only_under_root(habit_coach, tmp_path):
 
     assert result is not None, "expected the tracked file under the root folder"
     assert Path(result).name == "inside.py", f"expected inside.py, got {result!r}"
+
+
+def test_pick_probe_file_prefers_python_over_earlier_javascript(habit_coach, tmp_path):
+    _require(habit_coach, "pick_probe_file")
+    repo = _init_repo(tmp_path)
+    _track(repo, "a_view.js")
+    target = _track(repo, "z_app.py")
+
+    result = habit_coach.pick_probe_file(str(repo))
+
+    assert result is not None, "expected the tracked z_app.py as the probe file"
+    assert _resolved(result, repo) == target.resolve(), (
+        f"expected z_app.py, a file habit-hooks scans, but got {result!r}"
+    )
+
+
+def test_pick_probe_file_prefers_typescript_over_earlier_jsx(habit_coach, tmp_path):
+    _require(habit_coach, "pick_probe_file")
+    repo = _init_repo(tmp_path)
+    _track(repo, "a_view.jsx")
+    target = _track(repo, "z_app.ts")
+
+    result = habit_coach.pick_probe_file(str(repo))
+
+    assert result is not None, "expected the tracked z_app.ts as the probe file"
+    assert _resolved(result, repo) == target.resolve(), (
+        f"expected z_app.ts, a file habit-hooks scans, but got {result!r}"
+    )
+
+
+def test_pick_probe_file_returns_none_when_only_javascript_is_tracked(habit_coach, tmp_path):
+    _require(habit_coach, "pick_probe_file")
+    repo = _init_repo(tmp_path)
+    _track(repo, "slice-loop.js")
+    _track(repo, "view.jsx")
+
+    result = habit_coach.pick_probe_file(str(repo))
+
+    assert result is None, f"habit-hooks does not scan .js or .jsx, but the probe was {result!r}"
 
 
 # ---------------------------------------------------------------------------
@@ -876,6 +915,26 @@ def test_main_check_uses_git_root_of_current_folder(habit_coach, tmp_path, monke
     assert rc == 0, "a sub-folder with no tracked files must still find the repo probe file"
     assert len(runner.calls) == 1, f"expected one runner call, got {runner.calls!r}"
     assert _resolved(runner.calls[0], repo) == target.resolve()
+
+
+def test_main_check_fails_with_no_probe_reason_when_only_javascript_is_tracked(
+    habit_coach, tmp_path, monkeypatch
+):
+    _require_param(habit_coach.main, "argv")
+    repo = _init_repo(tmp_path)
+    _track(repo, "slice-loop.js")
+    _track(repo, "view.jsx")
+    monkeypatch.chdir(repo)
+    runner = FakeRunner((0, "app.py: 1 file scanned, 0 findings"))
+    stdout = io.StringIO()
+
+    rc = habit_coach.main(io.StringIO(""), stdout, runner=runner, argv=["--check"])
+
+    assert rc == 1, f"expected exit 1 when no probe file exists, got {rc}"
+    assert stdout.getvalue() == (
+        "coaching check failed: no tracked source file to probe in this project.\n"
+    ), f"unexpected check output: {stdout.getvalue()!r}"
+    assert runner.calls == [], f"the check must not run habit-hooks, but it ran on {runner.calls!r}"
 
 
 def test_main_check_returns_check_code_for_missing_habit_hooks(habit_coach, tmp_path, monkeypatch):

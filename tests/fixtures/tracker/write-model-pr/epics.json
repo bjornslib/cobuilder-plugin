@@ -1,0 +1,4 @@
+[
+  {"id": "pr-demo/E-a", "kind": "epic", "parent": "pr-demo", "blocked_by": [], "lifecycle": "open", "assignee": null, "envelope": {"epic_id": "E-a"}, "external_ref": null},
+  {"id": "pr-demo/E-b", "kind": "epic", "parent": "pr-demo", "blocked_by": [], "lifecycle": "open", "assignee": null, "envelope": {"epic_id": "E-b"}, "external_ref": null}
+]

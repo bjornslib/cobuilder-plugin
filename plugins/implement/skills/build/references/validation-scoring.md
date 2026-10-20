@@ -102,7 +102,7 @@ not ignore any gap.
 A slice that fails three targeted attempts is stuck. Escalation accepts the
 slice with reservations so subsequent work can continue.
 
-Format for escalation in `00-status.md`:
+Run `escalate <id> <score> <reason>` to record an escalation. The record has this shape:
 
 ```markdown
 ## Escalated

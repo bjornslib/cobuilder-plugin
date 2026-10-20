@@ -35,25 +35,16 @@
     {
       "id": "E1",
       "slug": "cobuilder-memory",
-      "branch": "design/cobuilder-memory",
-      "pr": 40,
-      "state": "implemented",
       "outcome": "The plugin installs from this marketplace, consults Hindsight through its MCP tools, shows each run in the memory pane, and joins design stage 1 and implement Gate 1. H1 to H5 retire."
     },
     {
       "id": "E2",
       "slug": "memory-gate",
-      "branch": null,
-      "pr": null,
-      "state": "backlog",
       "outcome": "A Jev gate decides every n tool calls whether a consult would help."
     },
     {
       "id": "E3",
       "slug": "memory-call-log",
-      "branch": null,
-      "pr": null,
-      "state": "backlog",
       "outcome": "The memory pane lists every Hindsight call of the session, with the plugin's own runs marked apart. Sources: the agent's mcp__hindsight__ tool calls, the runtime's diag.jsonl, and the Hindsight audit log."
     }
   ],

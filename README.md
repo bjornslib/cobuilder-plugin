@@ -269,7 +269,7 @@ Only `implement` ships agents. Only `implement` and the `cobuilder-memory` mod s
 
 ### Use the skills in another harness
 
-`scripts/export-agent-skills.sh` copies the plugins' skills into another tool's skill folder. It stamps each copy with its source version and commit, so you can see a stale copy. It refuses to overwrite a file that lacks the stamp.
+`scripts/export-agent-skills.sh` copies the plugins' skills into another tool's skill folder. It stamps each copy with its source version and commit, so you can see a stale copy. It refuses to overwrite a file that lacks the stamp. It also copies `shared/` to a `shared/` folder beside the skills. It rewrites each `${CLAUDE_PLUGIN_ROOT}/shared/` path in the copies to a relative path, so the paths resolve outside Claude Code. Put the `shared/` folder and the skills in the same target folder.
 
 ```
 scripts/export-agent-skills.sh --target /path/to/other-repo/.agents/skills --plugin architect

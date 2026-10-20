@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.10"
-# dependencies = []
+# dependencies = ["pyyaml>=6,<7"]
 # ///
 """Refresh the embedded payload of .cobuilder-architect/self/pages/builds-view.html from docs/plans.
 
@@ -24,6 +24,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "shared"))
 import gate_status  # noqa: E402
 import slice_table  # noqa: E402
+from tracker_port import reader  # noqa: E402
 
 # This script sits at <repo_root>/plugins/artifact/scripts/, so the
 # repo root is three parents up. The defaults below resolve against it, so
@@ -116,6 +117,43 @@ def find_fence(page: Path, lines: list[str]) -> tuple[int, int]:
     return begins[0], ends[0]
 
 
+def _epics(designs_dir: Path, slices_for) -> list[dict]:
+    """Every epic of every design. `slices_for(key, epic_id)` gives its slice rows."""
+    epics = []
+    for goal in sorted(designs_dir.glob("*/goal.json")):
+        d = json.loads(goal.read_text())
+        design = d.get("name", goal.parent.name)
+        for e in d.get("epics", []):
+            key = f"{design}/{e['id']}"
+            epics.append({
+                "id": e["id"], "key": key, "design": design,
+                "note": e.get("note", ""), "state": e.get("state", "planned"),
+                "branch": e.get("branch"), "pr": e.get("pr"),
+                "slices": slices_for(key, e["id"]),
+                "adrs": d.get("adrs", []),
+            })
+    return epics
+
+
+def attach_plan_keyed_rows(epics: list[dict], rows: dict[str, list[dict]], plan: str) -> None:
+    """Give epics the port rows keyed `<plan>/<id>`, when one epic can claim them.
+
+    The design key always wins, so an epic keeps its own rows. A plan named as
+    a design gets no fallback. A design with rows of its own gets no fallback.
+    A `<plan>/<id>` key attaches only when exactly one design without rows has
+    an epic with that id.
+    """
+    if any(e["design"] == plan for e in epics):
+        return
+    claimed = {e["design"] for e in epics if e["slices"]}
+    open_epics = [e for e in epics if not e["slices"] and e["design"] not in claimed]
+    for epic in open_epics:
+        same_id = [e for e in open_epics if e["id"] == epic["id"]]
+        key = f"{plan}/{epic['id']}"
+        if key in rows and len(same_id) == 1:
+            epic["slices"] = rows[key]
+
+
 def read_epics(designs_dir: Path, slices_md: str) -> list[dict]:
     """Every epic of every design, with the slices that advance it.
 
@@ -127,21 +165,25 @@ def read_epics(designs_dir: Path, slices_md: str) -> list[dict]:
         by_epic.setdefault(row.epic_id, []).append(
             {"n": row.n, "name": row.name.replace("**", ""),
              "score": (row.score or "").strip(), "state": (row.state or "").strip()})
+    return _epics(designs_dir, lambda key, _epic_id: by_epic.get(key, []))
 
-    epics = []
-    for goal in sorted(designs_dir.glob("*/goal.json")):
-        d = json.loads(goal.read_text())
-        design = d.get("name", goal.parent.name)
-        for e in d.get("epics", []):
-            key = f"{design}/{e['id']}"
-            epics.append({
-                "id": e["id"], "key": key, "design": design,
-                "note": e.get("note", ""), "state": e.get("state", "planned"),
-                "branch": e.get("branch"), "pr": e.get("pr"),
-                "slices": by_epic.get(key, []),
-                "adrs": d.get("adrs", []),
-            })
-    return epics
+
+def port_slice_rows(plan_dir: Path) -> dict[str, list[dict]] | None:
+    """Slice rows keyed by epic key, read through the tracker port.
+
+    Returns None when the files path applies: no tracker is configured, or
+    the configured store is docs/plans. The files path reads 04-slices.md.
+    """
+    records = reader.plan_records(plan_dir.parents[2], plan_dir.name)
+    if records.from_files:
+        return None
+    rows: dict[str, list[dict]] = {}
+    for record in records.slices:
+        row = reader.slice_row(record, plan_dir.name)
+        key = reader.epic_key(plan_dir.name, row["epic_id"])
+        rows.setdefault(key, []).append(
+            {"n": row["n"], "name": row["name"], "score": row["score"], "state": row["state"]})
+    return rows
 
 
 def read_rubrics(rubrics_dir: Path) -> tuple[dict, dict]:
@@ -183,7 +225,12 @@ def read_plan(plan_dir: Path, designs_dir: Path, rubrics_dir: Path) -> dict:
         if step["view"] is not None:
             gate["view"] = step["view"]
         gates.append(gate)
-    epics = read_epics(designs_dir, docs.get("04-slices.md", ""))
+    rows = port_slice_rows(plan_dir)
+    if rows is None:
+        epics = read_epics(designs_dir, docs.get("04-slices.md", ""))
+    else:
+        epics = _epics(designs_dir, lambda key, _epic_id: rows.get(key, []))
+        attach_plan_keyed_rows(epics, rows, plan_dir.name)
     return {"docs": docs, "gates": gates, "epics": epics, "paths": paths}
 
 

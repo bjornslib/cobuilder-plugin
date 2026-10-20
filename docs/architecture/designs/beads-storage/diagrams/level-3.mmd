@@ -1,18 +1,64 @@
 classDiagram
-    title Beads storage for CoBuilder — level 3: the mapped schema
-
-    class Issue {
+    class TrackerRecord {
         +String id
-        +String title
-        +Status status
-        +IssueType issue_type
-        +JSON metadata
+        +String kind
+        +String parent
+        +List blocked_by
+        +String lifecycle
+        +String assignee
+        +Envelope envelope
         +String external_ref
     }
-    class Dependency {
-        +String issue_id
-        +String depends_on_id
-        +DependencyType type
+    class TrackerPort {
+        +list_programs()
+        +list_epics()
+        +list_slices()
+        +list_pull_requests()
+        +get_slice()
+        +next_ready(kind, under)
+        +sync()
+        +claim_slice(id, claimant)
+        +set_program_stage()
+        +set_gate_value()
+        +set_epic_state()
+        +set_slice_state()
+        +record_attempt()
+        +escalate(slice, score, reason)
+        +add_note()
+        +open_pull_request(ref, epic_ids)
+        +set_pull_request_state(ref, merged)
+        +regenerate_status_files()
+        +seed_from_files()
+        +capabilities()
+    }
+    class TrackerCli {
+        +main(operation, args)
+        +doctor()
+        +exit 0 ok
+        +exit 2 refused
+        +exit 3 adapter error
+        +exit 4 bad arguments
+    }
+    class Capabilities {
+        +bool native_ready
+        +bool atomic_claim
+        +bool rich_envelope
+        +bool offline_read
+    }
+    class Projector {
+        +project(records) entities, joins, index
+    }
+    class BeadsAdapter
+    class FilesAdapter
+    class FakeAdapter
+    class LinearAdapter
+    class JiraAdapter
+    class Issue {
+        +String id
+        +String status
+        +String issue_type
+        +JSON metadata
+        +String external_ref
     }
     class Envelope {
         +int v
@@ -21,14 +67,20 @@ classDiagram
     class ProgramEnvelope {
         +String name
         +String stage
-        +int gate
-        +Dict sources
+        +String gate1
+        +String gate2
+        +String gate2b
+        +String gate3
+        +String gate4
+        +String gate4a
+        +String gate4b
+        +String gate4c
+        +String gate#lt;n#gt;_view
     }
     class EpicEnvelope {
         +String design
         +String epic_id
         +String branch
-        +int pr
         +String state
     }
     class SliceEnvelope {
@@ -38,23 +90,25 @@ classDiagram
         +String ends_with
         +String score
         +int attempts
-        +String feature
         +List evidence
     }
-    class DecisionEnvelope {
-        +String adr
-        +List districts
+    class PullRequestEnvelope {
         +int pr
     }
 
-    Issue "1" --> "0..*" Dependency : edges
+    TrackerCli ..> TrackerPort : calls
+    TrackerPort ..> TrackerRecord : returns
+    TrackerPort ..> Capabilities : reports
+    Projector ..> TrackerRecord : reads
+    TrackerPort <|.. BeadsAdapter
+    TrackerPort <|.. FilesAdapter
+    TrackerPort <|.. FakeAdapter
+    TrackerPort <|.. LinearAdapter : later
+    TrackerPort <|.. JiraAdapter : later
+    BeadsAdapter ..> Issue : maps record to issue
+    TrackerRecord *-- Envelope : envelope
     Issue *-- Envelope : metadata.cb
     Envelope <|-- ProgramEnvelope
     Envelope <|-- EpicEnvelope
     Envelope <|-- SliceEnvelope
-    Envelope <|-- DecisionEnvelope
-    Dependency : blocks
-    Dependency : parent-child
-    Dependency : blocked-by ladder
-    Dependency : relates-to
-    Dependency : supersedes
+    Envelope <|-- PullRequestEnvelope

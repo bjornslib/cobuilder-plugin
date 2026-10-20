@@ -54,6 +54,18 @@ Reference material lives in `references/` and loads on demand. It is not
 inlined here. Scripts live in `scripts/` and run through `uv run`. The
 skill never edits them.
 
+## Workflow state
+
+Write workflow state only through the tracker script. [shared/tracker-usage.md](../../../../shared/tracker-usage.md) lists every operation and its arguments. The call form is `uv run "${CLAUDE_PLUGIN_ROOT}/shared/tracker.py" <operation> args`. Do not edit tracker state by hand.
+
+- Review mode picks the program from the plan folder name under `docs/plans/`. It reads state with `tracker.py list-epics --program <program>`.
+- A pull request ref `<ref>` must end in the GitHub number, such as `pr-101`.
+- Generate mode runs `gh pr create`. Then it runs `tracker.py open-pull-request <ref> <epic-id>...`.
+- After a human merges the PR, run `tracker.py set-pull-request-state <ref> merged`. Then run `tracker.py set-epic-state <epic> <state>`. The valid states are `open`, `in_progress`, and `closed`. Then run `tracker.py regenerate-status-files <program> --plans-dir <dir>`.
+- This skill never merges a PR.
+
+Each call exits with a code. Branch on the code only, and never parse the message. [Failure and refusal](../../../../shared/tracker-usage.md#failure-and-refusal) lists the exit codes.
+
 ## Target resolution
 
 `<target>` is the repo under analysis. Resolve it in this order:
@@ -640,9 +652,7 @@ tiers.
    an array of `{name, epic}` objects, one per design the author
    named. Write that array onto the timeline entry in step 9, and onto
    `docs/pull-requests/branch-<slug>/intent.json` at the pre-PR stage
-   in step 8, in place of the single-object shape. Then fill the `pr`
-   and `state` fields for the matching epic in every named design's
-   `goal.json`, not only the first, and run:
+   in step 8, in place of the single-object shape. Then run:
    ```bash
    uv run "${CLAUDE_PLUGIN_ROOT}/shared/build_index.py"
    ```
@@ -687,10 +697,9 @@ tiers.
    uv run "${CLAUDE_PLUGIN_ROOT}/scripts/render_review.py" --repo <target> --bundle-dir <bundle-dir> --prs <N>
    ```
    If step 5 found a design, write `intent.design = {name, epic}` onto
-   that entry (`epic` is null for the single-epic form). Then fill that
-   epic's `pr` and `state` in the `goal.json` of the design (`state:
-   "open"` until merge). If the design has one epic and no slug, update
-   that one epic. Then run:
+   that entry (`epic` is null for the single-epic form). The tracker
+   holds the epic's `pr` and `state`. Do not write them in `goal.json`.
+   Then run:
    ```bash
    uv run "${CLAUDE_PLUGIN_ROOT}/shared/build_index.py"
    ```
@@ -754,6 +763,8 @@ decision about whether to open the PR at all.
    ```
    Then read the number back with `gh pr view --json number`.
 
+   Then record the PR in the tracker: run `tracker.py open-pull-request <ref> <epic-id>...`, with the PR reference and one epic id for each epic the PR covers. Run it once for each PR.
+
 4. **Continue at pre-stage step 9** with that number.
 
 **Three cases end at the staging directory instead**, and all three are
@@ -785,7 +796,7 @@ This stage runs after the PR merges. Run the same steps 1 through 4, then:
 
    If this merge completes the last epic, roll `goal.stage` to
    `implemented`. If some epics remain, set `goal.stage` to
-   `approved`. Fill that epic's `state` to `merged`.
+   `approved`.
 
    Stamp `approved_by` on the ADR this design wrote (the proposed record
    in `docs/architecture/adr/`), now that a human has merged it. An agent
@@ -795,6 +806,11 @@ This stage runs after the PR merges. Run the same steps 1 through 4, then:
    uv run "${CLAUDE_PLUGIN_ROOT}/shared/build_index.py"
    ```
    once, to rebuild both the design and the ADR projections.
+
+   **Record the merge in the tracker.** Run this only after a human has merged the PR. This skill never merges a PR. Run these calls in order, as the Workflow state section says:
+   1. `tracker.py set-pull-request-state <ref> merged`
+   2. `tracker.py set-epic-state <epic> closed`, for each epic of the PR
+   3. `tracker.py regenerate-status-files <program> --plans-dir <dir>`
 
 6. Render and verify as in pre-stage steps 9 and 10.
 

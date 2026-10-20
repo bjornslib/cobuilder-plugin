@@ -26,8 +26,8 @@ The projection keeps the portable fact and drops the machine-specific one.
 ``view`` carries the route fragment from the link's first ``#``, such as
 ``#/review-link/build/plan/product``. A link token with no ``#`` is kept
 whole. A gate block with no ``view:`` line yields ``view=None``.
-``verify_gate.py`` reads the raw authored line on purpose, because checking
-the link is that script's own job, and it shares no parser with this module.
+``verify_gate.py`` reads the same blocks through this module. It checks
+only that a link exists, not the URL itself.
 """
 from __future__ import annotations
 
@@ -40,6 +40,21 @@ GATE_LINE_RE = re.compile(r"^-\s*Gate\s*(\d+\w?)\s*[—–-]\s*([^:]+):\s*(.+)$"
 # The view line. The leading whitespace is what makes it a sub-line of the
 # gate line above it: a top-level `view:` word is not a link.
 VIEW_LINE_RE = re.compile(r"^\s+view:\s*(\S+)\s*$")
+
+# 00-status.md's Gate 2b line, e.g.:
+#   - Gate 2b — Interaction design: APPROVED 2026-09-14
+#   - Gate 2b — Interaction design: n/a (no UI) — Screens: "none"
+STATUS_2B_RE = re.compile(
+    r"^\s*-\s*Gate\s*2b\b.*?:\s*(APPROVED\b.*|pending|in progress|n/a.*)\s*$",
+    re.IGNORECASE,
+)
+
+# 00-status.md's Gate 4b sub-line, e.g.:
+#   - 4b Epic technical solution designs: APPROVED 2026-08-24
+STATUS_4B_RE = re.compile(
+    r"^\s*-\s*4b\b.*?:\s*(APPROVED\b.*|pending|in progress|n/a.*)\s*$",
+    re.IGNORECASE,
+)
 
 
 def view_route(token: str) -> str:
@@ -81,3 +96,29 @@ def parse_status_gates(status_text: str) -> list[dict]:
                 gate["view"] = view_route(view_match.group(1))
         gates.append(gate)
     return gates
+
+
+# An approved gate state carries its date: "APPROVED 2026-09-14 ...".
+APPROVED_DATE_RE = re.compile(r"^APPROVED\s+(\d{4}-\d{2}-\d{2})", re.IGNORECASE)
+
+# The Gate 4 sub-lines, such as "- 4b Epic designs: APPROVED 2026-09-20". They name no gate.
+GATE4_SUBSTEP_RE = re.compile(r"^-\s*(4[abc])\b.*?:\s*(.+)$")
+
+
+def approved_date(state: str) -> str | None:
+    """The ``YYYY-MM-DD`` date of an approved gate state, or None."""
+    match = APPROVED_DATE_RE.match(state.strip())
+    return match.group(1) if match else None
+
+
+def parse_gate4_substeps(status_text: str) -> dict[str, str]:
+    """The state of each Gate 4 sub-line, keyed ``4a``, ``4b``, or ``4c``.
+
+    The first sub-line for a key wins. A key with no sub-line is absent.
+    """
+    steps: dict[str, str] = {}
+    for line in status_text.splitlines():
+        match = GATE4_SUBSTEP_RE.match(line.strip())
+        if match and match.group(1) not in steps:
+            steps[match.group(1)] = match.group(2).strip()
+    return steps

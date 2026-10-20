@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>beads-storage — scope and data schema</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f4ee; --surface:#fffdf8; --fg:#1d2420; --muted:#5d675f; --border:#d7d2c4;
+  --accent:#1f6f5c; --warning:#a5640a; --error:#a3322a; --success:#2d7a3e;
+  --c1:#1f6f5c; --c2:#2b5fa5; --c3:#8a4fa0; --c4:#a5640a;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#14191a; --surface:#1b2224; --fg:#e6ebe4; --muted:#9aa69d; --border:#324040;
+    --accent:#56c2a4; --warning:#e0a24a; --error:#ee7a70; --success:#6cc47e;
+    --c1:#56c2a4; --c2:#6fa3e6; --c3:#c08ad6; --c4:#e0a24a;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14191a; --surface:#1b2224; --fg:#e6ebe4; --muted:#9aa69d; --border:#324040;
+  --accent:#56c2a4; --warning:#e0a24a; --error:#ee7a70; --success:#6cc47e;
+  --c1:#56c2a4; --c2:#6fa3e6; --c3:#c08ad6; --c4:#e0a24a;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:980px;margin:0 auto;padding:40px 20px 80px}
+h1{font:600 28px/1.2 "IBM Plex Mono",monospace;margin:0 0 6px}
+h2{font:600 18px/1.3 "IBM Plex Mono",monospace;margin:44px 0 12px;padding-top:14px;border-top:2px solid var(--border)}
+.sub{color:var(--muted);margin:0 0 24px}
+code{font-family:"IBM Plex Mono",monospace;font-size:.9em;background:var(--surface);border:1px solid var(--border);padding:1px 5px;border-radius:3px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 16px}
+.card h3{margin:0 0 8px;font:600 14px "IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.04em}
+.in h3{color:var(--success)} .out h3{color:var(--muted)} .ref h3{color:var(--c2)}
+ul{margin:0;padding-left:18px} li{margin:4px 0}
+.scroll{overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px}
+.scroll svg{display:block;min-width:900px;width:100%;height:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{border-bottom:1px solid var(--border);padding:7px 9px;text-align:left;vertical-align:top}
+th{font:600 12px "IBM Plex Mono",monospace;text-transform:uppercase;color:var(--muted)}
+.open{border-left:4px solid var(--warning);background:var(--surface);padding:10px 14px;margin:10px 0;border-radius:0 6px 6px 0}
+.open b{font-family:"IBM Plex Mono",monospace}
+.decision{margin-top:48px;border:3px solid var(--accent);background:var(--surface);border-radius:8px;padding:22px 24px}
+.decision h2{margin:0 0 10px;border:0;padding:0;color:var(--accent);font-size:22px}
+.decision ol{padding-left:22px} .decision li{margin:10px 0}
+.rec{color:var(--accent);font-weight:600}
+</style>
+</head>
+<body>
+<main>
+<h1>beads-storage: scope and data schema</h1>
+<p class="sub">Source of record: <code>docs/architecture/adr/ADR-0031-beads-as-the-cobuilder-storage-layer.md</code> and <code>docs/architecture/designs/beads-storage/goal.json</code>. This page presents them with your answers of 2026-10-17. Nothing is locked yet.</p>
+
+<h2>1. Why now</h2>
+<div class="card">
+  Work across a local machine, a cloud session, and several team members drifts apart. Without one central store, the backlog and the program states diverge. Sync of the CoBuilder JSON and markdown files produces complex merges. Success measure (accepted): <b>a fresh session finds the next slice with one <code>bd ready</code> call and zero file reads.</b>
+</div>
+
+<h2>2. Scope</h2>
+<div class="grid">
+  <div class="card in"><h3>Beads is the master of</h3>
+    <ul>
+      <li>Programs (custom type <code>program</code>): stage and the Gate 1 to 4 approval dates</li>
+      <li>Epics: state and branch</li>
+      <li>Pull requests: one issue each, blocking every epic it holds</li>
+      <li>Slices: order, state, score, attempts</li>
+      <li>The state of every one of these, including who changed it and when</li>
+    </ul></div>
+  <div class="card ref"><h3>Beads holds a pointer to a file</h3>
+    <ul>
+      <li>Design documents: <code>goal.json</code>, <code>intent.json</code>, design directory</li>
+      <li>Rubric evidence under <code>.cobuilder/rubrics/&lt;slug&gt;/evidence/</code></li>
+      <li>ADR files (no <code>decision</code> issue)</li>
+      <li>Every GitHub pull request fact except its number and its merged bit (ADR-0029)</li>
+    </ul></div>
+  <div class="card out"><h3>Out of scope</h3>
+    <ul>
+      <li>The thread ledger (<code>shared/ledger.py</code>): a reply-channel log, not work-item state</li>
+      <li>Every record that is not a program, epic, slice, or pull request: it stays a file</li>
+      <li>Hindsight initiative pages: stay separate (A2)</li>
+      <li>Any change to the viewer or to the <code>data/index.json</code> shape. <code>build_index.py</code> reads beads and writes the same static index. The viewer reads that file</li>
+      <li>A plugin-shipped MCP server (ADR-0016)</li>
+    </ul></div>
+</div>
+
+<h2>3. Data schema</h2>
+<div class="scroll">
+<svg viewBox="0 0 960 640" role="img" aria-label="Data schema: program, epic, slice, and pull request issues in beads, with file references and the Dolt-in-git central store" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor" color="var(--fg)">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker>
+  </defs>
+
+  <!-- program -->
+  <rect x="300" y="30" width="300" height="118" rx="6" fill="var(--surface)" stroke="var(--c1)" stroke-width="2"/>
+  <text x="314" y="52" font-weight="600" font-size="14" fill="var(--c1)">PROGRAM  (type: program, P1)</text>
+  <text x="314" y="74" fill="var(--fg)">title: "Program: &lt;name&gt;"</text>
+  <text x="314" y="92" fill="var(--fg)">cb.name, cb.stage</text>
+  <text x="314" y="110" fill="var(--fg)">cb.gate1..gate4, gate4a..4c (date | n/a)</text>
+  <text x="314" y="128" fill="var(--fg)">description = outcome, done_when</text>
+
+  <!-- epic -->
+  <rect x="300" y="210" width="300" height="108" rx="6" fill="var(--surface)" stroke="var(--c2)" stroke-width="2"/>
+  <text x="314" y="232" font-weight="600" font-size="14" fill="var(--c2)">EPIC  (type: epic, P2)</text>
+  <text x="314" y="254" fill="var(--fg)">cb.epic_id ("E5"), cb.state</text>
+  <text x="314" y="272" fill="var(--fg)">cb.branch</text>
+  <text x="314" y="290" fill="var(--fg)">status: open | in_progress | closed</text>
+
+  <!-- slice -->
+  <rect x="300" y="380" width="300" height="128" rx="6" fill="var(--surface)" stroke="var(--c3)" stroke-width="2"/>
+  <text x="314" y="402" font-weight="600" font-size="14" fill="var(--c3)">SLICE  (type: task, P2)</text>
+  <text x="314" y="424" fill="var(--fg)">cb.n, cb.ends_with, cb.feature</text>
+  <text x="314" y="442" fill="var(--fg)">cb.score, cb.attempts, cb.escalated</text>
+  <text x="314" y="460" fill="var(--fg)">cb.evidence = [paths]</text>
+  <text x="314" y="478" fill="var(--fg)">status: open | in_progress | closed</text>
+  <text x="314" y="496" fill="var(--muted)">comments = dated narrative (append-only)</text>
+
+  <!-- parent-child -->
+  <line x1="450" y1="210" x2="450" y2="148" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+  <text x="458" y="184" fill="var(--muted)">parent-child</text>
+  <line x1="450" y1="380" x2="450" y2="318" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+  <text x="458" y="354" fill="var(--muted)">parent-child</text>
+  <!-- ladder self loop -->
+  <path d="M300 410 C 240 410 240 478 300 478" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+  <text x="130" y="448" fill="var(--muted)">blocked-by slice n-1</text>
+
+  <!-- pull request -->
+  <rect x="660" y="210" width="260" height="108" rx="6" fill="var(--surface)" stroke="var(--c4)" stroke-width="2"/>
+  <text x="672" y="232" font-weight="600" font-size="14" fill="var(--c4)">PULL REQUEST  (type: task)</text>
+  <text x="672" y="254" fill="var(--fg)">cb.kind = pr, cb.pr = number</text>
+  <text x="672" y="272" fill="var(--fg)">external_ref: gh-&lt;n&gt;</text>
+  <text x="672" y="290" fill="var(--fg)">closed = merged</text>
+  <line x1="660" y1="262" x2="600" y2="262" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ar)"/>
+  <text x="614" y="254" fill="var(--muted)" font-size="10">blocks</text>
+  <text x="614" y="278" fill="var(--muted)" font-size="10">(each epic)</text>
+
+  <!-- file refs -->
+  <rect x="660" y="30" width="260" height="76" rx="6" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <text x="672" y="52" fill="var(--muted)" font-weight="600">FILE: design directory</text>
+  <text x="672" y="72" fill="var(--fg)">goal.json, intent.json</text>
+  <text x="672" y="90" fill="var(--fg)">via external_ref</text>
+  <line x1="600" y1="68" x2="660" y2="68" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#ar)"/>
+
+  <rect x="30" y="50" width="210" height="60" rx="6" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <text x="42" y="72" fill="var(--muted)" font-weight="600">FILE: ADR-NNNN.md</text>
+  <text x="42" y="92" fill="var(--fg)">no issue, no pointer</text>
+
+  <rect x="660" y="330" width="260" height="46" rx="6" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <text x="672" y="350" fill="var(--muted)" font-weight="600">GITHUB: pull request facts</text>
+  <text x="672" y="367" fill="var(--fg)">source of record (ADR-0029)</text>
+  <line x1="790" y1="318" x2="790" y2="330" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#ar)"/>
+
+  <rect x="660" y="400" width="260" height="76" rx="6" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <text x="672" y="422" fill="var(--muted)" font-weight="600">FILE: rubric evidence</text>
+  <text x="672" y="442" fill="var(--fg)">.cobuilder/rubrics/&lt;slug&gt;/</text>
+  <text x="672" y="460" fill="var(--fg)">evidence/slice-N-attempt-M.md</text>
+  <line x1="600" y1="450" x2="660" y2="445" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#ar)"/>
+
+  <!-- central remote -->
+  <rect x="270" y="570" width="360" height="56" rx="6" fill="var(--surface)" stroke="var(--success)" stroke-width="2"/>
+  <text x="284" y="592" font-weight="600" fill="var(--success)">CENTRAL STORE: Dolt-in-git (refs/dolt/data)</text>
+  <text x="284" y="612" fill="var(--fg)">bd sync: local, cloud, team</text>
+  <line x1="450" y1="508" x2="450" y2="570" stroke="var(--success)" stroke-width="1.5" marker-end="url(#ar)" marker-start="url(#ar)"/>
+</svg>
+</div>
+<p class="sub">Solid box: a beads issue, or the central store. Dashed grey box: a file or GitHub record. The gate approvals are fields on the program issue, so no gate issue exists. All <code>cb.*</code> fields live in the one <code>metadata.cb</code> envelope (scalars, paths, and lists of paths only).</p>
+
+<h2>4. State vocabularies (from ADR-0031, unchanged)</h2>
+<div class="scroll"><table>
+<tr><th>CoBuilder value</th><th>Kept in</th><th>beads status</th></tr>
+<tr><td>program: backlog, decided, design, review, approved</td><td><code>cb.stage</code></td><td>open</td></tr>
+<tr><td>program: implemented / superseded</td><td><code>cb.stage</code></td><td>closed (superseded adds a <code>supersedes</code> edge)</td></tr>
+<tr><td>epic: planned / open / deferred</td><td><code>cb.state</code></td><td>open / in_progress / open</td></tr>
+<tr><td>epic: completed, merged</td><td><code>cb.state</code></td><td>closed, reason carries the word</td></tr>
+<tr><td>slice: planned / claimed / completed</td><td>status only (plus <code>attempts</code>)</td><td>open / in_progress / closed</td></tr>
+</table></div>
+
+<h2>5. Resolved</h2>
+<ul>
+  <li><b>Master:</b> beads is master of programs, epics, slices, pull requests, and their states. The issue wins over a file.</li>
+  <li><b>Writes:</b> <code>bd</code> is required for every state write. Without it, scripts read files and refuse writes.</li>
+  <li><b>Central store:</b> Dolt-in-git (<code>refs/dolt/data</code>), synced with <code>bd sync</code>.</li>
+  <li><b>Pull request:</b> its own issue (type <code>task</code>, <code>cb.kind = pr</code>), blocks every epic it holds. It replaces the merge gate and the <code>gate</code> type.</li>
+  <li><b>Gates 1 to 4 and 4a to 4c:</b> flat scalar fields on the program issue.</li>
+  <li><b>ADRs:</b> file only, no issue. <b>Hindsight pages:</b> separate. <b>Thread ledger:</b> outside.</li>
+  <li><b>Owners:</b> <code>seed-from-files</code> in <code>shared/</code>. <code>bd init</code> runs from <code>implement:start</code> at Gate 3 and from the install command, with <code>--skip-agents --skip-hooks</code> (no agent files and no git hooks in the target repo, per ADR-0016).</li>
+  <li><b>Success measure:</b> a fresh session finds the next slice with one <code>bd ready</code> call and zero file reads.</li>
+</ul>
+
+<h2>6. Open items and unverified claims</h2>
+<div class="open"><b>Verified 2026-10-17 in a scratch tracker:</b> one <code>task</code> issue with <code>cb.kind = pr</code> blocked two epics, and <code>bd ready</code> hid both until <code>bd close</code>. Flat gate fields on a program issue round-tripped through <code>bd show</code>.</div>
+<div class="open"><b>Not verified:</b> a cloud session that holds only a git clone, running <code>bd init</code> and <code>bd sync</code> against <code>refs/dolt/data</code>. The smoke check must pass before E1 closes.</div>
+<div class="open"><b>Side effect:</b> a <code>pr</code> issue appears in <code>bd ready</code> until it merges. Consumers filter on <code>metadata.cb.kind</code>.</div>
+<div class="open"><b>Open:</b> when <code>gh:pr</code> automation closes the <code>pr</code> issue on merge. A gate stored as <code>n/a</code> (value) or absent (field): I lean to the value <code>n/a</code>.</div>
+<div class="open"><b>Not done yet:</b> the three epics in <code>goal.json</code> still read as before (E1 seed, E2 read model, E3 write model). The seed of 15 plans and the Gate 1 to 4 field names are not yet in the epic text.</div>
+
+<section class="decision">
+<h2>Decision: is this scope locked?</h2>
+<p>If you confirm, I rewrite the epic text in <code>goal.json</code> for the new mapping, finish the design with <code>/architect:design</code>, and then start <code>/implement:start</code> for E1. If you do not answer, I change nothing more.</p>
+<ol>
+  <li>Is the scope in section 5 final? <span class="rec">Recommend: yes.</span></li>
+  <li>Do you accept the <code>n/a</code> gate value (a missing field means a gate not reached)? <span class="rec">Recommend: yes.</span></li>
+</ol>
+</section>
+</main>
+</body>
+</html>

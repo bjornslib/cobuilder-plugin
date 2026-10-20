@@ -7,6 +7,11 @@
 # stamps each copy with its source plugin, version, and commit so a stale
 # copy is visible on the next export.
 #
+# The skills cite shared files as ${CLAUDE_PLUGIN_ROOT}/shared/<file>. That
+# variable does not exist outside Claude Code, so each export also copies the
+# repo's shared/ directory to <target>/shared/ and rewrites every such path in
+# the exported skills and agents to a path relative to the file that holds it.
+#
 # Usage:
 #   scripts/export-agent-skills.sh --target <dir> [--plugin <name>]...
 #
@@ -55,6 +60,42 @@ if ! git -C "$REPO_ROOT" diff --quiet 2>/dev/null || ! git -C "$REPO_ROOT" diff 
 fi
 
 mkdir -p "$TARGET"
+TARGET="$(cd "$TARGET" && pwd)"
+
+# Copy shared/ once, whichever plugins the run selects, because any skill can cite it.
+# An existing <target>/shared that this script did not produce stays untouched.
+SHARED_DEST="$TARGET/shared"
+SHARED_FRESH=0
+if [[ -d "$SHARED_DEST" && ! -f "$SHARED_DEST/.export-stamp" ]]; then
+  echo "skip shared: $SHARED_DEST exists and was not produced by this script (no '.export-stamp') -- remove it manually first" >&2
+else
+  rm -rf "$SHARED_DEST"
+  cp -R "$REPO_ROOT/shared" "$SHARED_DEST"
+  find "$SHARED_DEST" -name '__pycache__' -type d -prune -exec rm -rf {} +
+  find "$SHARED_DEST" -name '*.pyc' -type f -delete
+  echo "source: shared (${SHA})" > "$SHARED_DEST/.export-stamp"
+  echo "exported shared <- shared (${SHA})"
+  SHARED_FRESH=1
+fi
+
+# Rewrite ${CLAUDE_PLUGIN_ROOT}/shared/ to a path relative to the file, so the path
+# resolves from the file's own directory down to <target>/shared/.
+rewrite_shared_refs() {
+  local root="$1" file rel_dir depth prefix i
+  while IFS= read -r -d '' file; do
+    rel_dir="$(dirname "${file#"$TARGET"/}")"
+    depth="$(awk -F/ '{print NF}' <<<"$rel_dir")"
+    prefix=""
+    for ((i = 0; i < depth; i++)); do prefix="../${prefix}"; done
+    sed "s|\${CLAUDE_PLUGIN_ROOT}/shared/|${prefix}shared/|g" "$file" > "$file.tmp"
+    mv "$file.tmp" "$file"
+  done < <(grep -rIl --null --fixed-strings '${CLAUDE_PLUGIN_ROOT}/shared/' "$root" || true)
+}
+
+# shared/ files cite one another the same way, so the fresh copy gets the same rewrite.
+if [[ "$SHARED_FRESH" -eq 1 ]]; then
+  rewrite_shared_refs "$SHARED_DEST"
+fi
 
 shopt -s nullglob
 
@@ -85,6 +126,7 @@ for plugin_dir in "$REPO_ROOT"/plugins/*/; do
 
     rm -rf "$dest"
     cp -R "$skill_dir" "$dest"
+    rewrite_shared_refs "$dest"
 
     skill_md="$dest/SKILL.md"
     if [[ -f "$skill_md" ]]; then
@@ -125,6 +167,7 @@ for plugin_dir in "$REPO_ROOT"/plugins/*/; do
 
     mkdir -p "$TARGET/agents"
     cp "$agent_md" "$dest"
+    rewrite_shared_refs "$dest"
 
     claude_only_count="$( (grep -Eo 'CLAUDE_PLUGIN_ROOT|mcp__[A-Za-z0-9_]+' "$dest" || true) | wc -l | tr -d ' ')"
     source_line="source: ${plugin_name}@${plugin_version} (${SHA})"

@@ -51,63 +51,42 @@
     {
       "id": "F0",
       "slug": "describe-on-arrival",
-      "branch": "design/review-flight-deck",
-      "pr": null,
-      "state": "planned",
       "outcome": "A pull request with no description gets one from /pr:generate before the flightdeck reads it. A pull request that already has one is left alone.",
       "note": "New in round 4. It closes the gap the prototype had to show as a warning: 8 of 12 pull requests in this repository carry no intent block. Reuses generate mode whole, and adds only the check for an existing description."
     },
     {
       "id": "F1",
       "slug": "read-the-open-set",
-      "branch": "design/review-flight-deck",
-      "pr": null,
-      "state": "planned",
       "outcome": "The mode lists every open pull request with its head branch, changed files, and design, and marks the ones the team's auto-merge rules already handled.",
       "note": "The same work as the first epic of the inflight-record-store design. Build it once, in shared code. The auto-merge split is read from the team's own rules, and this design does not define them."
     },
     {
       "id": "F2",
       "slug": "simulate-routes",
-      "branch": "design/review-flight-deck",
-      "pr": null,
-      "state": "planned",
       "outcome": "The mode simulates at least three paths to close the whole open set, each against the common ancestor of the open branches, and each naming an order with the evidence for it.",
       "note": "divergent-exploration.md already generates competing options in isolation and criticises them in a separate pass. The baseline is load-bearing: simulating against the default branch inverts the order whenever an open pull request restructures the tree."
     },
     {
       "id": "F3",
       "slug": "git-what-if",
-      "branch": "design/review-flight-deck",
-      "pr": null,
-      "state": "planned",
       "outcome": "The mode replays the best one or two paths on a scratch worktree from the common ancestor, counts the real conflicts, and promotes the survivor. The mergeability chain it produces is shown to the reviewer as evidence in its own right.",
       "note": "New in round 4, and the step that makes the recommendation something to stand behind. Read-only against a scratch worktree. A route that fails the replay is kept, with the failure as its reason for losing. Systems that precompute mergeable slices may already do this part, so keep the interface narrow enough to swap one in. It must also classify what it cannot merge. A superseded branch and an unresolvable conflict are different findings and get different treatments in the layout."
     },
     {
       "id": "F4",
       "slug": "narrate-the-route",
-      "branch": "design/review-flight-deck",
-      "pr": null,
-      "state": "planned",
       "outcome": "Each path carries the state the reviewer would have when it is done, and one line per pull request saying what that pull request contributes. A losing path carries the reason it lost.",
       "note": "Round 5 fixed the register. State the outcome first, then the contributions, and never lead with the mechanics. The engineer's worked example: perform the renames and restructuring across the repository, which merges without conflict, then incorporate the new viewer into the resulting structure and naming conventions."
     },
     {
       "id": "F5",
       "slug": "render-and-record",
-      "branch": "design/review-flight-deck",
-      "pr": null,
-      "state": "planned",
       "outcome": "The front page shows one recommendation and an unreachable marker for the alternatives. Opening the recommendation unlocks them. The reviewer acts on a wave from the page, and each action appends one ledger line.",
       "note": "Reuses the existing view modes, the level rail, and the ledger from ADR-0019. flightdeck-prototype.html is the reference layout."
     },
     {
       "id": "F6",
       "slug": "execute-the-path",
-      "branch": "design/review-flight-deck",
-      "pr": null,
-      "state": "planned",
       "outcome": "A runner reads an accepted path from the ledger and merges each bundle onto its own integration branch, never onto the default branch. It stops at a checkpoint between bundles when the reviewer chose one bundle at a time.",
       "note": "New in round 6, and the first epic in this design that writes to a remote. ADR-0026 records the decision. The integration branch per bundle is what makes a path abandonable: delete N branches and the default branch never saw any of it. The default branch receives one pull request, from the last bundle's branch."
     }

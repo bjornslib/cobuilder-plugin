@@ -1,0 +1,13 @@
+feature: coach-probe-skips-unscanned-files
+test_command: "uv run pytest tests/test_habit_coach.py -q"
+baseline: "72 passed"
+thresholds:
+  accept: 0.90
+  investigate: 0.70
+max_attempts: 3
+models:
+  red: haiku
+  green: haiku
+  validate: sonnet
+slices:
+  - {id: 1, name: "The coach-check probe skips .js and .jsx files that habit-hooks does not scan", weight: 1.00}

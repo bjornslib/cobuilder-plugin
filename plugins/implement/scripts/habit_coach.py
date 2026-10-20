@@ -19,7 +19,11 @@ as exit code 2.
 
 Run the script with --check to prove the coach works. The check reads the
 git root of the current folder. It runs habit-hooks on the first tracked
-source file that it finds. It prints one line. It exits with 0 when the
+source file that it finds. The habit-hooks typescript plugin scans only
+.ts and .tsx files, so the check skips .js and .jsx files. A .js file
+would give a false failure.
+
+It prints one line. It exits with 0 when the
 coach reports, and with 1 and a reason when it does not. The check ignores
 stdin.
 
@@ -38,7 +42,7 @@ GREEN_AGENT_TYPES = frozenset({"implement:green"})
 
 UNSCANNED_MARKERS = ("nothing scanned", "is not a file in this project")
 
-SOURCE_EXTENSIONS = (".py", ".ts", ".tsx", ".js", ".jsx", ".php", ".java", ".rb")
+SOURCE_EXTENSIONS = (".py", ".ts", ".tsx", ".php", ".java", ".rb")
 
 
 def is_green(payload: dict) -> bool:

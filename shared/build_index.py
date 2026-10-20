@@ -44,6 +44,7 @@ import json
 import re
 import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 import yaml
@@ -60,6 +61,7 @@ from _bundle_meta import (  # noqa: E402
 import prose_budget  # noqa: E402
 import slice_table  # noqa: E402
 import gate_status  # noqa: E402
+from tracker_port import projector, reader  # noqa: E402
 
 # Bumped to 1.4 when the index gained the "rubric" entity kind and the
 # .cobuilder/rubrics tracked subtree. Nothing gates on this value; it names the
@@ -252,7 +254,7 @@ GOAL_FIELDS = (
     "adrs",
     "rounds",
 )
-EPIC_FIELDS = ("id", "slug", "branch", "pr", "state", "outcome")
+EPIC_FIELDS = ("id", "slug", "outcome")
 INTENT_FIELDS = ("problem", "approach", "alternatives")
 ASSESSMENT_FIELDS = ("verdict", "findings")
 PROGRAM_DESIGN_FIELDS = ("id", "feature_slug", "gate", "title", "body_md", "approved_date", "source_path")
@@ -412,6 +414,87 @@ def attach_authored_file(record: dict, path: Path, key: str) -> None:
             record[key] = text
 
 
+def display_path(repo: Path, path: Path) -> Path:
+    """Return `path` relative to the repo when it lies inside it."""
+    return path.relative_to(repo) if path.is_relative_to(repo) else path
+
+
+def attach_projected_file(
+    record: dict, repo: Path, path: Path, slot: tuple[str, Callable], failures: list[str]
+) -> None:
+    """Load an optional JSON file beside a goal, project it, and stamp it on the record."""
+    key, project = slot
+    if not path.is_file():
+        return
+    rel = display_path(repo, path)
+    raw, error = load_json(path)
+    if error:
+        failures.append(f"{rel}: {error}")
+        return
+    projected, shape_failure = project(raw, rel)
+    if shape_failure:
+        failures.append(shape_failure)
+    elif projected is not None:
+        record[key] = projected
+
+
+def attach_narrative(record: dict, repo: Path, path: Path, failures: list[str]) -> None:
+    """Stamp the optional narrative.json object on the record."""
+    if not path.is_file():
+        return
+    rel = display_path(repo, path)
+    raw, error = load_json(path)
+    if error:
+        failures.append(f"{rel}: {error}")
+    elif not isinstance(raw, dict):
+        failures.append(f"{rel}: narrative.json must be an object")
+    else:
+        record["narrative"] = raw
+
+
+def design_viewer_record(repo: Path, design_dir: Path, goal: dict, failures: list[str]) -> dict:
+    """Build the viewer record of one design from its goal and the files beside it."""
+    record: dict = {"goal": goal}
+    attach_projected_file(record, repo, design_dir / "intent.json", ("intent", project_intent), failures)
+    attach_projected_file(record, repo, design_dir / "assessment.json", ("assessment", project_assessment), failures)
+    attach_narrative(record, repo, design_dir / "narrative.json", failures)
+
+    diagrams = compile_design_diagrams(design_dir / "diagrams")
+    if diagrams:
+        record["diagrams"] = diagrams
+
+    # The pull-request draft ("pr_draft") and the contracts page ("contracts",
+    # ADR-0036) are authored markdown files that accompany a design. The
+    # viewer reads them to populate their sections. A design without a file
+    # simply omits the key; do not invent a placeholder.
+    for filename, key in (("pr-draft.md", "pr_draft"), ("contracts.md", "contracts")):
+        attach_authored_file(record, design_dir / filename, key)
+    return record
+
+
+def design_epic_entities(design_id: str, goal: dict, tracker_epics: dict) -> list[dict]:
+    """Return the epic entities of one design, with branch, pr, and state from the tracker."""
+    entities: list[dict] = []
+    for epic in goal.get("epics") or []:
+        epic_id = epic.get("id")
+        if not epic_id:
+            continue
+        held = tracker_epics.get(f"{design_id}/{epic_id}")
+        held_env = held.envelope if held is not None else {}
+        entities.append(
+            {
+                "id": f"{design_id}/{epic_id}",
+                "design": design_id,
+                "epic_id": epic_id,
+                "branch": held_env.get("branch"),
+                "pr": held_env.get("pr"),
+                "state": held_env.get("state"),
+                "note": epic.get("note"),
+            }
+        )
+    return entities
+
+
 def collect_designs(
     repo: Path,
 ) -> tuple[list[dict], list[dict], dict[str, dict], list[str]]:
@@ -427,10 +510,12 @@ def collect_designs(
     viewer_records: dict[str, dict] = {}
     design_entities: list[dict] = []
     epic_entities: list[dict] = []
+    # An epic's branch, pr, and state live in the tracker. A missing record or key reads as null.
+    tracker_epics = reader.epic_records(repo)
 
     for path in found:
         design_id = path.parent.name
-        rel = path.relative_to(repo) if path.is_relative_to(repo) else path
+        rel = display_path(repo, path)
         raw, error = load_json(path)
         if error:
             failures.append(f"{rel}: {error}")
@@ -443,79 +528,12 @@ def collect_designs(
         if name in viewer_records:
             failures.append(f"{rel}: duplicate name {name!r}")
             continue
-        record: dict = {"goal": goal}
 
-        intent_path = path.parent / "intent.json"
-        if intent_path.is_file():
-            intent_rel = intent_path.relative_to(repo) if intent_path.is_relative_to(repo) else intent_path
-            intent_raw, intent_error = load_json(intent_path)
-            if intent_error:
-                failures.append(f"{intent_rel}: {intent_error}")
-            else:
-                intent, intent_shape = project_intent(intent_raw, intent_rel)
-                if intent_shape:
-                    failures.append(intent_shape)
-                elif intent is not None:
-                    record["intent"] = intent
-
-        assessment_path = path.parent / "assessment.json"
-        if assessment_path.is_file():
-            assessment_rel = (
-                assessment_path.relative_to(repo) if assessment_path.is_relative_to(repo) else assessment_path
-            )
-            assessment_raw, assessment_error = load_json(assessment_path)
-            if assessment_error:
-                failures.append(f"{assessment_rel}: {assessment_error}")
-            else:
-                assessment, assessment_shape = project_assessment(assessment_raw, assessment_rel)
-                if assessment_shape:
-                    failures.append(assessment_shape)
-                elif assessment is not None:
-                    record["assessment"] = assessment
-
-        narrative_path = path.parent / "narrative.json"
-        if narrative_path.is_file():
-            narrative_rel = (
-                narrative_path.relative_to(repo) if narrative_path.is_relative_to(repo) else narrative_path
-            )
-            narrative_raw, narrative_error = load_json(narrative_path)
-            if narrative_error:
-                failures.append(f"{narrative_rel}: {narrative_error}")
-            elif not isinstance(narrative_raw, dict):
-                failures.append(f"{narrative_rel}: narrative.json must be an object")
-            else:
-                record["narrative"] = narrative_raw
-
-        diagrams = compile_design_diagrams(path.parent / "diagrams")
-        if diagrams:
-            record["diagrams"] = diagrams
-
-        # The pull-request draft ("pr_draft") and the contracts page ("contracts",
-        # ADR-0036) are authored markdown files that accompany a design. The
-        # viewer reads them to populate their sections. A design without a file
-        # simply omits the key; do not invent a placeholder.
-        for filename, key in (("pr-draft.md", "pr_draft"), ("contracts.md", "contracts")):
-            attach_authored_file(record, path.parent / filename, key)
-
-        viewer_records[name] = record
+        viewer_records[name] = design_viewer_record(repo, path.parent, goal, failures)
         design_entities.append(
             {"id": design_id, "name": name, "outcome": goal.get("outcome"), "stage": goal.get("stage")}
         )
-        for epic in goal.get("epics") or []:
-            epic_id = epic.get("id")
-            if not epic_id:
-                continue
-            epic_entities.append(
-                {
-                    "id": f"{design_id}/{epic_id}",
-                    "design": design_id,
-                    "epic_id": epic_id,
-                    "branch": epic.get("branch"),
-                    "pr": epic.get("pr"),
-                    "state": epic.get("state"),
-                    "note": epic.get("note"),
-                }
-            )
+        epic_entities.extend(design_epic_entities(design_id, goal, tracker_epics))
 
     return design_entities, epic_entities, viewer_records, failures
 
@@ -632,71 +650,14 @@ def collect_districts(bundle_dir: Path) -> tuple[list[dict], list[str]]:
 # resolve_feature_gates() and _gate_2b_state() read the block from there.
 
 
-STATUS_SLICE_RE = re.compile(
-    r"^-\s*\[(x| )\]\s*Slice\s*(\d+)\s*[—–-]\s*(.*?)(?:\s+score:\s*([^\s]+)(?:\s+on\s+attempt\s+(\d+))?)?$",
-    re.IGNORECASE,
-)
-
-
-def collect_plans(repo: Path) -> tuple[list[dict], list[str]]:
-    plans_dir = repo / PLANS_SOURCE_SUBDIR
-    if not plans_dir.is_dir():
-        return [], []
-    entities: list[dict] = []
-    failures: list[str] = []
-    for slices_path in sorted(plans_dir.glob("*/04-slices.md")):
-        feature = slices_path.parent.name
-        status_slices: dict[int, dict] = {}
-        status_path = slices_path.parent / "00-status.md"
-        if status_path.is_file():
-            try:
-                for line in status_path.read_text().splitlines():
-                    sm = STATUS_SLICE_RE.search(line.strip())
-                    if sm:
-                        checked = sm.group(1).lower() == "x"
-                        num = int(sm.group(2))
-                        score = sm.group(4) or ("1.00" if checked else "—")
-                        attempts = int(sm.group(5)) if sm.group(5) else (1 if checked else 0)
-                        status_slices[num] = {
-                            "checked": checked,
-                            "score": score,
-                            "attempts": attempts,
-                            "state": "completed" if checked else "planned",
-                        }
-            except OSError as exc:
-                failures.append(f"{status_path}: could not read file: {exc}")
-
-        try:
-            lines = slices_path.read_text().splitlines()
-        except OSError as exc:
-            failures.append(f"{slices_path}: could not read file: {exc}")
-            continue
-        for line in lines:
-            row = slice_table.parse_row(line.strip())
-            if row is None:
-                continue
-            number = row.n
-            slice_cell = row.name
-            ends_with = row.ends_with
-            n = row.n
-            st = status_slices.get(n, {})
-            checked = st.get("checked", False)
-            score = st.get("score", "—")
-            attempts = st.get("attempts", 1 if checked else 0)
-            state = "completed" if checked else "planned"
-            entities.append(
-                {
-                    "id": f"{feature}/{number}",
-                    "feature": feature,
-                    "n": n,
-                    "title": slice_cell,
-                    "ends_with": ends_with,
-                    "score": score,
-                    "attempts": attempts,
-                    "state": state,
-                }
-            )
-    return entities, failures
+# Slice entities come from the tracker adapter that .cobuilder/tracker.yaml names.
+# With no tracker config, the files adapter reads each 04-slices.md table and its
+# 00-status.md checkbox lines. The projector shapes each slice.
+# STATUS_SLICE_RE lives in tracker_port/files.py.
+def collect_slices(repo: Path) -> tuple[list[dict], list[str]]:
+    records, conflicts = reader.slice_records(repo)
+    failures = [f"{conflict['plan']}: {conflict['reason']}" for conflict in conflicts]
+    return projector.slice_entities(records), failures
 
 
 # --------------------------------------------------------------------------
@@ -721,64 +682,31 @@ PLAN_DOC_GATES = {"product": 1, "architecture": 2, "program": 3}
 GATE_DOC_KINDS = {"1": "product", "2": "architecture", "3": "program"}
 
 
+def read_gate_doc(kind: str, feature_slug: str, epic_id: str | None, path: Path) -> dict | None:
+    """Return one gate document row, or None when the file is not a readable file."""
+    if not path.is_file():
+        return None
+    try:
+        text = path.read_text()
+    except OSError:
+        return None
+    return {"kind": kind, "feature_slug": feature_slug, "epic_id": epic_id, "path": path, "text": text}
+
+
 def discover_plan_gate_docs(repo: Path) -> list[dict]:
     plans_dir = repo / PLANS_SOURCE_SUBDIR
     if not plans_dir.is_dir():
         return []
     found: list[dict] = []
+    fixed_docs = (*PLAN_DOC_FILES, ("program", "03-program-design.md"))
     for slug_dir in sorted(p for p in plans_dir.iterdir() if p.is_dir()):
         feature_slug = slug_dir.name
-        for kind, filename in PLAN_DOC_FILES:
-            plan_path = slug_dir / filename
-            if not plan_path.is_file():
-                continue
-            try:
-                text = plan_path.read_text()
-            except OSError:
-                continue
-            found.append(
-                {
-                    "kind": kind,
-                    "feature_slug": feature_slug,
-                    "epic_id": None,
-                    "path": plan_path,
-                    "text": text,
-                }
-            )
-        program_path = slug_dir / "03-program-design.md"
-        if program_path.is_file():
-            try:
-                text = program_path.read_text()
-            except OSError:
-                pass
-            else:
-                found.append(
-                    {
-                        "kind": "program",
-                        "feature_slug": feature_slug,
-                        "epic_id": None,
-                        "path": program_path,
-                        "text": text,
-                    }
-                )
+        rows = [read_gate_doc(kind, feature_slug, None, slug_dir / filename) for kind, filename in fixed_docs]
         for epic_path in sorted(slug_dir.glob("epic-*-design.md")):
             match = EPIC_DESIGN_FILENAME_RE.match(epic_path.name)
-            if not match:
-                continue
-            epic_id = match.group(1)
-            try:
-                text = epic_path.read_text()
-            except OSError:
-                continue
-            found.append(
-                {
-                    "kind": "epic",
-                    "feature_slug": feature_slug,
-                    "epic_id": epic_id,
-                    "path": epic_path,
-                    "text": text,
-                }
-            )
+            if match:
+                rows.append(read_gate_doc("epic", feature_slug, match.group(1), epic_path))
+        found.extend(row for row in rows if row is not None)
     return found
 
 
@@ -1538,7 +1466,7 @@ def build_index(repo: Path, bundle_dir: Path) -> tuple[dict, dict, dict, list[st
     district_entities, district_failures = collect_districts(bundle_dir)
     failures.extend(district_failures)
 
-    slice_entities, plan_failures = collect_plans(repo)
+    slice_entities, plan_failures = collect_slices(repo)
     failures.extend(plan_failures)
 
     pull_request_entities, pr_failures = collect_pull_requests(bundle_dir)

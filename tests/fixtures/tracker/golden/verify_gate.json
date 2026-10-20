@@ -1,0 +1,66 @@
+{
+  "plans-index/checkbox-vs-table": {
+    "check_4a": {
+      "slices.count": "4",
+      "slices.file": "ok"
+    },
+    "check_4b": {
+      "checkbox-vs-table/E1": {
+        "design.approved": "pending",
+        "design.file": "missing",
+        "design.sections": "missing"
+      }
+    }
+  },
+  "plans-real/blocked-close": {
+    "check_4a": {
+      "slices.count": "2",
+      "slices.file": "ok"
+    },
+    "check_4b": {
+      "blocked-close/E1": {
+        "design.approved": "pending",
+        "design.file": "missing",
+        "design.sections": "missing"
+      }
+    }
+  },
+  "plans-real/score-attempt": {
+    "check_4a": {
+      "slices.count": "2",
+      "slices.file": "ok"
+    },
+    "check_4b": {
+      "score-attempt/E1": {
+        "design.approved": "pending",
+        "design.file": "missing",
+        "design.sections": "missing"
+      }
+    }
+  },
+  "plans-real/status-only": {
+    "check_4a": {
+      "slices.count": "zero",
+      "slices.file": "missing"
+    },
+    "check_4b": {}
+  },
+  "plans-real/unparsed-row": {
+    "check_4a": {
+      "exit": 1
+    }
+  },
+  "plans/beads-storage-mini": {
+    "check_4a": {
+      "slices.count": "3",
+      "slices.file": "ok"
+    },
+    "check_4b": {
+      "beads-storage-mini/E1": {
+        "design.approved": "pending",
+        "design.file": "missing",
+        "design.sections": "missing"
+      }
+    }
+  }
+}
