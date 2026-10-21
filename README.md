@@ -40,7 +40,7 @@ Everything runs in your own Claude Code session, against your own checkout. Your
    /cobuilder-full-lifecycle:install
    ```
 
-   It installs habit-hooks and its detectors, and proves the coach. It checks for `DDD-VOCABULARY.md`. It adds the Hindsight allow rules to your user settings. It asks before each change.
+   It installs habit-hooks and its detectors, and proves the coach. It checks for `DDD-VOCABULARY.md`. It adds the Hindsight allow rules to your user settings. It also sets up the tracker. It creates `.cobuilder/tracker.yaml`, runs the `prepare` step, and shows a backfill dry run before it writes. For the `beads` adapter, install `bd` first (see Prerequisites). It asks before each change.
 5. Run a command from the table above.
 
 To start with one job, install one plugin. For example, `/plugin install architect@cobuilder-plugin` gives you the design and review modes.
@@ -69,8 +69,26 @@ To start with one job, install one plugin. For example, `/plugin install archite
 | Hindsight allow rules | The build loop's slice note, and the opt-in `cobuilder-memory` consult tool | A plugin cannot ship allow rules. `/cobuilder-full-lifecycle:install` finds the missing ones, asks once, and adds them to `~/.claude/settings.json` |
 | The `Artifact` tool | `/artifact:publish` | Needs a `/login` session on a paid plan |
 | The `tldraw-offline` skill and the tldraw Desktop app | `/artifact:canvas` | Install the skill yourself. The command stops with a message if either is missing. The diagram images also need `npx` and Google Chrome |
+| `bd` CLI (Beads), version 1.3.0 or later | Every state write, with the `beads` adapter | Install it system wide, not into the project. Check it with `bd --version`. See the install commands below the table |
+
+Install `bd` with one of these commands:
+
+- macOS and Linux, with Homebrew: `brew install beads`
+- Any OS, with npm: `npm install -g @beads/bd`
+- macOS, Linux, and FreeBSD, with a script: `curl -fsSL https://raw.githubusercontent.com/gastownhall/beads/main/scripts/install.sh | bash`
+- Windows, in PowerShell: `irm https://raw.githubusercontent.com/gastownhall/beads/main/install.ps1 | iex`
+
+Do not use `go install` without CGO. That build supports only server mode.
 
 The `architect`, `implement`, and `artifact view` commands need no API key. The prerequisite check runs first on every `pr` command, so a missing key stops the run before it spends anything.
+
+### Workflow state and the tracker
+
+Workflow state lives in a tracker, not in plan files or `goal.json`. State means the program stage and gates, the epic state and branch, the slice claim, the attempts, the score, and the pull request records. The `00-status.md` and `04-slices.md` state lines are generated. Do not edit them by hand. `goal.json` epics no longer hold `branch`, `pr`, or `state`.
+
+`shared/tracker.py` is the one command for all of it. `.cobuilder/tracker.yaml` picks the adapter. Without that file, every state write exits with code 2. The `implement` plugin also ships a `SessionStart` hook that reminds the agent to use the tracker. State syncs between machines through the git remote, under `refs/dolt/data`. It adds no branch.
+
+For the details, read `shared/tracker-usage.md`, ADR-0031, ADR-0040, and ADR-0041.
 
 ---
 
@@ -204,7 +222,7 @@ Run it when a test, a build, or a feature fails and the cause is unclear. It rep
 | Location | Holds | Written by |
 |---|---|---|
 | `docs/architecture/{adr,designs,contexts,review,options}/` | Authored records | Architect modes |
-| `docs/plans/<slug>/` | Gates, slice plan, status, rubrics | `implement` |
+| `docs/plans/<slug>/` | Gates, slice plan, rubrics, and generated status lines. State itself lives in the tracker | `implement` |
 | `docs/pull-requests/` | PR descriptions and assessments | `pr:generate` |
 | `.cobuilder-architect/self/` | The bundle: derived data, art, audio, viewer copy | `pr` and `artifact` |
 | `DDD-VOCABULARY.md` | The one glossary | Design mode |
@@ -256,6 +274,8 @@ The viewer source lives in `plugins/artifact/viewer/src/`. It uses React, TypeSc
 ```
 .claude-plugin/marketplace.json    the one marketplace manifest
 shared/                            code shared by every plugin, vendored as plugins/<name>/shared
+  tracker.py                       the one command for workflow state
+  tracker_port/                    the tracker port and its adapters: beads, files, fake
 plugins/
   architect/                       design, review, maintenance, options, debug, and the corpus
   pr/                              generate, review, baseline, and the story scripts
@@ -265,7 +285,7 @@ plugins/
   cobuilder-memory/                the opt-in memory mod: a TypeScript hooks module and its tests
 ```
 
-Only `implement` ships agents. Only `implement` and the `cobuilder-memory` mod ship hooks (ADR-0025, ADR-0039). No plugin ships an MCP server. The commands in each plugin are thin. The skills hold the procedures.
+Only `implement` ships agents. Only `implement` and the `cobuilder-memory` mod ship hooks (ADR-0025, ADR-0039, ADR-0041). No plugin ships an MCP server. The commands in each plugin are thin. The skills hold the procedures.
 
 ### Use the skills in another harness
 
