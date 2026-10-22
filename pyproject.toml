@@ -30,3 +30,7 @@ python-preference = "only-managed"
 [tool.ruff]
 force-exclude = true
 extend-exclude = ["**/*.ts", "**/*.tsx"]
+
+[tool.pytest.ini_options]
+markers = ["slow: runs a real bd, takes seconds to minutes"]
+addopts = "-m 'not slow'"

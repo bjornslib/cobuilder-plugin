@@ -206,7 +206,8 @@ tests/                            pytest suite for packaging, scripts, and gates
 ## Commands
 
 ```
-uv run pytest tests -q                         # Python suite, on uv's managed Python 3.11
+uv run pytest tests -q                         # fast Python suite, on uv's managed Python 3.11, with no real bd
+uv run pytest tests -q -m ''                   # full suite, with the slow real-bd tests; run it before a PR merges
 claude plugin test plugins/cobuilder-memory    # the mod's hook tests
 npx tsc -p plugins/cobuilder-memory --noEmit   # the mod's type check, with the root tools package
 cd plugins/artifact/viewer && npm run build    # tsc --noEmit, then vite build, writes the committed index.html
@@ -289,8 +290,8 @@ run the real `bd` in temporary folders.
   adapter and `shared/tracker_port/sync_worker.py` may run a sync. A hook
   script never calls `bd`. The sync files sit in `.cobuilder/` as `sync-dirty`,
   `sync-lock`, `sync-status.json`, and `sync-worker.log`, and the install
-  default is `sync: async` for beads. Tests that use a real `bd` are slow, so
-  run one background run at a time.
+  default is `sync: async` for beads. Tests that use a real `bd` carry the `slow` marker, and the default run skips
+  them. Run the full suite as one background run at a time.
 
 ## Known gaps
 

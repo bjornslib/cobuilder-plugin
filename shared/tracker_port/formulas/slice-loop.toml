@@ -1,0 +1,25 @@
+formula = "slice-loop"
+description = "One slice of the build loop: RED, then GREEN, then VALIDATE."
+version = 1
+type = "workflow"
+
+[vars.slice_id]
+description = "The id of the slice."
+required = true
+
+[[steps]]
+id = "red"
+title = "RED {{slice_id}}"
+description = "Write the failing tests that pin the slice contract."
+
+[[steps]]
+id = "green"
+title = "GREEN {{slice_id}}"
+description = "Write the minimal code that makes the failing tests pass."
+needs = ["red"]
+
+[[steps]]
+id = "validate"
+title = "VALIDATE {{slice_id}}"
+description = "Score the work against the blind rubric."
+needs = ["green"]

@@ -145,6 +145,7 @@ def scratch_bd(tmp_path: Path) -> Path:
     return tmp_path
 
 
+@pytest.mark.slow
 def test_real_bd_refresh_updates_only_stale_slices(scratch_bd: Path) -> None:
     from tracker_port.beads import LIST_ARGS, BeadsAdapter, _cb_block, _metadata_arg
     from tracker_port.bd_runner import BdRunner

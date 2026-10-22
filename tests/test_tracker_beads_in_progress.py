@@ -7,6 +7,7 @@ Run with: uv run pytest tests/test_tracker_beads_in_progress.py -q
 """
 from __future__ import annotations
 
+import pytest
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -58,6 +59,7 @@ def test_create_record_of_an_open_record_sends_no_status() -> None:
     assert "--status" not in _status_call(runner.calls), runner.calls
 
 
+@pytest.mark.slow
 def test_create_record_makes_an_in_progress_record_on_real_bd() -> None:
     support.require_bd()
 
@@ -68,6 +70,7 @@ def test_create_record_makes_an_in_progress_record_on_real_bd() -> None:
         assert ip.lifecycles(support.all_records(adapter)) == {"demo-ip-probe": "in_progress"}
 
 
+@pytest.mark.slow
 def test_seed_creates_every_record_with_the_lifecycle_the_files_say() -> None:
     support.require_bd()
 
@@ -82,6 +85,7 @@ def test_seed_creates_every_record_with_the_lifecycle_the_files_say() -> None:
             assert actual.get(record_id) == lifecycle, f"{record_id}: {actual.get(record_id)!r}, want {lifecycle!r}"
 
 
+@pytest.mark.slow
 def test_seed_repair_moves_open_records_to_in_progress_and_syncs_once() -> None:
     support.require_bd()
 
@@ -106,6 +110,7 @@ def test_seed_repair_moves_open_records_to_in_progress_and_syncs_once() -> None:
         assert adapter.runner.count("create") == 0, adapter.runner.calls
 
 
+@pytest.mark.slow
 def test_seed_repair_never_touches_closed_records_and_never_moves_in_progress_back() -> None:
     support.require_bd()
 
@@ -131,6 +136,7 @@ def test_seed_repair_never_touches_closed_records_and_never_moves_in_progress_ba
         assert after["running/3"] == "closed", f"closed record changed: {after}"
 
 
+@pytest.mark.slow
 def test_seed_with_nothing_to_move_does_not_sync_again() -> None:
     support.require_bd()
 

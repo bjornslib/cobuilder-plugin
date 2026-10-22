@@ -25,6 +25,8 @@ score <  0.90, attempt >= 3  → escalate: accept with reservations, record
 
 The loop passes its accept threshold and attempt limit to VALIDATE, and the values above are the defaults.
 
+The beads adapter can model the three steps as a formula, in `shared/tracker_port/formulas/slice-loop.toml`. Each failed attempt is a child of the slice.
+
 The escalation branch keeps the loop finite. Without this rule, a stuck slice
 blocks all following work.
 

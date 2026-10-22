@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from .beads_rows import CB_VERSION, _create_argv, _pr_number
+from .beads_gates import create_gates, resolve_gates
+from .beads_rows import CB_VERSION, _cb_block, _create_argv, _pr_number
 from .port import ArgumentError
 from .record import TrackerRecord
 
@@ -26,6 +27,10 @@ class _PullRequestMixin:
         for epic_row in epic_rows:
             # Each epic is blocked by the PR, so the epic is not ready until the PR closes.
             self.runner.run(["dep", "add", epic_row["id"], pr_bd_id])
+        # The blocker stays. Each epic also gets a gh:pr gate, and the PR record stores the gate ids.
+        gates = create_gates(self.runner, [row["id"] for row in epic_rows], number)
+        stored = {"gates": gates}
+        self._update(row={"id": pr_bd_id}, block={**block, "envelope": stored})
         self._publish()
         return TrackerRecord(
             id=ref,
@@ -34,13 +39,16 @@ class _PullRequestMixin:
             blocked_by=(),
             lifecycle="open",
             assignee=None,
-            envelope={},
+            envelope={"gates": tuple(gates)},
             external_ref=external_ref,
         )
 
     def set_pull_request_state(self, ref: str, merged: bool) -> TrackerRecord:
         rows = self._rows()
         row = self._find_row(rows, ref, ("pr",))
+        if merged:
+            stored = _cb_block(row).get("envelope", {}).get("gates") or []
+            resolve_gates(self.runner, list(stored), _pr_number(ref))
         status = "closed" if merged else "open"
         self._update(row, status=status)
         self._publish()

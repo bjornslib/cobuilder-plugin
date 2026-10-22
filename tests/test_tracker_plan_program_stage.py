@@ -5,6 +5,7 @@ Run with: uv run pytest tests/test_tracker_plan_program_stage.py -q
 """
 from __future__ import annotations
 
+import pytest
 import shutil
 from pathlib import Path
 from typing import Any
@@ -64,6 +65,7 @@ def _seed_open(tmp: Path) -> tuple[Any, Path]:
     return adapter, plans
 
 
+@pytest.mark.slow
 def test_real_bd_seed_repair_and_refresh_envelope_for_plan_programs(tmp_path: Path) -> None:
     adapter, plans = _seed_open(tmp_path)
     assert ps.bd_status(adapter, "shipped") == "open"
@@ -87,6 +89,7 @@ def test_real_bd_seed_repair_and_refresh_envelope_for_plan_programs(tmp_path: Pa
     assert held["shipped"].envelope["stage"] == "approved"
 
 
+@pytest.mark.slow
 def test_real_bd_refresh_envelope_fills_a_missing_stage(tmp_path: Path) -> None:
     adapter = ps.beads(tmp_path)
     plans = _plans(tmp_path)

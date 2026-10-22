@@ -4,6 +4,7 @@ Run with: uv run pytest tests/test_tracker_beads_create.py -q
 """
 from __future__ import annotations
 
+import pytest
 import json
 import shutil
 import tempfile
@@ -84,6 +85,7 @@ def test_create_record_closed_slice_keeps_parent_assignee_blocker_and_envelope()
     assert runner.calls.index(["close", "t-new", "--force"]) > runner.calls.index(["dep", "add", "t-new", "t-anc.1.1"]), runner.calls
 
 
+@pytest.mark.slow
 def test_create_record_round_trip_on_real_bd() -> None:
     support.require_bd()
 

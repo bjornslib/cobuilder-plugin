@@ -105,7 +105,7 @@ def corpus(tmp_path: Path) -> Path:
     return copy
 
 
-@pytest.fixture(params=list(ADAPTER_BUILDERS))
+@pytest.fixture(params=[pytest.param(name, marks=pytest.mark.slow) if name == "beads" else name for name in ADAPTER_BUILDERS])
 def build(request: pytest.FixtureRequest) -> Callable[[Path], Any]:
     return ADAPTER_BUILDERS[request.param]
 

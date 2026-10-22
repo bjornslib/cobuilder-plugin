@@ -9,43 +9,6 @@ from __future__ import annotations
 import _beads_support as support
 
 
-def test_claim_slice_maps_cb_id_then_reads_back_the_claimant() -> None:
-    from tracker_port.beads import BeadsAdapter
-
-    runner = support.SequenceRunner(support.with_syncs(support.steps("claim_slice_steps")))
-    record = BeadsAdapter(runner).claim_slice("demo-E1-s3", "agent-x")
-
-    assert record.assignee == "agent-x"
-    assert [call[0] for call in runner.calls] == ["list", "update", "show", "sync"]
-
-
-def test_claim_slice_raises_when_read_back_shows_another_claimant() -> None:
-    from tracker_port.beads import BeadsAdapter
-    from tracker_port.port import AdapterError
-
-    steps = support.with_syncs(support.steps("claim_slice_steps"))
-    show = next(step for step in steps if step["args"][0] == "show")
-    show["stdout"] = show["stdout"].replace('"agent-x"', '"agent-y"')
-    try:
-        BeadsAdapter(support.SequenceRunner(steps)).claim_slice("demo-E1-s3", "agent-x")
-    except AdapterError as error:
-        assert "agent-y" in str(error)
-    else:
-        raise AssertionError("a claim read back with another assignee must raise AdapterError")
-
-
-def test_claim_slice_raises_when_bd_refuses_the_claim() -> None:
-    from tracker_port.beads import BeadsAdapter
-    from tracker_port.port import AdapterError
-
-    try:
-        BeadsAdapter(support.SequenceRunner(support.steps("claim_slice_race_steps"))).claim_slice("demo-E1-s2", "agent-y")
-    except AdapterError as error:
-        assert "agent-1" in str(error)
-    else:
-        raise AssertionError("a refused claim must raise AdapterError")
-
-
 def test_set_slice_state_sends_the_full_cb_block() -> None:
     from tracker_port.beads import BeadsAdapter
 
@@ -56,9 +19,10 @@ def test_set_slice_state_sends_the_full_cb_block() -> None:
 
 
 def test_open_pull_request_replays_the_recorded_argv() -> None:
+    # E5-4 adds one gate for each epic, so the replay uses the transcript that holds the gate calls.
     from tracker_port.beads import BeadsAdapter
 
-    steps = support.with_syncs(support.steps("open_pull_request_steps"))
+    steps = support.with_syncs(support.steps("open_pull_request_gate_steps"))
     runner = support.SequenceRunner(steps)
     BeadsAdapter(runner).open_pull_request("pr-101", ["demo-E1", "demo-E2"])
 

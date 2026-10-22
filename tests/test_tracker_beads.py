@@ -101,5 +101,16 @@ def test_capabilities_flags() -> None:
     caps = adapter.capabilities
     caps = caps() if callable(caps) else caps
 
-    assert caps.atomic_claim is False
+    assert caps.atomic_claim is True
     assert caps.rich_envelope is True
+
+
+def test_claim_slice_sends_one_claim_update_and_no_read_back() -> None:
+    from tracker_port.beads import BeadsAdapter
+
+    recorded = support.load_transcript("claim_actor_steps")
+    runner = support.SequenceRunner([recorded["list_before"], recorded["claim_ok"], support.load_transcript("sync_ok")])
+    record = BeadsAdapter(runner).claim_slice("demo-E1-s3", "agent-x")
+
+    assert [call[0] for call in runner.calls] == ["list", "update", "sync"]
+    assert record.assignee == "agent-x"

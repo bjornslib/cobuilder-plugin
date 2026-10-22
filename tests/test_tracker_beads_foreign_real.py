@@ -15,6 +15,9 @@ import pytest
 import _beads_support as support
 import _tracker_cli_support as cli_support
 
+
+pytestmark = pytest.mark.slow
+
 FOREIGN_TITLE = "Foreign task made by another tool"
 
 
