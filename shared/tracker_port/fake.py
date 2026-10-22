@@ -19,11 +19,14 @@ from .fake_support import (
 )
 from .files import seedable_records
 from .port import AdapterError, ArgumentError
+from .program_state import program_lifecycle
 from .record import Capabilities, Kind, TrackerRecord
+from .fake_pull_requests import _PullRequestMixin
+from .skip_slice import _FakeSkipMixin
 from .regenerate import regenerate
 
 
-class FakeAdapter:
+class FakeAdapter(_PullRequestMixin, _FakeSkipMixin):
     name = "fake"
     capabilities = Capabilities(
         native_ready=False,
@@ -132,7 +135,12 @@ class FakeAdapter:
         return self._update(id, "slice", assignee=claimant)
 
     def set_program_stage(self, program: str, stage: str) -> TrackerRecord:
-        return self._update(program, "program", envelope={"stage": stage})
+        record = self._update(program, "program", envelope={"stage": stage})
+        return self._refollow(record)
+
+    def _refollow(self, program: TrackerRecord) -> TrackerRecord:
+        wanted = program_lifecycle(program.envelope.get("stage"), self.list_epics(program.id))
+        return program if wanted == program.lifecycle else self._update(program.id, "program", lifecycle=wanted)
 
     def set_gate_value(self, program: str, gate: str, value: str) -> TrackerRecord:
         return self._update(program, "program", envelope={gate: value})
@@ -140,7 +148,16 @@ class FakeAdapter:
     def set_epic_state(self, epic: str, state: str, branch: str | None = None) -> TrackerRecord:
         check_lifecycle(state)
         envelope = {} if branch is None else {"branch": branch}
-        return self._update(epic, "epic", lifecycle=state, envelope=envelope)
+        record = self._update(epic, "epic", lifecycle=state, envelope=envelope)
+        self._follow_program(record)
+        return record
+
+    def _follow_program(self, epic: TrackerRecord) -> None:
+        # The program lifecycle follows its epics. A write happens only on a change.
+        program = next((r for r in self._of_kind("program") if r.id == epic.parent), None)
+        if program is None:
+            return
+        self._refollow(program)
 
     def set_slice_state(
         self,
@@ -172,29 +189,3 @@ class FakeAdapter:
         record = self._update(id, "slice", envelope={"escalated": True, "score": score})
         self.add_note(id, f"escalated at score {score}: {reason}")
         return record
-
-    def open_pull_request(self, ref: str, epic_ids: list[str]) -> TrackerRecord:
-        if any(record.id == ref for record in self._records):
-            raise ArgumentError(f"pull request already exists: {ref}")
-        for epic in epic_ids:
-            self._record_of(epic, "epic")
-        pull_request = TrackerRecord(
-            id=ref,
-            kind="pr",
-            parent=None,
-            blocked_by=(),
-            lifecycle="open",
-            assignee=None,
-            envelope={},
-            external_ref=None,
-        )
-        self._records.append(pull_request)
-        for epic in epic_ids:
-            current = self._record_of(epic, "epic")
-            self._update(epic, "epic", blocked_by=current.blocked_by + (ref,))
-        self._commit()
-        return pull_request
-
-    def set_pull_request_state(self, ref: str, merged: bool) -> TrackerRecord:
-        return self._update(ref, "pr", lifecycle="closed" if merged else "open")
-

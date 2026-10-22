@@ -8,12 +8,14 @@ calls ``bd``.
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, NoReturn
 
-from .design_records import design_records
+from .design_records import design_records, design_stage
 from .plan_records import PlanError, _epic_and_slice_records, _program_record
 from .port import AdapterError, ArgumentError, NoAdapterError
+from .program_state import program_lifecycle
 from .record import Capabilities, TrackerRecord
 
 STATUS_FILE = "00-status.md"
@@ -50,7 +52,8 @@ class FilesAdapter:
             if not status_path.is_file() and not slices_path.is_file():
                 continue
             status_text = status_path.read_text(encoding="utf-8") if status_path.is_file() else ""
-            records.append(_program_record(directory, status_text))
+            program = _program_record(directory, status_text)
+            records.append(replace(program, lifecycle=program_lifecycle(design_stage(self._plans_dir, program.id), ())))
             if not slices_path.is_file():
                 continue
             try:
@@ -110,6 +113,7 @@ class FilesAdapter:
     record_attempt = _refuse
     add_note = _refuse
     escalate = _refuse
+    skip_slice = _refuse
     open_pull_request = _refuse
     set_pull_request_state = _refuse
     regenerate_status_files = _refuse

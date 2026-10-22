@@ -72,6 +72,24 @@ Send every envelope through `--metadata` as `{"cb": {...}}`. The adapter builds 
 
 The adapter sends `--force` on every close. bd refuses to close an epic that has open children unless the command includes `--force`.
 
+`set_epic_state` runs one `bd update <id> --status <state>` for the epic. When the program lifecycle changes, it runs one more update for the program, with `--force` for a close. The one `bd sync` at the end covers both writes.
+
+`skip_slice` writes the outcome and the reason to the `cb` envelope with one `bd update`. It then runs `bd close <id> --force` and one `bd sync`. A repeat call for a closed slice with the same outcome and reason runs no write and no sync.
+
+## Lifecycle mapping
+
+| Record | State | bd status |
+|---|---|---|
+| Program | Stage `implemented` or `superseded` | `closed` |
+| Program | Any other stage, an epic in progress | `in_progress` |
+| Program | Any other stage, all epics closed | `closed` |
+| Program | Any other stage, no epic started | `open` |
+| Epic or slice | `open` | `open` |
+| Epic or slice | `in_progress` | `in_progress` |
+| Epic or slice | `closed` | `closed` |
+
+`set_program_stage` writes the bd status only when the lifecycle changes. A refused create names the held id: `create_record` stops with `already exists` before any `bd create`.
+
 ## Pull request issues
 
 `open_pull_request(ref, epic_ids)` writes one issue for each pull request.

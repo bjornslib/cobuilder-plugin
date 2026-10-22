@@ -59,17 +59,4 @@ def beads_adapter(root: Path, runner_wrap: Any = None) -> Any:
     runner = BdRunner(bd="bd", cwd=support.scratch_tracker(root))
     return BeadsAdapter(runner_wrap(runner) if runner_wrap else runner)
 
-
-class CountingRunner:
-    """Delegates to a real runner and records each bd call."""
-
-    def __init__(self, inner: Any) -> None:
-        self.inner = inner
-        self.calls: list[list[str]] = []
-
-    def run(self, args: list[str]) -> str:
-        self.calls.append(list(args))
-        return self.inner.run(args)
-
-    def count(self, verb: str) -> int:
-        return sum(1 for call in self.calls if call[0] == verb)
+CountingRunner = support.CountingRunner

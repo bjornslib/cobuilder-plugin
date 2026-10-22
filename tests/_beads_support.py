@@ -180,3 +180,18 @@ def list_adapter(rows: list[dict[str, Any]]) -> tuple[Any, ListOnlyRunner]:
 
     runner = ListOnlyRunner(rows)
     return BeadsAdapter(runner), runner
+
+
+class CountingRunner:
+    """Wraps a real runner, keeps each argument list it runs, and counts calls by verb."""
+
+    def __init__(self, inner: Any) -> None:
+        self.inner = inner
+        self.calls: list[list[str]] = []
+
+    def run(self, args: list[str]) -> str:
+        self.calls.append(list(args))
+        return self.inner.run(args)
+
+    def count(self, verb: str) -> int:
+        return sum(1 for call in self.calls if call[0] == verb)

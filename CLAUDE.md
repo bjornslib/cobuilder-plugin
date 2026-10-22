@@ -106,7 +106,7 @@ deploy step and no CI.
 | `architect` | Seven self-only modes. Five have a command: design, review, maintenance, debug, options. `decisions` and `describe` are internal |
 | `pr` | Odyssey: narrate merged PRs (`baseline`, `review`), and interview an author before a PR opens (`generate`) |
 | `artifact` | Serve a bundle (`view`), publish a level as a Claude Artifact (`publish`), and draw a design as a tldraw canvas (`canvas`). Holds the viewer |
-| `implement` | Build a design one vertical slice at a time (`start`, `debug`). Its `install` hands over to the umbrella's install |
+| `implement` | Build a design one vertical slice at a time (`start`, `debug`). Ships the tracker reminder hook (ADR-0041). Its `install` hands over to the umbrella's install |
 | `cobuilder-full-lifecycle` | The umbrella. Depends on the other four, and holds the one install command, `/cobuilder-full-lifecycle:install` |
 | `cobuilder-memory` | An opt-in mod, outside the umbrella. Gives the agent the `consult` tool, which asks Hindsight what the project decided before |
 
@@ -123,10 +123,17 @@ shared/                           vendored into each plugin as plugins/<name>/sh
 plugins/<name>/{commands,skills,scripts}   auto-discovered, never declared in plugin.json
 plugins/artifact/viewer/src/      viewer source: React, TypeScript, Vite, Tailwind, Vitest
 plugins/artifact/viewer/index.html  the built viewer, committed
-plugins/implement/{agents,hooks}  the only agents in the family, and the coaching hook
+plugins/implement/{agents,hooks}  the only agents in the family, and its four hooks: coach, tracker reminder, sync check, sync flush
 plugins/cobuilder-memory/hooks/   the mod's TypeScript hooks module, with its tests in tests/
 docs/                             authored: architecture/{adr,designs,contexts,review,options}, plans/, pull-requests/
 .cobuilder-architect/             derived bundles and binary assets, committed (self/ plus two test fixtures)
+shared/tracker.py                 the one command for workflow state
+shared/tracker_port/              the tracker port and its adapters: beads, files, fake
+shared/tracker-usage.md           the reference for each tracker operation
+shared/tracker-backfill.md        how to load old plan state into the tracker
+shared/tracker-adapter-beads.md   the beads notes, the one prose file that names bd
+.beads/                           the repo's own tracker, and its data syncs under refs/dolt/data
+.cobuilder/tracker.yaml           picks the adapter (adapter: beads)
 DDD-VOCABULARY.md                 the one glossary
 tests/                            pytest suite for packaging, scripts, and gates
 ```
@@ -159,9 +166,10 @@ tests/                            pytest suite for packaging, scripts, and gates
 4. **Plugins meet at the bundle.** A plugin names another plugin's mode, and
    that plugin resolves its own path. A plugin never names
    `plugins/<other>/...`. Shared code goes in `shared/`.
-5. **Narrow install surface.** Only `implement` ships agents. Only `implement`
-   and the `cobuilder-memory` mod ship hooks (ADR-0025, ADR-0039). No plugin
-   ships an MCP server.
+5. **Narrow install surface.** Only `implement` ships agents. `implement` ships
+   four hook scripts: the coach, the tracker reminder, the sync check, and the
+   sync flush. The `cobuilder-memory` mod ships its hooks module (ADR-0025,
+   ADR-0039, ADR-0041, ADR-0042). No plugin ships an MCP server.
 6. **Never overwrite authored content.** `extract_story.py` keeps authored
    narrative fields. A data migration declares the fields it touches. Its guard
    stops the run before any write that changes another authored field.
@@ -172,12 +180,17 @@ tests/                            pytest suite for packaging, scripts, and gates
    evidence.
 9. **Architecture modes are self-only.** They analyze the session's own repo.
    The five Odyssey commands take `--repo`.
+10. **Workflow state goes through `tracker.py` only.** Never edit `00-status.md`,
+    the state lines of `04-slices.md`, or the epic state in `goal.json` by hand.
+    The tool generates the first two, and bundle format 5 retired the third.
+    Only the beads adapter (`shared/tracker_port/beads*.py` and `bd_runner.py`)
+    and `shared/tracker-adapter-beads.md` name `bd`.
 
 ## Key capabilities
 
 `README.md` describes each capability in full. One line each:
 
-- **Install** (`/cobuilder-full-lifecycle:install`): sets up habit-hooks, the coach check, the glossary check, and the Hindsight allow rules.
+- **Install** (`/cobuilder-full-lifecycle:install`): sets up habit-hooks, the coach check, the glossary check, and the Hindsight allow rules. It also writes `.cobuilder/tracker.yaml`, runs `tracker.py prepare`, and offers the backfill.
 - **Design** (`/architect:design`): writes the design record and a runtime diagram, and a stage-6 reviewer checks it (ADR-0036).
 - **Options** (`/architect:options`): one HTML report of alternatives for the whole system. Options proposes, and design decides (ADR-0035).
 - **Review, maintenance, decisions, describe, debug**: audit, ADR governance, bounded-context canvases, and root-cause diagnosis.
@@ -188,6 +201,7 @@ tests/                            pytest suite for packaging, scripts, and gates
 - **Publish** (`/artifact:publish`): one PR as a single HTML file under the 16 MiB Artifact cap.
 - **Canvas** (`/artifact:canvas`): one design as a `.tldraw` file. Git ignores `*.tldraw`.
 - **Bundle migration** (`shared/migrate_bundle.py`): runs first in every bundle mode, and refreshes the viewer, the layout, and the data shape.
+- **Tracker** (`shared/tracker.py`): one command for workflow state. The four main skills call it, and the beads adapter stores the state (ADR-0040, ADR-0031).
 
 ## Commands
 
@@ -201,9 +215,16 @@ uv run shared/build_index.py                   # rebuild the record index after 
 uv run plugins/implement/scripts/verify_gate.py --plan docs/plans/<slug>
 uv run shared/verify_bundle.py --bundle-dir .cobuilder-architect/self
 scripts/export-agent-skills.sh --target <dir>  # copy skills to a non-Claude harness
+uv run shared/tracker.py doctor                # check the tracker adapter and the bd binary
+uv run shared/tracker.py --help                # list every tracker operation
 ```
 
 Plugin scripts are PEP 723, so `uv run <script>` resolves their dependencies.
+
+The repo keeps its own state in its beads tracker: programs, epics, and slices.
+Use `tracker.py` to move that state. Do not edit the state by hand. Version
+1.3.0 or later of `bd` is a dependency of the tests. The beads contract tests
+run the real `bd` in temporary folders.
 
 ## Rules that break easily
 
@@ -252,8 +273,22 @@ Plugin scripts are PEP 723, so `uv run <script>` resolves their dependencies.
   such as a command or a tool call. Stub each engine call that it makes.
 - **Slice evidence stays local.** Git ignores `.cobuilder/rubrics/*/evidence/`.
   The rubrics and `manifest.yaml` are committed.
+- **Document each new `tracker.py` operation.** Add an entry for it in
+  `shared/tracker-usage.md`. `tests/test_tracker_usage_doc.py` fails until you do.
+- **Keep `bd` inside the beads adapter.** A new `bd` call outside
+  `shared/tracker_port/beads*.py` and `bd_runner.py` fails
+  `tests/test_tracker_docs.py`.
+- **Score prose that steers an agent with a blind pass.** This covers each
+  skill, reference, and command that calls the tracker. Keep the transcript.
+- **Keep new code inside the habit-smell limits.** A file has about 200 lines
+  or fewer. A function has about 50 lines or fewer, a complexity of 10 or less,
+  and 5 parameters or fewer. Check with `uv run shared/habit_smells.py`.
 - **Subagents may not run `git stash`.** `.claude/hooks/deny-git-stash.py`
   denies it. The hook is local tooling, and it ships to nobody.
+- **Keep sync code in the beads adapter and the worker.** Only the beads
+  adapter and `shared/tracker_port/sync_worker.py` may run a sync. A hook
+  script never calls `bd`. Tests that use a real `bd` are slow, so run one
+  background run at a time.
 
 ## Known gaps
 

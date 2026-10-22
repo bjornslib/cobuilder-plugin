@@ -12,10 +12,10 @@ from .beads_rows import (
     _bd_status,
     _cb_block,
     _create_argv,
-    _pr_number,
     _with_envelope,
 )
 from .port import AdapterError, ArgumentError
+from .program_state import program_lifecycle
 from .record import TrackerRecord
 
 
@@ -39,12 +39,18 @@ class _WriteMixin:
         return record
 
     def set_program_stage(self, program: str, stage: str) -> TrackerRecord:
+        # The stage also sets the program's bd status. The status is written only on a change.
         rows = self._rows()
         row = self._find_row(rows, program, ("program",))
         block = _with_envelope(_cb_block(row), {"stage": stage})
-        self._update(row, block=block)
+        held = self._after(rows, row, block=block)
+        ids = self._cb_ids(rows)
+        epics = [r for r in (self._record(x, ids) for x in rows) if r.kind == "epic" and r.parent == program]
+        wanted = program_lifecycle(stage, epics)
+        status = _bd_status(wanted) if wanted != held.lifecycle else None
+        self._update(row, status=status, block=block, force=status is not None and wanted == "closed")
         self._publish()
-        return self._after(rows, row, block=block)
+        return self._after(rows, row, block=block, status=status)
 
     def set_gate_value(self, program: str, gate: str, value: str) -> TrackerRecord:
         rows = self._rows()
@@ -61,8 +67,24 @@ class _WriteMixin:
         block = _with_envelope(_cb_block(row), {} if branch is None else {"branch": branch})
         # CoBuilder state words are authoritative, and the tracker mirrors them. bd would refuse a close while children are open.
         self._update(row, status=status, block=block if branch is not None else None, force=status == "closed")
+        after = self._after(rows, row, block=block, status=status)
+        self._follow_program(rows, after)
         self._publish()
-        return self._after(rows, row, block=block, status=status)
+        return after
+
+    def _follow_program(self, rows: list[dict[str, Any]], epic: TrackerRecord) -> None:
+        # The program lifecycle follows its epics. One update writes it, and only on a change.
+        ids = self._cb_ids(rows)
+        records = [epic if ids[r["id"]] == epic.id else self._record(r, ids) for r in rows]
+        program = next((r for r in records if r.kind == "program" and r.id == epic.parent), None)
+        if program is None:
+            return
+        wanted = program_lifecycle(
+            program.envelope.get("stage"), (r for r in records if r.kind == "epic" and r.parent == program.id)
+        )
+        if wanted != program.lifecycle:
+            program_row = next(r for r in rows if ids[r["id"]] == program.id)
+            self._update(program_row, status=_bd_status(wanted), force=wanted == "closed")
 
     def set_slice_state(
         self,
@@ -109,8 +131,10 @@ class _WriteMixin:
         return self._after(rows, row, block=block)
 
     def create_record(self, record: TrackerRecord) -> TrackerRecord:
-        # Only parent and blocker lookups need the list. A program create sends no list call.
-        rows = self._rows() if record.parent is not None or record.blocked_by else []
+        # The list shows whether the id is held. A held cb id is refused before any bd create.
+        rows = self._rows()
+        if record.id in self._cb_ids(rows).values():
+            raise ArgumentError(f"a record with id {record.id} already exists")
         parent_bd_id = self._find_row(rows, record.parent, KINDS)["id"] if record.parent is not None else None
         blocker_bd_ids = [self._find_row(rows, blocker, KINDS)["id"] for blocker in record.blocked_by]
         block = {"v": CB_VERSION, "id": record.id, "kind": record.kind, "envelope": dict(record.envelope)}
@@ -125,7 +149,9 @@ class _WriteMixin:
         for blocker_bd_id in blocker_bd_ids:
             # Each blocker edge is one bd dep add, sent in the recorded order.
             self.runner.run(["dep", "add", bd_id, blocker_bd_id])
-        if record.lifecycle == "closed":
+        if record.lifecycle == "closed" or (
+            record.kind == "program" and program_lifecycle(record.envelope.get("stage"), ()) == "closed"
+        ):
             self.runner.run(["close", bd_id, "--force"])
         self._publish()
         return record
@@ -148,35 +174,3 @@ class _WriteMixin:
             return {"changed": False}
         self.runner.run(["config", "set", "types.custom", ",".join([*types, "program"])])
         return {"changed": True}
-
-    def open_pull_request(self, ref: str, epic_ids: list[str]) -> TrackerRecord:
-        number = _pr_number(ref)
-        rows = self._rows()
-        if ref in self._cb_ids(rows).values():
-            raise ArgumentError(f"record {ref} already exists")
-        epic_rows = [self._find_row(rows, epic, ("epic",)) for epic in epic_ids]
-        block = {"v": CB_VERSION, "id": ref, "kind": "pr", "envelope": {}}
-        external_ref = f"gh-{number}"
-        pr_bd_id = self.runner.run(_create_argv(block, external_ref=external_ref)).strip()
-        for epic_row in epic_rows:
-            # Each epic is blocked by the PR, so the epic is not ready until the PR closes.
-            self.runner.run(["dep", "add", epic_row["id"], pr_bd_id])
-        self._publish()
-        return TrackerRecord(
-            id=ref,
-            kind="pr",
-            parent=None,
-            blocked_by=(),
-            lifecycle="open",
-            assignee=None,
-            envelope={},
-            external_ref=external_ref,
-        )
-
-    def set_pull_request_state(self, ref: str, merged: bool) -> TrackerRecord:
-        rows = self._rows()
-        row = self._find_row(rows, ref, ("pr",))
-        status = "closed" if merged else "open"
-        self._update(row, status=status)
-        self._publish()
-        return self._after(rows, row, status=status)
