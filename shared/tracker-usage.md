@@ -432,6 +432,8 @@ $ uv run shared/tracker.py set-pull-request-state pr-101 merged
 }
 ```
 
+`set-epic-state` also sets the lifecycle of the epic's program. The program is in progress when any epic is in progress. It is closed when it has epics and all are closed. Otherwise it is open.
+
 ## Failure and refusal
 
 Each call exits with one of four codes. A success writes one JSON object to stdout. A failure writes one JSON line to stdout and one message to stderr. Repeated `set-*` calls are idempotent.

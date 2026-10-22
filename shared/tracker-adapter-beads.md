@@ -72,6 +72,8 @@ Send every envelope through `--metadata` as `{"cb": {...}}`. The adapter builds 
 
 The adapter sends `--force` on every close. bd refuses to close an epic that has open children unless the command includes `--force`.
 
+`set_epic_state` runs one `bd update <id> --status <state>` for the epic. When the program lifecycle changes, it runs one more update for the program, with `--force` for a close. The one `bd sync` at the end covers both writes.
+
 ## Pull request issues
 
 `open_pull_request(ref, epic_ids)` writes one issue for each pull request.

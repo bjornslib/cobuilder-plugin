@@ -19,6 +19,7 @@ from .fake_support import (
 )
 from .files import seedable_records
 from .port import AdapterError, ArgumentError
+from .program_state import program_lifecycle
 from .record import Capabilities, Kind, TrackerRecord
 from .regenerate import regenerate
 
@@ -140,7 +141,18 @@ class FakeAdapter:
     def set_epic_state(self, epic: str, state: str, branch: str | None = None) -> TrackerRecord:
         check_lifecycle(state)
         envelope = {} if branch is None else {"branch": branch}
-        return self._update(epic, "epic", lifecycle=state, envelope=envelope)
+        record = self._update(epic, "epic", lifecycle=state, envelope=envelope)
+        self._follow_program(record)
+        return record
+
+    def _follow_program(self, epic: TrackerRecord) -> None:
+        # The program lifecycle follows its epics. A write happens only on a change.
+        program = next((r for r in self._of_kind("program") if r.id == epic.parent), None)
+        if program is None:
+            return
+        wanted = program_lifecycle(r for r in self._of_kind("epic") if r.parent == program.id)
+        if wanted != program.lifecycle:
+            self._update(program.id, "program", lifecycle=wanted)
 
     def set_slice_state(
         self,

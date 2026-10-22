@@ -16,6 +16,7 @@ from .beads_rows import (
     _with_envelope,
 )
 from .port import AdapterError, ArgumentError
+from .program_state import program_lifecycle
 from .record import TrackerRecord
 
 
@@ -61,8 +62,22 @@ class _WriteMixin:
         block = _with_envelope(_cb_block(row), {} if branch is None else {"branch": branch})
         # CoBuilder state words are authoritative, and the tracker mirrors them. bd would refuse a close while children are open.
         self._update(row, status=status, block=block if branch is not None else None, force=status == "closed")
+        after = self._after(rows, row, block=block, status=status)
+        self._follow_program(rows, after)
         self._publish()
-        return self._after(rows, row, block=block, status=status)
+        return after
+
+    def _follow_program(self, rows: list[dict[str, Any]], epic: TrackerRecord) -> None:
+        # The program lifecycle follows its epics. One update writes it, and only on a change.
+        ids = self._cb_ids(rows)
+        records = [epic if ids[r["id"]] == epic.id else self._record(r, ids) for r in rows]
+        program = next((r for r in records if r.kind == "program" and r.id == epic.parent), None)
+        if program is None:
+            return
+        wanted = program_lifecycle(r for r in records if r.kind == "epic" and r.parent == program.id)
+        if wanted != program.lifecycle:
+            program_row = next(r for r in rows if ids[r["id"]] == program.id)
+            self._update(program_row, status=_bd_status(wanted), force=wanted == "closed")
 
     def set_slice_state(
         self,
