@@ -1,6 +1,6 @@
 """Shared helpers of the two tracker sync hooks. The hooks never call the tracker tool for a read.
 
-They read the `sync` key of .cobuilder/tracker.yaml and the files in .cobuilder/runtime/. They use no network.
+They read the `sync` key of .cobuilder/tracker.yaml and the `sync-*` files in .cobuilder/. They use no network.
 """
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ def sync_mode(cwd: str) -> str | None:
 
 
 def runtime(cwd: str, name: str) -> str:
-    return os.path.join(cwd, ".cobuilder", "runtime", name)
+    return os.path.join(cwd, ".cobuilder", name)
 
 
 def is_dirty(cwd: str) -> bool:
@@ -53,7 +53,7 @@ def last_sync_failed(cwd: str) -> bool:
 
 
 def lock_held(cwd: str) -> bool:
-    path = runtime(cwd, "sync.lock")
+    path = runtime(cwd, "sync-lock")
     if not os.path.exists(path):
         return False
     with open(path, "a") as handle:
@@ -69,7 +69,7 @@ def run_tracker(cwd: str, operation: str, detached: bool, timeout: float | None 
     argv = ["uv", "run", TRACKER, operation]
     if detached:
         os.makedirs(runtime(cwd, ""), exist_ok=True)
-        with open(runtime(cwd, "sync.log"), "ab") as log:
+        with open(runtime(cwd, "sync-worker.log"), "ab") as log:
             subprocess.Popen(argv, cwd=cwd, stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT,
                              start_new_session=True)
     else:

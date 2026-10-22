@@ -55,10 +55,10 @@ ADR-0040 puts workflow state behind `shared/tracker.py`. The beads adapter runs 
 The key `sync` in `.cobuilder/tracker.yaml` takes three values. The default is `write`.
 
 - `write`: each write runs `bd sync`, as before.
-- `async`: each write sets the flag `.cobuilder/runtime/sync-dirty`. It starts `tracker.py sync-worker` detached, unless a worker holds the lock `sync.lock`.
+- `async`: each write sets the flag `.cobuilder/sync-dirty`. It starts `tracker.py sync-worker` detached, unless a worker holds the lock `sync-lock`.
 - `off`: a write never syncs. Only `tracker.py sync` syncs.
 
-The worker takes the lock without waiting. It syncs while the flag is set, writes `sync-status.json`, and exits. After a failed sync it keeps the flag and stops, so it never loops hot. A `.gitignore` in the runtime folder keeps these files out of git.
+The worker takes the lock without waiting. It syncs while the flag is set, writes `.cobuilder/sync-status.json`, and exits. After a failed sync it keeps the flag and stops, so it never loops hot. The line `sync-*` in `.cobuilder/.gitignore` keeps these files out of git.
 
 The `implement` plugin ships two more hooks:
 

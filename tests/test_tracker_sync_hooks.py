@@ -79,15 +79,19 @@ def test_flush_does_nothing_when_clean(tmp_path):
 
 def test_flush_retries_after_a_failed_last_sync(tmp_path):
     repo = s.tracked_repo(tmp_path, "async")
-    (repo / s.RUNTIME).mkdir(parents=True)
+    (repo / s.COBUILDER).mkdir(parents=True, exist_ok=True)
     (repo / s.STATUS).write_text(json.dumps({"ok": False, "at": "2026-10-22T10:00:00Z", "error": "boom"}))
     assert _run(SCRIPTS["SessionEnd"], repo).returncode == 0
     assert s.status(repo)["ok"] is True
 
 
-def test_setup_skill_asks_for_the_sync_mode():
+def test_setup_skill_writes_the_sync_mode_without_asking():
     text = (REPO / "plugins/cobuilder-full-lifecycle/skills/cobuilder-setup/SKILL.md").read_text()
-    assert "sync: async" in text and re.search(r"sync mode", text, re.I) and "async" in text and "recommend" in text.lower()
+    step = next(p for p in text.split("\n\n") if "sync: async" in p).split("\n1. ")[0]
+    assert "beads" in step
+    assert re.search(r"\bwrite\b", step) and re.search(r"\boff\b", step)
+    assert "?" not in step
+    assert not re.search(r"\bask\b[^.]*\b(sync|mode)\b", step, re.I)
 
 
 def test_adr_0042_exists_and_names_its_neighbours():

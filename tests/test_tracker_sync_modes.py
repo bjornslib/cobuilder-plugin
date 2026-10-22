@@ -58,7 +58,7 @@ def test_async_write_spawns_nothing_while_the_worker_lock_is_held(tmp_path):
     import fcntl
 
     spawner = s.RecordingSpawner()
-    (tmp_path / s.RUNTIME).mkdir(parents=True)
+    (tmp_path / s.COBUILDER).mkdir(parents=True)
     with open(tmp_path / s.LOCK, "w") as held:
         fcntl.flock(held, fcntl.LOCK_EX | fcntl.LOCK_NB)
         s.async_adapter(tmp_path, support.CreateAnswers(), spawner).create_record(s.probe())

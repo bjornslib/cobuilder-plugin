@@ -30,7 +30,8 @@ def test_worker_syncs_clears_flag_and_writes_status(tmp_path):
     assert not (tmp_path / s.DIRTY).exists()
     body = s.status(tmp_path)
     assert body["ok"] is True and body["error"] in (None, "") and body["at"]
-    assert (tmp_path / s.RUNTIME / ".gitignore").read_text().strip() == "*"
+    assert not (tmp_path / ".cobuilder" / "runtime").exists()
+    assert (tmp_path / s.GITIGNORE).read_text().splitlines().count("sync-*") == 1
 
 
 def test_worker_loops_while_a_write_sets_the_flag_again(tmp_path):
@@ -59,7 +60,7 @@ def test_failed_sync_keeps_flag_records_error_and_stops(tmp_path):
 
 def test_second_worker_exits_at_once_without_sync(tmp_path):
     s.mark_dirty(tmp_path)
-    (tmp_path / s.RUNTIME).mkdir(parents=True, exist_ok=True)
+    (tmp_path / s.COBUILDER).mkdir(parents=True, exist_ok=True)
     release = threading.Event()
     inside = threading.Event()
 
