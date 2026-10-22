@@ -46,7 +46,7 @@ def test_full_path_on_real_bd_with_a_foreign_issue() -> None:
 
         config = seed / ".cobuilder" / "tracker.yaml"
         config.parent.mkdir()
-        config.write_text("adapter: beads\n", encoding="utf-8")
+        config.write_text("adapter: beads\nsync: write\n", encoding="utf-8")
         adapter = BeadsAdapter(BdRunner(bd="bd", cwd=seed))
 
         # list: the foreign issue never appears, and nothing raises.

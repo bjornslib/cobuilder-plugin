@@ -8,14 +8,13 @@ calls ``bd``.
 
 from __future__ import annotations
 
-from dataclasses import replace
 from pathlib import Path
 from typing import Any, NoReturn
 
-from .design_records import design_records, design_stage
-from .plan_records import PlanError, _epic_and_slice_records, _program_record
+from .design_records import design_records, plan_stage
+from .plan_program import _program_record
+from .plan_records import PlanError, _epic_and_slice_records
 from .port import AdapterError, ArgumentError, NoAdapterError
-from .program_state import program_lifecycle
 from .record import Capabilities, TrackerRecord
 
 STATUS_FILE = "00-status.md"
@@ -52,21 +51,18 @@ class FilesAdapter:
             if not status_path.is_file() and not slices_path.is_file():
                 continue
             status_text = status_path.read_text(encoding="utf-8") if status_path.is_file() else ""
-            program = _program_record(directory, status_text)
-            records.append(replace(program, lifecycle=program_lifecycle(design_stage(self._plans_dir, program.id), ())))
-            if not slices_path.is_file():
-                continue
-            try:
-                records.extend(
-                    _epic_and_slice_records(
-                        directory.name,
-                        slices_path.read_text(encoding="utf-8"),
-                        status_text,
-                        self._plans_dir,
+            kept: list[TrackerRecord] = []
+            if slices_path.is_file():
+                try:
+                    kept = _epic_and_slice_records(
+                        directory.name, slices_path.read_text(encoding="utf-8"), status_text, self._plans_dir
                     )
-                )
-            except PlanError as error:
-                self.conflicts.append({"plan": directory.name, "reason": error.reason, "text": error.text})
+                except PlanError as error:
+                    self.conflicts.append({"plan": directory.name, "reason": error.reason, "text": error.text})
+            epics = [record for record in kept if record.kind == "epic"]
+            stage = plan_stage(self._plans_dir, directory.name, epics)
+            records.append(_program_record(directory, status_text, stage, epics))
+            records.extend(kept)
         records.extend(design_records(self._plans_dir, records))
         return records
 

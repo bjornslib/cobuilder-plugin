@@ -60,7 +60,12 @@ class BeadsAdapter(_SyncModeMixin, _WriteMixin, _PullRequestMixin, _SeedMixin, _
         return [row for row in self._all_rows() if _is_cb_row(row)]
 
     def doctor_details(self) -> dict[str, Any]:
-        return {"foreign_issues": sum(1 for row in self._all_rows() if not _is_cb_row(row)), **self._sync_details()}
+        # A workspace with no bd database still shows its sync details. It has no foreign issue count.
+        try:
+            foreign = {"foreign_issues": sum(1 for row in self._all_rows() if not _is_cb_row(row))}
+        except BdError:
+            foreign = {}
+        return {**foreign, **self._sync_details()}
 
     def _records(self) -> dict[str, TrackerRecord]:
         rows = self._rows()

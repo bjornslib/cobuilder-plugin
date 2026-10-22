@@ -143,7 +143,7 @@ def test_cli_prepare_on_real_bd_changes_once(tmp_path: Path) -> None:
 
     seed = support.scratch_tracker(tmp_path)
     config = tmp_path / "beads.yaml"
-    config.write_text("adapter: beads\n", encoding="utf-8")
+    config.write_text("adapter: beads\nsync: write\n", encoding="utf-8")
 
     assert cli_support.ok(cli_support.cli(config, seed, "prepare")) == {"changed": True}
     assert cli_support.ok(cli_support.cli(config, seed, "prepare")) == {"changed": False}
