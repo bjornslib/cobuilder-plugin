@@ -123,7 +123,7 @@ shared/                           vendored into each plugin as plugins/<name>/sh
 plugins/<name>/{commands,skills,scripts}   auto-discovered, never declared in plugin.json
 plugins/artifact/viewer/src/      viewer source: React, TypeScript, Vite, Tailwind, Vitest
 plugins/artifact/viewer/index.html  the built viewer, committed
-plugins/implement/{agents,hooks}  the only agents in the family, and the coaching hook
+plugins/implement/{agents,hooks}  the only agents in the family, and its four hooks: coach, tracker reminder, sync check, sync flush
 plugins/cobuilder-memory/hooks/   the mod's TypeScript hooks module, with its tests in tests/
 docs/                             authored: architecture/{adr,designs,contexts,review,options}, plans/, pull-requests/
 .cobuilder-architect/             derived bundles and binary assets, committed (self/ plus two test fixtures)
@@ -160,8 +160,8 @@ tests/                            pytest suite for packaging, scripts, and gates
    that plugin resolves its own path. A plugin never names
    `plugins/<other>/...`. Shared code goes in `shared/`.
 5. **Narrow install surface.** Only `implement` ships agents. Only `implement`
-   and the `cobuilder-memory` mod ship hooks (ADR-0025, ADR-0039). No plugin
-   ships an MCP server.
+   and the `cobuilder-memory` mod ship hooks (ADR-0025, ADR-0039). `implement`
+   ships four hook scripts (ADR-0041, ADR-0042). No plugin ships an MCP server.
 6. **Never overwrite authored content.** `extract_story.py` keeps authored
    narrative fields. A data migration declares the fields it touches. Its guard
    stops the run before any write that changes another authored field.
@@ -254,6 +254,10 @@ Plugin scripts are PEP 723, so `uv run <script>` resolves their dependencies.
   The rubrics and `manifest.yaml` are committed.
 - **Subagents may not run `git stash`.** `.claude/hooks/deny-git-stash.py`
   denies it. The hook is local tooling, and it ships to nobody.
+- **Keep sync code in the beads adapter and the worker.** Only the beads
+  adapter and `shared/tracker_port/sync_worker.py` may run a sync. A hook
+  script never calls `bd`. Tests that use a real `bd` are slow, so run one
+  background run at a time.
 
 ## Known gaps
 
