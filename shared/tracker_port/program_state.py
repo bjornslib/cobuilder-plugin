@@ -1,4 +1,4 @@
-"""The rule that derives a program lifecycle from the lifecycles of its epics."""
+"""The rule that derives a program lifecycle from its stage and the lifecycles of its epics."""
 
 from __future__ import annotations
 
@@ -6,9 +6,13 @@ from collections.abc import Iterable
 
 from .record import Lifecycle, TrackerRecord
 
+CLOSING_STAGES = frozenset({"implemented", "superseded"})
 
-def program_lifecycle(epics: Iterable[TrackerRecord]) -> Lifecycle:
-    """in_progress if any epic is in progress, closed if all epics are closed, else open."""
+
+def program_lifecycle(stage: str | None, epics: Iterable[TrackerRecord]) -> Lifecycle:
+    """closed at stage implemented or superseded. Else in_progress if any epic is, closed if all are, else open."""
+    if stage in CLOSING_STAGES:
+        return "closed"
     states = [epic.lifecycle for epic in epics]
     if "in_progress" in states:
         return "in_progress"

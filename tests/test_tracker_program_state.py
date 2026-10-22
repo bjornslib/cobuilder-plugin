@@ -11,8 +11,6 @@ import json
 from pathlib import Path
 from typing import Any
 
-import pytest
-
 import _inprogress_support as ip
 import _tracker_cli_support as cli_support
 import _beads_support as support

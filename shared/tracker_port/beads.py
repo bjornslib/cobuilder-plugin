@@ -23,6 +23,7 @@ from .beads_rows import (
     _metadata_arg,
 )
 from .beads_seed import _SeedMixin
+from .beads_pull_requests import _PullRequestMixin
 from .beads_writes import _WriteMixin
 from .port import AdapterError, ArgumentError
 from .record import Capabilities, Kind, TrackerRecord
@@ -31,7 +32,7 @@ from .regenerate import regenerate
 __all__ = ["LIST_ARGS", "BeadsAdapter", "_cb_block", "_metadata_arg"]
 
 
-class BeadsAdapter(_WriteMixin, _SeedMixin):
+class BeadsAdapter(_WriteMixin, _PullRequestMixin, _SeedMixin):
     name = "beads"
     # Readiness comes from blocked_by, not from bd. bd update has no atomic claim.
     capabilities = Capabilities(native_ready=False, atomic_claim=False, rich_envelope=True, offline_read=True)

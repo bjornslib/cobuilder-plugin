@@ -7,9 +7,10 @@ from pathlib import Path
 from typing import Any
 
 from gate_status import approved_date, parse_gate4_substeps, parse_status_gates
-from slice_table import parse_header_epic_id, parse_row, parse_table
+from slice_table import parse_header_epic_id, parse_table
 
 from .design_records import epic_state
+from .plan_epic_rows import _row_epics
 from .port import AdapterError
 from .record import TrackerRecord
 
@@ -104,19 +105,16 @@ def _program_record(directory: Path, status_text: str) -> TrackerRecord:
     )
 
 
-def _row_epics(text: str) -> dict[str, str]:
-    # A row with a blank Epic cell belongs to the epic header above it. Maps each slice row's raw line to its epic.
-    current = ""
-    epics: dict[str, str] = {}
+def _reject_repeated_epic_header(program: str, text: str) -> None:
+    # An epic id on two header rows is a conflict. The text quotes the first repeat.
+    seen: set[str] = set()
     for line in text.splitlines():
         header_id = parse_header_epic_id(line)
-        if header_id is not None:
-            current = header_id
+        if header_id is None:
             continue
-        row = parse_row(line)
-        if row is not None:
-            epics[row.raw] = row.epic_id or current
-    return epics
+        if header_id in seen:
+            raise PlanError(f"{program} repeats the epic header id {header_id}", line)
+        seen.add(header_id)
 
 
 def _epic_and_slice_records(
@@ -128,6 +126,7 @@ def _epic_and_slice_records(
             f"{program} has slice rows the parser cannot read",
             "\n".join(str(line) for line in table.unparsed),
         )
+    _reject_repeated_epic_header(program, text)
     epic_ids = set(table.header_epic_ids)
     records = [
         TrackerRecord(

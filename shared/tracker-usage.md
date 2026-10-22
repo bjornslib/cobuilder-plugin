@@ -342,6 +342,8 @@ $ uv run shared/tracker.py add-note demo-E1-s2 'checked the gate'
 }
 ```
 
+`set-program-stage` also sets the program's lifecycle. A program at stage `implemented` or `superseded` is closed. At any other stage, the epics set the lifecycle. On the beads adapter, a change of lifecycle also writes the bd status. The stage wins over an epic: a closed program stays closed when an epic starts.
+
 ```console
 $ uv run shared/tracker.py record-attempt demo-E1-s2 0.6 --note 'first try'
 {

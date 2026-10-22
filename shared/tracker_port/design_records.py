@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from .program_state import program_lifecycle
 from .record import TrackerRecord
 
 EPIC_STATE_KEYS = ("branch", "pr", "state")
@@ -36,6 +37,17 @@ def epic_state(plans_dir: Path, program: str, epic_id: str) -> dict[str, Any]:
         if state is not None:
             return state
     return {}
+
+
+def design_stage(plans_dir: Path, design: str) -> str | None:
+    # The stage word of the design's goal.json. None means no readable goal.json or no stage.
+    path = plans_dir.parent / "architecture" / "designs" / design / "goal.json"
+    try:
+        goal = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    stage = goal.get("stage") if isinstance(goal, dict) else None
+    return stage if isinstance(stage, str) else None
 
 
 def _epic_lifecycle(state: str) -> str:
@@ -94,7 +106,7 @@ def design_records(plans_dir: Path, emitted: list[TrackerRecord]) -> list[Tracke
                 kind="program",
                 parent=None,
                 blocked_by=(),
-                lifecycle="open",
+                lifecycle=program_lifecycle(stage if isinstance(stage, str) else None, ()),
                 assignee=None,
                 envelope={"stage": stage} if isinstance(stage, str) else {},
                 external_ref=design,

@@ -50,7 +50,11 @@ class _RejectsType:
         self.calls.append(list(args))
         if args[0] == "create":
             raise BdError(f"bd {' '.join(args)} exited 1", 1, self.stderr)
+        if args[0] == "list":
+            return "[]"
         return "types.custom (not set)\n" if args[:2] == ["config", "get"] else ""
+
+
 
 
 def test_prepare_on_bd_without_custom_types_sets_exactly_program() -> None:
@@ -179,4 +183,4 @@ def test_create_record_does_not_retry_another_error() -> None:
     with pytest.raises(BdError):
         BeadsAdapter(runner).create_record(_program())
 
-    assert [call[0] for call in runner.calls] == ["create"], runner.calls
+    assert [call[0] for call in runner.calls if call[0] != "list"] == ["create"], runner.calls  # the held-id read comes first
