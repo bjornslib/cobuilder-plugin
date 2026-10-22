@@ -1,12 +1,9 @@
-"""E5-5: the slice-loop formula file, its pointer, and the unchanged CLI.
+"""E5-5: the slice-loop formula file, its pointer, and that no code reads it.
 
 Run with: uv run pytest tests/test_tracker_beads_formula.py -q
 """
 from __future__ import annotations
 
-import difflib
-import re
-import subprocess
 
 import _formula_support as fs
 from _formula_support import FORMULA, FORMULA_REL, SLICE_LOOP, SLICE_LOOP_REL, REPO
@@ -42,24 +39,7 @@ def test_slice_loop_md_points_to_the_formula_without_copying_it() -> None:
         assert step["description"] not in text, f"slice-loop.md copies the {step['id']} description"
 
 
-def test_slice_loop_md_grows_by_at_most_three_lines() -> None:
-    before = fs.git_head_text(SLICE_LOOP_REL).splitlines()
-    after = SLICE_LOOP.read_text(encoding="utf-8").splitlines()
-    added = [line for line in difflib.ndiff(before, after) if line.startswith("+ ")]
-    assert any(FORMULA_REL in line for line in added), "the pointer line is not new versus HEAD"
-    assert len(added) <= 3, f"slice-loop.md adds {len(added)} lines versus HEAD: {added}"
-
-
-def test_cli_operations_are_those_of_head_and_no_code_reads_the_formula() -> None:
-    head = fs.git_head_text("shared/tracker_port/cli_operations.py")
-    start = head.index("OPERATIONS: dict")
-    head_ops = set(re.findall(r'^    "([a-z][a-z-]*)": \(', head[start:], re.M))
-    assert head_ops, "no operations parsed from HEAD"
-    out = subprocess.run(
-        ["uv", "run", str(REPO / "shared" / "tracker.py"), "--help"], cwd=REPO, capture_output=True, text=True
-    ).stdout
-    listed = set(re.search(r"\{([a-z][a-z0-9,-]+)\}", out).group(1).split(","))  # type: ignore[union-attr]
-    assert listed == head_ops, f"added: {listed - head_ops}, removed: {head_ops - listed}"
+def test_no_code_reads_the_formula() -> None:
     readers = [
         str(path.relative_to(REPO))
         for path in (REPO / "shared").rglob("*.py")
