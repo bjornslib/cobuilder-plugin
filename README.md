@@ -89,6 +89,8 @@ The result is a design directory at `docs/architecture/designs/<name>/`:
 
 Before it challenges your approach, design mode checks the boundary records of the code the change touches. It describes any context whose record is missing or out of date. The reviewer round fails a design that cites an unchecked boundary.
 
+If you install the opt-in `cobuilder-memory` plugin, design mode asks project memory twice. The first call comes before the hypothesis. It asks what the project decided before. The second call comes before the first challenge. It asks if the leading approach, or one close to it, was rejected before. Without the plugin, design mode says so and continues.
+
 A reviewer subagent checks the draft against a blind rubric before you read it. If `DDD-VOCABULARY.md` does not exist, design mode helps you create it.
 
 
@@ -102,6 +104,8 @@ Four gates come before any code. You approve each one.
 2. Architecture, plus interaction design when the change has a screen.
 3. Program design.
 4. Slice plan, epic designs, and blind acceptance rubrics.
+
+With the `cobuilder-memory` plugin, the build also asks project memory twice. The first call comes at Gate 1. The second call comes before Gate 3, or before Gate 2 when no design record exists. It finds past module splits, test rules, and conventions. The build writes them into `03-program-design.md`, so the `red` agent reads them. The build records each call in `00-status.md`. Without the plugin, it records `absent` and continues.
 
 Each slice then runs a red, green, and validate loop. The `red` agent writes failing tests. The `green` agent writes the minimum code. The `validate` agent scores the result against a rubric that `green` never saw. A slice is done at a score of 0.90 or higher. A `vocabulary` agent also checks each slice against the glossary, and its notes never change the score.
 
