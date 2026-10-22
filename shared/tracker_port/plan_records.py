@@ -160,7 +160,7 @@ def _epic_and_slice_records(
         table_score, table_attempts = _table_score(row.score)
         if checkbox is None:
             # No checkbox line: the table State cell sets the lifecycle. The table score counts only for a closed slice.
-            checked = (row.state or "").strip().lower() == "done"
+            checked = (row.state or "").strip().lower() in ("done", "skipped")
             score, attempts = (table_score, table_attempts) if checked else (None, None)
         else:
             checked = checkbox["checked"]

@@ -74,6 +74,8 @@ The adapter sends `--force` on every close. bd refuses to close an epic that has
 
 `set_epic_state` runs one `bd update <id> --status <state>` for the epic. When the program lifecycle changes, it runs one more update for the program, with `--force` for a close. The one `bd sync` at the end covers both writes.
 
+`skip_slice` writes the outcome and the reason to the `cb` envelope with one `bd update`. It then runs `bd close <id> --force` and one `bd sync`. A repeat call for a closed slice with the same outcome and reason runs no write and no sync.
+
 ## Lifecycle mapping
 
 | Record | State | bd status |

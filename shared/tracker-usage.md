@@ -113,6 +113,7 @@ Find the command for each workflow moment in this table.
 | Attempt fails | `record-attempt <id> <score> --note <text>` |
 | Slice passes | `set-slice-state <id> closed --score <score> --attempts <n>` |
 | Escalate | `escalate <id> <score> <reason>` |
+| Engineer moves on from a slice | `skip-slice <id> --reason <text> [--outcome skipped\|escalated]` |
 | PR opens | `open-pull-request <ref> <epic-id>...` |
 | PR merges | `set-pull-request-state <ref> merged`, then `set-epic-state` |
 | Program done | `set-program-stage <program> <stage>` |
@@ -380,6 +381,30 @@ $ uv run shared/tracker.py escalate demo-E1-s2 0.4 'needs a human'
     "id": "demo-E1-s2",
     "kind": "slice",
     "lifecycle": "in_progress",
+    "parent": "demo-E1"
+  }
+}
+```
+
+`skip-slice` closes a slice with an outcome and a reason, so the later slices of the epic become ready. The outcome is `skipped` by default. Use `escalated` after `escalate`. A repeat call with the same outcome and reason changes nothing.
+
+```console
+$ uv run shared/tracker.py skip-slice demo-E1-s2 --reason 'delayed by the engineer'
+{
+  "ok": true,
+  "result": {
+    "assignee": "agent-1",
+    "blocked_by": [
+      "demo-E1-s1"
+    ],
+    "envelope": {
+      "outcome": "skipped",
+      "reason": "delayed by the engineer"
+    },
+    "external_ref": null,
+    "id": "demo-E1-s2",
+    "kind": "slice",
+    "lifecycle": "closed",
     "parent": "demo-E1"
   }
 }

@@ -145,7 +145,7 @@ Branch on the exit code only, and never parse the message. [shared/tracker-usage
 |---|---|
 | **PASS** | Delete `slice-<N>-feedback.md`. Run `set-slice-state <id> closed --score <score> --attempts <n>`, then `regenerate-status-files <program> --plans-dir <dir>`. These two calls record the score and the epic status. **Store the slice note** (see "Slice note to project memory" below). Prove the slice works to the user with a test or demo. Ask whether to continue or adjust direction. |
 | **FAIL** | Run `record-attempt <id> <score> --note <text>`. Re-run GREEN with the feedback file. Do not re-run RED because the contract did not change. |
-| **ESCALATION** | Do not loop again. Run `escalate <id> <score> <reason>`. Then run `regenerate-status-files <program> --plans-dir <dir>`. Discuss with the user. See the gap decision tree in `validation-scoring.md`. |
+| **ESCALATION** | Do not loop again. Run `escalate <id> <score> <reason>`. Then run `regenerate-status-files <program> --plans-dir <dir>`. Discuss with the user. See the gap decision tree in `validation-scoring.md`. When the engineer decides to move on, run `tracker.py skip-slice <id> --reason <text> --outcome escalated`. For a delayed slice, use `--outcome skipped`. Closing the slice unblocks the later slices. |
 
 ## Slice note to project memory
 

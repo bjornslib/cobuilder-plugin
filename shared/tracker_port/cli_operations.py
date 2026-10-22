@@ -83,6 +83,12 @@ def _escalate_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("reason")
 
 
+def _skip_slice_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("id")
+    parser.add_argument("--reason", required=True)
+    parser.add_argument("--outcome", default="skipped")
+
+
 def _open_pull_request_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("ref")
     parser.add_argument("epic_ids", nargs="+")
@@ -142,6 +148,7 @@ OPERATIONS: dict[str, tuple[Callable[[argparse.ArgumentParser], None], Callable[
     "record-attempt": (_record_attempt_args, lambda a, n: a.record_attempt(n.id, n.score, n.note)),
     "add-note": (_add_note_args, lambda a, n: a.add_note(n.id, n.text)),
     "escalate": (_escalate_args, lambda a, n: a.escalate(n.id, n.score, n.reason)),
+    "skip-slice": (_skip_slice_args, lambda a, n: a.skip_slice(n.id, n.reason, n.outcome)),
     "open-pull-request": (_open_pull_request_args, lambda a, n: a.open_pull_request(n.ref, n.epic_ids)),
     "set-pull-request-state": (
         _set_pull_request_state_args,

@@ -113,6 +113,7 @@ class FilesAdapter:
     record_attempt = _refuse
     add_note = _refuse
     escalate = _refuse
+    skip_slice = _refuse
     open_pull_request = _refuse
     set_pull_request_state = _refuse
     regenerate_status_files = _refuse

@@ -22,10 +22,11 @@ from .port import AdapterError, ArgumentError
 from .program_state import program_lifecycle
 from .record import Capabilities, Kind, TrackerRecord
 from .fake_pull_requests import _PullRequestMixin
+from .skip_slice import _FakeSkipMixin
 from .regenerate import regenerate
 
 
-class FakeAdapter(_PullRequestMixin):
+class FakeAdapter(_PullRequestMixin, _FakeSkipMixin):
     name = "fake"
     capabilities = Capabilities(
         native_ready=False,
