@@ -48,7 +48,7 @@ class _SeedMixin:
         finally:
             self._batching = False
         if creates or closes or starts or refreshes:
-            self.sync()
+            self._publish()
         return creates + changed
 
     @staticmethod

@@ -8,6 +8,7 @@ does not hold.
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -26,21 +27,30 @@ from .beads_seed import _SeedMixin
 from .beads_pull_requests import _PullRequestMixin
 from .beads_writes import _WriteMixin
 from .skip_slice import _BeadsSkipMixin
+from .beads_sync import _SyncModeMixin
 from .port import AdapterError, ArgumentError
+from .sync_state import SYNC_MODES, spawn_worker
 from .record import Capabilities, Kind, TrackerRecord
 from .regenerate import regenerate
 
 __all__ = ["LIST_ARGS", "BeadsAdapter", "_cb_block", "_metadata_arg"]
 
 
-class BeadsAdapter(_WriteMixin, _PullRequestMixin, _SeedMixin, _BeadsSkipMixin):
+class BeadsAdapter(_SyncModeMixin, _WriteMixin, _PullRequestMixin, _SeedMixin, _BeadsSkipMixin):
     name = "beads"
     # Readiness comes from blocked_by, not from bd. bd update has no atomic claim.
     capabilities = Capabilities(native_ready=False, atomic_claim=False, rich_envelope=True, offline_read=True)
 
-    def __init__(self, runner: Any) -> None:
+    def __init__(
+        self, runner: Any, sync: str = "write", spawner: Callable[[Path], None] | None = None, repo_root: Path | None = None
+    ) -> None:
+        if sync not in SYNC_MODES:
+            raise AdapterError(f"sync must be one of {', '.join(SYNC_MODES)}, not {sync!r}")
         self.runner = runner
         self._batching = False
+        self.sync_mode = sync
+        self.spawner = spawner or spawn_worker
+        self.repo_root = repo_root or Path.cwd()
 
     def _all_rows(self) -> list[dict[str, Any]]:
         return json.loads(self.runner.run(LIST_ARGS))
@@ -50,7 +60,7 @@ class BeadsAdapter(_WriteMixin, _PullRequestMixin, _SeedMixin, _BeadsSkipMixin):
         return [row for row in self._all_rows() if _is_cb_row(row)]
 
     def doctor_details(self) -> dict[str, Any]:
-        return {"foreign_issues": sum(1 for row in self._all_rows() if not _is_cb_row(row))}
+        return {"foreign_issues": sum(1 for row in self._all_rows() if not _is_cb_row(row)), **self._sync_details()}
 
     def _records(self) -> dict[str, TrackerRecord]:
         rows = self._rows()
@@ -178,11 +188,6 @@ class BeadsAdapter(_WriteMixin, _PullRequestMixin, _SeedMixin, _BeadsSkipMixin):
             self.runner.run(argv)
         except BdError as error:
             raise AdapterError(f"bd {' '.join(argv)} failed: {error.stderr.strip() or error}") from error
-
-    def _publish(self) -> None:
-        # Each write op syncs once at its end. A seed batch skips this and syncs once at its end.
-        if not self._batching:
-            self.sync()
 
     def regenerate_status_files(self, program: str, plans_dir: Path) -> list[Path]:
         return regenerate(self, program, plans_dir)

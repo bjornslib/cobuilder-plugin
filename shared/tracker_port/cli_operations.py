@@ -9,7 +9,9 @@ from typing import Any
 
 from _bundle_meta import DESIGN_STAGES
 
+from . import sync_worker
 from .port import ArgumentError
+from .sync_state import sync_once
 
 
 def _no_args(parser: argparse.ArgumentParser) -> None:
@@ -128,6 +130,11 @@ def _doctor(adapter: Any, _namespace: argparse.Namespace) -> dict[str, Any]:
     return {"adapter": adapter.name, "capabilities": adapter.capabilities, **(details() if details else {})}
 
 
+def _sync(adapter: Any, _namespace: argparse.Namespace) -> None:
+    # The CLI sync clears the dirty flag and records the outcome, so the doctor and the hooks see it.
+    sync_once(Path.cwd(), adapter)
+
+
 OPERATIONS: dict[str, tuple[Callable[[argparse.ArgumentParser], None], Callable[[Any, argparse.Namespace], Any]]] = {
     "list-programs": (_no_args, lambda a, n: a.list_programs()),
     "list-epics": (_list_epics_args, lambda a, n: a.list_epics(n.program)),
@@ -135,7 +142,8 @@ OPERATIONS: dict[str, tuple[Callable[[argparse.ArgumentParser], None], Callable[
     "list-pull-requests": (_no_args, lambda a, n: a.list_pull_requests()),
     "get-slice": (_id, lambda a, n: a.get_slice(n.id)),
     "next-ready": (_next_ready_args, lambda a, n: a.next_ready(n.kind, n.under)),
-    "sync": (_no_args, lambda a, n: a.sync()),
+    "sync": (_no_args, _sync),
+    "sync-worker": (_no_args, lambda a, n: sync_worker.run(Path.cwd(), lambda: a)),
     "prepare": (_no_args, lambda a, n: a.prepare()),
     "claim-slice": (_claim_slice_args, lambda a, n: a.claim_slice(n.id, n.claimant)),
     "set-program-stage": (_set_program_stage_args, lambda a, n: a.set_program_stage(n.program, _design_stage(n.stage))),

@@ -544,6 +544,9 @@ The file `.cobuilder/tracker.yaml` names the adapter. It holds these keys:
 - `corpus`: the corpus folder that the `fake` adapter reads.
 - `state_file`: the file where the `fake` adapter keeps its state.
 - `bd`: the bd command that the `beads` adapter runs. It defaults to `bd`.
+- `sync`: when the `beads` adapter syncs. `write` syncs at the end of each write and is the default. `async` marks the sync as pending, and a short-lived worker runs it. `off` never syncs by itself.
+
+With `sync: async`, a write returns at once. It sets the flag `.cobuilder/runtime/sync-dirty` and starts `tracker.py sync-worker` detached. You may also run `tracker.py sync-worker` in the foreground. It takes a lock, syncs while the flag is set, writes `.cobuilder/runtime/sync-status.json`, and exits. A second worker exits at once. After a failed sync the flag stays set, and the next write or the SessionEnd hook of `implement` retries. The `sync` operation clears the flag and writes the status file. The `doctor` operation shows `sync`, `sync_pending`, and `last_sync`.
 
 ## Adapter notes
 

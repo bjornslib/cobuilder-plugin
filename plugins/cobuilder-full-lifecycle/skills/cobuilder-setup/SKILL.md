@@ -135,6 +135,8 @@ h. State the reason to the user. A plugin cannot ship allow rules, so this skill
 This part runs after the engineer configures the tracker adapter. It follows `shared/tracker-backfill.md`. It writes nothing until the engineer agrees.
 
 0. **Create the tracker config.** If `.cobuilder/tracker.yaml` is missing, ask the engineer which adapter to use: `beads` or `files`. Do not offer any other adapter. After the answer, write the file. For beads, the file holds `adapter: beads`. For files, it holds `adapter: files` and `plans_dir: docs/plans`. If the file exists, keep it.
+
+   For beads, also ask for the sync mode. Recommend `async`. Explain each choice. In `write` mode each write waits for the remote sync. In `async` mode a short-lived worker runs the sync after the write, and the Stop and SessionEnd hooks of `implement` start or flush it. In `off` mode only an explicit `tracker.py sync` syncs. Write the chosen mode as the `sync` key. If the engineer has no preference, write `sync: async`. If the file exists, keep its `sync` key.
 1. **Check the adapter.** When the adapter is beads and the repo has no `.beads` folder, read `shared/tracker-adapter-beads.md`. It holds the approval step for the beads setup. Do not run any beads command from this skill.
 2. **Prepare beads.** When the adapter is beads, tell the engineer that this step sets the issue type list of the repo to include `program`, and that the types already in the list stay. Ask the engineer to agree. After the engineer agrees, run `tracker.py prepare`. If the engineer declines, stop this part.
 3. **Run the dry run.** Run `tracker.py seed-from-files <plans-dir> --dry-run`. Show the engineer the list of planned creates.
