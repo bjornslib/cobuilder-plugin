@@ -8,7 +8,7 @@ from typing import Any
 
 from .beads_rows import STATUS_MAP, _cb_block, _envelope, _with_envelope
 from .files import seedable_records
-from .program_state import RUNTIME_STAGES
+from .program_state import CLOSING_STAGES, RUNTIME_STAGES
 from .record import TrackerRecord, merge_refresh_envelope
 
 
@@ -77,13 +77,19 @@ class _SeedMixin:
 
     @staticmethod
     def _rows_to_close(rows: list[dict[str, Any]], found: list[TrackerRecord]) -> list[dict[str, Any]]:
-        # An open record whose files now say closed gets closed. Lifecycle only. A closed record is never reopened.
         # A program whose held stage is a runtime stage, such as review, stays open. The held stage judges it.
+        # A program whose held stage closes it (implemented, superseded) is closed, with or without a file.
         closed_ids = {record.id for record in found if record.lifecycle == "closed"}
         return [
             row
             for row in rows
-            if _cb_block(row)["id"] in closed_ids
-            and STATUS_MAP.get(row.get("status")) != "closed"
-            and _envelope(_cb_block(row)).get("stage") not in RUNTIME_STAGES
+            if STATUS_MAP.get(row.get("status")) != "closed"
+            and _should_close(row, closed_ids)
         ]
+
+
+def _should_close(row: dict[str, Any], closed_ids: set[str]) -> bool:
+    stage = _envelope(_cb_block(row)).get("stage")
+    if stage in CLOSING_STAGES:
+        return True
+    return _cb_block(row)["id"] in closed_ids and stage not in RUNTIME_STAGES
