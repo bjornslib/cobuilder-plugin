@@ -31,6 +31,9 @@
   "epics": [
     {
       "id": "E1",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
       "note": "Teach both Builds views the three meanings of a gate state. `is_resolved(state)` in `plugins/artifact/scripts/build_builds_view.py` holds the test, and `current_doc()` receives the document map filtered to the files the plan holds, so a returned document always exists. The static page gains the `na` treatment and stops printing the text `undefined` for a Gate 2b document. The viewer rail gains the `is-na` card class, the `na` pill class, the words \"Not applicable\", and a header count of approved gates. Slices 1 and 2."
     }
   ],

@@ -31,10 +31,6 @@ glossary, and that one is created with the vocabulary bootstrap in
 `/architect:design` stage 1 (ADR-0036). Start never runs the bootstrap
 itself, and it never interviews the engineer about terms mid-feature.
 
-## Tracker state
-
-Start reads and writes workflow state through `shared/tracker.py`, as `shared/tracker-usage.md` directs. When the tracker holds no records for the program, follow `shared/tracker-backfill.md` first.
-
 ## What this writes
 
 This command writes plan documents and blind rubrics to disk:

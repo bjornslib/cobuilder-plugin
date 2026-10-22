@@ -1,9 +1,0 @@
-{
-  "bd": "bd version 1.3.0 (Homebrew)",
-  "args": [
-    "show",
-    "t-anc.1.1",
-    "--json"
-  ],
-  "stdout": "[\n  {\n    \"id\": \"t-anc.1.1\",\n    \"title\": \"demo-E1-s1\",\n    \"status\": \"closed\",\n    \"priority\": 2,\n    \"issue_type\": \"task\",\n    \"owner\": \"131568482+bjornslib@users.noreply.github.com\",\n    \"created_at\": \"2026-10-18T03:42:27Z\",\n    \"created_by\": \"Bjorn Schliebitz\",\n    \"updated_at\": \"2026-10-18T03:42:29Z\",\n    \"closed_at\": \"2026-10-18T03:42:29Z\",\n    \"metadata\": {\n      \"cb\": {\n        \"v\": 1,\n        \"id\": \"demo-E1-s1\",\n        \"kind\": \"slice\",\n        \"envelope\": {\n          \"score\": 0.92\n        }\n      }\n    },\n    \"dependencies\": [\n      {\n        \"id\": \"t-anc.1\",\n        \"title\": \"demo-E1\",\n        \"status\": \"open\",\n        \"priority\": 2,\n        \"issue_type\": \"epic\",\n        \"owner\": \"131568482+bjornslib@users.noreply.github.com\",\n        \"created_at\": \"2026-10-18T03:42:26Z\",\n        \"created_by\": \"Bjorn Schliebitz\",\n        \"updated_at\": \"2026-10-18T03:42:26Z\",\n        \"metadata\": {\n          \"cb\": {\n            \"v\": 1,\n            \"id\": \"demo-E1\",\n            \"kind\": \"epic\",\n            \"envelope\": {}\n          }\n        },\n        \"dependency_type\": \"parent-child\"\n      }\n    ],\n    \"parent\": \"t-anc.1\",\n    \"dependent_count\": 2,\n    \"dependency_count\": 1,\n    \"comment_count\": 0,\n    \"revision\": \"-210149076658593730\"\n  }\n]\n"
-}

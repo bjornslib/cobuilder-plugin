@@ -26,7 +26,7 @@ from pathlib import Path
 
 SCHEMA_VERSION = "1.3"
 SCHEMA_VERSION_KNOWN = {"1.0", "1.1", "1.2", "1.3"}
-CURRENT_BUNDLE_FORMAT = 5
+CURRENT_BUNDLE_FORMAT = 4
 
 # The stages a design's goal.json may carry. The Work board's lanes read exactly
 # these values (plugins/artifact/viewer/src/shell/workDeck.ts), so a design with

@@ -27,9 +27,13 @@ not just the repo this session is running in (the skill will ask for
 Skill("odyssey", args="review $ARGUMENTS")
 ```
 
-The skill reads workflow state with `tracker.py list-epics`. After a human merges a PR, it records the merge with `tracker.py set-pull-request-state <ref> merged`, as its Workflow state section says. It never merges a PR.
-
-The bundle lands where `/pr:baseline` puts it: `<hub>/.cobuilder-architect/self/` for self-analysis, or the per-hub cache for a foreign `--repo`. Pass `--store local` or `--store central` to override that choice.
+Where the bundle lands depends on what's being analyzed: self-analysis (no
+`--repo`, or `--repo` pointing at this same repo) stores it at
+`<hub>/.cobuilder-architect/self/`, committed alongside the code it narrates, while a
+foreign repo passed via `--repo` stores it instead in a central per-hub
+cache (`<hub>/.cobuilder-architect/<repo-slug>/`) so foreign checkouts are never
+written into. Pass `--store local` or `--store central` to override that
+automatic choice.
 
 ## Default PR selection
 

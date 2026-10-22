@@ -12,21 +12,27 @@
     "challenge_stage_run": false,
     "note": "Stage 0 and stage 1 grounding did not run. Stages 2 through 7 are deliberately deferred. This design is a backlog entry, not an approved design. It carries no intent.json, narrative.json, assessment.json, or diagrams, and it must not be implemented until design mode runs to completion."
   },
-  "limits": {
-    "warn_after_rounds": 3,
-    "cutoff_rounds": 6
-  },
+  "limits": { "warn_after_rounds": 3, "cutoff_rounds": 6 },
   "epics": [
     {
       "id": "E1",
+      "branch": null,
+      "pr": null,
+      "state": "planned",
       "note": "Decide the replacement shape: the viewer reads a diff by running git diff against the PR's recorded commit SHAs at serve time (view mode already runs from inside the repo), versus keeping diffs-pr{N}.js exactly as it is today but gitignoring it, regenerating it from git on demand the way exports/branch-*/diff.json already works for generate mode. Either removes the committed weight; they differ in whether a served bundle still needs a live git checkout next to it. Update 2026-10-13: the user directed the gitignore half of the second shape as a packaging fix for the Claude Plugin directory's 5 MiB per-file cap. The committed diffs-pr{N}.js files are gone, and .gitignore holds the pattern. The serve-time question stays open: extract_diffs.py still rewrites data/manifest.js together with its files, so a future pr:baseline can name a new PR in diff_prs while git does not carry its file. Settle this epic before the next pr:baseline lands a diff_prs entry."
     },
     {
       "id": "E2",
+      "branch": null,
+      "pr": null,
+      "state": "open",
       "note": "Whichever shape E1 picks, implement it in extract_diffs.py and, if the viewer starts requesting diffs at view time instead of reading a static file, in artifact's serve_bundle.py. Update verify_bundle.py's expectations accordingly. Update 2026-10-13: verify_bundle.py now reports the diffs key and does not gate on it, so a clone without the files passes. extract_diffs.py itself is unchanged."
     },
     {
       "id": "E3",
+      "branch": null,
+      "pr": null,
+      "state": "completed",
       "note": "Migrate the existing committed bundles (self, and the two fixture bundles) so history stops growing: remove the checked-in diffs-pr{N}.js files, or move them under .gitignore, per E1's decision. This does not touch story.json's authored fields, so it is a bundle-file change, not a schema migration. Update 2026-10-13: done for the self bundle, under the user's direction, to pass the plugin directory's 5 MiB cap. The ten diffs-pr{N}.js files are removed and .gitignore carries .cobuilder-architect/self/data/diffs-pr*.js. The two fixture bundles keep their diff files (0.4 MB and 1.3 MB, under the cap), because fixtures are committed test data. Story.json holds no diff fields, so no migration ran."
     }
   ],

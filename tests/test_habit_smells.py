@@ -225,7 +225,7 @@ def make_bundle(tmp_path: Path) -> tuple[Path, Path]:
     bundle = repo / ".cobuilder-architect" / "self"
     (bundle / "data").mkdir(parents=True)
     (bundle / "viewer").mkdir()
-    (bundle / "bundle.json").write_text(json.dumps({"bundle_format": 5, "schema_version": "1.3"}))
+    (bundle / "bundle.json").write_text(json.dumps({"bundle_format": 4, "schema_version": "1.3"}))
     (bundle / "data" / "story.json").write_text(json.dumps({"meta": {"schema_version": "1.3"}, "timeline": []}))
     (bundle / "viewer" / "index.html").write_text("<html></html>")
     (bundle / "inventory.yaml").write_text("contexts:\n  - a\n")

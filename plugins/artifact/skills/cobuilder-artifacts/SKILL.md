@@ -25,10 +25,6 @@ Reference material lives in `references/` and loads on demand, including
 `references/collaborate-with-user.md`, the rules for presenting a decision,
 a gate, or a review result as a page instead of prose.
 
-## Workflow state
-
-Take the state of an epic, such as its branch, pull request, and state, with `tracker.py list-epics`. Do not read it from `goal.json`. [shared/tracker-usage.md](../../../../shared/tracker-usage.md) lists every operation.
-
 ## View mode
 
 This mode serves the `viewer/` folder of the currently selected bundle as

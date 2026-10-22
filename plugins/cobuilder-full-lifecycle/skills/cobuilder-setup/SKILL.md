@@ -17,7 +17,7 @@ This skill sets up the CoBuilder family for the target repo. It asks before it i
 
 ## Install mode
 
-This mode runs the five parts below in order: habit-hooks setup, glossary check, Hindsight allow rules, tracker backfill, and report. Run it once per repo, and again when the repo gains a language.
+This mode runs the four parts below in order: habit-hooks setup, glossary check, Hindsight allow rules, and report. Run it once per repo, and again when the repo gains a language.
 
 ## Habit-hooks setup
 
@@ -116,7 +116,7 @@ a. If the session lists `mcp__cobuilder-memory__consult`, the needed rules are `
 
 b. If the session lists `mcp__hindsight__retain`, add `mcp__hindsight__retain` to the needed rules. The slice note of the build loop calls it.
 
-c. Always add `Bash(uv run *shared/tracker.py*)` to the needed rules. The build loop calls the tracker script with this form. If the session lists neither `mcp__cobuilder-memory__consult` nor `mcp__hindsight__retain`, state that no Hindsight rule is needed, and go on to step d.
+c. If the session lists neither `mcp__cobuilder-memory__consult` nor `mcp__hindsight__retain`, state that no Hindsight rule is needed. Then skip to the Report section.
 
 d. Read `permissions.allow` in the user file `~/.claude/settings.json`. List each needed rule that the file does not hold. If no needed rule is missing, say so. Then skip to the Report section.
 
@@ -129,19 +129,6 @@ f. After a yes, add only the missing rules to `permissions.allow`. Keep every ot
 g. After a no, change nothing. List the missing rules as a manual step for the user.
 
 h. State the reason to the user. A plugin cannot ship allow rules, so this skill edits the user file itself, and only after approval.
-
-## Tracker backfill
-
-This part runs after the engineer configures the tracker adapter. It follows `shared/tracker-backfill.md`. It writes nothing until the engineer agrees.
-
-0. **Create the tracker config.** If `.cobuilder/tracker.yaml` is missing, ask the engineer which adapter to use: `beads` or `files`. Do not offer any other adapter. After the answer, write the file. For beads, the file holds `adapter: beads`. For files, it holds `adapter: files` and `plans_dir: docs/plans`. If the file exists, keep it.
-1. **Check the adapter.** When the adapter is beads and the repo has no `.beads` folder, read `shared/tracker-adapter-beads.md`. It holds the approval step for the beads setup. Do not run any beads command from this skill.
-2. **Prepare beads.** When the adapter is beads, tell the engineer that this step sets the issue type list of the repo to include `program`, and that the types already in the list stay. Ask the engineer to agree. After the engineer agrees, run `tracker.py prepare`. If the engineer declines, stop this part.
-3. **Run the dry run.** Run `tracker.py seed-from-files <plans-dir> --dry-run`. Show the engineer the list of planned creates.
-4. **Ask for consent.** Ask the engineer for explicit consent to write. Do not write on silence or on a vague answer.
-5. **Write, after consent.** Run the same `seed-from-files` operation without `--dry-run`. Then run `tracker.py sync`.
-
-If the engineer declines, stop this part and report that nothing was written.
 
 ## Report
 

@@ -1,9 +1,0 @@
-{
-  "bd": "bd version 1.3.0 (Homebrew)",
-  "args": [
-    "sync"
-  ],
-  "stdout": "sync: pull (attempt 1/3)\n",
-  "exit": 1,
-  "stderr": "Error: sync failed: pull: fetch from origin/main: Error 1105: fetch failed: no branches found in remote 'origin'\n"
-}
