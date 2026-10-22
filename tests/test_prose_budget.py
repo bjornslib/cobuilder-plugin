@@ -144,7 +144,6 @@ AUTHORING_REFERENCES = [
     "plugins/pr/skills/odyssey/references/interview-guide.md",
     "plugins/pr/skills/odyssey/references/review-mode.md",
     "plugins/pr/skills/odyssey/references/story-mode.md",
-    "shared/tracker-usage.md",
     "CLAUDE.md",
 ]
 

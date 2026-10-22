@@ -31,6 +31,9 @@
   "epics": [
     {
       "id": "E1",
+      "branch": "design/design-mode",
+      "pr": 11,
+      "state": "open",
       "note": "Design mode as a pre-code interview and challenge gate. Shares a branch and a pull request with the cobuilder-implement design. See ADR-0013: a branch may carry more than one design."
     }
   ],
