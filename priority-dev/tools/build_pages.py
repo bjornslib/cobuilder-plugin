@@ -153,11 +153,8 @@ def main() -> None:
         if n == 1:
             inner = conv(re.sub(r"^# .*\n", "", intro)) + inner
         body += section(sid, eb, title.split(". ", 1)[1], inner)
-    sets = fieldset(0, "How `continue_until` runs", [
-        ("B: send /goal", "B. Send the built-in <code>/goal</code> command. Our check runs after the goal clears", True),
-        ("A: our own loop", "A. Keep our own loop that sends <code>continue</code> after each stop", False)],
-        "B. Section 4.1 has the table. Nothing is built until you answer.")
-    html, ids = decision(sets, 1, "Source of record: <code>priority-dev/docs/design/schemas.md</code> and <code>schemas/interpreter_schemas.py</code>.")
+    sets = ""
+    html, ids = decision(sets, 0, "Source of record: <code>priority-dev/docs/design/schemas.md</code> and <code>schemas/interpreter_schemas.py</code>.")
     chips = '<span class="chip warn">Draft for decision</span><span class="chip">Round 10: no Jev in the spikes, Digest always runs</span><span class="chip">Diagrams restored</span><span class="chip">24 October 2026</span>'
     page = head + top("CoBuilder · architect:design · round 10", "priority.dev interpreter schemas", "What the interpreter receives, what it produces, and every action it may propose.",
                       chips, "".join(nav) + '<a href="#decide">Decision</a>') + body + html + script(old, "priority.dev interpreter schemas, round 10: my answers", ids)

@@ -378,7 +378,7 @@ pre.code code{background:none;padding:0;white-space:pre}
 <text class="nt" x="385.0" y="76" text-anchor="middle">Jev API</text>
 <text class="ns" x="385.0" y="91" text-anchor="middle">System-1 decisions, later</text>
 </g>
-<g id="n-claude"><title>Language model: Nemo and Inkling via OpenRouter via OpenRouter</title>
+<g id="n-claude"><title>Language model: Nemo and Inkling via OpenRouter via OpenRouter via OpenRouter</title>
 <rect class="nx" x="490" y="50" width="150" height="55" rx="12"/>
 <text class="nt" x="565.0" y="76" text-anchor="middle">Language model</text>
 <text class="ns" x="565.0" y="91" text-anchor="middle">Nemo and Inkling</text>
@@ -1499,11 +1499,6 @@ Respond with the corresponding output fields, starting with the field `[[ ## adv
   <p class="q">Do these changes match what you want?</p>
   <p class="default-note">If you do not answer a point, the draft uses the default marked under it. Nothing leaves this machine until you say so.</p>
   <form id="decision-form" onsubmit="return false">
-    <fieldset id="f-d0"><legend>0. How `continue_until` runs</legend>
-      <label class="opt"><input type="radio" name="d0" value="B: send /goal"><span>B. Send the built-in <code>/goal</code> command. Our check runs after the goal clears<span class="rec">Recommended</span></span></label>
-      <label class="opt"><input type="radio" name="d0" value="A: our own loop"><span>A. Keep our own loop that sends <code>continue</code> after each stop</span></label>
-      <p class="default-note">Default: B. Section 4.1 has the table. Nothing is built until you answer.</p>
-    </fieldset>
     <fieldset id="f-notes"><legend><label for="notes">Notes</label></legend><textarea id="notes" placeholder="Changes, extra actions, or a reason"></textarea></fieldset>
     <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; padding-top:12px"><button class="go" id="copy-btn" type="button">Copy my answers</button><span id="copy-status" role="status"></span></div>
     <textarea id="answers-out" readonly aria-label="Your answers, ready to paste into the session"></textarea>
@@ -1518,7 +1513,7 @@ Respond with the corresponding output fields, starting with the field `[[ ## adv
   function lt(f) { var l = f.querySelector('legend'); return l ? l.textContent.trim() : ''; }
   function collect() {
     var lines = ['priority.dev interpreter schemas, round 10: my answers'];
-    ['d0'].forEach(function (n) {
+    [].forEach(function (n) {
       var c = form.querySelector('input[name="' + n + '"]:checked');
       lines.push(lt(document.getElementById('f-' + n)) + ' -> ' + (c ? c.value : 'no answer (use the default)'));
     });
