@@ -103,6 +103,7 @@ def _scratch(tmp: Path, stage: str = "approved") -> Any:
     return adapter
 
 
+@pytest.mark.slow
 def test_real_bd_create_at_stage_approved_is_open_and_at_implemented_is_closed(tmp_path: Path) -> None:
     adapter = ps.beads(tmp_path)
     adapter.create_record(ps.program("live", "approved"))
@@ -112,6 +113,7 @@ def test_real_bd_create_at_stage_approved_is_open_and_at_implemented_is_closed(t
     assert ps.bd_status(adapter, "done") == BD_CLOSED, "a program created at stage implemented stays open in bd"
 
 
+@pytest.mark.slow
 def test_real_bd_stage_changes_write_the_native_bd_status(tmp_path: Path) -> None:
     adapter = _scratch(tmp_path)
     assert ps.bd_status(adapter, "prog") == "open"
@@ -122,6 +124,7 @@ def test_real_bd_stage_changes_write_the_native_bd_status(tmp_path: Path) -> Non
     assert ps.bd_status(adapter, "prog") == "open"
 
 
+@pytest.mark.slow
 def test_real_bd_stage_wins_over_an_epic_going_in_progress(tmp_path: Path) -> None:
     adapter = _scratch(tmp_path)
     adapter.set_program_stage("prog", "implemented")
@@ -132,6 +135,7 @@ def test_real_bd_stage_wins_over_an_epic_going_in_progress(tmp_path: Path) -> No
     assert ps.lifecycles(adapter)["prog"] == "closed"
 
 
+@pytest.mark.slow
 def test_real_bd_set_program_stage_writes_status_only_on_a_change_with_one_sync(tmp_path: Path) -> None:
     adapter = _scratch(tmp_path)
     program_bd_id = next(r["id"] for r in adapter._rows() if r["metadata"]["cb"]["id"] == "prog")
@@ -176,6 +180,7 @@ def test_fake_seed_creates_implemented_and_superseded_programs_closed(tmp_path: 
     }
 
 
+@pytest.mark.slow
 def test_real_bd_seed_creates_implemented_and_superseded_programs_closed(tmp_path: Path) -> None:
     adapter = ps.beads(tmp_path)
     adapter.seed_from_files(ps.stage_tree(tmp_path))
@@ -185,6 +190,7 @@ def test_real_bd_seed_creates_implemented_and_superseded_programs_closed(tmp_pat
     }
 
 
+@pytest.mark.slow
 def test_real_bd_seed_repairs_an_open_program_whose_files_now_say_closed(tmp_path: Path) -> None:
     adapter = ps.beads(tmp_path)
     plans = ps.stage_tree(tmp_path)

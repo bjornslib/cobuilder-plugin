@@ -57,6 +57,7 @@ def test_fake_seed_skips_the_duplicate_plan_and_surfaces_the_conflict(tmp_path: 
         assert not [i for i in held if i.startswith("duplicate-epic")], held
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("dry_run", [True, False], ids=["dry-run", "real"])
 def test_real_bd_seed_skips_the_duplicate_plan_and_surfaces_the_conflict(tmp_path: Path, dry_run: bool) -> None:
     adapter = ps.beads(tmp_path)
@@ -71,6 +72,7 @@ def test_real_bd_seed_skips_the_duplicate_plan_and_surfaces_the_conflict(tmp_pat
         assert held == [], "a dry run wrote records"
 
 
+@pytest.mark.slow
 def test_real_bd_create_record_refuses_an_id_that_already_exists(tmp_path: Path) -> None:
     from tracker_port.port import ArgumentError
 

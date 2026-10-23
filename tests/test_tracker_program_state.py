@@ -7,6 +7,7 @@ Run with: uv run pytest tests/test_tracker_program_state.py -q
 """
 from __future__ import annotations
 
+import pytest
 import json
 from pathlib import Path
 from typing import Any
@@ -116,6 +117,7 @@ def _scratch(tmp: Path) -> Any:
     return adapter
 
 
+@pytest.mark.slow
 def test_real_bd_program_follows_its_epics_through_three_transitions(tmp_path: Path) -> None:
     support.require_bd()
     adapter = _scratch(tmp_path)
@@ -136,6 +138,7 @@ def test_real_bd_program_follows_its_epics_through_three_transitions(tmp_path: P
     assert adapter.list_programs()[0].envelope["stage"] == prog["prog"].envelope["stage"]
 
 
+@pytest.mark.slow
 def test_beads_one_extra_update_and_one_sync_per_operation(tmp_path: Path) -> None:
     support.require_bd()
     adapter = _scratch(tmp_path)

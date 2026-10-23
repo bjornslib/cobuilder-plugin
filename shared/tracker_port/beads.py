@@ -38,8 +38,8 @@ __all__ = ["LIST_ARGS", "BeadsAdapter", "_cb_block", "_metadata_arg"]
 
 class BeadsAdapter(_SyncModeMixin, _WriteMixin, _PullRequestMixin, _SeedMixin, _BeadsSkipMixin):
     name = "beads"
-    # Readiness comes from blocked_by, not from bd. bd update has no atomic claim.
-    capabilities = Capabilities(native_ready=False, atomic_claim=False, rich_envelope=True, offline_read=True)
+    # Readiness comes from blocked_by, not from bd. The claim is atomic: bd update --claim.
+    capabilities = Capabilities(native_ready=False, atomic_claim=True, rich_envelope=True, offline_read=True)
 
     def __init__(
         self, runner: Any, sync: str = "write", spawner: Callable[[Path], None] | None = None, repo_root: Path | None = None
@@ -84,7 +84,7 @@ class BeadsAdapter(_SyncModeMixin, _WriteMixin, _PullRequestMixin, _SeedMixin, _
         blocked_by = tuple(
             self._cb_id(to_cb_id, dep["depends_on_id"], row["id"])
             for dep in row.get("dependencies") or []
-            if dep.get("type") == "blocks"
+            if dep.get("type") == "blocks" and dep["depends_on_id"] in to_cb_id
         )
         parent = self._cb_id(to_cb_id, row["parent"], row["id"]) if row.get("parent") else None
         return TrackerRecord(

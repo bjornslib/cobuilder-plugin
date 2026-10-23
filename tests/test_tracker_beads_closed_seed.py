@@ -6,6 +6,7 @@ Run with: uv run pytest tests/test_tracker_beads_closed_seed.py -q
 """
 from __future__ import annotations
 
+import pytest
 import shutil
 import tempfile
 from pathlib import Path
@@ -13,6 +14,9 @@ from typing import Any
 
 import _beads_support as support
 from _beads_support import FIXTURE_DIR
+
+
+pytestmark = pytest.mark.slow
 
 _scratch_tracker = support.scratch_tracker
 

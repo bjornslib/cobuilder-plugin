@@ -1,11 +1,15 @@
 """The seed repair closes an open program whose HELD envelope stage closes it, even with no file for it."""
 from __future__ import annotations
 
+import pytest
 import shutil
 from pathlib import Path
 
 import _beads_support as support
 import _program_stage_support as ps
+
+
+pytestmark = pytest.mark.slow
 
 TREE = support.FIXTURE_DIR / "plans-planstage"
 HELD = {

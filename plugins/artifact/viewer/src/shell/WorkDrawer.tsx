@@ -216,7 +216,7 @@ function DetailPane({
             Pull requests
           </p>
           <p className="m-0 font-mono text-[13.5px] text-ink-dim">
-            {pullRequests.map((id) => `#${id}`).join(", ")} merged
+            {pullRequests.map((id) => `#${id}`).join(", ")}
           </p>
         </div>
       ) : null}

@@ -1,13 +1,13 @@
 {
   "schema_version": "1.4",
   "sources": {
-    "git_head": "def6e5132012ae08f37fe97fd87eb54fdbcfa71a",
+    "git_head": "5d52d2c751e5f689cd6029276f38daa5f0c41f26",
     "trees": {
-      "docs/architecture/adr": "sha256:7182136fd5b95b8e38c7e762b6a47ce34a766b0a2f3c90dc28cb1e68b0dfa6ba",
-      "docs/architecture/designs": "sha256:cd0a8ef689e2a5fda1361bd5976a491c5e785400f940eaf7429b407986b08a12",
+      "docs/architecture/adr": "sha256:608f1f9d9c20a4b5b520c4641440bcae38cad3cc588735be1fd22a9adf3e1dd7",
+      "docs/architecture/designs": "sha256:fab49e23773c605524d4c352883a86c7a450a3d25ceabdeace8185f2ee335b5e",
       "docs/architecture/contexts": "sha256:6663ee456e31bfbe31401908ae494017ed864dbb9c72211b6cbdccc44d078482",
-      "docs/plans": "sha256:f02bc4b2dac9644543e50f5de4b0a4d9f4c704af36d9c621e44a6405454d676b",
-      ".cobuilder/rubrics": "sha256:0b3c78d736e3e12d616e41275fb446f15f59b42bbb7b5bbc53d3070ae5456aac"
+      "docs/plans": "sha256:2d806c1e9d12bc2e9a0e759d467918a5fd1dea7e9c88ddb41582a06b92b342d8",
+      ".cobuilder/rubrics": "sha256:d40fd37297e8771cabdcef5c94c321b25b1fa73f9948aa4a6d49b9d4025c6f00"
     }
   },
   "entities": {
@@ -221,6 +221,11 @@
         "id": "ADR-0042",
         "title": "implement ships Stop and SessionEnd hooks for async tracker sync",
         "state": "decided"
+      },
+      {
+        "id": "ADR-0043",
+        "title": "the slice-loop formula follows the formulas key in tracker.yaml",
+        "state": "decided"
       }
     ],
     "design": [
@@ -228,7 +233,7 @@
         "id": "beads-storage",
         "name": "beads-storage",
         "outcome": "A tracker port sits between CoBuilder and the task system, and beads is its first adapter. Programs, epics, slices, and pull requests live in one proposed central store, which no test verifies yet. The same data/index.json serves the viewer, and one next-ready call answers what is next.",
-        "stage": "decided"
+        "stage": "approved"
       },
       {
         "id": "book-index-tiering",
@@ -376,7 +381,7 @@
         "epic_id": "E1",
         "branch": "design/beads-storage/tracker-port",
         "pr": null,
-        "state": null,
+        "state": "in_progress",
         "note": null,
         "design_doc": "beads-storage/E1"
       },
@@ -386,7 +391,7 @@
         "epic_id": "E2",
         "branch": "design/beads-storage/tracker-port",
         "pr": null,
-        "state": null,
+        "state": "in_progress",
         "note": null,
         "design_doc": "beads-storage/E2"
       },
@@ -396,7 +401,7 @@
         "epic_id": "E3",
         "branch": "design/beads-storage/tracker-port",
         "pr": null,
-        "state": null,
+        "state": "in_progress",
         "note": null,
         "design_doc": "beads-storage/E3"
       },
@@ -406,7 +411,7 @@
         "epic_id": "E4",
         "branch": "design/beads-storage/tracker-port",
         "pr": null,
-        "state": null,
+        "state": "in_progress",
         "note": null,
         "design_doc": "beads-storage/E4"
       },
@@ -414,11 +419,21 @@
         "id": "beads-storage/E5",
         "design": "beads-storage",
         "epic_id": "E5",
+        "branch": "feature/beads-native-e5",
+        "pr": null,
+        "state": "in_progress",
+        "note": null,
+        "design_doc": "beads-storage/E5"
+      },
+      {
+        "id": "beads-storage/E6",
+        "design": "beads-storage",
+        "epic_id": "E6",
         "branch": null,
         "pr": null,
         "state": null,
         "note": null,
-        "design_doc": "beads-storage/E5"
+        "design_doc": "beads-storage/E6"
       },
       {
         "id": "book-index-tiering/E1",
@@ -435,7 +450,7 @@
         "epic_id": "E1",
         "branch": null,
         "pr": null,
-        "state": "completed",
+        "state": "closed",
         "note": "Stage 7 in architect's references/design-mode.md ends design mode after creating the first branch, with no pointer to what runs next. Add one line after the branch is created: 'Design mode's work ends here. To build this design's epics, run /implement:start.' Do not have design mode invoke implement:start itself — architecture modes are self-only in scope, and implement already owns Gate 1's design-record lookup (build/SKILL.md's 'Optional: design mode record' section). This is a one-line prose addition to a mode-governing reference file, so it still needs the Gate-selection exception's behavioral rubric, not a skip."
       },
       {
@@ -444,7 +459,7 @@
         "epic_id": "E2",
         "branch": null,
         "pr": null,
-        "state": "completed",
+        "state": "closed",
         "note": "04-slices.md's Gate 4a instructions in build/SKILL.md describe the table only through the worked example, and never say the table must match shared/slice_table.py's exact column shape (six columns: #, Epic, Slice, Ends with, Score, State, with the epic-header row's precise empty-cell pattern) or point to that module as the source of truth. Add an explicit sentence and a link, so an authoring session does not freehand a table shape verify_gate.py silently fails to parse. Consider also having verify_gate.py surface parse_table()'s `unparsed` list by name when it is non-empty, instead of only reporting downstream symptoms like a missing epic."
       },
       {
@@ -453,7 +468,7 @@
         "epic_id": "E3",
         "branch": null,
         "pr": null,
-        "state": "completed",
+        "state": "closed",
         "note": "build/SKILL.md's 'After each slice' section (the four numbered steps following the red-green-validate loop) records the score and asks 'Proceed to the next slice, or adjust direction?' but never commits. In practice this produces a spurious 'want to commit this checkpoint first?' prompt after every slice instead of an automatic commit. Change step 2 (or add a step) so that once VALIDATE scores a slice at or above 0.90, the orchestrator commits the slice's changes to git immediately, before asking whether to proceed — no confirmation question for the commit itself, only for what comes after. A score below threshold still routes through the existing gap decision tree in references/validation-scoring.md, and does not commit. Below-threshold slices accepted with reservations after three attempts should also commit, since that path already represents a final accepted state, not a pending one."
       },
       {
@@ -462,7 +477,7 @@
         "epic_id": "E4",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "A colleague's scratch artifact (/private/tmp/.../diagram-viewer.html, session-local, not part of this repo) uses a top-of-panel tab switcher across three views — Diagram, Data flow, Data types — instead of stacking them, plus a right-hand info rail. Evaluate adopting the same top-tab pattern for viewer/index.html's per-PR diagram levels (currently level 1/2/3 switching, per ADR-0020's viewer/src/ plan), and separately evaluate narrowing the left-hand navigation rail so it takes less width once tabs handle top-level switching. This touches only the viewer, so it can run through architect:design on its own without waiting on E1-E3."
       },
       {
@@ -489,7 +504,7 @@
         "epic_id": "E1",
         "branch": "design/cobuilder-memory",
         "pr": 40,
-        "state": "implemented",
+        "state": "open",
         "note": null,
         "design_doc": "cobuilder-memory/E1"
       },
@@ -499,7 +514,7 @@
         "epic_id": "E2",
         "branch": null,
         "pr": null,
-        "state": "backlog",
+        "state": "open",
         "note": null
       },
       {
@@ -508,7 +523,7 @@
         "epic_id": "E3",
         "branch": null,
         "pr": null,
-        "state": "backlog",
+        "state": "open",
         "note": null
       },
       {
@@ -517,7 +532,7 @@
         "epic_id": "E1",
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "Carried from react-viewer E1 unchanged. Must land before any bundled build, or publishing breaks silently. It stays in the narrowed scope because the markers live inside the committed index.html, and E2 changes how that file is produced. This epic is the regression guard on a shipped mode: publishing must keep working while the build underneath it changes."
       },
       {
@@ -526,7 +541,7 @@
         "epic_id": "E2",
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "Carried from react-viewer E2 unchanged. Vite plus vite-plugin-singlefile, a lockfile, and a pinned Node version. Starts with a spike: byte-equal rebuild across two machines, size with React inlined, and whether a Claude Artifact renders a Mermaid block React injects after page load.",
         "design_doc": "cobuilder-viewer/E2"
       },
@@ -536,7 +551,7 @@
         "epic_id": "E3",
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "Carried from react-viewer E3, extended per ADR-0027's answer to Q13. Define the placeholder type and a trivial compile-time exhaustiveness check now, in this epic, not retrofitted when E7 starts."
       },
       {
@@ -554,7 +569,7 @@
         "epic_id": "E5",
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "Carried from react-viewer E4, with one vocabulary change. The level-and-section model replaced the lens model, per ADR-0028: a level is a sequence of sections, one section on screen at a time on a horizontal track, and the box owns the scroll rather than the pane. react-viewer's lens list described navigation rather than content, and it contradicted itself: every place that named the lenses listed six (intent, problem and solution, architecture, risks and verdict, build, pull requests), while three places said seven, including this epic's outcome. No seventh lens was ever named, and nothing renders a lens now. This design's five rows are Intent, Problem & Solution, Architecture, Epics, and Rubrics, and each one states its own sections. The engineer approved the rail's two groups on 2026-09-25. They land with the change's account, and not ahead of it. The criterion that survives from that outcome is the sparse record: a design whose records are goal.json only must render. Seven designs in this repository carry one, and they are the fixture for it. E4's prototype is the reference and the approval gate for this epic, not the uncommitted 2026-09-07 prototype. E4 shipped as a React application under plugins/artifact/viewer/src/variations/sections-e/, not as the static HTML file round 2's note asked for. The engineer decided where the content of the two removed rows goes, on 2026-09-25. The envisioned pull request lives on the program's Intent row, beside the change that opened. It is this design's own draft of the pull request it will open. This work's own pull-request list stays unbuilt, because the Epics row already carries each epic, its state, and its pull request. A second enumeration would state the same facts twice, so that is the reason and not an omission. The open set stays deferred with the multi-pull-request epics, E11 to E13, where it already lives. The release status stays out of the build, and the prototype alone keeps it. The engineer said the build should not carry it yet, no slice owns it, and nothing schedules it.",
         "design_doc": "cobuilder-viewer/E5"
       },
@@ -564,7 +579,7 @@
         "epic_id": "E6",
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "New in round 2, at the engineer's direction. review-flight-deck's own flightdeck-prototype.html and flightdeck-hindsight-fork.html prototyped multi-pull-request mode in detail against real data, and this epic reuses both rather than rebuilding either half. The engineer read the prototype again on 2026-09-25, as one work item read through two accounts. That reading fixed the shape this epic exists for. The rail groups its rows under Build and Review, and a press crosses between the accounts on a section of the same name. The account mark is a word and a glyph with no fill. The engineer removed the third group, Deploy, and the mode switch with it. The prototype is a React variation under plugins/artifact/viewer/src/variations/flightdeck/, served at its own dev entry, and not the static HTML file round 2's note named. E5's note records the four content decisions that removal raised. One of the four falls here: the release status stays out of the build and in this epic's prototype alone. No slice owns it, and nothing schedules it."
       },
       {
@@ -573,7 +588,7 @@
         "epic_id": "E7",
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "Carried from react-viewer E5, renamed from 'Flight deck' to FlightDeck's single-pull-request mode, and re-cut on 2026-09-25 into the change's account. A work item and the pull request its own epics carry are two accounts of one surface: E5 renders the program's account, and this epic renders the change's, which the rail reaches under its Review group. Parity covers the four narration levels, diagrams, scene art, narration audio, the diff, and the intent and assessment sheet. The joins rail is gone with the re-cut. The decisions a change landed read in its own Architecture row. The epics that carry it read in the Build group's Epics and Rubrics rows. Ships before E10, because E10 depends on the typed PullRequest shape this epic exercises first.",
         "design_doc": "cobuilder-viewer/E7"
       },
@@ -583,7 +598,7 @@
         "epic_id": "E8",
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
-        "state": "deferred",
+        "state": "open",
         "note": "New in round 2, at the engineer's direction. Unlike Work and FlightDeck, this surface has no prior prototype. Commits to docs/architecture/designs/cobuilder-viewer/prototypes/reference-prototype.html. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
       },
       {
@@ -592,7 +607,7 @@
         "epic_id": "E9",
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
-        "state": "deferred",
+        "state": "open",
         "note": "Carried from react-viewer E6 unchanged. tests/test_viewer_modes.py asserts the five data-mode buttons. That test changes with this epic, and the change is the point, not a regression. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
       },
       {
@@ -601,7 +616,7 @@
         "epic_id": "E10",
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
-        "state": "deferred",
+        "state": "open",
         "note": "Carried from review-flight-deck F0 unchanged. When this design measured it, 8 of 12 pull requests in this repository carried no intent block. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
       },
       {
@@ -610,7 +625,7 @@
         "epic_id": "E11",
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
-        "state": "deferred",
+        "state": "open",
         "note": "Carried from review-flight-deck F1. This epic also settles the open-pull-request entity question (Q13) for the record index, so no separate inflight-record-store epic duplicates it. The mode reads the auto-merge split from the team's own rules, and this design does not define them. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
       },
       {
@@ -619,7 +634,7 @@
         "epic_id": "E12",
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
-        "state": "deferred",
+        "state": "open",
         "note": "Merges review-flight-deck F2 and F3 into one epic, per ADR-0027's rejection of a live-in-browser or GitHub-Action mechanism. It must classify the three non-authored conflict shapes: a shared generated file, a hot file, and identical content added on both sides. A route that fails the replay stays, and the failure becomes its reason for losing. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
       },
       {
@@ -628,7 +643,7 @@
         "epic_id": "E13",
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
-        "state": "deferred",
+        "state": "open",
         "note": "Merges review-flight-deck F4 and F5. flightdeck-hindsight-fork.html, and E6's composed prototype, are the reference layout. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
       },
       {
@@ -637,7 +652,7 @@
         "epic_id": "E14",
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
-        "state": "deferred",
+        "state": "open",
         "note": "New in this merge, from the challenge gate's adoption of the auditor and 3am-on-call diverge candidates. The proposal line must record the exact ancestor SHA and per-step simulation inputs a later replay needs, which is new schema work neither source design carried. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
       },
       {
@@ -646,7 +661,7 @@
         "epic_id": "E15",
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
-        "state": "deferred",
+        "state": "open",
         "note": "Carried from review-flight-deck F6 unchanged. ADR-0027 records the decision, folding ADR-0026 forward. The first epic in this design that writes to a remote. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
       },
       {
@@ -655,7 +670,7 @@
         "epic_id": "E16",
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
-        "state": "deferred",
+        "state": "open",
         "note": "Carried from react-viewer E7 unchanged. Closes the loop on E1. Measures the real budget with React inlined, and settles the Mermaid question the abort condition names. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
       },
       {
@@ -664,7 +679,7 @@
         "epic_id": "E17",
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
-        "state": "deferred",
+        "state": "open",
         "note": "Carried from react-viewer E8 unchanged. build-workflow-polish stays superseded through this design now, not directly through react-viewer. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
       },
       {
@@ -673,7 +688,7 @@
         "epic_id": "E18",
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
-        "state": "deferred",
+        "state": "open",
         "note": "Carried from react-viewer E9 unchanged. Settles ADR-0019's anchoring under React, which owns the DOM the anchor walk uses. Deferred on 2026-09-22, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. Left the build; not deleted and not renumbered."
       },
       {
@@ -682,7 +697,7 @@
         "epic_id": "E19",
         "branch": "design/cobuilder-viewer/work-prototype",
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "New in round 3, when the engineer narrowed the scope to the Work surface and FlightDeck at parity. The shell had no landing surface before it: a reader arrived on a route that named a work item, and nothing listed the bundle's designs. The board lists them, says what each one holds, and opens one.",
         "design_doc": "cobuilder-viewer/E19"
       },
@@ -721,7 +736,7 @@
         "epic_id": "E1",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "Teach both Builds views the three meanings of a gate state. `is_resolved(state)` in `plugins/artifact/scripts/build_builds_view.py` holds the test, and `current_doc()` receives the document map filtered to the files the plan holds, so a returned document always exists. The static page gains the `na` treatment and stops printing the text `undefined` for a Gate 2b document. The viewer rail gains the `is-na` card class, the `na` pill class, the words \"Not applicable\", and a header count of approved gates. Slices 1 and 2.",
         "design_doc": "gate-state-resolution/E1"
       },
@@ -731,7 +746,7 @@
         "epic_id": "E1",
         "branch": null,
         "pr": null,
-        "state": null,
+        "state": "open",
         "note": null
       },
       {
@@ -740,7 +755,7 @@
         "epic_id": "E2",
         "branch": null,
         "pr": null,
-        "state": null,
+        "state": "open",
         "note": null
       },
       {
@@ -749,7 +764,7 @@
         "epic_id": "E3",
         "branch": null,
         "pr": null,
-        "state": null,
+        "state": "open",
         "note": null
       },
       {
@@ -758,7 +773,7 @@
         "epic_id": "E1",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "The join resolves from a change to the program that produced it, and the resolved path is recorded once. Two paths disagree today. epic_to_pull_request in the record index resolves 32 epics across 6 designs. intent.design is set on 4 of the 17 timeline entries and names 3 designs. plugin-split, design-mode, and cobuilder-implement resolve through an epic, and no timeline entry names them. A check that trusts intent.design alone therefore skips them silently. This epic decides the authoritative path, or the precedence between both, and writes the resolution where the check reads it. It is the tracer bullet: it is useful alone, it needs no change to the program's records, and the rest of the work cannot attach until it exists."
       },
       {
@@ -767,7 +782,7 @@
         "epic_id": "E2",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "A program's target becomes a record a check can cite. Today an epic's promise is prose, because 73 epic entities carry 0 outcome values and 72 note values. The rubrics are worse: 47 rubric files under 6 plan directories are reachable by no entity, and the plan slug is not the design name. The nearest projection is the slice, where 45 of 45 carry an ends_with and a score, and that is the rubric's result rather than its criteria. ADR-0030 leaves three shapes open and gives the choice to this epic. A design can fill epics[].outcome and hold itself to a testable criterion. The index can project each rubric as its own entity. Or the check can adopt the slice's ends_with and score as the target and say so. The last shape is the cheapest and the least faithful, so this epic must record which shape it chose and why."
       },
       {
@@ -776,7 +791,7 @@
         "epic_id": "E3",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "Both agents read the program's records, and the read is recorded. interview-guide.md section 2 already says that a set intent.design makes the design's intent block the hypothesis, and that the five design topics need no re-interview. review-mode.md section 7 already says to measure per epic against that epic's slice of the design. Neither instruction has a consumer, and nothing records that either read happened. This epic attaches the read to both stages: generate mode's pre stage, beside the interview it already runs, and review mode's post stage, beside the drift array it already writes. Each agent reads the design's intent, its problem and its solution, its architecture level, its epic list, and its slice rubrics. It reaches them through E1's resolved join and measures against the epic from E2. The read must survive a sparse program, because 7 of the 15 designs carry a goal.json only, and it must record which of the program's records it found and which it did not."
       },
       {
@@ -785,7 +800,7 @@
         "epic_id": "E4",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "The difference is stated where a reader finds it. The check must reach the output and not only a computed field, and story-mode.md already says the author's account and the code's account can disagree. This epic owns the words and the placement: one entry per difference in the assessment the pull request carries, and the same difference stated in the narrative a reader reads, at the altitude each level already uses. It also owns the single sentence a pull request that belongs to no program writes, because a statement that says nothing must not read as a clean result. review-mode.md section 7 keeps the four existing drift kinds drawn from the pull request's own intent, so this epic adds a separate record rather than a fifth kind, or it says why the array is the right home after all. It also owns the rendered review, so the difference survives into render_review.py's output."
       },
       {
@@ -794,7 +809,7 @@
         "epic_id": "E1",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "Open pull requests become entities. collect_pull_requests() merges gh pr list --state all metadata over the narrated story.json entities. An open pull request gets an entity with state: \"open\" and a narrated: false flag. This removes the placeholder in refine_epic_status(). It reads metadata only, checks out no branch, and creates no conflict. This is the tracer bullet, and it is useful on its own. It does not depend on E2, E3, or E4, and can ship alone."
       },
       {
@@ -803,7 +818,7 @@
         "epic_id": "E2",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "A record store with a merge strategy. One file per record, append-only, with a defined resolution rule for a concurrent write. Modelled on beads. This epic decides the storage shape and nothing else."
       },
       {
@@ -812,7 +827,7 @@
         "epic_id": "E3",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "Cross-branch collection without a conflict. Records written by a session on a branch reach the shared view without any branch writing a shared generated file."
       },
       {
@@ -821,7 +836,7 @@
         "epic_id": "E4",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "The active-work view. The viewer renders in-flight work beside merged history, so a reader sees one timeline rather than two."
       },
       {
@@ -830,7 +845,7 @@
         "epic_id": "E1",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "Vendor the skill into `plugins/implement/skills/design-to-code/` and trim it from five steps to three. Step 1 goes because Gate 1 `01-product.md` already holds the product intent, and Step 4 goes because the slice loop owns code. The four concepts the gate depends on, initial state plus timer arming, transitions on state change, visibility gating, and declared defaults, reach the specification through the rewritten template, the JSONC schema, and the implementation rules. Slices 1 and 2.",
         "design_doc": "interaction-design-gate/E1"
       },
@@ -840,7 +855,7 @@
         "epic_id": "E2",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "Add Gate 2b to the build workflow. A tracked line in `00-status.md` between Gate 2 and Gate 3, a `## Gate 2b` section in `build/SKILL.md`, the `2b` line in the status template, the resume rule that keeps Gate 3 from starting early, and the two consumption rules that let `rubric-authoring.md` and `slice-loop.md` read the artifacts. Slices 3 and 4.",
         "design_doc": "interaction-design-gate/E2"
       },
@@ -850,7 +865,7 @@
         "epic_id": "E3",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "Make the gate mechanical rather than remembered. A `2b` group in `verify_gate.py`, a `2b` label in both gate-line regexes, `GATE_DOCS[\"2b\"]`, an `interaction_design` entity in the index, and the Builds view rail. Three call sites assume the last gate is number 4, so this epic is larger than it looks. It is the epic to cut. Slices 5 to 7.",
         "design_doc": "interaction-design-gate/E3"
       },
@@ -860,7 +875,7 @@
         "epic_id": "E1",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "Decide the replacement shape: the viewer reads a diff by running git diff against the PR's recorded commit SHAs at serve time (view mode already runs from inside the repo), versus keeping diffs-pr{N}.js exactly as it is today but gitignoring it, regenerating it from git on demand the way exports/branch-*/diff.json already works for generate mode. Either removes the committed weight; they differ in whether a served bundle still needs a live git checkout next to it. Update 2026-10-13: the user directed the gitignore half of the second shape as a packaging fix for the Claude Plugin directory's 5 MiB per-file cap. The committed diffs-pr{N}.js files are gone, and .gitignore holds the pattern. The serve-time question stays open: extract_diffs.py still rewrites data/manifest.js together with its files, so a future pr:baseline can name a new PR in diff_prs while git does not carry its file. Settle this epic before the next pr:baseline lands a diff_prs entry."
       },
       {
@@ -878,7 +893,7 @@
         "epic_id": "E3",
         "branch": null,
         "pr": null,
-        "state": "completed",
+        "state": "closed",
         "note": "Migrate the existing committed bundles (self, and the two fixture bundles) so history stops growing: remove the checked-in diffs-pr{N}.js files, or move them under .gitignore, per E1's decision. This does not touch story.json's authored fields, so it is a bundle-file change, not a schema migration. Update 2026-10-13: done for the self bundle, under the user's direction, to pass the plugin directory's 5 MiB cap. The ten diffs-pr{N}.js files are removed and .gitignore carries .cobuilder-architect/self/data/diffs-pr*.js. The two fixture bundles keep their diff files (0.4 MB and 1.3 MB, under the cap), because fixtures are committed test data. Story.json holds no diff fields, so no migration ran."
       },
       {
@@ -887,7 +902,7 @@
         "epic_id": "E1",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "The build exists and is guarded. build_viewer.py concatenates ordered parts under viewer/src/ into the committed viewer/index.html, and a test rebuilds from the parts and fails on any difference. The first split is mechanical only, cut at the file's own 35 banner comments, with no line rewritten. This epic is the tracer bullet: it proves or disproves that the single IIFE separates by concatenation alone, which is the abort condition the whole design rests on."
       },
       {
@@ -896,7 +911,7 @@
         "epic_id": "E2",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "The exporter seam becomes declared. export_artifact.py stops matching incidental literals and matches named markers the parts emit deliberately. Today it hard-errors with not-found-verbatim when a literal moves, so the publish pipeline breaks silently under any refactor until somebody publishes. This must land before the parts are rewritten, not after, or every later epic risks breaking publishing without a test noticing."
       },
       {
@@ -905,7 +920,7 @@
         "epic_id": "E3",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "One definition per fragment. A template layer replaces the 45 innerHTML string blocks, and the rail-item, empty-card, and empty-detail fragments collapse from 4, 16, and 18 copies to one each. The viewer uses no template element today, so the mechanism is a design choice this epic makes and does not inherit."
       },
       {
@@ -914,7 +929,7 @@
         "epic_id": "E4",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "Each mode owns its own part. The five view modes stop interleaving: the 50 scattered mode-predicate calls collapse into one registry, and renderContextsMainContent, renderBuildsMainContent, and renderMainContent stop being three functions of over 200 lines that live beside each other. Adding a sixth mode becomes one new part plus one registry entry."
       },
       {
@@ -923,7 +938,7 @@
         "epic_id": "E1",
         "branch": "design/nexus-borrowings/runtime-arch-diagram",
         "pr": null,
-        "state": "implemented",
+        "state": "open",
         "note": "All eight slices built in one pass on design/nexus-borrowings/runtime-arch-diagram (2026-10-01): contract, validator, build_index projections, viewer tile + contracts section, stage-6 spawn, contracts artifact, vocabulary bootstrap + mode surfaces, implement guards + bumps. Behavioral rubrics score on the first real design runs.",
         "design_doc": "nexus-borrowings/E1"
       },
@@ -933,7 +948,7 @@
         "epic_id": "E2",
         "branch": "design/nexus-borrowings/runtime-arch-diagram",
         "pr": null,
-        "state": "implemented",
+        "state": "open",
         "note": "All eight slices built in one pass on design/nexus-borrowings/runtime-arch-diagram (2026-10-01): contract, validator, build_index projections, viewer tile + contracts section, stage-6 spawn, contracts artifact, vocabulary bootstrap + mode surfaces, implement guards + bumps. Behavioral rubrics score on the first real design runs.",
         "design_doc": "nexus-borrowings/E2"
       },
@@ -943,7 +958,7 @@
         "epic_id": "E3",
         "branch": "design/nexus-borrowings/runtime-arch-diagram",
         "pr": null,
-        "state": "implemented",
+        "state": "open",
         "note": "All eight slices built in one pass on design/nexus-borrowings/runtime-arch-diagram (2026-10-01): contract, validator, build_index projections, viewer tile + contracts section, stage-6 spawn, contracts artifact, vocabulary bootstrap + mode surfaces, implement guards + bumps. Behavioral rubrics score on the first real design runs.",
         "design_doc": "nexus-borrowings/E3"
       },
@@ -953,7 +968,7 @@
         "epic_id": "E4",
         "branch": "design/nexus-borrowings/runtime-arch-diagram",
         "pr": null,
-        "state": "implemented",
+        "state": "open",
         "note": "All eight slices built in one pass on design/nexus-borrowings/runtime-arch-diagram (2026-10-01): contract, validator, build_index projections, viewer tile + contracts section, stage-6 spawn, contracts artifact, vocabulary bootstrap + mode surfaces, implement guards + bumps. Behavioral rubrics score on the first real design runs.",
         "design_doc": "nexus-borrowings/E4"
       },
@@ -963,7 +978,7 @@
         "epic_id": "E1",
         "branch": "design/options-mode",
         "pr": null,
-        "state": "implemented",
+        "state": "open",
         "note": "One epic. Four slices: the mode and its command, the report template and validator, the manifests and glossary and counts, and one real run of the mode.",
         "design_doc": "options-mode/E1"
       },
@@ -1032,7 +1047,7 @@
         "epic_id": "E7",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "Threads read as conversations. The drawer renders a reply under the comment it answers. Deferred past E6 on purpose: E6 ships the record shape, so this epic adds no migration and carries no slice yet."
       },
       {
@@ -1041,7 +1056,7 @@
         "epic_id": "E8",
         "branch": "rename-plugins-drop-cobuilder-prefix",
         "pr": 17,
-        "state": "merged",
+        "state": "closed",
         "note": "The cobuilder- prefix drops from the four non-umbrella plugins named in E1's table (cobuilder-architect, cobuilder-pr, cobuilder-artifact, cobuilder-implement become architect, pr, artifact, implement), since it duplicates the marketplace repo's own name. cobuilder-full-lifecycle keeps its prefix, being the umbrella the repo's own name already carries. Merged as PR #17, then a same-epic follow-up (uncommitted at the time this entry was written) fixes a second-order bug the rename introduced: two of the four renamed plugins (implement, artifact) already shipped a skill folder named after themselves, and once the plugin took that same name too, Skill() resolution inside Claude Code broke -- reproduced directly, not environment-specific. Fixed by renaming the colliding skill folders (implement's skill to build, its command to start; artifact's skill to cobuilder-artifacts) and, for consistency, cobuilder-full-lifecycle's orientation skill to cobuilder-full. See ADR-0016's addendum."
       },
       {
@@ -1050,7 +1065,7 @@
         "epic_id": "E1",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "The exporter rewrites the viewer by verbatim string replacement today and hard-errors when a literal moves. A bundled build moves every literal, so this seam must become explicit before any build lands."
       },
       {
@@ -1059,7 +1074,7 @@
         "epic_id": "E2",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "Vite plus vite-plugin-singlefile, a lockfile, and a pinned Node version. This epic starts with a spike, at the engineer's direction: publish one throwaway bundled page and measure the byte-equal rebuild across two machines, the size with React inlined, and whether a Claude Artifact renders a Mermaid block that React injects after page load. Two of the three abort conditions are settled by that spike, before five epics of work depend on the answer."
       },
       {
@@ -1068,7 +1083,7 @@
         "epic_id": "E3",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "The viewer resolves joins by hand in each render path today. index.json already computed them. This epic makes the index the source and the types the contract."
       },
       {
@@ -1077,7 +1092,7 @@
         "epic_id": "E4",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "The prototype of 2026-09-07 is the reference for this surface."
       },
       {
@@ -1086,7 +1101,7 @@
         "epic_id": "E5",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "Parity covers the four levels, diagrams, scene art, narration audio, the diff, and the intent and assessment sheet."
       },
       {
@@ -1095,7 +1110,7 @@
         "epic_id": "E6",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "tests/test_viewer_modes.py asserts the five data-mode buttons. That test changes with this epic, and the change is the point, not a regression."
       },
       {
@@ -1104,7 +1119,7 @@
         "epic_id": "E7",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "Closes the loop on E1. Measures the real budget with React inlined, and settles the Mermaid question the third abort condition names."
       },
       {
@@ -1113,7 +1128,7 @@
         "epic_id": "E8",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "build-workflow-polish is superseded by this design at the engineer's direction. Its E4, the tab-based viewer layout, is absorbed by E4 and E5 here. Its other three epics are not viewer work and would be lost silently: E1 adds the pointer from design mode stage 7 to /implement:start, E2 states the six-column slice-table shape that shared/slice_table.py parses, and E3 commits an accepted slice without a second prompt. They are carried here so the supersede is safe."
       },
       {
@@ -1122,7 +1137,7 @@
         "epic_id": "E9",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "The comment mechanism does not work today, and the engineer confirmed it on 2026-09-07. Three causes, all verified in the tree. First, LEDGER_AVAILABLE at viewer/index.html line 1399 tests only whether fetch exists in the browser, which is always true, so it never tells a reviewer that no ledger server is listening. Second, a failed POST falls back to localStorage and shows 'Will sync when server is reachable', although nothing syncs: no code reads that key back. Third, a published Artifact cannot reach any server, because the Artifact CSP blocks fetch, so every comment left where review actually happens is written to one browser's localStorage and lost. This epic also settles ADR-0019's anchoring under React, which owns the DOM the anchor walk uses. The transport is decided: the served viewer keeps POST /feedback under --allow-write, and the published Artifact marks comments read-only and exports them for paste-back through the copy-as-markdown path that already exists. The Artifact platform's own storage is rejected, because it would make the published page behave differently from the served one, which is the split ADR-0001 exists to prevent."
       },
       {
@@ -1131,7 +1146,7 @@
         "epic_id": "F0",
         "branch": "design/review-flight-deck",
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "New in round 4. It closes the gap the prototype had to show as a warning: 8 of 12 pull requests in this repository carry no intent block. Reuses generate mode whole, and adds only the check for an existing description."
       },
       {
@@ -1140,7 +1155,7 @@
         "epic_id": "F1",
         "branch": "design/review-flight-deck",
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "The same work as the first epic of the inflight-record-store design. Build it once, in shared code. The auto-merge split is read from the team's own rules, and this design does not define them."
       },
       {
@@ -1149,7 +1164,7 @@
         "epic_id": "F2",
         "branch": "design/review-flight-deck",
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "divergent-exploration.md already generates competing options in isolation and criticises them in a separate pass. The baseline is load-bearing: simulating against the default branch inverts the order whenever an open pull request restructures the tree."
       },
       {
@@ -1158,7 +1173,7 @@
         "epic_id": "F3",
         "branch": "design/review-flight-deck",
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "New in round 4, and the step that makes the recommendation something to stand behind. Read-only against a scratch worktree. A route that fails the replay is kept, with the failure as its reason for losing. Systems that precompute mergeable slices may already do this part, so keep the interface narrow enough to swap one in. It must also classify what it cannot merge. A superseded branch and an unresolvable conflict are different findings and get different treatments in the layout."
       },
       {
@@ -1167,7 +1182,7 @@
         "epic_id": "F4",
         "branch": "design/review-flight-deck",
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "Round 5 fixed the register. State the outcome first, then the contributions, and never lead with the mechanics. The engineer's worked example: perform the renames and restructuring across the repository, which merges without conflict, then incorporate the new viewer into the resulting structure and naming conventions."
       },
       {
@@ -1176,7 +1191,7 @@
         "epic_id": "F5",
         "branch": "design/review-flight-deck",
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "Reuses the existing view modes, the level rail, and the ledger from ADR-0019. flightdeck-prototype.html is the reference layout."
       },
       {
@@ -1185,7 +1200,7 @@
         "epic_id": "F6",
         "branch": "design/review-flight-deck",
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "New in round 6, and the first epic in this design that writes to a remote. ADR-0026 records the decision. The integration branch per bundle is what makes a path abandonable: delete N branches and the default branch never saw any of it. The default branch receives one pull request, from the last bundle's branch."
       },
       {
@@ -1194,7 +1209,7 @@
         "epic_id": "E1",
         "branch": "design/review-link/E1",
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "A viewer link for each document under review. Slice 1 adds review_link.py and a --route argument to View mode. Slice 2 projects the Gate 1 and Gate 2 documents and adds the plan page under the Build level. Slice 3 adds the Present for review procedure to every presentation point, and the link check to verify_gate.py.",
         "design_doc": "review-link/E1"
       },
@@ -1204,7 +1219,7 @@
         "epic_id": "E1",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "ADR-0025 narrows the install-surface rule so implement may ship agents and hooks. Slice 1."
       },
       {
@@ -1213,7 +1228,7 @@
         "epic_id": "E2",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "RED, GREEN, and VALIDATE as plugin agents, spawned by name. Slices 2 and 3.",
         "design_doc": "slice-agents-and-vocabulary/E2"
       },
@@ -1223,7 +1238,7 @@
         "epic_id": "E3",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "A required PostToolUse hook runs habit-hooks for GREEN only, with credit to habit-hooks. Slices 4 and 5.",
         "design_doc": "slice-agents-and-vocabulary/E3"
       },
@@ -1233,7 +1248,7 @@
         "epic_id": "E4",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "DDD-VOCABULARY.md, the vocabulary agent, design mode read and write, and the CLAUDE.md table move. Slices 6 to 8.",
         "design_doc": "slice-agents-and-vocabulary/E4"
       },
@@ -1243,7 +1258,7 @@
         "epic_id": "E1",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "One language record, and it is the tracer bullet. docs/architecture/language.md becomes the single source of truth for a term, its owning context, its meaning, and what it must not be confused with. It is seeded from CLAUDE.md's existing Vocabulary table and from cobuilder-packaging's canvas section 3. shared/build_index.py projects it into the record index, so the viewer can render it. This epic is independently shippable and does not depend on E2 through E5."
       },
       {
@@ -1252,7 +1267,7 @@
         "epic_id": "E2",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "Design mode gains a language stage. A design that introduces a new term must declare it or reuse an existing entry from the language record. A collision with an existing term becomes a challenge-stage finding. This fits design mode's existing no-citation-no-challenge rule, because the language record gives the challenge stage something concrete to cite."
       },
       {
@@ -1261,7 +1276,7 @@
         "epic_id": "E3",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "The mechanical consumer, in cobuilder-implement. A Gate 4b technical solution design that names a concept absent from the language record fails the gate. This epic is what stops the whole program from rotting the way canvas section 3 did. E1 and E2 without E3 are documentation waiting to go stale."
       },
       {
@@ -1270,7 +1285,7 @@
         "epic_id": "E4",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "A verifier that exits non-zero. A script finds a term used in a design or an ADR and absent from the language record, and fails the check. It is modeled on plugins/cobuilder-implement/scripts/verify_gate.py, which exits non-zero on any failed Gate 4 sub-step. The honest open question is that deciding what counts as a term mechanically, rather than by judgement, is the hard part of this epic and may need its own exploration."
       },
       {
@@ -1279,7 +1294,7 @@
         "epic_id": "E5",
         "branch": null,
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "Repair the existing drift. Refresh cobuilder-packaging's canvas section 3 and its boundary.yaml public_interface against the shipped five-plugin tree, delete the now-false homonym comment, and reconcile the two glossaries into E1's record."
       },
       {
@@ -1288,7 +1303,7 @@
         "epic_id": "E1",
         "branch": "design/work-drawer",
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "One pull request. The engineer chose one pull request for the design, so the epic carries the branch alone. The prototypes stay under src/variations/ as the reference arrangement while the drawer is the prototype surface; the port that replaces shell/Board.tsx's full-page board is this design's next epic and is deliberately not in this one, so the shipped board never regresses while the drawer is under review."
       },
       {
@@ -1297,7 +1312,7 @@
         "epic_id": "E2",
         "branch": "design/work-drawer",
         "pr": null,
-        "state": "planned",
+        "state": "open",
         "note": "The second epic of the same pull request: the renames, the header's counts, and the chip walk."
       }
     ],
@@ -3042,9 +3057,9 @@
         "n": 18,
         "title": "**Spike: claim flags, exit codes, lease expiry**",
         "ends_with": "The beads notes list each flag set, exit code, and lease result, with the command that produced it.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "beads-storage/19",
@@ -3052,9 +3067,9 @@
         "n": 19,
         "title": "**Atomic claim**",
         "ends_with": "Contract case 3 passes on beads with one write, and eight concurrent claims give one winner.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "beads-storage/20",
@@ -3062,9 +3077,9 @@
         "n": 20,
         "title": "**Native ready, with parity**",
         "ends_with": "Ready parity holds for each kind on the recorded corpus, and contract cases 1 and 2 pass on beads.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "0.92",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "beads-storage/21",
@@ -3072,9 +3087,9 @@
         "n": 21,
         "title": "**Pull request gate**",
         "ends_with": "The gate resolves when the pull request merges, and the slice 15 test stays green.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "beads-storage/22",
@@ -3082,9 +3097,9 @@
         "n": 22,
         "title": "**Slice-loop formula**",
         "ends_with": "The formula cooks and pours, a failed attempt adds a wisp, and squash with `--keep-children` keeps the attempt history.",
-        "score": "—",
-        "attempts": 0,
-        "state": "planned"
+        "score": "1.00",
+        "attempts": 1,
+        "state": "completed"
       },
       {
         "id": "coach-reaches-green/1",
@@ -4526,9 +4541,18 @@
         "epic_id": "E5",
         "feature_slug": "beads-storage",
         "title": "Epic Technical Solution Design: E5, Beads-native features",
-        "body_md": "# Epic Technical Solution Design: E5, Beads-native features\n\nFeature: beads-storage\nEpic ID: E5\nStatus: proposed. The slices below are not in `04-slices.md`. The engineer decides first.\n\n## Proposal for engineer review\n\nThe engineer removes this section after the decision. The decisions then move into the sections below.\n\n### Goal\n\nUse four Beads features that the E2 adapter does not use yet. The features are atomic claim, native ready, a gate for the pull request merge, and formulas for the slice loop. Each feature needs a check before its flag changes.\n\n### Options\n\n| Option | What it changes | Evidence | Cost |\n|---|---|---|---|\n| A. Adopt the native features in four slices (E5-1 to E5-4) | Sets `atomic_claim` true with `bd update --claim --if-assignee`. Sets `native_ready` true only after a parity check. Adds a `gh:pr` gate that mirrors the pull request block. | Scratch runs: 8 concurrent claims gave one winner. | Four slices. Touches the E2 adapter and its tests. |\n| B. Add a slice-loop formula (E5-5) | Red, green, and validate become formula steps. Each failed attempt becomes a wisp. Squash makes the digest on the slice. | Scratch runs: formulas cook and pour. `close --continue` claims the next step. | One slice. Adds a TOML file and one pointer in E4 slice 13. Squash needs an explicit flag. |\n| C. Keep the E2 adapter as it is | No change. The claim keeps the read-back that E2 adds. `native_ready` stays false. | The current contract passes on beads. | No cost. The claim race window stays open until the read-back lands. |\n\n### Recommendation\n\nDecided by the engineer: do both Option A and Option B. Run E5-1 first, because its spike answers the questions that E5-2 to E5-4 need. E5-5 follows after E5-1 to E5-4 close, because it uses the claim and gate results. E5-5 is no longer optional.\n\n### What to drop\n\n- Nothing in E5-5 drops by default. If squash needs a custom digest, the engineer decides in E5-1 how to keep the attempt history.\n- The `native_ready` change in E5-3. Keep the flag false. The adapter then computes ready, as E1 does. Drop the change if the parity check finds a difference that Beads cannot close.\n- The gate mirror in E5-4. The pull request blocker in ADR-0040 already holds the epics. Drop the gate if it only repeats the blocker.\n\n## Scope and Intent\n\nE5 changes the beads adapter so that it uses four Beads features. The change touches the adapter, its tests, and its notes. The port contract, the CLI, and the skills keep the shape that E4 leaves. E5 adds no subcommand to `shared/tracker.py`.\n\nOut of scope: the Linear and Jira adapters and the viewer. Also out of scope: changes to the port contract in ADR-0040 and to the beads mapping in ADR-0031.\n\nE5 starts after E4 closes. E4 slice 17 is the last program slice. E5-5 changes a file that E4 slice 13 creates or edits, so E5 must wait for E4.\n\nVerified facts. These come from scratch experiments on bd 1.3.0 in this design session. They are not in the test suite.\n\n- Eight concurrent `bd update --claim` calls gave one winner.\n- `bd update --claim --if-assignee <login>` exits 13 when the assignee differs.\n- bd has no `bd claim` command.\n- `bd ready --mol` lists the molecule root. The adapter must filter that root out.\n- The squash command deletes open wisp children by default. Do not rely on the default. Pass `--keep-children`, or write a custom digest.\n- Formulas written in TOML cook to protos and pour to molecules.\n- `bd close --continue` claims the next step.\n- Federation works to a bare Dolt remote once one branch exists on it.\n\nNot verified: lease expiry, timer gates, merge slots, and federation conflicts. E5-1 tests lease expiry. The other three stay out of E5.\n\n## Files Touched\n\nNew files:\n\n- `tests/test_tracker_beads_claim.py`. The claim race and stale claim cases (E5-2).\n- `tests/test_tracker_beads_ready.py`. The ready parity cases (E5-3).\n- `tests/test_tracker_beads_gate.py`. The pull request gate case (E5-4).\n- `shared/tracker_port/formulas/slice-loop.toml`. The formula (E5-5).\n- `tests/test_tracker_beads_formula.py`. The cook, pour, and squash cases (E5-5).\n- `tests/fixtures/tracker/beads/transcripts/*.json`. One recorded transcript for each new `bd` case. E2 owns the folder. E5 adds files only, and it changes no existing transcript.\n\nModified files:\n\n- `shared/tracker_port/beads.py` (E2). Sets the flag values, and adds the claim, ready, and gate paths. E5-2, E5-3, and E5-4 edit it.\n- `shared/tracker_port/bd_runner.py` (E2). Remains the only subprocess call to `bd`. Adds the argument builders for the claim, ready, and gate calls (E5-2, E5-3, E5-4).\n- `shared/tracker-adapter-beads.md` (E2). Records the claim flags, the exit codes, the ready rule, the gate, and the spike results (E5-1 to E5-5).\n- `tests/test_tracker_beads.py` (E2). Adds one claim case (E5-2) and one gate case (E5-4). It changes no other case.\n- `plugins/implement/skills/build/references/slice-loop.md` (E4 slice 13). Adds one pointer to the formula (E5-5 only).\n\nNot touched:\n\n- `shared/tracker_port/record.py`, `port.py`, `projector.py`, `fake.py`, and `files.py` (E1). The record shape and the port contract stay the same.\n- `shared/tracker.py` (E1). No new subcommand.\n- `shared/tracker-usage.md` (E1). The moment table keeps its rows.\n- `tests/test_tracker_contract.py` (E1). Its seven cases run on beads without change.\n- `docs/architecture/adr/ADR-0031-*.md` and `ADR-0040-*.md`. An amendment is a separate decision.\n\n## Types & Signatures\n\nE5 adds no public name. The port contract in ADR-0040 and in E1 stays fixed. E5 sets the four values of `Capabilities` in the beads adapter only. E5 adds these private helpers to `bd_runner.py`. E5-1 confirms the exact flag set before E5-2 writes the first helper.\n\n```python\ndef claim_argv(issue_id: str, claimant: str, expected: str | None) -> list[str]: ...\ndef ready_argv(under: str | None) -> list[str]: ...\ndef gate_resolve_argv(gate_id: str) -> list[str]: ...\n```\n\n## Slice Decomposition\n\nThe numbers E5-1 to E5-5 are local to this epic. The engineer assigns the global numbers when the rows move to `04-slices.md`.\n\n| Slice | Name | Depends on | Files | Ends with |\n|---|---|---|---|---|\n| E5-1 | Spike: claim flags, exit codes, lease expiry | E4 slice 17 | `shared/tracker-adapter-beads.md`, transcripts | Notes list each flag set, exit code, and lease result, with the command that produced it |\n| E5-2 | Atomic claim | E5-1 | `beads.py`, `bd_runner.py`, `test_tracker_beads_claim.py`, `test_tracker_beads.py` | Contract case 3 passes on beads with one write. Eight concurrent claims give one winner |\n| E5-3 | Native ready, with parity | E5-1 | `beads.py`, `bd_runner.py`, `test_tracker_beads_ready.py` | Ready parity holds for each kind on the recorded corpus, and contract cases 1 and 2 pass on beads |\n| E5-4 | Pull request gate | E5-3 | `beads.py`, `bd_runner.py`, `test_tracker_beads_gate.py`, `test_tracker_beads.py` | The gate resolves when the pull request merges, and the E4 slice 15 test stays green |\n| E5-5 | Slice-loop formula | E5-4, and E4 slice 13 | formula TOML, `test_tracker_beads_formula.py`, `slice-loop.md` | The formula cooks and pours. A failed attempt adds a wisp. Squash with `--keep-children` keeps the attempt history |\n\n### Slice E5-1: spike, claim flags, exit codes, lease expiry\n\nInput: a scratch beads workspace built from the E1 corpus, with no change to the repo.\n\nAssertions: run the claim with and without `--if-assignee`, record the exit code of each case, and record the output of a claim whose lease expires. Save each run as a transcript.\n\nPass conditions: the notes in `shared/tracker-adapter-beads.md` list every run, and each result states pass or fail. No flag in the adapter changes in this slice.\n\n### Slice E5-2: atomic claim\n\nInput: the claim argument builder and the E1 contract case 3.\n\nAssertions: a claim writes once and stores the claimant. With a different expected assignee, the claim writes nothing, and the adapter reports the conflict as an adapter error (exit 3). The contract case passes with the write-once path.\n\nPass conditions: the race test shows one winner among eight concurrent claims. The test skips with a reason when `bd` is absent. `Capabilities.atomic_claim` is true for beads only after this slice passes.\n\n### Slice E5-3: native ready, with parity\n\nInput: the ready argument builder and the recorded transcripts of `bd ready` for each kind.\n\nAssertions: the adapter drops the molecule root from the candidates. It applies the pull request rule and the deferred epic rule that bd does not know. Its result equals the E1 result for `program`, `epic`, and `slice`, and for one case with `under`.\n\nPass conditions: the parity test passes on the recorded transcripts. `Capabilities.native_ready` is true for beads only when this holds. If the parity check fails, the flag stays false, and the notes record the difference.\n\n### Slice E5-4: pull request gate\n\nInput: the pull request record and its two blocked epics, as in E4 slice 15 (`tests/test_pr_tracker_state.py`).\n\nAssertions: `open_pull_request` adds a `gh:pr` gate to each blocked epic. The gate stores the pull request number. `set_pull_request_state(ref, merged)` resolves the gate through `gate_resolve_argv`.\n\nPass conditions: the gate case passes. The E4 slice 15 test passes without change. A gate that has no stored number stays pending, and the test shows it.\n\n### Slice E5-5: slice-loop formula\n\nInput: the E4 slice 13 procedure in `slice-loop.md`, and the formula TOML.\n\nAssertions: the formula holds the red, green, and validate steps. A failed attempt adds a wisp to the slice. The squash that ends the slice passes `--keep-children`.\n\nPass conditions: the formula cooks and pours in a scratch workspace. The squash keeps the attempt wisps. `slice-loop.md` gains one pointer to the formula and no copy of its steps.\n\n## Test Plan\n\n- E5-1: no suite test. The evidence is the transcripts and the notes.\n- E5-2: the E1 contract cases 1 to 7 run on beads. The race test and the stale claim test are new. Both skip without `bd`.\n- E5-3: the parity test reads the recorded transcripts under `tests/fixtures/tracker/beads/transcripts/`. It needs no live `bd`. The live check skips without `bd`.\n- E5-4: the gate test reads a recorded transcript. The E4 slice 15 test runs unchanged.\n- E5-5: the formula test runs in a scratch workspace. It skips without `bd`.\n- Each slice runs its own test file. The main session runs `uv run pytest tests -q` once, after all edits.\n\n## Risks & Open Questions\n\n1. **Lease expiry has no test.** E5-1 tests it. If an expired lease releases an active claim, E5-2 needs a lease guard. The engineer confirms the guard before E5-2 starts.\n2. **A hybrid ready may not count as native.** E5-3 uses `bd ready` and then applies two adapter rules. The engineer decides if that counts as `native_ready`. If not, the flag stays false.\n3. **The gate may repeat the pull request blocker.** ADR-0040 already blocks the epics through the pull request record. The engineer picks one mechanism. The default keeps the blocker and adds the gate as a mirror.\n4. **Squash deletes open wisp children by default.** E5-5 passes `--keep-children`. The flag must exist in bd 1.3.0. E5-5 confirms this before it relies on the flag.\n5. **The stale claim has no exit code in the contract.** The default is exit 3. A new code would need a change to the `tracker.py` reference, so the engineer decides.\n6. **E5-5 changes an E4 file.** E5 waits for E4, so the pointer in `slice-loop.md` lands on the final E4 text. The engineer confirms that E4 leaves a stable place for the pointer.\n7. **Federation conflicts have no test.** E5 does not change federation. The gap stays in the adapter notes.\n8. **Beads features may change in later releases.** The notes pin bd 1.3.0. A later release needs a new spike before any flag changes.\n",
+        "body_md": "# Epic Technical Solution Design: E5, Beads-native features\n\nFeature: beads-storage\nEpic ID: E5\nStatus: built. E5-1 to E5-5 are done. The decisions and results are in the next section.\n\n## Decisions and results\n\n- Options A and B are adopted. Option C is not used.\n- The spike corrected an earlier note. `bd update --claim` cannot combine with `--if-assignee`. bd exits 1, not 13. Exit 13 comes only from a guarded plain update. The claim is `bd update <id> --claim --actor <claimant>`, with no `--if-assignee`.\n- A lease lasts 5 minutes. An expired lease alone does not free a claim. Only `bd reclaim` frees it. The adapter needs no lease guard.\n- `native_ready` stays false. The parity check fails in bd 1.3.0: `bd ready` misses the children of a blocked parent, and it lists the pull request task and the deferred epic. The adapter keeps computing ready. There is no `ready_argv` and no hybrid. The parity evidence is in the transcripts, `tests/test_tracker_beads_ready.py`, and the adapter notes.\n- The gate is a mirror that stays beside the pull request blocker. The adapter handles the gate read hazard: `bd list` hides gate rows, and a read skips a `blocks` dependency whose target bd did not list.\n- The formula is built. Squash needs `--keep-children` to keep the attempt wisps.\n\n## Proposal for engineer review\n\nThis section holds the proposal as the engineer reviewed it. The section above holds the decisions and results. Where the two differ, the section above is correct.\n\n### Goal\n\nUse four Beads features that the E2 adapter does not use yet. The features are atomic claim, native ready, a gate for the pull request merge, and formulas for the slice loop. Each feature needs a check before its flag changes.\n\n### Options\n\n| Option | What it changes | Evidence | Cost |\n|---|---|---|---|\n| A. Adopt the native features in four slices (E5-1 to E5-4) | Sets `atomic_claim` true with `bd update --claim --if-assignee`. Sets `native_ready` true only after a parity check. Adds a `gh:pr` gate that mirrors the pull request block. | Scratch runs: 8 concurrent claims gave one winner. | Four slices. Touches the E2 adapter and its tests. |\n| B. Add a slice-loop formula (E5-5) | Red, green, and validate become formula steps. Each failed attempt becomes a wisp. Squash makes the digest on the slice. | Scratch runs: formulas cook and pour. `close --continue` claims the next step. | One slice. Adds a TOML file and one pointer in E4 slice 13. Squash needs an explicit flag. |\n| C. Keep the E2 adapter as it is | No change. The claim keeps the read-back that E2 adds. `native_ready` stays false. | The current contract passes on beads. | No cost. The claim race window stays open until the read-back lands. |\n\n### Recommendation\n\nDecided by the engineer: do both Option A and Option B. Run E5-1 first, because its spike answers the questions that E5-2 to E5-4 need. E5-5 follows after E5-1 to E5-4 close, because it uses the claim and gate results. E5-5 is no longer optional.\n\n### What to drop\n\n- Nothing in E5-5 drops by default. If squash needs a custom digest, the engineer decides in E5-1 how to keep the attempt history.\n- The `native_ready` change in E5-3. Keep the flag false. The adapter then computes ready, as E1 does. Drop the change if the parity check finds a difference that Beads cannot close.\n- The gate mirror in E5-4. The pull request blocker in ADR-0040 already holds the epics. Drop the gate if it only repeats the blocker.\n\n## Scope and Intent\n\nE5 changes the beads adapter so that it uses four Beads features. The change touches the adapter, its tests, and its notes. The port contract, the CLI, and the skills keep the shape that E4 leaves. E5 adds no subcommand to `shared/tracker.py`.\n\nOut of scope: the Linear and Jira adapters and the viewer. Also out of scope: changes to the port contract in ADR-0040 and to the beads mapping in ADR-0031.\n\nE5 starts after E4 closes. E4 slice 17 is the last program slice. E5-5 changes a file that E4 slice 13 creates or edits, so E5 must wait for E4.\n\nVerified facts. These come from scratch experiments on bd 1.3.0 in this design session. They are not in the test suite.\n\n- Eight concurrent `bd update --claim` calls gave one winner.\n- `bd update --claim --if-assignee <login>` does not work. bd refuses the two flags together and exits 1. Exit 13 comes only from a guarded plain update, such as `--status in_progress --assignee <login> --if-assignee <login>`.\n- bd has no `bd claim` command.\n- `bd ready --mol` lists the molecule root. The adapter must filter that root out.\n- The squash command deletes open wisp children by default. Do not rely on the default. Pass `--keep-children`, or write a custom digest.\n- Formulas written in TOML cook to protos and pour to molecules.\n- `bd close --continue` claims the next step.\n- Federation works to a bare Dolt remote once one branch exists on it.\n\nNot verified: lease expiry, timer gates, merge slots, and federation conflicts. E5-1 tests lease expiry. The other three stay out of E5.\n\n## Files Touched\n\nNew files:\n\n- `tests/test_tracker_beads_atomic_claim.py`, `tests/test_tracker_beads_claim_real.py` (slow), and `tests/test_tracker_beads_claim.py`. The claim argv, the held claim, and the eight-claim race (E5-2). The slow file needs `-m ''` to run.\n- `tests/test_tracker_beads_ready.py`. The ready parity cases (E5-3).\n- `tests/test_tracker_beads_gate.py`. The pull request gate case (E5-4).\n- `shared/tracker_port/formulas/slice-loop.toml`. The formula (E5-5).\n- `tests/test_tracker_beads_formula.py`. The cook, pour, and squash cases (E5-5).\n- `tests/fixtures/tracker/beads/transcripts/*.json`. One recorded transcript for each new `bd` case. E2 owns the folder. E5 adds files only, and it changes no existing transcript.\n\nModified files:\n\n- `shared/tracker_port/beads.py` (E2). Sets the flag values, and adds the claim and gate paths. `native_ready` stays false. E5-2 and E5-4 edit it.\n- `shared/tracker_port/bd_runner.py` (E2). Remains the only subprocess call to `bd`. Adds the argument builders for the claim and gate calls (E5-2, E5-4).\n- `shared/tracker-adapter-beads.md` (E2). Records the claim flags, the exit codes, the ready rule, the gate, and the spike results (E5-1 to E5-5).\n- `tests/test_tracker_beads.py` (E2). Adds one claim case (E5-2) and one gate case (E5-4). It changes no other case.\n- `plugins/implement/skills/build/references/slice-loop.md` (E4 slice 13). Adds one pointer to the formula (E5-5 only).\n\nNot touched:\n\n- `shared/tracker_port/record.py`, `port.py`, `projector.py`, `fake.py`, and `files.py` (E1). The record shape and the port contract stay the same.\n- `shared/tracker.py` (E1). No new subcommand.\n- `shared/tracker-usage.md` (E1). The moment table keeps its rows.\n- `tests/test_tracker_contract.py` (E1). Its seven cases run on beads without change.\n- `docs/architecture/adr/ADR-0031-*.md` and `ADR-0040-*.md`. An amendment is a separate decision.\n\n## Types & Signatures\n\nE5 adds no public name. The port contract in ADR-0040 and in E1 stays fixed. E5 sets the four values of `Capabilities` in the beads adapter only. E5 adds these private helpers to `bd_runner.py`. E5-1 confirms the exact flag set before E5-2 writes the first helper.\n\n```python\ndef claim_argv(issue_id: str, claimant: str) -> list[str]: ...\ndef gate_create_argv(epic_bd_id: str, number: str) -> list[str]: ...\ndef gate_resolve_argv(gate_id: str) -> list[str]: ...\n```\n\n## Slice Decomposition\n\nThe numbers E5-1 to E5-5 are local to this epic. The engineer assigns the global numbers when the rows move to `04-slices.md`.\n\n| Slice | Name | Depends on | Files | Ends with |\n|---|---|---|---|---|\n| E5-1 | Spike: claim flags, exit codes, lease expiry | E4 slice 17 | `shared/tracker-adapter-beads.md`, transcripts | Notes list each flag set, exit code, and lease result, with the command that produced it |\n| E5-2 | Atomic claim | E5-1 | `beads.py`, `bd_runner.py`, `test_tracker_beads_atomic_claim.py`, `test_tracker_beads_claim_real.py`, `test_tracker_beads_claim.py` | Contract case 3 passes on beads with one write. Eight concurrent claims give one winner |\n| E5-3 | Native ready, with parity | E5-1 | `test_tracker_beads_ready.py`, transcripts, notes | Parity of bd ready fails in bd 1.3.0. The flag stays false, and the evidence is recorded. The adapter matches the projector |\n| E5-4 | Pull request gate | E5-3 | `beads.py`, `bd_runner.py`, `test_tracker_beads_gate.py`, `test_tracker_beads.py` | The gate resolves when the pull request merges, and the E4 slice 15 test stays green |\n| E5-5 | Slice-loop formula | E5-4, and E4 slice 13 | formula TOML, `test_tracker_beads_formula.py`, `slice-loop.md` | The formula cooks and pours. A failed attempt adds a wisp. Squash with `--keep-children` keeps the attempt history |\n\n### Slice E5-1: spike, claim flags, exit codes, lease expiry\n\nInput: a scratch beads workspace built from the E1 corpus, with no change to the repo.\n\nAssertions: run the claim with and without `--if-assignee`, record the exit code of each case, and record the output of a claim whose lease expires. Save each run as a transcript.\n\nPass conditions: the notes in `shared/tracker-adapter-beads.md` list every run, and each result states pass or fail. No flag in the adapter changes in this slice.\n\n### Slice E5-2: atomic claim\n\nInput: the claim argument builder and the E1 contract case 3.\n\nAssertions: a claim writes once and stores the claimant. With a different expected assignee, the claim writes nothing, and the adapter reports the conflict as an adapter error (exit 3). The contract case passes with the write-once path.\n\nPass conditions: the race test shows one winner among eight concurrent claims. The test skips with a reason when `bd` is absent. `Capabilities.atomic_claim` is true for beads only after this slice passes.\n\n### Slice E5-3: native ready, with parity\n\nInput: the ready argument builder and the recorded transcripts of `bd ready` for each kind.\n\nAssertions: the adapter drops the molecule root from the candidates. It applies the pull request rule and the deferred epic rule that bd does not know. Its result equals the E1 result for `program`, `epic`, and `slice`, and for one case with `under`.\n\nPass conditions: the parity test passes on the recorded transcripts. `Capabilities.native_ready` is true for beads only when this holds. If the parity check fails, the flag stays false, and the notes record the difference.\n\n### Slice E5-4: pull request gate\n\nInput: the pull request record and its two blocked epics, as in E4 slice 15 (`tests/test_pr_tracker_state.py`).\n\nAssertions: `open_pull_request` adds a `gh:pr` gate to each blocked epic. The gate stores the pull request number. `set_pull_request_state(ref, merged)` resolves the gate through `gate_resolve_argv`.\n\nPass conditions: the gate case passes. The E4 slice 15 test passes without change. A gate that has no stored number stays pending, and the test shows it.\n\n### Slice E5-5: slice-loop formula\n\nInput: the E4 slice 13 procedure in `slice-loop.md`, and the formula TOML.\n\nAssertions: the formula holds the red, green, and validate steps. A failed attempt adds a wisp to the slice. The squash that ends the slice passes `--keep-children`.\n\nPass conditions: the formula cooks and pours in a scratch workspace. The squash keeps the attempt wisps. `slice-loop.md` gains one pointer to the formula and no copy of its steps.\n\n## Test Plan\n\n- E5-1: no suite test. The evidence is the transcripts and the notes.\n- E5-2: the E1 contract cases 1 to 7 run on beads. The race test and the stale claim test are new. Both skip without `bd`.\n- E5-3: the parity test reads the recorded transcripts under `tests/fixtures/tracker/beads/transcripts/`. It needs no live `bd`. The live check skips without `bd`.\n- E5-4: the gate test reads a recorded transcript. The E4 slice 15 test runs unchanged.\n- E5-5: the formula test runs in a scratch workspace. It skips without `bd`.\n- Each slice runs its own test file. The main session runs `uv run pytest tests -q` once, after all edits.\n\n## Risks & Open Questions\n\n1. **Lease expiry has no test.** Resolved. The spike observed it: a lease lasts 5 minutes, an expired lease alone does not free a claim, and `bd reclaim` does. The adapter needs no lease guard.\n2. **A hybrid ready may not count as native.** Resolved. The parity check fails in bd 1.3.0, so `native_ready` stays false. There is no hybrid and no `ready_argv`. The adapter computes ready.\n3. **The gate may repeat the pull request blocker.** Resolved. The adapter keeps the blocker and adds the gate as a mirror. Reads skip the hidden gate rows.\n4. **Squash deletes open wisp children by default.** Resolved. The flag `--keep-children` exists in bd 1.3.0, and the slice-loop formula uses it.\n5. **The stale claim has no exit code in the contract.** Resolved. A held claim is bd exit 1 with `already claimed by` in stderr. The adapter maps it to `AdapterError`, which the CLI reports as exit 3. No new code was needed.\n6. **E5-5 changes an E4 file.** E5 waits for E4, so the pointer in `slice-loop.md` lands on the final E4 text. The engineer confirms that E4 leaves a stable place for the pointer.\n7. **Federation conflicts have no test.** E5 does not change federation. The gap stays in the adapter notes.\n8. **Beads features may change in later releases.** The notes pin bd 1.3.0. A later release needs a new spike before any flag changes.\n",
         "approved_date": null,
         "source_path": "docs/plans/beads-storage/epic-E5-design.md"
+      },
+      {
+        "id": "beads-storage/E6",
+        "epic_id": "E6",
+        "feature_slug": "beads-storage",
+        "title": "Epic Technical Solution Design: E6, Formula-driven slice loop on beads",
+        "body_md": "# Epic Technical Solution Design: E6, Formula-driven slice loop on beads\n\nFeature: beads-storage\nEpic ID: E6\nStatus: proposed. The slices E6-1 to E6-6 are local numbers, and they are not yet in `04-slices.md`.\n\n## Decisions and results\n\nThe engineer decided these five points. Do not reopen them.\n\n1. E6 is a new epic in the `beads-storage` goal. It has this design document.\n2. `tracker.yaml` gets the key `formulas: true|false`. When the key is absent, it means true for the beads adapter and false for the files and fake adapters. The config loader checks it as it checks `sync`.\n3. Three port operations use the formula only when `formulas` is true:\n   - New `start-slice-loop <slice-id>` installs the formula into `.beads/formulas/slice-loop.formula.toml` when it is missing, and cooks when needed. It pours ONE molecule for the slice. The call is idempotent. The molecule is found again through `bd list --metadata-field slice=<bd id>`. It is linked by `bd update <root> --set-metadata slice=<slice bd id>`.\n   - `record-attempt` also adds an ephemeral wisp child of the slice molecule.\n   - `set-slice-state <id> closed` squashes the molecule with `--keep-children` and a `--summary` built from the recorded attempts. Then it closes the root.\n4. When `formulas` is false, by key or by adapter default, `start-slice-loop` exits 4. The message names the key `formulas`, and the adapter makes no bd call. `record-attempt` and `set-slice-state` keep their current behavior without the formula.\n5. `slice-loop.md` states that the formula path depends on the config file.\n\nThe engineer also chose default-on for beads. Every beads repo gets the cost of four or more rows per slice at once. The rollback is `formulas: false`.\n\nThe decision record is ADR-0043. It amends ADR-0040 and refers to ADR-0042.\n\n## Challenge\n\nThis is design stage 4. Each risk cites an ADR. The evidence lines come from the spike on bd 1.3.0 in `/tmp/e6-spike.md`. The numbers in brackets are the spike sections.\n\n1. **Wisps never sync (ADR-0042, ADR-0040).** A wisp for each attempt is local to one machine. Evidence: \"Wisps did NOT arrive. `bd mol wisp list` in clone 2: `No wisps found`\" [1]. The durable attempt history stays in the slice envelope and in the `--summary` of the squash digest, which syncs. Evidence: \"the digest and the closed steps arrived in clone 2 after `bd sync`. The kept attempt wisps did not arrive\" [5].\n2. **Each pour makes a new molecule (ADR-0040).** Poured molecules sync, so a duplicate spreads to every clone. Idempotence is mandatory. Evidence: \"Pour has no idempotency. Each `bd mol pour` makes a new molecule (4 issues). Two pours for one slice give two roots with the same metadata\" [2].\n3. **`bd mol pour` has no `--parent` (ADR-0031).** Evidence: \"`bd mol pour --parent`: exit 1, `Error: unknown flag: --parent`\" [2]. The link is `bd update <root> --set-metadata slice=<bd id>`, and the lookup is `--metadata-field`. A crash between the pour and the metadata write leaves an unlinked root. The step titles `RED <slice id>` find it [2].\n4. **bd never commits or syncs the formula file (ADR-0042).** Evidence: \"`.beads/formulas/` did not arrive in clone 2\" and \"`bd sync`/`bd dolt push` do not carry it\" [1, 4]. Each clone needs its own copy. `tracker.py prepare` and `start-slice-loop` both install it. The name must end in `.formula.toml` [4].\n5. **Poured rows are foreign (ADR-0031).** Evidence: \"No `cb` key, so `_is_cb_row` is False and the adapter treats all four rows as foreign\" and `doctor_details()` gave `foreign_issues: 4` [3]. The foreign count rises by four or more for each slice: the root, three steps, and one digest. Slice E6-3 adds a separate count of formula rows, so `doctor` shows foreign rows and formula rows apart. A script must never write a `cb` key on these rows. Evidence: a `cb` dict without `v: 1` raised `AdapterError` on every read [3].\n6. **`bd mol` exits 0 for a bogus subcommand (ADR-0040).** Evidence: \"`bd mol bogus` also exits 0 and prints the mol help\" [6]. The probe is `bd mol seed slice-loop`, which exits 1 when bd lacks the formula or the group [6].\n7. **A failed probe is an adapter fault, not a bad argument (ADR-0040).** When `formulas` is true on beads and the probe fails, the adapter raises `AdapterError`, and the CLI exits 3. Exit 4 is only for the false key. The caller must not read exit 3 as a request to turn the key off.\n8. **Default-on costs every beads repo at once (ADR-0031).** Each slice adds four or more rows, and a digest. The engineer chose this. The rollback is `formulas: false`.\n9. **The name `formulas` follows bd.** In bd, a formula is the template. A molecule and a wisp are what it makes. The key turns all three on or off. The engineer renamed the key from `wisps` to `formulas` for this reason.\n10. **The list limit (ADR-0031).** `LIST_ARGS` has the bd default of 50 rows [3]. Four or more rows per slice make a hidden `cb` row more likely. This risk exists today, and E6 makes it worse. See Risks.\n\n### Alternatives\n\n| Option | Rejected because |\n|---|---|\n| No formula at all, E5 file only | The file stays unused. The loop gets no molecule, no wisp, and no digest. |\n| One new operation only, `start-slice-loop` | The attempts and the close do not touch the molecule. It never records a result and never closes. |\n| Wisps as the only attempt record | A wisp never syncs. A second machine or a restart loses the attempts. |\n\n## Scope and Intent\n\nE6 connects the E5 formula to the port. It adds one config key, one port operation, and a formula path inside two existing operations. It changes the beads adapter, the config loader, the CLI, and the notes. It changes no record shape.\n\nOut of scope: the Linear and Jira adapters, the viewer, and a change of `LIST_ARGS`. A fix of the 50 row limit is a separate decision.\n\nE6 starts after E5 closes. ADR-0040 sets the port. E6 adds one operation to it. ADR-0031 sets the beads mapping, and E6 adds no kind to it. ADR-0042 sets the `sync` key, and E6 adds `formulas` beside it.\n\n## Files Touched\n\nNew files:\n\n- `tests/test_tracker_beads_formulas.py`: the `start-slice-loop`, attempt wisp, and squash cases (E6-4, E6-5).\n- `tests/test_tracker_formulas_config.py`: the key default and the refusal (E6-2).\n- `tests/fixtures/tracker/beads/transcripts/*.json`: one transcript for each new bd call. E6 adds files only.\n\nModified files:\n\n- `shared/tracker-adapter-beads.md`: the spike notes (E6-1) and the formula path (E6-4, E6-5).\n- `shared/tracker_port/config.py`: reads `formulas` (E6-2).\n- `shared/tracker_port/port.py`: adds `start_slice_loop` (E6-2, E6-4).\n- `shared/tracker_port/fake.py`, `files.py`: raise the refusal (E6-2, E6-4).\n- `shared/tracker_port/beads.py`, `bd_runner.py`: install, probe, pour, link, wisp, squash (E6-3 to E6-5).\n- `shared/tracker.py`: adds the subcommand `start-slice-loop` and `prepare` installs the formula (E6-3, E6-4).\n- `shared/tracker-usage.md`: the moment row and the `formulas` key (E6-6).\n- `plugins/implement/skills/build/references/slice-loop.md`: the formula path and its config dependency (E6-6).\n- `plugins/implement/commands/install.md`: one note (E6-6).\n- `plugins/implement/hooks/` reminder text: one line about `start-slice-loop` (E6-6).\n\nNot touched: `record.py`, `projector.py`, and the E1 contract cases. A formula row never enters a record.\n\n## Types & Signatures\n\nConfig key, in `.cobuilder/tracker.yaml`:\n\n```yaml\nformulas: true   # true | false. Absent: true for beads, false for files and fake.\n```\n\nPort operation and loader:\n\n```python\ndef start_slice_loop(self, id: str) -> TrackerRecord: ...   # returns the slice record\ndef load_adapter(config_path, repo_root, state_file=None) -> TrackerPort | None: ...  # reads formulas\n```\n\nCLI:\n\n```\nuv run shared/tracker.py start-slice-loop <slice-id>\n```\n\nAdapter helpers in `bd_runner.py`:\n\n```python\ndef probe_argv() -> list[str]: ...                          # bd mol seed slice-loop\ndef pour_argv(slice_id: str) -> list[str]: ...              # bd mol pour slice-loop --var slice_id=... --json\ndef link_argv(root: str, slice_bd_id: str) -> list[str]: ...  # bd update <root> --set-metadata slice=<id> --json\ndef find_molecule_argv(slice_bd_id: str) -> list[str]: ... # bd list --json --all --metadata-field slice=<id> -n 0\ndef attempt_wisp_argv(root: str, title: str) -> list[str]: ...  # bd create <title> --ephemeral --parent <root> --json\ndef squash_argv(root: str, summary: str) -> list[str]: ...  # bd mol squash <root> --keep-children --summary ... --json\n```\n\nError kinds and exit codes:\n\n| Case | Error | Exit |\n|---|---|---|\n| `formulas` false, `start-slice-loop` | refusal that names the key `formulas`, no bd call | 4 |\n| `formulas` true on beads, probe fails | `AdapterError` with the bd stderr text | 3 |\n| `formulas` is not a boolean | `AdapterError` from the loader | 3 |\n| No adapter configured | `NoAdapterError` | 2 |\n| Slice not found | existing error | as today |\n\n## Slice Decomposition\n\nThe numbers E6-1 to E6-6 are local to this epic. The engineer assigns the global numbers when the rows move to `04-slices.md`.\n\n| Slice | Name | Depends on | Files | Ends with |\n|---|---|---|---|---|\n| E6-1 | Spike notes into the adapter notes | E5-5 | `shared/tracker-adapter-beads.md` | The notes hold each spike finding with its command and result |\n| E6-2 | The `formulas` key and the refusal | E6-1 | `config.py`, `port.py`, `fake.py`, `files.py`, `tracker.py`, `test_tracker_formulas_config.py` | The key defaults by adapter, and `start-slice-loop` on a false key exits 4 with no bd call |\n| E6-3 | Formula install, probe, formula-row count | E6-2 | `beads.py`, `bd_runner.py`, `tracker.py`, transcripts | `prepare` installs the formula. `doctor` runs the probe and counts formula rows apart from foreign rows |\n| E6-4 | `start-slice-loop` on fake and beads | E6-3 | `beads.py`, `bd_runner.py`, `fake.py`, `test_tracker_beads_formulas.py` | One molecule for each slice, a second call finds it, and the root carries `slice` |\n| E6-5 | Attempt wisp and squash on close | E6-4 | `beads.py`, `bd_runner.py`, `test_tracker_beads_formulas.py` | `record-attempt` adds a wisp, and a close squashes with a summary and closes the root |\n| E6-6 | Docs, reminder, usage, install note | E6-5 | `slice-loop.md`, `tracker-usage.md`, hook reminder, `install.md` | The docs name the key and the config dependency, and `tracker.py --help` lists the operation |\n\n### Slice E6-1: spike notes\n\nInput: `/tmp/e6-spike.md`.\n\nAssertions: the notes list the six spike areas: sync, link, foreign rows, formula location, squash, and failure modes. Each finding names its command and its exit code.\n\nPass conditions: the notes state the bd version, 1.3.0. No code changes in this slice.\n\n### Slice E6-2: the `formulas` key and the refusal\n\nInput: the config loader and the three adapters.\n\nAssertions: with no key, beads reads true, and files and fake read false. A non-boolean value raises `AdapterError`. `start-slice-loop` on a false key exits 4, names `formulas`, and runs no bd call.\n\nPass conditions: the test replaces `BdRunner` with a runner that fails on any call, and the refusal test passes. The CLI lists the subcommand.\n\n### Slice E6-3: install, probe, formula-row count\n\nInput: the formula file and the failure table of the spike.\n\nAssertions: `prepare` copies the formula to `.beads/formulas/slice-loop.formula.toml` when it is missing, and keeps an existing copy. The probe is `bd mol seed slice-loop`. On a failed probe with `formulas` true, the adapter raises `AdapterError`. `doctor` reports the formula rows in a separate count.\n\nPass conditions: a transcript test shows the probe argv. The doctor test shows that a root, three steps, and a digest count as formula rows, and that other rows without a `cb` key stay foreign.\n\n### Slice E6-4: `start-slice-loop`\n\nInput: a slice record and a workspace with the formula.\n\nAssertions: the first call pours one molecule and sets `slice=<slice bd id>` on the root. A second call finds the molecule through `--metadata-field` and pours nothing. An unlinked root from a crash is found by the step title and linked. No row gets a `cb` key. On the fake adapter with `formulas` true, the call returns the slice record and keeps its state.\n\nPass conditions: the live test counts the roots for the slice after two calls and finds one. It skips without `bd`.\n\n### Slice E6-5: attempt wisp and squash on close\n\nInput: a slice with a molecule.\n\nAssertions: `record-attempt` writes the envelope as today and adds one ephemeral child of the molecule. The close builds a summary from the recorded attempts, with each score and note. It runs `bd mol squash <root> --keep-children --summary <text> --json`, and then closes the root. With no molecule, the close behaves as before. With `formulas` false, both operations behave as before.\n\nPass conditions: the live test shows a digest whose description holds the summary, and a second clone that reads the digest after `bd sync`. The attempt wisps are not expected in the second clone.\n\n### Slice E6-6: docs, reminder, usage, install note\n\nInput: the existing `slice-loop.md`, the usage guide, the reminder, and `install.md`.\n\nAssertions: `slice-loop.md` says that the formula path needs the config file and the `formulas` key. The usage guide adds the key and the moment row. The reminder names the operation. The install note says that default-on adds rows and that `formulas: false` is the rollback.\n\nPass conditions: every tracker.py operation that a doc names is a subcommand in `tracker.py --help`. The docs name no bd command outside the adapter notes.\n\n## Test Plan\n\n- E6-1: no suite test. The evidence is the notes.\n- E6-2: a unit test of the loader and the CLI over the fake adapter. It needs no `bd`.\n- E6-3: a transcript test for the probe and the install, and a doctor test over recorded rows.\n- E6-4, E6-5: a live test in a scratch workspace. It skips without `bd`. A recorded transcript covers each argv.\n- E6-6: the existing reference checks in `tests/` run unchanged.\n- The main session runs `uv run pytest tests -q` once, after all edits.\n\n## Risks & Open Questions\n\n1. **The list limit of 50 rows.** `LIST_ARGS` has no `-n 0`. Four or more rows per slice make a hidden `cb` row more likely. The find call in E6-4 passes `-n 0`. A caller that omits `--limit` can still miss rows. Open: the engineer decides if `LIST_ARGS` gets `-n 0` in a separate change.\n2. **Two machines pour at once.** Pours sync, and each pour makes a new molecule. Two machines that start the same slice before a sync make two roots with the same `slice` value. Open: the find call must pick one root, for example the oldest, and the doctor must report a duplicate.\n3. **bd versions below 1.3.0.** The spike ran on 1.3.0 only. An older bd without the `mol` group is not observed. The probe fails and gives exit 3 with the bd text. The notes pin 1.3.0.\n4. **Default-on cost.** Every beads repo gets four or more rows per slice. The engineer chose it. The rollback is `formulas: false`.\n5. **The name `formulas`.** It follows the bd term. The engineer chose it over `wisps`.\n6. **The root may stay open.** In the spike, the root stayed open with open wisp children. The close in E6-5 closes the root itself, and does not rely on auto-close.\n7. **A crash between pour and link.** E6-4 handles it by the step title. Open: the title holds the slice id as the E5 formula writes it. A change of the formula title breaks the recovery.\n8. **Wisps are local.** A second machine does not see the attempts of the first. The envelope and the digest summary are the record.\n",
+        "approved_date": null,
+        "source_path": "docs/plans/beads-storage/epic-E6-design.md"
       },
       {
         "id": "cobuilder-family/E1",
@@ -4949,7 +4973,7 @@
         "feature_slug": "beads-storage",
         "n": 18,
         "title": "Slice 18 — E5 spike: claim flags, exit codes, lease expiry",
-        "body_md": "Kind: behavioral\n\n# Rubric: Slice 18 — E5 spike: claim flags, exit codes, lease expiry\n\nFeature: beads-storage\nEpic: beads-storage/E5\nSlice goal: The spike records each claim flag set, its exit code, and its lease result, with the command that produced each. The spike changes no adapter flag.\nTest command: `uv run pytest tests/test_tracker_beads.py -q` (regression only. The spike has no suite test.)\n\n## Criteria\n\n### C1 — Every flag set has its command, exit code, and transcript [CRITICAL]\n\n**Must be true:** The spike notes in `shared/tracker-adapter-beads.md` list each flag set tried for `bd update --claim` and for `--if-assignee`. Each row gives the command, the observed exit code, and a transcript path.\n\n**Evidence to check:** Read the spike section of `shared/tracker-adapter-beads.md`. For each row, open the transcript path under `tests/fixtures/tracker/beads/transcripts/`. The `--if-assignee` mismatch row must record exit 13.\n\n**Scoring:**\n- 1.0: every row has a command, an exit code, and a transcript that exists.\n- 0.5: the rows exist, but one row lacks an exit code or a transcript.\n- 0.0: no rows, or the exit codes come from the design text with no run behind them.\n\n### C2 — Each lease result is observed or marked unverified [CRITICAL]\n\n**Must be true:** The notes state each lease expiry result as observed or as unverified. The design records that lease expiry is not verified. A result that the spike did not observe must say \"unverified\" and must give no outcome.\n\n**Evidence to check:** Find the lease section of the spike notes. An observed result cites a command and a transcript. An unobserved result carries the word \"unverified\".\n\n**Scoring:**\n- 1.0: every lease claim cites evidence, or carries the word \"unverified\".\n- 0.5: one lease claim lacks both evidence and the word \"unverified\".\n- 0.0: lease expiry is stated as fact with no evidence.\n\n### C3 — The spike changes no adapter flag\n\n**Must be true:** The slice changes no file under `shared/tracker_port/`. It changes no capability flag and no argv builder in `tests/test_tracker_beads.py`.\n\n**Evidence to check:** List the files this slice changed. Only docs, the spike notes, and fixtures may appear.\n\n**Scoring:**\n- 1.0: no adapter, flag, or argv file changed.\n- 0.5: a comment-only change under `shared/tracker_port/`.\n- 0.0: a capability flag or an argv builder changed.\n\n## Regression check\n\n- `uv run pytest tests/test_tracker_beads.py -q` passes with the same result as before the slice.\n- The spike notes name the bd version used. The design records bd 1.3.0.\n\n## Out of scope — do not penalise\n\n- The atomic claim itself. That belongs to slice 19.\n- Native ready and the pull request gate. Those belong to slices 20 and 21.\n- The formula. That belongs to slice 22.\n- Wording of the notes, when the rows carry the evidence.\n",
+        "body_md": "Kind: behavioral\n\n# Rubric: Slice 18 — E5 spike: claim flags, exit codes, lease expiry\n\nFeature: beads-storage\nEpic: beads-storage/E5\nSlice goal: The spike records each claim flag set, its exit code, and its lease result, with the command that produced each. The spike changes no adapter flag. The slice changes only docs and transcripts.\nTest command: `uv run pytest tests/test_tracker_beads.py -q` (regression only. The spike has no suite test.)\n\n## Criteria\n\n### C1 — Every flag set has its command, exit code, and transcript [CRITICAL]\n\n**Must be true:** The spike notes in `shared/tracker-adapter-beads.md` list each flag set tried for `bd update --claim` and for `--if-assignee`. Each row gives the command, the observed exit code, and a transcript path. The row for `--claim` with `--if-assignee` records what the spike observed: bd refuses the two flags together and exits 1, not 13. Exit 13 appears only on rows for a guarded plain update.\n\n**Evidence to check:** Read the spike section of `shared/tracker-adapter-beads.md`. For each row, open the transcript path under `tests/fixtures/tracker/beads/transcripts/`. Compare the exit code in the row with the exit code in the transcript. The `--claim --if-assignee` row must show exit 1. A row with exit 13 must use `--status` and `--assignee` with `--if-assignee`, and no `--claim`.\n\n**Scoring:**\n- 1.0: every row has a command, an exit code that matches its transcript, and a transcript that exists.\n- 0.5: the rows exist, but one row lacks an exit code or a transcript, or one exit code differs from its transcript.\n- 0.0: no rows, or the exit codes come from the design text with no run behind them (for example, a row that gives exit 13 for `--claim --if-assignee`).\n\n### C2 — Each lease result is observed, with a transcript [CRITICAL]\n\n**Must be true:** The notes state each lease result as observed, with the command and a transcript. The results are: the lease lasts 5 minutes, an expired lease alone does not free a claim, and `bd reclaim` frees it. A result that the spike did not observe must say \"unverified\" and must give no outcome.\n\n**Evidence to check:** Find the lease rows and the Findings in the spike notes. Each lease claim cites a command and a transcript (`claim-lease-reclaim.json`, `claim-lease-expiry.json`). Open the transcripts. The claim attempt after the lease expiry must exit 1. The `bd reclaim` step must leave the issue open with no assignee. Any claim without a transcript must carry the word \"unverified\".\n\n**Scoring:**\n- 1.0: every lease claim cites a transcript that supports it, or carries the word \"unverified\".\n- 0.5: one lease claim lacks both a transcript and the word \"unverified\".\n- 0.0: a lease result is stated as fact with no transcript behind it.\n\n### C3 — The spike changes no adapter flag\n\n**Must be true:** The slice changes only docs, the spike notes, and transcripts. It changes no file under `shared/tracker_port/`. It changes no capability flag and no argv builder.\n\n**Evidence to check:** List the files this slice changed. Only docs, the spike notes, and fixtures may appear.\n\n**Scoring:**\n- 1.0: no adapter, flag, or argv file changed.\n- 0.5: a comment-only change under `shared/tracker_port/`.\n- 0.0: a capability flag or an argv builder changed.\n\n## Regression check\n\n- `uv run pytest tests/test_tracker_beads.py -q` passes with the same result as before the slice.\n- The spike notes name the bd version used. The design records bd 1.3.0.\n\n## Out of scope — do not penalise\n\n- The atomic claim itself. That belongs to slice 19.\n- Native ready and the pull request gate. Those belong to slices 20 and 21.\n- The formula. That belongs to slice 22.\n- Wording of the notes, when the rows carry the evidence.\n",
         "source_path": ".cobuilder/rubrics/beads-storage/slice-18.md"
       },
       {
@@ -4957,15 +4981,15 @@
         "feature_slug": "beads-storage",
         "n": 19,
         "title": "Slice 19 — E5 atomic claim on beads",
-        "body_md": "Kind: test-suite\n\n# Rubric: Slice 19 — E5 atomic claim on beads\n\nFeature: beads-storage\nEpic: beads-storage/E5\nSlice goal: `claim_slice` on beads uses one atomic `bd update --claim` call with `--if-assignee`. Eight concurrent claims give one winner, and a mismatch gives exit 3.\nTest command: `uv run pytest tests/test_tracker_contract.py tests/test_tracker_beads_claim.py -q`\n\nThe file `tests/test_tracker_beads_claim.py` is created by this slice. The command runs once the slice exists. The race test skips without `bd`. A skip counts as no evidence for C2.\n\n## Criteria\n\n### C1 — Contract case 3 passes on beads with one write [CRITICAL]\n\n**Must be true:** `test_claim_leaves_assignee` passes for the beads adapter. `claim_argv(issue_id, claimant, expected)` returns one argv that carries `--claim` and `--if-assignee`.\n\n**Evidence to check:**\n- `uv run pytest tests/test_tracker_contract.py -q` passes, and the beads case runs.\n- Read `claim_argv` in `shared/tracker_port/beads.py`. It returns one argv, not two calls.\n\n**Scoring:**\n- 1.0: the contract case passes on beads, and `claim_argv` builds one argv with both flags.\n- 0.5: the case passes, but the claim still runs as two calls.\n- 0.0: the case fails, or the beads adapter is not in the contract run.\n\n### C2 — Eight concurrent claims give one winner [CRITICAL]\n\n**Must be true:** A test in `tests/test_tracker_beads_claim.py` runs eight concurrent claims on one issue. Exactly one claim succeeds, and the other seven are refused.\n\n**Evidence to check:** Run the file with `bd` on the path. Read the test body. It must start eight claims at once and assert one winner and seven refusals. A run that skips does not count.\n\n**Scoring:**\n- 1.0: the test runs with `bd`, passes, and asserts one winner and seven refusals.\n- 0.5: the test runs and passes, but asserts a weaker count.\n- 0.0: the test skips with no transcript, fails, or does not exist.\n\n### C3 — A mismatch gives exit 3 [CRITICAL]\n\n**Must be true:** When `--if-assignee` refuses a claim, the adapter raises or returns with exit code 3. The design records that `bd` exits 13 on a mismatch, so the mapping must cover that case.\n\n**Evidence to check:** Read the test that covers a refused claim. It must assert exit 3. Confirm that `shared/tracker_port/beads.py` maps the bd exit 13 to exit 3.\n\n**Scoring:**\n- 1.0: the test asserts exit 3, and the mapping from 13 to 3 appears in the adapter.\n- 0.5: the test asserts a refusal, but not the exit code.\n- 0.0: no refusal test, or a refused claim returns success.\n\n### C4 — `atomic_claim` is true only with the claim tests passing\n\n**Must be true:** `Capabilities.atomic_claim` is true for beads. `test_capabilities_flags` in `tests/test_tracker_beads.py` asserts the new value. The claim tests pass in the same state.\n\n**Evidence to check:** Read the flag in `shared/tracker_port/beads.py`. Read the matching assertion in `tests/test_tracker_beads.py`. Run that file.\n\n**Scoring:**\n- 1.0: the flag is true, the assertion matches, and both test files pass.\n- 0.5: the flag is true, but the assertion was not updated.\n- 0.0: the flag is true while a claim test fails.\n\n## Regression check\n\n- `uv run pytest tests/test_tracker_beads.py tests/test_tracker_beads_write.py -q` passes.\n- The fake adapter claim path still passes the contract case.\n\n## Out of scope — do not penalise\n\n- Native ready. That belongs to slice 20.\n- The pull request gate. That belongs to slice 21.\n- Lease expiry. Slice 18 records it as unverified.\n- Wording of the adapter docstrings.\n",
+        "body_md": "Kind: test-suite\n\n# Rubric: Slice 19 — E5 atomic claim on beads\n\nFeature: beads-storage\nEpic: beads-storage/E5\nSlice goal: `claim_slice` on beads makes one write, `bd update <id> --claim --actor <claimant>`, with no read-back. Eight concurrent claims give one winner. A held claim gives an adapter error (CLI exit 3). The call has no `--if-assignee`.\nTest command: `uv run pytest tests/test_tracker_contract.py tests/test_tracker_beads_claim.py tests/test_tracker_beads_atomic_claim.py tests/test_tracker_beads_claim_real.py -q -m ''`\n\nThe real-bd tests in `tests/test_tracker_beads_claim_real.py` carry the pytest mark `slow`. The default run skips them, so the command adds `-m ''` to run them. The real tests skip without `bd`. A skip counts as no evidence for C2.\n\n## Criteria\n\n### C1 — Contract case 3 passes on beads with one write [CRITICAL]\n\n**Must be true:** `test_claim_leaves_assignee` passes for the beads adapter. `claim_argv(issue_id, claimant)` in `shared/tracker_port/bd_runner.py` returns `[\"update\", issue_id, \"--claim\", \"--actor\", claimant]`. The claim is one write, with no read-back and no `--if-assignee`.\n\n**Evidence to check:**\n- `uv run pytest tests/test_tracker_contract.py -q` passes, and the beads case runs.\n- Read `claim_argv` in `shared/tracker_port/bd_runner.py`. It returns one argv with `--claim` and `--actor`, and it has no `--if-assignee`.\n- Read `test_claim_argv_is_update_claim_with_the_actor_flag`, `test_claim_argv_never_carries_if_assignee_or_status_flags`, and `test_claim_writes_once_then_syncs_with_no_read_back` in `tests/test_tracker_beads_atomic_claim.py`.\n\n**Scoring:**\n- 1.0: the contract case passes on beads, `claim_argv` builds the one argv above, and the tests assert one write and no read-back.\n- 0.5: the case passes, but the claim runs more than one write, or reads back after the claim.\n- 0.0: the case fails, the argv carries `--if-assignee`, or the beads adapter is not in the contract run.\n\n### C2 — Eight concurrent claims give one winner [CRITICAL]\n\n**Must be true:** `test_eight_concurrent_claims_give_one_winner` in `tests/test_tracker_beads_claim_real.py` runs eight concurrent claims on one issue in a scratch workspace. Exactly one claim succeeds, and the other seven raise an adapter error.\n\n**Evidence to check:** Run the file with `-m ''` and with `bd` on the path. Read the test body. It must start eight claims at once and assert one winner and seven refusals. A run that skips does not count.\n\n**Scoring:**\n- 1.0: the test runs with `bd`, passes, and asserts one winner and seven refusals.\n- 0.5: the test runs and passes, but asserts a weaker count.\n- 0.0: the test skips with no transcript, fails, or does not exist.\n\n### C3 — A held claim gives an adapter error (CLI exit 3) [CRITICAL]\n\n**Must be true:** When bd refuses a claim with exit 1 and `already claimed by` in stderr, the adapter raises `AdapterError`. The CLI maps that error to exit 3. The adapter names the holder, and it writes nothing else. A closed target also raises `AdapterError`. A missing target raises `ArgumentError`, as the fake adapter does.\n\n**Evidence to check:** Read `test_held_claim_raises_adapter_error_naming_the_holder_and_writes_nothing_else`, `test_closed_target_raises_adapter_error_after_one_refused_write`, and `test_missing_target_raises_argument_error_like_the_fake_and_calls_only_list` in `tests/test_tracker_beads_atomic_claim.py`. Read `test_a_held_claim_refuses_a_second_claimant` in `tests/test_tracker_beads_claim_real.py`. Confirm that the adapter in `shared/tracker_port/beads.py` reads stderr for `already claimed by`. The adapter does not map bd exit 13, because `--claim` never gives it.\n\n**Scoring:**\n- 1.0: the tests assert `AdapterError` with the holder named, and the stderr match is in the adapter.\n- 0.5: the tests assert a refusal, but not the error type or the holder.\n- 0.0: no refusal test, or a refused claim returns success.\n\n### C4 — `atomic_claim` is true only with the claim tests passing\n\n**Must be true:** `Capabilities.atomic_claim` is true for beads. `test_atomic_claim_flag_is_true_for_beads_and_false_for_files` and `test_doctor_shows_atomic_claim_true_for_beads` in `tests/test_tracker_beads_atomic_claim.py` assert the value. The claim tests pass in the same state.\n\n**Evidence to check:** Read the flag in `shared/tracker_port/beads.py`. Read the two tests. Run the test command.\n\n**Scoring:**\n- 1.0: the flag is true, the assertions match, and all claim test files pass.\n- 0.5: the flag is true, but an assertion was not updated.\n- 0.0: the flag is true while a claim test fails.\n\n## Regression check\n\n- `uv run pytest tests/test_tracker_beads.py tests/test_tracker_beads_write.py -q` passes.\n- The fake adapter claim path still passes the contract case.\n\n## Out of scope — do not penalise\n\n- Native ready. That belongs to slice 20.\n- The pull request gate. That belongs to slice 21.\n- Lease expiry. Slice 18 records the observed result: an expired lease does not free a claim, and `bd reclaim` does.\n- Wording of the adapter docstrings.\n",
         "source_path": ".cobuilder/rubrics/beads-storage/slice-19.md"
       },
       {
         "id": "beads-storage/20",
         "feature_slug": "beads-storage",
         "n": 20,
-        "title": "Slice 20 — E5 native ready on beads",
-        "body_md": "Kind: test-suite\n\n# Rubric: Slice 20 — E5 native ready on beads\n\nFeature: beads-storage\nEpic: beads-storage/E5\nSlice goal: `next_ready` on beads calls `bd ready` through `ready_argv(under)`. The molecule root is dropped. The pull request and deferred epic rules apply in the adapter. The result matches E1 parity, or `native_ready` stays false.\nTest command: `uv run pytest tests/test_tracker_beads_ready.py tests/test_tracker_contract.py -q`\n\nThe file `tests/test_tracker_beads_ready.py` is created by this slice. The command runs once the slice exists. The parity test skips without `bd`. A skip counts as no evidence for C1.\n\n## Criteria\n\n### C1 — Parity with E1 for program, epic, slice, and one `under` case [CRITICAL]\n\n**Must be true:** For `program`, `epic`, and `slice`, and for one `under` case, the beads `next_ready` result equals the fake adapter result on the same corpus. The `under` case uses `demo-E1`.\n\n**Evidence to check:** Run `tests/test_tracker_beads_ready.py` with `bd` on the path. The test must compare both adapters for each kind and for the `under` case.\n\n**Scoring:**\n- 1.0: the test runs with `bd`, and all four comparisons match.\n- 0.5: the test runs, but it covers fewer kinds or skips the `under` case.\n- 0.0: the test skips with no transcript, fails, or does not exist.\n\n### C2 — The molecule root is dropped, and the pull request and deferred rules hold [CRITICAL]\n\n**Must be true:** When `bd ready --mol` lists a molecule root, the adapter drops it. A pull request is never returned as ready. A deferred epic is never returned as ready. These rules apply in the adapter, not in the caller.\n\n**Evidence to check:** Read the test for the molecule root, the pull request, and the deferred epic. Each must assert that the record is absent from the result. Read `ready_argv` and the adapter filter in `shared/tracker_port/beads.py`.\n\n**Scoring:**\n- 1.0: all three rules are asserted in the adapter, and the tests pass.\n- 0.5: two of the three rules are asserted in the adapter.\n- 0.0: a rule is missing, or it lives in the caller.\n\n### C3 — `native_ready` matches the parity result\n\n**Must be true:** `Capabilities.native_ready` is true only when C1 and C2 pass. If parity fails, the flag stays false. The design treats a hybrid ready as not native.\n\n**Evidence to check:** Read the flag in `shared/tracker_port/beads.py`. Compare it with the parity test result. If the flag is true, the parity test must pass with no partial match.\n\n**Scoring:**\n- 1.0: the flag matches the parity result.\n- 0.5: the flag is true, but the parity test covers only part of the cases.\n- 0.0: the flag is true while parity fails.\n\n## Regression check\n\n- `uv run pytest tests/test_tracker_beads.py -q` passes.\n- The contract run still passes the next-ready cases on the fake adapter.\n\n## Out of scope — do not penalise\n\n- The atomic claim. That belongs to slice 19.\n- The pull request gate. That belongs to slice 21.\n- The formula. That belongs to slice 22.\n- Performance of `bd ready` on large corpora.\n",
+        "title": "Slice 20 — E5 native ready on beads: parity check",
+        "body_md": "Kind: test-suite\n\n# Rubric: Slice 20 — E5 native ready on beads: parity check\n\nFeature: beads-storage\nEpic: beads-storage/E5\nSlice goal: The slice checks if `bd ready` can replace the adapter ready rule. In bd 1.3.0 the parity check fails. The adapter keeps computing ready, `native_ready` stays false, and the code has no `ready_argv` and no hybrid. The deliverable is the parity evidence (transcripts, a live test, and notes) and the false flag.\nTest command: `uv run pytest tests/test_tracker_beads_ready.py tests/test_tracker_contract.py -q -m ''`\n\nThe live test `test_live_bd_ready_differs_and_adapter_equals_projector` carries the pytest mark `slow`. The default run skips it, so the command adds `-m ''` to run it. It skips without `bd`. A skip counts as no evidence for C1.\n\n## Criteria\n\n### C1 — The adapter matches the projector for each kind and under, and the bd difference is recorded [CRITICAL]\n\n**Must be true:** For `program`, `epic`, and `slice`, and for the `under` case `demo-E1`, the beads adapter `next_ready` result equals the projector result on the same corpus. The slice also records the bd difference with transcripts: `bd ready` misses the children of a blocked parent, and it lists the pull request task and the deferred epic.\n\n**Evidence to check:**\n- Run `tests/test_tracker_beads_ready.py` with `-m ''` and with `bd` on the path. `test_replay_next_ready_equals_projector` must cover all three kinds. `test_replay_next_ready_under_equals_projector` must cover `demo-E1`.\n- `test_live_bd_ready_differs_and_adapter_equals_projector` must assert the native `bd ready` titles, that `demo-E1-s3` is missing from them, and that the adapter equals the projector for each kind and for `under`.\n- `test_recorded_bd_ready_lists_a_pull_request_and_a_deferred_epic` and `test_recorded_bd_ready_misses_the_slice_under_a_blocked_epic` read the transcript `ready-bd-corpus`. Confirm that the transcript exists under `tests/fixtures/tracker/beads/transcripts/`. Confirm that `shared/tracker-adapter-beads.md` states the difference.\n\n**Scoring:**\n- 1.0: the tests run with `bd`, all four adapter comparisons match, and the bd difference has a transcript and a note.\n- 0.5: the comparisons match, but the difference has no transcript or no note, or the `under` case is missing.\n- 0.0: the live test skips with no transcript, a comparison fails, or the tests do not exist.\n\n### C2 — The adapter returns no pull request, no deferred epic, and no molecule root [CRITICAL]\n\n**Must be true:** The adapter `next_ready` result never holds a pull request record, a deferred epic, or a molecule root. The tests assert this on the adapter result, not on the bd output. The code has no `ready_argv`.\n\n**Evidence to check:** Read the tests that assert the adapter result. The pull request `pr-101` and the deferred epic `demo-E3` must be absent from the adapter result for each kind. Read `test_recorded_molecule_root_has_type_molecule` and the note on the molecule root. Confirm that `shared/tracker_port/bd_runner.py` and `shared/tracker_port/beads.py` have no `ready_argv`.\n\n**Scoring:**\n- 1.0: the adapter result has none of the three records, the tests assert it, and the code has no `ready_argv`.\n- 0.5: two of the three are asserted on the adapter result.\n- 0.0: a record appears in the adapter result, a rule is missing, or `ready_argv` exists.\n\n### C3 — `native_ready` stays false, matched by the recorded difference\n\n**Must be true:** `Capabilities.native_ready` is false for beads. The recorded bd difference in C1 is the reason. The code has no hybrid ready that calls `bd ready` and then filters.\n\n**Evidence to check:** Read the flag in `shared/tracker_port/beads.py`. Read `test_native_ready_is_false` and `test_doctor_shows_native_ready_false`. Confirm that the adapter computes ready from `blocked_by`, as the projector does.\n\n**Scoring:**\n- 1.0: the flag is false, the tests assert it, and the recorded difference explains it.\n- 0.5: the flag is false, but the notes do not state the reason.\n- 0.0: the flag is true while the recorded bd result differs from the projector.\n\n## Regression check\n\n- `uv run pytest tests/test_tracker_beads.py -q` passes.\n- The contract run still passes the next-ready cases on the fake adapter and on beads.\n\n## Out of scope — do not penalise\n\n- The atomic claim. That belongs to slice 19.\n- The pull request gate. That belongs to slice 21.\n- The formula. That belongs to slice 22.\n- Performance of `bd ready` on large corpora.\n",
         "source_path": ".cobuilder/rubrics/beads-storage/slice-20.md"
       },
       {
@@ -4973,7 +4997,7 @@
         "feature_slug": "beads-storage",
         "n": 21,
         "title": "Slice 21 — E5 pull request gate on beads",
-        "body_md": "Kind: test-suite\n\n# Rubric: Slice 21 — E5 pull request gate on beads\n\nFeature: beads-storage\nEpic: beads-storage/E5\nSlice goal: `open_pull_request` adds a `gh:pr` gate. `set_pull_request_state(ref, merged)` resolves that gate through `gate_resolve_argv(gate_id)`. The E4 pull request state test passes unchanged.\nTest command: `uv run pytest tests/test_tracker_beads_gate.py tests/test_pr_tracker_state.py -q`\n\nThe file `tests/test_tracker_beads_gate.py` is created by this slice. The file `tests/test_pr_tracker_state.py` is created by E4 slice 15, so it must exist before this slice starts. The command runs once both files exist.\n\n## Criteria\n\n### C1 — The E4 pull request state test passes unchanged [CRITICAL]\n\n**Must be true:** `tests/test_pr_tracker_state.py` passes. This slice does not edit that file, and it does not weaken any of its assertions.\n\n**Evidence to check:** Run the file. Confirm that this slice's diff does not touch the file.\n\n**Scoring:**\n- 1.0: the file passes, and this slice does not change it.\n- 0.5: the file passes, but this slice edits an assertion in it.\n- 0.0: the file fails, or it was removed.\n\n### C2 — `gh:pr` gate resolves on merge through `gate_resolve_argv` [CRITICAL]\n\n**Must be true:** `open_pull_request` adds a gate with kind `gh:pr`. When `set_pull_request_state(ref, merged=True)` runs, the adapter resolves that gate through `gate_resolve_argv(gate_id)`.\n\n**Evidence to check:** Read the test in `tests/test_tracker_beads_gate.py` for the open and merge path. It must assert the gate kind and the argv that resolves it. The argv must carry the gate id.\n\n**Scoring:**\n- 1.0: the test asserts the `gh:pr` kind and the resolve argv, and it passes.\n- 0.5: the test asserts the resolve, but not the kind or the argv.\n- 0.0: no gate is added, or the merge does not resolve it.\n\n### C3 — A gate with no stored number stays pending\n\n**Must be true:** A pull request gate with no stored number does not resolve on merge. It stays pending.\n\n**Evidence to check:** Read the test that covers a missing number. It must assert the pending state after `set_pull_request_state` runs.\n\n**Scoring:**\n- 1.0: the test asserts pending, and it passes.\n- 0.5: the test covers the case, but does not check the state.\n- 0.0: no test, or the gate resolves with no number.\n\n## Regression check\n\n- `uv run pytest tests/test_pr_tracker_state.py -q` passes unchanged.\n- `uv run pytest tests/test_tracker_beads_write.py -q` passes. Its open pull request replay still matches.\n\n## Out of scope — do not penalise\n\n- The claim and the ready query. Those belong to slices 19 and 20.\n- The formula. That belongs to slice 22.\n- Live `gh` calls. The tests use recorded argv.\n",
+        "body_md": "Kind: test-suite\n\n# Rubric: Slice 21 — E5 pull request gate on beads\n\nFeature: beads-storage\nEpic: beads-storage/E5\nSlice goal: `open_pull_request` adds a `gh:pr` gate for each blocked epic through `gate_create_argv(epic_bd_id, number)`. It stores the gate ids in the PR record `envelope.gates`. `set_pull_request_state(ref, merged)` resolves each gate through `gate_resolve_argv(gate_id)`. Reads skip the hidden gates. The E4 pull request state test passes unchanged.\nTest command: `uv run pytest tests/test_tracker_beads_gate.py tests/test_tracker_beads_gate_real.py tests/test_pr_tracker_state.py -q -m ''`\n\nThe real-bd tests in `tests/test_tracker_beads_gate_real.py` carry the pytest mark `slow`. The default run skips them, so the command adds `-m ''` to run them. They skip without `bd`. The file `tests/test_pr_tracker_state.py` is created by E4 slice 15, so it must exist before this slice starts.\n\n## Criteria\n\n### C1 — The E4 pull request state test passes unchanged [CRITICAL]\n\n**Must be true:** `tests/test_pr_tracker_state.py` passes. This slice does not edit that file, and it does not weaken any of its assertions.\n\n**Evidence to check:** Run the file. Confirm that this slice's diff does not touch the file.\n\n**Scoring:**\n- 1.0: the file passes, and this slice does not change it.\n- 0.5: the file passes, but this slice edits an assertion in it.\n- 0.0: the file fails, or it was removed.\n\n### C2 — `gh:pr` gates are created, stored, and resolved on merge [CRITICAL]\n\n**Must be true:** `open_pull_request` keeps the blocker and adds one gate with kind `gh:pr` for each blocked epic, through `gate_create_argv(epic_bd_id, number)`. It stores the gate ids in the PR record `envelope.gates`. When `set_pull_request_state(ref, merged=True)` runs, the adapter resolves each stored gate through `gate_resolve_argv(gate_id)` before it closes the PR.\n\n**Evidence to check:**\n- Read `test_gate_argv_builders`, `test_open_pull_request_adds_one_gate_for_each_epic_and_keeps_the_blocker`, `test_open_pull_request_stores_the_gate_ids_in_the_pr_metadata`, and `test_merge_resolves_each_gate_before_it_closes_the_pr` in `tests/test_tracker_beads_gate.py`. They must assert the `gh:pr` kind, the create argv, and the resolve argv with the gate id.\n- Read `test_merge_resolves_both_gates_and_frees_both_epics` in `tests/test_tracker_beads_gate_real.py`. Run it with `-m ''` and with `bd` on the path. A skip does not count.\n- Read `test_gate_replay_rejects_a_drifted_await_id`. The replay must fail when the await id drifts.\n\n**Scoring:**\n- 1.0: the tests assert the kind, both argv, the stored ids, and the merge order, and they pass, and the real test passes with `bd`.\n- 0.5: the replay tests pass, but the real test skips or is missing, or the stored ids are not asserted.\n- 0.0: no gate is added, or the merge does not resolve it.\n\n### C3 — A gate with no stored number stays pending\n\n**Must be true:** A pull request gate with no stored number (no await id) does not resolve on merge. It stays pending, and the merge raises no error.\n\n**Evidence to check:** Read `test_a_gate_with_no_stored_number_stays_pending`. It must assert that the merge resolves the first gate only and leaves the second pending. Read `test_an_open_state_resolves_no_gate` and `test_a_pr_with_no_stored_gates_calls_no_gate_command`, and `test_an_open_state_leaves_both_gates_pending` in the real file. They must assert that no gate command runs.\n\n**Scoring:**\n- 1.0: the tests assert the pending state, and they pass.\n- 0.5: the test covers the case, but does not check the state.\n- 0.0: no test, or the gate resolves with no number.\n\n### C4 — Reads skip the hidden gates\n\n**Must be true:** `bd list` hides gate rows, but an epic row lists its gate as a `blocks` dependency. A read skips a `blocks` dependency whose target bd did not list. Reads do not fail with open gates.\n\n**Evidence to check:** Read `test_reads_survive_open_gates_that_bd_list_hides`. It must build an adapter from rows that carry such a dependency and read without an error.\n\n**Scoring:**\n- 1.0: the test asserts that the read succeeds and skips the hidden gate.\n- 0.5: the test reads, but does not assert the skip.\n- 0.0: no test, or a read raises an error with an open gate.\n\n## Regression check\n\n- `uv run pytest tests/test_pr_tracker_state.py -q` passes unchanged.\n- `uv run pytest tests/test_tracker_beads_write.py -q` passes. Its open pull request replay still matches.\n\n## Out of scope — do not penalise\n\n- The claim and the ready query. Those belong to slices 19 and 20.\n- The formula. That belongs to slice 22.\n- Live `gh` calls. The tests use recorded argv, or a scratch `bd` workspace.\n",
         "source_path": ".cobuilder/rubrics/beads-storage/slice-21.md"
       },
       {
@@ -6075,6 +6099,7 @@
           "beads-storage/E3",
           "beads-storage/E4",
           "beads-storage/E5",
+          "beads-storage/E6",
           "cobuilder-viewer/E1",
           "cobuilder-viewer/E2",
           "cobuilder-viewer/E3",
@@ -6119,6 +6144,7 @@
           "beads-storage/E3",
           "beads-storage/E4",
           "beads-storage/E5",
+          "beads-storage/E6",
           "work-drawer/E1",
           "work-drawer/E2"
         ]
@@ -6190,7 +6216,8 @@
           "beads-storage/E2",
           "beads-storage/E3",
           "beads-storage/E4",
-          "beads-storage/E5"
+          "beads-storage/E5",
+          "beads-storage/E6"
         ]
       },
       "ADR-0041": {
@@ -6202,6 +6229,18 @@
         "pr": null,
         "via": "none",
         "path": []
+      },
+      "ADR-0043": {
+        "pr": 43,
+        "via": "epic",
+        "path": [
+          "beads-storage/E1",
+          "beads-storage/E2",
+          "beads-storage/E3",
+          "beads-storage/E4",
+          "beads-storage/E5",
+          "beads-storage/E6"
+        ]
       }
     },
     "epic_to_pull_request": {
@@ -6209,6 +6248,7 @@
       "beads-storage/E2": 43,
       "beads-storage/E3": 43,
       "beads-storage/E4": 43,
+      "beads-storage/E5": 50,
       "book-index-tiering/E1": 16,
       "cobuilder-implement/E1": 11,
       "cobuilder-implement/E2": 12,
@@ -6251,15 +6291,16 @@
       "work-drawer/E2": 25
     },
     "epic_status": {
-      "beads-storage/E1": "open",
-      "beads-storage/E2": "open",
-      "beads-storage/E3": "open",
-      "beads-storage/E4": "open",
-      "beads-storage/E5": "unstarted",
+      "beads-storage/E1": "in_progress",
+      "beads-storage/E2": "in_progress",
+      "beads-storage/E3": "in_progress",
+      "beads-storage/E4": "in_progress",
+      "beads-storage/E5": "in_progress",
+      "beads-storage/E6": "unstarted",
       "book-index-tiering/E1": "open",
-      "build-workflow-polish/E1": "unstarted",
-      "build-workflow-polish/E2": "unstarted",
-      "build-workflow-polish/E3": "unstarted",
+      "build-workflow-polish/E1": "completed",
+      "build-workflow-polish/E2": "completed",
+      "build-workflow-polish/E3": "completed",
       "build-workflow-polish/E4": "unstarted",
       "cobuilder-implement/E1": "merged",
       "cobuilder-implement/E2": "merged",
@@ -6305,7 +6346,7 @@
       "interaction-design-gate/E3": "unstarted",
       "lean-bundle-diffs/E1": "unstarted",
       "lean-bundle-diffs/E2": "unstarted",
-      "lean-bundle-diffs/E3": "unstarted",
+      "lean-bundle-diffs/E3": "completed",
       "maintainable-viewer/E1": "unstarted",
       "maintainable-viewer/E2": "unstarted",
       "maintainable-viewer/E3": "unstarted",
@@ -6322,7 +6363,7 @@
       "plugin-split/E5": "merged",
       "plugin-split/E6": "merged",
       "plugin-split/E7": "unstarted",
-      "plugin-split/E8": "open",
+      "plugin-split/E8": "completed",
       "react-viewer/E1": "unstarted",
       "react-viewer/E2": "unstarted",
       "react-viewer/E3": "unstarted",
@@ -6531,7 +6572,8 @@
       "ADR-0039": "cobuilder-packaging",
       "ADR-0040": "shared",
       "ADR-0041": "cobuilder-packaging",
-      "ADR-0042": "cobuilder-packaging"
+      "ADR-0042": "cobuilder-packaging",
+      "ADR-0043": "tracker-port"
     },
     "adr_to_district": {
       "ADR-0001": "scripts",

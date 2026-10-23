@@ -57,6 +57,7 @@ class _RejectsType:
 
 
 
+@pytest.mark.slow
 def test_prepare_on_bd_without_custom_types_sets_exactly_program() -> None:
     support.require_bd()
 
@@ -67,6 +68,7 @@ def test_prepare_on_bd_without_custom_types_sets_exactly_program() -> None:
         assert _types(adapter) == "program"
 
 
+@pytest.mark.slow
 def test_prepare_twice_changes_once_and_the_second_call_sets_nothing() -> None:
     support.require_bd()
 
@@ -79,6 +81,7 @@ def test_prepare_twice_changes_once_and_the_second_call_sets_nothing() -> None:
         assert adapter.runner.count("config") == 1 and adapter.runner.calls[0][:2] == ["config", "get"], adapter.runner.calls
 
 
+@pytest.mark.slow
 def test_prepare_keeps_the_existing_custom_types() -> None:
     support.require_bd()
 
@@ -90,6 +93,7 @@ def test_prepare_keeps_the_existing_custom_types() -> None:
         assert _types(adapter) == "foo,bar,program"
 
 
+@pytest.mark.slow
 def test_prepare_does_nothing_when_program_is_among_the_types() -> None:
     support.require_bd()
 
@@ -138,6 +142,7 @@ def test_cli_prepare_without_an_adapter_exits_2(tmp_path: Path) -> None:
     assert json.loads(result.stdout)["ok"] is False
 
 
+@pytest.mark.slow
 def test_cli_prepare_on_real_bd_changes_once(tmp_path: Path) -> None:
     support.require_bd()
 
@@ -149,6 +154,7 @@ def test_cli_prepare_on_real_bd_changes_once(tmp_path: Path) -> None:
     assert cli_support.ok(cli_support.cli(config, seed, "prepare")) == {"changed": False}
 
 
+@pytest.mark.slow
 def test_create_record_of_a_program_succeeds_on_bd_without_custom_types() -> None:
     support.require_bd()
 

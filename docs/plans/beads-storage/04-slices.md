@@ -36,11 +36,11 @@ Each slice ends in one thing that a test asserts or a reader sees. A slice never
 | 16 | `beads-storage/E4` | **Goal file drops epic state fields** | `goal.json` holds no `branch`, `pr`, or `state` key after the migration, and the artifact view lists the same epics. | 0.97 (attempt 1) | done |
 | 17 | `beads-storage/E4` | **Docs test guards the port and install asks first** | `tests/test_tracker_docs.py` passes on this repo, and it fails when a `bd` call appears outside `shared/tracker_port/`. The install command runs the backfill dry run after adapter config and asks for consent before any write. | 0.97 (attempt 1) | done |
 | | **`beads-storage/E5` — Beads-native features.** Atomic claim, native ready, a pull request gate, and the slice-loop formula. It starts after E4. The engineer chose options A and B of `epic-E5-design.md`. | | | | |
-| 18 | `beads-storage/E5` | **Spike: claim flags, exit codes, lease expiry** | The beads notes list each flag set, exit code, and lease result, with the command that produced it. | — | pending |
-| 19 | `beads-storage/E5` | **Atomic claim** | Contract case 3 passes on beads with one write, and eight concurrent claims give one winner. | — | pending |
-| 20 | `beads-storage/E5` | **Native ready, with parity** | Ready parity holds for each kind on the recorded corpus, and contract cases 1 and 2 pass on beads. | — | pending |
-| 21 | `beads-storage/E5` | **Pull request gate** | The gate resolves when the pull request merges, and the slice 15 test stays green. | — | pending |
-| 22 | `beads-storage/E5` | **Slice-loop formula** | The formula cooks and pours, a failed attempt adds a wisp, and squash with `--keep-children` keeps the attempt history. | — | pending |
+| 18 | `beads-storage/E5` | **Spike: claim flags, exit codes, lease expiry** | The beads notes list each flag set, exit code, and lease result, with the command that produced it. | 1 (attempt 1) | done |
+| 19 | `beads-storage/E5` | **Atomic claim** | Contract case 3 passes on beads with one write, and eight concurrent claims give one winner. | 1 (attempt 1) | done |
+| 20 | `beads-storage/E5` | **Native ready, with parity** | Ready parity holds for each kind on the recorded corpus, and contract cases 1 and 2 pass on beads. | 0.92 (attempt 1) | done |
+| 21 | `beads-storage/E5` | **Pull request gate** | The gate resolves when the pull request merges, and the slice 15 test stays green. | 1 (attempt 1) | done |
+| 22 | `beads-storage/E5` | **Slice-loop formula** | The formula cooks and pours, a failed attempt adds a wisp, and squash with `--keep-children` keeps the attempt history. | 1 (attempt 1) | done |
 
 ## Escalation and order
 

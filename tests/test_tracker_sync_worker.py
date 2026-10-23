@@ -4,6 +4,7 @@ Run with: uv run pytest tests/test_tracker_sync_worker.py -q
 """
 from __future__ import annotations
 
+import pytest
 import json
 import tempfile
 import threading
@@ -105,6 +106,7 @@ def test_usage_doc_names_sync_worker():
     assert "sync-worker" in DOC.read_text(encoding="utf-8")
 
 
+@pytest.mark.slow
 def test_real_bd_async_write_then_worker_reaches_a_fresh_clone() -> None:
     support.require_bd()
     from tracker_port import sync_worker

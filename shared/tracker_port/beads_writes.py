@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import json
+import re
 from typing import Any
 
-from .bd_runner import BdError
+from .bd_runner import BdError, claim_argv
 from .beads_rows import (
     CB_VERSION,
     KINDS,
@@ -28,14 +28,13 @@ class _WriteMixin:
         rows = self._rows()
         row = self._find_row(rows, id, ("slice",))
         try:
-            self.runner.run(["update", row["id"], "--status", "in_progress", "--assignee", claimant])
+            self.runner.run(claim_argv(row["id"], claimant))
         except BdError as error:
-            raise AdapterError(f"claim of {id} refused: {error.stderr.strip()}") from error
-        shown = json.loads(self.runner.run(["show", row["id"], "--json"]))[0]
-        record = self._record(shown, self._cb_ids(rows))
+            holder = re.search(r"already claimed by (\S+)", error.stderr)
+            detail = f"already claimed by {holder.group(1)}" if holder else error.stderr.strip()
+            raise AdapterError(f"claim of {id} refused: {detail}") from error
+        record = self._record({**row, "status": "in_progress", "assignee": claimant}, self._cb_ids(rows))
         self._publish()
-        if record.assignee != claimant:
-            raise AdapterError(f"claim of {id} read back assignee {record.assignee!r}, not {claimant!r}")
         return record
 
     def set_program_stage(self, program: str, stage: str) -> TrackerRecord:

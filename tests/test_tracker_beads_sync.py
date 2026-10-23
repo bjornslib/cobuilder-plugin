@@ -6,6 +6,7 @@ Run with: uv run pytest tests/test_tracker_beads_sync.py -q
 """
 from __future__ import annotations
 
+import pytest
 from collections import Counter
 import json
 import tempfile
@@ -29,6 +30,7 @@ def _clone_cbs(root: Path, origin: Path, name: str) -> list[dict[str, Any]]:
     return [row["metadata"]["cb"] for row in json.loads(listed.stdout)]
 
 
+@pytest.mark.slow
 def test_fresh_clone_inits_and_syncs() -> None:
     support.require_bd()
 
@@ -108,6 +110,7 @@ def test_sync_second_step_failure_raises_adapter_error() -> None:
     raise AssertionError("a failed dolt push must raise AdapterError")
 
 
+@pytest.mark.slow
 def test_sync_failure_on_a_non_empty_remote_does_not_push() -> None:
     from tracker_port.beads import BeadsAdapter
     from tracker_port.port import AdapterError
