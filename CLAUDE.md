@@ -123,7 +123,7 @@ shared/                           vendored into each plugin as plugins/<name>/sh
 plugins/<name>/{commands,skills,scripts}   auto-discovered, never declared in plugin.json
 plugins/artifact/viewer/src/      viewer source: React, TypeScript, Vite, Tailwind, Vitest
 plugins/artifact/viewer/index.html  the built viewer, committed
-plugins/implement/{agents,hooks}  the only agents in the family, and the coach and reminder hooks
+plugins/implement/{agents,hooks}  the only agents in the family, and its four hooks: coach, tracker reminder, sync check, sync flush
 plugins/cobuilder-memory/hooks/   the mod's TypeScript hooks module, with its tests in tests/
 docs/                             authored: architecture/{adr,designs,contexts,review,options}, plans/, pull-requests/
 .cobuilder-architect/             derived bundles and binary assets, committed (self/ plus two test fixtures)
@@ -167,8 +167,9 @@ tests/                            pytest suite for packaging, scripts, and gates
    that plugin resolves its own path. A plugin never names
    `plugins/<other>/...`. Shared code goes in `shared/`.
 5. **Narrow install surface.** Only `implement` ships agents. `implement` ships
-   two hooks, the coach and the reminder. The `cobuilder-memory` mod ships its
-   hooks module (ADR-0025, ADR-0039, ADR-0041). No plugin ships an MCP server.
+   four hook scripts: the coach, the tracker reminder, the sync check, and the
+   sync flush. The `cobuilder-memory` mod ships its hooks module (ADR-0025,
+   ADR-0039, ADR-0041, ADR-0042). No plugin ships an MCP server.
 6. **Never overwrite authored content.** `extract_story.py` keeps authored
    narrative fields. A data migration declares the fields it touches. Its guard
    stops the run before any write that changes another authored field.
@@ -205,7 +206,8 @@ tests/                            pytest suite for packaging, scripts, and gates
 ## Commands
 
 ```
-uv run pytest tests -q                         # Python suite, on uv's managed Python 3.11
+uv run pytest tests -q                         # fast Python suite, on uv's managed Python 3.11, with no real bd
+uv run pytest tests -q -m ''                   # full suite, with the slow real-bd tests; run it before a PR merges
 claude plugin test plugins/cobuilder-memory    # the mod's hook tests
 npx tsc -p plugins/cobuilder-memory --noEmit   # the mod's type check, with the root tools package
 cd plugins/artifact/viewer && npm run build    # tsc --noEmit, then vite build, writes the committed index.html
@@ -284,6 +286,12 @@ run the real `bd` in temporary folders.
   and 5 parameters or fewer. Check with `uv run shared/habit_smells.py`.
 - **Subagents may not run `git stash`.** `.claude/hooks/deny-git-stash.py`
   denies it. The hook is local tooling, and it ships to nobody.
+- **Keep sync code in the beads adapter and the worker.** Only the beads
+  adapter and `shared/tracker_port/sync_worker.py` may run a sync. A hook
+  script never calls `bd`. The sync files sit in `.cobuilder/` as `sync-dirty`,
+  `sync-lock`, `sync-status.json`, and `sync-worker.log`, and the install
+  default is `sync: async` for beads. Tests that use a real `bd` carry the `slow` marker, and the default run skips
+  them. Run the full suite as one background run at a time.
 
 ## Known gaps
 

@@ -6,6 +6,7 @@ Run with: uv run pytest tests/test_tracker_beads_sync.py -q
 """
 from __future__ import annotations
 
+import pytest
 from collections import Counter
 import json
 import tempfile
@@ -19,18 +20,6 @@ _run = support.run
 _scratch_tracker = support.scratch_tracker
 
 
-class _RecordingRunner:
-    """Wraps a real BdRunner and keeps each argument list it runs."""
-
-    def __init__(self, inner: Any) -> None:
-        self.inner = inner
-        self.calls: list[list[str]] = []
-
-    def run(self, args: list[str]) -> str:
-        self.calls.append(list(args))
-        return self.inner.run(args)
-
-
 def _clone_cbs(root: Path, origin: Path, name: str) -> list[dict[str, Any]]:
     """Clone the origin, sync bd, and return the cb block of every listed row."""
     clone = root / name
@@ -41,6 +30,7 @@ def _clone_cbs(root: Path, origin: Path, name: str) -> list[dict[str, Any]]:
     return [row["metadata"]["cb"] for row in json.loads(listed.stdout)]
 
 
+@pytest.mark.slow
 def test_fresh_clone_inits_and_syncs() -> None:
     support.require_bd()
 
@@ -59,13 +49,13 @@ def test_fresh_clone_inits_and_syncs() -> None:
         origin = root / "origin.git"
         seed = _scratch_tracker(root)
 
-        seed_runner = _RecordingRunner(BdRunner(bd="bd", cwd=seed))
+        seed_runner = support.CountingRunner(BdRunner(bd="bd", cwd=seed))
         created = BeadsAdapter(seed_runner).seed_from_files(plan_dir)
         assert sorted(record.id for record in created) == expected_ids
 
         _run(["git", "-C", str(origin), "show-ref", "refs/dolt/data"], root)
 
-        second_runner = _RecordingRunner(BdRunner(bd="bd", cwd=seed))
+        second_runner = support.CountingRunner(BdRunner(bd="bd", cwd=seed))
         assert BeadsAdapter(second_runner).seed_from_files(plan_dir) == []
         assert not [call for call in second_runner.calls if call[:1] == ["create"]]
 
@@ -120,6 +110,7 @@ def test_sync_second_step_failure_raises_adapter_error() -> None:
     raise AssertionError("a failed dolt push must raise AdapterError")
 
 
+@pytest.mark.slow
 def test_sync_failure_on_a_non_empty_remote_does_not_push() -> None:
     from tracker_port.beads import BeadsAdapter
     from tracker_port.port import AdapterError

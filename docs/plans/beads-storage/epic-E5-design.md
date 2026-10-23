@@ -2,11 +2,20 @@
 
 Feature: beads-storage
 Epic ID: E5
-Status: proposed. The slices below are not in `04-slices.md`. The engineer decides first.
+Status: built. E5-1 to E5-5 are done. The decisions and results are in the next section.
+
+## Decisions and results
+
+- Options A and B are adopted. Option C is not used.
+- The spike corrected an earlier note. `bd update --claim` cannot combine with `--if-assignee`. bd exits 1, not 13. Exit 13 comes only from a guarded plain update. The claim is `bd update <id> --claim --actor <claimant>`, with no `--if-assignee`.
+- A lease lasts 5 minutes. An expired lease alone does not free a claim. Only `bd reclaim` frees it. The adapter needs no lease guard.
+- `native_ready` stays false. The parity check fails in bd 1.3.0: `bd ready` misses the children of a blocked parent, and it lists the pull request task and the deferred epic. The adapter keeps computing ready. There is no `ready_argv` and no hybrid. The parity evidence is in the transcripts, `tests/test_tracker_beads_ready.py`, and the adapter notes.
+- The gate is a mirror that stays beside the pull request blocker. The adapter handles the gate read hazard: `bd list` hides gate rows, and a read skips a `blocks` dependency whose target bd did not list.
+- The formula is built. Squash needs `--keep-children` to keep the attempt wisps.
 
 ## Proposal for engineer review
 
-The engineer removes this section after the decision. The decisions then move into the sections below.
+This section holds the proposal as the engineer reviewed it. The section above holds the decisions and results. Where the two differ, the section above is correct.
 
 ### Goal
 
@@ -41,7 +50,7 @@ E5 starts after E4 closes. E4 slice 17 is the last program slice. E5-5 changes a
 Verified facts. These come from scratch experiments on bd 1.3.0 in this design session. They are not in the test suite.
 
 - Eight concurrent `bd update --claim` calls gave one winner.
-- `bd update --claim --if-assignee <login>` exits 13 when the assignee differs.
+- `bd update --claim --if-assignee <login>` does not work. bd refuses the two flags together and exits 1. Exit 13 comes only from a guarded plain update, such as `--status in_progress --assignee <login> --if-assignee <login>`.
 - bd has no `bd claim` command.
 - `bd ready --mol` lists the molecule root. The adapter must filter that root out.
 - The squash command deletes open wisp children by default. Do not rely on the default. Pass `--keep-children`, or write a custom digest.
@@ -55,7 +64,7 @@ Not verified: lease expiry, timer gates, merge slots, and federation conflicts. 
 
 New files:
 
-- `tests/test_tracker_beads_claim.py`. The claim race and stale claim cases (E5-2).
+- `tests/test_tracker_beads_atomic_claim.py`, `tests/test_tracker_beads_claim_real.py` (slow), and `tests/test_tracker_beads_claim.py`. The claim argv, the held claim, and the eight-claim race (E5-2). The slow file needs `-m ''` to run.
 - `tests/test_tracker_beads_ready.py`. The ready parity cases (E5-3).
 - `tests/test_tracker_beads_gate.py`. The pull request gate case (E5-4).
 - `shared/tracker_port/formulas/slice-loop.toml`. The formula (E5-5).
@@ -64,8 +73,8 @@ New files:
 
 Modified files:
 
-- `shared/tracker_port/beads.py` (E2). Sets the flag values, and adds the claim, ready, and gate paths. E5-2, E5-3, and E5-4 edit it.
-- `shared/tracker_port/bd_runner.py` (E2). Remains the only subprocess call to `bd`. Adds the argument builders for the claim, ready, and gate calls (E5-2, E5-3, E5-4).
+- `shared/tracker_port/beads.py` (E2). Sets the flag values, and adds the claim and gate paths. `native_ready` stays false. E5-2 and E5-4 edit it.
+- `shared/tracker_port/bd_runner.py` (E2). Remains the only subprocess call to `bd`. Adds the argument builders for the claim and gate calls (E5-2, E5-4).
 - `shared/tracker-adapter-beads.md` (E2). Records the claim flags, the exit codes, the ready rule, the gate, and the spike results (E5-1 to E5-5).
 - `tests/test_tracker_beads.py` (E2). Adds one claim case (E5-2) and one gate case (E5-4). It changes no other case.
 - `plugins/implement/skills/build/references/slice-loop.md` (E4 slice 13). Adds one pointer to the formula (E5-5 only).
@@ -83,8 +92,8 @@ Not touched:
 E5 adds no public name. The port contract in ADR-0040 and in E1 stays fixed. E5 sets the four values of `Capabilities` in the beads adapter only. E5 adds these private helpers to `bd_runner.py`. E5-1 confirms the exact flag set before E5-2 writes the first helper.
 
 ```python
-def claim_argv(issue_id: str, claimant: str, expected: str | None) -> list[str]: ...
-def ready_argv(under: str | None) -> list[str]: ...
+def claim_argv(issue_id: str, claimant: str) -> list[str]: ...
+def gate_create_argv(epic_bd_id: str, number: str) -> list[str]: ...
 def gate_resolve_argv(gate_id: str) -> list[str]: ...
 ```
 
@@ -95,8 +104,8 @@ The numbers E5-1 to E5-5 are local to this epic. The engineer assigns the global
 | Slice | Name | Depends on | Files | Ends with |
 |---|---|---|---|---|
 | E5-1 | Spike: claim flags, exit codes, lease expiry | E4 slice 17 | `shared/tracker-adapter-beads.md`, transcripts | Notes list each flag set, exit code, and lease result, with the command that produced it |
-| E5-2 | Atomic claim | E5-1 | `beads.py`, `bd_runner.py`, `test_tracker_beads_claim.py`, `test_tracker_beads.py` | Contract case 3 passes on beads with one write. Eight concurrent claims give one winner |
-| E5-3 | Native ready, with parity | E5-1 | `beads.py`, `bd_runner.py`, `test_tracker_beads_ready.py` | Ready parity holds for each kind on the recorded corpus, and contract cases 1 and 2 pass on beads |
+| E5-2 | Atomic claim | E5-1 | `beads.py`, `bd_runner.py`, `test_tracker_beads_atomic_claim.py`, `test_tracker_beads_claim_real.py`, `test_tracker_beads_claim.py` | Contract case 3 passes on beads with one write. Eight concurrent claims give one winner |
+| E5-3 | Native ready, with parity | E5-1 | `test_tracker_beads_ready.py`, transcripts, notes | Parity of bd ready fails in bd 1.3.0. The flag stays false, and the evidence is recorded. The adapter matches the projector |
 | E5-4 | Pull request gate | E5-3 | `beads.py`, `bd_runner.py`, `test_tracker_beads_gate.py`, `test_tracker_beads.py` | The gate resolves when the pull request merges, and the E4 slice 15 test stays green |
 | E5-5 | Slice-loop formula | E5-4, and E4 slice 13 | formula TOML, `test_tracker_beads_formula.py`, `slice-loop.md` | The formula cooks and pours. A failed attempt adds a wisp. Squash with `--keep-children` keeps the attempt history |
 
@@ -151,11 +160,11 @@ Pass conditions: the formula cooks and pours in a scratch workspace. The squash 
 
 ## Risks & Open Questions
 
-1. **Lease expiry has no test.** E5-1 tests it. If an expired lease releases an active claim, E5-2 needs a lease guard. The engineer confirms the guard before E5-2 starts.
-2. **A hybrid ready may not count as native.** E5-3 uses `bd ready` and then applies two adapter rules. The engineer decides if that counts as `native_ready`. If not, the flag stays false.
-3. **The gate may repeat the pull request blocker.** ADR-0040 already blocks the epics through the pull request record. The engineer picks one mechanism. The default keeps the blocker and adds the gate as a mirror.
-4. **Squash deletes open wisp children by default.** E5-5 passes `--keep-children`. The flag must exist in bd 1.3.0. E5-5 confirms this before it relies on the flag.
-5. **The stale claim has no exit code in the contract.** The default is exit 3. A new code would need a change to the `tracker.py` reference, so the engineer decides.
+1. **Lease expiry has no test.** Resolved. The spike observed it: a lease lasts 5 minutes, an expired lease alone does not free a claim, and `bd reclaim` does. The adapter needs no lease guard.
+2. **A hybrid ready may not count as native.** Resolved. The parity check fails in bd 1.3.0, so `native_ready` stays false. There is no hybrid and no `ready_argv`. The adapter computes ready.
+3. **The gate may repeat the pull request blocker.** Resolved. The adapter keeps the blocker and adds the gate as a mirror. Reads skip the hidden gate rows.
+4. **Squash deletes open wisp children by default.** Resolved. The flag `--keep-children` exists in bd 1.3.0, and the slice-loop formula uses it.
+5. **The stale claim has no exit code in the contract.** Resolved. A held claim is bd exit 1 with `already claimed by` in stderr. The adapter maps it to `AdapterError`, which the CLI reports as exit 3. No new code was needed.
 6. **E5-5 changes an E4 file.** E5 waits for E4, so the pointer in `slice-loop.md` lands on the final E4 text. The engineer confirms that E4 leaves a stable place for the pointer.
 7. **Federation conflicts have no test.** E5 does not change federation. The gap stays in the adapter notes.
 8. **Beads features may change in later releases.** The notes pin bd 1.3.0. A later release needs a new spike before any flag changes.

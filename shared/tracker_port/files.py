@@ -11,8 +11,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, NoReturn
 
-from .design_records import design_records
-from .plan_records import PlanError, _epic_and_slice_records, _program_record
+from .design_records import design_records, plan_stage
+from .plan_program import _program_record
+from .plan_records import PlanError, _epic_and_slice_records
 from .port import AdapterError, ArgumentError, NoAdapterError
 from .record import Capabilities, TrackerRecord
 
@@ -50,20 +51,18 @@ class FilesAdapter:
             if not status_path.is_file() and not slices_path.is_file():
                 continue
             status_text = status_path.read_text(encoding="utf-8") if status_path.is_file() else ""
-            records.append(_program_record(directory, status_text))
-            if not slices_path.is_file():
-                continue
-            try:
-                records.extend(
-                    _epic_and_slice_records(
-                        directory.name,
-                        slices_path.read_text(encoding="utf-8"),
-                        status_text,
-                        self._plans_dir,
+            kept: list[TrackerRecord] = []
+            if slices_path.is_file():
+                try:
+                    kept = _epic_and_slice_records(
+                        directory.name, slices_path.read_text(encoding="utf-8"), status_text, self._plans_dir
                     )
-                )
-            except PlanError as error:
-                self.conflicts.append({"plan": directory.name, "reason": error.reason, "text": error.text})
+                except PlanError as error:
+                    self.conflicts.append({"plan": directory.name, "reason": error.reason, "text": error.text})
+            epics = [record for record in kept if record.kind == "epic"]
+            stage = plan_stage(self._plans_dir, directory.name, epics)
+            records.append(_program_record(directory, status_text, stage, epics))
+            records.extend(kept)
         records.extend(design_records(self._plans_dir, records))
         return records
 
@@ -110,6 +109,7 @@ class FilesAdapter:
     record_attempt = _refuse
     add_note = _refuse
     escalate = _refuse
+    skip_slice = _refuse
     open_pull_request = _refuse
     set_pull_request_state = _refuse
     regenerate_status_files = _refuse

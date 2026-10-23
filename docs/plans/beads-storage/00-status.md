@@ -50,11 +50,11 @@ Initial checks, 2026-10-17:
 - [x] Slice 16 — Goal file drops epic state fields   score: 0.97 on attempt 1   note: —
 - [x] Slice 17 — Docs test guards the port and install asks first   score: 0.97 on attempt 1   note: —
 
-- [ ] Slice 18 — Spike: claim flags, exit codes, lease expiry   score: —   note: —
-- [ ] Slice 19 — Atomic claim   score: —   note: —
-- [ ] Slice 20 — Native ready, with parity   score: —   note: —
-- [ ] Slice 21 — Pull request gate   score: —   note: —
-- [ ] Slice 22 — Slice-loop formula   score: —   note: —
+- [x] Slice 18 — Spike: claim flags, exit codes, lease expiry   score: 1 on attempt 1   note: —
+- [x] Slice 19 — Atomic claim   score: 1 on attempt 1   note: —
+- [x] Slice 20 — Native ready, with parity   score: 0.92 on attempt 1   note: —
+- [x] Slice 21 — Pull request gate   score: 1 on attempt 1   note: —
+- [x] Slice 22 — Slice-loop formula   score: 1 on attempt 1   note: —
 
 ## Escalated
 

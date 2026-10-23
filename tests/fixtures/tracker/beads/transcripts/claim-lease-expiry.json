@@ -1,0 +1,77 @@
+{
+  "bd": "bd version 1.3.0 (Homebrew)",
+  "steps": [
+    {
+      "args": [
+        "update",
+        "scr-lv4",
+        "--claim"
+      ],
+      "stdout": "\u2713 Updated issue: scr-lv4 \u2014 x\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "show",
+        "scr-lv4",
+        "--json"
+      ],
+      "stdout": "[\n  {\n    \"id\": \"scr-lv4\",\n    \"title\": \"x\",\n    \"status\": \"in_progress\",\n    \"priority\": 2,\n    \"issue_type\": \"task\",\n    \"assignee\": \"alice\",\n    \"owner\": \"131568482+bjornslib@users.noreply.github.com\",\n    \"created_at\": \"2026-10-22T10:16:09Z\",\n    \"created_by\": \"Bjorn Schliebitz\",\n    \"updated_at\": \"2026-10-22T10:16:09Z\",\n    \"started_at\": \"2026-10-22T10:16:09Z\",\n    \"lease_expires_at\": \"2026-10-22T10:21:09Z\",\n    \"heartbeat_at\": \"2026-10-22T10:16:09Z\",\n    \"dependent_count\": 0,\n    \"dependency_count\": 0,\n    \"comment_count\": 0,\n    \"revision\": \"-7035741029944224395\"\n  }\n]\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "update",
+        "scr-lv4",
+        "--claim"
+      ],
+      "stdout": "",
+      "stderr": "Error updating scr-lv4: issue already claimed by alice\nError: 1 of 1 issues failed to update\n  scr-lv4: updating issue: issue already claimed by alice\n",
+      "exit": 1
+    },
+    {
+      "args": [
+        "reclaim",
+        "--older-than",
+        "0s",
+        "--id",
+        "scr-lv4"
+      ],
+      "stdout": "\u2713 Reclaimed 1 stale-lease issue(s):\n  scr-lv4 (was held by alice)\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "show",
+        "scr-lv4",
+        "--json"
+      ],
+      "stdout": "[\n  {\n    \"id\": \"scr-lv4\",\n    \"title\": \"x\",\n    \"status\": \"open\",\n    \"priority\": 2,\n    \"issue_type\": \"task\",\n    \"owner\": \"131568482+bjornslib@users.noreply.github.com\",\n    \"created_at\": \"2026-10-22T10:16:09Z\",\n    \"created_by\": \"Bjorn Schliebitz\",\n    \"updated_at\": \"2026-10-22T10:21:20Z\",\n    \"dependent_count\": 0,\n    \"dependency_count\": 0,\n    \"comment_count\": 0,\n    \"revision\": \"2991010889642698727\"\n  }\n]\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "update",
+        "scr-lv4",
+        "--claim"
+      ],
+      "stdout": "\u2713 Updated issue: scr-lv4 \u2014 x\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "show",
+        "scr-lv4",
+        "--json"
+      ],
+      "stdout": "[\n  {\n    \"id\": \"scr-lv4\",\n    \"title\": \"x\",\n    \"status\": \"in_progress\",\n    \"priority\": 2,\n    \"issue_type\": \"task\",\n    \"assignee\": \"bob\",\n    \"owner\": \"131568482+bjornslib@users.noreply.github.com\",\n    \"created_at\": \"2026-10-22T10:16:09Z\",\n    \"created_by\": \"Bjorn Schliebitz\",\n    \"updated_at\": \"2026-10-22T10:21:21Z\",\n    \"started_at\": \"2026-10-22T10:21:21Z\",\n    \"lease_expires_at\": \"2026-10-22T10:26:21Z\",\n    \"heartbeat_at\": \"2026-10-22T10:21:21Z\",\n    \"dependent_count\": 0,\n    \"dependency_count\": 0,\n    \"comment_count\": 0,\n    \"revision\": \"-4057685945703981305\"\n  }\n]\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ]
+}

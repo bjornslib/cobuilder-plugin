@@ -24,6 +24,8 @@ TABLE_ROW_RE = re.compile(r"^\|\s*\d+\s*\|")
 SLICE_BOX_RE = re.compile(r"^(-\s*\[)(x| )(\]\s*Slice\s*(\d+)\s*[—–-])", re.IGNORECASE)
 # The score token and its optional attempt count. The note tail after them stays as it is.
 SLICE_SCORE_RE = re.compile(r"(\s+score:\s*)(\S+)((?:\s+on\s+attempt\s+\d+)?)")
+# The note tail of a status line. A skipped slice replaces it with the word skipped.
+NOTE_TAIL_RE = re.compile(r"note:.*$")
 
 
 def regenerate(port: TrackerPort | None, program: str, plans_dir: Path) -> list[Path]:
@@ -88,7 +90,7 @@ def _status_line(line: str, gates: dict, by_n: dict[int, TrackerRecord]) -> str:
     score = SLICE_SCORE_RE.search(line)
     if score is not None:
         line = line[: score.start(2)] + _status_score(record) + line[score.end(3) :]
-    return line
+    return _skipped_note(line) if _skipped(record) else line
 
 
 def _table_row(line: str, by_n: dict[int, TrackerRecord]) -> str:
@@ -99,13 +101,24 @@ def _table_row(line: str, by_n: dict[int, TrackerRecord]) -> str:
     if record is None or len(cells) != 8:
         return line
     cells[5] = f" {_table_score(record)} "
-    cells[6] = " done " if _closed(record) else " pending "
+    cells[6] = " skipped " if _skipped(record) else " done " if _closed(record) else " pending "
     return "|".join(cells)
 
 
 def _closed(record: TrackerRecord) -> bool:
     # An in_progress slice is not closed. It reads as pending, which the files show for open work.
     return record.lifecycle == "closed"
+
+
+def _skipped(record: TrackerRecord) -> bool:
+    # A skip-slice closes the slice with an outcome of skipped or escalated.
+    return _closed(record) and record.envelope.get("outcome") in ("skipped", "escalated")
+
+
+def _skipped_note(line: str) -> str:
+    if NOTE_TAIL_RE.search(line):
+        return NOTE_TAIL_RE.sub("note: skipped", line)
+    return f"{line.rstrip()}   note: skipped"
 
 
 def _score_number(record: TrackerRecord) -> str:

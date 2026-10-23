@@ -1,0 +1,116 @@
+{
+  "bd": "bd version 1.3.0 (Homebrew)",
+  "steps": [
+    {
+      "args": [
+        "update",
+        "scr-z9l",
+        "--claim",
+        "--if-assignee",
+        "alice"
+      ],
+      "stdout": "",
+      "stderr": "Error: cannot combine --if-assignee/--if-status with --claim (--claim is already an atomic compare-and-set)\n",
+      "exit": 1
+    },
+    {
+      "args": [
+        "update",
+        "scr-z9l",
+        "--status",
+        "in_progress",
+        "--assignee",
+        "alice",
+        "--if-assignee",
+        ""
+      ],
+      "stdout": "\u2713 Updated issue: scr-z9l \u2014 x\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "update",
+        "scr-z9l",
+        "--status",
+        "in_progress",
+        "--assignee",
+        "alice",
+        "--if-assignee",
+        ""
+      ],
+      "stdout": "",
+      "stderr": "Error updating scr-z9l: assignee mismatch: scr-z9l is held by \"alice\", expected \"\"\nError: 1 of 1 issues failed to update\n  scr-z9l: updating issue: assignee mismatch: scr-z9l is held by \"alice\", expected \"\"\n",
+      "exit": 13
+    },
+    {
+      "args": [
+        "update",
+        "scr-z9l",
+        "--status",
+        "in_progress",
+        "--assignee",
+        "alice",
+        "--if-assignee",
+        "alice"
+      ],
+      "stdout": "\u2713 Updated issue: scr-z9l \u2014 x\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "update",
+        "scr-z9l",
+        "--status",
+        "in_progress",
+        "--assignee",
+        "bob",
+        "--if-assignee",
+        "carol"
+      ],
+      "stdout": "",
+      "stderr": "Error updating scr-z9l: assignee mismatch: scr-z9l is held by \"alice\", expected \"carol\"\nError: 1 of 1 issues failed to update\n  scr-z9l: updating issue: assignee mismatch: scr-z9l is held by \"alice\", expected \"carol\"\n",
+      "exit": 13
+    },
+    {
+      "args": [
+        "update",
+        "scr-h6a",
+        "--status",
+        "in_progress",
+        "--assignee",
+        "bob",
+        "--if-assignee",
+        "carol"
+      ],
+      "stdout": "",
+      "stderr": "Error updating scr-h6a: assignee mismatch: scr-h6a is held by \"\", expected \"carol\"\nError: 1 of 1 issues failed to update\n  scr-h6a: updating issue: assignee mismatch: scr-h6a is held by \"\", expected \"carol\"\n",
+      "exit": 13
+    },
+    {
+      "args": [
+        "update",
+        "scr-h6a",
+        "--claim",
+        "--if-assignee",
+        ""
+      ],
+      "stdout": "",
+      "stderr": "Error: cannot combine --if-assignee/--if-status with --claim (--claim is already an atomic compare-and-set)\n",
+      "exit": 1
+    },
+    {
+      "args": [
+        "update",
+        "scr-h6a",
+        "--claim",
+        "--if-status",
+        "open"
+      ],
+      "stdout": "",
+      "stderr": "Error: cannot combine --if-assignee/--if-status with --claim (--claim is already an atomic compare-and-set)\n",
+      "exit": 1
+    }
+  ]
+}

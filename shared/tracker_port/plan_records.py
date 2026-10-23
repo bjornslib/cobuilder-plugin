@@ -6,10 +6,10 @@ import re
 from pathlib import Path
 from typing import Any
 
-from gate_status import approved_date, parse_gate4_substeps, parse_status_gates
-from slice_table import parse_header_epic_id, parse_row, parse_table
+from slice_table import parse_header_epic_id, parse_table
 
 from .design_records import epic_state
+from .plan_epic_rows import _row_epics
 from .port import AdapterError
 from .record import TrackerRecord
 
@@ -78,45 +78,16 @@ def _table_score(cell: str | None) -> tuple[float | None, int | None]:
     return float(match.group(1)), attempts
 
 
-# The program envelope keys that verify_gate reads when the tracker is not files:
-#   gate<n>      the gate state text, such as "APPROVED 2026-09-14"
-#   gate_view_<n> the gate's view route, or "" when the gate has no view line.
-#                Written only for an approved gate with a date, the one kind that needs a link.
-#   gate4a/4b/4c the Gate 4 sub-line state, written only when the sub-line exists.
-def _program_record(directory: Path, status_text: str) -> TrackerRecord:
-    program = directory.name
-    envelope: dict[str, str] = {}
-    for gate in parse_status_gates(status_text):
-        envelope[f"gate{gate['n']}"] = gate["state"]
-        if approved_date(gate["state"]) is not None:
-            envelope[f"gate_view_{gate['n']}"] = gate["view"] or ""
-    for step, state in parse_gate4_substeps(status_text).items():
-        envelope[f"gate{step}"] = state
-    return TrackerRecord(
-        id=program,
-        kind="program",
-        parent=None,
-        blocked_by=(),
-        lifecycle="open",
-        assignee=None,
-        envelope=envelope,
-        external_ref=program,
-    )
-
-
-def _row_epics(text: str) -> dict[str, str]:
-    # A row with a blank Epic cell belongs to the epic header above it. Maps each slice row's raw line to its epic.
-    current = ""
-    epics: dict[str, str] = {}
+def _reject_repeated_epic_header(program: str, text: str) -> None:
+    # An epic id on two header rows is a conflict. The text quotes the first repeat.
+    seen: set[str] = set()
     for line in text.splitlines():
         header_id = parse_header_epic_id(line)
-        if header_id is not None:
-            current = header_id
+        if header_id is None:
             continue
-        row = parse_row(line)
-        if row is not None:
-            epics[row.raw] = row.epic_id or current
-    return epics
+        if header_id in seen:
+            raise PlanError(f"{program} repeats the epic header id {header_id}", line)
+        seen.add(header_id)
 
 
 def _epic_and_slice_records(
@@ -128,6 +99,7 @@ def _epic_and_slice_records(
             f"{program} has slice rows the parser cannot read",
             "\n".join(str(line) for line in table.unparsed),
         )
+    _reject_repeated_epic_header(program, text)
     epic_ids = set(table.header_epic_ids)
     records = [
         TrackerRecord(
@@ -161,7 +133,7 @@ def _epic_and_slice_records(
         table_score, table_attempts = _table_score(row.score)
         if checkbox is None:
             # No checkbox line: the table State cell sets the lifecycle. The table score counts only for a closed slice.
-            checked = (row.state or "").strip().lower() == "done"
+            checked = (row.state or "").strip().lower() in ("done", "skipped")
             score, attempts = (table_score, table_attempts) if checked else (None, None)
         else:
             checked = checkbox["checked"]

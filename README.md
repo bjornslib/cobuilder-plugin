@@ -129,6 +129,12 @@ Check a plan at any time:
 uv run plugins/implement/scripts/verify_gate.py --plan docs/plans/<slug>
 ```
 
+#### Sync modes, skipping slices, and program state
+
+Workflow state moves through `shared/tracker.py`, never by hand. The file `.cobuilder/tracker.yaml` names the adapter and has a `sync` key: `async` (the default for beads), `write`, or `off`. The install command writes `sync: async` for beads, and it writes no `sync` key for files. In `async` mode, a write sets a dirty flag and starts a short-lived background worker, `tracker.py sync-worker`. The flag, lock, status, and log files sit in `.cobuilder/` as `sync-dirty`, `sync-lock`, `sync-status.json`, and `sync-worker.log`. The line `sync-*` in `.cobuilder/.gitignore` keeps them out of git. `tracker.py sync` always runs in the foreground. `tracker.py doctor` shows `sync`, `sync_pending`, and `last_sync`.
+
+When an engineer decides to move on from a stuck slice, the build loop runs `tracker.py skip-slice <id> --reason <text> [--outcome skipped|escalated]`. The command closes the slice with that outcome, so later slices unblock. A program closes in beads when its stage is `implemented` or `superseded`, and it is in progress while any of its epics is. Two epic headers with the same id make a plan a conflict.
+
 
 ### Review: `/pr:generate`, `/pr:review`, and the viewer
 
@@ -280,12 +286,12 @@ plugins/
   architect/                       design, review, maintenance, options, debug, and the corpus
   pr/                              generate, review, baseline, and the story scripts
   artifact/                        view, publish, and the viewer
-  implement/                       start, debug, the coach check, the install hand-over, and the slice agents and hook
+  implement/                       start, debug, the coach check, the install hand-over, and the slice agents and hooks
   cobuilder-full-lifecycle/        the umbrella plugin and the install command
   cobuilder-memory/                the opt-in memory mod: a TypeScript hooks module and its tests
 ```
 
-Only `implement` ships agents. Only `implement` and the `cobuilder-memory` mod ship hooks (ADR-0025, ADR-0039, ADR-0041). No plugin ships an MCP server. The commands in each plugin are thin. The skills hold the procedures.
+Only `implement` ships agents. Only `implement` and the `cobuilder-memory` mod ship hooks (ADR-0025, ADR-0039). The `implement` plugin ships four hook scripts: the `PostToolUse` habit coach, the `SessionStart` tracker reminder (ADR-0041), the `Stop` sync check, and the `SessionEnd` sync flush (ADR-0042). No plugin ships an MCP server. The commands in each plugin are thin. The skills hold the procedures.
 
 ### Use the skills in another harness
 

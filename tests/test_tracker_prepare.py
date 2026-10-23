@@ -50,9 +50,14 @@ class _RejectsType:
         self.calls.append(list(args))
         if args[0] == "create":
             raise BdError(f"bd {' '.join(args)} exited 1", 1, self.stderr)
+        if args[0] == "list":
+            return "[]"
         return "types.custom (not set)\n" if args[:2] == ["config", "get"] else ""
 
 
+
+
+@pytest.mark.slow
 def test_prepare_on_bd_without_custom_types_sets_exactly_program() -> None:
     support.require_bd()
 
@@ -63,6 +68,7 @@ def test_prepare_on_bd_without_custom_types_sets_exactly_program() -> None:
         assert _types(adapter) == "program"
 
 
+@pytest.mark.slow
 def test_prepare_twice_changes_once_and_the_second_call_sets_nothing() -> None:
     support.require_bd()
 
@@ -75,6 +81,7 @@ def test_prepare_twice_changes_once_and_the_second_call_sets_nothing() -> None:
         assert adapter.runner.count("config") == 1 and adapter.runner.calls[0][:2] == ["config", "get"], adapter.runner.calls
 
 
+@pytest.mark.slow
 def test_prepare_keeps_the_existing_custom_types() -> None:
     support.require_bd()
 
@@ -86,6 +93,7 @@ def test_prepare_keeps_the_existing_custom_types() -> None:
         assert _types(adapter) == "foo,bar,program"
 
 
+@pytest.mark.slow
 def test_prepare_does_nothing_when_program_is_among_the_types() -> None:
     support.require_bd()
 
@@ -134,17 +142,19 @@ def test_cli_prepare_without_an_adapter_exits_2(tmp_path: Path) -> None:
     assert json.loads(result.stdout)["ok"] is False
 
 
+@pytest.mark.slow
 def test_cli_prepare_on_real_bd_changes_once(tmp_path: Path) -> None:
     support.require_bd()
 
     seed = support.scratch_tracker(tmp_path)
     config = tmp_path / "beads.yaml"
-    config.write_text("adapter: beads\n", encoding="utf-8")
+    config.write_text("adapter: beads\nsync: write\n", encoding="utf-8")
 
     assert cli_support.ok(cli_support.cli(config, seed, "prepare")) == {"changed": True}
     assert cli_support.ok(cli_support.cli(config, seed, "prepare")) == {"changed": False}
 
 
+@pytest.mark.slow
 def test_create_record_of_a_program_succeeds_on_bd_without_custom_types() -> None:
     support.require_bd()
 
@@ -179,4 +189,4 @@ def test_create_record_does_not_retry_another_error() -> None:
     with pytest.raises(BdError):
         BeadsAdapter(runner).create_record(_program())
 
-    assert [call[0] for call in runner.calls] == ["create"], runner.calls
+    assert [call[0] for call in runner.calls if call[0] != "list"] == ["create"], runner.calls  # the held-id read comes first

@@ -1,0 +1,47 @@
+{
+  "bd": "bd version 1.3.0 (Homebrew)",
+  "note": "merge where the second gate has no await-id: only the first gate resolves, no error",
+  "steps": [
+    {
+      "args": [
+        "list",
+        "--json",
+        "--all"
+      ],
+      "stdout": "[\n  {\n    \"id\": \"t-lvs\",\n    \"title\": \"pr-101\",\n    \"status\": \"open\",\n    \"priority\": 2,\n    \"issue_type\": \"task\",\n    \"owner\": \"131568482+bjornslib@users.noreply.github.com\",\n    \"created_at\": \"2026-10-22T10:34:14Z\",\n    \"created_by\": \"Bjorn Schliebitz\",\n    \"updated_at\": \"2026-10-22T10:34:16Z\",\n    \"external_ref\": \"gh-101\",\n    \"metadata\": {\n      \"cb\": {\n        \"v\": 1,\n        \"id\": \"pr-101\",\n        \"kind\": \"pr\",\n        \"envelope\": {\n          \"gates\": [\n            \"t-0sj\",\n            \"t-ttp\"\n          ]\n        }\n      }\n    },\n    \"dependency_count\": 0,\n    \"dependent_count\": 2,\n    \"comment_count\": 0\n  },\n  {\n    \"id\": \"t-155\",\n    \"title\": \"demo-E2\",\n    \"status\": \"open\",\n    \"priority\": 2,\n    \"issue_type\": \"epic\",\n    \"owner\": \"131568482+bjornslib@users.noreply.github.com\",\n    \"created_at\": \"2026-10-22T10:34:13Z\",\n    \"created_by\": \"Bjorn Schliebitz\",\n    \"updated_at\": \"2026-10-22T10:34:13Z\",\n    \"metadata\": {\n      \"cb\": {\n        \"v\": 1,\n        \"id\": \"demo-E2\",\n        \"kind\": \"epic\",\n        \"envelope\": {}\n      }\n    },\n    \"dependencies\": [\n      {\n        \"issue_id\": \"t-155\",\n        \"depends_on_id\": \"t-lvs\",\n        \"type\": \"blocks\",\n        \"created_at\": \"2026-10-22T10:34:15Z\",\n        \"created_by\": \"Bjorn Schliebitz\",\n        \"metadata\": \"{}\"\n      },\n      {\n        \"issue_id\": \"t-155\",\n        \"depends_on_id\": \"t-ttp\",\n        \"type\": \"blocks\",\n        \"created_at\": \"2026-10-22T10:34:16Z\",\n        \"created_by\": \"Bjorn Schliebitz\",\n        \"metadata\": \"{}\"\n      }\n    ],\n    \"dependency_count\": 2,\n    \"dependent_count\": 0,\n    \"comment_count\": 0\n  },\n  {\n    \"id\": \"t-ni2\",\n    \"title\": \"demo-E1\",\n    \"status\": \"open\",\n    \"priority\": 2,\n    \"issue_type\": \"epic\",\n    \"owner\": \"131568482+bjornslib@users.noreply.github.com\",\n    \"created_at\": \"2026-10-22T10:34:12Z\",\n    \"created_by\": \"Bjorn Schliebitz\",\n    \"updated_at\": \"2026-10-22T10:34:12Z\",\n    \"metadata\": {\n      \"cb\": {\n        \"v\": 1,\n        \"id\": \"demo-E1\",\n        \"kind\": \"epic\",\n        \"envelope\": {}\n      }\n    },\n    \"dependencies\": [\n      {\n        \"issue_id\": \"t-ni2\",\n        \"depends_on_id\": \"t-0sj\",\n        \"type\": \"blocks\",\n        \"created_at\": \"2026-10-22T10:34:16Z\",\n        \"created_by\": \"Bjorn Schliebitz\",\n        \"metadata\": \"{}\"\n      },\n      {\n        \"issue_id\": \"t-ni2\",\n        \"depends_on_id\": \"t-lvs\",\n        \"type\": \"blocks\",\n        \"created_at\": \"2026-10-22T10:34:14Z\",\n        \"created_by\": \"Bjorn Schliebitz\",\n        \"metadata\": \"{}\"\n      }\n    ],\n    \"dependency_count\": 2,\n    \"dependent_count\": 0,\n    \"comment_count\": 0\n  }\n]\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "gate",
+        "list",
+        "--json"
+      ],
+      "stdout": "[\n  {\n    \"id\": \"t-ttp\",\n    \"title\": \"Gate: gh:pr\",\n    \"description\": \"Ad-hoc gate blocking t-155\",\n    \"status\": \"open\",\n    \"priority\": 2,\n    \"issue_type\": \"gate\",\n    \"owner\": \"131568482+bjornslib@users.noreply.github.com\",\n    \"created_at\": \"2026-10-22T10:34:16Z\",\n    \"created_by\": \"Bjorn Schliebitz\",\n    \"updated_at\": \"2026-10-22T10:34:16Z\",\n    \"await_type\": \"gh:pr\"\n  },\n  {\n    \"id\": \"t-0sj\",\n    \"title\": \"Gate: gh:pr 101\",\n    \"description\": \"Ad-hoc gate blocking t-ni2\",\n    \"status\": \"open\",\n    \"priority\": 2,\n    \"issue_type\": \"gate\",\n    \"owner\": \"131568482+bjornslib@users.noreply.github.com\",\n    \"created_at\": \"2026-10-22T10:34:15Z\",\n    \"created_by\": \"Bjorn Schliebitz\",\n    \"updated_at\": \"2026-10-22T10:34:15Z\",\n    \"await_type\": \"gh:pr\",\n    \"await_id\": \"101\"\n  }\n]\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "gate",
+        "resolve",
+        "t-0sj"
+      ],
+      "stdout": "\u2713 Gate resolved: t-0sj\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "args": [
+        "update",
+        "t-lvs",
+        "--status",
+        "closed"
+      ],
+      "stdout": "\u2713 Updated issue: t-lvs \u2014 pr-101\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ]
+}

@@ -14,7 +14,9 @@ def test_create_record_program_replays_recorded_argv() -> None:
     from tracker_port.beads import BeadsAdapter
     from tracker_port.record import TrackerRecord
 
-    steps = support.with_syncs(support.steps("create_program"))
+    # create_record reads the list first, to refuse a held id. The tracker holds no record yet.
+    empty_list = {"args": ["list", "--json", "--all"], "stdout": "[]"}
+    steps = support.with_syncs([empty_list, *support.steps("create_program")])
     runner = support.SequenceRunner(steps)
     program = TrackerRecord(
         id="demo",
@@ -29,7 +31,7 @@ def test_create_record_program_replays_recorded_argv() -> None:
     BeadsAdapter(runner).create_record(program)
 
     assert len(runner.calls) == len(steps)
-    assert "--external-ref" not in runner.calls[0]
+    assert "--external-ref" not in runner.calls[1]
 
 
 def test_create_record_epic_maps_parent_and_blocked_by() -> None:
