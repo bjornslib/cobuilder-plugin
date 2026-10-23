@@ -15,6 +15,8 @@ priority-dev/
       design-overview.md        the high-level design (version 2, partly superseded)
       v0.1-scope.md             the riskiest assumption, the v0.1 lab, and the release ladder
       components.md             the roles (interpreter, policy, actuator) and the technology for each component
+      schemas.md                the typed input and output of the interpreter, and all the actions
+      schemas/                  a runnable sketch of those types
       options-research.md       the earlier technology research
       diagrams/                 level-1.mmd, runtime-architecture.svg, v0.1-lab-flow.svg, action-loop.svg, v2/
       history/                  the round 2 scope file
