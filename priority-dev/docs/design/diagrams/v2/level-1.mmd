@@ -1,0 +1,33 @@
+C4Container
+    title "priority.dev v2 (PROPOSAL, draft design, not built)"
+
+    Container(notifier, "Notifier plugins", "desktop, mobile push, email", "One plugin for each target")
+    Person(dev, "Developer", "Runs up to 20 coding agents across projects")
+    Container(nq, "Notification queue", "Plans delivery by priority class", "Queues one notification for each target")
+    Container(client, "Inbox client", "web viewer, mobile app, command line", "Clients of the same inbox API")
+    Container(aq, "Attention queue", "Ranked items that wait for a human", "Takes the human answer and appends it as an event")
+    Container(api, "Inbox API", "Request path and event stream", "The only door for a client")
+    Container(actuator, "Actuator", "Sends input, records gate approvals, opens items", "Writes an intent before and an effect after each command")
+    System_Ext(tracker, "CoBuilder tracker", "Workflow state through tracker.py")
+    Container(adapter, "Session adapter (tmux)", "runs in the adapter host on the machine with the sessions", "Signal source and transport")
+    Container(policy, "Policy engine", "deterministic code, fixed deny list", "Decides allow, deny, or escalate and sets the priority class")
+    System_Ext(tmux, "tmux and coding agents", "Claude Code sessions with hooks and transcript files")
+    Container(interp, "Interpreter", "router and pluggable stages: fact mapper, System-1 classifier, advisor agent", "Reads session events, emits fact and proposal events")
+    ContainerDb(log, "Event log", "Append-only file per project", "Every stage reads from its last cursor and appends events. The arrows show the logical flow of events, which the log carries.")
+    System_Ext(llm, "Language models", "System-1 classifier (Jev or a small model) and advisor agent")
+
+    Rel_R(dev, client, "answers and reads")
+    Rel_L(api, client, "HTTP and event stream")
+    Rel_U(aq, nq, "attention events")
+    Rel_U(nq, notifier, "notification events")
+    Rel_U(aq, api, "items")
+    Rel_U(actuator, aq, "open item")
+    Rel_R(actuator, tracker, "tracker.py")
+    Rel_D(actuator, adapter, "commands")
+    Rel_L(policy, actuator, "decision events")
+    Rel_R(interp, policy, "fact and proposal events")
+    Rel_U(adapter, interp, "session events")
+    Rel_L(tmux, adapter, "hook events, transcripts")
+    Rel_D(interp, llm, "typed questions, agent call (HTTPS)")
+
+    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")

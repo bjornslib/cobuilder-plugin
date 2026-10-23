@@ -1,0 +1,169 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1480 600" role="img" aria-labelledby="rt-title rt-desc">
+<title id="rt-title">priority.dev runtime architecture, version 2 (proposal)</title>
+<desc id="rt-desc">Runtime components of priority.dev, grouped by boundary. Nodes marked pending are proposed by the design. Each edge names its protocol.</desc>
+<style>
+.bd{fill:var(--svg-bd,none);stroke:var(--svg-bd-line,#9aa4b2);stroke-width:1.2;stroke-dasharray:6 4}
+.bt{font:600 12px system-ui,sans-serif;fill:var(--svg-muted,#5b6575);letter-spacing:.06em;text-transform:uppercase}
+.nr{fill:var(--svg-node,#ffffff);stroke:var(--svg-ink,#1f2937);stroke-width:1.4}
+.nx{fill:var(--svg-node,#ffffff);stroke:var(--svg-ink,#1f2937);stroke-width:1.4;stroke-dasharray:5 3}
+.nt{font:600 12px system-ui,sans-serif;fill:var(--svg-ink,#1f2937)}
+.ns{font:400 10.5px system-ui,sans-serif;fill:var(--svg-muted,#5b6575)}
+.pb{fill:var(--svg-pending,#f4c36a);stroke:none}
+.pt{font:700 8.5px system-ui,sans-serif;fill:#2b1d00;letter-spacing:.04em}
+.ed{fill:none;stroke:var(--svg-ink,#1f2937);stroke-width:1.3;marker-end:url(#arr)}
+.el{font:400 10px system-ui,sans-serif;fill:var(--svg-ink,#1f2937);paint-order:stroke;stroke:var(--svg-page,#ffffff);stroke-width:3.5px;stroke-linejoin:round}
+.ed2{fill:none;stroke:var(--svg-ink,#1f2937);stroke-width:1.3;marker-start:url(#arr);marker-end:url(#arr)}
+.ar{fill:var(--svg-ink,#1f2937)}
+</style>
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ar" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+<g id="bound-infra"><title>Infra boundary: the host machine that runs the sessions</title>
+<rect class="bd" x="20" y="250" width="240" height="360" rx="10"/>
+<text class="bt" x="32" y="270">infra: host machine</text></g>
+<g id="bound-api"><title>API boundary: the resident service in a Docker container</title>
+<rect class="bd" x="290" y="140" width="950" height="480" rx="10"/>
+<text class="bt" x="302" y="160">api: Docker container</text></g>
+<g id="bound-external"><title>External boundary: models and the tracker</title>
+<rect class="bd" x="290" y="20" width="570" height="100" rx="10"/>
+<text class="bt" x="302" y="40">external</text></g>
+<g id="bound-client"><title>Client boundary: inbox clients and notification targets</title>
+<rect class="bd" x="1260" y="140" width="200" height="300" rx="10"/>
+<text class="bt" x="1272" y="160">client</text></g>
+<g id="n-adapter"><title>Session adapter: tmux, adapter host</title>
+<rect class="nr" x="35" y="290" width="170" height="60" rx="12"/>
+<text class="nt" x="120.0" y="316" text-anchor="middle">Session adapter</text>
+<text class="ns" x="120.0" y="331" text-anchor="middle">tmux, adapter host</text>
+<rect class="pb" x="161" y="283" width="42" height="13" rx="6"/>
+<text class="pt" x="182" y="293" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-tmux"><title>tmux + Claude Code: sessions, transcripts</title>
+<rect class="nr" x="35" y="520" width="170" height="60" rx="12"/>
+<text class="nt" x="120.0" y="546" text-anchor="middle">tmux + Claude Code</text>
+<text class="ns" x="120.0" y="561" text-anchor="middle">sessions, transcripts</text>
+</g>
+<g id="n-interp"><title>Interpreter: router, pluggable stages</title>
+<rect class="nr" x="310" y="290" width="150" height="60" rx="12"/>
+<text class="nt" x="385.0" y="316" text-anchor="middle">Interpreter</text>
+<text class="ns" x="385.0" y="331" text-anchor="middle">router, pluggable stages</text>
+<rect class="pb" x="416" y="283" width="42" height="13" rx="6"/>
+<text class="pt" x="437" y="293" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-policy"><title>Policy engine: rules, fixed deny list</title>
+<rect class="nr" x="500" y="290" width="150" height="60" rx="12"/>
+<text class="nt" x="575.0" y="316" text-anchor="middle">Policy engine</text>
+<text class="ns" x="575.0" y="331" text-anchor="middle">rules, fixed deny list</text>
+<rect class="pb" x="606" y="283" width="42" height="13" rx="6"/>
+<text class="pt" x="627" y="293" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-actuator"><title>Actuator: send, approve, escalate</title>
+<rect class="nr" x="690" y="290" width="150" height="60" rx="12"/>
+<text class="nt" x="765.0" y="316" text-anchor="middle">Actuator</text>
+<text class="ns" x="765.0" y="331" text-anchor="middle">send, approve, escalate</text>
+<rect class="pb" x="796" y="283" width="42" height="13" rx="6"/>
+<text class="pt" x="817" y="293" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-attn"><title>Attention queue: items for a human</title>
+<rect class="nr" x="880" y="290" width="150" height="60" rx="12"/>
+<text class="nt" x="955.0" y="316" text-anchor="middle">Attention queue</text>
+<text class="ns" x="955.0" y="331" text-anchor="middle">items for a human</text>
+<rect class="pb" x="986" y="283" width="42" height="13" rx="6"/>
+<text class="pt" x="1007" y="293" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-notq"><title>Notification queue: plans delivery</title>
+<rect class="nr" x="1070" y="290" width="150" height="60" rx="12"/>
+<text class="nt" x="1145.0" y="316" text-anchor="middle">Notification queue</text>
+<text class="ns" x="1145.0" y="331" text-anchor="middle">plans delivery</text>
+<rect class="pb" x="1176" y="283" width="42" height="13" rx="6"/>
+<text class="pt" x="1197" y="293" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-inbox"><title>Inbox API: requests + event stream</title>
+<rect class="nr" x="880" y="170" width="150" height="60" rx="12"/>
+<text class="nt" x="955.0" y="196" text-anchor="middle">Inbox API</text>
+<text class="ns" x="955.0" y="211" text-anchor="middle">requests + event stream</text>
+<rect class="pb" x="986" y="163" width="42" height="13" rx="6"/>
+<text class="pt" x="1007" y="173" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-log"><title>Event log: append-only, cursor keyed, Docker volume</title>
+<path class="nr" d="M310,448 a455.0,8 0 0 1 910,0 v44 a455.0,8 0 0 1 -910,0 z"/>
+<path class="nr" fill="none" d="M310,448 a455.0,8 0 0 0 910,0"/>
+<text class="nt" x="765.0" y="470" text-anchor="middle">Event log</text>
+<text class="ns" x="765.0" y="485" text-anchor="middle">append-only, cursor keyed, Docker volume</text>
+<rect class="pb" x="1176" y="433" width="42" height="13" rx="6"/>
+<text class="pt" x="1197" y="443" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-jev"><title>Jev API: optional System-1 backend</title>
+<rect class="nx" x="310" y="50" width="150" height="55" rx="12"/>
+<text class="nt" x="385.0" y="76" text-anchor="middle">Jev API</text>
+<text class="ns" x="385.0" y="91" text-anchor="middle">optional System-1 backend</text>
+</g>
+<g id="n-claude"><title>Claude model: advisor agent, other stages</title>
+<rect class="nx" x="490" y="50" width="150" height="55" rx="12"/>
+<text class="nt" x="565.0" y="76" text-anchor="middle">Claude model</text>
+<text class="ns" x="565.0" y="91" text-anchor="middle">advisor agent, other stages</text>
+</g>
+<g id="n-tracker"><title>tracker.py + beads: workflow state</title>
+<rect class="nx" x="690" y="50" width="150" height="55" rx="12"/>
+<text class="nt" x="765.0" y="76" text-anchor="middle">tracker.py + beads</text>
+<text class="ns" x="765.0" y="91" text-anchor="middle">workflow state</text>
+</g>
+<g id="n-web"><title>Web viewer: inbox client</title>
+<rect class="nr" x="1280" y="180" width="160" height="48" rx="12"/>
+<text class="nt" x="1360.0" y="206" text-anchor="middle">Web viewer</text>
+<text class="ns" x="1360.0" y="221" text-anchor="middle">inbox client</text>
+<rect class="pb" x="1396" y="173" width="42" height="13" rx="6"/>
+<text class="pt" x="1417" y="183" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-mobile"><title>Mobile app: inbox client</title>
+<rect class="nr" x="1280" y="245" width="160" height="48" rx="12"/>
+<text class="nt" x="1360.0" y="271" text-anchor="middle">Mobile app</text>
+<text class="ns" x="1360.0" y="286" text-anchor="middle">inbox client</text>
+<rect class="pb" x="1396" y="238" width="42" height="13" rx="6"/>
+<text class="pt" x="1417" y="248" text-anchor="middle">PENDING</text>
+</g>
+<g id="n-targets"><title>Notification targets: desktop, push, email</title>
+<rect class="nr" x="1280" y="310" width="160" height="55" rx="12"/>
+<text class="nt" x="1360.0" y="336" text-anchor="middle">Notification targets</text>
+<text class="ns" x="1360.0" y="351" text-anchor="middle">desktop, push, email</text>
+<rect class="pb" x="1396" y="303" width="42" height="13" rx="6"/>
+<text class="pt" x="1417" y="313" text-anchor="middle">PENDING</text>
+</g>
+<path class="ed2" d="M120,350 V520"/>
+<text class="el" x="128" y="432" text-anchor="start">hook events,</text>
+<text class="el" x="128" y="444" text-anchor="start">transcripts, send-keys</text>
+<path class="ed" d="M205,330 H275 V470 H310"/>
+<text class="el" x="252" y="396" text-anchor="end">append session</text>
+<text class="el" x="252" y="408" text-anchor="end">events</text>
+<path class="ed" d="M745,350 V390 H150 V350"/>
+<text class="el" x="470" y="382" text-anchor="middle">commands (HTTP)</text>
+<path class="ed" d="M460,320 H500"/>
+<text class="el" x="480" y="312" text-anchor="middle">events</text>
+<path class="ed" d="M650,320 H690"/>
+<text class="el" x="670" y="312" text-anchor="middle">events</text>
+<path class="ed" d="M840,320 H880"/>
+<text class="el" x="860" y="312" text-anchor="middle">items</text>
+<path class="ed" d="M1030,320 H1070"/>
+<text class="el" x="1050" y="312" text-anchor="middle">events</text>
+<path class="ed2" d="M385,350 V440"/>
+<text class="el" x="393" y="422" text-anchor="start">fs read, append</text>
+<path class="ed2" d="M575,350 V440"/>
+<text class="el" x="583" y="422" text-anchor="start">fs read, append</text>
+<path class="ed2" d="M785,350 V440"/>
+<text class="el" x="793" y="422" text-anchor="start">fs read, append</text>
+<path class="ed2" d="M955,350 V440"/>
+<text class="el" x="963" y="422" text-anchor="start">fs read, append</text>
+<path class="ed2" d="M1145,350 V440"/>
+<text class="el" x="1153" y="422" text-anchor="start">fs read, append</text>
+<path class="ed2" d="M955,290 V230"/>
+<text class="el" x="963" y="262" text-anchor="start">items, answers</text>
+<path class="ed" d="M1030,200 H1280"/>
+<text class="el" x="1155" y="192" text-anchor="middle">HTTP + event stream</text>
+<path class="ed" d="M1030,222 L1280,266"/>
+<text class="el" x="1130" y="254" text-anchor="middle">HTTP + event stream</text>
+<path class="ed" d="M1220,337 H1280"/>
+<text class="el" x="1250" y="328" text-anchor="middle">notify events</text>
+<path class="ed" d="M385,290 V105"/>
+<text class="el" x="377" y="202" text-anchor="end">typed questions (HTTPS)</text>
+<path class="ed" d="M430,290 L540,105"/>
+<text class="el" x="484" y="234" text-anchor="middle">agent call (HTTPS)</text>
+<path class="ed" d="M735,290 V105"/>
+<text class="el" x="743" y="202" text-anchor="middle">uv run tracker.py</text>
+</svg>

@@ -1,0 +1,31 @@
+C4Container
+    title "priority.dev (PROPOSAL, draft design, not built)"
+
+    Container(inbox, "Web inbox", "Browser UI", "Ranked list, fleet board, ledger, policy editor")
+    Person(dev, "Developer", "Runs up to 20 coding agents across projects")
+    Container(api, "Inbox API", "HTTP and SSE, in the resident local service", "Serves ranked list, fleet board, ledger, policy editor")
+    System_Ext(notify, "Desktop notifications", "Urgent interrupts")
+    Container(queue, "Attention queue", "Ranking and delivery planner, in the resident local service", "Ranks items, plans immediate or batched delivery")
+    System_Ext(claude, "Claude model", "Headless claude call")
+    ContainerDb(policy, "Policy files", "File", "Rank, classes, allowed actions, delivery rules. Queue and actuator both read it")
+    Container(interp, "Interpreter", "Status reducer and advisor, in the resident local service", "Reads the event log from its last cursor, returns Verdict and Decision")
+    Container(actuator, "Actuator", "Policy and deny-list checks, in the resident local service", "Only part that sends input or records a gate approval")
+    System_Ext(tracker, "CoBuilder tracker", "Workflow state through tracker.py")
+    Container(adapter, "Session adapter (tmux)", "Signal source and transport, in the resident local service", "Reads hook events and the transcript, sends input")
+    ContainerDb(log, "Event log", "Append-only file per project", "SessionEvent lines, Intent and Effect records")
+    System_Ext(tmux, "tmux and coding agents", "Claude Code sessions with hooks and transcript files")
+
+    Rel_L(dev, inbox, "answers")
+    Rel_D(inbox, api, "HTTP and SSE")
+    Rel_D(api, queue, "ranked items")
+    Rel_R(queue, notify, "notify Urgent item")
+    Rel_U(interp, queue, "escalated item")
+    Rel_U(interp, claude, "headless claude call")
+    Rel_D(interp, actuator, "Verdict and Decision")
+    Rel_R(actuator, tracker, "tracker.py")
+    Rel_R(policy, actuator, "policy checks")
+    Rel_D(actuator, adapter, "Command")
+    Rel_R(adapter, log, "append, cursor")
+    Rel_D(tmux, adapter, "hook events, tmux send-keys")
+
+    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
