@@ -378,7 +378,7 @@ pre.code code{background:none;padding:0;white-space:pre}
 <text class="nt" x="385.0" y="76" text-anchor="middle">Jev API</text>
 <text class="ns" x="385.0" y="91" text-anchor="middle">System-1 decisions, later</text>
 </g>
-<g id="n-claude"><title>Language model: Nemo and Inkling via OpenRouter</title>
+<g id="n-claude"><title>Language model: Nemo and Inkling via OpenRouter via OpenRouter</title>
 <rect class="nx" x="490" y="50" width="150" height="55" rx="12"/>
 <text class="nt" x="565.0" y="76" text-anchor="middle">Language model</text>
 <text class="ns" x="565.0" y="91" text-anchor="middle">Nemo and Inkling</text>
@@ -477,28 +477,28 @@ pre.code code{background:none;padding:0;white-space:pre}
 <th>Model</th>
 <th>Input</th>
 <th>Output</th>
-<th>Calls for each slice</th>
+<th>Calls for each stop brief</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td class="k">1. Triage</td>
 <td>spikes: <code>openrouter/mistralai/mistral-nemo</code>. Later: Jev (<code>typesafe:jev-latest</code>)</td>
-<td>the slice</td>
+<td>the stop brief</td>
 <td><code>Facts</code>: five typed values</td>
 <td>one</td>
 </tr>
 <tr>
 <td class="k">2. Advise</td>
 <td><code>openrouter/mistralai/mistral-nemo</code></td>
-<td>the slice and the facts</td>
+<td>the stop brief and the facts</td>
 <td><code>Advice</code>: a question card and a proposal</td>
 <td>one, when an answer is due</td>
 </tr>
 <tr>
 <td class="k">Digest</td>
 <td><code>openrouter/thinkingmachines/inkling:free</code></td>
-<td>the slice</td>
+<td>the stop brief</td>
 <td><code>RunDigest</code>: a short summary of the run</td>
 <td>one for each finished run, always</td>
 </tr>
@@ -507,7 +507,7 @@ pre.code code{background:none;padding:0;white-space:pre}
 <td>the Digest model</td>
 <td>one oversized tool result</td>
 <td>a shorter text</td>
-<td>none, unless the slice is over the budget (section 2.3)</td>
+<td>none, unless the stop brief is over the budget (section 2.3)</td>
 </tr>
 </tbody>
 </table></div>
@@ -518,15 +518,15 @@ pre.code code{background:none;padding:0;white-space:pre}
 <ol class="plain">
 <li>Run stage 2 when <code>status</code> is <code>waiting_answer</code>, <code>waiting_permission</code>, <code>blocked</code>, or <code>failed</code>.</li>
 <li>Run stage 2 when any confidence is below its threshold.</li>
-<li>Otherwise store the facts and stop. The slice needs no answer.</li>
+<li>Otherwise store the facts and stop. The stop brief needs no answer.</li>
 </ol>
 <p>Stage 2 runs even when <code>needs_human</code> is true. The human then sees a card with a recommended answer and does not start from nothing.</p>
 <p>The stage 2 system prompt holds the JSON schema of <code>Advice</code>. That schema is 16,071 characters, because the <code>Action</code> type has 13 kinds. Every call sends it. Prompt caching at the provider may lower the cost. I did not check that.</p>
 </section>
 
 <section id="input">
-  <header><div class="eyebrow">In</div><h2>Input: the turn slice</h2></header>
-<p>A slice is the exact input of the interpreter. Code builds it from the transcript when an agent stops and waits. No model builds it. The system stores each slice once and never edits it. The raw transcript stays in <code>~/.claude</code>, and the slice holds a cursor that points to it.</p>
+  <header><div class="eyebrow">In</div><h2>Input: the stop brief</h2></header>
+<p>A stop brief is the exact input of the interpreter. Code builds it from the transcript when an agent stops and waits. No model builds it. The system stores each stop brief once and never edits it. The raw transcript stays in <code>~/.claude</code>, and the stop brief holds a cursor that points to it.</p>
 <h3>2.1 What a run holds in a real transcript</h3>
 <p>I measured the two largest transcripts of this repo (7526c296 with 18,729 records and 408 human prompts, and 48546f32) and one goal run (36752881). The numbers below come from those files only.</p>
 <ol class="plain">
@@ -541,7 +541,7 @@ pre.code code{background:none;padding:0;white-space:pre}
 <li><strong>Structured questions exist.</strong> The 53,298 records hold 41 <code>AskUserQuestion</code> calls. The call input holds the options, so a <code>pending</code> prompt with source <code>transcript</code> is exact. A permission prompt is not in the transcript until a decision exists. It needs a hook or a pane read.</li>
 </ol>
 <h3>2.2 What code can build, and what it cannot</h3>
-<p>Code reads structured JSON. It can group replies, pair each tool call with its result, read whether the result is an error, find the last text, and read the <code>origin</code> of a record. It can redact secrets. It cannot say whether the work was right, or what a question means. The slice therefore holds facts and no meaning. The models give the meaning.</p>
+<p>Code reads structured JSON. It can group replies, pair each tool call with its result, read whether the result is an error, find the last text, and read the <code>origin</code> of a record. It can redact secrets. It cannot say whether the work was right, or what a question means. The stop brief therefore holds facts and no meaning. The models give the meaning.</p>
 <h3>2.3 The fields</h3>
 <div class="scroll"><table>
 <thead>
@@ -553,7 +553,7 @@ pre.code code{background:none;padding:0;white-space:pre}
 </thead>
 <tbody>
 <tr>
-<td class="k"><code>slice_id</code>, <code>cursor</code></td>
+<td class="k"><code>brief_id</code>, <code>cursor</code></td>
 <td>digest of the session id and the stop record, and the place of the stop in the transcript</td>
 <td>code</td>
 </tr>
@@ -611,16 +611,16 @@ pre.code code{background:none;padding:0;white-space:pre}
 </table></div>
 <p>Rules that follow:</p>
 <ol class="plain">
-<li>Nothing in a slice is clipped. The slice keeps the assistant text, each tool call, and each full result. Only the redaction changes the text.</li>
+<li>Nothing in a stop brief is clipped. The stop brief keeps the assistant text, each tool call, and each full result. Only the redaction changes the text.</li>
 <li>The renderer sets a budget of 160,000 characters for the text that a model reads. This is a guess: about 40,000 tokens, against a 131,072-token window for Mistral Nemo. I did not measure the characters for each token. Over the budget, the Shrink call replaces the largest tool results first. It never touches <code>ask</code>, <code>final</code>, or the last three exchanges. The stored <code>InterpreterCall</code> records how many results it replaced. By the measure in 2.1, about 1 run in 100 passes 100,000 characters.</li>
-<li>The model reads <code>slice.for_model()</code>. That text leaves out <code>slice_id</code>, <code>cursor</code>, <code>redactions</code>, and <code>allowed_kinds</code>. The option <code>agent_reports_first</code> copies each sub-agent exchange into a block at the top. It is a lab option, and the lab tests whether it helps.</li>
+<li>The model reads <code>stop brief.for_model()</code>. That text leaves out <code>brief_id</code>, <code>cursor</code>, <code>redactions</code>, and <code>allowed_kinds</code>. The option <code>agent_reports_first</code> copies each sub-agent exchange into a block at the top. It is a lab option, and the lab tests whether it helps.</li>
 <li>A prose question has no <code>pending</code>. The facts say <code>waiting_answer</code>, and <code>final</code> holds the question.</li>
-<li>A goal run gives one slice for each stop attempt. The <code>goal</code> field lets the models see that the agent only waits.</li>
+<li>A goal run gives one stop brief for each stop attempt. The <code>goal</code> field lets the models see that the agent only waits.</li>
 <li>A model summary of older turns stays off in v0.1. The <code>previous</code> field is the one exception that you asked for, the digest of the run before.</li>
 </ol>
-<p>How the digest works. The Digest call reads the slice of a run that has just ended. It returns a <code>RunDigest</code>: what the agent did (up to 600 characters), how the run ended (up to 300), up to five open items, and up to five decisions. The system stores it as a <code>fact.run_digest</code> event. The next slice of the same session carries it as <code>previous</code>. It costs one model call for each finished run, and the call always runs. This includes each stop of a goal run, so the next slice always has a <code>previous</code>. The lab checks whether the digest helps and whether it loses facts.</p>
+<p>How the digest works. The Digest call reads the stop brief of a run that has just ended. It returns a <code>RunDigest</code>: what the agent did (up to 600 characters), how the run ended (up to 300), up to five open items, and up to five decisions. The system stores it as a <code>fact.run_digest</code> event. The next stop brief of the same session carries it as <code>previous</code>. It costs one model call for each finished run, and the call always runs. This includes each stop of a goal run, so the next stop brief always has a <code>previous</code>. The lab checks whether the digest helps and whether it loses facts.</p>
 <h3>2.4 What the lab must settle</h3>
-<p>The slice stores every section, and the renderer chooses what the model reads. The lab can therefore drop one section at a time and measure the effect, with no rebuild. The first ablations are the tool results in <code>items</code> (keep the calls, drop the results), <code>previous</code>, <code>last_thinking</code>, and <code>agent_reports_first</code>. I do not know which sections help. The sizes above come from one repo, and a different repo may differ.</p>
+<p>The stop brief stores every section, and the renderer chooses what the model reads. The lab can therefore drop one section at a time and measure the effect, with no rebuild. The first ablations are the tool results in <code>items</code> (keep the calls, drop the results), <code>previous</code>, <code>last_thinking</code>, and <code>agent_reports_first</code>. I do not know which sections help. The sizes above come from one repo, and a different repo may differ.</p>
 <p>Every model call is stored as an <code>InterpreterCall</code>. The row holds the stage, the exact text that the model received, how many tool results the Shrink call replaced, the model name, the output, and the time. A <code>Recommendation</code> links to its call rows. Section 11 shows both requests in full.</p>
 </section>
 
@@ -799,8 +799,8 @@ pre.code code{background:none;padding:0;white-space:pre}
 <ol class="plain">
 <li>The human, or the interpreter, writes the goal and a <code>proof</code> of kind <code>agent_shows</code>, with a command and a <code>show</code> text. The policy decides the loop once, as one action with a budget.</li>
 <li>The actuator sends one message to the session: the goal, and the line "Before you stop, run <code>&lt;command&gt;</code> and report <code>&lt;show&gt;</code>".</li>
-<li>The agent works. At each stop, code builds a slice. The slice holds the agent's tool calls with their full results, in order (section 2).</li>
-<li>Stage 2 reads the slice. In a goal run it also returns an <code>EvidenceCheck</code>: <code>claimed_met</code>, a <code>command_quote</code>, and a <code>result_quote</code>. The quotes must be exact text from the slice.</li>
+<li>The agent works. At each stop, code builds a stop brief. The stop brief holds the agent's tool calls with their full results, in order (section 2).</li>
+<li>Stage 2 reads the stop brief. In a goal run it also returns an <code>EvidenceCheck</code>: <code>claimed_met</code>, a <code>command_quote</code>, and a <code>result_quote</code>. The quotes must be exact text from the stop brief.</li>
 <li>Code, with no model, runs <code>check_evidence</code>. It looks for a Bash call in this run whose input contains the proof command. It needs <code>is_error</code> false for that call. It needs the <code>result_quote</code> to appear in that call's result. The data comes from the real tool result record.</li>
 <li>If the check passes, the actuator stops sending <code>continue</code>. The inbox gets a class 2 item, "Goal claimed met", with the command, the result, and a button to reopen the loop. The human decides whether the evidence is enough.</li>
 <li>If the check fails, the actuator sends <code>continue</code> with the reason, for example "You did not run <code>pytest -q</code> in this run". The send counts against <code>max_turns</code>.</li>
@@ -857,7 +857,7 @@ pre.code code{background:none;padding:0;white-space:pre}
 <li>The hash covers each step, not the proposal.</li>
 <li>A proposal that approves a gate and returns the same gate is invalid. <code>approve_gate</code> with <code>notes</code> already means Approve with Notes. <code>send_feedback</code> means the opposite.</li>
 </ol>
-<p>Example: <code>reply</code> with "1", then <code>continue_until</code> with the goal "Slices 3 to 5 pass their tests". Section 11 shows it.</p>
+<p>Example: <code>reply</code> with "1", then <code>continue_until</code> with the goal "Stop briefs 3 to 5 pass their tests". Section 11 shows it.</p>
 <p>Not in the list, on purpose:</p>
 <ul>
 <li><strong>Kill a session</strong>, <strong>launch a session</strong>, <strong>change the permission mode</strong>. These are not proposals in v0.3. A launch comes later, and it needs its own design.</li>
@@ -1036,11 +1036,11 @@ pre.code code{background:none;padding:0;white-space:pre}
 
 <section id="store">
   <header><div class="eyebrow">Learning</div><h2>Stored recommendations</h2></header>
-<p>The system stores every proposal, shown to the human or not. It also stores the input of the proposal. A <code>Recommendation</code> holds the proposal, the facts, a flag <code>shown_to_human</code>, and the ids of its <code>InterpreterCall</code> rows. Each call row holds the exact text that the model received. The slice row holds the redacted transcript input. The human's reply is an <code>Outcome</code>: accepted, edited, replaced, rejected, snoozed, or dismissed.</p>
+<p>The system stores every proposal, shown to the human or not. It also stores the input of the proposal. A <code>Recommendation</code> holds the proposal, the facts, a flag <code>shown_to_human</code>, and the ids of its <code>InterpreterCall</code> rows. Each call row holds the exact text that the model received. The stop brief row holds the redacted transcript input. The human's reply is an <code>Outcome</code>: accepted, edited, replaced, rejected, snoozed, or dismissed.</p>
 <ul>
-<li>The triple (slice, proposal, outcome) is the data for tuning the interpreter and for the lab metrics.</li>
+<li>The triple (stop brief, proposal, outcome) is the data for tuning the interpreter and for the lab metrics.</li>
 <li>A proposal that the human never saw has no outcome. It trains nothing until the human reviews a sample of it.</li>
-<li>The raw transcript is never copied. The stored text is already redacted. The redaction is lossy, so a stored slice cannot give back a secret.</li>
+<li>The raw transcript is never copied. The stored text is already redacted. The redaction is lossy, so a stored stop brief cannot give back a secret.</li>
 <li><code>approve_gate</code> stays at ASK. No rule moves it to ALLOW by itself. The human edits the policy file by hand when the stored outcomes justify it.</li>
 </ul>
 </section>
@@ -1057,8 +1057,8 @@ pre.code code{background:none;padding:0;white-space:pre}
 </thead>
 <tbody>
 <tr>
-<td class="k"><code>quote_not_in_slice</code></td>
-<td>the <code>evidence_quote</code> is not an exact substring of the slice</td>
+<td class="k"><code>quote_not_in_brief</code></td>
+<td>the <code>evidence_quote</code> is not an exact substring of the stop brief</td>
 </tr>
 <tr>
 <td class="k"><code>invalid_output</code></td>
@@ -1077,7 +1077,7 @@ pre.code code{background:none;padding:0;white-space:pre}
 <td>a model call returned an error</td>
 </tr>
 <tr>
-<td class="k"><code>slice_empty</code></td>
+<td class="k"><code>brief_empty</code></td>
 <td>the turn has no response text</td>
 </tr>
 </tbody>
@@ -1090,9 +1090,9 @@ pre.code code{background:none;padding:0;white-space:pre}
 <ol class="plain">
 <li>The sketch imports and validates (done: <code>uv run schemas/interpreter_schemas.py</code> prints <code>ok</code>).</li>
 <li>The request to Jev builds from the signature (done: section 11 shows the output of <code>DecisionAdapter._prepare</code>).</li>
-<li>A real Jev call returns the five typed fields for one slice (not done, one-day test).</li>
-<li>The advisor returns a valid <code>Advice</code> for 20 recorded slices (not done). The <code>Action</code> union as a DSPy output field is untested against a real model.</li>
-<li>The evidence quote check rejects a proposal whose quote is not in the slice (not done, a unit test).</li>
+<li>A real Jev call returns the five typed fields for one stop brief (not done, one-day test).</li>
+<li>The advisor returns a valid <code>Advice</code> for 20 recorded stop briefs (not done). The <code>Action</code> union as a DSPy output field is untested against a real model.</li>
+<li>The evidence quote check rejects a proposal whose quote is not in the stop brief (not done, a unit test).</li>
 <li>The 16,071-character schema in the stage 2 prompt does not lower the advisor's accuracy (not done).</li>
 <li><code>check_evidence</code> accepts a real pass and rejects four wrong cases: a wrong quote, a failed call, no call, and no goal (done: the sketch asserts all five).</li>
 <li>The Digest call keeps the open questions of a run, and the Shrink call keeps the errors (not done, lab checks).</li>
@@ -1103,21 +1103,21 @@ pre.code code{background:none;padding:0;white-space:pre}
 <section id="examples">
   <header><div class="eyebrow">Data</div><h2>Examples of the data</h2></header>
 <p>The data is synthetic. The sketch builds each example and checks a JSON round trip. Run <code>uv run schemas/interpreter_schemas.py dump</code> to print them. Empty fields are cut here.</p>
-<p><strong>The turn slice (what is stored)</strong></p>
+<p><strong>The stop brief (what is stored)</strong></p>
 <pre class="code"><code class="language-json">{
- &quot;slice_id&quot;: &quot;c096cea9b4f73d72&quot;,
+ &quot;brief_id&quot;: &quot;c096cea9b4f73d72&quot;,
  &quot;cursor&quot;: &quot;~/.claude/projects/-work-exporter/7c1e.jsonl@184220&quot;,
  &quot;trigger&quot;: &quot;end_turn&quot;,
  &quot;context&quot;: {
   &quot;session_id&quot;: &quot;sess-7c1&quot;,
   &quot;project&quot;: &quot;exporter&quot;,
-  &quot;branch&quot;: &quot;slice-2-csv&quot;,
-  &quot;workflow_stage&quot;: &quot;implement: slice 2 of 5&quot;,
+  &quot;branch&quot;: &quot;stop brief-2-csv&quot;,
+  &quot;workflow_stage&quot;: &quot;implement: @@stop brief@@ 2 of 5&quot;,
   &quot;answered_by_us_last_hour&quot;: 1
  },
  &quot;ask&quot;: {
   &quot;origin&quot;: &quot;human&quot;,
-  &quot;text&quot;: &quot;Build slice 2: the CSV export endpoint. Run the tests before you stop.&quot;
+  &quot;text&quot;: &quot;Build @@stop brief@@ 2: the CSV export endpoint. Run the tests before you stop.&quot;
  },
  &quot;items&quot;: [
   {
@@ -1164,10 +1164,10 @@ pre.code code{background:none;padding:0;white-space:pre}
    &quot;is_error&quot;: false
   }
  ],
- &quot;final&quot;: &quot;Slice 2 is done. 14 tests pass.\n\nBefore I start slice 3, one question. Should the CSV timestamps use UTC or the project timezone?\n1. UTC (I recommend this: it matches the API)\n2. The project timezone\nReply 1 or 2.&quot;,
+ &quot;final&quot;: &quot;Stop brief 2 is done. 14 tests pass.\n\nBefore I start @@stop brief@@ 3, one question. Should the CSV timestamps use UTC or the project timezone?\n1. UTC (I recommend this: it matches the API)\n2. The project timezone\nReply 1 or 2.&quot;,
  &quot;previous&quot;: {
   &quot;ran&quot;: &quot;Built the export model and its 9 tests.&quot;,
-  &quot;result&quot;: &quot;Slice 1 done, tests pass.&quot;,
+  &quot;result&quot;: &quot;Stop brief 1 done, tests pass.&quot;,
   &quot;decisions&quot;: [
    &quot;Money fields use integer cents&quot;
   ]
@@ -1189,7 +1189,7 @@ pre.code code{background:none;padding:0;white-space:pre}
 }
 </code></pre>
 <p><strong>RunDigest (the Digest call, carried as previous)</strong></p>
-<pre class="code"><code class="language-json">{&quot;ran&quot;: &quot;Built the export model and its 9 tests.&quot;, &quot;result&quot;: &quot;Slice 1 done, tests pass.&quot;, &quot;decisions&quot;: [&quot;Money fields use integer cents&quot;]}
+<pre class="code"><code class="language-json">{&quot;ran&quot;: &quot;Built the export model and its 9 tests.&quot;, &quot;result&quot;: &quot;Stop brief 1 done, tests pass.&quot;, &quot;decisions&quot;: [&quot;Money fields use integer cents&quot;]}
 </code></pre>
 <p><strong>Facts from the Jev call</strong></p>
 <pre class="code"><code class="language-json">{&quot;status&quot;: &quot;waiting_answer&quot;, &quot;needs_human&quot;: false, &quot;answer_class&quot;: &quot;pick_default&quot;, &quot;risk&quot;: 0.2, &quot;priority_hint&quot;: 0.3, &quot;confidence&quot;: {&quot;status&quot;: 0.93, &quot;needs_human&quot;: 0.81, &quot;answer_class&quot;: 0.88, &quot;risk&quot;: 0.74, &quot;priority_hint&quot;: 0.6}}
@@ -1225,7 +1225,7 @@ pre.code code{background:none;padding:0;white-space:pre}
  },
  &quot;proposal&quot;: {
   &quot;proposal_id&quot;: &quot;p-1&quot;,
-  &quot;slice_id&quot;: &quot;c096cea9b4f73d72&quot;,
+  &quot;brief_id&quot;: &quot;c096cea9b4f73d72&quot;,
   &quot;steps&quot;: [
    {
     &quot;session_id&quot;: &quot;sess-7c1&quot;,
@@ -1241,22 +1241,22 @@ pre.code code{background:none;padding:0;white-space:pre}
 </code></pre>
 <p><strong>A goal run at a stop attempt</strong></p>
 <pre class="code"><code class="language-json">{
- &quot;slice_id&quot;: &quot;c096cea9b4f73d72&quot;,
+ &quot;brief_id&quot;: &quot;c096cea9b4f73d72&quot;,
  &quot;cursor&quot;: &quot;~/.claude/projects/-work-exporter/7c1e.jsonl@184220&quot;,
  &quot;trigger&quot;: &quot;goal_stop_attempt&quot;,
  &quot;context&quot;: {
   &quot;session_id&quot;: &quot;sess-7c1&quot;,
   &quot;project&quot;: &quot;exporter&quot;,
-  &quot;branch&quot;: &quot;slice-2-csv&quot;,
-  &quot;workflow_stage&quot;: &quot;implement: slice 2 of 5&quot;,
+  &quot;branch&quot;: &quot;stop brief-2-csv&quot;,
+  &quot;workflow_stage&quot;: &quot;implement: @@stop brief@@ 2 of 5&quot;,
   &quot;answered_by_us_last_hour&quot;: 1
  },
  &quot;ask&quot;: {
   &quot;origin&quot;: &quot;goal_hook&quot;,
-  &quot;text&quot;: &quot;Stop hook feedback: [All 5 slices pass their tests]: not yet shown&quot;
+  &quot;text&quot;: &quot;Stop hook feedback: [All 5 stop briefs pass their tests]: not yet shown&quot;
  },
  &quot;goal&quot;: {
-  &quot;text&quot;: &quot;All 5 slices pass their tests&quot;,
+  &quot;text&quot;: &quot;All 5 stop briefs pass their tests&quot;,
   &quot;stop_attempts&quot;: 2,
   &quot;last_reason&quot;: &quot;no test output shown&quot;,
   &quot;proof&quot;: {
@@ -1274,10 +1274,10 @@ pre.code code{background:none;padding:0;white-space:pre}
    &quot;is_error&quot;: false
   }
  ],
- &quot;final&quot;: &quot;All 5 slices are built. I ran pytest -q: 68 passed in 4.1s.&quot;,
+ &quot;final&quot;: &quot;All 5 stop briefs are built. I ran pytest -q: 68 passed in 4.1s.&quot;,
  &quot;previous&quot;: {
   &quot;ran&quot;: &quot;Built the export model and its 9 tests.&quot;,
-  &quot;result&quot;: &quot;Slice 1 done, tests pass.&quot;,
+  &quot;result&quot;: &quot;Stop brief 1 done, tests pass.&quot;,
   &quot;decisions&quot;: [
    &quot;Money fields use integer cents&quot;
   ]
@@ -1298,55 +1298,55 @@ pre.code code{background:none;padding:0;white-space:pre}
  ]
 }
 </code></pre>
-<p><strong>EvidenceCheck (checked by code against the slice)</strong></p>
+<p><strong>EvidenceCheck (checked by code against the stop brief)</strong></p>
 <pre class="code"><code class="language-json">{&quot;claimed_met&quot;: true, &quot;command_quote&quot;: &quot;pytest -q&quot;, &quot;result_quote&quot;: &quot;68 passed in 4.1s&quot;}
 </code></pre>
 <p><strong>A proposal with two steps</strong></p>
-<pre class="code"><code class="language-json">{&quot;proposal_id&quot;: &quot;p-2&quot;, &quot;slice_id&quot;: &quot;c096cea9b4f73d72&quot;, &quot;steps&quot;: [{&quot;session_id&quot;: &quot;sess-7c1&quot;, &quot;evidence_quote&quot;: &quot;1. UTC (I recommend this&quot;, &quot;confidence&quot;: 0.9, &quot;kind&quot;: &quot;reply&quot;, &quot;text&quot;: &quot;1&quot;}, {&quot;session_id&quot;: &quot;sess-7c1&quot;, &quot;evidence_quote&quot;: &quot;Before I start slice 3&quot;, &quot;confidence&quot;: 0.0, &quot;kind&quot;: &quot;continue_until&quot;, &quot;goal&quot;: &quot;Slices 3 to 5 pass their tests&quot;, &quot;proof&quot;: {&quot;kind&quot;: &quot;agent_shows&quot;, &quot;command&quot;: &quot;pytest -q&quot;, &quot;show&quot;: &quot;the exit code and the last 5 lines&quot;}, &quot;max_turns&quot;: 20, &quot;max_minutes&quot;: 120}], &quot;rationale&quot;: &quot;Answer the question, then run to the end of the plan.&quot;}
+<pre class="code"><code class="language-json">{&quot;proposal_id&quot;: &quot;p-2&quot;, &quot;brief_id&quot;: &quot;c096cea9b4f73d72&quot;, &quot;steps&quot;: [{&quot;session_id&quot;: &quot;sess-7c1&quot;, &quot;evidence_quote&quot;: &quot;1. UTC (I recommend this&quot;, &quot;confidence&quot;: 0.9, &quot;kind&quot;: &quot;reply&quot;, &quot;text&quot;: &quot;1&quot;}, {&quot;session_id&quot;: &quot;sess-7c1&quot;, &quot;evidence_quote&quot;: &quot;Before I start @@stop brief@@ 3&quot;, &quot;confidence&quot;: 0.0, &quot;kind&quot;: &quot;continue_until&quot;, &quot;goal&quot;: &quot;Stop briefs 3 to 5 pass their tests&quot;, &quot;proof&quot;: {&quot;kind&quot;: &quot;agent_shows&quot;, &quot;command&quot;: &quot;pytest -q&quot;, &quot;show&quot;: &quot;the exit code and the last 5 lines&quot;}, &quot;max_turns&quot;: 20, &quot;max_minutes&quot;: 120}], &quot;rationale&quot;: &quot;Answer the question, then run to the end of the plan.&quot;}
 </code></pre>
 <p><strong>continue_until</strong></p>
-<pre class="code"><code class="language-json">{&quot;session_id&quot;: &quot;sess-7c1&quot;, &quot;evidence_quote&quot;: &quot;Reply 1 or 2.&quot;, &quot;confidence&quot;: 0.7, &quot;kind&quot;: &quot;continue_until&quot;, &quot;goal&quot;: &quot;All 5 slices pass their tests&quot;, &quot;proof&quot;: {&quot;kind&quot;: &quot;agent_shows&quot;, &quot;command&quot;: &quot;pytest -q&quot;, &quot;show&quot;: &quot;the exit code and the last 5 lines&quot;}, &quot;max_turns&quot;: 20, &quot;max_minutes&quot;: 120}
+<pre class="code"><code class="language-json">{&quot;session_id&quot;: &quot;sess-7c1&quot;, &quot;evidence_quote&quot;: &quot;Reply 1 or 2.&quot;, &quot;confidence&quot;: 0.7, &quot;kind&quot;: &quot;continue_until&quot;, &quot;goal&quot;: &quot;All 5 stop briefs pass their tests&quot;, &quot;proof&quot;: {&quot;kind&quot;: &quot;agent_shows&quot;, &quot;command&quot;: &quot;pytest -q&quot;, &quot;show&quot;: &quot;the exit code and the last 5 lines&quot;}, &quot;max_turns&quot;: 20, &quot;max_minutes&quot;: 120}
 </code></pre>
 <p><strong>Abstain</strong></p>
-<pre class="code"><code class="language-json">{&quot;slice_id&quot;: &quot;c096cea9b4f73d72&quot;, &quot;reason&quot;: &quot;quote_not_in_slice&quot;, &quot;detail&quot;: &quot;The quote 'Use UTC, as agreed' is not in the slice&quot;}
+<pre class="code"><code class="language-json">{&quot;brief_id&quot;: &quot;c096cea9b4f73d72&quot;, &quot;reason&quot;: &quot;quote_not_in_brief&quot;, &quot;detail&quot;: &quot;The quote 'Use UTC, as agreed' is not in the stop brief&quot;}
 </code></pre>
 <p><strong>ask_human (do)</strong></p>
 <pre class="code"><code class="language-json">{&quot;session_id&quot;: &quot;sess-7c1&quot;, &quot;confidence&quot;: 0.0, &quot;kind&quot;: &quot;ask_human&quot;, &quot;detail&quot;: {&quot;role&quot;: &quot;do&quot;, &quot;steps&quot;: [&quot;Open the console&quot;, &quot;Create the bucket&quot;], &quot;where&quot;: &quot;aws console&quot;, &quot;done_check&quot;: &quot;The bucket name appears in the next prompt&quot;}, &quot;why_escalated&quot;: &quot;Needs the AWS console&quot;}
 </code></pre>
 <p><strong>ask_human (review)</strong></p>
-<pre class="code"><code class="language-json">{&quot;session_id&quot;: &quot;sess-7c1&quot;, &quot;confidence&quot;: 0.0, &quot;kind&quot;: &quot;ask_human&quot;, &quot;detail&quot;: {&quot;role&quot;: &quot;review&quot;, &quot;artifact&quot;: &quot;docs/plans/x/04-slices.md&quot;, &quot;check_items&quot;: [&quot;Slice order&quot;]}, &quot;why_escalated&quot;: &quot;The gate needs a person&quot;}
+<pre class="code"><code class="language-json">{&quot;session_id&quot;: &quot;sess-7c1&quot;, &quot;confidence&quot;: 0.0, &quot;kind&quot;: &quot;ask_human&quot;, &quot;detail&quot;: {&quot;role&quot;: &quot;review&quot;, &quot;artifact&quot;: &quot;docs/plans/x/04-stop briefs.md&quot;, &quot;check_items&quot;: [&quot;Stop brief order&quot;]}, &quot;why_escalated&quot;: &quot;The gate needs a person&quot;}
 </code></pre>
 <p><strong>InterpreterCall (the stored row)</strong></p>
-<pre class="code"><code class="language-json">{&quot;call_id&quot;: &quot;c-1&quot;, &quot;slice_id&quot;: &quot;c096cea9b4f73d72&quot;, &quot;stage&quot;: &quot;triage&quot;, &quot;model&quot;: &quot;typesafe:jev-latest&quot;, &quot;rendered_input&quot;: &quot;(the state and the five questions, see schemas.md section 10)&quot;, &quot;shrunk_items&quot;: 0, &quot;output_json&quot;: &quot;{\&quot;status\&quot;:\&quot;waiting_answer\&quot;,\&quot;needs_human\&quot;:false,\&quot;answer_class\&quot;:\&quot;pick_default\&quot;,\&quot;risk\&quot;:0.2,\&quot;priority_hint\&quot;:0.3,\&quot;confidence\&quot;:{\&quot;status\&quot;:0.93,\&quot;needs_human\&quot;:0.81,\&quot;answer_class\&quot;:0.88,\&quot;risk\&quot;:0.74,\&quot;priority_hint\&quot;:0.6}}&quot;, &quot;latency_ms&quot;: 410}
+<pre class="code"><code class="language-json">{&quot;call_id&quot;: &quot;c-1&quot;, &quot;brief_id&quot;: &quot;c096cea9b4f73d72&quot;, &quot;stage&quot;: &quot;triage&quot;, &quot;model&quot;: &quot;typesafe:jev-latest&quot;, &quot;rendered_input&quot;: &quot;(the state and the five questions, see schemas.md section 10)&quot;, &quot;shrunk_items&quot;: 0, &quot;output_json&quot;: &quot;{\&quot;status\&quot;:\&quot;waiting_answer\&quot;,\&quot;needs_human\&quot;:false,\&quot;answer_class\&quot;:\&quot;pick_default\&quot;,\&quot;risk\&quot;:0.2,\&quot;priority_hint\&quot;:0.3,\&quot;confidence\&quot;:{\&quot;status\&quot;:0.93,\&quot;needs_human\&quot;:0.81,\&quot;answer_class\&quot;:0.88,\&quot;risk\&quot;:0.74,\&quot;priority_hint\&quot;:0.6}}&quot;, &quot;latency_ms&quot;: 410}
 </code></pre>
 <p><strong>Recommendation</strong></p>
-<pre class="code"><code class="language-json">{&quot;proposal&quot;: {&quot;proposal_id&quot;: &quot;p-1&quot;, &quot;slice_id&quot;: &quot;c096cea9b4f73d72&quot;, &quot;steps&quot;: [{&quot;session_id&quot;: &quot;sess-7c1&quot;, &quot;evidence_quote&quot;: &quot;1. UTC (I recommend this&quot;, &quot;confidence&quot;: 0.9, &quot;kind&quot;: &quot;reply&quot;, &quot;text&quot;: &quot;1&quot;}], &quot;rationale&quot;: &quot;The agent recommends UTC.&quot;}, &quot;facts&quot;: {&quot;status&quot;: &quot;waiting_answer&quot;, &quot;needs_human&quot;: false, &quot;answer_class&quot;: &quot;pick_default&quot;, &quot;risk&quot;: 0.2, &quot;priority_hint&quot;: 0.3, &quot;confidence&quot;: {&quot;status&quot;: 0.93, &quot;needs_human&quot;: 0.81, &quot;answer_class&quot;: 0.88, &quot;risk&quot;: 0.74, &quot;priority_hint&quot;: 0.6}}, &quot;shown_to_human&quot;: false, &quot;call_ids&quot;: [&quot;c-1&quot;, &quot;c-2&quot;]}
+<pre class="code"><code class="language-json">{&quot;proposal&quot;: {&quot;proposal_id&quot;: &quot;p-1&quot;, &quot;brief_id&quot;: &quot;c096cea9b4f73d72&quot;, &quot;steps&quot;: [{&quot;session_id&quot;: &quot;sess-7c1&quot;, &quot;evidence_quote&quot;: &quot;1. UTC (I recommend this&quot;, &quot;confidence&quot;: 0.9, &quot;kind&quot;: &quot;reply&quot;, &quot;text&quot;: &quot;1&quot;}], &quot;rationale&quot;: &quot;The agent recommends UTC.&quot;}, &quot;facts&quot;: {&quot;status&quot;: &quot;waiting_answer&quot;, &quot;needs_human&quot;: false, &quot;answer_class&quot;: &quot;pick_default&quot;, &quot;risk&quot;: 0.2, &quot;priority_hint&quot;: 0.3, &quot;confidence&quot;: {&quot;status&quot;: 0.93, &quot;needs_human&quot;: 0.81, &quot;answer_class&quot;: 0.88, &quot;risk&quot;: 0.74, &quot;priority_hint&quot;: 0.6}}, &quot;shown_to_human&quot;: false, &quot;call_ids&quot;: [&quot;c-1&quot;, &quot;c-2&quot;]}
 </code></pre>
 <p><strong>Outcome</strong></p>
-<pre class="code"><code class="language-json">{&quot;proposal_id&quot;: &quot;p-1&quot;, &quot;result&quot;: &quot;accepted&quot;, &quot;final&quot;: {&quot;proposal_id&quot;: &quot;p-1&quot;, &quot;slice_id&quot;: &quot;c096cea9b4f73d72&quot;, &quot;steps&quot;: [{&quot;session_id&quot;: &quot;sess-7c1&quot;, &quot;evidence_quote&quot;: &quot;1. UTC (I recommend this&quot;, &quot;confidence&quot;: 0.9, &quot;kind&quot;: &quot;reply&quot;, &quot;text&quot;: &quot;1&quot;}], &quot;rationale&quot;: &quot;The agent recommends UTC.&quot;}, &quot;seconds_to_answer&quot;: 41.0}
+<pre class="code"><code class="language-json">{&quot;proposal_id&quot;: &quot;p-1&quot;, &quot;result&quot;: &quot;accepted&quot;, &quot;final&quot;: {&quot;proposal_id&quot;: &quot;p-1&quot;, &quot;brief_id&quot;: &quot;c096cea9b4f73d72&quot;, &quot;steps&quot;: [{&quot;session_id&quot;: &quot;sess-7c1&quot;, &quot;evidence_quote&quot;: &quot;1. UTC (I recommend this&quot;, &quot;confidence&quot;: 0.9, &quot;kind&quot;: &quot;reply&quot;, &quot;text&quot;: &quot;1&quot;}], &quot;rationale&quot;: &quot;The agent recommends UTC.&quot;}, &quot;seconds_to_answer&quot;: 41.0}
 </code></pre>
 <p><strong>Notification settings</strong></p>
 <pre class="code"><code class="language-json">{&quot;batch_window_minutes&quot;: 30, &quot;quiet_hours&quot;: [&quot;22:00&quot;, &quot;07:00&quot;], &quot;timezone&quot;: &quot;Australia/Sydney&quot;}
 </code></pre>
 <h3>11.1 The exact request to Jev (stage 1, later)</h3>
-<p>DSPy builds this request. One call carries all five questions. The inputs hold <code>slice.for_model()</code>.</p>
+<p>DSPy builds this request. One call carries all five questions. The inputs hold <code>stop brief.for_model()</code>.</p>
 <pre class="code"><code class="language-json">{
  &quot;state&quot;: {
   &quot;instructions&quot;: &quot;Read the end of a turn. Report the state of the session.&quot;,
-  &quot;input_fields&quot;: &quot;1. `slice_json` (str):&quot;,
+  &quot;input_fields&quot;: &quot;1. `brief_json` (str):&quot;,
   &quot;inputs&quot;: {
-   &quot;slice_json&quot;: {
+   &quot;brief_json&quot;: {
     &quot;trigger&quot;: &quot;end_turn&quot;,
     &quot;context&quot;: {
      &quot;session_id&quot;: &quot;sess-7c1&quot;,
      &quot;project&quot;: &quot;exporter&quot;,
-     &quot;branch&quot;: &quot;slice-2-csv&quot;,
-     &quot;workflow_stage&quot;: &quot;implement: slice 2 of 5&quot;,
+     &quot;branch&quot;: &quot;stop brief-2-csv&quot;,
+     &quot;workflow_stage&quot;: &quot;implement: @@stop brief@@ 2 of 5&quot;,
      &quot;answered_by_us_last_hour&quot;: 1
     },
     &quot;ask&quot;: {
      &quot;origin&quot;: &quot;human&quot;,
-     &quot;text&quot;: &quot;Build slice 2: the CSV export endpoint. Run the tests before you stop.&quot;
+     &quot;text&quot;: &quot;Build @@stop brief@@ 2: the CSV export endpoint. Run the tests before you stop.&quot;
     },
     &quot;items&quot;: [
      {
@@ -1393,10 +1393,10 @@ pre.code code{background:none;padding:0;white-space:pre}
       &quot;is_error&quot;: false
      }
     ],
-    &quot;final&quot;: &quot;Slice 2 is done. 14 tests pass.\n\nBefore I start slice 3, one question. Should the CSV timestamps use UTC or the project timezone?\n1. UTC (I recommend this: it matches the API)\n2. The project timezone\nReply 1 or 2.&quot;,
+    &quot;final&quot;: &quot;Stop brief 2 is done. 14 tests pass.\n\nBefore I start @@stop brief@@ 3, one question. Should the CSV timestamps use UTC or the project timezone?\n1. UTC (I recommend this: it matches the API)\n2. The project timezone\nReply 1 or 2.&quot;,
     &quot;previous&quot;: {
      &quot;ran&quot;: &quot;Built the export model and its 9 tests.&quot;,
-     &quot;result&quot;: &quot;Slice 1 done, tests pass.&quot;,
+     &quot;result&quot;: &quot;Stop brief 1 done, tests pass.&quot;,
      &quot;open_items&quot;: [],
      &quot;decisions&quot;: [
       &quot;Money fields use integer cents&quot;
@@ -1463,14 +1463,14 @@ pre.code code{background:none;padding:0;white-space:pre}
 <p>The system message ends with the JSON schema of <code>Advice</code>. That schema has 16071 characters, and it is cut here. The user message is the exact text.</p>
 <pre class="code"><code>[system]
 Your input fields are:
-1. `slice_json` (str): 
+1. `brief_json` (str): 
 2. `facts_json` (str): The five typed facts from the triage call
 Your output fields are:
 1. `advice` (Advice):
 All interactions will be structured in the following way, with the appropriate values filled in.
 
-[[ ## slice_json ## ]]
-{slice_json}
+[[ ## brief_json ## ]]
+{brief_json}
 
 [[ ## facts_json ## ]]
 {facts_json}
@@ -1484,8 +1484,8 @@ In adhering to this structure, your objective is:
         Write the question card and propose the next steps for a waiting session.
 
 [user]
-[[ ## slice_json ## ]]
-{&quot;trigger&quot;: &quot;end_turn&quot;, &quot;context&quot;: {&quot;session_id&quot;: &quot;sess-7c1&quot;, &quot;project&quot;: &quot;exporter&quot;, &quot;branch&quot;: &quot;slice-2-csv&quot;, &quot;workflow_stage&quot;: &quot;implement: slice 2 of 5&quot;, &quot;answered_by_us_last_hour&quot;: 1}, &quot;ask&quot;: {&quot;origin&quot;: &quot;human&quot;, &quot;text&quot;: &quot;Build slice 2: the CSV export endpoint. Run the tests before you stop.&quot;}, &quot;items&quot;: [{&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: &quot;I will read the routes first, then add the writer.&quot;}, {&quot;type&quot;: &quot;tool&quot;, &quot;tool&quot;: &quot;Read&quot;, &quot;input&quot;: &quot;src/export/routes.py&quot;, &quot;result&quot;: &quot;def export_routes(app):\n    ...&quot;, &quot;is_error&quot;: false}, {&quot;type&quot;: &quot;tool&quot;, &quot;tool&quot;: &quot;Edit&quot;, &quot;input&quot;: &quot;src/export/csv_writer.py&quot;, &quot;result&quot;: &quot;File updated.&quot;, &quot;is_error&quot;: false}, {&quot;type&quot;: &quot;tool&quot;, &quot;tool&quot;: &quot;Bash&quot;, &quot;input&quot;: &quot;pytest tests/export -q&quot;, &quot;result&quot;: &quot;Exit code 1\nFAILED tests/export/test_csv.py::test_header_order\n1 failed, 13 passed&quot;, &quot;is_error&quot;: true}, {&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: &quot;One test fails on the header order. I fix the column list and run the tests again.&quot;}, {&quot;type&quot;: &quot;tool&quot;, &quot;tool&quot;: &quot;Edit&quot;, &quot;input&quot;: &quot;src/export/csv_writer.py&quot;, &quot;result&quot;: &quot;File updated.&quot;, &quot;is_error&quot;: false}, {&quot;type&quot;: &quot;tool&quot;, &quot;tool&quot;: &quot;Bash&quot;, &quot;input&quot;: &quot;pytest tests/export -q&quot;, &quot;result&quot;: &quot;14 passed in 0.9s&quot;, &quot;is_error&quot;: false}], &quot;final&quot;: &quot;Slice 2 is done. 14 tests pass.\n\nBefore I start slice 3, one question. Should the CSV timestamps use UTC or the project timezone?\n1. UTC (I recommend this: it matches the API)\n2. The project timezone\nReply 1 or 2.&quot;, &quot;previous&quot;: {&quot;ran&quot;: &quot;Built the export model and its 9 tests.&quot;, &quot;result&quot;: &quot;Slice 1 done, tests pass.&quot;, &quot;open_items&quot;: [], &quot;decisions&quot;: [&quot;Money fields use integer cents&quot;]}}
+[[ ## brief_json ## ]]
+{&quot;trigger&quot;: &quot;end_turn&quot;, &quot;context&quot;: {&quot;session_id&quot;: &quot;sess-7c1&quot;, &quot;project&quot;: &quot;exporter&quot;, &quot;branch&quot;: &quot;stop brief-2-csv&quot;, &quot;workflow_stage&quot;: &quot;implement: @@stop brief@@ 2 of 5&quot;, &quot;answered_by_us_last_hour&quot;: 1}, &quot;ask&quot;: {&quot;origin&quot;: &quot;human&quot;, &quot;text&quot;: &quot;Build @@stop brief@@ 2: the CSV export endpoint. Run the tests before you stop.&quot;}, &quot;items&quot;: [{&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: &quot;I will read the routes first, then add the writer.&quot;}, {&quot;type&quot;: &quot;tool&quot;, &quot;tool&quot;: &quot;Read&quot;, &quot;input&quot;: &quot;src/export/routes.py&quot;, &quot;result&quot;: &quot;def export_routes(app):\n    ...&quot;, &quot;is_error&quot;: false}, {&quot;type&quot;: &quot;tool&quot;, &quot;tool&quot;: &quot;Edit&quot;, &quot;input&quot;: &quot;src/export/csv_writer.py&quot;, &quot;result&quot;: &quot;File updated.&quot;, &quot;is_error&quot;: false}, {&quot;type&quot;: &quot;tool&quot;, &quot;tool&quot;: &quot;Bash&quot;, &quot;input&quot;: &quot;pytest tests/export -q&quot;, &quot;result&quot;: &quot;Exit code 1\nFAILED tests/export/test_csv.py::test_header_order\n1 failed, 13 passed&quot;, &quot;is_error&quot;: true}, {&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: &quot;One test fails on the header order. I fix the column list and run the tests again.&quot;}, {&quot;type&quot;: &quot;tool&quot;, &quot;tool&quot;: &quot;Edit&quot;, &quot;input&quot;: &quot;src/export/csv_writer.py&quot;, &quot;result&quot;: &quot;File updated.&quot;, &quot;is_error&quot;: false}, {&quot;type&quot;: &quot;tool&quot;, &quot;tool&quot;: &quot;Bash&quot;, &quot;input&quot;: &quot;pytest tests/export -q&quot;, &quot;result&quot;: &quot;14 passed in 0.9s&quot;, &quot;is_error&quot;: false}], &quot;final&quot;: &quot;Stop brief 2 is done. 14 tests pass.\n\nBefore I start @@stop brief@@ 3, one question. Should the CSV timestamps use UTC or the project timezone?\n1. UTC (I recommend this: it matches the API)\n2. The project timezone\nReply 1 or 2.&quot;, &quot;previous&quot;: {&quot;ran&quot;: &quot;Built the export model and its 9 tests.&quot;, &quot;result&quot;: &quot;Stop brief 1 done, tests pass.&quot;, &quot;open_items&quot;: [], &quot;decisions&quot;: [&quot;Money fields use integer cents&quot;]}}
 
 [[ ## facts_json ## ]]
 {&quot;status&quot;:&quot;waiting_answer&quot;,&quot;needs_human&quot;:false,&quot;answer_class&quot;:&quot;pick_default&quot;,&quot;risk&quot;:0.2,&quot;priority_hint&quot;:0.3,&quot;confidence&quot;:{&quot;status&quot;:0.93,&quot;needs_human&quot;:0.81,&quot;answer_class&quot;:0.88,&quot;risk&quot;:0.74,&quot;priority_hint&quot;:0.6}}

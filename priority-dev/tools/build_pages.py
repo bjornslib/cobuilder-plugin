@@ -168,29 +168,24 @@ def main() -> None:
         t = open(D + name).read()
         t = re.sub(r"^# .*\n", "", t)
         return conv(t.replace("\n## ", "\n### "))
-    plan = open(D + "plans/priority-dev-spikes/04-slices.md").read()
+    plan = open("docs/plans/priority-dev-spike/04-slices.md").read()
     plan = re.sub(r"^# .*\n", "", plan).replace("\n## ", "\n### ")
     sp = section("plan", "Plan", "The slice plan, in the form of /implement:start", conv(plan))
     sp += section("host", "Design", "The adapter host", doc("design/adapter-host.md").replace("<h3>1. Job</h3>", ah + "<h3>1. Job</h3>"))
     sp += section("dspy", "Design", "The DSPy modules", doc("design/dspy-modules.md"))
-    sets = (fieldset(0, "Where the spike code and its tracker live", [
-        ("new repo", "A new repository for priority.dev, with its own tracker. This repository stays the plugin only", True),
-        ("this branch", "A <code>priority-dev/</code> folder on this branch, using this repository's tracker", False)],
-        "nothing is created. I keep designing on this branch.")
-        + fieldset(1, "The transcripts that become test fixtures", [
-            ("real and local", "Real transcripts, redacted, kept local and ignored by Git. Small made-up fixtures go in the repository", True),
-            ("made-up only", "Made-up fixtures only. The replay then says little about real runs", False)],
-            "the first. No transcript is copied until you answer.")
-        + fieldset(2, "The slices to build first", [
-            ("1 to 4", "Slices 1 to 4: the interpreter on recorded transcripts", True),
-            ("1 to 6", "Slices 1 to 6: add the event log", False),
-            ("all", "All twelve slices", False)],
-            "slices 1 to 4.")
-        + fieldset(3, "Run the /implement:start gates for epic E1", [
-            ("after 0 to 2", "Yes, after you answer the three points above", True),
-            ("not yet", "Not yet. Keep designing first", False)],
-            "not yet."))
-    html, ids = decision(sets, 4, "Source of record: <code>priority-dev/docs/design/adapter-host.md</code>, <code>dspy-modules.md</code>, and <code>plans/priority-dev-spikes/04-slices.md</code>.")
+    sets = (fieldset(0, "Gates 1 to 3 (product, architecture, program design)", [
+        ("approve", "Approve gates 1 to 3 as drafted in docs/plans/priority-dev-spike/", True),
+        ("changes", "Changes are needed. Say what in the notes", False)],
+        "not approved. I change nothing and write no code.")
+        + fieldset(1, "Gate 4 (slice plan, epic designs, blind rubrics)", [
+            ("approve", "Approve the 13 slices, the 4 epic designs, and the 13 rubrics", True),
+            ("changes", "Changes are needed. Say what in the notes", False)],
+            "not approved.")
+        + fieldset(2, "Pull requests for the design", [
+            ("one", "One pull request later, with the branch design/priority-dev-spike", True),
+            ("several", "One pull request for each epic", False)],
+            "one, and no pull request opens until you ask."))
+    html, ids = decision(sets, 3, "Source of record: <code>priority-dev/docs/design/adapter-host.md</code>, <code>dspy-modules.md</code>, and <code>plans/priority-dev-spikes/04-slices.md</code>.")
     chips = '<span class="chip warn">Draft for decision</span><span class="chip">Nothing built</span><span class="chip">No model call made</span><span class="chip">24 October 2026</span>'
     page = head + top("CoBuilder · architect:design · round 10", "priority.dev first spikes", "A plan for three spikes: the interpreter, the event log, and the session adapter.", chips,
                       '<a href="#plan">Plan</a><a href="#host">Adapter host</a><a href="#dspy">DSPy modules</a><a href="#decide">Decision</a>') + sp + html \

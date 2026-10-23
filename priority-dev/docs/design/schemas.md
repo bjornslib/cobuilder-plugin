@@ -8,12 +8,12 @@ The first spikes do not use Jev (section 1). The sketch still shows the Jev type
 
 The language model is required. Jev returns typed values only. It cannot write a reply or a question card. The interpreter therefore has two stages, and stage 1 feeds stage 2.
 
-| Stage | Model | Input | Output | Calls for each slice |
+| Stage | Model | Input | Output | Calls for each stop brief |
 |---|---|---|---|---|
-| 1. Triage | spikes: `openrouter/mistralai/mistral-nemo`. Later: Jev (`typesafe:jev-latest`) | the slice | `Facts`: five typed values | one |
-| 2. Advise | `openrouter/mistralai/mistral-nemo` | the slice and the facts | `Advice`: a question card and a proposal | one, when an answer is due |
-| Digest | `openrouter/thinkingmachines/inkling:free` | the slice | `RunDigest`: a short summary of the run | one for each finished run, always |
-| Shrink | the Digest model | one oversized tool result | a shorter text | none, unless the slice is over the budget (section 2.3) |
+| 1. Triage | spikes: `openrouter/mistralai/mistral-nemo`. Later: Jev (`typesafe:jev-latest`) | the stop brief | `Facts`: five typed values | one |
+| 2. Advise | `openrouter/mistralai/mistral-nemo` | the stop brief and the facts | `Advice`: a question card and a proposal | one, when an answer is due |
+| Digest | `openrouter/thinkingmachines/inkling:free` | the stop brief | `RunDigest`: a short summary of the run | one for each finished run, always |
+| Shrink | the Digest model | one oversized tool result | a shorter text | none, unless the stop brief is over the budget (section 2.3) |
 
 The first spikes do not call Jev. You asked for this so that a poor classifier cannot make the design look wrong. The `Facts` type stays the same. Only the stage 1 module changes, so a Jev module can replace it later. `dspy-modules.md` shows the modules.
 
@@ -25,15 +25,15 @@ Stage 2 runs when the facts say that an answer is due. The rule is plain Python:
 
 1. Run stage 2 when `status` is `waiting_answer`, `waiting_permission`, `blocked`, or `failed`.
 2. Run stage 2 when any confidence is below its threshold.
-3. Otherwise store the facts and stop. The slice needs no answer.
+3. Otherwise store the facts and stop. The stop brief needs no answer.
 
 Stage 2 runs even when `needs_human` is true. The human then sees a card with a recommended answer and does not start from nothing.
 
 The stage 2 system prompt holds the JSON schema of `Advice`. That schema is 16,071 characters, because the `Action` type has 13 kinds. Every call sends it. Prompt caching at the provider may lower the cost. I did not check that.
 
-## 2. Input: the turn slice
+## 2. Input: the stop brief
 
-A slice is the exact input of the interpreter. Code builds it from the transcript when an agent stops and waits. No model builds it. The system stores each slice once and never edits it. The raw transcript stays in `~/.claude`, and the slice holds a cursor that points to it.
+A stop brief is the exact input of the interpreter. Code builds it from the transcript when an agent stops and waits. No model builds it. The system stores each stop brief once and never edits it. The raw transcript stays in `~/.claude`, and the stop brief holds a cursor that points to it.
 
 ### 2.1 What a run holds in a real transcript
 
@@ -51,13 +51,13 @@ I measured the two largest transcripts of this repo (7526c296 with 18,729 record
 
 ### 2.2 What code can build, and what it cannot
 
-Code reads structured JSON. It can group replies, pair each tool call with its result, read whether the result is an error, find the last text, and read the `origin` of a record. It can redact secrets. It cannot say whether the work was right, or what a question means. The slice therefore holds facts and no meaning. The models give the meaning.
+Code reads structured JSON. It can group replies, pair each tool call with its result, read whether the result is an error, find the last text, and read the `origin` of a record. It can redact secrets. It cannot say whether the work was right, or what a question means. The stop brief therefore holds facts and no meaning. The models give the meaning.
 
 ### 2.3 The fields
 
 | Field | Meaning | Source |
 |---|---|---|
-| `slice_id`, `cursor` | digest of the session id and the stop record, and the place of the stop in the transcript | code |
+| `brief_id`, `cursor` | digest of the session id and the stop record, and the place of the stop in the transcript | code |
 | `trigger` | `end_turn`, `goal_stop_attempt`, `question_tool`, or `permission_wait` | code |
 | `context` | session, project, branch, workflow stage, our answers in the last hour | code and the tracker |
 | `ask` | what woke the agent: its `origin` (human, goal_hook, task_notification, peer) and the full text | the record that opened the run |
@@ -71,18 +71,18 @@ Code reads structured JSON. It can group replies, pair each tool call with its r
 
 Rules that follow:
 
-1. Nothing in a slice is clipped. The slice keeps the assistant text, each tool call, and each full result. Only the redaction changes the text.
+1. Nothing in a stop brief is clipped. The stop brief keeps the assistant text, each tool call, and each full result. Only the redaction changes the text.
 2. The renderer sets a budget of 160,000 characters for the text that a model reads. This is a guess: about 40,000 tokens, against a 131,072-token window for Mistral Nemo. I did not measure the characters for each token. Over the budget, the Shrink call replaces the largest tool results first. It never touches `ask`, `final`, or the last three exchanges. The stored `InterpreterCall` records how many results it replaced. By the measure in 2.1, about 1 run in 100 passes 100,000 characters.
-3. The model reads `slice.for_model()`. That text leaves out `slice_id`, `cursor`, `redactions`, and `allowed_kinds`. The option `agent_reports_first` copies each sub-agent exchange into a block at the top. It is a lab option, and the lab tests whether it helps.
+3. The model reads `stop brief.for_model()`. That text leaves out `brief_id`, `cursor`, `redactions`, and `allowed_kinds`. The option `agent_reports_first` copies each sub-agent exchange into a block at the top. It is a lab option, and the lab tests whether it helps.
 4. A prose question has no `pending`. The facts say `waiting_answer`, and `final` holds the question.
-5. A goal run gives one slice for each stop attempt. The `goal` field lets the models see that the agent only waits.
+5. A goal run gives one stop brief for each stop attempt. The `goal` field lets the models see that the agent only waits.
 6. A model summary of older turns stays off in v0.1. The `previous` field is the one exception that you asked for, the digest of the run before.
 
-How the digest works. The Digest call reads the slice of a run that has just ended. It returns a `RunDigest`: what the agent did (up to 600 characters), how the run ended (up to 300), up to five open items, and up to five decisions. The system stores it as a `fact.run_digest` event. The next slice of the same session carries it as `previous`. It costs one model call for each finished run, and the call always runs. This includes each stop of a goal run, so the next slice always has a `previous`. The lab checks whether the digest helps and whether it loses facts.
+How the digest works. The Digest call reads the stop brief of a run that has just ended. It returns a `RunDigest`: what the agent did (up to 600 characters), how the run ended (up to 300), up to five open items, and up to five decisions. The system stores it as a `fact.run_digest` event. The next stop brief of the same session carries it as `previous`. It costs one model call for each finished run, and the call always runs. This includes each stop of a goal run, so the next stop brief always has a `previous`. The lab checks whether the digest helps and whether it loses facts.
 
 ### 2.4 What the lab must settle
 
-The slice stores every section, and the renderer chooses what the model reads. The lab can therefore drop one section at a time and measure the effect, with no rebuild. The first ablations are the tool results in `items` (keep the calls, drop the results), `previous`, `last_thinking`, and `agent_reports_first`. I do not know which sections help. The sizes above come from one repo, and a different repo may differ.
+The stop brief stores every section, and the renderer chooses what the model reads. The lab can therefore drop one section at a time and measure the effect, with no rebuild. The first ablations are the tool results in `items` (keep the calls, drop the results), `previous`, `last_thinking`, and `agent_reports_first`. I do not know which sections help. The sizes above come from one repo, and a different repo may differ.
 
 Every model call is stored as an `InterpreterCall`. The row holds the stage, the exact text that the model received, how many tool results the Shrink call replaced, the model name, the output, and the time. A `Recommendation` links to its call rows. Section 11 shows both requests in full.
 
@@ -153,8 +153,8 @@ This action runs a harness in a loop until the session shows evidence that it re
 
 1. The human, or the interpreter, writes the goal and a `proof` of kind `agent_shows`, with a command and a `show` text. The policy decides the loop once, as one action with a budget.
 2. The actuator sends one message to the session: the goal, and the line "Before you stop, run `<command>` and report `<show>`".
-3. The agent works. At each stop, code builds a slice. The slice holds the agent's tool calls with their full results, in order (section 2).
-4. Stage 2 reads the slice. In a goal run it also returns an `EvidenceCheck`: `claimed_met`, a `command_quote`, and a `result_quote`. The quotes must be exact text from the slice.
+3. The agent works. At each stop, code builds a stop brief. The stop brief holds the agent's tool calls with their full results, in order (section 2).
+4. Stage 2 reads the stop brief. In a goal run it also returns an `EvidenceCheck`: `claimed_met`, a `command_quote`, and a `result_quote`. The quotes must be exact text from the stop brief.
 5. Code, with no model, runs `check_evidence`. It looks for a Bash call in this run whose input contains the proof command. It needs `is_error` false for that call. It needs the `result_quote` to appear in that call's result. The data comes from the real tool result record.
 6. If the check passes, the actuator stops sending `continue`. The inbox gets a class 2 item, "Goal claimed met", with the command, the result, and a button to reopen the loop. The human decides whether the evidence is enough.
 7. If the check fails, the actuator sends `continue` with the reason, for example "You did not run `pytest -q` in this run". The send counts against `max_turns`.
@@ -189,7 +189,7 @@ A `Proposal` holds one to three steps. The answer to "can one proposal hold more
 5. The hash covers each step, not the proposal.
 6. A proposal that approves a gate and returns the same gate is invalid. `approve_gate` with `notes` already means Approve with Notes. `send_feedback` means the opposite.
 
-Example: `reply` with "1", then `continue_until` with the goal "Slices 3 to 5 pass their tests". Section 11 shows it.
+Example: `reply` with "1", then `continue_until` with the goal "Stop briefs 3 to 5 pass their tests". Section 11 shows it.
 
 Not in the list, on purpose:
 
@@ -256,11 +256,11 @@ The batch window and the quiet hours are settings. The `NotifyConfig` type holds
 
 ## 8. Stored recommendations
 
-The system stores every proposal, shown to the human or not. It also stores the input of the proposal. A `Recommendation` holds the proposal, the facts, a flag `shown_to_human`, and the ids of its `InterpreterCall` rows. Each call row holds the exact text that the model received. The slice row holds the redacted transcript input. The human's reply is an `Outcome`: accepted, edited, replaced, rejected, snoozed, or dismissed.
+The system stores every proposal, shown to the human or not. It also stores the input of the proposal. A `Recommendation` holds the proposal, the facts, a flag `shown_to_human`, and the ids of its `InterpreterCall` rows. Each call row holds the exact text that the model received. The stop brief row holds the redacted transcript input. The human's reply is an `Outcome`: accepted, edited, replaced, rejected, snoozed, or dismissed.
 
-- The triple (slice, proposal, outcome) is the data for tuning the interpreter and for the lab metrics.
+- The triple (stop brief, proposal, outcome) is the data for tuning the interpreter and for the lab metrics.
 - A proposal that the human never saw has no outcome. It trains nothing until the human reviews a sample of it.
-- The raw transcript is never copied. The stored text is already redacted. The redaction is lossy, so a stored slice cannot give back a secret.
+- The raw transcript is never copied. The stored text is already redacted. The redaction is lossy, so a stored stop brief cannot give back a secret.
 - `approve_gate` stays at ASK. No rule moves it to ALLOW by itself. The human edits the policy file by hand when the stored outcomes justify it.
 
 ## 9. When the interpreter abstains
@@ -269,12 +269,12 @@ An `Abstain` event says that the interpreter proposes nothing. The inbox then ge
 
 | Reason | Cause |
 |---|---|
-| `quote_not_in_slice` | the `evidence_quote` is not an exact substring of the slice |
+| `quote_not_in_brief` | the `evidence_quote` is not an exact substring of the stop brief |
 | `invalid_output` | the model reply does not parse as `Advice` |
 | `kind_not_allowed` | the proposal names a kind that is not in `allowed_kinds` |
 | `model_timeout` | a model call did not return in time |
 | `model_error` | a model call returned an error |
-| `slice_empty` | the turn has no response text |
+| `brief_empty` | the turn has no response text |
 
 Section 11 shows an example.
 
@@ -282,9 +282,9 @@ Section 11 shows an example.
 
 1. The sketch imports and validates (done: `uv run schemas/interpreter_schemas.py` prints `ok`).
 2. The request to Jev builds from the signature (done: section 11 shows the output of `DecisionAdapter._prepare`).
-3. A real Jev call returns the five typed fields for one slice (not done, one-day test).
-4. The advisor returns a valid `Advice` for 20 recorded slices (not done). The `Action` union as a DSPy output field is untested against a real model.
-5. The evidence quote check rejects a proposal whose quote is not in the slice (not done, a unit test).
+3. A real Jev call returns the five typed fields for one stop brief (not done, one-day test).
+4. The advisor returns a valid `Advice` for 20 recorded stop briefs (not done). The `Action` union as a DSPy output field is untested against a real model.
+5. The evidence quote check rejects a proposal whose quote is not in the stop brief (not done, a unit test).
 6. The 16,071-character schema in the stage 2 prompt does not lower the advisor's accuracy (not done).
 7. `check_evidence` accepts a real pass and rejects four wrong cases: a wrong quote, a failed call, no call, and no goal (done: the sketch asserts all five).
 8. The Digest call keeps the open questions of a run, and the Shrink call keeps the errors (not done, lab checks).
@@ -294,23 +294,23 @@ Section 11 shows an example.
 
 The data is synthetic. The sketch builds each example and checks a JSON round trip. Run `uv run schemas/interpreter_schemas.py dump` to print them. Empty fields are cut here.
 
-**The turn slice (what is stored)**
+**The stop brief (what is stored)**
 
 ```json
 {
- "slice_id": "c096cea9b4f73d72",
+ "brief_id": "c096cea9b4f73d72",
  "cursor": "~/.claude/projects/-work-exporter/7c1e.jsonl@184220",
  "trigger": "end_turn",
  "context": {
   "session_id": "sess-7c1",
   "project": "exporter",
-  "branch": "slice-2-csv",
-  "workflow_stage": "implement: slice 2 of 5",
+  "branch": "stop brief-2-csv",
+  "workflow_stage": "implement: @@stop brief@@ 2 of 5",
   "answered_by_us_last_hour": 1
  },
  "ask": {
   "origin": "human",
-  "text": "Build slice 2: the CSV export endpoint. Run the tests before you stop."
+  "text": "Build @@stop brief@@ 2: the CSV export endpoint. Run the tests before you stop."
  },
  "items": [
   {
@@ -357,10 +357,10 @@ The data is synthetic. The sketch builds each example and checks a JSON round tr
    "is_error": false
   }
  ],
- "final": "Slice 2 is done. 14 tests pass.\n\nBefore I start slice 3, one question. Should the CSV timestamps use UTC or the project timezone?\n1. UTC (I recommend this: it matches the API)\n2. The project timezone\nReply 1 or 2.",
+ "final": "Stop brief 2 is done. 14 tests pass.\n\nBefore I start @@stop brief@@ 3, one question. Should the CSV timestamps use UTC or the project timezone?\n1. UTC (I recommend this: it matches the API)\n2. The project timezone\nReply 1 or 2.",
  "previous": {
   "ran": "Built the export model and its 9 tests.",
-  "result": "Slice 1 done, tests pass.",
+  "result": "Stop brief 1 done, tests pass.",
   "decisions": [
    "Money fields use integer cents"
   ]
@@ -385,7 +385,7 @@ The data is synthetic. The sketch builds each example and checks a JSON round tr
 **RunDigest (the Digest call, carried as previous)**
 
 ```json
-{"ran": "Built the export model and its 9 tests.", "result": "Slice 1 done, tests pass.", "decisions": ["Money fields use integer cents"]}
+{"ran": "Built the export model and its 9 tests.", "result": "Stop brief 1 done, tests pass.", "decisions": ["Money fields use integer cents"]}
 ```
 
 **Facts from the Jev call**
@@ -427,7 +427,7 @@ The data is synthetic. The sketch builds each example and checks a JSON round tr
  },
  "proposal": {
   "proposal_id": "p-1",
-  "slice_id": "c096cea9b4f73d72",
+  "brief_id": "c096cea9b4f73d72",
   "steps": [
    {
     "session_id": "sess-7c1",
@@ -446,22 +446,22 @@ The data is synthetic. The sketch builds each example and checks a JSON round tr
 
 ```json
 {
- "slice_id": "c096cea9b4f73d72",
+ "brief_id": "c096cea9b4f73d72",
  "cursor": "~/.claude/projects/-work-exporter/7c1e.jsonl@184220",
  "trigger": "goal_stop_attempt",
  "context": {
   "session_id": "sess-7c1",
   "project": "exporter",
-  "branch": "slice-2-csv",
-  "workflow_stage": "implement: slice 2 of 5",
+  "branch": "stop brief-2-csv",
+  "workflow_stage": "implement: @@stop brief@@ 2 of 5",
   "answered_by_us_last_hour": 1
  },
  "ask": {
   "origin": "goal_hook",
-  "text": "Stop hook feedback: [All 5 slices pass their tests]: not yet shown"
+  "text": "Stop hook feedback: [All 5 stop briefs pass their tests]: not yet shown"
  },
  "goal": {
-  "text": "All 5 slices pass their tests",
+  "text": "All 5 stop briefs pass their tests",
   "stop_attempts": 2,
   "last_reason": "no test output shown",
   "proof": {
@@ -479,10 +479,10 @@ The data is synthetic. The sketch builds each example and checks a JSON round tr
    "is_error": false
   }
  ],
- "final": "All 5 slices are built. I ran pytest -q: 68 passed in 4.1s.",
+ "final": "All 5 stop briefs are built. I ran pytest -q: 68 passed in 4.1s.",
  "previous": {
   "ran": "Built the export model and its 9 tests.",
-  "result": "Slice 1 done, tests pass.",
+  "result": "Stop brief 1 done, tests pass.",
   "decisions": [
    "Money fields use integer cents"
   ]
@@ -504,7 +504,7 @@ The data is synthetic. The sketch builds each example and checks a JSON round tr
 }
 ```
 
-**EvidenceCheck (checked by code against the slice)**
+**EvidenceCheck (checked by code against the stop brief)**
 
 ```json
 {"claimed_met": true, "command_quote": "pytest -q", "result_quote": "68 passed in 4.1s"}
@@ -513,19 +513,19 @@ The data is synthetic. The sketch builds each example and checks a JSON round tr
 **A proposal with two steps**
 
 ```json
-{"proposal_id": "p-2", "slice_id": "c096cea9b4f73d72", "steps": [{"session_id": "sess-7c1", "evidence_quote": "1. UTC (I recommend this", "confidence": 0.9, "kind": "reply", "text": "1"}, {"session_id": "sess-7c1", "evidence_quote": "Before I start slice 3", "confidence": 0.0, "kind": "continue_until", "goal": "Slices 3 to 5 pass their tests", "proof": {"kind": "agent_shows", "command": "pytest -q", "show": "the exit code and the last 5 lines"}, "max_turns": 20, "max_minutes": 120}], "rationale": "Answer the question, then run to the end of the plan."}
+{"proposal_id": "p-2", "brief_id": "c096cea9b4f73d72", "steps": [{"session_id": "sess-7c1", "evidence_quote": "1. UTC (I recommend this", "confidence": 0.9, "kind": "reply", "text": "1"}, {"session_id": "sess-7c1", "evidence_quote": "Before I start @@stop brief@@ 3", "confidence": 0.0, "kind": "continue_until", "goal": "Stop briefs 3 to 5 pass their tests", "proof": {"kind": "agent_shows", "command": "pytest -q", "show": "the exit code and the last 5 lines"}, "max_turns": 20, "max_minutes": 120}], "rationale": "Answer the question, then run to the end of the plan."}
 ```
 
 **continue_until**
 
 ```json
-{"session_id": "sess-7c1", "evidence_quote": "Reply 1 or 2.", "confidence": 0.7, "kind": "continue_until", "goal": "All 5 slices pass their tests", "proof": {"kind": "agent_shows", "command": "pytest -q", "show": "the exit code and the last 5 lines"}, "max_turns": 20, "max_minutes": 120}
+{"session_id": "sess-7c1", "evidence_quote": "Reply 1 or 2.", "confidence": 0.7, "kind": "continue_until", "goal": "All 5 stop briefs pass their tests", "proof": {"kind": "agent_shows", "command": "pytest -q", "show": "the exit code and the last 5 lines"}, "max_turns": 20, "max_minutes": 120}
 ```
 
 **Abstain**
 
 ```json
-{"slice_id": "c096cea9b4f73d72", "reason": "quote_not_in_slice", "detail": "The quote 'Use UTC, as agreed' is not in the slice"}
+{"brief_id": "c096cea9b4f73d72", "reason": "quote_not_in_brief", "detail": "The quote 'Use UTC, as agreed' is not in the stop brief"}
 ```
 
 **ask_human (do)**
@@ -537,25 +537,25 @@ The data is synthetic. The sketch builds each example and checks a JSON round tr
 **ask_human (review)**
 
 ```json
-{"session_id": "sess-7c1", "confidence": 0.0, "kind": "ask_human", "detail": {"role": "review", "artifact": "docs/plans/x/04-slices.md", "check_items": ["Slice order"]}, "why_escalated": "The gate needs a person"}
+{"session_id": "sess-7c1", "confidence": 0.0, "kind": "ask_human", "detail": {"role": "review", "artifact": "docs/plans/x/04-stop briefs.md", "check_items": ["Stop brief order"]}, "why_escalated": "The gate needs a person"}
 ```
 
 **InterpreterCall (the stored row)**
 
 ```json
-{"call_id": "c-1", "slice_id": "c096cea9b4f73d72", "stage": "triage", "model": "typesafe:jev-latest", "rendered_input": "(the state and the five questions, see schemas.md section 10)", "shrunk_items": 0, "output_json": "{\"status\":\"waiting_answer\",\"needs_human\":false,\"answer_class\":\"pick_default\",\"risk\":0.2,\"priority_hint\":0.3,\"confidence\":{\"status\":0.93,\"needs_human\":0.81,\"answer_class\":0.88,\"risk\":0.74,\"priority_hint\":0.6}}", "latency_ms": 410}
+{"call_id": "c-1", "brief_id": "c096cea9b4f73d72", "stage": "triage", "model": "typesafe:jev-latest", "rendered_input": "(the state and the five questions, see schemas.md section 10)", "shrunk_items": 0, "output_json": "{\"status\":\"waiting_answer\",\"needs_human\":false,\"answer_class\":\"pick_default\",\"risk\":0.2,\"priority_hint\":0.3,\"confidence\":{\"status\":0.93,\"needs_human\":0.81,\"answer_class\":0.88,\"risk\":0.74,\"priority_hint\":0.6}}", "latency_ms": 410}
 ```
 
 **Recommendation**
 
 ```json
-{"proposal": {"proposal_id": "p-1", "slice_id": "c096cea9b4f73d72", "steps": [{"session_id": "sess-7c1", "evidence_quote": "1. UTC (I recommend this", "confidence": 0.9, "kind": "reply", "text": "1"}], "rationale": "The agent recommends UTC."}, "facts": {"status": "waiting_answer", "needs_human": false, "answer_class": "pick_default", "risk": 0.2, "priority_hint": 0.3, "confidence": {"status": 0.93, "needs_human": 0.81, "answer_class": 0.88, "risk": 0.74, "priority_hint": 0.6}}, "shown_to_human": false, "call_ids": ["c-1", "c-2"]}
+{"proposal": {"proposal_id": "p-1", "brief_id": "c096cea9b4f73d72", "steps": [{"session_id": "sess-7c1", "evidence_quote": "1. UTC (I recommend this", "confidence": 0.9, "kind": "reply", "text": "1"}], "rationale": "The agent recommends UTC."}, "facts": {"status": "waiting_answer", "needs_human": false, "answer_class": "pick_default", "risk": 0.2, "priority_hint": 0.3, "confidence": {"status": 0.93, "needs_human": 0.81, "answer_class": 0.88, "risk": 0.74, "priority_hint": 0.6}}, "shown_to_human": false, "call_ids": ["c-1", "c-2"]}
 ```
 
 **Outcome**
 
 ```json
-{"proposal_id": "p-1", "result": "accepted", "final": {"proposal_id": "p-1", "slice_id": "c096cea9b4f73d72", "steps": [{"session_id": "sess-7c1", "evidence_quote": "1. UTC (I recommend this", "confidence": 0.9, "kind": "reply", "text": "1"}], "rationale": "The agent recommends UTC."}, "seconds_to_answer": 41.0}
+{"proposal_id": "p-1", "result": "accepted", "final": {"proposal_id": "p-1", "brief_id": "c096cea9b4f73d72", "steps": [{"session_id": "sess-7c1", "evidence_quote": "1. UTC (I recommend this", "confidence": 0.9, "kind": "reply", "text": "1"}], "rationale": "The agent recommends UTC."}, "seconds_to_answer": 41.0}
 ```
 
 **Notification settings**
@@ -566,26 +566,26 @@ The data is synthetic. The sketch builds each example and checks a JSON round tr
 
 ### 11.1 The exact request to Jev (stage 1, later)
 
-DSPy builds this request. One call carries all five questions. The inputs hold `slice.for_model()`.
+DSPy builds this request. One call carries all five questions. The inputs hold `stop brief.for_model()`.
 
 ```json
 {
  "state": {
   "instructions": "Read the end of a turn. Report the state of the session.",
-  "input_fields": "1. `slice_json` (str):",
+  "input_fields": "1. `brief_json` (str):",
   "inputs": {
-   "slice_json": {
+   "brief_json": {
     "trigger": "end_turn",
     "context": {
      "session_id": "sess-7c1",
      "project": "exporter",
-     "branch": "slice-2-csv",
-     "workflow_stage": "implement: slice 2 of 5",
+     "branch": "stop brief-2-csv",
+     "workflow_stage": "implement: @@stop brief@@ 2 of 5",
      "answered_by_us_last_hour": 1
     },
     "ask": {
      "origin": "human",
-     "text": "Build slice 2: the CSV export endpoint. Run the tests before you stop."
+     "text": "Build @@stop brief@@ 2: the CSV export endpoint. Run the tests before you stop."
     },
     "items": [
      {
@@ -632,10 +632,10 @@ DSPy builds this request. One call carries all five questions. The inputs hold `
       "is_error": false
      }
     ],
-    "final": "Slice 2 is done. 14 tests pass.\n\nBefore I start slice 3, one question. Should the CSV timestamps use UTC or the project timezone?\n1. UTC (I recommend this: it matches the API)\n2. The project timezone\nReply 1 or 2.",
+    "final": "Stop brief 2 is done. 14 tests pass.\n\nBefore I start @@stop brief@@ 3, one question. Should the CSV timestamps use UTC or the project timezone?\n1. UTC (I recommend this: it matches the API)\n2. The project timezone\nReply 1 or 2.",
     "previous": {
      "ran": "Built the export model and its 9 tests.",
-     "result": "Slice 1 done, tests pass.",
+     "result": "Stop brief 1 done, tests pass.",
      "open_items": [],
      "decisions": [
       "Money fields use integer cents"
@@ -706,14 +706,14 @@ The system message ends with the JSON schema of `Advice`. That schema has 16071 
 ```
 [system]
 Your input fields are:
-1. `slice_json` (str): 
+1. `brief_json` (str): 
 2. `facts_json` (str): The five typed facts from the triage call
 Your output fields are:
 1. `advice` (Advice):
 All interactions will be structured in the following way, with the appropriate values filled in.
 
-[[ ## slice_json ## ]]
-{slice_json}
+[[ ## brief_json ## ]]
+{brief_json}
 
 [[ ## facts_json ## ]]
 {facts_json}
@@ -727,8 +727,8 @@ In adhering to this structure, your objective is:
         Write the question card and propose the next steps for a waiting session.
 
 [user]
-[[ ## slice_json ## ]]
-{"trigger": "end_turn", "context": {"session_id": "sess-7c1", "project": "exporter", "branch": "slice-2-csv", "workflow_stage": "implement: slice 2 of 5", "answered_by_us_last_hour": 1}, "ask": {"origin": "human", "text": "Build slice 2: the CSV export endpoint. Run the tests before you stop."}, "items": [{"type": "text", "text": "I will read the routes first, then add the writer."}, {"type": "tool", "tool": "Read", "input": "src/export/routes.py", "result": "def export_routes(app):\n    ...", "is_error": false}, {"type": "tool", "tool": "Edit", "input": "src/export/csv_writer.py", "result": "File updated.", "is_error": false}, {"type": "tool", "tool": "Bash", "input": "pytest tests/export -q", "result": "Exit code 1\nFAILED tests/export/test_csv.py::test_header_order\n1 failed, 13 passed", "is_error": true}, {"type": "text", "text": "One test fails on the header order. I fix the column list and run the tests again."}, {"type": "tool", "tool": "Edit", "input": "src/export/csv_writer.py", "result": "File updated.", "is_error": false}, {"type": "tool", "tool": "Bash", "input": "pytest tests/export -q", "result": "14 passed in 0.9s", "is_error": false}], "final": "Slice 2 is done. 14 tests pass.\n\nBefore I start slice 3, one question. Should the CSV timestamps use UTC or the project timezone?\n1. UTC (I recommend this: it matches the API)\n2. The project timezone\nReply 1 or 2.", "previous": {"ran": "Built the export model and its 9 tests.", "result": "Slice 1 done, tests pass.", "open_items": [], "decisions": ["Money fields use integer cents"]}}
+[[ ## brief_json ## ]]
+{"trigger": "end_turn", "context": {"session_id": "sess-7c1", "project": "exporter", "branch": "stop brief-2-csv", "workflow_stage": "implement: @@stop brief@@ 2 of 5", "answered_by_us_last_hour": 1}, "ask": {"origin": "human", "text": "Build @@stop brief@@ 2: the CSV export endpoint. Run the tests before you stop."}, "items": [{"type": "text", "text": "I will read the routes first, then add the writer."}, {"type": "tool", "tool": "Read", "input": "src/export/routes.py", "result": "def export_routes(app):\n    ...", "is_error": false}, {"type": "tool", "tool": "Edit", "input": "src/export/csv_writer.py", "result": "File updated.", "is_error": false}, {"type": "tool", "tool": "Bash", "input": "pytest tests/export -q", "result": "Exit code 1\nFAILED tests/export/test_csv.py::test_header_order\n1 failed, 13 passed", "is_error": true}, {"type": "text", "text": "One test fails on the header order. I fix the column list and run the tests again."}, {"type": "tool", "tool": "Edit", "input": "src/export/csv_writer.py", "result": "File updated.", "is_error": false}, {"type": "tool", "tool": "Bash", "input": "pytest tests/export -q", "result": "14 passed in 0.9s", "is_error": false}], "final": "Stop brief 2 is done. 14 tests pass.\n\nBefore I start @@stop brief@@ 3, one question. Should the CSV timestamps use UTC or the project timezone?\n1. UTC (I recommend this: it matches the API)\n2. The project timezone\nReply 1 or 2.", "previous": {"ran": "Built the export model and its 9 tests.", "result": "Stop brief 1 done, tests pass.", "open_items": [], "decisions": ["Money fields use integer cents"]}}
 
 [[ ## facts_json ## ]]
 {"status":"waiting_answer","needs_human":false,"answer_class":"pick_default","risk":0.2,"priority_hint":0.3,"confidence":{"status":0.93,"needs_human":0.81,"answer_class":0.88,"risk":0.74,"priority_hint":0.6}}

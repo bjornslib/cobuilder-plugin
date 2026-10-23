@@ -256,6 +256,23 @@ The fixed text at the top of a memory run's result that tells the main agent to 
 **Memory pane** (`cobuilder-memory`):
 The side pane, id `memory-run` and title `🧠 CoBuilder Memory: Hindsight Run`, that shows the newest memory run's steps while it runs and its result when it is done. It adds no fact that the result lacks.
 
+## priority-dev
+
+<a id="stop-brief"></a>
+**Stop brief** (`priority-dev`):
+The exact input that the interpreter reads for one stop of a coding session: the run in order, with each tool result in full, and a digest of the run before. Code builds it from the transcript and stores it once.
+_Avoid_: slice, turn slice (a Slice in `implement` is a vertical unit of build work, scored by a validator)
+
+<a id="abstain"></a>
+**Abstain** (`priority-dev`):
+The result of the interpreter when it proposes nothing, with a reason such as `quote_not_in_brief` or `model_error`. The inbox then gets an `ask_human` item, and no failure ends in silence.
+_Avoid_: fallback, error result
+
+<a id="probe"></a>
+**Probe** (`priority-dev`):
+A build slice whose end state is a measured answer to one unknown, in a committed report. Its blind rubric scores the honesty and completeness of the report, not the size of the number.
+_Avoid_: spike slice
+
 ## Cross-cutting
 
 <a id="self"></a>

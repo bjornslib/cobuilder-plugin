@@ -71,7 +71,7 @@ The two channels share one path. The control process signs a command. The host v
 | `transcript.records` | the tailer | raw lines, with `file:offset` keys |
 | `command.received`, `command.sent`, `command.confirmed`, `command.unknown` | the puller and the sender | the command hash, the channel (H or T), the result |
 
-The slicer cuts a slice when it sees `run.stopped`. The transcript may lag, so the slicer waits until the transcript tail holds the first 200 characters of `last_assistant_message`, with a timeout of 5 seconds. After the timeout it cuts anyway and records `transcript_lag`. This wait is inferred, and a spike must measure the lag.
+The brief builder cuts a stop brief when it sees `run.stopped`. The transcript may lag, so the brief builder waits until the transcript tail holds the first 200 characters of `last_assistant_message`, with a timeout of 5 seconds. After the timeout it cuts anyway and records `transcript_lag`. This wait is inferred, and a spike must measure the lag.
 
 ## 6. Failure rules
 
@@ -87,7 +87,7 @@ The slicer cuts a slice when it sees `run.stopped`. The transcript may lag, so t
 |---|---|---|
 | 1 | Does `$TMUX_PANE` reach the hook? | The whole pane link rests on it |
 | 2 | Does the permission dialog show while a `PermissionRequest` hook waits? | Decides the hold time for H |
-| 3 | How long does the transcript lag behind `Stop`? | Decides the slicer wait |
+| 3 | How long does the transcript lag behind `Stop`? | Decides the brief builder wait |
 | 4 | What does the transcript hold when a `/goal` clears? | Decides whether `continue_until` can use `/goal` (schemas.md, section 4.1) |
 | 5 | Does `-p` mode or bypass mode skip the hooks? | The policy hook must run in every mode |
 | 6 | Does a paste into a busy pane get lost? | Decides the precondition check for T |

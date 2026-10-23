@@ -1,0 +1,61 @@
+{
+  "intent": {
+    "tagline": "Measure the unknowns before the policy and the actuator exist.",
+    "narration": "Ten rounds of design left priority.dev with documents and no measurement. This spike asks the cheapest questions first: can a small model read a stop, and what do the hooks and the pane really do. The answers decide what the later phases build.",
+    "beats": []
+  },
+  "problem_solution": {
+    "problem": "The design of priority.dev rests on guesses about a small model, the Claude Code hooks, and tmux. A wrong guess would reach the policy and the actuator, which send text into your sessions.",
+    "solution": "A spike program of 4 epics and 13 slices measures each unknown, with the probes first. A blind rubric scores each slice, and each unknown is a criterion in its rubric.",
+    "narration": "Your prompt probe is slice 1, so the first model signal comes in hours. The hook and tmux probes follow before any database exists. The event log comes only when the real payloads are known.",
+    "beats": [
+      {
+        "kind": "problem",
+        "text": "No one has measured Nemo on real stops, or a hook in a live session."
+      },
+      {
+        "kind": "decision",
+        "text": "The probes come first. Slice 1 runs Nemo on three real transcripts. Slices 2 and 3 run hooks and tmux in a scratch session."
+      },
+      {
+        "kind": "decision",
+        "text": "Every model call is stored with its model id, prompt hash, and raw reply. A failed call ends as an Abstain with a reason."
+      },
+      {
+        "kind": "decision",
+        "text": "The interpreter input is now the stop brief, so that slice keeps its CoBuilder meaning."
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "A deterministic interpreter with no model",
+        "rejected_because": "It retires no model unknown."
+      },
+      {
+        "option": "The event log first",
+        "rejected_because": "The envelope depends on real hook payloads."
+      },
+      {
+        "option": "A claims.yaml ledger",
+        "rejected_because": "The blind rubrics carry the claims."
+      }
+    ]
+  },
+  "architecture": {
+    "narration": "The spike builds the interpreter on recorded transcripts, then the log, then the adapter that feeds it. The control process is not in the spike.",
+    "beats": [
+      {
+        "kind": "module",
+        "text": "The brief builder builds a stop brief from a transcript. Code redacts secrets and groups replies by message id."
+      },
+      {
+        "kind": "module",
+        "text": "Triage, Pick, Fill, and Card run on Nemo. Digest runs on Inkling. Code rejects any quote that is not in the brief."
+      },
+      {
+        "kind": "store",
+        "text": "The event log is Postgres 17 in Docker. The adapter host spools events to it."
+      }
+    ]
+  }
+}

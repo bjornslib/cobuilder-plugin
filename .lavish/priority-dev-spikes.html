@@ -189,8 +189,12 @@ pre.code code{background:none;padding:0;white-space:pre}
 <nav class="toc" aria-label="Sections"><a href="#plan">Plan</a><a href="#host">Adapter host</a><a href="#dspy">DSPy modules</a><a href="#decide">Decision</a></nav>
 <section id="plan">
   <header><div class="eyebrow">Plan</div><h2>The slice plan, in the form of /implement:start</h2></header>
-<p>Status: draft, round 10. I read <code>plugins/implement/skills/build/SKILL.md</code> and wrote only Gate 4a in its format. I did not run <code>/implement:start</code>, and I did not touch the tracker. No gate is approved.</p>
-<p>The goal of the spikes is to find out whether the design holds. Each slice ends in a state that a command or a file shows. The first four slices need no database and no running session. They retire the biggest risk first: does a small model give valid, grounded output on real transcripts?</p>
+<p>Gate 4a for the whole program. The slices cover four epics, E1 to E4. Slice numbers run 1 to 13 across the program. The first batch to build is slices 1 to 5. Gate 4b and 4c stay pending until the engineer approves this plan.</p>
+<p>Test command for each slice: <code>uv run pytest priority-dev/tests -q</code>. The command runs inside <code>priority-dev/</code>, which has its own <code>pyproject.toml</code>. The plugin tests never collect it.</p>
+<p>Rubrics path: <code>.cobuilder/rubrics/priority-dev-spike/</code>.</p>
+<h3>What makes a slice here</h3>
+<p>Each slice ends in one thing that a command prints or a file shows. A probe slice ends in a committed report that states a measured answer. A probe may refute its claim and still pass, because its rubric scores the honesty and completeness of the report, not the size of the number. The word stop brief names the interpreter input. The word slice names only a unit of build work.</p>
+<h3>Program slices</h3>
 <div class="scroll"><table>
 <thead>
 <tr>
@@ -205,7 +209,7 @@ pre.code code{background:none;padding:0;white-space:pre}
 <tbody>
 <tr>
 <td class="k"></td>
-<td><strong><code>priority-dev/E1</code> — The interpreter works on a recorded transcript.</strong> No Jev, no database, no live session. Nemo and Inkling through OpenRouter.</td>
+<td><strong><code>priority-dev-spike/E1</code> — Probes.</strong> A model probe, a hook probe, and a tmux probe. Each unknown gets a measured answer in a committed report. No database.</td>
 <td></td>
 <td></td>
 <td></td>
@@ -213,71 +217,71 @@ pre.code code{background:none;padding:0;white-space:pre}
 </tr>
 <tr>
 <td class="k">1</td>
-<td><code>priority-dev/E1</code></td>
-<td>Slice a recorded run</td>
-<td><code>uv run priority slice fixtures/run-3.jsonl --stop 2</code> prints a slice that equals the stored snapshot. Replies group by <code>message.id</code>, results pair by id, and a planted key is redacted</td>
+<td><code>priority-dev-spike/E1</code></td>
+<td><strong>Model probe</strong></td>
+<td><code>uv run python priority-dev/probes/model_probe.py &lt;transcript&gt;</code> runs Nemo on three redacted real transcripts and prints the five facts, an action kind, a quote, and whether the quote is in the text. <code>probes/model-probe.md</code> states the JSON validity and the rate-limit count</td>
 <td>—</td>
 <td>pending</td>
 </tr>
 <tr>
 <td class="k">2</td>
-<td><code>priority-dev/E1</code></td>
-<td>Digest a run</td>
-<td><code>priority digest</code> calls Inkling and prints a <code>RunDigest</code> that validates. The call row with the exact input is saved as a file</td>
+<td><code>priority-dev-spike/E1</code></td>
+<td><strong>Hook probe</strong></td>
+<td>In a scratch tmux session, Stop, PermissionRequest, and AskUserQuestion hooks append lines to a local file. <code>probes/hook-probe.md</code> states whether <code>$TMUX_PANE</code> is set, the fields seen, and the transcript lag. The report also states what the transcript holds when <code>/goal</code> clears. A failing hook exits 0 within 5 seconds, and the bypass file makes every hook a no-op</td>
 <td>—</td>
 <td>pending</td>
 </tr>
 <tr>
 <td class="k">3</td>
-<td><code>priority-dev/E1</code></td>
-<td>Interpret a stop</td>
-<td><code>priority interpret</code> runs Triage, Pick, Fill, and Card on Nemo. It prints an <code>Interpretation</code> or an <code>Abstain</code>. The call rows are saved</td>
-<td>—</td>
-<td>pending</td>
-</tr>
-<tr>
-<td class="k">4</td>
-<td><code>priority-dev/E1</code></td>
-<td>Replay many stops</td>
-<td><code>priority replay fixtures/</code> writes <code>report.md</code> with the valid-output rate, the quote-found rate, the abstain reasons, the kinds picked, the characters sent, the seconds, and the cost, for both adapters</td>
+<td><code>priority-dev-spike/E1</code></td>
+<td><strong>Tmux probe</strong></td>
+<td><code>probes/tmux-probe.md</code> states whether a paste is lost in an idle pane and in a busy pane, whether newlines survive, and whether the permission dialog shows while a PermissionRequest hook waits 20 seconds</td>
 <td>—</td>
 <td>pending</td>
 </tr>
 <tr>
 <td class="k"></td>
-<td><strong><code>priority-dev/E2</code> — The event log keeps what the other parts send.</strong> Postgres 17 in Docker.</td>
+<td><strong><code>priority-dev-spike/E2</code> — Interpreter.</strong> The stop brief, Interpret, Digest, and the replay report, on recorded transcripts.</td>
 <td></td>
 <td></td>
 <td></td>
 <td></td>
 </tr>
 <tr>
+<td class="k">4</td>
+<td><code>priority-dev-spike/E2</code></td>
+<td><strong>Stop brief</strong></td>
+<td><code>uv run priority brief fixtures/run-3.jsonl --stop 2</code> prints a stop brief that equals the stored snapshot. Replies group by message id, results pair by id, a duplicate message id is handled, and a planted key is redacted</td>
+<td>—</td>
+<td>pending</td>
+</tr>
+<tr>
 <td class="k">5</td>
-<td><code>priority-dev/E2</code></td>
-<td>Append and read</td>
-<td><code>priority log append</code> twice with one idempotency key stores one row. <code>priority log read --from 0</code> lists rows in order</td>
+<td><code>priority-dev-spike/E2</code></td>
+<td><strong>Interpret a stop</strong></td>
+<td><code>uv run priority interpret</code> runs Triage, Pick, Fill, and Card on Nemo through DSPy. It prints an Interpretation or an Abstain. Each call is stored with its model id, prompt hash, and raw reply</td>
 <td>—</td>
 <td>pending</td>
 </tr>
 <tr>
 <td class="k">6</td>
-<td><code>priority-dev/E2</code></td>
-<td>Ingest and follow</td>
-<td><code>POST /events</code> stores an event. A reader that follows the log gets it within one second and resumes from its cursor after a restart</td>
+<td><code>priority-dev-spike/E2</code></td>
+<td><strong>Digest a run</strong></td>
+<td><code>uv run priority digest</code> calls Inkling and prints a RunDigest that validates. The next stop brief of the same session carries it as <code>previous</code></td>
 <td>—</td>
 <td>pending</td>
 </tr>
 <tr>
 <td class="k">7</td>
-<td><code>priority-dev/E2</code></td>
-<td>Interpret from the log</td>
-<td>A <code>run.stopped</code> event in the log leads to a <code>fact.run_digest</code> event and an <code>interpretation</code> event, written by the interpreter process</td>
+<td><code>priority-dev-spike/E2</code></td>
+<td><strong>Replay report with failure drills</strong></td>
+<td><code>uv run priority replay fixtures/</code> writes <code>report.md</code> with the valid-output rate, the quote-found rate, the abstain reasons, the kinds picked, and the characters, seconds, and cost for each stage. A replay at the event rate of 5 sessions counts the free-tier limit errors. An injected 429, malformed JSON, empty quote, and timeout each end as an Abstain with a logged reason</td>
 <td>—</td>
 <td>pending</td>
 </tr>
 <tr>
 <td class="k"></td>
-<td><strong><code>priority-dev/E3</code> — The session adapter watches and answers a real session.</strong> A scratch Claude Code session in tmux.</td>
+<td><strong><code>priority-dev-spike/E3</code> — Event log.</strong> Postgres 17 in Docker, and the interpreter service over it.</td>
 <td></td>
 <td></td>
 <td></td>
@@ -285,41 +289,57 @@ pre.code code{background:none;padding:0;white-space:pre}
 </tr>
 <tr>
 <td class="k">8</td>
-<td><code>priority-dev/E3</code></td>
-<td>Stop hook to the log</td>
-<td>A <code>Stop</code> hook in the scratch session leads to a <code>run.stopped</code> event in the log. It holds <code>last_assistant_message</code> and the tmux pane id</td>
+<td><code>priority-dev-spike/E3</code></td>
+<td><strong>Append and read</strong></td>
+<td><code>uv run priority log append</code> twice with one idempotency key stores one row, and <code>priority log read --from 0</code> lists rows in order</td>
 <td>—</td>
 <td>pending</td>
 </tr>
 <tr>
 <td class="k">9</td>
-<td><code>priority-dev/E3</code></td>
-<td>Prompt hooks to the log</td>
-<td>A permission dialog and an <code>AskUserQuestion</code> in the scratch session lead to a <code>prompt.permission</code> event and a <code>prompt.question</code> event with the exact options</td>
+<td><code>priority-dev-spike/E3</code></td>
+<td><strong>Ingest and follow</strong></td>
+<td><code>POST /events</code> stores an event. A reader that follows the log gets it within one second and resumes from its cursor after a restart</td>
 <td>—</td>
 <td>pending</td>
 </tr>
 <tr>
 <td class="k">10</td>
-<td><code>priority-dev/E3</code></td>
-<td>Tail the transcript</td>
-<td>The tailer adds transcript records with <code>file:offset</code> keys. A host restart adds no duplicate. The report states the transcript lag after a stop</td>
+<td><code>priority-dev-spike/E3</code></td>
+<td><strong>Interpret from the log</strong></td>
+<td>A <code>run.stopped</code> event in the log leads to a <code>fact.run_digest</code> event and an <code>interpretation</code> event, written by the interpreter service</td>
 <td>—</td>
 <td>pending</td>
 </tr>
 <tr>
+<td class="k"></td>
+<td><strong><code>priority-dev-spike/E4</code> — Adapter to the log.</strong> The adapter host feeds the log, receives a signed command, and answers from a held hook.</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
 <td class="k">11</td>
-<td><code>priority-dev/E3</code></td>
-<td>Send a signed command</td>
-<td>A signed command pastes text into the scratch pane at an empty prompt, and <code>command.confirmed</code> follows. An unsigned command is refused. A command for a changed prompt gives <code>command.unknown</code></td>
+<td><code>priority-dev-spike/E4</code></td>
+<td><strong>Hooks and tail to the log</strong></td>
+<td>A Stop hook in the scratch session leads to a <code>run.stopped</code> event in the log with <code>last_assistant_message</code> and the pane id. The tailer posts transcript records with <code>file:offset</code> keys, and a host restart adds no duplicate</td>
 <td>—</td>
 <td>pending</td>
 </tr>
 <tr>
 <td class="k">12</td>
-<td><code>priority-dev/E3</code></td>
-<td>Answer from a held hook</td>
-<td>A <code>PermissionRequest</code> hook holds, a stub command returns allow, and the scratch session runs the tool with no dialog. The report states whether the dialog shows while the hook waits</td>
+<td><code>priority-dev-spike/E4</code></td>
+<td><strong>Send a signed command</strong></td>
+<td>A signed command pastes text into the scratch pane at an empty prompt, and <code>command.confirmed</code> follows. An unsigned command is refused, and a command for a changed prompt gives <code>command.unknown</code></td>
+<td>—</td>
+<td>pending</td>
+</tr>
+<tr>
+<td class="k">13</td>
+<td><code>priority-dev-spike/E4</code></td>
+<td><strong>Answer from a held hook</strong></td>
+<td>A PermissionRequest hook waits, a stub command returns allow, and the scratch session runs the tool with no dialog</td>
 <td>—</td>
 <td>pending</td>
 </tr>
@@ -327,12 +347,11 @@ pre.code code{background:none;padding:0;white-space:pre}
 </table></div>
 <h3>Notes for the gates</h3>
 <ol class="plain">
-<li><strong>Order.</strong> Build E1 first, slices 1 to 4. Then E2 slices 5 and 6, then E3 slice 8. Slice 7 joins E1 and E2. Slices 9 to 12 come last, because each tests one unknown of <code>adapter-host.md</code> section 7.</li>
-<li><strong>Gate 4b.</strong> Each epic holds more than one slice, so each needs a technical solution design. The designs exist as prose in <code>schemas.md</code> (E1), <code>dspy-modules.md</code> (E1), <code>components.md</code> section 3.3 (E2), and <code>adapter-host.md</code> (E3). They are not yet in the <code>epic-&lt;id&gt;-design.md</code> form.</li>
-<li><strong>Gate 4c.</strong> No blind rubric exists. The unknowns in <code>adapter-host.md</code> section 7 are good rubric criteria, because each one has an observable answer.</li>
-<li><strong>Fixtures.</strong> Slice 1 needs recorded transcripts, redacted. I measured two transcripts of this repo. The fixtures need your approval before they enter a repository, because a transcript holds your prompts.</li>
-<li><strong>Test command and place.</strong> The spike code needs a folder, a <code>pyproject.toml</code>, and a test command. I propose <code>priority-dev/</code> on this branch, and <code>uv run pytest</code>. This is an open decision.</li>
-<li><strong>The tracker.</strong> <code>/implement:start</code> stores slice state in the beads tracker of the repo that runs it. Running it here would add priority.dev programs to the cobuilder-plugin tracker. This is an open decision.</li>
+<li>Order: E1 first, then E2 slices 4 to 7. Slices 1 to 5 form the first batch. E3 and E4 follow, and E4 uses what the probes measured.</li>
+<li>Gate 4b: each epic holds more than one slice, so each needs an epic design. The prose exists in <code>priority-dev/docs/design/</code>: <code>dspy-modules.md</code> and <code>schemas.md</code> for E2, <code>components.md</code> section 3.3 for E3, and <code>adapter-host.md</code> for E1 and E4.</li>
+<li>Gate 4c: each unknown in <code>adapter-host.md</code> section 7 and <code>schemas.md</code> section 2.1 becomes a rubric criterion with an observable answer.</li>
+<li>Go or no-go: after slice 7, the engineer reads the replay report and decides against the <code>abort_if</code> conditions of <code>goal.json</code>. Slices 8 to 13 start only on a go. Every rubric of slices 1 to 7 carries one criterion that the report states the abort condition it informs.</li>
+<li>Fixtures: real transcripts, redacted, kept local and ignored by Git, plus small made-up ones in the repository.</li>
 </ol>
 </section>
 
@@ -594,7 +613,7 @@ pre.code code{background:none;padding:0;white-space:pre}
 </tr>
 </tbody>
 </table></div>
-<p>The slicer cuts a slice when it sees <code>run.stopped</code>. The transcript may lag, so the slicer waits until the transcript tail holds the first 200 characters of <code>last_assistant_message</code>, with a timeout of 5 seconds. After the timeout it cuts anyway and records <code>transcript_lag</code>. This wait is inferred, and a spike must measure the lag.</p>
+<p>The brief builder cuts a stop brief when it sees <code>run.stopped</code>. The transcript may lag, so the brief builder waits until the transcript tail holds the first 200 characters of <code>last_assistant_message</code>, with a timeout of 5 seconds. After the timeout it cuts anyway and records <code>transcript_lag</code>. This wait is inferred, and a spike must measure the lag.</p>
 <h3>6. Failure rules</h3>
 <ol class="plain">
 <li>The host is down. Hooks exit 0 with no output, so Claude Code runs as if no hook existed. The deny-list hook is separate. It runs in-process and fails closed, so a host outage never opens the deny list.</li>
@@ -626,7 +645,7 @@ pre.code code{background:none;padding:0;white-space:pre}
 <tr>
 <td class="k">3</td>
 <td>How long does the transcript lag behind <code>Stop</code>?</td>
-<td>Decides the slicer wait</td>
+<td>Decides the brief builder wait</td>
 </tr>
 <tr>
 <td class="k">4</td>
@@ -762,11 +781,11 @@ pre.code code{background:none;padding:0;white-space:pre}
 </tr>
 </tbody>
 </table></div>
-<p>The sizes are for an empty slice. The slice text comes on top. The old single call was 16,903 characters. A chain of Triage, Pick, Fill, and Card is about 7,700 characters for a common kind. It has four calls where the old design had two. The chain is not cheaper in calls. It is shorter in each prompt, and each call has one job. The spike measures whether it is more reliable.</p>
+<p>The sizes are for an empty stop brief. The stop brief text comes on top. The old single call was 16,903 characters. A chain of Triage, Pick, Fill, and Card is about 7,700 characters for a common kind. It has four calls where the old design had two. The chain is not cheaper in calls. It is shorter in each prompt, and each call has one job. The spike measures whether it is more reliable.</p>
 <p>Rules for the split:</p>
 <ol class="plain">
 <li>The model writes only the payload of an action. Code sets <code>session_id</code>, <code>author</code>, <code>evidence_quote</code>, and <code>confidence</code>. The model cannot forge an id.</li>
-<li>Code checks the quote. If the quote is not in the slice text, the result is an <code>Abstain</code> with the reason <code>quote_not_in_slice</code>. The kind <code>ask_human</code> needs no quote.</li>
+<li>Code checks the quote. If the quote is not in the stop brief text, the result is an <code>Abstain</code> with the reason <code>quote_not_in_brief</code>. The kind <code>ask_human</code> needs no quote.</li>
 <li>Code checks the kind against <code>allowed_kinds</code>. A kind that is not allowed gives an <code>Abstain</code> with <code>kind_not_allowed</code>.</li>
 <li>Triage gives no confidence number, because a language model has no calibrated one. It lists the fields it is unsure about. Stage 2 runs when the status needs an answer or when the list is not empty. This replaces the confidence rule of <code>schemas.md</code> section 1 for the spikes. The <code>Facts</code> type is unchanged. The sketch sets 0.5 for an unsure field and 0.9 for the others, and these numbers are stand-ins and not measurements.</li>
 <li>A proposal has one step in the spikes. Multi-step plans come after the single step works.</li>
@@ -796,7 +815,7 @@ pre.code code{background:none;padding:0;white-space:pre}
 <p>The <code>Fill</code> signature changes its output type for each kind. The sketch builds the 13 variants with <code>Signature.with_updated_fields</code>, and the payload model of each variant comes from the action class with the shared fields removed. The sketch checks this with the dummy model.</p>
 <p>I use <code>Predict</code>, not <code>ChainOfThought</code>. The first spike measures the plain call. If the quotes fail often, the next try is <code>ChainOfThought</code> on Pick only.</p>
 <h3>5. What the spike measures</h3>
-<p>No labels are needed. The replay report in slice 4 of the plan counts these:</p>
+<p>No labels are needed. The replay report in @@stop brief@@ 4 of the plan counts these:</p>
 <div class="scroll"><table>
 <thead>
 <tr>
@@ -811,7 +830,7 @@ pre.code code{background:none;padding:0;white-space:pre}
 </tr>
 <tr>
 <td class="k">Quote-found rate</td>
-<td>The share of picks whose quote is in the slice</td>
+<td>The share of picks whose quote is in the stop brief</td>
 </tr>
 <tr>
 <td class="k">Abstain reasons</td>
@@ -827,7 +846,7 @@ pre.code code{background:none;padding:0;white-space:pre}
 </tr>
 <tr>
 <td class="k">Stage 2 run rate</td>
-<td>How often Triage sends a slice on</td>
+<td>How often Triage sends a stop brief on</td>
 </tr>
 <tr>
 <td class="k">Digest size</td>
@@ -838,7 +857,7 @@ pre.code code{background:none;padding:0;white-space:pre}
 <p>The skill <code>dspy-evaluation-suite</code> covers metrics and baselines. I did not read it, so the metric code is not designed yet. A metric that needs the right answer waits for labels, which are out of scope for now.</p>
 <h3>6. What stays open</h3>
 <ol class="plain">
-<li>Does Nemo follow <code>JSONAdapter</code> for the nested payloads? The spike runs both adapters on the same slices and compares the valid-output rate.</li>
+<li>Does Nemo follow <code>JSONAdapter</code> for the nested payloads? The spike runs both adapters on the same stop briefs and compares the valid-output rate.</li>
 <li>Does Inkling's free tier have a rate limit that a goal run with many stops will hit? The documentation I used does not say.</li>
 <li>Does Digest keep the open question of a run? The replay report reads this on a few runs by hand.</li>
 <li>Optimisers (<code>MIPROv2</code>, <code>GEPA</code>) and <code>Refine</code> are not in the spikes. They need a metric first.</li>
@@ -850,26 +869,20 @@ pre.code code{background:none;padding:0;white-space:pre}
   <p class="q">Do these changes match what you want?</p>
   <p class="default-note">If you do not answer a point, the draft uses the default marked under it. Nothing leaves this machine until you say so.</p>
   <form id="decision-form" onsubmit="return false">
-    <fieldset id="f-d0"><legend>0. Where the spike code and its tracker live</legend>
-      <label class="opt"><input type="radio" name="d0" value="new repo"><span>A new repository for priority.dev, with its own tracker. This repository stays the plugin only<span class="rec">Recommended</span></span></label>
-      <label class="opt"><input type="radio" name="d0" value="this branch"><span>A <code>priority-dev/</code> folder on this branch, using this repository's tracker</span></label>
-      <p class="default-note">Default: nothing is created. I keep designing on this branch.</p>
+    <fieldset id="f-d0"><legend>0. Gates 1 to 3 (product, architecture, program design)</legend>
+      <label class="opt"><input type="radio" name="d0" value="approve"><span>Approve gates 1 to 3 as drafted in docs/plans/priority-dev-spike/<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d0" value="changes"><span>Changes are needed. Say what in the notes</span></label>
+      <p class="default-note">Default: not approved. I change nothing and write no code.</p>
     </fieldset>
-    <fieldset id="f-d1"><legend>1. The transcripts that become test fixtures</legend>
-      <label class="opt"><input type="radio" name="d1" value="real and local"><span>Real transcripts, redacted, kept local and ignored by Git. Small made-up fixtures go in the repository<span class="rec">Recommended</span></span></label>
-      <label class="opt"><input type="radio" name="d1" value="made-up only"><span>Made-up fixtures only. The replay then says little about real runs</span></label>
-      <p class="default-note">Default: the first. No transcript is copied until you answer.</p>
+    <fieldset id="f-d1"><legend>1. Gate 4 (slice plan, epic designs, blind rubrics)</legend>
+      <label class="opt"><input type="radio" name="d1" value="approve"><span>Approve the 13 slices, the 4 epic designs, and the 13 rubrics<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d1" value="changes"><span>Changes are needed. Say what in the notes</span></label>
+      <p class="default-note">Default: not approved.</p>
     </fieldset>
-    <fieldset id="f-d2"><legend>2. The slices to build first</legend>
-      <label class="opt"><input type="radio" name="d2" value="1 to 4"><span>Slices 1 to 4: the interpreter on recorded transcripts<span class="rec">Recommended</span></span></label>
-      <label class="opt"><input type="radio" name="d2" value="1 to 6"><span>Slices 1 to 6: add the event log</span></label>
-      <label class="opt"><input type="radio" name="d2" value="all"><span>All twelve slices</span></label>
-      <p class="default-note">Default: slices 1 to 4.</p>
-    </fieldset>
-    <fieldset id="f-d3"><legend>3. Run the /implement:start gates for epic E1</legend>
-      <label class="opt"><input type="radio" name="d3" value="after 0 to 2"><span>Yes, after you answer the three points above<span class="rec">Recommended</span></span></label>
-      <label class="opt"><input type="radio" name="d3" value="not yet"><span>Not yet. Keep designing first</span></label>
-      <p class="default-note">Default: not yet.</p>
+    <fieldset id="f-d2"><legend>2. Pull requests for the design</legend>
+      <label class="opt"><input type="radio" name="d2" value="one"><span>One pull request later, with the branch design/priority-dev-spike<span class="rec">Recommended</span></span></label>
+      <label class="opt"><input type="radio" name="d2" value="several"><span>One pull request for each epic</span></label>
+      <p class="default-note">Default: one, and no pull request opens until you ask.</p>
     </fieldset>
     <fieldset id="f-notes"><legend><label for="notes">Notes</label></legend><textarea id="notes" placeholder="Changes, extra actions, or a reason"></textarea></fieldset>
     <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; padding-top:12px"><button class="go" id="copy-btn" type="button">Copy my answers</button><span id="copy-status" role="status"></span></div>
@@ -885,7 +898,7 @@ pre.code code{background:none;padding:0;white-space:pre}
   function lt(f) { var l = f.querySelector('legend'); return l ? l.textContent.trim() : ''; }
   function collect() {
     var lines = ['priority.dev first spikes, round 10: my answers'];
-    ['d0','d1','d2','d3'].forEach(function (n) {
+    ['d0','d1','d2'].forEach(function (n) {
       var c = form.querySelector('input[name="' + n + '"]:checked');
       lines.push(lt(document.getElementById('f-' + n)) + ' -> ' + (c ? c.value : 'no answer (use the default)'));
     });

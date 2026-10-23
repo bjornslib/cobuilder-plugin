@@ -1,0 +1,40 @@
+sequenceDiagram
+    participant S as Claude Code session
+    participant H as priority-hook
+    participant P as Spool
+    participant L as Event log
+    participant I as Interpreter
+    participant N as Nemo (OpenRouter)
+    participant K as Inkling (OpenRouter)
+
+    S->>H: Stop hook fires
+    H->>P: Write run.stopped to spool
+    P->>L: POST /events (idempotency key)
+    L-->>I: Follow delivers run.stopped
+    I->>I: Slicer builds StopBrief from transcript (previous = last RunDigest, if any)
+
+    alt All Nemo calls succeed and checks pass
+        I->>N: Triage
+        N-->>I: Triage reply
+        I->>N: Pick
+        N-->>I: Pick reply
+        I->>N: Fill
+        N-->>I: Fill reply
+        I->>N: Card
+        N-->>I: Card reply
+        I->>I: Code checks kind and checks the quote is a substring of the Stop brief
+        I->>L: Append interpretation event
+    else Any call fails (429, malformed JSON, empty quote, timeout) or quote not in Stop brief
+        N--xI: Failure
+        I->>L: Append abstain event with logged reason
+    end
+
+    Note over I,K: At run end
+    I->>K: DigestRun calls Digest
+    alt Digest succeeds
+        K-->>I: RunDigest
+        I->>L: Append fact.run_digest (next StopBrief carries it as previous)
+    else Digest fails
+        K--xI: Failure
+        I->>I: Log reason, previous stays empty, nothing blocked
+    end

@@ -1,0 +1,73 @@
+{
+  "captured": "2026-10-24",
+  "source": "design",
+  "design_name": "priority-dev-spike",
+  "authorship": "agent-assisted",
+  "problem": "The design of priority.dev rests on guesses. No one has measured whether a small model gives valid, grounded output on real transcripts. No one has seen what the hooks and tmux do in a live session. Ten rounds of design produced documents and no measurement.",
+  "why_now": "The design has converged, the models are chosen, and the key is in place. Building the policy and the actuator on a guess would be costly to undo.",
+  "approach": "A spike program in priority-dev/, built with /implement:start: 4 epics and 13 slices, probes first. The probes are a model probe, a hook probe, and a tmux probe. Then come the stop brief, Interpret, Digest, and the replay report, then the event log, then the adapter to the log. Each unknown is a criterion in a blind rubric. Three merges apply: call records, a hook timeout with a bypass file, and failure drills that end in Abstain. After slice 7 the engineer decides go or no-go. The spike uses no Jev.",
+  "alternatives": [
+    {
+      "option": "A deterministic interpreter with no model, from hook fields and regex",
+      "rejected_because": "It retires no model unknown, and it breaks the decision to use Nemo and Inkling. A hand-labelled rule baseline may come later."
+    },
+    {
+      "option": "An evidence-grade hash chain over every record, with signed checkpoints",
+      "rejected_because": "Nobody audits a spike, and the chain delays the first slices. The model id, prompt hash, and raw reply are kept without a chain."
+    },
+    {
+      "option": "The event log envelope first, as the only durable contract",
+      "rejected_because": "The envelope shape depends on real hook payloads and transcript lag, which the probes measure. The log therefore comes after the probes."
+    },
+    {
+      "option": "One 60-line script as the whole spike",
+      "rejected_because": "It skips the hook and tmux unknowns, which need a live session. It is kept as slice 1 only."
+    },
+    {
+      "option": "A claims.yaml ledger file with pass lines",
+      "rejected_because": "A hidden blind rubric already carries each measure, and a second file would drift from it. The engineer chose the rubrics."
+    },
+    {
+      "option": "A pd command-line tool and a runbook inside the spike",
+      "rejected_because": "They add polish before the unknowns are measured. Only the hook timeout and the bypass file are kept."
+    },
+    {
+      "option": "Keep the first draft order: interpreter first, hook slices last",
+      "rejected_because": "The hook and tmux results change how the adapter works, so late probes risk rework. The engineer asked for them early."
+    }
+  ],
+  "out_of_scope": [
+    "Jev, the policy, the actuator, the attention queue, and the notifier",
+    "A second harness such as Pi, and the launch of new sessions",
+    "Optimisers and retry modules for DSPy",
+    "A real priority-dev-phase-a program, which waits for its own design"
+  ],
+  "risks": [
+    "Nemo may fail on the nested action payloads. The calls are small, and code checks every quote, so a failure ends as an Abstain",
+    "The free tier of Inkling may rate-limit a goal run. The replay report counts the limit errors",
+    "A hook that waits may freeze a live session. Every hook has a timeout and a bypass file",
+    "Real transcripts hold secrets. Fixtures stay local, git ignores them, and redaction runs before any model call",
+    "A probe slice can pass at 0.90 and still refute its claim. The rubric checks that the report is honest and complete, not that the number is good",
+    "The OpenRouter calls to Nemo are paid, though cheap. A replay over many stops needs a spend cap",
+    "The event log needs Docker and Postgres on the development machine"
+  ],
+  "testing": [
+    "Each slice has a blind rubric. A criterion is an unknown with an observable answer",
+    "The modules run in tests with a dummy model, and the replay uses the real models on the local fixtures",
+    "The probes run in a scratch tmux session with a scratch Claude Code session, never in a live one",
+    "A contract test covers the event log append, the idempotency key, and the cursor"
+  ],
+  "reviewer_focus": [
+    "Does the order retire the largest unknown first, and does each slice end in a state a command shows",
+    "Does the stop brief rename leave any old use of slice for the interpreter input",
+    "Does the bypass file release a session in every failure of the hook"
+  ],
+  "unknowns": [
+    "Whether Nemo returns valid Fill JSON for most of the 13 action kinds",
+    "Whether $TMUX_PANE reaches a hook, and how long the transcript lags after Stop",
+    "Whether the permission dialog shows while a PermissionRequest hook waits",
+    "Whether a paste into a busy pane is lost",
+    "Whether the free tier of Inkling sustains the event rate of 5 sessions",
+    "What the transcript holds when a /goal clears"
+  ]
+}

@@ -1,0 +1,41 @@
+C4Container
+    title priority.dev spike scope
+
+    Person(dev, "Developer", "Runs many local Claude Code sessions")
+
+    System_Ext(sessions, "Claude Code sessions", "tmux panes, hooks, transcript JSONL")
+    System_Ext(openrouter, "OpenRouter", "Nemo (mistral-nemo) and Inkling (inkling:free)")
+
+    Container_Boundary(adapter, "Adapter host") {
+        Container(hook, "priority-hook", "Python CLI", "Receives Stop, PermissionRequest, AskUserQuestion hooks")
+        Container(spool, "Spool", "Local files", "Holds events until the log accepts them")
+        Container(tailer, "Transcript tailer", "Python", "Posts transcript lines to the log")
+        Container(puller, "Puller", "Python", "Follows the log for signed commands")
+        Container(tmux, "tmux module", "Python", "Pastes a signed command, with confirmation")
+    }
+
+    ContainerDb(log, "Event log", "Postgres 17 in Docker", "Append with idempotency key, POST /events, follow with LISTEN/NOTIFY and cursor")
+
+    Container_Boundary(interp, "Interpreter") {
+        Container(brief_builder, "BriefBuilder", "Python", "Transcript JSONL to StopBrief, secrets redacted")
+        Container(dspy, "DSPy modules", "Python, DSPy", "Triage, Pick, Fill, Card, Digest")
+    }
+
+    Container(replay, "Replay report CLI", "Python", "Runs fixtures with injected failures")
+    Container(control, "Control process", "NOT IN SPIKE - LATER", "Policy and actuator")
+
+    Rel(dev, sessions, "Works in")
+    Rel(sessions, hook, "Fires hooks into")
+    Rel(sessions, tailer, "Writes transcript read by")
+    Rel(hook, spool, "Writes events to")
+    Rel(tailer, spool, "Writes events to")
+    Rel(spool, log, "Posts events to", "POST /events")
+    Rel(log, brief_builder, "run.stopped events", "follow")
+    Rel(brief_builder, dspy, "StopBrief")
+    Rel(dspy, openrouter, "Model calls", "HTTPS")
+    Rel(dspy, log, "Appends interpretation, abstain, fact.run_digest")
+    Rel(replay, dspy, "Replays fixtures through")
+    Rel(puller, log, "Follows commands from")
+    Rel(puller, tmux, "Signed command")
+    Rel(tmux, sessions, "Pastes into pane")
+    Rel(control, log, "Will read and append", "later")

@@ -26,8 +26,8 @@ def digest(*parts: str) -> str:
     return hashlib.sha256("\x1f".join(parts).encode()).hexdigest()[:16]
 
 
-# ---- 1. Input: the turn slice ----------------------------------------------
-# A slice is one run: from the record that woke the agent to the stop that
+# ---- 1. Input: the stop brief ----------------------------------------------
+# A stop brief is one run: from the record that woke the agent to the stop that
 # waits. Code reads structured transcript records. It judges no meaning.
 
 class AssistantText(Strict):
@@ -84,14 +84,14 @@ class SessionContext(Strict):
     session_id: str
     project: str
     branch: str | None = None
-    workflow_stage: str | None = None  # a CoBuilder gate or slice step, if known
+    workflow_stage: str | None = None  # a CoBuilder gate or stop brief step, if known
     last_human_reply_at: str | None = None
     answered_by_us_last_hour: int = 0
 
 
-class TurnSlice(Strict):
+class StopBrief(Strict):
     """The exact input of the interpreter. Built by code, stored once, never edited."""
-    slice_id: str  # digest of the session id and the uuid of the stop record
+    brief_id: str  # digest of the session id and the uuid of the stop record
     cursor: str  # transcript path and byte offset, to find the source again
     trigger: Literal["end_turn", "goal_stop_attempt", "question_tool", "permission_wait"]
     context: SessionContext
@@ -110,7 +110,7 @@ class TurnSlice(Strict):
 
         agent_reports_first is a lab option. It copies each Agent exchange into a block at the top.
         """
-        d = json.loads(self.model_dump_json(exclude={"slice_id", "cursor", "redactions", "allowed_kinds"},
+        d = json.loads(self.model_dump_json(exclude={"brief_id", "cursor", "redactions", "allowed_kinds"},
                                             exclude_none=True))
         if agent_reports_first:
             d = {"agent_reports": [i for i in d.get("items", []) if i.get("tool") == "Agent"], **d}
@@ -120,11 +120,11 @@ class TurnSlice(Strict):
 class InterpreterCall(Strict):
     """One model call, stored with the exact text that the model received."""
     call_id: str
-    slice_id: str
+    brief_id: str
     stage: Literal["triage", "advise", "digest", "shrink"]
     model: str
     rendered_input: str  # the exact text that the model received
-    shrunk_items: int = 0  # tool results that the Shrink call replaced, only when the slice was over budget
+    shrunk_items: int = 0  # tool results that the Shrink call replaced, only when the stop brief was over budget
     output_json: str
     latency_ms: int
 
@@ -160,7 +160,7 @@ PriorityT = Score["can wait", "soon", "now"]
 
 class Triage(dspy.Signature):
     """Read the end of a turn. Report the state of the session."""
-    slice_json: str = dspy.InputField()
+    brief_json: str = dspy.InputField()
     status: StatusT = dspy.OutputField(desc="What the session does now")
     needs_human: NeedsHumanT = dspy.OutputField(desc="Whether only the human can give the answer")
     answer_class: AnswerClassT = dspy.OutputField(desc="The kind of answer that is due")
@@ -209,7 +209,7 @@ class ActionBase(Strict):
     session_id: str
     prompt_id: str | None = None  # the prompt that this action answers
     author: Author = "interpreter"
-    evidence_quote: str = ""  # an exact substring of the slice, or the action is ask_human
+    evidence_quote: str = ""  # an exact substring of the stop brief, or the action is ask_human
     confidence: float = Field(ge=0, le=1, default=0)
 
 
@@ -330,7 +330,7 @@ def action_hash(a: ActionBase) -> str:
 class Proposal(Strict):
     """One to three steps. The policy decides each step on its own, in order."""
     proposal_id: str
-    slice_id: str
+    brief_id: str
     steps: tuple[Action, ...] = Field(min_length=1, max_length=3)
     rationale: str = Field(default="", max_length=300)
 
@@ -349,9 +349,9 @@ class Proposal(Strict):
 
 class Abstain(Strict):
     """The interpreter proposes nothing. The inbox gets an ask_human item instead."""
-    slice_id: str
-    reason: Literal["quote_not_in_slice", "invalid_output", "model_timeout",
-                    "model_error", "slice_empty", "kind_not_allowed"]
+    brief_id: str
+    reason: Literal["quote_not_in_brief", "invalid_output", "model_timeout",
+                    "model_error", "brief_empty", "kind_not_allowed"]
     detail: str = ""
 
 
@@ -362,7 +362,7 @@ class EvidenceCheck(Strict):
     result_quote: str = ""  # the text, as it appears in the result of that call
 
 
-def check_evidence(sl: "TurnSlice", ev: EvidenceCheck) -> tuple[bool, str]:
+def check_evidence(sl: "StopBrief", ev: EvidenceCheck) -> tuple[bool, str]:
     """Code, no model. It reads the transcript record of the call that really ran."""
     proof = sl.goal.proof if sl.goal else None
     if proof is None or proof.kind != "agent_shows" or not proof.command:
@@ -385,7 +385,7 @@ class Advice(Strict):
 
 
 class Interpretation(Strict):
-    slice_id: str
+    brief_id: str
     facts: Facts
     advice: Advice | None = None
     abstained: Abstain | None = None
@@ -393,14 +393,14 @@ class Interpretation(Strict):
 
 class Advise(dspy.Signature):
     """Write the question card and propose the next steps for a waiting session."""
-    slice_json: str = dspy.InputField()
+    brief_json: str = dspy.InputField()
     facts_json: str = dspy.InputField(desc="The five typed facts from the triage call")
     advice: Advice = dspy.OutputField()
 
 
 class Digest(dspy.Signature):
-    """Summarise one finished run of a coding agent for the next slice of the same session."""
-    slice_json: str = dspy.InputField()
+    """Summarise one finished run of a coding agent for the next stop brief of the same session."""
+    brief_json: str = dspy.InputField()
     digest: RunDigest = dspy.OutputField()
 
 
@@ -441,13 +441,13 @@ class NotifyConfig(Strict):
 
 # ---- 7. Example data -------------------------------------------------------
 
-def example_slice() -> TurnSlice:
-    return TurnSlice(
-        slice_id=digest("sess-7c1", "rec-0412"), cursor="~/.claude/projects/-work-exporter/7c1e.jsonl@184220",
+def example_brief() -> StopBrief:
+    return StopBrief(
+        brief_id=digest("sess-7c1", "rec-0412"), cursor="~/.claude/projects/-work-exporter/7c1e.jsonl@184220",
         trigger="end_turn",
-        context=SessionContext(session_id="sess-7c1", project="exporter", branch="slice-2-csv",
-                               workflow_stage="implement: slice 2 of 5", answered_by_us_last_hour=1),
-        ask=Ask(origin="human", text="Build slice 2: the CSV export endpoint. Run the tests before you stop."),
+        context=SessionContext(session_id="sess-7c1", project="exporter", branch="stop brief-2-csv",
+                               workflow_stage="implement: @@stop brief@@ 2 of 5", answered_by_us_last_hour=1),
+        ask=Ask(origin="human", text="Build @@stop brief@@ 2: the CSV export endpoint. Run the tests before you stop."),
         items=(
             AssistantText(text="I will read the routes first, then add the writer."),
             ToolExchange(tool="Read", input="src/export/routes.py", result="def export_routes(app):\n    ...", is_error=False),
@@ -459,27 +459,27 @@ def example_slice() -> TurnSlice:
             ToolExchange(tool="Edit", input="src/export/csv_writer.py", result="File updated.", is_error=False),
             ToolExchange(tool="Bash", input="pytest tests/export -q", result="14 passed in 0.9s", is_error=False),
         ),
-        final=("Slice 2 is done. 14 tests pass.\n\nBefore I start slice 3, one question. "
+        final=("Stop brief 2 is done. 14 tests pass.\n\nBefore I start @@stop brief@@ 3, one question. "
                "Should the CSV timestamps use UTC or the project timezone?\n"
                "1. UTC (I recommend this: it matches the API)\n2. The project timezone\n"
                "Reply 1 or 2."),
-        previous=RunDigest(ran="Built the export model and its 9 tests.", result="Slice 1 done, tests pass.",
+        previous=RunDigest(ran="Built the export model and its 9 tests.", result="Stop brief 1 done, tests pass.",
                            decisions=("Money fields use integer cents",)),
         redactions=0, allowed_kinds=tuple(sorted(SESSION_EFFECT | {"ask_human", "snooze", "dismiss"})),
     )
 
 
-def example_goal_slice() -> TurnSlice:
+def example_goal_brief() -> StopBrief:
     """A goal run at a stop attempt. The agent shows the evidence that the loop asked for."""
-    base = example_slice()
+    base = example_brief()
     return base.model_copy(update={
         "trigger": "goal_stop_attempt",
-        "ask": Ask(origin="goal_hook", text="Stop hook feedback: [All 5 slices pass their tests]: not yet shown"),
-        "goal": GoalState(text="All 5 slices pass their tests", stop_attempts=2, last_reason="no test output shown",
+        "ask": Ask(origin="goal_hook", text="Stop hook feedback: [All 5 stop briefs pass their tests]: not yet shown"),
+        "goal": GoalState(text="All 5 stop briefs pass their tests", stop_attempts=2, last_reason="no test output shown",
                           proof=Proof(kind="agent_shows", command="pytest -q",
                                       show="the exit code and the last 5 lines of output")),
         "items": (ToolExchange(tool="Bash", input="pytest -q", result="68 passed in 4.1s", is_error=False),),
-        "final": "All 5 slices are built. I ran pytest -q: 68 passed in 4.1s.",
+        "final": "All 5 stop briefs are built. I ran pytest -q: 68 passed in 4.1s.",
     })
 
 
@@ -490,7 +490,7 @@ def example_facts() -> Facts:
 
 
 def examples() -> dict[str, BaseModel]:
-    s = example_slice()
+    s = example_brief()
     q = Question(
         ask="Use UTC or the project timezone for the CSV timestamps?",
         options=(Option(label="UTC", detail="Matches the API"), Option(label="Project timezone")),
@@ -499,34 +499,34 @@ def examples() -> dict[str, BaseModel]:
                Help(kind="copy_command", label="Show the timestamp column", value="head -3 out/export.csv")),
     )
     reply = Reply(session_id="sess-7c1", text="1", evidence_quote="1. UTC (I recommend this", confidence=0.9)
-    one = Proposal(proposal_id="p-1", slice_id=s.slice_id, steps=(reply,), rationale="The agent recommends UTC.")
-    two = Proposal(proposal_id="p-2", slice_id=s.slice_id, rationale="Answer the question, then run to the end of the plan.", steps=(
+    one = Proposal(proposal_id="p-1", brief_id=s.brief_id, steps=(reply,), rationale="The agent recommends UTC.")
+    two = Proposal(proposal_id="p-2", brief_id=s.brief_id, rationale="Answer the question, then run to the end of the plan.", steps=(
         reply,
-        ContinueUntil(session_id="sess-7c1", goal="Slices 3 to 5 pass their tests", max_turns=20, max_minutes=120,
-                      proof=Proof(kind="agent_shows", command="pytest -q", show="the exit code and the last 5 lines"), evidence_quote="Before I start slice 3"),
+        ContinueUntil(session_id="sess-7c1", goal="Stop briefs 3 to 5 pass their tests", max_turns=20, max_minutes=120,
+                      proof=Proof(kind="agent_shows", command="pytest -q", show="the exit code and the last 5 lines"), evidence_quote="Before I start @@stop brief@@ 3"),
     ))
     return {
-        "turn_slice": s,
+        "stop_brief": s,
         "facts": example_facts(),
         "interpreter_call_triage": InterpreterCall(
-            call_id="c-1", slice_id=s.slice_id, stage="triage", model="typesafe:jev-latest",
+            call_id="c-1", brief_id=s.brief_id, stage="triage", model="typesafe:jev-latest",
             rendered_input="(the state and the five questions, see schemas.md section 10)",
             output_json=example_facts().model_dump_json(), latency_ms=410),
         "advice_with_question_card": Advice(question=q, proposal=one),
         "run_digest": s.previous,
-        "goal_slice": example_goal_slice(),
+        "goal_brief": example_goal_brief(),
         "evidence_check": EvidenceCheck(claimed_met=True, command_quote="pytest -q", result_quote="68 passed in 4.1s"),
         "proposal_two_steps": two,
-        "abstain": Abstain(slice_id=s.slice_id, reason="quote_not_in_slice",
-                           detail="The quote 'Use UTC, as agreed' is not in the slice"),
+        "abstain": Abstain(brief_id=s.brief_id, reason="quote_not_in_brief",
+                           detail="The quote 'Use UTC, as agreed' is not in the stop brief"),
         "continue_until": ContinueUntil(
-            session_id="sess-7c1", goal="All 5 slices pass their tests", max_turns=20, max_minutes=120,
+            session_id="sess-7c1", goal="All 5 stop briefs pass their tests", max_turns=20, max_minutes=120,
             proof=Proof(kind="agent_shows", command="pytest -q", show="the exit code and the last 5 lines"), evidence_quote="Reply 1 or 2.", confidence=0.7),
         "ask_human_do": AskHuman(session_id="sess-7c1", why_escalated="Needs the AWS console", detail=Do(
             steps=("Open the console", "Create the bucket"), where="aws console",
             done_check="The bucket name appears in the next prompt")),
         "ask_human_review": AskHuman(session_id="sess-7c1", why_escalated="The gate needs a person",
-                                     detail=Review(artifact="docs/plans/x/04-slices.md", check_items=("Slice order",))),
+                                     detail=Review(artifact="docs/plans/x/04-stop briefs.md", check_items=("Stop brief order",))),
         "recommendation": Recommendation(proposal=one, facts=example_facts(), shown_to_human=False,
                                          call_ids=("c-1", "c-2")),
         "outcome": Outcome(proposal_id="p-1", result="accepted", final=one, seconds_to_answer=41.0),
@@ -539,15 +539,15 @@ if __name__ == "__main__":
     for k, v in ex.items():
         assert type(v).model_validate_json(v.model_dump_json()) == v, k
     try:
-        Proposal(proposal_id="x", slice_id="y", steps=(ApproveGate(session_id="s", gate="g"),
+        Proposal(proposal_id="x", brief_id="y", steps=(ApproveGate(session_id="s", gate="g"),
                                                        SendFeedback(session_id="s", gate="g", notes="n")))
         raise SystemExit("a contradictory plan passed")
     except ValueError:
         pass
-    g = example_goal_slice()
+    g = example_goal_brief()
     assert check_evidence(g, EvidenceCheck(claimed_met=True, command_quote="pytest -q", result_quote="68 passed"))[0]
     assert not check_evidence(g, EvidenceCheck(claimed_met=True, result_quote="70 passed"))[0]
-    assert not check_evidence(example_slice(), EvidenceCheck(claimed_met=True))[0]  # no goal, no check
+    assert not check_evidence(example_brief(), EvidenceCheck(claimed_met=True))[0]  # no goal, no check
     fail = g.model_copy(update={"items": (ToolExchange(tool="Bash", input="pytest -q", result="Exit code 1", is_error=True),)})
     assert not check_evidence(fail, EvidenceCheck(claimed_met=True, result_quote="Exit"))[0]
     assert not check_evidence(g.model_copy(update={"items": ()}), EvidenceCheck(claimed_met=True))[0]

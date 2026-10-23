@@ -66,3 +66,4 @@ plugins/cobuilder-memory/.claude-plugin/types/
 .beads-credential-key
 .beads/proxieddb/
 *.gate.lock*
+priority-dev/fixtures/real/

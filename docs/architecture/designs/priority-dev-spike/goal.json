@@ -1,0 +1,93 @@
+{
+  "name": "priority-dev-spike",
+  "title": "The first spikes of priority.dev measure its riskiest unknowns",
+  "adr": "ADR-0045",
+  "adrs": [
+    "ADR-0045",
+    "ADR-0040",
+    "ADR-0031",
+    "ADR-0012"
+  ],
+  "created": "2026-10-24",
+  "outcome": "On recorded transcripts, priority-dev digests a run with Inkling and interprets it with Nemo into a checked Interpretation or an Abstain. Probes show what the hooks and the pane do. A replay report states the valid-output and quote-found rates, and each injected failure ends as an Abstain.",
+  "done_when": [
+    "a replay over the redacted fixtures writes a report with the valid-output rate, the quote-found rate, the abstain reasons, and the characters, seconds, and cost for each stage",
+    "each injected failure (rate limit, malformed JSON, empty quote, timeout) ends as an Abstain with a logged reason",
+    "the hook probe and the tmux probe reports state a measured answer for each unknown in adapter-host.md section 7",
+    "a Stop event from a scratch session reaches the event log and leads to a stored digest and interpretation"
+  ],
+  "abort_if": [
+    "Nemo returns valid, grounded output on too few real stops to build on, and Inkling cannot digest either",
+    "a hook in a live session cannot be made safe: it blocks the session and the bypass file does not release it"
+  ],
+  "min_work": {
+    "derived_from": "6 divergent frames, 1 critic, 3 challenges, 1 draft review, 0 colliding ADRs, 1 uncovered path",
+    "alternatives_explored": 7,
+    "boundary_rules_checked": true,
+    "challenge_stage_run": true,
+    "draft_review_run": true
+  },
+  "limits": {
+    "warn_after_rounds": 3,
+    "cutoff_rounds": 6
+  },
+  "epics": [
+    {
+      "id": "E1",
+      "slug": "probes",
+      "title": "Probes: a model probe, a hook probe, and a tmux probe in a scratch session.",
+      "outcome": "Each unknown of the model, the hooks, and the pane has a measured answer in a committed report.",
+      "branch": null,
+      "pr": null,
+      "state": "planned"
+    },
+    {
+      "id": "E2",
+      "slug": "interpreter",
+      "title": "Interpreter: the stop brief, Triage, Pick, Fill, Card, Digest, and the replay report.",
+      "outcome": "A replay over the fixtures gives a report, and each injected failure ends as an Abstain with a reason.",
+      "branch": null,
+      "pr": null,
+      "state": "planned"
+    },
+    {
+      "id": "E3",
+      "slug": "event-log",
+      "title": "Event log: Postgres 17 with append, read, ingest, follow, and an interpreter service.",
+      "outcome": "A run.stopped event in the log leads to a stored digest and interpretation.",
+      "branch": null,
+      "pr": null,
+      "state": "planned"
+    },
+    {
+      "id": "E4",
+      "slug": "adapter-to-log",
+      "title": "Adapter to the log: hooks and tail through a spool, a signed send, and an answer from a held hook.",
+      "outcome": "A real stop reaches the log, and a signed command reaches the pane and is confirmed.",
+      "branch": null,
+      "pr": null,
+      "state": "planned"
+    }
+  ],
+  "later_programs": [
+    {
+      "name": "priority-dev-phase-a",
+      "state": "planned",
+      "note": "Policy, actuator, attention queue, and notifier. A real program is seeded when that phase has its own design."
+    }
+  ],
+  "stage": "review",
+  "supersedes": null,
+  "rounds": [
+    {
+      "n": 1,
+      "changed": true,
+      "feedback_class": "material"
+    },
+    {
+      "n": 2,
+      "changed": true,
+      "feedback_class": "cosmetic"
+    }
+  ]
+}

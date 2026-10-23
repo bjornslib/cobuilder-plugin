@@ -1,0 +1,25 @@
+feature: priority-dev-spike
+test_command: "uv run pytest priority-dev/tests -q"
+baseline: "none: priority-dev/ does not exist yet"
+thresholds:
+  accept: 0.90
+  investigate: 0.70
+max_attempts: 3
+models:
+  red: haiku
+  green: haiku
+  validate: sonnet
+slices:
+  - {id: 1, name: "E1 model probe", weight: 0.1}
+  - {id: 2, name: "E1 hook probe", weight: 0.09}
+  - {id: 3, name: "E1 tmux probe", weight: 0.08}
+  - {id: 4, name: "E2 stop brief", weight: 0.09}
+  - {id: 5, name: "E2 interpret a stop", weight: 0.1}
+  - {id: 6, name: "E2 digest a run", weight: 0.06}
+  - {id: 7, name: "E2 replay report with failure drills", weight: 0.1}
+  - {id: 8, name: "E3 append and read", weight: 0.05}
+  - {id: 9, name: "E3 ingest and follow", weight: 0.06}
+  - {id: 10, name: "E3 interpret from the log", weight: 0.06}
+  - {id: 11, name: "E4 hooks and tail to the log", weight: 0.07}
+  - {id: 12, name: "E4 send a signed command", weight: 0.07}
+  - {id: 13, name: "E4 answer from a held hook", weight: 0.07}

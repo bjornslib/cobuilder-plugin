@@ -32,7 +32,7 @@ def inkling() -> dspy.LM:  # digest, shrink: no response_format, so the text ada
 
 class TriageLM(dspy.Signature):
     """Read the end of a run of a coding agent. Report the state of the session."""
-    slice_text: str = dspy.InputField()
+    brief_text: str = dspy.InputField()
     status: Literal["done", "waiting_answer", "waiting_permission", "blocked", "failed", "continuing"] = dspy.OutputField(desc="What the session does now")
     needs_human: bool = dspy.OutputField(desc="True only when no rule or agent can give the answer")
     answer_class: Literal["none", "approve_continue", "pick_default", "provide_fact", "decide", "external_action"] = dspy.OutputField(desc="The kind of answer that is due")
@@ -47,24 +47,24 @@ KindT = Literal[tuple(ACTION_CLASS)]  # type: ignore[valid-type]
 
 class PickStep(dspy.Signature):
     """Choose the kind of the next step for a waiting coding session. Quote the words that support the choice."""
-    slice_text: str = dspy.InputField()
+    brief_text: str = dspy.InputField()
     facts: str = dspy.InputField(desc="The facts from the triage step, as JSON")
     allowed_kinds: list[str] = dspy.InputField(desc="Choose one of these kinds only")
     kind: KindT = dspy.OutputField()
-    evidence_quote: str = dspy.OutputField(desc="Exact words from the slice. Empty when the kind is ask_human")
+    evidence_quote: str = dspy.OutputField(desc="Exact words from the stop brief. Empty when the kind is ask_human")
     confidence: float = dspy.OutputField(desc="0 to 1")
 
 
 class Fill(dspy.Signature):
-    """Write the fields of one action for a waiting coding session. Use only facts in the slice."""
-    slice_text: str = dspy.InputField()
+    """Write the fields of one action for a waiting coding session. Use only facts in the stop brief."""
+    brief_text: str = dspy.InputField()
     kind: str = dspy.InputField(desc="The kind of action to write")
     payload: S.Strict = dspy.OutputField()  # the type is replaced for each kind
 
 
 class WriteCard(dspy.Signature):
     """Write the question card that a busy human reads. Be short. Give options only if the agent gave them."""
-    slice_text: str = dspy.InputField()
+    brief_text: str = dspy.InputField()
     card: S.Question = dspy.OutputField()
 
 
@@ -94,33 +94,33 @@ class Interpreter(dspy.Module):
         self.fill = {k: dspy.Predict(s) for k, s in FILL.items()}
         self.card = dspy.Predict(WriteCard)
 
-    def forward(self, sl: S.TurnSlice) -> S.Interpretation:
+    def forward(self, sl: S.StopBrief) -> S.Interpretation:
         text = sl.for_model()
         with dspy.context(lm=self.lm or dspy.settings.lm):
-            t = self.triage(slice_text=text)
+            t = self.triage(brief_text=text)
             facts = S.Facts(status=t.status, needs_human=t.needs_human, answer_class=t.answer_class,
                             risk=RISK[t.risk], priority_hint=HINT[t.priority_hint],
                             confidence={f: 0.5 if f in t.unsure else 0.9 for f in TriageLM.output_fields if f != "unsure"})
             if t.status not in ANSWER_DUE and not t.unsure:
-                return S.Interpretation(slice_id=sl.slice_id, facts=facts)
-            p = self.pick(slice_text=text, facts=facts.model_dump_json(), allowed_kinds=list(sl.allowed_kinds))
+                return S.Interpretation(brief_id=sl.brief_id, facts=facts)
+            p = self.pick(brief_text=text, facts=facts.model_dump_json(), allowed_kinds=list(sl.allowed_kinds))
             abstain = self.check_pick(sl, text, p)
             if abstain:
-                return S.Interpretation(slice_id=sl.slice_id, facts=facts, abstained=abstain)
-            payload = self.fill[p.kind](slice_text=text, kind=p.kind).payload if payload_model(ACTION_CLASS[p.kind]).model_fields else None
+                return S.Interpretation(brief_id=sl.brief_id, facts=facts, abstained=abstain)
+            payload = self.fill[p.kind](brief_text=text, kind=p.kind).payload if payload_model(ACTION_CLASS[p.kind]).model_fields else None
             step = ACTION_CLASS[p.kind](session_id=sl.context.session_id, author="interpreter",
                                         evidence_quote=p.evidence_quote, confidence=min(max(p.confidence, 0), 1),
                                         **(payload.model_dump() if payload else {}))
-            card = self.card(slice_text=text).card if t.needs_human or t.status == "waiting_answer" else None
-        prop = S.Proposal(proposal_id="p-" + sl.slice_id, slice_id=sl.slice_id, steps=(step,))
-        return S.Interpretation(slice_id=sl.slice_id, facts=facts, advice=S.Advice(question=card, proposal=prop))
+            card = self.card(brief_text=text).card if t.needs_human or t.status == "waiting_answer" else None
+        prop = S.Proposal(proposal_id="p-" + sl.brief_id, brief_id=sl.brief_id, steps=(step,))
+        return S.Interpretation(brief_id=sl.brief_id, facts=facts, advice=S.Advice(question=card, proposal=prop))
 
     @staticmethod
-    def check_pick(sl: S.TurnSlice, text: str, p) -> S.Abstain | None:
+    def check_pick(sl: S.StopBrief, text: str, p) -> S.Abstain | None:
         if p.kind not in sl.allowed_kinds:
-            return S.Abstain(slice_id=sl.slice_id, reason="kind_not_allowed", detail=p.kind)
+            return S.Abstain(brief_id=sl.brief_id, reason="kind_not_allowed", detail=p.kind)
         if p.kind != "ask_human" and p.evidence_quote not in text:
-            return S.Abstain(slice_id=sl.slice_id, reason="quote_not_in_slice", detail=p.evidence_quote[:80])
+            return S.Abstain(brief_id=sl.brief_id, reason="quote_not_in_brief", detail=p.evidence_quote[:80])
         return None
 
 
@@ -130,9 +130,9 @@ class DigestRun(dspy.Module):
         self.lm = lm
         self.run = dspy.Predict(S.Digest)
 
-    def forward(self, sl: S.TurnSlice) -> S.RunDigest:
+    def forward(self, sl: S.StopBrief) -> S.RunDigest:
         with dspy.context(lm=self.lm or dspy.settings.lm):
-            return self.run(slice_json=sl.for_model()).digest
+            return self.run(brief_json=sl.for_model()).digest
 
 
 # ---- Check -------------------------------------------------------------------
@@ -143,7 +143,7 @@ def prompt_chars(sig: type[dspy.Signature]) -> int:
 
 
 if __name__ == "__main__":
-    sl = S.example_slice().model_copy(update={"allowed_kinds": tuple(ACTION_CLASS)})
+    sl = S.example_brief().model_copy(update={"allowed_kinds": tuple(ACTION_CLASS)})
     quote = sl.final[:20]
     lm = DummyLM([
         {"status": "waiting_answer", "needs_human": "false", "answer_class": "pick_default", "risk": "low", "priority_hint": "soon", "unsure": "[]"},
@@ -154,11 +154,11 @@ if __name__ == "__main__":
     out = Interpreter(lm)(sl)
     assert out.advice and out.advice.proposal.steps[0].kind == "reply" and out.advice.question, out
     bad = DummyLM([{"status": "waiting_answer", "needs_human": "false", "answer_class": "none", "risk": "low", "priority_hint": "soon", "unsure": "[]"},
-                   {"kind": "reply", "evidence_quote": "words that are not in the slice", "confidence": "0.8"}])
-    assert Interpreter(bad)(sl).abstained.reason == "quote_not_in_slice"
+                   {"kind": "reply", "evidence_quote": "words that are not in the stop brief", "confidence": "0.8"}])
+    assert Interpreter(bad)(sl).abstained.reason == "quote_not_in_brief"
     done = DummyLM([{"status": "done", "needs_human": "false", "answer_class": "none", "risk": "low", "priority_hint": "can_wait", "unsure": "[]"}])
     assert Interpreter(done)(sl).advice is None
-    print("characters in the system and user prompt (empty slice):")
+    print("characters in the system and user prompt (empty stop brief):")
     for name, sig in [("TriageLM", TriageLM), ("PickStep", PickStep), ("WriteCard", WriteCard), ("Digest", S.Digest), ("Advise (old, one call)", S.Advise)] + \
                      [(f"Fill:{k}", s) for k, s in FILL.items()]:
         print(f"  {name:28} {prompt_chars(sig):6}")

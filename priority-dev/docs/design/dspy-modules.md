@@ -37,12 +37,12 @@ The old design made one call for stage 2. Its output type was `Advice`, which ho
 | Card | Nemo | a `Question` card, when a human must answer | 2,056 |
 | Digest | Inkling | a `RunDigest` | 1,288 |
 
-The sizes are for an empty slice. The slice text comes on top. The old single call was 16,903 characters. A chain of Triage, Pick, Fill, and Card is about 7,700 characters for a common kind. It has four calls where the old design had two. The chain is not cheaper in calls. It is shorter in each prompt, and each call has one job. The spike measures whether it is more reliable.
+The sizes are for an empty stop brief. The stop brief text comes on top. The old single call was 16,903 characters. A chain of Triage, Pick, Fill, and Card is about 7,700 characters for a common kind. It has four calls where the old design had two. The chain is not cheaper in calls. It is shorter in each prompt, and each call has one job. The spike measures whether it is more reliable.
 
 Rules for the split:
 
 1. The model writes only the payload of an action. Code sets `session_id`, `author`, `evidence_quote`, and `confidence`. The model cannot forge an id.
-2. Code checks the quote. If the quote is not in the slice text, the result is an `Abstain` with the reason `quote_not_in_slice`. The kind `ask_human` needs no quote.
+2. Code checks the quote. If the quote is not in the stop brief text, the result is an `Abstain` with the reason `quote_not_in_brief`. The kind `ask_human` needs no quote.
 3. Code checks the kind against `allowed_kinds`. A kind that is not allowed gives an `Abstain` with `kind_not_allowed`.
 4. Triage gives no confidence number, because a language model has no calibrated one. It lists the fields it is unsure about. Stage 2 runs when the status needs an answer or when the list is not empty. This replaces the confidence rule of `schemas.md` section 1 for the spikes. The `Facts` type is unchanged. The sketch sets 0.5 for an unsure field and 0.9 for the others, and these numbers are stand-ins and not measurements.
 5. A proposal has one step in the spikes. Multi-step plans come after the single step works.
@@ -60,23 +60,23 @@ I use `Predict`, not `ChainOfThought`. The first spike measures the plain call. 
 
 ## 5. What the spike measures
 
-No labels are needed. The replay report in slice 4 of the plan counts these:
+No labels are needed. The replay report in @@stop brief@@ 4 of the plan counts these:
 
 | Measure | Meaning |
 |---|---|
 | Valid-output rate | The share of calls whose output parses into the type |
-| Quote-found rate | The share of picks whose quote is in the slice |
+| Quote-found rate | The share of picks whose quote is in the stop brief |
 | Abstain reasons | A count for each reason |
 | Kinds picked | A count for each kind |
 | Characters sent, seconds, and cost | For each stage |
-| Stage 2 run rate | How often Triage sends a slice on |
+| Stage 2 run rate | How often Triage sends a stop brief on |
 | Digest size | Characters out against characters in, and whether `open_items` holds the last question of the run |
 
 The skill `dspy-evaluation-suite` covers metrics and baselines. I did not read it, so the metric code is not designed yet. A metric that needs the right answer waits for labels, which are out of scope for now.
 
 ## 6. What stays open
 
-1. Does Nemo follow `JSONAdapter` for the nested payloads? The spike runs both adapters on the same slices and compares the valid-output rate.
+1. Does Nemo follow `JSONAdapter` for the nested payloads? The spike runs both adapters on the same stop briefs and compares the valid-output rate.
 2. Does Inkling's free tier have a rate limit that a goal run with many stops will hit? The documentation I used does not say.
 3. Does Digest keep the open question of a run? The replay report reads this on a few runs by hand.
 4. Optimisers (`MIPROv2`, `GEPA`) and `Refine` are not in the spikes. They need a metric first.
