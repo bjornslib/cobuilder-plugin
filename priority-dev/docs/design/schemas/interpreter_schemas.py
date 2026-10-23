@@ -150,8 +150,8 @@ class PickOption(ActionBase):
     index: int = Field(ge=0)
 
 
-class ApproveGate(ActionBase):
-    kind: Literal["approve_gate"] = "approve_gate"
+class Approve(ActionBase):
+    kind: Literal["approve"] = "approve"
     gate: str
     notes: str = ""  # Plannotator: "Approve with Notes" when notes exist
 
@@ -166,10 +166,29 @@ class Interrupt(ActionBase):
     kind: Literal["interrupt"] = "interrupt"
 
 
+class Decide(Strict):
+    role: Literal["decide"] = "decide"
+    question: Question
+
+
+class Do(Strict):
+    """The human acts outside the session (petekp/inbox do)."""
+    role: Literal["do"] = "do"
+    steps: tuple[str, ...] = Field(max_length=5)
+    where: str = ""  # a URL, a path, or a tool name
+    done_check: str = ""  # how we know the human finished
+
+
+class Review(Strict):
+    """The human reads an artifact (Plannotator)."""
+    role: Literal["review"] = "review"
+    artifact: str  # a path or a PR number
+    check_items: tuple[str, ...] = ()
+
+
 class AskHuman(ActionBase):
     kind: Literal["ask_human"] = "ask_human"
-    role: Literal["decide", "do", "review"] = "decide"  # petekp/inbox decide or do
-    question: Question
+    detail: Annotated[Union[Decide, Do, Review], Field(discriminator="role")]
     why_escalated: str = ""
 
 
@@ -190,12 +209,12 @@ class SetPriorityHint(ActionBase):
 
 
 Action = Annotated[
-    Union[Reply, Continue, ApprovePermission, DenyPermission, PickOption, ApproveGate,
+    Union[Reply, Continue, ApprovePermission, DenyPermission, PickOption, Approve,
           SendFeedback, Interrupt, AskHuman, Snooze, Dismiss, SetPriorityHint],
     Field(discriminator="kind"),
 ]
 SESSION_EFFECT = {"reply", "continue", "approve_permission", "deny_permission",
-                  "pick_option", "approve_gate", "send_feedback", "interrupt"}
+                  "pick_option", "approve", "send_feedback", "interrupt"}
 
 
 def action_hash(a: ActionBase) -> str:
@@ -223,11 +242,65 @@ class Interpretation(Strict):
     abstained: str | None = None  # the reason when the interpreter proposes nothing
 
 
+# ---- 5. Recommendation record and notification settings ----------------------
+
+class Recommendation(Strict):
+    """Stored for every proposal that reaches the human. The pair is training data."""
+    proposal_id: str
+    slice_id: str
+    facts: Facts
+    proposed: Action
+    shown_to_human: bool
+
+
+class Outcome(Strict):
+    proposal_id: str
+    result: Literal["accepted", "edited", "replaced", "rejected", "snoozed", "dismissed"]
+    final: Action | None = None  # what the human sent, if anything
+    seconds_to_answer: float | None = None
+
+
+class NotifyConfig(Strict):
+    """Every value is a setting. Defaults are the starting values."""
+    batch_window_minutes: dict[Literal["N2", "N3"], int] = {"N2": 30, "N3": 30}
+    quiet_hours: tuple[str, str] | None = ("22:00", "07:00")  # only N0 passes
+    timezone: str = "Australia/Sydney"
+
+
 class Advise(dspy.Signature):
     """Propose one action for a waiting session, or ask the human."""
     slice_json: str = dspy.InputField()
     facts_json: str = dspy.InputField()
     proposal: Action = dspy.OutputField()
+
+
+def examples() -> dict[str, Action]:
+    q = Question(ask="Use the existing table or add a new one?", options=("existing", "new"),
+                 agent_recommendation="existing", helps=("The table has 3 columns",))
+    return {
+        "reply": Reply(session_id="s1", prompt_id="p1", text="Use Postgres 17.",
+                       evidence_quote="Which database should I use?", confidence=0.91),
+        "continue": Continue(session_id="s1", evidence_quote="Shall I continue?", confidence=0.97),
+        "approve_permission": ApprovePermission(session_id="s1", prompt_id="p2", scope="once",
+                                                evidence_quote="Allow Bash(ls -la)?", confidence=0.99),
+        "deny_permission": DenyPermission(session_id="s1", prompt_id="p3", reason="Writes outside the repo"),
+        "pick_option": PickOption(session_id="s1", prompt_id="p4", index=0,
+                                  evidence_quote="1. Existing table (recommended)", confidence=0.88),
+        "approve": Approve(session_id="s1", prompt_id="p5", gate="design-review", notes="Check the retry limit.",
+                           evidence_quote="Approve the design?", confidence=0.8),
+        "send_feedback": SendFeedback(session_id="s1", gate="design-review", notes="Split slice 2 in two."),
+        "interrupt": Interrupt(session_id="s1", evidence_quote="rm -rf build/ running", confidence=0.7),
+        "ask_human_decide": AskHuman(session_id="s1", detail=Decide(question=q),
+                                     why_escalated="Cost of a new table is not in the transcript"),
+        "ask_human_do": AskHuman(session_id="s1", why_escalated="Needs the AWS console",
+                                 detail=Do(steps=("Open the console", "Create the bucket"), where="aws console",
+                                           done_check="Bucket name appears in the next prompt")),
+        "ask_human_review": AskHuman(session_id="s1", why_escalated="Gate needs a person",
+                                     detail=Review(artifact="docs/plans/x/04-slices.md", check_items=("Slice order",))),
+        "snooze": Snooze(session_id="s1", until_event="turn_end"),
+        "dismiss": Dismiss(session_id="s1", reason="fyi_read"),
+        "set_priority_hint": SetPriorityHint(session_id="s1", hint=0.8),
+    }
 
 
 if __name__ == "__main__":
@@ -239,5 +312,12 @@ if __name__ == "__main__":
         answer_class="none", risk=0.1, priority_hint=0.1, confidence={"status": 0.9}),
         proposals=(a,)).model_dump_json())
     assert parsed.proposals[0].kind == "approve_permission"
+    ex = examples()
+    for k, v in ex.items():
+        assert type(v).model_validate_json(v.model_dump_json()) == v, k
+    if len(__import__("sys").argv) > 1:
+        out = {k: json.loads(v.model_dump_json()) for k, v in ex.items()}
+        out["notify_config"] = json.loads(NotifyConfig().model_dump_json())
+        print(json.dumps(out, indent=2)); raise SystemExit
     print(Triage.output_fields.keys(), len(SESSION_EFFECT), "session actions")
     print("ok")
