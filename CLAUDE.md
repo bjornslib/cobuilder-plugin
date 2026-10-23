@@ -287,8 +287,10 @@ run the real `bd` in temporary folders.
   denies it. The hook is local tooling, and it ships to nobody.
 - **Keep sync code in the beads adapter and the worker.** Only the beads
   adapter and `shared/tracker_port/sync_worker.py` may run a sync. A hook
-  script never calls `bd`. Tests that use a real `bd` are slow, so run one
-  background run at a time.
+  script never calls `bd`. The sync files sit in `.cobuilder/` as `sync-dirty`,
+  `sync-lock`, `sync-status.json`, and `sync-worker.log`, and the install
+  default is `sync: async` for beads. Tests that use a real `bd` are slow, so
+  run one background run at a time.
 
 ## Known gaps
 

@@ -1,7 +1,7 @@
 """Shared helpers for the async tracker sync tests. Not a test module.
 
-Pinned names: the runtime folder is `.cobuilder/runtime/`, the dirty flag is
-`sync-dirty`, the lock is `sync.lock`, and the status is `sync-status.json`.
+Pinned names: the files sit in `.cobuilder/` with a `sync-` prefix: `sync-dirty`, `sync-lock`,
+`sync-status.json`, and `sync-worker.log`. No runtime folder exists. `.cobuilder/.gitignore` holds `sync-*`.
 """
 from __future__ import annotations
 
@@ -12,10 +12,12 @@ from typing import Any
 import _beads_support as support  # noqa: F401  (puts shared/ on sys.path)
 from _tracker_port_support import REPO_ROOT
 
-RUNTIME = Path(".cobuilder") / "runtime"
-DIRTY = RUNTIME / "sync-dirty"
-LOCK = RUNTIME / "sync.lock"
-STATUS = RUNTIME / "sync-status.json"
+COBUILDER = Path(".cobuilder")
+DIRTY = COBUILDER / "sync-dirty"
+LOCK = COBUILDER / "sync-lock"
+STATUS = COBUILDER / "sync-status.json"
+LOG = COBUILDER / "sync-worker.log"
+GITIGNORE = COBUILDER / ".gitignore"
 
 
 class RecordingSpawner:
@@ -60,7 +62,7 @@ def tracked_repo(tmp_path: Path, sync: str | None = "async") -> Path:
 
 
 def mark_dirty(repo: Path) -> None:
-    (repo / RUNTIME).mkdir(parents=True, exist_ok=True)
+    (repo / COBUILDER).mkdir(parents=True, exist_ok=True)
     (repo / DIRTY).write_text("1", encoding="utf-8")
 
 

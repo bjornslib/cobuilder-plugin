@@ -28,6 +28,7 @@ CONFIGURED = "\n".join([
     "Key operations: tracker.py doctor, tracker.py list-programs, "
     "tracker.py next-ready.",
     "Also: tracker.py claim-slice, tracker.py set-slice-state, tracker.py sync.",
+    "Stuck slice: tracker.py skip-slice <id> --reason <text>.",
     f"Call it as: uv run {PLUGIN_ROOT}/shared/tracker.py <operation>.",
     "A passed slice: tracker.py set-slice-state <id> closed --score <s> --attempts <n>.",
     "Run tracker.py sync at the end of a session.",

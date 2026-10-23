@@ -16,7 +16,7 @@ from .sync_state import is_dirty, runtime_dir, sync_once
 
 
 def run(repo_root: Path, adapter_factory: Callable[[], Any]) -> None:
-    with open(runtime_dir(repo_root) / "sync.lock", "a") as lock:
+    with open(runtime_dir(repo_root) / "sync-lock", "a") as lock:
         try:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError:

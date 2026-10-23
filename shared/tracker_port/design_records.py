@@ -50,6 +50,17 @@ def design_stage(plans_dir: Path, design: str) -> str | None:
     return stage if isinstance(stage, str) else None
 
 
+def plan_stage(plans_dir: Path, program: str, epics: list[TrackerRecord]) -> str | None:
+    # A plan takes its stage from the design of its own name. Else it takes the design that the
+    # first epic id prefix names, as in "othername/E1". None means neither design has a stage.
+    names = [program, *(epics[0].id.rpartition("/")[0],)] if epics else [program]
+    for name in dict.fromkeys(names):
+        stage = design_stage(plans_dir, name)
+        if stage is not None:
+            return stage
+    return None
+
+
 def _epic_lifecycle(state: str) -> str:
     # The goal.json state word sets the lifecycle. In progress has three spellings.
     word = "_".join(state.lower().replace("-", " ").replace("_", " ").split())

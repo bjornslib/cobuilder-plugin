@@ -7,6 +7,8 @@ from collections.abc import Iterable
 from .record import Lifecycle, TrackerRecord
 
 CLOSING_STAGES = frozenset({"implemented", "superseded"})
+# A stage that a runtime writes. A file stage never closes a program that holds one.
+RUNTIME_STAGES = frozenset({"review"})
 
 
 def program_lifecycle(stage: str | None, epics: Iterable[TrackerRecord]) -> Lifecycle:

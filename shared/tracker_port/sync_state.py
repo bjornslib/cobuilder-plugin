@@ -1,6 +1,6 @@
 """The runtime files of the async tracker sync: the dirty flag, the worker lock, the status, and the spawner.
 
-All files live in `.cobuilder/runtime/` of the repo. A `.gitignore` in that folder keeps them out of git.
+All files sit in `.cobuilder/` of the repo with a `sync-` prefix. The line `sync-*` in `.cobuilder/.gitignore` keeps them out of git.
 """
 
 from __future__ import annotations
@@ -20,16 +20,19 @@ TRACKER_CLI = Path(__file__).resolve().parent.parent / "tracker.py"
 
 
 def runtime_dir(repo_root: Path) -> Path:
-    folder = repo_root / ".cobuilder" / "runtime"
+    """Return `.cobuilder/` and make sure its .gitignore holds the line `sync-*` once."""
+    folder = repo_root / ".cobuilder"
     folder.mkdir(parents=True, exist_ok=True)
     ignore = folder / ".gitignore"
-    if not ignore.exists():
-        ignore.write_text("*\n", encoding="utf-8")
+    text = ignore.read_text(encoding="utf-8") if ignore.exists() else ""
+    if "sync-*" not in text.splitlines():
+        separator = "" if not text or text.endswith("\n") else "\n"
+        ignore.write_text(f"{text}{separator}sync-*\n", encoding="utf-8")
     return folder
 
 
 def _flag(repo_root: Path) -> Path:
-    return repo_root / ".cobuilder" / "runtime" / "sync-dirty"
+    return repo_root / ".cobuilder" / "sync-dirty"
 
 
 def mark_dirty(repo_root: Path) -> None:
@@ -46,7 +49,7 @@ def clear_dirty(repo_root: Path) -> None:
 
 def read_status(repo_root: Path) -> dict[str, Any] | None:
     try:
-        body = json.loads((repo_root / ".cobuilder" / "runtime" / "sync-status.json").read_text(encoding="utf-8"))
+        body = json.loads((repo_root / ".cobuilder" / "sync-status.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
     return body if isinstance(body, dict) else None
@@ -62,7 +65,7 @@ def write_status(repo_root: Path, error: str | None) -> None:
 
 def lock_held(repo_root: Path) -> bool:
     """Return True when a worker holds the lock. The probe takes the lock and frees it at once."""
-    path = repo_root / ".cobuilder" / "runtime" / "sync.lock"
+    path = repo_root / ".cobuilder" / "sync-lock"
     if not path.exists():
         return False
     with open(path, "a") as handle:
@@ -74,8 +77,8 @@ def lock_held(repo_root: Path) -> bool:
 
 
 def spawn_worker(repo_root: Path) -> None:
-    """Start `tracker.py sync-worker` detached from the repo root. Its output goes to sync.log."""
-    with open(runtime_dir(repo_root) / "sync.log", "ab") as log:
+    """Start `tracker.py sync-worker` detached from the repo root. Its output goes to sync-worker.log."""
+    with open(runtime_dir(repo_root) / "sync-worker.log", "ab") as log:
         try:
             subprocess.Popen(
                 ["uv", "run", str(TRACKER_CLI), "sync-worker"],

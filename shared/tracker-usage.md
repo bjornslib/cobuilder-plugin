@@ -345,6 +345,8 @@ $ uv run shared/tracker.py add-note demo-E1-s2 'checked the gate'
 
 `set-program-stage` also sets the program's lifecycle. A program at stage `implemented` or `superseded` is closed. At any other stage, the epics set the lifecycle. On the beads adapter, a change of lifecycle also writes the bd status. The stage wins over an epic: a closed program stays closed when an epic starts.
 
+`seed-from-files` takes the stage of a plan program from the `goal.json` of its design. It reads the design with the plan name first. Else it reads the design that the prefix of the first epic id names. The stage goes into the program envelope, and it sets the lifecycle. A refresh never replaces a stage that the program already holds. A seed repair closes an open program when its held stage is `implemented` or `superseded`, with or without a plan file. It does not close a program that holds the runtime stage `review`.
+
 ```console
 $ uv run shared/tracker.py record-attempt demo-E1-s2 0.6 --note 'first try'
 {
@@ -544,9 +546,9 @@ The file `.cobuilder/tracker.yaml` names the adapter. It holds these keys:
 - `corpus`: the corpus folder that the `fake` adapter reads.
 - `state_file`: the file where the `fake` adapter keeps its state.
 - `bd`: the bd command that the `beads` adapter runs. It defaults to `bd`.
-- `sync`: when the `beads` adapter syncs. `write` syncs at the end of each write and is the default. `async` marks the sync as pending, and a short-lived worker runs it. `off` never syncs by itself.
+- `sync`: when the `beads` adapter syncs. `async` is the default for beads. It marks the sync as pending, and a short-lived worker runs it. `write` syncs at the end of each write. The other adapters ignore the key. `off` never syncs by itself.
 
-With `sync: async`, a write returns at once. It sets the flag `.cobuilder/runtime/sync-dirty` and starts `tracker.py sync-worker` detached. You may also run `tracker.py sync-worker` in the foreground. It takes a lock, syncs while the flag is set, writes `.cobuilder/runtime/sync-status.json`, and exits. A second worker exits at once. After a failed sync the flag stays set, and the next write or the SessionEnd hook of `implement` retries. The `sync` operation clears the flag and writes the status file. The `doctor` operation shows `sync`, `sync_pending`, and `last_sync`.
+With `sync: async`, a write returns at once. It sets the flag `.cobuilder/sync-dirty` and starts `tracker.py sync-worker` detached. You may also run `tracker.py sync-worker` in the foreground. It takes a lock, syncs while the flag is set, writes `.cobuilder/sync-status.json`, and exits. A second worker exits at once. After a failed sync the flag stays set, and the next write or the SessionEnd hook of `implement` retries. The `sync` operation clears the flag and writes the status file. The `doctor` operation shows `sync`, `sync_pending`, and `last_sync`.
 
 ## Adapter notes
 

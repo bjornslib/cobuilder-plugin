@@ -32,7 +32,7 @@ class Capabilities:
 
 # Envelope keys the file fills only when the held envelope lacks them or holds None.
 # A runtime score, attempt count, or epic branch, pr, or state that is already set is never replaced by the file.
-FILL_WHEN_EMPTY = frozenset({"score", "attempts", "branch", "pr", "state"})
+FILL_WHEN_EMPTY = frozenset({"score", "attempts", "branch", "pr", "state", "stage"})
 
 
 def merge_refresh_envelope(

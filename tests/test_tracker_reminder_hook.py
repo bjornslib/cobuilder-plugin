@@ -15,7 +15,7 @@ HOOKS = PLUGIN / "hooks" / "hooks.json"
 SCRIPT = PLUGIN / "scripts" / "tracker_reminder.py"
 TRACKER = REPO / "shared" / "tracker.py"
 EVENTS = ("startup", "resume", "clear", "compact")
-OPS = ("doctor", "list-programs", "next-ready", "claim-slice", "set-slice-state", "sync")
+OPS = ("doctor", "list-programs", "next-ready", "claim-slice", "set-slice-state", "skip-slice", "sync")
 
 
 def _run(cwd: Path, stdin: str = "") -> tuple[int, str]:

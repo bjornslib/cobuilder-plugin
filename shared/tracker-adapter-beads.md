@@ -88,7 +88,7 @@ The adapter sends `--force` on every close. bd refuses to close an epic that has
 | Epic or slice | `in_progress` | `in_progress` |
 | Epic or slice | `closed` | `closed` |
 
-`set_program_stage` writes the bd status only when the lifecycle changes. A refused create names the held id: `create_record` stops with `already exists` before any `bd create`.
+A plan program takes its stage from the `goal.json` of its design: the plan name first, then the prefix of the first epic id. The seed repair closes an open program when the held stage is `implemented` or `superseded`, with or without a plan file. It also closes an open program that its files mark closed, unless the held stage is `review`. The close pass uses one sync. `set_program_stage` writes the bd status only when the lifecycle changes. A refused create names the held id: `create_record` stops with `already exists` before any `bd create`.
 
 ## Pull request issues
 

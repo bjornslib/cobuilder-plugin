@@ -24,9 +24,21 @@ def test_load_adapter_reads_the_sync_mode(tmp_path, mode):
     assert _adapter_of(tmp_path, mode).sync_mode == mode
 
 
-def test_load_adapter_defaults_to_write(tmp_path):
+def test_load_adapter_defaults_to_async_for_beads(tmp_path):
     adapter = _adapter_of(tmp_path, None)
-    assert adapter.sync_mode == "write"
+    assert adapter.sync_mode == "async"
+    assert adapter.doctor_details()["sync"] == "async"
+
+
+@pytest.mark.parametrize("kind", ["files", "fake"])
+def test_other_adapters_ignore_the_sync_key(tmp_path, kind):
+    from tracker_port.config import load_adapter
+
+    config = tmp_path / ".cobuilder" / "tracker.yaml"
+    config.parent.mkdir(parents=True)
+    lines = {"files": f"adapter: files\nplans_dir: {tmp_path}\n", "fake": f"adapter: fake\ncorpus: {support.FIXTURE_DIR / 'corpus'}\n"}
+    config.write_text(lines[kind] + "sync: async\n", encoding="utf-8")
+    assert not hasattr(load_adapter(config, tmp_path), "sync_mode")
 
 
 def test_load_adapter_rejects_an_unknown_sync_value(tmp_path):
@@ -58,7 +70,7 @@ def test_async_write_spawns_nothing_while_the_worker_lock_is_held(tmp_path):
     import fcntl
 
     spawner = s.RecordingSpawner()
-    (tmp_path / s.RUNTIME).mkdir(parents=True)
+    (tmp_path / s.COBUILDER).mkdir(parents=True)
     with open(tmp_path / s.LOCK, "w") as held:
         fcntl.flock(held, fcntl.LOCK_EX | fcntl.LOCK_NB)
         s.async_adapter(tmp_path, support.CreateAnswers(), spawner).create_record(s.probe())

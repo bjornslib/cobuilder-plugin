@@ -45,7 +45,7 @@ def load_adapter(config_path: Path, repo_root: Path, state_file: Path | None = N
         bd = config.get("bd", "bd")
         if not isinstance(bd, str) or not bd:
             raise AdapterError(f"tracker config {config_path} needs bd to be a command name")
-        sync = config.get("sync", "write")
+        sync = config.get("sync", "async")
         if sync is False:
             sync = "off"  # YAML reads a bare `off` as false
         return BeadsAdapter(BdRunner(bd=bd, cwd=repo_root), sync=sync, repo_root=repo_root)
