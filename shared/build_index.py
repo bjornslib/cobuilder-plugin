@@ -1107,6 +1107,18 @@ def refine_epic_status(epic_status: dict[str, str], epic_to_pr: dict[str, int], 
             epic_status[epic_id] = str(state).lower()
 
 
+# A tracker lifecycle of in_progress or closed is an explicit workflow fact. It outranks the pull request join.
+LIFECYCLE_STATUS = {"in_progress": "in_progress", "closed": "completed"}
+
+
+def apply_epic_lifecycle(epic_status: dict[str, str], epics: list[dict]) -> None:
+    """Let an epic's tracker lifecycle replace the pull request status, unless the lifecycle is open."""
+    for epic in epics:
+        word = LIFECYCLE_STATUS.get(epic.get("state") or "")
+        if word is not None:
+            epic_status[epic["id"]] = word
+
+
 def adrs_reaching_design(adr_id: str, adr_record: dict, design_records: dict[str, dict]) -> list[str]:
     """Return the design ids an ADR reaches: named in goal.adrs, goal.adr, or
     an epic's ``adr``, or via a ``related`` path into that design's own directory."""
@@ -1336,6 +1348,7 @@ def resolve_joins(
 
     epic_to_pr, epic_status = resolve_epic_pull_requests(entities["epic"], warnings)
     refine_epic_status(epic_status, epic_to_pr, entities["pull_request"])
+    apply_epic_lifecycle(epic_status, entities["epic"])
 
     adr_to_context, adr_to_district = resolve_adr_context_district(adrs_viewer)
 

@@ -1,0 +1,10 @@
+[
+  {"id": "estate/E1", "kind": "epic", "parent": "estate", "blocked_by": [], "lifecycle": "in_progress", "assignee": null,
+   "envelope": {"epic_id": "E1", "branch": "tracker/first", "pr": 9}, "external_ref": null},
+  {"id": "estate/E2", "kind": "epic", "parent": "estate", "blocked_by": [], "lifecycle": "closed", "assignee": null,
+   "envelope": {"epic_id": "E2", "branch": "tracker/second"}, "external_ref": null},
+  {"id": "estate/E4", "kind": "epic", "parent": "estate", "blocked_by": [], "lifecycle": "closed", "assignee": null,
+   "envelope": {"epic_id": "E4", "branch": "tracker/fourth", "pr": 11}, "external_ref": null},
+  {"id": "estate/E5", "kind": "epic", "parent": "estate", "blocked_by": [], "lifecycle": "open", "assignee": null,
+   "envelope": {"epic_id": "E5", "branch": "tracker/fifth", "pr": 12}, "external_ref": null}
+]

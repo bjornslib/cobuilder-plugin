@@ -164,6 +164,32 @@ def test_index_without_tracker_config_reads_state_through_the_files_adapter(tmp_
     assert epics["estate/E1"]["state"] == "open"  # the files adapter epic lifecycle; the envelope state merged no longer matters
 
 
+def test_index_epic_status_follows_the_tracker_lifecycle_after_the_pr_join(tmp_path: Path) -> None:
+    # E1 holds a PR (placeholder open) at in_progress. E4 holds a PR at closed. E2 is closed with no PR.
+    # E5 is held open with a PR. E3 has no held record.
+    repo = make_repo(tmp_path, corpus="corpus-join")
+    goal_path = repo / "docs" / "architecture" / "designs" / "estate" / "goal.json"
+    goal = json.loads(goal_path.read_text(encoding="utf-8"))
+    goal["epics"] += [
+        {"id": "E4", "slug": "fourth", "outcome": "The fourth epic ships."},
+        {"id": "E5", "slug": "fifth", "outcome": "The fifth epic ships."},
+    ]
+    goal_path.write_text(json.dumps(goal), encoding="utf-8")
+    epics = build(repo, tmp_path)
+    index = json.loads((repo / ".cobuilder-architect" / "self" / "data" / "index.json").read_text(encoding="utf-8"))
+    status = index["joins"]["epic_status"]
+    assert index["joins"]["epic_to_pull_request"]["estate/E1"] == 9
+    assert status["estate/E1"] == "in_progress"
+    assert status["estate/E4"] == "completed"
+    assert status["estate/E2"] == "completed"  # closed wins over no-pull-request
+    assert status["estate/E5"] == "open"  # lifecycle open leaves the PR-join placeholder
+    assert status["estate/E3"] == "unstarted"  # no held record
+    # The epic entity state stays the lifecycle word.
+    assert epics["estate/E1"]["state"] == "in_progress"
+    assert epics["estate/E4"]["state"] == "closed"
+    assert epics["estate/E5"]["state"] == "open"
+
+
 def test_epic_fields_hold_no_state_keys() -> None:
     import build_index
 
