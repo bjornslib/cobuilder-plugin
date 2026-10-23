@@ -1,21 +1,21 @@
 ---
-title: "ADR-0043 — formulas follow the wisps key in tracker.yaml"
+title: "ADR-0043 — the slice-loop formula follows the formulas key in tracker.yaml"
 status: active
 type: architecture
 last_verified: 2026-10-23
 owner: bjornslib
 id: ADR-0043
 source_pr: null
-name: "formulas follow the wisps key in tracker.yaml"
+name: "the slice-loop formula follows the formulas key in tracker.yaml"
 state: decided
 groups: [workflow, packaging]
 approved_by: ""
 problem: "The slice-loop formula of E5 is a file that no code reads. The loop cannot use molecules and wisps, and a molecule that is poured twice makes duplicate rows."
-decision: "The key wisps in tracker.yaml turns the formula path on or off. The default is true for beads and false for the files and fake adapters. With wisps true, the new operation start-slice-loop pours one molecule for a slice and finds it again, record-attempt adds a wisp, and closing a slice squashes the molecule with --keep-children and a summary. With wisps false, start-slice-loop exits 4 and runs no bd call. This amends ADR-0040 and builds on ADR-0042."
+decision: "The key formulas in tracker.yaml turns the formula path on or off. The default is true for beads and false for the files and fake adapters. With formulas true, the new operation start-slice-loop pours one molecule for a slice and finds it again, record-attempt adds a wisp, and closing a slice squashes the molecule with --keep-children and a summary. With formulas false, start-slice-loop exits 4 and runs no bd call. This amends ADR-0040 and builds on ADR-0042."
 maps_to:
   context: tracker-port
   modules: [shared/tracker_port/config.py, shared/tracker_port/beads.py, shared/tracker_port/bd_runner.py, shared/tracker.py]
-  rule: "Only shared/tracker_port/ calls bd. A formula operation runs only when the wisps key is true. Every row that the formula makes is foreign: it never holds a cb key."
+  rule: "Only shared/tracker_port/ calls bd. A formula operation runs only when the formulas key is true. Every row that the formula makes is foreign: it never holds a cb key."
 forces:
   - "An ephemeral wisp never syncs, so one machine alone sees it."
   - "A molecule syncs, and each pour makes a new molecule."
@@ -46,7 +46,7 @@ related:
   - "shared/tracker-usage.md"
 ---
 
-# ADR-0043 — formulas follow the wisps key in tracker.yaml
+# ADR-0043 — the slice-loop formula follows the formulas key in tracker.yaml
 
 ## Context
 
@@ -59,23 +59,23 @@ E5 added the file `shared/tracker_port/formulas/slice-loop.toml`. No code reads 
 
 ## Decision
 
-The key `wisps` in `.cobuilder/tracker.yaml` takes `true` or `false`. When the key is absent, it means true for the beads adapter and false for the files and fake adapters. The config loader checks it as it checks `sync`.
+The key `formulas` in `.cobuilder/tracker.yaml` takes `true` or `false`. When the key is absent, it means true for the beads adapter and false for the files and fake adapters. The config loader checks it as it checks `sync`.
 
-With `wisps` true:
+With `formulas` true:
 
 - `start-slice-loop <slice-id>` installs the formula into `.beads/formulas/slice-loop.formula.toml` when it is missing. It pours one molecule and sets `slice=<slice bd id>` on the root. A second call finds the molecule through `bd list --metadata-field slice=<bd id>`.
 - `record-attempt` also adds an ephemeral wisp child of the molecule.
 - `set-slice-state <id> closed` squashes the molecule with `--keep-children` and a `--summary` built from the recorded attempts. Then it closes the root.
 
-With `wisps` false, `start-slice-loop` exits 4, names the key `wisps`, and makes no bd call. `record-attempt` and `set-slice-state` keep their current behavior.
+With `formulas` false, `start-slice-loop` exits 4, names the key `formulas`, and makes no bd call. `record-attempt` and `set-slice-state` keep their current behavior.
 
-When `wisps` is true on beads and the probe `bd mol seed slice-loop` fails, the adapter raises `AdapterError`, which the CLI reports as exit 3.
+When `formulas` is true on beads and the probe `bd mol seed slice-loop` fails, the adapter raises `AdapterError`, which the CLI reports as exit 3.
 
 ## Consequences
 
 - The durable attempt history stays in the slice envelope and in the digest summary. The wisps are local to one machine.
 - `tracker.py prepare` and `start-slice-loop` install the formula in each clone.
 - Each slice adds four or more foreign rows. `doctor` counts them in `foreign_issues`. A later slice may split the count into foreign rows and formula rows.
-- Default-on gives every beads repo the cost at once. The engineer chose it. The rollback is `wisps: false`.
-- The name `wisps` also covers formulas and molecules. This is a naming gap. It is not fixed here.
+- Default-on gives every beads repo the cost at once. The engineer chose it. The rollback is `formulas: false`.
+- The key is named `formulas`, as in bd. A bd formula is the template, and a molecule and a wisp are what it makes. The key turns all three on or off.
 - This ADR amends ADR-0040: the port gains the operation `start-slice-loop`.
