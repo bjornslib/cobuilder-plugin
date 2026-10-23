@@ -30,45 +30,43 @@ def digest(*parts: str) -> str:
 # A slice is one run: from the record that woke the agent to the stop that
 # waits. Code reads structured transcript records. It judges no meaning.
 
-class Step(Strict):
-    """One tool call. The tool, the target, and the outcome come from the records."""
+class AssistantText(Strict):
+    """Text that the agent wrote before a tool call. Never clipped."""
+    type: Literal["text"] = "text"
+    text: str
+
+
+class ToolExchange(Strict):
+    """One tool call with its result, paired by tool_use_id. Never clipped in storage."""
+    type: Literal["tool"] = "tool"
     tool: str
-    target: str  # a path, a command, or a URL, redacted
-    outcome: Literal["ok", "error", "denied"]
-    note: str = Field(default="", max_length=200)  # the first line of an error
+    input: str  # the command, path, or prompt, redacted
+    result: str  # the full result text, redacted
+    is_error: bool  # from the result record. A failed Bash call also starts with "Exit code N"
 
 
-class StepSummary(Strict):
-    total: int
-    by_tool: dict[str, int]
-    last: tuple[Step, ...] = Field(default=(), max_length=8)  # the last steps in full
-    errors: tuple[Step, ...] = Field(default=(), max_length=5)  # the first errors in full
+RunItem = Annotated[Union[AssistantText, ToolExchange], Field(discriminator="type")]
 
 
 class Ask(Strict):
     """What woke the agent. The origin comes from the record, never from a guess."""
     origin: Literal["human", "goal_hook", "task_notification", "peer"]
-    text: str = Field(max_length=1500)
+    text: str
 
 
 class GoalState(Strict):
     text: str
     stop_attempts: int  # stop hook feedback records seen since the goal was set
     last_reason: str | None = None  # the reason that the last stop attempt was refused
+    proof: "Proof | None" = None  # what the session must show, set by continue_until
 
 
-class AgentReport(Strict):
-    """A sub-agent call with the start of its result. Other tool results are not kept."""
-    description: str
-    result: str = Field(max_length=800)
-
-
-class PreviousRun(Strict):
-    """The run before this one, in compact form."""
-    ask: str = Field(max_length=400)
-    steps_total: int
-    by_tool: dict[str, int]
-    final: str = Field(max_length=800)
+class RunDigest(Strict):
+    """A model summary of one finished run. The Digest call makes it at each stop."""
+    ran: str = Field(max_length=600)  # what the agent did, in plain words
+    result: str = Field(max_length=300)  # how the run ended
+    open_items: tuple[str, ...] = Field(default=(), max_length=5)  # questions and tasks left open
+    decisions: tuple[str, ...] = Field(default=(), max_length=5)  # choices made in the run, by the agent or the human
 
 
 class PendingPrompt(Strict):
@@ -99,31 +97,34 @@ class TurnSlice(Strict):
     context: SessionContext
     ask: Ask
     goal: GoalState | None = None
-    notes: tuple[str, ...] = Field(default=(), max_length=6)  # assistant text before a tool call, each clipped
-    steps: StepSummary
-    agent_reports: tuple[AgentReport, ...] = Field(default=(), max_length=4)
+    items: tuple[RunItem, ...] = ()  # the run in order: text, and each tool call with its result
     last_thinking: str | None = None  # off by default, a lab ablation
-    final: str  # the last assistant message of the run: head 1500 and tail 6000 characters, redacted
-    final_chars: int  # the length before the clip
-    previous: PreviousRun | None = None
+    final: str  # the last assistant message of the run, in full, redacted
+    previous: RunDigest | None = None  # the Digest of the run before, a stored fact
     pending: PendingPrompt | None = None
     redactions: int = 0
     allowed_kinds: tuple[str, ...]  # the action kinds the advisor may name
 
-    def for_model(self) -> str:
-        """The text that the models read. It leaves out the ids, the cursor, and the kinds."""
-        return self.model_dump_json(exclude={"slice_id", "cursor", "redactions", "allowed_kinds", "final_chars"},
-                                    exclude_none=True)
+    def for_model(self, agent_reports_first: bool = False) -> str:
+        """The text that the models read. It leaves out the ids, the cursor, and the kinds.
+
+        agent_reports_first is a lab option. It copies each Agent exchange into a block at the top.
+        """
+        d = json.loads(self.model_dump_json(exclude={"slice_id", "cursor", "redactions", "allowed_kinds"},
+                                            exclude_none=True))
+        if agent_reports_first:
+            d = {"agent_reports": [i for i in d.get("items", []) if i.get("tool") == "Agent"], **d}
+        return json.dumps(d)
 
 
 class InterpreterCall(Strict):
     """One model call, stored with the exact text that the model received."""
     call_id: str
     slice_id: str
-    stage: Literal["triage", "advise"]
+    stage: Literal["triage", "advise", "digest", "shrink"]
     model: str
-    rendered_input: str  # the exact text after the clip
-    clipped_chars: int = 0
+    rendered_input: str  # the exact text that the model received
+    shrunk_items: int = 0  # tool results that the Shrink call replaced, only when the slice was over budget
     output_json: str
     latency_ms: int
 
@@ -222,9 +223,10 @@ class Continue(ActionBase):
 
 
 class Proof(Strict):
-    """How code checks that the goal is reached. The agent's own claim is never proof."""
-    kind: Literal["command_exit_zero", "file_exists", "human_confirms"]
-    value: str = ""  # the command or the path
+    """What the session must show before the loop ends. Nothing here runs a command."""
+    kind: Literal["agent_shows", "human_confirms"]
+    command: str | None = None  # the command that the agent must run and report
+    show: str = ""  # what to report, for example "the exit code and the last 20 lines"
 
 
 class ContinueUntil(ActionBase):
@@ -353,10 +355,33 @@ class Abstain(Strict):
     detail: str = ""
 
 
+class EvidenceCheck(Strict):
+    """Only in a goal run. The advisor quotes what the agent showed. Code checks the quotes."""
+    claimed_met: bool
+    command_quote: str = ""  # the command, as it appears in a tool call of this run
+    result_quote: str = ""  # the text, as it appears in the result of that call
+
+
+def check_evidence(sl: "TurnSlice", ev: EvidenceCheck) -> tuple[bool, str]:
+    """Code, no model. It reads the transcript record of the call that really ran."""
+    proof = sl.goal.proof if sl.goal else None
+    if proof is None or proof.kind != "agent_shows" or not proof.command:
+        return False, "no command to check"
+    for it in sl.items:
+        if isinstance(it, ToolExchange) and it.tool == "Bash" and proof.command in it.input:
+            if it.is_error:
+                return False, "the command failed"
+            if ev.result_quote not in it.result:
+                return False, "the quoted result is not in the tool result"
+            return True, "the command ran, passed, and the quote is in its result"
+    return False, "the command did not run in this run"
+
+
 class Advice(Strict):
     """What the advisor returns: a card for the human, and a proposal."""
     question: Question | None = None
     proposal: Proposal
+    evidence: EvidenceCheck | None = None
 
 
 class Interpretation(Strict):
@@ -371,6 +396,23 @@ class Advise(dspy.Signature):
     slice_json: str = dspy.InputField()
     facts_json: str = dspy.InputField(desc="The five typed facts from the triage call")
     advice: Advice = dspy.OutputField()
+
+
+class Digest(dspy.Signature):
+    """Summarise one finished run of a coding agent for the next slice of the same session."""
+    slice_json: str = dspy.InputField()
+    digest: RunDigest = dspy.OutputField()
+
+
+class Shrink(dspy.Signature):
+    """Shorten one tool result. Keep errors, file names, numbers, and the last lines."""
+    tool: str = dspy.InputField()
+    text: str = dspy.InputField()
+    target_chars: int = dspy.InputField()
+    short: str = dspy.OutputField()
+
+
+RENDER_BUDGET_CHARS = 160_000  # a guess: about 40,000 tokens. Only over this does Shrink run
 
 
 # ---- 6. Stored recommendation and settings ---------------------------------
@@ -406,22 +448,39 @@ def example_slice() -> TurnSlice:
         context=SessionContext(session_id="sess-7c1", project="exporter", branch="slice-2-csv",
                                workflow_stage="implement: slice 2 of 5", answered_by_us_last_hour=1),
         ask=Ask(origin="human", text="Build slice 2: the CSV export endpoint. Run the tests before you stop."),
-        notes=("I will read the routes first, then add the writer.", "Tests pass. I check the timestamp format."),
-        steps=StepSummary(total=9, by_tool={"Read": 4, "Edit": 3, "Bash": 2}, last=(
-            Step(tool="Edit", target="src/export/csv_writer.py", outcome="ok"),
-            Step(tool="Bash", target="pytest tests/export -q", outcome="ok")),
-            errors=(Step(tool="Bash", target="pytest tests/export -q", outcome="error",
-                         note="1 failed: test_header_order"),)),
+        items=(
+            AssistantText(text="I will read the routes first, then add the writer."),
+            ToolExchange(tool="Read", input="src/export/routes.py", result="def export_routes(app):\n    ...", is_error=False),
+            ToolExchange(tool="Edit", input="src/export/csv_writer.py", result="File updated.", is_error=False),
+            ToolExchange(tool="Bash", input="pytest tests/export -q",
+                         result="Exit code 1\nFAILED tests/export/test_csv.py::test_header_order\n1 failed, 13 passed",
+                         is_error=True),
+            AssistantText(text="One test fails on the header order. I fix the column list and run the tests again."),
+            ToolExchange(tool="Edit", input="src/export/csv_writer.py", result="File updated.", is_error=False),
+            ToolExchange(tool="Bash", input="pytest tests/export -q", result="14 passed in 0.9s", is_error=False),
+        ),
         final=("Slice 2 is done. 14 tests pass.\n\nBefore I start slice 3, one question. "
                "Should the CSV timestamps use UTC or the project timezone?\n"
                "1. UTC (I recommend this: it matches the API)\n2. The project timezone\n"
                "Reply 1 or 2."),
-        final_chars=288,
-        previous=PreviousRun(ask="Build slice 1: the export model.", steps_total=14,
-                             by_tool={"Read": 6, "Edit": 5, "Bash": 3},
-                             final="Slice 1 is done. 9 tests pass. Starting slice 2 next."),
+        previous=RunDigest(ran="Built the export model and its 9 tests.", result="Slice 1 done, tests pass.",
+                           decisions=("Money fields use integer cents",)),
         redactions=0, allowed_kinds=tuple(sorted(SESSION_EFFECT | {"ask_human", "snooze", "dismiss"})),
     )
+
+
+def example_goal_slice() -> TurnSlice:
+    """A goal run at a stop attempt. The agent shows the evidence that the loop asked for."""
+    base = example_slice()
+    return base.model_copy(update={
+        "trigger": "goal_stop_attempt",
+        "ask": Ask(origin="goal_hook", text="Stop hook feedback: [All 5 slices pass their tests]: not yet shown"),
+        "goal": GoalState(text="All 5 slices pass their tests", stop_attempts=2, last_reason="no test output shown",
+                          proof=Proof(kind="agent_shows", command="pytest -q",
+                                      show="the exit code and the last 5 lines of output")),
+        "items": (ToolExchange(tool="Bash", input="pytest -q", result="68 passed in 4.1s", is_error=False),),
+        "final": "All 5 slices are built. I ran pytest -q: 68 passed in 4.1s.",
+    })
 
 
 def example_facts() -> Facts:
@@ -444,7 +503,7 @@ def examples() -> dict[str, BaseModel]:
     two = Proposal(proposal_id="p-2", slice_id=s.slice_id, rationale="Answer the question, then run to the end of the plan.", steps=(
         reply,
         ContinueUntil(session_id="sess-7c1", goal="Slices 3 to 5 pass their tests", max_turns=20, max_minutes=120,
-                      proof=Proof(kind="command_exit_zero", value="pytest -q"), evidence_quote="Before I start slice 3"),
+                      proof=Proof(kind="agent_shows", command="pytest -q", show="the exit code and the last 5 lines"), evidence_quote="Before I start slice 3"),
     ))
     return {
         "turn_slice": s,
@@ -454,12 +513,15 @@ def examples() -> dict[str, BaseModel]:
             rendered_input="(the state and the five questions, see schemas.md section 10)",
             output_json=example_facts().model_dump_json(), latency_ms=410),
         "advice_with_question_card": Advice(question=q, proposal=one),
+        "run_digest": s.previous,
+        "goal_slice": example_goal_slice(),
+        "evidence_check": EvidenceCheck(claimed_met=True, command_quote="pytest -q", result_quote="68 passed in 4.1s"),
         "proposal_two_steps": two,
         "abstain": Abstain(slice_id=s.slice_id, reason="quote_not_in_slice",
                            detail="The quote 'Use UTC, as agreed' is not in the slice"),
         "continue_until": ContinueUntil(
             session_id="sess-7c1", goal="All 5 slices pass their tests", max_turns=20, max_minutes=120,
-            proof=Proof(kind="command_exit_zero", value="pytest -q"), evidence_quote="Reply 1 or 2.", confidence=0.7),
+            proof=Proof(kind="agent_shows", command="pytest -q", show="the exit code and the last 5 lines"), evidence_quote="Reply 1 or 2.", confidence=0.7),
         "ask_human_do": AskHuman(session_id="sess-7c1", why_escalated="Needs the AWS console", detail=Do(
             steps=("Open the console", "Create the bucket"), where="aws console",
             done_check="The bucket name appears in the next prompt")),
@@ -482,6 +544,13 @@ if __name__ == "__main__":
         raise SystemExit("a contradictory plan passed")
     except ValueError:
         pass
+    g = example_goal_slice()
+    assert check_evidence(g, EvidenceCheck(claimed_met=True, command_quote="pytest -q", result_quote="68 passed"))[0]
+    assert not check_evidence(g, EvidenceCheck(claimed_met=True, result_quote="70 passed"))[0]
+    assert not check_evidence(example_slice(), EvidenceCheck(claimed_met=True))[0]  # no goal, no check
+    fail = g.model_copy(update={"items": (ToolExchange(tool="Bash", input="pytest -q", result="Exit code 1", is_error=True),)})
+    assert not check_evidence(fail, EvidenceCheck(claimed_met=True, result_quote="Exit"))[0]
+    assert not check_evidence(g.model_copy(update={"items": ()}), EvidenceCheck(claimed_met=True))[0]
     a = ApprovePermission(session_id="s1", prompt_id="p1", evidence_quote="Allow Bash(ls)?")
     b = ApprovePermission(session_id="s1", prompt_id="p1", author="human")
     assert action_hash(a) == action_hash(b)

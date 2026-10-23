@@ -1,6 +1,6 @@
 # Typed schemas: what the interpreter receives and produces
 
-Status: design, round 8. The code sketch is `schemas/interpreter_schemas.py`. It runs with `uv run`. It checks every example, one hash rule, and one plan rule. It is not the code layout.
+Status: design, round 9. The code sketch is `schemas/interpreter_schemas.py`. It runs with `uv run`. It checks every example, one hash rule, and one plan rule. It is not the code layout.
 
 The sketch uses `dspy[typesafe]==3.4.1`. `Choice`, `Noul`, and `Score` import from `dspy.experimental`. `Score[...]` must be the field type itself. Each decision field needs `desc=` in its `OutputField`. No call to Jev or to the advisor has run yet. The one-day test makes the first call.
 
@@ -12,6 +12,8 @@ The language model is required. Jev returns typed values only. It cannot write a
 |---|---|---|---|---|
 | 1. Triage | Jev (`typesafe:jev-latest`) | the slice | `Facts`: five typed values with confidence | one |
 | 2. Advise | the language model (`openrouter/anthropic/claude-haiku-5.5`) | the slice and the facts | `Advice`: a question card and a proposal | one, when an answer is due |
+| Digest | the same language model | the slice | `RunDigest`: a short summary of the run | one for each finished run |
+| Shrink | the same language model | one oversized tool result | a shorter text | none, unless the slice is over the budget (section 2.3) |
 
 One Jev call carries all five questions. A DSPy signature with five decision fields builds one request, `client.system_one(state=..., questions=...)`. The source is `dspy/adapters/decision.py` and `dspy/clients/typesafe.py` in version 3.4.1. I do not know whether Jev prices each question or each call.
 
@@ -23,7 +25,7 @@ Stage 2 runs when the facts say that an answer is due. The rule is plain Python:
 
 Stage 2 runs even when `needs_human` is true. The human then sees a card with a recommended answer and does not start from nothing.
 
-The stage 2 system prompt holds the JSON schema of `Advice`. That schema is 15,445 characters, because the `Action` type has 13 kinds. Every call sends it. Prompt caching at the provider may lower the cost. I did not check that.
+The stage 2 system prompt holds the JSON schema of `Advice`. That schema is 16,071 characters, because the `Action` type has 13 kinds. Every call sends it. Prompt caching at the provider may lower the cost. I did not check that.
 
 ## 2. Input: the turn slice
 
@@ -31,20 +33,21 @@ A slice is the exact input of the interpreter. Code builds it from the transcrip
 
 ### 2.1 What a run holds in a real transcript
 
-I measured the largest transcript of this repo (7526c296, 18,729 records, 408 human prompts) and one goal run (36752881). The numbers below are from those two files only.
+I measured the two largest transcripts of this repo (7526c296 with 18,729 records and 408 human prompts, and 48546f32) and one goal run (36752881). The numbers below come from those files only.
 
 1. **One reply is many records.** The API returns each content block (thinking, text, tool call) as its own `assistant` record. All records of one reply share a `message.id`. A record with `stop_reason: end_turn` can hold only a thinking block, and the text sits in the next record. Code must group by `message.id` and then read the text. The last record alone is wrong.
 2. **A run has many stops.** The biggest human-started turn has 10 `end_turn` replies. A reply with no tool call ends the run when nothing else wakes the agent. A wake-up record starts the run again: a task notification, a queued message, or a stop hook that refuses the stop.
 3. **A goal shows as a user record.** A refused stop in a goal run arrives as a user record with `origin` null and text that starts `Stop hook feedback: [<goal text>]: <reason>`. The goal run 36752881 has 3 such records. Between the second and the third there are 1,933 records, 81 Bash calls, 24 sub-agent calls, and 104 `end_turn` replies. The last reply before the refusal was "I am waiting for the foreign-run agent". That is a stop that no human needs to see.
-4. **Stops have a marker.** A `system` record with `subtype: stop_hook_summary` follows each stop. A `turn_duration` record follows a real end. I did not check that every stop has one. A Stop hook of our own, installed by the adapter host, gives the exact moment, and I did not test it.
+4. **Not every stop has a marker.** A `system` record with `subtype: stop_hook_summary` follows some stops. The two largest transcripts hold 764 of them against 1,034 `end_turn` replies. Code cannot use the marker alone. A Stop hook of our own, installed by the adapter host, gives the exact moment. I did not test that hook.
 5. **Thinking is small and often absent.** In the biggest turns it is 0 to 10,000 characters, against 2,000 to 22,000 of text. The transcript also holds `thinking_drop` records.
-6. **Tool results are large and mostly noise.** The median is 643 characters, the 90th percentile 4,600, and the maximum 660,963.
-7. **The final reply is long enough to clip.** Across 736 final replies the median is 2,036 characters, the 90th percentile 6,576, and the maximum 45,353.
-8. **Structured questions exist.** The 53,298 records hold 41 `AskUserQuestion` calls. The call input holds the options, so a `pending` prompt with source `transcript` is exact. A permission prompt is not in the transcript until a decision exists. It needs a hook or a pane read.
+6. **A call and its result pair by id.** The two transcripts hold 2,514 tool results, and each one matches a tool call by `tool_use_id`. None is unpaired. A failed Bash call has `is_error: true` and text that starts `Exit code N`. A passing call has `is_error: false`.
+7. **A whole run is small, even with every result.** One result has a median of 643 characters and a maximum of 660,963. A whole run, with the text, the calls, and the full results, has a median of 4,286 characters across 1,117 runs. The 90th percentile is 25,058, the 99th is 99,442, and the maximum is 381,179. Eleven runs pass 100,000 characters and three pass 250,000. A run here starts at any user record that is not only tool results, so the split is approximate.
+8. **The final reply is long.** Across 736 final replies the median is 2,036 characters, the 90th percentile 6,576, and the maximum 45,353.
+9. **Structured questions exist.** The 53,298 records hold 41 `AskUserQuestion` calls. The call input holds the options, so a `pending` prompt with source `transcript` is exact. A permission prompt is not in the transcript until a decision exists. It needs a hook or a pane read.
 
 ### 2.2 What code can build, and what it cannot
 
-Code reads structured JSON. It can say which tool ran, on which path or command, and whether the result had an error. It can group replies, find the last text, count steps, and read the `origin` of a record. It can clip and redact. It cannot say whether the work was right, or what a question means. The slice therefore holds facts and no meaning. The models give the meaning.
+Code reads structured JSON. It can group replies, pair each tool call with its result, read whether the result is an error, find the last text, and read the `origin` of a record. It can redact secrets. It cannot say whether the work was right, or what a question means. The slice therefore holds facts and no meaning. The models give the meaning.
 
 ### 2.3 The fields
 
@@ -53,31 +56,31 @@ Code reads structured JSON. It can say which tool ran, on which path or command,
 | `slice_id`, `cursor` | digest of the session id and the stop record, and the place of the stop in the transcript | code |
 | `trigger` | `end_turn`, `goal_stop_attempt`, `question_tool`, or `permission_wait` | code |
 | `context` | session, project, branch, workflow stage, our answers in the last hour | code and the tracker |
-| `ask` | what woke the agent: its `origin` (human, goal_hook, task_notification, peer) and the text, at most 1,500 characters | the record that opened the run |
-| `goal` | the goal text, the count of refused stops, and the last reason | the goal feedback records |
-| `notes` | the assistant text that came before a tool call in this run, up to 6, each clipped | text blocks that are not the last reply |
-| `steps` | a count, a count for each tool, the last 8 calls in full, and the first 5 errors in full | tool call and result records |
-| `agent_reports` | up to 4 sub-agent calls with the first 800 characters of each result | `Agent` call and result records |
+| `ask` | what woke the agent: its `origin` (human, goal_hook, task_notification, peer) and the full text | the record that opened the run |
+| `goal` | the goal text, the count of refused stops, the last reason, and the `proof` that the loop asked for | the goal feedback records and the `continue_until` action |
+| `items` | the run in order, nothing clipped. Each item is the agent's text before a call, or a tool call with its full result and its `is_error` flag | assistant and user records |
 | `last_thinking` | the last thinking block. Off by default | thinking blocks |
-| `final` | the last reply, redacted. For a reply over 7,500 characters: the first 1,500 and the last 6,000 | grouped assistant records |
-| `previous` | the run before this one, compact: its ask (400 characters), a step count, and its final reply (800 characters) | the earlier run |
+| `final` | the full last reply of the run, redacted | grouped assistant records |
+| `previous` | the `RunDigest` of the run before this one | the Digest call |
 | `pending` | the prompt that waits: source, kind, options, tool, command | hook, pane, or an `AskUserQuestion` call |
 | `redactions`, `allowed_kinds` | secrets removed, and the action kinds that the advisor may name | code |
 
 Rules that follow:
 
-1. Tool results are not in the slice, with two exceptions: the first line of an error, and the start of a sub-agent result. The cursor still reaches the full text.
-2. The `final` text keeps its tail, because a question comes at the end of a reply.
-3. The model reads `slice.for_model()`. That text leaves out `slice_id`, `cursor`, `redactions`, `allowed_kinds`, and `final_chars`.
+1. Nothing in a slice is clipped. The slice keeps the assistant text, each tool call, and each full result. Only the redaction changes the text.
+2. The renderer sets a budget of 160,000 characters for the text that a model reads. This is a guess: about 40,000 tokens, against 64,000 input tokens for Jev. I did not measure the characters for each token. Over the budget, the Shrink call replaces the largest tool results first. It never touches `ask`, `final`, or the last three exchanges. The stored `InterpreterCall` records how many results it replaced. By the measure in 2.1, about 1 run in 100 passes 100,000 characters.
+3. The model reads `slice.for_model()`. That text leaves out `slice_id`, `cursor`, `redactions`, and `allowed_kinds`. The option `agent_reports_first` copies each sub-agent exchange into a block at the top. It is a lab option, and the lab tests whether it helps.
 4. A prose question has no `pending`. The facts say `waiting_answer`, and `final` holds the question.
 5. A goal run gives one slice for each stop attempt. The `goal` field lets the models see that the agent only waits.
-6. A model summary of older turns stays off in v0.1. The `previous` field gives the one older run that you asked for, built by code.
+6. A model summary of older turns stays off in v0.1. The `previous` field is the one exception that you asked for, the digest of the run before.
+
+How the digest works. The Digest call reads the slice of a run that has just ended. It returns a `RunDigest`: what the agent did (up to 600 characters), how the run ended (up to 300), up to five open items, and up to five decisions. The system stores it as a `fact.run_digest` event. The next slice of the same session carries it as `previous`. It costs one model call for each run. In a goal run with many stops, that is one call for each stop. The lab checks whether the digest helps and whether it loses facts.
 
 ### 2.4 What the lab must settle
 
-The slice stores every section, and the renderer chooses what the model reads. The lab can therefore drop one section at a time and measure the effect, with no rebuild. The first ablations are `notes`, `steps`, `previous`, and `last_thinking`. I do not know which sections help. The sizes above are a guess from one repo, and a different repo may differ.
+The slice stores every section, and the renderer chooses what the model reads. The lab can therefore drop one section at a time and measure the effect, with no rebuild. The first ablations are the tool results in `items` (keep the calls, drop the results), `previous`, `last_thinking`, and `agent_reports_first`. I do not know which sections help. The sizes above come from one repo, and a different repo may differ.
 
-Every model call is stored as an `InterpreterCall`. The row holds the exact text that the model received, how many characters the clip removed, the model name, the output, and the time. A `Recommendation` links to its call rows. Section 11 shows both requests in full.
+Every model call is stored as an `InterpreterCall`. The row holds the stage, the exact text that the model received, how many tool results the Shrink call replaced, the model name, the output, and the time. A `Recommendation` links to its call rows. Section 11 shows both requests in full.
 
 ## 3. Output: the facts and the question card
 
@@ -132,13 +135,28 @@ The action hash is the idempotency key. It covers the kind and the payload. It d
 
 ### 4.1 `continue_until`
 
-This action runs a harness in a loop until code proves that it reached the stated outcome. It differs from `continue`, which sends one nudge.
+This action runs a harness in a loop until the session shows evidence that it reached the stated outcome. It differs from `continue`, which sends one nudge.
 
 - `goal`: the stated outcome, in words.
-- `proof`: how code checks it. The kinds are `command_exit_zero` (a command returns 0), `file_exists`, and `human_confirms`. The agent saying that it is done is never proof (CLAUDE.md principle 8).
+- `proof`: what the session must show. The kinds are `agent_shows` (the agent runs a named command and reports the result) and `human_confirms`. The field has a `command` and a `show` text, for example "the exit code and the last 5 lines".
 - `max_turns` and `max_minutes`: the budget. When the budget ends, the actuator opens an `ask_human` item.
 
-Three parties touch the proof. The interpreter proposes it and never runs it. The policy decides it before the loop starts, and a `command_exit_zero` command must pass the same shell deny list as any command. The actuator runs it through the adapter host after each stop, in the project folder, and records the exit code and the tail of the output as a `fact.proof_result` event. The agent never checks its own proof. A proof command runs with your rights, so a command with side effects (for example a test that writes files) is a risk. I recommend that the policy asks you to approve the proof command when the loop starts. The policy decides the loop once, as one action with a budget. It still decides each send inside the loop, and it evaluates the proof command against the shell deny list. I propose the name `continue_until`. The name `goal` sounds like only a note on the session. The human can also start this action from the client, as a human-authored action.
+**Who checks the proof.** No part of priority.dev runs the proof. We do not have an orchestrator agent with the same access as the coding session, so nothing here can run the command and read the exit code. The session shows the evidence, and code checks that the transcript supports what the session says. This is evidence. It is not proof.
+
+**How it works, step by step.**
+
+1. The human, or the interpreter, writes the goal and a `proof` of kind `agent_shows`, with a command and a `show` text. The policy decides the loop once, as one action with a budget.
+2. The actuator sends one message to the session: the goal, and the line "Before you stop, run `<command>` and report `<show>`".
+3. The agent works. At each stop, code builds a slice. The slice holds the agent's tool calls with their full results, in order (section 2).
+4. Stage 2 reads the slice. In a goal run it also returns an `EvidenceCheck`: `claimed_met`, a `command_quote`, and a `result_quote`. The quotes must be exact text from the slice.
+5. Code, with no model, runs `check_evidence`. It looks for a Bash call in this run whose input contains the proof command. It needs `is_error` false for that call. It needs the `result_quote` to appear in that call's result. The data comes from the real tool result record.
+6. If the check passes, the actuator stops sending `continue`. The inbox gets a class 2 item, "Goal claimed met", with the command, the result, and a button to reopen the loop. The human decides whether the evidence is enough.
+7. If the check fails, the actuator sends `continue` with the reason, for example "You did not run `pytest -q` in this run". The send counts against `max_turns`.
+8. If the budget ends before step 6, the actuator opens an `ask_human` item.
+
+**What the check cannot see.** The agent can run a weaker command than the goal needs, or change the tests, or end the command with `|| true`. The transcript then shows a pass, and the check passes. The check does not judge whether the command is a good proof. It stops one failure: the agent claims a result that it never produced. Because the check reads the tool result record and not the agent's words, the agent cannot invent the result. The human stays the judge of the proof itself. A later orchestrator agent could run the command itself, and that needs its own design.
+
+The policy decides each send inside the loop, as for any `continue`. The human can also start this action from the client, as a human-authored action. I propose the name `continue_until`. The name `goal` sounds like only a note on the session.
 
 ### 4.2 A proposal with more than one step
 
@@ -247,7 +265,10 @@ Section 11 shows an example.
 3. A real Jev call returns the five typed fields for one slice (not done, one-day test).
 4. The advisor returns a valid `Advice` for 20 recorded slices (not done). The `Action` union as a DSPy output field is untested against a real model.
 5. The evidence quote check rejects a proposal whose quote is not in the slice (not done, a unit test).
-6. The 15,445-character schema in the stage 2 prompt does not lower the advisor's accuracy (not done).
+6. The 16,071-character schema in the stage 2 prompt does not lower the advisor's accuracy (not done).
+7. `check_evidence` accepts a real pass and rejects four wrong cases: a wrong quote, a failed call, no call, and no goal (done: the sketch asserts all five).
+8. The Digest call keeps the open questions of a run, and the Shrink call keeps the errors (not done, lab checks).
+9. The adapter host Stop hook fires at every stop, including in a goal run (not done, one-day test).
 
 ## 11. Examples of the data
 
@@ -271,49 +292,58 @@ The data is synthetic. The sketch builds each example and checks a JSON round tr
   "origin": "human",
   "text": "Build slice 2: the CSV export endpoint. Run the tests before you stop."
  },
- "notes": [
-  "I will read the routes first, then add the writer.",
-  "Tests pass. I check the timestamp format."
+ "items": [
+  {
+   "type": "text",
+   "text": "I will read the routes first, then add the writer."
+  },
+  {
+   "type": "tool",
+   "tool": "Read",
+   "input": "src/export/routes.py",
+   "result": "def export_routes(app):\n    ...",
+   "is_error": false
+  },
+  {
+   "type": "tool",
+   "tool": "Edit",
+   "input": "src/export/csv_writer.py",
+   "result": "File updated.",
+   "is_error": false
+  },
+  {
+   "type": "tool",
+   "tool": "Bash",
+   "input": "pytest tests/export -q",
+   "result": "Exit code 1\nFAILED tests/export/test_csv.py::test_header_order\n1 failed, 13 passed",
+   "is_error": true
+  },
+  {
+   "type": "text",
+   "text": "One test fails on the header order. I fix the column list and run the tests again."
+  },
+  {
+   "type": "tool",
+   "tool": "Edit",
+   "input": "src/export/csv_writer.py",
+   "result": "File updated.",
+   "is_error": false
+  },
+  {
+   "type": "tool",
+   "tool": "Bash",
+   "input": "pytest tests/export -q",
+   "result": "14 passed in 0.9s",
+   "is_error": false
+  }
  ],
- "steps": {
-  "total": 9,
-  "by_tool": {
-   "Read": 4,
-   "Edit": 3,
-   "Bash": 2
-  },
-  "last": [
-   {
-    "tool": "Edit",
-    "target": "src/export/csv_writer.py",
-    "outcome": "ok"
-   },
-   {
-    "tool": "Bash",
-    "target": "pytest tests/export -q",
-    "outcome": "ok"
-   }
-  ],
-  "errors": [
-   {
-    "tool": "Bash",
-    "target": "pytest tests/export -q",
-    "outcome": "error",
-    "note": "1 failed: test_header_order"
-   }
-  ]
- },
  "final": "Slice 2 is done. 14 tests pass.\n\nBefore I start slice 3, one question. Should the CSV timestamps use UTC or the project timezone?\n1. UTC (I recommend this: it matches the API)\n2. The project timezone\nReply 1 or 2.",
- "final_chars": 288,
  "previous": {
-  "ask": "Build slice 1: the export model.",
-  "steps_total": 14,
-  "by_tool": {
-   "Read": 6,
-   "Edit": 5,
-   "Bash": 3
-  },
-  "final": "Slice 1 is done. 9 tests pass. Starting slice 2 next."
+  "ran": "Built the export model and its 9 tests.",
+  "result": "Slice 1 done, tests pass.",
+  "decisions": [
+   "Money fields use integer cents"
+  ]
  },
  "allowed_kinds": [
   "approve_gate",
@@ -330,6 +360,12 @@ The data is synthetic. The sketch builds each example and checks a JSON round tr
   "snooze"
  ]
 }
+```
+
+**RunDigest (the Digest call, carried as previous)**
+
+```json
+{"ran": "Built the export model and its 9 tests.", "result": "Slice 1 done, tests pass.", "decisions": ["Money fields use integer cents"]}
 ```
 
 **Facts from the Jev call**
@@ -386,16 +422,84 @@ The data is synthetic. The sketch builds each example and checks a JSON round tr
 }
 ```
 
+**A goal run at a stop attempt**
+
+```json
+{
+ "slice_id": "c096cea9b4f73d72",
+ "cursor": "~/.claude/projects/-work-exporter/7c1e.jsonl@184220",
+ "trigger": "goal_stop_attempt",
+ "context": {
+  "session_id": "sess-7c1",
+  "project": "exporter",
+  "branch": "slice-2-csv",
+  "workflow_stage": "implement: slice 2 of 5",
+  "answered_by_us_last_hour": 1
+ },
+ "ask": {
+  "origin": "goal_hook",
+  "text": "Stop hook feedback: [All 5 slices pass their tests]: not yet shown"
+ },
+ "goal": {
+  "text": "All 5 slices pass their tests",
+  "stop_attempts": 2,
+  "last_reason": "no test output shown",
+  "proof": {
+   "kind": "agent_shows",
+   "command": "pytest -q",
+   "show": "the exit code and the last 5 lines of output"
+  }
+ },
+ "items": [
+  {
+   "type": "tool",
+   "tool": "Bash",
+   "input": "pytest -q",
+   "result": "68 passed in 4.1s",
+   "is_error": false
+  }
+ ],
+ "final": "All 5 slices are built. I ran pytest -q: 68 passed in 4.1s.",
+ "previous": {
+  "ran": "Built the export model and its 9 tests.",
+  "result": "Slice 1 done, tests pass.",
+  "decisions": [
+   "Money fields use integer cents"
+  ]
+ },
+ "allowed_kinds": [
+  "approve_gate",
+  "approve_permission",
+  "ask_human",
+  "continue",
+  "continue_until",
+  "deny_permission",
+  "dismiss",
+  "interrupt",
+  "pick_option",
+  "reply",
+  "send_feedback",
+  "snooze"
+ ]
+}
+```
+
+**EvidenceCheck (checked by code against the slice)**
+
+```json
+{"claimed_met": true, "command_quote": "pytest -q", "result_quote": "68 passed in 4.1s"}
+```
+
 **A proposal with two steps**
 
 ```json
-{"proposal_id": "p-2", "slice_id": "c096cea9b4f73d72", "steps": [{"session_id": "sess-7c1", "evidence_quote": "1. UTC (I recommend this", "confidence": 0.9, "kind": "reply", "text": "1"}, {"session_id": "sess-7c1", "evidence_quote": "Before I start slice 3", "confidence": 0.0, "kind": "continue_until", "goal": "Slices 3 to 5 pass their tests", "proof": {"kind": "command_exit_zero", "value": "pytest -q"}, "max_turns": 20, "max_minutes": 120}], "rationale": "Answer the question, then run to the end of the plan."}
+{"proposal_id": "p-2", "slice_id": "c096cea9b4f73d72", "steps": [{"session_id": "sess-7c1", "evidence_quote": "1. UTC (I recommend this", "confidence": 0.9, "kind": "reply", "text": "1"}, {"session_id": "sess-7c1", "evidence_quote": "Before I start slice 3", "confidence": 0.0, "kind": "continue_until", "goal": "Slices 3 to 5 pass their tests", "proof": {"kind": "agent_shows", "command": "pytest -q", "show": "the exit code and the last 5 lines"}, "max_turns": 20, "max_minutes": 120}], "rationale": "Answer the question, then run to the end of the plan."}
 ```
 
 **continue_until**
 
 ```json
-{"session_id": "sess-7c1", "evidence_quote": "Reply 1 or 2.", "confidence": 0.7, "kind": "continue_until", "goal": "All 5 slices pass their tests", "proof": {"kind": "command_exit_zero", "value": "pytest -q"}, "max_turns": 20, "max_minutes": 120}
+{"session_id": "sess-7c1", "evidence_quote": "Reply 1 or 2.", "confidence": 0.7, "kind": "continue_until", "goal": "All 5 slices pass their tests", "proof": {"kind": "agent_shows", "command": "pytest -q", "show": "the exit code and the last 5 lines"}, "max_turns": 20, "max_minutes": 120}
 ```
 
 **Abstain**
@@ -419,7 +523,7 @@ The data is synthetic. The sketch builds each example and checks a JSON round tr
 **InterpreterCall (the stored row)**
 
 ```json
-{"call_id": "c-1", "slice_id": "c096cea9b4f73d72", "stage": "triage", "model": "typesafe:jev-latest", "rendered_input": "(the state and the five questions, see schemas.md section 10)", "clipped_chars": 0, "output_json": "{\"status\":\"waiting_answer\",\"needs_human\":false,\"answer_class\":\"pick_default\",\"risk\":0.2,\"priority_hint\":0.3,\"confidence\":{\"status\":0.93,\"needs_human\":0.81,\"answer_class\":0.88,\"risk\":0.74,\"priority_hint\":0.6}}", "latency_ms": 410}
+{"call_id": "c-1", "slice_id": "c096cea9b4f73d72", "stage": "triage", "model": "typesafe:jev-latest", "rendered_input": "(the state and the five questions, see schemas.md section 10)", "shrunk_items": 0, "output_json": "{\"status\":\"waiting_answer\",\"needs_human\":false,\"answer_class\":\"pick_default\",\"risk\":0.2,\"priority_hint\":0.3,\"confidence\":{\"status\":0.93,\"needs_human\":0.81,\"answer_class\":0.88,\"risk\":0.74,\"priority_hint\":0.6}}", "latency_ms": 410}
 ```
 
 **Recommendation**
@@ -463,51 +567,59 @@ DSPy builds this request. One call carries all five questions. The inputs hold `
      "origin": "human",
      "text": "Build slice 2: the CSV export endpoint. Run the tests before you stop."
     },
-    "notes": [
-     "I will read the routes first, then add the writer.",
-     "Tests pass. I check the timestamp format."
-    ],
-    "steps": {
-     "total": 9,
-     "by_tool": {
-      "Read": 4,
-      "Edit": 3,
-      "Bash": 2
+    "items": [
+     {
+      "type": "text",
+      "text": "I will read the routes first, then add the writer."
      },
-     "last": [
-      {
-       "tool": "Edit",
-       "target": "src/export/csv_writer.py",
-       "outcome": "ok",
-       "note": ""
-      },
-      {
-       "tool": "Bash",
-       "target": "pytest tests/export -q",
-       "outcome": "ok",
-       "note": ""
-      }
-     ],
-     "errors": [
-      {
-       "tool": "Bash",
-       "target": "pytest tests/export -q",
-       "outcome": "error",
-       "note": "1 failed: test_header_order"
-      }
-     ]
-    },
-    "agent_reports": [],
+     {
+      "type": "tool",
+      "tool": "Read",
+      "input": "src/export/routes.py",
+      "result": "def export_routes(app):\n    ...",
+      "is_error": false
+     },
+     {
+      "type": "tool",
+      "tool": "Edit",
+      "input": "src/export/csv_writer.py",
+      "result": "File updated.",
+      "is_error": false
+     },
+     {
+      "type": "tool",
+      "tool": "Bash",
+      "input": "pytest tests/export -q",
+      "result": "Exit code 1\nFAILED tests/export/test_csv.py::test_header_order\n1 failed, 13 passed",
+      "is_error": true
+     },
+     {
+      "type": "text",
+      "text": "One test fails on the header order. I fix the column list and run the tests again."
+     },
+     {
+      "type": "tool",
+      "tool": "Edit",
+      "input": "src/export/csv_writer.py",
+      "result": "File updated.",
+      "is_error": false
+     },
+     {
+      "type": "tool",
+      "tool": "Bash",
+      "input": "pytest tests/export -q",
+      "result": "14 passed in 0.9s",
+      "is_error": false
+     }
+    ],
     "final": "Slice 2 is done. 14 tests pass.\n\nBefore I start slice 3, one question. Should the CSV timestamps use UTC or the project timezone?\n1. UTC (I recommend this: it matches the API)\n2. The project timezone\nReply 1 or 2.",
     "previous": {
-     "ask": "Build slice 1: the export model.",
-     "steps_total": 14,
-     "by_tool": {
-      "Read": 6,
-      "Edit": 5,
-      "Bash": 3
-     },
-     "final": "Slice 1 is done. 9 tests pass. Starting slice 2 next."
+     "ran": "Built the export model and its 9 tests.",
+     "result": "Slice 1 done, tests pass.",
+     "open_items": [],
+     "decisions": [
+      "Money fields use integer cents"
+     ]
     }
    }
   }
@@ -569,7 +681,7 @@ DSPy builds this request. One call carries all five questions. The inputs hold `
 
 ### 11.2 The exact request to the language model (stage 2)
 
-The system message ends with the JSON schema of `Advice`. That schema has 15445 characters, and it is cut here. The user message is the exact text.
+The system message ends with the JSON schema of `Advice`. That schema has 16071 characters, and it is cut here. The user message is the exact text.
 
 ```
 [system]
@@ -596,7 +708,7 @@ In adhering to this structure, your objective is:
 
 [user]
 [[ ## slice_json ## ]]
-{"trigger":"end_turn","context":{"session_id":"sess-7c1","project":"exporter","branch":"slice-2-csv","workflow_stage":"implement: slice 2 of 5","answered_by_us_last_hour":1},"ask":{"origin":"human","text":"Build slice 2: the CSV export endpoint. Run the tests before you stop."},"notes":["I will read the routes first, then add the writer.","Tests pass. I check the timestamp format."],"steps":{"total":9,"by_tool":{"Read":4,"Edit":3,"Bash":2},"last":[{"tool":"Edit","target":"src/export/csv_writer.py","outcome":"ok","note":""},{"tool":"Bash","target":"pytest tests/export -q","outcome":"ok","note":""}],"errors":[{"tool":"Bash","target":"pytest tests/export -q","outcome":"error","note":"1 failed: test_header_order"}]},"agent_reports":[],"final":"Slice 2 is done. 14 tests pass.\n\nBefore I start slice 3, one question. Should the CSV timestamps use UTC or the project timezone?\n1. UTC (I recommend this: it matches the API)\n2. The project timezone\nReply 1 or 2.","previous":{"ask":"Build slice 1: the export model.","steps_total":14,"by_tool":{"Read":6,"Edit":5,"Bash":3},"final":"Slice 1 is done. 9 tests pass. Starting slice 2 next."}}
+{"trigger": "end_turn", "context": {"session_id": "sess-7c1", "project": "exporter", "branch": "slice-2-csv", "workflow_stage": "implement: slice 2 of 5", "answered_by_us_last_hour": 1}, "ask": {"origin": "human", "text": "Build slice 2: the CSV export endpoint. Run the tests before you stop."}, "items": [{"type": "text", "text": "I will read the routes first, then add the writer."}, {"type": "tool", "tool": "Read", "input": "src/export/routes.py", "result": "def export_routes(app):\n    ...", "is_error": false}, {"type": "tool", "tool": "Edit", "input": "src/export/csv_writer.py", "result": "File updated.", "is_error": false}, {"type": "tool", "tool": "Bash", "input": "pytest tests/export -q", "result": "Exit code 1\nFAILED tests/export/test_csv.py::test_header_order\n1 failed, 13 passed", "is_error": true}, {"type": "text", "text": "One test fails on the header order. I fix the column list and run the tests again."}, {"type": "tool", "tool": "Edit", "input": "src/export/csv_writer.py", "result": "File updated.", "is_error": false}, {"type": "tool", "tool": "Bash", "input": "pytest tests/export -q", "result": "14 passed in 0.9s", "is_error": false}], "final": "Slice 2 is done. 14 tests pass.\n\nBefore I start slice 3, one question. Should the CSV timestamps use UTC or the project timezone?\n1. UTC (I recommend this: it matches the API)\n2. The project timezone\nReply 1 or 2.", "previous": {"ran": "Built the export model and its 9 tests.", "result": "Slice 1 done, tests pass.", "open_items": [], "decisions": ["Money fields use integer cents"]}}
 
 [[ ## facts_json ## ]]
 {"status":"waiting_answer","needs_human":false,"answer_class":"pick_default","risk":0.2,"priority_hint":0.3,"confidence":{"status":0.93,"needs_human":0.81,"answer_class":0.88,"risk":0.74,"priority_hint":0.6}}
