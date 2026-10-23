@@ -31,6 +31,7 @@ CONFIGURED = "\n".join([
     "Stuck slice: tracker.py skip-slice <id> --reason <text>.",
     f"Call it as: uv run {PLUGIN_ROOT}/shared/tracker.py <operation>.",
     "A passed slice: tracker.py set-slice-state <id> closed --score <s> --attempts <n>.",
+    f"After a pass, rebuild the index: uv run {PLUGIN_ROOT}/shared/build_index.py.",
     "Run tracker.py sync at the end of a session.",
     "Read shared/tracker-usage.md for the arguments of each operation.",
 ])

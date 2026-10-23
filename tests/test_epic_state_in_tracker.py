@@ -124,12 +124,26 @@ def test_index_epic_state_comes_from_tracker_not_goal(tmp_path: Path) -> None:
 
 
 def test_index_epic_state_is_null_when_tracker_envelope_lacks_it(tmp_path: Path) -> None:
-    # goal.json holds values, the tracker does not. The index reads null, as today for a missing key.
+    # goal.json holds values, the tracker envelope does not. Branch and pr read null.
+    # State comes from the held record lifecycle, so the held epics read open.
     repo = make_repo(tmp_path, corpus="corpus-bare")
     epics = build(repo, tmp_path)
     assert list(epics) == EPIC_IDS
-    for epic in epics.values():
-        assert all(epic[key] is None for key in STATE_KEYS)
+    for epic_id in ("estate/E1", "estate/E2"):
+        assert epics[epic_id]["branch"] is None and epics[epic_id]["pr"] is None
+        assert epics[epic_id]["state"] == "open"
+    assert all(epics["estate/E3"][key] is None for key in STATE_KEYS)  # no tracker record for E3
+
+
+def test_index_epic_state_is_the_held_record_lifecycle(tmp_path: Path) -> None:
+    # E1 carries a stale envelope state of merged and lifecycle in_progress. The lifecycle wins.
+    repo = make_repo(tmp_path, corpus="corpus-lifecycle")
+    epics = build(repo, tmp_path)
+    assert epics["estate/E1"]["state"] == "in_progress"
+    assert epics["estate/E2"]["state"] == "closed"
+    assert epics["estate/E3"]["state"] is None  # no held record
+    assert (epics["estate/E1"]["branch"], epics["estate/E1"]["pr"]) == ("tracker/first", 9)
+    assert epics["estate/E2"]["branch"] == "tracker/second"
 
 
 def test_index_epic_state_after_migration_comes_from_tracker(tmp_path: Path) -> None:
@@ -147,7 +161,7 @@ def test_index_without_tracker_config_reads_state_through_the_files_adapter(tmp_
     assert list(epics) == EPIC_IDS
     assert epics["estate/E1"]["branch"] == "design/estate/first"
     assert epics["estate/E1"]["pr"] == 7
-    assert epics["estate/E1"]["state"] == "merged"
+    assert epics["estate/E1"]["state"] == "open"  # the files adapter epic lifecycle; the envelope state merged no longer matters
 
 
 def test_epic_fields_hold_no_state_keys() -> None:

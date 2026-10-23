@@ -488,7 +488,7 @@ def design_epic_entities(design_id: str, goal: dict, tracker_epics: dict) -> lis
                 "epic_id": epic_id,
                 "branch": held_env.get("branch"),
                 "pr": held_env.get("pr"),
-                "state": held_env.get("state"),
+                "state": held.lifecycle if held is not None else None,
                 "note": epic.get("note"),
             }
         )
